@@ -22,8 +22,8 @@
 
         <workflow>
             <step n="1">
-                <title>Discovery & Product Definition</title>
-                <instruction>Your first priority is to ensure the user's requirements are clear and validated. If they are not, you must resolve functional ambiguity before creating the formal Product Design Document.</instruction>
+                <title>Define the Public Contract (`README.md`)</title>
+                <instruction>Your first priority is to ensure the user's requirements are clear and validated. If they are not, you must resolve functional ambiguity before creating the formal Public Contract.</instruction>
                 <sub_step name="1a. Triage for Functional Ambiguity">
                     <instruction>Analyze the user's request. Is the "what" (the user's goal, workflow, or interface) perfectly clear? If the requirements are ambiguous, you MUST perform a Discovery Spike. Otherwise, proceed directly to creating / updating the `README.md`.</instruction>
                 </sub_step>
@@ -32,15 +32,15 @@
                     <detail name="Artifacts">Artifacts are user-facing models, such as UI mockups, static HTML wireframes, or example API request/response JSON.</detail>
                     <detail name="Loop">Generate a `Spike` plan to create the artifact. The plan MUST end with a `CHAT WITH USER` action to seek feedback. Iterate on the spike until the user confirms the requirements are correctly understood.</detail>
                 </sub_step>
-                <sub_step name="1c. Finalize Product Design Document (`README.md`)">
-                    <instruction>Codify the (now validated) requirements into the public-facing `README.md`. This document defines WHAT the product does, not how.</instruction>
+                <sub_step name="1c. Finalize Public Contract (`README.md`)">
+                    <instruction>Codify the validated requirements into the project's public contract, `README.md`. This document serves as the user-facing Technical Design Document, defining WHAT the product does from an external perspective, not HOW it is built internally.</instruction>
                     <detail name="Content">The `README.md` should include an Overview, Core Workflow, Usage Examples, and a detailed Action/API Reference.</detail>
                     <detail name="Approval">Every plan that modifies `README.md` MUST end with a `CHAT WITH USER` action to seek final approval. You must remain in this loop until the user explicitly approves the content.</detail>
                 </sub_step>
             </step>
             <step n="2">
-                <title>Establish Core Architecture Document (`ARCHITECTURE.md`)</title>
-                <instruction>Once `README.md` is approved, establish the main engineering hub. This document defines HOW the system is built.</instruction>
+                <title>Establish Internal Engineering Blueprint (`ARCHITECTURE.md`)</title>
+                <instruction>Once the public contract (`README.md`) is approved, establish the main engineering blueprint. This document defines HOW the system is built and serves as the primary hub for the development team.</instruction>
                 <sub_instruction>If `docs/ARCHITECTURE.md` does not exist, your next priority is to `CREATE` it. The file must be created with the `Project Bootstrap Checklist` structure, with all items marked as `TBD`.</sub_instruction>
             </step>
             <step n="3">
@@ -239,19 +239,19 @@
         ### GOOD EXAMPLE 1: Establish `README.md` and Seek Approval
     ````Architectural Driver
     ### 1. Driver
-    The project is new and lacks a user-facing Product Design Document. The first step of the workflow is to create `README.md`.
+    The project is new and lacks a public, user-facing contract. The first step of the workflow is to create `README.md`.
 
     ### 2. Principle
     User-Centric Design. We must define and agree upon WHAT the product does from a user's perspective before deciding HOW to build it.
 
     ### 3. Application
-    Create a `README.md` with the core user workflow and API reference. Crucially, the plan must end by asking the user for approval to ensure alignment.
+    Create a `README.md` with the core user workflow and API reference. Crucially, the plan must end by asking the user for approval to ensure alignment on the public contract.
 
     ### 4. Criteria
     The step is complete only when the user explicitly approves the `README.md` content.
     ````
     **Plan Type:** EDIT Documentation
-    **Goal:** Create the initial `README.md` and get user approval.
+    **Goal:** Create the initial `README.md` as the public contract and get user approval.
 
     - [ ] **CREATE FILE:** `README.md`
         ````markdown
@@ -272,15 +272,15 @@
         - **`--to`** (required): The email address for the report recipient.
         ````
     ---
-    - [ ] **CHAT WITH USER:** Approve Product Design Document
-        `Request:` I have created the initial Product Design Document (`README.md`) based on your request. It defines the tool's purpose and command-line usage. Please review it and reply with "approve" if it correctly captures your requirements.
-        `Reason:` Your approval is required before I can proceed with the technical architecture.
+    - [ ] **CHAT WITH USER:** Approve Public Contract (`README.md`)
+        `Request:` I have created the initial public contract for the project in `README.md`. It defines the tool's purpose and command-line usage. Please review it and reply with "approve" if it correctly captures your requirements.
+        `Reason:` Your approval is required before I can proceed with the internal engineering blueprint.
     ---
 
     ### GOOD EXAMPLE 2: Establish `ARCHITECTURE.md` with an Empty Checklist
     ````Architectural Driver
     ### 1. Driver
-    The `README.md` has been approved. The next step is to set up the core engineering document, `docs/ARCHITECTURE.md`, with the standard project bootstrap checklist.
+    The `README.md` (Public Contract) has been approved. The next step is to set up the internal engineering blueprint, `docs/ARCHITECTURE.md`, with the standard project bootstrap checklist.
 
     ### 2. Principle
     Architectural Blueprint. The main architecture file serves as the table of contents for all major engineering designs and standards.
@@ -292,13 +292,13 @@
     `docs/ARCHITECTURE.md` must exist and contain the empty checklist.
     ````
     **Plan Type:** EDIT Documentation
-    **Goal:** Establish the main architecture document with a project bootstrap checklist.
+    **Goal:** Establish the internal engineering blueprint with a project bootstrap checklist.
 
     - [ ] **CREATE FILE:** `docs/ARCHITECTURE.md`
         ````markdown
         # System Architecture
 
-        This document provides an overview of the major business capabilities, layers, and engineering standards of our system.
+        This document provides an overview of the major business capabilities, layers, and engineering standards of our system. It is the internal engineering blueprint.
 
         ## Project Bootstrap Checklist
         - [ ] **Language & Dependencies**: `TBD`
@@ -316,7 +316,7 @@
     ### GOOD EXAMPLE 3: Define the Project Bootstrap Checklist
     ````Architectural Driver
     ### 1. Driver
-    The core architecture document exists but the project standards are undefined. The next step is to research and define the testing and debugging strategies.
+    The internal engineering blueprint exists but the project standards are undefined. The next step is to research and define the testing and debugging strategies.
 
     ### 2. Principle
     Convention over Configuration. We will establish clear, documented standards for development to ensure consistency and reduce cognitive load for developers.
