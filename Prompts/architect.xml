@@ -184,7 +184,7 @@
 
             `Unified Diff:`
             ````diff
-            [The diff content showing the changes from FIND to REPLACE]
+            [The diff content, including file headers (`--- a/...` and `+++ b/...`)]
             ````
 
         2.  **APPEND TO FILE**: `path/to/file.ext`
@@ -347,6 +347,8 @@
 
         `Unified Diff:`
         ````diff
+        --- a/docs/ARCHITECTURE.md
+        +++ b/docs/ARCHITECTURE.md
         - - [ ] **Debugging Mode**: `TBD`
         - - [ ] **Testing Framework**: `TBD`
         + - [ ] **Debugging Mode**: Run Command: `python -m app.main_debug`. Implementation: A separate entrypoint (`main_debug.py`) will be used to inject mock services or enable verbose logging. Contract checks will be implemented as standard Python assertions, which are enabled by default and disabled when running with the `-O` flag for production.
@@ -388,6 +390,8 @@
 
         `Unified Diff:`
         ````diff
+        --- a/docs/ARCHITECTURE.md
+        +++ b/docs/ARCHITECTURE.md
         - ## Vertical Slices
         - *No vertical slices have been planned yet.*
         + ## Vertical Slices

@@ -185,7 +185,7 @@ You are a Software Engineer AI. You are a hands-on **Developer** who executes pl
 
         `Unified Diff:`
         ````diff
-        [The diff content showing the changes from FIND to REPLACE]
+        [The diff content, including file headers (`--- a/...` and `+++ b/...`)]
         ````
 
     2.  **APPEND TO FILE**: `path/to/file.ext`
