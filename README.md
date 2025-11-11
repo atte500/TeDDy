@@ -1,6 +1,11 @@
-# TeDDy: Design by Contract & Test-Driven Development with AI
+# TeDDy: Your Contract-First & Test-Driven Pair-Programmer
 
-TeDDy is an AI-assisted coding paradigm that pairs a strategic **Architect AI** with a tactical **Developer AI** to build robust, verifiable software. It counters the instability of "agent-mode" AI development by enforcing engineering discipline through a workflow inspired by Design by Contract (DbC) principles and grounded in Test-Driven Development (TDD) practices.
+TeDDy is an AI-assisted coding paradigm that pairs you with a strategic **Architect AI** and a tactical **Developer AI** to build robust, verifiable software. It counters the instability of "agent-mode" AI development by enforcing engineering discipline through a workflow inspired by Contract-First Design principles and grounded in Test-Driven Development (TDD) practices.
+
+## Conceptual Groundwork
+
+For a detailed walkthrough of the concepts and principles behind TeDDy, please see the video overview:
+[![Video Title](https://img.youtube.com/vi/VIDEO_ID/0.jpg)](https://www.youtube.com/watch?v=VIDEO_ID)
 
 ## The Problem: The AI Coding "Slot Machine"
 
@@ -9,7 +14,7 @@ Modern AI coding assistants are powerful but unpredictable. The experience often
 - **Rapid Decay:** This initial velocity quickly grinds to a halt as the complexity grows. You lose control of the code, and the cost of change skyrockets.
 - **Compounding Errors:** LLMs tend to "guess" the final code without incremental verification. This leads to compounding errors that are difficult to untangle.
 
-The 2025 DORA report on AI-assisted development confirms this observation: **software delivery instability leads to higher change failure rates and more rework.**
+The [2025 DORA report on AI-assisted software development](https://services.google.com/fh/files/misc/2025_state_of_ai_assisted_software_development.pdf) confirms this observation: **software delivery instability leads to higher change failure rates and more rework.**
 
 ## The Solution: Quality by Design
 
@@ -20,17 +25,17 @@ We take inspiration from the **Toyota Production System (TPS)**, which revolutio
 Two key principles of TPS apply directly to software:
 
 1.  **Jidoka (Autonomation):** *Stop the line immediately when a defect is found.* In software, a "defect" is a wrong assumption. Test-Driven Development (TDD) is our implementation of Jidoka, preventing flawed code from ever being integrated.
-2.  **Poka-Yoke (Mistake-Proofing):** *Design processes so errors can't be made in the first place.* Design by Contract is our Poka-Yoke. By defining clear "seams" and contracts between software components, we mistake-proof the architecture.
+2.  **Poka-Yoke (Mistake-Proofing):** *Design processes so errors can't be made in the first place.* **Contract-First Design** is our Poka-Yoke. By defining clear "seams" and contracts between all parts of the system—starting with the user—we mistake-proof the architecture.
 
-The objective is to improve long-term efficiency based on the prinicple that **speed is a byproduct of quality.**
+The objective is to improve **long-term** efficiency based on the DORA prinicple that **speed is a byproduct of quality.**
 
 ## The TeDDy Workflow: Architect & Developer
 
-TeDDy structures the development process around two distinct AI personas, each with a specific prompt and a clear mandate.
+TeDDy structures the development process around two distinct AI personas, each with a specific **system prompt** and a clear mandate.
 
-### 1. The Architect (Design by Contract)
+### 1. The Architect (Contract-First Design)
 
-The Architect's role is to manage complexity and define the engineering blueprint. It follows a structured workflow to establish clear, verifiable contracts before any implementation code is written.
+The Architect's role is to manage complexity by applying a holistic **Contract-First Design** philosophy. It establishes a cascade of agreements, starting with a user-approved **Public Contract** (`README.md`) that defines *what* the system does, and drills down into an **Architectural Contract** (`ARCHITECTURE.md`) and tactical **Implementation Contracts** that define *how* it's built.
 
 > **`Prompts/architect.xml`**: A high-level planner that defines the public contract (`README.md`), the internal architecture (`ARCHITECTURE.md`), and the specific contracts for each layer of the application. **Its output is documentation.**
 
@@ -43,28 +48,21 @@ The Developer's role is to implement the Architect's plan. It follows a strict, 
 ## How to Use TeDDy
 
 1.  **Phase 1: Architecture:**
-    - Start a chat session with [Google AI Studio](https://aistudio.google.com/).
-    - Provide the content of `Prompts/architect.xml` as the system prompt.
+    - Start a chat session in Google AI Studio.
+    - Add and save the content of `Prompts/architect.xml` as the "System instructions".
     - Give the Architect a high-level business requirement.
     - Iterate with the Architect until the public `README.md` and internal `ARCHITECTURE.md` are approved and all vertical slices and layer contracts are defined.
 
 2.  **Phase 2: Development:**
     - Start a new chat session.
-    - Provide the content of `Prompts/dev.xml` as the system prompt.
+    - Add and save the content of `Prompts/dev.xml` as the "System instructions".
     - Provide the architectural documents generated by the Architect.
     - Instruct the Developer to begin implementing the first vertical slice.
 
-## Conceptual Groundwork
-
-For a detailed walkthrough of the concepts and principles behind TeDDy, please see the video overview:
-- **[Link to Conceptual Overview Video]** *(Please provide the link)*
-
 ## Recommended Tooling
 
-To streamline the manual steps of the TeDDy workflow, we recommend the following VS Code extensions:
-
--   **[Copy4AI](https://marketplace.visualstudio.com/items?itemName=LeonKohli.snapsource):** Quickly copy the contents of multiple files and the project structure to your clipboard to provide context to the AI.
--   **[PatchPilot](https://marketplace.visualstudio.com/items?itemName=patchpilot.patch-pilot):** Apply code changes provided by the AI in the `diff` format directly into your local files.
+-   **Google AI Studio**: Add and save the provided system prompts under "System instructions" on the right-hand tab. Execute commands without any Tools enabled - Gemini 2.5 Pro is recommended.
+-   **[Copy4AI](https://marketplace.visualstudio.com/items?itemName=LeonKohli.snapsource):** A VS Code extension to quickly copy the contents of multiple files and the project structure to your clipboard to provide context to the AI.
 
 ## Understanding the AI's Plans
 
@@ -91,16 +89,16 @@ Each persona has a specific set of plans they can generate:
 These are the specific actions the AI can include in a plan:
 
 -   **`CREATE FILE`**: Creates a new file with the specified content.
--   **`EDIT FILE`**: Modifies an existing file using a `FIND`/`REPLACE` block or a `diff` patch.
+-   **`EDIT FILE`**: Modifies an existing file using a `FIND`/`REPLACE` block.
 -   **`APPEND TO FILE`**: Adds content to the end of an existing file.
 -   **`DELETE FILE`**: Removes a file, typically for cleaning up spike artifacts.
 -   **`READ FILE`**: Reads the content of a file to gain context.
--   **`EXECUTE`**: Runs a shell command (e.g., to run tests or `git status`).
--   **`RESEARCH`**: Asks a set of specific questions. For now, you can copy the research request and provide it to another AI (like Gemini, Perplexity, etc.) to get the answers.
+-   **`EXECUTE`**: Runs a shell command (e.g., to run tests or version control).
+-   **`RESEARCH`**: Asks a set of specific questions. You can copy the research request and provide it to another AI (like Gemini, Perplexity, etc.) to get the answers.
 -   **`CHAT WITH USER`**: The AI requires your feedback, approval, or specific information.
 
-## Roadmap & Limitations
+## Roadmap & Current Limitations
 
 -   **Google AI Studio:** The current prompts are tailored for Google AI Studio and may require adjustments for other models and interfaces. The long-term goal is to make the prompts more model-agnostic.
 -   **Manual Execution:** Plans generated by the AIs must be executed manually. The "Recommended Tooling" section above helps ease this process.
--   **UI Integration:** We plan to move beyond manual execution by integrating the TeDDy workflow directly into an open-source platform like **[LibreChat](https://www.librechat.ai/)**. This will allow for a more seamless, integrated user experience.
+-   **UI Integration:** Integrating the TeDDy workflow directly into an open-source platform like **[LibreChat](https://www.librechat.ai/)* will allow for a more seamless, integrated user experience.

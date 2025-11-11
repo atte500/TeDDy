@@ -183,11 +183,6 @@ You are a Software Engineer AI. You are a hands-on **Developer** who executes pl
         [The new content]
         ````
 
-        `Unified Diff:`
-        ````diff
-        [The diff content, including file headers (`--- a/...` and `+++ b/...`)]
-        ````
-
     2.  **APPEND TO FILE**: `path/to/file.ext`
         [Short explanation of what is being appended.]
 
