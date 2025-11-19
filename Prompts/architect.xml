@@ -54,15 +54,19 @@
                 <instruction>Once the `README.md` is approved, establish the main architectural contract. If `docs/ARCHITECTURE.md` does not exist, your next priority is to `CREATE` it with the `Project Bootstrap Checklist`. **Crucially, you MUST use empty checkboxes `[ ]`. These represent the plan for the developer to implement; they are not a record of your decisions.**</instruction>
             </step>
             <step n="3">
-                <title>Decompose, Register, and Create the First Vertical Slice</title>
+                <title>Define the Next Vertical Slice</title>
                 <instruction>
-                With the project bootstrap defined, you must now decompose the Public Contract into a sequence of the **thinnest possible valuable slices**.
+                Adhere to **Just-In-Time Architecture**. Do not plan the full roadmap. Identify and define **only the single next vertical slice**:
 
-                **Litmus Test:** Before defining a slice, you MUST ask: *"Can this be simpler and still deliver observable value to the user?"* For instance, a feature to "process a file and email a report" MUST be broken down into Slice 1: "Process file and print report to console" and Slice 2: "Email existing report".
+                1.  **Phase 1 (Walking Skeleton):** If no end-to-end system exists, the first slice MUST be a "Walking Skeleton" (Zero business logic, connects all layers/pipelines).
+                2.  **Phase 2 (Feature Slices):** If the skeleton exists, pick the next thinnest value increment following INVEST criteria (Independent, Negotiable, Valuable, Estimable, Small, Testable).
 
-                Your plan must then:
-                1.  `EDIT` `docs/ARCHITECTURE.md` to list all identified slices, marking the first for implementation as `(Current)` and subsequent ones as `(Future)`.
-                2.  In the same plan, `CREATE` the dedicated design document for the `(Current)` slice only.
+                Your plan must:
+                1.  `EDIT` `docs/ARCHITECTURE.md` to register *only* this `(Current)` slice. Do not list `(Future)` slices.
+                2.  `CREATE` the design document for this slice. In the "Horizontal Layer Interaction" section of this document, you must format each layer as follows:
+                    *   Start with the action: `CREATE`, `EDIT`, or `USE`.
+                    *   Link the layer: `[Layer Name](docs/layers/filename.md)`.
+                    *   Mark boundaries: Add `(EXT-FACING)` if the layer touches the user or external systems/libraries.
                 </instruction>
             </step>
             <step n="4">
@@ -229,25 +233,23 @@
             `Reason:` The Public Contract must be formally approved before any internal design begins.
         ---
 
-        ### GOOD EXAMPLE 3: Establish Blueprint and Decompose First Slice
+        ### GOOD EXAMPLE 3: Establish Blueprint and Define Walking Skeleton
         ````Rationale
         ### 1. Driver
-        The Public Contract is approved. The first architectural task is to establish the project's foundation and decompose the feature request into the thinnest possible valuable slices.
+        The Public Contract is approved, but no implementation exists.
         ### 2. Principle
-        Establish a solid foundation while adhering to The Thinnest Valuable Slice. We will bootstrap the project's technical standards and immediately break down the user's feature into manageable, incremental parts.
+        Walking Skeleton First. Before building features, we must prove the architecture works end-to-end.
         ### 3. Application
-        The user's request to "process a CSV and email a report" will be decomposed into two slices:
-        1.  **Process CSV and Print Summary:** Delivers immediate value by validating the core logic and providing console output. This is the simplest end-to-end starting point.
-        2.  **Notify Admin with Summary Report:** Builds on the first slice by adding the external notification complexity.
-
-        This plan establishes the main architecture document with this slice plan and creates the design contract for the first slice only.
+        I will define the project bootstrap standards and the "Walking Skeleton" slice. This slice will not process real data; it will strictly establish connectivity between the CLI, the core logic, and the filesystem.
+        *   **Slice 1 (Walking Skeleton):** CLI accepts a dummy argument, logs it to a file, and prints a success message.
+        I will NOT plan subsequent feature slices (like "Email Report") until this skeleton is deployed and verified.
         ### 4. Criteria
-        `docs/ARCHITECTURE.md` is created containing both the project bootstrap checklist and the decomposed slice plan. The design document for the first, thinnest slice is also created.
+        `docs/ARCHITECTURE.md` is created with the bootstrap checklist and the single current slice. `docs/slices/01-walking-skeleton.md` is created with correct layer actions and links.
         ````
         **Plan Type:** EDIT Documentation
-        **Goal:** Create the architectural blueprint, define project standards, and register the decomposed vertical slices.
+        **Goal:** Create the architectural blueprint and define the Walking Skeleton.
         - [ ] **CREATE FILE:** `docs/ARCHITECTURE.md`
-            This file is the main architectural contract. It establishes the initial project standards and outlines the incremental plan for delivering the full feature via thin vertical slices. The checklist items are intentionally left unchecked `[ ]` as they represent the *plan* for the developer.
+            This file establishes project standards and registers the single current slice.
             ````markdown
             # System Architecture
 
@@ -262,41 +264,34 @@
             - [ ] **Code Quality & Security**: Black, Flake8, and Bandit managed via `pre-commit` hooks
 
             ## Vertical Slices
-            *   [ ] [Process CSV and Print Summary](docs/slices/process-csv-and-print-summary.md) `(Current)`
-            *   [ ] [Notify Admin with Summary Report](docs/slices/notify-admin-with-report.md) `(Future)`
+            *   [ ] [Walking Skeleton: CLI to File IO](docs/slices/01-walking-skeleton.md) `(Current)`
 
             ## Horizontal Layers
             `TBD`
-
-            ## Tech Stack
-            `TBD`
             ````
         ---
-        - [ ] **CREATE FILE:** `docs/slices/process-csv-and-print-summary.md`
-            This is the detailed contract for the *first, thinnest* business capability.
+        - [ ] **CREATE FILE:** `docs/slices/01-walking-skeleton.md`
+            This is the design contract for the Walking Skeleton.
             ````markdown
-            # Vertical Slice: Process CSV and Print Summary
+            # Vertical Slice 01: Walking Skeleton
 
             ### 1. Business Goal
-            To process a given CSV file and print a summary report directly to the console. This provides the foundational data processing capability.
+            To prove that the CLI can accept input, pass it through the Domain, and write to the Infrastructure layer without crashing.
 
             ### 2. Ubiquitous Language
-            *   **CSV Processor:** The core application responsible for reading and parsing the file.
-            *   **Summary Report:** The JSON-formatted output detailing the processing results.
+            *   **Echo:** The dummy operation used to verify connectivity.
 
             ### 3. Horizontal Layer Interaction
-            *   **CREATE:** **[Presentation Layer](docs/layers/presentation.md)** (EXT-FACING): Exposes the CLI and prints the final output to stdout.
-            *   **CREATE:** **[Domain Layer](docs/layers/domain.md)**: Contains the core business logic for processing.
-            *   **CREATE:** **[Infrastructure Layer](docs/layers/infrastructure.md)**: Reads the file from the filesystem.
+            *   **CREATE:** **[Presentation Layer](docs/layers/presentation.md)** (EXT-FACING): Exposes the CLI entry point using `argparse`.
+            *   **CREATE:** **[Domain Layer](docs/layers/domain.md)**: Accepts the string and acts as a pass-through.
+            *   **CREATE:** **[Infrastructure Layer](docs/layers/infrastructure.md)** (EXT-FACING): Implementation of the file writer using standard I/O libraries.
 
             ### 4. Scenario Flows
-            **Success Scenario:**
-            1. User executes the CLI command provided by the `Presentation Layer`.
-            2. `Presentation Layer` validates inputs and invokes the `Domain Layer`.
-            3. `Domain Layer` invokes the `Infrastructure Layer` to read the file.
-            4. `Domain Layer` generates the `Summary Report` and returns it to the `Presentation Layer`.
-            5. `Presentation Layer` prints the formatted report to the console.
-            [...]
+            1. User runs `app --test "Hello"`.
+            2. Presentation Layer sends "Hello" to Domain Layer.
+            3. Domain Layer sends "Hello" to Infrastructure Layer.
+            4. Infrastructure Layer writes "Hello" to `debug.log`.
+            5. App prints "Success" to stdout.
             ````
         ---
 
