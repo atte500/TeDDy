@@ -13,9 +13,9 @@ TeDDy is an AI-assisted coding paradigm that pairs you with a strategic **Archit
 ## The Problem: The AI Coding "Slot Machine"
 
 Modern AI coding assistants are powerful but unpredictable. The experience often feels like playing a slot machine:
--   **Initial Wins:** The first few code generations are impressive, leading to a feeling of rapid progress.
--   **Rapid Decay:** This initial velocity quickly grinds to a halt as the complexity grows. You lose control of the code, and the cost of change skyrockets.
--   **Compounding Errors:** LLMs tend to "guess" the final code without incremental verification. This leads to compounding errors that are difficult to untangle.
+- **Initial Wins:** The first few code generations are impressive, leading to a feeling of rapid progress.
+- **Rapid Decay:** This initial velocity quickly grinds to a halt as the complexity grows. You lose control of the code, and the cost of change skyrockets.
+- **Compounding Errors:** LLMs tend to "guess" the final code without incremental verification. This leads to compounding errors that are difficult to untangle.
 
 The [2025 DORA report on AI-assisted software development](https://services.google.com/fh/files/misc/2025_state_of_ai_assisted_software_development.pdf) confirms this observation: **software delivery instability leads to higher change failure rates and more rework.**
 
@@ -31,23 +31,6 @@ Two key principles of TPS apply directly to software:
 2.  **Poka-Yoke (Mistake-Proofing):** *Design processes so errors can't be made in the first place.* **Contract-First Design** is our Poka-Yoke. By defining clear "seams" and contracts between all parts of the system—starting with the user—we mistake-proof the architecture.
 
 The objective is to improve **long-term** efficiency based on DORA's insight that **speed is a byproduct of quality.**
-
-## Repository Structure
-
-The repository is organized to separate the AI prompts and supporting tools from the project code you will be building.
-
-```
-├── Bookmarklets
-│   ├── DuckDuckGo SERP Scraper.js
-│   └── Google SERP scraper.js
-├── Prompts
-│   ├── requirements
-│   │   ├── architect.md
-│   │   └── dev.md
-│   ├── architect.xml
-│   └── dev.xml
-└── README.md
-```
 
 ## The TeDDy Workflow: Architect & Developer
 
