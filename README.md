@@ -8,7 +8,7 @@ TeDDy is an AI-assisted coding paradigm that pairs you with a strategic **Archit
 
 ## DEMO:
 
-[![Video Title](https://img.youtube.com/vi/4nM6e_2i54o/0.jpg)](https://www.youtube.com/watch?v=By6wGuT-4sA)
+[![Video Title](https://img.youtube.com/vi/4nM6e_2i54o/0.jpg)](https://www.youtube.com/watch?v=4nM6e_2i54o)
 
 ## The Problem: The AI Coding "Slot Machine"
 
