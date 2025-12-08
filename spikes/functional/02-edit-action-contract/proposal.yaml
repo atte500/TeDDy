@@ -1,0 +1,27 @@
+# spikes/functional/02-edit-action-contract/proposal.yaml
+# ---
+# Proposal for a clear `edit` action contract.
+
+# Case 1: Standard find and replace.
+# The executor MUST find the exact string in `find_block` and replace it.
+# If the `find_block` is not found, the action MUST fail with an error.
+- action: edit
+  description: "Replace a specific block of text in a file."
+  params:
+    file_path: "path/to/file.txt"
+    find_block: |
+      Text to be replaced.
+      This must be a literal match.
+    replace_block: |
+      The new text that will be inserted.
+
+# Case 2: Whole-file replacement.
+# If `find_block` is an empty string ("") or is null (~), the executor
+# MUST replace the entire content of the file with `replace_block`.
+- action: edit
+  description: "Replace the entire content of a file."
+  params:
+    file_path: "path/to/another_file.txt"
+    find_block: "" # An empty string signifies whole-file replacement
+    replace_block: |
+      This new content will overwrite everything in the file.

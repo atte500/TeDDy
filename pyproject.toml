@@ -1,0 +1,35 @@
+[project]
+name = "teddy-executor"
+version = "0.1.0"
+description = "A CLI tool to safely execute AI-generated YAML plans."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+    { name = "AI Architect" },
+]
+dependencies = [
+    "typer[all]",
+    "pyyaml",
+    "repotree",
+    "pyperclip",
+    "markdownify",
+    "playwright",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff",
+    "mypy",
+    "pre-commit",
+]
+
+[project.scripts]
+teddy = "teddy.main:app"
+
+[tool.ruff]
+line-length = 88
+
+[tool.mypy]
+ignore_missing_imports = true

@@ -1,0 +1,14 @@
+# spikes/functional/01-read-action-contract/proposal.yaml
+# ---
+# Final, approved contract for the `read` action.
+
+- action: read
+  # The 'description' field is optional metadata for the human operator.
+  # The AI does not need to generate it, and the executor can ignore it.
+  description: "Read the content of a local file or a remote URL."
+  params:
+    # The 'source' parameter is unified. It accepts either a local file path
+    # (e.g., "./path/to/file.txt") or a remote URL
+    # (e.g., "https://example.com/page.html").
+    # The executor is responsible for determining the source type.
+    source: "<path_or_url>"
