@@ -1,6 +1,7 @@
 # TeDDy: Your Contract-First & Test-Driven Pair-Programmer
 
-TeDDy is an AI-assisted coding paradigm that pairs you with a strategic **Architect AI** and a tactical **Developer AI** to build robust, verifiable software. It counters the instability of "agent-mode" AI development by enforcing engineering discipline through a workflow inspired by Contract-First Design principles and grounded in Test-Driven Development (TDD) practices.
+
+TeDDy is an AI-assisted coding paradigm that pairs you with a strategic **Architect AI** and a tactical **Developer AI**, supported by a specialist **Debugger AI**, to build robust, verifiable software. It counters the instability of "agent-mode" AI development by enforcing engineering discipline through a workflow inspired by Contract-First Design principles and grounded in Test-Driven Development (TDD) practices.
 
 ## Conceptual Groundwork for the Framework:
 
@@ -12,96 +13,156 @@ TeDDy is an AI-assisted coding paradigm that pairs you with a strategic **Archit
 
 ## The Problem: The AI Coding "Slot Machine"
 
+
 Modern AI coding assistants are powerful but unpredictable. The experience often feels like playing a slot machine:
 - **Initial Wins:** The first few code generations are impressive, leading to a feeling of rapid progress.
 - **Rapid Decay:** This initial velocity quickly grinds to a halt as the complexity grows. You lose control of the code, and the cost of change skyrockets.
 - **Compounding Errors:** LLMs tend to "guess" the final code without incremental verification. This leads to compounding errors that are difficult to untangle.
 
+
 The [2025 DORA report on AI-assisted software development](https://services.google.com/fh/files/misc/2025_state_of_ai_assisted_software_development.pdf) confirms this observation: **software delivery instability leads to higher change failure rates and more rework.**
+
 
 ## The Solution: Quality by Design
 
+
 The core issue is that software development is an iterative, sequential process. Unlike highly parallelizable problems where scale is the primary solution, software's main bottleneck is the **sequential, cognitive work of engineering**: asking the right questions, defining clear boundaries, and validating assumptions.
+
 
 We take inspiration from the **Toyota Production System (TPS)**, which revolutionized manufacturing by shifting from end-of-line quality control to a "built-in quality" mindset.
 
+
 Two key principles of TPS apply directly to software:
+
 
 1.  **Jidoka (Autonomation):** *Stop the line immediately when a defect is found.* In software, a "defect" is a wrong assumption. Test-Driven Development (TDD) is our implementation of Jidoka, preventing flawed code from ever being integrated.
 2.  **Poka-Yoke (Mistake-Proofing):** *Design processes so errors can't be made in the first place.* **Contract-First Design** is our Poka-Yoke. By defining clear "seams" and contracts between all parts of the system—starting with the user—we mistake-proof the architecture.
 
+
 The objective is to improve **long-term** efficiency based on DORA's insight that **speed is a byproduct of quality.**
 
-## The TeDDy Workflow: Architect & Developer
 
-TeDDy structures the development process around two distinct AI personas, each with a specific **system prompt** and a clear mandate.
+## The TeDDy Workflow: Architect, Developer & Debugger
+
+
+TeDDy structures the development process around three distinct AI personas, each with a specific **system prompt** and a clear mandate.
+
 
 ### 1. The Architect (Contract-First Design)
 
+
 The Architect's role is to manage complexity by applying a holistic **Contract-First Design** philosophy. It establishes a cascade of agreements, starting with a user-approved **Public Contract** (`README.md`) that defines *what* the system does, and drills down into an **Architectural Contract** (`ARCHITECTURE.md`) and tactical **Implementation Contracts** that define *how* it's built.
+
 
 > **`Prompts/architect.xml`**: A high-level planner that defines the public contract (`README.md`), the internal architecture (`ARCHITECTURE.md`), and the specific contracts for each layer of the application. **Its output is documentation.**
 
+
 ### 2. The Developer (Test-Driven Development)
+
 
 The Developer's role is to implement the Architect's plan. It follows a strict, outside-in TDD workflow, ensuring that every line of code is written to satisfy a failing test, which in turn satisfies an architectural contract.
 
+
 > **`Prompts/dev.xml`**: A hands-on implementer that executes the Architect's plan. It works in nested Red-Green-Refactor loops, starting with a failing end-to-end test and progressively implementing the system layer by layer. **Its output is code and tests.**
+
+
+### 3. The Debugger (Fault Isolation)
+
+
+The Debugger is a specialist agent activated only when the Architect or Developer gets stuck (i.e., fails to achieve its `Expected Outcome` twice in a row). Its role is to be a **Systematic Fault Isolation Specialist**. It follows a rigorous, scientific method to find the verifiable root cause of a problem, operating under the principle of "First, Do No Harm"—it never modifies source code directly.
+
+It works in three phases:
+1.  **Hypothesis Generation:** Analyzes the failure and creates a checklist of potential root causes.
+2.  **Systematic Verification:** Designs and runs minimal, isolated experiments (`spikes`) to test each hypothesis.
+3.  **Synthesis & Solution:** Produces a formal Root Cause Analysis (RCA) report and a verified solution script, then hands off the solution and deactivates.
+
+> **`Prompts/debugger.xml`**: A systematic debugger that uses the scientific method to find the root cause of failures. **Its output is a root-cause analysis report and a verified solution script.**
+
 
 ## How to Use TeDDy
 
+
 **Important First Step: Provide Project Context**
+
 
 Before starting, it's crucial to give the AI a clear picture of your project's layout. This is mandatory for existing (brownfield) projects.
 
-In your initial message to either the Architect or Developer, provide the complete file and directory tree of your project. This allows the AI to make informed decisions about where to read, create, or modify files.
+
+In your initial message to any agent, provide the complete file and directory tree of your project. This allows the AI to make informed decisions about where to read, create, or modify files.
+
 
 You can generate this using the `tree` command or the recommended **Copy4AI** VS Code extension.
 
+
 ---
 
+
 ### Phase 1: Architecture
+
 
 1.  Start a chat session in Google AI Studio.
 2.  Add and save the content of `Prompts/architect.xml` as the "System instructions".
 3.  **Provide the project file tree**, followed by a high-level business requirement.
 4.  Iterate with the Architect until the public `README.md` and internal `ARCHITECTURE.md` are approved and all vertical slices and layer contracts are defined.
 
+
 ### Phase 2: Development
+
 
 1.  Start a new chat session.
 2.  Add and save the content of `Prompts/dev.xml` as the "System instructions".
 3.  **Provide the project file tree** and the architectural documents generated by the Architect.
 4.  Instruct the Developer to begin implementing the first vertical slice.
 
+
+### Phase 3: Debugging (When Needed)
+
+
+This phase is only initiated when the Developer or Architect AI enters a failure loop.
+
+
+1.  Start a new chat session.
+2.  Add and save the content of `Prompts/debugger.xml` as the "System instructions".
+3.  **Provide the project file tree** and the **failure context**: the full text of the last failed plan and its `Rationale` block from the stuck agent.
+4.  Follow the Debugger's instructions as it systematically isolates the root cause.
+
+
 ## Recommended Tooling
+
 
 -   **Google AI Studio**: Add and save the provided system prompts under "System instructions" on the right-hand tab. Execute commands without any Tools enabled - Gemini 1.5 Pro is recommended.
 -   **[Copy4AI](https://marketplace.visualstudio.com/items?itemName=LeonKohli.snapsource):** A VS Code extension to quickly copy file contents and the project structure to your clipboard. This is the recommended way to perform the initial context-setting step.
 -   **SERP Scraper Bookmarklets**: To streamline the `RESEARCH` action, this repository includes bookmarklets that scrape search engine results (SERPs) and copy them to your clipboard as a clean Markdown list.
-    -   **How to set them up:**
-        1.  Open your browser's bookmarks manager.
-        2.  Create a new bookmark.
-        3.  For the "Name", enter something descriptive like `Scrape Google` or `Scrape DDG`.
-        4.  For the "URL" or "Address", copy the entire content of one of the `.js` files from the `Bookmarklets/` directory, including the `javascript:` prefix.
-        5.  Save the bookmark, preferably on your bookmarks bar for easy access.
-    -   **How to use them:** When the AI requests research, run its queries on Google or DuckDuckGo, click your bookmark, and paste the resulting Markdown list of links directly back to the AI.
+   -   **How to set them up:**
+       1.  Open your browser's bookmarks manager.
+       2.  Create a new bookmark.
+       3.  For the "Name", enter something descriptive like `Scrape Google` or `Scrape DDG`.
+       4.  For the "URL" or "Address", copy the entire content of one of the `.js` files from the `Bookmarklets/` directory, including the `javascript:` prefix.
+       5.  Save the bookmark, preferably on your bookmarks bar for easy access.
+   -   **How to use them:** When the AI requests research, run its queries on Google or DuckDuckGo, click your bookmark, and paste the resulting Markdown list of links directly back to the AI.
+
 
 ## Understanding the AI's Plans
 
-> **The Rationale Block: Tracing the AI's Logic**
-> Every plan generated by both the Architect and the Developer is preceded by a `Rationale` block. It explicitly states the reasoning behind the current plan by analyzing the outcome of the previous step, stating a clear objective, and defining the criteria for success. This ensures every action is deliberate and provides a traceable history of the AI's decision-making process, which is critical for effective multi-turn collaboration.
 
-The Architect and Developer AIs operate by generating structured **Plans**. Each plan has a clear **Goal** and a series of **Actions**. Your role is to act as the executor of these plans, applying the changes to your local workspace.
+> **The Rationale Block: Tracing the AI's Logic**
+> Every plan generated by the Architect, Developer, and Debugger is preceded by a `Rationale` block. It explicitly states the reasoning behind the current plan by analyzing the outcome of the previous step, stating a clear objective, and defining the criteria for success. This ensures every action is deliberate and provides a traceable history of the AI's decision-making process, which is critical for effective multi-turn collaboration.
+
+
+The Architect, Developer, and Debugger AIs operate by generating structured **Plans**. Each plan has a clear **Goal** and a series of **Actions**. Your role is to act as the executor of these plans, applying the changes to your local workspace.
+
 
 ### Plan Types
 
+
 Each persona has a specific set of plans they can generate:
+
 
 #### Architect Plans
 -   **`Information Gathering`**: Used to read files, ask you questions, or research external topics to fill knowledge gaps.
 -   **`Spike`**: A time-boxed experiment to resolve a specific technical or functional unknown (e.g., testing a library) before committing to a design. The output is disposable.
 -   **`EDIT Documentation`**: The primary plan type for creating and updating the canonical architecture documents in the `/docs/` directory.
+
 
 #### Developer Plans
 -   **`Information Gathering`**: Used to read architectural documents or ask for clarification.
@@ -110,9 +171,18 @@ Each persona has a specific set of plans they can generate:
 -   **`REFACTOR Phase`**: To improve the internal structure of the code without changing its external behavior, done only when all tests are passing.
 -   **`Version Control`**: To execute `git` commands for staging and committing code after a successful refactor cycle.
 
+
+#### Debugger Plans
+-   **`Information Gathering`**: To analyze the failure context, read existing RCA reports, or research potential causes.
+-   **`Spike`**: To create a minimal, reproducible experiment in a sandboxed directory (`/spikes/debug/`) to test a single hypothesis about the root cause.
+-   **`Synthesis`**: The final plan type used to generate the Root Cause Analysis (RCA) report (`/docs/rca/`) and the verified solution script.
+
+
 ### Action Reference
 
+
 These are the specific actions the AI can include in a plan:
+
 
 -   **`CREATE FILE`**: Creates a new file with the specified content.
 -   **`EDIT FILE`**: Modifies an existing file using a `FIND`/`REPLACE` block.
@@ -123,7 +193,9 @@ These are the specific actions the AI can include in a plan:
 -   **`RESEARCH`**: Generates a list of search queries to investigate a topic. Your role is to: 1. Execute these queries on Google or DuckDuckGo. 2. Use the provided SERP Scraper bookmarklets to copy the search results as a Markdown list. 3. Paste this list back to the AI for analysis.
 -   **`CHAT WITH USER`**: The AI requires your feedback, approval, or specific information.
 
+
 ## Roadmap & Current Limitations
+
 
 -   **Google AI Studio:** The current prompts are tailored for Google AI Studio and may require adjustments for other models and interfaces. The long-term goal is to make the prompts more model-agnostic.
 -   **Manual Execution:** Currently, plans generated by the AI must be applied to your local workspace manually. To streamline this, the AI will in the future also output a structured, machine-readable version of the plan (using e.g., YAML). This will enable automated execution via a local helper script.
