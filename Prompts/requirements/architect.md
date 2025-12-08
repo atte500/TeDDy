@@ -26,7 +26,9 @@
 **Workflow Requirements: Phase 3 (The Slice Delivery Loop)**
 *   **Overview:** After the initial project setup, the agent enters a loop for each vertical slice. This loop is the core of the evolutionary architecture process.
 *   **Loop Sequence:**
-    1.  **Review & Refine:** Before planning the next slice, the agent **must** review the implementation summary and architectural feedback from the Developer's last handoff. Based on this, the agent may create an **Architectural Refactoring Slice** to pay down technical debt or improve a design seam *before* proceeding with a new feature.
+    1.  **Review, De-risk & Refine:** Before planning the next slice, the agent **must** review the implementation summary and architectural feedback from the Developer's last handoff.
+        *   **Functional De-risking:** Before committing to a new **feature** slice, the agent must identify any functional uncertainties related to that feature. If any exist, the agent **must** enter a **Functional Spike Loop** (following the same rules as the initial Discovery Spike Loop) to resolve them with concrete artifacts.
+        *   **Strategic Decision:** Only after all functional risks are resolved and developer feedback is considered can the agent decide if the next slice will be a **Feature Slice**, an **Architectural Refactoring Slice**, or if more user input is needed.
     2.  **Define Next Slice (Just-In-Time):**
         *   Identify and define **only the single next vertical slice**. The first slice must be a "Walking Skeleton" (end-to-end connectivity with no business logic).
         *   Document the slice in its own file (`docs/slices/`) with a formal structure: `Business Goal`, Gherkin-style `Acceptance Criteria`, an `Interaction Sequence`, and a `Scope of Work`.
@@ -37,14 +39,15 @@
             2.  **Evaluate & Read:** Analyze the SERP, justify the selection, and `READ` the most promising URL(s).
             3.  **Verify:** Use a `Spike` plan to `CREATE` and `EXECUTE` a script that proves the approach works. Spike artifacts must be created in `/spikes/technical/`.
         *   **Canonical Structures:**
-            *   **Domain Model (`docs/core/domain_model.md`):** Must state the **Language** and reference the motivating **Vertical Slice**. It must define the **Ubiquitous Language**, Entities, **Invariants**, their **Interactions and Collaborations**, and link to any `Related Spikes` that informed its design.
-            *   **Ports (`docs/core/ports/**/*.md`):** Must reference the motivating **Vertical Slice** and detail each method's contract, including `Description`, `Preconditions`, `Postconditions`, and a link to any `Related Spikes`.
-            *   **Adapters (`docs/adapters/**/*.md`):** Must list `Implemented Ports`, summarize findings in `Implementation Notes`, and link to `Related Spikes`.
+            *   **Domain Model (`docs/core/domain_model.md`):** This is a living document that evolves with each slice. It must be structured to provide maximum clarity and traceability. The model must be organized by **Aggregate**, with objects explicitly classified as `Aggregate Root`, `Entity`, or `Value Object`. Each component must define its **Attributes** and **Behaviors/Methods**. Crucially, every single component, attribute, and behavior **MUST** be annotated with an inline `**Vertical Slice:** [link]` or `**Introduced in:** [link]` tag to trace its origin to a specific business requirement. The document must also include a cumulative `Ubiquitous Language` glossary and an `Interactions and Collaborations` section describing how the components work together.
+            *   **Ports (`docs/core/ports/**/*.md`):** These define the **interfaces** that form the boundary of the application core. They are pure contracts and must not contain implementation details. Each must reference the motivating **Vertical Slice** and detail each method's contract, including `Description`, `Preconditions`, `Postconditions`, and a link to any `Related Spikes`.
+            *   **Application Services (`docs/core/services/*.md`):** These describe the **concrete implementations** of Inbound Ports. They act as the primary orchestrators of business logic, translating incoming requests into coordinated interactions between the domain model and outbound ports. Each must state which `Implemented Ports` it satisfies, list its `Dependencies (Outbound Ports)`, and provide an `Implementation Strategy`.
+            *   **Adapters (`docs/adapters/**/*.md`):** Must list `Implemented Ports`, summarize findings from technical spikes in `Implementation Notes`, and link to `Related Spikes`.
     4.  **Finalize, Commit, & Handoff:**
         *   Update `docs/ARCHITECTURE.md` to link to all new component documents for the slice.
         *   Commit all documentation changes for the slice to version control with a clear, standardized message (e.g., "docs(arch): Define slice for [Feature Name]").
         *   Handoff to the Developer for implementation.
-        *   The agent will then wait for the Developer to complete the slice and provide their handoff report, which triggers the next iteration of this loop at the **Review & Refine** step.
+        *   The agent will then wait for the Developer to complete the slice and provide their handoff report, which triggers the next iteration of this loop at the **Review, De-risk & Refine** step.
 
 **Operational & Constraint Requirements**
 *   **Rationale Block:** Every plan must begin with a `Rationale` codeblock (`🟢`, `🟡`, `🔴`) containing:
