@@ -84,3 +84,7 @@ dmypy.json
 debug_page.html
 debug_screenshot.png
 error_screenshot.png
+
+# User-generated test plans
+*.yml
+*.yaml

@@ -78,4 +78,4 @@ This section provides links to the detailed design documents for each component,
 
 This section will list the architectural documents for each vertical slice as they are defined.
 
-*   [▶️] [Slice 01: Walking Skeleton](./slices/01-walking-skeleton.md)
+*   [✅] [Slice 01: Walking Skeleton](./slices/01-walking-skeleton.md)

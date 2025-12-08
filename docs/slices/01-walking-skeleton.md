@@ -39,16 +39,16 @@ As a user, I want to execute a simple, non-interactive plan containing a single 
 ### 4. Scope of Work (Components)
 
 -   **Domain Model (`src/teddy/core/domain`):**
-    -   [ ] `Plan`: Represents a list of actions.
-    -   [ ] `Action`: Represents a single action to be executed (initially, only `execute`).
-    -   [ ] `ExecutionReport`: Represents the results of a plan execution.
+    -   [x] `Plan`: Represents a list of actions.
+    -   [x] `Action`: Represents a single action to be executed (initially, only `execute`).
+    -   [x] `ExecutionReport`: Represents the results of a plan execution.
 -   **Inbound Ports (`src/teddy/core/ports/inbound`):**
-    -   [ ] `RunPlanUseCase`: A port with one method, `execute(plan_content: str) -> ExecutionReport`.
+    -   [x] `RunPlanUseCase`: A port with one method, `execute(plan_content: str) -> ExecutionReport`.
 -   **Outbound Ports (`src/teddy/core/ports/outbound`):**
-    -   [ ] `ShellExecutor`: A port with one method, `run(command: str) -> CommandResult`.
+    -   [x] `ShellExecutor`: A port with one method, `run(command: str) -> CommandResult`.
 -   **Application Core (`src/teddy/core/services`):**
-    -   [ ] `PlanService`: Implements the `RunPlanUseCase`.
+    -   [x] `PlanService`: Implements the `RunPlanUseCase`.
 -   **Inbound Adapters (`src/teddy/adapters/inbound`):**
-    -   [ ] `CLI`: The main Typer application entry point (`main.py`) that reads from stdin.
+    -   [x] `CLI`: The main Typer application entry point (`main.py`) that reads from stdin.
 -   **Outbound Adapters (`src/teddy/adapters/outbound`):**
-    -   [ ] `ShellAdapter`: Implements the `ShellExecutor` using Python's `subprocess` module.
+    -   [x] `ShellAdapter`: Implements the `ShellExecutor` using Python's `subprocess` module.

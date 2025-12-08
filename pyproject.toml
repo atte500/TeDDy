@@ -1,32 +1,34 @@
-[project]
+[tool.poetry]
 name = "teddy-executor"
 version = "0.1.0"
 description = "A CLI tool to safely execute AI-generated YAML plans."
+authors = ["AI Architect"]
+license = "MIT"
 readme = "README.md"
-requires-python = ">=3.9"
-license = { text = "MIT" }
-authors = [
-    { name = "AI Architect" },
-]
-dependencies = [
-    "typer[all]",
-    "pyyaml",
-    "repotree",
-    "pyperclip",
-    "markdownify",
-    "playwright",
-]
+packages = [{ include = "teddy", from = "src" }]
 
-[project.optional-dependencies]
-dev = [
-    "pytest",
-    "ruff",
-    "mypy",
-    "pre-commit",
-]
+[tool.poetry.dependencies]
+python = ">=3.9"
+typer = { version = "*", extras = ["all"] }
+pyyaml = "*"
+repotree = "*"
+pyperclip = "*"
+markdownify = "*"
+playwright = "*"
 
-[project.scripts]
-teddy = "teddy.main:app"
+[tool.poetry.group.dev.dependencies]
+pytest = "*"
+ruff = "*"
+mypy = "*"
+pre-commit = "*"
+types-PyYAML = "*"
+
+[tool.poetry.scripts]
+teddy = "teddy.main:run"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
 line-length = 88
