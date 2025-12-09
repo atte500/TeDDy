@@ -22,8 +22,8 @@ This checklist guides the initial setup of the project environment. Each step mu
 - **Version:** 3.9+
 
 ### Dependency Management
-- **Tool:** `pip` with `pyproject.toml`.
-- **Usage:** Dependencies are defined in `pyproject.toml`. The project should be installed in editable mode for development using `pip install -e .`. The use of virtual environments (e.g., `venv`) is required. `uv` is a recommended alternative to `pip` for performance.
+- **Tool:** `Poetry`.
+- **Usage:** Dependencies are defined in `pyproject.toml` and managed via the `poetry` CLI. To install dependencies, run `poetry install`. The use of virtual environments is managed automatically by Poetry. All commands, including running Python scripts or tests, **must** be prefixed with `poetry run` to ensure they execute within the project's virtual environment (e.g., `poetry run python ...`, `poetry run pytest`).
 
 ### Version Control Strategy
 - **System:** Git
@@ -74,8 +74,18 @@ This section provides links to the detailed design documents for each component,
     *   [Inbound Adapter: CLI](./adapters/inbound/cli.md)
     *   [Outbound Adapter: ShellAdapter](./adapters/outbound/shell_adapter.md)
 
+### Slice 02: Implement `create_file` Action
+
+*   **Core Logic:**
+    *   [Domain Model (Updated)](./core/domain_model.md)
+    *   [Application Service: PlanService (Updated)](./core/services/plan_service.md)
+    *   [Outbound Port: FileSystemManager](./core/ports/outbound/file_system_manager.md)
+*   **Adapters:**
+    *   [Outbound Adapter: LocalFileSystemAdapter](./adapters/outbound/file_system_adapter.md)
+
 ## 4. Vertical Slices
 
 This section will list the architectural documents for each vertical slice as they are defined.
 
 *   [✅] [Slice 01: Walking Skeleton](./slices/01-walking-skeleton.md)
+*   [▶️] [Slice 02: Implement `create_file` Action](./slices/02-create-file-action.md)

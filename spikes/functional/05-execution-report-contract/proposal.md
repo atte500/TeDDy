@@ -63,7 +63,7 @@ This document defines the structure and content of the **Execution Report** that
 
 ## Context Management Tip
 
-To proactively manage the AI's context window, the executor will append a tip at the very end of the report if the total report content is large.
+To proactively manage the AI's context window, `teddy` appends a tip to large reports. This tip guides the AI on how to summarize key outcomes before requesting that the user prune the context, ensuring no critical information is lost.
 
 - **Trigger:** This tip is added if the entire generated markdown report exceeds a configurable threshold (e.g., default: 80 lines or 4000 characters).
 - **Placement:** Appended after all action logs, as the final element of the report.
@@ -76,7 +76,7 @@ To proactively manage the AI's context window, the executor will append a tip at
 ...
 ---
 
-> **Tip:** This execution report is large. To preserve context, ask the user to delete the message containing this report after you have processed it.
+> **Tip:** This execution report is large. Before proceeding, summarize the key outcomes, errors, and any new file contents into your rationale. After you have processed all necessary information, ask the user to delete the message containing this report to preserve context.
 ```
 
 ---

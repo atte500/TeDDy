@@ -8,7 +8,7 @@
 2.  **Execution:** You run `teddy` in your terminal, piping or pasting the plan to it.
 3.  **Interactive Approval:** By default, `teddy` runs in interactive mode. It prints each action and prompts for your approval (`y/n`). If you reject a step, you will be prompted for an optional reason. The action is not performed, and the final report will mark it as `SKIPPED`, including your reason, confirming that no changes were made.
 4.  **Feedback Report:** After execution, `teddy` generates a markdown **Execution Report**, copies it to your clipboard, and prints it to the console. This report is pasted back to the AI, providing a complete feedback loop.
-5.  **Automated Context Tip:** If the total length of an Execution Report is large, a tip will be automatically added at the end recommending that the AI ask you to prune the context. This helps maintain the AI's focus and performance.
+5.  **Automated Context Tip:** If an Execution Report is particularly long, a tip is automatically added at the end. This tip instructs the AI to first summarize the report's key outcomes into its reasoning process before asking you to delete the large message. This helps manage the context window effectively without losing critical information.
 
 ## Installation & Dependencies
 

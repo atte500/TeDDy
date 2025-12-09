@@ -31,15 +31,16 @@ Represents the captured result of an external command.
 
 ### `Action` (Entity)
 
-Represents a single step in a plan. For the Walking Skeleton, this will only encapsulate an `execute` command.
+Represents a single step in a plan. It can be one of several types, such as `execute` or `create_file`.
 
 *   **Attributes:**
-    *   `action_type` (str): The type of action (e.g., "execute"). Fixed to "execute" for this slice.
-    *   `params` (dict): A dictionary of parameters for the action. For `execute`, this will contain a `command` key.
+    *   `action_type` (str): The type of action (e.g., "execute", "create_file").
+    *   `params` (dict): A dictionary of parameters for the action. The required keys depend on the `action_type`.
 *   **Invariants:**
-    *   `action_type` must be a non-empty string.
+    *   `action_type` must be a non-empty string from a known list of actions.
     *   `params` must be a dictionary.
-    *   For `action_type == "execute"`, `params` must contain a non-empty string value for the key `command`.
+    *   For `action_type == "execute"`, `params` must contain a non-empty string value for the key `command`. **Introduced in:** [Slice 01: Walking Skeleton](../slices/01-walking-skeleton.md)
+    *   For `action_type == "create_file"`, `params` must contain a non-empty string for `file_path` and a string for `content`. **Introduced in:** [Slice 02: Implement `create_file` Action](../slices/02-create-file-action.md)
 
 ---
 
