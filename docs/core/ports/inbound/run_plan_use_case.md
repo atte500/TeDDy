@@ -30,7 +30,6 @@ class RunPlanUseCase(ABC):
 
 ### `execute(plan_content: str) -> ExecutionReport`
 
-*   **Status:** `Defined`
 *   **Vertical Slice:** [Slice 01: Walking Skeleton](../../slices/01-walking-skeleton.md)
 *   **Description:** This is the sole method on the port. It accepts a string of raw YAML content, orchestrates the full execution of the plan described in the content, and returns a structured `ExecutionReport` domain object.
 *   **Preconditions:**

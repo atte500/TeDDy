@@ -10,7 +10,6 @@ The `FileSystemManager` port defines a technology-agnostic interface for interac
 
 ### `create_file`
 
-*   **Status:** `PROPOSED`
 *   **Description:** Creates a new file at a specified path with the given content. The operation must be atomic. The parent directory is assumed to exist.
 *   **Signature:** `create_file(path: str, content: str) -> None`
 *   **Preconditions:**

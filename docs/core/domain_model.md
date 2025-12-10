@@ -40,7 +40,7 @@ Represents a single step in a plan. It can be one of several types, such as `exe
     *   `action_type` must be a non-empty string from a known list of actions.
     *   `params` must be a dictionary.
     *   For `action_type == "execute"`, `params` must contain a non-empty string value for the key `command`. **Introduced in:** [Slice 01: Walking Skeleton](../slices/01-walking-skeleton.md)
-    *   For `action_type == "create_file"`, `params` must contain a non-empty string for `file_path` and a string for `content`. **Introduced in:** [Slice 02: Implement `create_file` Action](../slices/02-create-file-action.md)
+    *   For `action_type == "create_file"`, `params` must contain a non-empty string for `file_path` and a string for `content` (which defaults to empty if not provided). **Introduced in:** [Slice 02: Implement `create_file` Action](../slices/02-create-file-action.md)
 
 ---
 

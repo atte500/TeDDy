@@ -6,6 +6,7 @@ from teddy.core.ports.inbound.run_plan_use_case import RunPlanUseCase
 from teddy.core.domain.models import ExecutionReport, ActionResult
 from teddy.core.services.plan_service import PlanService
 from teddy.adapters.outbound.shell_adapter import ShellAdapter
+from teddy.adapters.outbound.file_system_adapter import LocalFileSystemAdapter
 
 
 # ===================================================================
@@ -37,8 +38,17 @@ def main(ctx: typer.Context):
 def _format_action_result(result: ActionResult) -> str:
     """Formats a single action result into a markdown string."""
     lines = []
-    command = result.action.params.get("command", "N/A")
-    lines.append(f"### Action: `{command}`")
+    action_type = result.action.action_type
+
+    if action_type == "execute":
+        command = result.action.params.get("command", "N/A")
+        lines.append(f"### Action: `execute` (`{command}`)")
+    elif action_type == "create_file":
+        file_path = result.action.params.get("file_path", "N/A")
+        lines.append(f"### Action: `create_file` (`{file_path}`)")
+    else:
+        lines.append(f"### Action: `{action_type}`")
+
     lines.append(f"- **Status:** {result.status}")
     if result.output:
         lines.append("- **Output:**")
@@ -81,9 +91,12 @@ def run():
     """
     # 1. Instantiate Adapters
     shell_adapter = ShellAdapter()
+    file_system_adapter = LocalFileSystemAdapter()
 
     # 2. Instantiate Core Logic with its dependencies
-    plan_service = PlanService(shell_executor=shell_adapter)
+    plan_service = PlanService(
+        shell_executor=shell_adapter, file_system_manager=file_system_adapter
+    )
 
     # 3. Run the CLI with the composed core logic
     app(obj=plan_service)

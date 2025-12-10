@@ -50,12 +50,12 @@ As a user, I want the `teddy` executor to be able to create new files with speci
 ## 4. Scope of Work (Components)
 
 *   **Domain Model (`docs/core/domain_model.md`):**
-    *   [ ] Update `Action` value object to include `create_file` as a valid type.
-    *   [ ] Add attributes for `file_path` and `content`.
+    *   [x] Update `Action` value object to include `create_file` as a valid type.
+    *   [x] Add attributes for `file_path` and `content`.
 *   **Application Service (`docs/core/services/plan_service.md`):**
-    *   [ ] Add logic to handle the `create_file` action type.
-    *   [ ] Add `FileSystemManager` to its dependencies.
+    *   [x] Add logic to handle the `create_file` action type.
+    *   [x] Add `FileSystemManager` to its dependencies.
 *   **Outbound Port (`docs/core/ports/outbound/file_system_manager.md`):**
-    *   [ ] **CREATE:** Define a new port for file system operations with a `create_file(path, content)` method.
+    *   [x] **CREATE:** Define a new port for file system operations with a `create_file(path, content)` method.
 *   **Outbound Adapter (`docs/adapters/outbound/file_system_adapter.md`):**
-    *   [ ] **CREATE:** Implement the `FileSystemManager` port for the local file system.
+    *   [x] **CREATE:** Implement the `FileSystemManager` port for the local file system.

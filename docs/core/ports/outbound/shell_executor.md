@@ -30,7 +30,6 @@ class ShellExecutor(ABC):
 
 ### `run(command: str) -> CommandResult`
 
-*   **Status:** `Defined`
 *   **Vertical Slice:** [Slice 01: Walking Skeleton](../../slices/01-walking-skeleton.md)
 *   **Description:** This method accepts a single string representing a shell command, executes it, and waits for its completion. It then returns a structured `CommandResult` object containing the captured stdout, stderr, and the command's exit code.
 *   **Preconditions:**

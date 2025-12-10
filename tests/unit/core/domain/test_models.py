@@ -146,3 +146,73 @@ def test_action_instantiation():
     # ASSERT
     assert action.action_type == action_type
     assert action.params == params
+
+
+class TestActionValidation:
+    def test_create_file_action_happy_path(self):
+        """
+        Given valid parameters for a create_file action,
+        When an Action object is created,
+        Then it should be created successfully.
+        """
+        action = Action(
+            action_type="create_file",
+            params={
+                "file_path": "path/to/file.txt",
+                "content": "Hello",
+            },
+        )
+        assert action.action_type == "create_file"
+        assert action.params["file_path"] == "path/to/file.txt"
+        assert action.params["content"] == "Hello"
+
+    def test_create_file_action_missing_file_path_raises_error(self):
+        """
+        Given parameters for a create_file action missing 'file_path',
+        When an Action object is created,
+        Then a ValueError should be raised.
+        """
+        with pytest.raises(
+            ValueError, match="'create_file' action requires a 'file_path' parameter"
+        ):
+            Action(
+                action_type="create_file",
+                params={"content": "Hello"},
+            )
+
+    def test_create_file_action_empty_file_path_raises_error(self):
+        """
+        Given an empty file_path for a create_file action,
+        When an Action object is created,
+        Then a ValueError should be raised.
+        """
+        with pytest.raises(ValueError, match="'file_path' parameter cannot be empty"):
+            Action(
+                action_type="create_file",
+                params={"file_path": "", "content": "Hello"},
+            )
+
+    def test_create_file_action_missing_content_is_allowed(self):
+        """
+        Given parameters for a create_file action missing 'content',
+        When an Action object is created,
+        Then it should succeed and default to an empty string.
+        """
+        action = Action(
+            action_type="create_file",
+            params={"file_path": "path/to/file.txt"},
+        )
+        assert action.params["content"] is not None
+        assert action.params["content"] == ""
+
+    def test_unknown_action_type_raises_error(self):
+        """
+        Given an unknown action type,
+        When an Action object is created,
+        Then a ValueError should be raised.
+        """
+        with pytest.raises(ValueError, match="Unknown action type: 'unknown_action'"):
+            Action(
+                action_type="unknown_action",
+                params={},
+            )

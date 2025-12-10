@@ -33,3 +33,28 @@ def test_cli_invokes_use_case_with_stdin_content():
 
     # Verify that the core use case was called correctly with the content from stdin
     mock_use_case.execute.assert_called_once_with(plan_input)
+
+
+def test_cli_handles_create_file_action():
+    """
+    Tests that the CLI correctly handles a create_file action plan.
+    """
+    # ARRANGE
+    mock_use_case = MagicMock(spec=RunPlanUseCase)
+    plan_yaml = """
+    - action: create_file
+      params:
+        file_path: "test.txt"
+        content: "hello"
+    """
+
+    # ACT
+    result = runner.invoke(
+        app, obj=mock_use_case, input=plan_yaml, catch_exceptions=False
+    )
+
+    # ASSERT
+    assert (
+        result.exit_code == 0
+    ), f"CLI exited with code {result.exit_code}\n{result.stdout}\n{result.stderr}"
+    mock_use_case.execute.assert_called_once_with(plan_yaml)

@@ -13,13 +13,32 @@ class Action:
         if not self.action_type or not isinstance(self.action_type, str):
             raise ValueError("action_type must be a non-empty string")
 
-        if self.action_type == "execute":
-            if "command" not in self.params:
-                raise ValueError("'execute' action requires a 'command' parameter")
+        # "parse_plan" is a special internal action type for reporting YAML errors.
+        known_action_types = {"execute", "create_file", "parse_plan"}
+        if self.action_type not in known_action_types:
+            raise ValueError(f"Unknown action type: '{self.action_type}'")
 
-            command = self.params["command"]
-            if not isinstance(command, str) or not command.strip():
-                raise ValueError("'command' parameter cannot be empty")
+        if self.action_type == "execute":
+            self._validate_execute_params()
+        elif self.action_type == "create_file":
+            self._validate_create_file_params()
+
+    def _validate_execute_params(self):
+        if "command" not in self.params:
+            raise ValueError("'execute' action requires a 'command' parameter")
+        command = self.params.get("command")
+        if not isinstance(command, str) or not command.strip():
+            raise ValueError("'command' parameter cannot be empty")
+
+    def _validate_create_file_params(self):
+        if "file_path" not in self.params:
+            raise ValueError("'create_file' action requires a 'file_path' parameter")
+        file_path = self.params.get("file_path")
+        if not isinstance(file_path, str) or not file_path.strip():
+            raise ValueError("'file_path' parameter cannot be empty")
+
+        if "content" not in self.params:
+            self.params["content"] = ""
 
 
 @dataclass(frozen=True)
@@ -32,7 +51,7 @@ class ActionResult:
     error: Optional[str]
 
     def __post_init__(self):
-        valid_statuses = {"SUCCESS", "FAILURE"}
+        valid_statuses = {"SUCCESS", "FAILURE", "COMPLETED"}
         if self.status not in valid_statuses:
             raise ValueError(f"Status must be one of {valid_statuses}")
 

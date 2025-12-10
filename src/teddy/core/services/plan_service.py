@@ -9,11 +9,15 @@ from teddy.core.domain.models import (
 )
 from teddy.core.ports.inbound.run_plan_use_case import RunPlanUseCase
 from teddy.core.ports.outbound.shell_executor import ShellExecutor
+from teddy.core.ports.outbound.file_system_manager import FileSystemManager
 
 
 class PlanService(RunPlanUseCase):
-    def __init__(self, shell_executor: ShellExecutor):
+    def __init__(
+        self, shell_executor: ShellExecutor, file_system_manager: FileSystemManager
+    ):
         self.shell_executor = shell_executor
+        self.file_system_manager = file_system_manager
 
     def _parse_plan_content(self, plan_content: str) -> List[Dict[str, Any]]:
         """Parses the raw YAML string into a list of action dictionaries."""
@@ -39,12 +43,20 @@ class PlanService(RunPlanUseCase):
                 output=command_result.stdout,
                 error=command_result.stderr,
             )
-        # In the future, other action types would be handled here.
+        elif action.action_type == "create_file":
+            file_path = action.params["file_path"]
+            content = action.params["content"]
+            self.file_system_manager.create_file(path=file_path, content=content)
+            return ActionResult(
+                action=action, status="COMPLETED", output=None, error=None
+            )
+
+        # This part should ideally not be reached due to domain model validation
         return ActionResult(
             action=action,
             status="FAILURE",
             output=None,
-            error=f"Unknown action type: {action.action_type}",
+            error=f"Unhandled action type: {action.action_type}",
         )
 
     def execute(self, plan_content: str) -> ExecutionReport:

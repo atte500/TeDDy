@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 from teddy.core.services.plan_service import PlanService
 from teddy.core.ports.outbound.shell_executor import ShellExecutor
 from teddy.core.domain.models import CommandResult
+from teddy.core.ports.outbound.file_system_manager import FileSystemManager
 
 
 def test_plan_service_handles_invalid_yaml():
@@ -12,7 +13,11 @@ def test_plan_service_handles_invalid_yaml():
     """
     # ARRANGE
     mock_shell_executor = MagicMock(spec=ShellExecutor)
-    plan_service = PlanService(shell_executor=mock_shell_executor)
+    mock_file_system_manager = MagicMock(spec=FileSystemManager)
+    plan_service = PlanService(
+        shell_executor=mock_shell_executor,
+        file_system_manager=mock_file_system_manager,
+    )
     invalid_plan_content = "this is not valid yaml: { oh no"
 
     # ACT
@@ -33,12 +38,16 @@ def test_plan_service_populates_run_summary():
     """
     # ARRANGE
     mock_shell_executor = MagicMock(spec=ShellExecutor)
+    mock_file_system_manager = MagicMock(spec=FileSystemManager)
     # Simulate one success and one failure
     mock_shell_executor.run.side_effect = [
         CommandResult(stdout="ok", stderr="", return_code=0),
         CommandResult(stdout="", stderr="error", return_code=1),
     ]
-    plan_service = PlanService(shell_executor=mock_shell_executor)
+    plan_service = PlanService(
+        shell_executor=mock_shell_executor,
+        file_system_manager=mock_file_system_manager,
+    )
     plan_content = """
     - { action: execute, params: { command: "true" } }
     - { action: execute, params: { command: "false" } }
@@ -68,12 +77,16 @@ def test_plan_service_parses_and_executes_plan():
     # ARRANGE
     # 1. Mock the outbound port (ShellExecutor)
     mock_shell_executor = MagicMock(spec=ShellExecutor)
+    mock_file_system_manager = MagicMock(spec=FileSystemManager)
     mock_shell_executor.run.return_value = CommandResult(
         stdout="hello world", stderr="", return_code=0
     )
 
     # 2. Instantiate the service with the mock dependency
-    plan_service = PlanService(shell_executor=mock_shell_executor)
+    plan_service = PlanService(
+        shell_executor=mock_shell_executor,
+        file_system_manager=mock_file_system_manager,
+    )
 
     # 3. Define the input YAML
     plan_content = """
@@ -95,3 +108,39 @@ def test_plan_service_parses_and_executes_plan():
     assert action_result.status == "SUCCESS"
     assert action_result.output == "hello world"
     assert action_result.action.action_type == "execute"
+
+
+def test_plan_service_handles_create_file_action():
+    """
+    Tests that PlanService can parse a create_file action and call the file system manager.
+    """
+    # ARRANGE
+    mock_shell_executor = MagicMock(spec=ShellExecutor)
+    mock_file_system_manager = MagicMock(spec=FileSystemManager)
+
+    # This instantiation is expected to fail with a TypeError
+    plan_service = PlanService(
+        shell_executor=mock_shell_executor,
+        file_system_manager=mock_file_system_manager,
+    )
+
+    plan_content = """
+    - action: create_file
+      params:
+        file_path: "foo/bar.txt"
+        content: "Hello from teddy!"
+    """
+
+    # ACT
+    report = plan_service.execute(plan_content)
+
+    # ASSERT
+    mock_file_system_manager.create_file.assert_called_once_with(
+        path="foo/bar.txt", content="Hello from teddy!"
+    )
+    mock_shell_executor.run.assert_not_called()
+
+    assert len(report.action_logs) == 1
+    action_result = report.action_logs[0]
+    assert action_result.status == "COMPLETED"
+    assert action_result.action.action_type == "create_file"
