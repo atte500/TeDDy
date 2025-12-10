@@ -89,3 +89,12 @@ This section will list the architectural documents for each vertical slice as th
 
 *   [✅] [Slice 01: Walking Skeleton](./slices/01-walking-skeleton.md)
 *   [▶️] [Slice 02: Implement `create_file` Action](./slices/02-create-file-action.md)
+
+---
+
+## 5. Architectural Notes & Technical Debt
+
+This section captures non-blocking architectural observations and potential areas for future refactoring that are identified during development.
+
+- **Action Validation Logic:** The `Action` domain model's `__post_init__` method currently acts as a router for parameter validation based on `action_type`. As more action types are added, this could violate the Single Responsibility Principle (SRP). A future refactoring could move this validation logic to a dedicated Factory or Strategy pattern to improve separation of concerns.
+- **Action Dispatching in PlanService:** The `PlanService._execute_single_action` method uses an `if/elif` chain to dispatch actions. This is acceptable for a small number of actions but will become a maintenance bottleneck as the system grows. This should be refactored to a more scalable pattern, such as the Command or Strategy pattern.

@@ -118,7 +118,6 @@ def test_plan_service_handles_create_file_action():
     mock_shell_executor = MagicMock(spec=ShellExecutor)
     mock_file_system_manager = MagicMock(spec=FileSystemManager)
 
-    # This instantiation is expected to fail with a TypeError
     plan_service = PlanService(
         shell_executor=mock_shell_executor,
         file_system_manager=mock_file_system_manager,
@@ -144,3 +143,49 @@ def test_plan_service_handles_create_file_action():
     action_result = report.action_logs[0]
     assert action_result.status == "COMPLETED"
     assert action_result.action.action_type == "create_file"
+    assert action_result.output == "Created file: foo/bar.txt"
+
+
+def test_execute_create_file_handles_file_exists_error():
+    """
+    Given a create_file action for a file that already exists,
+    When the plan is executed,
+    Then the service should catch the FileExistsError and return a FAILURE ActionResult.
+    """
+    # Arrange
+    mock_shell_executor = MagicMock(spec=ShellExecutor)
+    mock_file_system_manager = MagicMock(spec=FileSystemManager)
+    plan_service = PlanService(
+        shell_executor=mock_shell_executor,
+        file_system_manager=mock_file_system_manager,
+    )
+
+    file_path = "/path/to/existing_file.txt"
+    plan_content = f"""
+    - action: create_file
+      params:
+        file_path: "{file_path}"
+    """
+
+    # Configure the mock to simulate the file already existing
+    mock_exception = FileExistsError()
+    mock_exception.strerror = "File exists"
+    mock_exception.filename = file_path
+    mock_file_system_manager.create_file.side_effect = mock_exception
+
+    # Act
+    report = plan_service.execute(plan_content)
+
+    # Assert
+    assert len(report.action_logs) == 1
+    result = report.action_logs[0]
+    assert result.status == "FAILURE"
+    # The service should construct a user-friendly error message.
+    expected_error_message = f"File exists: '{file_path}'"
+    assert result.error == expected_error_message
+    assert result.output is None
+
+    # Verify the mock was called
+    mock_file_system_manager.create_file.assert_called_once_with(
+        path=file_path, content=""
+    )

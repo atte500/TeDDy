@@ -46,10 +46,18 @@ class PlanService(RunPlanUseCase):
         elif action.action_type == "create_file":
             file_path = action.params["file_path"]
             content = action.params["content"]
-            self.file_system_manager.create_file(path=file_path, content=content)
-            return ActionResult(
-                action=action, status="COMPLETED", output=None, error=None
-            )
+            try:
+                self.file_system_manager.create_file(path=file_path, content=content)
+                return ActionResult(
+                    action=action,
+                    status="COMPLETED",
+                    output=f"Created file: {file_path}",
+                )
+            except FileExistsError as e:
+                error_message = f"{e.strerror}: '{e.filename}'"
+                return ActionResult(
+                    action=action, status="FAILURE", error=error_message
+                )
 
         # This part should ideally not be reached due to domain model validation
         return ActionResult(

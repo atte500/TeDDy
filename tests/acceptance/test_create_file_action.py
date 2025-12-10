@@ -49,3 +49,39 @@ def test_create_file_happy_path(tmp_path: Path):
     assert "create_file" in result.stdout
     assert "COMPLETED" in result.stdout
     assert str(new_file_path) in result.stdout
+
+
+def test_create_file_when_file_exists_fails_gracefully(tmp_path: Path):
+    """
+    Given a file that already exists,
+    When a plan is executed to create the same file,
+    Then the action should fail, the original file should be unchanged,
+    and the report should indicate the failure.
+    """
+    # Arrange
+    existing_file = tmp_path / "existing.txt"
+    original_content = "Original content"
+    existing_file.write_text(original_content)
+
+    plan = PLAN_YAML.format(file_path=str(existing_file))
+
+    # Act
+    result = subprocess.run(
+        TEDDY_CMD,
+        input=plan,
+        capture_output=True,
+        text=True,
+        cwd=tmp_path,
+    )
+
+    # Assert
+    # The tool itself should not crash
+    assert result.returncode == 0, f"Teddy crashed with stderr: {result.stderr}"
+
+    # The original file should not have been modified
+    assert existing_file.read_text() == original_content
+
+    # The report should clearly indicate the failure
+    assert "FAILURE" in result.stdout
+    assert "File exists:" in result.stdout
+    assert str(existing_file) in result.stdout

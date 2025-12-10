@@ -216,3 +216,23 @@ class TestActionValidation:
                 action_type="unknown_action",
                 params={},
             )
+
+
+def test_action_result_can_represent_failure():
+    """
+    Tests that ActionResult can be instantiated to represent a failed action.
+    """
+    # Arrange
+    failed_action = Action(
+        action_type="create_file", params={"file_path": "/test/file.txt"}
+    )
+    error_message = "File already exists at /test/file.txt"
+
+    # Act
+    result = ActionResult(action=failed_action, status="FAILURE", error=error_message)
+
+    # Assert
+    assert result.action == failed_action
+    assert result.status == "FAILURE"
+    assert result.error == error_message
+    assert result.output is None

@@ -47,8 +47,8 @@ class ActionResult:
 
     action: Action
     status: str
-    output: Optional[str]
-    error: Optional[str]
+    output: Optional[str] = None
+    error: Optional[str] = None
 
     def __post_init__(self):
         valid_statuses = {"SUCCESS", "FAILURE", "COMPLETED"}
