@@ -6,18 +6,29 @@ from teddy.core.domain.models import (
     Plan,
     ActionResult,
     ExecutionReport,
+    ExecuteAction,
+    CreateFileAction,
 )
 from teddy.core.ports.inbound.run_plan_use_case import RunPlanUseCase
 from teddy.core.ports.outbound.shell_executor import ShellExecutor
 from teddy.core.ports.outbound.file_system_manager import FileSystemManager
+from teddy.core.services.action_factory import ActionFactory
 
 
 class PlanService(RunPlanUseCase):
     def __init__(
-        self, shell_executor: ShellExecutor, file_system_manager: FileSystemManager
+        self,
+        shell_executor: ShellExecutor,
+        file_system_manager: FileSystemManager,
+        action_factory: ActionFactory,
     ):
         self.shell_executor = shell_executor
         self.file_system_manager = file_system_manager
+        self.action_factory = action_factory
+        self._action_handlers = {
+            "execute": self._handle_execute,
+            "create_file": self._handle_create_file,
+        }
 
     def _parse_plan_content(self, plan_content: str) -> List[Dict[str, Any]]:
         """Parses the raw YAML string into a list of action dictionaries."""
@@ -31,33 +42,36 @@ class PlanService(RunPlanUseCase):
             # For now, we'll let it propagate up to the main execute method.
             raise
 
-    def _execute_single_action(self, action: Action) -> ActionResult:
-        """Executes one action and returns its result."""
-        if action.action_type == "execute":
-            command = action.params["command"]
-            command_result = self.shell_executor.run(command)
-            status = "SUCCESS" if command_result.return_code == 0 else "FAILURE"
+    def _handle_execute(self, action: ExecuteAction) -> ActionResult:
+        command_result = self.shell_executor.run(action.command)
+        status = "SUCCESS" if command_result.return_code == 0 else "FAILURE"
+        return ActionResult(
+            action=action,
+            status=status,
+            output=command_result.stdout,
+            error=command_result.stderr,
+        )
+
+    def _handle_create_file(self, action: CreateFileAction) -> ActionResult:
+        try:
+            self.file_system_manager.create_file(
+                path=action.file_path, content=action.content
+            )
             return ActionResult(
                 action=action,
-                status=status,
-                output=command_result.stdout,
-                error=command_result.stderr,
+                status="COMPLETED",
+                output=f"Created file: {action.file_path}",
             )
-        elif action.action_type == "create_file":
-            file_path = action.params["file_path"]
-            content = action.params["content"]
-            try:
-                self.file_system_manager.create_file(path=file_path, content=content)
-                return ActionResult(
-                    action=action,
-                    status="COMPLETED",
-                    output=f"Created file: {file_path}",
-                )
-            except FileExistsError as e:
-                error_message = f"{e.strerror}: '{e.filename}'"
-                return ActionResult(
-                    action=action, status="FAILURE", error=error_message
-                )
+        except FileExistsError as e:
+            error_message = f"{e.strerror}: '{e.filename}'"
+            return ActionResult(action=action, status="FAILURE", error=error_message)
+
+    def _execute_single_action(self, action: Action) -> ActionResult:
+        """Executes one action and returns its result."""
+        if isinstance(action, ExecuteAction):
+            return self._handle_execute(action)
+        if isinstance(action, CreateFileAction):
+            return self._handle_create_file(action)
 
         # This part should ideally not be reached due to domain model validation
         return ActionResult(
@@ -75,8 +89,7 @@ class PlanService(RunPlanUseCase):
 
             # 2. Create Domain Objects
             actions = [
-                Action(action_type=item["action"], params=item.get("params", {}))
-                for item in parsed_actions
+                self.action_factory.create_action(item) for item in parsed_actions
             ]
             plan = Plan(actions=actions)
 
@@ -87,7 +100,9 @@ class PlanService(RunPlanUseCase):
 
         except (yaml.YAMLError, ValueError) as e:
             # Catches parsing errors from YAML or validation errors from domain objects
-            parsing_error_action = Action(action_type="parse_plan", params={})
+            parsing_error_action = self.action_factory.create_action(
+                {"action": "parse_plan", "params": {}}
+            )
             action_result = ActionResult(
                 action=parsing_error_action,
                 status="FAILURE",

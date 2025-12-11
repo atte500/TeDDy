@@ -3,8 +3,14 @@ from unittest.mock import MagicMock
 # This import will fail
 from teddy.core.services.plan_service import PlanService
 from teddy.core.ports.outbound.shell_executor import ShellExecutor
-from teddy.core.domain.models import CommandResult
+from teddy.core.domain.models import (
+    CommandResult,
+    ExecuteAction,
+    CreateFileAction,
+    ParsePlanAction,
+)
 from teddy.core.ports.outbound.file_system_manager import FileSystemManager
+from teddy.core.services.action_factory import ActionFactory
 
 
 def test_plan_service_handles_invalid_yaml():
@@ -14,9 +20,16 @@ def test_plan_service_handles_invalid_yaml():
     # ARRANGE
     mock_shell_executor = MagicMock(spec=ShellExecutor)
     mock_file_system_manager = MagicMock(spec=FileSystemManager)
+    mock_action_factory = MagicMock(spec=ActionFactory)
+
+    # Configure the mock factory to return an object with the expected action_type
+    mock_parse_action = ParsePlanAction()
+    mock_action_factory.create_action.return_value = mock_parse_action
+
     plan_service = PlanService(
         shell_executor=mock_shell_executor,
         file_system_manager=mock_file_system_manager,
+        action_factory=mock_action_factory,
     )
     invalid_plan_content = "this is not valid yaml: { oh no"
 
@@ -39,14 +52,24 @@ def test_plan_service_populates_run_summary():
     # ARRANGE
     mock_shell_executor = MagicMock(spec=ShellExecutor)
     mock_file_system_manager = MagicMock(spec=FileSystemManager)
+    mock_action_factory = MagicMock(spec=ActionFactory)
     # Simulate one success and one failure
     mock_shell_executor.run.side_effect = [
         CommandResult(stdout="ok", stderr="", return_code=0),
         CommandResult(stdout="", stderr="error", return_code=1),
     ]
+
+    # Configure the mock factory to return objects the service can interact with
+    mock_action_factory.create_action.side_effect = [
+        ExecuteAction(command="true"),
+        ExecuteAction(command="false"),
+        ExecuteAction(command="true"),
+    ]
+
     plan_service = PlanService(
         shell_executor=mock_shell_executor,
         file_system_manager=mock_file_system_manager,
+        action_factory=mock_action_factory,
     )
     plan_content = """
     - { action: execute, params: { command: "true" } }
@@ -78,14 +101,20 @@ def test_plan_service_parses_and_executes_plan():
     # 1. Mock the outbound port (ShellExecutor)
     mock_shell_executor = MagicMock(spec=ShellExecutor)
     mock_file_system_manager = MagicMock(spec=FileSystemManager)
+    mock_action_factory = MagicMock(spec=ActionFactory)
     mock_shell_executor.run.return_value = CommandResult(
         stdout="hello world", stderr="", return_code=0
     )
+
+    # Configure the mock factory to return a mock action object with the necessary attributes
+    mock_action = ExecuteAction(command='echo "hello world"')
+    mock_action_factory.create_action.return_value = mock_action
 
     # 2. Instantiate the service with the mock dependency
     plan_service = PlanService(
         shell_executor=mock_shell_executor,
         file_system_manager=mock_file_system_manager,
+        action_factory=mock_action_factory,
     )
 
     # 3. Define the input YAML
@@ -117,10 +146,18 @@ def test_plan_service_handles_create_file_action():
     # ARRANGE
     mock_shell_executor = MagicMock(spec=ShellExecutor)
     mock_file_system_manager = MagicMock(spec=FileSystemManager)
+    mock_action_factory = MagicMock(spec=ActionFactory)
+
+    mock_action = CreateFileAction(
+        file_path="foo/bar.txt",
+        content="Hello from teddy!",
+    )
+    mock_action_factory.create_action.return_value = mock_action
 
     plan_service = PlanService(
         shell_executor=mock_shell_executor,
         file_system_manager=mock_file_system_manager,
+        action_factory=mock_action_factory,
     )
 
     plan_content = """
@@ -155,12 +192,17 @@ def test_execute_create_file_handles_file_exists_error():
     # Arrange
     mock_shell_executor = MagicMock(spec=ShellExecutor)
     mock_file_system_manager = MagicMock(spec=FileSystemManager)
+    mock_action_factory = MagicMock(spec=ActionFactory)
+
+    file_path = "/path/to/existing_file.txt"
+    mock_action = CreateFileAction(file_path=file_path, content="")
+    mock_action_factory.create_action.return_value = mock_action
+
     plan_service = PlanService(
         shell_executor=mock_shell_executor,
         file_system_manager=mock_file_system_manager,
+        action_factory=mock_action_factory,
     )
-
-    file_path = "/path/to/existing_file.txt"
     plan_content = f"""
     - action: create_file
       params:

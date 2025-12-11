@@ -7,10 +7,10 @@ def _format_action_result(result: ActionResult) -> str:
     action_type = result.action.action_type
 
     if action_type == "execute":
-        command = result.action.params.get("command", "N/A")
+        command = getattr(result.action, "command", "N/A")
         lines.append(f"### Action: `execute` (`{command}`)")
     elif action_type == "create_file":
-        file_path = result.action.params.get("file_path", "N/A")
+        file_path = getattr(result.action, "file_path", "N/A")
         lines.append(f"### Action: `create_file` (`{file_path}`)")
     else:
         lines.append(f"### Action: `{action_type}`")

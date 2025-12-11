@@ -2,10 +2,11 @@ import pytest
 
 from teddy.core.domain.models import (
     CommandResult,
-    Action,
     Plan,
     ActionResult,
     ExecutionReport,
+    ExecuteAction,
+    CreateFileAction,
 )
 
 
@@ -13,44 +14,52 @@ def test_command_result_instantiation():
     """
     Tests that a CommandResult can be instantiated with valid data.
     """
-    # ARRANGE
-    stdout = "output"
-    stderr = "error"
-    return_code = 1
-
-    # ACT
-    result = CommandResult(stdout=stdout, stderr=stderr, return_code=return_code)
-
-    # ASSERT
-    assert result.stdout == stdout
-    assert result.stderr == stderr
-    assert result.return_code == return_code
+    result = CommandResult(stdout="output", stderr="error", return_code=1)
+    assert result.stdout == "output"
+    assert result.stderr == "error"
+    assert result.return_code == 1
 
 
-def test_execute_action_raises_error_on_missing_command():
-    """
-    Tests that an 'execute' action raises ValueError if 'command' param is missing.
-    """
-    with pytest.raises(
-        ValueError, match="'execute' action requires a 'command' parameter"
-    ):
-        Action(action_type="execute", params={"other_param": "value"})
+class TestExecuteAction:
+    def test_instantiation_happy_path(self):
+        """Tests happy path instantiation for ExecuteAction."""
+        action = ExecuteAction(command="ls -l")
+        assert action.command == "ls -l"
+        assert action.action_type == "execute"
+
+    def test_instantiation_with_empty_command_raises_error(self):
+        """Tests that an empty command raises a ValueError."""
+        with pytest.raises(ValueError, match="'command' parameter cannot be empty"):
+            ExecuteAction(command=" ")
+
+    def test_instantiation_with_non_string_command_raises_error(self):
+        """Tests that a non-string command raises a ValueError."""
+        with pytest.raises(ValueError, match="'command' parameter cannot be empty"):
+            ExecuteAction(command=123)
 
 
-def test_execute_action_raises_error_on_empty_command():
-    """
-    Tests that an 'execute' action raises ValueError if 'command' param is empty.
-    """
-    with pytest.raises(ValueError, match="'command' parameter cannot be empty"):
-        Action(action_type="execute", params={"command": ""})
+class TestCreateFileAction:
+    def test_instantiation_happy_path(self):
+        """Tests happy path instantiation for CreateFileAction."""
+        action = CreateFileAction(file_path="path/to/file.txt", content="Hello")
+        assert action.file_path == "path/to/file.txt"
+        assert action.content == "Hello"
+        assert action.action_type == "create_file"
 
+    def test_missing_content_defaults_to_empty_string(self):
+        """Tests that missing content defaults to an empty string."""
+        action = CreateFileAction(file_path="path/to/file.txt")
+        assert action.content == ""
 
-def test_action_raises_error_on_empty_action_type():
-    """
-    Tests that instantiating an Action with an empty action_type raises a ValueError.
-    """
-    with pytest.raises(ValueError, match="action_type must be a non-empty string"):
-        Action(action_type="", params={"command": "echo"})
+    def test_empty_file_path_raises_error(self):
+        """Tests that an empty file_path raises a ValueError."""
+        with pytest.raises(ValueError, match="'file_path' parameter cannot be empty"):
+            CreateFileAction(file_path=" ")
+
+    def test_non_string_file_path_raises_error(self):
+        """Tests that a non-string file_path raises a ValueError."""
+        with pytest.raises(ValueError, match="'file_path' parameter cannot be empty"):
+            CreateFileAction(file_path=123)
 
 
 def test_plan_raises_error_on_empty_actions_list():
@@ -65,173 +74,58 @@ def test_action_result_raises_error_on_invalid_status():
     """
     Tests that ActionResult raises a ValueError on an invalid status.
     """
-    action = Action(action_type="execute", params={"command": "test"})
+    action = ExecuteAction(command="test")
     with pytest.raises(ValueError, match="Status must be one of"):
-        ActionResult(action=action, status="INVALID_STATUS", output=None, error=None)
+        ActionResult(action=action, status="INVALID_STATUS")
 
 
 def test_action_result_instantiation():
     """
     Tests that an ActionResult can be instantiated with valid data.
     """
-    # ARRANGE
-    action = Action(action_type="execute", params={"command": "test"})
-    status = "SUCCESS"
-    output = "some output"
-    error = None
-
-    # ACT
-    result = ActionResult(action=action, status=status, output=output, error=error)
-
-    # ASSERT
+    action = ExecuteAction(command="test")
+    result = ActionResult(action=action, status="SUCCESS", output="some output")
     assert result.action == action
-    assert result.status == status
-    assert result.output == output
-    assert result.error == error
+    assert result.status == "SUCCESS"
+    assert result.output == "some output"
+    assert result.error is None
 
 
 def test_execution_report_instantiation():
     """
     Tests that an ExecutionReport can be instantiated with valid data.
     """
-    # ARRANGE
-    run_summary = {"status": "SUCCESS"}
-    environment = {"os": "test_os"}
-    action_logs = [
-        ActionResult(
-            action=Action(action_type="execute", params={"command": "test"}),
-            status="SUCCESS",
-            output="ok",
-            error=None,
-        )
-    ]
-
-    # ACT
     report = ExecutionReport(
-        run_summary=run_summary, environment=environment, action_logs=action_logs
+        run_summary={"status": "SUCCESS"},
+        environment={"os": "test_os"},
+        action_logs=[
+            ActionResult(
+                action=ExecuteAction(command="test"), status="SUCCESS", output="ok"
+            )
+        ],
     )
-
-    # ASSERT
-    assert report.run_summary == run_summary
-    assert report.environment == environment
-    assert report.action_logs == action_logs
+    assert report.run_summary == {"status": "SUCCESS"}
+    assert report.environment == {"os": "test_os"}
+    assert len(report.action_logs) == 1
 
 
 def test_plan_instantiation():
     """
     Tests that a Plan can be instantiated with a list of actions.
     """
-    # ARRANGE
-    action1 = Action(action_type="execute", params={"command": "ls"})
-    actions = [action1]
-
-    # ACT
+    actions = [ExecuteAction(command="ls")]
     plan = Plan(actions=actions)
-
-    # ASSERT
     assert plan.actions == actions
-
-
-def test_action_instantiation():
-    """
-    Tests that an Action can be instantiated with valid data for 'execute'.
-    """
-    # ARRANGE
-    action_type = "execute"
-    params = {"command": "echo 'hello'"}
-
-    # ACT
-    action = Action(action_type=action_type, params=params)
-
-    # ASSERT
-    assert action.action_type == action_type
-    assert action.params == params
-
-
-class TestActionValidation:
-    def test_create_file_action_happy_path(self):
-        """
-        Given valid parameters for a create_file action,
-        When an Action object is created,
-        Then it should be created successfully.
-        """
-        action = Action(
-            action_type="create_file",
-            params={
-                "file_path": "path/to/file.txt",
-                "content": "Hello",
-            },
-        )
-        assert action.action_type == "create_file"
-        assert action.params["file_path"] == "path/to/file.txt"
-        assert action.params["content"] == "Hello"
-
-    def test_create_file_action_missing_file_path_raises_error(self):
-        """
-        Given parameters for a create_file action missing 'file_path',
-        When an Action object is created,
-        Then a ValueError should be raised.
-        """
-        with pytest.raises(
-            ValueError, match="'create_file' action requires a 'file_path' parameter"
-        ):
-            Action(
-                action_type="create_file",
-                params={"content": "Hello"},
-            )
-
-    def test_create_file_action_empty_file_path_raises_error(self):
-        """
-        Given an empty file_path for a create_file action,
-        When an Action object is created,
-        Then a ValueError should be raised.
-        """
-        with pytest.raises(ValueError, match="'file_path' parameter cannot be empty"):
-            Action(
-                action_type="create_file",
-                params={"file_path": "", "content": "Hello"},
-            )
-
-    def test_create_file_action_missing_content_is_allowed(self):
-        """
-        Given parameters for a create_file action missing 'content',
-        When an Action object is created,
-        Then it should succeed and default to an empty string.
-        """
-        action = Action(
-            action_type="create_file",
-            params={"file_path": "path/to/file.txt"},
-        )
-        assert action.params["content"] is not None
-        assert action.params["content"] == ""
-
-    def test_unknown_action_type_raises_error(self):
-        """
-        Given an unknown action type,
-        When an Action object is created,
-        Then a ValueError should be raised.
-        """
-        with pytest.raises(ValueError, match="Unknown action type: 'unknown_action'"):
-            Action(
-                action_type="unknown_action",
-                params={},
-            )
 
 
 def test_action_result_can_represent_failure():
     """
     Tests that ActionResult can be instantiated to represent a failed action.
     """
-    # Arrange
-    failed_action = Action(
-        action_type="create_file", params={"file_path": "/test/file.txt"}
-    )
-    error_message = "File already exists at /test/file.txt"
-
-    # Act
+    failed_action = CreateFileAction(file_path="/test/file.txt")
+    error_message = "File already exists"
     result = ActionResult(action=failed_action, status="FAILURE", error=error_message)
 
-    # Assert
     assert result.action == failed_action
     assert result.status == "FAILURE"
     assert result.error == error_message

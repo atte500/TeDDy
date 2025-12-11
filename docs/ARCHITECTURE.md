@@ -51,6 +51,10 @@ This checklist guides the initial setup of the project environment. Each step mu
     - `mypy`: For static type checking.
     - `check-yaml`, `check-toml`: For syntax validation.
 
+#### Spike Directory Exclusion
+The `spikes/` directory is intentionally excluded from `ruff` and `mypy` checks. This is configured in the `[tool.ruff]` and `[tool.mypy]` sections of `pyproject.toml`.
+- **Rationale:** Spikes are for rapid, isolated experimentation. The code within them is often temporary, may not conform to the project's quality standards, and might intentionally contain errors (e.g., to reproduce a bug). Enforcing linting and type-checking on this directory would hinder the exploratory purpose of spikes.
+
 ### Handling of Secrets
 - **Strategy:** Not applicable for this tool. If third-party API keys (e.g., for `research`) are needed in the future, they will be managed through environment variables and a `.env` file (which will be git-ignored).
 
@@ -96,7 +100,7 @@ This section will list the architectural documents for each vertical slice as th
 
 *   [✅] [Slice 01: Walking Skeleton](./slices/01-walking-skeleton.md)
 *   [✅] [Slice 02: Implement `create_file` Action](./slices/02-create-file-action.md)
-*   [ ] [Slice 03: Refactor Action Dispatching](./slices/03-refactor-action-dispatching.md)
+*   [✅] [Slice 03: Refactor Action Dispatching](./slices/03-refactor-action-dispatching.md)
 *   [ ] [Slice 04: Implement `read` Action](./slices/04-read-action.md)
 
 ---
@@ -105,5 +109,6 @@ This section will list the architectural documents for each vertical slice as th
 
 This section captures non-blocking architectural observations and potential areas for future refactoring that are identified during development.
 
-- **Action Validation Logic:** The `Action` domain model's `__post_init__` method currently acts as a router for parameter validation based on `action_type`. As more action types are added, this could violate the Single Responsibility Principle (SRP). A future refactoring could move this validation logic to a dedicated Factory or Strategy pattern to improve separation of concerns.
-- **Action Dispatching in PlanService:** The `PlanService._execute_single_action` method uses an `if/elif` chain to dispatch actions. This is acceptable for a small number of actions but will become a maintenance bottleneck as the system grows. This should be refactored to a more scalable pattern, such as the Command or Strategy pattern.
+- **Refactoring Impact (from Slice 03):** The change from a generic `Action` model with a `params` dictionary to specific `Action` subclasses (`ExecuteAction`, `CreateFileAction`) had a wider impact than initially anticipated. It required changes not only in the core logic (`PlanService`) but also in the composition root (`main.py`) and any adapter that interacted with the action models for reporting (`CLIFormatter`). This experience highlights that domain model refactoring often has broad consequences and reinforces the critical importance of a comprehensive, full-suite (unit, integration, and acceptance) verification step to catch downstream regressions.
+- ~~**Action Validation Logic:**~~ (Resolved in Slice 03) The `Action` domain model's `__post_init__` method currently acts as a router for parameter validation based on `action_type`. As more action types are added, this could violate the Single Responsibility Principle (SRP). A future refactoring could move this validation logic to a dedicated Factory or Strategy pattern to improve separation of concerns.
+- ~~**Action Dispatching in PlanService:**~~ (Resolved in Slice 03) The `PlanService._execute_single_action` method uses an `if/elif` chain to dispatch actions. This is acceptable for a small number of actions but will become a maintenance bottleneck as the system grows. This should be refactored to a more scalable pattern, such as the Command or Strategy pattern.

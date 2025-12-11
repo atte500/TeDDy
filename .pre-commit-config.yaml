@@ -11,9 +11,12 @@ repos:
     hooks:
     -   id: ruff
         args: [--fix, --exit-non-zero-on-fix]
+        exclude: ^spikes/.*
     -   id: ruff-format
+        exclude: ^spikes/.*
 -   repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.7.1
     hooks:
     -   id: mypy
         additional_dependencies: ["types-PyYAML"]
+        exclude: ^spikes/.*

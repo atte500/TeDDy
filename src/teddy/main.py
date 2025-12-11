@@ -4,6 +4,7 @@ from typing import cast
 
 from teddy.core.ports.inbound.run_plan_use_case import RunPlanUseCase
 from teddy.core.services.plan_service import PlanService
+from teddy.core.services.action_factory import ActionFactory
 from teddy.adapters.inbound.cli_formatter import format_report_as_markdown
 from teddy.adapters.outbound.shell_adapter import ShellAdapter
 from teddy.adapters.outbound.file_system_adapter import LocalFileSystemAdapter
@@ -45,13 +46,16 @@ def run():
     This is the main entry point for the application script.
     It is responsible for composing the application layers and running the CLI.
     """
-    # 1. Instantiate Adapters
+    # 1. Instantiate Adapters and Factories
     shell_adapter = ShellAdapter()
     file_system_adapter = LocalFileSystemAdapter()
+    action_factory = ActionFactory()
 
     # 2. Instantiate Core Logic with its dependencies
     plan_service = PlanService(
-        shell_executor=shell_adapter, file_system_manager=file_system_adapter
+        shell_executor=shell_adapter,
+        file_system_manager=file_system_adapter,
+        action_factory=action_factory,
     )
 
     # 3. Run the CLI with the composed core logic
