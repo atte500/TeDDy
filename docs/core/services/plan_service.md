@@ -18,8 +18,9 @@ The `PlanService` will be initialized with the components it needs to perform it
 *   **Factories:**
     *   [`ActionFactory`](../factories/action_factory.md) **Introduced in:** [Slice 03: Refactor Action Dispatching](../../slices/03-refactor-action-dispatching.md)
 *   **Outbound Ports:**
-    *   [`ShellExecutor`](../ports/outbound/shell_executor.md)
-    *   [`FileSystemManager`](../ports/outbound/file_system_manager.md)
+        *   [`ShellExecutor`](../ports/outbound/shell_executor.md)
+        *   [`FileSystemManager`](../ports/outbound/file_system_manager.md)
+        *   [`WebScraper`](../ports/outbound/web_scraper.md) **Introduced in:** [Slice 04: Implement `read` Action](../../slices/04-read-action.md)
 
 ## 4. Implementation Strategy (Refactored)
 **Related Slice:** [Slice 03: Refactor Action Dispatching](../../slices/03-refactor-action-dispatching.md)
@@ -34,15 +35,18 @@ class PlanService(RunPlanUseCase):
         self,
         action_factory: ActionFactory,
         shell_executor: ShellExecutor,
-        file_system_manager: FileSystemManager
+        file_system_manager: FileSystemManager,
+        web_scraper: WebScraper
     ):
         self.action_factory = action_factory
         self.shell_executor = shell_executor
         self.file_system_manager = file_system_manager
+        self.web_scraper = web_scraper
         # The dispatch map is the core of the refactoring
         self.action_handlers = {
             ExecuteAction: self._handle_execute_action,
             CreateFileAction: self._handle_create_file_action,
+            ReadAction: self._handle_read_action,
         }
 
     def execute(self, plan_content: str) -> ExecutionReport:
@@ -76,3 +80,9 @@ These private methods contain the logic for handling a single, specific action t
     *   Calls `self.file_system_manager.create_file(path=action.file_path, content=action.content)`.
     *   Catches specific exceptions from the port to determine success or failure.
     *   Builds and returns the corresponding `ActionResult`.
+*   `_handle_read_action(action: ReadAction) -> ActionResult`:
+    *   Inspects `action.source` to determine if it is a URL (starts with `http://` or `https://`).
+    *   **If URL:** Calls `self.web_scraper.get_content(url=action.source)`.
+    *   **If file path:** Calls `self.file_system_manager.read_file(path=action.source)`.
+    *   Catches specific exceptions from either port (e.g., `FileNotFoundError`, `WebContentError`) to create a failure `ActionResult` with a descriptive error message.
+    *   On success, builds and returns an `ActionResult` with the file/page content in the `output` field.

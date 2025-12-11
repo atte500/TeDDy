@@ -68,6 +68,19 @@ An action that creates a new file.
 
 ---
 
+### `ReadAction` (Entity)
+**Introduced in:** [Slice 04: Implement `read` Action](../slices/04-read-action.md)
+
+An action that reads the content of a local file or a remote URL.
+
+*   **Inherits from:** `Action`
+*   **Attributes:**
+    *   `source` (str): The path to the local file or the remote URL to be read.
+*   **Invariants:**
+    *   `source` must be a non-empty string.
+
+---
+
 ## 2. Plan (Aggregate Root)
 
 Represents a full plan to be executed. It is the aggregate root for a collection of `Action` entities.

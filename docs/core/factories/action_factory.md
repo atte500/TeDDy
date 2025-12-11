@@ -3,7 +3,7 @@
 **Related Slice:** [Slice 03: Refactor Action Dispatching](../../slices/03-refactor-action-dispatching.md)
 
 ## 1. Purpose
-The `ActionFactory` is a core component responsible for taking raw action data (typically deserialized from a YAML plan) and converting it into a validated, concrete `Action` domain object (e.g., `ExecuteAction`, `CreateFileAction`). It encapsulates the creation and validation logic, decoupling the `PlanService` from the specific details of each action type.
+The `ActionFactory` is a core component responsible for taking raw action data (typically deserialized from a YAML plan) and converting it into a validated, concrete `Action` domain object (e.g., `ExecuteAction`, `CreateFileAction`, `ReadAction`). It encapsulates the creation and validation logic, decoupling the `PlanService` from the specific details of each action type.
 
 ## 2. Public Interface
 
@@ -18,7 +18,16 @@ The `ActionFactory` is a core component responsible for taking raw action data (
     *   `InvalidActionParametersError`: If the `params` dictionary is missing required keys or contains values of the wrong type for the specified action.
 
 ## 3. Implementation Strategy
-1.  The factory will maintain an internal registry (e.g., a dictionary) that maps action type strings (like `"execute"`) to their corresponding `Action` subclasses (like `ExecuteAction`).
+1.  The factory will maintain an internal registry (e.g., a dictionary) that maps action type strings to their corresponding `Action` subclasses.
+
+    ```python
+    # Conceptual registry
+    self.action_registry = {
+        "execute": ExecuteAction,
+        "create_file": CreateFileAction,
+        "read": ReadAction, # Added in Slice 04
+    }
+    ```
 2.  The `create_action` method will first check if the provided `action` type exists in the registry. If not, it raises `UnknownActionError`.
 3.  It will then retrieve the corresponding class from the registry.
 4.  It will attempt to instantiate the class, passing the `params` dictionary as keyword arguments.

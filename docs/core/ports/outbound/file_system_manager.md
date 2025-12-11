@@ -19,6 +19,17 @@ The `FileSystemManager` port defines a technology-agnostic interface for interac
     *   On success, a new file is created at `path` containing the exact `content`.
     *   If a file already exists at `path`, a `FileExistsError` (or a custom domain equivalent) must be raised.
 
+### `read_file`
+
+*   **Description:** Reads the entire content of a file at a specified path.
+*   **Signature:** `read_file(path: str) -> str`
+*   **Preconditions:**
+    *   `path` must be a valid, non-empty string representing a file path.
+    *   A file must exist at the specified `path`.
+*   **Postconditions:**
+    *   On success, returns the full string content of the file.
+    *   If no file exists at `path`, a `FileNotFoundError` (or a custom domain equivalent) must be raised.
+
 ## 3. Related Spikes
 
 *   N/A
