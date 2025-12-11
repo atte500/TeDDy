@@ -11,29 +11,39 @@ The `PlanService` is the primary application service in the core logic. It acts 
 
 *   **Implements Inbound Port:** [`RunPlanUseCase`](../ports/inbound/run_plan_use_case.md)
 
-## 3. Dependencies (Outbound Ports)
+## 3. Dependencies
 
-The `PlanService` will be initialized with the outbound ports it needs to perform its function.
+The `PlanService` will be initialized with the components it needs to perform its function.
 
-*   **Uses Outbound Port:** [`ShellExecutor`](../ports/outbound/shell_executor.md) **Introduced in:** [Slice 01: Walking Skeleton](../../slices/01-walking-skeleton.md)
-*   **Uses Outbound Port:** [`FileSystemManager`](../ports/outbound/file_system_manager.md) **Introduced in:** [Slice 02: Implement `create_file` Action](../../slices/02-create-file-action.md)
+*   **Factories:**
+    *   [`ActionFactory`](../factories/action_factory.md) **Introduced in:** [Slice 03: Refactor Action Dispatching](../../slices/03-refactor-action-dispatching.md)
+*   **Outbound Ports:**
+    *   [`ShellExecutor`](../ports/outbound/shell_executor.md)
+    *   [`FileSystemManager`](../ports/outbound/file_system_manager.md)
 
-## 4. Implementation Strategy
+## 4. Implementation Strategy (Refactored)
+**Related Slice:** [Slice 03: Refactor Action Dispatching](../../slices/03-refactor-action-dispatching.md)
 
-The `PlanService` will be a class that is instantiated with its required dependencies (the outbound ports) via dependency injection in its constructor.
+The `PlanService` will be a class that is instantiated with its required dependencies via dependency injection. It uses an internal dispatch map to route action objects to the appropriate handler method, eliminating conditional logic.
 
 ```python
 # High-level conceptual implementation
 
 class PlanService(RunPlanUseCase):
-
     def __init__(
         self,
+        action_factory: ActionFactory,
         shell_executor: ShellExecutor,
         file_system_manager: FileSystemManager
     ):
+        self.action_factory = action_factory
         self.shell_executor = shell_executor
         self.file_system_manager = file_system_manager
+        # The dispatch map is the core of the refactoring
+        self.action_handlers = {
+            ExecuteAction: self._handle_execute_action,
+            CreateFileAction: self._handle_create_file_action,
+        }
 
     def execute(self, plan_content: str) -> ExecutionReport:
         # ... implementation ...
@@ -41,25 +51,28 @@ class PlanService(RunPlanUseCase):
 
 ### `execute(plan_content: str)` Method Logic
 
-1.  **Start Report:** Create a new `ExecutionReport` object and record the start time and environment details.
-2.  **Parse Input:**
-    *   Use the `pyyaml` library to parse the `plan_content` string.
-    *   If parsing fails, create a failure `ActionResult`, add it to the report, finalize the report summary, and return it immediately.
-    *   If parsing succeeds, validate the structure and create `Action` and `Plan` domain objects.
+1.  **Start Report:** Create a new `ExecutionReport`.
+2.  **Parse & Create Actions:**
+    *   Use `pyyaml` to parse the `plan_content` string into a list of raw action dictionaries.
+    *   For each raw action, call `self.action_factory.create_action()` to get a validated, concrete `Action` object. Handle any factory exceptions by creating a failure `ActionResult`.
 3.  **Execute Actions:**
-    *   Iterate through each `Action` in the `Plan`.
-    *   **For an `execute` action:**
-        a.  Call `self.shell_executor.run(command)`.
-        b.  Receive the `CommandResult` from the port.
-        c.  Create a corresponding `ActionResult` and add it to the report.
-    *   **For a `create_file` action:** (**Introduced in:** [Slice 02: Implement `create_file` Action](../../slices/02-create-file-action.md))
-        a.  Extract `file_path` and `content` from the action's `params`.
-        b.  Call `self.file_system_manager.create_file(path=file_path, content=content)`.
-        c.  The port will raise a specific exception (e.g., `FileExistsError`) on failure.
-        d.  Create a corresponding `ActionResult` (SUCCESS or FAILURE) based on the outcome.
-        e.  Add the `ActionResult` to the report.
+    *   Iterate through each successfully created `Action` object.
+    *   Look up the action's class in the `self.action_handlers` dispatch map to find the correct handler method.
+    *   If no handler is found, this is a programming error; create a failure `ActionResult`.
+    *   Invoke the handler method with the action object (e.g., `handler(action)`).
+    *   The handler method returns a complete `ActionResult`, which is appended to the report.
 4.  **Finalize Report:**
-    *   Calculate the total duration.
-    *   Determine the overall `status` (FAILURE if any action failed, otherwise SUCCESS).
-    *   Update the `run_summary`.
-    *   Return the completed `ExecutionReport`.
+    *   Calculate total duration and overall status.
+    *   Return the `ExecutionReport`.
+
+### Action Handler Methods
+
+These private methods contain the logic for handling a single, specific action type. They are responsible for interacting with the correct outbound port and translating the result into an `ActionResult`.
+
+*   `_handle_execute_action(action: ExecuteAction) -> ActionResult`:
+    *   Calls `self.shell_executor.run(command=action.command)`.
+    *   Builds and returns an `ActionResult` from the `CommandResult`.
+*   `_handle_create_file_action(action: CreateFileAction) -> ActionResult`:
+    *   Calls `self.file_system_manager.create_file(path=action.file_path, content=action.content)`.
+    *   Catches specific exceptions from the port to determine success or failure.
+    *   Builds and returns the corresponding `ActionResult`.

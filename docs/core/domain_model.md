@@ -29,18 +29,42 @@ Represents the captured result of an external command.
 *   **Invariants:**
     *   `return_code` must be an integer.
 
-### `Action` (Entity)
+### `Action` (Abstract Base Class)
 
-Represents a single step in a plan. It can be one of several types, such as `execute` or `create_file`.
+Represents the contract for a single, executable step in a plan. This is an abstract concept; concrete actions will inherit from this class.
 
 *   **Attributes:**
-    *   `action_type` (str): The type of action (e.g., "execute", "create_file").
-    *   `params` (dict): A dictionary of parameters for the action. The required keys depend on the `action_type`.
+    *   `action_type` (str): A read-only property that returns the type of the action (e.g., "execute"). This will be hardcoded in each subclass.
+
+---
+
+### `ExecuteAction` (Entity)
+**Introduced in:** [Slice 01: Walking Skeleton](../slices/01-walking-skeleton.md)
+
+An action that executes a shell command.
+
+*   **Inherits from:** `Action`
+*   **Attributes:**
+    *   `command` (str): The shell command to execute.
+    *   `cwd` (str | None): The working directory for the command. Defaults to the current directory.
+    *   `background` (bool): Whether to run the command in the background. Defaults to `False`.
+    *   `timeout` (int | None): Timeout in seconds for the command.
 *   **Invariants:**
-    *   `action_type` must be a non-empty string from a known list of actions.
-    *   `params` must be a dictionary.
-    *   For `action_type == "execute"`, `params` must contain a non-empty string value for the key `command`. **Introduced in:** [Slice 01: Walking Skeleton](../slices/01-walking-skeleton.md)
-    *   For `action_type == "create_file"`, `params` must contain a non-empty string for `file_path` and a string for `content` (which defaults to empty if not provided). **Introduced in:** [Slice 02: Implement `create_file` Action](../slices/02-create-file-action.md)
+    *   `command` must be a non-empty string.
+
+---
+
+### `CreateFileAction` (Entity)
+**Introduced in:** [Slice 02: Implement `create_file` Action](../slices/02-create-file-action.md)
+
+An action that creates a new file.
+
+*   **Inherits from:** `Action`
+*   **Attributes:**
+    *   `file_path` (str): The path where the new file will be created.
+    *   `content` (str): The content to write into the new file. Defaults to an empty string.
+*   **Invariants:**
+    *   `file_path` must be a non-empty string.
 
 ---
 
@@ -62,7 +86,7 @@ Represents a full plan to be executed. It is the aggregate root for a collection
 Represents the outcome of a single action's execution.
 
 *   **Attributes:**
-    *   `action` (Action): A copy of the action that was executed.
+    *   `action` (Action): A copy of the concrete action object (e.g., `ExecuteAction`) that was executed.
     *   `status` (str): The outcome, one of `SUCCESS`, `FAILURE`.
     *   `output` (str | None): The captured stdout from the command.
     *   `error` (str | None): The captured stderr from the command.

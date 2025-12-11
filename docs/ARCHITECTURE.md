@@ -83,12 +83,21 @@ This section provides links to the detailed design documents for each component,
 *   **Adapters:**
     *   [Outbound Adapter: LocalFileSystemAdapter](./adapters/outbound/file_system_adapter.md)
 
+### Slice 03: Refactor Action Dispatching
+
+*   **Core Logic:**
+    *   [Domain Model (Refactored)](./core/domain_model.md)
+    *   [Action Factory](./core/factories/action_factory.md)
+    *   [Application Service: PlanService (Refactored)](./core/services/plan_service.md)
+
 ## 4. Vertical Slices
 
 This section will list the architectural documents for each vertical slice as they are defined.
 
 *   [✅] [Slice 01: Walking Skeleton](./slices/01-walking-skeleton.md)
-*   [▶️] [Slice 02: Implement `create_file` Action](./slices/02-create-file-action.md)
+*   [✅] [Slice 02: Implement `create_file` Action](./slices/02-create-file-action.md)
+*   [ ] [Slice 03: Refactor Action Dispatching](./slices/03-refactor-action-dispatching.md)
+*   [ ] [Slice 04: Implement `read` Action](./slices/04-read-action.md)
 
 ---
 

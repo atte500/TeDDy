@@ -1,0 +1,25 @@
+# Application Component: Action Factory
+
+**Related Slice:** [Slice 03: Refactor Action Dispatching](../../slices/03-refactor-action-dispatching.md)
+
+## 1. Purpose
+The `ActionFactory` is a core component responsible for taking raw action data (typically deserialized from a YAML plan) and converting it into a validated, concrete `Action` domain object (e.g., `ExecuteAction`, `CreateFileAction`). It encapsulates the creation and validation logic, decoupling the `PlanService` from the specific details of each action type.
+
+## 2. Public Interface
+
+### `create_action(action_data: dict) -> Action`
+
+*   **Description:** The primary factory method. It inspects the `action` key in the input dictionary to determine which type of action object to create, validates the associated `params`, and returns an initialized instance of the appropriate `Action` subclass.
+*   **Parameters:**
+    *   `action_data` (dict): A dictionary representing a single action from the plan (e.g., `{'action': 'execute', 'params': {'command': 'ls'}}`).
+*   **Returns:** An instance of a concrete class that inherits from `Action`.
+*   **Raises:**
+    *   `UnknownActionError`: If the `action` key contains a value that does not map to a known action type.
+    *   `InvalidActionParametersError`: If the `params` dictionary is missing required keys or contains values of the wrong type for the specified action.
+
+## 3. Implementation Strategy
+1.  The factory will maintain an internal registry (e.g., a dictionary) that maps action type strings (like `"execute"`) to their corresponding `Action` subclasses (like `ExecuteAction`).
+2.  The `create_action` method will first check if the provided `action` type exists in the registry. If not, it raises `UnknownActionError`.
+3.  It will then retrieve the corresponding class from the registry.
+4.  It will attempt to instantiate the class, passing the `params` dictionary as keyword arguments.
+5.  The `dataclass` constructor of the concrete action class will handle the initial type validation. Any `TypeError` during instantiation should be caught and re-raised as a more specific `InvalidActionParametersError`, providing a clear error message to the user.
