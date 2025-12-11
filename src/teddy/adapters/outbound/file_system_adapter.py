@@ -1,3 +1,4 @@
+from pathlib import Path
 from teddy.core.ports.outbound.file_system_manager import FileSystemManager
 
 
@@ -21,3 +22,15 @@ class LocalFileSystemAdapter(FileSystemManager):
             # domain exception here, but for now, this is sufficient.
             # For example, to handle permission errors.
             raise IOError(f"Failed to create file at {path}: {e}") from e
+
+    def read_file(self, path: str) -> str:
+        """
+        Reads the content of a file from the specified path.
+        """
+        try:
+            return Path(path).read_text(encoding="utf-8")
+        except FileNotFoundError:
+            # Re-raise to conform to the port's contract
+            raise
+        except IOError as e:
+            raise IOError(f"Failed to read file at {path}: {e}") from e

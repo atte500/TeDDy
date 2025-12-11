@@ -7,6 +7,7 @@ from teddy.core.domain.models import (
     ExecutionReport,
     ExecuteAction,
     CreateFileAction,
+    ReadAction,
 )
 
 
@@ -60,6 +61,41 @@ class TestCreateFileAction:
         """Tests that a non-string file_path raises a ValueError."""
         with pytest.raises(ValueError, match="'file_path' parameter cannot be empty"):
             CreateFileAction(file_path=123)
+
+
+class TestReadAction:
+    def test_instantiation_happy_path(self):
+        """Tests happy path instantiation for ReadAction."""
+        action = ReadAction(source="path/to/file.txt")
+        assert action.source == "path/to/file.txt"
+        assert action.action_type == "read"
+
+    def test_empty_source_raises_error(self):
+        """Tests that an empty source raises a ValueError."""
+        with pytest.raises(ValueError, match="'source' parameter cannot be empty"):
+            ReadAction(source=" ")
+
+    def test_non_string_source_raises_error(self):
+        """Tests that a non-string source raises a ValueError."""
+        with pytest.raises(ValueError, match="'source' parameter cannot be empty"):
+            ReadAction(source=123)
+
+    @pytest.mark.parametrize(
+        "source, expected",
+        [
+            ("http://example.com", True),
+            ("https://example.com", True),
+            ("HTTP://EXAMPLE.COM", True),
+            ("ftp://example.com", False),
+            ("path/to/file.txt", False),
+            ("/abs/path/to/file.txt", False),
+            ("C:\\windows\\path.txt", False),
+        ],
+    )
+    def test_is_remote(self, source, expected):
+        """Tests the is_remote() method correctly identifies URLs."""
+        action = ReadAction(source=source)
+        assert action.is_remote() is expected
 
 
 def test_plan_raises_error_on_empty_actions_list():

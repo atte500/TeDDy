@@ -1,5 +1,6 @@
 from typing import List, Dict, Any
 import yaml
+from requests.exceptions import RequestException
 
 from teddy.core.domain.models import (
     Action,
@@ -8,10 +9,12 @@ from teddy.core.domain.models import (
     ExecutionReport,
     ExecuteAction,
     CreateFileAction,
+    ReadAction,
 )
 from teddy.core.ports.inbound.run_plan_use_case import RunPlanUseCase
 from teddy.core.ports.outbound.shell_executor import ShellExecutor
 from teddy.core.ports.outbound.file_system_manager import FileSystemManager
+from teddy.core.ports.outbound.web_scraper import WebScraper
 from teddy.core.services.action_factory import ActionFactory
 
 
@@ -21,14 +24,12 @@ class PlanService(RunPlanUseCase):
         shell_executor: ShellExecutor,
         file_system_manager: FileSystemManager,
         action_factory: ActionFactory,
+        web_scraper: WebScraper,
     ):
         self.shell_executor = shell_executor
         self.file_system_manager = file_system_manager
         self.action_factory = action_factory
-        self._action_handlers = {
-            "execute": self._handle_execute,
-            "create_file": self._handle_create_file,
-        }
+        self.web_scraper = web_scraper
 
     def _parse_plan_content(self, plan_content: str) -> List[Dict[str, Any]]:
         """Parses the raw YAML string into a list of action dictionaries."""
@@ -66,19 +67,30 @@ class PlanService(RunPlanUseCase):
             error_message = f"{e.strerror}: '{e.filename}'"
             return ActionResult(action=action, status="FAILURE", error=error_message)
 
+    def _handle_read(self, action: ReadAction) -> ActionResult:
+        try:
+            if action.is_remote():
+                content = self.web_scraper.get_content(url=action.source)
+            else:
+                content = self.file_system_manager.read_file(path=action.source)
+            return ActionResult(action=action, status="SUCCESS", output=content)
+        except (FileNotFoundError, RequestException) as e:
+            return ActionResult(action=action, status="FAILURE", error=str(e))
+
     def _execute_single_action(self, action: Action) -> ActionResult:
         """Executes one action and returns its result."""
         if isinstance(action, ExecuteAction):
             return self._handle_execute(action)
-        if isinstance(action, CreateFileAction):
+        elif isinstance(action, CreateFileAction):
             return self._handle_create_file(action)
+        elif isinstance(action, ReadAction):
+            return self._handle_read(action)
 
-        # This part should ideally not be reached due to domain model validation
         return ActionResult(
             action=action,
             status="FAILURE",
             output=None,
-            error=f"Unhandled action type: {action.action_type}",
+            error=f"Unhandled action type: {type(action).__name__}",
         )
 
     def execute(self, plan_content: str) -> ExecutionReport:

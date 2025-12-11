@@ -42,6 +42,22 @@ class CreateFileAction(Action):
 
 
 @dataclass(frozen=True)
+class ReadAction(Action):
+    """Represents an action to read a file or URL."""
+
+    source: str
+    action_type: str = field(default="read", init=False)
+
+    def __post_init__(self):
+        if not isinstance(self.source, str) or not self.source.strip():
+            raise ValueError("'source' parameter cannot be empty")
+
+    def is_remote(self) -> bool:
+        """Checks if the source is a remote URL."""
+        return self.source.lower().startswith(("http://", "https://"))
+
+
+@dataclass(frozen=True)
 class ActionResult:
     """Represents the outcome of a single action's execution."""
 

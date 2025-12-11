@@ -8,6 +8,7 @@ from teddy.core.services.action_factory import ActionFactory
 from teddy.adapters.inbound.cli_formatter import format_report_as_markdown
 from teddy.adapters.outbound.shell_adapter import ShellAdapter
 from teddy.adapters.outbound.file_system_adapter import LocalFileSystemAdapter
+from teddy.adapters.outbound.web_scraper_adapter import WebScraperAdapter
 
 
 # ===================================================================
@@ -49,12 +50,14 @@ def run():
     # 1. Instantiate Adapters and Factories
     shell_adapter = ShellAdapter()
     file_system_adapter = LocalFileSystemAdapter()
+    web_scraper_adapter = WebScraperAdapter()
     action_factory = ActionFactory()
 
     # 2. Instantiate Core Logic with its dependencies
     plan_service = PlanService(
         shell_executor=shell_adapter,
         file_system_manager=file_system_adapter,
+        web_scraper=web_scraper_adapter,
         action_factory=action_factory,
     )
 

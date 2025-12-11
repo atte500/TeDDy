@@ -1,6 +1,7 @@
 import pytest
 
 from teddy.core.domain.models import ExecuteAction, CreateFileAction
+from teddy.core.domain import models
 from teddy.core.services.action_factory import ActionFactory
 
 
@@ -61,3 +62,20 @@ class TestActionFactory:
         # Act & Assert
         with pytest.raises(TypeError):
             ActionFactory.create_action(raw_action)
+
+    def test_create_read_action(self):
+        """
+        Tests that the factory can create a valid ReadAction.
+        """
+        # Arrange
+        raw_action = {
+            "action": "read",
+            "params": {"source": "path/to/file.txt"},
+        }
+
+        # Act
+        action = ActionFactory.create_action(raw_action)
+
+        # Assert
+        assert isinstance(action, models.ReadAction)
+        assert action.source == "path/to/file.txt"

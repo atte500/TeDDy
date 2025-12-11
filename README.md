@@ -46,9 +46,15 @@ teddy -y
 ```
 
 **From a File or Pipe:**
+
+Plans are always read from standard input (`stdin`). This means you can use a pipe (`|`) or input redirection (`<`) to pass a plan file to the executor. The tool does not accept a filename as a command-line argument.
+
 ```bash
-# Execute from a file
-teddy my_plan.yaml
+# Pipe a plan from a file (recommended)
+cat my_plan.yaml | teddy
+
+# Use input redirection
+teddy < my_plan.yaml
 
 # Pipe a plan from another command
 echo '- action: execute\n  params:\n    command: "ls -la"' | teddy

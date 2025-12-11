@@ -5,6 +5,7 @@ from teddy.core.domain.models import (
     ExecuteAction,
     CreateFileAction,
     ParsePlanAction,
+    ReadAction,
 )
 
 
@@ -13,6 +14,7 @@ class ActionFactory:
         "execute": ExecuteAction,
         "create_file": CreateFileAction,
         "parse_plan": ParsePlanAction,
+        "read": ReadAction,
     }
 
     @classmethod

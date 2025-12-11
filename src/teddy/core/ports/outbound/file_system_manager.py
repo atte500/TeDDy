@@ -14,3 +14,12 @@ class FileSystemManager(Protocol):
             FileExistsError: If a file already exists at the specified path.
         """
         ...
+
+    def read_file(self, path: str) -> str:
+        """
+        Reads the content of a file from the specified path.
+
+        Raises:
+            FileNotFoundError: If no file exists at the specified path.
+        """
+        ...

@@ -3,29 +3,29 @@ from teddy.core.domain.models import ExecutionReport, ActionResult
 
 def _format_action_result(result: ActionResult) -> str:
     """Formats a single action result into a markdown string."""
-    lines = []
-    action_type = result.action.action_type
+    action = result.action
+    action_type = action.action_type
 
-    if action_type == "execute":
-        command = getattr(result.action, "command", "N/A")
-        lines.append(f"### Action: `execute` (`{command}`)")
-    elif action_type == "create_file":
-        file_path = getattr(result.action, "file_path", "N/A")
-        lines.append(f"### Action: `create_file` (`{file_path}`)")
-    else:
-        lines.append(f"### Action: `{action_type}`")
+    # Dictionary-based strategy for formatting the action header
+    header_formatters = {
+        "execute": lambda a: f"### Action: `execute` (`{getattr(a, 'command', 'N/A')}`)",
+        "create_file": lambda a: f"### Action: `create_file` (`{getattr(a, 'file_path', 'N/A')}`)",
+        "read": lambda a: f"### Action: `read` (`{getattr(a, 'source', 'N/A')}`)",
+    }
 
-    lines.append(f"- **Status:** {result.status}")
+    # Get the appropriate formatter or use a default
+    formatter = header_formatters.get(
+        action_type, lambda a: f"### Action: `{a.action_type}`"
+    )
+    header = formatter(action)
+
+    lines = [header, f"- **Status:** {result.status}"]
+
     if result.output:
-        lines.append("- **Output:**")
-        lines.append("```")
-        lines.append(result.output.strip())
-        lines.append("```")
+        lines.extend(["- **Output:**", "```", result.output.strip(), "```"])
     if result.error:
-        lines.append("- **Error:**")
-        lines.append("```")
-        lines.append(result.error.strip())
-        lines.append("```")
+        lines.extend(["- **Error:**", "```", result.error.strip(), "```"])
+
     return "\n".join(lines)
 
 
