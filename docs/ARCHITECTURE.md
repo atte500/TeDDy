@@ -114,6 +114,7 @@ This section will list the architectural documents for each vertical slice as th
 *   [✅] [Slice 02: Implement `create_file` Action](./slices/02-create-file-action.md)
 *   [✅] [Slice 03: Refactor Action Dispatching](./slices/03-refactor-action-dispatching.md)
 *   [✅] [Slice 04: Implement `read` Action](./slices/04-read-action.md)
+*   [ ] [Slice 05: Refactor Test Setup](./slices/05-refactor-test-setup.md)
 
 ---
 
@@ -121,7 +122,7 @@ This section will list the architectural documents for each vertical slice as th
 
 This section captures non-blocking architectural observations and potential areas for future refactoring that are identified during development.
 
-- **Test Setup Maintainability (from Slice 04):** During the implementation of the `read` action, adding a new dependency (`WebScraper`) to the `PlanService` constructor caused a cascade of failures throughout the unit test suite. Each test had to be manually updated to provide a mock for the new dependency. This indicates that the test setup is brittle. A future refactoring should introduce shared `pytest` fixtures for instantiating the `PlanService` and its dependencies to improve maintainability and reduce the ripple effect of future changes.
+- **Test Setup Maintainability (from Slice 04):** (Addressed in [Slice 05](./slices/05-refactor-test-setup.md)) During the implementation of the `read` action, adding a new dependency (`WebScraper`) to the `PlanService` constructor caused a cascade of failures throughout the unit test suite. Each test had to be manually updated to provide a mock for the new dependency. This indicates that the test setup is brittle. A future refactoring should introduce shared `pytest` fixtures for instantiating the `PlanService` and its dependencies to improve maintainability and reduce the ripple effect of future changes.
 - **Refactoring Impact (from Slice 03):** The change from a generic `Action` model with a `params` dictionary to specific `Action` subclasses (`ExecuteAction`, `CreateFileAction`) had a wider impact than initially anticipated. It required changes not only in the core logic (`PlanService`) but also in the composition root (`main.py`) and any adapter that interacted with the action models for reporting (`CLIFormatter`). This experience highlights that domain model refactoring often has broad consequences and reinforces the critical importance of a comprehensive, full-suite (unit, integration, and acceptance) verification step to catch downstream regressions.
 - ~~**Action Validation Logic:**~~ (Resolved in Slice 03) The `Action` domain model's `__post_init__` method currently acts as a router for parameter validation based on `action_type`. As more action types are added, this could violate the Single Responsibility Principle (SRP). A future refactoring could move this validation logic to a dedicated Factory or Strategy pattern to improve separation of concerns.
 - ~~**Action Dispatching in PlanService:**~~ (Resolved in Slice 03) The `PlanService._execute_single_action` method uses an `if/elif` chain to dispatch actions. This is acceptable for a small number of actions but will become a maintenance bottleneck as the system grows. This should be refactored to a more scalable pattern, such as the Command or Strategy pattern.
