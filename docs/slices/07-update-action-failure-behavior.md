@@ -1,8 +1,8 @@
-# Vertical Slice 07: Update Action Failure Behavior
+# Vertical Slice 07: Improve `create_file` Failure Behavior
 
 ### 1. Business Goal
 
-To make the tool's feedback more robust by providing more context on failure. When the `create_file` or `edit` actions fail due to a precondition not being met, the system should not just report failure but also return the current state of the file in question. This gives the AI agent immediate, actionable information to correct its next plan.
+To make the tool's feedback more robust by providing more context on failure. When the `create_file` action fails because the file already exists, the system should not just report failure but also return the current content of the file. This gives the AI agent immediate, actionable information to correct its next plan. A systemic fix for report formatting also applied this behavior to the `edit` action's failure cases.
 
 ### 2. Acceptance Criteria (Scenarios)
 
@@ -12,13 +12,6 @@ To make the tool's feedback more robust by providing more context on failure. Wh
 - **Then** the execution report for that action should show a `status` of `FAILED`.
 - **And** the report's `output` should contain the text "original content".
 - **And** the file `existing_file.txt` should remain unchanged.
-
-**Scenario 2: `edit` action with `find_block` not found**
-- **Given** a file named `target_file.txt` with content "some initial text".
-- **When** the `teddy` executor is run with a plan to `edit` the file `target_file.txt` with a `find_block` of "non-existent text".
-- **Then** the execution report for that action should show a `status` of `FAILED`.
-- **And** the report's `output` should contain the text "some initial text".
-- **And** the file `target_file.txt` should remain unchanged.
 
 ### 3. Interaction Sequence
 

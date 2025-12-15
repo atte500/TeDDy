@@ -11,6 +11,7 @@ def _format_action_result(result: ActionResult) -> str:
         "execute": lambda a: f"### Action: `execute` (`{getattr(a, 'command', 'N/A')}`)",
         "create_file": lambda a: f"### Action: `create_file` (`{getattr(a, 'file_path', 'N/A')}`)",
         "read": lambda a: f"### Action: `read` (`{getattr(a, 'source', 'N/A')}`)",
+        "edit": lambda a: f"### Action: `edit` (`{getattr(a, 'file_path', 'N/A')}`)",
     }
 
     # Get the appropriate formatter or use a default
@@ -19,8 +20,25 @@ def _format_action_result(result: ActionResult) -> str:
     )
     header = formatter(action)
 
-    lines = [header, f"- **Status:** {result.status}"]
+    # MODIFIED LOGIC: Trigger on any FAILURE, not just failure with output.
+    if result.status == "FAILURE":
+        details_lines = ["- **Details:**", "  ```yaml", f"  status: {result.status}"]
+        if result.error:
+            # Ensure error message is formatted correctly within YAML
+            error_msg = str(result.error).replace("'", "''")
+            details_lines.append(f"  error: {error_msg}")
 
+        # Conditionally add the output block only if output is not None.
+        if result.output is not None:
+            details_lines.append("  output: |")
+            output_lines = [f"    {line}" for line in result.output.strip().split("\n")]
+            details_lines.extend(output_lines)
+
+        details_lines.append("  ```")
+        return "\n".join([header] + details_lines)
+
+    # Default formatting for all other cases
+    lines = [header, f"- **Status:** {result.status}"]
     if result.output:
         lines.extend(["- **Output:**", "```", result.output.strip(), "```"])
     if result.error:

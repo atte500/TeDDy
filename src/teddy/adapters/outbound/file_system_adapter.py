@@ -1,6 +1,6 @@
 from pathlib import Path
 from teddy.core.ports.outbound.file_system_manager import FileSystemManager
-from teddy.core.domain.models import SearchTextNotFoundError
+from teddy.core.domain.models import SearchTextNotFoundError, FileAlreadyExistsError
 
 
 class LocalFileSystemAdapter(FileSystemManager):
@@ -15,9 +15,9 @@ class LocalFileSystemAdapter(FileSystemManager):
         try:
             with open(path, "x", encoding="utf-8") as f:
                 f.write(content)
-        except FileExistsError:
-            # Re-raise to conform to the port's contract.
-            raise
+        except FileExistsError as e:
+            # Raise a domain-specific exception to conform to the port's contract.
+            raise FileAlreadyExistsError(f"File exists: {path}", file_path=path) from e
         except IOError as e:
             # In a real-world scenario, we might want a more specific
             # domain exception here, but for now, this is sufficient.
@@ -88,6 +88,12 @@ class LocalFileSystemAdapter(FileSystemManager):
         indentation for multiline blocks.
         """
         file_path = Path(path)
+
+        # If find is empty, replace the entire file content.
+        if not find:
+            file_path.write_text(replace, encoding="utf-8")
+            return
+
         original_content = file_path.read_text(encoding="utf-8")
 
         # For single-line finds, a simple substring check and replace is robust.

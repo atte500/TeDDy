@@ -26,6 +26,45 @@ def test_format_report_with_successful_action():
     assert "hi" in formatted_string
 
 
+def test_format_report_with_failed_action_and_output():
+    """
+    Tests that a failed action with supplementary output (e.g., file content)
+    is formatted correctly.
+    """
+    # Arrange
+    factory = ActionFactory()
+    error_message = "File already exists"
+    output_content = "original file content"
+    failed_action = factory.create_action(
+        {"action": "create_file", "params": {"file_path": "a.txt"}}
+    )
+    report = ExecutionReport(
+        run_summary={"status": "FAILURE"},
+        action_logs=[
+            ActionResult(
+                action=failed_action,
+                status="FAILURE",
+                error=error_message,
+                output=output_content,
+            )
+        ],
+    )
+
+    # Act
+    formatted_string = format_report_as_markdown(report)
+
+    # Assert
+    expected_details = """
+- **Details:**
+  ```yaml
+  status: FAILURE
+  error: File already exists
+  output: |
+    original file content
+  ```"""
+    assert expected_details in formatted_string
+
+
 def test_format_report_with_failed_action():
     """
     Tests that a failed action is formatted correctly, showing status and error.
@@ -47,6 +86,10 @@ def test_format_report_with_failed_action():
     formatted_string = format_report_as_markdown(report)
 
     # Assert
-    assert "- **Status:** FAILURE" in formatted_string
-    assert "- **Error:**" in formatted_string
-    assert error_message in formatted_string
+    expected_details = """
+- **Details:**
+  ```yaml
+  status: FAILURE
+  error: File already exists
+  ```"""
+    assert expected_details in formatted_string

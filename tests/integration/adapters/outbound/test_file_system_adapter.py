@@ -4,6 +4,25 @@ import pytest
 from teddy.adapters.outbound.file_system_adapter import LocalFileSystemAdapter
 
 
+def test_create_file_raises_custom_error_if_file_exists(tmp_path: Path):
+    """
+    Tests that create_file raises FileAlreadyExistsError when the file
+    already exists, and that the exception contains the file path.
+    """
+    from teddy.core.domain.models import FileAlreadyExistsError
+
+    # Arrange
+    adapter = LocalFileSystemAdapter()
+    file_path = tmp_path / "existing_file.txt"
+    file_path.write_text("initial content")
+
+    # Act & Assert
+    with pytest.raises(FileAlreadyExistsError) as excinfo:
+        adapter.create_file(path=str(file_path), content="new content")
+
+    assert excinfo.value.file_path == str(file_path)
+
+
 def test_create_file_happy_path(tmp_path: Path):
     """
     Given a file path and content,

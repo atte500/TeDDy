@@ -132,36 +132,46 @@ def test_plan_service_handles_create_file_action(
     assert action_result.status == "COMPLETED"
 
 
-def test_execute_create_file_handles_file_exists_error(
+def test_execute_create_file_handles_file_already_exists_error(
     plan_service, mock_file_system_manager, mock_action_factory
 ):
     """
-    Tests handling of FileExistsError during file creation.
+    Tests that when create_file fails because a file exists, it reads
+    the file's content and includes it in the action result.
     """
-    # Arrange
+    from teddy.core.domain.models import FileAlreadyExistsError
 
+    # Arrange
     file_path = "/path/to/existing_file.txt"
-    mock_action = CreateFileAction(file_path=file_path, content="")
+    original_content = "This is the original content."
+    mock_action = CreateFileAction(file_path=file_path, content="new content")
     mock_action_factory.create_action.return_value = mock_action
 
-    mock_exception = FileExistsError()
-    mock_exception.strerror = "File exists"
-    mock_exception.filename = file_path
-    mock_file_system_manager.create_file.side_effect = mock_exception
+    # Configure mocks
+    mock_file_system_manager.create_file.side_effect = FileAlreadyExistsError(
+        message="File already exists", file_path=file_path
+    )
+    mock_file_system_manager.read_file.return_value = original_content
     plan_content = f"""
     - action: create_file
       params:
         file_path: "{file_path}"
-        content: ""
+        content: "new content"
     """
 
     # Act
     report = plan_service.execute(plan_content)
 
     # Assert
+    # Check that it tried to create the file
+    mock_file_system_manager.create_file.assert_called_once()
+    # Check that it then tried to read the file
+    mock_file_system_manager.read_file.assert_called_once_with(path=file_path)
+
     result = report.action_logs[0]
     assert result.status == "FAILURE"
-    assert result.error == f"File exists: '{file_path}'"
+    assert "File already exists" in result.error
+    assert result.output == original_content
 
 
 def test_plan_service_handles_read_file_action(

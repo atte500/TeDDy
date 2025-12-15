@@ -69,7 +69,7 @@ def test_failed_execution():
 
     # The report should contain the correct failure elements
     assert "Run Summary: FAILURE" in result.stdout
-    assert "- **Status:** FAILURE" in result.stdout
-    assert "Error:" in result.stdout
+    assert "status: FAILURE" in result.stdout
+    assert "error:" in result.stdout
     # The specific shell error message for "command not found"
     assert "not found" in result.stdout or "not recognized" in result.stdout

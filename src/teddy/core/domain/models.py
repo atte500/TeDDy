@@ -130,3 +130,11 @@ class SearchTextNotFoundError(ValueError):
     def __init__(self, message: str, content: str):
         super().__init__(message)
         self.content = content
+
+
+class FileAlreadyExistsError(FileExistsError):
+    """Custom exception raised when trying to create a file that already exists."""
+
+    def __init__(self, message: str, file_path: str):
+        super().__init__(message)
+        self.file_path = file_path

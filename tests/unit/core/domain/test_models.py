@@ -9,6 +9,7 @@ from teddy.core.domain.models import (
     CreateFileAction,
     ReadAction,
     EditAction,
+    FileAlreadyExistsError,
 )
 
 
@@ -167,6 +168,19 @@ def test_action_result_can_represent_failure():
     assert result.status == "FAILURE"
     assert result.error == error_message
     assert result.output is None
+
+
+def test_file_already_exists_error_stores_path():
+    """
+    Tests that the FileAlreadyExistsError custom exception correctly stores the file path.
+    """
+    path = "/path/to/some/file.txt"
+    message = "File already exists"
+    try:
+        raise FileAlreadyExistsError(message, file_path=path)
+    except FileAlreadyExistsError as e:
+        assert str(e) == message
+        assert e.file_path == path
 
 
 class TestEditAction:

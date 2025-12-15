@@ -72,11 +72,8 @@ def test_read_non_existent_local_file_fails(tmp_path: Path):
     # Assert
     assert "Run Summary: FAILURE" in output
     assert f"### Action: `read` (`{non_existent_file}`)" in output
-    assert "- **Status:** FAILURE" in output
-    assert "- **Error:**" in output
-    assert (
-        "No such file or directory" in output
-    )  # Based on standard FileNotFoundError message
+    assert "status: FAILURE" in output
+    assert "No such file or directory" in output
 
 
 def test_read_remote_url_successfully(httpserver: HTTPServer):
@@ -135,5 +132,5 @@ def test_read_inaccessible_remote_url_fails(httpserver: HTTPServer):
     # Assert
     assert "Run Summary: FAILURE" in output
     assert f"### Action: `read` (`{test_url}`)" in output
-    assert "- **Status:** FAILURE" in output
+    assert "status: FAILURE" in output
     assert "404 Client Error" in output

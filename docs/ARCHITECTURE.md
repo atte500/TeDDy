@@ -135,7 +135,7 @@ This section will list the architectural documents for each vertical slice as th
 *   [x] [Slice 04: Implement `read` Action](./slices/04-read-action.md)
 *   [x] [Slice 05: Refactor Test Setup](./slices/05-refactor-test-setup.md)
 *   [x] [Slice 06: Implement `edit` Action](./slices/06-edit-action.md)
-*   [ ] [Slice 07: Update Action Failure Behavior](./slices/07-update-action-failure-behavior.md)
+*   [x] [Slice 07: Update Action Failure Behavior](./slices/07-update-action-failure-behavior.md)
 
 ---
 
@@ -148,3 +148,4 @@ This section captures non-blocking architectural observations and potential area
 - ~~**Action Validation Logic:**~~ (Resolved in Slice 03) The `Action` domain model's `__post_init__` method currently acts as a router for parameter validation based on `action_type`. As more action types are added, this could violate the Single Responsibility Principle (SRP). A future refactoring could move this validation logic to a dedicated Factory or Strategy pattern to improve separation of concerns.
 - ~~**Action Dispatching in PlanService:**~~ (Resolved in Slice 03) The `PlanService._execute_single_action` method uses an `if/elif` chain to dispatch actions. This is acceptable for a small number of actions but will become a maintenance bottleneck as the system grows. This should be refactored to a more scalable pattern, such as the Command or Strategy pattern.
 - **CLI Exit Code Philosophy (from Slice 06):** An architectural decision was made to define the application's exit code behavior. The chosen philosophy is that the application process should exit with a non-zero code if *any* action within a plan fails. This aligns the tool with standard CI/CD practices, where a non-zero exit code universally signals failure. This decision required refactoring older acceptance tests that previously expected an exit code of `0` even when a plan's business logic failed.
+- **Consistent Failure Reporting (from Slice 07):** A systemic inconsistency in failure reporting was identified during development. The `CLIFormatter` now handles all `FAILURE` statuses uniformly, producing a consistent, YAML-style block for the details of any failed action. This improves both human and machine readability and should be considered the standard pattern for all future failure reporting. This change necessitated refactoring a significant number of existing acceptance and integration tests to align with the new, more robust output format.

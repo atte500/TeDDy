@@ -12,6 +12,7 @@ from teddy.core.domain.models import (
     ReadAction,
     EditAction,
     SearchTextNotFoundError,
+    FileAlreadyExistsError,
 )
 from teddy.core.ports.inbound.run_plan_use_case import RunPlanUseCase
 from teddy.core.ports.outbound.shell_executor import ShellExecutor
@@ -65,9 +66,15 @@ class PlanService(RunPlanUseCase):
                 status="COMPLETED",
                 output=f"Created file: {action.file_path}",
             )
-        except FileExistsError as e:
-            error_message = f"{e.strerror}: '{e.filename}'"
-            return ActionResult(action=action, status="FAILURE", error=error_message)
+        except FileAlreadyExistsError as e:
+            # The file exists, so we read its content to return in the report.
+            content = self.file_system_manager.read_file(path=e.file_path)
+            return ActionResult(
+                action=action,
+                status="FAILURE",
+                error=str(e),
+                output=content,
+            )
 
     def _handle_read(self, action: ReadAction) -> ActionResult:
         try:
