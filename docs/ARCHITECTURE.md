@@ -125,7 +125,7 @@ This section will list the architectural documents for each vertical slice as th
 *   [✅] [Slice 03: Refactor Action Dispatching](./slices/03-refactor-action-dispatching.md)
 *   [✅] [Slice 04: Implement `read` Action](./slices/04-read-action.md)
 *   [✅] [Slice 05: Refactor Test Setup](./slices/05-refactor-test-setup.md)
-*   [ ] [Slice 06: Implement `edit` Action](./slices/06-edit-action.md)
+*   [✅] [Slice 06: Implement `edit` Action](./slices/06-edit-action.md)
 
 ---
 
