@@ -10,21 +10,40 @@ from teddy.core.services.plan_service import PlanService
 
 
 @pytest.fixture
-def plan_service_with_mocks():
-    """
-    Provides a PlanService instance with all its dependencies mocked.
-    Yields a tuple containing the service instance and a dict of its mocks.
-    """
-    mocks = {
-        "shell_executor": MagicMock(spec=ShellExecutor),
-        "file_system_manager": MagicMock(spec=FileSystemManager),
-        "action_factory": MagicMock(spec=ActionFactory),
-        "web_scraper": MagicMock(spec=WebScraper),
-    }
-    plan_service = PlanService(
-        shell_executor=mocks["shell_executor"],
-        file_system_manager=mocks["file_system_manager"],
-        action_factory=mocks["action_factory"],
-        web_scraper=mocks["web_scraper"],
+def mock_shell_executor():
+    """Provides a MagicMock for the ShellExecutor port."""
+    return MagicMock(spec=ShellExecutor)
+
+
+@pytest.fixture
+def mock_file_system_manager():
+    """Provides a MagicMock for the FileSystemManager port."""
+    return MagicMock(spec=FileSystemManager)
+
+
+@pytest.fixture
+def mock_action_factory():
+    """Provides a MagicMock for the ActionFactory service."""
+    return MagicMock(spec=ActionFactory)
+
+
+@pytest.fixture
+def mock_web_scraper():
+    """Provides a MagicMock for the WebScraper port."""
+    return MagicMock(spec=WebScraper)
+
+
+@pytest.fixture
+def plan_service(
+    mock_shell_executor,
+    mock_file_system_manager,
+    mock_action_factory,
+    mock_web_scraper,
+):
+    """Provides a PlanService instance with all its dependencies mocked."""
+    return PlanService(
+        shell_executor=mock_shell_executor,
+        file_system_manager=mock_file_system_manager,
+        action_factory=mock_action_factory,
+        web_scraper=mock_web_scraper,
     )
-    yield plan_service, mocks

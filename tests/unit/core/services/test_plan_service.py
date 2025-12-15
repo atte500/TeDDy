@@ -7,14 +7,13 @@ from teddy.core.domain.models import (
 )
 
 
-def test_plan_service_handles_invalid_yaml(plan_service_with_mocks):
+def test_plan_service_handles_invalid_yaml(
+    plan_service, mock_action_factory, mock_shell_executor
+):
     """
     Tests that PlanService returns a failure report for malformed YAML.
     """
     # ARRANGE
-    plan_service, mocks = plan_service_with_mocks
-    mock_action_factory = mocks["action_factory"]
-    mock_shell_executor = mocks["shell_executor"]
 
     mock_parse_action = ParsePlanAction()
     mock_action_factory.create_action.return_value = mock_parse_action
@@ -32,14 +31,13 @@ def test_plan_service_handles_invalid_yaml(plan_service_with_mocks):
     assert action_result.action.action_type == "parse_plan"
 
 
-def test_plan_service_populates_run_summary(plan_service_with_mocks):
+def test_plan_service_populates_run_summary(
+    plan_service, mock_shell_executor, mock_action_factory
+):
     """
     Tests that PlanService correctly populates the run_summary in the report.
     """
     # ARRANGE
-    plan_service, mocks = plan_service_with_mocks
-    mock_shell_executor = mocks["shell_executor"]
-    mock_action_factory = mocks["action_factory"]
 
     # Simulate one success and one failure
     mock_shell_executor.run.side_effect = [
@@ -73,14 +71,13 @@ def test_plan_service_populates_run_summary(plan_service_with_mocks):
     assert report_success.run_summary.get("status") == "SUCCESS"
 
 
-def test_plan_service_parses_and_executes_plan(plan_service_with_mocks):
+def test_plan_service_parses_and_executes_plan(
+    plan_service, mock_shell_executor, mock_action_factory
+):
     """
     Tests that PlanService can parse a valid YAML plan and call the shell executor.
     """
     # ARRANGE
-    plan_service, mocks = plan_service_with_mocks
-    mock_shell_executor = mocks["shell_executor"]
-    mock_action_factory = mocks["action_factory"]
 
     mock_shell_executor.run.return_value = CommandResult(
         stdout="hello world", stderr="", return_code=0
@@ -105,15 +102,13 @@ def test_plan_service_parses_and_executes_plan(plan_service_with_mocks):
     assert action_result.action.action_type == "execute"
 
 
-def test_plan_service_handles_create_file_action(plan_service_with_mocks):
+def test_plan_service_handles_create_file_action(
+    plan_service, mock_file_system_manager, mock_shell_executor, mock_action_factory
+):
     """
     Tests that PlanService can parse a create_file action and call the file system manager.
     """
     # ARRANGE
-    plan_service, mocks = plan_service_with_mocks
-    mock_file_system_manager = mocks["file_system_manager"]
-    mock_shell_executor = mocks["shell_executor"]
-    mock_action_factory = mocks["action_factory"]
 
     mock_action = CreateFileAction(file_path="foo/bar.txt", content="Hello!")
     mock_action_factory.create_action.return_value = mock_action
@@ -136,14 +131,13 @@ def test_plan_service_handles_create_file_action(plan_service_with_mocks):
     assert action_result.status == "COMPLETED"
 
 
-def test_execute_create_file_handles_file_exists_error(plan_service_with_mocks):
+def test_execute_create_file_handles_file_exists_error(
+    plan_service, mock_file_system_manager, mock_action_factory
+):
     """
     Tests handling of FileExistsError during file creation.
     """
     # Arrange
-    plan_service, mocks = plan_service_with_mocks
-    mock_file_system_manager = mocks["file_system_manager"]
-    mock_action_factory = mocks["action_factory"]
 
     file_path = "/path/to/existing_file.txt"
     mock_action = CreateFileAction(file_path=file_path, content="")
@@ -169,14 +163,13 @@ def test_execute_create_file_handles_file_exists_error(plan_service_with_mocks):
     assert result.error == f"File exists: '{file_path}'"
 
 
-def test_plan_service_handles_read_file_action(plan_service_with_mocks):
+def test_plan_service_handles_read_file_action(
+    plan_service, mock_file_system_manager, mock_action_factory
+):
     """
     Tests that PlanService can parse a read action and call the file system manager.
     """
     # ARRANGE
-    plan_service, mocks = plan_service_with_mocks
-    mock_file_system_manager = mocks["file_system_manager"]
-    mock_action_factory = mocks["action_factory"]
 
     source_path = "path/to/some/file.txt"
     expected_content = "some file content"
@@ -199,14 +192,13 @@ def test_plan_service_handles_read_file_action(plan_service_with_mocks):
     assert action_result.output == expected_content
 
 
-def test_plan_service_handles_read_file_not_found_error(plan_service_with_mocks):
+def test_plan_service_handles_read_file_not_found_error(
+    plan_service, mock_file_system_manager, mock_action_factory
+):
     """
     Tests handling of FileNotFoundError during file reading.
     """
     # Arrange
-    plan_service, mocks = plan_service_with_mocks
-    mock_file_system_manager = mocks["file_system_manager"]
-    mock_action_factory = mocks["action_factory"]
 
     file_path = "path/to/non_existent_file.txt"
     mock_action = ReadAction(source=file_path)
@@ -229,15 +221,13 @@ def test_plan_service_handles_read_file_not_found_error(plan_service_with_mocks)
     assert result.error == error_message
 
 
-def test_plan_service_handles_read_url_action(plan_service_with_mocks):
+def test_plan_service_handles_read_url_action(
+    plan_service, mock_web_scraper, mock_file_system_manager, mock_action_factory
+):
     """
     Tests that PlanService calls the WebScraper port when the source is a URL.
     """
     # ARRANGE
-    plan_service, mocks = plan_service_with_mocks
-    mock_web_scraper = mocks["web_scraper"]
-    mock_file_system_manager = mocks["file_system_manager"]
-    mock_action_factory = mocks["action_factory"]
 
     source_url = "https://example.com/page"
     expected_content = "web page content"
