@@ -47,6 +47,7 @@ class PlanService(RunPlanUseCase):
             ExecuteAction: self._handle_execute_action,
             CreateFileAction: self._handle_create_file_action,
             ReadAction: self._handle_read_action,
+            EditAction: self._handle_edit_action,
         }
 
     def execute(self, plan_content: str) -> ExecutionReport:
@@ -86,3 +87,10 @@ These private methods contain the logic for handling a single, specific action t
     *   **If file path:** Calls `self.file_system_manager.read_file(path=action.source)`.
     *   Catches specific exceptions from either port (e.g., `FileNotFoundError`, `WebContentError`) to create a failure `ActionResult` with a descriptive error message.
     *   On success, builds and returns an `ActionResult` with the file/page content in the `output` field.
+
+*   `_handle_edit_action(action: EditAction) -> ActionResult`:
+    *   Calls `self.file_system_manager.edit_file(path=action.file_path, find=action.find, replace=action.replace)`.
+    *   **On success:** Builds and returns a success `ActionResult`.
+    *   **On failure:**
+        *   Catches `FileNotFoundError` and builds a failure `ActionResult` with a "file not found" error message.
+        *   Catches `FindStringNotFoundError` and builds a failure `ActionResult` with a "search text not found" error message. The full, unmodified file content from the exception **must** be placed in the `output` field of the `ActionResult`.

@@ -30,6 +30,20 @@ The `FileSystemManager` port defines a technology-agnostic interface for interac
     *   On success, returns the full string content of the file.
     *   If no file exists at `path`, a `FileNotFoundError` (or a custom domain equivalent) must be raised.
 
+### `edit_file`
+**Introduced in:** [Slice 06: Implement `edit` Action](../../slices/06-edit-action.md)
+
+*   **Description:** Finds and replaces the first occurrence of a specific string within a file.
+*   **Signature:** `edit_file(path: str, find: str, replace: str) -> None`
+*   **Preconditions:**
+    *   `path` must be a valid, non-empty string representing a file path.
+    *   A file must exist at the specified `path`.
+    *   `find` must be a non-empty string.
+*   **Postconditions:**
+    *   On success, the file at `path` is updated with the `replace` string substituted for the first occurrence of the `find` string.
+    *   If no file exists at `path`, a `FileNotFoundError` must be raised.
+    *   If the `find` string is not found in the file, a custom `FindStringNotFoundError` must be raised. This exception should contain the full, unmodified content of the file to be used for reporting purposes.
+
 ## 3. Related Spikes
 
 *   N/A

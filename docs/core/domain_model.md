@@ -81,6 +81,22 @@ An action that reads the content of a local file or a remote URL.
 
 ---
 
+### `EditAction` (Entity)
+**Introduced in:** [Slice 06: Implement `edit` Action](../slices/06-edit-action.md)
+
+An action that finds and replaces content within an existing file.
+
+*   **Inherits from:** `Action`
+*   **Attributes:**
+    *   `file_path` (str): The path to the file to be modified.
+    *   `find` (str): The exact string of content to search for.
+    *   `replace` (str): The string that will replace the `find` content.
+*   **Invariants:**
+    *   `file_path` must be a non-empty string.
+    *   `find` must be a non-empty string.
+
+---
+
 ## 2. Plan (Aggregate Root)
 
 Represents a full plan to be executed. It is the aggregate root for a collection of `Action` entities.

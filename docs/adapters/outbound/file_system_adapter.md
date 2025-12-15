@@ -17,6 +17,7 @@ The adapter will leverage Python's built-in `open()` function for file operation
 *   **File Creation:** To satisfy the port's requirement for exclusive creation (failing if a file already exists), the `create_file` method will use the `'x'` (exclusive creation) mode when calling `open()`.
 *   **Error Handling:** If `open()` is called with `'x'` mode on a path that already exists, it will raise a `FileExistsError`. The adapter must catch this specific exception and propagate it as a failure, fulfilling the port's contract. Other `IOError` exceptions (like permission errors) should also be handled gracefully.
 *   **File Reading:** (**Introduced in:** [Slice 04: Implement `read_file` Action](../../slices/04-read-action.md)) The `read_file` method will use the standard `'r'` (read) mode with `utf-8` encoding. It must catch `FileNotFoundError` if the path does not exist and `UnicodeDecodeError` for non-text files, propagating these as failures.
+*   **File Editing:** (**Introduced in:** [Slice 06: Implement `edit` Action](../../slices/06-edit-action.md)) The `edit_file` method will follow a read-modify-write pattern. It will first read the entire file into memory. If the `find` string is not present in the content, it must raise a custom `FindStringNotFoundError` exception containing the file's content, per the port's contract. If the string is found, it will perform the replacement and then open the same file in `'w'` (write) mode to overwrite it with the new content.
 
 ## 4. Key Code Snippets
 
@@ -51,6 +52,41 @@ def read_file(self, path: str) -> Result[str, str]:
         return Err(f"File at {path} is not a valid UTF-8 text file.")
     except IOError as e:
         return Err(f"Failed to read file at {path}: {e}")
+```
+
+### `edit_file`
+
+**Introduced in:** [Slice 06: Implement `edit` Action](../../slices/06-edit-action.md)
+
+```python
+# Note: FindStringNotFoundError is a custom exception defined in the core.
+from teddy.core.domain.errors import FindStringNotFoundError
+
+def edit_file(self, path: str, find: str, replace: str) -> None:
+    try:
+        # 1. Read
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        # 2. Modify
+        if find not in content:
+            raise FindStringNotFoundError(
+                f"String '{find}' not found in file {path}",
+                content=content
+            )
+        new_content = content.replace(find, replace, 1) # Replace only the first occurrence
+
+        # 3. Write
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(new_content)
+
+    except FileNotFoundError:
+        # Re-raise to be handled by the service layer
+        raise
+    except IOError as e:
+        # Re-raise a more generic error for other IO problems
+        raise IOError(f"Failed to edit file at {path}: {e}") from e
+
 ```
 
 ## 5. Related Spikes

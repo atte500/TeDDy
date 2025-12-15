@@ -106,6 +106,16 @@ This section provides links to the detailed design documents for each component,
     *   [Outbound Adapter: WebScraperAdapter](./adapters/outbound/web_scraper_adapter.md)
     *   [Outbound Adapter: LocalFileSystemAdapter (Updated)](./adapters/outbound/file_system_adapter.md)
 
+### Slice 06: Implement `edit` Action
+
+*   **Core Logic:**
+    *   [Domain Model (Updated)](./core/domain_model.md)
+    *   [Application Service: PlanService (Updated)](./core/services/plan_service.md)
+    *   [Action Factory (Updated)](./core/factories/action_factory.md)
+    *   [Outbound Port: FileSystemManager (Updated)](./core/ports/outbound/file_system_manager.md)
+*   **Adapters:**
+    *   [Outbound Adapter: LocalFileSystemAdapter (Updated)](./adapters/outbound/file_system_adapter.md)
+
 ## 4. Vertical Slices
 
 This section will list the architectural documents for each vertical slice as they are defined.
@@ -115,6 +125,7 @@ This section will list the architectural documents for each vertical slice as th
 *   [✅] [Slice 03: Refactor Action Dispatching](./slices/03-refactor-action-dispatching.md)
 *   [✅] [Slice 04: Implement `read` Action](./slices/04-read-action.md)
 *   [✅] [Slice 05: Refactor Test Setup](./slices/05-refactor-test-setup.md)
+*   [ ] [Slice 06: Implement `edit` Action](./slices/06-edit-action.md)
 
 ---
 
