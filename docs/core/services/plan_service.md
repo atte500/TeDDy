@@ -77,10 +77,17 @@ These private methods contain the logic for handling a single, specific action t
 *   `_handle_execute_action(action: ExecuteAction) -> ActionResult`:
     *   Calls `self.shell_executor.run(command=action.command)`.
     *   Builds and returns an `ActionResult` from the `CommandResult`.
-*   `_handle_create_file_action(action: CreateFileAction) -> ActionResult`:
-    *   Calls `self.file_system_manager.create_file(path=action.file_path, content=action.content)`.
-    *   Catches specific exceptions from the port to determine success or failure.
-    *   Builds and returns the corresponding `ActionResult`.
+*   `_handle_create_file_action(action: CreateFileAction) -> ActionResult`: **(Updated in: [Slice 07: Update Action Failure Behavior](../../slices/07-update-action-failure-behavior.md))**
+    *   The method will use a `try...except` block.
+    *   **`try` block:**
+        *   Calls `self.file_system_manager.create_file(path=action.file_path, content=action.content)`.
+        *   If successful, builds and returns a `SUCCESS` `ActionResult`.
+    *   **`except FileAlreadyExistsError as e` block:**
+        *   Catches the specific exception from the port.
+        *   Calls `self.file_system_manager.read_file(path=e.file_path)` to get the existing content.
+        *   Builds and returns a `FAILED` `ActionResult`, placing the retrieved content into the `output` field.
+    *   **`except Exception` block:**
+        *   Catches any other unexpected exceptions and returns a generic `FAILED` `ActionResult`.
 *   `_handle_read_action(action: ReadAction) -> ActionResult`:
     *   Inspects `action.source` to determine if it is a URL (starts with `http://` or `https://`).
     *   **If URL:** Calls `self.web_scraper.get_content(url=action.source)`.
@@ -88,9 +95,16 @@ These private methods contain the logic for handling a single, specific action t
     *   Catches specific exceptions from either port (e.g., `FileNotFoundError`, `WebContentError`) to create a failure `ActionResult` with a descriptive error message.
     *   On success, builds and returns an `ActionResult` with the file/page content in the `output` field.
 
-*   `_handle_edit_action(action: EditAction) -> ActionResult`:
-    *   Calls `self.file_system_manager.edit_file(path=action.file_path, find=action.find, replace=action.replace)`.
-    *   **On success:** Builds and returns a success `ActionResult`.
-    *   **On failure:**
-        *   Catches `FileNotFoundError` and builds a failure `ActionResult` with a "file not found" error message.
-        *   Catches `FindStringNotFoundError` and builds a failure `ActionResult` with a "search text not found" error message. The full, unmodified file content from the exception **must** be placed in the `output` field of the `ActionResult`.
+*   `_handle_edit_action(action: EditAction) -> ActionResult`: **(Updated in: [Slice 07: Update Action Failure Behavior](../../slices/07-update-action-failure-behavior.md))**
+    *   The method will use a `try...except` block.
+    *   **`try` block:**
+        *   Calls `self.file_system_manager.edit_file(path=action.file_path, find=action.find, replace=action.replace)`.
+        *   If successful, builds and returns a `SUCCESS` `ActionResult`.
+    *   **`except TextBlockNotFoundError as e` block:**
+        *   Catches the specific exception from the port.
+        *   Calls `self.file_system_manager.read_file(path=e.file_path)` to get the existing content.
+        *   Builds and returns a `FAILED` `ActionResult` with an appropriate error message and the retrieved content in the `output` field.
+    *   **`except FileNotFoundError as e` block:**
+        *   Catches the standard file not found error and returns a `FAILED` `ActionResult` with a descriptive error message.
+    *   **`except Exception` block:**
+        *   Catches any other unexpected exceptions and returns a generic `FAILED` `ActionResult`.

@@ -132,3 +132,27 @@ A comprehensive report detailing the execution of an entire `Plan`.
     *   `action_logs` (list[ActionResult]): A list of results for each action executed.
 *   **Invariants:**
     *   `action_logs` must be a list.
+
+---
+
+## 4. Domain Exceptions
+
+These are custom exceptions that represent specific business rule violations within the domain. They are used by outbound ports to communicate specific failure reasons to the application services.
+
+### `FileAlreadyExistsError` (Exception)
+**Introduced in:** [Slice 07: Update Action Failure Behavior](../slices/07-update-action-failure-behavior.md)
+
+Raised by the `FileSystemManager` port when a `create_file` operation is attempted on a path that already exists.
+
+*   **Purpose:** To allow the `PlanService` to specifically catch this failure and trigger the "read file content" fallback logic.
+*   **Attributes:**
+    *   `file_path` (str): The path of the file that already exists.
+
+### `TextBlockNotFoundError` (Exception)
+**Introduced in:** [Slice 07: Update Action Failure Behavior](../slices/07-update-action-failure-behavior.md)
+
+Raised by the `FileSystemManager` port when an `edit_file` operation cannot find the specified `find_block` within the target file.
+
+*   **Purpose:** To allow the `PlanService` to specifically catch this failure and trigger the "read file content" fallback logic.
+*   **Attributes:**
+    *   `file_path` (str): The path of the file that was being edited.

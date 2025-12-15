@@ -15,25 +15,28 @@ The `LocalFileSystemAdapter` implements the `FileSystemManager` port to provide 
 The adapter will leverage Python's built-in `open()` function for file operations.
 
 *   **File Creation:** To satisfy the port's requirement for exclusive creation (failing if a file already exists), the `create_file` method will use the `'x'` (exclusive creation) mode when calling `open()`.
-*   **Error Handling:** If `open()` is called with `'x'` mode on a path that already exists, it will raise a `FileExistsError`. The adapter must catch this specific exception and propagate it as a failure, fulfilling the port's contract. Other `IOError` exceptions (like permission errors) should also be handled gracefully.
+*   **Error Handling:** (**Updated in:** [Slice 07: Update Action Failure Behavior](../../slices/07-update-action-failure-behavior.md)) If `open()` is called with `'x'` mode on a path that already exists, it will raise a standard `FileExistsError`. The adapter must catch this and re-raise it as the domain-specific `FileAlreadyExistsError`, attaching the file path to the exception, to fulfill the port's contract.
 *   **File Reading:** (**Introduced in:** [Slice 04: Implement `read_file` Action](../../slices/04-read-action.md)) The `read_file` method will use the standard `'r'` (read) mode with `utf-8` encoding. It must catch `FileNotFoundError` if the path does not exist and `UnicodeDecodeError` for non-text files, propagating these as failures.
-*   **File Editing:** (**Introduced in:** [Slice 06: Implement `edit` Action](../../slices/06-edit-action.md)) The `edit_file` method will follow a read-modify-write pattern. It will first read the entire file into memory. If the `find` string is not present in the content, it must raise a custom `FindStringNotFoundError` exception containing the file's content, per the port's contract. If the string is found, it will perform the replacement and then open the same file in `'w'` (write) mode to overwrite it with the new content.
+*   **File Editing:** (**Updated in:** [Slice 07: Update Action Failure Behavior](../../slices/07-update-action-failure-behavior.md)) The `edit_file` method will follow a read-modify-write pattern. It will first read the entire file into memory. If the `find` string is not present in the content, it must raise the domain-specific `TextBlockNotFoundError`, attaching the file path to the exception, per the port's contract. If the string is found, it will perform the replacement and then open the same file in `'w'` (write) mode to overwrite it with the new content.
 
 ## 4. Key Code Snippets
 
 ### `create_file`
-
+**(Updated in: [Slice 07: Update Action Failure Behavior](../../slices/07-update-action-failure-behavior.md))**
 ```python
-def create_file(self, path: str, content: str) -> Result[None, str]:
+# Note: FileAlreadyExistsError is a custom exception from the domain model
+from teddy.core.domain import FileAlreadyExistsError
+
+def create_file(self, path: str, content: str) -> None:
     try:
         with open(path, "x", encoding="utf-8") as f:
             f.write(content)
-        return Ok(None)
     except FileExistsError:
-        return Err(f"File already exists at path: {path}")
+        # Catch the standard Python error and raise the specific domain exception
+        raise FileAlreadyExistsError(file_path=path)
     except IOError as e:
-        return Err(f"Failed to create file at {path}: {e}")
-
+        # Propagate other IO errors
+        raise IOError(f"Failed to create file at {path}: {e}") from e
 ```
 
 ### `read_file`
@@ -55,12 +58,10 @@ def read_file(self, path: str) -> Result[str, str]:
 ```
 
 ### `edit_file`
-
-**Introduced in:** [Slice 06: Implement `edit` Action](../../slices/06-edit-action.md)
-
+**(Updated in: [Slice 07: Update Action Failure Behavior](../../slices/07-update-action-failure-behavior.md))**
 ```python
-# Note: FindStringNotFoundError is a custom exception defined in the core.
-from teddy.core.domain.errors import FindStringNotFoundError
+# Note: TextBlockNotFoundError is a custom exception from the domain model
+from teddy.core.domain import TextBlockNotFoundError
 
 def edit_file(self, path: str, find: str, replace: str) -> None:
     try:
@@ -70,10 +71,9 @@ def edit_file(self, path: str, find: str, replace: str) -> None:
 
         # 2. Modify
         if find not in content:
-            raise FindStringNotFoundError(
-                f"String '{find}' not found in file {path}",
-                content=content
-            )
+            # Raise the specific domain exception with the file path
+            raise TextBlockNotFoundError(file_path=path)
+
         new_content = content.replace(find, replace, 1) # Replace only the first occurrence
 
         # 3. Write
@@ -86,7 +86,6 @@ def edit_file(self, path: str, find: str, replace: str) -> None:
     except IOError as e:
         # Re-raise a more generic error for other IO problems
         raise IOError(f"Failed to edit file at {path}: {e}") from e
-
 ```
 
 ## 5. Related Spikes

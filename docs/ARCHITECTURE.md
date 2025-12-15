@@ -116,16 +116,26 @@ This section provides links to the detailed design documents for each component,
 *   **Adapters:**
     *   [Outbound Adapter: LocalFileSystemAdapter (Updated)](./adapters/outbound/file_system_adapter.md)
 
+### Slice 07: Update Action Failure Behavior
+
+*   **Core Logic:**
+    *   [Domain Model (Updated)](./core/domain_model.md)
+    *   [Application Service: PlanService (Updated)](./core/services/plan_service.md)
+    *   [Outbound Port: FileSystemManager (Updated)](./core/ports/outbound/file_system_manager.md)
+*   **Adapters:**
+    *   [Outbound Adapter: LocalFileSystemAdapter (Updated)](./adapters/outbound/file_system_adapter.md)
+
 ## 4. Vertical Slices
 
 This section will list the architectural documents for each vertical slice as they are defined.
 
-*   [✅] [Slice 01: Walking Skeleton](./slices/01-walking-skeleton.md)
-*   [✅] [Slice 02: Implement `create_file` Action](./slices/02-create-file-action.md)
-*   [✅] [Slice 03: Refactor Action Dispatching](./slices/03-refactor-action-dispatching.md)
-*   [✅] [Slice 04: Implement `read` Action](./slices/04-read-action.md)
-*   [✅] [Slice 05: Refactor Test Setup](./slices/05-refactor-test-setup.md)
-*   [✅] [Slice 06: Implement `edit` Action](./slices/06-edit-action.md)
+*   [x] [Slice 01: Walking Skeleton](./slices/01-walking-skeleton.md)
+*   [x] [Slice 02: Implement `create_file` Action](./slices/02-create-file-action.md)
+*   [x] [Slice 03: Refactor Action Dispatching](./slices/03-refactor-action-dispatching.md)
+*   [x] [Slice 04: Implement `read` Action](./slices/04-read-action.md)
+*   [x] [Slice 05: Refactor Test Setup](./slices/05-refactor-test-setup.md)
+*   [x] [Slice 06: Implement `edit` Action](./slices/06-edit-action.md)
+*   [ ] [Slice 07: Update Action Failure Behavior](./slices/07-update-action-failure-behavior.md)
 
 ---
 

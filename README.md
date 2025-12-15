@@ -76,7 +76,7 @@ These commands are for the user to gather information for the AI. Their output i
 This section defines the contract for the YAML plans the AI can generate.
 
 ### `create_file`
-Creates a new file. Fails if the file already exists.
+Creates a new file. If the file already exists, the action is marked as `FAILED`, no changes are made to the file, and its current content is returned in the execution report.
 
 ```yaml
 - action: create_file
@@ -101,7 +101,7 @@ Reads the content of a local file or a remote URL.
 ### `edit`
 Modifies an existing file by finding and replacing a block of text.
 
-- If `find_block` is a string, it must be a literal match. The action fails if the block is not found.
+- If `find_block` is a string, it must be a literal match. If the block is not found, the action is marked as `FAILED`, no changes are made to the file, and its current content is returned in the execution report.
 - If `find_block` is an empty string (`""`) or null (`~`), the entire file content is replaced.
 
 ```yaml

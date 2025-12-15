@@ -17,7 +17,7 @@ The `FileSystemManager` port defines a technology-agnostic interface for interac
     *   No file must exist at the specified `path`.
 *   **Postconditions:**
     *   On success, a new file is created at `path` containing the exact `content`.
-    *   If a file already exists at `path`, a `FileExistsError` (or a custom domain equivalent) must be raised.
+    *   If a file already exists at `path`, a `FileAlreadyExistsError` must be raised. **(Updated in: [Slice 07: Update Action Failure Behavior](../../slices/07-update-action-failure-behavior.md))**
 
 ### `read_file`
 
@@ -42,7 +42,7 @@ The `FileSystemManager` port defines a technology-agnostic interface for interac
 *   **Postconditions:**
     *   On success, the file at `path` is updated with the `replace` string substituted for the first occurrence of the `find` string.
     *   If no file exists at `path`, a `FileNotFoundError` must be raised.
-    *   If the `find` string is not found in the file, a custom `FindStringNotFoundError` must be raised. This exception should contain the full, unmodified content of the file to be used for reporting purposes.
+    *   If the `find` string is not found in the file, a `TextBlockNotFoundError` must be raised. **(Updated in: [Slice 07: Update Action Failure Behavior](../../slices/07-update-action-failure-behavior.md))**
 
 ## 3. Related Spikes
 
