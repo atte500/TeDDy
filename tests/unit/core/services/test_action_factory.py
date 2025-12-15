@@ -79,3 +79,26 @@ class TestActionFactory:
         # Assert
         assert isinstance(action, models.ReadAction)
         assert action.source == "path/to/file.txt"
+
+    def test_create_edit_action(self):
+        """
+        Tests that the factory can create a valid EditAction.
+        """
+        # Arrange
+        raw_action = {
+            "action": "edit",
+            "params": {
+                "file_path": "/tmp/a",
+                "find": "old",
+                "replace": "new",
+            },
+        }
+
+        # Act
+        action = ActionFactory.create_action(raw_action)
+
+        # Assert
+        assert isinstance(action, models.EditAction)
+        assert action.file_path == "/tmp/a"
+        assert action.find == "old"
+        assert action.replace == "new"

@@ -8,6 +8,7 @@ from teddy.core.domain.models import (
     ExecuteAction,
     CreateFileAction,
     ReadAction,
+    EditAction,
 )
 
 
@@ -166,3 +167,40 @@ def test_action_result_can_represent_failure():
     assert result.status == "FAILURE"
     assert result.error == error_message
     assert result.output is None
+
+
+class TestEditAction:
+    def test_instantiation_happy_path(self):
+        """Tests happy path instantiation for EditAction."""
+        action = EditAction(file_path="path/to/file.txt", find="old", replace="new")
+        assert action.file_path == "path/to/file.txt"
+        assert action.find == "old"
+        assert action.replace == "new"
+        assert action.action_type == "edit"
+
+    def test_instantiation_with_empty_find_is_allowed(self):
+        """Tests that an empty 'find' string is allowed."""
+        action = EditAction(file_path="path/to/file.txt", find="", replace="new stuff")
+        assert action.find == ""
+
+    def test_instantiation_with_empty_replace_is_allowed(self):
+        """Tests that an empty 'replace' string is allowed for deletion."""
+        try:
+            EditAction(file_path="path/to/file.txt", find="old", replace="")
+        except (ValueError, TypeError) as e:
+            pytest.fail(
+                f"Instantiating with empty 'replace' raised an unexpected exception: {e}"
+            )
+
+    def test_empty_file_path_raises_error(self):
+        """Tests that a whitespace-only file_path raises a ValueError."""
+        with pytest.raises(ValueError, match="'file_path' parameter cannot be empty"):
+            EditAction(file_path=" ", find="old", replace="new")
+
+    @pytest.mark.parametrize("param", ["file_path", "find", "replace"])
+    def test_non_string_params_raise_error(self, param):
+        """Tests that non-string parameters raise a TypeError."""
+        with pytest.raises(TypeError, match=f"'{param}' must be a string"):
+            params = {"file_path": "path/to/file.txt", "find": "old", "replace": "new"}
+            params[param] = 123
+            EditAction(**params)

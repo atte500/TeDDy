@@ -4,6 +4,7 @@ from teddy.core.domain.models import (
     ExecuteAction,
     ParsePlanAction,
     ReadAction,
+    EditAction,
 )
 
 
@@ -249,3 +250,29 @@ def test_plan_service_handles_read_url_action(
     action_result = report.action_logs[0]
     assert action_result.status == "SUCCESS"
     assert action_result.output == expected_content
+
+
+def test_plan_service_handles_edit_action(
+    plan_service, mock_file_system_manager, mock_action_factory
+):
+    """
+    Tests that PlanService can parse an edit action and call the file system manager.
+    """
+    # ARRANGE
+    mock_action = EditAction(file_path="foo/bar.txt", find="old", replace="new")
+    mock_action_factory.create_action.return_value = mock_action
+    plan_content = """
+    - action: edit
+      params:
+        file_path: "foo/bar.txt"
+        find: "old"
+        replace: "new"
+    """
+
+    # ACT
+    plan_service.execute(plan_content)
+
+    # ASSERT
+    mock_file_system_manager.edit_file.assert_called_once_with(
+        path="foo/bar.txt", find="old", replace="new"
+    )

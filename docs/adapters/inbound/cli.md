@@ -25,30 +25,41 @@ The `main.py` file will act as the **Composition Root**. It is responsible for i
 
 ```python
 # Conceptual wiring in src/teddy/main.py
-
+import sys
 import typer
-from teddy.core.services import PlanService
-from teddy.adapters.outbound import ShellAdapter
+from typing import cast
+# ... other imports
 
-def main():
-    # 1. Instantiate adapters
-    shell_adapter = ShellAdapter()
+# 1. The Typer application object is defined
+app = typer.Typer()
 
-    # 2. Instantiate core service with its dependencies
-    plan_service = PlanService(shell_executor=shell_adapter)
-
-    # 3. Read input from stdin
+# 2. A callback function contains the core application logic
+@app.callback(invoke_without_command=True)
+def main(ctx: typer.Context):
+    # The PlanService is retrieved from the context
+    plan_service = cast(RunPlanUseCase, ctx.obj)
     plan_content = sys.stdin.read()
 
-    # 4. Invoke the use case
+    # The use case is invoked
     report = plan_service.execute(plan_content)
 
-    # 5. Format and print the report
+    # The report is formatted and printed
     formatted_report = format_report_as_markdown(report)
-    print(formatted_report)
+    typer.echo(formatted_report)
 
-if __name__ == "__main__":
-    typer.run(main)
+    # The exit code is set based on the report's status
+    if report.run_summary.get("status") == "FAILURE":
+        raise typer.Exit(code=1)
+
+# 3. A `run()` function acts as the Composition Root
+def run():
+    # Adapters and services are instantiated here
+    shell_adapter = ShellAdapter()
+    # ... other adapters
+    plan_service = PlanService(...)
+
+    # The Typer app is run with the composed service object
+    app(obj=plan_service)
 ```
 
 ### Input Handling (Walking Skeleton)

@@ -10,6 +10,8 @@ from teddy.core.domain.models import (
     ExecuteAction,
     CreateFileAction,
     ReadAction,
+    EditAction,
+    SearchTextNotFoundError,
 )
 from teddy.core.ports.inbound.run_plan_use_case import RunPlanUseCase
 from teddy.core.ports.outbound.shell_executor import ShellExecutor
@@ -77,6 +79,26 @@ class PlanService(RunPlanUseCase):
         except (FileNotFoundError, RequestException) as e:
             return ActionResult(action=action, status="FAILURE", error=str(e))
 
+    def _handle_edit(self, action: EditAction) -> ActionResult:
+        try:
+            self.file_system_manager.edit_file(
+                path=action.file_path, find=action.find, replace=action.replace
+            )
+            return ActionResult(
+                action=action,
+                status="COMPLETED",
+                output=f"Edited file: {action.file_path}",
+            )
+        except FileNotFoundError as e:
+            return ActionResult(action=action, status="FAILURE", error=str(e))
+        except SearchTextNotFoundError as e:
+            return ActionResult(
+                action=action,
+                status="FAILURE",
+                error=str(e),
+                output=e.content,
+            )
+
     def _execute_single_action(self, action: Action) -> ActionResult:
         """Executes one action and returns its result."""
         if isinstance(action, ExecuteAction):
@@ -85,6 +107,8 @@ class PlanService(RunPlanUseCase):
             return self._handle_create_file(action)
         elif isinstance(action, ReadAction):
             return self._handle_read(action)
+        elif isinstance(action, EditAction):
+            return self._handle_edit(action)
 
         return ActionResult(
             action=action,

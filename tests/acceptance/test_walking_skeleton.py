@@ -64,8 +64,8 @@ def test_failed_execution():
     result = run_teddy(plan_content)
 
     # THEN
-    # The tool itself should run successfully
-    assert result.returncode == 0
+    # The tool should exit with a non-zero code because the plan failed
+    assert result.returncode != 0
 
     # The report should contain the correct failure elements
     assert "Run Summary: FAILURE" in result.stdout

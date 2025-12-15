@@ -36,6 +36,9 @@ def main(ctx: typer.Context):
         formatted_report = format_report_as_markdown(report)
         typer.echo(formatted_report)
 
+        if report.run_summary.get("status") == "FAILURE":
+            raise typer.Exit(code=1)
+
 
 # ===================================================================
 #     Composition Root (Main Entry Point)

@@ -23,3 +23,12 @@ class FileSystemManager(Protocol):
             FileNotFoundError: If no file exists at the specified path.
         """
         ...
+
+    def edit_file(self, path: str, find: str, replace: str) -> None:
+        """
+        Modifies an existing file by replacing a string.
+
+        Raises:
+            FileNotFoundError: If no file exists at the specified path.
+        """
+        ...

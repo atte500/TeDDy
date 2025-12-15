@@ -75,8 +75,10 @@ def test_create_file_when_file_exists_fails_gracefully(tmp_path: Path):
     )
 
     # Assert
-    # The tool itself should not crash
-    assert result.returncode == 0, f"Teddy crashed with stderr: {result.stderr}"
+    # The tool should exit with a failure code because the plan failed
+    assert (
+        result.returncode != 0
+    ), "Teddy should exit with a non-zero code on plan failure"
 
     # The original file should not have been modified
     assert existing_file.read_text() == original_content
