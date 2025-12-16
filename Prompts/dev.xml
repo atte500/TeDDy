@@ -42,26 +42,41 @@
           4.  Once all inner cycles for the component are complete, mark the item as `✅` in the dashboard and move to the next.
         </action>
       </phase>
-      <phase n="4" name="Outer-Cycle: Local Verification & Refactor">
+      <phase n="4" name="Outer-Cycle: Final Local Verification & Refactor">
         <action>
           1.  Once all items in the `Scope of Work` are complete, **locally** (without committing), temporarily remove the `@skip` decorator from the acceptance test and run it to verify the end-to-end scenario passes.
-          2.  Perform a final **REFACTOR** cycle on the new code.
+          2.  If the test passes, perform a final **REFACTOR** cycle on the new code.
           3.  **Crucially, re-apply the `@skip` decorator to the acceptance test before committing any refactoring changes** to ensure the trunk remains green.
         </action>
       </phase>
-      <phase n="5" name="Outer-Cycle: Finalization & Merge/Activation">
+      <phase n="5" name="Outer-Cycle: Architectural Audit & Synchronization">
         <action>
-          This phase finalizes the slice based on the `Strategy` set in Phase 0.
+          This phase ensures architectural documents are synchronized with the final code, preventing drift.
+          1.  Re-read the current Vertical Slice document (`docs/slices/...`) to reload the definitive `Scope of Work`.
+          2.  For each component in the slice's scope, you must:
+              a. `READ` its canonical contract document (e.g., from `docs/core/ports/`, `docs/core/domain_model.md`).
+              b. `READ` its final implementation file (e.g., from `src/adapters/`, `src/hexagonal_core/`).
+              c. Create an `EDIT Architecture` plan to update the contract document if any discrepancies exist. Commit each update individually.
+          3.  Incorporate any `Architectural Notes` from the TDD Dashboard into `ARCHITECTURE.md` and commit the changes.
+          4.  Finally, edit `ARCHITECTURE.md` to mark the slice as complete (`[x]`) and commit this last documentation change.
+        </action>
+      </phase>
+      <phase n="6" name="Outer-Cycle: Feature Activation">
+        <action>
+          With implementation and documentation now synchronized, this phase makes the feature live.
           *   **If `Strategy` is `Trunk-Based`:**
               1.  Commit the feature activation (e.g., wiring up the entry point).
               2.  Commit the acceptance test enablement (e.g., removing `@skip`).
-              3.  Update `docs/ARCHITECTURE.md` to mark the slice as complete (`[x]`) and record any architectural notes, then commit the documentation changes.
-              4.  Handoff via `CHAT WITH USER` to announce the feature is live on `main`.
           *   **If `Strategy` is `Branch-Based`:**
               1.  On the feature branch, commit the feature activation and test enablement.
               2.  Rebase the feature branch onto the `main` trunk.
-              3.  Update `docs/ARCHITECTURE.md` to mark the slice as complete (`[x]`) and record any architectural notes, then commit the changes to the branch.
-              4.  Handoff via `CHAT WITH USER` to request a Pull Request to merge the feature branch into `main`.
+        </action>
+      </phase>
+      <phase n="7" name="Outer-Cycle: Handoff / Merge Request">
+        <action>
+            This is the final step.
+            *   **If `Strategy` is `Trunk-Based`:** Handoff via `CHAT WITH USER` to announce the feature is live on `main`.
+            *   **If `Strategy` is `Branch-Based`:** Handoff via `CHAT WITH USER` to request a Pull Request to merge the feature branch into `main`.
         </action>
       </phase>
     </workflow>
@@ -100,8 +115,10 @@
           - [ ] Phase 1: Orientation & Planning
           - [ ] Phase 2: Write Disabled Acceptance Test
           - [ ] Phase 3: Implement Scope of Work
-          - [ ] Phase 4: Local Verification & Refactor
-          - [ ] Phase 5: Finalization & Merge/Activation
+          - [ ] Phase 4: Final Local Verification & Refactor
+          - [ ] Phase 5: Architectural Audit & Synchronization
+          - [ ] Phase 6: Feature Activation
+          - [ ] Phase 7: Handoff / Merge Request
 
           #### Scope of Work
           - [▶️] [First item from slice's Scope of Work]

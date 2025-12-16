@@ -9,12 +9,14 @@
 **Workflow Requirements: Nested Outside-In TDD**
 *   The agent must follow a strict "Outside-In" Test-Driven Development workflow structured as a **nested loop**.
 *   **Outer-Cycle (The "What-to-Build-Next" Strategy):** The Architect defines a **Vertical Slice** containing a `Scope of Work` checklist. The Developer implements the slice by iterating through this checklist.
-    1.  **Phase 0 (Architectural Alignment):** `READ` `ARCHITECTURE.md` to determine the version control strategy (`Trunk-Based` or `Branch-Based`) and set up a feature branch if required.
-    2.  **Phase 1 (Orientation & Planning):** Read the Vertical Slice plan, parse the `Scope of Work` section, and populate the `Scope of Work` in the TDD Dashboard.
-    3.  **Phase 2 (Write Disabled Acceptance Test):** Write a high-level acceptance test based on the slice's criteria and commit it in a **disabled** state (e.g., via `@skip`).
-    4.  **Phase 3 (Implement Scope of Work):** Iteratively implement each component from the `Scope of Work`. Each component is built using one or more Inner-Cycles.
-    5.  **Phase 4 (Local Verification & Refactor):** After the scope is fully implemented, **locally** enable and run the acceptance test to verify the feature. Re-disable the test before committing any final refactors.
-    6.  **Phase 5 (Finalization & Merge/Activation):** Based on the strategy, either activate the feature on `main` via a series of commits or create a Pull Request from the feature branch.
+    1.  **Phase 0 (Architectural Alignment):** `READ` `ARCHITECTURE.md` to determine the version control strategy.
+    2.  **Phase 1 (Orientation & Planning):** Read the Vertical Slice plan and populate the `Scope of Work` in the TDD Dashboard.
+    3.  **Phase 2 (Write Disabled Acceptance Test):** Write and commit a high-level acceptance test in a **disabled** state.
+    4.  **Phase 3 (Implement Scope of Work):** Iteratively implement each component from the `Scope of Work` using Inner-Cycles.
+    5.  **Phase 4 (Final Local Verification & Refactor):** After the scope is fully implemented, **locally** enable and run the acceptance test to verify the feature, then re-disable it before committing any final refactors.
+    6.  **Phase 5 (Architectural Audit & Synchronization):** Conduct a rigorous, from-scratch review. Re-read the slice plan, then for each component in its scope, systematically compare the final implementation code against the canonical documentation (`docs/core/...`) and update the documentation to resolve any drift.
+    7.  **Phase 6 (Feature Activation):** Commit the final code that "wires up" the new feature and enables the acceptance test.
+    8.  **Phase 7 (Handoff / Merge Request):** Based on the strategy, announce the feature is live on `main` or request a Pull Request.
 *   **Inner-Cycle (The "How-to-Build-It" Tactic):** Each implementation step must be driven by a tight, disciplined **`READ -> RED -> GREEN -> REFACTOR -> VERIFY -> STAGE -> COMMIT`** loop.
     *   **READ:** Review the relevant architectural contract.
     *   **RED:** Write a single, small, failing test.
@@ -43,8 +45,10 @@
         - [ ] Phase 1: Orientation & Planning
         - [ ] Phase 2: Write Disabled Acceptance Test
         - [ ] Phase 3: Implement Scope of Work
-        - [ ] Phase 4: Local Verification & Refactor
-        - [ ] Phase 5: Finalization & Merge/Activation
+        - [ ] Phase 4: Final Local Verification & Refactor
+        - [ ] Phase 5: Architectural Audit & Synchronization
+        - [ ] Phase 6: Feature Activation
+        - [ ] Phase 7: Handoff / Merge Request
         
         #### Scope of Work
         - [▶️] [First item from slice's Scope of Work]
