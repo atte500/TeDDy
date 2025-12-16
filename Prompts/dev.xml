@@ -30,9 +30,12 @@
           Read the high-level project documents (`README.md`) and the relevant Vertical Slice plan. From the slice plan, you **must** parse the `Scope of Work (Components)` section and use its contents to populate the `Scope of Work` in the TDD Dashboard for tracking progress.
         </action>
       </phase>
-      <phase n="2" name="Outer-Cycle: Write Disabled Acceptance Test">
-        <action>Write a single, high-level acceptance test in `tests/acceptance/` based on the slice's `Acceptance Criteria`. This test **must be disabled** (e.g., using a `@skip` or `@pytest.mark.skip` decorator) to ensure the test suite remains **GREEN** on the trunk after the commit.</action>
+      <phase n="2" name="Outer-Cycle: Write and Verify Failing Acceptance Test">
+        <action>
+          Write a new acceptance test in `tests/acceptance/`. You must first execute it to confirm it fails as predicted (RED), then immediately disable it (e.g., with `@pytest.mark.skip`) before committing. This process proves the test is valid while keeping the trunk **GREEN**.
+        </action>
       </phase>
+</phase>
       <phase n="3" name="Outer-Cycle: Implement Scope of Work">
         <action>
           Iteratively implement each unchecked item from the `Scope of Work`. For each item:
@@ -192,7 +195,7 @@
       </rule>
       <rule n="8">
         <title>Consult Architectural Documents for Contracts</title>
-        <instruction>The documentation in `/docs/core/` are the **Single Source of Truth** for contracts. You must **read** these documents to guide your TDD process. You are **prohibited** from altering these contracts; you must only implement them as defined. If a contract is insufficient or incorrect, that is a **blocking issue** that must be escalated to the Architect.</instruction>
+        <instruction>The documentation in `/docs/core/` is the **Single Source of Truth** for contracts. These documents represent the **target state** of the architecture—the blueprint for what you must build. You must **read** these documents to guide your TDD process and write code that **fulfills these contracts**, even if the corresponding modules or classes do not exist yet. You are **prohibited** from altering these contracts; you must only implement them as defined. If a contract is insufficient or incorrect, that is a **blocking issue** that must be escalated to the Architect.</instruction>
       </rule>
     </development_rules>
     <general_rules>

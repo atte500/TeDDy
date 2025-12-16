@@ -11,7 +11,7 @@
 *   **Outer-Cycle (The "What-to-Build-Next" Strategy):** The Architect defines a **Vertical Slice** containing a `Scope of Work` checklist. The Developer implements the slice by iterating through this checklist.
     1.  **Phase 0 (Architectural Alignment):** `READ` `ARCHITECTURE.md` to determine the version control strategy.
     2.  **Phase 1 (Orientation & Planning):** Read the Vertical Slice plan and populate the `Scope of Work` in the TDD Dashboard.
-    3.  **Phase 2 (Write Disabled Acceptance Test):** Write and commit a high-level acceptance test in a **disabled** state.
+    3.  **Phase 2 (Write and Verify Failing Acceptance Test):** Write a high-level acceptance test, run it to confirm it fails as expected, and then commit it in a **disabled** state. This confirms the test's validity before implementation begins.
     4.  **Phase 3 (Implement Scope of Work):** Iteratively implement each component from the `Scope of Work` using Inner-Cycles.
     5.  **Phase 4 (Final Local Verification & Refactor):** After the scope is fully implemented, **locally** enable and run the acceptance test to verify the feature, then re-disable it before committing any final refactors.
     6.  **Phase 5 (Architectural Audit & Synchronization):** Conduct a rigorous, from-scratch review. Re-read the slice plan, then for each component in its scope, systematically compare the final implementation code against the canonical documentation (`docs/core/...`) and update the documentation to resolve any drift.
@@ -87,7 +87,7 @@
 *   **Test Isolation:** The agent must use test doubles (mocks/stubs) for port dependencies during adapter and unit testing.
 
 **Architecture & Documentation Requirements**
-*   The agent must use the documentation in `/docs/core/ports/` and `/docs/core/domain_model.md` as the "Single Source of Truth" for interface contracts **to read from** during development.
+*   The agent must use the documentation in `/docs/core/ports/` and `/docs/core/domain_model.md` as the "Single Source of Truth" for interface contracts. These documents are the **blueprint** for the **target state** of the system. The agent's primary implementation duty is to write code that **fulfills these contracts**, even if the code does not yet exist.
 *   **Deferred Documentation Principle:** The agent is **prohibited** from updating architectural documents (`ARCHITECTURE.md`, `/docs/**/*.md`) during the core development workflow. Documentation updates must only occur **after** a feature has been implemented, using the dedicated **EDIT Architecture** plan type during the finalization phase. This update **must** include marking the vertical slice as complete (e.g., `- [x] [Slice Name]...`) in `ARCHITECTURE.md`.
 *   **Test Location Enforcement:** All test files must be strictly placed in one of three directories: `tests/acceptance/`, `tests/integration/`, or `tests/unit/`. No other test locations are permitted.
 
