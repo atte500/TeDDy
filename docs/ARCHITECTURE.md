@@ -136,7 +136,7 @@ This section will list the architectural documents for each vertical slice as th
 *   [x] [Slice 05: Refactor Test Setup](./slices/05-refactor-test-setup.md)
 *   [x] [Slice 06: Implement `edit` Action](./slices/06-edit-action.md)
 *   [x] [Slice 07: Update Action Failure Behavior](./slices/07-update-action-failure-behavior.md)
-*   [ ] [Slice 08: Refactor Action Dispatching](./slices/08-refactor-action-dispatching.md)
+*   [x] [Slice 08: Refactor Action Dispatching](./slices/08-refactor-action-dispatching.md)
 
 ---
 
@@ -150,3 +150,4 @@ This section captures non-blocking architectural observations and potential area
 - ~~**Action Dispatching in PlanService:**~~ (Resolved in Slice 03) The `PlanService._execute_single_action` method uses an `if/elif` chain to dispatch actions. This is acceptable for a small number of actions but will become a maintenance bottleneck as the system grows. This should be refactored to a more scalable pattern, such as the Command or Strategy pattern.
 - **CLI Exit Code Philosophy (from Slice 06):** An architectural decision was made to define the application's exit code behavior. The chosen philosophy is that the application process should exit with a non-zero code if *any* action within a plan fails. This aligns the tool with standard CI/CD practices, where a non-zero exit code universally signals failure. This decision required refactoring older acceptance tests that previously expected an exit code of `0` even when a plan's business logic failed.
 - **Consistent Failure Reporting (from Slice 07):** A systemic inconsistency in failure reporting was identified during development. The `CLIFormatter` now handles all `FAILURE` statuses uniformly, producing a consistent, YAML-style block for the details of any failed action. This improves both human and machine readability and should be considered the standard pattern for all future failure reporting. This change necessitated refactoring a significant number of existing acceptance and integration tests to align with the new, more robust output format.
+- **Static Analysis vs. Dynamic Patterns (from Slice 08):** The refactoring of `PlanService` to use a dynamic dispatch map (`{ActionType: handler_method}`) introduced a challenge for the static type checker, `mypy`. While the pattern is robust at runtime, `mypy` could not statically verify the type relationship between the dispatched action and its handler, resulting in a `[operator]` error. The issue was resolved pragmatically by adding a `# type: ignore` comment. This captures a recurring architectural trade-off: highly dynamic, decoupled patterns can sometimes conflict with the guarantees of static analysis, requiring targeted suppression of type errors.
