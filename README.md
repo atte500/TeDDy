@@ -130,7 +130,7 @@ This phase is only initiated when the Developer or Architect AI enters a failure
 ## Recommended Tooling
 
 
--   **Google AI Studio**: Add and save the provided system prompts under "System instructions" on the right-hand tab. Execute commands without any Tools enabled - Gemini 1.5 Pro is recommended.
+-   **Google AI Studio**: Add and save the provided system prompts under "System instructions" on the right-hand tab. **Use Gemini 2.5 for this workflow.** Based on experience, **avoid using the latest Gemini 3 model**, as it can be less consistent in adhering to the strict, step-by-step instructions required by the TeDDy agents.
 -   **[Copy4AI](https://marketplace.visualstudio.com/items?itemName=LeonKohli.snapsource):** A VS Code extension to quickly copy file contents and the project structure to your clipboard. This is the recommended way to perform the initial context-setting step.
 -   **SERP Scraper Bookmarklets**: To streamline the `RESEARCH` action, this repository includes bookmarklets that scrape search engine results (SERPs) and copy them to your clipboard as a clean Markdown list.
    -   **How to set them up:**
