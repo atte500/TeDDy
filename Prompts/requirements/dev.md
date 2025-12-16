@@ -8,14 +8,15 @@
 
 **Workflow Requirements: Nested Outside-In TDD**
 *   The agent must follow a strict "Outside-In" Test-Driven Development workflow structured as a **nested loop**.
-*   **Outer-Cycle (The "What-to-Build-Next" Strategy):** The Architect defines a **Vertical Slice** containing a `Scope of Work` checklist. The Developer implements the slice by iterating through this checklist.
-    1.  **Phase 0 (Orientation & Planning):** `READ` `ARCHITECTURE.md` to determine the version control strategy, then read the Vertical Slice plan and populate the `Scope of Work` in the TDD Dashboard.
-    2.  **Phase 1 (Write and Verify Failing Acceptance Test):** Write a high-level acceptance test, run it to confirm it fails as expected, and then commit it in a **disabled** state. This confirms the test's validity before implementation begins.
-    3.  **Phase 2 (Implement Scope of Work):** Iteratively implement each component from the `Scope of Work` using Inner-Cycles.
-    4.  **Phase 3 (Final Local Verification & Refactor):** After the scope is fully implemented, **locally** enable and run the acceptance test to verify the feature, then re-disable it before committing any final refactors.
-    5.  **Phase 4 (Architectural Audit & Synchronization):** Conduct a rigorous, from-scratch review. Re-read the slice plan, then for each component in its scope, systematically compare the final implementation code against the canonical documentation (`docs/core/...`) and update the documentation to resolve any drift.
-    6.  **Phase 5 (Feature Activation):** Commit the final code that "wires up" the new feature and enables the acceptance test.
-    7.  **Phase 6 (Handoff / Merge Request):** Based on the strategy, announce the feature is live on `main` or request a Pull Request.
+*   **Outer-Cycle (The "What-to-Build-Next" Strategy):** The Architect defines a **Vertical Slice** containing a `Scope of Work` checklist. The Developer implements the slice by iterating through this checklist in a `Code -> Activate -> Document -> Handoff` sequence.
+    1.  **Phase 0 (Orientation & Planning):** `READ` `ARCHITECTURE.md` to determine the version control strategy, then `READ` the Vertical Slice plan and all files listed in its `Required Reading (Context)` section. Populate the `Scope of Work` in the TDD Dashboard.
+    2.  **Phase 1 (Write Local Failing Acceptance Test):** Create a high-level acceptance test and run it locally to confirm it fails as expected. **Do not commit it.** This test remains local until the feature is complete.
+    3.  **Phase 2 (Implement Scope of Work):** Iteratively implement each component from the `Scope of Work` using Inner-Cycles. All implementation code is committed during this phase.
+    4.  **Phase 3 (Final Local Verification & Refactor):** After the scope is fully implemented, run the local acceptance test to verify it passes. Perform any final refactoring on the implementation code and commit it.
+    5.  **Phase 4 (Feature Activation):** Use a single `Version Control` plan to commit both the new, now-passing acceptance test and the final "wiring" code that activates the feature. The codebase is now feature-complete and ready for user validation.
+    6.  **Phase 5 (User Showcase & Polish):** Initiate a `User Verification` plan to present the active feature to the user for manual verification and feedback. Loop on minor polish tasks until the user gives final approval.
+    7.  **Phase 6 (Architectural Audit & Synchronization):** With the code approved, conduct a from-scratch review. For each component, compare the final code against its documentation. Use a single `EDIT Architecture` plan to update all relevant documentation (including changing method statuses from `Planned` to `Implemented`). Use a single `Version Control` plan to commit all documentation changes at once.
+    8.  **Phase 7 (Handoff / Merge Request):** Based on the strategy, announce the feature is live on `main` or request a Pull Request.
 *   **Inner-Cycle (The "How-to-Build-It" Tactic):** Each implementation step must be driven by a tight, disciplined **`READ -> RED -> GREEN -> REFACTOR -> VERIFY -> STAGE -> COMMIT`** loop.
     *   **READ:** Review the relevant architectural contract.
     *   **RED:** Write a single, small, failing test.
@@ -41,11 +42,11 @@
 
         #### Outer-Cycle Phase
         - [▶️] Phase 0: Orientation & Planning
-        - [ ] Phase 1: Write Disabled Acceptance Test
+        - [ ] Phase 1: Write Local Failing Acceptance Test
         - [ ] Phase 2: Implement Scope of Work
         - [ ] Phase 3: Final Local Verification & Refactor
-        - [ ] Phase 4: Architectural Audit & Synchronization
-        - [ ] Phase 5: Feature Activation
+        - [ ] Phase 4: Feature Activation
+        - [ ] Phase 5: Architectural Audit & Synchronization
         - [ ] Phase 6: Handoff / Merge Request
         
         #### Scope of Work
@@ -69,9 +70,10 @@
         - [No notes yet.]
         ````
         
-*   **Relevant Files in Context:** Every plan must include a `Relevant Files in Context` section immediately after the `Goal` line. This section is a cumulative markdown list of all files that have been read **in a previous turn** and remain relevant. It serves as the agent's working memory for the duration of the feature implementation. **Crucially, files being read in the current plan should only be added to this list in the *next* turn's plan.**
+*   **Context Vault:** Every plan must include a `Context Vault` section immediately after the `Goal` line. This section is a cumulative markdown list of all files that have been read **in a previous turn**. It serves as a persistent log of the agent's information gathering. When updating the list from the previous turn, new files must be marked in bold, and files no longer relevant to the immediate task must be marked with a strikethrough but **never removed**.
+*   **Strict Read-Before-Write Workflow:** If you need to `EDIT` a file not present in your `Context Vault`, your next plan **must** be an `Information gathering` plan whose sole purpose is to `READ` that file. The subsequent plan will use the retrieved content to perform the `EDIT`.
 *   **Failure Handling & Escalation Protocol:**
-    *   **First Failure (`🟡 Yellow` State):** When an `Expected Outcome` fails for the first time, the agent must enter a `🟡 Yellow` state. Its next plan must be an **Information Gathering** plan to investigate the root cause. **The investigation must begin by checking for relevant Root Cause Analysis (RCA) documents (e.g., in `/docs/rca/`). The agent can skip this initial check only if it has already performed one in the current session for the same root issue, and it must explicitly state this justification in its Rationale.** Subsequent diagnostic steps involve using `READ`, `RESEARCH`, or targeted `EXECUTE` commands to diagnose the issue.
+    *   **First Failure (`🟡 Yellow` State):** When an `Expected Outcome` for an `EXECUTE` action fails for the first time, the agent must enter a `🟡 Yellow` state. An unexpected outcome for any other action type does not trigger a state change. Its next plan must be an **Information Gathering** plan to investigate the root cause. **The investigation must begin by checking for relevant Root Cause Analysis (RCA) documents (e.g., in `/docs/rca/`). The agent can skip this initial check only if it has already performed one in the current session for the same root issue, and it must explicitly state this justification in its Rationale.** Subsequent diagnostic steps involve using `READ`, `RESEARCH`, or targeted `EXECUTE` commands to diagnose the issue.
     *   **Second Consecutive Failure (`🔴 Red` State):** If the subsequent diagnostic plan *also* fails its `Expected Outcome`, the agent must enter a `🔴 Red` state. In this state, the agent is **strictly prohibited** from further self-diagnosis. Its next and only valid action is to **Handoff to Debugger**.
     *   **Handoff to Debugger:** This must be a `CHAT WITH USER` action that formally requests the activation of the Debugger, providing the full context of the last failed plan.
 *   **Context Digestion:** The `Analysis` section of the `Rationale` **must** always begin by analyzing the outcome of the previous turn. If the previous turn introduced new information (e.g., from a `READ`, `EXECUTE`, or `RESEARCH` action), this analysis must summarize the key findings and quote essential snippets to justify the next plan. This proves the information has been processed and integrated into the agent's reasoning.
@@ -85,8 +87,8 @@
 *   **Test Isolation:** The agent must use test doubles (mocks/stubs) for port dependencies during adapter and unit testing.
 
 **Architecture & Documentation Requirements**
-*   The agent must use the documentation in `/docs/core/ports/` and `/docs/core/domain_model.md` as the "Single Source of Truth" for interface contracts. These documents are the **blueprint** for the **target state** of the system. The agent's primary implementation duty is to write code that **fulfills these contracts**, even if the code does not yet exist.
-*   **Deferred Documentation Principle:** The agent is **prohibited** from updating architectural documents (`ARCHITECTURE.md`, `/docs/**/*.md`) during the core development workflow. Documentation updates must only occur **after** a feature has been implemented, using the dedicated **EDIT Architecture** plan type during the finalization phase. This update **must** include marking the vertical slice as complete (e.g., `- [x] [Slice Name]...`) in `ARCHITECTURE.md`.
+*   The agent must use the architectural documentation as the "Single Source of Truth". This includes the primary contracts (like Ports and the Domain Model) and **all supporting documents listed in the Vertical Slice's `Required Reading (Context)` section**. These documents are the **blueprint** for the **target state** of the system. The agent's primary implementation duty is to write code that **fulfills these contracts**, even if the code does not yet exist.
+*   **Component Status Enumeration:** When updating documentation, the `**Status:**` tag for any component, aggregate, or method **must** use one of the following exact string values: `Planned`, `Implemented`, or `Deprecated`. No other values are permitted.
 *   **Test Location Enforcement:** All test files must be strictly placed in one of three directories: `tests/acceptance/`, `tests/integration/`, or `tests/unit/`. No other test locations are permitted.
 
 **Version Control & Commit Strategy**
@@ -129,5 +131,5 @@
     *   **Why it's required:** This is a crucial safety and correctness example. It demonstrates that when the agent discovers a **blocking architectural issue** (e.g., a missing Port method), its only valid move is to stop and use `CHAT WITH USER` to escalate to the Architect. The abstract nature of the request (`[Brief description of issue]`) ensures the agent learns the general principle of escalating any architectural mismatch that prevents implementation.
 
 *   **Example 5: User Showcase and Approval (User Verification)**
-    *   **Requirement Demonstrated:** The **User Showcase & Polish** phase (Phase 7) and the user feedback protocol.
+    *   **Requirement Demonstrated:** The **User Showcase & Polish** phase (Phase 5) and the user feedback protocol.
     *   **Why it's required:** This example shows the correct protocol for interacting with the user to get feedback and approval. The agent must present the working feature with a clear set of **manual verification steps for the user to execute**, not automated tests. This models the critical feedback loop that allows for minor polish while protecting against major scope creep. Using placeholders for manual steps and expected observations makes it a reusable template for any feature presentation.
