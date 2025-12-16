@@ -22,10 +22,10 @@ The `PlanService` will be initialized with the components it needs to perform it
         *   [`FileSystemManager`](../ports/outbound/file_system_manager.md)
         *   [`WebScraper`](../ports/outbound/web_scraper.md) **Introduced in:** [Slice 04: Implement `read` Action](../../slices/04-read-action.md)
 
-## 4. Implementation Strategy
-**Related Slice:** [Slice 03: Refactor Action Dispatching](../../slices/03-refactor-action-dispatching.md)
+## 4. Implementation Strategy (Refactored)
+**Related Slice:** [Slice 08: Refactor Action Dispatching](../../slices/08-refactor-action-dispatching.md)
 
-The `PlanService` is a class instantiated with its required dependencies. Its main `execute` method orchestrates plan parsing and execution. It iterates through actions and uses a private `_execute_single_action` method, which employs a series of `isinstance` checks to route each action object to the correct private handler method (e.g., `_handle_execute`, `_handle_create_file`).
+The `PlanService` is a class instantiated with its required dependencies. It uses an internal dispatch map (`self.action_handlers`) to route action objects to the appropriate handler method, eliminating conditional logic and making the system more scalable.
 
 ```python
 # High-level conceptual implementation
@@ -42,21 +42,28 @@ class PlanService(RunPlanUseCase):
         self.file_system_manager = file_system_manager
         self.action_factory = action_factory
         self.web_scraper = web_scraper
+        # The dispatch map is the core of the refactoring
+        self.action_handlers = {
+            ExecuteAction: self._handle_execute,
+            CreateFileAction: self._handle_create_file,
+            ReadAction: self._handle_read,
+            EditAction: self._handle_edit,
+        }
 
     def execute(self, plan_content: str) -> ExecutionReport:
         # ... implementation ...
 
     def _execute_single_action(self, action: Action) -> ActionResult:
-        """Executes one action and returns its result."""
-        if isinstance(action, ExecuteAction):
-            return self._handle_execute(action)
-        elif isinstance(action, CreateFileAction):
-            return self._handle_create_file(action)
-        elif isinstance(action, ReadAction):
-            return self._handle_read(action)
-        elif isinstance(action, EditAction):
-            return self._handle_edit(action)
-        # ...
+        """Executes one action by looking up its handler in the dispatch map."""
+        handler = self.action_handlers.get(type(action))
+        if handler:
+            return handler(action)
+
+        return ActionResult(
+            action=action,
+            status="FAILURE",
+            error=f"Unhandled action type: {type(action).__name__}",
+        )
 ```
 
 ### `execute(plan_content: str)` Method Logic
@@ -68,7 +75,7 @@ class PlanService(RunPlanUseCase):
     *   Catches parsing and validation errors and creates a `FAILURE` `ActionResult`.
 3.  **Execute Actions:**
     *   Iterate through each successfully created `Action` object.
-    *   Invoke `_execute_single_action(action)`, which uses `isinstance` checks to determine the action type and call the appropriate handler.
+    *   Invoke `_execute_single_action(action)`, which looks up the action's class in the `self.action_handlers` dispatch map to find and execute the correct handler method.
     *   The handler method returns a complete `ActionResult`, which is appended to the report.
 4.  **Finalize Report:**
     *   Calculate total duration and overall status.
