@@ -40,9 +40,10 @@ The `FileSystemManager` port defines a technology-agnostic interface for interac
     *   A file must exist at the specified `path`.
     *   `find` must be a non-empty string.
 *   **Postconditions:**
-    *   On success, the file at `path` is updated with the `replace` string substituted for the first occurrence of the `find` string.
+    *   On success, the file at `path` is updated with the `replace` string substituted for the single occurrence of the `find` string.
     *   If no file exists at `path`, a `FileNotFoundError` must be raised.
     *   If the `find` string is not found in the file, a `SearchTextNotFoundError` must be raised. **(Updated in: [Slice 07: Update Action Failure Behavior](../../slices/07-update-action-failure-behavior.md))**
+    *   If the `find` string is found more than once in the file, a `MultipleMatchesFoundError` must be raised. **(Introduced in: [Slice 09: Enhance `edit` Action Safety](../../slices/09-enhance-edit-action-safety.md))**
 
 ## 3. Related Spikes
 

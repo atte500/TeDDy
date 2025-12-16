@@ -106,15 +106,17 @@ These private methods contain the logic for handling a single, specific action t
     *   Catches specific exceptions from either port (e.g., `FileNotFoundError`, `WebContentError`) to create a failure `ActionResult` with a descriptive error message.
     *   On success, builds and returns an `ActionResult` with the file/page content in the `output` field.
 
-*   `_handle_edit_action(action: EditAction) -> ActionResult`: **(Updated in: [Slice 07: Update Action Failure Behavior](../../slices/07-update-action-failure-behavior.md))**
-    *   The method will use a `try...except` block.
+*   `_handle_edit_action(action: EditAction) -> ActionResult`: **(Updated in: [Slice 09: Enhance `edit` Action Safety](../../slices/09-enhance-edit-action-safety.md))**
+    *   The method uses a `try...except` block to orchestrate the edit operation and handle specific failure modes.
     *   **`try` block:**
-        *   Calls `self.file_system_manager.edit_file(path=action.file_path, find=action.find, replace=action.replace)`.
-        *   If successful, builds and returns a `COMPLETED` `ActionResult`.
+        *   Calls `self.file_system_manager.edit_file(...)`.
+        *   If successful, returns a `COMPLETED` `ActionResult`.
     *   **`except SearchTextNotFoundError as e` block:**
-        *   Catches the specific exception from the port.
-        *   Builds and returns a `FAILED` `ActionResult` with an appropriate error message and the file's original content (retrieved from the exception object) in the `output` field.
+        *   Catches the failure for zero matches.
+        *   Returns a `FAILED` `ActionResult` with an error message and the original file content from `e.content`.
+    *   **`except MultipleMatchesFoundError as e` block:**
+        *   Catches the failure for multiple matches.
+        *   Returns a `FAILED` `ActionResult` with an error message and the original file content from `e.content`.
     *   **`except FileNotFoundError as e` block:**
-        *   Catches the standard file not found error and returns a `FAILED` `ActionResult` with a descriptive error message.
-    *   **`except Exception` block:**
-        *   Catches any other unexpected exceptions and returns a generic `FAILED` `ActionResult`.
+        *   Catches the error if the target file does not exist.
+        *   Returns a `FAILED` `ActionResult` with a descriptive error message.

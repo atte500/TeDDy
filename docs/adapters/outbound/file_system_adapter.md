@@ -17,7 +17,11 @@ The adapter will leverage Python's built-in `open()` function for file operation
 *   **File Creation:** To satisfy the port's requirement for exclusive creation (failing if a file already exists), the `create_file` method will use the `'x'` (exclusive creation) mode when calling `open()`.
 *   **Error Handling:** (**Updated in:** [Slice 07: Update Action Failure Behavior](../../slices/07-update-action-failure-behavior.md)) If `open()` is called with `'x'` mode on a path that already exists, it will raise a standard `FileExistsError`. The adapter must catch this and re-raise it as the domain-specific `FileAlreadyExistsError`, attaching the file path to the exception, to fulfill the port's contract.
 *   **File Reading:** (**Introduced in:** [Slice 04: Implement `read_file` Action](../../slices/04-read-action.md)) The `read_file` method will use the standard `'r'` (read) mode with `utf-8` encoding. It must catch `FileNotFoundError` if the path does not exist and `UnicodeDecodeError` for non-text files, propagating these as failures.
-*   **File Editing:** (**Updated in:** [Slice 07: Update Action Failure Behavior](../../slices/07-update-action-failure-behavior.md)) The `edit_file` method reads the file, attempts to find and replace the content, and writes the file back. If the `find` string is not present, it must raise the domain-specific `SearchTextNotFoundError`, attaching the original file content to the exception, per the port's contract. It also handles multiline replacements and preserves indentation.
+*   **File Editing:** (**Updated in:** [Slice 09: Enhance `edit` Action Safety](../../slices/09-enhance-edit-action-safety.md)) The `edit_file` method first reads the file's content. It then counts the number of occurrences of the `find` string.
+    *   If the count is 0, it raises `SearchTextNotFoundError`.
+    *   If the count is greater than 1, it raises `MultipleMatchesFoundError`.
+    *   If the count is exactly 1, it performs the replacement and writes the new content back to the file.
+    This logic applies to both single-line and multiline `find` strings.
 
 ## 4. Key Code Snippets
 

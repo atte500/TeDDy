@@ -157,3 +157,12 @@ Raised by the `FileSystemManager` port when an `edit_file` operation cannot find
 *   **Purpose:** To allow the `PlanService` to specifically catch this failure and return the original file content as part of the failure report.
 *   **Attributes:**
     *   `content` (str): The original, unmodified content of the file.
+
+### `MultipleMatchesFoundError` (Exception)
+**Introduced in:** [Slice 09: Enhance `edit` Action Safety](../slices/09-enhance-edit-action-safety.md)
+
+Raised by the `FileSystemManager` port when an `edit_file` operation finds more than one occurrence of the `find` string.
+
+*   **Purpose:** To prevent ambiguous edits and force the AI agent to provide a more specific `find` string.
+*   **Attributes:**
+    *   `content` (str): The original, unmodified content of the file.
