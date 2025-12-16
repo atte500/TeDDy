@@ -42,12 +42,6 @@ class PlanService(RunPlanUseCase):
         self.file_system_manager = file_system_manager
         self.action_factory = action_factory
         self.web_scraper = web_scraper
-        self.action_handlers = {
-            ExecuteAction: self._handle_execute,
-            CreateFileAction: self._handle_create_file,
-            ReadAction: self._handle_read,
-            EditAction: self._handle_edit,
-        }
         # The dispatch map is the core of the refactoring
         self.action_handlers = {
             ExecuteAction: self._handle_execute,
@@ -63,7 +57,7 @@ class PlanService(RunPlanUseCase):
         """Executes one action by looking up its handler in the dispatch map."""
         handler = self.action_handlers.get(type(action))
         if handler:
-            return handler(action)  # type: ignore[operator]
+            return handler(action)
 
         return ActionResult(
             action=action,
