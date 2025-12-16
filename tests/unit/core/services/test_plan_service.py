@@ -5,6 +5,7 @@ from teddy.core.domain.models import (
     ParsePlanAction,
     ReadAction,
     EditAction,
+    MultipleMatchesFoundError,
 )
 
 
@@ -286,3 +287,38 @@ def test_plan_service_handles_edit_action(
     mock_file_system_manager.edit_file.assert_called_once_with(
         path="foo/bar.txt", find="old", replace="new"
     )
+
+
+def test_handle_edit_action_raises_multiple_matches_found_error(
+    plan_service, mock_file_system_manager, mock_action_factory
+):
+    """
+    Tests that PlanService returns a FAILURE when the edit action finds
+    multiple matches for the `find` text.
+    """
+    # Arrange
+    file_path = "path/to/file.txt"
+    original_content = "hello world, hello again"
+    mock_action = EditAction(file_path=file_path, find="hello", replace="goodbye")
+    mock_action_factory.create_action.return_value = mock_action
+
+    error_message = f"Multiple matches found for 'hello' in '{file_path}'"
+    mock_file_system_manager.edit_file.side_effect = MultipleMatchesFoundError(
+        message=error_message, content=original_content
+    )
+    plan_content = f"""
+    - action: edit
+      params:
+        file_path: "{file_path}"
+        find: "hello"
+        replace: "goodbye"
+    """
+
+    # Act
+    report = plan_service.execute(plan_content)
+
+    # Assert
+    result = report.action_logs[0]
+    assert result.status == "FAILURE"
+    assert result.error == error_message
+    assert result.output == original_content

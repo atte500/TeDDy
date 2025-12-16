@@ -13,6 +13,7 @@ from teddy.core.domain.models import (
     EditAction,
     SearchTextNotFoundError,
     FileAlreadyExistsError,
+    MultipleMatchesFoundError,
 )
 from teddy.core.ports.inbound.run_plan_use_case import RunPlanUseCase
 from teddy.core.ports.outbound.shell_executor import ShellExecutor
@@ -105,6 +106,13 @@ class PlanService(RunPlanUseCase):
         except FileNotFoundError as e:
             return ActionResult(action=action, status="FAILURE", error=str(e))
         except SearchTextNotFoundError as e:
+            return ActionResult(
+                action=action,
+                status="FAILURE",
+                error=str(e),
+                output=e.content,
+            )
+        except MultipleMatchesFoundError as e:
             return ActionResult(
                 action=action,
                 status="FAILURE",
