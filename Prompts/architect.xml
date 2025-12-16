@@ -88,14 +88,13 @@
           *   Handling of Secrets (how to store and access them securely).
           *   Debug Mode strategy (how to enable it and what it does, e.g., enabling contract enforcement).
           *   **Data-Driven Configuration Strategy:**
-              *   **Principle:** The system must separate stable logic from volatile data. This allows the core application to remain robust while enabling rapid iteration on the system's behavior and content.
-              *   **Pattern:**
-                  1.  All externalized data files (e.g., `.json`, `.yaml`) **must** reside in the root `/data` directory.
-                  2.  The application core **must** define an **Outbound Port** (e.g., `IGetApplicationSettings`) to declare its need for this data, remaining agnostic to the source.
-                  3.  An **Outbound Adapter** (e.g., `JsonFileSettingsAdapter`) **must** be created to implement this port. This adapter's sole responsibility is to read the corresponding file from `/data`, parse it, and provide the data to the core.
-              *   **Heuristic (When to Externalize):** The decision to hardcode a value or externalize it to a data file should be guided by its expected volatility and the persona most likely to edit it.
-                  *   **Hardcode** when a value is **stable and developer-owned**. These are values fundamental to the system's mechanics, represent core architectural constants, and are only expected to change when a developer is refactoring the code itself (e.g., a gravity constant, a core algorithm parameter).
-                  *   **Externalize to a data file** when a value is **volatile and potentially non-developer-owned**. These are values used for tuning, balancing, or representing content. They are expected to change frequently, even post-deployment, and may be edited by designers, product managers, or analysts (e.g., weapon stats, loot drop chances, UI text, feature flags).
+              *   **Rule:** Separate volatile data from stable logic.
+              *   **Volatile Data:** (e.g., UI text, game stats, feature flags - often non-developer owned)
+                  *   Store in `/data` as `.json` or `.yaml`.
+                  *   The application core requests data via an **Outbound Port**.
+                  *   An **Outbound Adapter** reads the file from `/data` and implements the port.
+              *   **Stable Logic:** (e.g., gravity constant, core algorithm parameters - developer owned)
+                  *   Hardcode directly in the source code.
 
           **Boundary Map (must include):**
           *   The central register for the system's strategic architectural divisions.
@@ -158,12 +157,29 @@
           </detail>
         </sub_step>
         <detail name="Canonical Component Structures">
-          Components belonging to a **Hexagonal Core** are documented in `docs/contexts/[context-name]/`. Adapters always reside in a shared, top-level `docs/adapters/` directory.
+          **Rule:** Create component documents in the specified directories with the following mandatory contents.
 
-          *   **Domain Model (`.../domain_model.md` or `.../domain/*.md`):** This is a living document organized by **Aggregate**. It defines **Attributes**, **Behaviors/Methods**, and must include a **Business Rules & Invariants** section for each Aggregate. The document may also define simple Data Transfer Objects (DTOs) that model the structure of data retrieved via configuration-related Outbound Ports. This section lists the core business logic, transcribed from any relevant functional spikes, with a non-linking, parenthetical note for traceability (e.g., `(Clarified in Spike: 01-name)`). Every single component, attribute, and behavior **MUST** be annotated with an inline `**Introduced in:** [link]` tag to trace its origin to a specific business requirement. The document must also include a `Ubiquitous Language` glossary specific to its core or context.
-          *   **Ports (`.../ports/[inbound|outbound]/*.md`):** These define the technology-agnostic **interfaces** that form the boundary of a Bounded Context. They are the primary mechanism for the application core to request externalized configuration from the `/data` directory. They must reference the motivating **Vertical Slice** and detail each method's contract, including `Description`, `Preconditions`, and `Postconditions`. If a method handles a complex data structure clarified by a functional spike, its structure **must be defined inline** using a Markdown table or code snippet, with a non-linking parenthetical note for traceability.
-          *   **Application Services (`.../services/*.md`):** These are the orchestrators that implement Inbound Ports. They use the Domain Model and Outbound Ports to fulfill a use case. Each must state which `Implemented Ports` it satisfies, list its `Dependencies (Outbound Ports)`, and provide an `Implementation Strategy`.
-          *   **Adapters (`docs/adapters/[inbound|outbound]/*.md`):** Adapters always reside in a shared, top-level `adapters` directory. This includes adapters for external services as well as adapters for reading local configuration from the `/data` directory. They must list `Implemented Ports`, summarize findings from technical spikes in `Implementation Notes`, include a `Key Code Snippet` section containing the essential, successful code from the verification spike, and link to `External Documentation`.
+          *   **Domain Model (`docs/contexts/[context-name]/domain_model.md`):**
+              *   Organized by **Aggregate**.
+              *   For each Aggregate: define **Attributes**, **Behaviors**, and **Business Rules/Invariants**.
+              *   Include a `Ubiquitous Language` glossary.
+              *   Tag every element with `**Introduced in:** [link to slice]`.
+              *   Transcribe logic from functional spikes with a note, e.g., `(Clarified in Spike: 01-name)`.
+
+          *   **Port (`docs/contexts/[context-name]/ports/**/*.md`):**
+              *   Reference the motivating **Vertical Slice**.
+              *   For each method: define `Description`, `Preconditions`, and `Postconditions`.
+              *   Define complex data structures (from spikes) inline with a traceability note.
+
+          *   **Application Service (`docs/contexts/[context-name]/services/*.md`):**
+              *   List `Implemented Ports` and `Dependencies (Outbound Ports)`.
+              *   Provide an `Implementation Strategy`.
+
+          *   **Adapter (`docs/adapters/**/*.md`):**
+              *   List `Implemented Ports`.
+              *   Summarize technical spike findings in `Implementation Notes`.
+              *   Include a `Key Code Snippet` from the verification spike.
+              *   Link to `External Documentation`.
         </detail>
       </step>
     </workflow>
