@@ -70,43 +70,21 @@
         <title>Establish Internal Engineering Blueprint (`docs/ARCHITECTURE.md`)</title>
         <instruction>After the strategic boundary analysis is complete, `CREATE` `docs/ARCHITECTURE.md` with a `Setup Checklist`, a `Conventions & Standards` section, and the `Boundary Map`.</instruction>
         <detail name="Mandatory Sections">
-          **Setup Checklist (must include at a minimum):**
-          *   Verification of system prerequisites (e.g., language runtime, Docker).
-          *   Creation of the initial source code directory structure (`src/`).
-          *   Creation of the data directory structure (`data/`).
-          *   Creation of the test directory structure (`tests/acceptance`, `tests/integration`, `tests/unit`).
-          *   Creation of a root `.gitignore` file.
-          *   Dependency installation instructions.
-          *   Environment configuration setup (e.g., `.env` file).
-          *   Creation of the pre-commit hook configuration file (e.g., `.pre-commit-config.yaml`).
-          *   Installation and initialization of pre-commit hooks.
-          *   Command to run the initial test suite to verify the setup.
+          **Setup Checklist:**
+          A list of one-time setup tasks to ensure a fully bootstrapped developer environment. It must address, at a minimum: *source code & test directory structure, dependency installation, `.gitignore` creation, and pre-commit hook initialization*.
 
-          **Conventions & Standards (must include at a minimum):**
-          *   Language & Runtime.
-          *   Dependency Management tool and usage.
-          *   Version Control Strategy (Define the branching model, with **Trunk-Based Development as the default preference**. E.g., for **Trunk-Based Development**, specify that all commits are made to a single `main` branch. For a **Branch-Based** model, specify the branching and PR strategy.).
-          *   CI/CD Strategy (e.g., triggers for builds, deployment environments).
-          *   Testing Strategy (types of tests, locations).
-          *   **Pre-commit Hooks:**
-              *   Tooling and configuration file location (e.g., `pre-commit` framework with `.pre-commit-config.yaml`).
-              *   **Exclusion Policy:** The configuration **MUST** explicitly exclude the entire `/spikes/` directory from all checks to ensure experimental code does not block commits. For example: `exclude: ^spikes/`.
-          *   Handling of Secrets (how to store and access them securely).
-          *   Debug Mode strategy (how to enable it and what it does, e.g., enabling contract enforcement).
-          *   **Data-Driven Configuration Strategy:**
-              *   **Rule:** Separate volatile data from stable logic.
-              *   **Volatile Data:** (e.g., UI text, game stats, feature flags - often non-developer owned)
-                  *   Store in `/data` as `.json` or `.yaml`.
-                  *   The application core requests data via an **Outbound Port**.
-                  *   An **Outbound Adapter** reads the file from `/data` and implements the port.
-              *   **Stable Logic:** (e.g., gravity constant, core algorithm parameters - developer owned)
-                  *   Hardcode directly in the source code.
+          **Conventions & Standards:**
+          A guide for engineering practices. It must define the project's strategies for:
+          *   **Version Control:** Default to **Trunk-Based Development**.
+          *   **Testing:** Define test types and locations.
+          *   **Pre-commit Hooks:** Specify the tool and config file. The configuration **MUST** exclude the `/spikes/` directory from all checks (e.g., `exclude: ^spikes/`).
+          *   **Data-Driven Configuration:** Reference the **Data-Driven Configuration Strategy** defined in the `Canonical Document Contracts` general rule.
 
-          **Boundary Map (must include):**
-          *   The central register for the system's strategic architectural divisions.
-          *   **Hexagonal Cores (The Islands):** A list and description of each isolated domain that will be built with the full Ports & Adapters pattern. Each is treated as a Bounded Context.
-          *   **Framework/Platform Integration Layer (The Sea):** A description of the code that is intentionally coupled to the underlying framework, platform, or engine. Its responsibility is to mediate between the framework's world and the hexagonal cores.
-          *   **Primary Adapters:** High-level definitions of the key adapters that bridge the gap between the Integration Layer and the Cores.
+          **Boundary Map:**
+          The central register for the system's strategic architectural divisions. It must define:
+          *   **Hexagonal Cores (The Islands):** A list of isolated business logic domains.
+          *   **Framework/Platform Integration Layer (The Sea):** Code coupled to the underlying framework.
+          *   **Primary Adapters:** Key bridges between the Integration Layer and the Cores.
         </detail>
       </step>
       <step n="4">
