@@ -138,3 +138,11 @@ class FileAlreadyExistsError(FileExistsError):
     def __init__(self, message: str, file_path: str):
         super().__init__(message)
         self.file_path = file_path
+
+
+class MultipleMatchesFoundError(Exception):
+    """Custom exception for when an edit operation finds multiple matches."""
+
+    def __init__(self, message: str, content: str):
+        super().__init__(message)
+        self.content = content

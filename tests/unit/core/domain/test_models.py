@@ -183,6 +183,22 @@ def test_file_already_exists_error_stores_path():
         assert e.file_path == path
 
 
+def test_multiple_matches_found_error_can_be_raised_and_stores_content():
+    """
+    Tests that the MultipleMatchesFoundError custom exception can be raised
+    and correctly stores the original content.
+    """
+    from teddy.core.domain.models import MultipleMatchesFoundError
+
+    original_content = "some original content"
+    message = "Test error message"
+    try:
+        raise MultipleMatchesFoundError(message, content=original_content)
+    except MultipleMatchesFoundError as e:
+        assert str(e) == message
+        assert e.content == original_content
+
+
 class TestEditAction:
     def test_instantiation_happy_path(self):
         """Tests happy path instantiation for EditAction."""
