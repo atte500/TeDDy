@@ -62,30 +62,33 @@ def read_file(self, path: str) -> Result[str, str]:
 ```
 
 ### `edit_file`
-**(Updated in: [Slice 07: Update Action Failure Behavior](../../slices/07-update-action-failure-behavior.md))**
+**(Updated in: [Slice 09: Enhance `edit` Action Safety](../../slices/09-enhance-edit-action-safety.md))**
 ```python
-# Note: SearchTextNotFoundError is a custom exception from the domain model
-from teddy.core.domain.models import SearchTextNotFoundError
+# Note: Exceptions are from the domain model
+from teddy.core.domain.models import SearchTextNotFoundError, MultipleMatchesFoundError
 
 def edit_file(self, path: str, find: str, replace: str) -> None:
-    # ... read file content and handle multiline logic ...
-
-    # Simplified example for single-line find
+    # This is a conceptual example. The actual implementation handles multiline cases.
     original_content = Path(path).read_text(encoding="utf-8")
 
-    if "\n" not in find:
-        if find in original_content:
-            new_content = original_content.replace(find, replace)
-            Path(path).write_text(new_content, encoding="utf-8")
-            return
-        else:
-            # Raise the domain exception with the original content
-            raise SearchTextNotFoundError(
-                message="Search text was not found in the file.",
-                content=original_content,
-            )
+    # 1. Count occurrences to check for ambiguity.
+    num_matches = original_content.count(find)
 
-    # ... logic for multiline find ...
+    # 2. Raise domain-specific exceptions based on the count.
+    if num_matches > 1:
+        raise MultipleMatchesFoundError(
+            message=f"Found {num_matches} occurrences. Aborting.",
+            content=original_content,
+        )
+    if num_matches == 0:
+        raise SearchTextNotFoundError(
+            message="Search text was not found.",
+            content=original_content,
+        )
+
+    # 3. Perform the replacement, now guaranteed to be a single, unambiguous match.
+    new_content = original_content.replace(find, replace, 1)
+    Path(path).write_text(new_content, encoding="utf-8")
 ```
 
 ## 5. Related Spikes
