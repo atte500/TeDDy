@@ -3,7 +3,6 @@ import sys
 import textwrap
 from pathlib import Path
 
-import pytest
 
 # Path to the teddy executable script
 TEDDY_CMD = [sys.executable, "-m", "teddy"]
@@ -20,7 +19,6 @@ def run_teddy(plan: str, cwd: Path) -> subprocess.CompletedProcess:
     )
 
 
-@pytest.mark.skip(reason="Disabling after successful local verification.")
 def test_edit_action_fails_on_multiple_occurrences(tmp_path: Path):
     # Given a file with content that has multiple occurrences of the find string
     test_dir = tmp_path / "test_project"
