@@ -25,8 +25,7 @@ def _format_action_result(result: ActionResult) -> str:
         details_lines = ["- **Details:**", "  ```yaml", f"  status: {result.status}"]
         if result.error:
             # Ensure error message is formatted correctly within YAML
-            error_msg = str(result.error).replace("'", "''")
-            details_lines.append(f"  error: {error_msg}")
+            details_lines.append(f"  error: {result.error}")
 
         # Conditionally add the output block only if output is not None.
         if result.output is not None:

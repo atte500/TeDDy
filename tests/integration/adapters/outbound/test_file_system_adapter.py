@@ -1,6 +1,7 @@
 from pathlib import Path
 import pytest
 
+from teddy.core.domain.models import MultipleMatchesFoundError
 from teddy.adapters.outbound.file_system_adapter import LocalFileSystemAdapter
 
 
@@ -108,3 +109,66 @@ def test_edit_file_raises_error_if_find_text_not_found(tmp_path: Path):
 
     # Assert that the original content is part of the exception
     assert excinfo.value.content == initial_content
+
+
+def test_edit_file_raises_error_on_multiple_occurrences(tmp_path: Path):
+    """
+    Tests that edit_file raises MultipleMatchesFoundError if the `find` string
+    has more than one occurrence.
+    """
+    # Arrange
+    adapter = LocalFileSystemAdapter()
+    test_file = tmp_path / "test.txt"
+    original_content = "hello world, hello again"
+    test_file.write_text(original_content)
+
+    # Act & Assert
+    with pytest.raises(MultipleMatchesFoundError) as exc_info:
+        adapter.edit_file(path=str(test_file), find="hello", replace="goodbye")
+
+    # Check the exception details
+    assert "Found 2 occurrences of 'hello'" in str(exc_info.value)
+    assert exc_info.value.content == original_content
+
+    # Verify the file was not changed
+    content_after = test_file.read_text()
+    assert content_after == original_content
+
+
+def test_edit_file_raises_error_on_multiple_occurrences_multiline(tmp_path: Path):
+    """
+    Tests that edit_file raises MultipleMatchesFoundError if a multiline `find`
+    string has more than one occurrence.
+    """
+    from textwrap import dedent
+
+    # Arrange
+    adapter = LocalFileSystemAdapter()
+    test_file = tmp_path / "test.txt"
+    original_content = dedent(
+        """
+        First section:
+            line a
+            line b
+
+        Second section:
+            line a
+            line b
+    """
+    )
+    test_file.write_text(original_content)
+
+    find_block = dedent(
+        """
+        line a
+        line b
+    """
+    )
+
+    # Act & Assert
+    with pytest.raises(MultipleMatchesFoundError):
+        adapter.edit_file(path=str(test_file), find=find_block, replace="new content")
+
+    # Verify the file was not changed
+    content_after = test_file.read_text()
+    assert content_after == original_content

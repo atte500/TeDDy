@@ -1,6 +1,10 @@
 from pathlib import Path
 from teddy.core.ports.outbound.file_system_manager import FileSystemManager
-from teddy.core.domain.models import SearchTextNotFoundError, FileAlreadyExistsError
+from teddy.core.domain.models import (
+    SearchTextNotFoundError,
+    FileAlreadyExistsError,
+    MultipleMatchesFoundError,
+)
 
 
 class LocalFileSystemAdapter(FileSystemManager):
@@ -36,23 +40,42 @@ class LocalFileSystemAdapter(FileSystemManager):
         except IOError as e:
             raise IOError(f"Failed to read file at {path}: {e}") from e
 
-    def _find_multiline_match_index(
-        self, source_lines: list[str], find_lines: list[str]
-    ) -> int:
-        """Finds the starting index of a multiline match."""
-        normalized_find_lines = [line.strip() for line in find_lines]
-        if not normalized_find_lines:
-            return -1
+    def _normalize_lines_by_common_indent(self, lines: list[str]) -> list[str]:
+        """
+        Removes the common leading whitespace from a list of strings.
+        Preserves relative indentation.
+        """
+        non_empty_lines = [line for line in lines if line.strip()]
+        if not non_empty_lines:
+            return lines
 
+        min_indent = min(len(line) - len(line.lstrip(" ")) for line in non_empty_lines)
+
+        return [line[min_indent:] for line in lines]
+
+    def _find_multiline_match_indices(
+        self, source_lines: list[str], find_lines: list[str]
+    ) -> list[int]:
+        """
+        Finds the starting indices of all multiline matches, ignoring absolute
+        indentation but respecting relative indentation.
+        """
+        if not find_lines:
+            return []
+
+        normalized_find_lines = self._normalize_lines_by_common_indent(find_lines)
+
+        match_indices = []
         for i in range(len(source_lines) - len(normalized_find_lines) + 1):
-            is_match = True
-            for j in range(len(normalized_find_lines)):
-                if source_lines[i + j].strip() != normalized_find_lines[j]:
-                    is_match = False
-                    break
-            if is_match:
-                return i
-        return -1
+            source_slice = source_lines[i : i + len(normalized_find_lines)]
+            normalized_source_slice = self._normalize_lines_by_common_indent(
+                source_slice
+            )
+
+            if normalized_source_slice == normalized_find_lines:
+                match_indices.append(i)
+
+        return match_indices
 
     def _reconstruct_content(
         self,
@@ -82,43 +105,62 @@ class LocalFileSystemAdapter(FileSystemManager):
 
         return new_content
 
+    def _check_matches_and_raise(
+        self, num_matches: int, find_str_repr: str, content: str
+    ):
+        """Checks match count and raises domain exceptions for ambiguity or not found."""
+        if num_matches > 1:
+            raise MultipleMatchesFoundError(
+                message=f"Found {num_matches} occurrences of '{find_str_repr}'. Aborting edit to prevent ambiguity.",
+                content=content,
+            )
+        if num_matches == 0:
+            raise SearchTextNotFoundError(
+                message=f"Search text '{find_str_repr}' not found in file.",
+                content=content,
+            )
+
     def edit_file(self, path: str, find: str, replace: str) -> None:
         """
         Modifies an existing file by replacing a block of text, handling
-        indentation for multiline blocks.
+        indentation for multiline blocks. Fails if the `find` block is
+        ambiguous (multiple occurrences) or not found.
         """
         file_path = Path(path)
 
-        # If find is empty, replace the entire file content.
-        if not find:
+        if not find:  # If find is empty, replace the entire file content.
             file_path.write_text(replace, encoding="utf-8")
             return
 
         original_content = file_path.read_text(encoding="utf-8")
 
-        # For single-line finds, a simple substring check and replace is robust.
+        # Use different strategies for single-line and multi-line `find` blocks.
         if "\n" not in find:
-            if find in original_content:
-                new_content = original_content.replace(find, replace)
-                file_path.write_text(new_content, encoding="utf-8")
+            # For single-line, use robust substring counting.
+            num_matches = original_content.count(find)
+            self._check_matches_and_raise(num_matches, find, original_content)
+            # The check above ensures there's exactly one match, so a global replace is safe.
+            new_content = original_content.replace(find, replace)
+            file_path.write_text(new_content, encoding="utf-8")
+        else:
+            # For multi-line, use line-based matching for indentation handling.
+            source_lines = original_content.splitlines()
+            # Strip leading/trailing whitespace/newlines before splitting to make
+            # the matching robust to how the find block is formatted in the plan.
+            find_lines = find.strip().splitlines()
+
+            if not find.strip():  # Handle case where find is just whitespace
+                file_path.write_text(replace, encoding="utf-8")
                 return
-            else:
-                raise SearchTextNotFoundError(
-                    message="Search text was not found in the file.",
-                    content=original_content,
-                )
 
-        # For multiline finds, we must use the line-based matching logic.
-        source_lines = original_content.splitlines()
-        find_lines = find.strip().splitlines()
+            match_indices = self._find_multiline_match_indices(source_lines, find_lines)
+            num_matches = len(match_indices)
+            self._check_matches_and_raise(
+                num_matches, "multi-line block", original_content
+            )
 
-        if not find_lines:  # Handle case where find is just whitespace
-            file_path.write_text(replace, encoding="utf-8")
-            return
-
-        match_start_index = self._find_multiline_match_index(source_lines, find_lines)
-
-        if match_start_index != -1:
+            # Perform the replacement
+            match_start_index = match_indices[0]
             replace_lines = replace.strip().splitlines()
             new_content = self._reconstruct_content(
                 original_content,
@@ -128,9 +170,3 @@ class LocalFileSystemAdapter(FileSystemManager):
                 match_start_index,
             )
             file_path.write_text(new_content, encoding="utf-8")
-        else:
-            # If the multiline match fails, the text is considered not found.
-            raise SearchTextNotFoundError(
-                message="Search text was not found in the file.",
-                content=original_content,
-            )

@@ -242,6 +242,6 @@ def test_editing_file_where_find_text_is_not_found_fails(tmp_path: Path):
     # The report should indicate failure and the specific reason using the NEW format
     assert "Run Summary: FAILURE" in result.stdout
     assert "status: FAILURE" in result.stdout
-    assert "error: Search text was not found in the file." in result.stdout
+    assert "error: Search text 'goodbye' not found in file." in result.stdout
     assert "output: |" in result.stdout
     assert f"    {initial_content}" in result.stdout
