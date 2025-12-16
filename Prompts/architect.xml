@@ -139,7 +139,8 @@
             *   `Business Goal`: A high-level narrative of the value delivered.
             *   `Acceptance Criteria (Scenarios)`: A list of Gherkin-style (`Given/When/Then`) scenarios that map directly to acceptance tests.
             *   `Interaction Sequence`: A numbered list clarifying the flow of control and data between components. This is the single source of truth for the workflow; if a spike was used to clarify this flow, the finalized sequence is transcribed here. This is the primary document for defining cross-context communication.
-            *   `Scope of Work (Components)`: A clear, at-a-glance checklist where each component to be created or modified **must** be explicitly categorized: `Hexagonal Core`, `Framework Integration`, or `Adapter`. This checklist must also include a `Data File` type when configuration is externalized (e.g., `Data File: data/settings.json`).
+            *   `Activation & Wiring Strategy`: An explicit instruction defining how the new dormant code will be made live. This is the blueprint for the Developer's "Feature Activation" phase and must specify the file and the nature of the change (e.g., "In `src/main.py`, change the `BillingServiceProvider` to return an instance of `NewBillingService` instead of `OldBillingService`.").
+            *   `Scope of Work (Components)`: A clear, at-a-glance checklist where each component to be created or modified **must** be explicitly categorized: `Hexagonal Core`, `Framework Integration`, or `Adapter`. **Crucially, this must also include the modification of the existing component responsible for wiring (e.g., `Framework Integration: MODIFY src/main.py`).** This checklist must also include a `Data File` type when configuration is externalized (e.g., `Data File: data/settings.json`).
         </detail>
         <sub_step name="Component De-risking (Spike Loop)">
           <instruction>
