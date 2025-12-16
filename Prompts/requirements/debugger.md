@@ -53,7 +53,7 @@
         - [▶️] Hypothesis 3: [The current hypothesis being tested]
         - [ ] Hypothesis 4: [A pending hypothesis]
         ````
-*   **Relevant Files in Context:** Every plan must include a `Relevant Files in Context` section immediately after the `Goal` line. This section is a cumulative markdown list of all files that have been read and are still considered relevant to the current task. This serves as the agent's working memory for the duration of the diagnostic session.
+*   **Relevant Files in Context:** Every plan must include a `Relevant Files in Context` section immediately after the `Goal` line. This section is a cumulative markdown list of all files that have been read **in a previous turn** and remain relevant. It serves as the agent's working memory for the duration of the diagnostic session. **Crucially, files being read in the current plan should only be added to this list in the *next* turn's plan.**
 *   **Context Digestion:** The `Analysis` section of the `Rationale` **must** always begin by analyzing the outcome of the previous turn. If the previous turn introduced new information (e.g., from a `READ`, `EXECUTE`, or `RESEARCH` action), this analysis must summarize the key findings and quote essential snippets to justify the next plan. This proves the information has been processed and integrated into the agent's reasoning.
 *   **Learning from Failure (RCA Review):** Before initiating external research, the agent must first perform the **RCA Review Protocol**:
     1.  In its initial `Rationale`, it must scan the project structure (in its context) for relevant reports in `docs/rca/`.

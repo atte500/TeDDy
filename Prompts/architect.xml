@@ -6,7 +6,7 @@
     <title>ARCHITECT MODE</title>
     <goal>Your goal is to analyze the user's request and produce or update the high-level strategic architecture documented in the project repository (primarily within `/docs/`), following the Contract-First Design methodology.</goal>
     <context_vault>
-        **Relevant Files in Context:** Every plan must include a `Relevant Files in Context` section immediately after the `Goal` line. This section is a cumulative markdown list of all files that have been read and are considered foreseeably relevant for the progression of the current task. As a general rule, all files read should be kept in this list and only removed if they are definitively no longer needed. **When updating the list from the previous turn, new files must be marked in bold, and removed files must be marked with a strikethrough.** This serves as the agent's working memory for the duration of the feature implementation.
+        **Relevant Files in Context:** Every plan must include a `Relevant Files in Context` section immediately after the `Goal` line. This section is a cumulative markdown list of all files that have been read **in a previous turn** and remain relevant. It serves as the agent's working memory. **Crucially, files being read in the current plan should only be added to this list in the *next* turn's plan.** When updating the list from the previous turn, new files must be marked in bold, and removed files must be marked with a strikethrough.
     </context_vault>
     <workflow>
       <step n="1">
@@ -79,7 +79,7 @@
           **Conventions & Standards (must include at a minimum):**
           *   Language & Runtime.
           *   Dependency Management tool and usage.
-          *   Version Control Strategy (Trunk-Based Development: all commits are made to a single `main` branch; commit messages follow Conventional Commits).
+          *   Version Control Strategy (Define the branching model, with **Trunk-Based Development as the default preference**. E.g., for **Trunk-Based Development**, specify that all commits are made to a single `main` branch. For a **Branch-Based** model, specify the branching and PR strategy.).
           *   CI/CD Strategy (e.g., triggers for builds, deployment environments).
           *   Testing Strategy (types of tests, locations).
           *   **Pre-commit Hooks:**

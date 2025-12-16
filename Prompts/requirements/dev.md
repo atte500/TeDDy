@@ -9,14 +9,13 @@
 **Workflow Requirements: Nested Outside-In TDD**
 *   The agent must follow a strict "Outside-In" Test-Driven Development workflow structured as a **nested loop**.
 *   **Outer-Cycle (The "What-to-Build-Next" Strategy):** The Architect defines a **Vertical Slice** containing a `Scope of Work` checklist. The Developer implements the slice by iterating through this checklist.
-    1.  **Phase 0 (Architectural Alignment):** `READ` `ARCHITECTURE.md` to determine the version control strategy.
-    2.  **Phase 1 (Orientation & Planning):** Read the Vertical Slice plan and populate the `Scope of Work` in the TDD Dashboard.
-    3.  **Phase 2 (Write and Verify Failing Acceptance Test):** Write a high-level acceptance test, run it to confirm it fails as expected, and then commit it in a **disabled** state. This confirms the test's validity before implementation begins.
-    4.  **Phase 3 (Implement Scope of Work):** Iteratively implement each component from the `Scope of Work` using Inner-Cycles.
-    5.  **Phase 4 (Final Local Verification & Refactor):** After the scope is fully implemented, **locally** enable and run the acceptance test to verify the feature, then re-disable it before committing any final refactors.
-    6.  **Phase 5 (Architectural Audit & Synchronization):** Conduct a rigorous, from-scratch review. Re-read the slice plan, then for each component in its scope, systematically compare the final implementation code against the canonical documentation (`docs/core/...`) and update the documentation to resolve any drift.
-    7.  **Phase 6 (Feature Activation):** Commit the final code that "wires up" the new feature and enables the acceptance test.
-    8.  **Phase 7 (Handoff / Merge Request):** Based on the strategy, announce the feature is live on `main` or request a Pull Request.
+    1.  **Phase 0 (Orientation & Planning):** `READ` `ARCHITECTURE.md` to determine the version control strategy, then read the Vertical Slice plan and populate the `Scope of Work` in the TDD Dashboard.
+    2.  **Phase 1 (Write and Verify Failing Acceptance Test):** Write a high-level acceptance test, run it to confirm it fails as expected, and then commit it in a **disabled** state. This confirms the test's validity before implementation begins.
+    3.  **Phase 2 (Implement Scope of Work):** Iteratively implement each component from the `Scope of Work` using Inner-Cycles.
+    4.  **Phase 3 (Final Local Verification & Refactor):** After the scope is fully implemented, **locally** enable and run the acceptance test to verify the feature, then re-disable it before committing any final refactors.
+    5.  **Phase 4 (Architectural Audit & Synchronization):** Conduct a rigorous, from-scratch review. Re-read the slice plan, then for each component in its scope, systematically compare the final implementation code against the canonical documentation (`docs/core/...`) and update the documentation to resolve any drift.
+    6.  **Phase 5 (Feature Activation):** Commit the final code that "wires up" the new feature and enables the acceptance test.
+    7.  **Phase 6 (Handoff / Merge Request):** Based on the strategy, announce the feature is live on `main` or request a Pull Request.
 *   **Inner-Cycle (The "How-to-Build-It" Tactic):** Each implementation step must be driven by a tight, disciplined **`READ -> RED -> GREEN -> REFACTOR -> VERIFY -> STAGE -> COMMIT`** loop.
     *   **READ:** Review the relevant architectural contract.
     *   **RED:** Write a single, small, failing test.
@@ -41,14 +40,13 @@
         **Strategy:** [Trunk-Based | Branch-Based]
 
         #### Outer-Cycle Phase
-        - [▶️] Phase 0: Architectural Alignment
-        - [ ] Phase 1: Orientation & Planning
-        - [ ] Phase 2: Write Disabled Acceptance Test
-        - [ ] Phase 3: Implement Scope of Work
-        - [ ] Phase 4: Final Local Verification & Refactor
-        - [ ] Phase 5: Architectural Audit & Synchronization
-        - [ ] Phase 6: Feature Activation
-        - [ ] Phase 7: Handoff / Merge Request
+        - [▶️] Phase 0: Orientation & Planning
+        - [ ] Phase 1: Write Disabled Acceptance Test
+        - [ ] Phase 2: Implement Scope of Work
+        - [ ] Phase 3: Final Local Verification & Refactor
+        - [ ] Phase 4: Architectural Audit & Synchronization
+        - [ ] Phase 5: Feature Activation
+        - [ ] Phase 6: Handoff / Merge Request
         
         #### Scope of Work
         - [▶️] [First item from slice's Scope of Work]
@@ -71,7 +69,7 @@
         - [No notes yet.]
         ````
         
-*   **Relevant Files in Context:** Every plan must include a `Relevant Files in Context` section immediately after the `Goal` line. This section is a cumulative markdown list of all files that have been read and are still considered relevant to the current task. This serves as the agent's working memory for the duration of the feature implementation.
+*   **Relevant Files in Context:** Every plan must include a `Relevant Files in Context` section immediately after the `Goal` line. This section is a cumulative markdown list of all files that have been read **in a previous turn** and remain relevant. It serves as the agent's working memory for the duration of the feature implementation. **Crucially, files being read in the current plan should only be added to this list in the *next* turn's plan.**
 *   **Failure Handling & Escalation Protocol:**
     *   **First Failure (`🟡 Yellow` State):** When an `Expected Outcome` fails for the first time, the agent must enter a `🟡 Yellow` state. Its next plan must be an **Information Gathering** plan to investigate the root cause. **The investigation must begin by checking for relevant Root Cause Analysis (RCA) documents (e.g., in `/docs/rca/`). The agent can skip this initial check only if it has already performed one in the current session for the same root issue, and it must explicitly state this justification in its Rationale.** Subsequent diagnostic steps involve using `READ`, `RESEARCH`, or targeted `EXECUTE` commands to diagnose the issue.
     *   **Second Consecutive Failure (`🔴 Red` State):** If the subsequent diagnostic plan *also* fails its `Expected Outcome`, the agent must enter a `🔴 Red` state. In this state, the agent is **strictly prohibited** from further self-diagnosis. Its next and only valid action is to **Handoff to Debugger**.

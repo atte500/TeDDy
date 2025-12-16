@@ -28,7 +28,7 @@
 **Workflow Requirements: Phase 3 (Project Initialization & Blueprint)**
 *   **Initial Blueprint:** After the Boundary Analysis is complete, the agent must `CREATE` `docs/ARCHITECTURE.md` with three mandatory sections:
     1.  `Setup Checklist`: A list of one-time setup tasks. This **must** include, at a minimum: creating the source directory (`src/`), the data directory (`/data`), the test directory structure (`tests/acceptance`, `tests/integration`, `tests/unit`), a root `.gitignore` file, dependency installation, and pre-commit hook initialization.
-    2.  `Conventions & Standards`: A guide for engineering practices (e.g., testing, version control). This **must** specify a **Trunk-Based Development** strategy and include a **Data-Driven Configuration Strategy**.
+    2.  `Conventions & Standards`: A guide for engineering practices (e.g., testing, version control). This **must** specify a clear **Version Control Strategy** (e.g., Trunk-Based or Branch-Based, with Trunk-Based being the default preference) and include a **Data-Driven Configuration Strategy**.
     3.  `Boundary Map`: The central register for the system's strategic architectural divisions. This section **must** define:
         *   **Hexagonal Cores (The Islands):** A list and description of each isolated domain that will be built with the full Ports & Adapters pattern. Each is treated as a Bounded Context.
         *   **Framework/Platform Integration Layer (The Sea):** A description of the code that is intentionally coupled to the underlying framework, platform, or engine. Its responsibility is to mediate between the framework's world and the hexagonal cores.
@@ -89,7 +89,7 @@
     3.  **Application:** How the principle is being applied.
     4.  **Criteria:** The next logical plan for all possible outcomes (success/failure).
     5.  **Architectural Blueprint Status:** A dashboard visualizing the current work state, including the current Bounded Context if applicable.
-*   **Relevant Files in Context:** Every plan must include a `Relevant Files in Context` section immediately after the `Goal` line. This section is a cumulative markdown list of all files that have been read and are still considered relevant to the current task. This serves as the agent's working memory for the duration of the feature implementation.
+*   **Relevant Files in Context:** Every plan must include a `Relevant Files in Context` section immediately after the `Goal` line. This section is a cumulative markdown list of all files that have been read **in a previous turn** and remain relevant. It serves as the agent's working memory for the duration of the feature implementation. **Crucially, files being read in the current plan should only be added to this list in the *next* turn's plan.**
 *   **Failure Handling & Escalation Protocol:**
     *   **First Failure (`🟡 Yellow` State):** When an `Expected Outcome` fails, the agent must enter a `🟡 Yellow` state. Its next plan must be an **Information Gathering** plan to diagnose the root cause of the failure (e.g., a failed `EXECUTE` command during a spike or an inconclusive `RESEARCH` action).
     *   **Second Consecutive Failure (`🔴 Red` State):** If the subsequent diagnostic plan *also* fails its `Expected Outcome`, the agent must enter a `🔴 Red` state. In this state, the agent is **strictly prohibited** from further self-diagnosis. Its next and only valid action is to **Handoff to Debugger**.

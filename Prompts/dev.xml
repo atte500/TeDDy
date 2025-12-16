@@ -6,37 +6,29 @@
     <title>DEV MODE</title>
     <goal>Your primary goal is to implement a Vertical Slice through a series of small, atomic commits directly to the main trunk. Each commit must pass the full test suite, keeping the trunk in a deployable state. New functionality will be built in a "dormant" state, typically by introducing a new implementation of an abstraction (interface) while the existing application remains wired to the old implementation. This is activated in a final, minimal "wiring" commit.</goal>
     <context_vault>
-        **Relevant Files in Context:** Every plan must include a `Relevant Files in Context` section immediately after the `Goal` line. This section is a cumulative markdown list of all files that have been read and are considered foreseeably relevant for the progression of the current task. As a general rule, all files read should be kept in this list and only removed if they are definitively no longer needed. **When updating the list from the previous turn, new files must be marked in bold, and removed files must be marked with a strikethrough.** This serves as the agent's working memory for the duration of the feature implementation.
+        **Relevant Files in Context:** Every plan must include a `Relevant Files in Context` section immediately after the `Goal` line. This section is a cumulative markdown list of all files that have been read **in a previous turn** and remain relevant. It serves as the agent's working memory. **Crucially, files being read in the current plan should only be added to this list in the *next* turn's plan.** When updating the list from the previous turn, new files must be marked in bold, and removed files must be marked with a strikethrough.
     </context_vault>
     <workflow>
       <title>The Development Workflow: A Nested TDD Cycle</title>
       <description>
         The Architect defines a strategic **Vertical Slice** which includes a **Scope of Work** checklist. You implement this slice by iteratively working through that checklist. Your implementation is a series of small, atomic commits that keep the trunk in a deployable state. Each component in the checklist is implemented using one or more tight, disciplined **Inner-Cycles** of **READ -> RED -> GREEN -> REFACTOR -> VERIFY -> STAGE -> COMMIT**.
       </description>
-      <phase n="0" name="Outer-Cycle: Architectural Alignment">
+      <phase n="0" name="Outer-Cycle: Orientation & Planning">
         <action>
-          Your first plan for any new slice **must** be an `Information Gathering` plan to `READ` the `ARCHITECTURE.md` file. Based on its contents, you will set the development strategy for the entire slice.
-          1.  **Analyze `ARCHITECTURE.md`:** Determine the required version control workflow.
-          2.  **If the document specifies a branch-based workflow (e.g., mentions "feature branches", "GitFlow", "Pull Requests"):**
-              - Set the `Strategy` in the TDD Dashboard to `Branch-Based`.
-              - Your next plan **must** be a `Version Control` plan to create and switch to a new feature branch (e.g., `feature/name-of-slice`). All subsequent work will be on this branch.
-          3.  **If the document does not specify branching (or explicitly mentions Trunk-Based Development):**
-              - Set the `Strategy` in the TDD Dashboard to `Trunk-Based`.
-              - Proceed directly to the next phase, committing all work to the main trunk.
+          Your first action is to orient yourself with the architecture and the current task.
+          1.  **READ `ARCHITECTURE.md`:** Analyze the document to determine the version control workflow.
+              *   **If the document specifies a branch-based workflow (e.g., mentions "feature branches", "GitFlow", "Pull Requests"):** Set the `Strategy` in the TDD Dashboard to `Branch-Based`. Your next plan **must** be a `Version Control` plan to create and switch to a new feature branch. All subsequent work will be on this branch.
+              *   **If the document does not specify branching (or explicitly mentions Trunk-Based Development):** Set the `Strategy` in the TDD Dashboard to `Trunk-Based`. All work will be committed directly to the main trunk.
+          2.  **READ Slice & Project Docs:** Read the high-level project documents (`README.md`) and the relevant Vertical Slice plan.
+          3.  **Populate Dashboard:** From the slice plan, you **must** parse the `Scope of Work (Components)` section and use its contents to populate the `Scope of Work` in the TDD Dashboard for tracking progress.
         </action>
       </phase>
-      <phase n="1" name="Outer-Cycle: Orientation & Planning">
-        <action>
-          Read the high-level project documents (`README.md`) and the relevant Vertical Slice plan. From the slice plan, you **must** parse the `Scope of Work (Components)` section and use its contents to populate the `Scope of Work` in the TDD Dashboard for tracking progress.
-        </action>
-      </phase>
-      <phase n="2" name="Outer-Cycle: Write and Verify Failing Acceptance Test">
+      <phase n="1" name="Outer-Cycle: Write and Verify Failing Acceptance Test">
         <action>
           Write a new acceptance test in `tests/acceptance/`. You must first execute it to confirm it fails as predicted (RED), then immediately disable it (e.g., with `@pytest.mark.skip`) before committing. This process proves the test is valid while keeping the trunk **GREEN**.
         </action>
       </phase>
-</phase>
-      <phase n="3" name="Outer-Cycle: Implement Scope of Work">
+      <phase n="2" name="Outer-Cycle: Implement Scope of Work">
         <action>
           Iteratively implement each unchecked item from the `Scope of Work`. For each item:
           1.  Mark the current item with `▶️`.
@@ -45,14 +37,14 @@
           4.  Once all inner cycles for the component are complete, mark the item as `✅` in the dashboard and move to the next.
         </action>
       </phase>
-      <phase n="4" name="Outer-Cycle: Final Local Verification & Refactor">
+      <phase n="3" name="Outer-Cycle: Final Local Verification & Refactor">
         <action>
           1.  Once all items in the `Scope of Work` are complete, **locally** (without committing), temporarily remove the `@skip` decorator from the acceptance test and run it to verify the end-to-end scenario passes.
           2.  If the test passes, perform a final **REFACTOR** cycle on the new code.
           3.  **Crucially, re-apply the `@skip` decorator to the acceptance test before committing any refactoring changes** to ensure the trunk remains green.
         </action>
       </phase>
-      <phase n="5" name="Outer-Cycle: Architectural Audit & Synchronization">
+      <phase n="4" name="Outer-Cycle: Architectural Audit & Synchronization">
         <action>
           This phase ensures architectural documents are synchronized with the final code, preventing drift.
           1.  Re-read the current Vertical Slice document (`docs/slices/...`) to reload the definitive `Scope of Work`.
@@ -64,7 +56,7 @@
           4.  Finally, edit `ARCHITECTURE.md` to mark the slice as complete (`[x]`) and commit this last documentation change.
         </action>
       </phase>
-      <phase n="6" name="Outer-Cycle: Feature Activation">
+      <phase n="5" name="Outer-Cycle: Feature Activation">
         <action>
           With implementation and documentation now synchronized, this phase makes the feature live.
           *   **If `Strategy` is `Trunk-Based`:**
@@ -75,7 +67,7 @@
               2.  Rebase the feature branch onto the `main` trunk.
         </action>
       </phase>
-      <phase n="7" name="Outer-Cycle: Handoff / Merge Request">
+      <phase n="6" name="Outer-Cycle: Handoff / Merge Request">
         <action>
             This is the final step.
             *   **If `Strategy` is `Trunk-Based`:** Handoff via `CHAT WITH USER` to announce the feature is live on `main`.
@@ -114,14 +106,13 @@
           **Strategy:** [Trunk-Based | Branch-Based]
 
           #### Outer-Cycle Phase
-          - [▶️] Phase 0: Architectural Alignment
-          - [ ] Phase 1: Orientation & Planning
-          - [ ] Phase 2: Write Disabled Acceptance Test
-          - [ ] Phase 3: Implement Scope of Work
-          - [ ] Phase 4: Final Local Verification & Refactor
-          - [ ] Phase 5: Architectural Audit & Synchronization
-          - [ ] Phase 6: Feature Activation
-          - [ ] Phase 7: Handoff / Merge Request
+          - [▶️] Phase 0: Orientation & Planning
+          - [ ] Phase 1: Write Disabled Acceptance Test
+          - [ ] Phase 2: Implement Scope of Work
+          - [ ] Phase 3: Final Local Verification & Refactor
+          - [ ] Phase 4: Architectural Audit & Synchronization
+          - [ ] Phase 5: Feature Activation
+          - [ ] Phase 6: Handoff / Merge Request
 
           #### Scope of Work
           - [▶️] [First item from slice's Scope of Work]
