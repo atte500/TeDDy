@@ -93,7 +93,8 @@ An action that finds and replaces content within an existing file.
     *   `replace` (str): The string that will replace the `find` content.
 *   **Invariants:**
     *   `file_path` must be a non-empty string.
-    *   `find` must be a non-empty string.
+*   **Behaviors:**
+    *   An empty `find` string is permissible and signals that the entire file content should be replaced with the `replace` content.
 
 ---
 
@@ -148,11 +149,11 @@ Raised by the `FileSystemManager` port when a `create_file` operation is attempt
 *   **Attributes:**
     *   `file_path` (str): The path of the file that already exists.
 
-### `TextBlockNotFoundError` (Exception)
+### `SearchTextNotFoundError` (Exception)
 **Introduced in:** [Slice 07: Update Action Failure Behavior](../slices/07-update-action-failure-behavior.md)
 
-Raised by the `FileSystemManager` port when an `edit_file` operation cannot find the specified `find_block` within the target file.
+Raised by the `FileSystemManager` port when an `edit_file` operation cannot find the specified `find` string within the target file.
 
-*   **Purpose:** To allow the `PlanService` to specifically catch this failure and trigger the "read file content" fallback logic.
+*   **Purpose:** To allow the `PlanService` to specifically catch this failure and return the original file content as part of the failure report.
 *   **Attributes:**
-    *   `file_path` (str): The path of the file that was being edited.
+    *   `content` (str): The original, unmodified content of the file.

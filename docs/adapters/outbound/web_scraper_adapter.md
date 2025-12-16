@@ -12,42 +12,32 @@ The `WebScraperAdapter` is the concrete implementation of the `WebScraper` outbo
 
 ## 3. Implementation Notes
 
-This adapter's implementation was de-risked through a technical spike.
-
-*   **Technical Spike:** `spikes/technical/01-web-scraping-and-conversion/`
-*   **HTTP Client:** The `httpx` library was chosen for its modern API, synchronous support (matching our current needs), and readiness for future asynchronous use cases. It provides robust error handling with `response.raise_for_status()`.
-*   **HTML Conversion:** The `markdownify` library was selected for its simplicity and effectiveness in converting HTML to Markdown. It requires `beautifulsoup4` as a dependency.
+*   **HTTP Client:** The `requests` library is used for its simplicity and widespread adoption for synchronous HTTP requests.
+*   **Error Handling:** The adapter calls `response.raise_for_status()` to automatically raise an `HTTPError` for non-2xx responses, which is then caught by the `PlanService`.
+*   **HTML Conversion:** The `markdownify` library is used to convert the fetched HTML content into clean Markdown.
+*   **User Agent:** A default browser-like `User-Agent` header is sent with requests to avoid being blocked by simple anti-bot measures.
 
 ## 4. Key Code Snippet
 
-The following snippet from the verification spike (`verify.py`) demonstrates the core logic for fetching and converting content. The final adapter should encapsulate this logic within the `get_content` method.
+The following snippet demonstrates the core logic for fetching and converting content.
 
 ```python
-import httpx
+import requests
 from markdownify import markdownify
 
-def get_content(url: str) -> str:
-    """
-    Fetches an HTML page, converts it to Markdown, and returns the result.
-    """
-    try:
-        response = httpx.get(url)
-        response.raise_for_status()  # Raise an exception for bad status codes
+DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36"
 
+class WebScraperAdapter(WebScraper):
+    def get_content(self, url: str) -> str:
+        headers = {"User-Agent": DEFAULT_USER_AGENT}
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()  # Raises an HTTPError for bad responses
         html_content = response.text
         markdown_content = markdownify(html_content)
-
         return markdown_content
-
-    except httpx.RequestError as exc:
-        # The adapter should catch specific exceptions and raise a
-        # domain-specific exception as defined by the port contract.
-        # e.g., raise WebContentError(f"Failed to fetch {url}: {exc}")
-        raise RuntimeError(f"An error occurred while requesting {exc.request.url!r}: {exc}")
-
 ```
 
 ## 5. External Documentation
 
-*   [`httpx` Official Documentation](https://www.python-httpx.org/)
+*   [`requests` Official Documentation](https://requests.readthedocs.io/en/latest/)
 *   [`markdownify` on PyPI](https://pypi.org/project/markdownify/)

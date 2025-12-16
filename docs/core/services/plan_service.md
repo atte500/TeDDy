@@ -22,10 +22,10 @@ The `PlanService` will be initialized with the components it needs to perform it
         *   [`FileSystemManager`](../ports/outbound/file_system_manager.md)
         *   [`WebScraper`](../ports/outbound/web_scraper.md) **Introduced in:** [Slice 04: Implement `read` Action](../../slices/04-read-action.md)
 
-## 4. Implementation Strategy (Refactored)
+## 4. Implementation Strategy
 **Related Slice:** [Slice 03: Refactor Action Dispatching](../../slices/03-refactor-action-dispatching.md)
 
-The `PlanService` will be a class that is instantiated with its required dependencies via dependency injection. It uses an internal dispatch map to route action objects to the appropriate handler method, eliminating conditional logic.
+The `PlanService` is a class instantiated with its required dependencies. Its main `execute` method orchestrates plan parsing and execution. It iterates through actions and uses a private `_execute_single_action` method, which employs a series of `isinstance` checks to route each action object to the correct private handler method (e.g., `_handle_execute`, `_handle_create_file`).
 
 ```python
 # High-level conceptual implementation
@@ -33,38 +33,42 @@ The `PlanService` will be a class that is instantiated with its required depende
 class PlanService(RunPlanUseCase):
     def __init__(
         self,
-        action_factory: ActionFactory,
         shell_executor: ShellExecutor,
         file_system_manager: FileSystemManager,
-        web_scraper: WebScraper
+        action_factory: ActionFactory,
+        web_scraper: WebScraper,
     ):
-        self.action_factory = action_factory
         self.shell_executor = shell_executor
         self.file_system_manager = file_system_manager
+        self.action_factory = action_factory
         self.web_scraper = web_scraper
-        # The dispatch map is the core of the refactoring
-        self.action_handlers = {
-            ExecuteAction: self._handle_execute_action,
-            CreateFileAction: self._handle_create_file_action,
-            ReadAction: self._handle_read_action,
-            EditAction: self._handle_edit_action,
-        }
 
     def execute(self, plan_content: str) -> ExecutionReport:
         # ... implementation ...
+
+    def _execute_single_action(self, action: Action) -> ActionResult:
+        """Executes one action and returns its result."""
+        if isinstance(action, ExecuteAction):
+            return self._handle_execute(action)
+        elif isinstance(action, CreateFileAction):
+            return self._handle_create_file(action)
+        elif isinstance(action, ReadAction):
+            return self._handle_read(action)
+        elif isinstance(action, EditAction):
+            return self._handle_edit(action)
+        # ...
 ```
 
 ### `execute(plan_content: str)` Method Logic
 
 1.  **Start Report:** Create a new `ExecutionReport`.
 2.  **Parse & Create Actions:**
-    *   Use `pyyaml` to parse the `plan_content` string into a list of raw action dictionaries.
-    *   For each raw action, call `self.action_factory.create_action()` to get a validated, concrete `Action` object. Handle any factory exceptions by creating a failure `ActionResult`.
+    *   Use `pyyaml` to parse the `plan_content` string.
+    *   For each raw action, call `self.action_factory.create_action()` to get a validated, concrete `Action` object.
+    *   Catches parsing and validation errors and creates a `FAILURE` `ActionResult`.
 3.  **Execute Actions:**
     *   Iterate through each successfully created `Action` object.
-    *   Look up the action's class in the `self.action_handlers` dispatch map to find the correct handler method.
-    *   If no handler is found, this is a programming error; create a failure `ActionResult`.
-    *   Invoke the handler method with the action object (e.g., `handler(action)`).
+    *   Invoke `_execute_single_action(action)`, which uses `isinstance` checks to determine the action type and call the appropriate handler.
     *   The handler method returns a complete `ActionResult`, which is appended to the report.
 4.  **Finalize Report:**
     *   Calculate total duration and overall status.
@@ -99,11 +103,10 @@ These private methods contain the logic for handling a single, specific action t
     *   The method will use a `try...except` block.
     *   **`try` block:**
         *   Calls `self.file_system_manager.edit_file(path=action.file_path, find=action.find, replace=action.replace)`.
-        *   If successful, builds and returns a `SUCCESS` `ActionResult`.
-    *   **`except TextBlockNotFoundError as e` block:**
+        *   If successful, builds and returns a `COMPLETED` `ActionResult`.
+    *   **`except SearchTextNotFoundError as e` block:**
         *   Catches the specific exception from the port.
-        *   Calls `self.file_system_manager.read_file(path=e.file_path)` to get the existing content.
-        *   Builds and returns a `FAILED` `ActionResult` with an appropriate error message and the retrieved content in the `output` field.
+        *   Builds and returns a `FAILED` `ActionResult` with an appropriate error message and the file's original content (retrieved from the exception object) in the `output` field.
     *   **`except FileNotFoundError as e` block:**
         *   Catches the standard file not found error and returns a `FAILED` `ActionResult` with a descriptive error message.
     *   **`except Exception` block:**

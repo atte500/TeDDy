@@ -12,19 +12,19 @@
 
 ## Installation & Dependencies
 
-The `teddy` tool requires Python 3.9+ and the following libraries:
+The `teddy` tool is managed using `Poetry` and requires Python 3.9+. The main dependencies include:
 
 *   `Typer`: For building the command-line interface.
 *   `PyYAML`: For parsing YAML action plans.
-*   `repotree`: For generating the file tree structure.
-*   `pyperclip`: For cross-platform clipboard access.
+*   `requests`: For making HTTP requests (e.g., in the `read` action).
 *   `markdownify`: For converting HTML to Markdown.
-*   `SerpScrap`: For scraping search engine result pages.
+*   `playwright`: For advanced web automation (planned for future use).
 
-This project is packaged and can be installed via pip. For local development, install it in editable mode from the root of the repository:
+For local development, use Poetry to install the dependencies and the tool in editable mode:
 
 ```bash
-pip install -e .
+# This will create a virtual environment and install all dependencies
+poetry install
 ```
 
 Once published, it will be available from PyPI:
@@ -101,16 +101,16 @@ Reads the content of a local file or a remote URL.
 ### `edit`
 Modifies an existing file by finding and replacing a block of text.
 
-- If `find_block` is a string, it must be a literal match. If the block is not found, the action is marked as `FAILED`, no changes are made to the file, and its current content is returned in the execution report.
-- If `find_block` is an empty string (`""`) or null (`~`), the entire file content is replaced.
+- If `find` is a string, it must be a literal match. If the string is not found, the action is marked as `FAILED`, no changes are made to the file, and its current content is returned in the execution report.
+- If `find` is an empty string (`""`), the entire file content is replaced with the `replace` content.
 
 ```yaml
 - action: edit
   description: "Update a dependency version in a config file." # Optional
   params:
-    file_path: "requirements.txt"
-    find_block: "typer==0.4.0"
-    replace_block: "typer==0.5.0"
+    file_path: "pyproject.toml"
+    find: "typer = \"0.20.0\""
+    replace: "typer = \"0.21.0\""
 ```
 
 ### `execute`
@@ -126,9 +126,8 @@ Executes a shell command.
     timeout: 60 # Optional, in seconds
 ```
 
-### `chat_with_user`
-Prompts the user with a question and waits for their input. The input is then available in the execution report.
-
+### Planned Actions (Not Yet Implemented)
+The following actions are planned for future releases but are not yet available:
 ```yaml
 - action: chat_with_user
   description: "Ask for user confirmation." # Optional
