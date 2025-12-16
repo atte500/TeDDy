@@ -33,6 +33,12 @@ class PlanService(RunPlanUseCase):
         self.file_system_manager = file_system_manager
         self.action_factory = action_factory
         self.web_scraper = web_scraper
+        self.action_handlers = {
+            ExecuteAction: self._handle_execute,
+            CreateFileAction: self._handle_create_file,
+            ReadAction: self._handle_read,
+            EditAction: self._handle_edit,
+        }
 
     def _parse_plan_content(self, plan_content: str) -> List[Dict[str, Any]]:
         """Parses the raw YAML string into a list of action dictionaries."""
@@ -107,20 +113,14 @@ class PlanService(RunPlanUseCase):
             )
 
     def _execute_single_action(self, action: Action) -> ActionResult:
-        """Executes one action and returns its result."""
-        if isinstance(action, ExecuteAction):
-            return self._handle_execute(action)
-        elif isinstance(action, CreateFileAction):
-            return self._handle_create_file(action)
-        elif isinstance(action, ReadAction):
-            return self._handle_read(action)
-        elif isinstance(action, EditAction):
-            return self._handle_edit(action)
+        """Executes one action by looking up its handler in the dispatch map."""
+        handler = self.action_handlers.get(type(action))
+        if handler:
+            return handler(action)  # type: ignore[operator]
 
         return ActionResult(
             action=action,
             status="FAILURE",
-            output=None,
             error=f"Unhandled action type: {type(action).__name__}",
         )
 
