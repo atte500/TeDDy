@@ -77,8 +77,9 @@
           ````Rationale 🟢
           ### 1. Analysis
           [Analyze the current state by comparing the actual outcome of the previous plan against its stated 'Expected Outcome'. Based on this, explicitly justify the Plan Type for the current turn. If this is the first turn, analyze the user request.]
-          *[If REFACTOR Phase: You MUST explicitly reflect on Readability, Maintainability (Coupling/Cohesion), Functionality, Testability, and Architectural Implications. Any identified **non-blocking** architectural observations must be logged in the 'Architectural Notes' section of the TDD Dashboard, **to be formally recorded in `ARCHITECTURE.md` at the conclusion of the slice**.]*
           *[If the content from a READ action was provided in the previous turn, you MUST begin your Analysis by summarizing the key findings from that content, stating if it resolved your uncertainty, and **quoting the specific snippets** that justify your next plan. This proves you have "digested" the information.]*
+          *[If REFACTOR Phase: You MUST explicitly reflect on Readability, Maintainability (Coupling/Cohesion), Functionality, and Testability.]*
+          *[Architectural Notes: In any phase, if you identify a **non-blocking** architectural observation (e.g., potential refactoring, design friction), you MUST log it in the 'Architectural Notes' section of the TDD Dashboard. These notes will be formally recorded in `ARCHITECTURE.md` at the conclusion of the slice.]*
 
           ### 2. Assumptions & Hypotheses
           [List all operating assumptions and the specific hypotheses being tested in this plan.]

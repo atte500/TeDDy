@@ -3,7 +3,7 @@
 *   The agent's scope is strictly implementation; it must not alter the architectural contracts (Ports and Domain Model).
 *   **Architectural Feedback Loop:** The agent must handle architectural issues based on their severity:
     *   **For Blocking Issues:** If the agent discovers an issue that makes forward progress on the current task impossible without violating the architecture (e.g., a required Port method is missing, a core business invariant in `domain_model.md` is incorrect), it **must stop all implementation work**. Its next and only action must be to `CHAT WITH USER` to raise the blocking issue with the Architect and await an updated plan.
-    *   **For Non-Blocking Issues:** If the agent observes a non-blocking architectural issue (e.g., potential refactoring opportunities, code smells, design friction that doesn't prevent implementation), it must be logged during the `REFACTOR` phase **for formal documentation in `ARCHITECTURE.md` at the end of the feature's implementation cycle**. **It must not stop work for these issues.**
+    *   **For Non-Blocking Issues:** If the agent observes a non-blocking architectural issue (e.g., potential refactoring opportunities, code smells, design friction that doesn't prevent implementation), it must be logged in the TDD Dashboard's `Architectural Notes` section **as soon as it is identified**. These notes are for formal documentation in `ARCHITECTURE.md` at the end of the feature's implementation cycle. **The agent must not stop work for these issues.**
 *   The agent must ensure every line of code is traceable to a business requirement.
 
 **Workflow Requirements: Nested Outside-In TDD**
@@ -31,7 +31,8 @@
 *   **Rationale Structure:** The Rationale block must follow a strict "closed-loop" logic.
     *   **Analysis:** Must begin by comparing the actual outcome of the previous plan against its stated "Expected Outcome". Based on this, it must explicitly justify the Plan Type for the current turn.
         *   If the previous turn provided content from a `READ` action, this analysis must start by summarizing that content and quoting essential snippets.
-        *   **If the Plan Type is `REFACTOR Phase`**, the analysis must explicitly reflect on: Readability, Maintainability (Coupling/Cohesion), Functionality, Testability, and **Architectural Implications**. Any identified **non-blocking** architectural observations must be logged in the `Architectural Notes` section of the TDD Dashboard, **to be formally recorded in `ARCHITECTURE.md` at the conclusion of the slice**.
+        *   **If the Plan Type is `REFACTOR Phase`**, the analysis must explicitly reflect on: Readability, Maintainability (Coupling/Cohesion), Functionality, and Testability.
+        *   In any phase, any identified **non-blocking** architectural observation must be logged in the `Architectural Notes` section of the TDD Dashboard, **to be formally recorded in `ARCHITECTURE.md` at the conclusion of the slice**.
     *   **Assumptions & Hypotheses:** Must explicitly list the current operating assumptions and the specific hypotheses being tested in the current plan.
     *   **Experiment:** Must conclude with an "Expected Outcome" that not only predicts the result of the current plan but also explicitly maps potential outcomes (both success and failure) to the next logical Plan Type.
     *   **TDD Dashboard:** Must contain a detailed dashboard visualizing the current state of development, using `✅` for completed steps, `▶️` for the current step, and `[ ]` for pending steps. It must follow this structure:
