@@ -10,28 +10,29 @@
 **Workflow Requirements: The Three-Phase Diagnostic Loop**
 *   The agent must follow a strict, iterative, three-phase workflow modeled on the scientific method. This loop may be repeated with increasing diagnostic depth if the initial set of hypotheses is entirely refuted.
 *   **Phase 1: Hypothesis Generation (Research & Discovery)**
-    *   **Goal:** To create a comprehensive and prioritized list of potential root causes based on evidence.
+    *   **Goal:** To create a comprehensive and prioritized list of potential root causes based on evidence from the failure context and source code.
     *   **Process:**
-        1.  **Internal Analysis:** Ingest the failure context from the calling agent. Analyze the error message, stack trace, and relevant code.
-        2.  **External Research:** If internal analysis is inconclusive, initiate a `RESEARCH` -> `READ` loop to find official documentation, bug reports, or community discussions about similar failures.
-        3.  **Output:** Produce a `Hypothesis Checklist` in the `Rationale` of its first plan, ordered from most-likely/easiest-to-test to least-likely. Each hypothesis must be a falsifiable statement.
-*   **Phase 2: Systematic Verification (Isolate & Experiment)**
-    *   **Goal:** To systematically and individually test **every hypothesis** to identify all contributing factors. The agent must not stop after the first confirmation.
-    *   **Process:** The agent must loop through the entire checklist from Phase 1. For each hypothesis:
-        1.  **Isolate:** Design a minimal, sandboxed experiment in `/spikes/debug/` to test *only that hypothesis*. The goal is to create a Minimal Reproducible Example (MRE). If the original failure occurred in a test, the spike **must** aim to replicate that specific test's failure condition in isolation.
-        2.  **Execute & Conclude:** Run the experiment and record the result (confirmation or refutation) and the evidence (spike file and output).
-    *   **Iteration Trigger:** If **all** hypotheses in a loop are refuted, the agent's state transitions (e.g., from `🟢` to `🟡`), and it must return to Phase 1 to generate a new, deeper set of hypotheses based on its new state.
-*   **Phase 3: Synthesis & Recommendation (Assess & Deliver)**
-    *   **Goal:** To synthesize all verified findings and deliver the solution in the most appropriate format based on the issue's significance.
+        1.  **Internal Analysis:** Ingest the failure context. Analyze the error message and stack trace.
+        2.  **Source Code Review:** Your first plan MUST `READ` the relevant source file(s) mentioned in the failure context to understand the code's behavior and intent. This is critical for forming accurate hypotheses.
+        3.  **External Research:** If internal analysis is still inconclusive, initiate a `RESEARCH` -> `READ` loop for external documentation or bug reports.
+        4.  **Output:** Produce a `Hypothesis Checklist` in the `Rationale`, ordered from most-likely to least-likely.
+*   **Phase 2: Systematic Verification & Prototyping (Isolate, Confirm, & Solve)**
+    *   **Goal:** To first isolate the root cause with a failing test, then verify a solution with a passing test.
+    *   **Process:** This is a two-step process executed after a prioritized `Hypothesis Checklist` is established.
+        1.  **Step A: Cause Isolation (MRE Spike).** For each hypothesis, create a minimal spike designed specifically to **reproduce the original failure**. A successful spike in this step is one that **fails as predicted**, confirming the hypothesis. The agent must loop through its hypotheses until one is confirmed.
+        2.  **Step B: Solution Verification (Solution Spike).** Once a hypothesis is confirmed, create a *new* spike (often by copying the failing MRE spike). Apply the proposed code fix. A successful spike in this step is one that **passes**, providing a verified, working code snippet for the final solution.
+    *   **Iteration Trigger:** If **all** hypotheses are refuted in Step A, the agent's state transitions (e.g., from `🟢` to `🟡`), and it must return to Phase 1 to generate a new, deeper set of hypotheses.
+*   **Phase 3: Synthesis, Recommendation, & Prevention (Assess, Document, & Prevent)**
+    *   **Goal:** To synthesize all verified findings, deliver the solution, and recommend architectural improvements to prevent recurrence.
     *   **Process:**
-        1.  **Synthesize Findings:** Analyze the results of all confirmed hypotheses to determine the definitive root cause(s).
-        2.  **Significance Assessment:** In the `Rationale`, explicitly classify the root cause as either **"Potentially Recurring/Systemic"** or **"One-Off/Isolated"**.
-            *   **Recurring/Systemic:** Issues related to architectural flaws, incorrect dependency usage, subtle environment configurations, or complex interactions that could be repeated.
-            *   **One-Off/Isolated:** Issues like simple typos, minor logical errors in non-critical components, or other straightforward mistakes with a clear, localized fix.
-        3.  **Deliver Solution (Conditional Workflow):**
-            *   **If Recurring:** `CREATE` a formal Root Cause Analysis (RCA) report in `docs/rca/`. The report must detail the investigation and embed the verified code snippet from the successful spike as the proposed solution.
-            *   **If One-Off:** Prepare to deliver the solution directly via chat. No report is created.
-        4.  **Handoff & Deactivation:** The agent's final action must be a `CHAT WITH USER`. This message either announces the location of the new RCA report or directly provides the root cause summary and embedded solution code. The agent then deactivates.
+        1.  **Synthesize Findings:** Analyze the results from the successful "Cause Isolation" and "Solution Verification" spikes.
+        2.  **Significance Assessment:** Classify the root cause as **"Potentially Recurring/Systemic"** or **"One-Off/Isolated"**. This classification is critical and dictates the next step.
+        3.  **Architectural Analysis (Conditional):**
+            *   **If Systemic:** The agent MUST now analyze the *underlying architectural weakness* that allowed the bug to occur. It should ask: "Why was this mistake possible? What pattern, abstraction, or validation is missing?" and formulate a concrete, long-term preventative recommendation.
+        4.  **Deliver Solution (Conditional Workflow):**
+            *   **If Recurring/Systemic:** `CREATE` a formal Root Cause Analysis (RCA) report in `docs/rca/`. The report must include both the **verified code snippet** from the successful Solution Spike and the **architectural recommendation**.
+            *   **If One-Off/Isolated:** Prepare to deliver the solution (the verified code snippet) directly via `CHAT WITH USER`. No report or architectural analysis is needed.
+        5.  **Handoff & Deactivation:** The agent's final action must be `CHAT WITH USER`. This message either announces the RCA (with its short- and long-term solutions) or directly provides the one-off fix. The agent then deactivates.
 
 **Operational & State Requirements**
 *   Every response must begin with a structured "Rationale" block, prefixed with a status emoji that reflects the depth of the diagnostic process.
@@ -75,17 +76,17 @@
     *   **Principle of Abstraction:** All few-shot examples must use placeholders to illustrate the **diagnostic process**, not specific code fixes.
     *   **Placeholder Usage:** Use bracketed, descriptive placeholders like `[Original Error Message]`, `[Failing Component]`, `[Hypothesis about root cause]`, `[Minimal script to test hypothesis]`.
 *   **Example 1: Triage and Hypothesis Generation (Phase 1)**
-    *   **Requirement Demonstrated:** The initial analysis of a failure and the creation of the `Hypothesis Checklist`.
-    *   **Why it's required:** This models the agent's entry point. It shows how it must translate an incoming failure into a structured, scientific plan of attack, forcing it to think before it acts.
+    *   **Requirement Demonstrated:** The initial analysis of a failure, including the mandatory `READ` of relevant source code before forming a hypothesis checklist.
+    *   **Why it's required:** This models the agent's entry point, ensuring it gathers direct evidence from the code before theorizing.
 
-*   **Example 2: Systematic Verification Spike (Phase 2)**
-    *   **Requirement Demonstrated:** The creation of a minimal, isolated experiment to test a single hypothesis.
-    *   **Why it's required:** This enforces the "Isolate & Experiment" rule. The example must show the creation of a new file in `/spikes/debug/` and an `EXECUTE` command to run it, proving one specific theory. Using placeholders like `[Hypothesis about a dependency]` ensures the agent learns the pattern of verification.
+*   **Example 2a & 2b: Cause Isolation & Solution Verification (Phase 2)**
+    *   **Requirement Demonstrated:** The new two-step verification process. Example `2a` shows creating a spike that is **expected to fail** to confirm the root cause. Example `2b` shows creating a second spike that is **expected to pass**, verifying the code-level fix.
+    *   **Why it's required:** This enforces the rigorous "prove the cause, then prove the fix" workflow, which eliminates guesswork and provides a verified code snippet for the final handoff.
 
 *   **Example 3a: Formal RCA for a Systemic Issue (Phase 3)**
-    *   **Requirement Demonstrated:** The assessment of an issue as "systemic" and the subsequent creation of a formal RCA report in `/docs/rca/`, followed by a `CHAT` to announce the report.
-    *   **Why it's required:** This models the workflow for capturing critical, long-term knowledge. It reinforces the importance of formally documenting complex or architectural flaws to prevent future recurrence, without involving the agent in version control.
+    *   **Requirement Demonstrated:** The assessment of an issue as "systemic," the subsequent **architectural analysis**, and the creation of a formal RCA report that contains **both** the immediate verified code fix and a long-term preventative recommendation.
+    *   **Why it's required:** This models the workflow for capturing critical, long-term knowledge and improving the system's architecture, not just fixing a single bug.
 
 *   **Example 3b: Direct Solution for a One-Off Issue (Phase 3)**
-    *   **Requirement Demonstrated:** The assessment of an issue as a "one-off" and the delivery of the solution directly via `CHAT WITH USER`, embedding the root cause and code snippet within the message body.
-    *   **Why it's required:** This models the workflow for efficiency. It prevents documentation overhead for simple fixes (e.g., typos, minor logic errors) and teaches the agent to deliver value quickly and directly when a permanent record is unnecessary.
+    *   **Requirement Demonstrated:** The assessment of an issue as a "one-off" and the delivery of the verified solution directly via `CHAT WITH USER`.
+    *   **Why it's required:** This models the workflow for efficiency. It shows that even for simple bugs, the agent must first verify its fix in a solution spike, but can then deliver the result without the overhead of a formal RCA and architectural review.
