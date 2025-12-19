@@ -1,7 +1,6 @@
 # Core Domain Model
 
 **Language:** Python 3.9+ (using dataclasses)
-**Vertical Slice:** [Slice 01: Walking Skeleton](../slices/01-walking-skeleton.md)
 
 This document defines the core entities for the `teddy` executor application. These objects represent the fundamental concepts and data structures of the system.
 
@@ -19,6 +18,7 @@ This document defines the core entities for the `teddy` executor application. Th
 ## 1. Action & CommandResult
 
 ### `CommandResult` (Value Object)
+**Status:** Implemented
 
 Represents the captured result of an external command.
 
@@ -30,6 +30,7 @@ Represents the captured result of an external command.
     *   `return_code` must be an integer.
 
 ### `Action` (Abstract Base Class)
+**Status:** Implemented
 
 Represents the contract for a single, executable step in a plan. This is an abstract concept; concrete actions will inherit from this class.
 
@@ -39,6 +40,7 @@ Represents the contract for a single, executable step in a plan. This is an abst
 ---
 
 ### `ExecuteAction` (Entity)
+**Status:** Implemented
 **Introduced in:** [Slice 01: Walking Skeleton](../slices/01-walking-skeleton.md)
 
 An action that executes a shell command.
@@ -46,15 +48,13 @@ An action that executes a shell command.
 *   **Inherits from:** `Action`
 *   **Attributes:**
     *   `command` (str): The shell command to execute.
-    *   `cwd` (str | None): The working directory for the command. Defaults to the current directory.
-    *   `background` (bool): Whether to run the command in the background. Defaults to `False`.
-    *   `timeout` (int | None): Timeout in seconds for the command.
 *   **Invariants:**
     *   `command` must be a non-empty string.
 
 ---
 
 ### `CreateFileAction` (Entity)
+**Status:** Implemented
 **Introduced in:** [Slice 02: Implement `create_file` Action](../slices/02-create-file-action.md)
 
 An action that creates a new file.
@@ -68,7 +68,19 @@ An action that creates a new file.
 
 ---
 
+### `ParsePlanAction` (Entity)
+**Status:** Implemented
+
+A synthetic action used internally to represent the plan parsing step in execution reports. It does not correspond to a user-defined action in a YAML plan.
+
+*   **Inherits from:** `Action`
+*   **Attributes:**
+    *   None.
+
+---
+
 ### `ReadAction` (Entity)
+**Status:** Implemented
 **Introduced in:** [Slice 04: Implement `read` Action](../slices/04-read-action.md)
 
 An action that reads the content of a local file or a remote URL.
@@ -78,10 +90,13 @@ An action that reads the content of a local file or a remote URL.
     *   `source` (str): The path to the local file or the remote URL to be read.
 *   **Invariants:**
     *   `source` must be a non-empty string.
+*   **Behaviors:**
+    *   `is_remote()`: Returns `True` if the `source` starts with `http://` or `https://`.
 
 ---
 
 ### `EditAction` (Entity)
+**Status:** Implemented
 **Introduced in:** [Slice 06: Implement `edit` Action](../slices/06-edit-action.md)
 
 An action that finds and replaces content within an existing file.
@@ -99,6 +114,7 @@ An action that finds and replaces content within an existing file.
 ---
 
 ## 2. Plan (Aggregate Root)
+**Status:** Implemented
 
 Represents a full plan to be executed. It is the aggregate root for a collection of `Action` entities.
 
@@ -112,18 +128,20 @@ Represents a full plan to be executed. It is the aggregate root for a collection
 ## 3. ActionResult & ExecutionReport
 
 ### `ActionResult` (Value Object)
+**Status:** Implemented
 
 Represents the outcome of a single action's execution.
 
 *   **Attributes:**
     *   `action` (Action): A copy of the concrete action object (e.g., `ExecuteAction`) that was executed.
-    *   `status` (str): The outcome, one of `SUCCESS`, `FAILURE`.
+    *   `status` (str): The outcome, one of `SUCCESS`, `FAILURE`, or `COMPLETED`.
     *   `output` (str | None): The captured stdout from the command.
     *   `error` (str | None): The captured stderr from the command.
 *   **Invariants:**
-    *   `status` must be either `SUCCESS` or `FAILURE`.
+    *   `status` must be one of `SUCCESS`, `FAILURE`, or `COMPLETED`.
 
 ### `ExecutionReport` (Entity)
+**Status:** Implemented
 
 A comprehensive report detailing the execution of an entire `Plan`.
 
@@ -141,6 +159,7 @@ A comprehensive report detailing the execution of an entire `Plan`.
 These are custom exceptions that represent specific business rule violations within the domain. They are used by outbound ports to communicate specific failure reasons to the application services.
 
 ### `FileAlreadyExistsError` (Exception)
+**Status:** Implemented
 **Introduced in:** [Slice 07: Update Action Failure Behavior](../slices/07-update-action-failure-behavior.md)
 
 Raised by the `FileSystemManager` port when a `create_file` operation is attempted on a path that already exists.
@@ -150,6 +169,7 @@ Raised by the `FileSystemManager` port when a `create_file` operation is attempt
     *   `file_path` (str): The path of the file that already exists.
 
 ### `SearchTextNotFoundError` (Exception)
+**Status:** Implemented
 **Introduced in:** [Slice 07: Update Action Failure Behavior](../slices/07-update-action-failure-behavior.md)
 
 Raised by the `FileSystemManager` port when an `edit_file` operation cannot find the specified `find` string within the target file.
@@ -159,6 +179,7 @@ Raised by the `FileSystemManager` port when an `edit_file` operation cannot find
     *   `content` (str): The original, unmodified content of the file.
 
 ### `MultipleMatchesFoundError` (Exception)
+**Status:** Implemented
 **Introduced in:** [Slice 09: Enhance `edit` Action Safety](../slices/09-enhance-edit-action-safety.md)
 
 Raised by the `FileSystemManager` port when an `edit_file` operation finds more than one occurrence of the `find` string.

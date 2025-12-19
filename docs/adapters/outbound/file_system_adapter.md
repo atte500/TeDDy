@@ -1,5 +1,6 @@
 # Outbound Adapter: `LocalFileSystemAdapter`
 
+**Status:** Implemented
 **Introduced in:** [Slice 02: Implement `create_file` Action](../../slices/02-create-file-action.md)
 
 ## 1. Responsibility

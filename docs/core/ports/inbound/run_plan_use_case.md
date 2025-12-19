@@ -1,5 +1,6 @@
 # Inbound Port: Run Plan Use Case
 
+**Status:** Implemented
 **Language:** Python 3.9+ (using Abstract Base Classes)
 **Vertical Slice:** [Slice 01: Walking Skeleton](../../slices/01-walking-skeleton.md)
 
@@ -29,6 +30,7 @@ class RunPlanUseCase(ABC):
 ## 3. Method Contracts
 
 ### `execute(plan_content: str) -> ExecutionReport`
+**Status:** Implemented
 
 *   **Vertical Slice:** [Slice 01: Walking Skeleton](../../slices/01-walking-skeleton.md)
 *   **Description:** This is the sole method on the port. It accepts a string of raw YAML content, orchestrates the full execution of the plan described in the content, and returns a structured `ExecutionReport` domain object.

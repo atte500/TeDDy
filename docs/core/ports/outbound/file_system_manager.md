@@ -1,5 +1,6 @@
 # Outbound Port: `FileSystemManager`
 
+**Status:** Implemented
 **Introduced in:** [Slice 02: Implement `create_file` Action](../../slices/02-create-file-action.md)
 
 ## 1. Responsibility
@@ -9,6 +10,7 @@ The `FileSystemManager` port defines a technology-agnostic interface for interac
 ## 2. Methods
 
 ### `create_file`
+**Status:** Implemented
 
 *   **Description:** Creates a new file at a specified path with the given content. The operation must be atomic. The parent directory is assumed to exist.
 *   **Signature:** `create_file(path: str, content: str) -> None`
@@ -20,6 +22,7 @@ The `FileSystemManager` port defines a technology-agnostic interface for interac
     *   If a file already exists at `path`, a `FileAlreadyExistsError` must be raised. **(Updated in: [Slice 07: Update Action Failure Behavior](../../slices/07-update-action-failure-behavior.md))**
 
 ### `read_file`
+**Status:** Implemented
 
 *   **Description:** Reads the entire content of a file at a specified path.
 *   **Signature:** `read_file(path: str) -> str`
@@ -31,6 +34,7 @@ The `FileSystemManager` port defines a technology-agnostic interface for interac
     *   If no file exists at `path`, a `FileNotFoundError` (or a custom domain equivalent) must be raised.
 
 ### `edit_file`
+**Status:** Implemented
 **Introduced in:** [Slice 06: Implement `edit` Action](../../slices/06-edit-action.md)
 
 *   **Description:** Finds and replaces the first occurrence of a specific string within a file.

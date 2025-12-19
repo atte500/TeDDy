@@ -1,5 +1,6 @@
 # Outbound Port: Web Scraper
 
+**Status:** Implemented
 **Motivating Slice:** [Slice 04: Implement `read` Action](../../slices/04-read-action.md)
 
 ## 1. Purpose
@@ -11,6 +12,7 @@ This port defines the contract for fetching the content of a remote URL. It abst
 An adapter implementing this port **must** provide the following method:
 
 ### `get_content(url: str) -> str`
+**Status:** Implemented
 
 *   **Description:**
     Retrieves the primary textual content from the given URL. If the content is HTML, it should be converted to a clean, readable Markdown format.

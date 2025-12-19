@@ -1,5 +1,6 @@
 # Outbound Port: Shell Executor
 
+**Status:** Implemented
 **Language:** Python 3.9+ (using Abstract Base Classes)
 **Vertical Slice:** [Slice 01: Walking Skeleton](../../slices/01-walking-skeleton.md)
 
@@ -29,6 +30,7 @@ class ShellExecutor(ABC):
 ## 3. Method Contracts
 
 ### `run(command: str) -> CommandResult`
+**Status:** Implemented
 
 *   **Vertical Slice:** [Slice 01: Walking Skeleton](../../slices/01-walking-skeleton.md)
 *   **Description:** This method accepts a single string representing a shell command, executes it, and waits for its completion. It then returns a structured `CommandResult` object containing the captured stdout, stderr, and the command's exit code.

@@ -1,5 +1,6 @@
 # Application Component: Action Factory
 
+**Status:** Implemented
 **Related Slice:** [Slice 03: Refactor Action Dispatching](../../slices/03-refactor-action-dispatching.md)
 
 ## 1. Purpose
@@ -8,14 +9,15 @@ The `ActionFactory` is a core component responsible for taking raw action data (
 ## 2. Public Interface
 
 ### `create_action(action_data: dict) -> Action`
+**Status:** Implemented
 
 *   **Description:** The primary factory method. It inspects the `action` key in the input dictionary to determine which type of action object to create, validates the associated `params`, and returns an initialized instance of the appropriate `Action` subclass.
 *   **Parameters:**
     *   `action_data` (dict): A dictionary representing a single action from the plan (e.g., `{'action': 'execute', 'params': {'command': 'ls'}}`).
 *   **Returns:** An instance of a concrete class that inherits from `Action`.
 *   **Raises:**
-    *   `UnknownActionError`: If the `action` key contains a value that does not map to a known action type.
-    *   `InvalidActionParametersError`: If the `params` dictionary is missing required keys or contains values of the wrong type for the specified action.
+    *   `ValueError`: If the `action` key is missing, invalid, or does not map to a known action type.
+    *   `TypeError`: If the `params` dictionary is missing required keys for the specified action.
 
 ## 3. Implementation Strategy
 1.  The factory will maintain an internal registry (e.g., a dictionary) that maps action type strings to their corresponding `Action` subclasses.

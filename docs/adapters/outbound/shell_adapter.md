@@ -1,5 +1,6 @@
 # Outbound Adapter: Shell Adapter
 
+**Status:** Implemented
 **Language:** Python 3.9+
 **Vertical Slice:** [Slice 01: Walking Skeleton](../../slices/01-walking-skeleton.md)
 

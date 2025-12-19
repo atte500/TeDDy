@@ -1,5 +1,6 @@
 # Application Core: Plan Service
 
+**Status:** Implemented
 **Language:** Python 3.9+
 **Vertical Slice:** [Slice 01: Walking Skeleton](../../slices/01-walking-skeleton.md)
 
@@ -67,6 +68,7 @@ class PlanService(RunPlanUseCase):
 ```
 
 ### `execute(plan_content: str)` Method Logic
+**Status:** Implemented
 
 1.  **Start Report:** Create a new `ExecutionReport`.
 2.  **Parse & Create Actions:**
