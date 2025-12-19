@@ -186,7 +186,6 @@ These are the specific actions the AI can include in a plan:
 
 -   **`CREATE FILE`**: Creates a new file with the specified content.
 -   **`EDIT FILE`**: Modifies an existing file using a `FIND`/`REPLACE` block.
--   **`APPEND TO FILE`**: Adds content to the end of an existing file.
 -   **`DELETE FILE`**: Removes a file, typically for cleaning up spike artifacts.
 -   **`READ FILE`**: Reads the content of a local file to gain context. This can also be used to "read" a web page if you provide its content in Markdown format (many online tools or browser extensions can convert a web page to Markdown).
 -   **`EXECUTE`**: Runs a shell command (e.g., to run tests or version control).
