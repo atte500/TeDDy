@@ -1,22 +1,7 @@
-import subprocess
-import sys
 import textwrap
 from pathlib import Path
 
-
-# Path to the teddy executable script
-TEDDY_CMD = [sys.executable, "-m", "teddy"]
-
-
-def run_teddy(plan: str, cwd: Path) -> subprocess.CompletedProcess:
-    """Helper function to run teddy with a given plan."""
-    return subprocess.run(
-        TEDDY_CMD,
-        input=plan,
-        capture_output=True,
-        text=True,
-        cwd=cwd,
-    )
+from .helpers import run_teddy_with_stdin
 
 
 def test_edit_action_fails_on_multiple_occurrences(tmp_path: Path):
@@ -37,7 +22,7 @@ def test_edit_action_fails_on_multiple_occurrences(tmp_path: Path):
             replace: "goodbye"
     """
     )
-    result = run_teddy(plan, cwd=test_dir)
+    result = run_teddy_with_stdin(plan, cwd=test_dir)
 
     # Then the action should fail
     assert result.returncode != 0

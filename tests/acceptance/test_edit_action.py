@@ -1,21 +1,7 @@
-import subprocess
-import sys
 import textwrap
 from pathlib import Path
 
-# Path to the teddy executable script
-TEDDY_CMD = [sys.executable, "-m", "teddy"]
-
-
-def run_teddy(plan: str, cwd: Path) -> subprocess.CompletedProcess:
-    """Helper function to run teddy with a given plan."""
-    return subprocess.run(
-        TEDDY_CMD,
-        input=plan,
-        capture_output=True,
-        text=True,
-        cwd=cwd,
-    )
+from .helpers import run_teddy_with_stdin
 
 
 def test_editing_a_file_happy_path(tmp_path: Path):
@@ -49,7 +35,7 @@ def test_editing_a_file_happy_path(tmp_path: Path):
     )
 
     # Act
-    result = run_teddy(plan, cwd=test_dir)
+    result = run_teddy_with_stdin(plan, cwd=test_dir)
 
     # Assert
     # Primary assertion: The file content should be updated.
@@ -93,7 +79,7 @@ def test_editing_with_empty_find_replaces_entire_file(tmp_path: Path):
     )
 
     # Act
-    result = run_teddy(plan, cwd=test_dir)
+    result = run_teddy_with_stdin(plan, cwd=test_dir)
 
     # Assert
     # Primary assertion: The file content should be completely replaced.
@@ -154,7 +140,7 @@ def test_multiline_edit_preserves_indentation(tmp_path: Path):
     """
 
     # Act
-    result = run_teddy(plan, cwd=test_dir)
+    result = run_teddy_with_stdin(plan, cwd=test_dir)
 
     # Assert
     expected_content = textwrap.dedent(
@@ -193,7 +179,7 @@ def test_editing_non_existent_file_fails_gracefully(tmp_path: Path):
     )
 
     # Act
-    result = run_teddy(plan, cwd=test_dir)
+    result = run_teddy_with_stdin(plan, cwd=test_dir)
 
     # Assert
     # Primary assertion: The process should exit with a failure code.
@@ -230,7 +216,7 @@ def test_editing_file_where_find_text_is_not_found_fails(tmp_path: Path):
     )
 
     # Act
-    result = run_teddy(plan, cwd=test_dir)
+    result = run_teddy_with_stdin(plan, cwd=test_dir)
 
     # Assert
     # The file content should be unchanged.

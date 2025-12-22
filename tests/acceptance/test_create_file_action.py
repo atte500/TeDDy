@@ -1,10 +1,5 @@
-import subprocess
-import sys
 from pathlib import Path
-
-
-# Path to the teddy executable script
-TEDDY_CMD = [sys.executable, "-m", "teddy"]
+from .helpers import run_teddy_with_stdin
 
 PLAN_YAML = """
 - action: create_file
@@ -30,13 +25,7 @@ def test_create_file_happy_path(tmp_path: Path):
     # The input is piped to stdin.
     # For the walking skeleton, we don't have interactive approval yet.
     # The plan will be executed directly. The `-y` flag will be added later.
-    result = subprocess.run(
-        TEDDY_CMD,
-        input=plan,
-        capture_output=True,
-        text=True,
-        cwd=tmp_path,
-    )
+    result = run_teddy_with_stdin(plan, cwd=tmp_path)
 
     # Assert
     assert result.returncode == 0, f"Teddy failed with stderr: {result.stderr}"
@@ -66,13 +55,7 @@ def test_create_file_when_file_exists_fails_gracefully(tmp_path: Path):
     plan = PLAN_YAML.format(file_path=str(existing_file))
 
     # Act
-    result = subprocess.run(
-        TEDDY_CMD,
-        input=plan,
-        capture_output=True,
-        text=True,
-        cwd=tmp_path,
-    )
+    result = run_teddy_with_stdin(plan, cwd=tmp_path)
 
     # Assert
     # The tool should exit with a failure code because the plan failed

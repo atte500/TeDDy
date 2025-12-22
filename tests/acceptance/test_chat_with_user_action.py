@@ -2,7 +2,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from .helpers import run_teddy_as_subprocess
+from .helpers import run_teddy_with_plan_file
 
 # A plan containing a chat_with_user action.
 # Note the top-level list, lowercase action name, and 'params' key.
@@ -38,7 +38,7 @@ def test_chat_with_user_action_successful(plan_file: Path):
     user_input = "Blue\n\n"
 
     # Act
-    process = run_teddy_as_subprocess(plan_file, input=user_input)
+    process = run_teddy_with_plan_file(plan_file, input=user_input)
     output = process.stdout
 
     # Assert

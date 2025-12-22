@@ -1,22 +1,7 @@
-import subprocess
-import sys
 from pathlib import Path
-
 from pytest_httpserver import HTTPServer
 
-# The poetry run command to execute the teddy application
-TEDDY_CMD = [sys.executable, "-m", "teddy"]
-
-
-def run_teddy_with_plan(plan: str) -> subprocess.CompletedProcess:
-    """Helper function to run the teddy CLI with a given YAML plan."""
-    return subprocess.run(
-        TEDDY_CMD,
-        input=plan,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+from .helpers import run_teddy_with_stdin
 
 
 def test_read_local_file_successfully(tmp_path: Path):
@@ -37,7 +22,7 @@ def test_read_local_file_successfully(tmp_path: Path):
       params:
         source: "{source_file}"
     """
-    result = run_teddy_with_plan(plan)
+    result = run_teddy_with_stdin(plan, cwd=tmp_path)
     output = result.stdout
     print(f"\n--- TEDDY STDOUT ---\n{output}\n--- END TEDDY STDOUT ---")
 
@@ -65,7 +50,7 @@ def test_read_non_existent_local_file_fails(tmp_path: Path):
     """
 
     # Act
-    result = run_teddy_with_plan(plan)
+    result = run_teddy_with_stdin(plan, cwd=Path("."))
     output = result.stdout
     print(f"\n--- TEDDY STDOUT ---\n{output}\n--- END TEDDY STDOUT ---")
 
@@ -98,7 +83,7 @@ def test_read_remote_url_successfully(httpserver: HTTPServer):
     """
 
     # Act
-    result = run_teddy_with_plan(plan)
+    result = run_teddy_with_stdin(plan, cwd=Path("."))
     output = result.stdout
 
     # Assert
@@ -125,7 +110,7 @@ def test_read_inaccessible_remote_url_fails(httpserver: HTTPServer):
     """
 
     # Act
-    result = run_teddy_with_plan(plan)
+    result = run_teddy_with_stdin(plan, cwd=Path("."))
     output = result.stdout
     print(f"\n--- TEDDY STDOUT ---\n{output}\n--- END TEDDY STDOUT ---")
 

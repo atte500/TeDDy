@@ -1,21 +1,5 @@
-import subprocess
-import sys
-
-
-def run_teddy(plan: str) -> subprocess.CompletedProcess:
-    """Helper function to run the teddy application."""
-    # Note: We use sys.executable to ensure we're running the command
-    # with the same python that's running the test. This avoids issues
-    # with virtual environments. We assume the entry point will be
-    # configured as 'teddy' in pyproject.toml.
-    process = subprocess.run(
-        [sys.executable, "-m", "teddy"],
-        input=plan,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return process
+from pathlib import Path
+from .helpers import run_teddy_with_stdin
 
 
 def test_successful_execution():
@@ -33,7 +17,7 @@ def test_successful_execution():
     """
 
     # WHEN
-    result = run_teddy(plan_content)
+    result = run_teddy_with_stdin(plan_content, cwd=Path("."))
 
     # THEN
     # The tool itself should run successfully
@@ -61,7 +45,7 @@ def test_failed_execution():
     """
 
     # WHEN
-    result = run_teddy(plan_content)
+    result = run_teddy_with_stdin(plan_content, cwd=Path("."))
 
     # THEN
     # The tool should exit with a non-zero code because the plan failed

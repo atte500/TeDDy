@@ -1,9 +1,5 @@
-import subprocess
-import sys
 from pathlib import Path
-
-# Path to the teddy executable script
-TEDDY_CMD = [sys.executable, "-m", "teddy"]
+from .helpers import run_teddy_with_stdin
 
 CREATE_PLAN_YAML = """
 - action: create_file
@@ -28,13 +24,7 @@ def test_create_file_on_existing_file_fails_and_returns_content(tmp_path: Path):
     plan = CREATE_PLAN_YAML.format(file_path=str(existing_file))
 
     # Act
-    result = subprocess.run(
-        TEDDY_CMD,
-        input=plan,
-        capture_output=True,
-        text=True,
-        cwd=tmp_path,
-    )
+    result = run_teddy_with_stdin(plan, cwd=tmp_path)
 
     # Assert
     # The tool should exit with a failure code because the plan failed
