@@ -81,6 +81,20 @@ class EditAction(Action):
 
 
 @dataclass(frozen=True)
+class ChatWithUserAction(Action):
+    """Represents a 'chat_with_user' action."""
+
+    prompt: str
+    action_type: str = field(default="chat_with_user", init=False)
+
+    def __post_init__(self):
+        if not isinstance(self.prompt, str):
+            raise TypeError("'prompt' must be a string")
+        if not self.prompt.strip():
+            raise ValueError("'prompt' parameter cannot be empty")
+
+
+@dataclass(frozen=True)
 class ActionResult:
     """Represents the outcome of a single action's execution."""
 

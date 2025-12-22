@@ -9,6 +9,7 @@ from teddy.core.domain.models import (
     CreateFileAction,
     ReadAction,
     EditAction,
+    ChatWithUserAction,
     FileAlreadyExistsError,
 )
 
@@ -234,3 +235,21 @@ class TestEditAction:
             params = {"file_path": "path/to/file.txt", "find": "old", "replace": "new"}
             params[param] = 123
             EditAction(**params)
+
+
+class TestChatWithUserAction:
+    def test_instantiation_happy_path(self):
+        """Tests happy path instantiation for ChatWithUserAction."""
+        action = ChatWithUserAction(prompt="What is your name?")
+        assert action.prompt == "What is your name?"
+        assert action.action_type == "chat_with_user"
+
+    def test_empty_prompt_raises_error(self):
+        """Tests that an empty prompt raises a ValueError."""
+        with pytest.raises(ValueError, match="'prompt' parameter cannot be empty"):
+            ChatWithUserAction(prompt=" ")
+
+    def test_non_string_prompt_raises_error(self):
+        """Tests that a non-string prompt raises a TypeError."""
+        with pytest.raises(TypeError, match="'prompt' must be a string"):
+            ChatWithUserAction(prompt=123)
