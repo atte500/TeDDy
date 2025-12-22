@@ -126,13 +126,20 @@ Executes a shell command.
     timeout: 60 # Optional, in seconds
 ```
 
+### `chat_with_user`
+Asks the user a question and captures their free-text response. This action is subject to the same global `(y/n)` approval as all other actions. If approved, the prompt is displayed, and the executor waits for the user to enter their response. The user must press Enter twice to signal the end of their input. The captured response is then included in the execution report.
+
+```yaml
+- action: chat_with_user
+  description: "Get user feedback on a proposed approach." # Optional
+  params:
+    prompt_text: "I'm about to refactor the database schema. Are there any performance-critical queries I should be aware of?"
+```
+
 ### Planned Actions (Not Yet Implemented)
 The following actions are planned for future releases but are not yet available:
 ```yaml
-- action: chat_with_user
-  description: "Ask for user confirmation." # Optional
-  params:
-    prompt_text: "A new database will be created. Is this okay? (y/n)"
+# No planned actions at this time.
 ```
 
 ### `research`

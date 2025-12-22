@@ -29,6 +29,7 @@ The `ActionFactory` is a core component responsible for taking raw action data (
         "create_file": CreateFileAction,
         "read": ReadAction, # Added in Slice 04
         "edit": EditAction, # Added in Slice 06
+        "chat_with_user": ChatWithUserAction, # Added in Slice 10
     }
     ```
 2.  The `create_action` method will first check if the provided `action` type exists in the registry. If not, it raises `UnknownActionError`.

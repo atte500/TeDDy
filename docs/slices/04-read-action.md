@@ -55,7 +55,7 @@ To empower the AI agent to gather context from the local filesystem and the web.
 *   **Application Services (`docs/core/services/plan_service.md`)**:
     *   [ ] Update `PlanService` to depend on the `WebScraper` port.
     *   [ ] Modify the action execution logic to handle the `ReadAction`, differentiating between file paths and URLs and calling the appropriate outbound port.
-*   **Factories (`docs/core/factories/action_factory.md`)**:
+*   **Factories (`docs/core/services/action_factory.md`)**:
     *   [ ] Update the `ActionFactory` to recognize and create `ReadAction` objects.
 *   **Adapters (`docs/adapters/outbound/`)**:
     *   [ ] Create a new `WebScraperAdapter` (`web_scraper_adapter.md`) that implements the `WebScraper` port using a standard HTTP client library.

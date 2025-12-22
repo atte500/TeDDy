@@ -49,6 +49,6 @@ To extend the executor's capabilities by allowing it to perform in-place modific
 
 -   [ ] **Hexagonal Core:** Update `domain_model.md` to include the `EditAction` model.
 -   [ ] **Hexagonal Core:** Update `services/plan_service.md` to handle the `EditAction`.
--   [ ] **Hexagonal Core:** Update `factories/action_factory.md` to create the `EditAction`.
+-   [ ] **Hexagonal Core:** Update `services/action_factory.md` to create the `EditAction`.
 -   [ ] **Hexagonal Core:** Update `ports/outbound/file_system_manager.md` with an `edit_file` method.
 -   [ ] **Adapter:** Update `adapters/outbound/file_system_adapter.md` to implement the `edit_file` method.

@@ -91,7 +91,7 @@ This section provides links to the detailed design documents for each component,
 
 *   **Core Logic:**
     *   [Domain Model (Refactored)](./core/domain_model.md)
-    *   [Action Factory](./core/factories/action_factory.md)
+    *   [Action Factory](./core/services/action_factory.md)
     *   [Application Service: PlanService (Refactored)](./core/services/plan_service.md)
 
 ### Slice 04: Implement `read` Action
@@ -99,7 +99,7 @@ This section provides links to the detailed design documents for each component,
 *   **Core Logic:**
     *   [Domain Model (Updated)](./core/domain_model.md)
     *   [Application Service: PlanService (Updated)](./core/services/plan_service.md)
-    *   [Action Factory (Updated)](./core/factories/action_factory.md)
+    *   [Action Factory (Updated)](./core/services/action_factory.md)
     *   [Outbound Port: FileSystemManager (Updated)](./core/ports/outbound/file_system_manager.md)
     *   [Outbound Port: WebScraper](./core/ports/outbound/web_scraper.md)
 *   **Adapters:**
@@ -111,7 +111,7 @@ This section provides links to the detailed design documents for each component,
 *   **Core Logic:**
     *   [Domain Model (Updated)](./core/domain_model.md)
     *   [Application Service: PlanService (Updated)](./core/services/plan_service.md)
-    *   [Action Factory (Updated)](./core/factories/action_factory.md)
+    *   [Action Factory (Updated)](./core/services/action_factory.md)
     *   [Outbound Port: FileSystemManager (Updated)](./core/ports/outbound/file_system_manager.md)
 *   **Adapters:**
     *   [Outbound Adapter: LocalFileSystemAdapter (Updated)](./adapters/outbound/file_system_adapter.md)
@@ -124,6 +124,16 @@ This section provides links to the detailed design documents for each component,
     *   [Outbound Port: FileSystemManager (Updated)](./core/ports/outbound/file_system_manager.md)
 *   **Adapters:**
     *   [Outbound Adapter: LocalFileSystemAdapter (Updated)](./adapters/outbound/file_system_adapter.md)
+
+### Slice 10: Implement `chat_with_user` Action
+
+*   **Core Logic:**
+    *   [Domain Model (Updated)](./core/domain_model.md)
+    *   [Application Service: PlanService (Updated)](./core/services/plan_service.md)
+    *   [Application Service: ActionFactory (Updated)](./core/services/action_factory.md)
+    *   [Outbound Port: `IUserInteractor`](./core/ports/outbound/user_interactor.md)
+*   **Adapters:**
+    *   [Outbound Adapter: `ConsoleInteractorAdapter`](./adapters/outbound/console_interactor.md)
 
 ## 4. Vertical Slices
 
@@ -138,6 +148,7 @@ This section will list the architectural documents for each vertical slice as th
 *   [x] [Slice 07: Update Action Failure Behavior](./slices/07-update-action-failure-behavior.md)
 *   [x] [Slice 08: Refactor Action Dispatching](./slices/08-refactor-action-dispatching.md)
 *   [x] [Slice 09: Enhance `edit` Action Safety](./slices/09-enhance-edit-action-safety.md)
+*   [ ] [Slice 10: Implement `chat_with_user` Action](./slices/10-chat-with-user-action.md)
 
 ---
 
@@ -148,3 +159,4 @@ This section captures non-blocking architectural observations and potential area
 - **CLI Exit Code Philosophy (from Slice 06):** An architectural decision was made to define the application's exit code behavior. The chosen philosophy is that the application process should exit with a non-zero code if *any* action within a plan fails. This aligns the tool with standard CI/CD practices, where a non-zero exit code universally signals failure. This decision required refactoring older acceptance tests that previously expected an exit code of `0` even when a plan's business logic failed.
 - **Consistent Failure Reporting (from Slice 07):** A systemic inconsistency in failure reporting was identified during development. The `CLIFormatter` now handles all `FAILURE` statuses uniformly, producing a consistent, YAML-style block for the details of any failed action. This improves both human and machine readability and should be considered the standard pattern for all future failure reporting. This change necessitated refactoring a significant number of existing acceptance and integration tests to align with the new, more robust output format.
 - **Static Analysis vs. Dynamic Patterns (from Slice 08):** The refactoring of `PlanService` to use a dynamic dispatch map (`{ActionType: handler_method}`) introduced a challenge for the static type checker, `mypy`. While the pattern is robust at runtime, `mypy` could not statically verify the type relationship between the dispatched action and its handler, resulting in a `[operator]` error. The issue was resolved pragmatically by adding a `# type: ignore` comment. This captures a recurring architectural trade-off: highly dynamic, decoupled patterns can sometimes conflict with the guarantees of static analysis, requiring targeted suppression of type errors.
+- **Clarification on Interactivity (from Slice 10):** An initial design spike for the `chat_with_user` action conflated two distinct concepts: (1) a specific action for free-text user interaction, and (2) the global `y/n` approval mechanism that applies to *all* actions. The spike process clarified this. The architectural decision is that interactive approval is a global, wrapper feature of the executor's CLI, while `chat_with_user` is a discrete action type within a plan that handles long-form prompts and captures free-text responses.

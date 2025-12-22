@@ -17,11 +17,12 @@ The `PlanService` is the primary application service in the core logic. It acts 
 The `PlanService` will be initialized with the components it needs to perform its function.
 
 *   **Factories:**
-    *   [`ActionFactory`](../factories/action_factory.md) **Introduced in:** [Slice 03: Refactor Action Dispatching](../../slices/03-refactor-action-dispatching.md)
+    *   [`ActionFactory`](../services/action_factory.md) **Introduced in:** [Slice 03: Refactor Action Dispatching](../../slices/03-refactor-action-dispatching.md)
 *   **Outbound Ports:**
         *   [`ShellExecutor`](../ports/outbound/shell_executor.md)
         *   [`FileSystemManager`](../ports/outbound/file_system_manager.md)
         *   [`WebScraper`](../ports/outbound/web_scraper.md) **Introduced in:** [Slice 04: Implement `read` Action](../../slices/04-read-action.md)
+        *   [`IUserInteractor`](../ports/outbound/user_interactor.md) **Introduced in:** [Slice 10: Implement `chat_with_user` Action](../../slices/10-chat-with-user-action.md)
 
 ## 4. Implementation Strategy (Refactored)
 **Related Slice:** [Slice 08: Refactor Action Dispatching](../../slices/08-refactor-action-dispatching.md)
@@ -38,17 +39,20 @@ class PlanService(RunPlanUseCase):
         file_system_manager: FileSystemManager,
         action_factory: ActionFactory,
         web_scraper: WebScraper,
+        user_interactor: IUserInteractor,
     ):
         self.shell_executor = shell_executor
         self.file_system_manager = file_system_manager
         self.action_factory = action_factory
         self.web_scraper = web_scraper
+        self.user_interactor = user_interactor
         # The dispatch map is the core of the refactoring
         self.action_handlers = {
             ExecuteAction: self._handle_execute,
             CreateFileAction: self._handle_create_file,
             ReadAction: self._handle_read,
             EditAction: self._handle_edit,
+            ChatWithUserAction: self._handle_chat_with_user,
         }
 
     def execute(self, plan_content: str) -> ExecutionReport:
@@ -122,3 +126,8 @@ These private methods contain the logic for handling a single, specific action t
     *   **`except FileNotFoundError as e` block:**
         *   Catches the error if the target file does not exist.
         *   Returns a `FAILED` `ActionResult` with a descriptive error message.
+
+*   `_handle_chat_with_user(action: ChatWithUserAction) -> ActionResult`:
+    *   Calls `self.user_interactor.ask_question(prompt=action.prompt_text)`.
+    *   Catches any exceptions from the port and returns a `FAILED` `ActionResult`.
+    *   On success, builds and returns a `SUCCESS` `ActionResult` with the user's response in the `output` field.
