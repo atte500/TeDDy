@@ -20,10 +20,18 @@ app = typer.Typer()
 
 
 @app.callback(invoke_without_command=True)
-def main(ctx: typer.Context):
+def main(
+    ctx: typer.Context,
+    plan_file: typer.FileText = typer.Option(
+        None,
+        "--plan-file",
+        "-f",
+        help="Path to the plan file. If not provided, reads from stdin.",
+    ),
+):
     """
     Teddy Executor: A tool for running declarative plans.
-    Reads a plan from stdin and executes it.
+    Reads a plan from a file or stdin and executes it.
     """
     if ctx.invoked_subcommand is None:
         if not hasattr(ctx, "obj") or not ctx.obj:
@@ -31,7 +39,12 @@ def main(ctx: typer.Context):
             raise typer.Exit(code=1)
 
         plan_service = cast(RunPlanUseCase, ctx.obj)
-        plan_content = sys.stdin.read()
+
+        if plan_file:
+            plan_content = plan_file.read()
+        else:
+            plan_content = sys.stdin.read()
+
         report = plan_service.execute(plan_content)
 
         formatted_report = format_report_as_markdown(report)
