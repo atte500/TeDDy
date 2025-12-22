@@ -23,7 +23,7 @@
               *   The first Spike plan's `Rationale` MUST create the full **Uncertainty Checklist**.
               *   Each Spike plan MUST resolve only one uncertainty by creating a temporary, concrete artifact in `/spikes/functional/`.
               *   Continue this loop until the checklist is empty.
-          2.  **Once all ambiguities are resolved:** Create/update `README.md` to codify the requirements. This plan MUST end with a `CHAT WITH USER` action for approval.
+          2.  **Once all ambiguities are resolved:** Create/update `README.md` to codify the requirements. This document **must** also include a `## Project Roadmap` section outlining the high-level milestones. Each milestone must include a description and an explicit `**Status:** Planned` tag. If this information is not present in the user's request, it must be elicited during the Discovery Spike Loop. This plan MUST end with a `CHAT WITH USER` action for approval.
           <detail name="Uncertainty Categories and Spike Artifacts">
         Each spike MUST resolve a single uncertainty by producing the simplest possible concrete artifact. Spike artifacts are temporary, disposable proof-of-concepts. Once their essential information is approved and transcribed into a canonical architectural document (e.g., a Slice document or Domain Model), the corresponding spike directory **must be deleted** to maintain a clean project state. Start with low-fidelity options before escalating.
 

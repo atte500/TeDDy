@@ -8,6 +8,7 @@
 
 **Workflow Requirements: Phase 1 (Public Contract & Ambiguity Resolution)**
 *   **Priority:** All functional and domain language ambiguities must be resolved before any architectural design begins.
+*   **Roadmap Creation:** The `README.md` must contain a `## Project Roadmap` section. This section should provide a high-level overview of the major features and milestones planned for the project. Each milestone listed must include a description and an explicit status (e.g., `**Status:** Planned` or `**Status:** Implemented`).
 *   **Discovery Spike Loop:** If requirements are unclear, the agent must initiate this loop.
     *   The **first plan's `Rationale`** must create the full **"Uncertainty Checklist"**.
     *   The **first plan's `actions`** must propose a disposable artifact (e.g., sample data, diagram) to resolve the highest-priority uncertainty.
