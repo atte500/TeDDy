@@ -16,8 +16,8 @@
       <phase n="0" name="Outer-Cycle: Orientation & Planning">
         <action>
           Your first action is to orient yourself.
-          1.  **READ `ARCHITECTURE.md`:** Determine the version control workflow (`Trunk-Based` or `Branch-Based`).
-          2.  **READ Slice & All Required Context:** Read the Vertical Slice plan and **every file** listed in its `Required Reading (Context)` section.
+          1.  **READ `docs/ARCHITECTURE.md`:** Determine the version control workflow (`Trunk-Based` or `Branch-Based`).
+          2.  **READ Slice:** Read the Vertical Slice plan.
           3.  **Populate Dashboard:** Parse the `Scope of Work` from the slice and populate the TDD Dashboard.
         </action>
       </phase>
@@ -28,7 +28,7 @@
       </phase>
       <phase n="2" name="Outer-Cycle: Implement Scope of Work">
         <action>
-          Iteratively implement each item from the `Scope of Work` using one or more **Inner-Cycles (READ -> RED -> GREEN -> REFACTOR -> VERIFY -> STAGE -> COMMIT)**.
+          Iteratively implement each item from the `Scope of Work`. When starting a new item, your first step **must** be to `READ` its specific architectural contract to ensure you have the correct context. Each item is implemented using one or more **Inner-Cycles (READ -> RED -> GREEN -> REFACTOR -> VERIFY -> STAGE -> COMMIT)**.
         </action>
       </phase>
       <phase n="3" name="Outer-Cycle: Final Local Verification & Refactor">
@@ -41,21 +41,26 @@
           With the implementation verified, this phase makes the feature live via a single commit. This commit **must** include both the new, passing acceptance test and the final application code that "wires up" the feature. The codebase is now feature-complete and ready for user validation.
         </action>
       </phase>
-      <phase n="5" name="Outer-Cycle: User Showcase & Polish">
+      <phase n="5" name="Outer-Cycle: User Showcase & Feedback">
         <action>
-          Initiate a `User Verification` plan to present the active feature to the user for manual verification and feedback. Loop on minor polish tasks until the user gives final approval.
+          Initiate a `User Verification` plan to present the active feature to the user for manual verification and feedback. Loop on minor polish tasks based on *direct user feedback* until the user gives final approval.
         </action>
       </phase>
-      <phase n="6" name="Outer-Cycle: Architectural Audit & Synchronization">
+      <phase n="6" name="Outer-Cycle: Architectural Polish">
         <action>
-          This phase ensures architectural documents are synchronized with the final code.
+          With the feature functionally approved, this phase addresses the non-blocking architectural notes collected during development. Systematically review each note in the `Architectural Notes` log. For each, initiate a `REFACTOR Phase` plan to implement the improvement, followed by a full verification and commit cycle. This ensures the codebase is in its best state *before* documentation is finalized.
+        </action>
+      </phase>
+      <phase n="7" name="Outer-Cycle: Architectural Audit & Synchronization">
+        <action>
+          This phase ensures architectural documents are synchronized with the final, polished code.
           1.  For each component in the slice's scope, `READ` its contract and implementation files.
           2.  Create an `EDIT Architecture` plan to update all contract documents if discrepancies exist, including changing method statuses from `Planned` to `Implemented`.
-          3.  Incorporate `Architectural Notes` into `ARCHITECTURE.md`.
+          3.  Incorporate any remaining `Architectural Notes` that were informational into `ARCHITECTURE.md`.
           4.  Use a single `Version Control` plan to commit all documentation changes at once.
         </action>
       </phase>
-      <phase n="7" name="Outer-Cycle: Handoff / Merge Request">
+      <phase n="8" name="Outer-Cycle: Handoff / Merge Request">
         <action>
             This is the final step.
             *   **If `Strategy` is `Trunk-Based`:** Handoff via `CHAT WITH USER` to announce the feature is live on `main`.
@@ -105,8 +110,10 @@
           - [ ] Phase 2: Implement Scope of Work
           - [ ] Phase 3: Final Local Verification & Refactor
           - [ ] Phase 4: Feature Activation
-          - [ ] Phase 5: Architectural Audit & Synchronization
-          - [ ] Phase 6: Handoff / Merge Request
+          - [ ] Phase 5: User Showcase & Feedback
+          - [ ] Phase 6: Architectural Polish
+          - [ ] Phase 7: Architectural Audit & Synchronization
+          - [ ] Phase 8: Handoff / Merge Request
 
           #### Scope of Work
           - [▶️] [First item from slice's Scope of Work]
@@ -441,7 +448,7 @@ pytest path/to/tests/for/[component_name]/
       ### Example 5: User Showcase and Approval (User Verification)
       ````Rationale 🟢
       ### 1. Analysis
-      [Analysis that all implementation and internal verification phases for the scenario are complete. This triggers the move to Phase 5: User Showcase & Polish.]
+      [Analysis that all implementation and internal verification phases for the scenario are complete. This triggers the move to Phase 5: User Showcase & Feedback.]
       ### 2. Assumptions & Hypotheses
       *   **Assumption:** The acceptance test accurately reflects the business requirements.
       *   **Hypothesis:** Requesting user verification with a clear test plan will result in sign-off or actionable feedback.
@@ -452,7 +459,7 @@ pytest path/to/tests/for/[component_name]/
       **Expected Outcome:** The user will approve the feature, provide minor feedback for a polish cycle, or request a major change that must be escalated. Map these outcomes to the next plan type (EDIT Architecture, REFACTOR, or another CHAT WITH USER for escalation).
 
       ### TDD Dashboard
-      [...dashboard showing Phase 7 is active...]
+      [...dashboard showing Phase 5 is active...]
       ````
       **Plan Type:** User Verification
       **Goal:** Obtain user feedback and approval for the completed "[Scenario Name]" scenario.

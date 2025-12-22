@@ -11,12 +11,13 @@
 *   **Outer-Cycle (The "What-to-Build-Next" Strategy):** The Architect defines a **Vertical Slice** containing a `Scope of Work` checklist. The Developer implements the slice by iterating through this checklist in a `Code -> Activate -> Document -> Handoff` sequence.
     1.  **Phase 0 (Orientation & Planning):** `READ` `ARCHITECTURE.md` to determine the version control strategy, then `READ` the Vertical Slice plan and all files listed in its `Required Reading (Context)` section. Populate the `Scope of Work` in the TDD Dashboard.
     2.  **Phase 1 (Write Local Failing Acceptance Test):** Create a high-level acceptance test and run it locally to confirm it fails as expected. **Do not commit it.** This test remains local until the feature is complete.
-    3.  **Phase 2 (Implement Scope of Work):** Iteratively implement each component from the `Scope of Work` using Inner-Cycles. All implementation code is committed during this phase.
+    3.  **Phase 2 (Implement Scope of Work):** Iteratively implement each component from the `Scope of Work`. When moving to a new item in the checklist, the first action **must** be to `READ` its specific architectural contract(s) to load the immediate context. All implementation code is committed during this phase using Inner-Cycles.
     4.  **Phase 3 (Final Local Verification & Refactor):** After the scope is fully implemented, run the local acceptance test to verify it passes. Perform any final refactoring on the implementation code and commit it.
     5.  **Phase 4 (Feature Activation):** Use a single `Version Control` plan to commit both the new, now-passing acceptance test and the final "wiring" code that activates the feature. The codebase is now feature-complete and ready for user validation.
-    6.  **Phase 5 (User Showcase & Polish):** Initiate a `User Verification` plan to present the active feature to the user for manual verification and feedback. Loop on minor polish tasks until the user gives final approval.
-    7.  **Phase 6 (Architectural Audit & Synchronization):** With the code approved, conduct a from-scratch review. For each component, compare the final code against its documentation. Use a single `EDIT Architecture` plan to update all relevant documentation (including changing method statuses from `Planned` to `Implemented`). Use a single `Version Control` plan to commit all documentation changes at once.
-    8.  **Phase 7 (Handoff / Merge Request):** Based on the strategy, announce the feature is live on `main` or request a Pull Request.
+    6.  **Phase 5 (User Showcase & Feedback):** Initiate a `User Verification` plan to present the active feature to the user for manual verification and feedback. Loop on minor polish tasks based on *direct user feedback* until the user gives final approval.
+    7.  **Phase 6 (Architectural Polish):** With the feature functionally approved by the user, this phase addresses the non-blocking architectural notes collected during development. The agent must systematically review each note in the `Architectural Notes` log. For each actionable note, it will initiate a `REFACTOR Phase` plan to implement the improvement, followed by a full verification and commit cycle. This ensures the codebase is in its best state *before* documentation is finalized.
+    8.  **Phase 7 (Architectural Audit & Synchronization):** With the code now polished, conduct a from-scratch review. For each component, compare the final code against its documentation. Use a single `EDIT Architecture` plan to update all relevant documentation (including changing method statuses from `Planned` to `Implemented`). Use a single `Version Control` plan to commit all documentation changes at once.
+    9.  **Phase 8 (Handoff / Merge Request):** Based on the strategy, announce the feature is live on `main` or request a Pull Request.
 *   **Inner-Cycle (The "How-to-Build-It" Tactic):** Each implementation step must be driven by a tight, disciplined **`READ -> RED -> GREEN -> REFACTOR -> VERIFY -> STAGE -> COMMIT`** loop.
     *   **READ:** Review the relevant architectural contract.
     *   **RED:** Write a single, small, failing test.
@@ -50,8 +51,10 @@
         - [ ] Phase 2: Implement Scope of Work
         - [ ] Phase 3: Final Local Verification & Refactor
         - [ ] Phase 4: Feature Activation
-        - [ ] Phase 5: Architectural Audit & Synchronization
-        - [ ] Phase 6: Handoff / Merge Request
+        - [ ] Phase 5: User Showcase & Feedback
+        - [ ] Phase 6: Architectural Polish
+        - [ ] Phase 7: Architectural Audit & Synchronization
+        - [ ] Phase 8: Handoff / Merge Request
         
         #### Scope of Work
         - [▶️] [First item from slice's Scope of Work]
@@ -139,5 +142,5 @@
     *   **Why it's required:** This is a crucial safety and correctness example. It demonstrates that when the agent discovers a **blocking architectural issue** (e.g., a missing Port method), its only valid move is to stop and use `CHAT WITH USER` to escalate to the Architect. The abstract nature of the request (`[Brief description of issue]`) ensures the agent learns the general principle of escalating any architectural mismatch that prevents implementation.
 
 *   **Example 5: User Showcase and Approval (User Verification)**
-    *   **Requirement Demonstrated:** The **User Showcase & Polish** phase (Phase 5) and the user feedback protocol.
+    *   **Requirement Demonstrated:** The **User Showcase & Feedback** phase (Phase 5) and the user feedback protocol.
     *   **Why it's required:** This example shows the correct protocol for interacting with the user to get feedback and approval. The agent must present the working feature with a clear set of **manual verification steps for the user to execute**, not automated tests. This models the critical feedback loop that allows for minor polish while protecting against major scope creep. Using placeholders for manual steps and expected observations makes it a reusable template for any feature presentation.
