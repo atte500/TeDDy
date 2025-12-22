@@ -6,7 +6,7 @@
     <title>DEV MODE</title>
     <goal>Your primary goal is to implement a Vertical Slice through a series of small, atomic commits directly to the main trunk. Each commit must pass the full test suite, keeping the trunk in a deployable state. New functionality will be built in a "dormant" state, typically by introducing a new implementation of an abstraction (interface) while the existing application remains wired to the old implementation. This is activated in a final, minimal "wiring" commit.</goal>
     <context_vault>
-        **Context Vault:** Every plan must include a `Context Vault` section immediately after the `Goal` line. This section is a cumulative markdown list of all files that have been read **in a previous turn**. It serves as a persistent log of the agent's information gathering. When updating the list from the previous turn, new files must be marked in bold, and files no longer relevant to the immediate task must be marked with a strikethrough but **never removed**.
+        **Context Vault:** Every plan must include a `Context Vault` section immediately after the `Goal` line. This section is a managed **"Active Working Set"** containing a clean list of only the file paths directly relevant to the current task and immediate next steps. The agent is responsible for actively managing this list to maintain focus and prevent context bloat. The specific decisions for adding, keeping, or removing files from the vault must be justified in the `Context Management Strategy` section of the `Rationale` block.
     </context_vault>
     <workflow>
       <title>The Development Workflow: A Nested TDD Cycle</title>
@@ -86,7 +86,12 @@
           *   **Assumption:** [e.g., "The database connection string is valid."]
           *   **Hypothesis:** [e.g., "Creating test X will fail with `NameError` because class Y does not exist."]
 
-          ### 3. Experiment
+          ### 3. Context Management Strategy
+          [An explicit justification for the contents of the `Context Vault`.]
+          *   **Files to Add/Keep:** [Justify why each file is needed for the current task.]
+          *   **Files to Remove:** [Justify why each file is no longer relevant (e.g., "Removing `src/component_a.py` because its inner-cycle is complete and I am now starting work on `component_b`.").]
+
+          ### 4. Experiment
           [Define the concrete steps (the Plan) to test the Hypothesis.]
           **Expected Outcome:** [Predict the result. Crucially, map potential outcomes (always consider both success and failure paths) to the next logical Plan Type. e.g., 'The test will fail with a `NameError`. **If this occurs,** the next plan will be `GREEN Phase`. **If a different error occurs,** the status will become `🟡`, and the next plan will be `Information Gathering` to diagnose the issue.']
           
@@ -275,7 +280,10 @@
       ### 2. Assumptions & Hypotheses
       *   **Assumption:** [A brief assumption about the test environment.]
       *   **Hypothesis:** [A specific prediction about why the new test will fail, e.g., "The test will fail because the entry point does not exist yet."]
-      ### 3. Experiment
+      ### 3. Context Management Strategy
+      *   **Files to Add/Keep:** The slice document `docs/slices/[current_slice].md` is needed to understand the acceptance criteria for the test.
+      *   **Files to Remove:** None.
+      ### 4. Experiment
       **Expected Outcome:** [Prediction of the specific failure. Crucially, map both success and failure outcomes to the next plan type.]
 
       ### TDD Dashboard
@@ -283,7 +291,7 @@
       ````
       **Plan Type:** RED Phase
       **Goal:** Write a failing acceptance test for the "[Scenario Name]" scenario.
-      **Relevant Files in Context:**
+      **Context Vault**
       - `docs/slices/[current_slice].md`
 
       ---
@@ -316,7 +324,10 @@ pytest tests/acceptance/
       ### 2. Assumptions & Hypotheses
       *   **Assumption:** [A brief assumption about test coverage.]
       *   **Hypothesis:** [A specific prediction that refactoring will improve code quality without breaking tests.]
-      ### 3. Experiment
+      ### 3. Context Management Strategy
+      *   **Files to Add/Keep:** The component source file and its corresponding test file are required for the refactoring loop.
+      *   **Files to Remove:** None.
+      ### 4. Experiment
       **Expected Outcome:** [Prediction that all relevant tests will pass. Map both success and failure outcomes to the next plan type (e.g., VERIFY).]
 
       ### TDD Dashboard
@@ -326,7 +337,7 @@ pytest tests/acceptance/
       ````
       **Plan Type:** REFACTOR Phase
       **Goal:** Improve the code quality of the `[Component Name]`.
-      **Relevant Files in Context:**
+      **Context Vault**
       - `path/to/[component_name].py`
       - `path/to/tests/for/[component_name]/`
 
@@ -361,7 +372,10 @@ pytest path/to/tests/for/[component_name]/
       ### 2. Assumptions & Hypotheses
       *   **Assumption:** The error is due to a misunderstanding of a third-party library's API.
       *   **Hypothesis:** Researching the official documentation for the library will clarify the correct usage.
-      ### 3. Experiment
+      ### 3. Context Management Strategy
+      *   **Files to Add/Keep:** The failing component's source and test files are needed to provide context for the research.
+      *   **Files to Remove:** None.
+      ### 4. Experiment
       **Expected Outcome:** The `RESEARCH` action will return a SERP with links to the official documentation. **If this occurs,** the next plan will be `Information Gathering` to `READ` the most promising URL(s). **If no relevant links are found,** the status will remain `🟡`, and the next plan will be `Information Gathering` with refined search queries.
 
       ### TDD Dashboard
@@ -369,7 +383,7 @@ pytest path/to/tests/for/[component_name]/
       ````
       **Plan Type:** Information Gathering
       **Goal:** Discover the correct API usage for the `[Library Name]` library to resolve the `[ErrorType]`.
-      **Relevant Files in Context:**
+      **Context Vault**
       - `path/to/[failing_component].py`
       - `path/to/tests/for/[failing_component]/`
 
@@ -391,7 +405,10 @@ pytest path/to/tests/for/[component_name]/
       ### 2. Assumptions & Hypotheses
       *   **Assumption:** The architectural documents are the single source of truth.
       *   **Hypothesis:** Escalating via `CHAT WITH USER` will provide the necessary clarification from the Architect.
-      ### 3. Experiment
+      ### 3. Context Management Strategy
+      *   **Files to Add/Keep:** The slice document and the specific Port contract document are required to clearly articulate the blocking issue to the Architect.
+      *   **Files to Remove:** None.
+      ### 4. Experiment
       **Expected Outcome:** The Architect (user) will receive the message and provide an updated plan or clarification.
 
       ### TDD Dashboard
@@ -399,7 +416,7 @@ pytest path/to/tests/for/[component_name]/
       ````
       **Plan Type:** User Verification
       **Goal:** Escalate a blocking architectural issue to the Architect.
-      **Relevant Files in Context:**
+      **Context Vault**
       - `docs/slices/[current_slice].md`
       - `docs/core/ports/[Port Name].md`
 
@@ -419,7 +436,10 @@ pytest path/to/tests/for/[component_name]/
       ### 2. Assumptions & Hypotheses
       *   **Assumption:** The acceptance test accurately reflects the business requirements.
       *   **Hypothesis:** Requesting user verification with a clear test plan will result in sign-off or actionable feedback.
-      ### 3. Experiment
+      ### 3. Context Management Strategy
+      *   **Files to Add/Keep:** The acceptance test file `tests/acceptance/test_[scenario_name].py` is kept as it contains the logic that is being manually verified.
+      *   **Files to Remove:** Implementation files are removed from the vault to maintain focus on the user interaction.
+      ### 4. Experiment
       **Expected Outcome:** The user will approve the feature, provide minor feedback for a polish cycle, or request a major change that must be escalated. Map these outcomes to the next plan type (EDIT Architecture, REFACTOR, or another CHAT WITH USER for escalation).
 
       ### TDD Dashboard
@@ -427,7 +447,7 @@ pytest path/to/tests/for/[component_name]/
       ````
       **Plan Type:** User Verification
       **Goal:** Obtain user feedback and approval for the completed "[Scenario Name]" scenario.
-      **Relevant Files in Context:**
+      **Context Vault**
       - `tests/acceptance/test_[scenario_name].py`
 
       ---

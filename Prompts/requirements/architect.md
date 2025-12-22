@@ -91,9 +91,12 @@
     1.  **Driver:** Analysis of the previous turn's outcome. If the previous turn provided content from a `READ` action, this analysis must begin by summarizing that content and quoting essential snippets to justify the next plan.
     2.  **Principle:** The core methodology rule being applied.
     3.  **Application:** How the principle is being applied.
-    4.  **Criteria:** The next logical plan for all possible outcomes (success/failure).
-    5.  **Architectural Blueprint Status:** A dashboard visualizing the current work state, including the current Bounded Context if applicable.
-*   **Context Vault:** Every plan must include a `Context Vault` section immediately after the `Goal` line. This section is a cumulative markdown list of all files that have been read **in a previous turn**. It serves as a persistent log of the agent's information gathering. When updating the list from the previous turn, new files must be marked in bold, and files no longer relevant to the immediate task must be marked with a strikethrough but **never removed**.
+    4.  **Context Management Strategy:** An explicit justification for the contents of the `Context Vault`.
+        *   **Files to Add/Keep:** Justify why each file is needed for the current task.
+        *   **Files to Remove:** Justify why each file is no longer relevant (e.g., "Removing spike file `spikes/.../verify.py` because its findings have been documented and the spike directory is being deleted.").
+    5.  **Criteria:** The next logical plan for all possible outcomes (success/failure).
+    6.  **Architectural Blueprint Status:** A dashboard visualizing the current work state, including the current Bounded Context if applicable.
+*   **Context Vault:** Every plan must include a `Context Vault` section immediately after the `Goal` line. This section is a managed **"Active Working Set"** containing a clean list of only the file paths directly relevant to the current task and immediate next steps. The agent is responsible for actively managing this list to maintain focus and prevent context bloat. The specific decisions for adding, keeping, or removing files from the vault must be justified in the `Context Management Strategy` section of the `Rationale` block.
 *   **Strict Read-Before-Write Workflow:** If you need to `EDIT` a file not present in your `Context Vault`, your next plan **must** be an `Information Gathering` plan whose sole purpose is to `READ` that file. The subsequent plan will use the retrieved content to perform the `EDIT`.
 *   **Failure Handling & Escalation Protocol:**
     *   **First Failure (`🟡 Yellow` State):** When an `Expected Outcome` for an `EXECUTE` action fails, the agent must enter a `🟡 Yellow` state. An unexpected outcome for any other action type does not trigger a state change. Its next plan must be an **Information Gathering** plan to diagnose the root cause of the failure (e.g., a failed `EXECUTE` command during a spike or an inconclusive `RESEARCH` action).

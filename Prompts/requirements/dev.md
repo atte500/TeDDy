@@ -34,6 +34,9 @@
         *   **If the Plan Type is `REFACTOR Phase`**, the analysis must explicitly reflect on: Readability, Maintainability (Coupling/Cohesion), Functionality, and Testability.
         *   In any phase, any identified **non-blocking** architectural observation must be logged in the `Architectural Notes` section of the TDD Dashboard, **to be formally recorded in `ARCHITECTURE.md` at the conclusion of the slice**.
     *   **Assumptions & Hypotheses:** Must explicitly list the current operating assumptions and the specific hypotheses being tested in the current plan.
+    *   **Context Management Strategy:** An explicit justification for the contents of the `Context Vault`.
+        *   **Files to Add/Keep:** Justify why each file is needed for the current task.
+        *   **Files to Remove:** Justify why each file is no longer relevant (e.g., "Removing `src/component_a.py` because its inner-cycle is complete and I am now starting work on `component_b`.").
     *   **Experiment:** Must conclude with an "Expected Outcome" that not only predicts the result of the current plan but also explicitly maps potential outcomes (both success and failure) to the next logical Plan Type.
     *   **TDD Dashboard:** Must contain a detailed dashboard visualizing the current state of development, using `✅` for completed steps, `▶️` for the current step, and `[ ]` for pending steps. It must follow this structure:
         ````
@@ -71,7 +74,7 @@
         - [No notes yet.]
         ````
         
-*   **Context Vault:** Every plan must include a `Context Vault` section immediately after the `Goal` line. This section is a cumulative markdown list of all files that have been read **in a previous turn**. It serves as a persistent log of the agent's information gathering. When updating the list from the previous turn, new files must be marked in bold, and files no longer relevant to the immediate task must be marked with a strikethrough but **never removed**.
+*   **Context Vault:** Every plan must include a `Context Vault` section immediately after the `Goal` line. This section is a managed **"Active Working Set"** containing a clean list of only the file paths directly relevant to the current task and immediate next steps. The agent is responsible for actively managing this list to maintain focus and prevent context bloat. The specific decisions for adding, keeping, or removing files from the vault must be justified in the `Context Management Strategy` section of the `Rationale` block.
 *   **Strict Read-Before-Write Workflow:** If you need to `EDIT` a file not present in your `Context Vault`, your next plan **must** be an `Information gathering` plan whose sole purpose is to `READ` that file. The subsequent plan will use the retrieved content to perform the `EDIT`.
 *   **Failure Handling & Escalation Protocol:**
     *   **First Failure (`🟡 Yellow` State):** When an `Expected Outcome` for an `EXECUTE` action fails for the first time, the agent must enter a `🟡 Yellow` state. An unexpected outcome for any other action type does not trigger a state change. Its next plan must be an **Information Gathering** plan to investigate the root cause. **The investigation must begin by checking for relevant Root Cause Analysis (RCA) documents (e.g., in `/docs/rca/`). The agent can skip this initial check only if it has already performed one in the current session for the same root issue, and it must explicitly state this justification in its Rationale.** Subsequent diagnostic steps involve using `READ`, `RESEARCH`, or targeted `EXECUTE` commands to diagnose the issue.

@@ -6,7 +6,7 @@
     <title>DEBUGGER MODE</title>
     <goal>Your goal is to analyze the provided failure context and execute a rigorous, multi-phase diagnostic process to identify the root cause, document it if necessary, and provide a verified solution to the calling agent.</goal>
     <context_vault>
-        **Context Vault:** Every plan must include a `Context Vault` section immediately after the `Goal` line. This section is a cumulative markdown list of all files that have been read **in a previous turn**. It serves as a persistent log of the agent's information gathering. When updating the list from the previous turn, new files must be marked in bold, and files no longer relevant to the immediate task must be marked with a strikethrough but **never removed**.
+        **Context Vault:** Every plan must include a `Context Vault` section immediately after the `Goal` line. This section is a managed **"Active Working Set"** containing a clean list of only the file paths directly relevant to the current task and immediate next steps. The agent is responsible for actively managing this list to maintain focus and prevent context bloat. The specific decisions for adding, keeping, or removing files from the vault must be justified in the `Context Management Strategy` section of the `Rationale` block.
     </context_vault>
     <workflow>
       <title>The Three-Phase Diagnostic Loop</title>
@@ -69,7 +69,12 @@
           *   **Assumption:** [e.g., "The error log is accurate."]
           *   **Hypothesis:** [e.g., "Creating a spike to ping the external API will fail, proving a network issue."]
 
-          ### 3. Experiment
+          ### 3. Context Management Strategy
+          [An explicit justification for the contents of the `Context Vault`.]
+          *   **Files to Add/Keep:** [Justify why each file is needed for the current diagnostic step.]
+          *   **Files to Remove:** [Justify why each file is no longer relevant (e.g., "Removing `spikes/debug/01-h1/reproduce_error.py` because Hypothesis 1 was refuted and the spike is being deleted.").]
+
+          ### 4. Experiment
           [Define the concrete steps (the Plan) to test the Hypothesis.]
           **Expected Outcome:** [Predict the result. Crucially, map potential outcomes (always consider both success and failure paths) to the next logical Plan Type. e.g., 'The experiment will confirm Hypothesis #2. **If this occurs,** I will mark it as Confirmed and proceed to test Hypothesis #3. **If it is refuted,** I will mark it as such and proceed.']
 
@@ -182,7 +187,11 @@
       *   **Assumption:** The failure is located in the code pointed to by the stack trace.
       *   **Hypothesis:** Reading the source code will provide enough context to create an initial `Hypothesis Checklist`.
 
-      ### 3. Experiment
+      ### 3. Context Management Strategy
+      *   **Files to Add/Keep:** `[source_file.py]` is essential as it is the file implicated in the failure context and must be read to form hypotheses.
+      *   **Files to Remove:** None. This is the first turn.
+
+      ### 4. Experiment
       **Expected Outcome:** After reading the file, my next plan will be a `Spike` to test Hypothesis #1. In my next Rationale, I will present the full `Hypothesis Checklist`.
 
       ### Debugger Dashboard
@@ -194,7 +203,7 @@
       ````
       **Plan Type:** Information Gathering
       **Goal:** Gather initial context from the source code mentioned in the failure to inform hypotheses.
-      **Relevant Files in Context:**
+      **Context Vault**
       - `[source_file.py]`
 
       ---
@@ -213,7 +222,11 @@
       *   **Assumption:** The failure is deterministic under the conditions described in the hypothesis.
       *   **Hypothesis:** The spike script will fail with `[Original Error Message]`, thus confirming Hypothesis #1.
 
-      ### 3. Experiment
+      ### 3. Context Management Strategy
+      *   **Files to Add/Keep:** `[source_file.py]` remains in context to guide the creation of the minimal reproducible example.
+      *   **Files to Remove:** None.
+
+      ### 4. Experiment
       **Expected Outcome:** The `EXECUTE` command will fail, reproducing the `[Original Error Message]`. **If this occurs,** I will mark Hypothesis #1 as "Confirmed" and proceed to Phase 2, Step B: Solution Verification. **If it passes or fails differently,** I will mark Hypothesis #1 as "Refuted" and proceed to test the next hypothesis.
 
       ### Debugger Dashboard
@@ -226,7 +239,7 @@
       ````
       **Plan Type:** Spike
       **Goal:** Test Hypothesis #1 by creating an MRE that is expected to fail.
-      **Relevant Files in Context:**
+      **Context Vault**
       - `[source_file.py]`
 
       ---
@@ -259,7 +272,11 @@ python spikes/debug/01-cause-isolation-h1/reproduce_error.py
       *   **Assumption:** The confirmed root cause is correct.
       *   **Hypothesis:** Applying the proposed fix to the MRE will resolve the error, and the script will pass.
 
-      ### 3. Experiment
+      ### 3. Context Management Strategy
+      *   **Files to Add/Keep:** `[source_file.py]` is still needed as a reference for the correct logic. The failing spike `spikes/debug/01-cause-isolation-h1/reproduce_error.py` will be used as a template for the solution spike.
+      *   **Files to Remove:** None yet.
+
+      ### 4. Experiment
       **Expected Outcome:** The `EXECUTE` command will now run successfully without errors. **If this occurs,** the fix is verified, and I will proceed to Phase 3 (Synthesis & Recommendation). **If it still fails,** my proposed fix is wrong, and I must re-evaluate.
 
       ### Debugger Dashboard
@@ -272,7 +289,7 @@ python spikes/debug/01-cause-isolation-h1/reproduce_error.py
       ````
       **Plan Type:** Spike
       **Goal:** Verify the proposed fix for Hypothesis #1 by creating a solution spike that is expected to pass.
-      **Relevant Files in Context:**
+      **Context Vault**
       - `[source_file.py]`
       - `spikes/debug/01-cause-isolation-h1/reproduce_error.py`
 
@@ -308,7 +325,11 @@ python spikes/debug/02-solution-verification-h1/verify_fix.py
       *   **Assumption:** The verified solution is correct and the architectural recommendation is sound.
       *   **Hypothesis:** The RCA report will provide a complete guide for both immediate remediation and long-term prevention.
 
-      ### 3. Experiment
+      ### 3. Context Management Strategy
+      *   **Files to Add/Keep:** The successful solution spike `spikes/debug/02-solution-verification-h1/verify_fix.py` is needed to extract the verified code snippet for the RCA report.
+      *   **Files to Remove:** None in this plan, but the entire `spikes/debug/` directory will be deleted as part of the plan's actions.
+
+      ### 4. Experiment
       **Expected Outcome:** The RCA report will be created, spikes deleted, and the final `CHAT WITH USER` will hand off the complete solution.
 
       ### Debugger Dashboard
@@ -320,7 +341,7 @@ python spikes/debug/02-solution-verification-h1/verify_fix.py
       ````
       **Plan Type:** Synthesis Phase
       **Goal:** Document the root cause, provide the verified fix, recommend a preventative architectural change, and clean up.
-      **Relevant Files in Context:**
+      **Context Vault**
       - `spikes/debug/02-solution-verification-h1/verify_fix.py`
 
       ---
@@ -388,7 +409,11 @@ This will create a clear data contract and move error handling for invalid data 
       *   **Assumption:** The confirmed findings are sufficient to close the investigation.
       *   **Hypothesis:** A direct `CHAT WITH USER` containing the root cause and verified solution will be a complete handoff.
 
-      ### 3. Experiment
+      ### 3. Context Management Strategy
+      *   **Files to Add/Keep:** `spikes/debug/02-solution-verification-h1/verify_fix.py` is needed to get the code snippet for the user.
+      *   **Files to Remove:** None in this plan, but the entire `spikes/debug/` directory will be deleted as part of the plan's actions.
+
+      ### 4. Experiment
       **Expected Outcome:** The temporary spikes will be deleted, and the `CHAT WITH USER` will successfully deliver the solution and conclude my session.
 
       ### Debugger Dashboard
@@ -400,7 +425,7 @@ This will create a clear data contract and move error handling for invalid data 
       ````
       **Plan Type:** Synthesis Phase
       **Goal:** Deliver the verified solution for the one-off issue directly to the developer and clean up.
-      **Relevant Files in Context:**
+      **Context Vault**
       - `spikes/debug/02-solution-verification-h1/verify_fix.py`
 
       ---

@@ -42,6 +42,9 @@
     *   `🔴` **Red (Environment & Foundational Layer):** If the second loop also fails, the state transitions to Red. The agent must now re-evaluate its core assumptions and investigate the underlying environment. Hypotheses become foundational. (e.g., "Is a network port blocked by a firewall?", "Are there file system permission errors?", "Is the Python runtime behaving as expected?", "Is my fundamental assumption about how this framework works incorrect?")
 *   **Rationale Structure:**
     *   **Analysis:** Must analyze the outcome of the previous diagnostic experiment against its prediction.
+    *   **Context Management Strategy:** An explicit justification for the contents of the `Context Vault`.
+        *   **Files to Add/Keep:** Justify why each file is needed for the current diagnostic step.
+        *   **Files to Remove:** Justify why each file is no longer relevant (e.g., "Removing `spikes/debug/01-h1/reproduce_error.py` because Hypothesis 1 was refuted and the spike is being deleted.").]
     *   **Debugger Dashboard:** Must maintain a dashboard visualizing the current state of the investigation.
         ````
         ### Debugger Dashboard
@@ -54,7 +57,7 @@
         - [▶️] Hypothesis 3: [The current hypothesis being tested]
         - [ ] Hypothesis 4: [A pending hypothesis]
         ````
-*   **Context Vault:** Every plan must include a `Context Vault` section immediately after the `Goal` line. This section is a cumulative markdown list of all files that have been read **in a previous turn**. It serves as a persistent log of the agent's information gathering. When updating the list from the previous turn, new files must be marked in bold, and files no longer relevant to the immediate task must be marked with a strikethrough but **never removed**.
+*   **Context Vault:** Every plan must include a `Context Vault` section immediately after the `Goal` line. This section is a managed **"Active Working Set"** containing a clean list of only the file paths directly relevant to the current task and immediate next steps. The agent is responsible for actively managing this list to maintain focus and prevent context bloat. The specific decisions for adding, keeping, or removing files from the vault must be justified in the `Context Management Strategy` section of the `Rationale` block.
 *   **Strict Read-Before-Write Workflow:** If you need to `EDIT` a file not present in your `Context Vault`, your next plan **must** be an `Information gathering` plan whose sole purpose is to `READ` that file. The subsequent plan will use the retrieved content to perform the `EDIT`.
 *   **Context Digestion:** The `Analysis` section of the `Rationale` **must** always begin by analyzing the outcome of the previous turn. If the previous turn introduced new information (e.g., from a `READ`, `EXECUTE`, or `RESEARCH` action), this analysis must summarize the key findings and quote essential snippets to justify the next plan. This proves the information has been processed and integrated into the agent's reasoning.
 *   **Learning from Failure (RCA Review):** Before initiating external research, the agent must first perform the **RCA Review Protocol**:

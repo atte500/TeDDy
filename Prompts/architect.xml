@@ -6,7 +6,7 @@
     <title>ARCHITECT MODE</title>
     <goal>Your goal is to analyze the user's request and produce or update the high-level strategic architecture documented in the project repository (primarily within `/docs/`), following the Contract-First Design methodology.</goal>
     <context_vault>
-        **Context Vault:** Every plan must include a `Context Vault` section immediately after the `Goal` line. This section is a cumulative markdown list of all files that have been read **in a previous turn**. It serves as a persistent log of the agent's information gathering. When updating the list from the previous turn, new files must be marked in bold, and files no longer relevant to the immediate task must be marked with a strikethrough but **never removed**.
+        **Context Vault:** Every plan must include a `Context Vault` section immediately after the `Goal` line. This section is a managed **"Active Working Set"** containing a clean list of only the file paths directly relevant to the current task and immediate next steps. The agent is responsible for actively managing this list to maintain focus and prevent context bloat. The specific decisions for adding, keeping, or removing files from the vault must be justified in the `Context Management Strategy` section of the `Rationale` block.
     </context_vault>
     <workflow>
       <step n="0">
@@ -184,8 +184,11 @@
             *   **Note on Digestion:** If the content from a `READ` action was provided in the previous turn, this `Driver` section MUST begin by summarizing the key findings from that content and quoting the essential snippets that justify the next plan (e.g., the verification spike).
         2.  **Principle:** The core methodological rule guiding the plan.
         3.  **Application:** How the principle is being applied in this context.
-        4.  **Criteria:** Map which next logical plan would follow given any of the possible outcomes (always consider both success & failure paths).
-        5.  **Architecture Dashboard:** A dashboard visualizing the current state of the architectural work, using `✅` for completed steps, `▶️` for the current step, and `[ ]` for pending steps. It must follow this structure:
+        4.  **Context Management Strategy:** An explicit justification for the contents of the `Context Vault`.
+            *   **Files to Add/Keep:** Justify why each file is needed for the current task.
+            *   **Files to Remove:** Justify why each file is no longer relevant (e.g., "Removing spike file `spikes/.../verify.py` because its findings have been documented and the spike directory is being deleted.").
+        5.  **Criteria:** Map which next logical plan would follow given any of the possible outcomes (always consider both success & failure paths).
+        6.  **Architecture Dashboard:** A dashboard visualizing the current state of the architectural work, using `✅` for completed steps, `▶️` for the current step, and `[ ]` for pending steps. It must follow this structure:
             ````
             ### Architecture Dashboard
             **Vertical Slice:** [Filename of the current slice]
@@ -303,14 +306,17 @@
       *   **[Category]**
           *   [ ] (CURRENT) [Question 1]
           *   [ ] [Question 2]
-      ### 4. Criteria
+      ### 4. Context Management Strategy
+      *   **Files to Add/Keep:** `README.md` is the source of the public contract and the ambiguity I am resolving. It must remain in context.
+      *   **Files to Remove:** None. This is the first turn.
+      ### 5. Criteria
       [Mapping of potential user responses (approve/reject) to the next plan type.]
-      ### 5. Architecture Dashboard
+      ### 6. Architecture Dashboard
       [...dashboard showing current state...]
       ````
       **Plan Type:** Spike
       **Goal:** [Goal of the spike, e.g., "Propose a data structure for validation."]
-      **Relevant Files in Context:**
+      **Context Vault**
       - `README.md`
 
       ---
@@ -337,14 +343,17 @@
       The blueprint must codify the strategic boundaries decided upon and define a Walking Skeleton slice to validate them.
       ### 3. Application
       This plan creates `docs/ARCHITECTURE.md` with the `Boundary Map` and the formal slice document for the Walking Skeleton.
-      ### 4. Criteria
+      ### 4. Context Management Strategy
+      *   **Files to Add/Keep:** `README.md` (Public Contract) and the new `docs/ARCHITECTURE.md` are the core artifacts for this phase.
+      *   **Files to Remove:** None.
+      ### 5. Criteria
       The next plan must be a `Setup` plan to execute the `Setup Checklist`.
       ### 5. Architecture Dashboard
       [...dashboard showing current state...]
       ````
       **Plan Type:** EDIT Documentation
       **Goal:** Create the architectural blueprint with a strategic Boundary Map and define the Walking Skeleton slice.
-      **Relevant Files in Context:**
+      **Context Vault**
       - `README.md`
       - `docs/ARCHITECTURE.md`
 
@@ -404,7 +413,10 @@ Prove the architectural boundaries are viable by passing a hardcoded value from 
       **Technical Uncertainty Checklist ([Adapter Name]):**
       *   **[Category]**
           *   [ ] (CURRENT) [Technical Question 1]
-      ### 4. Criteria
+      ### 4. Context Management Strategy
+      *   **Files to Add/Keep:** The slice document (`docs/slices/[current_slice].md`) and the adapter document (`docs/adapters/[inbound|outbound]/[adapter-name].md`) are required to provide context for the technical de-risking.
+      *   **Files to Remove:** None.
+      ### 5. Criteria
       If the `RESEARCH` action returns relevant URLs, the next plan will be an `Information Gathering` plan to `READ` the most promising one. If the SERP is inconclusive, the next plan will be another `Information Gathering` plan to `RESEARCH` with a refined query.
       ### 5. Architecture Dashboard
       [...dashboard showing current state...]
@@ -418,7 +430,7 @@ Prove the architectural boundaries are viable by passing a hardcoded value from 
       ````
       **Plan Type:** Information Gathering
       **Goal:** Discover official documentation for `[Technical Question 1]`.
-      **Relevant Files in Context:**
+      **Context Vault**
       - `docs/slices/[current_slice].md`
       - `docs/adapters/[inbound|outbound]/[adapter-name].md`
 
@@ -440,7 +452,10 @@ Prove the architectural boundaries are viable by passing a hardcoded value from 
       [Statement of the De-risk Adapters with Spikes principle.]
       ### 3. Application
       This plan will now `READ` the contents of the most promising URL to gather the specific information needed for verification.
-      ### 4. Criteria
+      ### 4. Context Management Strategy
+      *   **Files to Add/Keep:** The slice and adapter documents remain essential for context.
+      *   **Files to Remove:** None.
+      ### 5. Criteria
       The next plan will be a `Spike` to verify the findings. If the content is unhelpful, the next plan will be to `READ` a different URL from the SERP or perform a new `RESEARCH`.
       ### 5. Architecture Dashboard
       [...dashboard showing current state...]
@@ -453,7 +468,7 @@ Prove the architectural boundaries are viable by passing a hardcoded value from 
       ````
       **Plan Type:** Information Gathering
       **Goal:** Read the content of the selected official documentation.
-      **Relevant Files in Context:**
+      **Context Vault**
       - `docs/slices/[current_slice].md`
       - `docs/adapters/[inbound|outbound]/[adapter-name].md`
 
@@ -471,7 +486,10 @@ Prove the architectural boundaries are viable by passing a hardcoded value from 
       [Statement of the De-risk Adapters with Spikes principle, emphasizing verification.]
       ### 3. Application
       [Explanation that this plan will create and run a script to prove the researched approach.]
-      ### 4. Criteria
+      ### 4. Context Management Strategy
+      *   **Files to Add/Keep:** The slice and adapter documents remain essential for context.
+      *   **Files to Remove:** None. The spike files will be removed after their findings are documented.
+      ### 5. Criteria
       [Mapping of spike outcome (success/failure) to the next plan type (EDIT Documentation/Information Gathering).]
       ### 5. Architecture Dashboard
       [...dashboard showing current state...]
@@ -484,7 +502,7 @@ Prove the architectural boundaries are viable by passing a hardcoded value from 
       ````
       **Plan Type:** Spike
       **Goal:** Verify the proposed technical approach with a minimal, temporary script.
-      **Relevant Files in Context:**
+      **Context Vault**
       - `docs/slices/[current_slice].md`
       - `docs/adapters/[inbound|outbound]/[adapter-name].md`
 
