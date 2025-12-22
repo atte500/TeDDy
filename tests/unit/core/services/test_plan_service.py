@@ -1,4 +1,6 @@
+from unittest.mock import MagicMock
 from teddy.core.domain.models import (
+    ChatWithUserAction,
     CommandResult,
     CreateFileAction,
     ExecuteAction,
@@ -7,6 +9,7 @@ from teddy.core.domain.models import (
     EditAction,
     MultipleMatchesFoundError,
 )
+from teddy.core.services.plan_service import PlanService
 
 
 def test_plan_service_handles_invalid_yaml(
@@ -322,3 +325,46 @@ def test_handle_edit_action_raises_multiple_matches_found_error(
     assert result.status == "FAILURE"
     assert result.error == error_message
     assert result.output == original_content
+
+
+def test_plan_service_handles_chat_with_user_action():
+    """
+    Tests that PlanService calls the UserInteractor port for a chat action.
+    """
+    # ARRANGE
+    # Manually instantiate PlanService with a mock for the new port
+    mock_shell_executor = MagicMock()
+    mock_file_system_manager = MagicMock()
+    mock_action_factory = MagicMock()
+    mock_web_scraper = MagicMock()
+    mock_user_interactor = MagicMock()
+
+    plan_service = PlanService(
+        shell_executor=mock_shell_executor,
+        file_system_manager=mock_file_system_manager,
+        action_factory=mock_action_factory,
+        web_scraper=mock_web_scraper,
+        user_interactor=mock_user_interactor,
+    )
+
+    prompt_text = "What is your quest?"
+    user_response = "To seek the Holy Grail."
+
+    mock_action = ChatWithUserAction(prompt=prompt_text)
+    mock_action_factory.create_action.return_value = mock_action
+    mock_user_interactor.ask_question.return_value = user_response
+
+    plan_content = f"""
+    - action: chat_with_user
+      params:
+        prompt: "{prompt_text}"
+    """
+
+    # ACT
+    report = plan_service.execute(plan_content)
+
+    # ASSERT
+    mock_user_interactor.ask_question.assert_called_once_with(prompt=prompt_text)
+    action_result = report.action_logs[0]
+    assert action_result.status == "SUCCESS"
+    assert action_result.output == user_response

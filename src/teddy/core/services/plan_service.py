@@ -11,6 +11,7 @@ from teddy.core.domain.models import (
     CreateFileAction,
     ReadAction,
     EditAction,
+    ChatWithUserAction,
     SearchTextNotFoundError,
     FileAlreadyExistsError,
     MultipleMatchesFoundError,
@@ -19,6 +20,7 @@ from teddy.core.ports.inbound.run_plan_use_case import RunPlanUseCase
 from teddy.core.ports.outbound.shell_executor import ShellExecutor
 from teddy.core.ports.outbound.file_system_manager import FileSystemManager
 from teddy.core.ports.outbound.web_scraper import WebScraper
+from teddy.core.ports.outbound.user_interactor import UserInteractor
 from teddy.core.services.action_factory import ActionFactory
 
 
@@ -29,16 +31,19 @@ class PlanService(RunPlanUseCase):
         file_system_manager: FileSystemManager,
         action_factory: ActionFactory,
         web_scraper: WebScraper,
+        user_interactor: "UserInteractor",
     ):
         self.shell_executor = shell_executor
         self.file_system_manager = file_system_manager
         self.action_factory = action_factory
         self.web_scraper = web_scraper
+        self.user_interactor = user_interactor
         self.action_handlers = {
             ExecuteAction: self._handle_execute,
             CreateFileAction: self._handle_create_file,
             ReadAction: self._handle_read,
             EditAction: self._handle_edit,
+            ChatWithUserAction: self._handle_chat_with_user,
         }
 
     def _parse_plan_content(self, plan_content: str) -> List[Dict[str, Any]]:
@@ -119,6 +124,10 @@ class PlanService(RunPlanUseCase):
                 error=str(e),
                 output=e.content,
             )
+
+    def _handle_chat_with_user(self, action: ChatWithUserAction) -> ActionResult:
+        response = self.user_interactor.ask_question(prompt=action.prompt)
+        return ActionResult(action=action, status="SUCCESS", output=response)
 
     def _execute_single_action(self, action: Action) -> ActionResult:
         """Executes one action by looking up its handler in the dispatch map."""

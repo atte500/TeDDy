@@ -9,6 +9,7 @@ from teddy.adapters.inbound.cli_formatter import format_report_as_markdown
 from teddy.adapters.outbound.shell_adapter import ShellAdapter
 from teddy.adapters.outbound.file_system_adapter import LocalFileSystemAdapter
 from teddy.adapters.outbound.web_scraper_adapter import WebScraperAdapter
+from teddy.adapters.outbound.console_interactor import ConsoleInteractorAdapter
 
 
 # ===================================================================
@@ -54,6 +55,7 @@ def run():
     shell_adapter = ShellAdapter()
     file_system_adapter = LocalFileSystemAdapter()
     web_scraper_adapter = WebScraperAdapter()
+    console_interactor_adapter = ConsoleInteractorAdapter()
     action_factory = ActionFactory()
 
     # 2. Instantiate Core Logic with its dependencies
@@ -62,6 +64,7 @@ def run():
         file_system_manager=file_system_adapter,
         web_scraper=web_scraper_adapter,
         action_factory=action_factory,
+        user_interactor=console_interactor_adapter,
     )
 
     # 3. Run the CLI with the composed core logic
