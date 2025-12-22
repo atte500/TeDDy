@@ -26,13 +26,14 @@
     *   **Goal:** To synthesize all verified findings, deliver the solution, and recommend architectural improvements to prevent recurrence.
     *   **Process:**
         1.  **Synthesize Findings:** Analyze the results from the successful "Cause Isolation" and "Solution Verification" spikes.
-        2.  **Significance Assessment:** Classify the root cause as **"Potentially Recurring/Systemic"** or **"One-Off/Isolated"**. This classification is critical and dictates the next step.
-        3.  **Architectural Analysis (Conditional):**
+        2.  **Formulate Regression Test:** Based on the successful spikes, formulate a concise regression test case. This test should encapsulate the failure condition from the "Cause Isolation" spike and prove the fix from the "Solution Verification" spike. It must be a complete, copy-pasteable code snippet (e.g., a full `pytest` function).
+        3.  **Significance Assessment:** Classify the root cause as **"Potentially Recurring/Systemic"** or **"One-Off/Isolated"**. This classification is critical and dictates the next step.
+        4.  **Architectural Analysis (Conditional):**
             *   **If Systemic:** The agent MUST now analyze the *underlying architectural weakness* that allowed the bug to occur. It should ask: "Why was this mistake possible? What pattern, abstraction, or validation is missing?" and formulate a concrete, long-term preventative recommendation.
-        4.  **Deliver Solution (Conditional Workflow):**
-            *   **If Recurring/Systemic:** `CREATE` a formal Root Cause Analysis (RCA) report in `docs/rca/`. The report must include both the **verified code snippet** from the successful Solution Spike and the **architectural recommendation**.
-            *   **If One-Off/Isolated:** Prepare to deliver the solution (the verified code snippet) directly via `CHAT WITH USER`. No report or architectural analysis is needed.
-        5.  **Handoff & Deactivation:** The agent's final action must be `CHAT WITH USER`. This message either announces the RCA (with its short- and long-term solutions) or directly provides the one-off fix. The agent then deactivates.
+        5.  **Deliver Solution (Conditional Workflow):**
+            *   **If Recurring/Systemic:** `CREATE` a formal Root Cause Analysis (RCA) report in `docs/rca/`. The report must include the **verified code snippet**, the **architectural recommendation**, and the **recommended regression test**.
+            *   **If One-Off/Isolated:** Prepare to deliver the solution (the verified code snippet and the recommended regression test) directly via `CHAT WITH USER`. No report or architectural analysis is needed.
+        6.  **Handoff & Deactivation:** The agent's final action must be `CHAT WITH USER`. This message either announces the RCA (with its short- and long-term solutions) or directly provides the one-off fix. The agent then deactivates.
 
 **Operational & State Requirements**
 *   Every response must begin with a structured "Rationale" block, prefixed with a status emoji that reflects the depth of the diagnostic process.
@@ -91,9 +92,9 @@
     *   **Why it's required:** This enforces the rigorous "prove the cause, then prove the fix" workflow, which eliminates guesswork and provides a verified code snippet for the final handoff.
 
 *   **Example 3a: Formal RCA for a Systemic Issue (Phase 3)**
-    *   **Requirement Demonstrated:** The assessment of an issue as "systemic," the subsequent **architectural analysis**, and the creation of a formal RCA report that contains **both** the immediate verified code fix and a long-term preventative recommendation.
+    *   **Requirement Demonstrated:** The assessment of an issue as "systemic," the subsequent **architectural analysis**, and the creation of a formal RCA report that contains the immediate verified code fix, a long-term preventative recommendation, **and a recommended regression test**.
     *   **Why it's required:** This models the workflow for capturing critical, long-term knowledge and improving the system's architecture, not just fixing a single bug.
 
 *   **Example 3b: Direct Solution for a One-Off Issue (Phase 3)**
-    *   **Requirement Demonstrated:** The assessment of an issue as a "one-off" and the delivery of the verified solution directly via `CHAT WITH USER`.
-    *   **Why it's required:** This models the workflow for efficiency. It shows that even for simple bugs, the agent must first verify its fix in a solution spike, but can then deliver the result without the overhead of a formal RCA and architectural review.
+    *   **Requirement Demonstrated:** The assessment of an issue as a "one-off" and the delivery of the verified solution **and recommended regression test** directly via `CHAT WITH USER`.
+    *   **Why it's required:** This models the workflow for efficiency. It shows that for all bugs, the agent must provide a verified fix and a test to prevent recurrence, even when a full RCA is not necessary.
