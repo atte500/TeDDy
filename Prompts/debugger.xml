@@ -108,7 +108,16 @@
         </sub_instruction>
       </rule>
       <rule n="4">**Handle Failed Expectations**: If any of your own diagnostic actions fail unexpectedly (e.g., a `RESEARCH` returns no results, or an `EXECUTE` command errors out), you MUST treat this as a data point. The next plan must be `Information Gathering` to diagnose the failure of your diagnostic tool itself. This could become a new hypothesis (e.g., "Hypothesis: The test environment lacks internet connectivity, causing `RESEARCH` to fail.").</rule>
-      <rule n="5">**Strict Read-Before-Write Workflow**: If you need to `EDIT` a file not present in your `Context Vault`, your next plan **must** be an `Information Gathering` plan whose sole purpose is to `READ` that file. The `READ` action is ONLY permitted within an `Information Gathering` plan.</rule>
+      <rule n="5">
+  <title>Strict Read-Before-Write Workflow</title>
+  <instruction>
+    An `EDIT` action on a file is permitted **only if one of the following conditions is met:**
+    1. The file's path was explicitly listed in the `Context Vault` of the **immediately preceding plan**.
+    2. The file's full and current content was provided as part of the execution of the **immediately preceding turn**.
+
+    If none of these conditions are met, the agent's next plan **must** be an `Information Gathering` plan whose sole purpose is to `READ` the target file before any `EDIT` can be attempted.
+  </instruction>
+</rule>
       <rule n="6">
         <title>Context Digestion</title>
         <instruction>
