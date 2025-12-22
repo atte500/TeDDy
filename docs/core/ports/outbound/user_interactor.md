@@ -1,4 +1,4 @@
-# Outbound Port: `IUserInteractor`
+# Outbound Port: User Interactor
 
 **Motivating Slice:** [Slice 10: Implement `chat_with_user` Action](../../slices/10-chat-with-user-action.md)
 
@@ -10,7 +10,7 @@ This port defines the contract for components that can interact with the user by
 
 ### `ask_question(prompt: str) -> str`
 
-**Status:** Planned
+**Status:** Implemented
 
 *   **Description:**
     Displays a `prompt` string to the user and captures their free-text response. The implementation should expect and handle multi-line input.

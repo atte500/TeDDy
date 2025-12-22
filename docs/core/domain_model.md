@@ -114,16 +114,16 @@ An action that finds and replaces content within an existing file.
 ---
 
 ### `ChatWithUserAction` (Entity)
-**Status:** Planned
+**Status:** Implemented
 **Introduced in:** [Slice 10: Implement `chat_with_user` Action](../slices/10-chat-with-user-action.md)
 
 An action that prompts the user with a question and captures their free-text response.
 
 *   **Inherits from:** `Action`
 *   **Attributes:**
-    *   `prompt_text` (str): The question to display to the user.
+    *   `prompt` (str): The question to display to the user.
 *   **Invariants:**
-    *   `prompt_text` must be a non-empty string.
+    *   `prompt` must be a non-empty string.
 
 ---
 
