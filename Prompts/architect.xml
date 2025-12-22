@@ -221,7 +221,7 @@
     1. The file's path was explicitly listed in the `Context Vault` of the **immediately preceding plan**.
     2. The file's full and current content was provided as part of the execution of the **immediately preceding turn**.
 
-    If none of these conditions are met, the agent's next plan **must** be an `Information Gathering` plan whose sole purpose is to `READ` the target file before any `EDIT` can be attempted.
+    If none of these conditions are met, the agent's next plan **must** be an `Information Gathering` plan whose sole purpose is to `READ` the target file before any `EDIT` can be attempted. A file is considered "read" and its content "known" if either of the conditions are met.
   </instruction>
 </rule>
       <rule n="3">**Link Formatting**: Markdown links to other files MUST use explicit relative paths (`./` or `../`). Links MUST NOT be enclosed in backticks (e.g., use `[link](./path)`, not ``[`link`](./path)``).</rule>

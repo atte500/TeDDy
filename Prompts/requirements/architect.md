@@ -101,7 +101,7 @@
     1.  The file's path was explicitly listed in the `Context Vault` of the **immediately preceding plan**.
     2.  The file's full and current content was provided as part of the execution of the **immediately preceding turn**.
 
-    If none of these conditions are met, the agent's next plan **must** be an `Information Gathering` plan whose sole purpose is to `READ` the target file before any `EDIT` can be attempted. The subsequent plan will use the retrieved content to perform the `EDIT`.
+    If none of these conditions are met, the agent's next plan **must** be an `Information Gathering` plan whose sole purpose is to `READ` the target file before any `EDIT` can be attempted. A file is considered "read" and its content "known" if either of the conditions are met. The subsequent plan will use the retrieved content to perform the `EDIT`.
 *   **Failure Handling & Escalation Protocol:**
     *   **First Failure (`🟡 Yellow` State):** When an `Expected Outcome` for an `EXECUTE` action fails, the agent must enter a `🟡 Yellow` state. An unexpected outcome for any other action type does not trigger a state change. Its next plan must be an **Information Gathering** plan to diagnose the root cause of the failure (e.g., a failed `EXECUTE` command during a spike or an inconclusive `RESEARCH` action).
     *   **Second Consecutive Failure (`🔴 Red` State):** If the subsequent diagnostic plan *also* fails its `Expected Outcome`, the agent must enter a `🔴 Red` state. In this state, the agent is **strictly prohibited** from further self-diagnosis. Its next and only valid action is to **Handoff to Debugger**.
