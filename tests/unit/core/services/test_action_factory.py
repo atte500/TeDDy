@@ -102,3 +102,20 @@ class TestActionFactory:
         assert action.file_path == "/tmp/a"
         assert action.find == "old"
         assert action.replace == "new"
+
+    def test_create_chat_with_user_action(self):
+        """
+        Tests that the factory can create a valid ChatWithUserAction.
+        """
+        # Arrange
+        raw_action = {
+            "action": "chat_with_user",
+            "params": {"prompt": "What is the meaning of life?"},
+        }
+
+        # Act
+        action = ActionFactory.create_action(raw_action)
+
+        # Assert
+        assert isinstance(action, models.ChatWithUserAction)
+        assert action.prompt == "What is the meaning of life?"
