@@ -1,4 +1,6 @@
 from typing import List, Dict, Any
+import json
+from dataclasses import asdict
 import yaml
 import time
 from datetime import datetime, timezone
@@ -14,15 +16,19 @@ from teddy.core.domain.models import (
     ReadAction,
     EditAction,
     ChatWithUserAction,
+    ResearchAction,
+    SERPReport,
     SearchTextNotFoundError,
     FileAlreadyExistsError,
     MultipleMatchesFoundError,
+    WebSearchError,
 )
 from teddy.core.ports.inbound.run_plan_use_case import RunPlanUseCase
 from teddy.core.ports.outbound.shell_executor import ShellExecutor
 from teddy.core.ports.outbound.file_system_manager import FileSystemManager
 from teddy.core.ports.outbound.web_scraper import WebScraper
 from teddy.core.ports.outbound.user_interactor import UserInteractor
+from teddy.core.ports.outbound.web_searcher import IWebSearcher
 from teddy.core.services.action_factory import ActionFactory
 
 
@@ -34,18 +40,21 @@ class PlanService(RunPlanUseCase):
         action_factory: ActionFactory,
         web_scraper: WebScraper,
         user_interactor: "UserInteractor",
+        web_searcher: "IWebSearcher",
     ):
         self.shell_executor = shell_executor
         self.file_system_manager = file_system_manager
         self.action_factory = action_factory
         self.web_scraper = web_scraper
         self.user_interactor = user_interactor
+        self.web_searcher = web_searcher
         self.action_handlers = {
             ExecuteAction: self._handle_execute,
             CreateFileAction: self._handle_create_file,
             ReadAction: self._handle_read,
             EditAction: self._handle_edit,
             ChatWithUserAction: self._handle_chat_with_user,
+            ResearchAction: self._handle_research,
         }
 
     def _parse_plan_content(self, plan_content: str) -> List[Dict[str, Any]]:
@@ -130,6 +139,24 @@ class PlanService(RunPlanUseCase):
     def _handle_chat_with_user(self, action: ChatWithUserAction) -> ActionResult:
         response = self.user_interactor.ask_question(prompt=action.prompt)
         return ActionResult(action=action, status="SUCCESS", output=response)
+
+    def _serialize_serp_report(self, report: SERPReport) -> str:
+        """Serializes a SERPReport object to a JSON string."""
+        return json.dumps(asdict(report), indent=2)
+
+    def _handle_research(self, action: ResearchAction) -> ActionResult:
+        try:
+            serp_report = self.web_searcher.search(queries=action.queries)
+            json_output = self._serialize_serp_report(serp_report)
+            return ActionResult(action=action, status="SUCCESS", output=json_output)
+        except WebSearchError as e:
+            return ActionResult(action=action, status="FAILURE", error=str(e))
+        except Exception as e:
+            return ActionResult(
+                action=action,
+                status="FAILURE",
+                error=f"An unexpected error occurred during research: {e}",
+            )
 
     def _execute_single_action(self, action: Action) -> ActionResult:
         """Executes one action by looking up its handler in the dispatch map."""

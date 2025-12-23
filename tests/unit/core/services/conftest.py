@@ -4,6 +4,7 @@ from teddy.core.ports.outbound.file_system_manager import FileSystemManager
 from teddy.core.ports.outbound.shell_executor import ShellExecutor
 from teddy.core.ports.outbound.user_interactor import UserInteractor
 from teddy.core.ports.outbound.web_scraper import WebScraper
+from teddy.core.ports.outbound.web_searcher import IWebSearcher
 from teddy.core.services.action_factory import ActionFactory
 from teddy.core.services.plan_service import PlanService
 
@@ -39,12 +40,19 @@ def mock_user_interactor():
 
 
 @pytest.fixture
+def mock_web_searcher():
+    """Provides a MagicMock for the IWebSearcher port."""
+    return MagicMock(spec=IWebSearcher)
+
+
+@pytest.fixture
 def plan_service(
     mock_shell_executor,
     mock_file_system_manager,
     mock_action_factory,
     mock_web_scraper,
     mock_user_interactor,
+    mock_web_searcher,
 ):
     """Provides a PlanService instance with all its dependencies mocked."""
     return PlanService(
@@ -53,4 +61,5 @@ def plan_service(
         action_factory=mock_action_factory,
         web_scraper=mock_web_scraper,
         user_interactor=mock_user_interactor,
+        web_searcher=mock_web_searcher,
     )

@@ -1,3 +1,4 @@
+import json
 from unittest.mock import MagicMock
 from teddy.core.domain.models import (
     ChatWithUserAction,
@@ -7,6 +8,10 @@ from teddy.core.domain.models import (
     ParsePlanAction,
     ReadAction,
     EditAction,
+    ResearchAction,
+    SERPReport,
+    QueryResult,
+    SearchResult,
     MultipleMatchesFoundError,
 )
 from teddy.core.services.plan_service import PlanService
@@ -338,6 +343,7 @@ def test_plan_service_handles_chat_with_user_action():
     mock_action_factory = MagicMock()
     mock_web_scraper = MagicMock()
     mock_user_interactor = MagicMock()
+    mock_web_searcher = MagicMock()  # Add the new mock
 
     plan_service = PlanService(
         shell_executor=mock_shell_executor,
@@ -345,6 +351,7 @@ def test_plan_service_handles_chat_with_user_action():
         action_factory=mock_action_factory,
         web_scraper=mock_web_scraper,
         user_interactor=mock_user_interactor,
+        web_searcher=mock_web_searcher,  # Pass the new mock
     )
 
     prompt_text = "What is your quest?"
@@ -368,3 +375,71 @@ def test_plan_service_handles_chat_with_user_action():
     action_result = report.action_logs[0]
     assert action_result.status == "SUCCESS"
     assert action_result.output == user_response
+
+
+def test_plan_service_handles_research_action_success():
+    """
+    Tests that PlanService calls the WebSearcher port for a research action
+    and correctly serializes the SERPReport to JSON.
+    """
+    # ARRANGE
+    mock_shell_executor = MagicMock()
+    mock_file_system_manager = MagicMock()
+    mock_action_factory = MagicMock()
+    mock_web_scraper = MagicMock()
+    mock_user_interactor = MagicMock()
+    mock_web_searcher = MagicMock()
+
+    plan_service = PlanService(
+        shell_executor=mock_shell_executor,
+        file_system_manager=mock_file_system_manager,
+        action_factory=mock_action_factory,
+        web_scraper=mock_web_scraper,
+        user_interactor=mock_user_interactor,
+        web_searcher=mock_web_searcher,
+    )
+
+    queries = ["python web scraping", "beautiful soup tutorial"]
+    mock_action = ResearchAction(queries=queries)
+    mock_action_factory.create_action.return_value = mock_action
+
+    # This is the object the port is expected to return
+    serp_report = SERPReport(
+        results=[
+            QueryResult(
+                query="python web scraping",
+                search_results=[
+                    SearchResult(
+                        title="Web Scraping with Python",
+                        url="https://example.com/scrape",
+                        snippet="A guide to web scraping.",
+                    )
+                ],
+            )
+        ]
+    )
+    mock_web_searcher.search.return_value = serp_report
+
+    plan_content = """
+    - action: research
+      params:
+        queries:
+          - python web scraping
+          - beautiful soup tutorial
+    """
+
+    # ACT
+    report = plan_service.execute(plan_content)
+
+    # ASSERT
+    mock_web_searcher.search.assert_called_once_with(queries=queries)
+    action_result = report.action_logs[0]
+    assert action_result.status == "SUCCESS"
+
+    # Verify the output is a correctly structured JSON string
+    output_data = json.loads(action_result.output)
+    assert output_data["results"][0]["query"] == "python web scraping"
+    assert (
+        output_data["results"][0]["search_results"][0]["title"]
+        == "Web Scraping with Python"
+    )
