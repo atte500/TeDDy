@@ -95,6 +95,22 @@ class ChatWithUserAction(Action):
 
 
 @dataclass(frozen=True)
+class ResearchAction(Action):
+    """Represents a 'research' action."""
+
+    queries: List[str]
+    action_type: str = field(default="research", init=False)
+
+    def __post_init__(self):
+        if not isinstance(self.queries, list):
+            raise TypeError("'queries' must be a list")
+        if not self.queries:
+            raise ValueError("'queries' must be a non-empty list")
+        if not all(isinstance(q, str) for q in self.queries):
+            raise ValueError("All items in 'queries' must be strings")
+
+
+@dataclass(frozen=True)
 class ActionResult:
     """Represents the outcome of a single action's execution."""
 
@@ -129,6 +145,30 @@ class CommandResult:
     return_code: int
 
 
+@dataclass(frozen=True)
+class SearchResult:
+    """Represents a single search result item."""
+
+    title: str
+    url: str
+    snippet: str
+
+
+@dataclass(frozen=True)
+class QueryResult:
+    """Represents the collection of results for a single search query."""
+
+    query: str
+    search_results: List[SearchResult]
+
+
+@dataclass(frozen=True)
+class SERPReport:
+    """Represents the aggregated results for all queries in a ResearchAction."""
+
+    results: List[QueryResult]
+
+
 @dataclass
 class ExecutionReport:
     """A comprehensive report detailing the execution of an entire Plan."""
@@ -160,3 +200,11 @@ class MultipleMatchesFoundError(Exception):
     def __init__(self, message: str, content: str):
         super().__init__(message)
         self.content = content
+
+
+class WebSearchError(Exception):
+    """Custom exception raised when a web search operation fails."""
+
+    def __init__(self, message: str, original_exception: Optional[Exception] = None):
+        super().__init__(message)
+        self.original_exception = original_exception

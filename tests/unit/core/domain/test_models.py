@@ -10,7 +10,12 @@ from teddy.core.domain.models import (
     ReadAction,
     EditAction,
     ChatWithUserAction,
+    ResearchAction,
+    SearchResult,
+    QueryResult,
+    SERPReport,
     FileAlreadyExistsError,
+    WebSearchError,
 )
 
 
@@ -253,3 +258,70 @@ class TestChatWithUserAction:
         """Tests that a non-string prompt raises a TypeError."""
         with pytest.raises(TypeError, match="'prompt' must be a string"):
             ChatWithUserAction(prompt=123)
+
+
+class TestResearchAction:
+    def test_instantiation_happy_path(self):
+        """Tests happy path instantiation for ResearchAction."""
+        queries = ["query1", "query2"]
+        action = ResearchAction(queries=queries)
+        assert action.queries == queries
+        assert action.action_type == "research"
+
+    def test_empty_queries_list_raises_error(self):
+        """Tests that an empty queries list raises a ValueError."""
+        with pytest.raises(ValueError, match="'queries' must be a non-empty list"):
+            ResearchAction(queries=[])
+
+    def test_non_list_queries_raises_error(self):
+        """Tests that a non-list queries parameter raises a TypeError."""
+        with pytest.raises(TypeError, match="'queries' must be a list"):
+            ResearchAction(queries="not a list")
+
+    def test_queries_list_with_non_string_raises_error(self):
+        """Tests that a queries list with non-string elements raises a ValueError."""
+        with pytest.raises(ValueError, match="All items in 'queries' must be strings"):
+            ResearchAction(queries=["query1", 123])
+
+
+class TestSERPValueObjects:
+    def test_search_result_instantiation(self):
+        """Tests that a SearchResult value object can be instantiated."""
+        result = SearchResult(
+            title="Test Title",
+            url="http://example.com",
+            snippet="This is a test snippet.",
+        )
+        assert result.title == "Test Title"
+        assert result.url == "http://example.com"
+        assert result.snippet == "This is a test snippet."
+
+    def test_query_result_instantiation(self):
+        """Tests that a QueryResult value object can be instantiated."""
+        search_results = [
+            SearchResult("T1", "http://e.com/1", "S1"),
+            SearchResult("T2", "http://e.com/2", "S2"),
+        ]
+        query_result = QueryResult(query="test query", search_results=search_results)
+        assert query_result.query == "test query"
+        assert query_result.search_results == search_results
+
+    def test_serp_report_instantiation(self):
+        """Tests that a SERPReport value object can be instantiated."""
+        query_results = [
+            QueryResult("q1", [SearchResult("T1", "http://e.com/1", "S1")]),
+            QueryResult("q2", [SearchResult("T2", "http://e.com/2", "S2")]),
+        ]
+        serp_report = SERPReport(results=query_results)
+        assert serp_report.results == query_results
+
+
+def test_web_search_error_can_be_raised():
+    """Tests that the WebSearchError can be raised and stores original exception."""
+    original_exc = ValueError("Network failed")
+    message = "Web search failed"
+    try:
+        raise WebSearchError(message, original_exception=original_exc)
+    except WebSearchError as e:
+        assert str(e) == message
+        assert e.original_exception == original_exc
