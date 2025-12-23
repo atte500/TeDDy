@@ -5,11 +5,9 @@ import yaml
 from .helpers import run_teddy_with_plan_file
 
 # A plan containing a chat_with_user action.
-# Note the top-level list, lowercase action name, and 'params' key.
 PLAN_WITH_CHAT_ACTION = [
     {
         "action": "chat_with_user",
-        "title": "Ask for user's favorite color",
         "params": {
             "prompt": "What is your favorite color?",
         },
@@ -33,22 +31,21 @@ def test_chat_with_user_action_successful(plan_file: Path):
     Then the action should succeed and capture the response.
     """
     # Arrange
-    # The user input is "Blue" followed by an empty line to terminate input.
-    # There is no "y/n" approval for this action type.
+    # The user input is "Blue" followed by two newlines to terminate input.
     user_input = "Blue\n\n"
 
     # Act
     process = run_teddy_with_plan_file(plan_file, input=user_input)
-    output = process.stdout
 
     # Assert
+    assert process.returncode == 0
+    report = yaml.safe_load(process.stdout)
+
     # The overall run should be successful
-    assert "Run Summary: SUCCESS" in output
+    assert report["run_summary"]["status"] == "SUCCESS"
 
-    # The action report should show SUCCESS
-    # Note: PlanService returns SUCCESS for this action, not COMPLETED.
-    assert "- **Status:** SUCCESS" in output
-
-    # The report should contain the user's response in the output section
-    assert "- **Output:**" in output
-    assert "Blue" in output
+    # The action report should show SUCCESS and the user's response
+    action_log = report["action_logs"][0]
+    assert action_log["status"] == "SUCCESS"
+    assert action_log["output"] == "Blue"
+    assert action_log["action"]["params"]["prompt"] == "What is your favorite color?"
