@@ -5,9 +5,9 @@
 ## Execution Flow
 
 1.  **Plan Generation:** An AI agent generates a multi-step plan in YAML format.
-2.  **Execution:** You run `teddy` in your terminal, piping or pasting the plan to it.
+2.  **Execution:** You save the plan to a file (e.g., `plan.yaml`) and run `teddy` against it. The recommended way is to use the `--plan-file` option to avoid conflicts with interactive prompts.
 3.  **Interactive Approval:** By default, `teddy` runs in interactive mode. It prints each action and prompts for your approval (`y/n`). If you reject a step, you will be prompted for an optional reason. The action is not performed, and the final report will mark it as `SKIPPED`, including your reason, confirming that no changes were made.
-4.  **Execution Report:** After execution, `teddy` generates a pure YAML **Execution Report**, copies it to your clipboard, and prints it to the console. This report is the single source of truth about the outcome of the plan and is pasted back to the AI to provide a complete feedback loop.
+4.  **Execution Report:** After execution, `teddy` prints a pure YAML **Execution Report** to the console. This report is the single source of truth about the outcome of the plan and is pasted back to the AI to provide a complete feedback loop.
 
     The report has the following structure:
 

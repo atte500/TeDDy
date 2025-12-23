@@ -29,6 +29,6 @@ To improve the robustness, testability, and machine-readability of the applicati
 
 ### 4. Scope of Work (Components)
 
-*   [ ] **Adapter:** `MODIFY` `src/teddy/adapters/inbound/cli_formatter.py` to replace the Markdown formatting logic with YAML serialization logic. The `format_report_as_markdown` function will be renamed to `format_report_as_yaml`.
-*   [ ] **Framework Integration:** `MODIFY` `src/teddy/main.py` to call the renamed `format_report_as_yaml` function.
-*   [ ] **Testing:** `MODIFY` all existing acceptance tests in `tests/acceptance/` to parse the new YAML output instead of performing string or regex matching on Markdown. The tests' core assertions about action success/failure will remain, but the method of verifying the output will be completely changed.
+*   [x] **Adapter:** `MODIFY` `src/teddy/adapters/inbound/cli_formatter.py` to replace the Markdown formatting logic with YAML serialization logic. The `format_report_as_markdown` function will be renamed to `format_report_as_yaml`.
+*   [x] **Framework Integration:** `MODIFY` `src/teddy/main.py` to call the renamed `format_report_as_yaml` function.
+*   [x] **Testing:** `MODIFY` all existing acceptance tests in `tests/acceptance/` to parse the new YAML output instead of performing string or regex matching on Markdown. The tests' core assertions about action success/failure will remain, but the method of verifying the output will be completely changed.
