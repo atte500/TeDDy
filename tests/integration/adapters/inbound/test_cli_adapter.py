@@ -16,7 +16,10 @@ def test_cli_invokes_use_case_with_stdin_content():
     # ARRANGE
     # Create a mock implementation of the port
     mock_use_case = MagicMock(spec=RunPlanUseCase)
-
+    # Configure the mock to return a valid, empty report
+    mock_use_case.execute.return_value = ExecutionReport(
+        run_summary={"status": "SUCCESS"}
+    )
     plan_input = "plan content from stdin"
 
     # ACT
@@ -43,8 +46,7 @@ def test_cli_exits_with_error_code_on_failure():
     """
     # ARRANGE
     mock_use_case = MagicMock(spec=RunPlanUseCase)
-    failure_report = ExecutionReport()
-    failure_report.run_summary["status"] = "FAILURE"
+    failure_report = ExecutionReport(run_summary={"status": "FAILURE"})
     mock_use_case.execute.return_value = failure_report
     plan_input = "any plan that will fail"
 
@@ -65,6 +67,10 @@ def test_cli_handles_create_file_action():
     """
     # ARRANGE
     mock_use_case = MagicMock(spec=RunPlanUseCase)
+    # Configure the mock to return a valid, empty report
+    mock_use_case.execute.return_value = ExecutionReport(
+        run_summary={"status": "SUCCESS"}
+    )
     plan_yaml = """
     - action: create_file
       params:

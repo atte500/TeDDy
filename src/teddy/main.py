@@ -5,7 +5,7 @@ from typing import cast
 from teddy.core.ports.inbound.run_plan_use_case import RunPlanUseCase
 from teddy.core.services.plan_service import PlanService
 from teddy.core.services.action_factory import ActionFactory
-from teddy.adapters.inbound.cli_formatter import format_report_as_markdown
+from teddy.adapters.inbound.cli_formatter import format_report_as_yaml
 from teddy.adapters.outbound.shell_adapter import ShellAdapter
 from teddy.adapters.outbound.file_system_adapter import LocalFileSystemAdapter
 from teddy.adapters.outbound.web_scraper_adapter import WebScraperAdapter
@@ -47,7 +47,7 @@ def main(
 
         report = plan_service.execute(plan_content)
 
-        formatted_report = format_report_as_markdown(report)
+        formatted_report = format_report_as_yaml(report)
         typer.echo(formatted_report)
 
         if report.run_summary.get("status") == "FAILURE":

@@ -1,62 +1,44 @@
-from teddy.core.domain.models import ExecutionReport, ActionResult
+import os
+import platform
+import yaml
+from dataclasses import asdict
+
+from teddy.core.domain.models import ExecutionReport, Action
 
 
-def _format_action_result(result: ActionResult) -> str:
-    """Formats a single action result into a markdown string."""
-    action = result.action
-    action_type = action.action_type
+def _action_to_dict(action: Action) -> dict:
+    """Converts an Action dataclass object to a dictionary for YAML serialization."""
+    # Convert the dataclass to a dictionary using the official helper
+    params = asdict(action)
 
-    # Dictionary-based strategy for formatting the action header
-    header_formatters = {
-        "execute": lambda a: f"### Action: `execute` (`{getattr(a, 'command', 'N/A')}`)",
-        "create_file": lambda a: f"### Action: `create_file` (`{getattr(a, 'file_path', 'N/A')}`)",
-        "read": lambda a: f"### Action: `read` (`{getattr(a, 'source', 'N/A')}`)",
-        "edit": lambda a: f"### Action: `edit` (`{getattr(a, 'file_path', 'N/A')}`)",
+    # The action_type is a guaranteed field on all Action subclasses.
+    # Pop it from the params dict to separate it.
+    action_type = params.pop("action_type")
+
+    return {"type": action_type, "params": params}
+
+
+def format_report_as_yaml(report: ExecutionReport) -> str:
+    """Formats the full execution report into a YAML string."""
+    action_logs_list = []
+    for result in report.action_logs:
+        log_dict = {
+            "action": _action_to_dict(result.action),
+            "status": result.status,
+            "output": result.output if result.output is not None else None,
+            "error": result.error if result.error is not None else None,
+        }
+        action_logs_list.append(log_dict)
+
+    report_dict = {
+        "run_summary": report.run_summary,
+        "environment": {
+            "os": platform.system(),
+            "cwd": str(os.getcwd()),
+        },
+        "action_logs": action_logs_list,
     }
 
-    # Get the appropriate formatter or use a default
-    formatter = header_formatters.get(
-        action_type, lambda a: f"### Action: `{a.action_type}`"
+    return yaml.dump(
+        report_dict, sort_keys=False, default_flow_style=False, allow_unicode=True
     )
-    header = formatter(action)
-
-    # MODIFIED LOGIC: Trigger on any FAILURE, not just failure with output.
-    if result.status == "FAILURE":
-        details_lines = ["- **Details:**", "  ```yaml", f"  status: {result.status}"]
-        if result.error:
-            # Ensure error message is formatted correctly within YAML
-            details_lines.append(f"  error: {result.error}")
-
-        # Conditionally add the output block only if output is not None.
-        if result.output is not None:
-            details_lines.append("  output: |")
-            output_lines = [f"    {line}" for line in result.output.strip().split("\n")]
-            details_lines.extend(output_lines)
-
-        details_lines.append("  ```")
-        return "\n".join([header] + details_lines)
-
-    # Default formatting for all other cases
-    lines = [header, f"- **Status:** {result.status}"]
-    if result.output:
-        lines.extend(["- **Output:**", "```", result.output.strip(), "```"])
-    if result.error:
-        lines.extend(["- **Error:**", "```", result.error.strip(), "```"])
-
-    return "\n".join(lines)
-
-
-def format_report_as_markdown(report: ExecutionReport) -> str:
-    """Formats the full execution report into a markdown string."""
-    lines = ["# Execution Report"]
-
-    overall_status = report.run_summary.get("status", "UNKNOWN")
-    lines.append(f"## Run Summary: {overall_status}")
-    lines.append("---")
-
-    lines.append("## Action Logs")
-    for result in report.action_logs:
-        lines.append(_format_action_result(result))
-        lines.append("\n---")
-
-    return "\n".join(lines)
