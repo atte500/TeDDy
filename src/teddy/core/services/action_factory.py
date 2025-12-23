@@ -48,4 +48,11 @@ class ActionFactory:
         if not action_class:
             raise ValueError(f"Unknown action type: '{action_type}'")
 
+        # Special handling for 'research' action to split queries string
+        if action_type == "research" and isinstance(params.get("queries"), str):
+            queries_str = params["queries"]
+            params["queries"] = [
+                q.strip() for q in queries_str.splitlines() if q.strip()
+            ]
+
         return action_class(**params)
