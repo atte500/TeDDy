@@ -23,6 +23,7 @@ The `PlanService` will be initialized with the components it needs to perform it
         *   [`FileSystemManager`](../ports/outbound/file_system_manager.md)
         *   [`WebScraper`](../ports/outbound/web_scraper.md) **Introduced in:** [Slice 04: Implement `read` Action](../../slices/04-read-action.md)
         *   [`IUserInteractor`](../ports/outbound/user_interactor.md) **Introduced in:** [Slice 10: Implement `chat_with_user` Action](../../slices/10-chat-with-user-action.md)
+        *   [`IWebSearcher`](../ports/outbound/web_searcher.md) **Introduced in:** [Slice 11: Implement `research` action](../../slices/11-research-action.md)
 
 ## 4. Implementation Strategy (Refactored)
 **Related Slice:** [Slice 08: Refactor Action Dispatching](../../slices/08-refactor-action-dispatching.md)
@@ -40,12 +41,14 @@ class PlanService(RunPlanUseCase):
         action_factory: ActionFactory,
         web_scraper: WebScraper,
         user_interactor: IUserInteractor,
+        web_searcher: IWebSearcher,
     ):
         self.shell_executor = shell_executor
         self.file_system_manager = file_system_manager
         self.action_factory = action_factory
         self.web_scraper = web_scraper
         self.user_interactor = user_interactor
+        self.web_searcher = web_searcher
         # The dispatch map is the core of the refactoring
         self.action_handlers = {
             ExecuteAction: self._handle_execute,
@@ -53,6 +56,7 @@ class PlanService(RunPlanUseCase):
             ReadAction: self._handle_read,
             EditAction: self._handle_edit,
             ChatWithUserAction: self._handle_chat_with_user,
+            ResearchAction: self._handle_research,
         }
 
     def execute(self, plan_content: str) -> ExecutionReport:
@@ -131,3 +135,15 @@ These private methods contain the logic for handling a single, specific action t
     *   Calls `self.user_interactor.ask_question(prompt=action.prompt_text)`.
     *   Catches any exceptions from the port and returns a `FAILED` `ActionResult`.
     *   On success, builds and returns a `SUCCESS` `ActionResult` with the user's response in the `output` field.
+
+*   `_handle_research(action: ResearchAction) -> ActionResult`:
+    *   The method will use a `try...except` block.
+    *   **`try` block:**
+        *   Calls `self.web_searcher.search(queries=action.queries)`.
+        *   The returned `SERPReport` object is serialized into a JSON string. A helper/utility function should be used for this serialization to ensure consistency.
+        *   Builds and returns a `SUCCESS` `ActionResult` with the JSON string in the `output` field.
+    *   **`except WebSearchError as e` block:**
+        *   Catches the specific exception from the port.
+        *   Builds and returns a `FAILED` `ActionResult` with a descriptive error message from the exception `e`.
+    *   **`except Exception` block:**
+        *   Catches any other unexpected exceptions and returns a generic `FAILED` `ActionResult`.

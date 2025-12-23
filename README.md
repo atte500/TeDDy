@@ -36,28 +36,16 @@ pip install teddy
 
 ### Executing a Plan
 
-**From Clipboard (Recommended):**
+To avoid conflicts between plan input and interactive prompts (like `y/n` approval or `chat_with_user`), plans must be passed using the `--plan-file` option. Standard input (`stdin`) is now reserved exclusively for interactive I/O.
+
+**From a File:**
 ```bash
-# Get plan from clipboard and execute with interactive approval
-teddy
+# 1. Save the AI-generated plan to a file (e.g., plan.yaml)
+# 2. Execute the plan with interactive approval:
+teddy --plan-file plan.yaml
 
-# Get plan from clipboard and automatically approve all steps
-teddy -y
-```
-
-**From a File or Pipe:**
-
-Plans are always read from standard input (`stdin`). This means you can use a pipe (`|`) or input redirection (`<`) to pass a plan file to the executor. The tool does not accept a filename as a command-line argument.
-
-```bash
-# Pipe a plan from a file (recommended)
-cat my_plan.yaml | teddy
-
-# Use input redirection
-teddy < my_plan.yaml
-
-# Pipe a plan from another command
-echo '- action: execute\n  params:\n    command: "ls -la"' | teddy
+# To automatically approve all steps, use the -y flag:
+teddy --plan-file plan.yaml -y
 ```
 
 ### Utility Commands
@@ -136,15 +124,10 @@ Asks the user a question and captures their free-text response. This action is s
     prompt_text: "I'm about to refactor the database schema. Are there any performance-critical queries I should be aware of?"
 ```
 
-### Planned Actions (Not Yet Implemented)
-The following actions are planned for future releases but are not yet available:
-```yaml
-# No planned actions at this time.
-```
-
 ### `research`
-Performs web searches and returns a SERP report.
+Performs web searches and returns a SERP report in JSON format within the execution report.
 
+**Input:**
 ```yaml
 - action: research
   description: "Find info on Python's Typer." # Optional
@@ -152,3 +135,36 @@ Performs web searches and returns a SERP report.
     typer python cli tutorial
     typer best practices site:realpython.com
 ```
+
+**Output (in Execution Report):**
+The `output` field for a successful `research` action will contain a JSON object with the following structure:
+```json
+{
+  "results": [
+    {
+      "query": "typer python cli tutorial",
+      "search_results": [
+        {
+          "title": "Typer - The official tutorial",
+          "url": "https://typer.tiangolo.com/tutorial/",
+          "snippet": "Learn how to use Typer, the library for building powerful CLIs with Python, based on type hints."
+        },
+        {
+          "title": "Python Typer Tutorial - Real Python",
+          "url": "https://realpython.com/python-typer-cli/",
+          "snippet": "A comprehensive guide to building command-line interfaces in Python with Typer, covering commands, arguments, and options."
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## Project Roadmap
+
+This section outlines the high-level milestones for the project.
+
+*   **Implement `research` action:** Implement the ability for the agent to perform web searches.
+    *   **Status:** In Progress

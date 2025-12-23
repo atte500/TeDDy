@@ -127,6 +127,20 @@ An action that prompts the user with a question and captures their free-text res
 
 ---
 
+### `ResearchAction` (Entity)
+**Status:** Planned
+**Introduced in:** [Slice 11: Implement `research` action](../slices/11-research-action.md)
+
+An action that performs a web search for a list of queries.
+
+*   **Inherits from:** `Action`
+*   **Attributes:**
+    *   `queries` (list[str]): A list of search terms.
+*   **Invariants:**
+    *   `queries` must be a non-empty list of strings.
+
+---
+
 ## 2. Plan (Aggregate Root)
 **Status:** Implemented
 
@@ -168,7 +182,41 @@ A comprehensive report detailing the execution of an entire `Plan`.
 
 ---
 
-## 4. Domain Exceptions
+## 4. Search Result Value Objects
+**Introduced in:** [Slice 11: Implement `research` action](../slices/11-research-action.md)
+
+This hierarchy of value objects represents the structured results from a web search. They are immutable data containers.
+
+### `SearchResult` (Value Object)
+**Status:** Planned
+
+Represents a single search result item.
+
+*   **Attributes:**
+    *   `title` (str): The page title.
+    *   `url` (str): The full URL.
+    *   `snippet` (str): A descriptive snippet of the page content.
+
+### `QueryResult` (Value Object)
+**Status:** Planned
+
+Represents the collection of results for a single search query.
+
+*   **Attributes:**
+    *   `query` (str): The original search query string.
+    *   `search_results` (list[SearchResult]): A list of individual search results.
+
+### `SERPReport` (Value Object)
+**Status:** Planned
+
+Represents the aggregated results for all queries in a `ResearchAction`. This is the object returned by the `IWebSearcher` port.
+
+*   **Attributes:**
+    *   `results` (list[QueryResult]): A list of results, one for each query.
+
+---
+
+## 5. Domain Exceptions
 
 These are custom exceptions that represent specific business rule violations within the domain. They are used by outbound ports to communicate specific failure reasons to the application services.
 
@@ -201,3 +249,13 @@ Raised by the `FileSystemManager` port when an `edit_file` operation finds more 
 *   **Purpose:** To prevent ambiguous edits and force the AI agent to provide a more specific `find` string.
 *   **Attributes:**
     *   `content` (str): The original, unmodified content of the file.
+
+### `WebSearchError` (Exception)
+**Status:** Planned
+**Introduced in:** [Slice 11: Implement `research` action](../slices/11-research-action.md)
+
+Raised by the `IWebSearcher` port when it fails to retrieve search results for any reason (e.g., network error, library failure).
+
+*   **Purpose:** To allow the `PlanService` to catch this specific failure and create a descriptive `FAILED` `ActionResult`.
+*   **Attributes:**
+    *   `original_exception` (Exception | None): The underlying exception that caused the failure, for logging and debugging purposes.
