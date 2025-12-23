@@ -1,4 +1,5 @@
 from pathlib import Path
+import yaml
 from .helpers import run_teddy_with_stdin
 
 CREATE_PLAN_YAML = """
@@ -36,7 +37,10 @@ def test_create_file_on_existing_file_fails_and_returns_content(tmp_path: Path):
     assert existing_file.read_text() == original_content
 
     # The report should clearly indicate the failure and include the original content
-    assert "status: FAILURE" in result.stdout
-    assert "error: File exists:" in result.stdout
-    assert "output: |" in result.stdout
-    assert f"    {original_content}" in result.stdout
+    report = yaml.safe_load(result.stdout)
+    assert report["run_summary"]["status"] == "FAILURE"
+
+    action_log = report["action_logs"][0]
+    assert action_log["status"] == "FAILURE"
+    assert "File exists" in action_log["error"]
+    assert action_log["output"] == original_content
