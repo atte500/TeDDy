@@ -1,6 +1,6 @@
 import textwrap
 from pathlib import Path
-
+import yaml
 from .helpers import run_teddy_with_stdin
 
 
@@ -28,11 +28,13 @@ def test_edit_action_fails_on_multiple_occurrences(tmp_path: Path):
     assert result.returncode != 0
 
     # The report should indicate failure and the specific reason.
-    assert "Run Summary: FAILURE" in result.stdout
-    assert "status: FAILURE" in result.stdout
-    assert "Aborting edit to prevent ambiguity" in result.stdout
-    assert "output: |" in result.stdout
-    assert f"    {original_content}" in result.stdout
+    report = yaml.safe_load(result.stdout)
+    assert report["run_summary"]["status"] == "FAILURE"
+
+    action_log = report["action_logs"][0]
+    assert action_log["status"] == "FAILURE"
+    assert "Aborting edit to prevent ambiguity" in action_log["error"]
+    assert action_log["output"] == original_content
 
     # And the file must remain unchanged
     assert file_to_edit.read_text() == original_content
