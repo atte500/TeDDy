@@ -1,4 +1,5 @@
 from pathlib import Path
+import yaml
 from .helpers import run_teddy_with_stdin
 
 PLAN_YAML = """
@@ -13,7 +14,7 @@ def test_create_file_happy_path(tmp_path: Path):
     """
     Given a YAML plan to create a new file,
     When the user executes the plan,
-    Then the file should be created with the correct content.
+    Then the file should be created with the correct content and the report is valid.
     """
     # Arrange
     file_name = "new_file.txt"
@@ -21,10 +22,6 @@ def test_create_file_happy_path(tmp_path: Path):
     plan = PLAN_YAML.format(file_path=str(new_file_path))
 
     # Act
-    # We run the command with '-y' to auto-approve the action.
-    # The input is piped to stdin.
-    # For the walking skeleton, we don't have interactive approval yet.
-    # The plan will be executed directly. The `-y` flag will be added later.
     result = run_teddy_with_stdin(plan, cwd=tmp_path)
 
     # Assert
@@ -35,9 +32,12 @@ def test_create_file_happy_path(tmp_path: Path):
     ), "The file content is incorrect."
 
     # Verify the report output
-    assert "create_file" in result.stdout
-    assert "COMPLETED" in result.stdout
-    assert str(new_file_path) in result.stdout
+    report = yaml.safe_load(result.stdout)
+    assert report["run_summary"]["status"] == "SUCCESS"
+    action_log = report["action_logs"][0]
+    assert action_log["status"] == "COMPLETED"
+    assert action_log["action"]["type"] == "create_file"
+    assert action_log["action"]["params"]["file_path"] == str(new_file_path)
 
 
 def test_create_file_when_file_exists_fails_gracefully(tmp_path: Path):
@@ -67,6 +67,8 @@ def test_create_file_when_file_exists_fails_gracefully(tmp_path: Path):
     assert existing_file.read_text() == original_content
 
     # The report should clearly indicate the failure
-    assert "FAILURE" in result.stdout
-    assert "File exists:" in result.stdout
-    assert str(existing_file) in result.stdout
+    report = yaml.safe_load(result.stdout)
+    assert report["run_summary"]["status"] == "FAILURE"
+    action_log = report["action_logs"][0]
+    assert action_log["status"] == "FAILURE"
+    assert "File exists" in action_log["error"]

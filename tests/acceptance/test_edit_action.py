@@ -1,6 +1,6 @@
 import textwrap
 from pathlib import Path
-
+import yaml
 from .helpers import run_teddy_with_stdin
 
 
@@ -38,7 +38,6 @@ def test_editing_a_file_happy_path(tmp_path: Path):
     result = run_teddy_with_stdin(plan, cwd=test_dir)
 
     # Assert
-    # Primary assertion: The file content should be updated.
     expected_content = textwrap.dedent(
         """\
         Hello world!
@@ -49,10 +48,11 @@ def test_editing_a_file_happy_path(tmp_path: Path):
     )
     assert file_to_edit.read_text() == expected_content
 
-    # Secondary assertions: The process should exit successfully and report completion.
     assert result.returncode == 0
-    assert "Run Summary: SUCCESS" in result.stdout
-    assert "- **Status:** COMPLETED" in result.stdout
+    report = yaml.safe_load(result.stdout)
+    assert report["run_summary"]["status"] == "SUCCESS"
+    action_log = report["action_logs"][0]
+    assert action_log["status"] == "COMPLETED"
 
 
 def test_editing_with_empty_find_replaces_entire_file(tmp_path: Path):
@@ -82,12 +82,12 @@ def test_editing_with_empty_find_replaces_entire_file(tmp_path: Path):
     result = run_teddy_with_stdin(plan, cwd=test_dir)
 
     # Assert
-    # Primary assertion: The file content should be completely replaced.
     assert file_to_edit.read_text() == new_content
-
-    # Secondary assertions: The process should report success.
     assert result.returncode == 0
-    assert "- **Status:** COMPLETED" in result.stdout
+    report = yaml.safe_load(result.stdout)
+    assert report["run_summary"]["status"] == "SUCCESS"
+    action_log = report["action_logs"][0]
+    assert action_log["status"] == "COMPLETED"
 
 
 def test_multiline_edit_preserves_indentation(tmp_path: Path):
@@ -156,6 +156,9 @@ def test_multiline_edit_preserves_indentation(tmp_path: Path):
     )
     assert file_to_edit.read_text() == expected_content
     assert result.returncode == 0
+    report = yaml.safe_load(result.stdout)
+    assert report["run_summary"]["status"] == "SUCCESS"
+    assert report["action_logs"][0]["status"] == "COMPLETED"
 
 
 def test_editing_non_existent_file_fails_gracefully(tmp_path: Path):
@@ -182,14 +185,13 @@ def test_editing_non_existent_file_fails_gracefully(tmp_path: Path):
     result = run_teddy_with_stdin(plan, cwd=test_dir)
 
     # Assert
-    # Primary assertion: The process should exit with a failure code.
     assert result.returncode != 0
-
-    # Secondary assertions: The process should report failure and a clear error message.
-    assert "Run Summary: FAILURE" in result.stdout
-    assert "status: FAILURE" in result.stdout
-    assert "No such file or directory" in result.stdout
-    assert "output: |" not in result.stdout
+    report = yaml.safe_load(result.stdout)
+    assert report["run_summary"]["status"] == "FAILURE"
+    action_log = report["action_logs"][0]
+    assert action_log["status"] == "FAILURE"
+    assert "No such file or directory" in action_log["error"]
+    assert action_log["output"] is None
 
 
 def test_editing_file_where_find_text_is_not_found_fails(tmp_path: Path):
@@ -219,15 +221,11 @@ def test_editing_file_where_find_text_is_not_found_fails(tmp_path: Path):
     result = run_teddy_with_stdin(plan, cwd=test_dir)
 
     # Assert
-    # The file content should be unchanged.
     assert file_to_edit.read_text() == initial_content
-
-    # The process should exit with a failure code.
     assert result.returncode != 0
-
-    # The report should indicate failure and the specific reason using the NEW format
-    assert "Run Summary: FAILURE" in result.stdout
-    assert "status: FAILURE" in result.stdout
-    assert "error: Search text 'goodbye' not found in file." in result.stdout
-    assert "output: |" in result.stdout
-    assert f"    {initial_content}" in result.stdout
+    report = yaml.safe_load(result.stdout)
+    assert report["run_summary"]["status"] == "FAILURE"
+    action_log = report["action_logs"][0]
+    assert action_log["status"] == "FAILURE"
+    assert "Search text 'goodbye' not found" in action_log["error"]
+    assert action_log["output"] == initial_content
