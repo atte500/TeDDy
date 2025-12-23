@@ -2,19 +2,23 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import Optional
+import yaml
 
 # Path to the teddy executable script
 TEDDY_CMD_BASE = [sys.executable, "-m", "teddy"]
 
 
 def run_teddy_with_plan_file(
-    plan_file: Path, input: Optional[str] = None
+    plan_file: Path, input: Optional[str] = None, auto_approve: bool = False
 ) -> subprocess.CompletedProcess:
     """
     Helper function to run teddy with a given plan file path.
     Used for interactive tests where stdin is needed for user input.
     """
     cmd = TEDDY_CMD_BASE + ["--plan-file", str(plan_file)]
+    if auto_approve:
+        cmd.append("-y")
+
     return subprocess.run(
         cmd,
         input=input,
@@ -38,6 +42,6 @@ def run_teddy_with_stdin(plan_content: str, cwd: Path) -> subprocess.CompletedPr
     )
 
 
-# The validate_teddy_output function was removed as it was based on a faulty
-# assumption that the application would output raw YAML. The application outputs
-# Markdown, which should be asserted against with string matching.
+def parse_yaml_report(stdout: str) -> dict:
+    """Parses the YAML report from teddy's stdout."""
+    return yaml.safe_load(stdout)

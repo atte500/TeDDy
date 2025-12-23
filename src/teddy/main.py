@@ -28,6 +28,12 @@ def main(
         "-f",
         help="Path to the plan file. If not provided, reads from stdin.",
     ),
+    auto_approve: bool = typer.Option(
+        False,
+        "--yes",
+        "-y",
+        help="Automatically approve all actions without prompting.",
+    ),
 ):
     """
     Teddy Executor: A tool for running declarative plans.
