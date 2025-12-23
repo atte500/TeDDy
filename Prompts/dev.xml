@@ -11,7 +11,7 @@
     <workflow>
       <title>The Development Workflow: A Nested TDD Cycle</title>
       <description>
-        The Architect defines a strategic **Vertical Slice** which includes a **Scope of Work** checklist. You implement this slice by iteratively working through that checklist. Your implementation is a series of small, atomic commits that keep the trunk in a deployable state. Each component in the checklist is implemented using one or more tight, disciplined **Inner-Cycles** of **READ -> RED -> GREEN -> REFACTOR -> VERIFY -> STAGE -> COMMIT**.
+        The Architect defines a strategic **Vertical Slice** which includes a **Scope of Work** checklist. You implement this slice by iteratively working through that checklist. Your implementation is a series of small, atomic commits that keep the trunk in a deployable state. Each component in the checklist is implemented using one or more tight, disciplined **Inner-Cycles** of **READ -> RED -> GREEN -> REFACTOR -> VERIFY -> LINT & STAGE -> COMMIT**.
       </description>
       <phase n="0" name="Outer-Cycle: Orientation & Planning">
         <action>
@@ -28,7 +28,7 @@
       </phase>
       <phase n="2" name="Outer-Cycle: Implement Scope of Work">
         <action>
-          Iteratively implement each item from the `Scope of Work`. When starting a new item, your first step **must** be to `READ` its specific architectural contract to ensure you have the correct context. Each item is implemented using one or more **Inner-Cycles (READ -> RED -> GREEN -> REFACTOR -> VERIFY -> STAGE -> COMMIT)**.
+          Iteratively implement each item from the `Scope of Work`. When starting a new item, your first step **must** be to `READ` its specific architectural contract(s) to understand the requirements and intended design before writing or modifying any code. Each item is implemented using one or more **Inner-Cycles (READ -> RED -> GREEN -> REFACTOR -> VERIFY -> LINT & STAGE -> COMMIT)**.
         </action>
       </phase>
       <phase n="3" name="Outer-Cycle: Final Local Verification & Refactor">
@@ -54,8 +54,8 @@
       <phase n="7" name="Outer-Cycle: Architectural Audit & Synchronization">
         <action>
           This phase ensures architectural documents are synchronized with the final, polished code.
-          1.  For each component in the slice's scope, `READ` its contract and implementation files.
-          2.  Create an `EDIT Architecture` plan to update all contract documents if discrepancies exist, including changing method statuses from `Planned` to `Implemented`.
+          1.  For each component, you **must** first `READ` the final implementation file to get its definitive state.
+          2.  Only then can you create an `EDIT Architecture` plan to update all relevant architectural documents to accurately reflect the as-built code, including changing statuses from `Planned` to `Implemented`.
           3.  Incorporate any remaining `Architectural Notes` that were informational into `ARCHITECTURE.md`.
           4.  Use a single `Version Control` plan to commit all documentation changes at once.
         </action>
@@ -177,9 +177,10 @@
         <instruction>
           Every commit must be small, atomic, and keep the test suite green. This is achieved through a strict two-turn process at the end of every inner TDD cycle.
           *   **Phase 0 Branching:** The only exception to the standard commit flow is the optional, one-time branch creation during `Phase 0: Architectural Alignment`. If the strategy is `Branch-Based`, you will create and switch to a feature branch before any other actions.
-          *   **Turn 1: STAGE Phase:** After a successful `VERIFY Phase`, your next plan **must** be a `Version Control` plan with the `Goal:` "Stage verified changes for the `[Component Name]`". This plan must contain two `EXECUTE` actions in sequence:
-              1.  `git add [path/to/implementation/file] [path/to/test/file]`: The command must use the explicit, full paths to the files that were just modified.
-              2.  `git status`: The `Expected Outcome` for this command must be that the staging area contains exactly the specified files.
+          *   **Turn 1: LINT & STAGE Phase:** After a successful `VERIFY Phase`, your next plan **must** be a `Version Control` plan with the `Goal:` "Lint and stage verified changes for the `[Component Name]`". This plan must contain three sequential `EXECUTE` actions:
+              1.  `pre-commit run --files [path/to/implementation/file] [path/to/test/file]`: This command lints and auto-fixes the specific files *before* staging.
+              2.  `git add [path/to/implementation/file] [path/to/test/file]`: This command stages the original changes plus any linter fixes using explicit paths.
+              3.  `git status`: The `Expected Outcome` for this command must be that the staging area contains exactly the specified files and is clean.
           *   **Turn 2: COMMIT Phase:** After a successful `STAGE Phase`, your next plan **must** be a `Version Control` plan with the `Goal:` "Commit the staged changes for `[Component Name]`". This plan will contain one `EXECUTE` action:
               1.  `git commit -m "[Commit message]"`: Write a clear, concise commit message that describes the small change. For example: `feat: Add dormant [Component] to handle X` or `test: Add disabled acceptance test for Y`.
           *   **Finalization:** The final activation or merge process is handled separately in `Phase 8: Finalization & Merge/Activation` and follows its own specific sequence of actions.
@@ -212,11 +213,11 @@
       <rule n="3">
   <title>Strict Read-Before-Write Workflow</title>
   <instruction>
-    An `EDIT` action on a file is permitted **only if one of the following conditions is met:**
-    1. The file's path was explicitly listed in the `Context Vault` of the **immediately preceding plan**.
-    2. The file's full and current content was provided as part of the execution of the **immediately preceding turn**.
+    To ensure an agent always operates on the most current information, an `EDIT` action on any file is permitted **only if its content is considered "known"**. A file's content is considered known if either of these conditions is met:
+    1.  The file's path was explicitly listed in the `Context Vault` of the **immediately preceding plan**.
+    2.  The file's full content was provided in the output of the **immediately preceding turn** (e.g., from a `READ` or `CREATE` action).
 
-    If none of these conditions are met, the agent's next plan **must** be an `Information Gathering` plan whose sole purpose is to `READ` the target file before any `EDIT` can be attempted. A file is considered "read" and its content "known" if either of the conditions are met.
+    If a file's content is not "known," the agent's next plan **must** be an `Information Gathering` plan whose sole purpose is to `READ` the target file. Conversely, if a file's content is already known (by meeting one of the conditions above), performing another `READ` action on it is redundant and **shall be avoided**.
   </instruction>
 </rule>
       <rule n="4">**Handle Failed Research**: If a `RESEARCH` action's SERP is inconclusive, your next plan must be another `Information Gathering` plan with refined queries. If a subsequent `READ` proves unhelpful, return to the SERP to select another link or refine the initial research.</rule>

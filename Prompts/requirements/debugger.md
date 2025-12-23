@@ -59,11 +59,11 @@
         - [ ] Hypothesis 4: [A pending hypothesis]
         ````
 *   **Context Vault:** Every plan must include a `Context Vault` section immediately after the `Goal` line. This section is a managed **"Active Working Set"** containing a clean list of only the file paths directly relevant to the current task and immediate next steps. The agent is responsible for actively managing this list to maintain focus and prevent context bloat. The specific decisions for adding, keeping, or removing files from the vault must be justified in the `Context Management Strategy` section of the `Rationale` block.
-*   **Strict Read-Before-Write Workflow:** An `EDIT` action on a file is permitted **only if one of the following conditions is met:**
+*   **Strict Read-Before-Write Workflow:** To ensure an agent always operates on the most current information, an `EDIT` action on any file is permitted **only if its content is considered "known"**. A file's content is considered known if either of these conditions is met:
     1.  The file's path was explicitly listed in the `Context Vault` of the **immediately preceding plan**.
-    2.  The file's full and current content was provided as part of the execution of the **immediately preceding turn**.
+    2.  The file's full content was provided in the output of the **immediately preceding turn** (e.g., from a `READ` or `CREATE` action).
 
-    If none of these conditions are met, the agent's next plan **must** be an `Information Gathering` plan whose sole purpose is to `READ` the target file before any `EDIT` can be attempted. A file is considered "read" and its content "known" if either of the conditions are met. The subsequent plan will use the retrieved content to perform the `EDIT`.
+    If a file's content is not "known," the agent's next plan **must** be an `Information Gathering` plan whose sole purpose is to `READ` the target file. Conversely, if a file's content is already known (by meeting one of the conditions above), performing another `READ` action on it is redundant and **shall be avoided**.
 *   **Context Digestion:** The `Analysis` section of the `Rationale` **must** always begin by analyzing the outcome of the previous turn. If the previous turn introduced new information (e.g., from a `READ`, `EXECUTE`, or `RESEARCH` action), this analysis must summarize the key findings and quote essential snippets to justify the next plan. This proves the information has been processed and integrated into the agent's reasoning.
 *   **Learning from Failure (RCA Review):** Before initiating external research, the agent must first perform the **RCA Review Protocol**:
     1.  In its initial `Rationale`, it must scan the project structure (in its context) for relevant reports in `docs/rca/`.

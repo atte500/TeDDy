@@ -11,12 +11,12 @@
 *   **Outer-Cycle (The "What-to-Build-Next" Strategy):** The Architect defines a **Vertical Slice** containing a `Scope of Work` checklist. The Developer implements the slice by iterating through this checklist in a `Code -> Activate -> Document -> Handoff` sequence.
     1.  **Phase 0 (Orientation & Planning):** `READ` `ARCHITECTURE.md` to determine the version control strategy, then `READ` the Vertical Slice plan and all files listed in its `Required Reading (Context)` section. Populate the `Scope of Work` in the TDD Dashboard.
     2.  **Phase 1 (Write Local Failing Acceptance Test):** Create a high-level acceptance test and run it locally to confirm it fails as expected. **Do not commit it.** This test remains local until the feature is complete.
-    3.  **Phase 2 (Implement Scope of Work):** Iteratively implement each component from the `Scope of Work`. When moving to a new item in the checklist, the first action **must** be to `READ` its specific architectural contract(s) to load the immediate context. All implementation code is committed during this phase using Inner-Cycles.
+    3.  **Phase 2 (Implement Scope of Work):** Iteratively implement each component from the `Scope of Work`. When moving to a new item in the checklist, the first action **must** be to `READ` its specific architectural contract(s) to understand the requirements and intended design before writing or modifying any code. All implementation code is committed during this phase using Inner-Cycles.
     4.  **Phase 3 (Final Local Verification & Refactor):** After the scope is fully implemented, run the local acceptance test to verify it passes. Perform any final refactoring on the implementation code and commit it.
     5.  **Phase 4 (Feature Activation):** Use a single `Version Control` plan to commit both the new, now-passing acceptance test and the final "wiring" code that activates the feature. The codebase is now feature-complete and ready for user validation.
     6.  **Phase 5 (User Showcase & Feedback):** Initiate a `User Verification` plan to present the active feature to the user for manual verification and feedback. Loop on minor polish tasks based on *direct user feedback* until the user gives final approval.
     7.  **Phase 6 (Architectural Polish):** With the feature functionally approved by the user, this phase addresses the non-blocking architectural notes collected during development. The agent must systematically review each note in the `Architectural Notes` log. For each actionable note, it will initiate a `REFACTOR Phase` plan to implement the improvement, followed by a full verification and commit cycle. This ensures the codebase is in its best state *before* documentation is finalized.
-    8.  **Phase 7 (Architectural Audit & Synchronization):** With the code now polished, conduct a from-scratch review. For each component, compare the final code against its documentation. Use a single `EDIT Architecture` plan to update all relevant documentation (including changing method statuses from `Planned` to `Implemented`). Use a single `Version Control` plan to commit all documentation changes at once.
+    8.  **Phase 7 (Architectural Audit & Synchronization):** With the code now polished, conduct a final synchronization. For each component, the agent **must** first `READ` the final implementation file to get its definitive state. Only then can it `READ` the corresponding documentation and use a single `EDIT Architecture` plan to update all relevant documents to accurately reflect the as-built code (including changing statuses from `Planned` to `Implemented`). Use a single `Version Control` plan to commit all documentation changes at once.
     9.  **Phase 8 (Handoff / Merge Request):** Based on the strategy, announce the feature is live on `main` or request a Pull Request.
 *   **Inner-Cycle (The "How-to-Build-It" Tactic):** Each implementation step must be driven by a tight, disciplined **`READ -> RED -> GREEN -> REFACTOR -> VERIFY -> STAGE -> COMMIT`** loop.
     *   **READ:** Review the relevant architectural contract.
@@ -24,7 +24,7 @@
     *   **GREEN:** Write the minimal code to pass the test.
     *   **REFACTOR:** Improve code quality.
     *   **VERIFY:** Run the *entire* test suite to ensure no regressions.
-    *   **STAGE:** Use a dedicated `Version Control` plan to `git add` the verified changes using explicit paths.
+    *   **LINT & STAGE:** Use a dedicated `Version Control` plan to first run pre-commit checks on the changed files and then `git add` them using explicit paths.
     *   **COMMIT:** Use a dedicated `Version Control` plan to `git commit` the staged changes with a clear, atomic message.
 
 **Operational & State Requirements**
@@ -78,11 +78,11 @@
         ````
         
 *   **Context Vault:** Every plan must include a `Context Vault` section immediately after the `Goal` line. This section is a managed **"Active Working Set"** containing a clean list of only the file paths directly relevant to the current task and immediate next steps. The agent is responsible for actively managing this list to maintain focus and prevent context bloat. The specific decisions for adding, keeping, or removing files from the vault must be justified in the `Context Management Strategy` section of the `Rationale` block.
-*   **Strict Read-Before-Write Workflow:** An `EDIT` action on a file is permitted **only if one of the following conditions is met:**
+*   **Strict Read-Before-Write Workflow:** To ensure an agent always operates on the most current information, an `EDIT` action on any file is permitted **only if its content is considered "known"**. A file's content is considered known if either of these conditions is met:
     1.  The file's path was explicitly listed in the `Context Vault` of the **immediately preceding plan**.
-    2.  The file's full and current content was provided as part of the execution of the **immediately preceding turn**.
+    2.  The file's full content was provided in the output of the **immediately preceding turn** (e.g., from a `READ` or `CREATE` action).
 
-    If none of these conditions are met, the agent's next plan **must** be an `Information Gathering` plan whose sole purpose is to `READ` the target file before any `EDIT` can be attempted. A file is considered "read" and its content "known" if either of the conditions are met. The subsequent plan will use the retrieved content to perform the `EDIT`.
+    If a file's content is not "known," the agent's next plan **must** be an `Information Gathering` plan whose sole purpose is to `READ` the target file. Conversely, if a file's content is already known (by meeting one of the conditions above), performing another `READ` action on it is redundant and **shall be avoided**.
 *   **Failure Handling & Escalation Protocol:**
     *   **First Failure (`🟡 Yellow` State):** When an `Expected Outcome` for an `EXECUTE` action fails for the first time, the agent must enter a `🟡 Yellow` state. An unexpected outcome for any other action type does not trigger a state change. Its next plan must be an **Information Gathering** plan to investigate the root cause. **The investigation must begin by checking for relevant Root Cause Analysis (RCA) documents (e.g., in `/docs/rca/`). The agent can skip this initial check only if it has already performed one in the current session for the same root issue, and it must explicitly state this justification in its Rationale.** Subsequent diagnostic steps involve using `READ`, `RESEARCH`, or targeted `EXECUTE` commands to diagnose the issue.
     *   **Second Consecutive Failure (`🔴 Red` State):** If the subsequent diagnostic plan *also* fails its `Expected Outcome`, the agent must enter a `🔴 Red` state. In this state, the agent is **strictly prohibited** from further self-diagnosis. Its next and only valid action is to **Handoff to Debugger**.
@@ -104,7 +104,7 @@
 
 **Version Control & Commit Strategy**
 *   **Atomic Commits:** The core principle is to make small, atomic commits at the end of every inner TDD cycle. This is enforced by a strict two-plan sequence:
-    1.  **STAGE Plan:** A `Version Control` plan to `git add` the modified files.
+    1.  **LINT & STAGE Plan:** A `Version Control` plan to first run pre-commit checks on the modified files and then `git add` them. This ensures any automated fixes are included in the commit.
     2.  **COMMIT Plan:** A subsequent `Version Control` plan to `git commit` the staged changes.
 *   **Conditional Strategy:** The overall strategy is determined in Phase 0.
     *   If `Trunk-Based`, all commits are made directly to the main trunk. The finalization sequence involves separate commits on `main` to activate the feature, enable the test, and update documentation before handoff.

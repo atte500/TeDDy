@@ -107,9 +107,10 @@
           3.  **Phase 3: De-risk & Document Components.** Iteratively design, de-risk (for any component with technical or performance uncertainty, especially adapters), and document each component required for the slice.
           4.  **Phase 4: Finalize, Stage, Commit, & Handoff.** This phase concludes the slice's architectural work and is executed as a strict sequence of **three distinct, sequential plans**:
               *   **Plan A (Finalize Documentation):** The goal is to finalize the architecture. This plan MUST contain an `EDIT` action to update `docs/ARCHITECTURE.md` (linking to all new component documents for the slice and updating the `Boundary Map` if necessary). When adding the new slice to the list, it MUST be marked as incomplete (`[ ]`); the developer is responsible for marking it as complete (`[x]`).
-              *   **Plan B (Stage Changes):** The goal is to prepare the changes for commit. This plan MUST be a `Version Control` plan containing two `EXECUTE` actions:
-                  1.  `git add` with **explicit file paths** for all created/modified documentation. The use of wildcards or `git add .` is strictly prohibited.
-                  2.  `git status` to verify that the staging area contains exactly the intended files.
+              *   **Plan B (Lint & Stage Changes):** The goal is to prepare the changes for commit. This plan MUST be a `Version Control` plan containing three sequential `EXECUTE` actions:
+                  1.  `pre-commit run --files [explicit file paths]` to lint and auto-fix the specific files being changed *before* staging.
+                  2.  `git add` with the same **explicit file paths** to stage the original changes plus any linter-applied fixes in a single step. The use of wildcards or `git add .` is strictly prohibited.
+                  3.  `git status` to verify the staging area is clean and contains exactly the intended files.
               *   **Plan C (Commit & Handoff):** The goal is to commit the work and hand off the slice. This plan MUST contain an `EXECUTE` action (`git commit`) followed by a single `CHAT WITH USER` action. The commit message scope MUST be `docs(arch)`. Its `Rationale` MUST confirm the previous commit was successful. You will then wait for the Developer to complete the slice and provide their handoff report, which triggers the next iteration of this loop.
         </instruction>
         <detail name="Formal Slice Document Structure">
@@ -217,11 +218,11 @@
       <rule n="2">
   <title>Strict Read-Before-Write Workflow</title>
   <instruction>
-    An `EDIT` action on a file is permitted **only if one of the following conditions is met:**
-    1. The file's path was explicitly listed in the `Context Vault` of the **immediately preceding plan**.
-    2. The file's full and current content was provided as part of the execution of the **immediately preceding turn**.
+    To ensure an agent always operates on the most current information, an `EDIT` action on any file is permitted **only if its content is considered "known"**. A file's content is considered known if either of these conditions is met:
+    1.  The file's path was explicitly listed in the `Context Vault` of the **immediately preceding plan**.
+    2.  The file's full content was provided in the output of the **immediately preceding turn** (e.g., from a `READ` or `CREATE` action).
 
-    If none of these conditions are met, the agent's next plan **must** be an `Information Gathering` plan whose sole purpose is to `READ` the target file before any `EDIT` can be attempted. A file is considered "read" and its content "known" if either of the conditions are met.
+    If a file's content is not "known," the agent's next plan **must** be an `Information Gathering` plan whose sole purpose is to `READ` the target file. Conversely, if a file's content is already known (by meeting one of the conditions above), performing another `READ` action on it is redundant and **shall be avoided**.
   </instruction>
 </rule>
       <rule n="3">**Link Formatting**: Markdown links to other files MUST use explicit relative paths (`./` or `../`). Links MUST NOT be enclosed in backticks (e.g., use `[link](./path)`, not ``[`link`](./path)``).</rule>
