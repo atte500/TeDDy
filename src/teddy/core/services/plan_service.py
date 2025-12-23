@@ -1,5 +1,7 @@
 from typing import List, Dict, Any
 import yaml
+import time
+from datetime import datetime, timezone
 from requests.exceptions import RequestException
 
 from teddy.core.domain.models import (
@@ -143,6 +145,9 @@ class PlanService(RunPlanUseCase):
 
     def execute(self, plan_content: str) -> ExecutionReport:
         report = ExecutionReport()
+        start_time = time.monotonic()
+        start_time_utc = datetime.now(timezone.utc).isoformat()
+
         try:
             # 1. Parse and Validate Input
             parsed_actions = self._parse_plan_content(plan_content)
@@ -175,6 +180,12 @@ class PlanService(RunPlanUseCase):
         overall_status = "SUCCESS"
         if any(log.status == "FAILURE" for log in report.action_logs):
             overall_status = "FAILURE"
+
+        end_time = time.monotonic()
+        duration = end_time - start_time
+
         report.run_summary["status"] = overall_status
+        report.run_summary["start_time"] = start_time_utc
+        report.run_summary["duration_seconds"] = round(duration, 4)
 
         return report

@@ -20,7 +20,11 @@ def test_format_report_as_yaml():
         error=None,
     )
     report = ExecutionReport(
-        run_summary={"status": "SUCCESS", "duration_seconds": 0.1},
+        run_summary={
+            "status": "SUCCESS",
+            "duration_seconds": 0.1,
+            "start_time": "2023-01-01T12:00:00Z",
+        },
         action_logs=[action_result],
     )
 
@@ -32,6 +36,8 @@ def test_format_report_as_yaml():
     data = yaml.safe_load(yaml_output)
 
     assert data["run_summary"]["status"] == "SUCCESS"
+    assert "start_time" in data["run_summary"]
+    assert "duration_seconds" in data["run_summary"]
     assert data["environment"]["os"] == platform.system()
     assert data["environment"]["cwd"] == str(os.getcwd())
 
