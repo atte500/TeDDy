@@ -1,4 +1,5 @@
 from pathlib import Path
+import yaml
 from .helpers import run_teddy_with_stdin
 
 
@@ -20,21 +21,22 @@ def test_successful_execution():
     result = run_teddy_with_stdin(plan_content, cwd=Path("."))
 
     # THEN
-    # The tool itself should run successfully
     assert result.returncode == 0
+    report = yaml.safe_load(result.stdout)
 
-    # The report should contain the correct elements
-    assert "Run Summary: SUCCESS" in result.stdout
-    assert "- **Status:** SUCCESS" in result.stdout
-    assert "hello world" in result.stdout
-    assert "Error:" not in result.stdout
+    assert report["run_summary"]["status"] == "SUCCESS"
+    action_log = report["action_logs"][0]
+    assert action_log["status"] == "SUCCESS"
+    assert "hello world" in action_log["output"]
+    # error key exists but is empty string on success for shell adapter
+    assert not action_log["error"]
 
 
 def test_failed_execution():
     """
     Given a valid YAML plan with a failing command,
     When the plan is piped into the teddy command,
-    Then the command should exit with status 0 (the tool ran successfully),
+    Then the command should exit with a non-zero code,
     And the report should show FAILURE with the correct error output.
     """
     # GIVEN
@@ -48,12 +50,13 @@ def test_failed_execution():
     result = run_teddy_with_stdin(plan_content, cwd=Path("."))
 
     # THEN
-    # The tool should exit with a non-zero code because the plan failed
     assert result.returncode != 0
+    report = yaml.safe_load(result.stdout)
 
-    # The report should contain the correct failure elements
-    assert "Run Summary: FAILURE" in result.stdout
-    assert "status: FAILURE" in result.stdout
-    assert "error:" in result.stdout
+    assert report["run_summary"]["status"] == "FAILURE"
+    action_log = report["action_logs"][0]
+    assert action_log["status"] == "FAILURE"
+    assert action_log["error"] is not None
     # The specific shell error message for "command not found"
-    assert "not found" in result.stdout or "not recognized" in result.stdout
+    error_msg = action_log["error"].lower()
+    assert "not found" in error_msg or "not recognized" in error_msg
