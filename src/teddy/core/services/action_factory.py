@@ -8,6 +8,7 @@ from teddy.core.domain.models import (
     ReadAction,
     EditAction,
     ChatWithUserAction,
+    ResearchAction,
 )
 
 
@@ -19,6 +20,7 @@ class ActionFactory:
         "read": ReadAction,
         "edit": EditAction,
         "chat_with_user": ChatWithUserAction,
+        "research": ResearchAction,
     }
 
     @classmethod

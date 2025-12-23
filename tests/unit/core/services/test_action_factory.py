@@ -119,3 +119,20 @@ class TestActionFactory:
         # Assert
         assert isinstance(action, models.ChatWithUserAction)
         assert action.prompt == "What is the meaning of life?"
+
+    def test_create_research_action(self):
+        """
+        Tests that the factory can create a valid ResearchAction.
+        """
+        # Arrange
+        raw_action = {
+            "action": "research",
+            "params": {"queries": ["python typer", "pytest best practices"]},
+        }
+
+        # Act
+        action = ActionFactory.create_action(raw_action)
+
+        # Assert
+        assert isinstance(action, models.ResearchAction)
+        assert action.queries == ["python typer", "pytest best practices"]
