@@ -7,8 +7,26 @@
 1.  **Plan Generation:** An AI agent generates a multi-step plan in YAML format.
 2.  **Execution:** You run `teddy` in your terminal, piping or pasting the plan to it.
 3.  **Interactive Approval:** By default, `teddy` runs in interactive mode. It prints each action and prompts for your approval (`y/n`). If you reject a step, you will be prompted for an optional reason. The action is not performed, and the final report will mark it as `SKIPPED`, including your reason, confirming that no changes were made.
-4.  **Feedback Report:** After execution, `teddy` generates a markdown **Execution Report**, copies it to your clipboard, and prints it to the console. This report is pasted back to the AI, providing a complete feedback loop.
-5.  **Automated Context Tip:** If an Execution Report is particularly long, a tip is automatically added at the end. This tip instructs the AI to first summarize the report's key outcomes into its reasoning process before asking you to delete the large message. This helps manage the context window effectively without losing critical information.
+4.  **Execution Report:** After execution, `teddy` generates a pure YAML **Execution Report**, copies it to your clipboard, and prints it to the console. This report is the single source of truth about the outcome of the plan and is pasted back to the AI to provide a complete feedback loop.
+
+    The report has the following structure:
+
+    ```yaml
+    run_summary:
+      status: [SUCCESS|FAILURE]
+      start_time: "YYYY-MM-DDTHH:MM:SSZ"
+      duration_seconds: float
+    environment:
+      os: "os_name"
+      cwd: "/path/to/execution"
+    action_logs:
+      - action:
+          type: "action_name"
+          params: { ... }
+        status: [SUCCESS|FAILURE|COMPLETED]
+        output: "multi-line string output" | null
+        error: "error message" | null
+    ```
 
 ## Installation & Dependencies
 
@@ -109,9 +127,6 @@ Executes a shell command.
   description: "Install project dependencies." # Optional
   params:
     command: "pip install -r requirements.txt"
-    cwd: "." # Optional working directory
-    background: false # Optional, run in background
-    timeout: 60 # Optional, in seconds
 ```
 
 ### `chat_with_user`

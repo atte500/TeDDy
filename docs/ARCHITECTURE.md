@@ -135,7 +135,14 @@ This section provides links to the detailed design documents for each component,
 *   **Adapters:**
     *   [Outbound Adapter: `ConsoleInteractorAdapter`](./adapters/outbound/console_interactor.md)
 
-### Slice 11: Implement `research` Action
+### Slice 11: Refactor Execution Report to Pure YAML
+
+*   **Adapters:**
+    *   [Inbound Adapter: CLI Formatter (Refactored)](./adapters/inbound/cli.md)
+*   **Testing:**
+    *   All acceptance tests will be refactored to parse YAML.
+
+### Slice 12: Implement `research` Action
 
 *   **Core Logic:**
     *   [Domain Model (Updated)](./core/domain_model.md)
@@ -159,7 +166,8 @@ This section will list the architectural documents for each vertical slice as th
 *   [x] [Slice 08: Refactor Action Dispatching](./slices/08-refactor-action-dispatching.md)
 *   [x] [Slice 09: Enhance `edit` Action Safety](./slices/09-enhance-edit-action-safety.md)
 *   [x] [Slice 10: Implement `chat_with_user` Action](./slices/10-chat-with-user-action.md)
-*   [ ] [Slice 11: Implement `research` action](./slices/11-research-action.md)
+*   [ ] [Slice 11: Refactor Execution Report to Pure YAML](./slices/11-refactor-report-to-yaml.md)
+*   [ ] [Slice 12: Implement `research` action](./slices/12-research-action.md)
 
 ---
 
