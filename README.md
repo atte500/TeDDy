@@ -146,9 +146,10 @@ Performs web searches and returns a SERP report in JSON format within the execut
 ```yaml
 - action: research
   description: "Find info on Python's Typer." # Optional
-  queries: |
-    typer python cli tutorial
-    typer best practices site:realpython.com
+  params:
+    queries: |
+      typer python cli tutorial
+      typer best practices site:realpython.com
 ```
 
 **Output (in Execution Report):**

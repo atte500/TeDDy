@@ -37,3 +37,4 @@ The `ActionFactory` is a core component responsible for taking raw action data (
 3.  It will then retrieve the corresponding class from the registry.
 4.  It will attempt to instantiate the class, passing the `params` dictionary as keyword arguments.
 5.  The `dataclass` constructor of the concrete action class will handle the initial type validation. Any `TypeError` during instantiation should be caught and re-raised as a more specific `InvalidActionParametersError`, providing a clear error message to the user.
+6.  The factory is also responsible for minor data transformations required by the YAML format. For example, it converts a multi-line string of queries for the `research` action into the list of strings required by the `ResearchAction` domain object.

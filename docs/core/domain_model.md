@@ -128,7 +128,7 @@ An action that prompts the user with a question and captures their free-text res
 ---
 
 ### `ResearchAction` (Entity)
-**Status:** Planned
+**Status:** Implemented
 **Introduced in:** [Slice 11: Implement `research` action](../slices/11-research-action.md)
 
 An action that performs a web search for a list of queries.
@@ -188,7 +188,7 @@ A comprehensive report detailing the execution of an entire `Plan`.
 This hierarchy of value objects represents the structured results from a web search. They are immutable data containers.
 
 ### `SearchResult` (Value Object)
-**Status:** Planned
+**Status:** Implemented
 
 Represents a single search result item.
 
@@ -198,7 +198,7 @@ Represents a single search result item.
     *   `snippet` (str): A descriptive snippet of the page content.
 
 ### `QueryResult` (Value Object)
-**Status:** Planned
+**Status:** Implemented
 
 Represents the collection of results for a single search query.
 
@@ -207,7 +207,7 @@ Represents the collection of results for a single search query.
     *   `search_results` (list[SearchResult]): A list of individual search results.
 
 ### `SERPReport` (Value Object)
-**Status:** Planned
+**Status:** Implemented
 
 Represents the aggregated results for all queries in a `ResearchAction`. This is the object returned by the `IWebSearcher` port.
 
@@ -251,7 +251,7 @@ Raised by the `FileSystemManager` port when an `edit_file` operation finds more 
     *   `content` (str): The original, unmodified content of the file.
 
 ### `WebSearchError` (Exception)
-**Status:** Planned
+**Status:** Implemented
 **Introduced in:** [Slice 11: Implement `research` action](../slices/11-research-action.md)
 
 Raised by the `IWebSearcher` port when it fails to retrieve search results for any reason (e.g., network error, library failure).
