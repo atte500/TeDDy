@@ -86,3 +86,29 @@ def test_format_report_with_failed_action():
     assert log["status"] == "FAILURE"
     assert log["error"] == error_message
     assert log["output"] is None
+
+
+def test_format_report_uses_literal_block_for_multiline_output():
+    """
+    Tests that a multi-line string in the 'output' field is formatted
+    using a YAML literal block scalar (|) for readability.
+    """
+    # Arrange
+    multiline_content = '{\n  "key": "value",\n  "another": "item"\n}'
+    action = ExecuteAction(command="cat file.json")
+    report = ExecutionReport(
+        run_summary={"status": "SUCCESS"},
+        action_logs=[
+            ActionResult(action=action, status="SUCCESS", output=multiline_content)
+        ],
+    )
+
+    # Act
+    yaml_string = format_report_as_yaml(report)
+
+    # Assert
+    # We check the raw string for the literal block indicator
+    assert "output: |" in yaml_string
+    # We also parse it to ensure it's still valid YAML
+    data = yaml.safe_load(yaml_string)
+    assert data["action_logs"][0]["output"] == multiline_content
