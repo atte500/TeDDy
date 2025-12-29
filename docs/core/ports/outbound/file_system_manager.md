@@ -21,6 +21,8 @@ The `FileSystemManager` port defines a technology-agnostic interface for interac
     *   On success, a new file is created at `path` containing the exact `content`.
     *   If a file already exists at `path`, a `FileAlreadyExistsError` must be raised. **(Updated in: [Slice 07: Update Action Failure Behavior](../../slices/07-update-action-failure-behavior.md))**
 
+---
+
 ### `read_file`
 **Status:** Implemented
 
@@ -32,6 +34,21 @@ The `FileSystemManager` port defines a technology-agnostic interface for interac
 *   **Postconditions:**
     *   On success, returns the full string content of the file.
     *   If no file exists at `path`, a `FileNotFoundError` (or a custom domain equivalent) must be raised.
+
+---
+
+### `write_file`
+**Status:** Planned
+**Introduced in:** [Slice 13: Implement `context` Command](../../slices/13-context-command.md)
+
+*   **Description:** Writes content to a file at a specified path. If the file exists, it is overwritten. If it does not exist, it is created. This is an "upsert" operation.
+*   **Signature:** `write_file(path: str, content: str) -> None`
+*   **Preconditions:**
+    *   `path` must be a valid, non-empty string representing a file path.
+*   **Postconditions:**
+    *   A file exists at `path` with the specified `content`.
+
+---
 
 ### `edit_file`
 **Status:** Implemented
@@ -48,6 +65,30 @@ The `FileSystemManager` port defines a technology-agnostic interface for interac
     *   If no file exists at `path`, a `FileNotFoundError` must be raised.
     *   If the `find` string is not found in the file, a `SearchTextNotFoundError` must be raised. **(Updated in: [Slice 07: Update Action Failure Behavior](../../slices/07-update-action-failure-behavior.md))**
     *   If the `find` string is found more than once in the file, a `MultipleMatchesFoundError` must be raised. **(Introduced in: [Slice 09: Enhance `edit` Action Safety](../../slices/09-enhance-edit-action-safety.md))**
+
+---
+
+### `path_exists`
+**Status:** Planned
+**Introduced in:** [Slice 13: Implement `context` Command](../../slices/13-context-command.md)
+
+*   **Description:** Checks for the existence of a file or directory at the given path.
+*   **Signature:** `path_exists(path: str) -> bool`
+*   **Postconditions:**
+    *   Returns `True` if a file or directory exists at `path`, otherwise `False`.
+
+---
+
+### `create_directory`
+**Status:** Planned
+**Introduced in:** [Slice 13: Implement `context` Command](../../slices/13-context-command.md)
+
+*   **Description:** Creates a new directory. This operation should be idempotent (i.e., not fail if the directory already exists).
+*   **Signature:** `create_directory(path: str) -> None`
+*   **Preconditions:**
+    *   `path` must be a valid path for a directory.
+*   **Postconditions:**
+    *   A directory exists at the specified `path`.
 
 ## 3. Related Spikes
 

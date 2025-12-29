@@ -70,10 +70,9 @@ teddy --plan-file plan.yaml -y
 
 These commands are for the user to gather information for the AI. Their output is printed to the console AND copied to the clipboard.
 
-| Command         | Description                                               |
-| --------------- | --------------------------------------------------------- |
-| `context`       | Provides a project snapshot (`repotree`).                 |
-| `copy-unstaged` | Copies a `git diff` of unstaged changes to the clipboard. |
+| Command   | Description                                                                                                                                |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `context` | Generates a comprehensive project snapshot for the AI, including file trees, OS info, and the contents of all files listed in the context. |
 
 ---
 
@@ -178,9 +177,15 @@ The `output` field for a successful `research` action will contain a JSON object
 
 ---
 
-## Project Roadmap
+## 🗺️ Project Roadmap
 
-This section outlines the high-level milestones for the project.
+Here's a look at our development priorities. We use the following statuses to indicate progress:
 
-*   **Implement `research` action:** Implement the ability for the agent to perform web searches.
-    *   **Status:** In Progress
+- 📝 **Planned:** The feature is on our agenda and is being scoped for a future release.
+- ▶️ **In Progress:** The feature is in active development.
+- ✅ **Completed:** The feature has been released.
+
+| Status | Stage / Feature Set               | Description                                                                                                                                                       |
+| :----: | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|   ▶️    | **Core Action & Utility Support** | Implement the foundational actions (`create`, `read`, `edit`, `execute`, `chat`, `research`) and supporting utility commands (`context`) for AI-driven workflows. |
+|   📝    | **TUI for LLM Interaction**       | Create a Terminal User Interface (TUI) to directly call LLM APIs, pass context, manage prompts, and execute the resulting plans in a seamless, interactive loop.  |

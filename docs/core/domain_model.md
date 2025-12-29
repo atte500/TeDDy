@@ -259,3 +259,40 @@ Raised by the `IWebSearcher` port when it fails to retrieve search results for a
 *   **Purpose:** To allow the `PlanService` to catch this specific failure and create a descriptive `FAILED` `ActionResult`.
 *   **Attributes:**
     *   `original_exception` (Exception | None): The underlying exception that caused the failure, for logging and debugging purposes.
+---
+
+## 6. Project Context
+**Introduced in:** [./../slices/13-context-command.md](./../slices/13-context-command.md)
+
+This section defines the objects related to gathering and representing the project's context for the AI.
+
+### Aggregate: `ProjectContext`
+- **Status:** Planned
+
+A snapshot of the project's state, containing environmental information and the contents of key files.
+
+#### Attributes
+- `os_info`: string - Information about the operating system.
+- `terminal_info`: string - Information about the terminal environment (e.g., shell type, version).
+- `repo_tree`: string - A string representation of the repository's file structure.
+- `file_contents`: map<string, FileContent> - A map where the key is the file path and the value is a `FileContent` object.
+
+#### Behaviors
+- `get_content(file_path)`: Retrieves the content of a specific file from the context.
+- `add_file_content(file_path, content, status)`: Adds the content of a file to the context, along with its status ('found' or 'not_found').
+
+#### Business Rules/Invariants
+- The `repo_tree` must respect the ignore patterns from the project's `.gitignore` file.
+- The `file_contents` map must include an entry for every file requested from both `context.yaml` and `permanent_context.yaml`.
+
+---
+
+### Value Object: `FileContent`
+- **Status:** Planned
+
+Represents the content of a single file within the project context, including a status indicating if it was successfully read.
+
+#### Attributes
+- `path`: string - The relative path to the file.
+- `content`: string | null - The text content of the file, or null if not found.
+- `status`: enum('found', 'not_found') - The status of the file read operation.

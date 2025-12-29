@@ -168,6 +168,7 @@ This section will list the architectural documents for each vertical slice as th
 *   [x] [Slice 10: Implement `chat_with_user` Action](./slices/10-chat-with-user-action.md)
 *   [x] [Slice 11: Refactor Execution Report to Pure YAML](./slices/11-refactor-report-to-yaml.md)
 *   [x] [Slice 12: Implement `research` action](./slices/12-research-action.md)
+*   [ ] [Slice 13: Implement `context` Command](./slices/13-context-command.md)
 
 ---
 
