@@ -27,7 +27,9 @@
 *   **Phase 2: Finalization & Handoff**
     *   **Trigger:** This phase begins immediately after the user gives final approval for the high-fidelity prototype.
     *   **Action 1: Create Prototype Summary:** The agent must create a markdown file in the `/prototypes/summaries/` directory, named after the project stage (e.g., `01-core-content-management.md`). This document is the permanent "Polar Star" artifact and must summarize the key decisions made during the prototyping process and directly answer the questions from the original brief.
-    *   **Action 2: Handoff to Architect:** The agent's final action must be a `CHAT WITH USER` action. This message must formally announce the completion of the prototype, state that the summary is available, and explicitly hand control back to the Architect to resume its workflow.
+    *   **Action 2: Stage Final Artifacts:** After creating the summary, the agent must use a `Version Control` plan to stage the final, permanent artifacts. This plan must contain `EXECUTE` actions to stage the summary file and the final high-fidelity artifact (e.g., `git add prototypes/summaries/01-stage.md prototypes/current/high-fi/final.html`). It must end with a `git status` check to verify the staging area.
+    *   **Action 3: Commit Artifacts:** The next plan must use an `EXECUTE` action to `git commit` the staged artifacts with a clear, standardized message (e.g., "docs(prototype): Finalize Polar Star for [Stage Name]").
+    *   **Action 4: Handoff to Architect:** The agent's final action must be a `CHAT WITH USER` action. This message must formally announce the completion and commit of the prototype, and explicitly hand control back to the Architect to resume its workflow.
 
 **File System Contract**
 *   The Prototyper operates exclusively within the `/prototypes/` directory.

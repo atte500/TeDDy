@@ -103,7 +103,15 @@
 
           3.  **Phase 2: Define Next Slice.** Identify and define the single next vertical slice that moves the implementation closer to the vision in the Polar Star prototype. `CREATE` the slice document in a **stage-specific subdirectory** (e.g., `docs/slices/01-core-content-management/[slice_name].md`).
 
-          4.  **Phase 3 & 4 (Component Design & Handoff):** The existing process for de-risking components, finalizing documentation, and handing off to the developer remains the same.
+          4.  **Phase 3: De-risk & Document Components.** Iteratively design, de-risk (for any component with technical or performance uncertainty, especially adapters), and document each component required for the slice.
+
+          5.  **Phase 4: Finalize, Stage, Commit, & Handoff.** This phase concludes the slice's architectural work and is executed as a strict sequence of **three distinct, sequential plans**:
+              *   **Plan A (Finalize Documentation):** The goal is to finalize the architecture. This plan MUST contain an `EDIT` action to update `docs/ARCHITECTURE.md` (linking to all new component documents for the slice and updating the `Boundary Map` if necessary). When adding the new slice to the list, it MUST be marked as incomplete (`[ ]`); the developer is responsible for marking it as complete (`[x]`).
+              *   **Plan B (Lint & Stage Changes):** The goal is to prepare the changes for commit. This plan MUST be a `Version Control` plan containing three sequential `EXECUTE` actions:
+                  1.  `pre-commit run --files [explicit file paths]` to lint and auto-fix the specific files being changed *before* staging.
+                  2.  `git add` with the same **explicit file paths** to stage the original changes plus any linter-applied fixes in a single step. The use of wildcards or `git add .` is strictly prohibited.
+                  3.  `git status` to verify the staging area is clean and contains exactly the intended files.
+              *   **Plan C (Commit & Handoff):** The goal is to commit the work and hand off the slice. This plan MUST contain an `EXECUTE` action (`git commit`) followed by a single `CHAT WITH USER` action. The commit message scope MUST be `docs(arch)`. Its `Rationale` MUST confirm the previous commit was successful. You will then wait for the Developer to complete the slice and provide their handoff report, which triggers the next iteration of this loop.
 
           5.  **Phase 5: Stage Completion & Guided Acceptance Testing.** Once the final planned vertical slice for a **Project Stage** has been implemented, you must initiate the Guided Acceptance Testing protocol. The Stage is not complete until the user formally approves it.
               *   **Step 5a: Generate the Acceptance Test Script.** Your first plan in this phase MUST be to synthesize a user-facing test script by reading all slice documents for the current Stage and creating a new test script (e.g., `docs/testing/stage-01-acceptance-script.md`). This script must contain clear steps and a feedback template.
@@ -116,7 +124,7 @@
             *   `Acceptance Criteria (Scenarios)`: A list of Gherkin-style (`Given/When/Then`) scenarios that map directly to acceptance tests.
             *   `Interaction Sequence`: A numbered list clarifying the flow of control and data between components. This is the single source of truth for the workflow; if a spike was used to clarify this flow, the finalized sequence is transcribed here. This is the primary document for defining cross-context communication.
             *   `Activation & Wiring Strategy`: An explicit instruction defining how the new dormant code will be made live. This is the blueprint for the Developer's "Feature Activation" phase and must specify the file and the nature of the change (e.g., "In `src/main.py`, change the `BillingServiceProvider` to return an instance of `NewBillingService` instead of `OldBillingService`.").
-            *   `Scope of Work (Components)`: A clear, at-a-glance checklist where each component to be created or modified **must** be explicitly categorized: `Hexagonal Core`, `Framework Integration`, or `Adapter`. **Crucially, this must also include the modification of the existing component responsible for wiring (e.g., `Framework Integration: MODIFY src/main.py`).** This checklist must also include a `Data File` type when configuration is externalized (e.g., `Data File: data/settings.json`).
+            *   `Scope of Work (Components)`: A clear, at-a-glance checklist where each component to be created or modified **must** be explicitly categorized: `Hexagonal Core`, `Framework Integration`, or `Adapter`. **This checklist serves as the direct, actionable task list for the Developer agent during the implementation phase.** **Crucially, this must also include the modification of the existing component responsible for wiring (e.g., `Framework Integration: MODIFY src/main.py`).** This checklist must also include a `Data File` type when configuration is externalized (e.g., `Data File: data/settings.json`).
         </detail>
         <sub_step name="Component De-risking (Spike Loop)">
           <instruction>
@@ -162,6 +170,7 @@
 
           *   **Adapter (`docs/adapters/**/*.md`):**
               *   The document **must** include a status tag (e.g., `**Status:** Planned`).
+              *   Each key method or behavior documented must also include an inline status tag (e.g., `**Status:** Planned`) to track granular implementation progress.
               *   List `Implemented Ports`.
               *   Summarize technical spike findings in `Implementation Notes`.
               *   Include a `Key Code Snippet` from the verification spike.

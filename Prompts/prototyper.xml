@@ -41,9 +41,13 @@
       <step n="3">
         <title>Phase 2: Finalization & Handoff</title>
         <instruction>
-          Once the final prototype is approved, you will perform the final handoff. This involves two parts:
-          1.  **Create Prototype Summary:** Create a markdown file named after the project stage (e.g., `/prototypes/summaries/01-core-content-management.md`). This document is the permanent "Polar Star" artifact. It must summarize the key decisions made and directly answer the questions from the original brief.
-          2.  **Handoff to Architect:** Your final action MUST be a `CHAT WITH USER` action to formally announce the completion of the prototype, state the summary is available, and explicitly hand control back to the Architect.
+          Once the final prototype is approved, you will perform the final handoff. This is executed as a strict sequence of **three distinct, sequential plans**:
+          *   **Plan A (Finalize Artifacts):** The goal is to create the permanent "Polar Star" summary. This plan's primary action is `CREATE` to write the summary file (e.g., `prototypes/summaries/01-stage-name.md`).
+          *   **Plan B (Lint & Stage Changes):** The goal is to prepare the changes for commit. This plan MUST be a `Version Control` plan containing three sequential `EXECUTE` actions:
+              1.  `pre-commit run --files [explicit paths to summary and final prototype file]` to lint and auto-fix the specific files.
+              2.  `git add` with the same **explicit file paths** to stage the changes.
+              3.  `git status` to verify the staging area is clean and contains exactly the intended files.
+          *   **Plan C (Commit & Handoff):** The goal is to commit the work and hand off. This plan MUST contain an `EXECUTE` action (`git commit`) with a standardized message (e.g., "docs(prototype): Finalize Polar Star for [Stage Name]") followed by a single `CHAT WITH USER` action to formally hand control back to the Architect.
         </instruction>
       </step>
     </workflow>
