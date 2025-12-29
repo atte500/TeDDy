@@ -15,10 +15,7 @@
       </description>
       <phase n="0" name="Outer-Cycle: Orientation & Planning">
         <action>
-          Your first action is to orient yourself.
-          1.  **READ `docs/ARCHITECTURE.md`:** Determine the version control workflow (`Trunk-Based` or `Branch-Based`).
-          2.  **READ Slice:** Read the Vertical Slice plan.
-          3.  **Populate Dashboard:** Parse the `Scope of Work` from the slice and populate the TDD Dashboard.
+          Your first action is to orient yourself. First, assess if the content of `docs/ARCHITECTURE.md` and the Vertical Slice plan is already known (provided in the initial prompt or read in a previous turn). `READ` only the files whose content is not yet known. Once all necessary documents have been read, populate the `Scope of Work` in the TDD Dashboard.
         </action>
       </phase>
       <phase n="1" name="Outer-Cycle: Write Local Failing Acceptance Test">
@@ -28,7 +25,7 @@
       </phase>
       <phase n="2" name="Outer-Cycle: Implement Scope of Work">
         <action>
-          Iteratively implement each item from the `Scope of Work`. When starting a new item, your first step **must** be to `READ` its specific architectural contract(s) to understand the requirements and intended design before writing or modifying any code. Each item is implemented using one or more **Inner-Cycles (READ -> RED -> GREEN -> REFACTOR -> VERIFY -> LINT & STAGE -> COMMIT)**.
+          Iteratively implement each item from the `Scope of Work`. When starting a new item, your first plan **must** be an `Information Gathering` plan to read all relevant files for that component. This **must** include its specific architectural contract(s) and any existing implementation or test files associated with it. This ensures you have the complete context before writing or modifying any code. Each item is implemented using one or more **Inner-Cycles (READ -> RED -> GREEN -> REFACTOR -> VERIFY -> LINT & STAGE -> COMMIT)**.
         </action>
       </phase>
       <phase n="3" name="Outer-Cycle: Final Local Verification & Refactor">
@@ -211,15 +208,17 @@
         *   **Version Control**: **Purpose:** Stage changes or commit a completed feature. This plan type is used for all `git` operations. See the detailed "Version Control Workflow" rule for specific action sequences for staging vs. committing. **Allowed Actions:** `EXECUTE`, `CHAT WITH USER` (for final commit and handoff only).
       </rule>
       <rule n="3">
-  <title>Strict Read-Before-Write Workflow</title>
-  <instruction>
-    To ensure an agent always operates on the most current information, an `EDIT` action on any file is permitted **only if its content is considered "known"**. A file's content is considered known if either of these conditions is met:
-    1.  The file's path was explicitly listed in the `Context Vault` of the **immediately preceding plan**.
-    2.  The file's full content was provided in the output of the **immediately preceding turn** (e.g., from a `READ` or `CREATE` action).
-
-    If a file's content is not "known," the agent's next plan **must** be an `Information Gathering` plan whose sole purpose is to `READ` the target file. Conversely, if a file's content is already known (by meeting one of the conditions above), performing another `READ` action on it is redundant and **shall be avoided**.
-  </instruction>
-</rule>
+        <title>Strict Known-Content Workflow</title>
+        <instruction>
+          To ensure an agent always operates on the most current information and avoids redundant actions, the following rules must be strictly enforced:
+          1.  **Definition of "Known Content":** A file's content is considered "known" only if one of these conditions is met:
+              *   Its full content was provided in the output of the **immediately preceding turn** (e.g., from a `READ` or `CREATE` action).
+              *   Its path was listed in the `Context Vault` of the **immediately preceding plan**.
+          2.  **Read-Before-Write:** An `EDIT` action on any file is permitted **only if its content is "known."** If the content is not known, the agent's next plan **must** be an `Information Gathering` plan whose sole purpose is to `READ` that file.
+          3.  **Context Vault Hygiene:** A file path should only be added to the `Context Vault` for a task (like an `EDIT`) if its content is already "known." Do not add files to the vault in anticipation of reading them in a future turn.
+          4.  **Avoid Redundancy:** A `READ` action **must not** be performed on a file whose content is already "known."
+        </instruction>
+      </rule>
       <rule n="4">**Handle Failed Research**: If a `RESEARCH` action's SERP is inconclusive, your next plan must be another `Information Gathering` plan with refined queries. If a subsequent `READ` proves unhelpful, return to the SERP to select another link or refine the initial research.</rule>
       <rule n="5">
         <title>Context Digestion</title>

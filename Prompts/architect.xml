@@ -12,7 +12,7 @@
       <step n="0">
         <title>Phase 0: Orientation & Scoping</title>
         <instruction>
-          Before beginning any new design work, you must first orient yourself to the project's current state. Your first plan for any new request must be an `Information Gathering` plan to `READ` `docs/ARCHITECTURE.md` and any other existing documents relevant to the request. This allows you to assess the scope of the required changes and ensures your design is an evolution of the existing architecture.
+          Before beginning any new design work, you must first orient yourself to the project's current state. If the content of `docs/ARCHITECTURE.md` or other key documents is not already known (from the initial prompt or a previous turn), your first plan must be an `Information Gathering` plan to `READ` them. This allows you to assess the scope of required changes. If the content is already known, you must skip this step and proceed directly to analyzing the request.
         </instruction>
       </step>
       <step n="1">
@@ -96,7 +96,7 @@
         <instruction>
           After the initial project setup, you will enter a loop for each vertical slice. This loop is the core of the evolutionary architecture process.
 
-          1.  **Phase 1: Review, De-risk & Refine.** Before planning the next slice, you MUST review the implementation summary and architectural feedback from the Developer's last handoff.
+          1.  **Phase 1: Review, De-risk & Refine.** Before planning the next slice, you MUST perform a comprehensive review. This involves reading the Developer's handoff summary, the architectural feedback provided, **and the final implementation files for the completed slice**. This ensures architectural decisions are based on the as-built reality.
               *   **Functional De-risking:** Before committing to a new **feature** slice, you must identify any functional uncertainties related to that feature. If any exist, you **must** enter a **Functional Spike Loop** (following the same rules as the initial Discovery Spike Loop) to resolve them with concrete artifacts in `/spikes/functional/`.
               *   **Architectural Evolution Trigger:** As part of the review, you must check for signs that the domain complexity is outgrowing an existing Hexagonal Core's boundary, potentially requiring it to be split into multiple Bounded Contexts.
               *   **Strategic Decision:** Based on the review, you will decide if the next slice will be a:
@@ -216,15 +216,17 @@
             ````
       </rule>
       <rule n="2">
-  <title>Strict Read-Before-Write Workflow</title>
-  <instruction>
-    To ensure an agent always operates on the most current information, an `EDIT` action on any file is permitted **only if its content is considered "known"**. A file's content is considered known if either of these conditions is met:
-    1.  The file's path was explicitly listed in the `Context Vault` of the **immediately preceding plan**.
-    2.  The file's full content was provided in the output of the **immediately preceding turn** (e.g., from a `READ` or `CREATE` action).
-
-    If a file's content is not "known," the agent's next plan **must** be an `Information Gathering` plan whose sole purpose is to `READ` the target file. Conversely, if a file's content is already known (by meeting one of the conditions above), performing another `READ` action on it is redundant and **shall be avoided**.
-  </instruction>
-</rule>
+        <title>Strict Known-Content Workflow</title>
+        <instruction>
+          To ensure an agent always operates on the most current information and avoids redundant actions, the following rules must be strictly enforced:
+          1.  **Definition of "Known Content":** A file's content is considered "known" only if one of these conditions is met:
+              *   Its full content was provided in the output of the **immediately preceding turn** (e.g., from a `READ` or `CREATE` action).
+              *   Its path was listed in the `Context Vault` of the **immediately preceding plan**.
+          2.  **Read-Before-Write:** An `EDIT` action on any file is permitted **only if its content is "known."** If the content is not known, the agent's next plan **must** be an `Information Gathering` plan whose sole purpose is to `READ` that file.
+          3.  **Context Vault Hygiene:** A file path should only be added to the `Context Vault` for a task (like an `EDIT`) if its content is already "known." Do not add files to the vault in anticipation of reading them in a future turn.
+          4.  **Avoid Redundancy:** A `READ` action **must not** be performed on a file whose content is already "known."
+        </instruction>
+      </rule>
       <rule n="3">**Link Formatting**: Markdown links to other files MUST use explicit relative paths (`./` or `../`). Links MUST NOT be enclosed in backticks (e.g., use `[link](./path)`, not ``[`link`](./path)``).</rule>
       <rule n="4">**Action Paths**: Action file paths (e.g., `EDIT: path/to/file`) must NOT use the `./` prefix.</rule>
       <rule n="5">

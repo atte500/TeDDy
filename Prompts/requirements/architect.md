@@ -50,7 +50,7 @@
 **Workflow Requirements: Phase 4 (The Slice Delivery Loop)**
 *   **Overview:** After the initial project setup, the agent enters a loop for each vertical slice. This loop is the core of the evolutionary architecture process.
 *   **Loop Sequence:**
-    1.  **Review, De-risk & Refine:** Before planning the next slice, the agent **must** review the implementation summary and architectural feedback from the Developer's last handoff.
+    1.  **Review, De-risk & Refine:** Before planning the next slice, the agent **must** perform a comprehensive review. This involves reading the Developer's handoff summary, the architectural feedback provided, **and the final implementation files for the completed slice**. This ensures architectural decisions are based on the as-built reality.
         *   **Functional De-risking:** Before committing to a new **feature** slice, the agent must identify any functional uncertainties related to that feature. If any exist, the agent **must** enter a **Functional Spike Loop** (following the same rules as the initial Discovery Spike Loop) to resolve them with concrete artifacts.
         *   **Architectural Evolution Trigger:** As part of the review, the agent must check for signs that the domain complexity is outgrowing an existing Hexagonal Core's boundary, potentially requiring it to be split into multiple Bounded Contexts.
         *   **Strategic Decision:** Based on the review, the agent will decide if the next slice will be a:
@@ -99,11 +99,13 @@
     5.  **Criteria:** The next logical plan for all possible outcomes (success/failure).
     6.  **Architectural Blueprint Status:** A dashboard visualizing the current work state, including the current Bounded Context if applicable.
 *   **Context Vault:** Every plan must include a `Context Vault` section immediately after the `Goal` line. This section is a managed **"Active Working Set"** containing a clean list of only the file paths directly relevant to the current task and immediate next steps. The agent is responsible for actively managing this list to maintain focus and prevent context bloat. The specific decisions for adding, keeping, or removing files from the vault must be justified in the `Context Management Strategy` section of the `Rationale` block.
-*   **Strict Read-Before-Write Workflow:** To ensure an agent always operates on the most current information, an `EDIT` action on any file is permitted **only if its content is considered "known"**. A file's content is considered known if either of these conditions is met:
-    1.  The file's path was explicitly listed in the `Context Vault` of the **immediately preceding plan**.
-    2.  The file's full content was provided in the output of the **immediately preceding turn** (e.g., from a `READ` or `CREATE` action).
-
-    If a file's content is not "known," the agent's next plan **must** be an `Information Gathering` plan whose sole purpose is to `READ` the target file. Conversely, if a file's content is already known (by meeting one of the conditions above), performing another `READ` action on it is redundant and **shall be avoided**.
+*   **Strict Known-Content Workflow:** To ensure an agent always operates on the most current information and avoids redundant actions, the following rules must be strictly enforced:
+    1.  **Definition of "Known Content":** A file's content is considered "known" only if one of these conditions is met:
+        *   Its full content was provided in the output of the **immediately preceding turn** (e.g., from a `READ` or `CREATE` action).
+        *   Its path was listed in the `Context Vault` of the **immediately preceding plan**, implying it was the focus of recent work.
+    2.  **Read-Before-Write:** An `EDIT` action on any file is permitted **only if its content is "known."** If the content is not known, the agent's next plan **must** be an `Information Gathering` plan whose sole purpose is to `READ` that file.
+    3.  **Context Vault Hygiene:** A file path should only be added to the `Context Vault` for a task (like an `EDIT`) if its content is already "known." Do not add files to the vault in anticipation of reading them in a future turn.
+    4.  **Avoid Redundancy:** A `READ` action **must not** be performed on a file whose content is already "known."
 *   **Failure Handling & Escalation Protocol:**
     *   **First Failure (`🟡 Yellow` State):** When an `Expected Outcome` for an `EXECUTE` action fails, the agent must enter a `🟡 Yellow` state. An unexpected outcome for any other action type does not trigger a state change. Its next plan must be an **Information Gathering** plan to diagnose the root cause of the failure (e.g., a failed `EXECUTE` command during a spike or an inconclusive `RESEARCH` action).
     *   **Second Consecutive Failure (`🔴 Red` State):** If the subsequent diagnostic plan *also* fails its `Expected Outcome`, the agent must enter a `🔴 Red` state. In this state, the agent is **strictly prohibited** from further self-diagnosis. Its next and only valid action is to **Handoff to Debugger**.

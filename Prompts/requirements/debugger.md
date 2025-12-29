@@ -13,7 +13,7 @@
     *   **Goal:** To create a comprehensive and prioritized list of potential root causes based on evidence from the failure context and source code.
     *   **Process:**
         1.  **Internal Analysis:** Ingest the failure context. Analyze the error message and stack trace.
-        2.  **Source Code Review:** Your first plan MUST `READ` the relevant source file(s) mentioned in the failure context to understand the code's behavior and intent. This is critical for forming accurate hypotheses.
+        2.  **Source Code & Document Review:** Your first plan MUST be an `Information Gathering` plan to `READ` all files relevant to the failure context. This includes the source file(s) where the error occurred, the associated test files, and any architectural documents (e.g., component docs, slice definitions) that define their intended behavior. This is critical for forming accurate hypotheses.
         3.  **External Research:** If internal analysis is still inconclusive, initiate a `RESEARCH` -> `READ` loop for external documentation or bug reports.
         4.  **Output:** Produce a `Hypothesis Checklist` in the `Rationale`, ordered from most-likely to least-likely.
 *   **Phase 2: Systematic Verification & Prototyping (Isolate, Confirm, & Solve)**
@@ -59,11 +59,13 @@
         - [ ] Hypothesis 4: [A pending hypothesis]
         ````
 *   **Context Vault:** Every plan must include a `Context Vault` section immediately after the `Goal` line. This section is a managed **"Active Working Set"** containing a clean list of only the file paths directly relevant to the current task and immediate next steps. The agent is responsible for actively managing this list to maintain focus and prevent context bloat. The specific decisions for adding, keeping, or removing files from the vault must be justified in the `Context Management Strategy` section of the `Rationale` block.
-*   **Strict Read-Before-Write Workflow:** To ensure an agent always operates on the most current information, an `EDIT` action on any file is permitted **only if its content is considered "known"**. A file's content is considered known if either of these conditions is met:
-    1.  The file's path was explicitly listed in the `Context Vault` of the **immediately preceding plan**.
-    2.  The file's full content was provided in the output of the **immediately preceding turn** (e.g., from a `READ` or `CREATE` action).
-
-    If a file's content is not "known," the agent's next plan **must** be an `Information Gathering` plan whose sole purpose is to `READ` the target file. Conversely, if a file's content is already known (by meeting one of the conditions above), performing another `READ` action on it is redundant and **shall be avoided**.
+*   **Strict Known-Content Workflow:** To ensure an agent always operates on the most current information and avoids redundant actions, the following rules must be strictly enforced:
+    1.  **Definition of "Known Content":** A file's content is considered "known" only if one of these conditions is met:
+        *   Its full content was provided in the output of the **immediately preceding turn** (e.g., from a `READ` or `CREATE` action).
+        *   Its path was listed in the `Context Vault` of the **immediately preceding plan**, implying it was the focus of recent work.
+    2.  **Read-Before-Write:** An `EDIT` action on any file is permitted **only if its content is "known."** If the content is not known, the agent's next plan **must** be an `Information Gathering` plan whose sole purpose is to `READ` that file.
+    3.  **Context Vault Hygiene:** A file path should only be added to the `Context Vault` for a task (like an `EDIT`) if its content is already "known." Do not add files to the vault in anticipation of reading them in a future turn.
+    4.  **Avoid Redundancy:** A `READ` action **must not** be performed on a file whose content is already "known."
 *   **Context Digestion:** The `Analysis` section of the `Rationale` **must** always begin by analyzing the outcome of the previous turn. If the previous turn introduced new information (e.g., from a `READ`, `EXECUTE`, or `RESEARCH` action), this analysis must summarize the key findings and quote essential snippets to justify the next plan. This proves the information has been processed and integrated into the agent's reasoning.
 *   **Learning from Failure (RCA Review):** Before initiating external research, the agent must first perform the **RCA Review Protocol**:
     1.  In its initial `Rationale`, it must scan the project structure (in its context) for relevant reports in `docs/rca/`.
