@@ -107,8 +107,8 @@
 
           5.  **Phase 4: Finalize, Stage, Commit, & Handoff.** This phase concludes the slice's architectural work and is executed as a strict sequence of **three distinct, sequential plans**:
               *   **Plan A (Finalize Documentation):** The goal of this plan is to finalize all documentation before handoff. It MUST contain two key `EDIT` actions:
-                  1.  First, `EDIT` `docs/ARCHITECTURE.md` to link to all new component documents for the slice and update the central `Boundary Map` and slice tracking list.
-                  2.  Second, `EDIT` the slice document itself (e.g., `docs/slices/01-stage/01-slice.md`) to synthesize and add the final, detailed `Scope of Work (Implementation)` section. This section is created from all the component documents just written and serves as the developer's ultimate checklist.
+                  1.  First, `EDIT` `docs/ARCHITECTURE.md` to link to the new component documents for the slice and update the central `Boundary Map` and slice tracking list.
+                  2.  Second, `EDIT` the slice document itself (e.g., `docs/slices/01-stage/01-slice.md`) to synthesize and add the final **`Scope of Work`** section. This section is created from the finalized documentation for all items listed in the **`Architectural Changes`** and serves as the developer's ultimate checklist.
               *   **Plan B (Lint & Stage Changes):** The goal is to prepare the changes for commit. This plan MUST be a `Version Control` plan containing three sequential `EXECUTE` actions:
                   1.  `pre-commit run --files [explicit file paths]` to lint and auto-fix the specific files being changed *before* staging.
                   2.  `git add` with the same **explicit file paths** to stage the original changes plus any linter-applied fixes in a single step. The use of wildcards or `git add .` is strictly prohibited.
@@ -124,9 +124,9 @@
             The slice document is a formal contract with the developer and must include:
             *   `Business Goal`: A high-level narrative of the value delivered.
             *   `Acceptance Criteria (Scenarios)`: A list of Gherkin-style (`Given/When/Then`) scenarios that map directly to acceptance tests.
-            *   `Interaction Sequence`: A numbered list clarifying the flow of control and data between components. This is the single source of truth for the workflow; if a spike was used to clarify this flow, the finalized sequence is transcribed here. This is the primary document for defining cross-context communication.
-            *   `Activation & Wiring Strategy`: An explicit instruction defining how the new dormant code will be made live. This is the blueprint for the Developer's "Feature Activation" phase and must specify the file and the nature of the change (e.g., "In `src/main.py`, change the `BillingServiceProvider` to return an instance of `NewBillingService` instead of `OldBillingService`.").
-            *   `Scope of Work (Implementation)`: This is the final, developer-facing checklist, which is added to the slice document only **after** all component documentation has been finalized. It must be a detailed, file-by-file list of the source code and test files to be created or modified, including specific implementation notes for each file. This serves as the ultimate, concrete blueprint for the developer.
+            *   `Architectural Changes`: An initial, high-level list of the architectural components (Domain Models, Ports, Adapters, etc.) the architect must design and document to deliver this slice. This serves as the architect's primary to-do list for the design phase.
+            *   `Interaction Sequence`: A numbered list clarifying the flow of control and data between the components listed in `Architectural Changes`. This is the single source of truth for the workflow.
+            *   `Scope of Work`: This is the final, developer-facing checklist, which is added to the slice document only **after** all component documentation has been finalized. Synthesized from the `Architectural Changes`, it must be a detailed, file-by-file list of the source code and test files to be created or modified. This serves as the ultimate, concrete blueprint for the developer.
         </detail>
         <sub_step name="Component De-risking (Spike Loop)">
           <instruction>
@@ -373,7 +373,7 @@ Prove the architectural boundaries are viable by passing a hardcoded value from 
 3. Inbound Adapter calls the Application Service via an Inbound Port.
 4. Application Service (in the Hexagonal Core) returns a hardcoded success message.
 5. The message is passed back to the Framework Integration Layer, which displays it.
-### 4. Scope of Work (Components)
+### 4. Architectural Changes
 - [ ] Framework Integration: `MainApplicationTrigger`
 - [ ] Adapter: `CliInboundAdapter`
 - [ ] Hexagonal Core: `UseCaseService` (implements `IExecuteUseCase`)
