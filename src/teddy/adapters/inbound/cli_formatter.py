@@ -3,7 +3,7 @@ import platform
 import yaml
 from dataclasses import asdict
 
-from teddy.core.domain.models import ExecutionReport, Action
+from teddy.core.domain.models import ExecutionReport, Action, ContextResult
 
 
 # Custom string class to mark strings for literal block style
@@ -64,3 +64,33 @@ def format_report_as_yaml(report: ExecutionReport) -> str:
         allow_unicode=True,
         indent=2,
     )
+
+
+def format_project_context(context: ContextResult) -> str:
+    """Formats the ContextResult object into a structured string for display."""
+    lines = []
+
+    lines.append("### Repo Tree ###")
+    lines.append(context.repo_tree)
+    lines.append("\n")
+
+    lines.append("### Environment Info ###")
+    for key, value in context.environment_info.items():
+        lines.append(f"{key}: {value}")
+    lines.append("\n")
+
+    if context.gitignore_content:
+        lines.append("### .gitignore ###")
+        lines.append(context.gitignore_content)
+        lines.append("\n")
+
+    lines.append("### File Contexts ###")
+    for file_context in context.file_contexts:
+        if file_context.status == "found":
+            lines.append(f"--- File: {file_context.file_path} ---")
+            lines.append(file_context.content or "")
+        else:
+            lines.append(f"--- File: {file_context.file_path} (Not Found) ---")
+        lines.append("\n")
+
+    return "\n".join(lines)

@@ -1,8 +1,55 @@
 import os
 import platform
 import yaml
-from teddy.adapters.inbound.cli_formatter import format_report_as_yaml
-from teddy.core.domain.models import ExecutionReport, ActionResult, ExecuteAction
+
+
+from teddy.adapters.inbound.cli_formatter import (
+    format_report_as_yaml,
+    format_project_context,
+)
+from teddy.core.domain.models import (
+    ExecutionReport,
+    ActionResult,
+    ExecuteAction,
+    ContextResult,
+    FileContext,
+)
+
+
+def test_format_project_context():
+    """
+    Given a ContextResult object,
+    When format_project_context is called,
+    Then it should return a well-structured string with all context info.
+    """
+    # Arrange
+    context = ContextResult(
+        repo_tree="<tree>",
+        environment_info={"os": "test_os", "python": "3.x"},
+        gitignore_content=".venv/",
+        file_contexts=[
+            FileContext(
+                file_path="src/main.py", content="print('hello')", status="found"
+            ),
+            FileContext(file_path="non_existent.py", content=None, status="not_found"),
+        ],
+    )
+
+    # Act
+    output = format_project_context(context)
+
+    # Assert
+    assert "### Repo Tree ###" in output
+    assert "<tree>" in output
+    assert "### Environment Info ###" in output
+    assert "os: test_os" in output
+    assert "python: 3.x" in output
+    assert "### .gitignore ###" in output
+    assert ".venv/" in output
+    assert "### File Contexts ###" in output
+    assert "--- File: src/main.py ---" in output
+    assert "print('hello')" in output
+    assert "--- File: non_existent.py (Not Found) ---" in output
 
 
 def test_format_report_as_yaml():
