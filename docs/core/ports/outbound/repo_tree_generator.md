@@ -1,22 +1,15 @@
-# Outbound Port: `IRepoTreeGenerator`
+# Outbound Port: IRepoTreeGenerator
 
-- **Introduced in:** [Slice 13: Implement `context` Command](./../../../slices/13-context-command.md)
-- **Consumer:** [ContextService](../../services/context_service.md)
+**Motivating Vertical Slice:** [Implement `context` Command](../../slices/13-context-command.md)
 
-This port defines the contract for a service that can scan the project directory and generate a string representation of its file tree.
+This port defines the contract for a service that can generate a textual representation of the repository's directory and file structure. This is a crucial component for providing context to an AI.
 
 ## Methods
 
 ### `generate_tree()`
 
-- **Status:** Planned
-
-#### Description
-Scans the current project directory and produces a multi-line string that visually represents the file and directory structure. The implementation of this method **must** respect the ignore patterns found in the project's root `.gitignore` file.
-
-#### Preconditions
-- A `.gitignore` file may or may not exist at the project root.
-
-#### Postconditions
-- **On Success:** Returns a `string` containing the formatted repository tree.
-- **On Failure:** Raises an appropriate exception if the directory cannot be scanned.
+-   **Description:** Scans the current working directory and its subdirectories to build a tree-like string representation. The implementation **must** respect the ignore patterns defined in any `.gitignore` files found in the repository. It should also ignore common noise directories like `.git`, `.vscode`, and `__pycache__` by default.
+-   **Preconditions:** None.
+-   **Postconditions:** A string containing the formatted repository tree is returned.
+-   **Returns:** `str` - The repository tree as a multi-line string.
+-   **`**Status:**` Planned

@@ -1,30 +1,15 @@
-# Outbound Port: `IEnvironmentInspector`
+# Outbound Port: IEnvironmentInspector
 
-- **Introduced in:** [Slice 13: Implement `context` Command](./../../../slices/13-context-command.md)
-- **Consumer:** [ContextService](../../services/context_service.md)
+**Motivating Vertical Slice:** [Implement `context` Command](../../slices/13-context-command.md)
 
-This port defines the contract for a service that can inspect the local system to gather information about the operating system and terminal environment.
+This port defines the contract for a service that can inspect the local machine's environment to gather information relevant for an AI's context.
 
 ## Methods
 
-### `get_os_info()`
+### `get_environment_info()`
 
-- **Status:** Planned
-
-#### Description
-Retrieves information about the host operating system (e.g., "macOS 14.1", "Ubuntu 22.04 LTS", "Windows 11").
-
-#### Postconditions
-- **On Success:** Returns a `string` containing a description of the operating system.
-
----
-
-### `get_terminal_info()`
-
-- **Status:** Planned
-
-#### Description
-Retrieves information about the terminal or shell environment from which the command is being run (e.g., "zsh 5.9", "bash 5.1.16", "Windows Terminal").
-
-#### Postconditions
-- **On Success:** Returns a `string` containing a description of the terminal environment.
+-   **Description:** Retrieves key information about the operating system and the user's current shell environment.
+-   **Preconditions:** None.
+-   **Postconditions:** A dictionary containing environment details is returned.
+-   **Returns:** `dict[str, str]` - A dictionary containing key-value pairs of information, such as `{"os": "darwin", "shell": "/bin/zsh"}`. Expected keys are `os`, `shell`, and `python_version`.
+-   **`**Status:**` Planned

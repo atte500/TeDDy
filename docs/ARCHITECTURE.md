@@ -51,6 +51,11 @@ This checklist guides the initial setup of the project environment. Each step mu
     - `mypy`: For static type checking.
     - `check-yaml`, `check-toml`: For syntax validation.
 
+### Third-Party Dependency Vetting
+- **Strategy:** Mandate a "Verify, Then Document" Spike for new dependencies.
+- **Rationale:** Based on the RCA for a failure involving the `gitwalk` library ([see RCA](./rca/unreliable-third-party-library-gitwalk.md)), a key architectural principle is to de-risk new third-party dependencies before they are integrated.
+- **Process:** Before a new, non-trivial dependency is formally documented in an adapter design, a minimal technical spike **must** be created and successfully run. This spike's purpose is to prove that the library's core advertised feature works as expected and that its API contract is sound. The successful spike script should then be referenced in the final adapter design document as proof of verification.
+
 #### Spike Directory Exclusion
 The `spikes/` directory is intentionally excluded from `ruff` and `mypy` checks. This is configured in the `[tool.ruff]` and `[tool.mypy]` sections of `pyproject.toml`.
 - **Rationale:** Spikes are for rapid, isolated experimentation. The code within them is often temporary, may not conform to the project's quality standards, and might intentionally contain errors (e.g., to reproduce a bug). Enforcing linting and type-checking on this directory would hinder the exploratory purpose of spikes.
@@ -60,6 +65,11 @@ The `spikes/` directory is intentionally excluded from `ruff` and `mypy` checks.
 
 ### Debug Mode
 - **Strategy:** A global `--debug` flag will be implemented. When enabled, it will set the logging level to `DEBUG`, providing verbose output for both the executor's operations and the output of any subprocesses.
+
+### Third-Party Dependency Vetting
+- **Strategy:** Mandate a "Verify, Then Document" Spike for new dependencies.
+- **Rationale:** Based on the RCA for a failure involving the `gitwalk` library ([see RCA](./rca/unreliable-third-party-library-gitwalk.md)), a key architectural principle is to de-risk new third-party dependencies before they are integrated.
+- **Process:** Before a new, non-trivial dependency is formally documented in an adapter design, a minimal technical spike **must** be created and successfully run. This spike's purpose is to prove that the library's core advertised feature works as expected and that its API contract is sound. The successful spike script should then be referenced in the final adapter design document as proof of verification.
 
 ---
 
@@ -151,6 +161,20 @@ This section provides links to the detailed design documents for each component,
     *   [Outbound Port: `IWebSearcher`](./core/ports/outbound/web_searcher.md)
 *   **Adapters:**
     *   [Outbound Adapter: `WebSearcherAdapter`](./adapters/outbound/web_searcher_adapter.md)
+
+### Slice 13: Implement `context` Command
+
+*   **Core Logic:**
+    *   [Domain Model (Updated)](./core/domain_model.md)
+    *   [Inbound Port: `IGetContextUseCase`](./core/ports/inbound/get_context_use_case.md)
+    *   [Outbound Port: `IRepoTreeGenerator`](./core/ports/outbound/repo_tree_generator.md)
+    *   [Outbound Port: `IEnvironmentInspector`](./core/ports/outbound/environment_inspector.md)
+    *   [Application Service: `ContextService`](./core/services/context_service.md)
+*   **Adapters:**
+    *   [Outbound Adapter: `LocalRepoTreeGenerator`](./adapters/outbound/local_repo_tree_generator.md)
+    *   [Outbound Adapter: `SystemEnvironmentInspector`](./adapters/outbound/system_environment_inspector.md)
+*   **Root Cause Analysis:**
+    *   [RCA: Unreliable Third-Party Library (`gitwalk`)](./rca/unreliable-third-party-library-gitwalk.md)
 
 ## 4. Vertical Slices
 

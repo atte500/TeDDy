@@ -1,47 +1,31 @@
-# Application Service: `ContextService`
+# Application Service: ContextService
 
-- **Introduced in:** [slice-13-context-command](./../../../slices/13-context-command.md)
+**Motivating Vertical Slice:** [Implement `context` Command](../../slices/13-context-command.md)
 
-This service is the central orchestrator for the `context` command's use case. It gathers all required information by calling various outbound ports and aggregates it into a `ProjectContext` domain object.
+## 1. Implemented Ports (Inbound)
 
-## Implemented Ports
-- [IGetContextUseCase](../ports/inbound/get_context_use_case.md)
+*   [IGetContextUseCase](../ports/inbound/get_context_use_case.md)
 
-## Dependencies (Outbound Ports)
-- `IFileSystemManager`: To handle all interactions with the local file system (reading/writing files, checking for directories).
-- `IRepoTreeGenerator`: To generate the text-based representation of the repository file tree.
-- `IEnvironmentInspector`: To gather information about the operating system and terminal environment.
+## 2. Dependencies (Outbound Ports)
 
-## Implementation Strategy
+*   [IFileSystemManager](../ports/outbound/file_system_manager.md)
+*   [IRepoTreeGenerator](../ports/outbound/repo_tree_generator.md)
+*   [IEnvironmentInspector](../ports/outbound/environment_inspector.md)
 
-### `get_project_context()`
-- **Status:** Planned
+## 3. Implementation Strategy
 
-This method will execute the following logic:
+The `ContextService` is the central orchestrator for the `teddy context` command. It is responsible for gathering all pieces of information from its dependencies and assembling them into the final `ContextResult` domain object.
 
-1.  **Initialize Context Directory:**
-    -   Use the `IFileSystemManager` to check for the existence of the `.teddy` directory.
-    -   If it does not exist, use the `IFileSystemManager` to create it.
-    -   Use the `IFileSystemManager` to ensure the default files (`.teddy/context.yaml`, `.teddy/permanent_context.yaml`, `.teddy/.gitignore`) exist with their initial content.
+### `get_context()`
 
-2.  **Gather Environment Information:**
-    -   Call the `IEnvironmentInspector` to get OS and terminal details.
-
-3.  **Generate and Save Repository Tree:**
-    -   Call the `IRepoTreeGenerator` to generate the file tree string. This port's implementation will be responsible for respecting the root `.gitignore`.
-    -   Use the `IFileSystemManager` to write the resulting string to `repotree.log`.
-
-4.  **Read Context Files and Aggregate Paths:**
-    -   Use the `IFileSystemManager` to read the contents of `.teddy/context.yaml` and `.teddy/permanent_context.yaml`.
-    -   Parse the YAML from both files to create a single, de-duplicated list of file paths to include in the context.
-
-5.  **Read File Contents:**
-    -   Instantiate a new `ProjectContext` domain object.
-    -   Iterate through the aggregated list of file paths. For each path:
-        -   Use the `IFileSystemManager` to read the file's content.
-        -   If the file is read successfully, call `ProjectContext.add_file_content()` with the path, content, and a status of `'found'`.
-        -   If the file cannot be read (e.g., does not exist), call `ProjectContext.add_file_content()` with the path, `null` content, and a status of `'not_found'`.
-    -   Also read the root `.gitignore` and add its content to the `ProjectContext`.
-
-6.  **Return Result:**
-    -   Return the populated `ProjectContext` object.
+-   `**Status:**` Planned
+-   **Logic:**
+    1.  **Initialize `.teddy` Directory:** Use the `IFileSystemManager` to check for the existence of the `.teddy` directory and its contents (`.gitignore`, `context.json`, `permanent_context.txt`). If they don't exist, create them with their default content.
+    2.  **Read Context File Lists:** Use the `IFileSystemManager` to read the file paths from `.teddy/context.json` and `.teddy/permanent_context.txt`.
+    3.  **Gather Environmental Info:**
+        a. Call `IEnvironmentInspector.get_environment_info()` to get OS and shell details.
+        b. Call `IRepoTreeGenerator.generate_tree()` to get the repository file listing.
+        c. Use `IFileSystemManager` to read the content of the root `.gitignore` file.
+    4.  **Read File Contents:** Iterate through the combined list of file paths from the context files. For each path, use `IFileSystemManager.read_file()` to get its content. If a file is not found, the manager should signal this (e.g., return `None` or raise a specific, catchable error). Create a `FileContext` object for each file, capturing its path, content, and status (`"found"` or `"not_found"`).
+    5.  **Assemble Result:** Construct the final `ContextResult` object, populating it with all the information gathered in the previous steps.
+    6.  **Return Result:** Return the populated `ContextResult` object to the caller (the inbound adapter).

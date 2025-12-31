@@ -1,25 +1,70 @@
-# Outbound Adapter: `LocalRepoTreeGeneratorAdapter`
+# Outbound Adapter: LocalRepoTreeGenerator
 
-- **Status:** Planned
-- **Introduced in:** [Slice 13: Implement `context` Command](./../../../slices/13-context-command.md)
+-   `**Status:**` Planned
+-   **Motivating Vertical Slice:** [Implement `context` Command](../../slices/13-context-command.md)
 
-This adapter provides a concrete implementation of the `IRepoTreeGenerator` port, responsible for scanning the local file system and generating a textual representation of the repository tree.
+This adapter is responsible for generating a string representation of the project's file and directory tree, respecting `.gitignore` rules.
 
-## Implemented Ports
-- [IRepoTreeGenerator](../../core/ports/outbound/repo_tree_generator.md)
+## 1. Implemented Ports
 
-## Implementation Notes
+*   [IRepoTreeGenerator](../../core/ports/outbound/repo_tree_generator.md)
 
-### De-risking
-A technical spike was deemed unnecessary for this component. The task of walking a file system and filtering based on `.gitignore` rules is a common requirement with standard, well-documented solutions in Python.
+## 2. Implementation Notes
 
-### Strategy
-The implementation will follow these steps:
-1.  **Read `.gitignore`:** The adapter will first look for a `.gitignore` file in the current working directory. If found, it will parse its patterns. The `pathspec` library is the recommended tool for this task as it correctly handles the `.gitignore` pattern syntax.
-2.  **Walk the Directory Tree:** The adapter will recursively walk the directory structure starting from the current working directory. Python's `pathlib.Path.rglob('*')` or `os.walk()` are suitable for this.
-3.  **Filter Paths:** For each file and directory found, the adapter will use the parsed `.gitignore` patterns (from `pathspec`) to determine if the path should be ignored.
-4.  **Format Output:** The remaining (non-ignored) paths will be collected and formatted into a hierarchical, multi-line string that visually represents the repository tree. Common directories that are typically ignored (e.g., `.git`, `__pycache__`, `.venv`) will be excluded by default, even if not present in `.gitignore`.
+The implementation will use Python's built-in `os.walk` in combination with the `pathspec` third-party library. This approach was verified by the Debugger agent after a previous attempt with an unreliable library (`gitwalk`) failed. The `pathspec` library correctly parses `.gitignore` files and allows for robust filtering of both files and directories.
 
-## External Documentation
-- Python `pathlib` module: [https://docs.python.org/3/library/pathlib.html](https://docs.python.org/3/library/pathlib.html)
-- `pathspec` library on PyPI: [https://pypi.org/project/pathspec/](https://pypi.org/project/pathspec/)
+In addition to `.gitignore` rules, the implementation will also manually exclude a predefined list of high-noise directories (e.g., `.git`, `.venv`, `__pycache__`) to ensure the cleanest possible output.
+
+### `generate_tree()`
+
+-   `**Status:**` Planned
+-   **Logic:**
+    1.  Load the `.gitignore` file from the root path into a `pathspec` object. If no `.gitignore` exists, proceed without filtering.
+    2.  Define a static set of directories to always exclude (e.g., `.git`).
+    3.  Use `os.walk()` to traverse the directory tree from the specified start path.
+    4.  During the walk, prune the list of directories to descend into by checking them against both the static exclude list and the `pathspec` object.
+    5.  Collect all file paths that are not matched by the `pathspec`.
+    6.  Format the final list of directories and files into a human-readable, multi-line tree string.
+
+## 3. Verified Code Snippet (from Debugger RCA)
+
+This snippet demonstrates the core logic of using `os.walk` and `pathspec` to correctly identify files and prune directories.
+
+```python
+import os
+import pathspec
+
+def get_non_ignored_paths(root_path="."):
+    """
+    Returns a list of all file paths not ignored by .gitignore.
+    """
+    gitignore_path = os.path.join(root_path, '.gitignore')
+    spec = None
+    if os.path.exists(gitignore_path):
+        with open(gitignore_path, 'r') as f:
+            spec = pathspec.PathSpec.from_lines('gitwildmatch', f)
+
+    paths = []
+    for root, d_names, f_names in os.walk(root_path, topdown=True):
+        rel_root = os.path.relpath(root, root_path)
+        if rel_root == ".": rel_root = ""
+
+        # Prune directories based on the spec
+        if spec:
+            d_names[:] = [
+                d for d in d_names
+                if not spec.match_file(os.path.join(rel_root, d) + os.sep)
+            ]
+
+        # Filter and collect files
+        for f_name in f_names:
+            file_path = os.path.join(rel_root, f_name)
+            if not spec or not spec.match_file(file_path):
+                paths.append(file_path)
+
+    return paths
+```
+
+## 4. External Documentation
+
+*   [`pathspec` on PyPI](https://pypi.org/project/pathspec/)

@@ -187,6 +187,6 @@ Here's a look at our development priorities. We use the following statuses to in
 
 | Status | Stage / Feature Set                 | Description                                                                                                                                                          |
 | :----: | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|   ✅    | **Core Action & Utility Support**   | The foundational actions (`create`, `read`, `edit`, `execute`, `chat`, `research`) and the `context` utility command are fully implemented and stable.               |
-|   ▶️    | **TUI for LLM Interaction**         | Create a Terminal User Interface (TUI) to directly call LLM APIs, pass context, manage prompts, and execute the resulting plans in a seamless, interactive loop.     |
+|   ▶️    | **Core Action & Utility Support**   | The foundational actions (`create`, `read`, `edit`, `execute`, `chat`, `research`) and the `context` utility command are fully implemented and stable.               |
+|   📝    | **TUI for LLM Interaction**         | Create a Terminal User Interface (TUI) to directly call LLM APIs, pass context, manage prompts, and execute the resulting plans in a seamless, interactive loop.     |
 |   📝    | **Agent Workflow & Prompt Library** | Refine and document the library of specialized agent prompts (e.g., Architect, Developer) and establish a stable, repeatable workflow for using them within the TUI. |

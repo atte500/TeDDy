@@ -1,26 +1,55 @@
-# Outbound Adapter: `SystemEnvironmentInspectorAdapter`
+# Outbound Adapter: SystemEnvironmentInspector
 
-- **Status:** Planned
-- **Introduced in:** [Slice 13: Implement `context` Command](./../../../slices/13-context-command.md)
+-   `**Status:**` Planned
+-   **Motivating Vertical Slice:** [Implement `context` Command](../../slices/13-context-command.md)
 
-This adapter provides a concrete implementation of the `IEnvironmentInspector` port. It interacts directly with the underlying operating system via Python's standard library to fetch details about the OS and terminal environment.
+This adapter is responsible for inspecting the local machine's environment to gather information such as OS type, shell, and Python version.
 
-## Implemented Ports
-- [IEnvironmentInspector](../../core/ports/outbound/environment_inspector.md)
+## 1. Implemented Ports
 
-## Implementation Notes
+*   [IEnvironmentInspector](../../core/ports/outbound/environment_inspector.md)
 
-### De-risking
-A technical spike is not required. The necessary information can be reliably obtained using Python's built-in modules.
+## 2. Implementation Notes
 
-### Strategy
+The implementation will use Python's standard libraries (`platform`, `os`, `sys`), which require no external dependencies. A technical spike has verified that these modules provide a reliable, cross-platform way to retrieve the necessary information.
 
-#### `get_os_info()`
-This method will use the `platform` module to construct a descriptive string of the operating system. For example, `platform.system()`, `platform.release()`, and `platform.version()` can be combined to produce a result like `"macOS 14.1"` or `"Linux-5.15.0-78-generic-x86_64-with-glibc2.35"`.
+The adapter will handle common platform differences, such as checking for `COMSPEC` on Windows for the shell, to provide the most accurate information possible.
 
-#### `get_terminal_info()`
-This method will inspect environment variables to determine the current shell. It will primarily check the `SHELL` environment variable on Unix-like systems. On Windows, it can check `COMSPEC`. The goal is to return a descriptive string like `"zsh 5.9"` or `"bash 5.1.16"`.
+### `get_environment_info()`
 
-## External Documentation
-- Python `platform` module: [https://docs.python.org/3/library/platform.html](https://docs.python.org/3/library/platform.html)
-- Python `os` module (for environ): [https://docs.python.org/3/library/os.html](https://docs.python.org/3/library/os.html)
+-   `**Status:**` Planned
+-   **Logic:**
+    1.  Call `platform.system()` to get the OS name.
+    2.  Check the `SHELL` environment variable for the user's shell on POSIX systems.
+    3.  If on Windows, check the `COMSPEC` environment variable as a fallback.
+    4.  Use `sys.version_info` to construct a clean `major.minor.micro` version string for the Python interpreter.
+    5.  Return this information in a dictionary with keys `os`, `shell`, and `python_version`.
+
+## 3. Verified Code Snippet (from Spike)
+
+This snippet from the verification spike demonstrates the core logic for gathering the environment details.
+
+```python
+import os
+import platform
+import sys
+
+def get_environment_details():
+    """
+    Gathers and returns a dictionary of key environment details.
+    """
+    os_name = platform.system()
+
+    # Get current shell, with fallback for Windows.
+    shell = os.environ.get('SHELL', 'N/A')
+    if os_name == 'Windows':
+        shell = os.environ.get('COMSPEC', 'cmd.exe')
+
+    py_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+
+    return {
+        "os": os_name,
+        "shell": shell,
+        "python_version": py_version,
+    }
+```

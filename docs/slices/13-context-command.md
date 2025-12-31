@@ -2,116 +2,131 @@
 
 ## 1. Business Goal
 
-To provide the AI agent with a comprehensive, machine-readable snapshot of the project's current state. This command is crucial for enabling the AI to generate accurate, context-aware plans by giving it access to the repository structure, key configuration files, and the contents of any relevant source files.
+As a user preparing to interact with an AI, I need a simple command (`teddy context`) that gathers all relevant project information into a single, comprehensive output. This output should include a file tree, system information, and the contents of specified files, making it easy to provide the AI with a complete snapshot of the current working environment.
+
+The command should also manage a local `.teddy` directory to store context file lists, separating the AI-managed context from a user-managed permanent context file.
 
 ## 2. Acceptance Criteria (Scenarios)
 
-### Scenario 1: First-time initialization
-- **Given** the `.teddy` directory does not exist
-- **When** the user runs `teddy context`
-- **Then** a directory named `.teddy` is created in the current working directory
-- **And** a file named `.teddy/context.yaml` is created and is empty
-- **And** a file named `.teddy/permanent_context.yaml` is created
-- **And** the `.teddy/permanent_context.yaml` file contains a default list of files: `README.md`, `docs/ARCHITECTURE.md`, and `repotree.log`
-- **And** a file named `.teddy/.gitignore` is created with the content `*` to prevent accidental commits of context files.
+### Scenario: First-time run in a new project
 
-### Scenario 2: Standard execution
-- **Given** the `.teddy` directory and its files exist
-- **And** the project has a root `.gitignore` file
-- **When** the user runs `teddy context`
-- **Then** a file named `repotree.log` is created or overwritten in the root directory
-- **And** the `repotree.log` file contains a textual representation of the file tree, ignoring all paths specified in the root `.gitignore`
-- **And** the command's standard output contains the following, clearly delineated sections:
-    1.  Operating System & Terminal Information
-    2.  The content of the root `.gitignore` file
-    3.  The content of `.teddy/context.yaml`
-    4.  The content of `.teddy/permanent_context.yaml`
-    5.  The content of every file listed in both `context.yaml` and `permanent_context.yaml`
+*   **Given** I am in a project directory that does not contain a `.teddy` folder
+*   **When** I run the `teddy context` command
+*   **Then** a `.teddy` directory is created
+*   **And** a `.teddy/.gitignore` file is created containing the line `*`
+*   **And** a `.teddy/context.json` file is created (and is empty or has a default structure)
+*   **And** a `.teddy/permanent_context.txt` file is created
+*   **And** the `.teddy/permanent_context.txt` file contains default entries like `README.md`, `docs/ARCHITECTURE.md`, and `repotree.txt`.
+*   **And** the output contains the repo tree, OS info, `.gitignore` content, and the content of `README.md` and `docs/ARCHITECTURE.md`.
 
-### Scenario 3: Handling missing files
-- **Given** `.teddy/context.yaml` lists a file named `non_existent_file.py`
-- **When** the user runs `teddy context`
-- **Then** the output for the content of `non_existent_file.py` clearly indicates that the file was not found.
+### Scenario: Running the command with existing context files
 
-## 3. Data Contracts
+*   **Given** a `.teddy` directory exists
+*   **And** `.teddy/context.json` contains `["src/main.py"]`
+*   **And** `.teddy/permanent_context.txt` contains `["pyproject.toml"]`
+*   **When** I run the `teddy context` command
+*   **Then** the output includes the contents of `src/main.py` and `pyproject.toml`.
+*   **And** the output mentions if any file listed in the context files is not found.
 
-### Context YAML Files
+### Scenario: Handling missing files gracefully
 
-The context system relies on two YAML files located in the `.teddy/` directory. Both files share the same simple format: a YAML list of file paths.
+*   **Given** a `.teddy` directory exists
+*   **And** `.teddy/permanent_context.txt` contains `["non_existent_file.txt"]`
+*   **When** I run the `teddy context` command
+*   **Then** the output still includes all other requested information
+*   **And** the output contains a clear message indicating that `non_existent_file.txt` was not found.
 
-#### `.teddy/context.yaml`
-This file is intended to be managed by the AI. It can add or remove files from this list to focus its attention on specific parts of the codebase for a given task.
+## 3. Interaction Sequence
 
-```yaml
-# Files for the current task. This file is managed by the AI.
-- src/teddy/cli.py
-- tests/acceptance/test_cli.py
-```
+1.  User executes `teddy context` from the command line.
+2.  The `CliInboundAdapter` receives the command and invokes the `GetContextUseCase` port on the `ContextService`.
+3.  The `ContextService` orchestrates the gathering of information:
+    a. It ensures the `.teddy` directory and its default files (`.gitignore`, `context.json`, `permanent_context.txt`) exist, creating them if necessary. This is handled via the `FileSystemManager` port.
+    b. It reads the list of file paths from both `context.json` and `permanent_context.txt` via the `FileSystemManager` port.
+    c. It requests the repository file tree (respecting `.gitignore`) from the `RepoTreeGenerator` port.
+    d. It requests OS and terminal information from the `EnvironmentInspector` port.
+    e. It reads the content of the main `.gitignore` file via the `FileSystemManager` port.
+    f. For each file path gathered from the context lists, it reads its content via the `FileSystemManager` port, noting any files that are not found.
+4.  The `ContextService` aggregates all this information into a structured `ContextResult` domain object.
+5.  The `ContextService` returns the `ContextResult` object to the `CliInboundAdapter`.
+6.  The `CliInboundAdapter` (via `CLIFormatter`) formats the `ContextResult` into a human-readable string and prints it to the console.
 
-#### `.teddy/permanent_context.yaml`
-This file is for the user to manage. The AI will not edit this file. The `context` command will create it with sensible defaults on its first run. The user can add files here that should *always* be included in the context snapshot.
+## 4. Scope of Work (Components)
 
-```yaml
-# Permanent context files. This file is managed by the user.
-- README.md
-- docs/ARCHITECTURE.md
-- repotree.log
-- pyproject.toml
-```
+*   **Hexagonal Core (New):**
+    *   **Domain Model:** `ContextResult` (a dataclass to hold all the gathered info).
+    *   **Inbound Port:** `IGetContextUseCase` (with a method like `get_context()`).
+    *   **Application Service:** `ContextService` (implements `IGetContextUseCase`).
+    *   **Outbound Port:** `IRepoTreeGenerator` (generates a file tree respecting `.gitignore`).
+    *   **Outbound Port:** `IEnvironmentInspector` (gets OS/terminal info).
+*   **Hexagonal Core (Updates):**
+    *   **Outbound Port:** `IFileSystemManager` (needs to support checking existence, ensuring directory creation, and reading/writing context files).
+*   **Adapters (New):**
+    *   **Outbound Adapter:** `LocalRepoTreeGenerator` (implements `IRepoTreeGenerator`).
+    *   **Outbound Adapter:** `SystemEnvironmentInspector` (implements `IEnvironmentInspector`).
+*   **Adapters (Updates):**
+    *   **Inbound Adapter:** `CLI` (add the new `context` command and wire it to the `ContextService`).
+    *   **Outbound Adapter:** `LocalFileSystemAdapter` (implement new methods required by `IFileSystemManager`).
 
-## 4. Interaction Sequence
+## 5. Scope of Work (Implementation)
 
-1.  User executes `teddy context` in their terminal.
-2.  The `CLI` (Inbound Adapter) receives the command and its arguments.
-3.  The `CLI` invokes the `ContextService` (Application Service) via the `IGetContextUseCase` (Inbound Port).
-4.  The `ContextService` orchestrates the gathering of information:
-    a.  It calls the `IFileSystemManager` (Outbound Port) to ensure the `.teddy` directory and its default files (`context.yaml`, `permanent_context.yaml`, `.gitignore`) exist, creating them if necessary.
-    b.  It calls the `IRepoTreeGenerator` (Outbound Port) to scan the filesystem (respecting `.gitignore`) and generate the repository tree string.
-    c.  It calls the `IFileSystemManager` to write the generated tree to `repotree.log`.
-    d.  It calls the `IEnvironmentInspector` (Outbound Port) to get OS and terminal details.
-    e.  It calls the `IFileSystemManager` to read the contents of the root `.gitignore`, both context YAML files, and every file path listed within them. It tracks any files that are not found.
-    f.  It aggregates all collected data (OS info, file contents, repo tree, etc.) into a `ProjectContext` (Domain Object).
-5.  The `ContextService` returns the `ProjectContext` object to the `CLI`.
-6.  The `CLI` formats the `ProjectContext` data into a single, structured string and prints it to standard output.
+This section provides a detailed, file-by-file checklist for the developer.
 
-## 5. Activation & Wiring Strategy
+### Core Logic
 
-In `src/teddy/cli.py`, a new command function decorated with `@app.command()` will be created for `context`. This function will instantiate and call the `ContextService`, which in turn will be wired with concrete adapter implementations for `IFileSystemManager`, `IRepoTreeGenerator`, and `IEnvironmentInspector`.
+-   [ ] **CREATE** `src/teddy/core/ports/inbound/get_context_use_case.py`
+    -   Define the `IGetContextUseCase` protocol with a single method `get_context() -> ContextResult`.
+-   [ ] **CREATE** `src/teddy/core/ports/outbound/repo_tree_generator.py`
+    -   Define the `IRepoTreeGenerator` protocol with a single method `generate_tree() -> str`.
+-   [ ] **CREATE** `src/teddy/core/ports/outbound/environment_inspector.py`
+    -   Define the `IEnvironmentInspector` protocol with a single method `get_environment_info() -> dict[str, str]`.
+-   [ ] **EDIT** `src/teddy/core/domain/models.py`
+    -   Add the `FileContext` and `ContextResult` dataclasses as defined in the domain model documentation.
+-   [ ] **EDIT** `src/teddy/core/ports/outbound/file_system_manager.py`
+    -   Add `path_exists(path: str) -> bool`, `create_directory(path: str) -> None`, and `write_file(path: str, content: str) -> None` to the `IFileSystemManager` protocol.
+    -   Update the `read_file` signature to return `str` and raise exceptions, removing the old `Result` object pattern.
+-   [ ] **CREATE** `src/teddy/core/services/context_service.py`
+    -   Create the `ContextService` class.
+    -   Implement the `IGetContextUseCase` port.
+    -   Inject `IFileSystemManager`, `IRepoTreeGenerator`, and `IEnvironmentInspector` as dependencies in the constructor.
+    -   Implement the `get_context` method to orchestrate its dependencies as detailed in the Interaction Sequence.
+-   [ ] **CREATE** `tests/unit/core/services/test_context_service.py`
+    -   Write unit tests for `ContextService`.
+    -   Use mocks for all outbound port dependencies to test the orchestration logic in isolation.
+    -   Verify that the service correctly handles the creation of the `.teddy` directory on the first run.
+    -   Verify that it correctly aggregates data from all its dependencies into the `ContextResult` object.
 
-## 6. Scope of Work (Implementation)
+### Adapters
 
-This checklist outlines the source code and test files to be created or modified by the developer.
+-   [ ] **CREATE** `src/teddy/adapters/outbound/local_repo_tree_generator.py`
+    -   Create the `LocalRepoTreeGenerator` class implementing `IRepoTreeGenerator`.
+    -   Implement the `generate_tree` method using `os.walk` and the `pathspec` library, following the verified solution in the RCA.
+    -   Include a hardcoded set of directories to always ignore (e.g., `.git`, `.venv`, `__pycache__`).
+-   [ ] **CREATE** `src/teddy/adapters/outbound/system_environment_inspector.py`
+    -   Create the `SystemEnvironmentInspector` class implementing `IEnvironmentInspector`.
+    -   Implement `get_environment_info` using the `platform`, `sys`, and `os` modules as verified in the spike.
+-   [ ] **EDIT** `src/teddy/adapters/outbound/file_system_adapter.py`
+    -   Implement the new methods: `path_exists`, `create_directory`, and `write_file` using `pathlib` as documented.
+    -   Update the `read_file` implementation to raise standard exceptions (`FileNotFoundError`, etc.) instead of returning a `Result` object.
+-   [ ] **EDIT** `src/teddy/adapters/inbound/cli_formatter.py`
+    -   Create a new function `format_project_context(context: ContextResult) -> str`.
+    -   This function should render the `ContextResult` object into a well-structured string with clear headings for each section.
+-   [ ] **EDIT** `src/teddy/main.py` (or CLI definition file)
+    -   Add a new Typer command function for `context`.
+    -   In the composition root, wire up the `ContextService` with its concrete adapter dependencies (`LocalFileSystemAdapter`, `LocalRepoTreeGenerator`, `SystemEnvironmentInspector`).
+    -   The command function should call the `ContextService`, pass the result to the new `format_project_context` formatter, and print the output.
 
-### Hexagonal Core (`src/teddy/core/`)
-- [ ] **Domain:** `MODIFY src/teddy/core/domain/models.py`
-    - Add `ProjectContext` aggregate and `FileContent` value object.
-- [ ] **Ports:** `MODIFY src/teddy/core/ports/inbound.py`
-    - Add `IGetContextUseCase` protocol.
-- [ ] **Ports:** `MODIFY src/teddy/core/ports/outbound.py`
-    - Add `IRepoTreeGenerator` and `IEnvironmentInspector` protocols.
-    - Add `path_exists`, `create_directory`, and `write_file` methods to the `IFileSystemManager` protocol.
-- [ ] **Services:** `CREATE src/teddy/core/services/context_service.py`
-    - Implement the `ContextService` class which implements `IGetContextUseCase`.
+### Testing
 
-### Adapters (`src/teddy/adapters/`)
-- [ ] **Outbound:** `CREATE src/teddy/adapters/outbound/repo_tree_generator.py`
-    - Implement the `LocalRepoTreeGeneratorAdapter`.
-- [ ] **Outbound:** `CREATE src/teddy/adapters/outbound/system_environment_inspector.py`
-    - Implement the `SystemEnvironmentInspectorAdapter`.
-- [ ] **Outbound:** `MODIFY src/teddy/adapters/outbound/file_system_adapter.py`
-    - Implement the new methods from the `IFileSystemManager` port.
-
-### Framework & Wiring (`src/teddy/`)
-- [ ] **CLI:** `MODIFY src/teddy/cli.py`
-    - Add the new `context` command using `@app.command()`.
-    - Instantiate and wire all the new services and adapters for this command.
-- [ ] **CLI Formatter:** `MODIFY src/teddy/cli_formatter.py`
-    - Add a `format_project_context` function.
-
-### Tests (`tests/`)
-- [ ] **Unit:** `MODIFY tests/unit/core/services/test_context_service.py` (or create)
-    - Test `ContextService` logic using mocks for all outbound ports.
-- [ ] **Integration:** `CREATE tests/integration/adapters/outbound/test_repo_tree_generator.py`
-    - Test the repo tree adapter against a temporary directory structure.
-- [ ] **Acceptance:** `MODIFY tests/acceptance/test_cli.py`
-    - Add end-to-end tests for the `teddy context` command.
+-   [ ] **CREATE** `tests/integration/adapters/outbound/test_local_repo_tree_generator.py`
+    -   Implement the regression test recommended in the RCA (`docs/rca/unreliable-third-party-library-gitwalk.md`) to ensure `.gitignore` rules are respected.
+-   [ ] **CREATE** `tests/integration/adapters/outbound/test_system_environment_inspector.py`
+    -   Write a simple test to ensure `get_environment_info` returns a dictionary with the expected keys and non-empty string values.
+-   [ ] **EDIT** `tests/integration/adapters/outbound/test_file_system_adapter.py`
+    -   Add integration tests for the new `path_exists`, `create_directory`, and `write_file` methods.
+    -   Update the tests for `read_file` to assert that it raises the correct exceptions on failure.
+-   [ ] **CREATE** `tests/acceptance/test_context_command.py`
+    -   Create a new acceptance test that runs `teddy context` as a subprocess.
+    -   **Scenario 1 (First Run):** Test that the command creates the `.teddy` directory and default files.
+    -   **Scenario 2 (Existing Context):** Test that the command correctly reads file paths from both `context.json` and `permanent_context.txt` and includes their content in the output.
+    -   **Scenario 3 (Missing File):** Test that the command runs successfully and includes a "not found" message when a file listed in the context does not exist.
