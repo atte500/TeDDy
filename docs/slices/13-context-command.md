@@ -51,7 +51,7 @@ The command should also manage a local `.teddy` directory to store context file 
 5.  The `ContextService` returns the `ContextResult` object to the `CliInboundAdapter`.
 6.  The `CliInboundAdapter` (via `CLIFormatter`) formats the `ContextResult` into a human-readable string and prints it to the console.
 
-## 4. Scope of Work (Components)
+## 4. Architectural Changes
 
 *   **Hexagonal Core (New):**
     *   **Domain Model:** `ContextResult` (a dataclass to hold all the gathered info).
@@ -68,7 +68,7 @@ The command should also manage a local `.teddy` directory to store context file 
     *   **Inbound Adapter:** `CLI` (add the new `context` command and wire it to the `ContextService`).
     *   **Outbound Adapter:** `LocalFileSystemAdapter` (implement new methods required by `IFileSystemManager`).
 
-## 5. Scope of Work (Implementation)
+## 5. Scope of Work
 
 This section provides a detailed, file-by-file checklist for the developer.
 
