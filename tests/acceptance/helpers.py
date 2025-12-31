@@ -45,3 +45,19 @@ def run_teddy_with_stdin(plan_content: str, cwd: Path) -> subprocess.CompletedPr
 def parse_yaml_report(stdout: str) -> dict:
     """Parses the YAML report from teddy's stdout."""
     return yaml.safe_load(stdout)
+
+
+def run_teddy_command(
+    args: list[str], cwd: Path, input: Optional[str] = None
+) -> subprocess.CompletedProcess:
+    """
+    Helper function to run teddy with a list of command-line arguments.
+    """
+    cmd = TEDDY_CMD_BASE + args
+    return subprocess.run(
+        cmd,
+        input=input,
+        capture_output=True,
+        text=True,
+        cwd=cwd,
+    )

@@ -325,3 +325,48 @@ def test_web_search_error_can_be_raised():
     except WebSearchError as e:
         assert str(e) == message
         assert e.original_exception == original_exc
+
+
+class TestContextModels:
+    def test_instantiation_with_invalid_status_raises_error(self):
+        """Tests that an invalid status raises a ValueError."""
+        from teddy.core.domain.models import FileContext
+
+        with pytest.raises(ValueError, match="Status must be one of"):
+            FileContext(
+                file_path="src/main.py",
+                content="text",
+                status="invalid_status",
+            )
+
+    def test_instantiation_happy_path(self):
+        """Tests happy path instantiation for context-related models."""
+        from teddy.core.domain.models import FileContext, ContextResult
+
+        file_context_found = FileContext(
+            file_path="src/main.py",
+            content="print('hello')",
+            status="found",
+        )
+        assert file_context_found.file_path == "src/main.py"
+        assert file_context_found.content == "print('hello')"
+        assert file_context_found.status == "found"
+
+        file_context_not_found = FileContext(
+            file_path="src/missing.py",
+            content=None,
+            status="not_found",
+        )
+        assert file_context_not_found.content is None
+        assert file_context_not_found.status == "not_found"
+
+        context_result = ContextResult(
+            repo_tree="<tree>",
+            environment_info={"os": "test"},
+            gitignore_content="<gitignore>",
+            file_contexts=[file_context_found, file_context_not_found],
+        )
+        assert context_result.repo_tree == "<tree>"
+        assert context_result.environment_info == {"os": "test"}
+        assert context_result.gitignore_content == "<gitignore>"
+        assert len(context_result.file_contexts) == 2

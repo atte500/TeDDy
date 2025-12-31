@@ -169,6 +169,30 @@ class SERPReport:
     results: List[QueryResult]
 
 
+@dataclass(frozen=True)
+class FileContext:
+    """Represents the content and status of a single file requested for context."""
+
+    file_path: str
+    content: Optional[str]
+    status: str  # e.g., "found", "not_found"
+
+    def __post_init__(self):
+        valid_statuses = {"found", "not_found"}
+        if self.status not in valid_statuses:
+            raise ValueError(f"Status must be one of {valid_statuses}")
+
+
+@dataclass(frozen=True)
+class ContextResult:
+    """Aggregates all information gathered by the context command."""
+
+    repo_tree: str
+    environment_info: Dict[str, str]
+    gitignore_content: str
+    file_contexts: List[FileContext]
+
+
 @dataclass
 class ExecutionReport:
     """A comprehensive report detailing the execution of an entire Plan."""
