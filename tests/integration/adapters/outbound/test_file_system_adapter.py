@@ -172,3 +172,105 @@ def test_edit_file_raises_error_on_multiple_occurrences_multiline(tmp_path: Path
     # Verify the file was not changed
     content_after = test_file.read_text()
     assert content_after == original_content
+
+
+def test_path_exists(tmp_path: Path):
+    """
+    Tests that path_exists correctly reports the existence of a file.
+    """
+    # Arrange
+    adapter = LocalFileSystemAdapter()
+    existing_file = tmp_path / "exists.txt"
+    existing_file.touch()
+    non_existing_file = tmp_path / "not_exists.txt"
+
+    # Act & Assert
+    assert adapter.path_exists(str(existing_file)) is True
+    assert adapter.path_exists(str(non_existing_file)) is False
+
+
+def test_create_directory(tmp_path: Path):
+    """
+    Tests that create_directory creates a directory, including parents.
+    """
+    # Arrange
+    adapter = LocalFileSystemAdapter()
+    new_dir = tmp_path / "new" / "nested" / "dir"
+
+    # Act
+    adapter.create_directory(str(new_dir))
+
+    # Assert
+    assert new_dir.is_dir()
+
+
+def test_write_file(tmp_path: Path):
+    """
+    Tests that write_file creates a file if it doesn't exist,
+    and overwrites it if it does.
+    """
+    # Arrange
+    adapter = LocalFileSystemAdapter()
+    file_path = tmp_path / "test.txt"
+
+    # Act (Create)
+    adapter.write_file(str(file_path), "first content")
+
+    # Assert (Create)
+    assert file_path.read_text() == "first content"
+
+    # Act (Overwrite)
+    adapter.write_file(str(file_path), "second content")
+
+    # Assert (Overwrite)
+    assert file_path.read_text() == "second content"
+    # Arrange
+    adapter = LocalFileSystemAdapter()
+    new_dir = tmp_path / "new" / "nested" / "dir"
+
+    # Act
+    adapter.create_directory(str(new_dir))
+
+    # Assert
+    assert new_dir.is_dir()
+    # Arrange
+    adapter = LocalFileSystemAdapter()
+    existing_file = tmp_path / "exists.txt"
+    existing_file.touch()
+    non_existing_file = tmp_path / "not_exists.txt"
+
+    # Act & Assert
+    assert adapter.path_exists(str(existing_file)) is True
+    assert adapter.path_exists(str(non_existing_file)) is False
+    from textwrap import dedent
+
+    # Arrange
+    adapter = LocalFileSystemAdapter()
+    test_file = tmp_path / "test.txt"
+    original_content = dedent(
+        """
+        First section:
+            line a
+            line b
+
+        Second section:
+            line a
+            line b
+    """
+    )
+    test_file.write_text(original_content)
+
+    find_block = dedent(
+        """
+        line a
+        line b
+    """
+    )
+
+    # Act & Assert
+    with pytest.raises(MultipleMatchesFoundError):
+        adapter.edit_file(path=str(test_file), find=find_block, replace="new content")
+
+    # Verify the file was not changed
+    content_after = test_file.read_text()
+    assert content_after == original_content

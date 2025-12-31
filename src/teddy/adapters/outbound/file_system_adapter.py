@@ -12,6 +12,26 @@ class LocalFileSystemAdapter(FileSystemManager):
     An adapter that implements file system operations on the local machine.
     """
 
+    def path_exists(self, path: str) -> bool:
+        """
+        Checks if a path (file or directory) exists.
+        """
+        return Path(path).exists()
+
+    def create_directory(self, path: str) -> None:
+        """
+        Creates a directory, including any necessary parent directories.
+        Does not raise an error if the directory already exists.
+        """
+        Path(path).mkdir(parents=True, exist_ok=True)
+
+    def write_file(self, path: str, content: str) -> None:
+        """
+        Writes content to a file, creating it if it doesn't exist
+        and overwriting it if it does.
+        """
+        Path(path).write_text(content, encoding="utf-8")
+
     def create_file(self, path: str, content: str) -> None:
         """
         Creates a new file with the given content using exclusive creation mode.

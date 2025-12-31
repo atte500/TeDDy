@@ -6,6 +6,25 @@ class FileSystemManager(Protocol):
     An outbound port for interacting with a file system.
     """
 
+    def path_exists(self, path: str) -> bool:
+        """
+        Checks if a path (file or directory) exists.
+        """
+        ...
+
+    def create_directory(self, path: str) -> None:
+        """
+        Creates a directory, including any necessary parent directories.
+        """
+        ...
+
+    def write_file(self, path: str, content: str) -> None:
+        """
+        Writes content to a file, creating it if it doesn't exist
+        and overwriting it if it does.
+        """
+        ...
+
     def create_file(self, path: str, content: str) -> None:
         """
         Creates a new file with the given content.
