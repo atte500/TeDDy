@@ -3,14 +3,23 @@ import typer
 from typing import cast
 
 from teddy.core.ports.inbound.run_plan_use_case import RunPlanUseCase
+from teddy.core.ports.inbound.get_context_use_case import IGetContextUseCase
 from teddy.core.services.plan_service import PlanService
+from teddy.core.services.context_service import ContextService
 from teddy.core.services.action_factory import ActionFactory
-from teddy.adapters.inbound.cli_formatter import format_report_as_yaml
+from teddy.adapters.inbound.cli_formatter import (
+    format_report_as_yaml,
+    format_project_context,
+)
 from teddy.adapters.outbound.shell_adapter import ShellAdapter
 from teddy.adapters.outbound.file_system_adapter import LocalFileSystemAdapter
 from teddy.adapters.outbound.web_scraper_adapter import WebScraperAdapter
 from teddy.adapters.outbound.console_interactor import ConsoleInteractorAdapter
 from teddy.adapters.outbound.web_searcher_adapter import WebSearcherAdapter
+from teddy.adapters.outbound.local_repo_tree_generator import LocalRepoTreeGenerator
+from teddy.adapters.outbound.system_environment_inspector import (
+    SystemEnvironmentInspector,
+)
 
 
 # ===================================================================
@@ -18,6 +27,21 @@ from teddy.adapters.outbound.web_searcher_adapter import WebSearcherAdapter
 # ===================================================================
 
 app = typer.Typer()
+
+
+@app.command()
+def context(ctx: typer.Context):
+    """
+    Gathers and displays the project context.
+    """
+    if not hasattr(ctx, "obj") or not ctx.obj.get("context_service"):
+        typer.echo("Error: Core logic (ContextService) not configured.", err=True)
+        raise typer.Exit(code=1)
+
+    context_service = cast(IGetContextUseCase, ctx.obj["context_service"])
+    context_result = context_service.get_context()
+    formatted_context = format_project_context(context_result)
+    typer.echo(formatted_context)
 
 
 @app.callback(invoke_without_command=True)
@@ -41,11 +65,11 @@ def main(
     Reads a plan from a file or stdin and executes it.
     """
     if ctx.invoked_subcommand is None:
-        if not hasattr(ctx, "obj") or not ctx.obj:
+        if not hasattr(ctx, "obj") or not ctx.obj.get("plan_service"):
             typer.echo("Error: Core logic (PlanService) not configured.", err=True)
             raise typer.Exit(code=1)
 
-        plan_service = cast(RunPlanUseCase, ctx.obj)
+        plan_service = cast(RunPlanUseCase, ctx.obj["plan_service"])
 
         if plan_file:
             plan_content = plan_file.read()
@@ -77,6 +101,8 @@ def run():
     web_scraper_adapter = WebScraperAdapter()
     console_interactor_adapter = ConsoleInteractorAdapter()
     web_searcher_adapter = WebSearcherAdapter()
+    repo_tree_generator = LocalRepoTreeGenerator()
+    env_inspector = SystemEnvironmentInspector()
     action_factory = ActionFactory()
 
     # 2. Instantiate Core Logic with its dependencies
@@ -88,9 +114,19 @@ def run():
         user_interactor=console_interactor_adapter,
         web_searcher=web_searcher_adapter,
     )
+    context_service = ContextService(
+        file_system_manager=file_system_adapter,
+        repo_tree_generator=repo_tree_generator,
+        environment_inspector=env_inspector,
+    )
+
+    services = {
+        "plan_service": plan_service,
+        "context_service": context_service,
+    }
 
     # 3. Run the CLI with the composed core logic
-    app(obj=plan_service)
+    app(obj=services)
 
 
 if __name__ == "__main__":

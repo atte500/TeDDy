@@ -26,7 +26,10 @@ def test_cli_invokes_use_case_with_stdin_content():
     # Run the CLI command, passing the mock service as the context object `obj`
     # and the plan content as stdin.
     result = runner.invoke(
-        app, obj=mock_use_case, input=plan_input, catch_exceptions=False
+        app,
+        obj={"plan_service": mock_use_case},
+        input=plan_input,
+        catch_exceptions=False,
     )
 
     # ASSERT
@@ -52,7 +55,10 @@ def test_cli_exits_with_error_code_on_failure():
 
     # ACT
     result = runner.invoke(
-        app, obj=mock_use_case, input=plan_input, catch_exceptions=False
+        app,
+        obj={"plan_service": mock_use_case},
+        input=plan_input,
+        catch_exceptions=False,
     )
 
     # ASSERT
@@ -80,7 +86,10 @@ def test_cli_handles_create_file_action():
 
     # ACT
     result = runner.invoke(
-        app, obj=mock_use_case, input=plan_yaml, catch_exceptions=False
+        app,
+        obj={"plan_service": mock_use_case},
+        input=plan_yaml,
+        catch_exceptions=False,
     )
 
     # ASSERT
