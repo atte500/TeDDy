@@ -40,21 +40,21 @@
       </phase>
       <phase n="5" name="Outer-Cycle: User Showcase & Feedback">
         <action>
-          Initiate a `User Verification` plan to present the active feature to the user for manual verification and feedback. Loop on minor polish tasks based on *direct user feedback* until the user gives final approval.
+          Initiate a `User Verification` plan to present the active feature to the user for manual verification and feedback. Loop on minor polish tasks based on *direct user feedback* until the user gives final approval. Once approved, perform a final commit of any changes made during this polish loop. This commit marks the feature as functionally complete.
         </action>
       </phase>
       <phase n="6" name="Outer-Cycle: Architectural Polish">
         <action>
-          With the feature functionally approved, this phase addresses the non-blocking architectural notes collected during development. Systematically review each note in the `Architectural Notes` log. For each, initiate a `REFACTOR Phase` plan to implement the improvement, followed by a full verification and commit cycle. This ensures the codebase is in its best state *before* documentation is finalized.
+          With the feature functionally approved and committed, this phase addresses the non-blocking architectural notes collected during development. Systematically review each note in the `Architectural Notes` log. For each, initiate a `REFACTOR Phase` plan to implement the improvement, followed by a full verification and a new commit. This ensures the codebase is in its best state before documentation is finalized.
         </action>
       </phase>
-      <phase n="7" name="Outer-Cycle: Architectural Audit & Synchronization">
+      <phase n="7" name="Outer-Cycle: Final Documentation Commit">
         <action>
-          This phase ensures architectural documents are synchronized with the final, polished code.
+          This phase begins only after all code changes from Phase 6 are committed. It ensures architectural documents are synchronized with the final, polished code. This phase must not contain any code changes.
           1.  For each component, you **must** first `READ` the final implementation file to get its definitive state.
           2.  Only then can you create an `EDIT Architecture` plan to update all relevant architectural documents to accurately reflect the as-built code, including changing statuses from `Planned` to `Implemented`.
           3.  Incorporate any remaining `Architectural Notes` that were informational into `ARCHITECTURE.md`.
-          4.  Use a single `Version Control` plan to commit all documentation changes at once.
+          4.  Use a single `Version Control` plan to commit all documentation changes at once in a dedicated, docs-only commit.
         </action>
       </phase>
       <phase n="8" name="Outer-Cycle: Handoff / Merge Request">
@@ -109,7 +109,7 @@
           - [ ] Phase 4: Feature Activation
           - [ ] Phase 5: User Showcase & Feedback
           - [ ] Phase 6: Architectural Polish
-          - [ ] Phase 7: Architectural Audit & Synchronization
+          - [ ] Phase 7: Final Documentation Commit
           - [ ] Phase 8: Handoff / Merge Request
 
           #### Scope of Work
