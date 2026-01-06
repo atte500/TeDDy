@@ -9,14 +9,14 @@
 
 **Workflow Requirements: The Four-Phase Diagnostic Loop**
 *   The agent must follow a strict, iterative, four-phase workflow modeled on the scientific method. This loop may be repeated with increasing diagnostic depth if the initial set of hypotheses is entirely refuted.
-*   **Phase 0: Hierarchical Triage (Premise Validation)**
-    *   **Goal:** To methodically validate the entire chain of technical assumptions the failure rests on, from the most fundamental layer upwards, before analyzing project code.
-    *   **Process: The Hierarchical Triage Protocol**
-        1.  **Identify Assumption Chain:** Analyze the failure context to identify all distinct technology layers involved (e.g., Project Code -> 3rd-Party Library -> Standard Library).
-        2.  **Test from the Bottom Up:** Create a sequence of isolated "Oracle Spikes", one for each layer, starting with the most fundamental and moving up.
-        3.  **The Circuit Breaker:**
-            *   **If any Oracle Spike fails to match its expected outcome:** The premise at that layer is **FLAWED**. The investigation is **OVER**. The agent must halt the triage and proceed directly to Phase 3 to report the specific flawed assumption it discovered.
-            *   **If all Oracle Spikes pass:** The premises for all underlying technologies are **VALIDATED**. The bug must exist in the project's code. The agent may now proceed to Phase 1.
+*   **Phase 0: Single Oracle Triage (Premise Validation)**
+    *   **Goal:** To create and execute a single, definitive "Oracle Spike" that internally tests the entire chain of technical assumptions and outputs a final, unchallengeable verdict.
+    *   **Process: The Single Oracle Protocol**
+        1.  **Identify Assumption Chain:** Analyze the failure to identify all technology layers involved (e.g., Project Code -> 3rd-Party Library -> Standard Library).
+        2.  **Build a Multi-Layer Oracle Spike:** The agent's first plan MUST be a `Spike` to `CREATE` a single script. This script must internally test each layer of the assumption chain from the bottom up and print a single, definitive verdict line at the end (e.g., `VERDICT: PREMISE FLAWED at [Layer Name]`).
+        3.  **Execute and Accept the Verdict:** The agent must `EXECUTE` the spike. Its final verdict is absolute ground truth.
+            *   **If the verdict is `PREMISE FLAWED...`:** The investigation is **OVER**. The agent must proceed directly to Phase 3 to report the finding.
+            *   **If the verdict is `ALL PREMISES VALIDATED`:** The agent may proceed to Phase 1 to analyze the project's code.
 *   **Phase 1: Hypothesis Generation (Research & Discovery)**
     *   **Goal:** To create a comprehensive and prioritized list of potential root causes based on evidence from the failure context and source code.
     *   **Process:**
@@ -103,9 +103,9 @@
 *   **General Example Formatting Requirement**
     *   **Principle of Abstraction:** All few-shot examples must use placeholders to illustrate the **diagnostic process**, not specific code fixes.
     *   **Placeholder Usage:** Use bracketed, descriptive placeholders like `[Original Error Message]`, `[Failing Component]`, `[Hypothesis about root cause]`, `[Minimal script to test hypothesis]`.
-*   **Example 1: Hierarchical Triage (Phase 0)**
-    *   **Requirement Demonstrated:** The new multi-step validation process for Phase 0. The example shows the agent methodically testing a chain of assumptions, starting from the most fundamental layer and moving up, only proceeding to the next layer if the previous one is validated.
-    *   **Why it's required:** This models the agent's correct entry point and the rigorous process for isolating a flawed premise, which could exist at any layer of the technology stack.
+*   **Example 1: Single Oracle Triage (Phase 0)**
+    *   **Requirement Demonstrated:** The creation and execution of a single, atomic spike that internally tests the entire assumption chain and produces a definitive verdict.
+    *   **Why it's required:** This models the robust, single-step triage process that prevents the agent from deviating from the protocol. It is the most critical example for ensuring rational, evidence-based diagnosis.
 
 *   **Example 2: Information Gathering (Phase 1)**
     *   **Requirement Demonstrated:** The transition from Phase 0 to Phase 1. This occurs *after* all underlying technical premises have been validated, and it is time to investigate the project's own source code.
