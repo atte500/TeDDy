@@ -9,7 +9,7 @@ def test_context_command_first_run(tmp_path: Path):
     When I run the `teddy context` command
     Then a .teddy directory is created
     And a .teddy/.gitignore file is created containing the line `*`
-    And a .teddy/context.json file is created
+    And a .teddy/context.txt file is created
     And a .teddy/permanent_context.txt file is created
     And the .teddy/permanent_context.txt file contains default entries.
     """
@@ -26,8 +26,8 @@ def test_context_command_first_run(tmp_path: Path):
     assert gitignore_file.is_file(), ".teddy/.gitignore was not created."
     assert gitignore_file.read_text().strip() == "*", ".gitignore content is incorrect."
 
-    context_json = teddy_dir / "context.json"
-    assert context_json.is_file(), ".teddy/context.json was not created."
+    context_txt = teddy_dir / "context.txt"
+    assert context_txt.is_file(), ".teddy/context.txt was not created."
 
     permanent_context = teddy_dir / "permanent_context.txt"
     assert permanent_context.is_file(), ".teddy/permanent_context.txt was not created."

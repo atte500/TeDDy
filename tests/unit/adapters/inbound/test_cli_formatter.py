@@ -39,13 +39,13 @@ def test_format_project_context():
     output = format_project_context(context)
 
     # Assert
-    assert "### Repo Tree ###" in output
-    assert "<tree>" in output
+    assert "### Repo Tree ###" not in output
+    assert "<tree>" not in output  # Should be handled as a regular file context
     assert "### Environment Info ###" in output
     assert "os: test_os" in output
     assert "python: 3.x" in output
-    assert "### .gitignore ###" in output
-    assert ".venv/" in output
+    assert "### .gitignore ###" not in output
+    assert ".venv/" not in output  # This is no longer passed directly
     assert "### File Contexts ###" in output
     assert "--- File: src/main.py ---" in output
     assert "print('hello')" in output

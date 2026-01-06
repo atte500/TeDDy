@@ -38,7 +38,7 @@ The `FileSystemManager` port defines a technology-agnostic interface for interac
 ---
 
 ### `write_file`
-**Status:** Planned
+**Status:** Implemented
 **Introduced in:** [Slice 13: Implement `context` Command](../../slices/13-context-command.md)
 
 *   **Description:** Writes content to a file at a specified path. If the file exists, it is overwritten. If it does not exist, it is created. This is an "upsert" operation.
@@ -69,7 +69,7 @@ The `FileSystemManager` port defines a technology-agnostic interface for interac
 ---
 
 ### `path_exists`
-**Status:** Planned
+**Status:** Implemented
 **Introduced in:** [Slice 13: Implement `context` Command](../../slices/13-context-command.md)
 
 *   **Description:** Checks for the existence of a file or directory at the given path.
@@ -80,7 +80,7 @@ The `FileSystemManager` port defines a technology-agnostic interface for interac
 ---
 
 ### `create_directory`
-**Status:** Planned
+**Status:** Implemented
 **Introduced in:** [Slice 13: Implement `context` Command](../../slices/13-context-command.md)
 
 *   **Description:** Creates a new directory. This operation should be idempotent (i.e., not fail if the directory already exists).

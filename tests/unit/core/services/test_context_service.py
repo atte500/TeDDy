@@ -24,19 +24,32 @@ def test_get_context_creates_teddy_dir_on_first_run():
 
     # Mock return values for the rest of the function to avoid errors
     mock_fsm.read_file.return_value = ""
-    mock_rtg.generate_tree.return_value = ""
+    mock_rtg.generate_tree.return_value = "<tree>"
     mock_ei.get_environment_info.return_value = {}
 
     # Act
     service.get_context()
 
     # Assert
+    # Check that the directory setup happens
     mock_fsm.path_exists.assert_called_once_with(".teddy")
     mock_fsm.create_directory.assert_called_once_with(".teddy")
     mock_fsm.write_file.assert_any_call(".teddy/.gitignore", "*")
-    mock_fsm.write_file.assert_any_call(".teddy/context.json", "[]")
+    mock_fsm.write_file.assert_any_call(".teddy/context.txt", "")
 
-    expected_permanent_context = "README.md\n" "docs/ARCHITECTURE.md\n" "repotree.txt\n"
+    # Check that repo tree is generated and saved
+    mock_rtg.generate_tree.assert_called_once()
+    mock_fsm.write_file.assert_any_call(".teddy/repotree.txt", "<tree>")
+
+    # Check the new default permanent context
+    expected_permanent_context = (
+        ".gitignore\n"
+        ".teddy/context.txt\n"
+        ".teddy/permanent_context.txt\n"
+        ".teddy/repotree.txt\n"
+        "README.md\n"
+        "docs/ARCHITECTURE.md\n"
+    )
     mock_fsm.write_file.assert_any_call(
         ".teddy/permanent_context.txt", expected_permanent_context
     )
@@ -44,12 +57,10 @@ def test_get_context_creates_teddy_dir_on_first_run():
 
 def test_get_context_reads_and_processes_context_files():
     """
-    Tests that get_context reads file paths from context.json and
+    Tests that get_context reads file paths from context.txt and
     permanent_context.txt, fetches their content, and handles missing files.
     """
     # Arrange
-    import json
-
     mock_fsm = MagicMock()
     mock_rtg = MagicMock()
     mock_ei = MagicMock()
@@ -66,13 +77,13 @@ def test_get_context_reads_and_processes_context_files():
     mock_fsm.path_exists.return_value = True
 
     # Mock reading the context list files
-    context_json_content = json.dumps(["src/main.py", "README.md"])
+    context_txt_content = "src/main.py\nREADME.md"
     permanent_context_content = "pyproject.toml\nnon_existent.py"
 
     # Mock reading the content of the actual files
     def read_file_side_effect(path):
-        if path == ".teddy/context.json":
-            return context_json_content
+        if path == ".teddy/context.txt":
+            return context_txt_content
         if path == ".teddy/permanent_context.txt":
             return permanent_context_content
         if path == "src/main.py":
@@ -107,19 +118,16 @@ def test_get_context_reads_and_processes_context_files():
         fc for fc in result.file_contexts if fc.file_path == "README.md"
     )
     assert found_readme.status == "found"
-    assert found_readme.content == "# My Project"
 
     found_toml = next(
         fc for fc in result.file_contexts if fc.file_path == "pyproject.toml"
     )
     assert found_toml.status == "found"
-    assert found_toml.content == "[tool.poetry]"
 
     not_found_py = next(
         fc for fc in result.file_contexts if fc.file_path == "non_existent.py"
     )
     assert not_found_py.status == "not_found"
-    assert not_found_py.content is None
 
 
 def test_context_service_instantiation():

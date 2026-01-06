@@ -1,15 +1,24 @@
-# Outbound Port: IRepoTreeGenerator
+# Outbound Port: `IRepoTreeGenerator`
 
-**Motivating Vertical Slice:** [Implement `context` Command](../../slices/13-context-command.md)
+**Status:** Implemented
+**Introduced in:** [Slice 13: Implement `context` Command](../../slices/13-context-command.md)
 
-This port defines the contract for a service that can generate a textual representation of the repository's directory and file structure. This is a crucial component for providing context to an AI.
+## 1. Responsibility
 
-## Methods
+The `IRepoTreeGenerator` port defines a technology-agnostic interface for generating a string representation of a repository's file and directory tree. A key responsibility is that the generated tree must respect the ignore patterns found in a `.gitignore` file.
 
-### `generate_tree()`
+## 2. Methods
 
--   **Description:** Scans the current working directory and its subdirectories to build a tree-like string representation. The implementation **must** respect the ignore patterns defined in any `.gitignore` files found in the repository. It should also ignore common noise directories like `.git`, `.vscode`, and `__pycache__` by default.
--   **Preconditions:** None.
--   **Postconditions:** A string containing the formatted repository tree is returned.
--   **Returns:** `str` - The repository tree as a multi-line string.
--   **`**Status:**` Planned
+### `generate_tree`
+**Status:** Implemented
+
+*   **Description:** Generates a multi-line string representing the file tree of the project.
+*   **Signature:** `generate_tree() -> str`
+*   **Preconditions:** None.
+*   **Postconditions:**
+    *   Returns a string formatted as a hierarchical tree.
+    *   The returned tree must not include files or directories that match patterns in the project's `.gitignore` file.
+
+## 3. Related Spikes
+
+*   N/A - However, the implementation is based on the findings from the RCA documented in [`docs/rca/unreliable-third-party-library-gitwalk.md`](../../rca/unreliable-third-party-library-gitwalk.md).

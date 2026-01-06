@@ -1,4 +1,3 @@
-import json
 from typing import List
 
 from teddy.core.domain.models import ContextResult, FileContext
@@ -28,23 +27,26 @@ class ContextService(IGetContextUseCase):
         if not self.file_system_manager.path_exists(".teddy"):
             self.file_system_manager.create_directory(".teddy")
             self.file_system_manager.write_file(".teddy/.gitignore", "*")
-            self.file_system_manager.write_file(".teddy/context.json", "[]")
+            self.file_system_manager.write_file(".teddy/context.txt", "")
             permanent_context_content = (
-                "README.md\n" "docs/ARCHITECTURE.md\n" "repotree.txt\n"
+                ".gitignore\n"
+                ".teddy/context.txt\n"
+                ".teddy/permanent_context.txt\n"
+                ".teddy/repotree.txt\n"
+                "README.md\n"
+                "docs/ARCHITECTURE.md\n"
             )
             self.file_system_manager.write_file(
                 ".teddy/permanent_context.txt", permanent_context_content
             )
 
-    def _read_json_context_paths(self) -> List[str]:
-        """Reads and parses .teddy/context.json, returning a list of paths."""
+    def _read_context_paths(self) -> List[str]:
+        """Reads and parses .teddy/context.txt, returning a list of paths."""
         try:
-            content = self.file_system_manager.read_file(".teddy/context.json")
-            data = json.loads(content)
-            if isinstance(data, list):
-                return [str(p) for p in data if p and isinstance(p, str)]
-        except (FileNotFoundError, json.JSONDecodeError):
-            pass  # If file doesn't exist or is invalid, treat as empty list
+            content = self.file_system_manager.read_file(".teddy/context.txt")
+            return [line.strip() for line in content.splitlines() if line.strip()]
+        except FileNotFoundError:
+            pass  # If file doesn't exist, treat as empty list
         return []
 
     def _read_permanent_context_paths(self) -> List[str]:
@@ -58,11 +60,11 @@ class ContextService(IGetContextUseCase):
 
     def _get_file_contexts(self) -> List[FileContext]:
         """Gathers file paths from all context sources and fetches their content."""
-        json_paths = self._read_json_context_paths()
+        context_paths = self._read_context_paths()
         permanent_paths = self._read_permanent_context_paths()
 
         # Combine, de-duplicate, and sort paths for deterministic order
-        all_paths = sorted(list(set(json_paths + permanent_paths)))
+        all_paths = sorted(list(set(context_paths + permanent_paths)))
 
         file_contexts = []
         for path in all_paths:
@@ -83,19 +85,21 @@ class ContextService(IGetContextUseCase):
         """
         self._ensure_teddy_directory_exists()
 
+        # Generate and save the repo tree first, so it's available if requested
         repo_tree = self.repo_tree_generator.generate_tree()
+        self.file_system_manager.write_file(".teddy/repotree.txt", repo_tree)
+
         env_info = self.environment_inspector.get_environment_info()
 
-        try:
-            gitignore_content = self.file_system_manager.read_file(".gitignore")
-        except FileNotFoundError:
-            gitignore_content = ""
+        # This is now handled by _get_file_contexts if .gitignore is in a context file
+        # For the domain object, we can pass an empty string.
+        gitignore_content = ""
 
         file_contexts = self._get_file_contexts()
 
         return ContextResult(
-            repo_tree=repo_tree,
+            repo_tree="",  # No longer a special field
             environment_info=env_info,
-            gitignore_content=gitignore_content,
+            gitignore_content=gitignore_content,  # No longer a special field
             file_contexts=file_contexts,
         )

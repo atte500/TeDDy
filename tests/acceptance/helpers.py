@@ -52,6 +52,7 @@ def run_teddy_command(
 ) -> subprocess.CompletedProcess:
     """
     Helper function to run teddy with a list of command-line arguments.
+    This is used for acceptance tests of non-plan-based commands like 'context'.
     """
     cmd = TEDDY_CMD_BASE + args
     return subprocess.run(

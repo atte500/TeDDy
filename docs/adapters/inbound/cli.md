@@ -33,13 +33,13 @@ This is the primary command for executing a plan. It will be the default command
 *   **Behavior:** It executes the plan by calling the `PlanService` and prints a machine-readable YAML report to standard output.
 
 ### Utility Command: `context`
-**Status:** Planned
+**Status:** Implemented
 **Introduced in:** [Slice 13: Implement `context` Command](../../slices/13-context-command.md)
 
 This command provides a comprehensive snapshot of the project for an AI agent.
 
 *   **Input:** This command takes no arguments.
-*   **Behavior:** It invokes the `ContextService` via the `IGetContextUseCase` port. It receives a `ProjectContext` domain object in return, formats it into a structured, human-readable string, and prints it to standard output.
+*   **Behavior:** It invokes the `ContextService` via the `IGetContextUseCase` port. It receives a `ContextResult` domain object in return, formats it into a structured, human-readable string, and prints it to standard output.
 
 ### Output Handling
 
@@ -47,4 +47,4 @@ This command provides a comprehensive snapshot of the project for an AI agent.
 The `cli_formatter.py` module contains a `format_report_as_yaml` function responsible for converting the `ExecutionReport` domain model into a YAML string. This keeps presentation logic separate from the core application. The formatted report is printed to `stdout`. The application exits with a non-zero status code if any action in the plan fails.
 
 #### Project Context Snapshot
-A new formatter function, `format_project_context`, will be added to `cli_formatter.py`. This function will take the `ProjectContext` object and render it as a single string with clear headings for each section (OS Info, Repo Tree, File Contents, etc.), ready to be consumed by an LLM.
+The `cli_formatter.py` module contains a `format_project_context` function. This function takes the `ContextResult` object and renders it as a single string with clear headings for each section (Environment Info, File Contents, etc.), ready to be consumed by an LLM.

@@ -265,27 +265,27 @@ Raised by the `IWebSearcher` port when it fails to retrieve search results for a
 
 This section defines the objects related to gathering and representing the project's context for the AI.
 
-### `ContextResult` (Data Class)
-**Status:** Planned
+### `FileContext` (Value Object)
+**Status:** Implemented
+**Introduced in:** [Implement `context` Command](../slices/13-context-command.md)
+
+Represents the content and status of a single file requested for context.
+
+*   **Attributes:**
+    *   `file_path` (str): The path to the file.
+    *   `content` (str | None): The content of the file, or `None` if it could not be read.
+    *   `status` (str): The read status, one of "found" or "not_found".
+*   **Invariants:**
+    *   `status` must be either "found" or "not_found".
+
+### `ContextResult` (Aggregate Root)
+**Status:** Implemented
 **Introduced in:** [Implement `context` Command](../slices/13-context-command.md)
 
 A data structure that aggregates all the information gathered by the `GetContextUseCase`. It acts as the root of the Project Context aggregate.
 
 *   **Attributes:**
-    *   `repo_tree` (str): The file and directory structure of the repository, ignoring paths from `.gitignore`.
-    *   `environment_info` (dict[str, str]): Key-value pairs of OS and terminal information.
-    *   `main_gitignore_content` (str | None): The content of the root `.gitignore` file.
+    *   `repo_tree` (str): The file and directory structure of the repository.
+    *   `environment_info` (dict[str, str]): Key-value pairs of OS and environment information.
+    *   `gitignore_content` (str): The content of the root `.gitignore` file.
     *   `file_contexts` (list[FileContext]): A list containing the content of each requested file.
-    *   `permanent_context_files` (list[str]): The list of file paths from the permanent context file.
-    *   `ai_context_files` (list[str]): The list of file paths from the AI-managed context file.
-
-### `FileContext` (Value Object)
-**Status:** Planned
-**Introduced in:** [Implement `context` Command](../slices/13-context-command.md)
-
-Represents the content of a single file within the project context, including a status indicating if it was successfully read.
-
-*   **Attributes:**
-    *   `file_path` (str): The path to the file.
-    *   `content` (str | None): The content of the file, or `None` if the file was not found.
-    *   `status` (str): The status of the file read operation (e.g., "found", "not_found").

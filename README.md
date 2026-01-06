@@ -68,11 +68,11 @@ teddy --plan-file plan.yaml -y
 
 ### Utility Commands
 
-These commands are for the user to gather information for the AI. Their output is printed to the console AND copied to the clipboard.
+These commands are for the user to gather information for the AI.
 
-| Command   | Description                                                                                                                                |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `context` | Generates a comprehensive project snapshot for the AI, including file trees, OS info, and the contents of all files listed in the context. |
+| Command   | Description                                                                                                                          |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `context` | Gathers and displays the project context, including environment info and the contents of files specified in `.teddy/` configuration. |
 
 ---
 

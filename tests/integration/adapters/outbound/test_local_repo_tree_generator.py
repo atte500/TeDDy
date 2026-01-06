@@ -2,6 +2,45 @@ from pathlib import Path
 from textwrap import dedent
 
 
+def test_repo_tree_generator_produces_correct_format(tmp_path: Path):
+    """
+    Tests that the tree generator produces a correctly formatted and indented
+    string representation of the directory structure.
+    """
+    from teddy.adapters.outbound.local_repo_tree_generator import LocalRepoTreeGenerator
+
+    # Arrange
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "main.py").touch()
+    (tmp_path / "src" / "utils.py").touch()
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "guide.md").touch()
+    (tmp_path / "README.md").touch()
+
+    # .gitignore to ignore nothing for this test
+    (tmp_path / ".gitignore").write_text("")
+
+    adapter = LocalRepoTreeGenerator(root_dir=str(tmp_path))
+
+    expected_tree = dedent(
+        f"""
+    {tmp_path.name}/
+    ├── docs/
+    │   └── guide.md
+    ├── src/
+    │   ├── main.py
+    │   └── utils.py
+    └── README.md
+    """
+    ).strip()
+
+    # Act
+    tree_output = adapter.generate_tree()
+
+    # Assert
+    assert tree_output.strip() == expected_tree
+
+
 def test_repo_tree_generator_respects_gitignore(tmp_path: Path):
     """
     Tests that LocalRepoTreeGenerator correctly generates a file tree
