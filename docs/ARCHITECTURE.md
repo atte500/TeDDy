@@ -23,7 +23,7 @@ This checklist guides the initial setup of the project environment. Each step mu
 
 ### Dependency Management
 - **Tool:** `Poetry`.
-- **Usage:** Dependencies are defined in `pyproject.toml` within each package (e.g., `packages/executor/pyproject.toml`). To work with a package, you must first navigate to its directory (`cd packages/executor`). All commands, including running Python scripts or tests, **must** be prefixed with `poetry run` to ensure they execute within the project's virtual environment (e.g., `poetry run python ...`, `poetry run pytest`).
+- **Usage:** Dependencies are defined in `pyproject.toml` within each package. The `executor` package is configured as an installable CLI tool. Once installed via `poetry -C packages/executor install`, the `teddy` command is available within the activated Poetry shell. For development tasks from the project root, commands must be directed to the correct package, e.g., `poetry -C packages/executor run ...`.
 
 ### Version Control Strategy
 - **System:** Git
@@ -41,7 +41,7 @@ This checklist guides the initial setup of the project environment. Each step mu
     - `tests/acceptance/`: End-to-end tests.
     - `tests/integration/`: Tests for components that interact with external systems.
     - `tests/unit/`: Tests for individual functions or classes in isolation.
-- **Execution:** Tests are run via `poetry run pytest` from within a specific package directory.
+- **Execution:** Tests are run from the **project root** by directing poetry to the correct package. For example, to run the `executor` tests: `poetry -C packages/executor run pytest`.
 
 ### Pre-commit Hooks
 - **Framework:** `pre-commit`.

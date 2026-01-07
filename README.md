@@ -70,35 +70,43 @@ The `teddy` command-line tool, located in the `packages/executor` directory, is 
 3.  **Interactive Approval:** By default, `teddy` runs in interactive mode. It prints each action and prompts for your approval (`y/n`). If you reject a step, you will be prompted for an optional reason. The action is not performed, and the final report will mark it as `SKIPPED`, including your reason, confirming that no changes were made.
 4.  **Execution Report:** After execution, `teddy` prints a pure YAML **Execution Report** to the console. This report is the single source of truth about the outcome of the plan and is pasted back to the AI to provide a complete feedback loop.
 
-### Installation & Dependencies
+### Installation & Usage
 
-The `teddy` tool is managed using `Poetry` and requires Python 3.9+. To work with the executor, first navigate to its directory:
-```bash
-cd packages/executor
-```
+The `teddy` executor is a command-line tool managed with Poetry.
 
-Then, use Poetry to install the dependencies and the tool in editable mode:
+#### 1. Installation
+First, install the package and its dependencies. This command only needs to be run once.
 ```bash
-# This will create a virtual environment and install all dependencies
-poetry install
+# From the TeDDy project root, this installs the executor package.
+poetry -C packages/executor install
 ```
+This makes the `teddy` command available within the project's managed environment.
+
+#### 2. Activating the Environment
+To use the `teddy` command from any directory, you must first activate its virtual environment.
+
+```bash
+# From the project root on macOS / Linux:
+source $(poetry -C packages/executor env info --path)/bin/activate
+```
+After running this, your shell prompt will change, indicating that you are now inside the `teddy-executor` environment. You can then navigate to any other project directory and use the `teddy` command directly.
 
 ### Command-Line Reference
 
-All `teddy` commands must be run from within the `packages/executor/` directory.
-
 #### Executing a Plan
 
-To avoid conflicts between plan input and interactive prompts (like `y/n` approval or `chat_with_user`), plans must be passed using the `--plan-file` option. Standard input (`stdin`) is now reserved exclusively for interactive I/O.
+Once your environment is active (see "Installation & Usage"), you can run the `teddy` command from any directory. It will execute its plan relative to your current working directory.
 
-**From a File:**
+**Example:**
 ```bash
-# 1. Save the AI-generated plan to a file (e.g., plan.yaml)
-# 2. Execute the plan with interactive approval:
-poetry run teddy --plan-file plan.yaml
+# Navigate to the project you want to work on
+cd /path/to/my-web-app
+
+# Execute a plan file located in this directory
+teddy --plan-file plan.yaml
 
 # To automatically approve all steps, use the -y flag:
-poetry run teddy --plan-file plan.yaml -y
+teddy --plan-file plan.yaml -y
 ```
 
 #### Utility Commands
