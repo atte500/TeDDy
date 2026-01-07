@@ -88,3 +88,6 @@ error_screenshot.png
 # User-generated test plans
 *.yml
 *.yaml
+
+# Spikes (temporary experimental code) - Located in the executor project
+executor/spikes/
