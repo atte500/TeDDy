@@ -55,7 +55,7 @@
         - [ ] Phase 6: Architectural Polish
         - [ ] Phase 7: Final Documentation Commit
         - [ ] Phase 8: Handoff / Merge Request
-        
+
         #### Scope of Work
         - [▶️] [First item from slice's Scope of Work]
         - [ ] [Second item from slice's Scope of Work]
@@ -72,11 +72,11 @@
             - [ ] VERIFY: Run all tests
             - [ ] STAGE: Stage changes
             - [ ] COMMIT: Commit changes
-        
+
         #### Architectural Notes (Non-Blocking)
         - [No notes yet.]
         ````
-        
+
 *   **Context Vault:** Every plan must include a `Context Vault` section immediately after the `Goal` line. This section is a managed **"Active Working Set"** containing a clean list of only the file paths directly relevant to the current task and immediate next steps. The agent is responsible for actively managing this list to maintain focus and prevent context bloat. The specific decisions for adding, keeping, or removing files from the vault must be justified in the `Context Management Strategy` section of the `Rationale` block. **The path to the current Vertical Slice document, as specified in the TDD Dashboard, must always be present in the Context Vault throughout all phases of the workflow.** Its presence is a standing requirement and does not need to be re-justified in every `Context Management Strategy` section.
 *   **Strict Known-Content Workflow:** To ensure an agent always operates on the most current information and avoids redundant actions, the following rules must be strictly enforced:
     1.  **Definition of "Known Content":** A file's content is considered "known" only if one of these conditions is met:

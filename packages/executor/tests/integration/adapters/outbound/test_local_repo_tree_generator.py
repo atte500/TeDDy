@@ -7,7 +7,9 @@ def test_repo_tree_generator_produces_correct_format(tmp_path: Path):
     Tests that the tree generator produces a correctly formatted and indented
     string representation of the directory structure.
     """
-    from teddy_executor.adapters.outbound.local_repo_tree_generator import LocalRepoTreeGenerator
+    from teddy_executor.adapters.outbound.local_repo_tree_generator import (
+        LocalRepoTreeGenerator,
+    )
 
     # Arrange
     (tmp_path / "src").mkdir()
@@ -46,7 +48,9 @@ def test_repo_tree_generator_respects_gitignore(tmp_path: Path):
     Tests that LocalRepoTreeGenerator correctly generates a file tree
     and respects rules from a .gitignore file.
     """
-    from teddy_executor.adapters.outbound.local_repo_tree_generator import LocalRepoTreeGenerator
+    from teddy_executor.adapters.outbound.local_repo_tree_generator import (
+        LocalRepoTreeGenerator,
+    )
 
     # Arrange
     # Create a test directory structure

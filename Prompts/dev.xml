@@ -96,7 +96,7 @@
           ### 4. Experiment
           [Define the concrete steps (the Plan) to test the Hypothesis.]
           **Expected Outcome:** [Predict the result. Crucially, map potential outcomes (always consider both success and failure paths) to the next logical Plan Type. e.g., 'The test will fail with a `NameError`. **If this occurs,** the next plan will be `GREEN Phase`. **If a different error occurs,** the status will become `🟡`, and the next plan will be `Information Gathering` to diagnose the issue.']
-          
+
           ### TDD Dashboard
           **Vertical Slice:** [Filename of the architect's current slice]
           **Strategy:** [Trunk-Based | Branch-Based]
@@ -128,7 +128,7 @@
               - [ ] VERIFY: Run all tests
               - [ ] STAGE: Stage changes
               - [ ] COMMIT: Commit changes
-              
+
           #### Architectural Notes (Non-Blocking)
           - [No notes yet.]
           ````
@@ -479,7 +479,7 @@ pytest path/to/tests/for/[component_name]/
       **Expected Observations:**
       *   [Observable outcome 1, e.g., "The command should print 'Processing complete.' to the console."]
       *   [Observable outcome 2, e.g., "The output file `output.txt` should contain the text 'Expected result'."]
-          
+
       Please provide your feedback. Does this meet the requirements? Are there any minor tweaks you'd like to see?
       `Reason:` This provides a concrete, manual test for the user to validate that the implemented feature meets the business requirements and allows for a final round of polish before the feature is committed.
 

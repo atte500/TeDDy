@@ -89,5 +89,9 @@ error_screenshot.png
 *.yml
 *.yaml
 
+# Do not ignore critical project configuration files
+!/.pre-commit-config.yaml
+!/.github/workflows/ci.yml
+
 # Spikes (temporary experimental code) - Located in the executor project
-executor/spikes/
+spikes/

@@ -2,7 +2,9 @@ import os
 import platform
 import sys
 
-from teddy_executor.core.ports.outbound.environment_inspector import IEnvironmentInspector
+from teddy_executor.core.ports.outbound.environment_inspector import (
+    IEnvironmentInspector,
+)
 
 
 class SystemEnvironmentInspector(IEnvironmentInspector):

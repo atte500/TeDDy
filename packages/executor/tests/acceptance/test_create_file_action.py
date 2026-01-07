@@ -27,9 +27,9 @@ def test_create_file_happy_path(tmp_path: Path):
     # Assert
     assert result.returncode == 0, f"Teddy failed with stderr: {result.stderr}"
     assert new_file_path.exists(), "The new file was not created."
-    assert (
-        new_file_path.read_text() == "Hello, World!"
-    ), "The file content is incorrect."
+    assert new_file_path.read_text() == "Hello, World!", (
+        "The file content is incorrect."
+    )
 
     # Verify the report output
     report = yaml.safe_load(result.stdout)
@@ -59,9 +59,9 @@ def test_create_file_when_file_exists_fails_gracefully(tmp_path: Path):
 
     # Assert
     # The tool should exit with a failure code because the plan failed
-    assert (
-        result.returncode != 0
-    ), "Teddy should exit with a non-zero code on plan failure"
+    assert result.returncode != 0, (
+        "Teddy should exit with a non-zero code on plan failure"
+    )
 
     # The original file should not have been modified
     assert existing_file.read_text() == original_content

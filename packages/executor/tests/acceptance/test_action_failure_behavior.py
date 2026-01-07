@@ -29,9 +29,9 @@ def test_create_file_on_existing_file_fails_and_returns_content(tmp_path: Path):
 
     # Assert
     # The tool should exit with a failure code because the plan failed
-    assert (
-        result.returncode != 0
-    ), "Teddy should exit with a non-zero code on plan failure"
+    assert result.returncode != 0, (
+        "Teddy should exit with a non-zero code on plan failure"
+    )
 
     # The original file should not have been modified
     assert existing_file.read_text() == original_content

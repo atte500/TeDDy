@@ -23,7 +23,9 @@ def test_search_success_maps_results_correctly():
     ]
 
     # Patch DDGS where it's used: in the web_searcher_adapter module
-    with patch("teddy_executor.adapters.outbound.web_searcher_adapter.DDGS") as mock_ddgs_class:
+    with patch(
+        "teddy_executor.adapters.outbound.web_searcher_adapter.DDGS"
+    ) as mock_ddgs_class:
         # Configure the instance and its text method
         mock_ddgs_instance = MagicMock()
         mock_ddgs_instance.text.return_value = mock_ddgs_result
@@ -62,7 +64,9 @@ def test_search_handles_library_exception():
     queries = ["test query"]
 
     # Patch DDGS where it's used: in the web_searcher_adapter module
-    with patch("teddy_executor.adapters.outbound.web_searcher_adapter.DDGS") as mock_ddgs_class:
+    with patch(
+        "teddy_executor.adapters.outbound.web_searcher_adapter.DDGS"
+    ) as mock_ddgs_class:
         mock_ddgs_instance = MagicMock()
         mock_ddgs_instance.text.side_effect = ConnectionError("Network failed")
         mock_ddgs_class.return_value.__enter__.return_value = mock_ddgs_instance

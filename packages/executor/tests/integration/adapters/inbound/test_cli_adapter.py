@@ -34,9 +34,9 @@ def test_cli_invokes_use_case_with_stdin_content():
 
     # ASSERT
     # Ensure the CLI command itself succeeded
-    assert (
-        result.exit_code == 0
-    ), f"CLI exited with code {result.exit_code}\n{result.stdout}\n{result.stderr}"
+    assert result.exit_code == 0, (
+        f"CLI exited with code {result.exit_code}\n{result.stdout}\n{result.stderr}"
+    )
 
     # Verify that the core use case was called correctly with the content from stdin
     mock_use_case.execute.assert_called_once_with(plan_input)
@@ -62,9 +62,9 @@ def test_cli_exits_with_error_code_on_failure():
     )
 
     # ASSERT
-    assert (
-        result.exit_code == 1
-    ), f"CLI should exit with code 1 on failure, but got {result.exit_code}"
+    assert result.exit_code == 1, (
+        f"CLI should exit with code 1 on failure, but got {result.exit_code}"
+    )
 
 
 def test_cli_handles_create_file_action():
@@ -93,7 +93,7 @@ def test_cli_handles_create_file_action():
     )
 
     # ASSERT
-    assert (
-        result.exit_code == 0
-    ), f"CLI exited with code {result.exit_code}\n{result.stdout}\n{result.stderr}"
+    assert result.exit_code == 0, (
+        f"CLI exited with code {result.exit_code}\n{result.stdout}\n{result.stderr}"
+    )
     mock_use_case.execute.assert_called_once_with(plan_yaml)

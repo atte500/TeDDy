@@ -134,9 +134,9 @@ def test_multiline_edit_preserves_indentation(tmp_path: Path):
       params:
         file_path: "source.py"
         find: |
-{textwrap.indent(find_block, '          ')}
+{textwrap.indent(find_block, "          ")}
         replace: |
-{textwrap.indent(replace_block, '          ')}
+{textwrap.indent(replace_block, "          ")}
     """
 
     # Act

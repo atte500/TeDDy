@@ -4,7 +4,9 @@ from teddy_executor.core.domain.models import ContextResult, FileContext
 from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
 from teddy_executor.core.ports.outbound.file_system_manager import FileSystemManager
 from teddy_executor.core.ports.outbound.repo_tree_generator import IRepoTreeGenerator
-from teddy_executor.core.ports.outbound.environment_inspector import IEnvironmentInspector
+from teddy_executor.core.ports.outbound.environment_inspector import (
+    IEnvironmentInspector,
+)
 
 
 class ContextService(IGetContextUseCase):

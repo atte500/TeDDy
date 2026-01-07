@@ -247,9 +247,9 @@
       #   echo "PREMISE FLAWED"
       # fi
       ````
-      
+
       ---
-      
+
       **EXECUTE:** Consult the Oracle
       [This command runs the spike. Its output is considered the absolute ground truth and will not be questioned.]
       ````shell
@@ -306,7 +306,7 @@ python spikes/debug/01-cause-isolation-h1/reproduce_error.py
       `Expected Outcome:` The script will fail with the original error message.
 
       ---
-      
+
       ### GOOD EXAMPLE 3: Formal RCA for a Systemic Issue (Phase 3)
       ````Rationale 🟢
       ### 1. Analysis

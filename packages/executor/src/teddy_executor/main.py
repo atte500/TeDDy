@@ -16,7 +16,9 @@ from teddy_executor.adapters.outbound.file_system_adapter import LocalFileSystem
 from teddy_executor.adapters.outbound.web_scraper_adapter import WebScraperAdapter
 from teddy_executor.adapters.outbound.console_interactor import ConsoleInteractorAdapter
 from teddy_executor.adapters.outbound.web_searcher_adapter import WebSearcherAdapter
-from teddy_executor.adapters.outbound.local_repo_tree_generator import LocalRepoTreeGenerator
+from teddy_executor.adapters.outbound.local_repo_tree_generator import (
+    LocalRepoTreeGenerator,
+)
 from teddy_executor.adapters.outbound.system_environment_inspector import (
     SystemEnvironmentInspector,
 )
