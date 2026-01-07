@@ -61,7 +61,7 @@ It works in three phases:
 
 ## The `teddy` Executor: The Hands of the AI
 
-The `teddy` command-line tool, located in the `/executor` directory, is the bridge between AI-generated plans and your local filesystem. It allows for the safe, transparent, and user-supervised execution of development tasks.
+The `teddy` command-line tool, located in the `packages/executor` directory, is the bridge between AI-generated plans and your local filesystem. It allows for the safe, transparent, and user-supervised execution of development tasks.
 
 ### Execution Flow
 
@@ -74,7 +74,7 @@ The `teddy` command-line tool, located in the `/executor` directory, is the brid
 
 The `teddy` tool is managed using `Poetry` and requires Python 3.9+. To work with the executor, first navigate to its directory:
 ```bash
-cd executor
+cd packages/executor
 ```
 
 Then, use Poetry to install the dependencies and the tool in editable mode:
@@ -85,7 +85,7 @@ poetry install
 
 ### Command-Line Reference
 
-All `teddy` commands must be run from within the `executor/` directory.
+All `teddy` commands must be run from within the `packages/executor/` directory.
 
 #### Executing a Plan
 
@@ -167,4 +167,4 @@ Here's a look at our development priorities. We use the following statuses to in
 | Status | Stage / Feature Set               | Description                                                                                                                                                      |
 | :----: | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 |   ✅    | **Core Action & Utility Support** | The foundational actions (`create`, `read`, `edit`, `execute`, `chat`, `research`) and the `context` utility command are fully implemented and stable.           |
-|   📝    | **TUI for LLM Interaction**       | Create a Terminal User Interface (TUI) to directly call LLM APIs, pass context, manage prompts, and execute the resulting plans in a seamless, interactive loop. |
+|   ▶️    | **TUI for LLM Interaction**       | Create a Terminal User Interface (TUI) to directly call LLM APIs, pass context, manage prompts, and execute the resulting plans in a seamless, interactive loop. |
