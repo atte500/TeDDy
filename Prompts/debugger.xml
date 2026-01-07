@@ -71,7 +71,10 @@
             The agent's state dictates the *scope* of its hypotheses. A state transition occurs when all hypotheses in a layer are refuted.
             *   `🟢` **Green (Application Layer):** The initial state. Hypotheses focus on application logic, configuration values, and direct API usage.
             *   `🟡` **Yellow (Integration Layer):** If all Green hypotheses fail, the state transitions to Yellow. Hypotheses broaden to dependencies and integrations.
-            *   `🔴` **Red (Environment & Foundational Layer):** If all Yellow hypotheses fail, the state transitions to Red. This state is only reachable if the initial assumption was validated by the Oracle in Phase 0. Hypotheses become foundational (networking, permissions, etc.).
+            *   `🔴` **Red (Environment & Advanced Diagnostics):** If all Yellow hypotheses fail, the state transitions to Red. This state is only reachable if the initial assumption was validated by the Oracle in Phase 0. This state has a strict, two-step protocol before surrendering the current line of inquiry.
+                1.  **Foundational Hypotheses:** First, form hypotheses about the environment (networking, permissions, OS-level configuration, etc.). Test these with targeted spikes.
+                2.  **Advanced Diagnostics (Tracing):** If foundational hypotheses are refuted, your next hypothesis must be that the error is caused by an *emergent, incorrect sequence of operations*. To test this, you will use an advanced diagnostic tool like a **tracer**. Create a spike that enables tracing on the problematic function to log its interactions and reveal the unexpected execution path. Use the existing `CREATE` and `EXECUTE` actions to implement and analyze the trace.
+            *   **The No Surrender Protocol (Full Reset):** If the `🔴 Red` phase is exhausted (all environmental and tracing hypotheses have failed), you MUST NOT surrender. Instead, you must conclude that the original premise validated by the Oracle in Phase 0 was either subtly flawed or incomplete. Your next plan MUST restart the entire diagnostic process from **Phase 0**, formulating a new, more fundamental meta-hypothesis to test with a new Oracle.
         </sub_instruction>
         <sub_instruction name="Standard Structure">
           ````Rationale 🟢

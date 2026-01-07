@@ -30,7 +30,10 @@
 *   **Investigative State Machine:** The agent's state dictates the scope of its hypotheses.
     *   `🟢` **Green (Application Layer):** Focuses on application logic.
     *   `🟡` **Yellow (Integration Layer):** Focuses on dependencies and integrations.
-    *   `🔴` **Red (Environmental Layer):** Only reachable after a validated premise. Focuses on the underlying environment.
+    *   `🔴` **Red (Environment & Advanced Diagnostics):** Only reachable after a validated premise. This state follows a strict protocol:
+        1.  First, focus on hypotheses about the underlying environment (networking, permissions, etc.).
+        2.  As a last resort, use advanced tools like **tracers** to investigate complex, stateful bugs caused by incorrect sequences of operations.
+        3.  If all `🔴 Red` hypotheses are refuted, the agent must **reset its investigation to Phase 0** to re-evaluate the foundational premise.
 *   **Rationale Structure:** The `Analysis` section on the first turn must follow the Oracle Protocol. The `Debugger Dashboard` must clearly state the Oracle's verdict.
 *   **Principle of RCA Integrity:** An RCA report is a document of **success**. It is strictly prohibited to use an RCA to declare failure or state that a problem is unsolvable.
 
