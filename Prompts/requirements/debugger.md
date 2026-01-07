@@ -14,7 +14,7 @@
         3.  **Consult the Oracle:** Execute the script to get a "Verdict Matrix". This is the **final investigative action**.
         4.  **Mandatory Synthesis (Hard Stop):** The agent's very next plan **MUST** be a `Synthesis Phase` plan. It is **strictly forbidden** from creating another `Spike` to "debug the Oracle." Its only remaining task is to analyze the Verdict Matrix from within the Synthesis plan and report the findings.
             *   If the matrix shows the premise was flawed (due to a general principle or library quirk), the agent reports the finding and deactivates.
-            *   If the matrix validates the premise, the agent may then initiate Phase 1 from within the Synthesis plan's framework.
+            *   If the matrix validates the premise, the agent's next plan must be an `Information Gathering` plan to formally begin Phase 1.
 *   **Phase 1: Hypothesis Generation (Research & Discovery)**
     *   **Goal:** (Only after a validated premise) To create a list of potential root causes based on project code.
     *   **Process:** `READ` relevant source code, tests, and docs to form a `Hypothesis Checklist`.
@@ -32,7 +32,7 @@
     *   `🟡` **Yellow (Integration Layer):** Focuses on dependencies and integrations.
     *   `🔴` **Red (Environment & Advanced Diagnostics):** Only reachable after a validated premise. This state follows a strict protocol:
         1.  First, focus on hypotheses about the underlying environment (networking, permissions, etc.).
-        2.  As a last resort, use advanced tools like **tracers** to investigate complex, stateful bugs caused by incorrect sequences of operations.
+        2.  As a last resort, shift the hypothesis to runtime behavior, investigating complex, stateful bugs caused by incorrect sequences of operations. This is best done using advanced tools like **tracers**.
         3.  If all `🔴 Red` hypotheses are refuted, the agent must **reset its investigation to Phase 0** to re-evaluate the foundational premise.
 *   **Rationale Structure:** The `Analysis` section on the first turn must follow the Oracle Protocol. The `Debugger Dashboard` must clearly state the Oracle's verdict.
 *   **Principle of RCA Integrity:** An RCA report is a document of **success**. It is strictly prohibited to use an RCA to declare failure or state that a problem is unsolvable.
