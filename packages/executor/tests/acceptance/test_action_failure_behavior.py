@@ -22,7 +22,7 @@ def test_create_file_on_existing_file_fails_and_returns_content(tmp_path: Path):
     original_content = "original content"
     existing_file.write_text(original_content)
 
-    plan = CREATE_PLAN_YAML.format(file_path=str(existing_file))
+    plan = CREATE_PLAN_YAML.format(file_path=existing_file.as_posix())
 
     # Act
     result = run_teddy_with_stdin(plan, cwd=tmp_path)
