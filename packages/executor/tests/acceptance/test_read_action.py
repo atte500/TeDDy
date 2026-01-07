@@ -2,7 +2,7 @@ from pathlib import Path
 import yaml
 from pytest_httpserver import HTTPServer
 
-from .helpers import run_teddy_with_stdin
+from .helpers import run_teddy_with_plan_structure
 
 
 def test_read_local_file_successfully(tmp_path: Path):
@@ -17,13 +17,9 @@ def test_read_local_file_successfully(tmp_path: Path):
     expected_content = "Hello, TeDDy!"
     source_file.write_text(expected_content)
 
-    plan = f"""
-    - action: read
-      params:
-        source: "{source_file}"
-    """
+    plan_structure = [{"action": "read", "params": {"source": source_file}}]
     # Act
-    result = run_teddy_with_stdin(plan, cwd=tmp_path)
+    result = run_teddy_with_plan_structure(plan_structure, cwd=tmp_path)
 
     # Assert
     assert result.returncode == 0
@@ -43,14 +39,10 @@ def test_read_non_existent_local_file_fails(tmp_path: Path):
     """
     # Arrange
     non_existent_file = tmp_path / "non_existent.txt"
-    plan = f"""
-    - action: read
-      params:
-        source: "{non_existent_file}"
-    """
+    plan_structure = [{"action": "read", "params": {"source": non_existent_file}}]
 
     # Act
-    result = run_teddy_with_stdin(plan, cwd=Path("."))
+    result = run_teddy_with_plan_structure(plan_structure, cwd=Path("."))
 
     # Assert
     assert result.returncode != 0
@@ -74,14 +66,10 @@ def test_read_remote_url_successfully(httpserver: HTTPServer):
     httpserver.expect_request("/test-page").respond_with_data(html_content)
     test_url = httpserver.url_for("/test-page")
 
-    plan = f"""
-    - action: read
-      params:
-        source: "{test_url}"
-    """
+    plan_structure = [{"action": "read", "params": {"source": test_url}}]
 
     # Act
-    result = run_teddy_with_stdin(plan, cwd=Path("."))
+    result = run_teddy_with_plan_structure(plan_structure, cwd=Path("."))
 
     # Assert
     assert result.returncode == 0
@@ -103,14 +91,10 @@ def test_read_inaccessible_remote_url_fails(httpserver: HTTPServer):
     # Arrange
     httpserver.expect_request("/not-found").respond_with_data("Not Found", status=404)
     test_url = httpserver.url_for("/not-found")
-    plan = f"""
-    - action: read
-      params:
-        source: "{test_url}"
-    """
+    plan_structure = [{"action": "read", "params": {"source": test_url}}]
 
     # Act
-    result = run_teddy_with_stdin(plan, cwd=Path("."))
+    result = run_teddy_with_plan_structure(plan_structure, cwd=Path("."))
 
     # Assert
     assert result.returncode != 0

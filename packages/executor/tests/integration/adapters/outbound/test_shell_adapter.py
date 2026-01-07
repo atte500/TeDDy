@@ -1,4 +1,4 @@
-# This import will fail
+import sys
 from teddy_executor.adapters.outbound.shell_adapter import ShellAdapter
 
 
@@ -8,7 +8,8 @@ def test_shell_adapter_executes_command_successfully():
     """
     # ARRANGE
     adapter = ShellAdapter()
-    command = 'echo "hello from shell"'
+    # Use sys.executable to ensure the command is platform-agnostic
+    command = f"{sys.executable} -c \"print('hello from shell')\""
 
     # ACT
     result = adapter.run(command)

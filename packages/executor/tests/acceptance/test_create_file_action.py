@@ -1,13 +1,6 @@
 from pathlib import Path
 import yaml
-from .helpers import run_teddy_with_stdin
-
-PLAN_YAML = """
-- action: create_file
-  params:
-    file_path: "{file_path}"
-    content: "Hello, World!"
-"""
+from .helpers import run_teddy_with_plan_structure
 
 
 def test_create_file_happy_path(tmp_path: Path):
@@ -19,10 +12,15 @@ def test_create_file_happy_path(tmp_path: Path):
     # Arrange
     file_name = "new_file.txt"
     new_file_path = tmp_path / file_name
-    plan = PLAN_YAML.format(file_path=str(new_file_path))
+    plan_structure = [
+        {
+            "action": "create_file",
+            "params": {"file_path": new_file_path, "content": "Hello, World!"},
+        }
+    ]
 
     # Act
-    result = run_teddy_with_stdin(plan, cwd=tmp_path)
+    result = run_teddy_with_plan_structure(plan_structure, cwd=tmp_path)
 
     # Assert
     assert result.returncode == 0, f"Teddy failed with stderr: {result.stderr}"
@@ -37,7 +35,7 @@ def test_create_file_happy_path(tmp_path: Path):
     action_log = report["action_logs"][0]
     assert action_log["status"] == "COMPLETED"
     assert action_log["action"]["type"] == "create_file"
-    assert action_log["action"]["params"]["file_path"] == str(new_file_path)
+    assert action_log["action"]["params"]["file_path"] == new_file_path.as_posix()
 
 
 def test_create_file_when_file_exists_fails_gracefully(tmp_path: Path):
@@ -52,10 +50,15 @@ def test_create_file_when_file_exists_fails_gracefully(tmp_path: Path):
     original_content = "Original content"
     existing_file.write_text(original_content)
 
-    plan = PLAN_YAML.format(file_path=str(existing_file))
+    plan_structure = [
+        {
+            "action": "create_file",
+            "params": {"file_path": existing_file, "content": "Hello, World!"},
+        }
+    ]
 
     # Act
-    result = run_teddy_with_stdin(plan, cwd=tmp_path)
+    result = run_teddy_with_plan_structure(plan_structure, cwd=tmp_path)
 
     # Assert
     # The tool should exit with a failure code because the plan failed

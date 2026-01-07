@@ -1,6 +1,6 @@
 from pathlib import Path
 import yaml
-from .helpers import run_teddy_with_stdin
+from .helpers import run_teddy_with_plan_structure
 
 
 def test_successful_execution():
@@ -11,14 +11,12 @@ def test_successful_execution():
     And the report should show SUCCESS with the correct output.
     """
     # GIVEN
-    plan_content = """
-    - action: execute
-      params:
-        command: echo "hello world"
-    """
+    plan_structure = [
+        {"action": "execute", "params": {"command": 'echo "hello world"'}}
+    ]
 
     # WHEN
-    result = run_teddy_with_stdin(plan_content, cwd=Path("."))
+    result = run_teddy_with_plan_structure(plan_structure, cwd=Path("."))
 
     # THEN
     assert result.returncode == 0
@@ -40,14 +38,12 @@ def test_failed_execution():
     And the report should show FAILURE with the correct error output.
     """
     # GIVEN
-    plan_content = """
-    - action: execute
-      params:
-        command: nonexistentcommand12345
-    """
+    plan_structure = [
+        {"action": "execute", "params": {"command": "nonexistentcommand12345"}}
+    ]
 
     # WHEN
-    result = run_teddy_with_stdin(plan_content, cwd=Path("."))
+    result = run_teddy_with_plan_structure(plan_structure, cwd=Path("."))
 
     # THEN
     assert result.returncode != 0

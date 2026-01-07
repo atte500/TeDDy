@@ -1,7 +1,6 @@
-import textwrap
 from pathlib import Path
 import yaml
-from .helpers import run_teddy_with_stdin
+from .helpers import run_teddy_with_plan_structure
 
 
 def test_edit_action_fails_on_multiple_occurrences(tmp_path: Path):
@@ -13,16 +12,17 @@ def test_edit_action_fails_on_multiple_occurrences(tmp_path: Path):
     file_to_edit.write_text(original_content)
 
     # When an edit action is executed with that find string
-    plan = textwrap.dedent(
-        f"""
-        - action: edit
-          params:
-            file_path: "{file_to_edit.name}"
-            find: "hello"
-            replace: "goodbye"
-    """
-    )
-    result = run_teddy_with_stdin(plan, cwd=test_dir)
+    plan_structure = [
+        {
+            "action": "edit",
+            "params": {
+                "file_path": file_to_edit.name,
+                "find": "hello",
+                "replace": "goodbye",
+            },
+        }
+    ]
+    result = run_teddy_with_plan_structure(plan_structure, cwd=test_dir)
 
     # Then the action should fail
     assert result.returncode != 0

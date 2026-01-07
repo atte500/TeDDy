@@ -1,7 +1,7 @@
 import textwrap
 from pathlib import Path
 import yaml
-from .helpers import run_teddy_with_stdin
+from .helpers import run_teddy_with_plan_structure
 
 
 def test_editing_a_file_happy_path(tmp_path: Path):
@@ -24,18 +24,19 @@ def test_editing_a_file_happy_path(tmp_path: Path):
     )
     file_to_edit.write_text(initial_content)
 
-    plan = textwrap.dedent(
-        """
-        - action: edit
-          params:
-            file_path: "file.txt"
-            find: "Let's edit this line."
-            replace: "This line has been successfully edited."
-    """
-    )
+    plan_structure = [
+        {
+            "action": "edit",
+            "params": {
+                "file_path": "file.txt",
+                "find": "Let's edit this line.",
+                "replace": "This line has been successfully edited.",
+            },
+        }
+    ]
 
     # Act
-    result = run_teddy_with_stdin(plan, cwd=test_dir)
+    result = run_teddy_with_plan_structure(plan_structure, cwd=test_dir)
 
     # Assert
     expected_content = textwrap.dedent(
@@ -68,18 +69,15 @@ def test_editing_with_empty_find_replaces_entire_file(tmp_path: Path):
     file_to_edit.write_text("This is the original content.")
 
     new_content = "This is the new, full content."
-    plan = textwrap.dedent(
-        f"""
-        - action: edit
-          params:
-            file_path: "file.txt"
-            find: ""
-            replace: "{new_content}"
-    """
-    )
+    plan_structure = [
+        {
+            "action": "edit",
+            "params": {"file_path": "file.txt", "find": "", "replace": new_content},
+        }
+    ]
 
     # Act
-    result = run_teddy_with_stdin(plan, cwd=test_dir)
+    result = run_teddy_with_plan_structure(plan_structure, cwd=test_dir)
 
     # Assert
     assert file_to_edit.read_text() == new_content
@@ -129,18 +127,19 @@ def test_multiline_edit_preserves_indentation(tmp_path: Path):
         # End of new block"""
     )
 
-    plan = f"""
-    - action: edit
-      params:
-        file_path: "source.py"
-        find: |
-{textwrap.indent(find_block, "          ")}
-        replace: |
-{textwrap.indent(replace_block, "          ")}
-    """
+    plan_structure = [
+        {
+            "action": "edit",
+            "params": {
+                "file_path": "source.py",
+                "find": find_block,
+                "replace": replace_block,
+            },
+        }
+    ]
 
     # Act
-    result = run_teddy_with_stdin(plan, cwd=test_dir)
+    result = run_teddy_with_plan_structure(plan_structure, cwd=test_dir)
 
     # Assert
     expected_content = textwrap.dedent(
@@ -171,18 +170,19 @@ def test_editing_non_existent_file_fails_gracefully(tmp_path: Path):
     test_dir = tmp_path / "test_project"
     test_dir.mkdir()
 
-    plan = textwrap.dedent(
-        """
-        - action: edit
-          params:
-            file_path: "non_existent_file.txt"
-            find: "any"
-            replace: "thing"
-    """
-    )
+    plan_structure = [
+        {
+            "action": "edit",
+            "params": {
+                "file_path": "non_existent_file.txt",
+                "find": "any",
+                "replace": "thing",
+            },
+        }
+    ]
 
     # Act
-    result = run_teddy_with_stdin(plan, cwd=test_dir)
+    result = run_teddy_with_plan_structure(plan_structure, cwd=test_dir)
 
     # Assert
     assert result.returncode != 0
@@ -207,18 +207,19 @@ def test_editing_file_where_find_text_is_not_found_fails(tmp_path: Path):
     initial_content = "Hello world!"
     file_to_edit.write_text(initial_content)
 
-    plan = textwrap.dedent(
-        """
-        - action: edit
-          params:
-            file_path: "file.txt"
-            find: "goodbye"
-            replace: "farewell"
-    """
-    )
+    plan_structure = [
+        {
+            "action": "edit",
+            "params": {
+                "file_path": "file.txt",
+                "find": "goodbye",
+                "replace": "farewell",
+            },
+        }
+    ]
 
     # Act
-    result = run_teddy_with_stdin(plan, cwd=test_dir)
+    result = run_teddy_with_plan_structure(plan_structure, cwd=test_dir)
 
     # Assert
     assert file_to_edit.read_text() == initial_content

@@ -1,7 +1,7 @@
 import subprocess
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any
 import yaml
 
 # Path to the teddy executable script
@@ -40,6 +40,30 @@ def run_teddy_with_stdin(plan_content: str, cwd: Path) -> subprocess.CompletedPr
         text=True,
         cwd=cwd,
     )
+
+
+def _convert_paths(data: Any) -> Any:
+    """Recursively converts Path objects to posix strings in a data structure."""
+    if isinstance(data, Path):
+        return data.as_posix()
+    if isinstance(data, list):
+        return [_convert_paths(item) for item in data]
+    if isinstance(data, dict):
+        return {key: _convert_paths(value) for key, value in data.items()}
+    return data
+
+
+def run_teddy_with_plan_structure(
+    plan_structure: list | dict, cwd: Path
+) -> subprocess.CompletedProcess:
+    """
+    Helper function that takes a Python data structure, converts it to a
+    platform-agnostic YAML string, and runs teddy with it.
+    """
+    # Automatically convert any Path objects to posix strings
+    sanitized_structure = _convert_paths(plan_structure)
+    plan_content = yaml.dump(sanitized_structure)
+    return run_teddy_with_stdin(plan_content, cwd=cwd)
 
 
 def parse_yaml_report(stdout: str) -> dict:
