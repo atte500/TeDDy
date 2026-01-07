@@ -41,7 +41,7 @@ jobs:
     - name: Install dependencies
       if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
       working-directory: ./packages/executor
-      run: poetry install --no-interaction --no-root
+      run: poetry install --no-interaction
 
     - name: Run tests
       working-directory: ./packages/executor
