@@ -163,16 +163,17 @@ Here's a look at our development priorities. We use the following statuses to in
 
 ### Core Framework
 
-| Status | Stage / Feature Set      | Description                                                                                                                     |
-| :----: | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-|   ✅    | **Agent Prompts v1**     | Core prompts for Architect, Developer, and Debugger are defined and functional.                                                 |
-|   ✅    | **Conceptual Workflow**  | The high-level workflow for using the TeDDy paradigm is documented.                                                             |
-|   📝    | **Prompt Agnosticism**   | Refine prompts to be more model-agnostic and less tied to a specific platform like Google AI Studio.                            |
-|   📝    | **Prompt Decomposition** | Decompose large prompts into smaller, chained instructions to improve reliability and leverage Mixture-of-Agents architectures. |
+| Status | Stage / Feature Set        | Description                                                                                                                                 |
+| :----: | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+|   ✅    | **Agent Prompts v1**       | Core prompts for Architect, Developer, and Debugger are defined and functional.                                                             |
+|   ▶️    | **YAML Plan Generation**   | Refining agent prompts to reliably generate YAML-compliant plans, improving executor compatibility and reducing the need for manual fixes.  |
+|   📝    | **Agents & Core Workflow** | Solidifying the interaction protocols and distribuition of responsibilities between agents to ensure a robust, repeatable workflow.         |
+|   📝    | **Prompt Decomposition**   | Decompose large prompts into smaller, chained states. This improves reliability and enables using smaller, local models for specific tasks. |
 
 ### `teddy` Executor CLI
 
-| Status | Stage / Feature Set               | Description                                                                                                                                                      |
-| :----: | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|   ✅    | **Core Action & Utility Support** | The foundational actions (`create`, `read`, `edit`, `execute`, `chat`, `research`) and the `context` utility command are fully implemented and stable.           |
-|   ▶️    | **TUI for LLM Interaction**       | Create a Terminal User Interface (TUI) to directly call LLM APIs, pass context, manage prompts, and execute the resulting plans in a seamless, interactive loop. |
+| Status | Stage / Feature Set               | Description                                                                                                                                                          |
+| :----: | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|   ▶️    | **Core Action & Utility Support** | The foundational actions (`create`, `read`, `edit`, `execute`, `chat`, `research`) and the `context` utility command are fully implemented and stable.               |
+|   📝    | **TUI for LLM Interaction**       | Create a Terminal User Interface (TUI) to directly call LLM APIs, pass context, manage prompts, and execute the resulting plans in a seamless, interactive loop.     |
+|   📝    | **Automated Workflows**           | Enable auto-run and agent-switching capabilities, allowing the framework to autonomously chain agents and decompose complex problems into smaller, manageable steps. |

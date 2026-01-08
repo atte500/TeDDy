@@ -95,6 +95,3 @@ error_screenshot.png
 
 # Spikes (temporary experimental code) - Located in the executor project
 spikes/
-
-# Vertical slice docs from completed stages to avoid polluting teddy's repotree
-docs/slices/executor
