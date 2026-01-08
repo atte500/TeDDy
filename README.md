@@ -111,9 +111,9 @@ teddy --plan-file plan.yaml -y
 
 #### Utility Commands
 
-| Command   | Description                                                                                                                          |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `context` | Gathers and displays the project context, including environment info and the contents of files specified in `.teddy/` configuration. |
+| Command   | Description                                                                                                                                                                                                                                                                                                                                  |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `context` | Gathers and displays the project context. The command respects rules in both `.gitignore` and an optional `.teddyignore` file at the project root. It uses the same syntax as `.gitignore`, including negation (`!`), allowing you to use `.teddyignore` to re-include specific files for the AI's context that are ignored by `.gitignore`. |
 
 ### YAML Action Reference
 

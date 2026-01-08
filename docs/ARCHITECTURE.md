@@ -144,3 +144,5 @@ This section captures non-blocking architectural observations and potential area
 - **Configuration Unification:** All context configuration files (e.g., `context.txt`) use a simple, newline-delimited `.txt` format to simplify parsing and improve user experience.
 
 - **Context-Driven Output:** The `context` command's output is driven entirely by the contents of the context configuration files (`.teddy/*.txt`). The command generates artifacts (like the repo tree) to files, and these files must be explicitly listed in a context file to be included in the final output, making the command's behavior explicit and configurable.
+
+- **Context-Specific Ignores with `.teddyignore`:** To allow filtering of context for the AI without modifying the project's primary `.gitignore` file, the `LocalRepoTreeGenerator` supports a `.teddyignore` file in the project root. This file uses the same syntax as `.gitignore`. Its rules are applied with higher precedence, allowing it to override `.gitignore` rules (e.g., using `!` to re-include an ignored file). This provides a clean separation and ultimate control over the AI context versus the version control context.
