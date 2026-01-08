@@ -37,3 +37,49 @@ def test_context_command_first_run(tmp_path: Path):
     assert "README.md" in permanent_content
     assert "docs/ARCHITECTURE.md" in permanent_content
     assert "repotree.txt" in permanent_content
+
+
+def test_context_command_honors_teddyignore_overrides(tmp_path: Path):
+    """
+    Scenario: Re-include a file ignored by .gitignore
+    Given a project with a file "dist/index.html" and "dist/bundle.js"
+    And a ".gitignore" file containing "dist/"
+    And a ".teddyignore" file containing "!dist/index.html"
+    When the user runs the "teddy context" command
+    Then the generated repotree output should contain "dist/index.html"
+    And the generated repotree output should not contain "dist/bundle.js"
+    """
+    # Arrange
+    dist_dir = tmp_path / "dist"
+    dist_dir.mkdir()
+    (dist_dir / "index.html").write_text("<html></html>")
+    (dist_dir / "bundle.js").write_text("console.log('hello');")
+
+    (tmp_path / ".gitignore").write_text("dist/\n")
+    (tmp_path / ".teddyignore").write_text("!dist/index.html\n")
+
+    # To trigger repotree generation, we need to tell the context command
+    # to look for it. We'll create the .teddy dir and context.txt manually.
+    teddy_dir = tmp_path / ".teddy"
+    teddy_dir.mkdir()
+    (teddy_dir / "context.txt").write_text(".teddy/repotree.txt")
+
+    # Act
+    result = run_teddy_command(args=["context"], cwd=tmp_path)
+
+    # Assert
+    assert result.returncode == 0, f"Teddy exited with an error:\n{result.stderr}"
+
+    # The final output to stdout should contain the repotree.
+    # Assert that the output has a tree structure for the included file
+    # and that the excluded file is not present.
+    output = result.stdout
+    assert "dist/" in output
+    assert "index.html" in output
+    assert "bundle.js" not in output
+
+    # Check for tree structure by asserting the parent directory appears before the child file
+    assert output.find("dist/") < output.find("index.html")
+
+    # The flat path should no longer be present
+    assert "dist/index.html" not in output
