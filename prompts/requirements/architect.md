@@ -23,10 +23,7 @@
 *   **Initial Blueprint:** After the Boundary Analysis is complete, the agent must `CREATE` `docs/ARCHITECTURE.md` with three mandatory sections:
     1.  `Setup Checklist`: A list of one-time setup tasks. This **must** include, at a minimum: creating the source directory (`src/`), the data directory (`/data`), the test directory structure (`tests/acceptance`, `tests/integration`, `tests/unit`), a root `.gitignore` file, dependency installation, and pre-commit hook initialization.
     2.  `Conventions & Standards`: A guide for engineering practices (e.g., testing, version control). This **must** specify a clear **Version Control Strategy** (e.g., Trunk-Based or Branch-Based, with Trunk-Based being the default preference) and include a **Data-Driven Configuration Strategy**.
-    3.  `Boundary Map`: The central register for the system's strategic architectural divisions. This section **must** define:
-        *   **Hexagonal Cores (The Islands):** A list and description of each isolated domain that will be built with the full Ports & Adapters pattern. Each is treated as a Bounded Context.
-        *   **Framework/Platform Integration Layer (The Sea):** A description of the code that is intentionally coupled to the underlying framework, platform, or engine. Its responsibility is to mediate between the framework's world and the hexagonal cores.
-        *   **Primary Adapters:** High-level definitions of the key adapters that bridge the gap between the Integration Layer and the Cores.
+    3.  `Component Design`: This section serves as the canonical map of major architectural components, organized by package or logical area (e.g., `executor` package, `tui` package). It provides a high-level table of contents that links to the detailed documentation for all domain models, ports, services, and adapters.
 *   **Data-Driven Configuration Strategy:**
     *   **Principle:** The system must separate stable logic from volatile data. This allows the core application to remain robust while enabling rapid iteration on the system's behavior and content.
     *   **Pattern:**
@@ -39,6 +36,7 @@
 *   **Initialization Sequence:**
     1.  Immediately after creating the blueprint, a dedicated `Setup` plan must be used to `EXECUTE` all tasks in the `Setup Checklist`.
     2.  The following plan must `EDIT` `docs/ARCHITECTURE.md` to mark all setup tasks as complete (`- [x]`).
+    3.  The `Setup Checklist` is a permanent, living document. The agent must add new setup tasks to it (e.g., when adding a new package) and execute them as part of the project's evolution.
 
 **Workflow Requirements: Phase 4 (The Stage Delivery Loop)**
 *   **Overview:** After initial project setup, the agent manages development in discrete **Project Stages**. The primary loop consists of initiating a Stage, defining and delivering all its vertical slices, and concluding with a formal acceptance test.
@@ -62,7 +60,7 @@
             *   **Adapters (`docs/adapters/**/*.md`):** Adapters always reside in a shared, top-level `adapters` directory. This includes adapters for external services as well as adapters for reading local configuration from the `/data` directory. The document **must** include a status tag (e.g., `**Status:** Planned`). Each key method or behavior documented must also include an inline status tag (e.g., `**Status:** Planned`) to track granular implementation progress. They must list `Implemented Ports`, summarize findings from technical spikes in `Implementation Notes`, and include a `Key Code Snippet` section containing the essential, successful code from the verification spike.
     5.  **Finalize, Stage, Commit, & Handoff:** This phase concludes the architectural work for a slice and is executed as a strict sequence of three distinct plans to ensure a verifiable and auditable handoff.
         *   **Plan A (Finalize Documentation):** This plan finalizes all documentation before handoff. It **must** contain two key `EDIT` actions:
-            1.  First, `EDIT` `docs/ARCHITECTURE.md` to link to all new component documents for the slice and update the central `Boundary Map` and slice tracking list.
+            1.  First, `EDIT` `docs/ARCHITECTURE.md` to link to all new component documents for the slice under the appropriate package heading in the `Component Design` section. This file **no longer contains a list or links to vertical slice documents**.
             2.  Second, `EDIT` the slice document itself (e.g., `docs/slices/01-stage/01-slice.md`) to synthesize and add the final **`Scope of Work`** section. This section is created from the finalized documentation for all items listed in the **`Architectural Changes`** and serves as the developer's ultimate, file-by-file checklist.
         *   **Plan B (Lint & Stage Changes):** The agent then uses a `Version Control` plan to lint and stage the finalized documents. This plan **must** contain three sequential `EXECUTE` actions:
             1.  An `EXECUTE` action to run pre-commit checks on the specific files being changed (e.g., `pre-commit run --files docs/ARCHITECTURE.md docs/slices/01-slice.md`). This ensures standards are met and applies automated fixes *before* staging.
@@ -126,8 +124,8 @@
         *   For artifacts: `path/to/[component-name]/`, `[artifact.extension]`
         *   For explanations: `[Brief explanation of the goal]`, `[The specific error to be predicted]`
 *   **Example 1: Establish Blueprint and Define Walking Skeleton**
-    *   **Requirement Demonstrated:** The creation of the strategic `Boundary Map` and the definition of a "Walking Skeleton" slice that respects those boundaries. It **must** also demonstrate the data-driven design pattern by including a simple configuration file in `/data`, an outbound port to request it, and an adapter to read it.
-    *   **Why it's required:** Models the strategic analysis, the `CREATE` -> `EXECUTE` -> `EDIT` setup workflow, and the detailed Gherkin-based slice contract that explicitly categorizes components.
+    *   **Requirement Demonstrated:** The creation of the canonical `ARCHITECTURE.md` document, including the new `Component Design` section structure, and the definition of a "Walking Skeleton" slice.
+    *   **Why it's required:** Models the `CREATE` -> `EXECUTE` -> `EDIT` setup workflow and ensures the agent generates the correct, scalable, single-document architecture from the beginning.
 
 *   **Example 2: Technical Spike Loop - Research**
     *   **Requirement Demonstrated:** The explicit "Discover -> Evaluate & Read" sequence for information gathering.

@@ -52,9 +52,10 @@
         <action>
           This phase begins only after all code changes from Phase 6 are committed. It ensures architectural documents are synchronized with the final, polished code. This phase must not contain any code changes.
           1.  For each component, you **must** first `READ` the final implementation file to get its definitive state.
-          2.  Only then can you create an `EDIT Architecture` plan to update all relevant architectural documents to accurately reflect the as-built code, including changing statuses from `Planned` to `Implemented`.
-          3.  Incorporate any remaining `Architectural Notes` that were informational into `ARCHITECTURE.md`.
-          4.  Use a single `Version Control` plan to commit all documentation changes at once in a dedicated, docs-only commit.
+          2.  Create an `EDIT Architecture` plan to update all relevant architectural documents (`docs/contexts/...`, `docs/adapters/...`) to accurately reflect the as-built code by changing statuses from `Planned` to `Implemented`.
+          3.  As part of the same plan, you **must** `EDIT` the vertical slice document itself (e.g., `docs/slices/[stage]/[slice].md`) and add a `**Status:** Implemented` tag to the top of the file. This is the canonical way to mark a slice as complete.
+          4.  Incorporate any remaining `Architectural Notes` that were informational into `ARCHITECTURE.md`.
+          5.  Use a single `Version Control` plan to commit all documentation changes at once in a dedicated, docs-only commit.
         </action>
       </phase>
       <phase n="8" name="Outer-Cycle: Handoff / Merge Request">
@@ -185,7 +186,7 @@
       </rule>
       <rule n="8">
         <title>Consult Architectural Documents for Contracts</title>
-        <instruction>The architectural documentation is the **Single Source of Truth**. This includes the primary contracts (like Ports and the Domain Model) and **all supporting documents listed in the Vertical Slice's `Required Reading (Context)` section**. These documents represent the **target state** of the architecture—the blueprint for what you must build. You must **read** these documents to guide your TDD process and write code that **fulfills these contracts**, even if the corresponding modules or classes do not exist yet. You are **prohibited** from altering these contracts; you must only implement them as defined. If a contract is insufficient or incorrect, that is a **blocking issue** that must be escalated to the Architect.</instruction>
+        <instruction>The architectural documentation is the **Single Source of Truth**. This includes the primary contracts (like Ports and the Domain Model). These documents represent the **target state** of the architecture—the blueprint for what you must build. You must **read** these documents to guide your TDD process and write code that **fulfills these contracts**, even if the corresponding modules or classes do not exist yet. You are **prohibited** from altering these contracts; you must only implement them as defined. If a contract is insufficient or incorrect, that is a **blocking issue** that must be escalated to the Architect.</instruction>
         <sub_instruction name="Component Status Enumeration">When updating documentation, the `**Status:**` tag for any component, aggregate, or method **must** use one of the following exact string values: `Planned`, `Implemented`, or `Deprecated`. No other values are permitted.</sub_instruction>
       </rule>
     </development_rules>

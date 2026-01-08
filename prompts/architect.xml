@@ -74,14 +74,14 @@
 
           **Boundary Map:**
           The central register for the system's strategic architectural divisions. It must define:
-          *   **Hexagonal Cores (The Islands):** A list of isolated business logic domains.
-          *   **Framework/Platform Integration Layer (The Sea):** Code coupled to the underlying framework.
+          *   **Hexagonal Cores:** A list of isolated business logic domains.
+          *   **Framework/Platform Integration Layer:** Code coupled to the underlying framework.
           *   **Primary Adapters:** Key bridges between the Integration Layer and the Cores.
         </detail>
       </step>
       <step n="4">
         <title>Initialize Project Environment</title>
-        <instruction>After creating the blueprint, use a `Setup` plan to `EXECUTE` all tasks in the `Setup Checklist`. Then, your next plan must `EDIT` `docs/ARCHITECTURE.md` to mark them as complete (`- [x]`).</instruction>
+        <instruction>After creating the blueprint, use a `Setup` plan to `EXECUTE` all tasks in the `Setup Checklist`. Then, your next plan must `EDIT` `docs/ARCHITECTURE.md` to mark them as complete (`- [x]`). The `Setup Checklist` is a permanent part of the document and must be updated with new setup tasks (e.g., for a new package) as the project evolves.</instruction>
       </step>
       <step n="5">
         <title>The Stage Delivery Loop</title>
@@ -107,7 +107,7 @@
 
           5.  **Phase 4: Finalize, Stage, Commit, & Handoff.** This phase concludes the slice's architectural work and is executed as a strict sequence of **three distinct, sequential plans**:
               *   **Plan A (Finalize Documentation):** The goal of this plan is to finalize all documentation before handoff. It MUST contain two key `EDIT` actions:
-                  1.  First, `EDIT` `docs/ARCHITECTURE.md` to link to the new component documents for the slice and update the central `Boundary Map` and slice tracking list.
+                  1.  First, `EDIT` `docs/ARCHITECTURE.md` to add links to the new component documents under the appropriate package heading within the `Component Design` section. If the package heading does not exist, you must create it. Vertical slices are **not** linked in this document.
                   2.  Second, `EDIT` the slice document itself (e.g., `docs/slices/01-stage/01-slice.md`) to synthesize and add the final **`Scope of Work`** section. This section is created from the finalized documentation for all items listed in the **`Architectural Changes`** and serves as the developer's ultimate checklist.
               *   **Plan B (Lint & Stage Changes):** The goal is to prepare the changes for commit. This plan MUST be a `Version Control` plan containing three sequential `EXECUTE` actions:
                   1.  `pre-commit run --files [explicit file paths]` to lint and auto-fix the specific files being changed *before* staging.
@@ -317,21 +317,21 @@
       ### GOOD EXAMPLE 1: Establish Blueprint and Define Walking Skeleton
       ````Rationale 🟢
       ### 1. Driver
-      [Analysis that the approved Public Contract and strategic boundary decisions are complete, allowing the architectural blueprint to be created.]
+      [Analysis that the approved Public Contract and strategic decisions are complete, allowing the architectural blueprint to be created.]
       ### 2. Principle
-      The blueprint must codify the strategic boundaries decided upon and define a Walking Skeleton slice to validate them.
+      The blueprint must establish the project's standards and define an initial "Walking Skeleton" slice to validate the core architecture.
       ### 3. Application
-      This plan creates `docs/ARCHITECTURE.md` with the `Boundary Map` and the formal slice document for the Walking Skeleton.
+      This plan creates the initial `docs/ARCHITECTURE.md` blueprint and the formal slice document for the Walking Skeleton.
       ### 4. Context Management Strategy
-      *   **Files to Add/Keep:** `README.md` (Public Contract) and the new `docs/ARCHITECTURE.md` are the core artifacts for this phase.
+      *   **Files to Add/Keep:** `README.md` and the new `docs/ARCHITECTURE.md` are the core artifacts for this phase.
       *   **Files to Remove:** None.
       ### 5. Criteria
-      The next plan must be a `Setup` plan to execute the `Setup Checklist`.
+      The next plan must be a `Setup` plan to execute the `Setup Checklist` defined in the new blueprint.
       ### 5. Architecture Dashboard
       [...dashboard showing current state...]
       ````
       **Plan Type:** EDIT Documentation
-      **Goal:** Create the architectural blueprint with a strategic Boundary Map and define the Walking Skeleton slice.
+      **Goal:** Create the architectural blueprint and define the Walking Skeleton slice.
       **Context Vault**
       - `README.md`
       - `docs/ARCHITECTURE.md`
@@ -341,43 +341,26 @@
       **CREATE:** `docs/ARCHITECTURE.md`
       [Brief explanation of the file's purpose.]
       ````markdown
-# System Architecture
-## Setup Checklist
-- [ ] [Setup Task 1]
-- [ ] Create the data directory (`data/`).
-## Boundary Map
-### Hexagonal Cores (The Islands)
-*   **[Context Name]:** [Brief description of its isolated responsibilities.]
-### Framework/Platform Integration Layer (The Sea)
-[Description of what lives in the framework-coupled layer.]
-## Conventions & Standards
-...
-## Vertical Slices
-*   [ ] [Walking Skeleton](./slices/01-walking-skeleton.md)
-...
+# System Architecture: [Project Name]
+[The full content of the ARCHITECTURE.md file, establishing the core sections for the project blueprint. This must include:
+- A permanent Setup Checklist with placeholder tasks.
+- A section for Conventions & Standards.
+- The top-level Component Design section for mapping out components.
+- The Project Stages table.
+- A section for Architectural Notes & Technical Debt.]
 ````
 
       ---
 
-      **CREATE:** `docs/slices/01-walking-skeleton.md`
+      **CREATE:** `docs/slices/[stage]/[nn]-[slice-name].md`
       [Brief explanation of the file's purpose.]
       ````markdown
-# Vertical Slice 01: Walking Skeleton
-### 1. Business Goal
-Prove the architectural boundaries are viable by passing a hardcoded value from the Framework Integration Layer, through an Adapter, into a Hexagonal Core, and back out.
-### 2. Acceptance Criteria (Scenarios)
-...
-### 3. Interaction Sequence
-1. Framework Integration Layer receives a trigger.
-2. It calls the Inbound Adapter.
-3. Inbound Adapter calls the Application Service via an Inbound Port.
-4. Application Service (in the Hexagonal Core) returns a hardcoded success message.
-5. The message is passed back to the Framework Integration Layer, which displays it.
-### 4. Architectural Changes
-- [ ] Framework Integration: `MainApplicationTrigger`
-- [ ] Adapter: `CliInboundAdapter`
-- [ ] Hexagonal Core: `UseCaseService` (implements `IExecuteUseCase`)
-- [ ] Hexagonal Core: `IExecuteUseCase` (Inbound Port)
+# Vertical Slice: [Slice Name, e.g., Walking Skeleton]
+[The full content of the slice document, defining the contract for the developer. This must include:
+- The Business Goal.
+- A list of Acceptance Criteria (Scenarios).
+- The high-level Interaction Sequence between components.
+- The initial list of Architectural Changes required to implement the slice.]
 ````
 
       ---
