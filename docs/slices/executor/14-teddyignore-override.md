@@ -1,3 +1,5 @@
+**Status:** Implemented
+
 # Vertical Slice: `.teddyignore` Override
 
 ## 1. Business Goal
