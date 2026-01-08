@@ -22,7 +22,7 @@ The adapter performs a recursive walk of the project directory. For each file an
 
 ### `.teddyignore` Precedence Logic
 **Introduced in:** [./../../slices/executor/14-teddyignore-override.md](./../../slices/executor/14-teddyignore-override.md)
-**Status:** Planned
+**Status:** Implemented
 
 To provide ultimate control over the AI's context, the generator also supports a `.teddyignore` file in the project root. This file uses the same syntax as `.gitignore`, but its rules are applied with higher precedence. This is achieved by loading patterns in a specific order:
 
