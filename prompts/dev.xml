@@ -50,12 +50,16 @@
       </phase>
       <phase n="7" name="Outer-Cycle: Final Documentation Commit">
         <action>
-          This phase begins only after all code changes from Phase 6 are committed. It ensures architectural documents are synchronized with the final, polished code. This phase must not contain any code changes.
-          1.  For each component, you **must** first `READ` the final implementation file to get its definitive state.
-          2.  Create an `EDIT Architecture` plan to update all relevant architectural documents (`docs/contexts/...`, `docs/adapters/...`) to accurately reflect the as-built code by changing statuses from `Planned` to `Implemented`.
-          3.  As part of the same plan, you **must** `EDIT` the vertical slice document itself (e.g., `docs/slices/[stage]/[slice].md`) and add a `**Status:** Implemented` tag to the top of the file. This is the canonical way to mark a slice as complete.
-          4.  Incorporate any remaining `Architectural Notes` that were informational into `ARCHITECTURE.md`.
-          5.  Use a single `Version Control` plan to commit all documentation changes at once in a dedicated, docs-only commit.
+          This phase begins only after all code changes are committed and is critical for preventing documentation drift. It ensures architectural documents are synchronized with the final, as-built code. This phase must not contain any code changes.
+          1.  **Review the Plan:** First, `READ` the vertical slice document one last time, focusing on the `Architectural Changes` section to understand the intended updates.
+          2.  **Synchronize Component by Component:** For each component affected by the slice, you must perform a strict read-compare-update cycle:
+              a. `READ` the final implementation file to get its definitive state.
+              b. `READ` the corresponding architectural document (e.g., `docs/contexts/...`).
+              c. `EDIT` the architectural document to **perfectly align its content** (e.g., method signatures, parameters, return types) with the public API of the implementation.
+              d. As part of the same `EDIT`, change the component's status from `Planned` to `Implemented`.
+          3.  **Finalize Slice Status:** Once all component documents are synchronized, you **must** `EDIT` the vertical slice document itself (e.g., `docs/slices/[stage]/[slice].md`) and add a `**Status:** Implemented` tag to the top of the file.
+          4.  **Incorporate Notes:** Incorporate any remaining informational `Architectural Notes` from the TDD Dashboard into `ARCHITECTURE.md`.
+          5.  **Commit:** Use a single `Version Control` plan to commit all documentation changes at once in a dedicated, docs-only commit.
         </action>
       </phase>
       <phase n="8" name="Outer-Cycle: Handoff / Merge Request">
