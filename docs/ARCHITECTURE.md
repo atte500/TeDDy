@@ -139,7 +139,7 @@ This section captures non-blocking architectural observations and potential area
 
 - **Composition Root Complexity:** The composition root in `packages/executor/src/teddy_executor/main.py` is growing complex. Future work should consider introducing a formal dependency injection container or factory pattern to manage service instantiation.
 
-- **Canonical `gitignore`-aware Tree Generator:** The recursive implementation in `packages/executor/src/teddy_executor/adapters/outbound/local_repo_tree_generator.py` is the canonical, verified pattern for generating a repository tree that correctly respects `.gitignore` rules.
+- **Canonical `repotree` Format for LLMs:** The `LocalRepoTreeGenerator` produces a simple, space-indented list of files and directories. This is the canonical format for providing file hierarchy context to an LLM, as it is token-efficient, platform-agnostic, and unambiguously machine-readable, avoiding the fragility and complexity of visual tree formats.
 
 - **Configuration Unification:** All context configuration files (e.g., `context.txt`) use a simple, newline-delimited `.txt` format to simplify parsing and improve user experience.
 
