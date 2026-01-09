@@ -7,36 +7,48 @@ def test_context_command_first_run(tmp_path: Path):
     Scenario: First-time run in a new project
     Given I am in a project directory that does not contain a .teddy folder
     When I run the `teddy context` command
-    Then a .teddy directory is created
-    And a .teddy/.gitignore file is created containing the line `*`
-    And a .teddy/context.txt file is created
-    And a .teddy/permanent_context.txt file is created
-    And the .teddy/permanent_context.txt file contains default entries.
+    Then a .teddy directory is created with correctly commented default files.
     """
+    from textwrap import dedent
+
     # Act
     result = run_teddy_command(args=["context"], cwd=tmp_path)
 
     # Assert
     assert result.returncode == 0, f"Teddy exited with an error:\n{result.stderr}"
 
+    # Assert .teddy directory and .gitignore exist
     teddy_dir = tmp_path / ".teddy"
-    assert teddy_dir.is_dir(), "The .teddy directory was not created."
+    assert teddy_dir.is_dir()
+    assert (teddy_dir / ".gitignore").is_file()
 
-    gitignore_file = teddy_dir / ".gitignore"
-    assert gitignore_file.is_file(), ".teddy/.gitignore was not created."
-    assert gitignore_file.read_text().strip() == "*", ".gitignore content is incorrect."
+    # Assert temp.context content
+    temp_context = teddy_dir / "temp.context"
+    assert temp_context.is_file()
+    expected_temp_content = "# This file is managed by the AI. It determines the file context for the NEXT turn."
+    assert temp_context.read_text().strip() == expected_temp_content
 
-    context_txt = teddy_dir / "context.txt"
-    assert context_txt.is_file(), ".teddy/context.txt was not created."
+    # Assert perm.context content
+    perm_context = teddy_dir / "perm.context"
+    assert perm_context.is_file()
+    expected_perm_content = dedent(
+        """
+        # This file is managed by the User. It provides persistent file context.
+        .teddy/repotree.txt
+        .teddy/temp.context
+        .teddy/perm.context
+        README.md
+        docs/ARCHITECTURE.md
+        """
+    ).strip()
+    assert perm_context.read_text().strip() == expected_perm_content
 
-    permanent_context = teddy_dir / "permanent_context.txt"
-    assert permanent_context.is_file(), ".teddy/permanent_context.txt was not created."
-
-    # Check for default content in permanent_context.txt
-    permanent_content = permanent_context.read_text()
-    assert "README.md" in permanent_content
-    assert "docs/ARCHITECTURE.md" in permanent_content
-    assert "repotree.txt" in permanent_content
+    # Assert repotree.txt content
+    repotree = teddy_dir / "repotree.txt"
+    assert repotree.is_file()
+    # The tree is empty on first run, but should have the comment
+    expected_repotree_content = "# This is the repotree of the project"
+    assert repotree.read_text().strip() == expected_repotree_content
 
 
 def test_context_command_honors_teddyignore_overrides(tmp_path: Path):
@@ -59,10 +71,10 @@ def test_context_command_honors_teddyignore_overrides(tmp_path: Path):
     (tmp_path / ".teddyignore").write_text("!dist/index.html\n")
 
     # To trigger repotree generation, we need to tell the context command
-    # to look for it. We'll create the .teddy dir and context.txt manually.
+    # to look for it. We'll create the .teddy dir and temp.context manually.
     teddy_dir = tmp_path / ".teddy"
     teddy_dir.mkdir()
-    (teddy_dir / "context.txt").write_text(".teddy/repotree.txt")
+    (teddy_dir / "temp.context").write_text(".teddy/repotree.txt")
 
     # Act
     result = run_teddy_command(args=["context"], cwd=tmp_path)

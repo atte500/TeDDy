@@ -29,33 +29,48 @@ class ContextService(IGetContextUseCase):
         if not self.file_system_manager.path_exists(".teddy"):
             self.file_system_manager.create_directory(".teddy")
             self.file_system_manager.write_file(".teddy/.gitignore", "*")
-            self.file_system_manager.write_file(".teddy/context.txt", "")
+
+            temp_context_content = "# This file is managed by the AI. It determines the file context for the NEXT turn."
+            self.file_system_manager.write_file(
+                ".teddy/temp.context", temp_context_content
+            )
+
             permanent_context_content = (
-                ".gitignore\n"
-                ".teddy/context.txt\n"
-                ".teddy/permanent_context.txt\n"
+                "# This file is managed by the User. It provides persistent file context.\n"
                 ".teddy/repotree.txt\n"
+                ".teddy/temp.context\n"
+                ".teddy/perm.context\n"
                 "README.md\n"
                 "docs/ARCHITECTURE.md\n"
             )
             self.file_system_manager.write_file(
-                ".teddy/permanent_context.txt", permanent_context_content
+                ".teddy/perm.context", permanent_context_content
             )
 
     def _read_context_paths(self) -> List[str]:
-        """Reads and parses .teddy/context.txt, returning a list of paths."""
+        """Reads and parses .teddy/temp.context, returning a list of paths."""
         try:
-            content = self.file_system_manager.read_file(".teddy/context.txt")
-            return [line.strip() for line in content.splitlines() if line.strip()]
+            content = self.file_system_manager.read_file(".teddy/temp.context")
+            lines = []
+            for line in content.splitlines():
+                stripped_line = line.strip()
+                if stripped_line and not stripped_line.startswith("#"):
+                    lines.append(stripped_line)
+            return lines
         except FileNotFoundError:
             pass  # If file doesn't exist, treat as empty list
         return []
 
     def _read_permanent_context_paths(self) -> List[str]:
-        """Reads and parses .teddy/permanent_context.txt, returning a list of paths."""
+        """Reads and parses .teddy/perm.context, returning a list of paths."""
         try:
-            content = self.file_system_manager.read_file(".teddy/permanent_context.txt")
-            return [line.strip() for line in content.splitlines() if line.strip()]
+            content = self.file_system_manager.read_file(".teddy/perm.context")
+            lines = []
+            for line in content.splitlines():
+                stripped_line = line.strip()
+                if stripped_line and not stripped_line.startswith("#"):
+                    lines.append(stripped_line)
+            return lines
         except FileNotFoundError:
             pass  # If file doesn't exist, treat as empty list
         return []

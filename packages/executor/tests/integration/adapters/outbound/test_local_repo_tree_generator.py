@@ -26,13 +26,14 @@ def test_repo_tree_generator_produces_correct_format(tmp_path: Path):
 
     expected_tree = dedent(
         """
-    docs/
-      guide.md
-    src/
-      main.py
-      utils.py
-    README.md
-    """
+        # This is the repotree of the project
+        docs/
+          guide.md
+        src/
+          main.py
+          utils.py
+        README.md
+        """
     ).strip()
 
     # Act

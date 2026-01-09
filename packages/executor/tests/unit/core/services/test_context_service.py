@@ -35,7 +35,9 @@ def test_get_context_creates_teddy_dir_on_first_run():
     mock_fsm.path_exists.assert_called_once_with(".teddy")
     mock_fsm.create_directory.assert_called_once_with(".teddy")
     mock_fsm.write_file.assert_any_call(".teddy/.gitignore", "*")
-    mock_fsm.write_file.assert_any_call(".teddy/context.txt", "")
+
+    expected_temp_context = "# This file is managed by the AI. It determines the file context for the NEXT turn."
+    mock_fsm.write_file.assert_any_call(".teddy/temp.context", expected_temp_context)
 
     # Check that repo tree is generated and saved
     mock_rtg.generate_tree.assert_called_once()
@@ -43,15 +45,15 @@ def test_get_context_creates_teddy_dir_on_first_run():
 
     # Check the new default permanent context
     expected_permanent_context = (
-        ".gitignore\n"
-        ".teddy/context.txt\n"
-        ".teddy/permanent_context.txt\n"
+        "# This file is managed by the User. It provides persistent file context.\n"
         ".teddy/repotree.txt\n"
+        ".teddy/temp.context\n"
+        ".teddy/perm.context\n"
         "README.md\n"
         "docs/ARCHITECTURE.md\n"
     )
     mock_fsm.write_file.assert_any_call(
-        ".teddy/permanent_context.txt", expected_permanent_context
+        ".teddy/perm.context", expected_permanent_context
     )
 
 
@@ -77,14 +79,16 @@ def test_get_context_reads_and_processes_context_files():
     mock_fsm.path_exists.return_value = True
 
     # Mock reading the context list files
-    context_txt_content = "src/main.py\nREADME.md"
-    permanent_context_content = "pyproject.toml\nnon_existent.py"
+    comment_line_1 = "# This is a comment"
+    comment_line_2 = "# And another one"
+    context_txt_content = f"src/main.py\n{comment_line_1}\nREADME.md"
+    permanent_context_content = f"pyproject.toml\nnon_existent.py\n{comment_line_2}"
 
     # Mock reading the content of the actual files
     def read_file_side_effect(path):
-        if path == ".teddy/context.txt":
+        if path == ".teddy/temp.context":
             return context_txt_content
-        if path == ".teddy/permanent_context.txt":
+        if path == ".teddy/perm.context":
             return permanent_context_content
         if path == "src/main.py":
             return "print('hello')"
@@ -128,6 +132,11 @@ def test_get_context_reads_and_processes_context_files():
         fc for fc in result.file_contexts if fc.file_path == "non_existent.py"
     )
     assert not_found_py.status == "not_found"
+
+    # Assert that the service did NOT try to read the comment lines as files
+    read_calls = [call[0][0] for call in mock_fsm.read_file.call_args_list]
+    assert comment_line_1 not in read_calls
+    assert comment_line_2 not in read_calls
 
 
 def test_context_service_instantiation():
