@@ -71,15 +71,20 @@ def test_context_command_honors_teddyignore_overrides(tmp_path: Path):
     assert result.returncode == 0, f"Teddy exited with an error:\n{result.stderr}"
 
     # The final output to stdout should contain the repotree.
-    # Assert that the output has a tree structure for the included file
-    # and that the excluded file is not present.
+    # Assert that the output has the new indented list structure.
     output = result.stdout
-    assert "dist/" in output
-    assert "index.html" in output
-    assert "bundle.js" not in output
 
-    # Check for tree structure by asserting the parent directory appears before the child file
-    assert output.find("dist/") < output.find("index.html")
+    # The output of the `context` command includes headers and other info.
+    # We need to extract just the content of the repotree.txt file.
+    # A simple way is to find the file header and check the lines that follow.
+    repotree_content_header = "--- File: .teddy/repotree.txt ---"
+    assert repotree_content_header in output
 
-    # The flat path should no longer be present
-    assert "dist/index.html" not in output
+    # Extract the content after the header
+    repotree_content = output.split(repotree_content_header)[1]
+
+    # The generated tree should be in the content
+    # Note: The root directory name is dynamic, so we just check for the structure inside it
+    assert "dist/" in repotree_content
+    assert "  index.html" in repotree_content
+    assert "bundle.js" not in repotree_content

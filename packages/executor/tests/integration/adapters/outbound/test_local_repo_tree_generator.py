@@ -25,14 +25,13 @@ def test_repo_tree_generator_produces_correct_format(tmp_path: Path):
     adapter = LocalRepoTreeGenerator(root_dir=str(tmp_path))
 
     expected_tree = dedent(
-        f"""
-    {tmp_path.name}/
-    ├── docs/
-    │   └── guide.md
-    ├── src/
-    │   ├── main.py
-    │   └── utils.py
-    └── README.md
+        """
+    docs/
+      guide.md
+    src/
+      main.py
+      utils.py
+    README.md
     """
     ).strip()
 

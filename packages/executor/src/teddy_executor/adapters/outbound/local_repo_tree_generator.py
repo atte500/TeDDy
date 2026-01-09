@@ -3,37 +3,37 @@ from pathlib import Path
 from teddy_executor.core.ports.outbound.repo_tree_generator import IRepoTreeGenerator
 
 
-class _TreeFormatter:
-    """A private helper class to format a set of paths into a visual tree."""
+class _IndentedListFormatter:
+    """
+    A helper class to format a set of paths into a simple, indented list
+    that is reliable and easy for an LLM to parse.
+    """
 
     def __init__(self, root_dir: Path, included_paths: set[Path]):
         self.root_dir = root_dir
         self.included_paths = included_paths
 
     def format(self) -> str:
-        """Generates a string representation of the file tree."""
-        if not self.included_paths:
-            return ""
-
-        tree_lines = [f"{self.root_dir.name}/"]
-        self._format_recursive(self.root_dir, "", tree_lines)
+        """Generates the indented list string."""
+        tree_lines: list[str] = []
+        # Start the recursion from the root's children at level 0
+        self._format_recursive(self.root_dir, 0, tree_lines)
         return "\n".join(tree_lines)
 
-    def _format_recursive(self, directory: Path, prefix: str, tree_lines: list[str]):
-        """Recursively builds the tree string from the set of included paths."""
+    def _format_recursive(self, directory: Path, level: int, tree_lines: list[str]):
+        """Recursively builds the tree string."""
+        children = sorted(
+            [p for p in directory.iterdir() if p in self.included_paths],
+            key=lambda p: (not p.is_dir(), p.name.lower()),
+        )
 
-        children = [p for p in directory.iterdir() if p in self.included_paths]
-        children.sort(key=lambda p: (not p.is_dir(), p.name))
-
-        for i, path in enumerate(children):
-            connector = "└── " if i == len(children) - 1 else "├── "
+        indent = "  " * level
+        for path in children:
+            entry = f"{path.name}/" if path.is_dir() else path.name
+            tree_lines.append(f"{indent}{entry}")
 
             if path.is_dir():
-                tree_lines.append(f"{prefix}{connector}{path.name}/")
-                new_prefix = prefix + ("    " if i == len(children) - 1 else "│   ")
-                self._format_recursive(path, new_prefix, tree_lines)
-            else:
-                tree_lines.append(f"{prefix}{connector}{path.name}")
+                self._format_recursive(path, level + 1, tree_lines)
 
 
 class LocalRepoTreeGenerator(IRepoTreeGenerator):
@@ -95,5 +95,5 @@ class LocalRepoTreeGenerator(IRepoTreeGenerator):
         and then delegating to a formatter.
         """
         included_paths = self._get_included_paths()
-        formatter = _TreeFormatter(self.root_dir, included_paths)
+        formatter = _IndentedListFormatter(self.root_dir, included_paths)
         return formatter.format()
