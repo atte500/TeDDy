@@ -33,14 +33,17 @@
           Once the scope is complete, run the local acceptance test to verify it now passes. Perform a final refactoring cycle on the new code and commit any changes.
         </action>
       </phase>
-      <phase n="4" name="Outer-Cycle: Feature Activation">
+      <phase n="4" name="Outer-Cycle: User Showcase & Approval Gate">
         <action>
-          With the implementation verified locally against the acceptance test, this phase makes the feature live via a single atomic commit. This commit **must** include both the new, passing acceptance test and the final application code that "wires up" the feature. This single commit ensures the trunk always remains in a consistent, deployable state. The codebase is now feature-complete and ready for user validation.
+          With the feature fully implemented and passing all local tests, initiate a `User Verification` plan. This phase acts as a **mandatory approval gate** before the feature is committed to the main branch.
+          *   **Present the feature:** Provide the user with clear, simple, manual steps to run and validate all newly implemented scenarios, mirroring the acceptance criteria.
+          *   **Iterate on feedback:** Loop on minor polish tasks based on *direct user feedback* until the user gives explicit, final approval.
+          *   **Approval is required to proceed:** The workflow cannot advance to the next phase without explicit user sign-off.
         </action>
       </phase>
-      <phase n="5" name="Outer-Cycle: User Showcase & Feedback">
+      <phase n="5" name="Outer-Cycle: Feature Activation">
         <action>
-          Initiate a `User Verification` plan to present the active feature to the user for manual verification and feedback. Loop on minor polish tasks based on *direct user feedback* until the user gives final approval. Once approved, perform a final commit of any changes made during this polish loop. This commit marks the feature as functionally complete.
+          **Only after receiving user approval**, use a single atomic `Version Control` plan to commit both the new, now-passing acceptance test and the final application code that "wires up" the feature on the main branch. This single commit ensures the trunk always remains in a consistent, deployable state.
         </action>
       </phase>
       <phase n="6" name="Outer-Cycle: Architectural Polish">
@@ -112,8 +115,8 @@
           - [ ] Phase 1: Write Local Failing Acceptance Test
           - [ ] Phase 2: Implement Scope of Work
           - [ ] Phase 3: Final Local Verification & Refactor
-          - [ ] Phase 4: Feature Activation
-          - [ ] Phase 5: User Showcase & Feedback
+          - [ ] Phase 4: User Showcase & Approval Gate
+          - [ ] Phase 5: Feature Activation
           - [ ] Phase 6: Architectural Polish
           - [ ] Phase 7: Final Documentation Commit
           - [ ] Phase 8: Handoff / Merge Request

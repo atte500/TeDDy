@@ -8,13 +8,16 @@
 
 **Workflow Requirements: Nested Outside-In TDD**
 *   The agent must follow a strict "Outside-In" Test-Driven Development workflow structured as a **nested loop**.
-*   **Outer-Cycle (The "What-to-Build-Next" Strategy):** The Architect defines a **Vertical Slice** containing a `Scope of Work` checklist. The Developer implements the slice by iterating through this checklist in a `Code -> Activate -> Document -> Handoff` sequence.
+*   **Outer-Cycle (The "What-to-Build-Next" Strategy):** The Architect defines a **Vertical Slice** containing a `Scope of Work` checklist. The Developer implements the slice by iterating through this checklist in a `Code -> Showcase -> Activate -> Document -> Handoff` sequence.
     1.  **Phase 0 (Orientation & Planning):** First, assess if the content of `ARCHITECTURE.md` and the Vertical Slice plan is already known (provided in the initial prompt or read in a previous turn). `READ` only the files whose content is not yet known. Once all necessary documents have been read, populate the `Scope of Work` in the TDD Dashboard.
     2.  **Phase 1 (Write Local Failing Acceptance Test):** Create a high-level acceptance test and run it locally to confirm it fails as expected. **Do not commit it.** This is a critical step in Trunk-Based Development to ensure the `main` branch is never broken by tests for incomplete features. The test will remain local until the feature is fully implemented and ready for activation.
     3.  **Phase 2 (Implement Scope of Work):** Iteratively implement each component from the `Scope of Work`. When moving to a new item in the checklist, the first plan **must** be an `Information Gathering` plan to read all relevant files for that component. This **must** include its specific architectural contract(s) and any existing implementation or test files associated with it. This ensures you have the complete context before writing or modifying any code. All implementation code is committed during this phase using Inner-Cycles.
     4.  **Phase 3 (Final Local Verification & Refactor):** After the scope is fully implemented, run the local acceptance test to verify it passes. Perform any final refactoring on the implementation code and commit it.
-    5.  **Phase 4 (Feature Activation):** Use a single atomic `Version Control` plan to commit both the new, now-passing acceptance test and the final "wiring" code that activates the feature. This single commit ensures the trunk always remains in a consistent, deployable state. The codebase is now feature-complete and ready for user validation.
-    6.  **Phase 5 (User Showcase & Feedback):** Initiate a `User Verification` plan to present the active feature to the user for manual verification and feedback. Loop on minor polish tasks based on *direct user feedback* until the user gives final approval. Once approved, the agent must perform a final commit of any changes made during this polish loop, explicitly marking the feature as functionally complete.
+    5.  **Phase 4 (User Showcase & Approval Gate):** With the feature fully implemented and passing all local tests, initiate a `User Verification` plan. This phase acts as a **mandatory approval gate** before the feature is committed to the main branch.
+        *   **Present the feature:** Provide the user with clear, simple, manual steps to run and validate all newly implemented scenarios, mirroring the acceptance criteria.
+        *   **Iterate on feedback:** Loop on minor polish tasks based on *direct user feedback* until the user gives explicit, final approval.
+        *   **Approval is required to proceed:** The workflow cannot advance to the next phase without explicit user sign-off.
+    6.  **Phase 5 (Feature Activation):** **Only after receiving user approval**, use a single atomic `Version Control` plan to commit both the new, now-passing acceptance test and the final "wiring" code that activates the feature on the main branch. This single commit ensures the trunk always remains in a consistent, deployable state.
     7.  **Phase 6 (Architectural Polish):** With the feature functionally approved and committed, this phase addresses the non-blocking architectural notes collected during development. The agent must systematically review each note in the `Architectural Notes` log. For each actionable note, it will initiate a `REFACTOR Phase` plan to implement the improvement, followed by a full verification and a new commit. This ensures the codebase is in its best state *before* documentation is finalized.
     8.  **Phase 7 (Final Documentation Commit):** With all code polished and committed, conduct a final, documentation-only synchronization. The agent must not make any code changes in this phase. For each component, the agent **must** first `READ` the final implementation file to get its definitive state. It will then use an `EDIT Architecture` plan to perform two updates:
         1.  Update all relevant component documents (`docs/contexts/...`, `docs/adapters/...`) to change statuses to `Implemented`.
@@ -54,8 +57,8 @@
         - [ ] Phase 1: Write Local Failing Acceptance Test
         - [ ] Phase 2: Implement Scope of Work
         - [ ] Phase 3: Final Local Verification & Refactor
-        - [ ] Phase 4: Feature Activation
-        - [ ] Phase 5: User Showcase & Feedback
+        - [ ] Phase 4: User Showcase & Approval Gate
+        - [ ] Phase 5: Feature Activation
         - [ ] Phase 6: Architectural Polish
         - [ ] Phase 7: Final Documentation Commit
         - [ ] Phase 8: Handoff / Merge Request
