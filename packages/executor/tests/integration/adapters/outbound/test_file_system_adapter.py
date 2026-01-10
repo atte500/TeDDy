@@ -2,7 +2,9 @@ from pathlib import Path
 import pytest
 
 from teddy_executor.core.domain.models import MultipleMatchesFoundError
-from teddy_executor.adapters.outbound.file_system_adapter import LocalFileSystemAdapter
+from teddy_executor.adapters.outbound.local_file_system_adapter import (
+    LocalFileSystemAdapter,
+)
 
 
 def test_create_file_raises_custom_error_if_file_exists(tmp_path: Path):

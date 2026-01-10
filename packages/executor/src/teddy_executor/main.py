@@ -12,7 +12,9 @@ from teddy_executor.adapters.inbound.cli_formatter import (
     format_project_context,
 )
 from teddy_executor.adapters.outbound.shell_adapter import ShellAdapter
-from teddy_executor.adapters.outbound.file_system_adapter import LocalFileSystemAdapter
+from teddy_executor.adapters.outbound.local_file_system_adapter import (
+    LocalFileSystemAdapter,
+)
 from teddy_executor.adapters.outbound.web_scraper_adapter import WebScraperAdapter
 from teddy_executor.adapters.outbound.console_interactor import ConsoleInteractorAdapter
 from teddy_executor.adapters.outbound.web_searcher_adapter import WebSearcherAdapter

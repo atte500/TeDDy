@@ -98,7 +98,7 @@ This section provides a canonical map of the major architectural components for 
     *   [CLI Adapter](./adapters/executor/inbound/cli.md)
 *   **Outbound Adapters:** Implement outbound ports to interact with external systems.
     *   [ConsoleInteractorAdapter](./adapters/executor/outbound/console_interactor.md)
-    *   [LocalFileSystemAdapter](./adapters/executor/outbound/file_system_adapter.md)
+    *   [LocalFileSystemAdapter](./adapters/executor/outbound/local_file_system_adapter.md)
     *   [LocalRepoTreeGenerator](./adapters/executor/outbound/local_repo_tree_generator.md)
     *   [ShellAdapter](./adapters/executor/outbound/shell_adapter.md)
     *   [SystemEnvironmentInspector](./adapters/executor/outbound/system_environment_inspector.md)
@@ -148,5 +148,3 @@ This section captures non-blocking architectural observations and potential area
 - **Context-Specific Ignores with `.teddyignore`:** To allow filtering of context for the AI without modifying the project's primary `.gitignore` file, the `LocalRepoTreeGenerator` supports a `.teddyignore` file in the project root. This file uses the same syntax as `.gitignore`. Its rules are applied with higher precedence, allowing it to override `.gitignore` rules (e.g., using `!` to re-include an ignored file). This provides a clean separation and ultimate control over the AI context versus the version control context.
 
 - **Comment Handling in Context Files:** The parser for `.context` files intentionally ignores empty lines and any lines beginning with a `#` character. This allows for comments and spacing to be used for better readability without affecting the application's behavior.
-
-- **Adapter Naming Consistency:** A minor inconsistency in adapter naming was noted. Some are prefixed with `local_` (e.g., `local_repo_tree_generator.py`) while others are not (e.g., `file_system_adapter.py`), even though both interact with the local file system. Future work could standardize this.
