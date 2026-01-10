@@ -27,7 +27,9 @@ The adapter will leverage Python's built-in `pathlib` and `open()` functions for
     *   If the count is exactly 1, it performs the replacement and writes the new content back to the file.
 *   **Path Existence (`path_exists`):** (**Introduced in:** [Slice 13: Implement `context` Command](../../slices/13-context-command.md)) This will be implemented using `pathlib.Path.exists()`, which correctly checks for both files and directories.
 *   **Directory Creation (`create_directory`):** (**Introduced in:** [Slice 13: Implement `context` Command](../../slices/executor/13-context-command.md)) This will use `pathlib.Path.mkdir()` with the `parents=True` and `exist_ok=True` flags. This ensures the method is idempotent and can create parent directories as needed.
-*   **Default Context File Creation (`create_default_context_file`):** (**Introduced in:** [Slice 17: Refactor `context` Command Output](../../slices/executor/17-refactor-context-command-output.md)) If invoked by the `ContextService`, this method will create a `.teddy/perm.context` file. The file's content will be a simple, newline-delimited list containing `README.md` and `docs/ARCHITECTURE.md`. This provides a sensible default for first-time users.
+*   **Default Context File Creation (`create_default_context_file`):** (**Introduced in:** [Slice 17: Refactor `context` Command Output](../../slices/executor/17-refactor-context-command-output.md)) This method creates the `.teddy` directory if it doesn't exist, adds a `.gitignore` file inside it to ignore all contents, and creates a default `perm.context` file with a simple list of starting files (`README.md`, `docs/ARCHITECTURE.md`).
+*   **Context Path Gathering (`get_context_paths`):** (**Introduced in:** [Slice 17: Refactor `context` Command Output](../../slices/executor/17-refactor-context-command-output.md)) This method finds all files ending with `.context` inside the `.teddy` directory, reads them, and returns a sorted, deduplicated list of all file paths, ignoring comments and empty lines.
+*   **Vault File Reading (`read_files_in_vault`):** (**Introduced in:** [Slice 17: Refactor `context` Command Output](../../slices/executor/17-refactor-context-command-output.md)) This method takes a list of file paths and returns a dictionary mapping each path to its content. If a file is not found, the path is still included in the dictionary, but its value is `None`.
 
 ## 4. Key Code Snippets
 
@@ -52,17 +54,17 @@ def create_file(self, path: str, content: str) -> None:
 ### `read_file`
 **Introduced in:** [Slice 04: Implement `read_file` Action](../../slices/04-read-action.md)
 ```python
-def read_file(self, path: str) -> Result[str, str]:
+def read_file(self, path: str) -> str:
+    """
+    Reads the content of a file from the specified path.
+    """
     try:
-        with open(path, "r", encoding="utf-8") as f:
-            content = f.read()
-        return Ok(content)
+        return Path(path).read_text(encoding="utf-8")
     except FileNotFoundError:
-        return Err(f"File not found at path: {path}")
-    except UnicodeDecodeError:
-        return Err(f"File at {path} is not a valid UTF-8 text file.")
+        # Re-raise to conform to the port's contract
+        raise
     except IOError as e:
-        return Err(f"Failed to read file at {path}: {e}")
+        raise IOError(f"Failed to read file at {path}: {e}") from e
 ```
 
 ### `write_file`
@@ -122,10 +124,57 @@ def path_exists(self, path: str) -> bool:
 from pathlib import Path
 
 def create_directory(self, path: str) -> None:
-    try:
-        Path(path).mkdir(parents=True, exist_ok=True)
-    except IOError as e:
-        raise IOError(f"Failed to create directory at {path}: {e}") from e
+    Path(path).mkdir(parents=True, exist_ok=True)
+```
+
+### `create_default_context_file`
+**Introduced in:** [Slice 17: Refactor `context` Command Output](../../slices/executor/17-refactor-context-command-output.md)
+```python
+def create_default_context_file(self) -> None:
+    teddy_dir = self.root_dir / ".teddy"
+    teddy_dir.mkdir(exist_ok=True)
+
+    gitignore_file = teddy_dir / ".gitignore"
+    gitignore_file.write_text("*", encoding="utf-8")
+
+    perm_context_file = teddy_dir / "perm.context"
+    default_content = "README.md\ndocs/ARCHITECTURE.md\n"
+    perm_context_file.write_text(default_content, encoding="utf-8")
+```
+
+### `get_context_paths`
+**Introduced in:** [Slice 17: Refactor `context` Command Output](../../slices/executor/17-refactor-context-command-output.md)
+```python
+def get_context_paths(self) -> list[str]:
+    teddy_dir = self.root_dir / ".teddy"
+    if not teddy_dir.is_dir():
+        return []
+
+    all_paths = set()
+    context_files = list(teddy_dir.glob("*.context"))
+
+    for context_file in context_files:
+        content = context_file.read_text(encoding="utf-8")
+        for line in content.splitlines():
+            stripped_line = line.strip()
+            if stripped_line and not stripped_line.startswith("#"):
+                all_paths.add(stripped_line)
+
+    return sorted(list(all_paths))
+```
+
+### `read_files_in_vault`
+**Introduced in:** [Slice 17: Refactor `context` Command Output](../../slices/executor/17-refactor-context-command-output.md)
+```python
+def read_files_in_vault(self, paths: list[str]) -> dict[str, str | None]:
+    contents: dict[str, str | None] = {}
+    for path in paths:
+        try:
+            full_path = self.root_dir / path
+            contents[path] = self.read_file(str(full_path))
+        except FileNotFoundError:
+            contents[path] = None
+    return contents
 ```
 
 

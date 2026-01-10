@@ -26,9 +26,9 @@ The `IGetContextUseCase` port defines the primary entry point into the applicati
 ### `ContextResult`
 This is a data transfer object (DTO) that aggregates all the information gathered by the use case.
 
-| Field                 | Type            | Description                                                                                 |
-| --------------------- | --------------- | ------------------------------------------------------------------------------------------- |
-| `system_info`         | `dict`          | A dictionary containing system information (e.g., `os`, `cwd`, `shell`).                    |
-| `repo_tree`           | `str`           | A string representing the repository's file and directory structure.                        |
-| `context_vault_paths` | `list[str]`     | A simple list of file paths gathered from all `.teddy/*.context` files.                     |
-| `file_contents`       | `dict[str,str]` | A dictionary mapping file paths from the context vault to their respective string contents. |
+| Field                 | Type           | Description                                                              |
+| --------------------- | -------------- | ------------------------------------------------------------------------ |
+| `system_info`         | `dict`         | A dictionary containing system information (e.g., `os`, `cwd`, `shell`). |
+| `repo_tree`           | `str`          | A string representing the repository's file and directory structure.     |
+| `context_vault_paths` | `list[str]`    | A simple list of file paths gathered from all `.teddy/*.context` files.  |
+| `file_contents`       | `dict[str, str | None]`                                                                   | A dictionary mapping file paths to their content, or `None` if the file was not found. |

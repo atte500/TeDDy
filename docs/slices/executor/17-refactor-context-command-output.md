@@ -1,3 +1,5 @@
+**Status:** Implemented
+
 # Vertical Slice: Refactor `context` Command Output
 
 ## Business Goal

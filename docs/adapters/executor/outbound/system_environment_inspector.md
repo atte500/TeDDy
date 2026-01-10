@@ -18,4 +18,4 @@ The `SystemEnvironmentInspector` is a simple adapter that implements the `IEnvir
 
 ## 4. Implementation Details
 
-The adapter calls functions like `platform.system()`, `platform.release()`, `sys.version`, and `os.getcwd()` to populate a dictionary with the required environment information. This adapter directly interacts with the underlying operating system via the Python runtime.
+The adapter calls functions like `platform.system()`, `platform.release()`, `sys.version`, `os.getcwd()`, and `os.getenv("SHELL")` to populate a dictionary with the required environment information. This adapter directly interacts with the underlying operating system via the Python runtime.
