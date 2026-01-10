@@ -27,7 +27,7 @@
     *   **GREEN:** Write the minimal code to pass the test.
     *   **REFACTOR:** Improve code quality.
     *   **VERIFY:** Run the *entire* test suite to ensure no regressions.
-    *   **LINT & STAGE:** Use a dedicated `Version Control` plan to first run pre-commit checks on the changed files and then `git add` them using explicit paths.
+    *   **LINT & STAGE:** Use a dedicated `Version Control` plan to first run pre-commit checks on the changed files and then `git add` them.
     *   **COMMIT:** Use a dedicated `Version Control` plan to `git commit` the staged changes with a clear, atomic message.
 
 **Operational & State Requirements**

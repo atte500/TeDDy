@@ -181,7 +181,7 @@
           *   **Phase 0 Branching:** The only exception to the standard commit flow is the optional, one-time branch creation during `Phase 0: Architectural Alignment`. If the strategy is `Branch-Based`, you will create and switch to a feature branch before any other actions.
           *   **Turn 1: LINT & STAGE Phase:** After a successful `VERIFY Phase`, your next plan **must** be a `Version Control` plan with the `Goal:` "Lint and stage verified changes for the `[Component Name]`". This plan must contain three sequential `EXECUTE` actions:
               1.  `pre-commit run --files [path/to/implementation/file] [path/to/test/file]`: This command lints and auto-fixes the specific files *before* staging.
-              2.  `git add [path/to/implementation/file] [path/to/test/file]`: This command stages the original changes plus any linter fixes using explicit paths.
+              2.  `git add .`: This command stages the original changes plus any linter fixes.
               3.  `git status`: The `Expected Outcome` for this command must be that the staging area contains exactly the specified files and is clean.
           *   **Turn 2: COMMIT Phase:** After a successful `STAGE Phase`, your next plan **must** be a `Version Control` plan with the `Goal:` "Commit the staged changes for `[Component Name]`". This plan will contain one `EXECUTE` action:
               1.  `git commit -m "[Commit message]"`: Write a clear, concise commit message that describes the small change. For example: `feat: Add dormant [Component] to handle X` or `test: Add disabled acceptance test for Y`.

@@ -64,7 +64,7 @@
             2.  Second, `EDIT` the slice document itself (e.g., `docs/slices/01-stage/01-slice.md`) to synthesize and add the final **`Scope of Work`** section. This section is created from the finalized documentation for all items listed in the **`Architectural Changes`** and serves as the developer's ultimate, file-by-file checklist.
         *   **Plan B (Lint & Stage Changes):** The agent then uses a `Version Control` plan to lint and stage the finalized documents. This plan **must** contain three sequential `EXECUTE` actions:
             1.  An `EXECUTE` action to run pre-commit checks on the specific files being changed (e.g., `pre-commit run --files docs/ARCHITECTURE.md docs/slices/01-slice.md`). This ensures standards are met and applies automated fixes *before* staging.
-            2.  An `EXECUTE` action to stage the changes using `git add` with the same **explicit file paths**. This stages the original changes plus any fixes applied by the linter. The use of wildcards or `git add .` is strictly prohibited.
+            2.  An `EXECUTE` action to stage all changes (e.g., using `git add .`). This stages the original changes plus any fixes applied by the linter.
             3.  A final `EXECUTE` action running `git status` to verify that the staging area contains exactly the intended files and is clean.
         *   **Plan C (Commit & Handoff):** Finally, the agent uses a plan that contains two actions:
             1.  An `EXECUTE` action to `git commit` the staged changes with a clear, standardized message (e.g., "docs(arch): Define slice for [Feature Name]").
