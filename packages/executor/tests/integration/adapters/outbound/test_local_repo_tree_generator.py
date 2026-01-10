@@ -26,7 +26,6 @@ def test_repo_tree_generator_produces_correct_format(tmp_path: Path):
 
     expected_tree = dedent(
         """
-        # This is the repotree of the project
         docs/
           guide.md
         src/

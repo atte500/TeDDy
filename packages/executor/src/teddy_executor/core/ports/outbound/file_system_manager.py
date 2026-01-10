@@ -51,3 +51,22 @@ class FileSystemManager(Protocol):
             FileNotFoundError: If no file exists at the specified path.
         """
         ...
+
+    def create_default_context_file(self) -> None:
+        """
+        Creates a default .teddy/perm.context file with simplified content.
+        """
+        ...
+
+    def get_context_paths(self) -> list[str]:
+        """
+        Reads all .teddy/*.context files and returns a deduplicated list of paths.
+        """
+        ...
+
+    def read_files_in_vault(self, paths: list[str]) -> dict[str, str | None]:
+        """
+        Reads the content of multiple files. Returns content for found files
+        and None for files that are not found.
+        """
+        ...

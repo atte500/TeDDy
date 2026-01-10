@@ -94,12 +94,6 @@ class LocalRepoTreeGenerator(IRepoTreeGenerator):
         Generates a string representation of the file tree by gathering paths
         and then delegating to a formatter.
         """
-        header = "# This is the repotree of the project\n"
         included_paths = self._get_included_paths()
         formatter = _IndentedListFormatter(self.root_dir, included_paths)
-        tree = formatter.format()
-
-        # If the tree is empty, just return the header, otherwise combine them
-        if not tree:
-            return header.strip()
-        return header + tree
+        return formatter.format()

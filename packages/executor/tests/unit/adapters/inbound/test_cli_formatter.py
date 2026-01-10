@@ -12,44 +12,66 @@ from teddy_executor.core.domain.models import (
     ActionResult,
     ExecuteAction,
     ContextResult,
-    FileContext,
 )
 
 
 def test_format_project_context():
     """
-    Given a ContextResult object,
+    Given a ContextResult DTO,
     When format_project_context is called,
-    Then it should return a well-structured string with all context info.
+    Then it should return a string with the four required sections in order,
+    and with the correct content and formatting.
     """
     # Arrange
     context = ContextResult(
-        repo_tree="<tree>",
-        environment_info={"os": "test_os", "python": "3.x"},
-        gitignore_content=".venv/",
-        file_contexts=[
-            FileContext(
-                file_path="src/main.py", content="print('hello')", status="found"
-            ),
-            FileContext(file_path="non_existent.py", content=None, status="not_found"),
-        ],
+        system_info={"os": "test_os", "shell": "/bin/test", "python_version": "3.x"},
+        repo_tree="src/\n  main.py",
+        context_vault_paths=["src/main.py", "README.md", "missing.txt"],
+        file_contents={
+            "src/main.py": "print('hello')",
+            "README.md": "# Title",
+            "missing.txt": None,
+        },
     )
 
     # Act
     output = format_project_context(context)
 
     # Assert
-    assert "### Repo Tree ###" not in output
-    assert "<tree>" not in output  # Should be handled as a regular file context
-    assert "### Environment Info ###" in output
+    # 1. Check for all four headers
+    assert "# System Information" in output
+    assert "# Repository Tree" in output
+    assert "# Context Vault" in output
+    assert "# File Contents" in output
+
+    # 2. Check content of System Information
+    # Note: python_version should be excluded
     assert "os: test_os" in output
-    assert "python: 3.x" in output
-    assert "### .gitignore ###" not in output
-    assert ".venv/" not in output  # This is no longer passed directly
-    assert "### File Contexts ###" in output
-    assert "--- File: src/main.py ---" in output
-    assert "print('hello')" in output
-    assert "--- File: non_existent.py (Not Found) ---" in output
+    assert "shell: /bin/test" in output
+    assert "python_version" not in output
+
+    # 3. Check content of Repository Tree
+    assert "src/\n  main.py" in output
+
+    # 4. Check content of Context Vault (clean list)
+    assert "```" not in output.split("# Context Vault")[1].split("# File Contents")[0]
+    assert "src/main.py" in output
+    assert "README.md" in output
+
+    # 5. Check content of File Contents
+    assert "--- src/main.py ---" in output
+    assert "````python\nprint('hello')\n````" in output
+    assert "--- README.md ---" in output
+    assert "````markdown\n# Title\n````" in output
+    assert "--- missing.txt (Not Found) ---" in output
+
+    # 6. Check order of headers
+    assert (
+        output.find("# System Information")
+        < output.find("# Repository Tree")
+        < output.find("# Context Vault")
+        < output.find("# File Contents")
+    )
 
 
 def test_format_report_as_yaml():

@@ -66,23 +66,51 @@ def format_report_as_yaml(report: ExecutionReport) -> str:
     )
 
 
+def _get_file_extension(file_path: str) -> str:
+    """Extracts the file extension for code block formatting."""
+    # A basic implementation for common file types
+    ext_map = {
+        ".py": "python",
+        ".md": "markdown",
+        ".js": "javascript",
+        ".html": "html",
+        ".css": "css",
+        ".yaml": "yaml",
+        ".yml": "yaml",
+        ".json": "json",
+        ".sh": "shell",
+    }
+    ext = os.path.splitext(file_path)[1]
+    return ext_map.get(ext, "")
+
+
 def format_project_context(context: ContextResult) -> str:
-    """Formats the ContextResult object into a structured string for display."""
-    lines = []
+    """Formats the ContextResult DTO into a structured string for display."""
+    output_parts = []
 
-    lines.append("### Environment Info ###")
-    for key, value in context.environment_info.items():
-        lines.append(f"{key}: {value}")
-    lines.append("\n")
+    # Section 1: System Information
+    output_parts.append("# System Information")
+    for key, value in sorted(context.system_info.items()):
+        if key != "python_version":  # Exclude python_version as per requirements
+            output_parts.append(f"{key}: {value}")
 
-    lines.append("### File Contexts ###")
-    # Sort file contexts for deterministic output
-    for file_context in sorted(context.file_contexts, key=lambda fc: fc.file_path):
-        if file_context.status == "found":
-            lines.append(f"--- File: {file_context.file_path} ---")
-            lines.append(file_context.content or "")
+    # Section 2: Repository Tree
+    output_parts.append("\n# Repository Tree")
+    output_parts.append(context.repo_tree)
+
+    # Section 3: Context Vault
+    output_parts.append("\n# Context Vault")
+    output_parts.extend(sorted(context.context_vault_paths))
+
+    # Section 4: File Contents
+    output_parts.append("\n# File Contents")
+    for path in sorted(context.file_contents.keys()):
+        content = context.file_contents[path]
+        if content is None:
+            output_parts.append(f"--- {path} (Not Found) ---")
         else:
-            lines.append(f"--- File: {file_context.file_path} (Not Found) ---")
-        lines.append("\n")
+            extension = _get_file_extension(path)
+            output_parts.append(f"--- {path} ---")
+            output_parts.append(f"````{extension}\n{content}\n````")
 
-    return "\n".join(lines)
+    return "\n".join(output_parts)

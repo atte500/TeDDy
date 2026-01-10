@@ -22,4 +22,5 @@ class SystemEnvironmentInspector(IEnvironmentInspector):
             "os_version": platform.release(),
             "python_version": sys.version,
             "cwd": os.getcwd(),
+            "shell": os.getenv("SHELL", "unknown"),
         }

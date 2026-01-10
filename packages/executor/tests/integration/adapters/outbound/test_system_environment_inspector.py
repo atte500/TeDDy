@@ -14,6 +14,7 @@ def test_get_environment_info():
         "os_version",
         "python_version",
         "cwd",
+        "shell",
     }
 
     # Act

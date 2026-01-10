@@ -170,27 +170,16 @@ class SERPReport:
 
 
 @dataclass(frozen=True)
-class FileContext:
-    """Represents the content and status of a single file requested for context."""
-
-    file_path: str
-    content: Optional[str]
-    status: str  # e.g., "found", "not_found"
-
-    def __post_init__(self):
-        valid_statuses = {"found", "not_found"}
-        if self.status not in valid_statuses:
-            raise ValueError(f"Status must be one of {valid_statuses}")
-
-
-@dataclass(frozen=True)
 class ContextResult:
-    """Aggregates all information gathered by the context command."""
+    """
+    Aggregates all information gathered by the context command.
+    This is a data transfer object (DTO) that structures the data for the CLI formatter.
+    """
 
+    system_info: Dict[str, str]
     repo_tree: str
-    environment_info: Dict[str, str]
-    gitignore_content: str
-    file_contexts: List[FileContext]
+    context_vault_paths: List[str]
+    file_contents: Dict[str, Optional[str]]
 
 
 @dataclass

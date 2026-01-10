@@ -327,46 +327,29 @@ def test_web_search_error_can_be_raised():
         assert e.original_exception == original_exc
 
 
-class TestContextModels:
-    def test_instantiation_with_invalid_status_raises_error(self):
-        """Tests that an invalid status raises a ValueError."""
-        from teddy_executor.core.domain.models import FileContext
+def test_new_context_result_model_instantiation():
+    """
+    Tests that the new ContextResult model can be instantiated
+    with the fields defined in the architectural contract.
+    """
+    # Arrange
+    from teddy_executor.core.domain.models import ContextResult
 
-        with pytest.raises(ValueError, match="Status must be one of"):
-            FileContext(
-                file_path="src/main.py",
-                content="text",
-                status="invalid_status",
-            )
+    system_info = {"os": "test_os", "shell": "/bin/test"}
+    repo_tree = "file.txt\ndir/"
+    context_vault_paths = ["file.txt"]
+    file_contents = {"file.txt": "content"}
 
-    def test_instantiation_happy_path(self):
-        """Tests happy path instantiation for context-related models."""
-        from teddy_executor.core.domain.models import FileContext, ContextResult
+    # Act
+    context_result = ContextResult(
+        system_info=system_info,
+        repo_tree=repo_tree,
+        context_vault_paths=context_vault_paths,
+        file_contents=file_contents,
+    )
 
-        file_context_found = FileContext(
-            file_path="src/main.py",
-            content="print('hello')",
-            status="found",
-        )
-        assert file_context_found.file_path == "src/main.py"
-        assert file_context_found.content == "print('hello')"
-        assert file_context_found.status == "found"
-
-        file_context_not_found = FileContext(
-            file_path="src/missing.py",
-            content=None,
-            status="not_found",
-        )
-        assert file_context_not_found.content is None
-        assert file_context_not_found.status == "not_found"
-
-        context_result = ContextResult(
-            repo_tree="<tree>",
-            environment_info={"os": "test"},
-            gitignore_content="<gitignore>",
-            file_contexts=[file_context_found, file_context_not_found],
-        )
-        assert context_result.repo_tree == "<tree>"
-        assert context_result.environment_info == {"os": "test"}
-        assert context_result.gitignore_content == "<gitignore>"
-        assert len(context_result.file_contexts) == 2
+    # Assert
+    assert context_result.system_info == system_info
+    assert context_result.repo_tree == repo_tree
+    assert context_result.context_vault_paths == context_vault_paths
+    assert context_result.file_contents == file_contents

@@ -274,3 +274,70 @@ def test_write_file(tmp_path: Path):
     # Verify the file was not changed
     content_after = test_file.read_text()
     assert content_after == original_content
+
+
+def test_read_files_in_vault(tmp_path: Path):
+    """
+    Tests that read_files_in_vault reads content for existing files
+    and ignores non-existent files.
+    """
+    # Arrange
+    adapter = LocalFileSystemAdapter(root_dir=str(tmp_path))
+    (tmp_path / "file1.txt").write_text("content1")
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "file2.txt").write_text("content2")
+
+    paths_to_read = ["file1.txt", "docs/file2.txt", "non_existent_file.txt"]
+
+    expected_contents = {
+        "file1.txt": "content1",
+        "docs/file2.txt": "content2",
+        "non_existent_file.txt": None,
+    }
+
+    # Act
+    actual_contents = adapter.read_files_in_vault(paths_to_read)
+
+    # Assert
+    assert actual_contents == expected_contents
+
+
+def test_get_context_paths(tmp_path: Path):
+    """
+    Tests that get_context_paths finds all .context files, reads them,
+    and returns a sorted, deduplicated list of non-commented paths.
+    """
+    # Arrange
+    adapter = LocalFileSystemAdapter(root_dir=str(tmp_path))
+    teddy_dir = tmp_path / ".teddy"
+    teddy_dir.mkdir()
+
+    (teddy_dir / "perm.context").write_text("file1.py\n# comment\nfile2.py\nfile1.py")
+    (teddy_dir / "temp.context").write_text("file3.py\n\nfile4.py")
+    (teddy_dir / "other.txt").write_text("not_a_context_file.py")
+
+    expected_paths = sorted(["file1.py", "file2.py", "file3.py", "file4.py"])
+
+    # Act
+    actual_paths = adapter.get_context_paths()
+
+    # Assert
+    assert actual_paths == expected_paths
+
+
+def test_create_default_context_file(tmp_path: Path):
+    """
+    Tests that create_default_context_file creates the .teddy/perm.context
+    file with the correct, simplified default content.
+    """
+    # Arrange
+    adapter = LocalFileSystemAdapter(root_dir=str(tmp_path))
+    expected_file = tmp_path / ".teddy" / "perm.context"
+    expected_content = "README.md\ndocs/ARCHITECTURE.md\n"
+
+    # Act
+    adapter.create_default_context_file()
+
+    # Assert
+    assert expected_file.exists()
+    assert expected_file.read_text() == expected_content

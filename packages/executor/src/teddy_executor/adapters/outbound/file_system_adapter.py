@@ -12,11 +12,65 @@ class LocalFileSystemAdapter(FileSystemManager):
     An adapter that implements file system operations on the local machine.
     """
 
+    def __init__(self, root_dir: str = "."):
+        self.root_dir = Path(root_dir)
+
+    def create_default_context_file(self) -> None:
+        """
+        Creates a default .teddy/perm.context file with simplified content
+        and a .gitignore to ignore the directory's contents.
+        """
+        teddy_dir = self.root_dir / ".teddy"
+        teddy_dir.mkdir(exist_ok=True)
+
+        # Create .gitignore
+        gitignore_file = teddy_dir / ".gitignore"
+        gitignore_file.write_text("*", encoding="utf-8")
+
+        # Create perm.context
+        perm_context_file = teddy_dir / "perm.context"
+        default_content = "README.md\ndocs/ARCHITECTURE.md\n"
+        perm_context_file.write_text(default_content, encoding="utf-8")
+
+    def get_context_paths(self) -> list[str]:
+        """
+        Reads all .teddy/*.context files and returns a deduplicated list of paths.
+        """
+        teddy_dir = self.root_dir / ".teddy"
+        if not teddy_dir.is_dir():
+            return []
+
+        all_paths = set()
+        context_files = list(teddy_dir.glob("*.context"))
+
+        for context_file in context_files:
+            content = context_file.read_text(encoding="utf-8")
+            for line in content.splitlines():
+                stripped_line = line.strip()
+                if stripped_line and not stripped_line.startswith("#"):
+                    all_paths.add(stripped_line)
+
+        return sorted(list(all_paths))
+
+    def read_files_in_vault(self, paths: list[str]) -> dict[str, str | None]:
+        """
+        Reads the content of multiple files specified in a list.
+        Returns content for found files and None for files that are not found.
+        """
+        contents: dict[str, str | None] = {}
+        for path in paths:
+            try:
+                full_path = self.root_dir / path
+                contents[path] = self.read_file(str(full_path))
+            except FileNotFoundError:
+                contents[path] = None  # Mark not found files with None
+        return contents
+
     def path_exists(self, path: str) -> bool:
         """
-        Checks if a path (file or directory) exists.
+        Checks if a path (file or directory) exists relative to the root_dir.
         """
-        return Path(path).exists()
+        return (self.root_dir / path).exists()
 
     def create_directory(self, path: str) -> None:
         """
