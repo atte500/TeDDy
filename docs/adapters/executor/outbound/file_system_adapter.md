@@ -1,7 +1,9 @@
 # Outbound Adapter: `LocalFileSystemAdapter`
 
 **Status:** Implemented
-**Introduced in:** [Slice 02: Implement `create_file` Action](../../slices/02-create-file-action.md)
+**Introduced in:**
+- [Slice 02: Implement `create_file` Action](../../slices/executor/02-create-file-action.md)
+- [Slice 17: Refactor `context` Command Output](../../slices/executor/17-refactor-context-command-output.md)
 
 ## 1. Responsibility
 
@@ -24,7 +26,8 @@ The adapter will leverage Python's built-in `pathlib` and `open()` functions for
     *   If the count is greater than 1, it raises `MultipleMatchesFoundError`.
     *   If the count is exactly 1, it performs the replacement and writes the new content back to the file.
 *   **Path Existence (`path_exists`):** (**Introduced in:** [Slice 13: Implement `context` Command](../../slices/13-context-command.md)) This will be implemented using `pathlib.Path.exists()`, which correctly checks for both files and directories.
-*   **Directory Creation (`create_directory`):** (**Introduced in:** [Slice 13: Implement `context` Command](../../slices/13-context-command.md)) This will use `pathlib.Path.mkdir()` with the `parents=True` and `exist_ok=True` flags. This ensures the method is idempotent and can create parent directories as needed.
+*   **Directory Creation (`create_directory`):** (**Introduced in:** [Slice 13: Implement `context` Command](../../slices/executor/13-context-command.md)) This will use `pathlib.Path.mkdir()` with the `parents=True` and `exist_ok=True` flags. This ensures the method is idempotent and can create parent directories as needed.
+*   **Default Context File Creation (`create_default_context_file`):** (**Introduced in:** [Slice 17: Refactor `context` Command Output](../../slices/executor/17-refactor-context-command-output.md)) If invoked by the `ContextService`, this method will create a `.teddy/perm.context` file. The file's content will be a simple, newline-delimited list containing `README.md` and `docs/ARCHITECTURE.md`. This provides a sensible default for first-time users.
 
 ## 4. Key Code Snippets
 

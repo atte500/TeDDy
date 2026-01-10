@@ -47,4 +47,21 @@ This command provides a comprehensive snapshot of the project for an AI agent.
 The `cli_formatter.py` module contains a `format_report_as_yaml` function responsible for converting the `ExecutionReport` domain model into a YAML string. This keeps presentation logic separate from the core application. The formatted report is printed to `stdout`. The application exits with a non-zero status code if any action in the plan fails.
 
 #### Project Context Snapshot
-The `cli_formatter.py` module contains a `format_project_context` function. This function takes the `ContextResult` object and renders it as a single string with clear headings for each section (Environment Info, File Contents, etc.), ready to be consumed by an LLM.
+**(Updated in: [Slice 17: Refactor `context` Command Output](../../slices/executor/17-refactor-context-command-output.md))**
+
+The `cli_formatter.py` module contains a `format_project_context` function. This function takes the `ContextResult` DTO and renders it as a single string with four distinct sections, in order.
+
+1.  **`# System Information`**: This section is a markdown-formatted list of key-value pairs from the `system_info` attribute of the `ContextResult`. It **MUST** include the `shell` and **MUST NOT** include the `python_version`.
+
+2.  **`# Repository Tree`**: This section contains the verbatim string from the `repo_tree` attribute of the `ContextResult`.
+
+3.  **`# Context Vault`**: This section contains a simple, newline-delimited list of file paths from the `context_vault_paths` attribute. It **MUST NOT** be formatted as a code block.
+
+4.  **`# File Contents`**: This section iterates through the `file_contents` dictionary. For each file, it prints the file path followed by its content enclosed in a markdown code block with the appropriate language extension. For example:
+    ```
+    path/to/file.py
+    `````python
+    # Contents of file.py
+    print("Hello, World!")
+    `````
+    ```
