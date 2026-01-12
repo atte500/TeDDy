@@ -60,9 +60,9 @@
               b. `READ` the corresponding architectural document (e.g., `docs/contexts/...`).
               c. `EDIT` the architectural document to **perfectly align its content** (e.g., method signatures, parameters, return types) with the public API of the implementation.
               d. As part of the same `EDIT`, change the component's status from `Planned` to `Implemented`.
-          3.  **Finalize Slice Status:** Once all component documents are synchronized, you **must** `EDIT` the vertical slice document itself (e.g., `docs/slices/[stage]/[slice].md`) and add a `**Status:** Implemented` tag to the top of the file.
+          3.  **Update the Brief's Checklist:** Your final documentation action, before committing, **must** be to `EDIT` the canonical feature brief (e.g., `docs/briefs/brief-name.md`) to mark the slice you just implemented as complete by changing `[ ]` to `[x]`. This is the single source of truth for slice completion.
           4.  **Incorporate Notes:** Incorporate any remaining informational `Architectural Notes` from the TDD Dashboard into `ARCHITECTURE.md`.
-          5.  **Commit:** Use a single `Version Control` plan to commit all documentation changes at once in a dedicated, docs-only commit.
+          5.  **Commit:** Use a single `Version Control` plan to commit all documentation changes—including the brief update—at once in a dedicated, docs-only commit.
         </action>
       </phase>
       <phase n="8" name="Outer-Cycle: Handoff / Merge Request">
