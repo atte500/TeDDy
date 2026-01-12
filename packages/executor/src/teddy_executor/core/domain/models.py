@@ -14,6 +14,8 @@ class ExecuteAction(Action):
     """Represents an 'execute' action."""
 
     command: str
+    cwd: Optional[str] = None
+    env: Optional[Dict[str, str]] = None
     action_type: str = field(default="execute", init=False)
 
     def __post_init__(self):

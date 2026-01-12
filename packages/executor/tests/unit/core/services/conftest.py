@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock
 import pytest
 from teddy_executor.core.ports.outbound.file_system_manager import FileSystemManager
-from teddy_executor.core.ports.outbound.shell_executor import ShellExecutor
+from teddy_executor.core.ports.outbound.shell_executor import IShellExecutor
 from teddy_executor.core.ports.outbound.user_interactor import UserInteractor
 from teddy_executor.core.ports.outbound.web_scraper import WebScraper
 from teddy_executor.core.ports.outbound.web_searcher import IWebSearcher
@@ -11,8 +11,8 @@ from teddy_executor.core.services.plan_service import PlanService
 
 @pytest.fixture
 def mock_shell_executor():
-    """Provides a MagicMock for the ShellExecutor port."""
-    return MagicMock(spec=ShellExecutor)
+    """Provides a MagicMock for the IShellExecutor port."""
+    return MagicMock(spec=IShellExecutor)
 
 
 @pytest.fixture

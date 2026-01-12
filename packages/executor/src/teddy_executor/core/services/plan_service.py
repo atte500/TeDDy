@@ -24,7 +24,7 @@ from teddy_executor.core.domain.models import (
     WebSearchError,
 )
 from teddy_executor.core.ports.inbound.run_plan_use_case import RunPlanUseCase
-from teddy_executor.core.ports.outbound.shell_executor import ShellExecutor
+from teddy_executor.core.ports.outbound.shell_executor import IShellExecutor
 from teddy_executor.core.ports.outbound.file_system_manager import FileSystemManager
 from teddy_executor.core.ports.outbound.web_scraper import WebScraper
 from teddy_executor.core.ports.outbound.user_interactor import UserInteractor
@@ -35,7 +35,7 @@ from teddy_executor.core.services.action_factory import ActionFactory
 class PlanService(RunPlanUseCase):
     def __init__(
         self,
-        shell_executor: ShellExecutor,
+        shell_executor: IShellExecutor,
         file_system_manager: FileSystemManager,
         action_factory: ActionFactory,
         web_scraper: WebScraper,
@@ -70,14 +70,19 @@ class PlanService(RunPlanUseCase):
             raise
 
     def _handle_execute(self, action: ExecuteAction) -> ActionResult:
-        command_result = self.shell_executor.run(action.command)
-        status = "SUCCESS" if command_result.return_code == 0 else "FAILURE"
-        return ActionResult(
-            action=action,
-            status=status,
-            output=command_result.stdout,
-            error=command_result.stderr,
-        )
+        try:
+            command_result = self.shell_executor.execute(
+                command=action.command, cwd=action.cwd, env=action.env
+            )
+            status = "SUCCESS" if command_result.return_code == 0 else "FAILURE"
+            return ActionResult(
+                action=action,
+                status=status,
+                output=command_result.stdout,
+                error=command_result.stderr,
+            )
+        except (ValueError, FileNotFoundError) as e:
+            return ActionResult(action=action, status="FAILURE", error=str(e))
 
     def _handle_create_file(self, action: CreateFileAction) -> ActionResult:
         try:

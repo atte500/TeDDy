@@ -44,6 +44,10 @@ class ActionFactory:
 
         params = raw_action.get("params", {})
 
+        # Handle legacy execute action where params is just a string
+        if action_type == "execute" and isinstance(params, str):
+            params = {"command": params}
+
         action_class = cls._action_map.get(action_type)
         if not action_class:
             raise ValueError(f"Unknown action type: '{action_type}'")

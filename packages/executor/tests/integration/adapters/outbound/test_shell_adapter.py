@@ -12,7 +12,7 @@ def test_shell_adapter_executes_command_successfully():
     command = f"{sys.executable} -c \"print('hello from shell')\""
 
     # ACT
-    result = adapter.run(command)
+    result = adapter.execute(command)
 
     # ASSERT
     assert result.return_code == 0
@@ -31,7 +31,7 @@ def test_shell_adapter_handles_failed_command():
     command = "nonexistentcommand12345"
 
     # ACT
-    result = adapter.run(command)
+    result = adapter.execute(command)
 
     # ASSERT
     assert result.return_code != 0

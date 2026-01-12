@@ -1,5 +1,6 @@
 import json
 from unittest.mock import MagicMock
+from teddy_executor.core.ports.outbound.shell_executor import IShellExecutor
 from teddy_executor.core.domain.models import (
     ChatWithUserAction,
     CommandResult,
@@ -33,7 +34,7 @@ def test_plan_service_handles_invalid_yaml(
     report = plan_service.execute(invalid_plan_content)
 
     # ASSERT
-    mock_shell_executor.run.assert_not_called()
+    mock_shell_executor.execute.assert_not_called()
     assert len(report.action_logs) == 1
     action_result = report.action_logs[0]
     assert action_result.status == "FAILURE"
@@ -50,7 +51,7 @@ def test_plan_service_populates_run_summary(
     # ARRANGE
 
     # Simulate one success and one failure
-    mock_shell_executor.run.side_effect = [
+    mock_shell_executor.execute.side_effect = [
         CommandResult(stdout="ok", stderr="", return_code=0),
         CommandResult(stdout="", stderr="error", return_code=1),
     ]
@@ -70,7 +71,7 @@ def test_plan_service_populates_run_summary(
     assert report.run_summary.get("status") == "FAILURE"
 
     # Test the SUCCESS case
-    mock_shell_executor.run.side_effect = [
+    mock_shell_executor.execute.side_effect = [
         CommandResult(stdout="ok", stderr="", return_code=0)
     ]
     mock_action_factory.create_action.side_effect = [ExecuteAction(command="true")]
@@ -89,7 +90,7 @@ def test_plan_service_parses_and_executes_plan(
     """
     # ARRANGE
 
-    mock_shell_executor.run.return_value = CommandResult(
+    mock_shell_executor.execute.return_value = CommandResult(
         stdout="hello world", stderr="", return_code=0
     )
     mock_action = ExecuteAction(command='echo "hello world"')
@@ -104,7 +105,9 @@ def test_plan_service_parses_and_executes_plan(
     report = plan_service.execute(plan_content)
 
     # ASSERT
-    mock_shell_executor.run.assert_called_once_with('echo "hello world"')
+    mock_shell_executor.execute.assert_called_once_with(
+        command='echo "hello world"', cwd=None, env=None
+    )
     assert len(report.action_logs) == 1
     action_result = report.action_logs[0]
     assert action_result.status == "SUCCESS"
@@ -136,7 +139,7 @@ def test_plan_service_handles_create_file_action(
     mock_file_system_manager.create_file.assert_called_once_with(
         path="foo/bar.txt", content="Hello!"
     )
-    mock_shell_executor.run.assert_not_called()
+    mock_shell_executor.execute.assert_not_called()
     action_result = report.action_logs[0]
     assert action_result.status == "COMPLETED"
 
@@ -443,3 +446,57 @@ def test_plan_service_handles_research_action_success():
         output_data["results"][0]["search_results"][0]["title"]
         == "Web Scraping with Python"
     )
+
+
+def test_handle_execute_fails_if_cwd_is_absolute():
+    """
+    Tests that _handle_execute returns a FAILURE if the cwd is an absolute path.
+    """
+    # ARRANGE
+    mock_shell_executor = MagicMock(spec=IShellExecutor)
+    plan_service = PlanService(
+        shell_executor=mock_shell_executor,
+        file_system_manager=MagicMock(),
+        action_factory=MagicMock(),
+        web_scraper=MagicMock(),
+        user_interactor=MagicMock(),
+        web_searcher=MagicMock(),
+    )
+    action = ExecuteAction(command="ls", cwd="/tmp")
+    error_msg = f"Validation failed: `cwd` path '{action.cwd}' must be relative."
+    mock_shell_executor.execute.side_effect = ValueError(error_msg)
+
+    # ACT
+    result = plan_service._handle_execute(action)
+
+    # ASSERT
+    assert result.status == "FAILURE"
+    assert "must be relative" in result.error
+    mock_shell_executor.execute.assert_called_once()
+
+
+def test_handle_execute_fails_if_cwd_traverses_outside_project():
+    """
+    Tests that _handle_execute returns a FAILURE if the cwd traverses outside the project root.
+    """
+    # ARRANGE
+    mock_shell_executor = MagicMock(spec=IShellExecutor)
+    plan_service = PlanService(
+        shell_executor=mock_shell_executor,
+        file_system_manager=MagicMock(),
+        action_factory=MagicMock(),
+        web_scraper=MagicMock(),
+        user_interactor=MagicMock(),
+        web_searcher=MagicMock(),
+    )
+    action = ExecuteAction(command="ls", cwd="../..")
+    error_msg = f"Validation failed: `cwd` path '{action.cwd}' is outside the project directory."
+    mock_shell_executor.execute.side_effect = ValueError(error_msg)
+
+    # ACT
+    result = plan_service._handle_execute(action)
+
+    # ASSERT
+    assert result.status == "FAILURE"
+    assert "is outside the project directory" in result.error
+    mock_shell_executor.execute.assert_called_once()

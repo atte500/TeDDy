@@ -91,7 +91,11 @@ class LocalFileSystemAdapter(FileSystemManager):
         Creates a new file with the given content using exclusive creation mode.
         """
         try:
-            with open(path, "x", encoding="utf-8") as f:
+            # FIX: Ensure the parent directory exists before writing the file.
+            file_path = Path(path)
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+
+            with open(file_path, "x", encoding="utf-8") as f:
                 f.write(content)
         except FileExistsError as e:
             # Raise a domain-specific exception to conform to the port's contract.

@@ -1,6 +1,7 @@
 from pathlib import Path
 import pytest
 
+
 from teddy_executor.core.domain.models import MultipleMatchesFoundError
 from teddy_executor.adapters.outbound.local_file_system_adapter import (
     LocalFileSystemAdapter,
@@ -24,6 +25,27 @@ def test_create_file_raises_custom_error_if_file_exists(tmp_path: Path):
         adapter.create_file(path=str(file_path), content="new content")
 
     assert excinfo.value.file_path == str(file_path)
+
+
+def test_create_file_creates_parent_directories(tmp_path: Path):
+    """
+    Verifies that create_file successfully creates necessary parent directories
+    for the target file.
+    """
+    # Arrange
+    adapter = LocalFileSystemAdapter()
+    new_file_path = "new_dir/sub_dir/test.txt"
+    full_path = tmp_path / new_file_path
+
+    # Pre-condition: Assert that the parent directory does not exist yet
+    assert not full_path.parent.exists()
+
+    # Act
+    adapter.create_file(path=str(full_path), content="content")
+
+    # Assert
+    assert full_path.exists()
+    assert full_path.read_text() == "content"
 
 
 def test_create_file_happy_path(tmp_path: Path):
