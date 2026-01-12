@@ -129,6 +129,8 @@ def test_execute_action_fails_with_absolute_cwd(tmp_path: Path):
 
     # Assert
     assert "status: FAILURE" in result.stdout
+    # Check for key phrases to avoid brittleness from YAML formatting (e.g., newlines)
+    assert "Validation failed" in result.stdout
     assert "must be relative" in result.stdout
     assert result.returncode != 0
 
