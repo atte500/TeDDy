@@ -1,26 +1,33 @@
 # Outbound Port: Shell Executor
 
-**Status:** Implemented
+**Status:** Refactoring
 **Language:** Python 3.9+ (using Abstract Base Classes)
-**Vertical Slice:** [Slice 01: Walking Skeleton](../../slices/01-walking-skeleton.md)
+**Vertical Slice:** [Slice 01: Walking Skeleton](../../slices/executor/01-walking-skeleton.md)
+**Modified in:** [Structured `execute` Action](../../slices/executor/18-structured-execute-action.md)
 
 ## 1. Purpose
 
-This port defines the interface that the application core requires for executing shell commands. By depending on this interface, the core logic remains decoupled from the specific implementation details of running a subprocess (e.g., Python's `subprocess` module, `os.system`, etc.). Any adapter that can run a shell command and capture its output can satisfy this port.
+This port defines the interface that the application core requires for executing shell commands. By depending on this interface, the core logic remains decoupled from the specific implementation details of running a subprocess. Any adapter that can run a shell command in a specific context (working directory, environment) and capture its output can satisfy this port.
 
 ## 2. Interface Definition
 
 ```python
 from abc import ABC, abstractmethod
+from typing import Dict, Optional
 from teddy.core.domain import CommandResult
 
-class ShellExecutor(ABC):
+class IShellExecutor(ABC):
     """
     Defines the contract for executing a shell command.
     """
 
     @abstractmethod
-    def run(self, command: str) -> CommandResult:
+    def execute(
+        self,
+        command: str,
+        cwd: Optional[str] = None,
+        env: Optional[Dict[str, str]] = None
+    ) -> CommandResult:
         """
         Executes a shell command and returns its result.
         """
@@ -29,14 +36,17 @@ class ShellExecutor(ABC):
 
 ## 3. Method Contracts
 
-### `run(command: str) -> CommandResult`
-**Status:** Implemented
+### `execute(command: str, cwd: Optional[str], env: Optional[Dict[str, str]]) -> CommandResult`
+**Status:** Refactoring
 
-*   **Vertical Slice:** [Slice 01: Walking Skeleton](../../slices/01-walking-skeleton.md)
-*   **Description:** This method accepts a single string representing a shell command, executes it, and waits for its completion. It then returns a structured `CommandResult` object containing the captured stdout, stderr, and the command's exit code.
+*   **Vertical Slice:** [Slice 01: Walking Skeleton](../../slices/executor/01-walking-skeleton.md)
+*   **Modified in:** [Structured `execute` Action](../../slices/executor/18-structured-execute-action.md)
+*   **Description:** This method accepts a command string and optional `cwd` and `env` parameters. It executes the command within the specified context and waits for its completion, returning a structured `CommandResult` object.
 *   **Preconditions:**
     *   `command` must be a non-empty string representing a valid shell command.
+    *   If provided, `cwd` must be a string representing a valid directory path.
+    *   If provided, `env` must be a dictionary of string key-value pairs.
 *   **Postconditions:**
     *   A valid `CommandResult` object is always returned.
     *   The method will block until the command has finished executing.
-    *   If the command cannot be found (e.g., `nonexistentcommand123`), the method does not raise an exception. Instead, it captures the shell's error message in the `stderr` field of the returned `CommandResult` and provides a non-zero `return_code`.
+    *   If the command cannot be found, the method captures the shell's error in the `stderr` field of the `CommandResult` and provides a non-zero `return_code`.

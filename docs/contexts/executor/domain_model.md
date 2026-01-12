@@ -41,15 +41,19 @@ Represents the contract for a single, executable step in a plan. This is an abst
 
 ### `ExecuteAction` (Entity)
 **Status:** Implemented
-**Introduced in:** [Slice 01: Walking Skeleton](../slices/01-walking-skeleton.md)
+**Introduced in:** [Slice 01: Walking Skeleton](../slices/executor/01-walking-skeleton.md)
+**Modified in:** [Structured `execute` Action](../slices/executor/18-structured-execute-action.md)
 
 An action that executes a shell command.
 
 *   **Inherits from:** `Action`
 *   **Attributes:**
     *   `command` (str): The shell command to execute.
+    *   `cwd` (str | None): An optional relative path specifying the working directory for the command. Defaults to `None`.
+    *   `env` (dict[str, str] | None): An optional dictionary of environment variables to set for the command's process. Defaults to `None`.
 *   **Invariants:**
     *   `command` must be a non-empty string.
+    *   If provided, `cwd` must be a relative path that does not escape the project sandbox.
 
 ---
 

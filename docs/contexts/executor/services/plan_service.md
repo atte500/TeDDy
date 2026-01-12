@@ -1,12 +1,13 @@
 # Application Core: Plan Service
 
-**Status:** Implemented
+**Status:** Refactoring
 **Language:** Python 3.9+
-**Vertical Slice:** [Slice 01: Walking Skeleton](../../slices/01-walking-skeleton.md)
+**Vertical Slice:** [Slice 01: Walking Skeleton](../../slices/executor/01-walking-skeleton.md)
+**Modified in:** [Structured `execute` Action](../../slices/executor/18-structured-execute-action.md)
 
 ## 1. Purpose
 
-The `PlanService` is the primary application service in the core logic. It acts as the orchestrator for the `RunPlanUseCase`. It is responsible for taking raw input, coordinating the domain models and outbound ports to execute the business logic, and returning the final result.
+The `PlanService` is the primary application service in the core logic. It acts as the orchestrator for the `RunPlanUseCase`. It is responsible for taking raw input, coordinating the domain models and outbound ports to execute the business logic, and returning the final result. It also enforces application-level security policies, such as sandboxing file system access.
 
 ## 2. Port Implementations
 
@@ -19,7 +20,7 @@ The `PlanService` will be initialized with the components it needs to perform it
 *   **Factories:**
     *   [`ActionFactory`](../services/action_factory.md) **Introduced in:** [Slice 03: Refactor Action Dispatching](../../slices/03-refactor-action-dispatching.md)
 *   **Outbound Ports:**
-        *   [`ShellExecutor`](../ports/outbound/shell_executor.md)
+        *   [`IShellExecutor`](../ports/outbound/shell_executor.md)
         *   [`FileSystemManager`](../ports/outbound/file_system_manager.md)
         *   [`WebScraper`](../ports/outbound/web_scraper.md) **Introduced in:** [Slice 04: Implement `read` Action](../../slices/04-read-action.md)
         *   [`IUserInteractor`](../ports/outbound/user_interactor.md) **Introduced in:** [Slice 10: Implement `chat_with_user` Action](../../slices/10-chat-with-user-action.md)
@@ -36,7 +37,7 @@ The `PlanService` is a class instantiated with its required dependencies. It use
 class PlanService(RunPlanUseCase):
     def __init__(
         self,
-        shell_executor: ShellExecutor,
+        shell_executor: IShellExecutor,
         file_system_manager: FileSystemManager,
         action_factory: ActionFactory,
         web_scraper: WebScraper,
@@ -76,12 +77,12 @@ class PlanService(RunPlanUseCase):
 ```
 
 ### `execute(plan_content: str)` Method Logic
-**Status:** Implemented
+**Status:** Refactoring
 
 1.  **Start Report:** Create a new `ExecutionReport`.
 2.  **Parse & Create Actions:**
     *   Use `pyyaml` to parse the `plan_content` string.
-    *   For each raw action, call `self.action_factory.create_action()` to get a validated, concrete `Action` object.
+    *   For each raw action, call `self.action_factory.create_action()` to get a validated, concrete `Action` object. The `ActionFactory` is now responsible for handling both the legacy string format and the new structured map format for `execute` actions.
     *   Catches parsing and validation errors and creates a `FAILURE` `ActionResult`.
 3.  **Execute Actions:**
     *   Iterate through each successfully created `Action` object.
@@ -95,9 +96,15 @@ class PlanService(RunPlanUseCase):
 
 These private methods contain the logic for handling a single, specific action type. They are responsible for interacting with the correct outbound port and translating the result into an `ActionResult`.
 
-*   `_handle_execute_action(action: ExecuteAction) -> ActionResult`:
-    *   Calls `self.shell_executor.run(command=action.command)`.
-    *   Builds and returns an `ActionResult` from the `CommandResult`.
+*   `_handle_execute(action: ExecuteAction) -> ActionResult`:
+    *   **1. Validate `cwd`:**
+        *   Before execution, the service must validate the `action.cwd` path to enforce the project sandbox.
+        *   It checks if the path is absolute. If so, it immediately returns a `FAILURE` `ActionResult` with a descriptive error.
+        *   It resolves the path and checks if it is outside the current project's root directory. If so, it returns a `FAILURE` `ActionResult`.
+    *   **2. Execute Command:**
+        *   If validation passes, it calls `self.shell_executor.execute(command=action.command, cwd=action.cwd, env=action.env)`.
+    *   **3. Return Result:**
+        *   Builds and returns an `ActionResult` from the `CommandResult`.
 *   `_handle_create_file_action(action: CreateFileAction) -> ActionResult`: **(Updated in: [Slice 07: Update Action Failure Behavior](../../slices/07-update-action-failure-behavior.md))**
     *   The method will use a `try...except` block.
     *   **`try` block:**
