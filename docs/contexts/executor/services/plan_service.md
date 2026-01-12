@@ -97,14 +97,13 @@ class PlanService(RunPlanUseCase):
 These private methods contain the logic for handling a single, specific action type. They are responsible for interacting with the correct outbound port and translating the result into an `ActionResult`.
 
 *   `_handle_execute(action: ExecuteAction) -> ActionResult`:
-    *   **1. Validate `cwd`:**
-        *   Before execution, the service must validate the `action.cwd` path to enforce the project sandbox.
-        *   It checks if the path is absolute. If so, it immediately returns a `FAILURE` `ActionResult` with a descriptive error.
-        *   It resolves the path and checks if it is outside the current project's root directory. If so, it returns a `FAILURE` `ActionResult`.
-    *   **2. Execute Command:**
-        *   If validation passes, it calls `self.shell_executor.execute(command=action.command, cwd=action.cwd, env=action.env)`.
-    *   **3. Return Result:**
-        *   Builds and returns an `ActionResult` from the `CommandResult`.
+    *   The method wraps the call to the shell executor in a `try...except` block.
+    *   **`try` block:**
+        *   Calls `self.shell_executor.execute(command=action.command, cwd=action.cwd, env=action.env)`. The `ShellAdapter` is now responsible for validating the `cwd` path before execution.
+        *   Builds and returns an `ActionResult` from the returned `CommandResult`.
+    *   **`except (ValueError, FileNotFoundError) as e` block:**
+        *   Catches validation errors (`ValueError`) or execution errors (`FileNotFoundError`) raised by the adapter.
+        *   Returns a `FAILURE` `ActionResult` with the error message from the exception.
 *   `_handle_create_file_action(action: CreateFileAction) -> ActionResult`: **(Updated in: [Slice 07: Update Action Failure Behavior](../../slices/07-update-action-failure-behavior.md))**
     *   The method will use a `try...except` block.
     *   **`try` block:**

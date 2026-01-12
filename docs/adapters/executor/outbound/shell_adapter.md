@@ -1,6 +1,6 @@
 # Outbound Adapter: Shell Adapter
 
-**Status:** Refactoring
+**Status:** Implemented
 **Language:** Python 3.9+
 **Vertical Slice:** [Slice 01: Walking Skeleton](../../slices/executor/01-walking-skeleton.md)
 **Modified in:** [Structured `execute` Action](../../slices/executor/18-structured-execute-action.md)
@@ -22,7 +22,11 @@ The `ShellAdapter` is a "driven" adapter that provides the concrete implementati
 
 The `execute` method will implement the contract defined by the `IShellExecutor` port.
 
-1.  **Invoke Subprocess:** It will call `subprocess.run()` and pass the `cwd` and `env` parameters directly to it. The `subprocess` module handles `None` values for these parameters correctly, so no conditional logic is needed in the adapter.
+1.  **Validate `cwd`:** If `cwd` is provided, the adapter performs security validation:
+    *   It raises a `ValueError` if the path is absolute.
+    *   It resolves the real path of `os.getcwd()` joined with the relative `cwd` path.
+    *   It raises a `ValueError` if the resolved path does not start with the project root's real path, preventing directory traversal attacks (e.g., `../..`).
+2.  **Invoke Subprocess:** It will call `subprocess.run()`, passing the *validated and resolved absolute path* for `cwd`, and the `env` parameter directly.
     *   `command`: The command string to execute.
     *   `shell=True`: To ensure the command is interpreted by the system's shell.
     *   `capture_output=True`: To capture `stdout` and `stderr`.
@@ -35,10 +39,11 @@ The `execute` method will implement the contract defined by the `IShellExecutor`
 
 ```python
 # Conceptual implementation
+import os
 import subprocess
 from typing import Dict, Optional
-from teddy.core.domain import CommandResult
-from teddy.core.ports.outbound import IShellExecutor
+from teddy_executor.core.domain.models import CommandResult
+from teddy_executor.core.ports.outbound import IShellExecutor
 
 class ShellAdapter(IShellExecutor):
     def execute(
@@ -47,13 +52,27 @@ class ShellAdapter(IShellExecutor):
         cwd: Optional[str] = None,
         env: Optional[Dict[str, str]] = None
     ) -> CommandResult:
+        validated_cwd = cwd
+        if cwd:
+            if os.path.isabs(cwd):
+                raise ValueError("`cwd` path must be relative.")
+
+            project_root = os.getcwd()
+            full_path = os.path.realpath(os.path.join(project_root, cwd))
+
+            if not full_path.startswith(os.path.realpath(project_root)):
+                raise ValueError("`cwd` path is outside the project directory.")
+
+            validated_cwd = full_path
+
         result = subprocess.run(
             command,
             shell=True,
             capture_output=True,
             text=True,
-            cwd=cwd,
-            env=env
+            cwd=validated_cwd,
+            env=env,
+            check=False
         )
         return CommandResult(
             stdout=result.stdout,

@@ -1,6 +1,6 @@
-# Outbound Port: Shell Executor
+# Outbound Port: IShellExecutor
 
-**Status:** Refactoring
+**Status:** Implemented
 **Language:** Python 3.9+ (using Abstract Base Classes)
 **Vertical Slice:** [Slice 01: Walking Skeleton](../../slices/executor/01-walking-skeleton.md)
 **Modified in:** [Structured `execute` Action](../../slices/executor/18-structured-execute-action.md)
@@ -14,7 +14,7 @@ This port defines the interface that the application core requires for executing
 ```python
 from abc import ABC, abstractmethod
 from typing import Dict, Optional
-from teddy.core.domain import CommandResult
+from teddy_executor.core.domain.models import CommandResult
 
 class IShellExecutor(ABC):
     """
@@ -37,15 +37,17 @@ class IShellExecutor(ABC):
 ## 3. Method Contracts
 
 ### `execute(command: str, cwd: Optional[str], env: Optional[Dict[str, str]]) -> CommandResult`
-**Status:** Refactoring
+**Status:** Implemented
 
 *   **Vertical Slice:** [Slice 01: Walking Skeleton](../../slices/executor/01-walking-skeleton.md)
 *   **Modified in:** [Structured `execute` Action](../../slices/executor/18-structured-execute-action.md)
 *   **Description:** This method accepts a command string and optional `cwd` and `env` parameters. It executes the command within the specified context and waits for its completion, returning a structured `CommandResult` object.
 *   **Preconditions:**
     *   `command` must be a non-empty string representing a valid shell command.
-    *   If provided, `cwd` must be a string representing a valid directory path.
+    *   If provided, `cwd` must be a string representing a *relative* directory path. The adapter is responsible for validating this path.
     *   If provided, `env` must be a dictionary of string key-value pairs.
+*   **Raises:**
+    *   `ValueError`: If the `cwd` path is absolute or attempts to traverse outside the project directory.
 *   **Postconditions:**
     *   A valid `CommandResult` object is always returned.
     *   The method will block until the command has finished executing.
