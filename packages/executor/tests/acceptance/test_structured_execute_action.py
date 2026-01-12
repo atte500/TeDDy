@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 
 
-from tests.acceptance.helpers import run_teddy_with_plan_structure
+from tests.acceptance.helpers import parse_yaml_report, run_teddy_with_plan_structure
 
 # Define platform-agnostic commands
 LIST_COMMAND = "dir" if sys.platform == "win32" else "ls -a"
@@ -97,9 +97,11 @@ def test_execute_action_fails_with_unsafe_cwd_traversal(tmp_path: Path):
     result = run_teddy_with_plan_structure(plan, cwd=tmp_path)
 
     # Assert
-    assert "status: FAILURE" in result.stdout
-    assert "is outside the project directory" in result.stdout
-    # The teddy command itself should exit with a non-zero code to signal failure
+    report = parse_yaml_report(result.stdout)
+    assert report["run_summary"]["status"] == "FAILURE"
+    error_log = report["action_logs"][0]
+    assert error_log["status"] == "FAILURE"
+    assert "is outside the project directory" in error_log["error"]
     assert result.returncode != 0
 
 
@@ -128,10 +130,12 @@ def test_execute_action_fails_with_absolute_cwd(tmp_path: Path):
     result = run_teddy_with_plan_structure(plan, cwd=tmp_path)
 
     # Assert
-    assert "status: FAILURE" in result.stdout
-    # Check for key phrases to avoid brittleness from YAML formatting (e.g., newlines)
-    assert "Validation failed" in result.stdout
-    assert "must be relative" in result.stdout
+    report = parse_yaml_report(result.stdout)
+    assert report["run_summary"]["status"] == "FAILURE"
+    error_log = report["action_logs"][0]
+    assert error_log["status"] == "FAILURE"
+    assert "Validation failed" in error_log["error"]
+    assert "must be relative" in error_log["error"]
     assert result.returncode != 0
 
 
