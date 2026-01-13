@@ -1,8 +1,8 @@
 import sys
-from teddy_executor.core.ports.outbound.user_interactor import UserInteractor
+from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 
 
-class ConsoleInteractorAdapter(UserInteractor):
+class ConsoleInteractorAdapter(IUserInteractor):
     def ask_question(self, prompt: str) -> str:
         """
         Presents a prompt to the user on the console and captures their input.

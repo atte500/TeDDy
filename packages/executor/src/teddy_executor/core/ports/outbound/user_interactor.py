@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 
-class UserInteractor(ABC):
+class IUserInteractor(ABC):
     @abstractmethod
     def ask_question(self, prompt: str) -> str:
         """

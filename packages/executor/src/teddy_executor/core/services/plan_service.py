@@ -26,7 +26,7 @@ from teddy_executor.core.ports.inbound.run_plan_use_case import RunPlanUseCase
 from teddy_executor.core.ports.outbound.shell_executor import IShellExecutor
 from teddy_executor.core.ports.outbound.file_system_manager import FileSystemManager
 from teddy_executor.core.ports.outbound.web_scraper import WebScraper
-from teddy_executor.core.ports.outbound.user_interactor import UserInteractor
+from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 from teddy_executor.core.ports.outbound.web_searcher import IWebSearcher
 from teddy_executor.core.services.action_factory import ActionFactory
 
@@ -38,7 +38,7 @@ class PlanService(RunPlanUseCase):
         file_system_manager: FileSystemManager,
         action_factory: ActionFactory,
         web_scraper: WebScraper,
-        user_interactor: "UserInteractor",
+        user_interactor: "IUserInteractor",
         web_searcher: "IWebSearcher",
     ):
         self.shell_executor = shell_executor
