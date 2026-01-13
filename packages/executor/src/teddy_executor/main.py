@@ -106,8 +106,16 @@ def execute(
 
     formatted_report = format_report_as_yaml(report)
     typer.echo(formatted_report)
-    pyperclip.copy(formatted_report)
-    typer.echo("\nExecution report copied to clipboard.")
+    try:
+        pyperclip.copy(formatted_report)
+        typer.echo("\nExecution report copied to clipboard.")
+    except pyperclip.PyperclipException:
+        # Gracefully fail in environments without a clipboard (e.g., CI)
+        typer.echo(
+            "\n(Note: Could not copy report to clipboard. "
+            "Pyperclip backend not found.)",
+            err=True,
+        )
 
     if report.run_summary.get("status") == "FAILURE":
         raise typer.Exit(code=1)

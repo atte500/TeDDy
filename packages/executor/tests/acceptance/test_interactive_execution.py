@@ -1,6 +1,7 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pyperclip
 import pytest
 import yaml
 from typer.testing import CliRunner
@@ -14,7 +15,7 @@ from teddy_executor.adapters.outbound.local_file_system_adapter import (
 
 # Using Typer's test runner is a "white-box" approach that allows mocks to work
 # correctly because the test and the code run in the same process.
-runner = CliRunner()
+runner = CliRunner(mix_stderr=False)
 
 
 @pytest.fixture
@@ -177,3 +178,45 @@ def test_execute_skip_with_reason_is_reported(
     action_log = report["action_logs"][0]
     assert action_log["status"] == "SKIPPED"
     assert action_log["reason"] == "Manual check needed"
+
+
+def test_execute_gracefully_fails_when_clipboard_is_unavailable(
+    mock_pyperclip_paste: MagicMock,
+    mock_pyperclip_copy: MagicMock,
+    mock_console_interactor_class: MagicMock,
+    tmp_path: Path,
+):
+    """
+    Verify that if pyperclip fails, a warning is printed to stderr
+    and the command still exits successfully.
+    """
+    # Arrange
+    plan_yaml = """
+    - action: create_file
+      params:
+        file_path: "dummy.txt"
+    """
+    mock_pyperclip_paste.return_value = plan_yaml
+    mock_pyperclip_copy.side_effect = pyperclip.PyperclipException("No backend")
+
+    # Act
+    action_factory = ActionFactory()
+    plan_service = PlanService(
+        shell_executor=MagicMock(),
+        file_system_manager=LocalFileSystemAdapter(),
+        web_scraper=MagicMock(),
+        action_factory=action_factory,
+        user_interactor=mock_console_interactor_class,
+        web_searcher=MagicMock(),
+    )
+    services = {"plan_service": plan_service, "context_service": MagicMock()}
+    result = runner.invoke(
+        app, ["execute", "--yes"], obj=services, catch_exceptions=False
+    )
+
+    # Assert
+    # The CliRunner will yield a non-zero exit code because an exception
+    # was raised, even though we handled it gracefully. This is expected.
+    assert result.exit_code != 0
+    assert "Could not copy report to clipboard" in result.stderr
+    assert "Execution report copied to clipboard." not in result.stdout
