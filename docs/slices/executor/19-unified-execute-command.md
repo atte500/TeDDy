@@ -70,15 +70,18 @@ Approve? (y/n): y
     - *Note:* This dependency was installed and vetted via a technical spike during the architectural phase. It is already present in `pyproject.toml` and `poetry.lock`.
 
 ### 2. Port and Adapter Layer (`IUserInteractor`)
+- [ ] **Review:** Read the design documents for the [`IUserInteractor` Port](../../contexts/executor/ports/outbound/user_interactor.md) and the [`ConsoleInteractorAdapter`](../../adapters/executor/outbound/console_interactor.md).
 - [ ] **Port:** In the `IUserInteractor` interface, add the new method signature: `confirm_action(self, action_prompt: str) -> tuple[bool, str]`.
 - [ ] **Adapter:** In `ConsoleInteractorAdapter`, implement the `confirm_action` method to handle the `y/n` and optional reason prompts as detailed in its design document.
 
 ### 3. Core Logic (`PlanService`)
+- [ ] **Review:** Read the design document for the [`PlanService`](../../contexts/executor/services/plan_service.md).
 - [ ] Modify the `PlanService.execute` method signature to accept the new `auto_approve: bool = False` parameter.
 - [ ] Implement the interactive approval loop within the `execute` method. Before dispatching each action, check the `auto_approve` flag and call the `user_interactor` if necessary.
 - [ ] If an action is skipped, create a `SKIPPED` `ActionResult` with the user's reason and append it to the report.
 
 ### 4. Inbound Adapter (`CLI`)
+- [ ] **Review:** Read the design document for the [`CLI Adapter`](../../adapters/executor/inbound/cli.md).
 - [ ] Refactor `teddy_executor/main.py` to consolidate the CLI logic.
 - [ ] Replace the existing top-level command with an `execute` subcommand using `typer.Typer()`.
 - [ ] The `execute` function should accept an optional `plan_file: Optional[Path]` argument and a `--yes` flag.
