@@ -21,3 +21,23 @@ class ConsoleInteractorAdapter(UserInteractor):
             except EOFError:
                 break
         return "\n".join(lines)
+
+    def confirm_action(self, action_prompt: str) -> tuple[bool, str]:
+        try:
+            prompt = f"{action_prompt}\nApprove? (y/n): "
+            # Use stderr for prompts to not pollute stdout
+            print(prompt, file=sys.stderr, flush=True, end="")
+            response = input().lower().strip()
+
+            if response.startswith("y"):
+                return True, ""
+
+            reason_prompt = "Reason for skipping (optional): "
+            print(reason_prompt, file=sys.stderr, flush=True, end="")
+            reason = input().strip()
+            return False, reason
+        except EOFError:
+            # If input stream is closed (e.g., in non-interactive script),
+            # default to denying the action.
+            print("\n", file=sys.stderr, flush=True)  # Ensure a newline after prompt
+            return False, "Skipped due to non-interactive session."
