@@ -25,7 +25,7 @@ This port defines the contract for components that can interact with the user by
 
 ### `confirm_action(action_prompt: str) -> tuple[bool, str]`
 
-**Status:** Planned
+**Status:** Implemented
 **Motivating Slice:** [Slice 19: Unified `execute` Command & Interactive Approval](../../slices/executor/19-unified-execute-command.md)
 
 *   **Description:**
