@@ -19,10 +19,19 @@ The core of this adapter is the logic to read multi-line input from `sys.stdin`.
 
 ### Implementation Details
 
+#### `ask_question(prompt: str) -> str`
 The `ask_question` method logic is as follows:
 1.  **Print Prompt to Stderr:** The prompt is printed to `sys.stderr` to avoid polluting `stdout`, which is reserved for the final machine-readable report.
 2.  **Read Input Loop:** The adapter reads lines from standard input using `input()` until an `EOFError` is caught or the user enters an empty line. This robustly handles both interactive sessions and piped input.
 3.  **Return Value:** The collected lines are joined into a single string.
+
+#### `confirm_action(action_prompt: str) -> tuple[bool, str]`
+The `confirm_action` method logic is as follows:
+1.  **Print Action Prompt:** Display the action description to `sys.stderr` followed by a `(y/n)` query.
+2.  **Read Confirmation:** Read a single line of input. The response is considered an approval if it starts with 'y' or 'Y'.
+3.  **Prompt for Reason (on denial):** If the action is denied, prompt the user for an optional reason for skipping.
+4.  **Read Reason:** Read the single-line reason.
+5.  **Return Value:** Return a tuple containing the approval status (`True`/`False`) and the reason string (or an empty string).
 
 ```python
 # Conceptual Implementation
@@ -42,6 +51,22 @@ class ConsoleInteractorAdapter(UserInteractor):
             except EOFError:
                 break
         return "\n".join(lines)
+
+    def confirm_action(self, action_prompt: str) -> tuple[bool, str]:
+        try:
+            prompt = f"{action_prompt}\nApprove? (y/n): "
+            response = input(prompt).lower().strip()
+            if response.startswith('y'):
+                return True, ""
+
+            reason_prompt = "Reason for skipping (optional): "
+            reason = input(reason_prompt).strip()
+            return False, reason
+        except EOFError:
+            # If input stream is closed (e.g., in non-interactive script),
+            # default to denying the action.
+            return False, "Skipped due to non-interactive session."
+
 ```
 
 ## 4. External Documentation

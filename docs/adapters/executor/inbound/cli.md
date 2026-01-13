@@ -25,12 +25,23 @@ This adapter is a "driving" adapter that uses inbound ports to interact with the
 *   **Technology:** `Typer`
 *   **Composition Root:** The application's dependency injection and wiring are handled in `src/teddy/main.py` and `src/teddy/cli.py`.
 
-### Main Command: `teddy execute`
+### Main Command: `execute`
+**Status:** Refactoring
+**Updated in:** [Slice 19: Unified `execute` Command & Interactive Approval](../../slices/executor/19-unified-execute-command.md)
 
-This is the primary command for executing a plan. It will be the default command if no subcommand is specified.
+This is the primary command for executing a plan.
 
-*   **Input:** The command accepts a plan from a file via the `--plan-file` option. `stdin` is reserved for interactive user input (e.g., for the `chat_with_user` action).
-*   **Behavior:** It executes the plan by calling the `PlanService` and prints a machine-readable YAML report to standard output.
+*   **Signature:** `teddy execute [PLAN_FILE] [--yes]`
+*   **Input:**
+    *   `PLAN_FILE` (Optional): A path to a YAML plan file.
+    *   If `PLAN_FILE` is omitted, the command reads the plan from the system clipboard. This introduces a dependency on the `pyperclip` library.
+        *   **Dependency Vetting:** The `pyperclip` library was vetted via a technical spike (`spikes/technical/spike_clipboard_access.py`, now deleted) to confirm its cross-platform reliability, in accordance with the project's third-party dependency standards.
+    *   `--yes` (Optional Flag): If provided, the plan will be executed in non-interactive mode, automatically approving all actions.
+*   **Behavior:**
+    1.  Reads the plan content from the specified source (file or clipboard).
+    2.  Determines the approval mode (`auto_approve` is `True` if `--yes` is present).
+    3.  Calls the `PlanService` via the `RunPlanUseCase` port, passing the plan content and the `auto_approve` flag.
+    4.  Prints the final YAML report to standard output.
 
 ### Utility Command: `context`
 **Status:** Implemented

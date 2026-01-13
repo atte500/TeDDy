@@ -172,8 +172,9 @@ Here's a look at our development priorities. We use the following statuses to in
 
 ### `teddy` Executor CLI
 
-| Status | Stage / Feature Set               | Description                                                                                                                                                          |
-| :----: | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|   ▶️    | **Core Action & Utility Support** | The foundational actions (`create`, `read`, `edit`, `execute`, `chat`, `research`) and the `context` utility command are fully implemented and stable.               |
-|   📝    | **TUI for LLM Interaction**       | Create a Terminal User Interface (TUI) to directly call LLM APIs, pass context, manage prompts, and execute the resulting plans in a seamless, interactive loop.     |
-|   📝    | **Automated Workflows**           | Enable auto-run and agent-switching capabilities, allowing the framework to autonomously chain agents and decompose complex problems into smaller, manageable steps. |
+| Status | Stage / Feature Set                | Description                                                                                                                                                          |
+| :----: | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|   ✅    | **Core Action & Utility Support**  | The foundational actions (`create`, `read`, `edit`, `execute`, `chat`, `research`) and the `context` utility command are fully implemented and stable.               |
+|   ▶️    | **Interactive Execution Workflow** | Streamline plan execution with clipboard support and step-by-step interactive approval, giving the user full control and improving safety and usability.             |
+|   📝    | **TUI for LLM Interaction**        | Create a Terminal User Interface (TUI) to directly call LLM APIs, pass context, manage prompts, and execute the resulting plans in a seamless, interactive loop.     |
+|   📝    | **Automated Workflows**            | Enable auto-run and agent-switching capabilities, allowing the framework to autonomously chain agents and decompose complex problems into smaller, manageable steps. |

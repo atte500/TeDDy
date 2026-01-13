@@ -60,7 +60,7 @@ class PlanService(RunPlanUseCase):
             ResearchAction: self._handle_research,
         }
 
-    def execute(self, plan_content: str) -> ExecutionReport:
+    def execute(self, plan_content: str, auto_approve: bool = False) -> ExecutionReport:
         # ... implementation ...
 
     def _execute_single_action(self, action: Action) -> ActionResult:
@@ -76,18 +76,23 @@ class PlanService(RunPlanUseCase):
         )
 ```
 
-### `execute(plan_content: str)` Method Logic
+### `execute(plan_content: str, auto_approve: bool = False)` Method Logic
 **Status:** Refactoring
+**Updated in:** [Slice 19: Unified `execute` Command & Interactive Approval](../../slices/executor/19-unified-execute-command.md)
 
 1.  **Start Report:** Create a new `ExecutionReport`.
 2.  **Parse & Create Actions:**
     *   Use `pyyaml` to parse the `plan_content` string.
-    *   For each raw action, call `self.action_factory.create_action()` to get a validated, concrete `Action` object. The `ActionFactory` is now responsible for handling both the legacy string format and the new structured map format for `execute` actions.
+    *   For each raw action, call `self.action_factory.create_action()` to get a validated, concrete `Action` object.
     *   Catches parsing and validation errors and creates a `FAILURE` `ActionResult`.
 3.  **Execute Actions:**
     *   Iterate through each successfully created `Action` object.
-    *   Invoke `_execute_single_action(action)`, which looks up the action's class in the `self.action_handlers` dispatch map to find and execute the correct handler method.
-    *   The handler method returns a complete `ActionResult`, which is appended to the report.
+    *   **Approval Check:**
+        *   If `auto_approve` is `False`, call `self.user_interactor.confirm_action()` with a descriptive prompt for the current action.
+        *   If the user denies the action (returns `False`), create a `SKIPPED` `ActionResult`, capture the optional reason, append it to the report, and continue to the next action.
+    *   **Dispatch:**
+        *   If the action is approved (or if `auto_approve` is `True`), invoke `_execute_single_action(action)`, which looks up and executes the correct handler method.
+        *   The handler method returns a complete `ActionResult`, which is appended to the report.
 4.  **Finalize Report:**
     *   Calculate total duration and overall status.
     *   Return the `ExecutionReport`.

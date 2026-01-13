@@ -80,7 +80,22 @@ Consequently, any paths to files outside this directory (like those in the root 
 
 ---
 
-## 3. Component Design
+## 3. Boundary Map
+
+This section defines the system's strategic architectural divisions, separating isolated business logic from framework-specific integrations.
+
+### `executor` Package
+
+*   **Hexagonal Core:** This contains the pure business logic, application services, and domain models that are independent of any specific delivery mechanism or external tool.
+    *   **Components:** `Domain Model`, `Inbound Ports`, `Outbound Ports`, `Application Services`.
+*   **Framework/Platform Integration Layer:** This layer contains code that is directly coupled to external frameworks or platforms, such as the command-line interface library (`Typer`). Its primary role is to translate external inputs into calls to the hexagonal core.
+    *   **Components:** `main.py` (Composition Root), `CLI Adapter`.
+*   **Primary Adapters:** These are the concrete implementations of the outbound ports, bridging the hexagonal core to external systems like the local file system or the console.
+    *   **Components:** `ConsoleInteractorAdapter`, `LocalFileSystemAdapter`, `LocalRepoTreeGenerator`, `ShellAdapter`, `SystemEnvironmentInspector`, etc.
+
+---
+
+## 4. Component Design
 
 This section provides a canonical map of the major architectural components for each package.
 
@@ -119,7 +134,7 @@ This section provides a canonical map of the major architectural components for 
 
 ---
 
-## 4. Project Stages & Polar Stars
+## 5. Project Stages & Polar Stars
 
 This section tracks the high-level project stages. Each stage delivers a significant set of features guided by a "Polar Star" prototype.
 
@@ -129,7 +144,7 @@ This section tracks the high-level project stages. Each stage delivers a signifi
 |   📝    | **Stage 02: Interactive TUI** | Create a Terminal User Interface to streamline the workflow of interacting with the AI agents, managing context, and executing plans without leaving the terminal.   | `Planned`  |
 ---
 
-## 5. Architectural Notes & Technical Debt
+## 6. Architectural Notes & Technical Debt
 
 This section captures non-blocking architectural observations and potential areas for future refactoring.
 
