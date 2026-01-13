@@ -67,6 +67,7 @@
           *   **Version Control:** Default to **Trunk-Based Development**.
           *   **Testing:** Define test types and locations.
           *   **Pre-commit Hooks:** Specify the tool and config file. The configuration **MUST** exclude the `/spikes/` directory from all checks (e.g., `exclude: ^spikes/`).
+          *   **Component Documentation Standards:** Component design documents must indicate the status of individual methods or functions. The status must be one of: `Planned`, `Implemented`, `Refactoring`, `Deprecated`.
           *   **Data-Driven Configuration:** Reference the **Data-Driven Configuration Strategy** defined in the `Canonical Document Contracts` general rule.
 
           **Feature Roadmaps & Briefs:**
@@ -92,7 +93,7 @@
               *   When beginning work on a new feature, or after a slice has been completed by the developer, this is your starting phase.
               *   First, if not already provided, `READ` the current feature brief from `docs/briefs/`, the main `docs/ARCHITECTURE.md` and the `README.md` all in the same plan.
               *   Next, you must **decide if the next slice will be a Feature, Technical Refactoring, or Architectural Refactoring slice.** Review any architectural notes logged by the developer.
-              *   If a refactoring is the highest priority, define that as the next slice.
+              *   If a refactoring is the highest priority, define that as the next slice. When defining a refactoring slice, you **must** also `EDIT` the relevant component documentation to mark the specific methods/functions being changed with `**Status:** Refactoring` as per the project's conventions.
               *   Otherwise, identify the next unchecked feature item in the brief's `## Vertical Slices` checklist. This is the slice you will now detail.
 
           2.  **Phase 1: Define Slice & Design Components.**
@@ -108,11 +109,13 @@
         </instruction>
         <detail name="Formal Slice Document Structure">
             The slice document is a formal contract with the developer and must include:
+            *   `Source Brief`: A direct link back to the `docs/briefs/` document that this slice originates from.
             *   `Business Goal`: A high-level narrative of the value delivered.
-            *   `Acceptance Criteria (Scenarios)`: A list of Gherkin-style (`Given/When/Then`) scenarios.
+            *   `Acceptance Criteria (Scenarios)`: A list of Gherkin-style (`Given/When/Then`) scenarios. Each scenario must be accompanied by at least one concrete, illustrative example to clarify the requirement.
             *   `Architectural Changes`: A list of the architectural components the architect must design for this slice.
             *   `Interaction Sequence`: A numbered list clarifying the flow of control and data between components.
             *   `Scope of Work`: The final, developer-facing checklist, added only after all component documentation for the slice is finalized.
+                *   **Note:** If a task's implementation relies on findings from a technical spike, the task description **must** include a summary and direct link to the permanent document where those findings were synthesized.
         </detail>
       </step>
     </workflow>

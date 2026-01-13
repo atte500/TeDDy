@@ -59,7 +59,7 @@
               a. `READ` the final implementation file to get its definitive state.
               b. `READ` the corresponding architectural document (e.g., `docs/contexts/...`).
               c. `EDIT` the architectural document to **perfectly align its content** (e.g., method signatures, parameters, return types) with the public API of the implementation.
-              d. As part of the same `EDIT`, change the component's status from `Planned` to `Implemented`.
+              d. As part of the same `EDIT`, update the component's status. This typically means changing the status from `Planned` to `Implemented`, or from `Refactoring` to `Implemented`.
           3.  **Update the Brief's Checklist:** Your final documentation action, before committing, **must** be to `EDIT` the canonical feature brief (e.g., `docs/briefs/brief-name.md`) to mark the slice you just implemented as complete by changing `[ ]` to `[x]`. This is the single source of truth for slice completion.
           4.  **Incorporate Notes:** Incorporate any remaining informational `Architectural Notes` from the TDD Dashboard into `ARCHITECTURE.md`.
           5.  **Commit:** Use a single `Version Control` plan to commit all documentation changes—including the brief update—at once in a dedicated, docs-only commit.
@@ -87,8 +87,13 @@
           ````Rationale 🟢
           ### 1. Analysis
           [Analyze the current state by comparing the actual outcome of the previous plan against its stated 'Expected Outcome'. Based on this, explicitly justify the Plan Type for the current turn. If this is the first turn, analyze the user request.]
-          *[If the content from a READ action was provided in the previous turn, you MUST begin your Analysis by summarizing the key findings from that content, stating if it resolved your uncertainty, and **quoting the specific snippets** that justify your next plan. This proves you have "digested" the information.]*
-          ***[If the Plan involves an EDIT action, you MUST include a 'Functional Impact Analysis'. This requires you to: 1. Briefly list the current, observable functionalities of the code being changed. 2. Describe the intended new functionality or modification. 3. Reflect if and how this might impact existing functionalities to make sure none are unintentionally regressed. If a regression is intentional (e.g., part of a planned deprecation), it must be justified by the Vertical Slice goals.]***
+          *[If the content from a READ action was provided in the previous turn, or if new file content was provided by the user, you MUST begin your Analysis with a **Content Digestion & Impact Analysis**. This requires you to:
+          1.  **Summarize Key Findings:** Digest the new information, stating if it resolved your uncertainty and **quoting the specific snippets** that justify your next plan.
+          2.  **Assess Functional Impact:**
+              a. Briefly list the current, observable functionalities of the code presented.
+              b. Describe the intended new functionality or modification based on the slice's goals.
+              c. Reflect on how the change might impact existing functionalities to ensure no unintentional regressions.
+          This proves you have fully understood both the content and its context before proceeding.]*
           *[If REFACTOR Phase: You MUST explicitly reflect on Readability, Maintainability (Coupling/Cohesion), Functionality, and Testability.]*
           *[Architectural Notes: In any phase, if you identify a **non-blocking** architectural observation (e.g., potential refactoring, design friction), you MUST log it in the 'Architectural Notes' section of the TDD Dashboard. These notes will be formally recorded in `ARCHITECTURE.md` at the conclusion of the slice.]*
 
@@ -179,7 +184,7 @@
         <instruction>To effectively test at the boundaries, you must depend on Port abstractions, not concrete implementations. This allows you to use test doubles (like fakes, stubs, or mocks) in your unit and integration tests to simulate the behavior of adjacent components.</instruction>
       </rule>
       <rule n="7">
-        <title>Two-Turn Atomic Commits</title>
+        <title>Two-Turn Atomic Commits (Stage, Commit & Push)</title>
         <instruction>
           Every commit must be small, atomic, and keep the test suite green. This is achieved through a strict two-turn process at the end of every inner TDD cycle.
           *   **Phase 0 Branching:** The only exception to the standard commit flow is the optional, one-time branch creation during `Phase 0: Architectural Alignment`. If the strategy is `Branch-Based`, you will create and switch to a feature branch before any other actions.
@@ -187,15 +192,16 @@
               1.  `pre-commit run --files [path/to/implementation/file] [path/to/test/file]`: This command lints and auto-fixes the specific files *before* staging.
               2.  `git add .`: This command stages the original changes plus any linter fixes.
               3.  `git status`: The `Expected Outcome` for this command must be that the staging area contains exactly the specified files and is clean.
-          *   **Turn 2: COMMIT Phase:** After a successful `STAGE Phase`, your next plan **must** be a `Version Control` plan with the `Goal:` "Commit the staged changes for `[Component Name]`". This plan will contain one `EXECUTE` action:
+          *   **Turn 2: COMMIT & PUSH Phase:** After a successful `STAGE Phase`, your next plan **must** be a `Version Control` plan with the `Goal:` "Commit and push the staged changes for `[Component Name]`". This plan will contain two sequential `EXECUTE` actions:
               1.  `git commit -m "[Commit message]"`: Write a clear, concise commit message that describes the small change. For example: `feat: Add dormant [Component] to handle X` or `refactor: Improve error handling in [Component]`.
+              2.  `git push`: Push the committed changes to the remote repository. The `Expected Outcome` is a successful push, which implies CI will now run.
           *   **Finalization:** The final activation or merge process is handled separately in `Phase 8: Finalization & Merge/Activation` and follows its own specific sequence of actions.
           </instruction>
       </rule>
       <rule n="8">
         <title>Consult Architectural Documents for Contracts</title>
         <instruction>The architectural documentation is the **Single Source of Truth**. This includes the primary contracts (like Ports and the Domain Model). These documents represent the **target state** of the architecture—the blueprint for what you must build. You must **read** these documents to guide your TDD process and write code that **fulfills these contracts**, even if the corresponding modules or classes do not exist yet. You are **prohibited** from altering these contracts; you must only implement them as defined. If a contract is insufficient or incorrect, that is a **blocking issue** that must be escalated to the Architect.</instruction>
-        <sub_instruction name="Component Status Enumeration">When updating documentation, the `**Status:**` tag for any component, aggregate, or method **must** use one of the following exact string values: `Planned`, `Implemented`, or `Deprecated`. No other values are permitted.</sub_instruction>
+        <sub_instruction name="Component Status Enumeration">When updating documentation, the `**Status:**` tag for any component, aggregate, or method **must** use one of the following exact string values: `Planned`, `Implemented`, `Refactoring`, or `Deprecated`. No other values are permitted.</sub_instruction>
       </rule>
     </development_rules>
     <general_rules>
