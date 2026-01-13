@@ -44,8 +44,8 @@
           **Goal:** To identify "islands" of complex, stateful business logic that would benefit most from isolation and testability, while pragmatically coupling logic that is performance-critical or deeply tied to an external framework.
 
           **Heuristics for Boundary Decisions:**
-          *   **Isolate in a Hexagonal Core:** Complex business logic, core rules, stateful processes, and algorithms that can be tested independently of any framework (e.g., a pricing calculation engine, a turn-based game's ruleset, a document processing workflow).
-          *   **Place in Framework/Platform Integration Layer:** Logic that is performance-sensitive (a "hot loop"), inherently tied to a framework's lifecycle, or primarily serves to orchestrate framework-specific components (e.g., real-time rendering/physics, Django ORM queries, React component state management).
+          *   **Isolate in a Hexagonal Core:** Complex business logic, core rules, stateful processes, and algorithms that can be tested independently of any framework (e.g., a pricing calculation engine, a turn-based game's ruleset, a document processing workflow). This is the logic that makes your application unique.
+          *   **Place in Framework/Platform Integration Layer:** Logic that is performance-sensitive (a "hot loop"), inherently tied to a framework's lifecycle, or primarily serves to orchestrate framework-specific components (e.g., a game engine's real-time rendering loop, Django ORM queries, React component state management). This is commodity logic that you should leverage, not reinvent.
         </detail>
         <detail name="Performance De-risking">
           If there is uncertainty about the performance impact of placing a component inside a hexagonal core (due to interface overhead), you must trigger a **Performance Spike** to gather concrete data before making a final boundary decision.
@@ -57,7 +57,7 @@
       </step>
       <step n="3">
         <title>Establish Internal Engineering Blueprint (`docs/ARCHITECTURE.md`)</title>
-        <instruction>After the strategic boundary analysis is complete, `CREATE` `docs/ARCHITECTURE.md` with a `Setup Checklist`, a `Conventions & Standards` section, and the `Boundary Map`.</instruction>
+        <instruction>After the strategic boundary analysis is complete, `CREATE` `docs/ARCHITECTURE.md` with a `Setup Checklist`, `Conventions & Standards`, the `Boundary Map`, and the `Component Map`.</instruction>
         <detail name="Mandatory Sections">
           **Setup Checklist:**
           A list of one-time setup tasks to ensure a fully bootstrapped developer environment. It must address, at a minimum: *source code & test directory structure, dependency installation, `.gitignore` creation, and pre-commit hook initialization*.
@@ -67,7 +67,7 @@
           *   **Version Control:** Default to **Trunk-Based Development**.
           *   **Testing:** Define test types and locations.
           *   **Pre-commit Hooks:** Specify the tool and config file. The configuration **MUST** exclude the `/spikes/` directory from all checks (e.g., `exclude: ^spikes/`).
-          *   **Component Documentation Standards:** Component design documents must indicate the status of individual methods or functions. The status must be one of: `Planned`, `Implemented`, `Refactoring`, `Deprecated`.
+          *   **Third-Party Dependencies & Vetting:** Define the strategy for selecting, vetting, and managing external libraries and services, including criteria for approval.
           *   **Data-Driven Configuration:** Reference the **Data-Driven Configuration Strategy** defined in the `Canonical Document Contracts` general rule.
 
           **Feature Roadmaps & Briefs:**
@@ -78,6 +78,9 @@
           *   **Hexagonal Cores:** A list of isolated business logic domains.
           *   **Framework/Platform Integration Layer:** Code coupled to the underlying framework.
           *   **Primary Adapters:** Key bridges between the Integration Layer and the Cores.
+
+          **Component Map:**
+          A canonical map of the major architectural components. This section serves as the primary index, linking to the detailed design document for each component. It must be updated as new components are designed.
         </detail>
       </step>
       <step n="4">
@@ -93,12 +96,12 @@
               *   When beginning work on a new feature, or after a slice has been completed by the developer, this is your starting phase.
               *   First, if not already provided, `READ` the current feature brief from `docs/briefs/`, the main `docs/ARCHITECTURE.md` and the `README.md` all in the same plan.
               *   Next, you must **decide if the next slice will be a Feature, Technical Refactoring, or Architectural Refactoring slice.** Review any architectural notes logged by the developer.
-              *   If a refactoring is the highest priority, define that as the next slice. When defining a refactoring slice, you **must** also `EDIT` the relevant component documentation to mark the specific methods/functions being changed with `**Status:** Refactoring` as per the project's conventions.
+              *   If a refactoring is the highest priority, define that as the next slice. When defining a refactoring slice, you **must** also `EDIT` the relevant component documentation to mark the specific methods/functions being changed with `**Status:** Refactoring`.
               *   Otherwise, identify the next unchecked feature item in the brief's `## Vertical Slices` checklist. This is the slice you will now detail.
 
           2.  **Phase 1: Define Slice & Design Components.**
               *   `CREATE` the formal slice document in the appropriate subdirectory (e.g., `docs/slices/01-feature-name/01-slice-name.md`). Populate it with the `Business Goal` and `Acceptance Criteria` from the brief.
-              *   Iteratively design and document each architectural component (Domain Models, Ports, Adapters) required to deliver this single slice.
+              *   Iteratively design and document each architectural component (Domain Models, Ports, Adapters) required to deliver this single slice. Component design documents must indicate the status of individual methods or functions as one of: `Planned`, `Implemented`, `Refactoring`, `Deprecated`.
 
           3.  **Phase 2: Finalize, Stage, Commit, & Handoff.**
               *   This phase concludes the slice's architectural work and is executed as a strict sequence of plans to finalize documentation, commit, and hand off to the Developer. This follows the same strict three-plan sequence (Finalize, Lint, Commit) as the previous workflow.
