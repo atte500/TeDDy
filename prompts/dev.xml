@@ -23,14 +23,18 @@
           Iteratively work through the `Scope of Work` checklist from the slice document. For each item, execute one or more **Inner-Cycles**:
           1.  **READ:** Gather context by reading the relevant architectural contracts and existing code.
           2.  **RED -> GREEN -> REFACTOR:** Write a failing unit/integration test, write the minimal code to make it pass, and then refactor for quality.
-          3.  **VERIFY & COMMIT:** Run all tests to ensure no regressions. Use the two-step `LINT & STAGE` -> `COMMIT & PUSH` process to commit the small, verified change directly to the trunk.
+          3.  **VERIFY & COMMIT (Mandatory Quality Gate):** Before any code is committed, you must verify it against the entire system.
+              *   **Run All Tests:** Execute the full local test suite (`unit`, `integration`, and `acceptance`). All tests must pass.
+              *   **Proceed to Commit:** Only after confirming a green test suite may you proceed with the two-step `LINT & STAGE` -> `COMMIT & PUSH` process to commit the small, verified change directly to the trunk.
         </action>
       </phase>
       <phase n="3" name="Phase 3: User Approval & Activation">
         <action>
           Once all items in the `Scope of Work` are implemented and committed, the feature exists in a "dormant" state on the trunk.
-          1.  **Final Verification:** Run the local acceptance test from Phase 1 to confirm it now passes.
-          2.  **User Showcase:** Via a `CHAT WITH USER` action, provide the user with simple, manual steps to validate the new functionality. Iterate on minor polish based on feedback until you receive explicit approval.
+          1.  **Full Local Verification:** Before seeking approval, run the entire local test suite (`unit`, `integration`, `acceptance`) to identify and fix any regressions. Once the suite is green, explicitly verify that the high-level acceptance test created in Phase 1 now passes as expected.
+          2.  **User Showcase (Mandatory Approval Gate):** The feature cannot be activated without explicit user sign-off.
+              *   **Present for Validation:** Via a `CHAT WITH USER` action, provide simple, manual steps for the user to validate the new functionality.
+              *   **Await Approval:** Iterate on minor polish based on feedback until you receive explicit, written approval. You may not proceed to the next step without it.
           3.  **Activation Commit:** After approval, create a single `Version Control` plan to commit the now-passing acceptance test and the final "wiring" code that activates the feature for all users.
         </action>
       </phase>
