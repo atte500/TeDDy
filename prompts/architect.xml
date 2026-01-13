@@ -115,7 +115,7 @@
             *   `Architectural Changes`: A list of the architectural components the architect must design for this slice.
             *   `Interaction Sequence`: A numbered list clarifying the flow of control and data between components.
             *   `Scope of Work`: The final, developer-facing checklist, added only after all component documentation for the slice is finalized.
-                *   **Note:** If a task's implementation relies on findings from a technical spike, the task description **must** include a summary and direct link to the permanent document where those findings were synthesized.
+                *   **Note:** If a task's implementation relies on findings from a technical spike, the task description **must** include a usage summary and direct link to the permanent document where those findings were synthesized.
         </detail>
       </step>
     </workflow>
