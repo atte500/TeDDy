@@ -42,15 +42,18 @@ class ActionFactory:
         if not isinstance(action_type, str):
             raise ValueError("Action type missing or not a string in the plan.")
 
-        params = raw_action.get("params", {})
-
-        # Handle legacy execute action where params is just a string
-        if action_type == "execute" and isinstance(params, str):
-            params = {"command": params}
+        # All keys in the raw_action dict apart from 'action' are considered params.
+        params = {k: v for k, v in raw_action.items() if k != "action"}
 
         action_class = cls._action_map.get(action_type)
         if not action_class:
             raise ValueError(f"Unknown action type: '{action_type}'")
+
+        # Map external contract names (from YAML) to internal domain model parameter names.
+        # This is a key decoupling point between the public contract and the core domain.
+        if action_type in ["create_file", "edit"]:
+            if "path" in params:
+                params["file_path"] = params.pop("path")
 
         # Special handling for 'research' action to split queries string
         if action_type == "research" and isinstance(params.get("queries"), str):
@@ -58,5 +61,13 @@ class ActionFactory:
             params["queries"] = [
                 q.strip() for q in queries_str.splitlines() if q.strip()
             ]
+
+        # Handle legacy execute action where the value is just a command string
+        if action_type == "execute" and "command" not in params and len(params) == 1:
+            # This is brittle, assumes the single value is the command
+            # A better approach would be to formalize the plan structure
+            command_key = list(params.keys())[0]
+            if command_key != "action":
+                params["command"] = params.pop(command_key)
 
         return action_class(**params)

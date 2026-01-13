@@ -1,6 +1,8 @@
 import sys
 import typer
-from typing import cast
+from typing import cast, Optional
+from pathlib import Path
+import pyperclip
 
 from teddy_executor.core.ports.inbound.run_plan_use_case import RunPlanUseCase
 from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
@@ -48,16 +50,18 @@ def context(ctx: typer.Context):
     typer.echo(formatted_context)
 
 
-@app.callback(invoke_without_command=True)
-def main(
+@app.command()
+def execute(
     ctx: typer.Context,
-    plan_file: typer.FileText = typer.Option(
+    plan_file: Optional[Path] = typer.Argument(
         None,
-        "--plan-file",
-        "-f",
-        help="Path to the plan file. If not provided, reads from stdin.",
+        help="Path to the plan file. If not provided, reads from the clipboard.",
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
     ),
-    auto_approve: bool = typer.Option(
+    yes: bool = typer.Option(
         False,
         "--yes",
         "-y",
@@ -65,28 +69,42 @@ def main(
     ),
 ):
     """
-    Teddy Executor: A tool for running declarative plans.
-    Reads a plan from a file or stdin and executes it.
+    Executes a plan from a file or the clipboard.
     """
-    if ctx.invoked_subcommand is None:
-        if not hasattr(ctx, "obj") or not ctx.obj.get("plan_service"):
-            typer.echo("Error: Core logic (PlanService) not configured.", err=True)
+    if not hasattr(ctx, "obj") or not ctx.obj.get("plan_service"):
+        typer.echo("Error: Core logic (PlanService) not configured.", err=True)
+        raise typer.Exit(code=1)
+
+    plan_service = cast(RunPlanUseCase, ctx.obj["plan_service"])
+    plan_content = ""
+
+    if plan_file:
+        plan_content = plan_file.read_text()
+    else:
+        plan_content = pyperclip.paste()
+        if not plan_content or not plan_content.strip():
+            typer.echo(
+                "Error: No plan found in clipboard or clipboard is empty.", err=True
+            )
             raise typer.Exit(code=1)
 
-        plan_service = cast(RunPlanUseCase, ctx.obj["plan_service"])
+    # NOTE: The 'yes' flag is not yet passed to the plan_service.
+    # This will be implemented in a subsequent step when PlanService is updated.
+    report = plan_service.execute(plan_content)
 
-        if plan_file:
-            plan_content = plan_file.read()
-        else:
-            plan_content = sys.stdin.read()
+    formatted_report = format_report_as_yaml(report)
+    typer.echo(formatted_report)
 
-        report = plan_service.execute(plan_content)
+    if report.run_summary.get("status") == "FAILURE":
+        raise typer.Exit(code=1)
 
-        formatted_report = format_report_as_yaml(report)
-        typer.echo(formatted_report)
 
-        if report.run_summary.get("status") == "FAILURE":
-            raise typer.Exit(code=1)
+@app.callback()
+def main(ctx: typer.Context):
+    """
+    Teddy Executor: A CLI for running AI-generated development plans.
+    """
+    pass
 
 
 # ===================================================================
