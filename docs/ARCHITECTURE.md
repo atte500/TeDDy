@@ -61,6 +61,18 @@ The `spikes/` directory is intentionally excluded from `ruff` and `mypy` checks 
 ### Debug Mode
 - **Strategy:** A global `--debug` flag in the executor CLI sets the logging level to `DEBUG`, providing verbose output for diagnostics.
 
+### Running Scripts (including Spikes) from the Root
+When running a script from the project root using Poetry, it's crucial to understand that the `-C` flag changes the effective working directory before the command is executed. For example, `poetry -C packages/executor run ...` will execute the command as if you were inside the `packages/executor/` directory.
+
+Consequently, any paths to files outside this directory (like those in the root `/spikes` folder) must be relative *from that new working directory*.
+
+- **Correct Pattern:** Use `../..` to navigate up from the package directory to the project root.
+- **Example:** To run a spike from the root while inside the `teddy-executor` virtual environment:
+  ```bash
+  # Correctly navigates up two levels to the root, then down into spikes.
+  poetry -C packages/executor run python ../../spikes/technical/my_spike.py
+  ```
+
 ### Third-Party Dependency Vetting
 - **Strategy:** Mandate a "Verify, Then Document" Spike for new dependencies.
 - **Rationale:** Based on the RCA for a failure involving the `gitwalk` library ([see RCA](./rca/unreliable-third-party-library-gitwalk.md)), new third-party dependencies must be de-risked before integration.
