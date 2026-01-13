@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import MagicMock
 from typer.testing import CliRunner
 
@@ -25,12 +26,17 @@ def test_cli_invokes_use_case_with_stdin_content():
     # ACT
     # Run the CLI command, passing the mock service as the context object `obj`
     # and the plan content as stdin.
-    result = runner.invoke(
-        app,
-        obj={"plan_service": mock_use_case},
-        input=plan_input,
-        catch_exceptions=False,
-    )
+    # NOTE: The refactored CLI no longer uses stdin for plans, so this test
+    # is adapted to use a temp file, simulating the old stdin helper.
+    with runner.isolated_filesystem() as temp_dir:
+        p = Path(temp_dir) / "plan.yml"
+        p.write_text(plan_input)
+        result = runner.invoke(
+            app,
+            ["execute", str(p), "--yes"],
+            obj={"plan_service": mock_use_case},
+            catch_exceptions=False,
+        )
 
     # ASSERT
     # Ensure the CLI command itself succeeded
@@ -39,7 +45,7 @@ def test_cli_invokes_use_case_with_stdin_content():
     )
 
     # Verify that the core use case was called correctly with the content from stdin
-    mock_use_case.execute.assert_called_once_with(plan_input)
+    mock_use_case.execute.assert_called_once_with(plan_input, auto_approve=True)
 
 
 def test_cli_exits_with_error_code_on_failure():
@@ -54,12 +60,15 @@ def test_cli_exits_with_error_code_on_failure():
     plan_input = "any plan that will fail"
 
     # ACT
-    result = runner.invoke(
-        app,
-        obj={"plan_service": mock_use_case},
-        input=plan_input,
-        catch_exceptions=False,
-    )
+    with runner.isolated_filesystem() as temp_dir:
+        p = Path(temp_dir) / "plan.yml"
+        p.write_text(plan_input)
+        result = runner.invoke(
+            app,
+            ["execute", str(p), "--yes"],
+            obj={"plan_service": mock_use_case},
+            catch_exceptions=False,
+        )
 
     # ASSERT
     assert result.exit_code == 1, (
@@ -85,15 +94,18 @@ def test_cli_handles_create_file_action():
     """
 
     # ACT
-    result = runner.invoke(
-        app,
-        obj={"plan_service": mock_use_case},
-        input=plan_yaml,
-        catch_exceptions=False,
-    )
+    with runner.isolated_filesystem() as temp_dir:
+        p = Path(temp_dir) / "plan.yml"
+        p.write_text(plan_yaml)
+        result = runner.invoke(
+            app,
+            ["execute", str(p), "--yes"],
+            obj={"plan_service": mock_use_case},
+            catch_exceptions=False,
+        )
 
     # ASSERT
     assert result.exit_code == 0, (
         f"CLI exited with code {result.exit_code}\n{result.stdout}\n{result.stderr}"
     )
-    mock_use_case.execute.assert_called_once_with(plan_yaml)
+    mock_use_case.execute.assert_called_once_with(plan_yaml, auto_approve=True)

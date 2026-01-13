@@ -15,9 +15,9 @@ def run_teddy_with_plan_file(
     Helper function to run teddy with a given plan file path.
     Used for interactive tests where stdin is needed for user input.
     """
-    cmd = TEDDY_CMD_BASE + ["--plan-file", str(plan_file)]
+    cmd = TEDDY_CMD_BASE + ["execute", str(plan_file)]
     if auto_approve:
-        cmd.append("-y")
+        cmd.append("--yes")
 
     return subprocess.run(
         cmd,
@@ -31,11 +31,19 @@ def run_teddy_with_plan_file(
 def run_teddy_with_stdin(plan_content: str, cwd: Path) -> subprocess.CompletedProcess:
     """
     Helper function to run teddy by piping a plan string to stdin.
-    Used for non-interactive tests.
+    This is no longer the primary way to execute plans. The default
+    `execute` command now reads from a file or clipboard. This helper
+    is kept for legacy tests that might still rely on it, but it's
+    adapted to call the `execute` subcommand.
     """
+    # Create a temporary file to hold the stdin content
+    plan_file = cwd / "temp_plan_for_stdin_helper.yml"
+    plan_file.write_text(plan_content)
+
+    cmd = TEDDY_CMD_BASE + ["execute", str(plan_file), "--yes"]
+
     return subprocess.run(
-        TEDDY_CMD_BASE,
-        input=plan_content,
+        cmd,
         capture_output=True,
         text=True,
         cwd=cwd,

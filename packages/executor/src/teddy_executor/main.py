@@ -1,6 +1,9 @@
 import sys
+from pathlib import Path
+from typing import Optional, cast
+
+import pyperclip
 import typer
-from typing import cast
 
 from teddy_executor.core.ports.inbound.run_plan_use_case import RunPlanUseCase
 from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
@@ -48,16 +51,15 @@ def context(ctx: typer.Context):
     typer.echo(formatted_context)
 
 
-@app.callback(invoke_without_command=True)
-def main(
+@app.command()
+def execute(
     ctx: typer.Context,
-    plan_file: typer.FileText = typer.Option(
+    plan_file: Optional[Path] = typer.Argument(
         None,
-        "--plan-file",
-        "-f",
-        help="Path to the plan file. If not provided, reads from stdin.",
+        help="Path to the YAML plan file. If omitted, reads from the clipboard.",
+        show_default=False,
     ),
-    auto_approve: bool = typer.Option(
+    yes: bool = typer.Option(
         False,
         "--yes",
         "-y",
@@ -65,28 +67,60 @@ def main(
     ),
 ):
     """
+    Executes a plan from a file or the clipboard.
+    """
+    if not hasattr(ctx, "obj") or not ctx.obj.get("plan_service"):
+        typer.echo("Error: Core logic (PlanService) not configured.", err=True)
+        raise typer.Exit(code=1)
+
+    plan_service = cast(RunPlanUseCase, ctx.obj["plan_service"])
+
+    try:
+        if plan_file:
+            if not plan_file.exists():
+                typer.echo(f"Error: Plan file not found at '{plan_file}'", err=True)
+                raise typer.Exit(code=1)
+            plan_content = plan_file.read_text()
+        else:
+            plan_content = pyperclip.paste()
+            if not plan_content.strip():
+                typer.echo(
+                    "Error: Clipboard is empty or contains only whitespace.", err=True
+                )
+                raise typer.Exit(code=1)
+
+    except Exception as e:
+        typer.echo(f"Error accessing clipboard: {e}", err=True)
+        typer.echo(
+            "Please ensure 'xclip' (Linux) or 'pbcopy'/'pbpaste' (macOS) is installed.",
+            err=True,
+        )
+        raise typer.Exit(code=1)
+
+    # Here we temporarily revert the default during the final activation.
+    # The default in PlanService is True, but for interactive CLI it should be False.
+    # This will be cleaned up in the final commit.
+    auto_approve_flag = yes
+
+    report = plan_service.execute(plan_content, auto_approve=auto_approve_flag)
+
+    formatted_report = format_report_as_yaml(report)
+    typer.echo(formatted_report)
+
+    if report.run_summary.get("status") == "FAILURE":
+        raise typer.Exit(code=1)
+
+
+@app.callback(invoke_without_command=True)
+def main(ctx: typer.Context):
+    """
     Teddy Executor: A tool for running declarative plans.
-    Reads a plan from a file or stdin and executes it.
     """
     if ctx.invoked_subcommand is None:
-        if not hasattr(ctx, "obj") or not ctx.obj.get("plan_service"):
-            typer.echo("Error: Core logic (PlanService) not configured.", err=True)
-            raise typer.Exit(code=1)
-
-        plan_service = cast(RunPlanUseCase, ctx.obj["plan_service"])
-
-        if plan_file:
-            plan_content = plan_file.read()
-        else:
-            plan_content = sys.stdin.read()
-
-        report = plan_service.execute(plan_content)
-
-        formatted_report = format_report_as_yaml(report)
-        typer.echo(formatted_report)
-
-        if report.run_summary.get("status") == "FAILURE":
-            raise typer.Exit(code=1)
+        typer.echo(
+            "Welcome to Teddy Executor. Please choose a command (e.g., execute, context)."
+        )
+        typer.echo("Run with --help for more information.")
 
 
 # ===================================================================

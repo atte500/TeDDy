@@ -35,7 +35,7 @@ def test_chat_with_user_action_successful(plan_file: Path):
     user_input = "Blue\n\n"
 
     # Act
-    process = run_teddy_with_plan_file(plan_file, input=user_input)
+    process = run_teddy_with_plan_file(plan_file, input=user_input, auto_approve=True)
 
     # Assert
     assert process.returncode == 0
