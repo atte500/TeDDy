@@ -58,9 +58,6 @@ The `spikes/` directory is intentionally excluded from `ruff` and `mypy` checks 
 ### Handling of Secrets
 - **Strategy:** Not applicable for this tool. If third-party API keys are needed in the future, they will be managed through environment variables.
 
-### Debug Mode
-- **Strategy:** A global `--debug` flag in the executor CLI sets the logging level to `DEBUG`, providing verbose output for diagnostics.
-
 ### Running Scripts (including Spikes) from the Root
 When running a script from the project root using Poetry, it's crucial to understand that the `-C` flag changes the effective working directory before the command is executed. For example, `poetry -C packages/executor run ...` will execute the command as if you were inside the `packages/executor/` directory.
 
