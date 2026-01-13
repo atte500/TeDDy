@@ -106,6 +106,8 @@ def execute(
 
     formatted_report = format_report_as_yaml(report)
     typer.echo(formatted_report)
+    pyperclip.copy(formatted_report)
+    typer.echo("\nExecution report copied to clipboard.")
 
     if report.run_summary.get("status") == "FAILURE":
         raise typer.Exit(code=1)

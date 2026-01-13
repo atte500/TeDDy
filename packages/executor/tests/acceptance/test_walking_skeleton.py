@@ -1,6 +1,5 @@
 from pathlib import Path
-import yaml
-from .helpers import run_teddy_with_plan_structure
+from .helpers import run_teddy_with_plan_structure, parse_yaml_report
 
 
 def test_successful_execution():
@@ -20,7 +19,7 @@ def test_successful_execution():
 
     # THEN
     assert result.returncode == 0
-    report = yaml.safe_load(result.stdout)
+    report = parse_yaml_report(result.stdout)
 
     assert report["run_summary"]["status"] == "SUCCESS"
     action_log = report["action_logs"][0]
@@ -47,7 +46,7 @@ def test_failed_execution():
 
     # THEN
     assert result.returncode != 0
-    report = yaml.safe_load(result.stdout)
+    report = parse_yaml_report(result.stdout)
 
     assert report["run_summary"]["status"] == "FAILURE"
     action_log = report["action_logs"][0]

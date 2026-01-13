@@ -1,8 +1,7 @@
 from pathlib import Path
-import yaml
 from pytest_httpserver import HTTPServer
 
-from .helpers import run_teddy_with_plan_structure
+from .helpers import run_teddy_with_plan_structure, parse_yaml_report
 
 
 def test_read_local_file_successfully(tmp_path: Path):
@@ -23,7 +22,7 @@ def test_read_local_file_successfully(tmp_path: Path):
 
     # Assert
     assert result.returncode == 0
-    report = yaml.safe_load(result.stdout)
+    report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "SUCCESS"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "SUCCESS"
@@ -46,7 +45,7 @@ def test_read_non_existent_local_file_fails(tmp_path: Path):
 
     # Assert
     assert result.returncode != 0
-    report = yaml.safe_load(result.stdout)
+    report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "FAILURE"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "FAILURE"
@@ -73,7 +72,7 @@ def test_read_remote_url_successfully(httpserver: HTTPServer):
 
     # Assert
     assert result.returncode == 0
-    report = yaml.safe_load(result.stdout)
+    report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "SUCCESS"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "SUCCESS"
@@ -98,7 +97,7 @@ def test_read_inaccessible_remote_url_fails(httpserver: HTTPServer):
 
     # Assert
     assert result.returncode != 0
-    report = yaml.safe_load(result.stdout)
+    report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "FAILURE"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "FAILURE"

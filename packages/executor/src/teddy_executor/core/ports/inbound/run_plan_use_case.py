@@ -8,7 +8,7 @@ class RunPlanUseCase(ABC):
     """
 
     @abstractmethod
-    def execute(self, plan_content: str, auto_approve: bool = True) -> ExecutionReport:
+    def execute(self, plan_content: str, auto_approve: bool = False) -> ExecutionReport:
         """
         Takes raw plan content, executes it, and returns a report.
         """

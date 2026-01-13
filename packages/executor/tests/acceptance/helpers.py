@@ -74,9 +74,23 @@ def run_teddy_with_plan_structure(
     return run_teddy_with_stdin(plan_content, cwd=cwd)
 
 
+def extract_yaml_from_stdout(output: str) -> str:
+    """
+    Extracts the YAML report from the full stdout, stripping any trailing
+    human-readable messages.
+    """
+    separator = "\nExecution report copied to clipboard."
+    if separator in output:
+        return output.split(separator)[0].strip()
+    return output.strip()
+
+
 def parse_yaml_report(stdout: str) -> dict:
-    """Parses the YAML report from teddy_executor's stdout."""
-    return yaml.safe_load(stdout)
+    """
+    Parses the YAML report from teddy_executor's stdout after extracting it.
+    """
+    yaml_content = extract_yaml_from_stdout(stdout)
+    return yaml.safe_load(yaml_content)
 
 
 def run_teddy_command(

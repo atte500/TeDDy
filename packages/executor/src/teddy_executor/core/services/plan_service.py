@@ -2,7 +2,6 @@ from typing import List, Dict, Any
 import json
 from dataclasses import asdict
 import yaml
-import time
 from datetime import datetime, timezone
 from requests.exceptions import RequestException
 
@@ -56,6 +55,14 @@ class PlanService(RunPlanUseCase):
             ChatWithUserAction: self._handle_chat_with_user,
             ResearchAction: self._handle_research,
         }
+
+    def _format_action_for_prompt(self, action: Action, index: int, total: int) -> str:
+        """Formats an action into a user-friendly string for confirmation."""
+        header = f"Action {index}/{total}: {action.action_type}"
+        params = asdict(action)
+        params.pop("action_type", None)
+        param_lines = [f"  {k}: {v}" for k, v in params.items()]
+        return "\n".join([header] + param_lines)
 
     def _parse_plan_content(self, plan_content: str) -> List[Dict[str, Any]]:
         """Parses the raw YAML string into a list of action dictionaries."""
@@ -175,9 +182,8 @@ class PlanService(RunPlanUseCase):
             error=f"Unhandled action type: {type(action).__name__}",
         )
 
-    def execute(self, plan_content: str, auto_approve: bool = True) -> ExecutionReport:
+    def execute(self, plan_content: str, auto_approve: bool = False) -> ExecutionReport:
         report = ExecutionReport()
-        start_time = time.monotonic()
         start_time_utc = datetime.now(timezone.utc).isoformat()
 
         try:
@@ -191,9 +197,12 @@ class PlanService(RunPlanUseCase):
             plan = Plan(actions=actions)
 
             # 3. Execute Actions
-            for action in plan.actions:
+            total_actions = len(plan.actions)
+            for i, action in enumerate(plan.actions):
                 if not auto_approve:
-                    prompt = f"Confirm Action: {action.action_type} - {action}"
+                    prompt = self._format_action_for_prompt(
+                        action, index=i + 1, total=total_actions
+                    )
                     approved, reason = self.user_interactor.confirm_action(prompt)
                     if not approved:
                         result = ActionResult(
@@ -223,11 +232,7 @@ class PlanService(RunPlanUseCase):
         if any(log.status == "FAILURE" for log in report.action_logs):
             overall_status = "FAILURE"
 
-        end_time = time.monotonic()
-        duration = end_time - start_time
-
         report.run_summary["status"] = overall_status
         report.run_summary["start_time"] = start_time_utc
-        report.run_summary["duration_seconds"] = round(duration, 4)
 
         return report

@@ -1,6 +1,5 @@
 from pathlib import Path
-import yaml
-from .helpers import run_teddy_with_plan_structure
+from .helpers import run_teddy_with_plan_structure, parse_yaml_report
 
 
 def test_edit_action_fails_on_multiple_occurrences(tmp_path: Path):
@@ -28,7 +27,7 @@ def test_edit_action_fails_on_multiple_occurrences(tmp_path: Path):
     assert result.returncode != 0
 
     # The report should indicate failure and the specific reason.
-    report = yaml.safe_load(result.stdout)
+    report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "FAILURE"
 
     action_log = report["action_logs"][0]

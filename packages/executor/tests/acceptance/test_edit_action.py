@@ -1,7 +1,6 @@
 import textwrap
 from pathlib import Path
-import yaml
-from .helpers import run_teddy_with_plan_structure
+from .helpers import run_teddy_with_plan_structure, parse_yaml_report
 
 
 def test_editing_a_file_happy_path(tmp_path: Path):
@@ -50,7 +49,7 @@ def test_editing_a_file_happy_path(tmp_path: Path):
     assert file_to_edit.read_text() == expected_content
 
     assert result.returncode == 0
-    report = yaml.safe_load(result.stdout)
+    report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "SUCCESS"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "COMPLETED"
@@ -82,7 +81,7 @@ def test_editing_with_empty_find_replaces_entire_file(tmp_path: Path):
     # Assert
     assert file_to_edit.read_text() == new_content
     assert result.returncode == 0
-    report = yaml.safe_load(result.stdout)
+    report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "SUCCESS"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "COMPLETED"
@@ -155,7 +154,7 @@ def test_multiline_edit_preserves_indentation(tmp_path: Path):
     )
     assert file_to_edit.read_text() == expected_content
     assert result.returncode == 0
-    report = yaml.safe_load(result.stdout)
+    report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "SUCCESS"
     assert report["action_logs"][0]["status"] == "COMPLETED"
 
@@ -186,12 +185,12 @@ def test_editing_non_existent_file_fails_gracefully(tmp_path: Path):
 
     # Assert
     assert result.returncode != 0
-    report = yaml.safe_load(result.stdout)
+    report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "FAILURE"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "FAILURE"
     assert "No such file or directory" in action_log["error"]
-    assert action_log["output"] is None
+    assert "output" not in action_log
 
 
 def test_editing_file_where_find_text_is_not_found_fails(tmp_path: Path):
@@ -224,7 +223,7 @@ def test_editing_file_where_find_text_is_not_found_fails(tmp_path: Path):
     # Assert
     assert file_to_edit.read_text() == initial_content
     assert result.returncode != 0
-    report = yaml.safe_load(result.stdout)
+    report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "FAILURE"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "FAILURE"

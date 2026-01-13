@@ -45,8 +45,11 @@ def format_report_as_yaml(report: ExecutionReport) -> str:
             "status": result.status,
             "output": output if output is not None else None,
             "error": result.error if result.error is not None else None,
+            "reason": result.reason if result.reason is not None else None,
         }
-        action_logs_list.append(log_dict)
+        # Filter out null values for a cleaner report
+        final_log_dict = {k: v for k, v in log_dict.items() if v is not None}
+        action_logs_list.append(final_log_dict)
 
     report_dict = {
         "run_summary": report.run_summary,

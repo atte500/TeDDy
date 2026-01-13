@@ -2,7 +2,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from .helpers import run_teddy_with_plan_file
+from .helpers import run_teddy_with_plan_file, parse_yaml_report
 
 # A plan containing a chat_with_user action.
 PLAN_WITH_CHAT_ACTION = [
@@ -39,7 +39,7 @@ def test_chat_with_user_action_successful(plan_file: Path):
 
     # Assert
     assert process.returncode == 0
-    report = yaml.safe_load(process.stdout)
+    report = parse_yaml_report(process.stdout)
 
     # The overall run should be successful
     assert report["run_summary"]["status"] == "SUCCESS"

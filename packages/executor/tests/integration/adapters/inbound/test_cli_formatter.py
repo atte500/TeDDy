@@ -85,7 +85,7 @@ def test_format_report_with_failed_action():
     log = data["action_logs"][0]
     assert log["status"] == "FAILURE"
     assert log["error"] == error_message
-    assert log["output"] is None
+    assert "output" not in log
 
 
 def test_format_report_uses_literal_block_for_multiline_output():

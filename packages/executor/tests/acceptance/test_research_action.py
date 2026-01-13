@@ -27,6 +27,8 @@ def test_research_action_success():
     mock_file_system_manager = MagicMock()
     mock_web_scraper = MagicMock()
     mock_user_interactor = MagicMock()
+    # Add default approval to prevent interactive mode from breaking the test
+    mock_user_interactor.confirm_action.return_value = (True, "")
     mock_web_searcher = MagicMock()
 
     # 2. Configure the mock_web_searcher to return a predictable domain object
