@@ -35,8 +35,13 @@ def mock_web_scraper():
 
 @pytest.fixture
 def mock_user_interactor():
-    """Provides a MagicMock for the UserInteractor port."""
-    return MagicMock(spec=UserInteractor)
+    """
+    Provides a MagicMock for the UserInteractor port, with a default
+    approval for confirm_action to support existing tests.
+    """
+    mock = MagicMock(spec=UserInteractor)
+    mock.confirm_action.return_value = (True, "")
+    return mock
 
 
 @pytest.fixture

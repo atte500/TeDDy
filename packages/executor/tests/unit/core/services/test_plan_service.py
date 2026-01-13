@@ -335,6 +335,39 @@ def test_handle_edit_action_raises_multiple_matches_found_error(
     assert result.output == original_content
 
 
+def test_execute_skips_action_when_denied(
+    plan_service: PlanService,
+    mock_action_factory: MagicMock,
+    mock_user_interactor: MagicMock,
+    mock_file_system_manager: MagicMock,
+):
+    """
+    Verify that if auto_approve is False and the user denies the action,
+    the action is skipped and the reason is recorded.
+    """
+    # Arrange
+    plan_content = """
+    - action: create_file
+      params:
+        file_path: /test.txt
+        content: "hello"
+    """
+    mock_action = CreateFileAction(file_path="/test.txt", content="hello")
+    mock_action_factory.create_action.return_value = mock_action
+    mock_user_interactor.confirm_action.return_value = (False, "User denied")
+
+    # Act
+    report = plan_service.execute(plan_content, auto_approve=False)
+
+    # Assert
+    mock_user_interactor.confirm_action.assert_called_once()
+    mock_file_system_manager.create_file.assert_not_called()
+    assert len(report.action_logs) == 1
+    result = report.action_logs[0]
+    assert result.status == "SKIPPED"
+    assert result.reason == "User denied"
+
+
 def test_plan_service_handles_chat_with_user_action():
     """
     Tests that PlanService calls the UserInteractor port for a chat action.
@@ -346,6 +379,7 @@ def test_plan_service_handles_chat_with_user_action():
     mock_action_factory = MagicMock()
     mock_web_scraper = MagicMock()
     mock_user_interactor = MagicMock()
+    mock_user_interactor.confirm_action.return_value = (True, "")
     mock_web_searcher = MagicMock()  # Add the new mock
 
     plan_service = PlanService(
@@ -391,6 +425,7 @@ def test_plan_service_handles_research_action_success():
     mock_action_factory = MagicMock()
     mock_web_scraper = MagicMock()
     mock_user_interactor = MagicMock()
+    mock_user_interactor.confirm_action.return_value = (True, "")
     mock_web_searcher = MagicMock()
 
     plan_service = PlanService(

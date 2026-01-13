@@ -175,7 +175,7 @@ class PlanService(RunPlanUseCase):
             error=f"Unhandled action type: {type(action).__name__}",
         )
 
-    def execute(self, plan_content: str) -> ExecutionReport:
+    def execute(self, plan_content: str, auto_approve: bool = True) -> ExecutionReport:
         report = ExecutionReport()
         start_time = time.monotonic()
         start_time_utc = datetime.now(timezone.utc).isoformat()
@@ -192,6 +192,16 @@ class PlanService(RunPlanUseCase):
 
             # 3. Execute Actions
             for action in plan.actions:
+                if not auto_approve:
+                    prompt = f"Confirm Action: {action.action_type} - {action}"
+                    approved, reason = self.user_interactor.confirm_action(prompt)
+                    if not approved:
+                        result = ActionResult(
+                            action=action, status="SKIPPED", reason=reason
+                        )
+                        report.action_logs.append(result)
+                        continue
+
                 result = self._execute_single_action(action)
                 report.action_logs.append(result)
 

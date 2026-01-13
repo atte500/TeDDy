@@ -120,9 +120,10 @@ class ActionResult:
     status: str
     output: Optional[str] = None
     error: Optional[str] = None
+    reason: Optional[str] = None
 
     def __post_init__(self):
-        valid_statuses = {"SUCCESS", "FAILURE", "COMPLETED"}
+        valid_statuses = {"SUCCESS", "FAILURE", "COMPLETED", "SKIPPED"}
         if self.status not in valid_statuses:
             raise ValueError(f"Status must be one of {valid_statuses}")
 
