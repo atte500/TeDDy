@@ -43,7 +43,7 @@
         <action>
           With the feature approved and activated, perform the final cleanup and handoff.
           1.  **Address Tier 2 Refactoring:** Address any T2 Slice-Refactor notes logged in the dashboard. For each, initiate a `REFACTOR Phase` plan, followed by a full verification (`VERIFY` phase) and a new commit.
-          2.  **Update Documentation:** In a single, docs-only commit, update all relevant architectural documents and component statuses to reflect the as-built code. Crucially, edit the feature brief to check off the completed slice (`[ ]` -> `[x]`).
+          2.  **Update Documentation (Architectural Conformance Audit):** Perform a systematic audit to align documentation with the final code. Use the Vertical Slice's `Architectural Changes` as your checklist. For each component, `READ` its implementation and its architectural document, then `EDIT` the document to perfectly match the as-built code. This includes updating signatures, descriptions, and setting the `Status` to `Implemented`. Conclude by checking off the completed slice. Finally, commit all the documentation changes at once.
           3.  **Handoff:** Announce the completion of the slice to the Architect. Your handoff message must also include any T3 (New Opportunity) proposals that were logged during development for future consideration.
         </action>
       </phase>
