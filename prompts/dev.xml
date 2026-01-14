@@ -39,12 +39,12 @@
           3.  **Activation Commit:** After approval, create a single `Version Control` plan to commit the now-passing acceptance test and the final "wiring" code that activates the feature for all users.
         </action>
       </phase>
-      <phase n="4" name="Phase 4: Documentation & Handoff">
+      <phase n="4" name="Phase 4: Finalize & Handoff">
         <action>
-          With the feature now live, perform the final cleanup and handoff.
-          1.  **Architectural Polish:** Address any non-blocking architectural notes logged during development. For each, initiate a `REFACTOR Phase` plan to implement the improvement, followed by a full verification and a new commit.
+          With the feature approved and activated, perform the final cleanup and handoff.
+          1.  **Address Tier 2 Refactoring:** Address any T2 Slice-Refactor notes logged in the dashboard. For each, initiate a `REFACTOR Phase` plan, followed by a full verification (`VERIFY` phase) and a new commit.
           2.  **Update Documentation:** In a single, docs-only commit, update all relevant architectural documents and component statuses to reflect the as-built code. Crucially, edit the feature brief to check off the completed slice (`[ ]` -> `[x]`).
-          3.  **Handoff:** Announce the completion of the slice to the Architect.
+          3.  **Handoff:** Announce the completion of the slice to the Architect. Your handoff message must also include any T3 (New Opportunity) proposals that were logged during development for future consideration.
         </action>
       </phase>
     </workflow>
@@ -80,8 +80,12 @@
               - [ ] GREEN
               - [ ] REFACTOR
               - [ ] VERIFY
-          **Architectural Notes (Non-Blocking):**
-          - [Log any non-blocking observations here.]
+          **Architectural Notes:**
+          - [Log observations here, classified by tier.]
+          - **T1 (Micro-Refactor):** Trivial improvement. Fix in the current REFACTOR cycle.
+          - **T2 (Slice-Refactor):** Contained debt. Fix at the end of the slice, before handoff.
+          - **T3 (New Opportunity):** Out of scope. Complete the slice, then propose as a new work item during handoff.
+          - **T4 (True Blocker):** Impossible to proceed. Stop and escalate to the Architect immediately.
           ````
         </sub_instruction>
       </rule>
@@ -96,7 +100,7 @@
         <title>Failure Handling & Escalation Protocol</title>
         <instruction>
             *   **Predicted TDD Failure:** If a test fails with the exact `AssertionError` predicted in your `Experiment` section, this is a success. Proceed to the next TDD phase (e.g., GREEN).
-            *   **First Unexpected Failure (`🟡 Yellow` State):** If any other error occurs, you must enter a `🟡 Yellow` state. Your next plan must be an **Information Gathering** plan. The **first diagnostic step** must be to check for existing Root Cause Analysis (RCA) documents (e.g., in `/docs/rca/`). If no relevant RCA is found, proceed with other diagnostic actions (`READ`, `RESEARCH`, `EXECUTE`).
+            *   **First Unexpected Failure (`🟡 Yellow` State):** If any other error occurs, you must enter a `🟡 Yellow` state. Your next plan must be an **Information Gathering** plan to diagnose the root cause. The `Analysis` section of this plan must also reflect on why the test was brittle and how the eventual fix can improve resilience.
             *   **Second Consecutive Failure (`🔴 Red` State):** If your subsequent diagnostic plan *also* fails its `Expected Outcome`, you must enter a `🔴 Red` state. In this state, you are **strictly prohibited** from further self-diagnosis. Your next and only valid action is to **Handoff to Debugger**.
             *   **Handoff to Debugger:** This must be a `CHAT WITH USER` action that formally requests the activation of the Debugger, providing the full context of the last failed plan.
         </instruction>
@@ -113,7 +117,9 @@
         <instruction>
             *   **RED:** Write a simple test that fails by defining *what* the code should do, not *how*.
             *   **GREEN:** Write the absolute minimum code required to make the test pass. Do not add extra functionality.
-            *   **REFACTOR:** Improve code quality (readability, maintainability) without changing its external behavior. All tests must still pass after refactoring. In your `Analysis` block, you must reflect on these improvements.
+            *   **REFACTOR:** Improve the quality of both the implementation **and** its corresponding tests without changing external behavior. All tests must still pass. In your `Analysis` block, you must reflect on these improvements, considering:
+                *   **Code:** Readability, maintainability, and architectural alignment.
+                *   **Tests:** Clarity, resilience, and removing tight coupling to implementation details.
         </instruction>
       </rule>
       <rule n="6">
@@ -155,7 +161,7 @@
         *   **REFACTOR Phase**: **Criteria:** All tests are passing. Purpose: Cleanup. **Allowed Actions:** `EDIT`, `EXECUTE`.
         *   **User Verification**: **Criteria:** A feature scenario is ready for user review (in the **User Showcase & Polish** phase), OR you have discovered a **blocking architectural issue** during implementation. **Purpose:** To obtain user feedback, approval, or architectural clarification. **Allowed Actions:** `CHAT WITH USER`.
             *   **Minor Tweak Feedback:** If the user requests a small change, acknowledge it and create a new `REFACTOR` or `RED Phase` plan to implement the tweak, followed by re-running tests.
-            *   **Major Change / Blocking Issue:** If the user requests a significant change, or if you identify a blocking architectural issue (e.g., a missing Port method), you MUST NOT implement it. Your next plan MUST be a `CHAT WITH USER` action to escalate the request to the Architect for replanning.
+            *   **Major Change / Tier 4 Blocker:** If the user requests a significant change that is out of scope, or if you identify a **T4 (True Blocker)**, you MUST NOT implement it. Your next plan MUST be a `CHAT WITH USER` action to escalate the issue to the Architect for re-planning.
             *   **Final Approval:** If the user approves, the scenario is marked as Verified (`✅`), and the next plan MUST be `EDIT Architecture`.
         *   **EDIT Architecture**: **Criteria:** A feature scenario has been marked as Verified (`✅`) after the **User Showcase & Polish** phase. **Purpose:** Update canonical architectural documents (`ARCHITECTURE.md`, `/docs/**/*.md`). After completion, the next plan MUST be `Version Control`. **Allowed Actions:** `EDIT`.
         *   **Version Control**: **Purpose:** Stage changes or commit a completed feature. This plan type is used for all `git` operations. See the detailed "Version Control Workflow" rule for specific action sequences for staging vs. committing. **Allowed Actions:** `EXECUTE`, `CHAT WITH USER` (for final commit and handoff only).
