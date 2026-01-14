@@ -166,11 +166,12 @@ Represents the outcome of a single action's execution.
 
 *   **Attributes:**
     *   `action` (Action): A copy of the concrete action object (e.g., `ExecuteAction`) that was executed.
-    *   `status` (str): The outcome, one of `SUCCESS`, `FAILURE`, or `COMPLETED`.
+    *   `status` (str): The outcome, one of `SUCCESS`, `FAILURE`, `COMPLETED`, or `SKIPPED`.
     *   `output` (str | None): The captured stdout from the command.
     *   `error` (str | None): The captured stderr from the command.
+    *   `reason` (str | None): An optional reason, typically for a `SKIPPED` status.
 *   **Invariants:**
-    *   `status` must be one of `SUCCESS`, `FAILURE`, or `COMPLETED`.
+    *   `status` must be one of `SUCCESS`, `FAILURE`, `COMPLETED`, or `SKIPPED`.
 
 ### `ExecutionReport` (Entity)
 **Status:** Implemented

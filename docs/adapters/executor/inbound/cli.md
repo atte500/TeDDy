@@ -55,7 +55,14 @@ This command provides a comprehensive snapshot of the project for an AI agent.
 ### Output Handling
 
 #### Plan Execution Report
-The `cli_formatter.py` module contains a `format_report_as_yaml` function responsible for converting the `ExecutionReport` domain model into a YAML string. This keeps presentation logic separate from the core application. The formatted report is printed to `stdout`. The application exits with a non-zero status code if any action in the plan fails.
+The `cli_formatter.py` module contains a `format_report_as_yaml` function responsible for converting the `ExecutionReport` domain model into a YAML string. This keeps presentation logic separate from the core application.
+
+Upon completion of a plan, the CLI adapter performs two actions:
+1.  **Prints the formatted YAML report to `stdout`**.
+2.  **Copies the same YAML report to the system clipboard**, printing a confirmation message.
+3.  In headless environments (like CI runners) where a clipboard is not available, the copy action is gracefully skipped and a note is printed to `stderr`.
+
+The application exits with a non-zero status code if any action in the plan fails.
 
 #### Project Context Snapshot
 **(Updated in: [Slice 17: Refactor `context` Command Output](../../slices/executor/17-refactor-context-command-output.md))**

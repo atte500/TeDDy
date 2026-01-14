@@ -1,6 +1,6 @@
 # Application Core: Plan Service
 
-**Status:** Refactoring
+**Status:** Implemented
 **Language:** Python 3.9+
 **Vertical Slice:** [Slice 01: Walking Skeleton](../../slices/executor/01-walking-skeleton.md)
 **Modified in:** [Structured `execute` Action](../../slices/executor/18-structured-execute-action.md)
@@ -88,7 +88,8 @@ class PlanService(RunPlanUseCase):
 3.  **Execute Actions:**
     *   Iterate through each successfully created `Action` object.
     *   **Approval Check:**
-        *   If `auto_approve` is `False`, call `self.user_interactor.confirm_action()` with a descriptive prompt for the current action.
+        *   If `auto_approve` is `False`, a user-friendly, formatted prompt is generated for the current action (e.g., `Action 1/3: create_file...`).
+        *   It then calls `self.user_interactor.confirm_action()` with this prompt.
         *   If the user denies the action (returns `False`), create a `SKIPPED` `ActionResult`, capture the optional reason, append it to the report, and continue to the next action.
     *   **Dispatch:**
         *   If the action is approved (or if `auto_approve` is `True`), invoke `_execute_single_action(action)`, which looks up and executes the correct handler method.

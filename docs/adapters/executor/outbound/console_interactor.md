@@ -8,7 +8,7 @@ The `ConsoleInteractorAdapter` is a concrete implementation of the `IUserInterac
 
 ## 2. Implemented Ports
 
-*   **Implements:** [`UserInteractor`](../../core/ports/outbound/user_interactor.md)
+*   **Implements:** [`IUserInteractor`](../../contexts/executor/ports/outbound/user_interactor.md)
 
 ## 3. Implementation Notes
 
@@ -36,9 +36,9 @@ The `confirm_action` method logic is as follows:
 ```python
 # Conceptual Implementation
 import sys
-from teddy.core.ports.outbound.user_interactor import UserInteractor
+from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 
-class ConsoleInteractorAdapter(UserInteractor):
+class ConsoleInteractorAdapter(IUserInteractor):
     def ask_question(self, prompt: str) -> str:
         print(prompt, file=sys.stderr, flush=True)
         lines = []

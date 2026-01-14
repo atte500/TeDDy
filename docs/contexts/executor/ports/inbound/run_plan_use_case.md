@@ -20,7 +20,7 @@ class RunPlanUseCase(ABC):
     """
 
     @abstractmethod
-    def execute(self, plan_content: str) -> ExecutionReport:
+    def execute(self, plan_content: str, auto_approve: bool = False) -> ExecutionReport:
         """
         Takes raw plan content, executes it, and returns a report.
         """
@@ -29,7 +29,7 @@ class RunPlanUseCase(ABC):
 
 ## 3. Method Contracts
 
-### `execute(plan_content: str) -> ExecutionReport`
+### `execute(plan_content: str, auto_approve: bool = False) -> ExecutionReport`
 **Status:** Implemented
 
 *   **Vertical Slice:** [Slice 01: Walking Skeleton](../../slices/01-walking-skeleton.md)
