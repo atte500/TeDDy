@@ -56,6 +56,7 @@
       </phase>
     </workflow>
     <general_rules>
+      <rule n="0">**Rationale Fencing**: Your entire `Rationale` block must be encapsulated within four backticks.</rule>
       <rule n="1">
         **Structured Thinking**: Every plan MUST begin with a `Rationale` codeblock with a status emoji (`🟢`, `🟡`, `🔴`) that reflects the outcome of the previous turn.
         *   `🟢` **Green (Happy Path):** Use this when the previous turn's `Expected Outcome` was met successfully or the user gave approval.

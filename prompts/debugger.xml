@@ -64,6 +64,7 @@
       </phase>
     </workflow>
     <general_rules>
+      <rule n="0">**Rationale Fencing**: Your entire `Rationale` block must be encapsulated within four backticks.</rule>
       <rule n="1">
         <title>Rationale Block & Investigative State Machine</title>
         <instruction>Every response you generate MUST begin with a `Rationale` codeblock, prefixed with a status emoji that reflects the depth of the diagnostic process. **You MUST NOT surrender or conclude that a problem is unresolvable.**</instruction>

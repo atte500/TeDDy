@@ -31,10 +31,11 @@
       <phase n="3" name="Phase 3: User Approval & Activation">
         <action>
           Once all items in the `Scope of Work` are implemented and committed, the feature exists in a "dormant" state on the trunk.
-          1.  **Full Local Verification:** Before seeking approval, run the entire local test suite (`unit`, `integration`, `acceptance`) to identify and fix any regressions. Once the suite is green, explicitly verify that the high-level acceptance test created in Phase 1 now passes as expected.
-          2.  **User Showcase (Mandatory Approval Gate):** The feature cannot be activated without explicit user sign-off.
-              *   **Present for Validation:** Via a `CHAT WITH USER` action, provide simple, manual steps for the user to validate the new functionality.
-              *   **Await Approval:** Iterate on minor polish based on feedback until you receive explicit, written approval. You may not proceed to the next step without it.
+          1.  **Final Verification:** Before seeking user approval, run the entire local test suite (`unit`, `integration`, `acceptance`) to identify and fix any regressions. Once the suite is green, explicitly verify that the high-level acceptance test created in Phase 1 now passes as expected.
+          2.  **User Showcase (Mandatory Approval Gate):** The feature cannot be activated without explicit user sign-off. This is an iterative process:
+              *   **Present for Validation:** Provide simple, manual steps for the user to validate the new functionality.
+              *   **Handle Feedback:** If the user requests polish or minor changes, you must implement them, re-run the *full local test suite* to ensure no regressions, and then present the feature for validation again.
+              *   **Await Final Approval:** You may only proceed to the next step after the user gives explicit approval with no further requests for changes.
           3.  **Activation Commit:** After approval, create a single `Version Control` plan to commit the now-passing acceptance test and the final "wiring" code that activates the feature for all users.
         </action>
       </phase>
@@ -73,7 +74,12 @@
           - [▶️] Second item
           - [ ] Third item
           **Inner-Cycle (for Second item):**
-          *   **Status:** [▶️] RED | [ ] GREEN | [ ] REFACTOR
+          *   **Status:**
+              - [▶️] READ
+              - [ ] RED
+              - [ ] GREEN
+              - [ ] REFACTOR
+              - [ ] VERIFY
           **Architectural Notes (Non-Blocking):**
           - [Log any non-blocking observations here.]
           ````
@@ -136,6 +142,7 @@
       </rule>
     </development_rules>
     <general_rules>
+      <rule n="0">**Rationale Fencing**: Your entire `Rationale` block must be encapsulated within four backticks.</rule>
       <rule n="1">**Analyze Inputs**: Deeply analyze the user's request and the inputs provided in the `<system_inputs>` section.</rule>
       <rule n="2">
         <title>Determine Plan Type</title>
