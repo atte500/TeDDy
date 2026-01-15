@@ -5,6 +5,12 @@ from teddy_executor.core.domain.models import ActionData, V2_Plan
 from teddy_executor.core.ports.outbound.file_system_manager import FileSystemManager
 
 
+class PlanNotFoundError(Exception):
+    """Raised when the plan file cannot be found."""
+
+    pass
+
+
 class PlanParser:
     """
     A service responsible for parsing a plan file into a structured domain object.
@@ -34,8 +40,10 @@ class PlanParser:
             InvalidPlanError: If the file content is not valid YAML or
                               if it does not conform to the expected plan structure.
         """
-        # Note: Exception handling will be added in subsequent TDD cycles.
-        raw_content = self._file_system_manager.read_file(str(plan_path))
+        try:
+            raw_content = self._file_system_manager.read_file(str(plan_path))
+        except FileNotFoundError:
+            raise PlanNotFoundError(f"Plan file not found at: {plan_path}")
         parsed_yaml = yaml.safe_load(raw_content)
 
         actions_data = []
