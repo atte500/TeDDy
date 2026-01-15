@@ -13,6 +13,13 @@ class FakeSuccessfulAction:
         return {"summary": "Fake action executed successfully."}
 
 
+class FakeFailingAction:
+    """A test double for a generic action that always fails."""
+
+    def execute(self, **kwargs):
+        raise RuntimeError("Fake action failed as intended.")
+
+
 class FakeActionFactory:
     """A test double for the ActionFactory."""
 
@@ -52,3 +59,30 @@ def test_dispatch_and_execute_success():
     assert result_log.params == action_params
     expected_details = {"summary": "Fake action executed successfully."}
     assert result_log.details == json.dumps(expected_details)
+
+
+def test_dispatch_and_execute_failure():
+    """
+    Given a valid action that fails by raising an exception,
+    When dispatch_and_execute is called,
+    Then it should return a failure ActionLog containing the exception details.
+    """
+    # Arrange
+    action_type = "fake_failing_action"
+    action_params = {"param1": "value1"}
+    action_data = ActionData(type=action_type, params=action_params)
+
+    fake_action = FakeFailingAction()
+    fake_factory = FakeActionFactory(actions_to_return={action_type: fake_action})
+
+    dispatcher = ActionDispatcher(action_factory=fake_factory)
+
+    # Act
+    result_log = dispatcher.dispatch_and_execute(action_data)
+
+    # Assert
+    assert isinstance(result_log, V2_ActionLog)
+    assert result_log.status == "FAILURE"
+    assert result_log.action_type == action_type
+    assert result_log.params == action_params
+    assert "Fake action failed as intended" in result_log.details

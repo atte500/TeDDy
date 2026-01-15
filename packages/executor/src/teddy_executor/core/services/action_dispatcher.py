@@ -35,12 +35,18 @@ class ActionDispatcher:
         Takes an ActionData object, finds the corresponding action handler
         via the factory, executes it, and returns the result as an ActionLog.
         """
-        action_handler = self._action_factory.create_action(action_data.type)
-        execution_result = action_handler.execute(**action_data.params)
+        log_data: dict = {
+            "action_type": action_data.type,
+            "params": action_data.params,
+        }
 
-        return V2_ActionLog(
-            status="SUCCESS",
-            action_type=action_data.type,
-            params=action_data.params,
-            details=json.dumps(execution_result),
-        )
+        try:
+            action_handler = self._action_factory.create_action(action_data.type)
+            execution_result = action_handler.execute(**action_data.params)
+            log_data["status"] = "SUCCESS"
+            log_data["details"] = json.dumps(execution_result)
+        except Exception as e:
+            log_data["status"] = "FAILURE"
+            log_data["details"] = str(e)
+
+        return V2_ActionLog(**log_data)
