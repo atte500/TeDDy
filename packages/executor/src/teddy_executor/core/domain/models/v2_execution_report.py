@@ -15,7 +15,7 @@ class V2_ActionLog:
 
 # Placeholder for a more complete domain model to be defined elsewhere.
 @dataclass(frozen=True)
-class TeddyProject:
+class V2_TeddyProject:
     """Represents the project context for an execution."""
 
     name: str = "unknown"
@@ -28,7 +28,7 @@ class V2_RunSummary:
     status: Literal["SUCCESS", "FAILURE", "SKIPPED"]
     start_time: datetime
     end_time: datetime
-    project: TeddyProject
+    project: V2_TeddyProject
     error: str | None = None
 
 

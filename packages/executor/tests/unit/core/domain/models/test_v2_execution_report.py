@@ -2,10 +2,11 @@ from dataclasses import is_dataclass
 from datetime import datetime
 from unittest.mock import Mock
 
-from teddy_executor.core.domain.models.execution_report import (
+from teddy_executor.core.domain.models.v2_execution_report import (
     V2_ActionLog,
     V2_ExecutionReport,
     V2_RunSummary,
+    V2_TeddyProject,
 )
 
 
@@ -76,8 +77,7 @@ def test_run_summary_creation():
     """
     Tests the creation of a RunSummary instance.
     """
-    # Using Mock for TeddyProject as it's not defined yet
-    mock_project = Mock()
+    project = V2_TeddyProject(name="test-project")
     start_time = datetime.now()
     end_time = datetime.now()
 
@@ -85,12 +85,12 @@ def test_run_summary_creation():
         status="SUCCESS",
         start_time=start_time,
         end_time=end_time,
-        project=mock_project,
+        project=project,
         error=None,
     )
 
     assert summary.status == "SUCCESS"
     assert summary.start_time is start_time
     assert summary.end_time is end_time
-    assert summary.project is mock_project
+    assert summary.project is project
     assert summary.error is None

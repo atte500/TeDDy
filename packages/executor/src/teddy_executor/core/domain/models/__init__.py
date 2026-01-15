@@ -1,5 +1,3 @@
-# Re-export all models from the legacy file to maintain the import contract
-# for the rest of the application during the refactoring.
 from ._legacy_models import (
     Action,
     ActionResult,
@@ -21,6 +19,13 @@ from ._legacy_models import (
     SearchTextNotFoundError,
     SERPReport,
     WebSearchError,
+)
+from .plan import ActionData, V2_Plan
+from .v2_execution_report import (
+    V2_ActionLog,
+    V2_ExecutionReport,
+    V2_RunSummary,
+    V2_TeddyProject,
 )
 
 __all__ = [
@@ -44,4 +49,11 @@ __all__ = [
     "SearchTextNotFoundError",
     "SERPReport",
     "WebSearchError",
+    # New V2 Models
+    "V2_Plan",
+    "ActionData",
+    "V2_ExecutionReport",
+    "V2_ActionLog",
+    "V2_RunSummary",
+    "V2_TeddyProject",
 ]
