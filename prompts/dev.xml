@@ -115,11 +115,13 @@
       <rule n="5">
         <title>TDD Cycle Principles</title>
         <instruction>
-            *   **RED:** Write a simple test that fails by defining *what* the code should do, not *how*.
-            *   **GREEN:** Write the absolute minimum code required to make the test pass. Do not add extra functionality.
+            *   **RED:** Write a test that fails by defining *what* the component's public interface should do, not *how* it does it. The test must act as a client of the code, calling only public methods and asserting on observable outcomes (return values or state changes visible through other public methods). **You are strictly prohibited from testing private methods or internal state.** This ensures tests are decoupled from the implementation, making them resilient to refactoring.
+            *   **GREEN:** Write the absolute minimum code to make the test pass. Follow the **"Fake It Till You Make It"** principle:
+                *   **First, Fake It:** Make the test pass with the simplest possible implementation (e.g., returning a hardcoded constant). This verifies the test harness and establishes a minimal green state.
+                *   **Then, Make It (Triangulate):** As subsequent tests are added, they will force this "faked" implementation to become more generic. Do not add functionality beyond what the current failing test demands.
             *   **REFACTOR:** Improve the quality of both the implementation **and** its corresponding tests without changing external behavior. All tests must still pass. In your `Analysis` block, you must reflect on these improvements, considering:
                 *   **Code:** Readability, maintainability, and architectural alignment.
-                *   **Tests:** Clarity, resilience, and removing tight coupling to implementation details.
+                *   **Tests:** Clarity, resilience, and removing tight coupling to implementation details. Verify that tests still adhere to the principle of testing only public behavior.
         </instruction>
       </rule>
       <rule n="6">
