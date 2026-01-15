@@ -1,51 +1,73 @@
-import sys
 from pathlib import Path
-from typing import Optional, cast
+from typing import Optional
 
 import pyperclip
+import punq
 import typer
 
-from teddy_executor.core.ports.inbound.run_plan_use_case import RunPlanUseCase
+from teddy_executor.core.domain.models import ExecutionReport, RunStatus
 from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
-from teddy_executor.core.services.plan_service import PlanService
-from teddy_executor.core.services.context_service import ContextService
-from teddy_executor.core.services.action_factory import ActionFactory
-from teddy_executor.adapters.inbound.cli_formatter import (
-    format_report_as_yaml,
-    format_project_context,
+from teddy_executor.core.ports.inbound.run_plan_use_case import RunPlanUseCase
+from teddy_executor.core.ports.outbound import (
+    IEnvironmentInspector,
+    IFileSystemManager,
+    IRepoTreeGenerator,
+    IShellExecutor,
+    IUserInteractor,
+    IWebScraper,
+    IWebSearcher,
 )
-from teddy_executor.adapters.outbound.shell_adapter import ShellAdapter
+from teddy_executor.core.services.action_dispatcher import (
+    ActionDispatcher,
+    IActionFactory,
+)
+from teddy_executor.core.services.action_factory import ActionFactory
+from teddy_executor.core.services.context_service import ContextService
+from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
+from teddy_executor.core.services.plan_parser import PlanParser
+from teddy_executor.adapters.inbound.cli_formatter import (
+    format_project_context,
+    format_report_as_yaml,
+)
+from teddy_executor.adapters.outbound.console_interactor import ConsoleInteractorAdapter
 from teddy_executor.adapters.outbound.local_file_system_adapter import (
     LocalFileSystemAdapter,
 )
-from teddy_executor.adapters.outbound.web_scraper_adapter import WebScraperAdapter
-from teddy_executor.adapters.outbound.console_interactor import ConsoleInteractorAdapter
-from teddy_executor.adapters.outbound.web_searcher_adapter import WebSearcherAdapter
 from teddy_executor.adapters.outbound.local_repo_tree_generator import (
     LocalRepoTreeGenerator,
 )
+from teddy_executor.adapters.outbound.shell_adapter import ShellAdapter
 from teddy_executor.adapters.outbound.system_environment_inspector import (
     SystemEnvironmentInspector,
 )
+from teddy_executor.adapters.outbound.web_scraper_adapter import WebScraperAdapter
+from teddy_executor.adapters.outbound.web_searcher_adapter import WebSearcherAdapter
 
 
-# ===================================================================
-#     CLI Definition (Adapter)
-# ===================================================================
+def create_container() -> punq.Container:
+    container = punq.Container()
+    container.register(IShellExecutor, ShellAdapter)
+    container.register(IFileSystemManager, LocalFileSystemAdapter)
+    container.register(IWebScraper, WebScraperAdapter)
+    container.register(IUserInteractor, ConsoleInteractorAdapter)
+    container.register(IWebSearcher, WebSearcherAdapter)
+    container.register(IRepoTreeGenerator, LocalRepoTreeGenerator)
+    container.register(IEnvironmentInspector, SystemEnvironmentInspector)
+    container.register(IActionFactory, ActionFactory)
+    container.register(PlanParser)
+    container.register(ActionDispatcher)
+    container.register(RunPlanUseCase, ExecutionOrchestrator)
+    container.register(IGetContextUseCase, ContextService)
+    return container
+
 
 app = typer.Typer()
+container = create_container()
 
 
 @app.command()
-def context(ctx: typer.Context):
-    """
-    Gathers and displays the project context.
-    """
-    if not hasattr(ctx, "obj") or not ctx.obj.get("context_service"):
-        typer.echo("Error: Core logic (ContextService) not configured.", err=True)
-        raise typer.Exit(code=1)
-
-    context_service = cast(IGetContextUseCase, ctx.obj["context_service"])
+def context():
+    context_service: IGetContextUseCase = container.resolve(IGetContextUseCase)
     context_result = context_service.get_context()
     formatted_context = format_project_context(context_result)
     typer.echo(formatted_context)
@@ -53,7 +75,6 @@ def context(ctx: typer.Context):
 
 @app.command()
 def execute(
-    ctx: typer.Context,
     plan_file: Optional[Path] = typer.Argument(
         None,
         help="Path to the YAML plan file. If omitted, reads from the clipboard.",
@@ -66,118 +87,48 @@ def execute(
         help="Automatically approve all actions without prompting.",
     ),
 ):
-    """
-    Executes a plan from a file or the clipboard.
-    """
-    if not hasattr(ctx, "obj") or not ctx.obj.get("plan_service"):
-        typer.echo("Error: Core logic (PlanService) not configured.", err=True)
-        raise typer.Exit(code=1)
-
-    plan_service = cast(RunPlanUseCase, ctx.obj["plan_service"])
+    orchestrator: RunPlanUseCase = container.resolve(RunPlanUseCase)
+    report: Optional[ExecutionReport] = None
+    interactive_mode = not yes
 
     try:
+        plan_content: str
         if plan_file:
-            if not plan_file.exists():
+            if not plan_file.is_file():
+                # Use typer.echo for error and typer.Exit for termination
                 typer.echo(f"Error: Plan file not found at '{plan_file}'", err=True)
                 raise typer.Exit(code=1)
             plan_content = plan_file.read_text()
         else:
             plan_content = pyperclip.paste()
             if not plan_content.strip():
-                typer.echo(
-                    "Error: Clipboard is empty or contains only whitespace.", err=True
-                )
+                typer.echo("Error: Clipboard is empty.", err=True)
                 raise typer.Exit(code=1)
 
-    except Exception as e:
+        report = orchestrator.execute(
+            plan_content=plan_content, interactive=interactive_mode
+        )
+
+    except pyperclip.PyperclipException as e:
         typer.echo(f"Error accessing clipboard: {e}", err=True)
-        typer.echo(
-            "Please ensure 'xclip' (Linux) or 'pbcopy'/'pbpaste' (macOS) is installed.",
-            err=True,
-        )
         raise typer.Exit(code=1)
 
-    # Here we temporarily revert the default during the final activation.
-    # The default in PlanService is True, but for interactive CLI it should be False.
-    # This will be cleaned up in the final commit.
-    auto_approve_flag = yes
+    if report:
+        formatted_report = format_report_as_yaml(report)
+        typer.echo(formatted_report)
+        try:
+            pyperclip.copy(formatted_report)
+            typer.echo("\nExecution report copied to clipboard.", err=True)
+        except pyperclip.PyperclipException:
+            pass  # Fail silently if clipboard is not available
 
-    report = plan_service.execute(plan_content, auto_approve=auto_approve_flag)
-
-    formatted_report = format_report_as_yaml(report)
-    typer.echo(formatted_report)
-    try:
-        pyperclip.copy(formatted_report)
-        typer.echo("\nExecution report copied to clipboard.")
-    except pyperclip.PyperclipException:
-        # Gracefully fail in environments without a clipboard (e.g., CI)
-        typer.echo(
-            "\n(Note: Could not copy report to clipboard. "
-            "Pyperclip backend not found.)",
-            err=True,
-        )
-
-    if report.run_summary.get("status") == "FAILURE":
-        raise typer.Exit(code=1)
-
-
-@app.callback(invoke_without_command=True)
-def main(ctx: typer.Context):
-    """
-    Teddy Executor: A tool for running declarative plans.
-    """
-    if ctx.invoked_subcommand is None:
-        typer.echo(
-            "Welcome to Teddy Executor. Please choose a command (e.g., execute, context)."
-        )
-        typer.echo("Run with --help for more information.")
-
-
-# ===================================================================
-#     Composition Root (Main Entry Point)
-# ===================================================================
+        if report.run_summary.status == RunStatus.FAILURE:
+            raise typer.Exit(code=1)
 
 
 def run():
-    """
-    This is the main entry point for the application script.
-    It is responsible for composing the application layers and running the CLI.
-    """
-    # 1. Instantiate Adapters and Factories
-    shell_adapter = ShellAdapter()
-    file_system_adapter = LocalFileSystemAdapter()
-    web_scraper_adapter = WebScraperAdapter()
-    console_interactor_adapter = ConsoleInteractorAdapter()
-    web_searcher_adapter = WebSearcherAdapter()
-    repo_tree_generator = LocalRepoTreeGenerator()
-    env_inspector = SystemEnvironmentInspector()
-    action_factory = ActionFactory()
-
-    # 2. Instantiate Core Logic with its dependencies
-    plan_service = PlanService(
-        shell_executor=shell_adapter,
-        file_system_manager=file_system_adapter,
-        web_scraper=web_scraper_adapter,
-        action_factory=action_factory,
-        user_interactor=console_interactor_adapter,
-        web_searcher=web_searcher_adapter,
-    )
-    context_service = ContextService(
-        file_system_manager=file_system_adapter,
-        repo_tree_generator=repo_tree_generator,
-        environment_inspector=env_inspector,
-    )
-
-    services = {
-        "plan_service": plan_service,
-        "context_service": context_service,
-    }
-
-    # 3. Run the CLI with the composed core logic
-    app(obj=services)
+    app()
 
 
 if __name__ == "__main__":
-    typer.echo("Error: This script cannot be run directly.", err=True)
-    typer.echo("Please use the 'teddy' command installed by poetry.", err=True)
-    sys.exit(1)
+    run()

@@ -1,7 +1,7 @@
-import json
+from dataclasses import is_dataclass, asdict
 from typing import Protocol
 
-from teddy_executor.core.domain.models import ActionData, V2_ActionLog
+from teddy_executor.core.domain.models import ActionData, ActionLog, CommandResult
 
 
 # --- Protocols for Dependencies ---
@@ -30,7 +30,7 @@ class ActionDispatcher:
     def __init__(self, action_factory: IActionFactory):
         self._action_factory = action_factory
 
-    def dispatch_and_execute(self, action_data: ActionData) -> V2_ActionLog:
+    def dispatch_and_execute(self, action_data: ActionData) -> ActionLog:
         """
         Takes an ActionData object, finds the corresponding action handler
         via the factory, executes it, and returns the result as an ActionLog.
@@ -41,12 +41,66 @@ class ActionDispatcher:
         }
 
         try:
+            execution_params = action_data.params
+            if not isinstance(execution_params, dict):
+                # Handle legacy case where a single string param is provided for 'execute'
+                if action_data.type == "execute":
+                    execution_params = {"command": execution_params}
+                else:
+                    # For other actions, a non-dict param is an error, as the
+                    # intended keyword is ambiguous.
+                    raise TypeError(
+                        f"Action type '{action_data.type}' requires dictionary parameters, "
+                        f"but received type '{type(execution_params).__name__}'."
+                    )
+
+            # --- Parameter Translation for Backwards Compatibility ---
+            param_map = {
+                "create_file": {"file_path": "path"},
+                "edit": {"file_path": "path"},
+                "read": {"source": "path"},
+            }
+
+            mapping = param_map.get(action_data.type.lower(), {})
+            translated_params = execution_params.copy()
+            for old_key, new_key in mapping.items():
+                if old_key in translated_params:
+                    translated_params[new_key] = translated_params.pop(old_key)
+            # --- End of Translation ---
+
             action_handler = self._action_factory.create_action(action_data.type)
-            execution_result = action_handler.execute(**action_data.params)
-            log_data["status"] = "SUCCESS"
-            log_data["details"] = json.dumps(execution_result)
+            execution_result = action_handler.execute(**translated_params)
+
+            # Convert dataclass to dict for serialization
+            if is_dataclass(execution_result):
+                result_to_serialize = asdict(execution_result)
+            else:
+                result_to_serialize = execution_result
+
+            # --- Normalize successful results for consistent reporting ---
+            if action_data.type == "read" and isinstance(result_to_serialize, str):
+                result_to_serialize = {"content": result_to_serialize}
+            elif action_data.type == "chat_with_user" and isinstance(
+                result_to_serialize, str
+            ):
+                result_to_serialize = {"response": result_to_serialize}
+            elif action_data.type == "chat_with_user" and isinstance(
+                result_to_serialize, str
+            ):
+                result_to_serialize = {"response": result_to_serialize}
+
+            # Determine status based on result type
+            if isinstance(execution_result, CommandResult):
+                if execution_result.return_code == 0:
+                    log_data["status"] = "SUCCESS"
+                else:
+                    log_data["status"] = "FAILURE"
+            else:
+                log_data["status"] = "SUCCESS"
+
+            log_data["details"] = result_to_serialize
         except Exception as e:
             log_data["status"] = "FAILURE"
             log_data["details"] = str(e)
 
-        return V2_ActionLog(**log_data)
+        return ActionLog(**log_data)

@@ -11,7 +11,11 @@ class ActionData:
 
 
 @dataclass(frozen=True)
-class V2_Plan:
+class Plan:
     """Represents a parsed and validated execution plan."""
 
     actions: Sequence[ActionData]
+
+    def __post_init__(self):
+        if not self.actions:
+            raise ValueError("Plan must contain at least one action.")

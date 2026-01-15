@@ -1,138 +1,61 @@
 import pytest
+import punq
 
-from teddy_executor.core.domain.models import ExecuteAction, CreateFileAction
-from teddy_executor.core.domain import models
+from teddy_executor.core.ports.outbound import IShellExecutor, IFileSystemManager
 from teddy_executor.core.services.action_factory import ActionFactory
 
+# --- Test Doubles ---
 
-class TestActionFactory:
-    def test_create_execute_action(self):
-        """
-        Tests that the factory can create a valid ExecuteAction.
-        """
-        # Arrange
-        raw_action = {
-            "action": "execute",
-            "params": {"command": "ls -l"},
-        }
 
-        # Act
-        action = ActionFactory.create_action(raw_action)
+class MockShellExecutor:
+    def execute(self, **kwargs):
+        pass
 
-        # Assert
-        assert isinstance(action, ExecuteAction)
-        assert action.command == "ls -l"
 
-    def test_create_create_file_action(self):
-        """
-        Tests that the factory can create a valid CreateFileAction.
-        """
-        # Arrange
-        raw_action = {
-            "action": "create_file",
-            "params": {"file_path": "/tmp/a", "content": "hello"},
-        }
+class MockFileSystemManager:
+    def create_file(self, **kwargs):
+        pass
 
-        # Act
-        action = ActionFactory.create_action(raw_action)
 
-        # Assert
-        assert isinstance(action, CreateFileAction)
-        assert action.file_path == "/tmp/a"
-        assert action.content == "hello"
+# --- Test Cases ---
 
-    def test_create_action_with_unknown_type_raises_error(self):
-        """
-        Tests that an unknown action type raises a ValueError.
-        """
-        # Arrange
-        raw_action = {"action": "unknown_action"}
 
-        # Act & Assert
-        with pytest.raises(ValueError, match="Unknown action type: 'unknown_action'"):
-            ActionFactory.create_action(raw_action)
+@pytest.fixture
+def container() -> punq.Container:
+    """A pytest fixture to provide a pre-configured mock DI container."""
+    mock_container = punq.Container()
+    mock_container.register(IShellExecutor, MockShellExecutor)
+    mock_container.register(IFileSystemManager, MockFileSystemManager)
+    return mock_container
 
-    def test_create_action_with_missing_params_raises_error(self):
-        """
-        Tests that missing required params raises a TypeError.
-        """
-        # Arrange
-        raw_action = {"action": "execute", "params": {}}
 
-        # Act & Assert
-        with pytest.raises(TypeError):
-            ActionFactory.create_action(raw_action)
+def test_create_action_successfully_resolves_handler(container: punq.Container):
+    """
+    Given a known action type ('execute'),
+    When create_action is called,
+    Then it should resolve and return the correct handler from the container.
+    """
+    # Arrange
+    factory = ActionFactory(container=container)
+    action_type = "execute"
 
-    def test_create_read_action(self):
-        """
-        Tests that the factory can create a valid ReadAction.
-        """
-        # Arrange
-        raw_action = {
-            "action": "read",
-            "params": {"source": "path/to/file.txt"},
-        }
+    # Act
+    action_handler = factory.create_action(action_type)
 
-        # Act
-        action = ActionFactory.create_action(raw_action)
+    # Assert
+    assert isinstance(action_handler, MockShellExecutor)
 
-        # Assert
-        assert isinstance(action, models.ReadAction)
-        assert action.source == "path/to/file.txt"
 
-    def test_create_edit_action(self):
-        """
-        Tests that the factory can create a valid EditAction.
-        """
-        # Arrange
-        raw_action = {
-            "action": "edit",
-            "params": {
-                "file_path": "/tmp/a",
-                "find": "old",
-                "replace": "new",
-            },
-        }
+def test_create_action_raises_error_for_unknown_type(container: punq.Container):
+    """
+    Given an unknown action type,
+    When create_action is called,
+    Then it should raise a ValueError.
+    """
+    # Arrange
+    factory = ActionFactory(container=container)
+    action_type = "non_existent_action"
 
-        # Act
-        action = ActionFactory.create_action(raw_action)
-
-        # Assert
-        assert isinstance(action, models.EditAction)
-        assert action.file_path == "/tmp/a"
-        assert action.find == "old"
-        assert action.replace == "new"
-
-    def test_create_chat_with_user_action(self):
-        """
-        Tests that the factory can create a valid ChatWithUserAction.
-        """
-        # Arrange
-        raw_action = {
-            "action": "chat_with_user",
-            "params": {"prompt": "What is the meaning of life?"},
-        }
-
-        # Act
-        action = ActionFactory.create_action(raw_action)
-
-        # Assert
-        assert isinstance(action, models.ChatWithUserAction)
-        assert action.prompt == "What is the meaning of life?"
-
-    def test_create_research_action(self):
-        """
-        Tests that the factory can create a valid ResearchAction.
-        """
-        # Arrange
-        raw_action = {
-            "action": "research",
-            "params": {"queries": ["python typer", "pytest best practices"]},
-        }
-
-        # Act
-        action = ActionFactory.create_action(raw_action)
-
-        # Assert
-        assert isinstance(action, models.ResearchAction)
-        assert action.queries == ["python typer", "pytest best practices"]
+    # Act & Assert
+    with pytest.raises(ValueError, match="Unknown action type: 'non_existent_action'"):
+        factory.create_action(action_type)

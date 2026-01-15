@@ -1,51 +1,48 @@
 from pathlib import Path
-import pytest
+from unittest.mock import patch
 import yaml
+from typer.testing import CliRunner
 
-from .helpers import run_teddy_with_plan_file, parse_yaml_report
-
-# A plan containing a chat_with_user action.
-PLAN_WITH_CHAT_ACTION = [
-    {
-        "action": "chat_with_user",
-        "params": {
-            "prompt": "What is your favorite color?",
-        },
-    }
-]
+from teddy_executor.main import app, create_container
 
 
-@pytest.fixture
-def plan_file(tmp_path: Path) -> Path:
-    """Creates a temporary plan file for the test."""
-    p_file = tmp_path / "plan.yml"
-    p_file.write_text(yaml.dump(PLAN_WITH_CHAT_ACTION))
-    return p_file
-
-
-def test_chat_with_user_action_successful(plan_file: Path):
+def test_chat_with_user_action_successful(tmp_path: Path):
     """
     Given a plan containing a 'chat_with_user' action,
-    When the plan is executed,
-    And the user provides input,
+    When the plan is executed and the user provides input,
     Then the action should succeed and capture the response.
     """
     # Arrange
-    # The user input is "Blue" followed by two newlines to terminate input.
-    user_input = "Blue\n\n"
+    runner = CliRunner(mix_stderr=False)
+    user_response = "Blue"
+    # User input is the response, followed by an empty line to terminate.
+    cli_input = f"{user_response}\n\n"
+
+    plan_structure = [
+        {
+            "action": "chat_with_user",
+            "params": {"prompt": "What is your favorite color?"},
+        }
+    ]
+    plan_content = yaml.dump(plan_structure)
+    plan_file = tmp_path / "plan.yml"
+    plan_file.write_text(plan_content)
+
+    real_container = create_container()
 
     # Act
-    process = run_teddy_with_plan_file(plan_file, input=user_input, auto_approve=True)
+    with patch("teddy_executor.main.container", real_container):
+        result = runner.invoke(
+            app, ["execute", str(plan_file), "--yes"], input=cli_input
+        )
 
     # Assert
-    assert process.returncode == 0
-    report = parse_yaml_report(process.stdout)
+    assert result.exit_code == 0
 
-    # The overall run should be successful
+    report = yaml.safe_load(result.stdout)
     assert report["run_summary"]["status"] == "SUCCESS"
-
-    # The action report should show SUCCESS and the user's response
     action_log = report["action_logs"][0]
     assert action_log["status"] == "SUCCESS"
-    assert action_log["output"] == "Blue"
-    assert action_log["action"]["params"]["prompt"] == "What is your favorite color?"
+
+    details_dict = action_log["details"]
+    assert details_dict["response"] == user_response

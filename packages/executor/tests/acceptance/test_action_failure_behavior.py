@@ -1,46 +1,60 @@
 from pathlib import Path
-from .helpers import run_teddy_with_plan_structure, parse_yaml_report
+from unittest.mock import patch
+
+import yaml
+from typer.testing import CliRunner
+
+from teddy_executor.main import app, create_container
 
 
-def test_create_file_on_existing_file_fails_and_returns_content(tmp_path: Path):
+def test_create_file_on_existing_file_fails_and_reports_correctly(tmp_path: Path):
     """
     Given a file that already exists,
     When a plan is executed to create the same file,
     Then the action should fail, the original file should be unchanged,
-    and the report's output should contain the original content of the file.
+    and the report's details should contain the error message.
     """
-    # Arrange
+    # ARRANGE
+    runner = CliRunner(mix_stderr=False)
     existing_file = tmp_path / "existing.txt"
     original_content = "original content"
     existing_file.write_text(original_content)
 
-    plan_structure = [
-        {
-            "action": "create_file",
-            "params": {
-                "file_path": existing_file,
-                "content": "This is new content.",
-            },
-        }
-    ]
+    plan_structure = {
+        "actions": [
+            {
+                "type": "create_file",
+                "params": {
+                    "path": str(existing_file),
+                    "content": "This is new content.",
+                },
+            }
+        ]
+    }
+    plan_content = yaml.dump(plan_structure)
+    plan_file = tmp_path / "plan.yml"
+    plan_file.write_text(plan_content)
 
-    # Act
-    result = run_teddy_with_plan_structure(plan_structure, cwd=tmp_path)
+    # For an acceptance test, we use the real application container
+    real_container = create_container()
 
-    # Assert
-    # The tool should exit with a failure code because the plan failed
-    assert result.returncode != 0, (
+    # ACT
+    # The 'patch' is still necessary to ensure the CLI runner uses our container
+    # instance, especially in a parallel test environment.
+    with patch("teddy_executor.main.container", real_container):
+        result = runner.invoke(app, ["execute", str(plan_file), "--yes"])
+
+    # ASSERT
+    assert result.exit_code == 1, (
         "Teddy should exit with a non-zero code on plan failure"
     )
+    assert existing_file.read_text() == original_content, (
+        "The original file should not be modified"
+    )
 
-    # The original file should not have been modified
-    assert existing_file.read_text() == original_content
-
-    # The report should clearly indicate the failure and include the original content
-    report = parse_yaml_report(result.stdout)
+    report = yaml.safe_load(result.stdout)
     assert report["run_summary"]["status"] == "FAILURE"
 
     action_log = report["action_logs"][0]
     assert action_log["status"] == "FAILURE"
-    assert "File exists" in action_log["error"]
-    assert action_log["output"] == original_content
+    assert "File exists" in action_log["details"]

@@ -1,6 +1,4 @@
-import json
-
-from teddy_executor.core.domain.models import ActionData, V2_ActionLog
+from teddy_executor.core.domain.models import ActionData, ActionLog, ActionStatus
 from teddy_executor.core.services.action_dispatcher import ActionDispatcher
 
 # --- Test Doubles ---
@@ -53,12 +51,12 @@ def test_dispatch_and_execute_success():
     result_log = dispatcher.dispatch_and_execute(action_data)
 
     # Assert
-    assert isinstance(result_log, V2_ActionLog)
-    assert result_log.status == "SUCCESS"
+    assert isinstance(result_log, ActionLog)
+    assert result_log.status == ActionStatus.SUCCESS
     assert result_log.action_type == action_type
     assert result_log.params == action_params
     expected_details = {"summary": "Fake action executed successfully."}
-    assert result_log.details == json.dumps(expected_details)
+    assert result_log.details == expected_details
 
 
 def test_dispatch_and_execute_failure():
@@ -81,8 +79,8 @@ def test_dispatch_and_execute_failure():
     result_log = dispatcher.dispatch_and_execute(action_data)
 
     # Assert
-    assert isinstance(result_log, V2_ActionLog)
-    assert result_log.status == "FAILURE"
+    assert isinstance(result_log, ActionLog)
+    assert result_log.status == ActionStatus.FAILURE
     assert result_log.action_type == action_type
     assert result_log.params == action_params
     assert "Fake action failed as intended" in result_log.details

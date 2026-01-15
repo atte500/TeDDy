@@ -1,60 +1,15 @@
-from pathlib import Path
-
 import pytest
 
-from teddy_executor.core.domain.models import V2_Plan
-from teddy_executor.core.ports.outbound.file_system_manager import FileSystemManager
+from teddy_executor.core.domain.models import Plan
 from teddy_executor.core.services.plan_parser import (
     InvalidPlanError,
     PlanParser,
-    PlanNotFoundError,
 )
-
-
-class FakeFileSystemManager(FileSystemManager):
-    """A test double for the FileSystemManager that returns predefined content."""
-
-    def __init__(self, content: str = "", file_exists: bool = True):
-        self._content = content
-        self._file_exists = file_exists
-
-    # --- Interface Methods ---
-
-    def read_file(self, path: str) -> str:
-        if not self._file_exists:
-            raise FileNotFoundError(f"File not found: {path}")
-        return self._content
-
-    # --- Stubs for unused methods ---
-
-    def path_exists(self, path: str) -> bool:
-        raise NotImplementedError
-
-    def create_directory(self, path: str) -> None:
-        raise NotImplementedError
-
-    def write_file(self, path: str, content: str) -> None:
-        raise NotImplementedError
-
-    def create_file(self, path: str, content: str) -> None:
-        raise NotImplementedError
-
-    def edit_file(self, path: str, find: str, replace: str) -> None:
-        raise NotImplementedError
-
-    def create_default_context_file(self) -> None:
-        raise NotImplementedError
-
-    def get_context_paths(self) -> list[str]:
-        raise NotImplementedError
-
-    def read_files_in_vault(self, paths: list[str]) -> dict[str, str | None]:
-        raise NotImplementedError
 
 
 def test_parse_success_scenario():
     """
-    Given a valid plan file content,
+    Given a valid plan string,
     When the plan is parsed,
     Then a valid Plan domain object is returned.
     """
@@ -62,22 +17,20 @@ def test_parse_success_scenario():
     plan_content = """
     actions:
       - type: create_file
-        path: "hello.txt"
-        content: "Hello, World!"
+        params:
+            path: "hello.txt"
+            content: "Hello, World!"
       - type: execute
-        command: "echo 'done'"
+        params:
+            command: "echo 'done'"
     """
-    dummy_path = Path("plan.yaml")
-    fake_fs_manager = FakeFileSystemManager(content=plan_content)
-
-    # This is the class we are testing
-    plan_parser = PlanParser(file_system_manager=fake_fs_manager)
+    plan_parser = PlanParser()
 
     # Act
-    result_plan = plan_parser.parse(plan_path=dummy_path)
+    result_plan = plan_parser.parse(plan_content=plan_content)
 
     # Assert
-    assert isinstance(result_plan, V2_Plan)
+    assert isinstance(result_plan, Plan)
     assert len(result_plan.actions) == 2
 
     assert result_plan.actions[0].type == "create_file"
@@ -92,36 +45,28 @@ def test_parse_success_scenario():
 
 def test_parse_raises_invalid_plan_error_for_malformed_yaml():
     """
-    Given a plan file with syntactically incorrect YAML,
+    Given a plan string with syntactically incorrect YAML,
     When the plan is parsed,
     Then an InvalidPlanError should be raised.
     """
     # Arrange
-    # This YAML is invalid because it uses a tab character for indentation.
     malformed_content = "actions:\n\t- type: create_file"
-    dummy_path = Path("invalid_plan.yaml")
-    fake_fs_manager = FakeFileSystemManager(content=malformed_content)
-    plan_parser = PlanParser(file_system_manager=fake_fs_manager)
+    plan_parser = PlanParser()
 
     # Act & Assert
-    with pytest.raises(InvalidPlanError, match="Plan file contains invalid YAML"):
-        plan_parser.parse(plan_path=dummy_path)
+    with pytest.raises(InvalidPlanError, match="Plan contains invalid YAML"):
+        plan_parser.parse(plan_content=malformed_content)
 
 
-def test_parse_raises_plan_not_found_when_file_does_not_exist():
+def test_parse_raises_invalid_plan_error_for_empty_content():
     """
-    Given a file system manager that reports a file does not exist,
+    Given an empty string,
     When the plan is parsed,
-    Then a PlanNotFoundError should be raised.
+    Then an InvalidPlanError should be raised.
     """
     # Arrange
-    dummy_path = Path("non_existent_plan.yaml")
-    # Configure the fake to simulate a missing file
-    fake_fs_manager = FakeFileSystemManager(file_exists=False)
-    plan_parser = PlanParser(file_system_manager=fake_fs_manager)
+    plan_parser = PlanParser()
 
     # Act & Assert
-    with pytest.raises(
-        PlanNotFoundError, match=f"Plan file not found at: {dummy_path}"
-    ):
-        plan_parser.parse(plan_path=dummy_path)
+    with pytest.raises(InvalidPlanError, match="Plan content cannot be empty"):
+        plan_parser.parse(plan_content="  ")

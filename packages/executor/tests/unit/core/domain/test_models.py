@@ -3,7 +3,6 @@ import pytest
 from teddy_executor.core.domain.models import (
     CommandResult,
     Plan,
-    ActionResult,
     ExecutionReport,
     ExecuteAction,
     CreateFileAction,
@@ -114,42 +113,29 @@ def test_plan_raises_error_on_empty_actions_list():
         Plan(actions=[])
 
 
-def test_action_result_raises_error_on_invalid_status():
-    """
-    Tests that ActionResult raises a ValueError on an invalid status.
-    """
-    action = ExecuteAction(command="test")
-    with pytest.raises(ValueError, match="Status must be one of"):
-        ActionResult(action=action, status="INVALID_STATUS")
-
-
-def test_action_result_instantiation():
-    """
-    Tests that an ActionResult can be instantiated with valid data.
-    """
-    action = ExecuteAction(command="test")
-    result = ActionResult(action=action, status="SUCCESS", output="some output")
-    assert result.action == action
-    assert result.status == "SUCCESS"
-    assert result.output == "some output"
-    assert result.error is None
-
-
 def test_execution_report_instantiation():
     """
     Tests that an ExecutionReport can be instantiated with valid data.
     """
-    report = ExecutionReport(
-        run_summary={"status": "SUCCESS"},
-        environment={"os": "test_os"},
-        action_logs=[
-            ActionResult(
-                action=ExecuteAction(command="test"), status="SUCCESS", output="ok"
-            )
-        ],
+    from datetime import datetime
+    from teddy_executor.core.domain.models import (
+        RunSummary,
+        ActionLog,
+        RunStatus,
+        ActionStatus,
+        TeddyProject,
     )
-    assert report.run_summary == {"status": "SUCCESS"}
-    assert report.environment == {"os": "test_os"}
+
+    summary = RunSummary(
+        status=RunStatus.SUCCESS,
+        start_time=datetime.now(),
+        end_time=datetime.now(),
+        project=TeddyProject(),
+    )
+    log = ActionLog(status=ActionStatus.SUCCESS, action_type="test", params={})
+    report = ExecutionReport(run_summary=summary, action_logs=[log])
+
+    assert report.run_summary.status == "SUCCESS"
     assert len(report.action_logs) == 1
 
 
@@ -160,20 +146,6 @@ def test_plan_instantiation():
     actions = [ExecuteAction(command="ls")]
     plan = Plan(actions=actions)
     assert plan.actions == actions
-
-
-def test_action_result_can_represent_failure():
-    """
-    Tests that ActionResult can be instantiated to represent a failed action.
-    """
-    failed_action = CreateFileAction(file_path="/test/file.txt")
-    error_message = "File already exists"
-    result = ActionResult(action=failed_action, status="FAILURE", error=error_message)
-
-    assert result.action == failed_action
-    assert result.status == "FAILURE"
-    assert result.error == error_message
-    assert result.output is None
 
 
 def test_file_already_exists_error_stores_path():

@@ -20,9 +20,13 @@ class RunPlanUseCase(ABC):
     """
 
     @abstractmethod
-    def execute(self, plan_content: str, auto_approve: bool = False) -> ExecutionReport:
+    def execute(self, plan_content: str, interactive: bool) -> ExecutionReport:
         """
         Takes raw plan content, executes it, and returns a report.
+
+        Args:
+            plan_content: The YAML string representing the plan.
+            interactive: A flag to enable/disable step-by-step user approval.
         """
         pass
 ```

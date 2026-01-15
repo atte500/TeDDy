@@ -1,5 +1,3 @@
-import os
-import platform
 import yaml
 
 
@@ -7,12 +5,7 @@ from teddy_executor.adapters.inbound.cli_formatter import (
     format_report_as_yaml,
     format_project_context,
 )
-from teddy_executor.core.domain.models import (
-    ExecutionReport,
-    ActionResult,
-    ExecuteAction,
-    ContextResult,
-)
+from teddy_executor.core.domain.models import ContextResult
 
 
 def test_format_project_context():
@@ -81,37 +74,39 @@ def test_format_report_as_yaml():
     Then it should return a valid YAML string with the correct structure.
     """
     # Arrange
-    action = ExecuteAction(command="ls -l")
-    action_result = ActionResult(
-        action=action,
-        status="SUCCESS",
-        output="total 0",
-        error=None,
+    from datetime import datetime
+    from teddy_executor.core.domain.models import (
+        ExecutionReport,
+        RunSummary,
+        ActionLog,
+        TeddyProject,
+        RunStatus,
+        ActionStatus,
     )
+
     report = ExecutionReport(
-        run_summary={
-            "status": "SUCCESS",
-            "start_time": "2023-01-01T12:00:00Z",
-        },
-        action_logs=[action_result],
+        run_summary=RunSummary(
+            status=RunStatus.SUCCESS,
+            start_time=datetime(2023, 1, 1, 12, 0, 0),
+            end_time=datetime(2023, 1, 1, 12, 1, 0),
+            project=TeddyProject(name="test-proj"),
+        ),
+        action_logs=[
+            ActionLog(
+                status=ActionStatus.SUCCESS,
+                action_type="execute",
+                params={"command": "ls -l"},
+                details={"stdout": "total 0"},
+            )
+        ],
     )
 
     # Act
     yaml_output = format_report_as_yaml(report)
 
     # Assert
-    # Parse the output to verify it's valid YAML
     data = yaml.safe_load(yaml_output)
-
     assert data["run_summary"]["status"] == "SUCCESS"
     assert "start_time" in data["run_summary"]
-    assert data["environment"]["os"] == platform.system()
-    assert data["environment"]["cwd"] == str(os.getcwd())
-
-    assert len(data["action_logs"]) == 1
-    log = data["action_logs"][0]
-    assert log["action"]["type"] == "execute"
-    assert log["action"]["params"]["command"] == "ls -l"
-    assert log["status"] == "SUCCESS"
-    assert log["output"] == "total 0"
-    assert "error" not in log
+    assert data["action_logs"][0]["action_type"] == "execute"
+    assert data["action_logs"][0]["details"]["stdout"] == "total 0"

@@ -1,8 +1,11 @@
 import sys
 from pathlib import Path
+from unittest.mock import patch
+import yaml
+from typer.testing import CliRunner
 
-
-from tests.acceptance.helpers import parse_yaml_report, run_teddy_with_plan_structure
+from teddy_executor.main import app, create_container
+from tests.acceptance.helpers import run_teddy_with_plan_structure
 
 # Define platform-agnostic commands
 LIST_COMMAND = "dir" if sys.platform == "win32" else "ls -a"
@@ -94,15 +97,22 @@ def test_execute_action_fails_with_unsafe_cwd_traversal(tmp_path: Path):
     ]
 
     # Act
-    result = run_teddy_with_plan_structure(plan, cwd=tmp_path)
+    runner = CliRunner(mix_stderr=False)
+    plan_content = yaml.dump(plan)
+    plan_file = tmp_path / "plan.yml"
+    plan_file.write_text(plan_content)
+    real_container = create_container()
+
+    with patch("teddy_executor.main.container", real_container):
+        result = runner.invoke(app, ["execute", str(plan_file), "--yes"])
 
     # Assert
-    report = parse_yaml_report(result.stdout)
+    report = yaml.safe_load(result.stdout)
     assert report["run_summary"]["status"] == "FAILURE"
     error_log = report["action_logs"][0]
     assert error_log["status"] == "FAILURE"
-    assert "is outside the project directory" in error_log["error"]
-    assert result.returncode != 0
+    assert "is outside the project directory" in error_log["details"]
+    assert result.exit_code != 0
 
 
 def test_execute_action_fails_with_absolute_cwd(tmp_path: Path):
@@ -127,16 +137,23 @@ def test_execute_action_fails_with_absolute_cwd(tmp_path: Path):
     ]
 
     # Act
-    result = run_teddy_with_plan_structure(plan, cwd=tmp_path)
+    runner = CliRunner(mix_stderr=False)
+    plan_content = yaml.dump(plan)
+    plan_file = tmp_path / "plan.yml"
+    plan_file.write_text(plan_content)
+    real_container = create_container()
+
+    with patch("teddy_executor.main.container", real_container):
+        result = runner.invoke(app, ["execute", str(plan_file), "--yes"])
 
     # Assert
-    report = parse_yaml_report(result.stdout)
+    report = yaml.safe_load(result.stdout)
     assert report["run_summary"]["status"] == "FAILURE"
     error_log = report["action_logs"][0]
     assert error_log["status"] == "FAILURE"
-    assert "Validation failed" in error_log["error"]
-    assert "must be relative" in error_log["error"]
-    assert result.returncode != 0
+    assert "Validation failed" in error_log["details"]
+    assert "must be relative" in error_log["details"]
+    assert result.exit_code != 0
 
 
 def test_execute_action_backwards_compatibility(tmp_path: Path):

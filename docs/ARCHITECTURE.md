@@ -119,7 +119,6 @@ This section provides a canonical map of the major architectural components for 
     *   [ContextService](./contexts/executor/services/context_service.md)
     *   [ExecutionOrchestrator](./contexts/executor/services/execution_orchestrator.md) (New)
     *   [PlanParser](./contexts/executor/services/plan_parser.md) (New)
-    *   [PlanService](./contexts/executor/services/plan_service.md) (Deprecated)
 
 #### Primary Adapters
 *   **Inbound Adapters:** Drive the application's core.

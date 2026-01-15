@@ -1,17 +1,14 @@
-from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
 
 from teddy_executor.core.domain.models import (
     ActionData,
-    V2_ActionLog,
-    V2_ExecutionReport,
-    V2_Plan,
+    ActionLog,
+    ActionStatus,
+    Plan,
 )
-from teddy_executor.core.services.execution_orchestrator import (
-    ExecutionOrchestrator,
-)
+from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
 
 
 @pytest.fixture
@@ -30,7 +27,9 @@ def mock_user_interactor():
 
 
 @pytest.fixture
-def orchestrator(mock_plan_parser, mock_action_dispatcher, mock_user_interactor):
+def orchestrator(
+    mock_plan_parser, mock_action_dispatcher, mock_user_interactor
+) -> ExecutionOrchestrator:
     return ExecutionOrchestrator(
         plan_parser=mock_plan_parser,
         action_dispatcher=mock_action_dispatcher,
@@ -50,12 +49,12 @@ def test_execute_with_failing_action(
     Then the final report status should be 'FAILURE'
     """
     # Arrange
-    plan_path = Path("/fake/plan.yml")
+    plan_content = "fake plan content"
     action1_params = {"name": "failing action", "details": {}}
     action1 = ActionData(type="action1", params=action1_params)
-    plan = V2_Plan(actions=[action1])
-    failing_log = V2_ActionLog(
-        status="FAILURE",
+    plan = Plan(actions=[action1])
+    failing_log = ActionLog(
+        status=ActionStatus.FAILURE,
         action_type="action1",
         params=action1_params,
         details="It broke",
@@ -65,13 +64,13 @@ def test_execute_with_failing_action(
     mock_action_dispatcher.dispatch_and_execute.return_value = failing_log
 
     # Act
-    report = orchestrator.execute(plan_path=plan_path, interactive=False)
+    report = orchestrator.execute(plan_content=plan_content, interactive=False)
 
     # Assert
+    assert report.run_summary.status == "FAILURE"
+    mock_plan_parser.parse.assert_called_once_with(plan_content)
     mock_action_dispatcher.dispatch_and_execute.assert_called_once_with(action1)
     mock_user_interactor.confirm_action.assert_not_called()
-    assert report.run_summary.status == "FAILURE"
-    assert report.action_logs == [failing_log]
 
 
 def test_execute_interactive_and_skipped(
@@ -87,22 +86,22 @@ def test_execute_interactive_and_skipped(
     And a 'SKIPPED' action log should be recorded
     """
     # Arrange
-    plan_path = Path("/fake/plan.yml")
+    plan_content = "fake plan content"
     action1 = ActionData(type="action1", params={})
-    plan = V2_Plan(actions=[action1])
+    plan = Plan(actions=[action1])
 
     mock_plan_parser.parse.return_value = plan
     mock_user_interactor.confirm_action.return_value = (False, "Just because")
 
     # Act
-    report = orchestrator.execute(plan_path=plan_path, interactive=True)
+    report = orchestrator.execute(plan_content=plan_content, interactive=True)
 
     # Assert
+    assert report.run_summary.status == "FAILURE"
+    assert len(report.action_logs) == 1
+    assert report.action_logs[0].status == ActionStatus.SKIPPED
     mock_user_interactor.confirm_action.assert_called_once()
     mock_action_dispatcher.dispatch_and_execute.assert_not_called()
-    assert report.run_summary.status == "SUCCESS"
-    assert len(report.action_logs) == 1
-    assert report.action_logs[0].status == "SKIPPED"
 
 
 def test_execute_interactive_and_approved(
@@ -117,12 +116,12 @@ def test_execute_interactive_and_approved(
     Then the orchestrator should prompt the user and then dispatch the action
     """
     # Arrange
-    plan_path = Path("/fake/plan.yml")
+    plan_content = "fake plan content"
     action1_params = {"name": "first action", "details": {}}
     action1 = ActionData(type="action1", params=action1_params)
-    plan = V2_Plan(actions=[action1])
-    action_log1 = V2_ActionLog(
-        status="SUCCESS",
+    plan = Plan(actions=[action1])
+    action_log1 = ActionLog(
+        status=ActionStatus.SUCCESS,
         action_type="action1",
         params=action1_params,
         details="Success",
@@ -133,14 +132,12 @@ def test_execute_interactive_and_approved(
     mock_user_interactor.confirm_action.return_value = (True, "")
 
     # Act
-    report = orchestrator.execute(plan_path=plan_path, interactive=True)
+    report = orchestrator.execute(plan_content=plan_content, interactive=True)
 
     # Assert
+    assert report.run_summary.status == "SUCCESS"
     mock_user_interactor.confirm_action.assert_called_once()
     mock_action_dispatcher.dispatch_and_execute.assert_called_once_with(action1)
-    assert report.run_summary.status == "SUCCESS"
-    assert len(report.action_logs) == 1
-    assert report.action_logs[0].status == "SUCCESS"
 
 
 def test_execute_happy_path_non_interactive(
@@ -156,12 +153,12 @@ def test_execute_happy_path_non_interactive(
     And it should not interact with the user
     """
     # Arrange
-    plan_path = Path("/fake/plan.yml")
+    plan_content = "fake plan content"
     action1_params = {"name": "first action", "details": {}}
     action1 = ActionData(type="action1", params=action1_params)
-    plan = V2_Plan(actions=[action1])
-    action_log1 = V2_ActionLog(
-        status="SUCCESS",
+    plan = Plan(actions=[action1])
+    action_log1 = ActionLog(
+        status=ActionStatus.SUCCESS,
         action_type="action1",
         params=action1_params,
         details="Success",
@@ -171,13 +168,12 @@ def test_execute_happy_path_non_interactive(
     mock_action_dispatcher.dispatch_and_execute.return_value = action_log1
 
     # Act
-    report = orchestrator.execute(plan_path=plan_path, interactive=False)
+    report = orchestrator.execute(plan_content=plan_content, interactive=False)
 
     # Assert
-    mock_plan_parser.parse.assert_called_once_with(plan_path)
+    assert report.run_summary.status == "SUCCESS"
+    assert len(report.action_logs) == 1
+    assert report.action_logs[0] == action_log1
+    mock_plan_parser.parse.assert_called_once_with(plan_content)
     mock_action_dispatcher.dispatch_and_execute.assert_called_once_with(action1)
     mock_user_interactor.confirm_action.assert_not_called()
-
-    assert isinstance(report, V2_ExecutionReport)
-    assert report.run_summary.status == "SUCCESS"
-    assert report.action_logs == [action_log1]

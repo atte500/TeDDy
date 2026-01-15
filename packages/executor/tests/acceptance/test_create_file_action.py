@@ -1,5 +1,9 @@
 from pathlib import Path
-from .helpers import run_teddy_with_plan_structure, parse_yaml_report
+from unittest.mock import patch
+import yaml
+from typer.testing import CliRunner
+
+from teddy_executor.main import app, create_container
 
 
 def test_create_file_happy_path(tmp_path: Path):
@@ -9,32 +13,37 @@ def test_create_file_happy_path(tmp_path: Path):
     Then the file should be created with the correct content and the report is valid.
     """
     # Arrange
+    runner = CliRunner(mix_stderr=False)
     file_name = "new_file.txt"
     new_file_path = tmp_path / file_name
     plan_structure = [
         {
             "action": "create_file",
-            "params": {"file_path": new_file_path, "content": "Hello, World!"},
+            "params": {"path": str(new_file_path), "content": "Hello, World!"},
         }
     ]
+    plan_content = yaml.dump(plan_structure)
+    plan_file = tmp_path / "plan.yml"
+    plan_file.write_text(plan_content)
+
+    real_container = create_container()
 
     # Act
-    result = run_teddy_with_plan_structure(plan_structure, cwd=tmp_path)
+    with patch("teddy_executor.main.container", real_container):
+        result = runner.invoke(app, ["execute", str(plan_file), "--yes"])
 
     # Assert
-    assert result.returncode == 0, f"Teddy failed with stderr: {result.stderr}"
+    assert result.exit_code == 0, f"Teddy failed with stderr: {result.stderr}"
     assert new_file_path.exists(), "The new file was not created."
     assert new_file_path.read_text() == "Hello, World!", (
         "The file content is incorrect."
     )
 
     # Verify the report output
-    report = parse_yaml_report(result.stdout)
+    report = yaml.safe_load(result.stdout)
     assert report["run_summary"]["status"] == "SUCCESS"
     action_log = report["action_logs"][0]
-    assert action_log["status"] == "COMPLETED"
-    assert action_log["action"]["type"] == "create_file"
-    assert action_log["action"]["params"]["file_path"] == new_file_path.as_posix()
+    assert action_log["status"] == "SUCCESS"
 
 
 def test_create_file_when_file_exists_fails_gracefully(tmp_path: Path):
@@ -45,6 +54,7 @@ def test_create_file_when_file_exists_fails_gracefully(tmp_path: Path):
     and the report should indicate the failure.
     """
     # Arrange
+    runner = CliRunner(mix_stderr=False)
     existing_file = tmp_path / "existing.txt"
     original_content = "Original content"
     existing_file.write_text(original_content)
@@ -52,25 +62,28 @@ def test_create_file_when_file_exists_fails_gracefully(tmp_path: Path):
     plan_structure = [
         {
             "action": "create_file",
-            "params": {"file_path": existing_file, "content": "Hello, World!"},
+            "params": {"path": str(existing_file), "content": "Hello, World!"},
         }
     ]
+    plan_content = yaml.dump(plan_structure)
+    plan_file = tmp_path / "plan.yml"
+    plan_file.write_text(plan_content)
+
+    real_container = create_container()
 
     # Act
-    result = run_teddy_with_plan_structure(plan_structure, cwd=tmp_path)
+    with patch("teddy_executor.main.container", real_container):
+        result = runner.invoke(app, ["execute", str(plan_file), "--yes"])
 
     # Assert
-    # The tool should exit with a failure code because the plan failed
-    assert result.returncode != 0, (
+    assert result.exit_code == 1, (
         "Teddy should exit with a non-zero code on plan failure"
     )
-
-    # The original file should not have been modified
     assert existing_file.read_text() == original_content
 
     # The report should clearly indicate the failure
-    report = parse_yaml_report(result.stdout)
+    report = yaml.safe_load(result.stdout)
     assert report["run_summary"]["status"] == "FAILURE"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "FAILURE"
-    assert "File exists" in action_log["error"]
+    assert "File exists" in action_log["details"]

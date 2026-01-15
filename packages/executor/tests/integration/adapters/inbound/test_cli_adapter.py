@@ -1,51 +1,55 @@
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
+
+import punq
 from typer.testing import CliRunner
 
-# Import the app object from the refactored module
-from teddy_executor.main import app
-from teddy_executor.core.domain.models import ExecutionReport
+from teddy_executor.core.domain.models import (
+    ExecutionReport,
+    RunSummary,
+    TeddyProject,
+    RunStatus,
+)
 from teddy_executor.core.ports.inbound.run_plan_use_case import RunPlanUseCase
+from teddy_executor.main import app
 
-runner = CliRunner()
+runner = CliRunner(mix_stderr=False)
 
 
-def test_cli_invokes_use_case_with_stdin_content():
+def test_cli_invokes_orchestrator_with_plan_file():
     """
-    Tests that the CLI correctly captures stdin and calls the use case.
+    Tests that the CLI correctly calls the orchestrator with the plan path.
     """
     # ARRANGE
-    # Create a mock implementation of the port
-    mock_use_case = MagicMock(spec=RunPlanUseCase)
-    # Configure the mock to return a valid, empty report
-    mock_use_case.execute.return_value = ExecutionReport(
-        run_summary={"status": "SUCCESS"}
+    from datetime import datetime
+
+    mock_orchestrator = MagicMock(spec=RunPlanUseCase)
+    mock_summary = RunSummary(
+        status=RunStatus.SUCCESS,
+        start_time=datetime.now(),
+        end_time=datetime.now(),
+        project=TeddyProject(name="test-project"),
     )
-    plan_input = "plan content from stdin"
+    mock_orchestrator.execute.return_value = ExecutionReport(
+        run_summary=mock_summary, action_logs=[]
+    )
+
+    test_container = punq.Container()
+    test_container.register(RunPlanUseCase, instance=mock_orchestrator)
 
     # ACT
-    # Run the CLI command, passing the mock service as the context object `obj`
-    # and the plan content as stdin.
-    # NOTE: The refactored CLI no longer uses stdin for plans, so this test
-    # is adapted to use a temp file, simulating the old stdin helper.
     with runner.isolated_filesystem() as temp_dir:
         p = Path(temp_dir) / "plan.yml"
-        p.write_text(plan_input)
-        result = runner.invoke(
-            app,
-            ["execute", str(p), "--yes"],
-            obj={"plan_service": mock_use_case},
-            catch_exceptions=False,
-        )
+        p.write_text("plan content")
+
+        with patch("teddy_executor.main.container", test_container):
+            result = runner.invoke(app, ["execute", str(p), "--yes"])
 
     # ASSERT
-    # Ensure the CLI command itself succeeded
-    assert result.exit_code == 0, (
-        f"CLI exited with code {result.exit_code}\n{result.stdout}\n{result.stderr}"
+    assert result.exit_code == 0, f"CLI exited with error: {result.stderr}"
+    mock_orchestrator.execute.assert_called_once_with(
+        plan_content="plan content", interactive=False
     )
-
-    # Verify that the core use case was called correctly with the content from stdin
-    mock_use_case.execute.assert_called_once_with(plan_input, auto_approve=True)
 
 
 def test_cli_exits_with_error_code_on_failure():
@@ -54,21 +58,29 @@ def test_cli_exits_with_error_code_on_failure():
     execution report indicates a failure.
     """
     # ARRANGE
-    mock_use_case = MagicMock(spec=RunPlanUseCase)
-    failure_report = ExecutionReport(run_summary={"status": "FAILURE"})
-    mock_use_case.execute.return_value = failure_report
-    plan_input = "any plan that will fail"
+    from datetime import datetime
+
+    mock_orchestrator = MagicMock(spec=RunPlanUseCase)
+    mock_summary = RunSummary(
+        status=RunStatus.FAILURE,
+        start_time=datetime.now(),
+        end_time=datetime.now(),
+        project=TeddyProject(name="test-project"),
+    )
+    mock_orchestrator.execute.return_value = ExecutionReport(
+        run_summary=mock_summary, action_logs=[]
+    )
+
+    test_container = punq.Container()
+    test_container.register(RunPlanUseCase, instance=mock_orchestrator)
 
     # ACT
     with runner.isolated_filesystem() as temp_dir:
         p = Path(temp_dir) / "plan.yml"
-        p.write_text(plan_input)
-        result = runner.invoke(
-            app,
-            ["execute", str(p), "--yes"],
-            obj={"plan_service": mock_use_case},
-            catch_exceptions=False,
-        )
+        p.write_text("any plan")
+
+        with patch("teddy_executor.main.container", test_container):
+            result = runner.invoke(app, ["execute", str(p), "--yes"])
 
     # ASSERT
     assert result.exit_code == 1, (
@@ -76,36 +88,37 @@ def test_cli_exits_with_error_code_on_failure():
     )
 
 
-def test_cli_handles_create_file_action():
+def test_cli_handles_interactive_mode_flag():
     """
-    Tests that the CLI correctly handles a create_file action plan.
+    Tests that the CLI correctly sets the interactive flag (default is True).
     """
     # ARRANGE
-    mock_use_case = MagicMock(spec=RunPlanUseCase)
-    # Configure the mock to return a valid, empty report
-    mock_use_case.execute.return_value = ExecutionReport(
-        run_summary={"status": "SUCCESS"}
+    from datetime import datetime
+
+    mock_orchestrator = MagicMock(spec=RunPlanUseCase)
+    mock_summary = RunSummary(
+        status=RunStatus.SUCCESS,
+        start_time=datetime.now(),
+        end_time=datetime.now(),
+        project=TeddyProject(name="test-project"),
     )
-    plan_yaml = """
-    - action: create_file
-      params:
-        file_path: "test.txt"
-        content: "hello"
-    """
+    mock_orchestrator.execute.return_value = ExecutionReport(
+        run_summary=mock_summary, action_logs=[]
+    )
+
+    test_container = punq.Container()
+    test_container.register(RunPlanUseCase, instance=mock_orchestrator)
 
     # ACT
     with runner.isolated_filesystem() as temp_dir:
         p = Path(temp_dir) / "plan.yml"
-        p.write_text(plan_yaml)
-        result = runner.invoke(
-            app,
-            ["execute", str(p), "--yes"],
-            obj={"plan_service": mock_use_case},
-            catch_exceptions=False,
-        )
+        p.write_text("plan content")
+
+        with patch("teddy_executor.main.container", test_container):
+            # Note: No --yes flag
+            runner.invoke(app, ["execute", str(p)])
 
     # ASSERT
-    assert result.exit_code == 0, (
-        f"CLI exited with code {result.exit_code}\n{result.stdout}\n{result.stderr}"
+    mock_orchestrator.execute.assert_called_once_with(
+        plan_content="plan content", interactive=True
     )
-    mock_use_case.execute.assert_called_once_with(plan_yaml, auto_approve=True)
