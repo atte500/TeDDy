@@ -101,6 +101,7 @@ This section provides a canonical map of the major architectural components for 
 #### Hexagonal Core
 *   **Domain Model:** The central business logic and state.
     *   [Domain Model & Ubiquitous Language](./contexts/executor/domain_model.md)
+    *   [ExecutionReport](./contexts/executor/domain/execution_report.md)
 *   **Inbound Ports:** Define how the application is driven.
     *   [IGetContextUseCase](./contexts/executor/ports/inbound/get_context_use_case.md)
     *   [IRunPlanUseCase](./contexts/executor/ports/inbound/run_plan_use_case.md)
@@ -113,9 +114,12 @@ This section provides a canonical map of the major architectural components for 
     *   [IWebScraper](./contexts/executor/ports/outbound/web_scraper.md)
     *   [IWebSearcher](./contexts/executor/ports/outbound/web_searcher.md)
 *   **Application Services:** Orchestrate the core logic.
+    *   [ActionDispatcher](./contexts/executor/services/action_dispatcher.md) (New)
     *   [ActionFactory](./contexts/executor/services/action_factory.md)
     *   [ContextService](./contexts/executor/services/context_service.md)
-    *   [PlanService](./contexts/executor/services/plan_service.md)
+    *   [ExecutionOrchestrator](./contexts/executor/services/execution_orchestrator.md) (New)
+    *   [PlanParser](./contexts/executor/services/plan_parser.md) (New)
+    *   [PlanService](./contexts/executor/services/plan_service.md) (Deprecated)
 
 #### Primary Adapters
 *   **Inbound Adapters:** Drive the application's core.
