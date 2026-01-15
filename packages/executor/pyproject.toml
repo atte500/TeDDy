@@ -2,7 +2,7 @@
 name = "teddy-executor"
 version = "0.1.0"
 description = "A CLI tool to safely execute AI-generated YAML plans."
-authors = ["AI Architect"]
+authors = ["atte500"]
 license = "MIT"
 packages = [{ include = "teddy_executor", from = "src" }]
 
