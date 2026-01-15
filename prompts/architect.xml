@@ -118,7 +118,7 @@
             *   `Architectural Changes`: A list of the architectural components the architect must design for this slice.
             *   `Interaction Sequence`: A numbered list clarifying the flow of control and data between components.
             *   `Scope of Work`: The final, developer-facing checklist, added only after all component documentation for the slice is finalized.
-                *   **Ordering Principle:** This checklist **must** be ordered "outside-in" to guide the developer through a logical implementation sequence.
+                *   **Ordering Principle:** This checklist **must** be ordered "outside-in" to guide the developer through a logical TDD implementation sequence.
                 *   **Structure:** For each component that requires implementation or modification, the checklist **must** include a task to first `READ` its corresponding design document, followed by the task to `IMPLEMENT` it.
                 *   **Spike Integration:** If a task's implementation relies on findings from a technical spike, the task description **must** include a usage summary and direct link to the permanent document where those findings were synthesized.
         </detail>
