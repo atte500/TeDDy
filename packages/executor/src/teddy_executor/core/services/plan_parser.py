@@ -11,6 +11,12 @@ class PlanNotFoundError(Exception):
     pass
 
 
+class InvalidPlanError(Exception):
+    """Raised when the plan file is malformed."""
+
+    pass
+
+
 class PlanParser:
     """
     A service responsible for parsing a plan file into a structured domain object.
@@ -44,7 +50,11 @@ class PlanParser:
             raw_content = self._file_system_manager.read_file(str(plan_path))
         except FileNotFoundError:
             raise PlanNotFoundError(f"Plan file not found at: {plan_path}")
-        parsed_yaml = yaml.safe_load(raw_content)
+
+        try:
+            parsed_yaml = yaml.safe_load(raw_content)
+        except yaml.YAMLError:
+            raise InvalidPlanError("Plan file contains invalid YAML.")
 
         actions_data = []
         # Gracefully handle empty or malformed plan files

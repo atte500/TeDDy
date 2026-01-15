@@ -4,7 +4,11 @@ import pytest
 
 from teddy_executor.core.domain.models import V2_Plan
 from teddy_executor.core.ports.outbound.file_system_manager import FileSystemManager
-from teddy_executor.core.services.plan_parser import PlanParser, PlanNotFoundError
+from teddy_executor.core.services.plan_parser import (
+    InvalidPlanError,
+    PlanParser,
+    PlanNotFoundError,
+)
 
 
 class FakeFileSystemManager(FileSystemManager):
@@ -84,6 +88,24 @@ def test_parse_success_scenario():
 
     assert result_plan.actions[1].type == "execute"
     assert result_plan.actions[1].params == {"command": "echo 'done'"}
+
+
+def test_parse_raises_invalid_plan_error_for_malformed_yaml():
+    """
+    Given a plan file with syntactically incorrect YAML,
+    When the plan is parsed,
+    Then an InvalidPlanError should be raised.
+    """
+    # Arrange
+    # This YAML is invalid because it uses a tab character for indentation.
+    malformed_content = "actions:\n\t- type: create_file"
+    dummy_path = Path("invalid_plan.yaml")
+    fake_fs_manager = FakeFileSystemManager(content=malformed_content)
+    plan_parser = PlanParser(file_system_manager=fake_fs_manager)
+
+    # Act & Assert
+    with pytest.raises(InvalidPlanError, match="Plan file contains invalid YAML"):
+        plan_parser.parse(plan_path=dummy_path)
 
 
 def test_parse_raises_plan_not_found_when_file_does_not_exist():
