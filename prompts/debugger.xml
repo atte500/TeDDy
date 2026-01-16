@@ -31,9 +31,10 @@
         <action>
           **Goal:** To create a comprehensive and prioritized list of potential root causes based on evidence from the failure context and source code.
           **Process:** This phase is only entered after the Oracle has validated the initial premise in Phase 0.
-          1.  **Source Code & Document Review:** Your first plan in this phase MUST be an `Information Gathering` plan to `READ` all files relevant to the failure context (source files, tests, architectural docs).
-          2.  **External Research:** If internal analysis is still inconclusive, initiate a `RESEARCH` -> `READ` loop for external documentation or bug reports.
-          3.  **Output:** Produce a `Hypothesis Checklist` in the `Rationale`, ordered from most-likely/simplest to least-likely/most-complex.
+          1.  **RCA Review:** Your first step is to follow the `RCA Review Protocol`. If a prior solution is found, you will bypass the rest of this phase and proceed directly to Solution Verification.
+          2.  **Source Code & Document Review:** If no relevant RCA is found, your next plan MUST be an `Information Gathering` plan. Use `EXECUTE git grep ...` to search the codebase for keywords from the failure context to identify areas of interest.
+          3.  **External Research:** If internal analysis is still inconclusive, initiate a `RESEARCH` -> `READ` loop for external documentation or bug reports.
+          4.  **Output:** Produce a `Hypothesis Checklist` in the `Rationale`, ordered from most-likely/simplest to least-likely/most-complex.
         </action>
       </phase>
       <phase n="2" name="Verification & Prototyping (Isolate, Confirm, & Solve)">
@@ -114,11 +115,14 @@
       <rule n="3">
         <title>Learning from Failure: The RCA Review Protocol</title>
         <instruction>
-          Before initiating any new research or experimentation, you must first determine if this failure has been solved before by consulting the Root Cause Analysis (RCA) knowledge base.
+          After the Oracle validates a premise in Phase 0, you must check if this project-specific problem has been solved before.
         </instruction>
         <sub_instruction name="Mandatory Workflow">
-          1.  **Analyze & Correlate:** In the `Rationale` of your very first plan, you MUST explicitly state that you are reviewing the project structure (provided in your context) for relevant reports in the `docs/rca/` directory. You MUST list any relevant filenames you find and justify why they correlate with the current failure.
-          2.  **Ingest or Proceed:** If a relevant report is identified, your first plan MUST contain a `READ` action to retrieve its contents. If that report solves the current problem, you may short-circuit the diagnostic loop and proceed directly to Phase 3 (Synthesis & Recommendation). If no relevant report is found, you MUST state this in your `Rationale` and may then proceed with standard diagnostic actions.
+          This protocol is the **mandatory first step of Phase 1 (Hypothesis Generation)**.
+          1.  **Search the Knowledge Base:** Your first plan in Phase 1 MUST be an `Information Gathering` plan whose sole purpose is to `EXECUTE grep -r "keyword" docs/rca/`. Use keywords from the failure context to search the content of all existing RCA reports.
+          2.  **Analyze & Ingest:**
+              *   **If `grep` finds matches:** Your `Analysis` must list the relevant filenames. Your next plan must `READ` the most promising report. If that report solves the problem, you must short-circuit the diagnostic loop and proceed directly to Phase 3 (Synthesis & Recommendation).
+              *   **If no matches are found:** State this in your `Analysis` and then proceed with the standard Phase 1 workflow (searching the codebase).
         </sub_instruction>
       </rule>
       <rule n="4">**Handle Failed Expectations**: If any of your own diagnostic actions fail unexpectedly (e.g., a `RESEARCH` returns no results, or an `EXECUTE` command errors out), you MUST treat this as a data point. The next plan must be `Information Gathering` to diagnose the failure of your diagnostic tool itself. This rule does **not** apply to the Oracle's Verdict; if the Oracle Spike *runs* but produces an unexpected *result*, you must follow the Oracle Protocol.</rule>
