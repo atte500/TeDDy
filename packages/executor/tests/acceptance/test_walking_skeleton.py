@@ -76,4 +76,8 @@ def test_failed_execution(tmp_path: Path):
     # The 'details' field is a dict; the error message is in 'stderr'
     details_dict = action_log["details"]
     error_msg = details_dict.get("stderr", "").lower()
-    assert "not found" in error_msg or "no such file" in error_msg
+    assert (
+        "not found" in error_msg
+        or "no such file" in error_msg
+        or "not recognized" in error_msg
+    )
