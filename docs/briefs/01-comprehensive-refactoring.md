@@ -39,10 +39,10 @@ This initiative is broken down into the following high-level, actionable slices:
     -   Relocate presentation logic and consolidate error handling out of the core services.
 
 - [ ] **Slice 2: Modernize the Test Suite.** This slice focuses on establishing robust, maintainable testing patterns.
-    -   Create a new, standardized "white-box" acceptance test helper using `typer.testing.CliRunner`.
-    -   Migrate a pilot test (`test_walking_skeleton.py`) to the new helper to serve as a template.
-    -   Refactor the unit test suite to align with the newly decomposed services, creating smaller, focused tests with consistent fixture patterns.
-    -   Deprecate and remove legacy test helpers.
+    -   [ ] **Create a standardized "white-box" acceptance test helper** to centralize the `typer.testing.CliRunner` setup logic.
+    -   [ ] **Refactor all existing acceptance tests** to use the new standardized helper, eliminating code duplication and the last remnants of the old `subprocess` pattern.
+    -   [ ] **Refactor the unit test suite** to align with the newly decomposed services, creating smaller, focused tests with consistent fixture patterns.
+    -   [ ] **Deprecate and remove legacy test helpers** from `tests/acceptance/helpers.py`.
 
 - [ ] **Slice 3: Finalize Documentation and CLI Polish.** This slice focuses on cleaning up documentation and improving the CLI's internal structure.
     -   Condense the "Architectural Notes" section in `ARCHITECTURE.md` to be a concise, high-level summary.
