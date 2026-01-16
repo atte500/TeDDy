@@ -6,7 +6,6 @@ from teddy_executor.core.domain.models import (
     ExecutionReport,
     RunSummary,
     ActionLog,
-    TeddyProject,
     RunStatus,
     ActionStatus,
 )
@@ -22,7 +21,6 @@ def test_format_report_with_successful_action():
             status=RunStatus.SUCCESS,
             start_time=datetime.now(),
             end_time=datetime.now(),
-            project=TeddyProject(),
         ),
         action_logs=[
             ActionLog(

@@ -79,7 +79,6 @@ def test_format_report_as_yaml():
         ExecutionReport,
         RunSummary,
         ActionLog,
-        TeddyProject,
         RunStatus,
         ActionStatus,
     )
@@ -89,7 +88,6 @@ def test_format_report_as_yaml():
             status=RunStatus.SUCCESS,
             start_time=datetime(2023, 1, 1, 12, 0, 0),
             end_time=datetime(2023, 1, 1, 12, 1, 0),
-            project=TeddyProject(name="test-proj"),
         ),
         action_logs=[
             ActionLog(

@@ -32,7 +32,7 @@ Our deep-dive analysis of the codebase confirmed the following key findings:
 
 This initiative is broken down into the following high-level, actionable slices:
 
-- [ ] **Slice 1: Refactor the Core Service Layer & Domain Model.** This slice focuses on improving the core application's design and type safety.
+- [x] **Slice 1: Refactor the Core Service Layer & Domain Model.** This slice focuses on improving the core application's design and type safety.
     -   Decompose the monolithic `PlanService` into smaller, single-responsibility services (`PlanParser`, `ActionDispatcher`, `ExecutionOrchestrator`).
     -   Introduce a formal Dependency Injection (DI) container in `main.py`.
     -   Refactor the `ExecutionReport` model to use strongly-typed dataclasses, eliminating the "Data Model Drift".

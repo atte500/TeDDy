@@ -30,14 +30,6 @@ class ActionLog:
     details: Any | None = None
 
 
-# Placeholder for a more complete domain model to be defined elsewhere.
-@dataclass(frozen=True)
-class TeddyProject:
-    """Represents the project context for an execution."""
-
-    name: str = "unknown"
-
-
 @dataclass(frozen=True)
 class RunSummary:
     """Summarizes the overall result of a plan execution."""
@@ -45,7 +37,6 @@ class RunSummary:
     status: RunStatus
     start_time: datetime
     end_time: datetime
-    project: TeddyProject
     error: str | None = None
 
 

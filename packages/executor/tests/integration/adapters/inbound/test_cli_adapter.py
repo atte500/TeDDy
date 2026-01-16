@@ -7,7 +7,6 @@ from typer.testing import CliRunner
 from teddy_executor.core.domain.models import (
     ExecutionReport,
     RunSummary,
-    TeddyProject,
     RunStatus,
 )
 from teddy_executor.core.ports.inbound.run_plan_use_case import RunPlanUseCase
@@ -28,7 +27,6 @@ def test_cli_invokes_orchestrator_with_plan_file():
         status=RunStatus.SUCCESS,
         start_time=datetime.now(),
         end_time=datetime.now(),
-        project=TeddyProject(name="test-project"),
     )
     mock_orchestrator.execute.return_value = ExecutionReport(
         run_summary=mock_summary, action_logs=[]
@@ -65,7 +63,6 @@ def test_cli_exits_with_error_code_on_failure():
         status=RunStatus.FAILURE,
         start_time=datetime.now(),
         end_time=datetime.now(),
-        project=TeddyProject(name="test-project"),
     )
     mock_orchestrator.execute.return_value = ExecutionReport(
         run_summary=mock_summary, action_logs=[]
@@ -100,7 +97,6 @@ def test_cli_handles_interactive_mode_flag():
         status=RunStatus.SUCCESS,
         start_time=datetime.now(),
         end_time=datetime.now(),
-        project=TeddyProject(name="test-project"),
     )
     mock_orchestrator.execute.return_value = ExecutionReport(
         run_summary=mock_summary, action_logs=[]

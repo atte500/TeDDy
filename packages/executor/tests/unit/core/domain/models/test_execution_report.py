@@ -4,7 +4,6 @@ from teddy_executor.core.domain.models import (
     ActionLog,
     ExecutionReport,
     RunSummary,
-    TeddyProject,
     ActionStatus,
     RunStatus,
 )
@@ -16,7 +15,6 @@ def test_run_summary_creation():
         status=RunStatus.SUCCESS,
         start_time=datetime.now(),
         end_time=datetime.now(),
-        project=TeddyProject(name="test"),
     )
     assert summary.status == RunStatus.SUCCESS
     assert summary.status == "SUCCESS"  # Should also be comparable to string
@@ -40,7 +38,6 @@ def test_execution_report_creation():
         status=RunStatus.FAILURE,
         start_time=datetime.now(),
         end_time=datetime.now(),
-        project=TeddyProject(),
     )
     log = ActionLog(
         status=ActionStatus.FAILURE, action_type="test", params={}, details="error"

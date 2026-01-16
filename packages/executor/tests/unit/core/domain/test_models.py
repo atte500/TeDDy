@@ -123,14 +123,12 @@ def test_execution_report_instantiation():
         ActionLog,
         RunStatus,
         ActionStatus,
-        TeddyProject,
     )
 
     summary = RunSummary(
         status=RunStatus.SUCCESS,
         start_time=datetime.now(),
         end_time=datetime.now(),
-        project=TeddyProject(),
     )
     log = ActionLog(status=ActionStatus.SUCCESS, action_type="test", params={})
     report = ExecutionReport(run_summary=summary, action_logs=[log])

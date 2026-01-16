@@ -4,7 +4,6 @@ from .execution_report import (
     ExecutionReport,
     RunStatus,
     RunSummary,
-    TeddyProject,
 )
 from .plan import ActionData, Plan
 from ._legacy_models import (
@@ -31,7 +30,6 @@ __all__ = [
     "ExecutionReport",
     "ActionLog",
     "RunSummary",
-    "TeddyProject",
     "RunStatus",
     "ActionStatus",
     "ContextResult",

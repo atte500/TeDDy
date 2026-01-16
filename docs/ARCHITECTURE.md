@@ -114,11 +114,11 @@ This section provides a canonical map of the major architectural components for 
     *   [IWebScraper](./contexts/executor/ports/outbound/web_scraper.md)
     *   [IWebSearcher](./contexts/executor/ports/outbound/web_searcher.md)
 *   **Application Services:** Orchestrate the core logic.
-    *   [ActionDispatcher](./contexts/executor/services/action_dispatcher.md) (New)
+    *   [ActionDispatcher](./contexts/executor/services/action_dispatcher.md)
     *   [ActionFactory](./contexts/executor/services/action_factory.md)
     *   [ContextService](./contexts/executor/services/context_service.md)
-    *   [ExecutionOrchestrator](./contexts/executor/services/execution_orchestrator.md) (New)
-    *   [PlanParser](./contexts/executor/services/plan_parser.md) (New)
+    *   [ExecutionOrchestrator](./contexts/executor/services/execution_orchestrator.md)
+    *   [PlanParser](./contexts/executor/services/plan_parser.md)
 
 #### Primary Adapters
 *   **Inbound Adapters:** Drive the application's core.
@@ -152,7 +152,7 @@ This section captures non-blocking architectural observations and potential area
 
 - **Consistent Failure Reporting:** The `CLIFormatter` handles all `FAILURE` statuses uniformly, producing a consistent, YAML-style block for the details of any failed action. This improves both human and machine readability and is the standard for all failure reporting.
 
-- **Static Analysis vs. Dynamic Patterns:** The refactoring of `PlanService` to use a dynamic dispatch map (`{ActionType: handler_method}`) posed a challenge for `mypy`, which could not statically verify the type relationship. The issue was pragmatically resolved with a `# type: ignore` comment, capturing the common architectural trade-off between dynamic, decoupled patterns and the guarantees of static analysis.
+- **Static Analysis vs. Dynamic Patterns:** The `CLIFormatter`'s recursive `to_dict` function posed a challenge for `mypy`, which could not statically prove that a dataclass *type* would not be passed to the `asdict` function (which only accepts instances). The issue was pragmatically resolved with a `# type: ignore[arg-type]` comment, capturing a common trade-off where runtime logic is sound but cannot be fully verified by the static analyzer.
 
 - **CLI Interactivity & Input Strategy:** A key architectural decision separates plan input from user interaction. The `--plan-file` CLI option is the canonical way to provide a plan, reserving `stdin` exclusively for interactive I/O, such as the global `y/n` approval mechanism or the `chat_with_user` action. This prevents input conflicts and clarifies the executor's I/O model.
 
@@ -164,7 +164,7 @@ This section captures non-blocking architectural observations and potential area
 
 - **YAML Formatting for Readability:** The final YAML report is formatted for human readability. Multi-line strings are formatted using YAML's literal block style (`|`), achieved via a custom string representer for the `PyYAML` library.
 
-- **Composition Root Complexity:** The composition root in `packages/executor/src/teddy_executor/main.py` is growing complex. Future work should consider introducing a formal dependency injection container or factory pattern to manage service instantiation.
+- **Composition Root Management:** The composition root in `packages/executor/src/teddy_executor/main.py` was refactored to use the `punq` dependency injection library. This has simplified the manual wiring of services. However, as the application grows, managing the container's configuration will remain an important architectural consideration.
 
 - **Canonical `repotree` Format for LLMs:** The `LocalRepoTreeGenerator` produces a simple, space-indented list of files and directories. This is the canonical format for providing file hierarchy context to an LLM, as it is token-efficient, platform-agnostic, and unambiguously machine-readable, avoiding the fragility and complexity of visual tree formats.
 
@@ -177,7 +177,5 @@ This section captures non-blocking architectural observations and potential area
 - **Comment Handling in Context Files:** The parser for `.context` files intentionally ignores empty lines and any lines beginning with a `#` character. This allows for comments and spacing to be used for better readability without affecting the application's behavior.
 
 - **Robust Acceptance Testing via Parsing:** CI failures caused by environment-specific YAML formatting have shown that asserting against raw string output is brittle. The required pattern for acceptance tests that check structured output (like the YAML report) is to first parse the output into a data structure, and then make assertions against specific fields. This makes tests resilient to cosmetic formatting changes. Future work should include a dedicated refactoring slice to apply this pattern to the entire acceptance test suite.
-
-- **`ExecutionReport` Data Model Drift:** There is a known inconsistency in the `ExecutionReport` domain model (`run_summary`, `action_logs`) and its associated tests. The `CLIFormatter` has also been adapted to handle this by filtering out `None` values. This represents technical debt that must be addressed in a dedicated refactoring slice to unify the data model and make test assertions more consistent.
 
 - **Acceptance Testing for CLI Commands with Mocks:** The `execute` command, which requires mocking `pyperclip`, revealed a critical testing principle. Mocks applied in the `pytest` process are not inherited by child processes launched via `subprocess`. Therefore, the required pattern for acceptance testing CLI commands that depend on mocks is **"white-box" acceptance testing using `typer.testing.CliRunner`**. This runs the CLI application logic in the same process as the test, ensuring mocks are respected. The `CliRunner` should be instantiated with `mix_stderr=False` to allow for separate inspection of `stdout` and `stderr`.

@@ -5,7 +5,6 @@ from teddy_executor.core.domain.models import (
     ExecutionReport,
     Plan,
     RunSummary,
-    TeddyProject,
     RunStatus,
     ActionStatus,
 )
@@ -58,7 +57,6 @@ class ExecutionOrchestrator:
             status=overall_status,
             start_time=start_time,
             end_time=end_time,
-            project=TeddyProject(name="unknown"),
         )
 
         return ExecutionReport(
