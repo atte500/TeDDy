@@ -18,6 +18,9 @@
       <step n="1">
         <title>Define the Public Contract (`README.md`)</title>
         <instruction>
+          NOTE: If the current task is an internal refactoring or detailing a slice for an already-documented feature, you may proceed directly to the next phase.
+
+
           Create/update `README.md` to establish the public-facing **Project Roadmap**. This roadmap MUST be presented as a Markdown table to ensure a professional and clear presentation for end-users. It must include a legend for status emojis (`📝 Planned`, `▶️ In Progress`, `✅ Completed`) and contain columns for `Status`, `Stage / Feature Set`, and `Description`. The description must be user-focused and explain the value of the feature set. You must get user approval on this roadmap.
 
           Example structure:
@@ -104,7 +107,7 @@
               *   Iteratively design and document each architectural component (Domain Models, Ports, Adapters) required to deliver this single slice. Component design documents must indicate the status of individual methods or functions as one of: `Planned`, `Implemented`, `Refactoring`, `Deprecated`.
 
           3.  **Phase 2: Finalize, Stage, Commit, & Handoff.**
-              *   This phase concludes the slice's architectural work and is executed as a strict sequence of plans to finalize documentation, commit, and hand off to the Developer. This follows the same strict three-plan sequence (Finalize, Lint, Commit) as the previous workflow.
+              *   After finalizing all component documents for the slice, you must follow the strict `Two-Turn Atomic Documentation Commits` protocol to commit all changes before handing off to the Developer.
 
           4.  **Phase 3: Loop or Conclude.**
               *   After handing off to the Developer, you will wait for them to complete the slice.
@@ -195,6 +198,14 @@
         <title>Context Digestion</title>
         <instruction>
           The `Driver` section of the `Rationale` **must** always begin by analyzing the outcome of the previous turn. If the previous turn introduced new information (e.g., from a `READ`, `EXECUTE`, or `RESEARCH` action), this analysis must summarize the key findings and quote essential snippets to justify the next plan. This proves the information has been processed and integrated into the agent's reasoning.
+        </instruction>
+      </rule>
+      <rule n="8">
+        <title>Two-Turn Atomic Documentation Commits</title>
+        <instruction>
+          At the end of the Slice Detailing Loop, you must use a strict two-turn `Version Control` process to commit all documentation.
+          *   **Turn 1 (Lint & Stage):** Create a plan to `pre-commit run` the files, `git add` them, and verify with `git status`.
+          *   **Turn 2 (Commit & Push):** Create a second plan to `git commit` the staged changes with a clear message, then `git push`.
         </instruction>
       </rule>
     </general_rules>
