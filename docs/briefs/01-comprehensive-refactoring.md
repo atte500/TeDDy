@@ -44,6 +44,6 @@ This initiative is broken down into the following high-level, actionable slices:
     - [x] **Refactor the unit test suite** to align with the newly decomposed services, creating smaller, focused tests with consistent fixture patterns.
     - [x] **Deprecate and remove legacy test helpers** from `tests/acceptance/helpers.py`.
 
-- [ ] **Slice 3: Finalize Documentation and CLI Polish.** This slice focuses on cleaning up documentation and improving the CLI's internal structure.
-    -   Condense the "Architectural Notes" section in `ARCHITECTURE.md` to be a concise, high-level summary.
-    -   Refactor the input handling logic (file vs. clipboard) in the `execute` command into a dedicated helper function.
+- [x] **Slice 3: Finalize Documentation and CLI Polish.** This slice focuses on cleaning up documentation and improving the CLI's internal structure.
+    -   [x] Condense the "Architectural Notes" section in `ARCHITECTURE.md` to be a concise, high-level summary.
+    -   [x] Refactor the input handling logic (file vs. clipboard) in the `execute` command into a dedicated helper function.

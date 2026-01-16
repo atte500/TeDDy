@@ -32,25 +32,33 @@ Two key principles of TPS apply directly to software:
 
 The objective is to improve **long-term** efficiency based on DORA's insight that **speed is a byproduct of quality.**
 
-## The TeDDy Workflow: Architect, Developer & Debugger
+## The TeDDy Workflow: Pathfinder, Architect, Developer & Debugger
 
-TeDDy structures the development process around three distinct AI personas, each with a specific **system prompt** and a clear mandate.
+TeDDy structures the development process around four distinct AI personas, each with a specific **system prompt** and a clear mandate.
 
-### 1. The Architect (Contract-First Design)
+### 1. The Pathfinder (Strategic Discovery)
 
-The Architect's role is to manage complexity by applying a holistic **Contract-First Design** philosophy. It establishes a cascade of agreements, starting with a user-approved **Public Contract** (`README.md`) that defines *what* the system does, and drills down into an **Architectural Contract** (`ARCHITECTURE.md`) and tactical **Implementation Contracts** that define *how* it's built.
+The Pathfinder is the entry point for any new feature or idea. Its role is to act as a **Strategic Pathfinder**, navigating the journey from a vague user goal to a concrete, validated, and technically-grounded plan. It uses a structured, iterative "Diverge-Converge" workflow to methodically explore the **Problem Space (Why)**, the **Solution Space (What)**, and finally the **Implementation Space (How)**.
+
+The Pathfinder's final output is a canonical **Brief**, a document that defines the scope of work and breaks it down into a checklist of high-level vertical slices, ready for the Architect.
+
+> **`Prompts/pathfinder.xml`**: A strategic partner that guides the user through a discovery process to produce a well-defined feature brief. **Its output is a brief and a backlog of vertical slices.**
+
+### 2. The Architect (Contract-First Design)
+
+The Architect's role is to take the **Brief** from the Pathfinder and manage its complexity by applying a holistic **Contract-First Design** philosophy. It establishes a cascade of agreements, starting with a user-approved **Public Contract** (`README.md`) that defines *what* the system does, and drills down into an **Architectural Contract** (`ARCHITECTURE.md`) and tactical **Implementation Contracts** that define *how* it's built.
 
 > **`Prompts/architect.xml`**: A high-level planner that defines the public contract (`README.md`), the internal architecture (`ARCHITECTURE.md`), and the specific contracts for each layer of the application. **Its output is documentation.**
 
-### 2. The Developer (Test-Driven Development)
+### 3. The Developer (Test-Driven Development)
 
 The Developer's role is to implement the Architect's plan. It follows a strict, outside-in TDD workflow, ensuring that every line of code is written to satisfy a failing test, which in turn satisfies an architectural contract.
 
 > **`Prompts/dev.xml`**: A hands-on implementer that executes the Architect's plan. It works in nested Red-Green-Refactor loops, starting with a failing end-to-end test and progressively implementing the system layer by layer. **Its output is code and tests.**
 
-### 3. The Debugger (Fault Isolation)
+### 4. The Debugger (Fault Isolation)
 
-The Debugger is a specialist agent activated only when the Architect or Developer gets stuck (i.e., fails to achieve its `Expected Outcome` twice in a row). Its role is to be a **Systematic Fault Isolation Specialist**. It follows a rigorous, scientific method to find the verifiable root cause of a problem, operating under the principle of "First, Do No Harm"—it never modifies source code directly.
+The Debugger is a specialist agent activated only when another agent gets stuck (i.e., fails to achieve its `Expected Outcome` twice in a row). Its role is to be a **Systematic Fault Isolation Specialist**. It follows a rigorous, scientific method to find the verifiable root cause of a problem, operating under the principle of "First, Do No Harm"—it never modifies source code directly.
 
 It works in three phases:
 1.  **Hypothesis Generation:** Analyzes the failure and creates a checklist of potential root causes.
@@ -132,20 +140,26 @@ This section defines the contract for the YAML plans the AI can generate. For th
 
 Before starting, it's crucial to give the AI a clear picture of your project's layout. This is mandatory for existing (brownfield) projects. In your initial message to any agent, provide the complete file and directory tree of your project.
 
-### Phase 1: Architecture
+### Phase 1: Pathfinder (Discovery)
 1.  Start a chat session in Google AI Studio.
-2.  Add and save the content of `Prompts/architect.xml` as the "System instructions".
-3.  **Provide the project file tree**, followed by a high-level business requirement.
-4.  Iterate with the Architect until the public `README.md` and internal `ARCHITECTURE.md` are approved.
+2.  Add and save the content of `Prompts/pathfinder.xml` as the "System instructions".
+3.  **Provide a high-level goal or problem statement.**
+4.  Collaborate with the Pathfinder as it guides you from the "Why" (problem) to the "What" (solution) and "How" (implementation). The final output is an approved **Brief**.
 
-### Phase 2: Development
+### Phase 2: Architecture (Planning)
+1.  Start a new chat session.
+2.  Add and save the content of `Prompts/architect.xml` as the "System instructions".
+3.  **Provide the project file tree** and the **Brief** from the Pathfinder.
+4.  Iterate with the Architect to produce the public `README.md` and internal `ARCHITECTURE.md`.
+
+### Phase 3: Development (Implementation)
 1.  Start a new chat session.
 2.  Add and save the content of `Prompts/dev.xml` as the "System instructions".
-3.  **Provide the project file tree** and the architectural documents.
+3.  **Provide the project file tree** and the architectural documents from the Architect.
 4.  Instruct the Developer to begin implementing the first vertical slice. The Developer will provide you with `plan.yaml` files to execute using the `teddy` tool.
 
-### Phase 3: Debugging (When Needed)
-This phase is only initiated when the Developer or Architect AI enters a failure loop. Follow the instructions in the `Prompts/debugger.xml` system prompt.
+### Phase 4: Debugging (When Needed)
+This phase is only initiated when another agent enters a failure loop. Follow the instructions in the `Prompts/debugger.xml` system prompt.
 
 ## Recommended Tooling
 

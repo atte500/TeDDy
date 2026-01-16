@@ -35,13 +35,20 @@ This checklist guides the initial setup of the project environment. Each step mu
 - **Triggers:** On every push to the `main` branch.
 - **Pipeline:** The CI pipeline will lint, type-check, test, and build the packages.
 
+### Service Layer Naming Convention
+- **Dependency Attributes:** Injected dependencies in the core application services (`packages/executor/src/teddy_executor/core/services/`) MUST be private.
+- **Rationale:** This enforces a consistent pattern across the service layer, clearly distinguishing injected dependencies from public methods or other attributes.
+
 ### Testing Strategy
 - **Framework:** `pytest`.
 - **Location of Tests:** Within each package, tests are organized as follows:
     - `tests/acceptance/`: End-to-end tests.
     - `tests/integration/`: Tests for components that interact with external systems.
     - `tests/unit/`: Tests for individual functions or classes in isolation.
-- **Execution:** Tests are run from the **project root** by directing poetry to the correct package. For example, to run the `executor` tests: `poetry -C packages/executor run pytest`.
+- **Execution:** Tests are run from the **project root** by directing poetry to the correct package.
+    - **Run all tests for a package:** `poetry -C packages/executor run pytest`
+    - **Run tests in a specific file:** `poetry -C packages/executor run pytest tests/acceptance/test_chat_with_user_action.py`
+    - **Run a specific test by name:** `poetry -C packages/executor run pytest -k "test_chat_with_user_gets_response"`
 
 ### Pre-commit Hooks
 - **Framework:** `pre-commit`.
@@ -77,22 +84,7 @@ Consequently, any paths to files outside this directory (like those in the root 
 
 ---
 
-## 3. Boundary Map
-
-This section defines the system's strategic architectural divisions, separating isolated business logic from framework-specific integrations.
-
-### `executor` Package
-
-*   **Hexagonal Core:** This contains the pure business logic, application services, and domain models that are independent of any specific delivery mechanism or external tool.
-    *   **Components:** `Domain Model`, `Inbound Ports`, `Outbound Ports`, `Application Services`.
-*   **Framework/Platform Integration Layer:** This layer contains code that is directly coupled to external frameworks or platforms, such as the command-line interface library (`Typer`). Its primary role is to translate external inputs into calls to the hexagonal core.
-    *   **Components:** `main.py` (Composition Root), `CLI Adapter`.
-*   **Primary Adapters:** These are the concrete implementations of the outbound ports, bridging the hexagonal core to external systems like the local file system or the console.
-    *   **Components:** `ConsoleInteractorAdapter`, `LocalFileSystemAdapter`, `LocalRepoTreeGenerator`, `ShellAdapter`, `SystemEnvironmentInspector`, etc.
-
----
-
-## 4. Component Design
+## 3. Component Design
 
 This section provides a canonical map of the major architectural components for each package.
 
@@ -134,7 +126,7 @@ This section provides a canonical map of the major architectural components for 
 
 ---
 
-## 5. Project Stages & Polar Stars
+## 4. Project Stages & Polar Stars
 
 This section tracks the high-level project stages. Each stage delivers a significant set of features guided by a "Polar Star" prototype.
 
@@ -144,38 +136,13 @@ This section tracks the high-level project stages. Each stage delivers a signifi
 |   📝    | **Stage 02: Interactive TUI** | Create a Terminal User Interface to streamline the workflow of interacting with the AI agents, managing context, and executing plans without leaving the terminal.   | `Planned`  |
 ---
 
-## 6. Architectural Notes & Technical Debt
+## 5. Key Architectural Decisions
 
-This section captures non-blocking architectural observations and potential areas for future refactoring.
+This section captures significant, long-standing architectural decisions and patterns that define the system's design.
 
-- **CLI Exit Code Philosophy:** The application exits with a non-zero code if *any* action within a plan fails. This aligns the tool with standard CI/CD practices where a non-zero exit code universally signals failure.
-
-- **Consistent Failure Reporting:** The `CLIFormatter` handles all `FAILURE` statuses uniformly, producing a consistent, YAML-style block for the details of any failed action. This improves both human and machine readability and is the standard for all failure reporting.
-
-- **Static Analysis vs. Dynamic Patterns:** The `CLIFormatter`'s recursive `to_dict` function posed a challenge for `mypy`, which could not statically prove that a dataclass *type* would not be passed to the `asdict` function (which only accepts instances). The issue was pragmatically resolved with a `# type: ignore[arg-type]` comment, capturing a common trade-off where runtime logic is sound but cannot be fully verified by the static analyzer.
-
-- **CLI Interactivity & Input Strategy:** A key architectural decision separates plan input from user interaction. The `--plan-file` CLI option is the canonical way to provide a plan, reserving `stdin` exclusively for interactive I/O, such as the global `y/n` approval mechanism or the `chat_with_user` action. This prevents input conflicts and clarifies the executor's I/O model.
-
-- **Consolidated Acceptance Test Helpers:** The module `packages/executor/tests/acceptance/helpers.py` centralizes the logic for running the `teddy` executor in tests. It provides distinct helper functions for invoking plan-based actions (`run_teddy_with_plan_structure`) and non-plan utility commands (`run_teddy_command`), establishing a clear and reusable pattern for acceptance testing.
-
-- **Platform-Agnostic Test Data Generation:** Acceptance tests that generate YAML plans must be platform-agnostic, especially concerning file paths. The `run_teddy_with_plan_structure` helper in `tests/acceptance/helpers.py` is the required pattern. It accepts a Python data structure, recursively converts any `pathlib.Path` objects to POSIX-compliant strings, and then serializes the structure to a valid YAML plan. This centralizes platform-safe test data generation, making tests robust and cross-platform compatible.
-
-- **Acceptance Testing for Network I/O:** For features involving network I/O (like the `research` action), mocks applied in the test runner do not affect the application running as a separate subprocess. The required pattern is "white-box" acceptance testing: the test directly instantiates the relevant application service (e.g., `PlanService`) and injects a mocked adapter. This ensures tests are fast, reliable, and do not make real network calls.
-
-- **YAML Formatting for Readability:** The final YAML report is formatted for human readability. Multi-line strings are formatted using YAML's literal block style (`|`), achieved via a custom string representer for the `PyYAML` library.
-
-- **Composition Root Management:** The composition root in `packages/executor/src/teddy_executor/main.py` was refactored to use the `punq` dependency injection library. This has simplified the manual wiring of services. However, as the application grows, managing the container's configuration will remain an important architectural consideration.
-
-- **Canonical `repotree` Format for LLMs:** The `LocalRepoTreeGenerator` produces a simple, space-indented list of files and directories. This is the canonical format for providing file hierarchy context to an LLM, as it is token-efficient, platform-agnostic, and unambiguously machine-readable, avoiding the fragility and complexity of visual tree formats.
-
-- **Configuration Unification:** User-managed context configuration files (e.g., `perm.context`, `temp.context`) use a simple, newline-delimited `.context` format for better semantic meaning. System-generated context artifacts, such as `repotree.txt`, retain a `.txt` extension.
-
-- **Context-Driven Output:** The `context` command's output is driven entirely by the contents of the context configuration files (`.teddy/*.context`). The command generates artifacts (like the repo tree) to files, and these files must be explicitly listed in a context file to be included in the final output, making the command's behavior explicit and configurable.
-
-- **Context-Specific Ignores with `.teddyignore`:** To allow filtering of context for the AI without modifying the project's primary `.gitignore` file, the `LocalRepoTreeGenerator` supports a `.teddyignore` file in the project root. This file uses the same syntax as `.gitignore`. Its rules are applied with higher precedence, allowing it to override `.gitignore` rules (e.g., using `!` to re-include an ignored file). This provides a clean separation and ultimate control over the AI context versus the version control context.
-
-- **Comment Handling in Context Files:** The parser for `.context` files intentionally ignores empty lines and any lines beginning with a `#` character. This allows for comments and spacing to be used for better readability without affecting the application's behavior.
-
-- **Robust Acceptance Testing via Parsing:** CI failures caused by environment-specific YAML formatting have shown that asserting against raw string output is brittle. The required pattern for acceptance tests that check structured output (like the YAML report) is to first parse the output into a data structure, and then make assertions against specific fields. This makes tests resilient to cosmetic formatting changes. Future work should include a dedicated refactoring slice to apply this pattern to the entire acceptance test suite.
-
-- **Acceptance Testing for CLI Commands with Mocks:** The `execute` command, which requires mocking `pyperclip`, revealed a critical testing principle. Mocks applied in the `pytest` process are not inherited by child processes launched via `subprocess`. Therefore, the required pattern for acceptance testing CLI commands that depend on mocks is **"white-box" acceptance testing using `typer.testing.CliRunner`**. This runs the CLI application logic in the same process as the test, ensuring mocks are respected. The `CliRunner` should be instantiated with `mix_stderr=False` to allow for separate inspection of `stdout` and `stderr`.
+-   **Hexagonal Architecture:** The core business logic is isolated from external frameworks and I/O, enabling independent testing and technology swapping.
+-   **Dependency Injection (DI):** The composition root in `main.py` uses the `punq` library to manage and inject dependencies, decoupling services from concrete implementations.
+-   **"White-Box" Acceptance Testing:** All acceptance tests use `typer.testing.CliRunner` to run the CLI application in-process. This is the required pattern as it ensures mocks are respected and is faster and more reliable than testing via `subprocess`.
+-   **Structured Output Parsing in Tests:** Acceptance tests that verify structured output (e.g., YAML) MUST parse the output into a data structure before making assertions. This makes tests resilient to formatting changes.
+-   **Separation of I/O Concerns:** The `--plan-file` CLI option is the canonical way to provide a plan, reserving `stdin` exclusively for interactive prompts (like `y/n` or `chat_with_user`).
+-   **Context Configuration:** The `context` command's behavior is explicitly driven by the contents of `.teddy/*.context` files, providing a clear, user-configurable contract.

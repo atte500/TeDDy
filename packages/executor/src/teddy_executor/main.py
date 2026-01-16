@@ -73,6 +73,29 @@ def context():
     typer.echo(formatted_context)
 
 
+def _get_plan_content(plan_file: Optional[Path]) -> str:
+    """
+    Retrieves the plan content from a file or the clipboard.
+    Exits with an error if the source is invalid.
+    """
+    plan_content: str
+    if plan_file:
+        if not plan_file.is_file():
+            typer.echo(f"Error: Plan file not found at '{plan_file}'", err=True)
+            raise typer.Exit(code=1)
+        plan_content = plan_file.read_text()
+    else:
+        try:
+            plan_content = pyperclip.paste()
+            if not plan_content.strip():
+                typer.echo("Error: Clipboard is empty.", err=True)
+                raise typer.Exit(code=1)
+        except pyperclip.PyperclipException as e:
+            typer.echo(f"Error accessing clipboard: {e}", err=True)
+            raise typer.Exit(code=1)
+    return plan_content
+
+
 @app.command()
 def execute(
     plan_file: Optional[Path] = typer.Argument(
@@ -92,19 +115,7 @@ def execute(
     interactive_mode = not yes
 
     try:
-        plan_content: str
-        if plan_file:
-            if not plan_file.is_file():
-                # Use typer.echo for error and typer.Exit for termination
-                typer.echo(f"Error: Plan file not found at '{plan_file}'", err=True)
-                raise typer.Exit(code=1)
-            plan_content = plan_file.read_text()
-        else:
-            plan_content = pyperclip.paste()
-            if not plan_content.strip():
-                typer.echo("Error: Clipboard is empty.", err=True)
-                raise typer.Exit(code=1)
-
+        plan_content = _get_plan_content(plan_file)
         report = orchestrator.execute(
             plan_content=plan_content, interactive=interactive_mode
         )
