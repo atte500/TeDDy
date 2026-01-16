@@ -5,14 +5,17 @@ import yaml
 from typer.testing import CliRunner
 
 from teddy_executor.main import app, create_container
-from tests.acceptance.helpers import run_teddy_with_plan_structure
+from tests.acceptance.helpers import (
+    run_cli_with_plan,
+    parse_yaml_report,
+)
 
 # Define platform-agnostic commands
 LIST_COMMAND = "dir" if sys.platform == "win32" else "ls -a"
 ECHO_COMMAND = "(echo %MY_VAR%)" if sys.platform == "win32" else "echo $MY_VAR"
 
 
-def test_execute_action_with_custom_cwd(tmp_path: Path):
+def test_execute_action_with_custom_cwd(tmp_path: Path, monkeypatch):
     """
     Scenario 2: Command with a Custom Working Directory
     Given a plan with an execute action specifying a cwd
@@ -39,18 +42,22 @@ def test_execute_action_with_custom_cwd(tmp_path: Path):
     ]
 
     # Act
-    result = run_teddy_with_plan_structure(plan, cwd=tmp_path)
+    result = run_cli_with_plan(monkeypatch, plan, cwd=tmp_path)
 
     # Assert
+    assert result.exit_code == 0
+    report = parse_yaml_report(result.stdout)
+
     # Check that the overall run was successful
-    assert "status: SUCCESS" in result.stdout
+    assert report["run_summary"]["status"] == "SUCCESS"
+
     # Check that the command output contains the unique file, proving it ran in the correct directory
-    assert "unique_file.txt" in result.stdout
-    # Check that the process exited cleanly
-    assert result.returncode == 0
+    action_log = report["action_logs"][0]
+    assert action_log["status"] == "SUCCESS"
+    assert "unique_file.txt" in action_log["details"]["stdout"]
 
 
-def test_execute_action_with_env_variables(tmp_path: Path):
+def test_execute_action_with_env_variables(tmp_path: Path, monkeypatch):
     """
     Scenario 3: Command with Environment Variables
     Given a plan with an execute action specifying an env map
@@ -70,12 +77,15 @@ def test_execute_action_with_env_variables(tmp_path: Path):
     ]
 
     # Act
-    result = run_teddy_with_plan_structure(plan, cwd=tmp_path)
+    result = run_cli_with_plan(monkeypatch, plan, cwd=tmp_path)
 
     # Assert
-    assert "status: SUCCESS" in result.stdout
-    assert expected_value in result.stdout
-    assert result.returncode == 0
+    assert result.exit_code == 0
+    report = parse_yaml_report(result.stdout)
+    assert report["run_summary"]["status"] == "SUCCESS"
+    action_log = report["action_logs"][0]
+    assert action_log["status"] == "SUCCESS"
+    assert expected_value in action_log["details"]["stdout"]
 
 
 def test_execute_action_fails_with_unsafe_cwd_traversal(tmp_path: Path):
@@ -156,7 +166,7 @@ def test_execute_action_fails_with_absolute_cwd(tmp_path: Path):
     assert result.exit_code != 0
 
 
-def test_execute_action_backwards_compatibility(tmp_path: Path):
+def test_execute_action_backwards_compatibility(tmp_path: Path, monkeypatch):
     """
     Scenario 5: Backwards Compatibility (Simple String Command)
     Given a plan where the execute action is a simple string (old format)
@@ -167,15 +177,18 @@ def test_execute_action_backwards_compatibility(tmp_path: Path):
     plan = [{"action": "execute", "params": "echo 'it works'"}]
 
     # Act
-    result = run_teddy_with_plan_structure(plan, cwd=tmp_path)
+    result = run_cli_with_plan(monkeypatch, plan, cwd=tmp_path)
 
     # Assert
-    assert "status: SUCCESS" in result.stdout
-    assert "it works" in result.stdout
-    assert result.returncode == 0
+    assert result.exit_code == 0
+    report = parse_yaml_report(result.stdout)
+    assert report["run_summary"]["status"] == "SUCCESS"
+    action_log = report["action_logs"][0]
+    assert action_log["status"] == "SUCCESS"
+    assert "it works" in action_log["details"]["stdout"]
 
 
-def test_execute_action_with_both_cwd_and_env(tmp_path: Path):
+def test_execute_action_with_both_cwd_and_env(tmp_path: Path, monkeypatch):
     """
     Scenario 4: Command with Both `cwd` and `env`
     Given a plan with an execute action specifying both cwd and env
@@ -207,11 +220,12 @@ def test_execute_action_with_both_cwd_and_env(tmp_path: Path):
     ]
 
     # Act
-    result = run_teddy_with_plan_structure(plan, cwd=tmp_path)
+    result = run_cli_with_plan(monkeypatch, plan, cwd=tmp_path)
 
     # Assert
-    assert "status: SUCCESS" in result.stdout
-    assert result.returncode == 0
+    assert result.exit_code == 0
+    report = parse_yaml_report(result.stdout)
+    assert report["run_summary"]["status"] == "SUCCESS"
 
     # Verify that the file was created in the correct directory with the correct content
     output_file = sub_dir / "output.txt"

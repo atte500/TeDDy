@@ -125,3 +125,17 @@ def run_cli_command(
     with monkeypatch.context() as m:
         m.chdir(cwd)
         return runner.invoke(app, args, input=input)
+
+
+def run_cli_with_plan(monkeypatch, plan_structure: list | dict, cwd: Path) -> Result:
+    """
+    Runs the teddy 'execute' command with a plan structure using CliRunner.
+    """
+    sanitized_structure = _convert_paths(plan_structure)
+    plan_content = yaml.dump(sanitized_structure)
+    plan_file = cwd / "plan.yml"
+    plan_file.write_text(plan_content)
+
+    with monkeypatch.context() as m:
+        m.chdir(cwd)
+        return runner.invoke(app, ["execute", str(plan_file), "--yes"])
