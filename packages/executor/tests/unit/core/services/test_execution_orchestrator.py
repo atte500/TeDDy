@@ -12,17 +12,17 @@ from teddy_executor.core.services.execution_orchestrator import ExecutionOrchest
 
 
 @pytest.fixture
-def mock_plan_parser():
+def mock_plan_parser() -> Mock:
     return Mock()
 
 
 @pytest.fixture
-def mock_action_dispatcher():
+def mock_action_dispatcher() -> Mock:
     return Mock()
 
 
 @pytest.fixture
-def mock_user_interactor():
+def mock_user_interactor() -> Mock:
     return Mock()
 
 
@@ -38,10 +38,10 @@ def orchestrator(
 
 
 def test_execute_with_failing_action(
-    orchestrator,
-    mock_plan_parser,
-    mock_action_dispatcher,
-    mock_user_interactor,
+    orchestrator: ExecutionOrchestrator,
+    mock_plan_parser: Mock,
+    mock_action_dispatcher: Mock,
+    mock_user_interactor: Mock,
 ):
     """
     Given a plan with an action that fails
@@ -74,10 +74,10 @@ def test_execute_with_failing_action(
 
 
 def test_execute_interactive_and_skipped(
-    orchestrator,
-    mock_plan_parser,
-    mock_action_dispatcher,
-    mock_user_interactor,
+    orchestrator: ExecutionOrchestrator,
+    mock_plan_parser: Mock,
+    mock_action_dispatcher: Mock,
+    mock_user_interactor: Mock,
 ):
     """
     Given interactive mode is enabled
@@ -105,10 +105,10 @@ def test_execute_interactive_and_skipped(
 
 
 def test_execute_interactive_and_approved(
-    orchestrator,
-    mock_plan_parser,
-    mock_action_dispatcher,
-    mock_user_interactor,
+    orchestrator: ExecutionOrchestrator,
+    mock_plan_parser: Mock,
+    mock_action_dispatcher: Mock,
+    mock_user_interactor: Mock,
 ):
     """
     Given interactive mode is enabled
@@ -141,10 +141,10 @@ def test_execute_interactive_and_approved(
 
 
 def test_execute_happy_path_non_interactive(
-    orchestrator,
-    mock_plan_parser,
-    mock_action_dispatcher,
-    mock_user_interactor,
+    orchestrator: ExecutionOrchestrator,
+    mock_plan_parser: Mock,
+    mock_action_dispatcher: Mock,
+    mock_user_interactor: Mock,
 ):
     """
     Given a valid plan path and non-interactive mode

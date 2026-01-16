@@ -1,3 +1,5 @@
+from unittest.mock import Mock
+import pytest
 from teddy_executor.core.domain.models import ActionData, ActionLog, ActionStatus
 from teddy_executor.core.services.action_dispatcher import ActionDispatcher
 
@@ -18,20 +20,25 @@ class FakeFailingAction:
         raise RuntimeError("Fake action failed as intended.")
 
 
-class FakeActionFactory:
-    """A test double for the ActionFactory."""
+# --- Fixtures ---
 
-    def __init__(self, actions_to_return: dict):
-        self._actions = actions_to_return
 
-    def create_action(self, action_type: str):
-        return self._actions.get(action_type)
+@pytest.fixture
+def mock_action_factory() -> Mock:
+    return Mock()
+
+
+@pytest.fixture
+def dispatcher(mock_action_factory: Mock) -> ActionDispatcher:
+    return ActionDispatcher(action_factory=mock_action_factory)
 
 
 # --- Test Cases ---
 
 
-def test_dispatch_and_execute_success():
+def test_dispatch_and_execute_success(
+    dispatcher: ActionDispatcher, mock_action_factory: Mock
+):
     """
     Given a valid action that succeeds,
     When dispatch_and_execute is called,
@@ -42,10 +49,7 @@ def test_dispatch_and_execute_success():
     action_params = {"param1": "value1"}
     action_data = ActionData(type=action_type, params=action_params)
 
-    fake_action = FakeSuccessfulAction()
-    fake_factory = FakeActionFactory(actions_to_return={action_type: fake_action})
-
-    dispatcher = ActionDispatcher(action_factory=fake_factory)
+    mock_action_factory.create_action.return_value = FakeSuccessfulAction()
 
     # Act
     result_log = dispatcher.dispatch_and_execute(action_data)
@@ -59,7 +63,9 @@ def test_dispatch_and_execute_success():
     assert result_log.details == expected_details
 
 
-def test_dispatch_and_execute_failure():
+def test_dispatch_and_execute_failure(
+    dispatcher: ActionDispatcher, mock_action_factory: Mock
+):
     """
     Given a valid action that fails by raising an exception,
     When dispatch_and_execute is called,
@@ -70,10 +76,7 @@ def test_dispatch_and_execute_failure():
     action_params = {"param1": "value1"}
     action_data = ActionData(type=action_type, params=action_params)
 
-    fake_action = FakeFailingAction()
-    fake_factory = FakeActionFactory(actions_to_return={action_type: fake_action})
-
-    dispatcher = ActionDispatcher(action_factory=fake_factory)
+    mock_action_factory.create_action.return_value = FakeFailingAction()
 
     # Act
     result_log = dispatcher.dispatch_and_execute(action_data)
@@ -83,4 +86,5 @@ def test_dispatch_and_execute_failure():
     assert result_log.status == ActionStatus.FAILURE
     assert result_log.action_type == action_type
     assert result_log.params == action_params
+    assert isinstance(result_log.details, str)
     assert "Fake action failed as intended" in result_log.details
