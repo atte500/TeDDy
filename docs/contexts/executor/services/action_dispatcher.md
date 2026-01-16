@@ -20,14 +20,14 @@ The `ActionDispatcher` service exposes a single method.
 ### `dispatch_and_execute`
 Resolves and executes a single action, returning its result.
 
-**Status:** Planned
+**Status:** Implemented
 
 ```python
 from teddy_executor.core.domain.models import ActionData, ActionLog
-from teddy_executor.core.services import ActionFactory # Fictional import
+from teddy_executor.core.services.action_factory import IActionFactory
 
 class ActionDispatcher:
-    def __init__(self, action_factory: ActionFactory):
+    def __init__(self, action_factory: IActionFactory):
         self._action_factory = action_factory
 
     def dispatch_and_execute(self, action_data: ActionData) -> ActionLog:

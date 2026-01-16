@@ -24,10 +24,9 @@ The `ExecutionOrchestrator` service exposes a single method, fulfilling the `IRu
 ### `execute`
 Orchestrates the parsing and execution of a plan, returning a final report.
 
-**Status:** Planned
+**Status:** Implemented
 
 ```python
-from pathlib import Path
 from teddy_executor.core.domain.models import ExecutionReport
 from teddy_executor.core.ports.outbound import IUserInteractor
 from teddy_executor.core.services import PlanParser, ActionDispatcher
@@ -43,11 +42,11 @@ class ExecutionOrchestrator:
         self._action_dispatcher = action_dispatcher
         self._user_interactor = user_interactor
 
-    def execute(self, plan_path: Path, interactive: bool) -> ExecutionReport:
+    def execute(self, plan_content: str, interactive: bool) -> ExecutionReport:
         """
         Coordinates the end-to-end execution of a plan.
 
-        1.  Calls the PlanParser to load the plan.
+        1.  Calls the PlanParser to load the plan from a string.
         2.  Loops through each action in the plan.
         3.  If in interactive mode, prompts the user for approval via the IUserInteractor.
         4.  If approved (or not in interactive mode), calls the ActionDispatcher.
@@ -55,7 +54,7 @@ class ExecutionOrchestrator:
         6.  Builds and returns the final ExecutionReport.
 
         Args:
-            plan_path: The path to the plan file.
+            plan_content: A string containing the plan.
             interactive: A flag to enable/disable step-by-step user approval.
 
         Returns:
@@ -66,5 +65,5 @@ class ExecutionOrchestrator:
 
 ## 4. Domain Models (Input/Output)
 
--   **Input:** `plan_path: Path`, `interactive: bool`
+-   **Input:** `plan_content: str`, `interactive: bool`
 -   **Output:** `ExecutionReport` (from `execution_report.md`)
