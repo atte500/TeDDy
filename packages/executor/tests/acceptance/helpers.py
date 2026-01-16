@@ -2,10 +2,16 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import Optional, Any
+
 import yaml
+from teddy_executor.main import app
+from typer.testing import CliRunner, Result
 
 # Path to the teddy executable script
 TEDDY_CMD_BASE = [sys.executable, "-m", "teddy_executor"]
+
+
+runner = CliRunner(mix_stderr=False)
 
 
 def run_teddy_with_plan_file(
@@ -108,3 +114,14 @@ def run_teddy_command(
         text=True,
         cwd=cwd,
     )
+
+
+def run_cli_command(
+    monkeypatch, args: list[str], cwd: Path, input: Optional[str] = None
+) -> Result:
+    """
+    Runs a teddy command using the CliRunner for in-process testing.
+    """
+    with monkeypatch.context() as m:
+        m.chdir(cwd)
+        return runner.invoke(app, args, input=input)

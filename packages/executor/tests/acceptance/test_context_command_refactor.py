@@ -1,10 +1,10 @@
 import re
 from pathlib import Path
 
-from tests.acceptance.helpers import run_teddy_command
+from tests.acceptance.helpers import run_cli_command
 
 
-def test_context_creates_default_perm_context_file(tmp_path: Path):
+def test_context_creates_default_perm_context_file(tmp_path: Path, monkeypatch):
     """
     Scenario 2: Simplified Default Configuration
     Given a project that does not have a .teddy/perm.context file
@@ -18,10 +18,10 @@ def test_context_creates_default_perm_context_file(tmp_path: Path):
     (tmp_path / "docs/ARCHITECTURE.md").touch()
 
     # Act
-    result = run_teddy_command(["context"], cwd=tmp_path)
+    result = run_cli_command(monkeypatch, ["context"], cwd=tmp_path)
 
     # Assert
-    assert result.returncode == 0
+    assert result.exit_code == 0
     teddy_dir = tmp_path / ".teddy"
 
     # Check perm.context
@@ -36,7 +36,7 @@ def test_context_creates_default_perm_context_file(tmp_path: Path):
     assert gitignore_file.read_text() == "*"
 
 
-def test_context_generates_standard_output_and_is_clean(tmp_path: Path):
+def test_context_generates_standard_output_and_is_clean(tmp_path: Path, monkeypatch):
     """
     Scenario 1: Standardized Output Format
     Scenario 3: Clean Context Vault Listing
@@ -52,11 +52,11 @@ def test_context_generates_standard_output_and_is_clean(tmp_path: Path):
     (tmp_path / "docs/ARCHITECTURE.md").write_text("# Test Architecture")
 
     # Act
-    result = run_teddy_command(["context"], cwd=tmp_path)
+    result = run_cli_command(monkeypatch, ["context"], cwd=tmp_path)
     output = result.stdout
 
     # Assert - Standardized Output Format (Scenario 1)
-    assert result.returncode == 0
+    assert result.exit_code == 0
     assert "# System Information" in output
     assert "# Repository Tree" in output
     assert "# Context Vault" in output
