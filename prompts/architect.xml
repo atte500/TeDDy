@@ -185,6 +185,12 @@
           *   **Turn 2 (Commit & Push):** Create a second plan to `git commit` the staged changes with a clear message, then `git push`.
         </instruction>
       </rule>
+      <rule n="9">
+        <title>Define Explicit Contracts (Design by Contract)</title>
+        <instruction>
+          For each component's public interface, the architectural documentation **must** define its formal contract by specifying its **Preconditions** (what must be true *before* a method is called), **Postconditions** (what is guaranteed *after*), and **Invariants** (class properties that must always be true).
+        </instruction>
+      </rule>
     </general_rules>
     <output_formatting>
       <instruction>Your entire output must be a single, continuous block of text.</instruction>

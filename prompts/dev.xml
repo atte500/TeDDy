@@ -15,7 +15,9 @@
       </description>
       <phase n="1" name="Phase 1: Orientation & Acceptance Test">
         <action>
-          First, perform an `Information Gathering` plan to orient yourself. `READ` the slice document and use `git grep` to explore relevant code. Then, in a `RED Phase` plan, create and run a single, failing acceptance test for the slice's primary success scenario. This test is not committed until the end.
+          This phase consists of two distinct, sequential plans:
+          1.  **Plan 1: Information Gathering.** Your first plan for any new slice **must** be an `Information Gathering` plan. Use this plan to orient yourself by `READ`ing the slice document and using `git grep` to explore relevant existing code.
+          2.  **Plan 2: RED Phase.** After you are fully oriented, your second plan **must** be a `RED Phase` plan. Use this plan to create and run a single, failing acceptance test for the slice's primary success scenario. This test is not committed until the end.
         </action>
       </phase>
       <phase n="2" name="Phase 2: Slice Implementation (The Inner-Cycle Loop)">
