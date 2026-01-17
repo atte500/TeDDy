@@ -39,13 +39,27 @@ This checklist guides the initial setup of the project environment. Each step mu
 - **Dependency Attributes:** Injected dependencies in the core application services (`packages/executor/src/teddy_executor/core/services/`) MUST be private.
 - **Rationale:** This enforces a consistent pattern across the service layer, clearly distinguishing injected dependencies from public methods or other attributes.
 
+### Command Execution with Poetry
+- **Principle:** Commands are executed from the **project root**, but `poetry`'s `-C` flag changes the working directory *before* the command runs. For example, `poetry -C packages/executor run ...` executes the command as if you were already inside the `packages/executor/` directory.
+- **Rule:** All file paths provided to such commands **MUST be relative to the package directory**, not the project root.
+- **Correct Pattern:**
+  ```bash
+  # Correctly provides a path relative to packages/executor/
+  poetry -C packages/executor run pytest tests/acceptance/test_chat_with_user_action.py
+  ```
+- **Incorrect Pattern:**
+  ```bash
+  # Incorrectly duplicates the path because the CWD is already packages/executor/
+  poetry -C packages/executor run pytest packages/executor/tests/acceptance/test_quality_of_life_improvements.py
+  ```
+
 ### Testing Strategy
 - **Framework:** `pytest`.
 - **Location of Tests:** Within each package, tests are organized as follows:
     - `tests/acceptance/`: End-to-end tests.
     - `tests/integration/`: Tests for components that interact with external systems.
     - `tests/unit/`: Tests for individual functions or classes in isolation.
-- **Execution:** Tests are run from the **project root** by directing poetry to the correct package.
+- **Execution:** Tests are run from the **project root** using the `poetry -C` flag. See the **"Command Execution with Poetry"** section for the required path conventions.
     - **Run all tests for a package:** `poetry -C packages/executor run pytest`
     - **Run tests in a specific file:** `poetry -C packages/executor run pytest tests/acceptance/test_chat_with_user_action.py`
     - **Run a specific test by name:** `poetry -C packages/executor run pytest -k "test_chat_with_user_gets_response"`
@@ -64,18 +78,6 @@ The `spikes/` directory is intentionally excluded from `ruff` and `mypy` checks 
 
 ### Handling of Secrets
 - **Strategy:** Not applicable for this tool. If third-party API keys are needed in the future, they will be managed through environment variables.
-
-### Running Scripts (including Spikes) from the Root
-When running a script from the project root using Poetry, it's crucial to understand that the `-C` flag changes the effective working directory before the command is executed. For example, `poetry -C packages/executor run ...` will execute the command as if you were inside the `packages/executor/` directory.
-
-Consequently, any paths to files outside this directory (like those in the root `/spikes` folder) must be relative *from that new working directory*.
-
-- **Correct Pattern:** Use `../..` to navigate up from the package directory to the project root.
-- **Example:** To run a spike from the root while inside the `teddy-executor` virtual environment:
-  ```bash
-  # Correctly navigates up two levels to the root, then down into spikes.
-  poetry -C packages/executor run python ../../spikes/technical/my_spike.py
-  ```
 
 ### Third-Party Dependency Vetting
 - **Strategy:** Mandate a "Verify, Then Document" Spike for new dependencies.
