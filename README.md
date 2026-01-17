@@ -117,11 +117,13 @@ teddy --plan-file plan.yaml
 teddy --plan-file plan.yaml -y
 ```
 
+To streamline the workflow, commands that produce significant output (like `context` and `execute`) will now **copy their output to the clipboard by default**. A confirmation message will be printed to `stderr`. This behavior can be disabled by adding the `--no-copy` flag to the command.
+
 #### Utility Commands
 
-| Command   | Description                                                                                                                                                                                                                                                                                                                                   |
-| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `context` | Gathers and displays the project context. When generating the repository tree, the command respects rules in both `.gitignore` and an optional `.teddyignore` file. Rules in `.teddyignore` take precedence, allowing you to re-include specific files for the AI's context that are ignored by `.gitignore` (e.g., using `!dist/bundle.js`). |
+| Command   | Description                                                                                                                                                                                                                                                                                                                                      |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `context` | Gathers and displays the project context, copying it to the clipboard by default. The command respects rules in both `.gitignore` and an optional `.teddyignore` file. Rules in `.teddyignore` take precedence, allowing you to re-include specific files for the AI's context that are ignored by `.gitignore` (e.g., using `!dist/bundle.js`). |
 
 ### YAML Action Reference
 
