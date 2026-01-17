@@ -84,9 +84,11 @@ Consequently, any paths to files outside this directory (like those in the root 
 
 ---
 
-## 3. Component Design
+## 3. Component & Boundary Map
 
-This section provides a canonical map of the major architectural components for each package.
+This section serves as both the strategic **Boundary Map** and the detailed **Component Map** for the system.
+
+**Boundary Analysis:** The `executor` package follows a Hexagonal Architecture. The boundary separates the core business logic (domain models, services, and ports) from the platform-specific integration layer (the CLI) and infrastructure (the local filesystem, shell, and web). **Primary Adapters** act as the explicit translation layer across this boundary, ensuring the core remains isolated and independently testable.
 
 ### `executor` Package
 

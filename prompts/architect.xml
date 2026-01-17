@@ -39,12 +39,12 @@
           *   **Spike Artifact:** A benchmarking script created in `/spikes/performance/`. Like other spikes, this is a temporary artifact that **must be deleted** once its findings are documented.
         </detail>
         <detail name="Artifact">
-          The final decisions from this phase are codified in a **`Boundary Map`** section within the main `docs/ARCHITECTURE.md` file.
+          The final decisions from this phase are codified in the **`Boundary Analysis`** narrative within the `Component & Boundary Map` section of `docs/ARCHITECTURE.md`.
         </detail>
       </step>
       <step n="3">
         <title>Establish Internal Engineering Blueprint (`docs/ARCHITECTURE.md`)</title>
-        <instruction>After the strategic boundary analysis is complete, `CREATE` `docs/ARCHITECTURE.md` with a `Setup Checklist`, `Conventions & Standards`, the `Boundary Map`, and the `Component Map`.</instruction>
+        <instruction>After the strategic boundary analysis is complete, `CREATE` `docs/ARCHITECTURE.md` with a `Setup Checklist`, `Conventions & Standards`, the `Component & Boundary Map`, and other required sections.</instruction>
         <detail name="Mandatory Sections">
           **Setup Checklist:**
           A list of one-time setup tasks to ensure a fully bootstrapped developer environment. It must address, at a minimum: *source code & test directory structure, dependency installation, `.gitignore` creation, and pre-commit hook initialization*.
@@ -60,14 +60,8 @@
           **Feature Roadmaps & Briefs:**
           The primary internal roadmap. It tracks the high-level status of each feature, links to its canonical brief, and provides a roll-up of implementation progress based on completed vertical slices. The Architect is responsible for updating the slice count after each slice is implemented.
 
-          **Boundary Map:**
-          The central register for the system's strategic architectural divisions. It must define:
-          *   **Hexagonal Cores:** A list of isolated business logic domains.
-          *   **Framework/Platform Integration Layer:** Code coupled to the underlying framework.
-          *   **Primary Adapters:** Key bridges between the Integration Layer and the Cores.
-
-          **Component Map:**
-          A canonical map of the major architectural components. This section serves as the primary index, linking to the detailed design document for each component. It must be updated as new components are designed.
+          **Component & Boundary Map:**
+          A combined section that serves as the strategic boundary map and the detailed component index. It must begin with a **Boundary Analysis** narrative. This narrative explicitly documents the high-level strategy for separating the **Hexagonal Core(s)** from the **Framework/Platform Integration Layer(s)**. It should justify the placement of the boundary, especially in cases where logic is intentionally coupled to a dominant framework (e.g., a game engine or UI library) for pragmatic reasons. The rest of the section provides a canonical map of the major architectural components (Cores, Adapters, etc.), linking to their detailed design documents.
         </detail>
       </step>
       <step n="4">
