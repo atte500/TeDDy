@@ -65,12 +65,34 @@ app = typer.Typer()
 container = create_container()
 
 
+def _echo_and_copy(
+    content: str,
+    no_copy: bool = False,
+    confirmation_message: str = "Output copied to clipboard.",
+):
+    """Prints content to stdout and copies it to the clipboard unless disabled."""
+    typer.echo(content)
+    if not no_copy:
+        try:
+            pyperclip.copy(content)
+            typer.echo(confirmation_message, err=True)
+        except pyperclip.PyperclipException:
+            # Silently fail if clipboard is not available.
+            pass
+
+
 @app.command()
-def context():
+def context(
+    no_copy: bool = typer.Option(
+        False,
+        "--no-copy",
+        help="Do not copy the output to the clipboard.",
+    ),
+):
     context_service: IGetContextUseCase = container.resolve(IGetContextUseCase)
     context_result = context_service.get_context()
     formatted_context = format_project_context(context_result)
-    typer.echo(formatted_context)
+    _echo_and_copy(formatted_context, no_copy=no_copy)
 
 
 def _get_plan_content(plan_file: Optional[Path]) -> str:
@@ -109,6 +131,11 @@ def execute(
         "-y",
         help="Automatically approve all actions without prompting.",
     ),
+    no_copy: bool = typer.Option(
+        False,
+        "--no-copy",
+        help="Do not copy the output to the clipboard.",
+    ),
 ):
     orchestrator: RunPlanUseCase = container.resolve(RunPlanUseCase)
     report: Optional[ExecutionReport] = None
@@ -126,12 +153,11 @@ def execute(
 
     if report:
         formatted_report = format_report_as_yaml(report)
-        typer.echo(formatted_report)
-        try:
-            pyperclip.copy(formatted_report)
-            typer.echo("\nExecution report copied to clipboard.", err=True)
-        except pyperclip.PyperclipException:
-            pass  # Fail silently if clipboard is not available
+        _echo_and_copy(
+            formatted_report,
+            no_copy=no_copy,
+            confirmation_message="Execution report copied to clipboard.",
+        )
 
         if report.run_summary.status == RunStatus.FAILURE:
             raise typer.Exit(code=1)
