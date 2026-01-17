@@ -1,6 +1,6 @@
 # Inbound Adapter: CLI
 
-**Status:** Refactoring
+**Status:** Implemented
 **Language:** Python 3.9+
 **Introduced in:** [Slice 01: Walking Skeleton](../../../slices/executor/01-walking-skeleton.md)
 
@@ -90,7 +90,7 @@ This adapter is a "driving" adapter that uses inbound ports to interact with the
 *   **Composition Root:** The application's dependency injection and wiring are handled in `packages/executor/src/teddy_executor/main.py` as described in the Dependency Injection section above.
 
 ### Main Command: `execute`
-**Status:** Refactoring
+**Status:** Implemented
 **Updated in:** [Slice 19: Unified `execute` Command & Interactive Approval](../../../slices/executor/19-unified-execute-command.md)
 
 This is the primary command for executing a plan.
@@ -115,7 +115,7 @@ This command provides a comprehensive snapshot of the project for an AI agent.
 
 *   **Input:**
     *   `--no-copy` (Optional Flag): If provided, suppresses the default behavior of copying the output to the system clipboard.
-*   **Behavior:** It invokes the `ContextService` via the `IGetContextUseCase` port. It receives a `ContextResult` domain object in return, formats it into a structured, human-readable string, and prints it to standard output.
+*   **Behavior:** It invokes the `ContextService` via the `IGetContextUseCase` port. It receives a `ContextResult` domain object in return, formats it into a structured, human-readable string, and prints it to standard output while also copying it to the clipboard, as per the standard output handling rules.
 
 ### Standard Output Handling
 **Updated in:** [Slice 22: Generalized Clipboard Output](../../../slices/executor/22-generalized-clipboard-output.md)
