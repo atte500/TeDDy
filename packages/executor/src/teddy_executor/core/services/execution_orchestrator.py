@@ -34,8 +34,7 @@ class ExecutionOrchestrator:
         for action in plan.actions:
             should_dispatch = True
             reason = ""
-            if interactive:
-                # --- START OF FIX ---
+            if interactive and action.type != "chat_with_user":
                 # Build a more descriptive, multi-line prompt for readability
                 # and correctly include the description.
                 prompt_parts = [
@@ -52,7 +51,6 @@ class ExecutionOrchestrator:
                 prompt_parts.append("---\nApprove action?")
 
                 prompt = "\n".join(prompt_parts)
-                # --- END OF FIX ---
                 should_dispatch, reason = self._user_interactor.confirm_action(prompt)
 
             if should_dispatch:

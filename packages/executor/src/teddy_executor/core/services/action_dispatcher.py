@@ -1,5 +1,5 @@
 from dataclasses import is_dataclass, asdict
-from typing import Protocol
+from typing import Protocol, Any
 
 from teddy_executor.core.domain.models import ActionData, ActionLog, CommandResult
 
@@ -10,7 +10,7 @@ from teddy_executor.core.domain.models import ActionData, ActionLog, CommandResu
 class IAction(Protocol):
     """Defines the interface for any action handler."""
 
-    def execute(self, **kwargs) -> dict: ...
+    def execute(self, **kwargs) -> Any: ...
 
 
 class IActionFactory(Protocol):
@@ -73,21 +73,16 @@ class ActionDispatcher:
 
             # Convert dataclass to dict for serialization
             if is_dataclass(execution_result):
-                result_to_serialize = asdict(execution_result)
+                result_to_serialize = asdict(execution_result)  # type: ignore[arg-type]
             else:
                 result_to_serialize = execution_result
 
             # --- Normalize successful results for consistent reporting ---
-            if action_data.type == "read" and isinstance(result_to_serialize, str):
-                result_to_serialize = {"content": result_to_serialize}
-            elif action_data.type == "chat_with_user" and isinstance(
-                result_to_serialize, str
-            ):
-                result_to_serialize = {"response": result_to_serialize}
-            elif action_data.type == "chat_with_user" and isinstance(
-                result_to_serialize, str
-            ):
-                result_to_serialize = {"response": result_to_serialize}
+            if isinstance(result_to_serialize, str):
+                if action_data.type == "read":
+                    result_to_serialize = {"content": result_to_serialize}
+                elif action_data.type == "chat_with_user":
+                    result_to_serialize = {"response": result_to_serialize}
 
             # Determine status based on result type
             if isinstance(execution_result, CommandResult):
