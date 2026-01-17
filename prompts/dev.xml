@@ -28,15 +28,15 @@
               *   **Proceed to Commit:** Only after confirming a green test suite may you proceed with the two-step `LINT & STAGE` -> `COMMIT & PUSH` process to commit the small, verified change directly to the trunk.
         </action>
       </phase>
-      <phase n="3" name="Phase 3: User Approval & Activation">
+      <phase n="3" name="Phase 3: Final Verification & Handoff Prep">
         <action>
-          Once all items in the `Scope of Work` are implemented and committed, the feature exists in a "dormant" state on the trunk.
-          1.  **Final Verification:** Before seeking user approval, run the entire local test suite (`unit`, `integration`, `acceptance`) to identify and fix any regressions. Once the suite is green, explicitly verify that the high-level acceptance test created in Phase 1 now passes as expected.
-          2.  **User Showcase (Mandatory Approval Gate):** The feature cannot be activated without explicit user sign-off. This is an iterative process:
-              *   **Present for Validation:** Provide simple, manual steps for the user to validate the new functionality.
-              *   **Handle Feedback:** If the user requests polish or minor changes, you must implement them, re-run the *full local test suite* to ensure no regressions, and then present the feature for validation again.
-              *   **Await Final Approval:** You may only proceed to the next step after the user gives explicit approval with no further requests for changes.
-          3.  **Activation Commit:** After approval, create a single `Version Control` plan to commit the now-passing acceptance test and the final "wiring" code that activates the feature for all users.
+          Once the `Scope of Work` is complete, this phase verifies the slice using a risk-based approach before it is finalized.
+          1.  **Automated Verification:** Run the entire local test suite (`unit`, `integration`, `acceptance`) to ensure no regressions were introduced. The full suite must pass.
+          2.  **Risk-Based User Showcase (Mandatory Approval Gate):**
+              *   A manual **User Showcase** is **mandatory** for any slice that introduces user-facing changes (new features, behavioral fixes, UI modifications).
+              *   For purely internal slices (e.g., refactoring), passing the full automated test suite is the required quality gate.
+              *   **Safety Valve:** The Developer is empowered to proactively request a User Showcase for a high-risk internal slice.
+          3.  **Final Commit:** After all verification and approval is complete, create a final `Version Control` plan to commit any remaining artifacts (like a passing acceptance test).
         </action>
       </phase>
       <phase n="4" name="Phase 4: Finalize & Handoff">
@@ -161,7 +161,7 @@
         *   **RED Phase**: **Criteria:** Assumptions and Hypotheses are clear. Purpose: Write a new failing test. **Allowed Actions:** `CREATE`, `EDIT` (for test files), `EXECUTE`.
         *   **GREEN Phase**: **Criteria:** You have a failing test that matches the prediction in your `Experiment`. Purpose: Write minimal code. **Allowed Actions:** `CREATE`, `EDIT` (for application code), `EXECUTE`.
         *   **REFACTOR Phase**: **Criteria:** All tests are passing. Purpose: Cleanup. **Allowed Actions:** `EDIT`, `EXECUTE`.
-        *   **User Verification**: **Criteria:** A feature scenario is ready for user review (in the **User Showcase & Polish** phase), OR you have discovered a **blocking architectural issue** during implementation. **Purpose:** To obtain user feedback, approval, or architectural clarification. **Allowed Actions:** `CHAT WITH USER`.
+        *   **User Verification**: **Criteria:** A User Showcase is required by the risk-based verification policy (e.g., for a user-facing or high-risk internal slice), OR you have discovered a blocking architectural issue. **Purpose:** To obtain user feedback, approval, or architectural clarification. **Allowed Actions:** `CHAT WITH USER`.
             *   **Minor Tweak Feedback:** If the user requests a small change, acknowledge it and create a new `REFACTOR` or `RED Phase` plan to implement the tweak, followed by re-running tests.
             *   **Major Change / Tier 4 Blocker:** If the user requests a significant change that is out of scope, or if you identify a **T4 (True Blocker)**, you MUST NOT implement it. Your next plan MUST be a `CHAT WITH USER` action to escalate the issue to the Architect for re-planning.
             *   **Final Approval:** If the user approves, the scenario is marked as Verified (`✅`), and the next plan MUST be `EDIT Architecture`.

@@ -45,7 +45,6 @@
           *   **Version Control:** Default to **Trunk-Based Development**.
           *   **Testing:** Define test types and locations.
           *   **Pre-commit Hooks:** Specify the tool and config file. The configuration **MUST** exclude the `/spikes/` directory from all checks (e.g., `exclude: ^spikes/`).
-          *   **Third-Party Dependencies & Vetting:** Define the strategy for selecting, vetting, and managing external libraries and services, including criteria for approval.
           *   **Data-Driven Configuration:** Reference the **Data-Driven Configuration Strategy** defined in the `Canonical Document Contracts` general rule.
 
           **Feature Roadmaps & Briefs:**
