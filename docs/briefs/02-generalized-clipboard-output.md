@@ -22,9 +22,9 @@ The analysis of `packages/executor/src/teddy_executor/main.py` confirmed that cl
 
 ## 4. Vertical Slice
 
-- [ ] **Implement Generalized Clipboard Functionality:**
-    - [ ] In `packages/executor/src/teddy_executor/main.py`:
-        - [ ] Create the private helper function `_echo_and_copy`.
-        - [ ] Add the `--no-copy` flag to both the `execute` and `context` command signatures.
-        - [ ] Refactor both commands to use the new helper function.
-    - [ ] In `README.md`, update the command-line reference table to document the new behavior and the `--no-copy` flag.
+- [x] **Implement Generalized Clipboard Functionality:**
+    - [x] In `packages/executor/src/teddy_executor/main.py`:
+        - [x] Create the private helper function `_echo_and_copy`.
+        - [x] Add the `--no-copy` flag to both the `execute` and `context` command signatures.
+        - [x] Refactor both commands to use the new helper function.
+    - [x] In `README.md`, update the command-line reference table to document the new behavior and the `--no-copy` flag.
