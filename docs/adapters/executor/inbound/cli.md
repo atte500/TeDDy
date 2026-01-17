@@ -95,7 +95,7 @@ This adapter is a "driving" adapter that uses inbound ports to interact with the
 
 This is the primary command for executing a plan.
 
-*   **Signature:** `teddy execute [PLAN_FILE] [--yes]`
+*   **Signature:** `teddy execute [PLAN_FILE] [--yes] [--no-copy]`
 *   **Input:**
     *   `PLAN_FILE` (Optional): A path to a YAML plan file.
     *   If `PLAN_FILE` is omitted, the command reads the plan from the system clipboard. This introduces a dependency on the `pyperclip` library.
@@ -113,20 +113,21 @@ This is the primary command for executing a plan.
 
 This command provides a comprehensive snapshot of the project for an AI agent.
 
-*   **Input:** This command takes no arguments.
+*   **Input:**
+    *   `--no-copy` (Optional Flag): If provided, suppresses the default behavior of copying the output to the system clipboard.
 *   **Behavior:** It invokes the `ContextService` via the `IGetContextUseCase` port. It receives a `ContextResult` domain object in return, formats it into a structured, human-readable string, and prints it to standard output.
 
-### Output Handling
+### Standard Output Handling
+**Updated in:** [Slice 22: Generalized Clipboard Output](../../../slices/executor/22-generalized-clipboard-output.md)
 
-#### Plan Execution Report
-The `cli_formatter.py` module contains a `format_report_as_yaml` function responsible for converting the `ExecutionReport` domain model into a YAML string. This keeps presentation logic separate from the core application.
+To streamline the interactive user workflow, commands that produce substantial text output (like `context` and `execute`) follow a standard behavior, encapsulated in a private helper function within `main.py`:
 
-Upon completion of a plan, the CLI adapter performs two actions:
-1.  **Prints the formatted YAML report to `stdout`**.
-2.  **Copies the same YAML report to the system clipboard**, printing a confirmation message.
-3.  In headless environments (like CI runners) where a clipboard is not available, the copy action is gracefully skipped and a note is printed to `stderr`.
+1.  The primary output (e.g., project context or execution report) is always printed to `stdout`.
+2.  By default, the same output is also copied to the system clipboard using the `pyperclip` library. A confirmation message is printed to `stderr`.
+3.  This clipboard behavior is suppressed if the `--no-copy` flag is provided.
+4.  If the clipboard is unavailable (e.g., in a headless CI environment), the copy action is silently skipped.
 
-The application exits with a non-zero status code if any action in the plan fails.
+The application exits with a non-zero status code if any action in the `execute` plan fails.
 
 #### Project Context Snapshot
 **(Updated in: [Slice 17: Refactor `context` Command Output](../../../slices/executor/17-refactor-context-command-output.md))**
