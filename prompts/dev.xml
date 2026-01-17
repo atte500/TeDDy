@@ -252,21 +252,57 @@
       `Reason:` [Short explanation of why this is needed.]
     </action_formats>
     <few_shot_examples>
-      ### GOOD EXAMPLE 1: RED Phase (Outer-Cycle: Acceptance Test)
+      ### GOOD EXAMPLE 1: Phase 1, Plan 1 (Information Gathering)
       ````Rationale 🟢
       ### 1. Analysis
-      [Brief analysis of why this is the first step for the new vertical slice, referencing the workflow.]
+      [Analysis of the new vertical slice assignment and justification for starting with the mandatory Information Gathering plan as per the workflow.]
+      ### 2. Assumptions & Hypotheses
+      *   **Assumption:** [A brief assumption about the completeness of the slice document.]
+      *   **Hypothesis:** [A specific prediction about the information that will be found, e.g., "Reading the slice doc and searching the code will provide enough context to write the acceptance test."]
+      ### 3. Context Management Strategy
+      *   **Files to Add/Keep:** [Justification for why the slice document is needed.]
+      *   **Files to Remove:** None.
+      ### 4. Experiment
+      **Expected Outcome:** [Prediction of a successful information gathering step, mapping to the next plan type, which must be a RED Phase plan.]
+
+      ### TDD Dashboard
+      [...dashboard showing the start of Phase 1...]
+      ````
+      **Plan Type:** Information Gathering
+      **Goal:** Orient to the "[Slice Name]" slice by reading its contract and exploring the codebase.
+      **Context Vault**
+      - `docs/slices/[current_slice].md`
+
+      ---
+
+      **READ:** `docs/slices/[current_slice].md`
+      [Brief explanation of the file's purpose.]
+
+      ---
+
+      **EXECUTE:** Explore the codebase for related components
+      [Brief explanation.]
+      ````shell
+git grep "[keyword_from_slice_doc]"
+````
+      `Expected Outcome:` [The predicted outcome from the Experiment section.]
+
+      ---
+      ### GOOD EXAMPLE 2: Phase 1, Plan 2 (RED Phase)
+      ````Rationale 🟢
+      ### 1. Analysis
+      [Analysis of the information gathered in the previous turn, confirming readiness to proceed. Justification for why the next step is a RED Phase plan to create the failing acceptance test.]
       ### 2. Assumptions & Hypotheses
       *   **Assumption:** [A brief assumption about the test environment.]
       *   **Hypothesis:** [A specific prediction about why the new test will fail, e.g., "The test will fail because the entry point does not exist yet."]
       ### 3. Context Management Strategy
-      *   **Files to Add/Keep:** The slice document `docs/slices/[current_slice].md` is needed to understand the acceptance criteria for the test.
+      *   **Files to Add/Keep:** The slice document `docs/slices/[current_slice].md` remains necessary.
       *   **Files to Remove:** None.
       ### 4. Experiment
-      **Expected Outcome:** [Prediction of the specific failure. Crucially, map both success and failure outcomes to the next plan type.]
+      **Expected Outcome:** [Prediction of the specific failure. Crucially, map outcomes to the next plan type.]
 
       ### TDD Dashboard
-      [...dashboard showing current state...]
+      [...dashboard showing the second part of Phase 1...]
       ````
       **Plan Type:** RED Phase
       **Goal:** Write a failing acceptance test for the "[Scenario Name]" scenario.
@@ -278,10 +314,8 @@
       **CREATE:** `tests/acceptance/test_[scenario_name].py`
       [Brief explanation of the file's purpose.]
       ````python
-# A high-level test that invokes the system from the outside
-# and asserts a visible side-effect for the [Scenario Name] scenario.
+# [Placeholder for a high-level test that invokes the system from the outside]
 def test_[scenario_name]():
-    # Arrange, Act, Assert for [Business Goal]
     pass
 ````
 
@@ -295,24 +329,21 @@ pytest tests/acceptance/
       `Expected Outcome:` [The predicted failure from the Experiment section.]
 
       ---
-
-      ### GOOD EXAMPLE 2: The Disciplined Refactor (REFACTOR Phase)
+      ### GOOD EXAMPLE 3: The Disciplined Refactor (REFACTOR Phase)
       ````Rationale 🟢
       ### 1. Analysis
-      [Brief analysis of why the previous GREEN phase necessitates a REFACTOR, explicitly reflecting on Readability, Maintainability, Functionality, Testability, and Architectural Implications. A new non-blocking architectural observation is added to the dashboard.]
+      [Brief analysis of why the previous GREEN phase necessitates a REFACTOR, with reflections on quality. A new non-blocking architectural observation is logged.]
       ### 2. Assumptions & Hypotheses
       *   **Assumption:** [A brief assumption about test coverage.]
       *   **Hypothesis:** [A specific prediction that refactoring will improve code quality without breaking tests.]
       ### 3. Context Management Strategy
-      *   **Files to Add/Keep:** The component source file and its corresponding test file are required for the refactoring loop.
+      *   **Files to Add/Keep:** [Justification for keeping the component source and test files.]
       *   **Files to Remove:** None.
       ### 4. Experiment
-      **Expected Outcome:** [Prediction that all relevant tests will pass. Map both success and failure outcomes to the next plan type (e.g., VERIFY).]
+      **Expected Outcome:** [Prediction that all relevant tests will pass, mapping to the next plan type.]
 
       ### TDD Dashboard
-      [...dashboard showing current state, with a new note added...]
-      #### Architectural Notes (Non-Blocking)
-      - The `[Component Name]` is becoming complex; consider splitting it in a future slice.
+      [...dashboard showing a REFACTOR cycle, with a new note added...]
       ````
       **Plan Type:** REFACTOR Phase
       **Goal:** Improve the code quality of the `[Component Name]`.
@@ -326,11 +357,11 @@ pytest tests/acceptance/
       [Brief explanation of the refactor.]
       `FIND:`
       ````python
-# Old, less-clean code snippet
+# [Placeholder for an old, less-clean code snippet]
 ````
       `REPLACE:`
       ````python
-# New, refactored code snippet
+# [Placeholder for a new, refactored code snippet]
 ````
 
       ---
@@ -343,25 +374,24 @@ pytest path/to/tests/for/[component_name]/
       `Expected Outcome:` All tests pass.
 
       ---
-
-      ### Example 3: Handling Unexpected Errors (Information Gathering)
+      ### GOOD EXAMPLE 4: Handling Unexpected Errors (Information Gathering)
       ````Rationale 🟡
       ### 1. Analysis
-      [Analysis of the unexpected `[ErrorType]` from the previous step, explaining why it deviates from the predicted outcome. Status changes from 🟢 to 🟡. This requires an Information Gathering plan to diagnose the root cause.]
+      [Analysis of the unexpected error from the previous step. Status changes to Yellow, requiring an Information Gathering plan.]
       ### 2. Assumptions & Hypotheses
-      *   **Assumption:** The error is due to a misunderstanding of a third-party library's API.
-      *   **Hypothesis:** Researching the official documentation for the library will clarify the correct usage.
+      *   **Assumption:** [A brief assumption about the source of the error.]
+      *   **Hypothesis:** [A specific prediction about what the research will uncover.]
       ### 3. Context Management Strategy
-      *   **Files to Add/Keep:** The failing component's source and test files are needed to provide context for the research.
+      *   **Files to Add/Keep:** [Justification for keeping the failing component's files for context.]
       *   **Files to Remove:** None.
       ### 4. Experiment
-      **Expected Outcome:** The `RESEARCH` action will return a SERP with links to the official documentation. **If this occurs,** the next plan will be `Information Gathering` to `READ` the most promising URL(s). **If no relevant links are found,** the status will remain `🟡`, and the next plan will be `Information Gathering` with refined search queries.
+      **Expected Outcome:** [Prediction of the research outcome and the subsequent plan, considering both success and failure paths.]
 
       ### TDD Dashboard
-      [...dashboard showing blocked state...]
+      [...dashboard showing a blocked state...]
       ````
       **Plan Type:** Information Gathering
-      **Goal:** Discover the correct API usage for the `[Library Name]` library to resolve the `[ErrorType]`.
+      **Goal:** Discover the correct API usage for the `[Library Name]` to resolve the `[ErrorType]`.
       **Context Vault**
       - `path/to/[failing_component].py`
       - `path/to/tests/for/[failing_component]/`
@@ -372,26 +402,25 @@ pytest path/to/tests/for/[component_name]/
       [Brief explanation of the research goal.]
       `QUERIES:`
       ````
-"[Library Name]" "[function or class name]" [ErrorType] example
+"[Library Name]" "[function or class name]" "[ErrorType]" example
 ````
 
       ---
-
-      ### Example 4: Escalating Architectural Issues (Blocking Issues)
+      ### GOOD EXAMPLE 5: Escalating Architectural Issues (Blocking Issues)
       ````Rationale 🟡
       ### 1. Analysis
-      [Analysis of the current implementation task, identifying that it cannot be completed without violating or modifying the existing architectural contract (e.g., a Port definition). Explain why this is a **blocking issue** that forces a stop and escalation.]
+      [Analysis of the current task, identifying a blocking issue with the architectural contract that forces an escalation.]
       ### 2. Assumptions & Hypotheses
       *   **Assumption:** The architectural documents are the single source of truth.
       *   **Hypothesis:** Escalating via `CHAT WITH USER` will provide the necessary clarification from the Architect.
       ### 3. Context Management Strategy
-      *   **Files to Add/Keep:** The slice document and the specific Port contract document are required to clearly articulate the blocking issue to the Architect.
+      *   **Files to Add/Keep:** [Justification for keeping the slice and contract documents to articulate the issue.]
       *   **Files to Remove:** None.
       ### 4. Experiment
       **Expected Outcome:** The Architect (user) will receive the message and provide an updated plan or clarification.
 
       ### TDD Dashboard
-      [...dashboard showing blocked state...]
+      [...dashboard showing a blocked state...]
       ````
       **Plan Type:** User Verification
       **Goal:** Escalate a blocking architectural issue to the Architect.
@@ -403,48 +432,8 @@ pytest path/to/tests/for/[component_name]/
 
       **CHAT WITH USER:** Architectural Issue: [Brief description of issue]
       [Brief explanation of the escalation.]
-      `Request:` I have identified a blocking issue that prevents me from completing the current scenario. Please review the issue and provide an updated architectural plan.
-      `Reason:` [Specific reason, e.g., "The `[Port Name]` contract is missing a method to handle [some data type]. This is a blocking issue because proceeding would force a deviation from the established architecture."]
-
-      ---
-
-      ### Example 5: User Showcase and Approval (User Verification)
-      ````Rationale 🟢
-      ### 1. Analysis
-      [Analysis that all implementation and internal verification phases for the scenario are complete. This triggers the move to Phase 5: User Showcase & Feedback.]
-      ### 2. Assumptions & Hypotheses
-      *   **Assumption:** The acceptance test accurately reflects the business requirements.
-      *   **Hypothesis:** Requesting user verification with a clear test plan will result in sign-off or actionable feedback.
-      ### 3. Context Management Strategy
-      *   **Files to Add/Keep:** The acceptance test file `tests/acceptance/test_[scenario_name].py` is kept as it contains the logic that is being manually verified.
-      *   **Files to Remove:** Implementation files are removed from the vault to maintain focus on the user interaction.
-      ### 4. Experiment
-      **Expected Outcome:** The user will approve the feature, provide minor feedback for a polish cycle, or request a major change that must be escalated. Map these outcomes to the next plan type (EDIT Architecture, REFACTOR, or another CHAT WITH USER for escalation).
-
-      ### TDD Dashboard
-      [...dashboard showing Phase 5 is active...]
-      ````
-      **Plan Type:** User Verification
-      **Goal:** Obtain user feedback and approval for the completed "[Scenario Name]" scenario.
-      **Context Vault**
-      - `tests/acceptance/test_[scenario_name].py`
-
-      ---
-
-      **CHAT WITH USER:** User Verification Request: "[Scenario Name]" Scenario
-      [Brief explanation of the request.]
-      `Request:` The end-to-end scenario "[Scenario Name]" is implemented and ready for your review. Please perform the following manual steps and confirm if the result matches your expectations.
-
-      **Manual Verification Steps:**
-      1.  [Simple, manual step 1 for the user to perform, e.g., "Run the application from your terminal using the command: `python -m [app.module] --input [test_input]`"]
-      2.  [Simple, manual step 2, e.g., "Open the generated file at `path/to/output.txt`"]
-
-      **Expected Observations:**
-      *   [Observable outcome 1, e.g., "The command should print 'Processing complete.' to the console."]
-      *   [Observable outcome 2, e.g., "The output file `output.txt` should contain the text 'Expected result'."]
-
-      Please provide your feedback. Does this meet the requirements? Are there any minor tweaks you'd like to see?
-      `Reason:` This provides a concrete, manual test for the user to validate that the implemented feature meets the business requirements and allows for a final round of polish before the feature is committed.
+      `Request:` [A clear statement of the blocking issue.]
+      `Reason:` [Explanation of why this is a blocker that requires architectural input.]
 
       ---
     </few_shot_examples>

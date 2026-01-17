@@ -258,14 +258,14 @@
       ### 1. Driver
       [Analysis that the approved Public Contract and strategic decisions are complete, allowing the architectural blueprint to be created.]
       ### 2. Principle
-      The blueprint must establish the project's standards and define an initial "Walking Skeleton" slice to validate the core architecture.
+      [Statement of the core principle guiding the creation of the initial architectural documents.]
       ### 3. Application
-      This plan creates the initial `docs/ARCHITECTURE.md` blueprint and the formal slice document for the Walking Skeleton.
+      [Explanation of how the principle is being applied to create the initial blueprint and the first slice document.]
       ### 4. Context Management Strategy
-      *   **Files to Add/Keep:** `README.md` and the new `docs/ARCHITECTURE.md` are the core artifacts for this phase.
+      *   **Files to Add/Keep:** [Justification for why the core architectural artifacts are needed.]
       *   **Files to Remove:** None.
       ### 5. Criteria
-      The next plan must be a `Setup` plan to execute the `Setup Checklist` defined in the new blueprint.
+      [Mapping of the successful creation of these documents to the next logical plan type, such as a `Setup` plan.]
       ### 5. Architecture Dashboard
       [...dashboard showing current state...]
       ````
@@ -281,12 +281,7 @@
       [Brief explanation of the file's purpose.]
       ````markdown
 # System Architecture: [Project Name]
-[The full content of the ARCHITECTURE.md file, establishing the core sections for the project blueprint. This must include:
-- A permanent Setup Checklist with placeholder tasks.
-- A section for Conventions & Standards.
-- The top-level Component Design section for mapping out components.
-- The Project Stages table.
-- A section for Architectural Notes & Technical Debt.]
+[Placeholder for the full content of the ARCHITECTURE.md file, establishing all core sections.]
 ````
 
       ---
@@ -294,43 +289,29 @@
       **CREATE:** `docs/slices/[stage]/[nn]-[slice-name].md`
       [Brief explanation of the file's purpose.]
       ````markdown
-# Vertical Slice: [Slice Name, e.g., Walking Skeleton]
-[The full content of the slice document, defining the contract for the developer. This must include:
-- The Business Goal.
-- A list of Acceptance Criteria (Scenarios).
-- The high-level Interaction Sequence between components.
-- The initial list of Architectural Changes required to implement the slice.]
+# Vertical Slice: [Slice Name]
+[Placeholder for the full content of the slice document, defining the initial contract for the developer.]
 ````
 
       ---
       ### GOOD EXAMPLE 2: Technical Spike Loop - Plan 1 (Discover)
       ````Rationale 🟢
       ### 1. Driver
-      [Analysis of why the current Adapter has a technical unknown that must be resolved.]
+      [Analysis of why a component has a technical unknown that must be resolved before design can proceed.]
       ### 2. Principle
-      [Statement of the De-risk Adapters with Spikes principle.]
+      [Statement of the principle for de-risking technical uncertainty with spikes.]
       ### 3. Application
-      [Explanation of creating the technical uncertainty checklist and researching the top item.]
-      **Technical Uncertainty Checklist ([Adapter Name]):**
-      *   **[Category]**
-          *   [ ] (CURRENT) [Technical Question 1]
+      [Explanation of how a technical uncertainty checklist is being used to drive a focused research action.]
       ### 4. Context Management Strategy
-      *   **Files to Add/Keep:** The slice document (`docs/slices/[current_slice].md`) and the adapter document (`docs/adapters/[inbound|outbound]/[adapter-name].md`) are required to provide context for the technical de-risking.
+      *   **Files to Add/Keep:** [Justification for why the slice and component documents are needed for context.]
       *   **Files to Remove:** None.
       ### 5. Criteria
-      If the `RESEARCH` action returns relevant URLs, the next plan will be an `Information Gathering` plan to `READ` the most promising one. If the SERP is inconclusive, the next plan will be another `Information Gathering` plan to `RESEARCH` with a refined query.
+      [Mapping of the `RESEARCH` outcome (conclusive or inconclusive SERP) to the next logical plan type.]
       ### 5. Architecture Dashboard
       [...dashboard showing current state...]
-      #### Current Focus: `[Adapter Name]`
-      *   **Target Document:** `docs/adapters/[inbound|outbound]/[adapter-name].md`
-      *   **Status:**
-          - [▶️] DISCOVER: [Technical Question 1]
-          - [ ] READ: [Digest official documentation]
-          - [ ] VERIFY: [Prove usage with a spike]
-          - [ ] DOCUMENT: [Formalize the contract]
       ````
       **Plan Type:** Information Gathering
-      **Goal:** Discover official documentation for `[Technical Question 1]`.
+      **Goal:** Discover official documentation for `[Technical Question]`.
       **Context Vault**
       - `docs/slices/[current_slice].md`
       - `docs/adapters/[inbound|outbound]/[adapter-name].md`
@@ -341,31 +322,25 @@
       [Brief explanation of the research goal.]
       `QUERIES:`
       ````
-"[technology]" "[feature]" example site:[official_docs_url]
+[Placeholder for a targeted search query]
 ````
 
       ---
       ### GOOD EXAMPLE 3: Technical Spike Loop - Plan 2 (Evaluate & Read)
       ````Rationale 🟢
       ### 1. Driver
-      [Analysis of the SERP from the previous turn, justifying the choice of URL. e.g., "The link titled '[Link Title]' appears most relevant because its snippet mentions [key concept]."]
+      [Analysis of the SERP from the previous turn, justifying the choice of a specific URL to investigate further.]
       ### 2. Principle
-      [Statement of the De-risk Adapters with Spikes principle.]
+      [Statement of the principle for de-risking technical uncertainty with spikes.]
       ### 3. Application
-      This plan will now `READ` the contents of the most promising URL to gather the specific information needed for verification.
+      [Explanation of how the plan will now `READ` the selected URL to gather data for verification.]
       ### 4. Context Management Strategy
-      *   **Files to Add/Keep:** The slice and adapter documents remain essential for context.
+      *   **Files to Add/Keep:** [Justification for why the slice and component documents remain essential for context.]
       *   **Files to Remove:** None.
       ### 5. Criteria
-      The next plan will be a `Spike` to verify the findings. If the content is unhelpful, the next plan will be to `READ` a different URL from the SERP or perform a new `RESEARCH`.
+      [Mapping of the `READ` outcome (helpful or unhelpful content) to the next logical plan type.]
       ### 5. Architecture Dashboard
       [...dashboard showing current state...]
-      #### Current Focus: `[Adapter Name]`
-      *   **Status:**
-          - [✅] DISCOVER: [Technical Question 1]
-          - [▶️] READ: [Digest official documentation]
-          - [ ] VERIFY: [Prove usage with a spike]
-          - [ ] DOCUMENT: [Formalize the contract]
       ````
       **Plan Type:** Information Gathering
       **Goal:** Read the content of the selected official documentation.
@@ -382,24 +357,18 @@
       ### GOOD EXAMPLE 4: Technical Spike Loop - Plan 3 (Verify)
       ````Rationale 🟢
       ### 1. Driver
-      [Analysis of previous successful `READ`, summarizing the key finding and stating it must now be verified. e.g., "The documentation confirms that `[Class/Function Name]` is the correct tool. I will now write a spike to prove this works as expected."]
+      [Analysis of the content from the previous `READ` action, summarizing key findings and justifying the need for verification.]
       ### 2. Principle
-      [Statement of the De-risk Adapters with Spikes principle, emphasizing verification.]
+      [Statement of the principle for de-risking technical uncertainty with spikes, emphasizing verification.]
       ### 3. Application
-      [Explanation that this plan will create and run a script to prove the researched approach.]
+      [Explanation of how a temporary script will be created and executed to prove the researched approach.]
       ### 4. Context Management Strategy
-      *   **Files to Add/Keep:** The slice and adapter documents remain essential for context.
-      *   **Files to Remove:** None. The spike files will be removed after their findings are documented.
+      *   **Files to Add/Keep:** [Justification for why the slice and component documents remain essential for context.]
+      *   **Files to Remove:** None at this time.
       ### 5. Criteria
-      [Mapping of spike outcome (success/failure) to the next plan type (EDIT Documentation/Information Gathering).]
+      [Mapping of the spike's outcome (success or failure) to the next logical plan type.]
       ### 5. Architecture Dashboard
       [...dashboard showing current state...]
-      #### Current Focus: `[Adapter Name]`
-      *   **Status:**
-          - [✅] DISCOVER: [Technical Question 1]
-          - [✅] READ: [Digest official documentation]
-          - [▶️] VERIFY: [Prove usage with a spike]
-          - [ ] DOCUMENT: [Formalize the contract]
       ````
       **Plan Type:** Spike
       **Goal:** Verify the proposed technical approach with a minimal, temporary script.
@@ -412,8 +381,7 @@
       **CREATE:** `spikes/technical/01-[spike-name]/verify.[ext]`
       [Brief explanation of the script's purpose.]
       ````[language]
-# A minimal script to prove a specific technical concept.
-# e.g., connect to an API, test a library feature.
+# [Placeholder for a minimal script to prove a specific technical concept.]
 print("Success")
 ````
 

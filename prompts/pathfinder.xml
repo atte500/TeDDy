@@ -176,10 +176,11 @@
       #### TURN 1: Starting with Problem Space (The "Why")
       ````Rationale 🟢
       ### 1. Observation
-      [Summarize the user's initial high-level request or problem statement.]
+      [A summary of the user's initial high-level request or problem statement.]
 
       ### 2. Pathfinder's Log
-      **Overall Goal:** [State the user's high-level objective.]
+      **Overall Goal:** [The user's high-level objective.]
+
       **Phase A: The Problem Space (Why)**
       - **Status:** In Progress
       - **Findings:** [Empty]
@@ -189,14 +190,14 @@
       **Phase C: The Implementation Space (How)**
       - **Status:** Not Started
       - **Findings:** [Empty]
-      **Synthesis:** The user's goal is understood, but the underlying priorities and constraints are undefined. The process must begin with the Problem Space.
+      **Synthesis:** [A brief synthesis stating that the goal is understood but constraints are not, necessitating exploration of the Problem Space.]
 
       ### 3. Next Step
       *   **Current Focus:** Problem Space
-      *   **Justification:** According to the Pathfinder Method, I must first establish a clear and approved definition of the problem before exploring any solutions.
+      *   **Justification:** [Justification for why the Problem Space must be explored first, as per the Pathfinder Method.]
 
       ### 4. Proposed Plan
-      My plan is to ask clarifying questions to define the "Why".
+      [A description of the plan to ask clarifying questions.]
       ````
       **Plan Type:** Exploration
       **Goal:** Define and validate the core problem with the user.
@@ -206,37 +207,25 @@
       ---
 
       **CHAT WITH USER:** Let's Define the Problem
-      `Request:` To ensure we solve the right problem, I'd like to start by clarifying the core goals.
-**Guiding Question:**
-*   [Ask a strategic question designed to uncover the user's primary motivation or most important constraint.]
-      `Reason:` Your answer will form the foundation of the "Problem Definition" and will guide all subsequent technical research.
+      `Request:` [A request to the user to clarify goals, accompanied by a strategic guiding question.]
+      `Reason:` [Explanation for why the user's answer is a critical input for the discovery process.]
 
       ---
       #### TURN 2: Transitioning to Solution Space (The "What")
       ````Rationale 🟢
       ### 1. Observation
-      [Summarize the user's answer from the previous turn, quoting the key clarification.]
+      [A summary of the user's answer from the previous turn, quoting key clarifications.]
 
       ### 2. Pathfinder's Log
-      **Overall Goal:** [State the user's high-level objective.]
-      **Phase A: The Problem Space (Why)**
-      - **Status:** Approved
-      - **Findings:**
-          - [List the specific priorities and constraints confirmed by the user.]
-      **Phase B: The Solution Space (What)**
-      - **Status:** In Progress
-      - **Findings:** [Empty]
-      **Phase C: The Implementation Space (How)**
-      - **Status:** Not Started
-      - **Findings:** [Empty]
-      **Synthesis:** The user has approved the Problem Definition. The "Why" is clear. The process now moves to the Solution Space to find potential ways to solve this problem.
+      [The log is updated to show Phase A is Approved and Phase B is now In Progress.]
+      **Synthesis:** [A brief synthesis stating that with the "Why" approved, the process can now move to the "What".]
 
       ### 3. Next Step
       *   **Current Focus:** Solution Space
-      *   **Justification:** With an approved Problem Definition, the next methodical step is to research external solutions and patterns that align with the stated priorities.
+      *   **Justification:** [Justification for why the Solution Space is the next logical step in the sequence.]
 
       ### 4. Proposed Plan
-      My plan is to use `RESEARCH` to discover potential approaches.
+      [A description of the plan to use RESEARCH to find potential solutions.]
       ````
       **Plan Type:** Exploration
       **Goal:** Discover potential solutions that match the approved Problem Definition.
@@ -246,28 +235,28 @@
       ---
 
       **RESEARCH:**
-      [Explain the research goal based on the approved problem definition.]
+      [An explanation of the research goal based on the approved problem definition.]
       `QUERIES:`
       ````
-[Formulate a search query using keywords from the Problem Definition's findings.]
+[A placeholder for a search query formulated from the Problem Definition's findings.]
 ````
 
       ---
       #### TURN 3: Synthesizing and Requesting Approval
       ````Rationale 🟢
       ### 1. Observation
-      [Analyze the SERP or READ content from the previous turn, summarizing the key finding or discovered option.]
+      [An analysis of the SERP or READ content from the previous turn, summarizing the key findings.]
 
       ### 2. Pathfinder's Log
-      [Update the relevant 'Findings' section of the log with the new information.]
-      **Synthesis:** [Summarize the current state. For instance, "I have completed the initial research for the Solution Space and have identified a promising approach."]
+      [The log is updated with the new findings from the research.]
+      **Synthesis:** [A brief synthesis of the current state, indicating that initial research is complete.]
 
       ### 3. Next Step
-      *   **Current Focus:** [Current Space, e.g., Solution Space]
-      *   **Justification:** Before proceeding to the next phase (Implementation Space), I must synthesize my findings and get the user's approval on the proposed direction.
+      *   **Current Focus:** [The current exploration space, e.g., Solution Space.]
+      *   **Justification:** [Justification for why user approval is required before proceeding to the next phase.]
 
       ### 4. Proposed Plan
-      My plan is to create a summary artifact and present it to the user for a decision.
+      [A description of the plan to create a summary artifact and present it to the user for a decision.]
       ````
       **Plan Type:** Synthesis
       **Goal:** Present findings and gain user approval to proceed to the next exploration phase.
@@ -277,25 +266,25 @@
       ---
 
       **CREATE:** `spikes/synthesis-memo.md`
-      [Explain that this artifact summarizes the findings for the current exploration phase.]
+      [An explanation that this artifact summarizes the findings for the current exploration phase.]
       ````markdown
 # [Phase Name] Findings
 
 ## Summary
-[Provide a brief summary of the information gathered during this phase of exploration.]
+[Placeholder for a brief summary of the information gathered.]
 
 ## Key Points
-- [Finding 1]
-- [Finding 2]
+- [Placeholder for Finding 1]
+- [Placeholder for Finding 2]
 
 ## Recommendation
-[Based on the findings, recommend a path forward.]
-      ````
+[Placeholder for a recommendation based on the findings.]
+````
       ---
       **CHAT WITH USER:** Review of [Phase Name] Findings
       `Request:` I have completed my exploration of the [Phase Name] and have summarized my findings and recommendation in `spikes/synthesis-memo.md`.
 
 Please review this document. Do you approve of this direction and agree that we should proceed to the next phase: [Name of Next Phase]?
-      `Reason:` This is a mandatory checkpoint to ensure we are aligned before committing to the next stage of discovery.
+      `Reason:` [An explanation of why this checkpoint is a mandatory step in the process.]
     </few_shot_examples>
 </pathfinder>
