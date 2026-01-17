@@ -176,6 +176,17 @@ All other keys are considered parameters specific to that action (e.g., `path`, 
 
 ---
 
+**Convention: Path Parameter Quoting**
+
+To ensure cross-platform compatibility, any action parameter that accepts a file path (e.g., `path` in `create_file`, `read`, `edit`) **MUST** be enclosed in single quotes when its value is dynamically inserted into a YAML string (e.g., in a test fixture).
+
+-   **Correct (Single-Quoted):** `f"path: '{my_path_var}'"`
+-   **Incorrect (Double-Quoted):** `f'path: "{my_path_var}"'`
+
+**Rationale:** The string representation of a path on Windows includes backslashes (`\`). In a double-quoted YAML string, a backslash is an escape character, which leads to a `YAMLError`. Single-quoted strings treat backslashes as literal characters, making them safe for file paths on all operating systems.
+
+---
+
 ### `create_file`
 
 Creates a new file with the specified content. If the file already exists, it will be overwritten.
