@@ -169,26 +169,22 @@ This phase is only initiated when another agent enters a failure loop. Follow th
 
 ## 🗺️ Project Roadmap
 
-Here's a look at our development priorities. We use the following statuses to indicate progress:
-
-- 📝 **Planned:** The feature is on our agenda and is being scoped for a future release.
-- ▶️ **In Progress:** The feature is in active development.
-- ✅ **Completed:** The feature has been released.
+Here's a look at our development priorities.
 
 ### Core Framework
 
-| Status | Stage / Feature Set        | Description                                                                                                                                 |
-| :----: | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-|   ✅    | **Agent Prompts v1**       | Core prompts for Architect, Developer, and Debugger are defined and functional.                                                             |
-|   ▶️    | **YAML Plan Generation**   | Refining agent prompts to reliably generate YAML-compliant plans, improving executor compatibility and reducing the need for manual fixes.  |
-|   📝    | **Agents & Core Workflow** | Solidifying the interaction protocols and distribuition of responsibilities between agents to ensure a robust, repeatable workflow.         |
-|   📝    | **Prompt Decomposition**   | Decompose large prompts into smaller, chained states. This improves reliability and enables using smaller, local models for specific tasks. |
+|    Status     | Stage / Feature Set        | Description                                                                                                                                 |
+| :-----------: | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+|  ✅ Completed  | **Agent Prompts v1**       | Core prompts for Architect, Developer, and Debugger are defined and functional.                                                             |
+| ▶️ In Progress | **YAML Plan Generation**   | Refining agent prompts to reliably generate YAML-compliant plans, improving executor compatibility and reducing the need for manual fixes.  |
+|   📝 Planned   | **Agents & Core Workflow** | Solidifying the interaction protocols and distribuition of responsibilities between agents to ensure a robust, repeatable workflow.         |
+|   📝 Planned   | **Prompt Decomposition**   | Decompose large prompts into smaller, chained states. This improves reliability and enables using smaller, local models for specific tasks. |
 
 ### `teddy` Executor CLI
 
-| Status | Stage / Feature Set                | Description                                                                                                                                                          |
-| :----: | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|   ✅    | **Core Action & Utility Support**  | The foundational actions (`create`, `read`, `edit`, `execute`, `chat`, `research`) and the `context` utility command are fully implemented and stable.               |
-|   ▶️    | **Interactive Execution Workflow** | Streamline plan execution with clipboard support and step-by-step interactive approval, giving the user full control and improving safety and usability.             |
-|   📝    | **TUI for LLM Interaction**        | Create a Terminal User Interface (TUI) to directly call LLM APIs, pass context, manage prompts, and execute the resulting plans in a seamless, interactive loop.     |
-|   📝    | **Automated Workflows**            | Enable auto-run and agent-switching capabilities, allowing the framework to autonomously chain agents and decompose complex problems into smaller, manageable steps. |
+|    Status     | Stage / Feature Set                | Description                                                                                                                                                          |
+| :-----------: | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|  ✅ Completed  | **Core Action & Utility Support**  | The foundational actions (`create`, `read`, `edit`, `execute`, `chat`, `research`) and the `context` utility command are fully implemented and stable.               |
+| ▶️ In Progress | **Interactive Execution Workflow** | Streamline plan execution with clipboard support and step-by-step interactive approval, giving the user full control and improving safety and usability.             |
+|   📝 Planned   | **TUI for LLM Interaction**        | Create a Terminal User Interface (TUI) to directly call LLM APIs, pass context, manage prompts, and execute the resulting plans in a seamless, interactive loop.     |
+|   📝 Planned   | **Automated Workflows**            | Enable auto-run and agent-switching capabilities, allowing the framework to autonomously chain agents and decompose complex problems into smaller, manageable steps. |

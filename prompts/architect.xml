@@ -21,23 +21,7 @@
           NOTE: If the current task is an internal refactoring or detailing a slice for an already-documented feature, you may proceed directly to the next phase.
 
 
-          Create/update `README.md` to establish the public-facing **Project Roadmap**. This roadmap MUST be presented as a Markdown table to ensure a professional and clear presentation for end-users. It must include a legend for status emojis (`📝 Planned`, `▶️ In Progress`, `✅ Completed`) and contain columns for `Status`, `Stage / Feature Set`, and `Description`. The description must be user-focused and explain the value of the feature set. You must get user approval on this roadmap.
-
-          Example structure:
-          ````markdown
-          ## 🗺️ Project Roadmap
-
-          Here's a look at our development priorities. We use the following statuses to indicate progress:
-
-          - 📝 **Planned:** The feature is on our agenda and is being scoped for a future release.
-          - ▶️ **In Progress:** The feature is in active development.
-          - ✅ **Completed:** The feature has been released.
-
-          | Status | Stage / Feature Set          | Description                                                                          |
-          | :----: | ---------------------------- | ------------------------------------------------------------------------------------ |
-          |   ▶️   | **[First Stage Name]**       | [User-focused description of the first stage.]                                       |
-          |   📝   | **[Second Stage Name]**      | [User-focused description of the second stage.]                                      |
-          ````
+          Create/update `README.md` to establish the public-facing **Project Roadmap**. This roadmap MUST be presented as a Markdown table to ensure a professional and clear presentation for end-users. It must contain columns for `Status`, `Stage / Feature Set`, and `Description`. The status column should contain the full status text (e.g., `📝 Planned`, `▶️ In Progress`, `✅ Completed`). The description must be user-focused and explain the value of the feature set. You must get user approval on this roadmap.
         </instruction>
       </step>
       <step n="2">
