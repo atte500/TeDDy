@@ -39,15 +39,15 @@ The architectural changes for this slice are focused on refactoring the CLI entr
 
 ### Step 1: Implement Core Logic in CLI Adapter
 
--   [ ] **READ:** [CLI Adapter Design Doc](../../adapters/executor/inbound/cli.md)
--   [ ] **IMPLEMENT:** In `packages/executor/src/teddy_executor/main.py`:
-    -   [ ] Create a private helper function `_echo_and_copy(content: str, no_copy: bool = False)` that prints the given content to `stdout` and, if `no_copy` is `False`, copies it to the clipboard using `pyperclip`.
-    -   [ ] Add the `--no-copy: bool` `typer.Option` to the function signatures of both `execute` and `context`.
-    -   [ ] Refactor the `execute` command to replace its inline clipboard logic with a call to `_echo_and_copy`.
-    -   [ ] Refactor the `context` command to use the `_echo_and_copy` function for its output.
+-   [x] **READ:** [CLI Adapter Design Doc](../../adapters/executor/inbound/cli.md)
+-   [x] **IMPLEMENT:** In `packages/executor/src/teddy_executor/main.py`:
+    -   [x] Create a private helper function `_echo_and_copy(content: str, no_copy: bool = False)` that prints the given content to `stdout` and, if `no_copy` is `False`, copies it to the clipboard using `pyperclip`.
+    -   [x] Add the `--no-copy: bool` `typer.Option` to the function signatures of both `execute` and `context`.
+    -   [x] Refactor the `execute` command to replace its inline clipboard logic with a call to `_echo_and_copy`.
+    -   [x] Refactor the `context` command to use the `_echo_and_copy` function for its output.
 
 ### Step 2: Update Public Documentation
 
--   [ ] **IMPLEMENT:** In `README.md`:
-    -   [ ] Locate the "Command-Line Reference" table.
-    -   [ ] Add a new row or update existing descriptions to document the `--no-copy` flag and explain that output is now copied to the clipboard by default.
+-   [x] **IMPLEMENT:** In `README.md`:
+    -   [x] Locate the "Command-Line Reference" table.
+    -   [x] Add a new row or update existing descriptions to document the `--no-copy` flag and explain that output is now copied to the clipboard by default.
