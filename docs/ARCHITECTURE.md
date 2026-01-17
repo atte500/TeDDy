@@ -148,3 +148,133 @@ This section captures significant, long-standing architectural decisions and pat
 -   **Structured Output Parsing in Tests:** Acceptance tests that verify structured output (e.g., YAML) MUST parse the output into a data structure before making assertions. This makes tests resilient to formatting changes.
 -   **Separation of I/O Concerns:** The `--plan-file` CLI option is the canonical way to provide a plan, reserving `stdin` exclusively for interactive prompts (like `y/n` or `chat_with_user`).
 -   **Context Configuration:** The `context` command's behavior is explicitly driven by the contents of `.teddy/*.context` files, providing a clear, user-configurable contract.
+
+---
+
+## 6. YAML Plan Specification
+
+This section defines the formal contract for the `actions` list in a `plan.yaml` file used by the `teddy execute` command. Each item in the list is a dictionary representing a single action.
+
+**Structure:**
+```yaml
+actions:
+  - action: <action_type>
+    <parameter_1>: <value_1>
+    <parameter_2>: <value_2>
+    ...
+```
+
+The only universally required key is `action`, which specifies the type of operation to perform. All other keys are parameters specific to that action. Metadata fields like `id` or `description` are not supported and will cause the execution to fail.
+
+---
+
+### `create_file`
+
+Creates a new file with the specified content. If the file already exists, it will be overwritten.
+
+**Parameters:**
+-   `path` (string, required): The relative path to the file to create.
+-   `content` (string, required): The content to write into the file.
+
+**Example:**
+```yaml
+- action: create_file
+  path: "src/new_module.py"
+  content: |
+    # src/new_module.py
+    def hello_world():
+        print("Hello, world!")
+```
+
+---
+
+### `read`
+
+Reads the full content of a specified file. The content is returned in the `details` field of the action log in the final execution report.
+
+**Parameters:**
+-   `path` (string, required): The relative path to the file to read.
+
+**Example:**
+```yaml
+- action: read
+  path: "README.md"
+```
+
+---
+
+### `edit`
+
+Performs a find-and-replace operation on a file. It is designed for targeted, precise modifications.
+
+**Parameters:**
+-   `path` (string, required): The relative path to the file to edit.
+-   `find` (string, required): The exact block of text to search for. Multi-line blocks are supported.
+-   `replace` (string, required): The block of text that will replace the `find` block. Multi-line blocks and indentation are supported.
+
+**Example (Multi-line with indentation):**
+```yaml
+- action: edit
+  path: "src/my_class.py"
+  find: |
+    def existing_method(self):
+        """An existing method."""
+        return self.value
+  replace: |
+    def existing_method(self):
+        """An existing method."""
+        return self.value
+
+    def new_indented_method(self, multiplier):
+        """A new method added via edit."""
+        return self.value * multiplier
+```
+
+---
+
+### `execute`
+
+Executes a shell command in the current working directory.
+
+**Parameters:**
+-   `command` (string, required): The shell command to execute.
+-   `cwd` (string, optional): A relative path to a different directory to run the command in.
+-   `env` (dictionary, optional): A dictionary of environment variables to set for the command.
+
+**Example:**
+```yaml
+- action: execute
+  command: "python -m pytest tests/"
+```
+
+---
+
+### `research`
+
+Performs a web search using a set of queries. The search results (title, URL, snippet) are returned in the `details` field of the action log.
+
+**Parameters:**
+-   `queries` (list of strings, required): A list of search queries to execute.
+
+**Example:**
+```yaml
+- action: research
+  queries:
+    - "python dependency injection libraries"
+    - "hexagonal architecture in python"
+```
+
+---
+
+### `chat_with_user`
+
+Prompts the user with a question during an interactive execution and waits for a free-text response. The user's response is returned in the `details.response` field of the action log.
+
+**Parameters:**
+-   `prompt` (string, required): The question to ask the user.
+
+**Example:**
+```yaml
+- action: chat_with_user
+  prompt: "Based on the research, which DI library should I use?"
+```
