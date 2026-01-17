@@ -136,42 +136,9 @@ This section defines the contract for the YAML plans the AI can generate. For th
 -   `chat_with_user`
 -   `research`
 
-## Utilities
-
-- `utils.py`: Contains miscellaneous helper functions.
-
----
-
-## Utilities
-
-- `utils.py`: Contains miscellaneous helper functions.
-
----
-
-## Utilities
-
-- `utils.py`: Contains miscellaneous helper functions.
-
----
-
-## Utilities
-
-- `utils.py`: Contains miscellaneous helper functions.
-
----
-
-## Utilities
-
-- `utils.py`: Contains miscellaneous helper functions.
-
 ---
 
 ## How to Use TeDDy
-
-
-
-
-
 
 **Important First Step: Provide Project Context**
 
