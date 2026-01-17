@@ -166,7 +166,13 @@ actions:
     ...
 ```
 
-The only universally required key is `action`, which specifies the type of operation to perform. All other keys are parameters specific to that action. Metadata fields like `id` or `description` are not supported and will cause the execution to fail.
+**Required Keys:**
+-   `action` (or `type`): Specifies the type of operation to perform.
+
+**Optional Keys:**
+-   `description`: A string that describes the action's purpose. This is used for logging and interactive prompts.
+
+All other keys are considered parameters specific to that action (e.g., `path`, `content`, `command`).
 
 ---
 
@@ -275,8 +281,22 @@ Prompts the user with a question during an interactive execution and waits for a
 **Parameters:**
 -   `prompt` (string, required): The question to ask the user.
 
-**Example:**
+**Example Plan:**
 ```yaml
 - action: chat_with_user
+  description: "Get user's final decision on a library."
   prompt: "Based on the research, which DI library should I use?"
+```
+
+**Example Report Output:**
+After the user responds (e.g., with "punq"), the corresponding `ActionLog` in the final report will look like this:
+
+```yaml
+- status: SUCCESS
+  action_type: chat_with_user
+  params:
+    prompt: Based on the research, which DI library should I use?
+  description: Get user's final decision on a library.
+  details:
+    response: punq
 ```

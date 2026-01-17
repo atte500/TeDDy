@@ -15,31 +15,28 @@ The reporting model is composed of three main dataclasses: `RunSummary`, `Action
 ### `RunSummary`
 This model captures the overall outcome of the entire plan execution.
 
-**Status:** Planned
+**Status:** Implemented
 
 ```python
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal
 
-from teddy_executor.core.domain.models import TeddyProject
-
+# Note: The 'TeddyProject' field was removed in the as-built implementation
+# in favor of a simpler model. This documentation reflects the current code.
 @dataclass(frozen=True)
 class RunSummary:
     """Summarizes the overall result of a plan execution."""
-    status: Literal["SUCCESS", "FAILURE", "SKIPPED"]
+    status: Literal["SUCCESS", "FAILURE"]
     start_time: datetime
     end_time: datetime
-    project: TeddyProject
-    # Optional field for a high-level error message if the entire run fails early
-    # (e.g., plan parsing error).
     error: str | None = None
 ```
 
 ### `ActionLog`
 This model captures the specific outcome of a single action within the plan.
 
-**Status:** Planned
+**Status:** Implemented
 
 ```python
 from dataclasses import dataclass
@@ -48,17 +45,17 @@ from typing import Any, Literal
 @dataclass(frozen=True)
 class ActionLog:
     """Logs the result of a single action execution."""
-    status: Literal["SUCCESS", "FAILURE", "SKIPPED", "PENDING"]
+    status: Literal["SUCCESS", "FAILURE", "SKIPPED"]
     action_type: str
     params: dict[str, Any]
-    # Optional field for detailed error messages or output from the action.
-    details: str | None = None
+    description: str | None = None
+    details: Any | None = None
 ```
 
 ### `ExecutionReport`
 This is the root model that aggregates the run summary and all individual action logs.
 
-**Status:** Planned
+**Status:** Implemented
 
 ```python
 from dataclasses import dataclass, field
