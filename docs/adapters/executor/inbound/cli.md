@@ -72,7 +72,7 @@ def execute(
 
 The CLI adapter is the primary entry point for the `teddy` application. It is responsible for:
 1.  Parsing user commands and arguments (`teddy execute`, `teddy context`).
-2.  Reading plan content for the execution command from a file (`--plan-file`).
+2.  Reading plan content for the execution command from a positional file argument or the clipboard.
 3.  Invoking the correct application service via the appropriate inbound port (resolved from the DI container).
 4.  Formatting the resulting domain object (`ExecutionReport` or `ProjectContext`) into a user-facing string.
 5.  Printing the final output to standard output.
@@ -97,7 +97,7 @@ This is the primary command for executing a plan.
 
 *   **Signature:** `teddy execute [PLAN_FILE] [--yes] [--no-copy]`
 *   **Input:**
-    *   `PLAN_FILE` (Optional): A path to a YAML plan file.
+    *   `PLAN_FILE` (Positional Argument, Optional): A path to a YAML plan file.
     *   If `PLAN_FILE` is omitted, the command reads the plan from the system clipboard. This introduces a dependency on the `pyperclip` library.
         *   **Dependency Vetting:** The `pyperclip` library was vetted via a technical spike (`spikes/technical/spike_clipboard_access.py`, now deleted) to confirm its cross-platform reliability, in accordance with the project's third-party dependency standards.
     *   `--yes` (Optional Flag): If provided, the plan will be executed in non-interactive mode, automatically approving all actions.

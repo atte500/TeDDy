@@ -16,7 +16,7 @@ To streamline the interactive workflow between the `teddy` CLI and the AI model 
 
 ### Scenario 2: Clipboard behavior is suppressed with a flag
 -   **Given** a user or script needs to prevent clipboard interaction
--   **When** they run a command with the suppression flag, such as `teddy context --no-copy` or `teddy --plan-file plan.yaml --no-copy`
+-   **When** they run a command with the suppression flag, such as `teddy context --no-copy` or `teddy plan.yaml --no-copy`
 -   **Then** the command's primary output (context or report) is printed to standard output as normal
 -   **But** the system clipboard is not modified
 -   **And** no clipboard-related confirmation message is printed.

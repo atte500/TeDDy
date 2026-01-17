@@ -8,6 +8,7 @@ class ActionData:
 
     type: str
     params: dict[str, Any]
+    description: str | None = None
 
 
 @dataclass(frozen=True)

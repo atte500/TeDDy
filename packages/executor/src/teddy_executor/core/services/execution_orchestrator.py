@@ -35,7 +35,24 @@ class ExecutionOrchestrator:
             should_dispatch = True
             reason = ""
             if interactive:
-                prompt = f"Execute action: {action.type} with params {action.params}?"
+                # --- START OF FIX ---
+                # Build a more descriptive, multi-line prompt for readability
+                # and correctly include the description.
+                prompt_parts = [
+                    "---",
+                    f"Action: {action.type}",
+                ]
+                if action.description:
+                    prompt_parts.append(f"Description: {action.description}")
+
+                # Use a cleaner representation of params
+                param_str = "\n".join(f"  - {k}: {v}" for k, v in action.params.items())
+                prompt_parts.append("Parameters:")
+                prompt_parts.append(param_str)
+                prompt_parts.append("---\nApprove action?")
+
+                prompt = "\n".join(prompt_parts)
+                # --- END OF FIX ---
                 should_dispatch, reason = self._user_interactor.confirm_action(prompt)
 
             if should_dispatch:

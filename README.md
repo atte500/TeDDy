@@ -111,10 +111,10 @@ Once your environment is active (see "Installation & Usage"), you can run the `t
 cd /path/to/my-web-app
 
 # Execute a plan file located in this directory
-teddy --plan-file plan.yaml
+teddy plan.yaml
 
 # To automatically approve all steps, use the -y flag:
-teddy --plan-file plan.yaml -y
+teddy plan.yaml -y
 ```
 
 To streamline the workflow, commands that produce significant output (like `context` and `execute`) will now **copy their output to the clipboard by default**. A confirmation message will be printed to `stderr`. This behavior can be disabled by adding the `--no-copy` flag to the command.

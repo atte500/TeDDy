@@ -51,14 +51,21 @@ class PlanParser:
                     f"Action is missing a 'type' or 'action' key: {action_dict}"
                 )
 
+            description = action_dict.get("description")
+
             if "params" in action_dict:
                 action_params = action_dict["params"]
             else:
                 action_params = action_dict.copy()
                 action_params.pop("action", None)
                 action_params.pop("type", None)
+                action_params.pop("description", None)
 
-            actions_data.append(ActionData(type=action_type, params=action_params))
+            actions_data.append(
+                ActionData(
+                    type=action_type, params=action_params, description=description
+                )
+            )
 
         if not actions_data:
             raise InvalidPlanError("Plan must contain at least one action.")
