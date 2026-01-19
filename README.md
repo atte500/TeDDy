@@ -186,9 +186,9 @@ Here's a look at our development priorities.
 
 ### `teddy` Executor CLI
 
-|    Status     | Stage / Feature Set                | Description                                                                                                                                                          |
-| :-----------: | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|  ✅ Completed  | **Core Action & Utility Support**  | The foundational actions (`create`, `read`, `edit`, `execute`, `chat`, `research`) and the `context` utility command are fully implemented and stable.               |
-| ▶️ In Progress | **Interactive Execution Workflow** | Streamline plan execution with clipboard support and step-by-step interactive approval, giving the user full control and improving safety and usability.             |
-|   📝 Planned   | **TUI for LLM Interaction**        | Create a Terminal User Interface (TUI) to directly call LLM APIs, pass context, manage prompts, and execute the resulting plans in a seamless, interactive loop.     |
-|   📝 Planned   | **Automated Workflows**            | Enable auto-run and agent-switching capabilities, allowing the framework to autonomously chain agents and decompose complex problems into smaller, manageable steps. |
+|    Status     | Stage / Feature Set               | Description                                                                                                                                                            |
+| :-----------: | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|  ✅ Completed  | **Core Action & Utility Support** | The foundational actions (`create`, `read`, `edit`, `execute`, `chat`, `research`) and the `context` utility command are fully implemented and stable.                 |
+| ▶️ In Progress | **Interactive Session Workflow**  | A local-first, file-based workflow that eliminates chat UIs. Manages conversation history, context, and state snapshots directly on the filesystem with Git.           |
+|   📝 Planned   | **Explicit YAML Pipelines**       | A robust, user-configurable system for chaining multiple LLM prompts to perform complex reasoning (e.g., analysis -> decision -> plan) before generating a final plan. |
+|   📝 Planned   | **Autonomous Execution Mode**     | An enhancement to the session workflow that allows for continuous, unattended execution of AI-generated plans, pausing only for explicit user interaction points.      |
