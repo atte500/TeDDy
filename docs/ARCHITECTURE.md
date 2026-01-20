@@ -162,16 +162,14 @@ This section defines the formal contract for the `actions` list in a `plan.yaml`
 ```yaml
 actions:
   - action: <action_type>
+    description: <A human-readable description of the action's purpose>
     <parameter_1>: <value_1>
-    <parameter_2>: <value_2>
     ...
 ```
 
 **Required Keys:**
 -   `action` (or `type`): Specifies the type of operation to perform.
-
-**Optional Keys:**
--   `description`: A string that describes the action's purpose. This is used for logging and interactive prompts.
+-   `description`: A string that describes the action's purpose. This is used for logging and interactive prompts. For `execute` actions, this field should summarize the expected outcome of the command.
 
 All other keys are considered parameters specific to that action (e.g., `path`, `content`, `command`).
 
@@ -199,6 +197,7 @@ Creates a new file with the specified content. If the file already exists, it wi
 **Example:**
 ```yaml
 - action: create_file
+  description: "Create a new Python module with a hello_world function."
   path: "src/new_module.py"
   content: |
     # src/new_module.py
@@ -218,6 +217,7 @@ Reads the full content of a specified file. The content is returned in the `deta
 **Example:**
 ```yaml
 - action: read
+  description: "Read the project's README file."
   path: "README.md"
 ```
 
@@ -235,6 +235,7 @@ Performs a find-and-replace operation on a file. It is designed for targeted, pr
 **Example (Multi-line with indentation):**
 ```yaml
 - action: edit
+  description: "Add a new method to my_class.py."
   path: "src/my_class.py"
   find: |
     def existing_method(self):
@@ -264,6 +265,7 @@ Executes a shell command in the current working directory.
 **Example:**
 ```yaml
 - action: execute
+  description: "Run the pytest test suite."
   command: "python -m pytest tests/"
 ```
 
@@ -279,6 +281,7 @@ Performs a web search using a set of queries. The search results (title, URL, sn
 **Example:**
 ```yaml
 - action: research
+  description: "Find information on Python DI libraries and hexagonal architecture."
   queries:
     - "python dependency injection libraries"
     - "hexagonal architecture in python"

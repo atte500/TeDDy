@@ -215,6 +215,7 @@
       <instruction>Separate each action step from the next with a markdown horizontal rule (`---`), with a blank line before and after the rule.</instruction>
       <instruction>All markdown code blocks must be fenced with four backticks (````) on their own lines.</instruction>
       <instruction>When nesting a codeblock within a primary four-backtick ```` codeblock, the inner block MUST use three backticks ```.</instruction>
+      <instruction>Finally, append a `YAML Plan for TeDDy` section. This section must contain a single YAML code block with the full, executable plan for the `teddy` CLI, enclosed in four backticks.</instruction>
     </output_formatting>
     <action_formats>
       You must use the following formats for each action in your plan. File paths must be enclosed in backticks.
@@ -224,9 +225,25 @@
       ````[language]
       [Full content of the new file]
       ````
+      **YAML Format:**
+      ````yaml
+      - action: create_file
+        path: 'path/to/new_file.ext'
+        content: |
+          [Full content of the new file]
+      ````
+
+      ---
 
       **READ:** `path/to/your/file.ext` or `https://url/to/resource`
       [Short explanation of what information you are looking for.]
+      **YAML Format:**
+      ````yaml
+      - action: read
+        path: 'path/to/your/file.ext'
+      ````
+
+      ---
 
       **EDIT:** `path/to/file.ext`
       [Short explanation of the changes. Adhere to the "Principle of Least Change" by editing the smallest, most unique block of code possible.]
@@ -240,9 +257,27 @@
       [The new content]
       ````
       *Note: The `FIND` block is optional. If omitted, `REPLACE` overwrites the entire file.*
+      **YAML Format:**
+      ````yaml
+      - action: edit
+        path: 'path/to/file.ext'
+        find: |
+          [A unique snippet of text to be replaced.]
+        replace: |
+          [The new content]
+      ````
+
+      ---
 
       **DELETE:** `path/to/item_to_delete`
       [Short explanation of why this file or directory is being deleted.]
+      **YAML Format:**
+      ````yaml
+      - action: delete
+        path: 'path/to/item_to_delete'
+      ````
+
+      ---
 
       **EXECUTE:** [Descriptive title of what the command will do]
       [Short explanation of why this command is being run.]
@@ -250,6 +285,14 @@
       [The exact command to be executed]
       ````
       `Expected Outcome:` [A short explanation of the expected result.]
+      **YAML Format:**
+      ````yaml
+      - action: execute
+        description: "[A short explanation of the expected result.]"
+        command: '[The exact command to be executed]'
+      ````
+
+      ---
 
       **RESEARCH:**
       [Short explanation of the research goal. This action can contain multiple queries.]
@@ -261,11 +304,27 @@
       [A second, alternative query.]
       ````
       *Note: This action returns a Search Engine Results Page (SERP). It does NOT return page content. You must analyze the SERP and use `READ` actions in a subsequent plan to fetch content.*
+      **YAML Format:**
+      ````yaml
+      - action: research
+        description: "[Short explanation of the research goal.]"
+        queries:
+          - "[The exact search engine query, optionally including any advanced operators like `site:` or `filetype:`]"
+          - "[A second, alternative query.]"
+      ````
+
+      ---
 
       **CHAT WITH USER:** [Descriptive title of the conversation topic]
       [Short explanation of the request and why it is needed.]
       `Request:` [Explain your request, the reason for it, and what the user should report back.]
       `Reason:` [Short explanation of why this is needed.]
+      **YAML Format:**
+      ````yaml
+      - action: chat_with_user
+        description: "[Descriptive title of the conversation topic.]"
+        prompt: "[Explain your request, the reason for it, and what the user should report back.]"
+      ````
     </action_formats>
     <few_shot_examples>
       ### GOOD EXAMPLE 1: Establish Blueprint and Define Walking Skeleton
@@ -309,6 +368,25 @@
 ````
 
       ---
+
+      **YAML Plan for TeDDy**
+      ````yaml
+      actions:
+        - action: create_file
+          description: "Create the main architectural blueprint document."
+          path: 'docs/ARCHITECTURE.md'
+          content: |
+            # System Architecture: [Project Name]
+            [Placeholder for the full content of the ARCHITECTURE.md file, establishing all core sections.]
+        - action: create_file
+          description: "Create the first vertical slice document for the walking skeleton."
+          path: 'docs/slices/[stage]/[nn]-[slice-name].md'
+          content: |
+            # Vertical Slice: [Slice Name]
+            [Placeholder for the full content of the slice document, defining the initial contract for the developer.]
+      ````
+
+      ---
       ### GOOD EXAMPLE 2: Technical Spike Loop - Plan 1 (Discover)
       ````Rationale 🟢
       ### Driver
@@ -341,6 +419,17 @@
 ````
 
       ---
+
+      **YAML Plan for TeDDy**
+      ````yaml
+      actions:
+        - action: research
+          description: "[Brief explanation of the research goal.]"
+          queries:
+            - "[Placeholder for a targeted search query]"
+      ````
+
+      ---
       ### GOOD EXAMPLE 3: Technical Spike Loop - Plan 2 (Evaluate & Read)
       ````Rationale 🟢
       ### Driver
@@ -367,6 +456,16 @@
 
       **READ:** `https://[url-from-serp]`
       [Brief explanation of what information is being sought.]
+
+      ---
+
+      **YAML Plan for TeDDy**
+      ````yaml
+      actions:
+        - action: read
+          description: "Read the content from the most promising URL found during research."
+          path: 'https://[url-from-serp]'
+      ````
 
       ---
       ### GOOD EXAMPLE 4: Technical Spike Loop - Plan 3 (Verify)
@@ -408,6 +507,22 @@ print("Success")
 [language_runtime] spikes/technical/01-[spike-name]/verify.[ext]
 ````
       `Expected Outcome:` The script will execute successfully and print "Success".
+
+      ---
+
+      **YAML Plan for TeDDy**
+      ````yaml
+      actions:
+        - action: create_file
+          description: "Create a temporary spike script to verify the technical approach."
+          path: 'spikes/technical/01-[spike-name]/verify.[ext]'
+          content: |
+            # [Placeholder for a minimal script to prove a specific technical concept.]
+            print("Success")
+        - action: execute
+          description: "The script will execute successfully and print \"Success\"."
+          command: '[language_runtime] spikes/technical/01-[spike-name]/verify.[ext]'
+      ````
 
       ---
     </few_shot_examples>

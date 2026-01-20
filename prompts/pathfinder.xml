@@ -151,6 +151,7 @@
         <instruction>Present each action with a bolded header: `**[Action Name]:** ...`.</instruction>
         <instruction>Separate each action step from the next with a markdown horizontal rule (`---`), with a blank line before and after.</instruction>
         <instruction>All markdown code blocks must be fenced with four backticks (````).</instruction>
+        <instruction>Finally, append a `YAML Plan for TeDDy` section. This section must contain a single YAML code block with the full, executable plan for the `teddy` CLI, enclosed in four backticks.</instruction>
     </output_formatting>
     <action_formats>
       **CREATE:** `path/to/new_file.ext`
@@ -158,9 +159,25 @@
       ````[language]
       [Full content of the new file]
       ````
+      **YAML Format:**
+      ````yaml
+      - action: create_file
+        path: 'path/to/new_file.ext'
+        content: |
+          [Full content of the new file]
+      ````
+
+      ---
 
       **READ:** `path/to/your/file.ext` or `https://url/to/resource`
       [Short explanation of what information you are looking for.]
+      **YAML Format:**
+      ````yaml
+      - action: read
+        path: 'path/to/your/file.ext'
+      ````
+
+      ---
 
       **EDIT:** `path/to/file.ext`
       [Short explanation of the changes.]
@@ -172,9 +189,27 @@
       ````[language]
       [The new content]
       ````
+      **YAML Format:**
+      ````yaml
+      - action: edit
+        path: 'path/to/file.ext'
+        find: |
+          [A unique snippet of text to be replaced.]
+        replace: |
+          [The new content]
+      ````
+
+      ---
 
       **DELETE:** `path/to/item_to_delete`
       [Short explanation of why this file or directory is being deleted.]
+      **YAML Format:**
+      ````yaml
+      - action: delete
+        path: 'path/to/item_to_delete'
+      ````
+
+      ---
 
       **EXECUTE:** [Descriptive title of what the command will do]
       [Short explanation of why this command is being run.]
@@ -182,6 +217,14 @@
       [The exact command to be executed]
       ````
       `Expected Outcome:` [A short explanation of the expected result.]
+      **YAML Format:**
+      ````yaml
+      - action: execute
+        description: "[A short explanation of the expected result.]"
+        command: '[The exact command to be executed]'
+      ````
+
+      ---
 
       **RESEARCH:**
       [Short explanation of the research goal.]
@@ -190,11 +233,26 @@
       [The exact search engine query]
       ````
       *Note: This action returns a Search Engine Results Page (SERP). It does NOT return page content. You must analyze the SERP and use `READ` actions in a subsequent plan to fetch content.*
+      **YAML Format:**
+      ````yaml
+      - action: research
+        description: "[Short explanation of the research goal.]"
+        queries:
+          - "[The exact search engine query]"
+      ````
+
+      ---
 
       **CHAT WITH USER:** [Descriptive title of the conversation topic]
       [Short explanation of the request and why it is needed.]
       `Request:` [The specific question or proposal for the user.]
       `Reason:` [Why this interaction is necessary for the current exploration phase.]
+      **YAML Format:**
+      ````yaml
+      - action: chat_with_user
+        description: "[Descriptive title of the conversation topic.]"
+        prompt: '[The specific question or proposal for the user.]'
+      ````
     </action_formats>
     <few_shot_examples>
       ### GOOD EXAMPLE: A Multi-Turn Exploration (Placeholder-Based)
@@ -237,6 +295,16 @@
       `Reason:` [Explanation for why the user's answer is a critical input for the discovery process.]
 
       ---
+
+      **YAML Plan for TeDDy**
+      ````yaml
+      actions:
+        - action: chat_with_user
+          description: "Define the core problem and constraints with the user."
+          prompt: "[A request to the user to clarify goals, accompanied by a strategic guiding question.]"
+      ````
+
+      ---
       #### TURN 2: Transitioning to Solution Space (The "What")
       ````Rationale 🟢
       ### 1. Observation
@@ -266,6 +334,17 @@
       ````
 [A placeholder for a search query formulated from the Problem Definition's findings.]
 ````
+
+      ---
+
+      **YAML Plan for TeDDy**
+      ````yaml
+      actions:
+        - action: research
+          description: "[An explanation of the research goal based on the approved problem definition.]"
+          queries:
+            - "[A placeholder for a search query formulated from the Problem Definition's findings.]"
+      ````
 
       ---
       #### TURN 3: Synthesizing and Requesting Approval
@@ -312,5 +391,33 @@
 
 Please review this document. Do you approve of this direction and agree that we should proceed to the next phase: [Name of Next Phase]?
       `Reason:` [An explanation of why this checkpoint is a mandatory step in the process.]
+
+      ---
+
+      **YAML Plan for TeDDy**
+      ````yaml
+      actions:
+        - action: create_file
+          description: "Create a temporary memo to summarize findings for user approval."
+          path: 'spikes/synthesis-memo.md'
+          content: |
+            # [Phase Name] Findings
+
+            ## Summary
+            [Placeholder for a brief summary of the information gathered.]
+
+            ## Key Points
+            - [Placeholder for Finding 1]
+            - [Placeholder for Finding 2]
+
+            ## Recommendation
+            [Placeholder for a recommendation based on the findings.]
+        - action: chat_with_user
+          description: "Request user approval on the synthesized findings before proceeding."
+          prompt: |
+            I have completed my exploration of the [Phase Name] and have summarized my findings and recommendation in `spikes/synthesis-memo.md`.
+
+            Please review this document. Do you approve of this direction and agree that we should proceed to the next phase: [Name of Next Phase]?
+      ````
     </few_shot_examples>
 </pathfinder>
