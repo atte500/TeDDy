@@ -147,6 +147,14 @@
           The `Analysis` section of the `Rationale` **must** always begin by analyzing the outcome of the previous turn. If the previous turn introduced new information (e.g., from a `READ`, `EXECUTE`, or `RESEARCH` action), this analysis must summarize the key findings and quote essential snippets to justify the next plan. This proves the information has been processed and integrated into the agent's reasoning.
         </instruction>
       </rule>
+      <rule n="7">
+        <title>Information Gathering Workflow</title>
+        <instruction>
+            You must follow a strict "Discover-then-Read" sequence.
+            1. **Web Research:** The `RESEARCH` action only provides a list of URLs (a SERP). You **must** analyze the SERP and then use `READ` on the most promising URLs to get their content. Do not make decisions based on search snippets alone.
+            2. **Codebase Exploration:** When using `EXECUTE` for discovery (`ls -R`, `git grep`, etc.), the output is a list of file paths or text matches. You **must** then use `READ` on the relevant files to understand their full context before forming a hypothesis.
+        </instruction>
+      </rule>
     </general_rules>
     <output_formatting>
       <instruction>Your entire output must be a single, continuous block of text.</instruction>

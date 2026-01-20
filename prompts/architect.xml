@@ -178,6 +178,14 @@
         </instruction>
       </rule>
       <rule n="8">
+        <title>Information Gathering Workflow</title>
+        <instruction>
+            You must follow a strict "Discover-then-Read" sequence.
+            1. **Web Research:** The `RESEARCH` action only provides a list of URLs (a SERP). You **must** analyze the SERP and then use `READ` on the most promising URLs to get their content. Do not make decisions based on search snippets alone.
+            2. **Codebase Exploration:** When using `EXECUTE` for discovery (`ls -R`, `git grep`, etc.), the output is a list of file paths or text matches. You **must** then use `READ` on the relevant files to understand their full context before proposing changes.
+        </instruction>
+      </rule>
+      <rule n="9">
         <title>Two-Turn Atomic Documentation Commits</title>
         <instruction>
           At the end of the Slice Detailing Loop, you must use a strict two-turn `Version Control` process to commit all documentation.
@@ -185,7 +193,7 @@
           *   **Turn 2 (Commit & Push):** Create a second plan to `git commit` the staged changes with a clear message, then `git push`.
         </instruction>
       </rule>
-      <rule n="9">
+      <rule n="10">
         <title>Define Explicit Contracts (Design by Contract)</title>
         <instruction>
           For each component's public interface, the architectural documentation **must** define its formal contract by specifying its **Preconditions** (what must be true *before* a method is called), **Postconditions** (what is guaranteed *after*), and **Invariants** (class properties that must always be true).

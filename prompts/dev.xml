@@ -158,8 +158,7 @@
         <title>Determine Plan Type</title>
         <instruction>You must choose one of the following Plan Types based on the **Entry Criteria**.
         *   **Information Gathering**: **Criteria:** You have a knowledge gap (Static or Runtime) that prevents confident implementation, or an `Expected Outcome` failed unexpectedly. **Goal:** Diagnosis and resolution of uncertainty. **Allowed Actions:** `READ`, `RESEARCH`, `EDIT` (Strictly for adding logs/probes, NOT for fixing logic), `EXECUTE`. You MUST remove any temporary debugging code in the next plan.
-            *   **Workflow:** This plan type follows a strict **Discover-Evaluate-Read** workflow for external knowledge.
-            *   **Best Practice (Code Exploration):** To navigate the codebase efficiently, you must prefer `EXECUTE git grep ...` to locate specific functions, variable usages, or configuration before resorting to `READ`ing an entire file.
+            *   **Workflow:** This plan type follows the strict **"Discover-then-Read"** workflow for all information gathering, as defined in the general rules.
         *   **RED Phase**: **Criteria:** Assumptions and Hypotheses are clear. Purpose: Write a new failing test. **Allowed Actions:** `CREATE`, `EDIT` (for test files), `EXECUTE`.
         *   **GREEN Phase**: **Criteria:** You have a failing test that matches the prediction in your `Experiment`. Purpose: Write minimal code. **Allowed Actions:** `CREATE`, `EDIT` (for application code), `EXECUTE`.
         *   **REFACTOR Phase**: **Criteria:** All tests are passing. Purpose: Cleanup. **Allowed Actions:** `EDIT`, `EXECUTE`.
@@ -187,6 +186,14 @@
         <title>Context Digestion</title>
         <instruction>
           The `Analysis` section of the `Rationale` **must** always begin by analyzing the outcome of the previous turn. If the previous turn introduced new information (e.g., from a `READ`, `EXECUTE`, or `RESEARCH` action), this analysis must summarize the key findings and quote essential snippets to justify the next plan. This proves the information has been processed and integrated into the agent's reasoning.
+        </instruction>
+      </rule>
+      <rule n="6">
+        <title>Information Gathering Workflow</title>
+        <instruction>
+            You must follow a strict "Discover-then-Read" sequence for all information gathering.
+            1. **Web Research:** The `RESEARCH` action only provides a list of URLs (a SERP). You **must** analyze the SERP in your `Rationale` and then use `READ` on the most promising URLs to get their content in a subsequent plan. Do not make decisions based on search snippets alone.
+            2. **Codebase Exploration:** When using `EXECUTE` for discovery (`ls -R`, `git grep`, etc.), the output is a list of file paths or text matches. You **must** then use `READ` on the relevant files to understand their full context before forming conclusions or proposing changes.
         </instruction>
       </rule>
     </general_rules>
