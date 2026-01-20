@@ -17,6 +17,11 @@ The goal is to create a seamless, local-first, CLI-driven workflow that eliminat
 
 ## 2. Selected Solution (The What)
 
+### LLM Integration: `litellm`
+To handle communication with various LLM providers, TeDDy will use the `litellm` library. This lightweight library provides a single, unified interface (`litellm.completion()`) for over 100 LLM providers, including OpenRouter. This approach satisfies the core requirement for a pluggable, non-hard-coded solution.
+
+User configuration for API keys and model selection will be managed via a `config.yaml` file located in a `.teddy/` directory.
+
 ### State Management: Isolated Git Worktrees
 The feature will be built around an **Isolated Worktree Strategy** for state management. This provides maximum safety by sandboxing all AI file operations, which aligns with `TeDDy`'s "Poka-Yoke" (Mistake-Proofing) principle. A successful plan execution results in a new Git commit, whose hash is stored in the turn file, enabling a robust `restore` capability.
 
@@ -45,12 +50,18 @@ This feature will be implemented in the following dependency-aware order:
     -   [ ] Move all `packages/executor` content to the project root and delete `packages/tui`. Update all imports, `pyproject.toml`, and CI scripts.
     -   [ ] Refactor the `get-prompt` command's default prompt logic to use `importlib.resources`, making it robust for pip installation.
     -   [ ] Update `README.md` `Installation & Usage` section.
--   [ ] **Slice 2: Session Scaffolding & Context.** Implement `teddy session start` and `continue` commands. Add the `-m` flag, the interactive comment prompt, and the `id`/`parent_id` linking logic.
+-   [ ] **Slice 2: LLM Integration.**
+    -   [ ] Add `litellm` as a dependency.
+    -   [ ] Create a `ConfigService` to load model and API key settings from `.teddy/config.yaml`.
+    -   [ ] Define a new `ILlmClient` outbound port.
+    -   [ ] Create a `LiteLLMAdapter` that implements the port.
+    -   [ ] Wire up the adapter in `main.py`.
+-   [ ] **Slice 3: Session Scaffolding & Context.** Implement `teddy session start` and `continue` commands. Integrate the `ILlmClient` to generate a plan based on user input. Add the `-m` flag, the interactive comment prompt, and the `id`/`parent_id` linking logic.
     -   *Update `README.md` `Command-Line Reference` for `start` and `continue`.*
--   [ ] **Slice 3: Core State Management & Autonomous Mode.** Implement the `git worktree` snapshot-and-commit logic in a `GitManager`. Integrate into the `continue` loop with the `--yolo` flag.
+-   [ ] **Slice 4: Core State Management & Autonomous Mode.** Implement the `git worktree` snapshot-and-commit logic in a `GitManager`. Integrate into the `continue` loop with the `--yolo` flag.
     -   *Update `README.md` `Session-Based Workflow` to explain state snapshots.*
--   [ ] **Slice 4: State Restoration.** Implement `teddy session restore <turn_file.md>`.
+-   [ ] **Slice 5: State Restoration.** Implement `teddy session restore <turn_file.md>`.
     -   *Update `README.md` `Command-Line Reference` for `restore`.*
--   [ ] **Slice 5: YAML Validation & Retry.** Integrate a validation and retry loop for LLM-generated plans.
+-   [ ] **Slice 6: YAML Validation & Retry.** Integrate a validation and retry loop for LLM-generated plans.
     -   *Update `README.md` `Session-Based Workflow` to mention plan validation.*
     -   *Update `README.md` to re-market TeDDy as "Obsidian for Vibecoding", highlighting principles like local-first, plain text files, and link-based history (`parent_id`).*
