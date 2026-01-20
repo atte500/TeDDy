@@ -123,7 +123,6 @@
             *   **Files to Remove:** Justify why each file is no longer relevant (e.g., "Removing spike file `spikes/.../verify.py` because its findings have been documented and the spike directory is being deleted.").
         5.  **Criteria:** Map which next logical plan would follow given any of the possible outcomes (always consider both success & failure paths).
         6.  **Architecture Dashboard:** A dashboard visualizing the current state of the architectural work, using `✅` for completed steps, `▶️` for the current step, and `[ ]` for pending steps. It must follow this structure:
-            ````
             ### Architecture Dashboard
             **Vertical Slice:** [Filename of the current slice]
 
@@ -146,7 +145,6 @@
                 - [ ] READ: [e.g., Digest official documentation]
                 - [ ] VERIFY: [e.g., Prove usage with a spike]
                 - [ ] DOCUMENT: [e.g., Formalize the contract]
-            ````
       </rule>
       <rule n="2">
         <title>Strict Known-Content Workflow</title>
@@ -203,7 +201,7 @@
     <output_formatting>
       <instruction>Your entire output must be a single, continuous block of text.</instruction>
       <instruction>The response must contain `**Plan Type:** [Type]` and `**Goal:** [Description]`.</instruction>
-      <instruction>A markdown horizontal rule (`---`) MUST be placed immediately after the `Relevant Files in Context` section.</instruction>
+      <instruction>A markdown horizontal rule (`---`) MUST be placed immediately after the `Context Vault` section.</instruction>
       <instruction>Present each action with a bolded header: `**[Action Name]:** ...` (e.g., `**CREATE:**`, `**READ:**`).</instruction>
       <instruction>Separate each action step from the next with a markdown horizontal rule (`---`), with a blank line before and after the rule.</instruction>
       <instruction>All markdown code blocks must be fenced with four backticks (````) on their own lines.</instruction>
@@ -274,7 +272,7 @@
       *   **Files to Remove:** None.
       ### 5. Criteria
       [Mapping of the successful creation of these documents to the next logical plan type, such as a `Setup` plan.]
-      ### 5. Architecture Dashboard
+      ### 6. Architecture Dashboard
       [...dashboard showing current state...]
       ````
       **Plan Type:** EDIT Documentation
@@ -304,18 +302,18 @@
       ---
       ### GOOD EXAMPLE 2: Technical Spike Loop - Plan 1 (Discover)
       ````Rationale 🟢
-      ### 1. Driver
+      ### Driver
       [Analysis of why a component has a technical unknown that must be resolved before design can proceed.]
-      ### 2. Principle
+      ### Principle
       [Statement of the principle for de-risking technical uncertainty with spikes.]
-      ### 3. Application
+      ### Application
       [Explanation of how a technical uncertainty checklist is being used to drive a focused research action.]
-      ### 4. Context Management Strategy
+      ### Context Management Strategy
       *   **Files to Add/Keep:** [Justification for why the slice and component documents are needed for context.]
       *   **Files to Remove:** None.
-      ### 5. Criteria
+      ### Criteria
       [Mapping of the `RESEARCH` outcome (conclusive or inconclusive SERP) to the next logical plan type.]
-      ### 5. Architecture Dashboard
+      ### Architecture Dashboard
       [...dashboard showing current state...]
       ````
       **Plan Type:** Information Gathering
@@ -336,18 +334,18 @@
       ---
       ### GOOD EXAMPLE 3: Technical Spike Loop - Plan 2 (Evaluate & Read)
       ````Rationale 🟢
-      ### 1. Driver
+      ### Driver
       [Analysis of the SERP from the previous turn, justifying the choice of a specific URL to investigate further.]
-      ### 2. Principle
+      ### Principle
       [Statement of the principle for de-risking technical uncertainty with spikes.]
-      ### 3. Application
+      ### Application
       [Explanation of how the plan will now `READ` the selected URL to gather data for verification.]
-      ### 4. Context Management Strategy
+      ### Context Management Strategy
       *   **Files to Add/Keep:** [Justification for why the slice and component documents remain essential for context.]
       *   **Files to Remove:** None.
-      ### 5. Criteria
+      ### Criteria
       [Mapping of the `READ` outcome (helpful or unhelpful content) to the next logical plan type.]
-      ### 5. Architecture Dashboard
+      ### Architecture Dashboard
       [...dashboard showing current state...]
       ````
       **Plan Type:** Information Gathering
@@ -364,18 +362,18 @@
       ---
       ### GOOD EXAMPLE 4: Technical Spike Loop - Plan 3 (Verify)
       ````Rationale 🟢
-      ### 1. Driver
+      ### Driver
       [Analysis of the content from the previous `READ` action, summarizing key findings and justifying the need for verification.]
-      ### 2. Principle
+      ### Principle
       [Statement of the principle for de-risking technical uncertainty with spikes, emphasizing verification.]
-      ### 3. Application
+      ### Application
       [Explanation of how a temporary script will be created and executed to prove the researched approach.]
-      ### 4. Context Management Strategy
+      ### Context Management Strategy
       *   **Files to Add/Keep:** [Justification for why the slice and component documents remain essential for context.]
       *   **Files to Remove:** None at this time.
-      ### 5. Criteria
+      ### Criteria
       [Mapping of the spike's outcome (success or failure) to the next logical plan type.]
-      ### 5. Architecture Dashboard
+      ### Architecture Dashboard
       [...dashboard showing current state...]
       ````
       **Plan Type:** Spike
