@@ -23,14 +23,15 @@ This port defines the contract for components that can interact with the user by
 
 ---
 
-### `confirm_action(action_prompt: str) -> tuple[bool, str]`
+### `confirm_action(action: 'Action', action_prompt: str) -> tuple[bool, str]`
 
-**Status:** Implemented
-**Motivating Slice:** [Slice 19: Unified `execute` Command & Interactive Approval](../../slices/executor/19-unified-execute-command.md)
+**Status:** Refactored
+**Motivating Slice:** [Slice 23: Foundational CLI Additions & Refactoring](../../../slices/executor/23-cli-ux-foundations.md)
 
 *   **Description:**
-    Displays a prompt describing an action and asks the user for `y/n` confirmation. If the user denies the action, it prompts them for an optional reason.
+    Displays a prompt describing an action and asks the user for `y/n` confirmation. If the user denies the action, it prompts them for an optional reason. The full `Action` object is passed to allow implementing adapters to provide enhanced previews (e.g., diffs for `edit` actions).
 *   **Preconditions:**
+    *   `action` must be a valid `Action` domain object.
     *   `action_prompt` must be a non-empty string describing the action to be confirmed.
 *   **Postconditions:**
     *   Returns a tuple where the first element is a boolean indicating approval, and the second is the optional reason string provided by the user if the action was denied.

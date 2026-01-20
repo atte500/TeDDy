@@ -117,6 +117,22 @@ This command provides a comprehensive snapshot of the project for an AI agent.
     *   `--no-copy` (Optional Flag): If provided, suppresses the default behavior of copying the output to the system clipboard.
 *   **Behavior:** It invokes the `ContextService` via the `IGetContextUseCase` port. It receives a `ContextResult` domain object in return, formats it into a structured, human-readable string, and prints it to standard output while also copying it to the clipboard, as per the standard output handling rules.
 
+### Utility Command: `get-prompt`
+**Status:** Planned
+**Introduced in:** [Slice 23: Foundational CLI Additions & Refactoring](../../../slices/executor/23-cli-ux-foundations.md)
+
+This command provides a convenient way for users to access and override system prompts.
+
+*   **Signature:** `teddy get-prompt <PROMPT_NAME> [--no-copy]`
+*   **Input:**
+    *   `PROMPT_NAME` (Positional Argument, Required): The name of the prompt to retrieve (e.g., `architect`, `dev`).
+    *   `--no-copy` (Optional Flag): If provided, suppresses the default behavior of copying the output to the system clipboard.
+*   **Behavior:**
+    1.  The command first searches for a custom prompt in the local `.teddy/prompts/` directory. It looks for a file that starts with `<PROMPT_NAME>`, ignoring the file extension.
+    2.  If a local override is not found, it falls back to searching the default prompts packaged with the application using `importlib.resources`.
+    3.  If found, the content of the prompt is printed to `stdout` and copied to the clipboard, following the standard output handling rules.
+    4.  If the prompt is not found in either location, an error is printed to `stderr` and the command exits with a non-zero status code.
+
 ### Standard Output Handling
 **Updated in:** [Slice 22: Generalized Clipboard Output](../../../slices/executor/22-generalized-clipboard-output.md)
 
