@@ -12,7 +12,7 @@ To improve the interactive plan approval workflow by providing users with an imm
 *   **Given** the `TEDDY_DIFF_TOOL` environment variable is set to a valid command (e.g., `meld`).
 *   **When** an interactive plan containing a `create_file` or `edit` action is executed.
 *   **Then** the executor should invoke the specified custom diff tool to display the changes before prompting for confirmation.
-*   **And** the plan execution should pause until the diff tool process is closed.
+*   **And** the terminal should immediately prompt for confirmation while the diff is visible.
 
 *Example:*
 ```gherkin
@@ -27,7 +27,7 @@ And I am prompted for approval after closing meld
 *   **And** the `code` command-line tool is available in the system's `PATH`.
 *   **When** an interactive plan containing a `create_file` or `edit` action is executed.
 *   **Then** the executor should invoke `code --diff` to display the changes in Visual Studio Code.
-*   **And** the plan execution should pause until the diff tab is closed.
+*   **And** the terminal should immediately prompt for confirmation while the diff is visible.
 
 *Example:*
 ```gherkin
@@ -73,29 +73,30 @@ And I am then prompted for approval
     2.  If not found, check for the `code` command using `shutil.which()`.
     3.  If neither is found, select the internal `difflib` fallback.
 4.  The adapter creates temporary files representing the state of the file before and after the proposed change. For a `create_file` action, the "before" state is an empty file.
-5.  The adapter invokes the selected tool (`TEDDY_DIFF_TOOL`, `code`, or `difflib`) as a subprocess.
-6.  After the diff view is closed by the user, the adapter proceeds to prompt for `y/n` confirmation as usual.
-7.  The user's response is returned to the orchestrator.
+5.  The adapter invokes the selected external tool as a non-blocking subprocess, or prints the in-terminal diff.
+6.  The adapter immediately proceeds to prompt for `y/n` confirmation.
+7.  The user's response is returned to the orchestrator. After the user responds, temporary files are cleaned up.
 
 ## 5. Scope of Work
 
 This checklist guides the implementation of the change preview feature in an "outside-in" manner, starting with the adapter's public contract and ending with verification through acceptance tests.
 
 ### `ConsoleInteractorAdapter`
-1.  **READ:** The updated design document for the `ConsoleInteractorAdapter` to understand the full requirements for the change preview logic.
+1.  [x] **READ:** The updated design document for the `ConsoleInteractorAdapter` to understand the full requirements for the change preview logic.
     - `docs/adapters/executor/outbound/console_interactor.md`
-2.  **IMPLEMENT:** The change preview logic within the `confirm_action` method of the `ConsoleInteractorAdapter`.
-    -   Target file: `packages/executor/src/teddy_executor/adapters/outbound/console_interactor.py`
-    -   Implement the tool detection strategy (`TEDDY_DIFF_TOOL` > `code` > `difflib`).
-    -   Add logic to create, use, and clean up temporary files for the external diff tool.
-    -   Ensure the standard `(y/n)` prompt is displayed *after* the preview is shown and closed.
-    -   This logic should only trigger for `create_file` and `edit` actions and should be skipped when the `-y` flag is used.
+2.  [x] **IMPLEMENT:** The change preview logic within the `confirm_action` method of the `ConsoleInteractorAdapter`.
+    -   [x] Target file: `packages/executor/src/teddy_executor/adapters/outbound/console_interactor.py`
+    -   [x] Implement the tool detection strategy (`TEDDY_DIFF_TOOL` > `code` > `difflib`).
+    -   [x] Add logic to create, use, and clean up temporary files for the external diff tool.
+    -   [x] Ensure the standard `(y/n)` prompt is displayed immediately for non-blocking diffs.
+    -   [x] This logic should only trigger for `create_file` and `edit` actions and should be skipped when the `-y` flag is used.
 
 ### Acceptance Tests
-1.  **CREATE:** A new acceptance test file to verify the change preview feature.
-    -   File: `packages/executor/tests/acceptance/test_change_preview_feature.py`
-2.  **IMPLEMENT:** The following test cases:
-    -   A test that verifies the custom tool specified in `TEDDY_DIFF_TOOL` is called correctly. Use mocking to assert that `subprocess.run` is called with the expected command.
-    -   A test that verifies `code --diff` is called when `TEDDY_DIFF_TOOL` is not set but `shutil.which('code')` returns a path.
-    -   A test that verifies the `difflib` output is printed to the console when no external tool is found.
-    -   A test that confirms no diff is shown when the `-y` flag is passed to the CLI.
+1.  [x] **CREATE:** A new acceptance test file to verify the change preview feature.
+    -   [x] File: `packages/executor/tests/acceptance/test_change_preview_feature.py`
+2.  [x] **IMPLEMENT:** The following test cases:
+    -   [x] A test that verifies the custom tool specified in `TEDDY_DIFF_TOOL` is called correctly, including with arguments.
+    -   [x] A test that verifies `code --diff` is called when `TEDDY_DIFF_TOOL` is not set but `shutil.which('code')` returns a path.
+    -   [x] A test that verifies the `difflib` output is printed to the console when no external tool is found.
+    -   [x] A test that verifies an invalid custom tool correctly falls back to the terminal diff.
+    -   [x] A test that confirms no diff is shown when the `-y` flag is passed to the CLI.

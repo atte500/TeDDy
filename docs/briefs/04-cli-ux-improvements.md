@@ -53,10 +53,10 @@ The implementation will be broken into two parts, starting with a necessary refa
     -   [x] Update the call site in `ExecutionOrchestrator` to pass the `Action` object.
     -   [x] Ensure all existing tests pass after the refactoring.
 
--   [ ] **Slice 2: Implement Change Preview Feature.**
-    -   [ ] In `ConsoleInteractorAdapter`, implement the full preview logic:
-        -   Detect `TEDDY_DIFF_TOOL` environment variable.
-        -   Detect `code` command-line tool.
-        -   Fall back to an in-terminal `difflib` view.
-    -   [ ] Add logic to create and manage temporary files for diffing.
-    -   [ ] Add acceptance tests covering all three preview scenarios (custom tool, vscode, difflib fallback).
+-   [x] **Slice 2: Implement Change Preview Feature.**
+    -   [x] In `ConsoleInteractorAdapter`, implement the full preview logic:
+        -   [x] Detect `TEDDY_DIFF_TOOL` environment variable.
+        -   [x] Detect `code` command-line tool.
+        -   [x] Fall back to an in-terminal `difflib` view.
+    -   [x] Add logic to create and manage temporary files for diffing.
+    -   [x] Add acceptance tests covering all three preview scenarios (custom tool, vscode, difflib fallback).

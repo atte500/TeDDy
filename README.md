@@ -121,9 +121,18 @@ To streamline the workflow, commands that produce significant output (like `cont
 
 #### Utility Commands
 
-| Command   | Description                                                                                                                                                                                                                                                                                                                                      |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `context` | Gathers and displays the project context, copying it to the clipboard by default. The command respects rules in both `.gitignore` and an optional `.teddyignore` file. Rules in `.teddyignore` take precedence, allowing you to re-include specific files for the AI's context that are ignored by `.gitignore` (e.g., using `!dist/bundle.js`). |
+| Command      | Description                                                                                                                                                                                                                                                                                                                                      |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `context`    | Gathers and displays the project context, copying it to the clipboard by default. The command respects rules in both `.gitignore` and an optional `.teddyignore` file. Rules in `.teddyignore` take precedence, allowing you to re-include specific files for the AI's context that are ignored by `.gitignore` (e.g., using `!dist/bundle.js`). |
+| `get-prompt` | Outputs the content of a system prompt (e.g., `dev`, `architect`). It searches for project-specific overrides in `.teddy/prompts/` before falling back to the packaged defaults.                                                                                                                                                                 |
+
+#### Environment Variables
+
+The `teddy` executor can be configured using the following environment variables:
+
+| Variable          | Description                                                                                                                                                                                                                                                   |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TEDDY_DIFF_TOOL` | Specifies a custom command-line tool for viewing diffs during interactive plan approval. If set, this tool takes precedence over the default fallback (VS Code). The command string is parsed to support arguments, e.g., `export TEDDY_DIFF_TOOL="nvim -d"`. |
 
 ### YAML Action Reference
 
