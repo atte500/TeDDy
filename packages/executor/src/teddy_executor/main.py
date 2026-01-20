@@ -95,6 +95,25 @@ def context(
     _echo_and_copy(formatted_context, no_copy=no_copy)
 
 
+def _find_prompt_content(prompt_name: str) -> Optional[str]:
+    """
+    Finds prompt content, prioritizing local override.
+    Returns None if not found.
+    """
+    # 1. Search for local override
+    local_prompt_dir = Path.cwd() / ".teddy" / "prompts"
+    if local_prompt_dir.is_dir():
+        found_files = list(local_prompt_dir.glob(f"{prompt_name}.*"))
+        if found_files:
+            return found_files[0].read_text()
+
+    # 2. Fallback to default (faked for now)
+    if prompt_name == "architect":
+        return "Default architect prompt content"
+
+    return None
+
+
 @app.command(name="get-prompt")
 def get_prompt(
     prompt_name: str = typer.Argument(..., help="The name of the prompt to retrieve."),
@@ -104,10 +123,17 @@ def get_prompt(
 ):
     """
     Retrieves and displays the content of a specified prompt.
+
+    Searches for a local override in ./.teddy/prompts/ first.
     """
-    # Fake implementation for now
-    prompt_content = "Default architect prompt content"
-    _echo_and_copy(prompt_content, no_copy)
+    prompt_content = _find_prompt_content(prompt_name)
+
+    if prompt_content:
+        _echo_and_copy(prompt_content, no_copy)
+    else:
+        # This part will be tested in the next scenario
+        typer.echo(f"Error: Prompt '{prompt_name}' not found.", err=True)
+        raise typer.Exit(code=1)
 
 
 def _get_plan_content(plan_file: Optional[Path]) -> str:
