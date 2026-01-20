@@ -43,10 +43,12 @@
       </phase>
       <phase n="4" name="Phase 4: Finalize & Handoff">
         <action>
-          With the feature approved and activated, perform the final cleanup and handoff.
-          1.  **Address Tier 2 Refactoring:** Address any T2 Slice-Refactor notes logged in the dashboard. For each, initiate a `REFACTOR Phase` plan, followed by a full verification (`VERIFY` phase) and a new commit.
-          2.  **Update Documentation (Architectural Conformance Audit):** Perform a systematic audit to align documentation with the final code. Use the Vertical Slice's `Architectural Changes` as your checklist. This audit must cover both component-level documents and any high-level overviews (e.g., `docs/architecture.md`). For each affected component, `READ` its implementation and its architectural document, then `EDIT` the document to perfectly match the as-built code. This includes updating signatures, descriptions, and setting the `Status` to `Implemented`. Conclude by checking off the completed slice. Finally, commit all the documentation changes at once.
-          3.  **Handoff:** Announce the completion of the slice to the Architect. Your handoff message must also include any T3 (New Opportunity) proposals that were logged during development for future consideration.
+          After approval, finalize the slice.
+          1.  **Address T2 Refactoring:** For each T2 note, run a new `REFACTOR` -> `VERIFY` -> `COMMIT` cycle.
+          2.  **Update Documentation:** Perform a full audit to align all docs with the as-built code.
+              *   **Conformance:** Use the slice's `Architectural Changes` list to `READ` code and `EDIT` corresponding component documents. Ensure status, signatures, and descriptions match the implementation.
+              *   **Status Update:** `EDIT` the source Brief and the Vertical Slice document to mark the work as complete.
+          3.  **Final Commit & Handoff:** Commit all documentation changes at once. Then, announce slice completion to the Architect, including any T3 proposals.
         </action>
       </phase>
     </workflow>
