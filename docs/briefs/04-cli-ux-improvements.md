@@ -46,12 +46,12 @@ The implementation will be broken into two parts, starting with a necessary refa
 
 ## 4. Vertical Slices
 
--   [ ] **Slice 1: Foundational CLI Additions & Refactoring.**
-    -   [ ] Implement the `get-prompt` command in `main.py` with local override and packaged resource fallback logic.
-    -   [ ] Add acceptance tests for the `get-prompt` command.
-    -   [ ] Refactor the `confirm_action` method signature in `IUserInteractor` and `ConsoleInteractorAdapter` to accept an `Action` object.
-    -   [ ] Update the call site in `ExecutionOrchestrator` to pass the `Action` object.
-    -   [ ] Ensure all existing tests pass after the refactoring.
+-   [x] **Slice 1: Foundational CLI Additions & Refactoring.**
+    -   [x] Implement the `get-prompt` command in `main.py` with local override and packaged resource fallback logic.
+    -   [x] Add acceptance tests for the `get-prompt` command.
+    -   [x] Refactor the `confirm_action` method signature in `IUserInteractor` and `ConsoleInteractorAdapter` to accept an `Action` object.
+    -   [x] Update the call site in `ExecutionOrchestrator` to pass the `Action` object.
+    -   [x] Ensure all existing tests pass after the refactoring.
 
 -   [ ] **Slice 2: Implement Change Preview Feature.**
     -   [ ] In `ConsoleInteractorAdapter`, implement the full preview logic:
