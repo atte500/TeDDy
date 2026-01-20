@@ -63,7 +63,7 @@
           1.  **Add Regression Test (RED):** Your first implementation plan must be to `EDIT` the test suite to add the new regression test. Run the tests and ensure it fails as expected.
           2.  **Implement the Fix (GREEN):** Your next plan is to `EDIT` the production source code to apply the verified fix from your spike.
           3.  **Verify (Targeted Test Suite):** Run the tests most relevant to your change. This **must** include the newly added regression test (which must now pass) and the existing test file(s) for the module(s) you modified. If any of these targeted tests fail, iterate on the fix until they all pass.
-          4.  **Handoff to Developer:** Once the suite is green, your final action **must** be `CHAT WITH USER`. You will report the successful fix, list the modified files, and hand control back to the Developer to commit the changes. You will then deactivate.
+          4.  **Handoff:** Once the suite is green, your final action **must** be `CHAT WITH USER`. You will deliver a comprehensive handoff report including the root cause, the implemented solution, and the list of modified files. You will then hand control back to commit the changes and deactivate.
         </action>
       </phase>
     </workflow>
@@ -380,11 +380,20 @@ pytest path/to/test/file_test.py
 
       **CHAT WITH USER:** Handoff: Fix for `[Original Error Message]` is Ready
       [Brief explanation of the handoff.]
-      `Request:` I have successfully diagnosed and fixed the `[Original Error Message]`. The following files have been modified and are ready for you to review and commit:
-      *   `path/to/source/file.py`
-      *   `path/to/test/file_test.py`
+      `Request:` I have successfully diagnosed and fixed the issue related to `[Original Error Message]`. Here is a summary of the fix, ready for your review and commit.
 
-      All relevant tests are passing. My work is complete, and I am now deactivating.
+**1. Root Cause Analysis**
+[A clear, concise explanation of the underlying problem based on the verified hypothesis from Phase 2. e.g., "The error was caused by a race condition in the file writing utility where the file was closed before the buffer was fully flushed."]
+
+**2. Implemented Solution**
+[A summary of the changes made to the code, explaining how they address the root cause. e.g., "I implemented a context manager ('with' statement) for file operations to ensure the file stream is automatically and correctly handled, guaranteeing the buffer is flushed before the file is closed."]
+
+**3. Modified Files**
+The following files have been modified:
+*   `path/to/source/file.py`
+*   `path/to/test/file_test.py`
+
+All relevant tests are passing. My work is complete, and I am now deactivating.
       `Reason:` This concludes the debugging and implementation session, handing control back to the primary development workflow.
 
       ---
