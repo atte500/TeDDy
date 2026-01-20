@@ -5,6 +5,7 @@ import pytest
 from teddy_executor.adapters.outbound.console_interactor import (
     ConsoleInteractorAdapter,
 )
+from teddy_executor.core.domain.models.plan import ActionData
 
 
 class TestConsoleInteractorAdapter:
@@ -22,7 +23,10 @@ class TestConsoleInteractorAdapter:
         monkeypatch.setattr("sys.stderr", mock_stderr)
 
         # Act
-        approved, reason = adapter.confirm_action("Perform the action?")
+        dummy_action = ActionData(type="test", params={})
+        approved, reason = adapter.confirm_action(
+            action=dummy_action, action_prompt="Perform the action?"
+        )
 
         # Assert
         assert approved is True
@@ -40,7 +44,10 @@ class TestConsoleInteractorAdapter:
         monkeypatch.setattr("sys.stderr", mock_stderr)
 
         # Act
-        approved, reason = adapter.confirm_action("Do it?")
+        dummy_action = ActionData(type="test", params={})
+        approved, reason = adapter.confirm_action(
+            action=dummy_action, action_prompt="Do it?"
+        )
 
         # Assert
         assert approved is False
@@ -64,7 +71,10 @@ class TestConsoleInteractorAdapter:
         monkeypatch.setattr("sys.stderr", mock_stderr)
 
         # Act
-        approved, reason = adapter.confirm_action("Another action?")
+        dummy_action = ActionData(type="test", params={})
+        approved, reason = adapter.confirm_action(
+            action=dummy_action, action_prompt="Another action?"
+        )
 
         # Assert
         assert approved is False

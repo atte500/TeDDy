@@ -50,8 +50,8 @@ def test_interactive_prompt_shows_description(tmp_path: Path):
 
     # Verify the prompt sent to the user included the description
     mock_interactor.confirm_action.assert_called_once()
-    call_args, _ = mock_interactor.confirm_action.call_args
-    prompt_message = call_args[0]
+    _, call_kwargs = mock_interactor.confirm_action.call_args
+    prompt_message = call_kwargs["action_prompt"]
     assert "Create a test file for the QoL feature." in prompt_message
 
 

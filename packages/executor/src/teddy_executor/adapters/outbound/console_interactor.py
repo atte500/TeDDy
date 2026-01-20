@@ -1,4 +1,6 @@
 import sys
+
+from teddy_executor.core.domain.models.plan import ActionData
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 
 
@@ -22,7 +24,9 @@ class ConsoleInteractorAdapter(IUserInteractor):
                 break
         return "\n".join(lines)
 
-    def confirm_action(self, action_prompt: str) -> tuple[bool, str]:
+    def confirm_action(
+        self, action: ActionData, action_prompt: str
+    ) -> tuple[bool, str]:
         try:
             prompt = f"{action_prompt}\nApprove? (y/n): "
             # Use stderr for prompts to not pollute stdout

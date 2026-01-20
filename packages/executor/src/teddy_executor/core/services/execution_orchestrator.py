@@ -51,7 +51,9 @@ class ExecutionOrchestrator:
                 prompt_parts.append("---\nApprove action?")
 
                 prompt = "\n".join(prompt_parts)
-                should_dispatch, reason = self._user_interactor.confirm_action(prompt)
+                should_dispatch, reason = self._user_interactor.confirm_action(
+                    action=action, action_prompt=prompt
+                )
 
             if should_dispatch:
                 action_log = self._action_dispatcher.dispatch_and_execute(action)
