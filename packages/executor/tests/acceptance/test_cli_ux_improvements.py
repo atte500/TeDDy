@@ -77,3 +77,25 @@ def test_get_prompt_fails_for_non_existent_prompt(mock_clipboard):
 
     assert result.exit_code != 0
     assert "Prompt 'non-existent-prompt' not found." in result.stderr
+
+
+def test_get_prompt_with_no_copy_flag(mock_clipboard, tmp_path):
+    """
+    Scenario 4: Use the --no-copy flag
+    - Given: A default prompt exists.
+    - When: The user runs `teddy get-prompt architect --no-copy`.
+    - Then: The prompt content is printed.
+    - And: No clipboard confirmation message is shown.
+    """
+    # Setup root prompt
+    prompt_dir = tmp_path / "prompts"
+    prompt_dir.mkdir()
+    (prompt_dir / "architect.xml").write_text("dummy prompt")
+    (tmp_path / ".git").mkdir()
+
+    with runner.isolated_filesystem(temp_dir=tmp_path):
+        result = runner.invoke(app, ["get-prompt", "architect", "--no-copy"])
+
+    assert result.exit_code == 0
+    assert "dummy prompt" in result.stdout
+    assert "Output copied to clipboard." not in result.stderr
