@@ -25,7 +25,7 @@ The `ask_question` method logic is as follows:
 2.  **Read Input Loop:** The adapter reads lines from standard input using `input()` until an `EOFError` is caught or the user enters an empty line. This robustly handles both interactive sessions and piped input.
 3.  **Return Value:** The collected lines are joined into a single string.
 
-#### `confirm_action(action: 'Action', action_prompt: str) -> tuple[bool, str]`
+#### `confirm_action(action: 'ActionData', action_prompt: str) -> tuple[bool, str]`
 The `confirm_action` method logic is as follows:
 1.  **Print Action Prompt:** Display the action description to `sys.stderr` followed by a `(y/n)` query.
 2.  **Read Confirmation:** Read a single line of input. The response is considered an approval if it starts with 'y' or 'Y'.
@@ -52,7 +52,7 @@ class ConsoleInteractorAdapter(IUserInteractor):
                 break
         return "\n".join(lines)
 
-    def confirm_action(self, action_prompt: str) -> tuple[bool, str]:
+    def confirm_action(self, action: "ActionData", action_prompt: str) -> tuple[bool, str]:
         try:
             prompt = f"{action_prompt}\nApprove? (y/n): "
             response = input(prompt).lower().strip()

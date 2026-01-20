@@ -41,8 +41,10 @@ The first step will be to simplify the project structure. The contents of `packa
 
 This feature will be implemented in the following dependency-aware order:
 
--   [ ] **Slice 1: Project Restructuring.** Move all `packages/executor` content to the project root and delete `packages/tui`. Update all imports, `pyproject.toml`, and CI scripts.
-    -   *Update `README.md` `Installation & Usage` section.*
+-   [ ] **Slice 1: Project Restructuring & Technical Debt.**
+    -   [ ] Move all `packages/executor` content to the project root and delete `packages/tui`. Update all imports, `pyproject.toml`, and CI scripts.
+    -   [ ] Refactor the `get-prompt` command's default prompt logic to use `importlib.resources`, making it robust for pip installation.
+    -   [ ] Update `README.md` `Installation & Usage` section.
 -   [ ] **Slice 2: Session Scaffolding & Context.** Implement `teddy session start` and `continue` commands. Add the `-m` flag, the interactive comment prompt, and the `id`/`parent_id` linking logic.
     -   *Update `README.md` `Command-Line Reference` for `start` and `continue`.*
 -   [ ] **Slice 3: Core State Management & Autonomous Mode.** Implement the `git worktree` snapshot-and-commit logic in a `GitManager`. Integrate into the `continue` loop with the `--yolo` flag.

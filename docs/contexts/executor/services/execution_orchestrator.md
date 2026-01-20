@@ -48,7 +48,7 @@ class ExecutionOrchestrator:
 
         1.  Calls the PlanParser to load the plan from a string.
         2.  Loops through each action in the plan.
-        3.  If in interactive mode, calls the `IUserInteractor.confirm_action` method, passing the full `Action` object and a descriptive prompt string to get the user's approval.
+        3.  If in interactive mode, calls the `IUserInteractor.confirm_action` method, passing the full `ActionData` object and a descriptive prompt string to get the user's approval.
             - **Special Case:** The approval prompt is automatically skipped for `chat_with_user` actions to provide a more fluid user experience.
         4.  If approved (or not in interactive mode), calls the ActionDispatcher.
         5.  Collects the ActionLog from the dispatcher.
