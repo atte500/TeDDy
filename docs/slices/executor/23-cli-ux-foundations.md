@@ -54,8 +54,8 @@ The following component documents must be updated to reflect the new requirement
 2.  The `CLI Adapter` receives the command and its arguments.
 3.  The command logic first searches for a custom prompt in the local `./.teddy/prompts/` directory that starts with `<prompt_name>` (e.g., `<prompt_name>.xml`, `<prompt_name>.md`).
 4.  If a local file is found, its content is read and returned.
-5.  If not found, the logic uses `importlib.resources` to search for a default prompt in the packaged resources with a matching name.
-6.  If a packaged prompt is found, its content is read and returned.
+5.  If not found, the logic searches for a default prompt in a root-level `/prompts/` directory.
+6.  If a prompt is found there, its content is read and returned.
 7.  If no prompt is found in either location, an error is raised.
 8.  The `CLI Adapter` prints the returned content to `stdout` and, by default, copies it to the clipboard, printing a confirmation to `stderr`.
 
@@ -77,7 +77,7 @@ This checklist is ordered "outside-in" to guide a logical TDD implementation seq
     -   [ ] In `packages/executor/src/teddy_executor/main.py`, add a new `typer` command named `get-prompt`.
     -   [ ] The command must accept a required positional argument `<PROMPT_NAME>` and an optional `--no-copy` flag.
     -   [ ] Implement the logic to search for a prompt file in `./.teddy/prompts/` that starts with `<PROMPT_NAME>`.
-    -   [ ] If a local prompt is not found, implement the fallback logic to search for a default prompt in the packaged `prompts/` resources using `importlib.resources`.
+    -   [ ] If a local prompt is not found, implement the fallback logic to search for a default prompt in a root-level `/prompts/` directory. This logic should be robust enough to locate the directory when the command is run from subdirectories of the project.
     -   [ ] If a prompt is found, use the existing `_echo_and_copy` helper function to print its content to `stdout` and copy it to the clipboard (respecting the `--no-copy` flag).
     -   [ ] If no prompt is found in either location, print an error message to `stderr` and exit with a non-zero status code.
 
