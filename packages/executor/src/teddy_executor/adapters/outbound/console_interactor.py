@@ -1,5 +1,6 @@
 import difflib
 import os
+import shlex
 import shutil
 import subprocess
 import sys
@@ -43,64 +44,90 @@ class ConsoleInteractorAdapter(IUserInteractor):
             after_content = action.params["content"]
         return before_content, after_content, path
 
-    def _show_external_diff(self, tool_cmd: list[str], action: ActionData):
-        before_content, after_content, _ = self._get_diff_content(action)
-
-        with (
-            tempfile.NamedTemporaryFile(
-                mode="w", delete=False, suffix=".before"
-            ) as before_file,
-            tempfile.NamedTemporaryFile(
-                mode="w", delete=False, suffix=".after"
-            ) as after_file,
-        ):
-            before_file.write(before_content)
-            after_file.write(after_content)
-            before_path = before_file.name
-            after_path = after_file.name
-
-        try:
-            subprocess.run(tool_cmd + [before_path, after_path], check=True)
-        finally:
-            os.unlink(before_path)
-            os.unlink(after_path)
+    def _show_external_diff(
+        self, tool_cmd: list[str], before_path: str, after_path: str
+    ):
+        """Launches an external diff tool as a non-blocking subprocess."""
+        subprocess.run(tool_cmd + [before_path, after_path], check=True)
 
     def _show_in_terminal_diff(self, action: ActionData):
         before_content, after_content, path = self._get_diff_content(action)
 
-        diff = difflib.unified_diff(
+        diff_generator = difflib.unified_diff(
             before_content.splitlines(keepends=True),
             after_content.splitlines(keepends=True),
             fromfile=f"a/{path.name}",
             tofile=f"b/{path.name}",
         )
+
+        # Iteratively build the diff string, ensuring each line is newline-terminated.
+        # This fixes the bug where difflib doesn't add a newline to the last line
+        # if the input content doesn't have one.
+        diff_lines = []
+        for line in diff_generator:
+            diff_lines.append(line)
+            if not line.endswith("\n"):
+                diff_lines.append("\n")
+
         print("--- Diff ---", file=sys.stderr)
-        for line in diff:
-            print(line, end="", file=sys.stderr)
+        sys.stderr.write("".join(diff_lines).rstrip() + "\n")
         print("------------", file=sys.stderr)
 
     def _get_diff_viewer_command(self) -> list[str] | None:
         """Determines the command for an external diff viewer, if available."""
-        custom_tool_name = os.getenv("TEDDY_DIFF_TOOL")
-        if custom_tool_name:
-            if custom_tool_path := shutil.which(custom_tool_name):
-                return [custom_tool_path]
+        custom_tool_str = os.getenv("TEDDY_DIFF_TOOL")
+        if custom_tool_str:
+            custom_tool_parts = shlex.split(custom_tool_str)
+            tool_name = custom_tool_parts[0]
+
+            if tool_path := shutil.which(tool_name):
+                # Replace the command name with its full path for robustness
+                custom_tool_parts[0] = tool_path
+                return custom_tool_parts
+
+            # If the user specified a tool but it wasn't found, warn them
+            # and fall back to the terminal diff by returning None.
+            print(
+                f"Warning: Custom diff tool '{tool_name}' not found. "
+                "Falling back to in-terminal diff.",
+                file=sys.stderr,
+            )
+            return None
 
         if code_path := shutil.which("code"):
-            return [code_path, "--wait", "--diff"]
+            return [code_path, "-r", "--diff"]
 
         return None
 
     def confirm_action(
         self, action: ActionData, action_prompt: str
     ) -> tuple[bool, str]:
-        if action.type in ["edit", "create_file"]:
-            if diff_command := self._get_diff_viewer_command():
-                self._show_external_diff(diff_command, action)
-            else:
-                self._show_in_terminal_diff(action)
-
+        temp_files = []
         try:
+            if action.type in ["edit", "create_file"]:
+                if diff_command := self._get_diff_viewer_command():
+                    before_content, after_content, _ = self._get_diff_content(action)
+
+                    before_file = tempfile.NamedTemporaryFile(
+                        mode="w", delete=False, suffix=".before"
+                    )
+                    after_file = tempfile.NamedTemporaryFile(
+                        mode="w", delete=False, suffix=".after"
+                    )
+                    temp_files.extend([before_file.name, after_file.name])
+
+                    before_file.write(before_content)
+                    before_file.close()
+
+                    after_file.write(after_content)
+                    after_file.close()
+
+                    self._show_external_diff(
+                        diff_command, before_file.name, after_file.name
+                    )
+                else:
+                    self._show_in_terminal_diff(action)
+
             prompt = f"{action_prompt}\nApprove? (y/n): "
             # Use stderr for prompts to not pollute stdout
             print(prompt, file=sys.stderr, flush=True, end="")
@@ -118,3 +145,6 @@ class ConsoleInteractorAdapter(IUserInteractor):
             # default to denying the action.
             print("\n", file=sys.stderr, flush=True)  # Ensure a newline after prompt
             return False, "Skipped due to non-interactive session."
+        finally:
+            for file_path in temp_files:
+                os.unlink(file_path)
