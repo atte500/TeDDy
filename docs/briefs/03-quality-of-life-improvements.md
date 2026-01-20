@@ -27,13 +27,13 @@ The selected solution involves a series of targeted improvements to the core ser
 
 ## 4. Vertical Slices
 
-- [ ] **Implement Quality of Life Improvements:**
-    - [ ] **Universal `description` Field:**
-        - [ ] In `ActionDispatcher`, modify `dispatch_and_execute` to recognize and strip the `description` parameter from `action_data.params` before calling the action handler. This prevents `TypeError` exceptions on the adapters.
-        - [ ] In `main.py`, update the interactive approval prompt to display the action's `description` if it exists, providing better context to the user.
-    - [ ] **Improve CLI Output Formatting:**
-        - [ ] Refactor the interactive approval prompt logic in `main.py` to present the action and its parameters in a more readable, multi-line format.
-        - [ ] Review and refactor `cli_formatter.py` to improve the final YAML report's readability, especially for multi-line strings and nested data like the `chat_with_user` response.
-    - [ ] **Update Documentation:**
-        - [ ] In `docs/ARCHITECTURE.md`, update the "YAML Plan Specification" to document that `description` is a supported optional field for all actions.
-        - [ ] In the same document, update the `chat_with_user` example to show how the user's response appears in the final report.
+- [x] **Implement Quality of Life Improvements:**
+    - [x] **Universal `description` Field:**
+        - [x] In `ActionDispatcher`, modify `dispatch_and_execute` to recognize and strip the `description` parameter from `action_data.params` before calling the action handler. This prevents `TypeError` exceptions on the adapters.
+        - [x] In `main.py`, update the interactive approval prompt to display the action's `description` if it exists, providing better context to the user.
+    - [x] **Improve CLI Output Formatting:**
+        - [x] Refactor the interactive approval prompt logic in `main.py` to present the action and its parameters in a more readable, multi-line format.
+        - [x] Review and refactor `cli_formatter.py` to improve the final YAML report's readability, especially for multi-line strings and nested data like the `chat_with_user` response.
+    - [x] **Update Documentation:**
+        - [x] In `docs/ARCHITECTURE.md`, update the "YAML Plan Specification" to document that `description` is a supported optional field for all actions.
+        - [x] In the same document, update the `chat_with_user` example to show how the user's response appears in the final report.
