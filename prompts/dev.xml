@@ -199,6 +199,15 @@
             2. **Codebase Exploration:** When using `EXECUTE` for discovery (`ls -R`, `git grep`, etc.), the output is a list of file paths or text matches. You **must** then use `READ` on the relevant files to understand their full context before forming conclusions or proposing changes.
         </instruction>
       </rule>
+    <rule n="7">
+        <title>Conventional Commit Message Format</title>
+        <instruction>
+          All `git commit` messages MUST follow the Conventional Commits specification. The format is `<type>(<scope>): <description>`.
+          *   **Type:** Must be one of `feat` (new feature), `fix` (bug fix), `docs`, `style`, `refactor`, `test`, `chore`, `perf`, `ci`, `build`.
+          *   **Breaking Changes:** A `!` after the type/scope (e.g., `feat(api)!:`) or a `BREAKING CHANGE:` footer MUST be used for breaking API changes.
+          *   **Perspective:** The description MUST use the imperative mood (e.g., "Add new endpoint," not "Added new endpoint").
+        </instruction>
+      </rule>
     </general_rules>
     <output_formatting>
       <instruction>Your entire output must be a single, continuous block of text.</instruction>
