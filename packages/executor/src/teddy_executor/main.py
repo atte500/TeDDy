@@ -95,6 +95,21 @@ def context(
     _echo_and_copy(formatted_context, no_copy=no_copy)
 
 
+@app.command(name="get-prompt")
+def get_prompt(
+    prompt_name: str = typer.Argument(..., help="The name of the prompt to retrieve."),
+    no_copy: bool = typer.Option(
+        False, "--no-copy", help="Do not copy the output to the clipboard."
+    ),
+):
+    """
+    Retrieves and displays the content of a specified prompt.
+    """
+    # Fake implementation for now
+    prompt_content = "Default architect prompt content"
+    _echo_and_copy(prompt_content, no_copy)
+
+
 def _get_plan_content(plan_file: Optional[Path]) -> str:
     """
     Retrieves the plan content from a file or the clipboard.
