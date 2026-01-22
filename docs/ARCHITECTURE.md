@@ -95,52 +95,42 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 ### `executor` Package
 
 #### Hexagonal Core
-*   **Domain Model:** The central business logic and state.
-    *   [Domain Model & Ubiquitous Language](./contexts/executor/domain_model.md)
-    *   [ExecutionReport](./contexts/executor/domain/execution_report.md)
-*   **Inbound Ports:** Define how the application is driven.
-    *   [IGetContextUseCase](./contexts/executor/ports/inbound/get_context_use_case.md)
-    *   [IRunPlanUseCase](./contexts/executor/ports/inbound/run_plan_use_case.md)
-*   **Outbound Ports:** Define interfaces for external dependencies.
-    *   [IEnvironmentInspector](./contexts/executor/ports/outbound/environment_inspector.md)
-    *   [IFileSystemManager](./contexts/executor/ports/outbound/file_system_manager.md)
-    *   [IRepoTreeGenerator](./contexts/executor/ports/outbound/repo_tree_generator.md)
-    *   [IShellExecutor](./contexts/executor/ports/outbound/shell_executor.md)
-    *   [IUserInteractor](./contexts/executor/ports/outbound/user_interactor.md)
-    *   [IWebScraper](./contexts/executor/ports/outbound/web_scraper.md)
-    *   [IWebSearcher](./contexts/executor/ports/outbound/web_searcher.md)
-*   **Application Services:** Orchestrate the core logic.
-    *   [ActionDispatcher](./contexts/executor/services/action_dispatcher.md)
-    *   [ActionFactory](./contexts/executor/services/action_factory.md)
-    *   [ContextService](./contexts/executor/services/context_service.md)
-    *   [ExecutionOrchestrator](./contexts/executor/services/execution_orchestrator.md)
-    *   [PlanParser](./contexts/executor/services/plan_parser.md)
+
+| Component | Description | Contract |
+|---|---|---|
+| **Domain Model** | Defines the core entities, value objects, and ubiquitous language of the application. | [Domain Model & Ubiquitous Language](./contexts/executor/domain_model.md) |
+| **ExecutionReport** | A strongly-typed, immutable data structure representing the outcome of a plan execution. | [ExecutionReport](./contexts/executor/domain/execution_report.md) |
+| **IGetContextUseCase** | Defines the inbound port for orchestrating the collection of project context. | [IGetContextUseCase](./contexts/executor/ports/inbound/get_context_use_case.md) |
+| **IRunPlanUseCase** | Defines the primary inbound port for executing a plan from a raw YAML string. | [IRunPlanUseCase](./contexts/executor/ports/inbound/run_plan_use_case.md) |
+| **IEnvironmentInspector** | Defines the outbound port for gathering information about the host operating environment. | [IEnvironmentInspector](./contexts/executor/ports/outbound/environment_inspector.md) |
+| **IFileSystemManager** | Defines a technology-agnostic outbound port for all file system operations (create, read, edit). | [IFileSystemManager](./contexts/executor/ports/outbound/file_system_manager.md) |
+| **IRepoTreeGenerator** | Defines the outbound port for generating a file tree, respecting `.gitignore` and `.teddyignore` files. | [IRepoTreeGenerator](./contexts/executor/ports/outbound/repo_tree_generator.md) |
+| **IShellExecutor** | Defines the outbound port for executing shell commands in a specific context (CWD, env). | [IShellExecutor](./contexts/executor/ports/outbound/shell_executor.md) |
+| **IUserInteractor** | Defines the outbound port for prompting the user for confirmation and free-text input. | [IUserInteractor](./contexts/executor/ports/outbound/user_interactor.md) |
+| **IWebScraper** | Defines the outbound port for fetching and converting remote web page content to Markdown. | [IWebScraper](./contexts/executor/ports/outbound/web_scraper.md) |
+| **IWebSearcher** | Defines the outbound port for performing web searches and returning structured results. | [IWebSearcher](./contexts/executor/ports/outbound/web_searcher.md) |
+| **ActionDispatcher** | A service that resolves and executes a single action, delegating to the `ActionFactory`. | [ActionDispatcher](./contexts/executor/services/action_dispatcher.md) |
+| **ActionFactory** | A factory service that creates validated `Action` domain objects from raw plan data. | [ActionFactory](./contexts/executor/services/action_factory.md) |
+| **ContextService** | The service that implements `IGetContextUseCase` by orchestrating outbound ports. | [ContextService](./contexts/executor/services/context_service.md) |
+| **ExecutionOrchestrator** | The primary service that implements `IRunPlanUseCase`, managing the step-by-step execution of a plan. | [ExecutionOrchestrator](./contexts/executor/services/execution_orchestrator.md) |
+| **PlanParser** | A service that parses a YAML plan string into a structured `Plan` domain object, handling validation. | [PlanParser](./contexts/executor/services/plan_parser.md) |
 
 #### Primary Adapters
-*   **Inbound Adapters:** Drive the application's core.
-    *   [CLI Adapter](./adapters/executor/inbound/cli.md)
-*   **Outbound Adapters:** Implement outbound ports to interact with external systems.
-    *   [ConsoleInteractorAdapter](./adapters/executor/outbound/console_interactor.md)
-    *   [LocalFileSystemAdapter](./adapters/executor/outbound/local_file_system_adapter.md)
-    *   [LocalRepoTreeGenerator](./adapters/executor/outbound/local_repo_tree_generator.md)
-    *   [ShellAdapter](./adapters/executor/outbound/shell_adapter.md)
-    *   [SystemEnvironmentInspector](./adapters/executor/outbound/system_environment_inspector.md)
-    *   [WebScraperAdapter](./adapters/executor/outbound/web_scraper_adapter.md)
-    *   [WebSearcherAdapter](./adapters/executor/outbound/web_searcher_adapter.md)
+
+| Component | Description | Contract |
+|---|---|---|
+| **CLI Adapter** | The primary inbound adapter that drives the application via the `Typer` CLI framework. | [CLI Adapter](./adapters/executor/inbound/cli.md) |
+| **ConsoleInteractor** | Implements `IUserInteractor` for the console, providing diff previews for file operations. | [ConsoleInteractorAdapter](./adapters/executor/outbound/console_interactor.md) |
+| **LocalFileSystemAdapter** | Implements `IFileSystemManager` for the local disk using Python's `pathlib`. | [LocalFileSystemAdapter](./adapters/executor/outbound/local_file_system_adapter.md) |
+| **LocalRepoTreeGenerator** | Implements `IRepoTreeGenerator` using the `pathspec` library to handle ignore files. | [LocalRepoTreeGenerator](./adapters/executor/outbound/local_repo_tree_generator.md) |
+| **ShellAdapter** | Implements `IShellExecutor` using Python's `subprocess` module. | [ShellAdapter](./adapters/executor/outbound/shell_adapter.md) |
+| **SystemEnvironmentInspector** | Implements `IEnvironmentInspector` using Python's `os`, `platform`, and `sys` modules. | [SystemEnvironmentInspector](./adapters/executor/outbound/system_environment_inspector.md) |
+| **WebScraperAdapter** | Implements `IWebScraper` using the `requests` and `markdownify` libraries. | [WebScraperAdapter](./adapters/executor/outbound/web_scraper_adapter.md) |
+| **WebSearcherAdapter** | Implements `IWebSearcher` using the `ddgs` library for keyless DuckDuckGo searches. | [WebSearcherAdapter](./adapters/executor/outbound/web_searcher_adapter.md) |
 
 ---
 
-## 4. Project Stages & Polar Stars
-
-This section tracks the high-level project stages. Each stage delivers a significant set of features guided by a "Polar Star" prototype.
-
-| Status | Stage                         | Description                                                                                                                                                          | Polar Star |
-| :----: | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------: |
-|   ✅    | **Stage 01: CLI Executor**    | Delivered the core `teddy` command-line tool for plan execution. Implemented all foundational actions, the context utility, and established the YAML-based workflow. |    N/A     |
-|   📝    | **Stage 02: Interactive TUI** | Create a Terminal User Interface to streamline the workflow of interacting with the AI agents, managing context, and executing plans without leaving the terminal.   | `Planned`  |
----
-
-## 5. Key Architectural Decisions
+## 4. Key Architectural Decisions
 
 This section captures significant, long-standing architectural decisions and patterns that define the system's design.
 

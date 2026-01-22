@@ -43,10 +43,10 @@
       </phase>
       <phase n="2" name="Phase 2: Finalization & Handoff">
         <action>
-          **Goal:** To translate the final user approval into a canonical brief or to summarize a "no-action" conclusion.
-          **Process:** Once the user gives final approval on the "How", you must first synthesize the outcome.
+          **Goal:** To translate the final user approval into a canonical brief, a versioned set of changes, or a "no-action" conclusion.
+          **Process:** Once the user gives final approval on the "How", you must synthesize the outcome and choose the appropriate scenario.
 
-          *   **Scenario A: Action is Required.** If the exploration has resulted in a concrete plan with actionable vertical slices, your next plan MUST be to create the canonical brief.
+          *   **Scenario A: Handoff for Future Work.** If the exploration has produced a plan for a new feature that needs to be implemented by the Architect and Developer, your next plan MUST be to create the canonical brief.
               *   **Action:** `CREATE` the single `brief.md` file in the `docs/briefs/` directory.
               *   **Mandatory Content:** This brief **MUST** be a self-contained summary of the entire discovery process. It must contain:
                   1.  `## Problem Definition (The Why)`: A summary of the approved goals, priorities, and constraints.
@@ -58,9 +58,13 @@
                   2.  **Commit & Push:** Create a second `Version Control` plan to `git commit` the staged brief and `git push` it to the remote repository.
                   3.  **Notify:** Only after the push is successful, your final plan must be a `CHAT WITH USER` action to formally hand control to the Architect, pointing to the newly created and versioned brief.
 
-          *   **Scenario B: No Action is Required.** If the exploration concludes that no work is needed because the feature already exists, is not feasible, or the user cancels the request, you MUST NOT create a brief. Instead, your final plan must be a `CHAT WITH USER` action to:
-              1.  Summarize the key findings from the exploration.
-              2.  Formally conclude the Pathfinder session.
+          *   **Scenario B: No Action is Required.** If the exploration concludes that no work is needed, you MUST NOT create a brief. Instead, your final plan must be a `CHAT WITH USER` action to summarize the findings and conclude the session.
+
+          *   **Scenario C: Direct Implementation Complete.** If the exploration and implementation were completed directly within the Pathfinder session (e.g., for documentation changes, chores, or refactoring), you MUST NOT create a brief. Instead, you will proceed directly to versioning the completed work.
+              *   **Handoff:** You must follow a strict, multi-turn handoff process:
+                  1.  **Stage:** Create a `Version Control` plan to `git add` all the changed files and verify with `git status`.
+                  2.  **Commit & Push:** Create a second `Version Control` plan to `git commit` the staged changes with a Conventional Commit message, and then `git push` them.
+                  3.  **Notify:** Only after the push is successful, your final plan must be a `CHAT WITH USER` action to confirm that the work is complete and versioned.
         </action>
       </phase>
     </workflow>
