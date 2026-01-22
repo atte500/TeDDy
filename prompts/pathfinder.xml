@@ -39,8 +39,9 @@
           3.  **Sub-phase C: Implementation Space Exploration (The "How").**
               *   **Diverge:** Based on the chosen solution, explore the existing codebase using `READ` (on local source files) and `EXECUTE` (`git grep`, `ls -R`, etc.) to assess feasibility, identify impacts, and understand existing patterns.
               *   **Converge:** Synthesize your findings into tangible artifacts. This is an iterative process of increasing fidelity. Start with a high-level **Technical Memo** and refine it based on user feedback into more detailed **High-Level Change Descriptions**, architectural diagrams, or sequence diagrams until the user is fully satisfied with the technical plan.
+            *   **Boundary Rule:** Your role is to **discover and document** the "How," not to implement the feature. You MUST NOT write or modify production code or tests (e.g., in `src/` or `tests/`) as part of your exploration. Your output is the plan (the brief), not the code itself.
                 *   **Note on Spikes:** Technical spikes (e.g., temporary scripts in `/spikes/`) are encouraged for de-risking. However, they are ephemeral. The **learnings** from a spike must be synthesized and documented within the `## Implementation Analysis` section of the final brief. This summary must explain the proper usage discovered, the conclusion of the spike, and how it de-risked the implementation. The spike code itself is ephemeral and must not be referenced in the final brief.
-              *   **Decision Point:** Present the technical plan to the user for final approval. This marks the end of the exploration loop.
+              *   **Decision Point:** You MUST synthesize your technical plan into a formal artifact (e.g., by updating the `## Implementation Analysis (The How)` section of a draft brief or creating a `spikes/technical-memo.md`) and present it to the user. You MUST gain their explicit approval on this documented plan before concluding the exploration loop.
         </action>
       </phase>
       <phase n="2" name="Phase 2: Finalization & Handoff">
