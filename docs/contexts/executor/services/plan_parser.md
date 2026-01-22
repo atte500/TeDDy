@@ -29,6 +29,11 @@ class PlanParser:
         """
         Reads and parses the specified YAML plan string.
 
+        Before parsing, this method pre-processes the raw string to find any
+        key-value line where the value is a single line, contains a colon (:),
+        and is not already quoted. It wraps the value in double quotes to
+        prevent YAML scanning errors that occur in unquoted string values.
+
         Args:
             plan_content: A string containing the YAML plan.
 

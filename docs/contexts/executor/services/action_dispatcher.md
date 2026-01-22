@@ -35,6 +35,10 @@ class ActionDispatcher:
         Takes an ActionData object, finds the corresponding action handler
         via the factory, executes it, and returns the result as an ActionLog.
 
+        This method is responsible for creating the ActionLog and populating
+        it with the outcome of the execution, including the original
+        `description` from the ActionData.
+
         It will catch any exceptions during action execution and wrap them
         in a FAILURE ActionLog.
 

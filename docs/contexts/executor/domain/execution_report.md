@@ -48,7 +48,7 @@ class ActionLog:
     status: Literal["SUCCESS", "FAILURE", "SKIPPED"]
     action_type: str
     params: dict[str, Any]
-    description: str | None = None
+    description: str | None = None  # The user-provided description from the plan.
     details: Any | None = None
 ```
 

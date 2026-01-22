@@ -20,7 +20,30 @@ The `ActionFactory` is a core component responsible for taking raw action data (
     *   `TypeError`: If the `params` dictionary is missing required keys for the specified action.
 
 ## 3. Implementation Strategy
-1.  The factory will maintain an internal registry (e.g., a dictionary) that maps action type strings to their corresponding `Action` subclasses.
+1.  The factory will maintain an internal registry (e.g., a dictionary) that maps action type strings to their corresponding `Action` handler classes.
+
+2.  **Dependency Injection:** The factory will be injected with all necessary outbound ports (e.g., `IFileSystemManager`, `IWebScraper`, etc.) at creation time. It will then inject the required dependencies into the constructor of each action handler it creates.
+
+3.  **URL Handling in `ReadAction`:**
+    *   The handler for the `read` action will be injected with both `IFileSystemManager` and `IWebScraper`.
+    *   Its `execute` method will inspect the `path` parameter. If the path starts with `http://` or `https://`, it will delegate the call to the web scraper. Otherwise, it will delegate to the file system manager.
+
+4.  **Backwards Compatibility:** For the `execute` action, it checks if `params` is a simple string. If so, it converts it to a dictionary (`{"command": "..."}`) to support the legacy plan format.
+
+5.  The factory is also responsible for minor data transformations. For example, it converts a multi-line string of queries for the `research` action into the list of strings required by the `ResearchAction` domain object.
+
+**Conceptual Registry:**
+```python
+# Conceptual registry
+self.action_registry = {
+    "execute": ExecuteAction,
+    "create_file": CreateFileAction,
+    "read": ReadAction, # Added in Slice 04
+    "edit": EditAction, # Added in Slice 06
+    "chat_with_user": ChatWithUserAction, # Added in Slice 10
+    "research": ResearchAction, # Added in Slice 11
+}
+```
 
     ```python
     # Conceptual registry
