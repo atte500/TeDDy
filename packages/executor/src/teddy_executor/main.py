@@ -159,27 +159,37 @@ def get_prompt(
         raise typer.Exit(code=1)
 
 
-def _get_plan_content(plan_file: Optional[Path]) -> str:
+def _get_plan_content(
+    plan_content_str: Optional[str], plan_file: Optional[Path]
+) -> str:
     """
-    Retrieves the plan content from a file or the clipboard.
-    Exits with an error if the source is invalid.
+    Retrieves the plan content from one of three sources, in order of priority:
+    1. A direct string via --plan-content.
+    2. A file path.
+    3. The system clipboard.
+    Exits with an error if the final source is invalid or empty.
     """
-    plan_content: str
+    if plan_content_str:
+        return plan_content_str
+
     if plan_file:
         if not plan_file.is_file():
             typer.echo(f"Error: Plan file not found at '{plan_file}'", err=True)
             raise typer.Exit(code=1)
-        plan_content = plan_file.read_text()
-    else:
-        try:
-            plan_content = pyperclip.paste()
-            if not plan_content.strip():
-                typer.echo("Error: Clipboard is empty.", err=True)
-                raise typer.Exit(code=1)
-        except pyperclip.PyperclipException as e:
-            typer.echo(f"Error accessing clipboard: {e}", err=True)
+        return plan_file.read_text()
+
+    try:
+        plan_from_clipboard = pyperclip.paste()
+        if not plan_from_clipboard.strip():
+            typer.echo(
+                "Error: No plan provided via file or --plan-content, and clipboard is empty.",
+                err=True,
+            )
             raise typer.Exit(code=1)
-    return plan_content
+        return plan_from_clipboard
+    except pyperclip.PyperclipException as e:
+        typer.echo(f"Error accessing clipboard: {e}", err=True)
+        raise typer.Exit(code=1)
 
 
 @app.command()
@@ -200,15 +210,22 @@ def execute(
         "--no-copy",
         help="Do not copy the output to the clipboard.",
     ),
+    plan_content: Optional[str] = typer.Option(
+        None,
+        "--plan-content",
+        help="The YAML plan content as a string. Overrides plan_file and clipboard.",
+        show_default=False,
+        rich_help_panel="Advanced Options",
+    ),
 ):
     orchestrator: RunPlanUseCase = container.resolve(RunPlanUseCase)
     report: Optional[ExecutionReport] = None
     interactive_mode = not yes
 
     try:
-        plan_content = _get_plan_content(plan_file)
+        final_plan_content = _get_plan_content(plan_content, plan_file)
         report = orchestrator.execute(
-            plan_content=plan_content, interactive=interactive_mode
+            plan_content=final_plan_content, interactive=interactive_mode
         )
 
     except pyperclip.PyperclipException as e:

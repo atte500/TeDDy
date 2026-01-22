@@ -1,3 +1,4 @@
+import re
 import yaml
 
 from teddy_executor.core.domain.models import ActionData, Plan
@@ -21,8 +22,21 @@ class PlanParser:
         if not plan_content.strip():
             raise InvalidPlanError("Plan content cannot be empty.")
 
+        # Pre-process to handle unquoted colons in single-line values
+        processed_lines = []
+        for line in plan_content.splitlines():
+            # This regex looks for a key, a colon, and a value that is not quoted
+            # and contains a colon.
+            match = re.match(r"^(?P<key>\s*[\w\-]+:\s*)(?P<value>[^\"'].*:.*)$", line)
+            if match:
+                parts = match.groupdict()
+                processed_lines.append(f"{parts['key']}'{parts['value'].strip()}'")
+            else:
+                processed_lines.append(line)
+        processed_content = "\n".join(processed_lines)
+
         try:
-            parsed_yaml = yaml.safe_load(plan_content)
+            parsed_yaml = yaml.safe_load(processed_content)
         except yaml.YAMLError as e:
             raise InvalidPlanError(f"Plan contains invalid YAML: {e}")
 
