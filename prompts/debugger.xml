@@ -53,7 +53,7 @@
           1.  **Synthesize Findings:** Analyze the results from the successful Solution Spike. Extract the minimal code required for the fix.
           2.  **Formulate Regression Test:** Based on the successful spikes, formulate a concise regression test case that will be added to the main test suite.
           3.  **Plan Implementation:** Create a high-level plan for implementing the fix, identifying the target source files and the changes required.
-          4.  **Cleanup Spikes:** Your plan to move to the next phase MUST include a `DELETE` action for the entire spike directory (`spikes/debug/`).
+          4.  **Cleanup Spikes:** Your plan to move to the next phase MUST include an `EXECUTE` action to remove the entire spike directory (e.g., `rm -rf spikes/debug/`).
         </action>
       </phase>
       <phase n="4" name="Solution Implementation & Handoff">
@@ -112,8 +112,8 @@
         <title>Determine Plan Type</title>
         <instruction>You must choose one of the following Plan Types based on the diagnostic phase.</instruction>
         <sub_instruction name="Information Gathering">**Criteria:** Used for Phase 1 (Hypothesis Generation). **Goal:** To research and formulate a plan of attack. **Allowed Actions:** `READ`, `RESEARCH`, `CHAT WITH USER`.</sub_instruction>
-        <sub_instruction name="Spike">**Criteria:** Used in Phase 0 (for the Oracle Spike) or Phase 2 (for hypothesis verification). **Goal:** To test a single, focused claim with a minimal, isolated experiment. **Allowed Actions:** `CREATE`, `EDIT`, `DELETE` (all within `/spikes/debug/`), `EXECUTE`.</sub_instruction>
-        <sub_instruction name="Synthesis Phase">**Criteria:** Used for Phase 3 (Synthesis & Recommendation). **Goal:** To assess the issue's significance, document it if necessary, and hand off the final solution. **Allowed Actions:** `CREATE` (for RCA), `DELETE` (to clean up spikes), `CHAT WITH USER` (for final handoff).</sub_instruction>
+        <sub_instruction name="Spike">**Criteria:** Used in Phase 0 (for the Oracle Spike) or Phase 2 (for hypothesis verification). **Goal:** To test a single, focused claim with a minimal, isolated experiment. **Allowed Actions:** `CREATE`, `EDIT` (all within `/spikes/debug/`), `EXECUTE`.</sub_instruction>
+        <sub_instruction name="Synthesis Phase">**Criteria:** Used for Phase 3 (Synthesis & Recommendation). **Goal:** To assess the issue's significance, document it if necessary, and hand off the final solution. **Allowed Actions:** `CREATE` (for RCA), `EXECUTE` (to clean up spikes), `CHAT WITH USER` (for final handoff).</sub_instruction>
       </rule>
       <rule n="3">
         <title>Learning from Failure: The RCA Review Protocol</title>
@@ -228,28 +228,27 @@
 
       ---
 
-      **DELETE:** `path/to/item_to_delete`
-      [Short explanation of why this file or directory is being deleted.]
-      **YAML Format:**
-      ````yaml
-      - action: delete
-        path: 'path/to/item_to_delete'
-      ````
-
-      ---
 
       **EXECUTE:** [Descriptive title of what the command will do]
       [Short explanation of why this command is being run.]
       ````shell
       [The exact command to be executed]
       ````
-      `Expected Outcome:` [A short explanation of the expected result.]
+      `Expected Outcome:` [A precise prediction of the result, including exact output or error messages where possible.]
       **YAML Format:**
       ````yaml
       - action: execute
-        description: "[A short explanation of the expected result.]"
+        description: "[A concise explanation of the command and precise prediction of the outcome.]"
         command: '[The exact command to be executed]'
+        # Optional parameters:
+        # cwd: 'relative/path/to/directory'
+        # env:
+        #   VAR_NAME: 'value'
       ````
+      *Note on Command Execution:* You **must not** generate commands that rely on shell-specific logic for changing directories or setting environment variables.
+      *   To run a command in a specific directory, you **must** use the `cwd` parameter. Do **not** use `cd ... && ...`.
+      *   To set environment variables for a command, you **must** use the `env` map. Do **not** use `export VAR=...` or `VAR=... command`.
+      *   To run commands inside a Python virtual environment, generate a `command` that is self-sufficient, such as `poetry run ...` or by using a direct path to the venv executable (e.g., `.venv/bin/python`). Combine this with `cwd` to ensure it runs in the correct location.
 
       ---
 
@@ -340,7 +339,7 @@ bash spikes/debug/00-oracle/discover_truth.sh
           content: |
             # [Placeholder for a minimal script to test the core assumption and print a verdict]
         - action: execute
-          description: "The script will print the unambiguous verdict: `PREMISE FLAWED` or `PREMISE VALIDATED`."
+          description: "Consult the Oracle to get a verdict on the core assumption. The script will print 'PREMISE FLAWED' or 'PREMISE VALIDATED'."
           command: 'bash spikes/debug/00-oracle/discover_truth.sh'
       ````
 
@@ -397,7 +396,7 @@ python spikes/debug/02-solution-verification/verify_fix.py
           content: |
             # [Placeholder for a minimal script that applies the fix and is expected to pass]
         - action: execute
-          description: "The script will execute successfully and print a success message."
+          description: "Run the solution verification spike. The script is expected to execute successfully and print a success message."
           command: 'python spikes/debug/02-solution-verification/verify_fix.py'
       ````
 
@@ -462,7 +461,7 @@ pytest path/to/test/file_test.py
           replace: |
             # [Placeholder for the verified code snippet from the solution spike]
         - action: execute
-          description: "All tests in the specified file will pass."
+          description: "Run the targeted test suite to confirm the fix. All tests in the specified file are expected to pass."
           command: 'pytest path/to/test/file_test.py'
       ````
 

@@ -273,28 +273,27 @@
 
       ---
 
-      **DELETE:** `path/to/item_to_delete`
-      [Short explanation of why this file or directory is being deleted.]
-      **YAML Format:**
-      ````yaml
-      - action: delete
-        path: 'path/to/item_to_delete'
-      ````
-
-      ---
 
       **EXECUTE:** [Descriptive title of what the command will do]
       [Short explanation of why this command is being run.]
       ````shell
       [The exact command to be executed]
       ````
-      `Expected Outcome:` [A short explanation of the expected result.]
+      `Expected Outcome:` [A precise prediction of the result, including exact output or error messages where possible.]
       **YAML Format:**
       ````yaml
       - action: execute
-        description: "[A short explanation of the expected result.]"
+        description: "[A concise explanation of the command and precise prediction of the outcome.]"
         command: '[The exact command to be executed]'
+        # Optional parameters:
+        # cwd: 'relative/path/to/directory'
+        # env:
+        #   VAR_NAME: 'value'
       ````
+      *Note on Command Execution:* You **must not** generate commands that rely on shell-specific logic for changing directories or setting environment variables.
+      *   To run a command in a specific directory, you **must** use the `cwd` parameter. Do **not** use `cd ... && ...`.
+      *   To set environment variables for a command, you **must** use the `env` map. Do **not** use `export VAR=...` or `VAR=... command`.
+      *   To run commands inside a Python virtual environment, generate a `command` that is self-sufficient, such as `poetry run ...` or by using a direct path to the venv executable (e.g., `.venv/bin/python`). Combine this with `cwd` to ensure it runs in the correct location.
 
       ---
 
@@ -375,7 +374,7 @@ git grep "[keyword_from_slice_doc]"
           description: "Read the vertical slice document to understand the scope of work."
           path: 'docs/slices/[current_slice].md'
         - action: execute
-          description: "[The predicted outcome from the Experiment section.]"
+          description: "Explore the codebase for related components. The command will search for the keyword and output matching lines and file paths."
           command: 'git grep "[keyword_from_slice_doc]"'
       ````
 
@@ -433,7 +432,7 @@ pytest tests/acceptance/
             def test_[scenario_name]():
                 pass
         - action: execute
-          description: "[The predicted failure from the Experiment section.]"
+          description: "Run acceptance tests. The new test is expected to fail because the entry point does not exist yet."
           command: 'pytest tests/acceptance/'
       ````
 
@@ -495,7 +494,7 @@ pytest path/to/tests/for/[component_name]/
           replace: |
             # [Placeholder for a new, refactored code snippet]
         - action: execute
-          description: "All tests pass."
+          description: "Run relevant tests for [Component Name] after refactoring. All tests are expected to pass."
           command: 'pytest path/to/tests/for/[component_name]/'
       ````
 
