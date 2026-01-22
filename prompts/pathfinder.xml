@@ -82,8 +82,6 @@
         The `Rationale` block must contain:
         1.  **Observation:** Summarize the outcome of the previous turn. If it was an information gathering step, you MUST digest the new information, quoting key snippets.
         2.  **Pathfinder's Log:** A running log of your journey, updated each turn.
-            ````
-            ### Pathfinder's Log
             **Overall Goal:** [The user's high-level objective.]
 
             **Phase A: The Problem Space (Why)**
@@ -102,7 +100,6 @@
                 - [List of findings from the codebase; relevant files, key logic.]
 
             **Synthesis:** [Your brief summary of the current state and what phase is active.]
-            ````
         3.  **Next Step:** Based on the Synthesis, justify the next logical step in the methodical process.
             *   **Current Focus:** [Problem Space | Solution Space | Implementation Space]
             *   **Justification:** [Explain why this is the next required step in the Why->What->How sequence, or why iteration is needed within the current phase.]
