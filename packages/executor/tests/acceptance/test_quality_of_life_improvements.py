@@ -138,11 +138,9 @@ def test_read_action_report_formats_multiline_content_correctly(tmp_path: Path):
     test_file.write_text("line one\nline two")
 
     # and a plan to read that file
+    plan_dict = [{"action": "read", "path": str(test_file)}]
     plan_file = tmp_path / "plan.yaml"
-    plan_file.write_text(f"""
-- action: read
-  path: '{test_file}'
-""")
+    plan_file.write_text(yaml.dump(plan_dict))
 
     real_container = create_container()
 

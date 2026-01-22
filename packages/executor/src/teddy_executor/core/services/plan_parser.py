@@ -22,15 +22,18 @@ class PlanParser:
         if not plan_content.strip():
             raise InvalidPlanError("Plan content cannot be empty.")
 
-        # Pre-process to handle unquoted colons in single-line values
+        # Pre-process to handle unquoted colons in single-line command values,
+        # which is a common issue with git commands.
         processed_lines = []
         for line in plan_content.splitlines():
-            # This regex looks for a key, a colon, and a value that is not quoted
-            # and contains a colon.
-            match = re.match(r"^(?P<key>\s*[\w\-]+:\s*)(?P<value>[^\"'].*:.*)$", line)
+            # This more specific regex looks for the key 'command', a colon, and a value
+            # that is not quoted and contains a colon.
+            match = re.match(r"^(?P<key>\s*command:\s*)(?P<value>[^\"'].*:.*)$", line)
             if match:
                 parts = match.groupdict()
-                processed_lines.append(f"{parts['key']}'{parts['value'].strip()}'")
+                # Use double quotes for safety with backslashes, and escape internal quotes.
+                value = parts["value"].strip().replace('"', '\\"')
+                processed_lines.append(f'{parts["key"]}"{value}"')
             else:
                 processed_lines.append(line)
         processed_content = "\n".join(processed_lines)

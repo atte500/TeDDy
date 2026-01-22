@@ -19,16 +19,17 @@ def test_in_terminal_diff_is_shown_for_create_file(tmp_path: Path, monkeypatch):
     """
     # GIVEN: A plan to create a new file
     new_file_path = tmp_path / "new_file.txt"
-    plan_content = f"""
-actions:
-  - action: create_file
-    path: '{new_file_path}'
-    content: |
-      First line.
-      Second line.
-"""
+    plan_dict = {
+        "actions": [
+            {
+                "action": "create_file",
+                "path": str(new_file_path),
+                "content": "First line.\nSecond line.\n",
+            }
+        ]
+    }
     plan_path = tmp_path / "plan.yaml"
-    plan_path.write_text(plan_content)
+    plan_path.write_text(yaml.dump(plan_dict))
 
     # GIVEN: No diff tool is configured or found
     monkeypatch.setenv("TEDDY_DIFF_TOOL", "")
@@ -72,15 +73,18 @@ def test_in_terminal_diff_is_shown_as_fallback(tmp_path: Path, monkeypatch):
     hello_path = tmp_path / "hello.txt"
     hello_path.write_text("Hello, world!")
 
-    plan_content = f"""
-actions:
-  - action: edit
-    path: '{hello_path}'
-    find: 'world'
-    replace: 'TeDDy'
-"""
+    plan_dict = {
+        "actions": [
+            {
+                "action": "edit",
+                "path": str(hello_path),
+                "find": "world",
+                "replace": "TeDDy",
+            }
+        ]
+    }
     plan_path = tmp_path / "plan.yaml"
-    plan_path.write_text(plan_content)
+    plan_path.write_text(yaml.dump(plan_dict))
 
     # GIVEN: No diff tool is configured or found
     monkeypatch.setenv("TEDDY_DIFF_TOOL", "")
@@ -123,15 +127,18 @@ def test_vscode_is_used_as_fallback(tmp_path: Path, monkeypatch):
     hello_path = tmp_path / "hello.txt"
     hello_path.write_text("Hello, world!")
 
-    plan_content = f"""
-actions:
-  - action: edit
-    path: '{hello_path}'
-    find: 'world'
-    replace: 'TeDDy'
-"""
+    plan_dict = {
+        "actions": [
+            {
+                "action": "edit",
+                "path": str(hello_path),
+                "find": "world",
+                "replace": "TeDDy",
+            }
+        ]
+    }
     plan_path = tmp_path / "plan.yaml"
-    plan_path.write_text(plan_content)
+    plan_path.write_text(yaml.dump(plan_dict))
 
     # GIVEN: No custom diff tool is set, but 'code' is available
     monkeypatch.setenv("TEDDY_DIFF_TOOL", "")
@@ -174,15 +181,18 @@ def test_custom_diff_tool_is_used_from_env(tmp_path: Path, monkeypatch):
     hello_path = tmp_path / "hello.txt"
     hello_path.write_text("Hello, world!")
 
-    plan_content = f"""
-actions:
-  - action: edit
-    path: '{hello_path}'
-    find: 'world'
-    replace: 'TeDDy'
-"""
+    plan_dict = {
+        "actions": [
+            {
+                "action": "edit",
+                "path": str(hello_path),
+                "find": "world",
+                "replace": "TeDDy",
+            }
+        ]
+    }
     plan_path = tmp_path / "plan.yaml"
-    plan_path.write_text(plan_content)
+    plan_path.write_text(yaml.dump(plan_dict))
 
     # GIVEN: A custom diff tool with arguments is set
     monkeypatch.setenv("TEDDY_DIFF_TOOL", "nvim -d")
@@ -220,14 +230,18 @@ def test_invalid_custom_tool_falls_back_to_terminal(tmp_path: Path, monkeypatch)
     # GIVEN: A plan to edit a file
     hello_path = tmp_path / "hello.txt"
     hello_path.write_text("Hello!")
+    plan_dict = {
+        "actions": [
+            {
+                "action": "edit",
+                "path": str(hello_path),
+                "find": "!",
+                "replace": ", TeDDy!",
+            }
+        ]
+    }
     plan_path = tmp_path / "plan.yaml"
-    plan_path.write_text(f"""
-actions:
-  - action: edit
-    path: '{hello_path}'
-    find: '!'
-    replace: ', TeDDy!'
-""")
+    plan_path.write_text(yaml.dump(plan_dict))
 
     # GIVEN: An invalid custom tool is set AND vscode is available
     monkeypatch.setenv("TEDDY_DIFF_TOOL", "nonexistent-tool")
@@ -269,15 +283,18 @@ def test_no_diff_is_shown_for_auto_approved_plans(tmp_path: Path):
     hello_path = tmp_path / "hello.txt"
     hello_path.write_text("Hello, world!")
 
-    plan_content = f"""
-actions:
-  - action: edit
-    path: '{hello_path}'
-    find: 'world'
-    replace: 'TeDDy'
-"""
+    plan_dict = {
+        "actions": [
+            {
+                "action": "edit",
+                "path": str(hello_path),
+                "find": "world",
+                "replace": "TeDDy",
+            }
+        ]
+    }
     plan_path = tmp_path / "plan.yaml"
-    plan_path.write_text(plan_content)
+    plan_path.write_text(yaml.dump(plan_dict))
 
     # GIVEN: A mock interactor to spy on
     mock_interactor = MagicMock(spec=IUserInteractor)
