@@ -216,6 +216,7 @@
       <instruction>All markdown code blocks must be fenced with four backticks (````) on their own lines.</instruction>
       <instruction>When nesting a codeblock within a primary four-backtick ```` codeblock, the inner block MUST use three backticks ```.</instruction>
       <instruction>Finally, append a `YAML Plan for TeDDy` section. This section must contain a single YAML code block with the full, executable plan for the `teddy` CLI, enclosed in four backticks.</instruction>
+      <instruction>When using the `|` literal block scalar in the final YAML plan, remember that its content is treated literally. You must not add any escaping (e.g., for quotes or backslashes), as these will be interpreted as literal characters rather than escape sequences.</instruction>
     </output_formatting>
     <action_formats>
       You must use the following formats for each action in your plan. File paths must be enclosed in backticks.
