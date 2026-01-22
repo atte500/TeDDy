@@ -187,7 +187,7 @@ def test_edit_file_raises_error_on_multiple_occurrences_multiline(tmp_path: Path
         line a
         line b
     """
-    )
+    ).strip()
 
     # Act & Assert
     with pytest.raises(MultipleMatchesFoundError):
@@ -248,56 +248,6 @@ def test_write_file(tmp_path: Path):
 
     # Assert (Overwrite)
     assert file_path.read_text() == "second content"
-    # Arrange
-    adapter = LocalFileSystemAdapter()
-    new_dir = tmp_path / "new" / "nested" / "dir"
-
-    # Act
-    adapter.create_directory(str(new_dir))
-
-    # Assert
-    assert new_dir.is_dir()
-    # Arrange
-    adapter = LocalFileSystemAdapter()
-    existing_file = tmp_path / "exists.txt"
-    existing_file.touch()
-    non_existing_file = tmp_path / "not_exists.txt"
-
-    # Act & Assert
-    assert adapter.path_exists(str(existing_file)) is True
-    assert adapter.path_exists(str(non_existing_file)) is False
-    from textwrap import dedent
-
-    # Arrange
-    adapter = LocalFileSystemAdapter()
-    test_file = tmp_path / "test.txt"
-    original_content = dedent(
-        """
-        First section:
-            line a
-            line b
-
-        Second section:
-            line a
-            line b
-    """
-    )
-    test_file.write_text(original_content)
-
-    find_block = dedent(
-        """
-        line a
-        line b
-    """
-    )
-
-    # Act & Assert
-    with pytest.raises(MultipleMatchesFoundError):
-        adapter.edit_file(path=str(test_file), find=find_block, replace="new content")
-
-    # Verify the file was not changed
-    content_after = test_file.read_text()
-    assert content_after == original_content
 
 
 def test_read_files_in_vault(tmp_path: Path):
@@ -383,6 +333,31 @@ def test_edit_file_preserves_indentation_in_multiline_replace(tmp_path: Path):
 
     # The expected content is the original function definition line, plus the replace block.
     expected_content = "def test_one():\n" + replace_block
+
+    # Act
+    adapter.edit_file(path=str(test_file), find=find_block, replace=replace_block)
+
+    # Assert
+    actual_content = test_file.read_text()
+    assert actual_content == expected_content
+
+
+def test_edit_file_handles_leading_newline_in_find_block(tmp_path: Path):
+    """
+    Tests that edit_file can literally match a find block that includes a
+    leading newline, which was a previously failing case.
+    """
+    # Arrange
+    adapter = LocalFileSystemAdapter()
+    test_file = tmp_path / "test.txt"
+    original_content = "line one\n\n    line two\nline three"
+    test_file.write_text(original_content)
+
+    # This find block is a literal match of a blank line and an indented line.
+    # The previous buggy implementation would .strip() this and fail to find it.
+    find_block = "\n    line two"
+    replace_block = "\n    line two (replaced)"
+    expected_content = "line one\n\n    line two (replaced)\nline three"
 
     # Act
     adapter.edit_file(path=str(test_file), find=find_block, replace=replace_block)

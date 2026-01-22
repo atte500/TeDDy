@@ -216,9 +216,8 @@ class LocalFileSystemAdapter(FileSystemManager):
         else:
             # For multi-line, use line-based matching for indentation handling.
             source_lines = original_content.splitlines()
-            # Strip leading/trailing whitespace/newlines before splitting to make
-            # the matching robust to how the find block is formatted in the plan.
-            find_lines = find.strip().splitlines()
+            # CORRECT FIX: Do not strip the find block, as it can contain meaningful newlines.
+            find_lines = find.splitlines()
 
             if not find.strip():  # Handle case where find is just whitespace
                 file_path.write_text(replace, encoding="utf-8")
