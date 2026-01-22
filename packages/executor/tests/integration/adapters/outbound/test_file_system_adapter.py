@@ -349,6 +349,49 @@ def test_get_context_paths(tmp_path: Path):
     assert actual_paths == expected_paths
 
 
+def test_edit_file_preserves_indentation_in_multiline_replace(tmp_path: Path):
+    """
+    Tests that a multiline `replace` block with internal indentation and
+    top-level definitions is inserted correctly, without being altered.
+    """
+    from textwrap import dedent
+
+    # Arrange
+    adapter = LocalFileSystemAdapter()
+    test_file = tmp_path / "test.py"
+    original_content = dedent("""
+        def test_one():
+            # content to be replaced
+            pass
+    """).strip()
+    test_file.write_text(original_content)
+
+    find_block = dedent("""
+            # content to be replaced
+            pass
+        """).strip()
+
+    # The replace block is what we want to insert. Its indentation must be literal.
+    replace_block = (
+        "    # new indented content\n"
+        "    assert True\n"
+        "\n"
+        "def test_two():\n"
+        "    # a new top-level function\n"
+        "    pass"
+    )
+
+    # The expected content is the original function definition line, plus the replace block.
+    expected_content = "def test_one():\n" + replace_block
+
+    # Act
+    adapter.edit_file(path=str(test_file), find=find_block, replace=replace_block)
+
+    # Assert
+    actual_content = test_file.read_text()
+    assert actual_content == expected_content
+
+
 def test_create_default_context_file(tmp_path: Path):
     """
     Tests that create_default_context_file creates the .teddy/perm.context

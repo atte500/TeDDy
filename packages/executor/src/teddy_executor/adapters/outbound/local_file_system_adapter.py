@@ -164,17 +164,10 @@ class LocalFileSystemAdapter(FileSystemManager):
         match_start_index: int,
     ) -> str:
         """Reconstructs the file content with the replacement."""
-        first_match_line = source_lines[match_start_index]
-        indentation = first_match_line[
-            : len(first_match_line) - len(first_match_line.lstrip())
-        ]
-
-        indented_replace_lines = [indentation + line for line in replace_lines]
-
         pre_match_lines = source_lines[:match_start_index]
         post_match_lines = source_lines[match_start_index + len(find_lines) :]
 
-        final_lines = pre_match_lines + indented_replace_lines + post_match_lines
+        final_lines = pre_match_lines + replace_lines + post_match_lines
         new_content = "\n".join(final_lines)
 
         # Preserve a single trailing newline if the original had one
@@ -239,7 +232,7 @@ class LocalFileSystemAdapter(FileSystemManager):
 
             # Perform the replacement
             match_start_index = match_indices[0]
-            replace_lines = replace.strip().splitlines()
+            replace_lines = replace.splitlines()
             new_content = self._reconstruct_content(
                 original_content,
                 source_lines,
