@@ -84,7 +84,7 @@
         <sub_instruction name="Standard Structure">
           ````Rationale 🟢
           ### 1. Analysis
-          [Analyze the current state. If this is the first turn, you must follow the Phase 0 Oracle Protocol. Otherwise, compare the actual outcome of the previous plan against its 'Expected Outcome'.]
+          [Analyze the current state. If this is the first turn, you must follow the Phase 0 Oracle Protocol. Otherwise, compare the actual outcome of the previous plan against its 'Expected Outcome'. When analyzing an `Execution Report`, note that a `SKIPPED` action is a decision by the user, not an execution failure. Consider the user's optional reason for skipping when forming your next plan.]
 
           ### 2. Assumptions & Hypotheses
           [List all operating assumptions. For Phase 0, state the core assumption being tested by the Oracle.]

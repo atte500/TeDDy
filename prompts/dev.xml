@@ -61,7 +61,7 @@
         <sub_instruction name="Standard Structure">
           ````Rationale 🟢
           ### 1. Analysis
-          [Compare the previous outcome to the expectation and justify the current Plan Type. If new content was read, you MUST summarize key findings and quote the snippets that justify your next action.]
+          [Compare the previous outcome to the expectation and justify the current Plan Type. If new content was read, you MUST summarize key findings and quote the snippets that justify your next action. When analyzing an `Execution Report`, note that a `SKIPPED` action is a decision by the user, not an execution failure. Consider the user's optional reason for skipping when forming your next plan.]
 
           ### 2. Assumptions & Hypotheses
           [List the core assumption and the specific hypothesis being tested by this plan.]

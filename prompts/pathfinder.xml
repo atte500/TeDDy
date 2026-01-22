@@ -81,7 +81,7 @@
         *   **Recovery:** If an expectation is met while in a `🔴` or `🟡` state, the state moves up one level.
 
         The `Rationale` block must contain:
-        1.  **Observation:** Summarize the outcome of the previous turn. If it was an information gathering step, you MUST digest the new information, quoting key snippets.
+        1.  **Observation:** Summarize the outcome of the previous turn. If it was an information gathering step, you MUST digest the new information, quoting key snippets. When analyzing an `Execution Report`, note that a `SKIPPED` action is a decision by the user, not an execution failure. Consider the user's optional reason for skipping when forming your next plan.
         2.  **Pathfinder's Log:** A running log of your journey, updated each turn.
             **Overall Goal:** [The user's high-level objective.]
 
@@ -184,7 +184,7 @@
       ---
 
       **EDIT:** `path/to/file.ext`
-      [Short explanation of the changes.]
+      [Short explanation of the changes. Adhere to the "Principle of Least Change" by editing the smallest, most unique block of code possible.]
       `FIND:`
       ````[language]
       [A unique snippet of text to be replaced.]
@@ -193,6 +193,7 @@
       ````[language]
       [The new content]
       ````
+      *Note: The `FIND` block is optional. If omitted, `REPLACE` overwrites the entire file.*
       **YAML Format:**
       ````yaml
       - action: edit

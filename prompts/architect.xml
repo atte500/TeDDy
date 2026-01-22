@@ -115,7 +115,7 @@
 
         The `Rationale` block must contain:
         1.  **Driver:** Review the outcome of the previous turn and based on the `Criteria` of the previous turn assert which plan type is now necessary to perform.
-            *   **Note on Digestion:** If the content from a `READ` action was provided in the previous turn, this `Driver` section MUST begin by summarizing the key findings from that content and quoting the essential snippets that justify the next plan (e.g., the verification spike).
+            *   **Note on Digestion:** If the content from a `READ` action was provided in the previous turn, this `Driver` section MUST begin by summarizing the key findings from that content and quoting the essential snippets that justify the next plan (e.g., the verification spike). When analyzing an `Execution Report`, note that a `SKIPPED` action is a decision by the user, not an execution failure. Consider the user's optional reason for skipping when forming your next plan.
         2.  **Principle:** The core methodological rule guiding the plan.
         3.  **Application:** How the principle is being applied in this context.
         4.  **Context Management Strategy:** An explicit justification for the contents of the `Context Vault`.
