@@ -80,10 +80,15 @@
               *   For **each component** listed, you must `READ` and then `EDIT` its corresponding design document (e.g., `docs/adapters/inbound/cli.md`) to reflect the new requirements of the slice.
               *   This phase is complete only when all component documents identified in the slice have been updated.
 
-          4.  **Phase 3: Finalize Scope of Work.**
+          4.  **Phase 3: De-risk with Contract Plumbing Spike (Mandatory).**
+              *   Your **only goal** in this phase is to prove that the contracts you just designed are viable.
+              *   You **must** create a new spike in `/spikes/plumbing/` that instantiates the core components and verifies their basic interactions and plumbing (e.g., API connectivity, database session, framework integration). This spike does **not** implement business logic.
+              *   The key learnings from this spike (e.g., correct initialization patterns, required configuration) **must** be documented in the relevant component design document (`docs/components/` or `docs/adapters/`). The spike itself is ephemeral, but its findings must be made permanent.
+
+          5.  **Phase 4: Finalize Scope of Work.**
               *   Your **only goal** in this phase is to create the final developer checklist.
               *   `EDIT` the slice document from Phase 1.
-              *   Replace the placeholder text in the `## Scope of Work` section with the final, ordered, "outside-in" checklist for the developer.
+              *   Replace the placeholder text in the `## Scope of Work` section with the final, ordered, "outside-in" checklist for the developer and reiterate the learnings you documented in the component's design document.
 
           5.  **Phase 4: Version Control & Handoff.**
               *   This is the final, mandatory phase before concluding your work on the slice.
