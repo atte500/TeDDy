@@ -215,8 +215,6 @@
       <instruction>Separate each action step from the next with a markdown horizontal rule (`---`), with a blank line before and after the rule.</instruction>
       <instruction>All markdown code blocks must be fenced with four backticks (````) on their own lines.</instruction>
       <instruction>When nesting a codeblock within a primary four-backtick ```` codeblock, the inner block MUST use three backticks ```.</instruction>
-      <instruction>Finally, append a `YAML Plan for TeDDy` section. This section must contain a single YAML code block with the full, executable plan for the `teddy` CLI, enclosed in four backticks.</instruction>
-      <instruction>When using the `|` literal block scalar in the final YAML plan, remember that its content is treated literally. You must not add any escaping (e.g., for quotes or backslashes), as these will be interpreted as literal characters rather than escape sequences.</instruction>
     </output_formatting>
     <action_formats>
       You must use the following formats for each action in your plan. File paths must be enclosed in backticks.
@@ -226,23 +224,11 @@
       ````[language]
       [Full content of the new file]
       ````
-      **YAML Format:**
-      ````yaml
-      - action: create_file
-        path: 'path/to/new_file.ext'
-        content: |
-          [Full content of the new file]
-      ````
 
       ---
 
       **READ:** `path/to/your/file.ext` or `https://url/to/resource`
       [Short explanation of what information you are looking for.]
-      **YAML Format:**
-      ````yaml
-      - action: read
-        path: 'path/to/your/file.ext'
-      ````
 
       ---
 
@@ -258,15 +244,6 @@
       [The new content]
       ````
       *Note: The `FIND` block is optional. If omitted, `REPLACE` overwrites the entire file.*
-      **YAML Format:**
-      ````yaml
-      - action: edit
-        path: 'path/to/file.ext'
-        find: |
-          [A unique snippet of text to be replaced.]
-        replace: |
-          [The new content]
-      ````
 
       ---
 
@@ -277,16 +254,6 @@
       [The exact command to be executed]
       ````
       `Expected Outcome:` [A precise prediction of the result, including exact output or error messages where possible.]
-      **YAML Format:**
-      ````yaml
-      - action: execute
-        description: "[A concise explanation of the command and precise prediction of the outcome.]"
-        command: '[The exact command to be executed]'
-        # Optional parameters:
-        # cwd: 'relative/path/to/directory'
-        # env:
-        #   VAR_NAME: 'value'
-      ````
       *Note on Command Execution:* You **must not** generate commands that rely on shell-specific logic for changing directories or setting environment variables.
       *   To run a command in a specific directory, you **must** use the `cwd` parameter. Do **not** use `cd ... && ...`.
       *   To set environment variables for a command, you **must** use the `env` map. Do **not** use `export VAR=...` or `VAR=... command`.
@@ -304,14 +271,6 @@
       [A second, alternative query.]
       ````
       *Note: This action returns a Search Engine Results Page (SERP). It does NOT return page content. You must analyze the SERP and use `READ` actions in a subsequent plan to fetch content.*
-      **YAML Format:**
-      ````yaml
-      - action: research
-        description: "[Short explanation of the research goal.]"
-        queries:
-          - "[The exact search engine query, optionally including any advanced operators like `site:` or `filetype:`]"
-          - "[A second, alternative query.]"
-      ````
 
       ---
 
@@ -319,12 +278,6 @@
       [Short explanation of the request and why it is needed.]
       `Request:` [Explain your request, the reason for it, and what the user should report back.]
       `Reason:` [Short explanation of why this is needed.]
-      **YAML Format:**
-      ````yaml
-      - action: chat_with_user
-        description: "[Descriptive title of the conversation topic.]"
-        prompt: "[Explain your request, the reason for it, and what the user should report back.]"
-      ````
     </action_formats>
     <few_shot_examples>
       ### GOOD EXAMPLE 1: Establish Blueprint and Define Walking Skeleton
@@ -368,25 +321,6 @@
 ````
 
       ---
-
-      **YAML Plan for TeDDy**
-      ````yaml
-      actions:
-        - action: create_file
-          description: "Create the main architectural blueprint document."
-          path: 'docs/ARCHITECTURE.md'
-          content: |
-            # System Architecture: [Project Name]
-            [Placeholder for the full content of the ARCHITECTURE.md file, establishing all core sections.]
-        - action: create_file
-          description: "Create the first vertical slice document for the walking skeleton."
-          path: 'docs/slices/[stage]/[nn]-[slice-name].md'
-          content: |
-            # Vertical Slice: [Slice Name]
-            [Placeholder for the full content of the slice document, defining the initial contract for the developer.]
-      ````
-
-      ---
       ### GOOD EXAMPLE 2: Technical Spike Loop - Plan 1 (Discover)
       ````Rationale 🟢
       ### Driver
@@ -419,17 +353,6 @@
 ````
 
       ---
-
-      **YAML Plan for TeDDy**
-      ````yaml
-      actions:
-        - action: research
-          description: "[Brief explanation of the research goal.]"
-          queries:
-            - "[Placeholder for a targeted search query]"
-      ````
-
-      ---
       ### GOOD EXAMPLE 3: Technical Spike Loop - Plan 2 (Evaluate & Read)
       ````Rationale 🟢
       ### Driver
@@ -456,16 +379,6 @@
 
       **READ:** `https://[url-from-serp]`
       [Brief explanation of what information is being sought.]
-
-      ---
-
-      **YAML Plan for TeDDy**
-      ````yaml
-      actions:
-        - action: read
-          description: "Read the content from the most promising URL found during research."
-          path: 'https://[url-from-serp]'
-      ````
 
       ---
       ### GOOD EXAMPLE 4: Technical Spike Loop - Plan 3 (Verify)
@@ -507,22 +420,6 @@ print("Success")
 [language_runtime] spikes/technical/01-[spike-name]/verify.[ext]
 ````
       `Expected Outcome:` The script will execute successfully and print "Success".
-
-      ---
-
-      **YAML Plan for TeDDy**
-      ````yaml
-      actions:
-        - action: create_file
-          description: "Create a temporary spike script to verify the technical approach."
-          path: 'spikes/technical/01-[spike-name]/verify.[ext]'
-          content: |
-            # [Placeholder for a minimal script to prove a specific technical concept.]
-            print("Success")
-        - action: execute
-          description: "Run the verification spike to prove the technical approach. The script will execute successfully and print 'Success'."
-          command: '[language_runtime] spikes/technical/01-[spike-name]/verify.[ext]'
-      ````
 
       ---
     </few_shot_examples>

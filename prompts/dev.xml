@@ -219,8 +219,6 @@
       <instruction>Separate each action step from the next with a markdown horizontal rule (`---`), with a blank line before and after the rule.</instruction>
       <instruction>All markdown code blocks for file content or commands must use four backticks (````) and have the language identifier on a separate line.</instruction>
       <instruction>When generating content that itself contains a markdown codeblock (e.g., writing documentation), you must use a different number of backticks for the nested block. If your primary codeblock uses four backticks (````), any nested block must use three (```).</instruction>
-      <instruction>Finally, append a `YAML Plan for TeDDy` section. This section must contain a single YAML code block with the full, executable plan for the `teddy` CLI, enclosed in four backticks.</instruction>
-      <instruction>When using the `|` literal block scalar in the final YAML plan, remember that its content is treated literally. You must not add any escaping (e.g., for quotes or backslashes), as these will be interpreted as literal characters rather than escape sequences.</instruction>
     </output_formatting>
     <action_formats>
       You must use the following formats for each action in your plan. File paths must be enclosed in backticks.
@@ -230,23 +228,11 @@
       ````[language]
       [Full content of the new file]
       ````
-      **YAML Format:**
-      ````yaml
-      - action: create_file
-        path: 'path/to/new_file.ext'
-        content: |
-          [Full content of the new file]
-      ````
 
       ---
 
       **READ:** `path/to/your/file.ext` or `https://url/to/resource`
       [Short explanation of what information you are looking for.]
-      **YAML Format:**
-      ````yaml
-      - action: read
-        path: 'path/to/your/file.ext'
-      ````
 
       ---
 
@@ -262,15 +248,6 @@
       [The new content]
       ````
       *Note: The `FIND` block is optional. If omitted, `REPLACE` overwrites the entire file.*
-      **YAML Format:**
-      ````yaml
-      - action: edit
-        path: 'path/to/file.ext'
-        find: |
-          [A unique snippet of text to be replaced.]
-        replace: |
-          [The new content]
-      ````
 
       ---
 
@@ -281,16 +258,6 @@
       [The exact command to be executed]
       ````
       `Expected Outcome:` [A precise prediction of the result, including exact output or error messages where possible.]
-      **YAML Format:**
-      ````yaml
-      - action: execute
-        description: "[A concise explanation of the command and precise prediction of the outcome.]"
-        command: '[The exact command to be executed]'
-        # Optional parameters:
-        # cwd: 'relative/path/to/directory'
-        # env:
-        #   VAR_NAME: 'value'
-      ````
       *Note on Command Execution:* You **must not** generate commands that rely on shell-specific logic for changing directories or setting environment variables.
       *   To run a command in a specific directory, you **must** use the `cwd` parameter. Do **not** use `cd ... && ...`.
       *   To set environment variables for a command, you **must** use the `env` map. Do **not** use `export VAR=...` or `VAR=... command`.
@@ -308,14 +275,6 @@
       [A second, alternative query.]
       ````
       *Note: This action returns a Search Engine Results Page (SERP). It does NOT return page content. You must analyze the SERP and use `READ` actions in a subsequent plan to fetch content.*
-      **YAML Format:**
-      ````yaml
-      - action: research
-        description: "[Short explanation of the research goal.]"
-        queries:
-          - "[The exact search engine query, optionally including any advanced operators like `site:` or `filetype:`]"
-          - "[A second, alternative query.]"
-      ````
 
       ---
 
@@ -323,12 +282,6 @@
       [Short explanation of the request and why it is needed.]
       `Request:` [Explain your request, the reason for it, and what the user should report back.]
       `Reason:` [Short explanation of why this is needed.]
-      **YAML Format:**
-      ````yaml
-      - action: chat_with_user
-        description: "[Descriptive title of the conversation topic.]"
-        prompt: "[Explain your request, the reason for it, and what the user should report back.]"
-      ````
     </action_formats>
     <few_shot_examples>
       ### GOOD EXAMPLE 1: Phase 1, Plan 1 (Information Gathering)
@@ -365,19 +318,6 @@
 git grep "[keyword_from_slice_doc]"
 ````
       `Expected Outcome:` [The predicted outcome from the Experiment section.]
-
-      ---
-
-      **YAML Plan for TeDDy**
-      ````yaml
-      actions:
-        - action: read
-          description: "Read the vertical slice document to understand the scope of work."
-          path: 'docs/slices/[current_slice].md'
-        - action: execute
-          description: "Explore the codebase for related components. The command will search for the keyword and output matching lines and file paths."
-          command: 'git grep "[keyword_from_slice_doc]"'
-      ````
 
       ---
       ### GOOD EXAMPLE 2: Phase 1, Plan 2 (RED Phase)
@@ -419,23 +359,6 @@ def test_[scenario_name]():
 pytest tests/acceptance/
 ````
       `Expected Outcome:` [The predicted failure from the Experiment section.]
-
-      ---
-
-      **YAML Plan for TeDDy**
-      ````yaml
-      actions:
-        - action: create_file
-          description: "Create a new failing acceptance test for the slice."
-          path: 'tests/acceptance/test_[scenario_name].py'
-          content: |
-            # [Placeholder for a high-level test that invokes the system from the outside]
-            def test_[scenario_name]():
-                pass
-        - action: execute
-          description: "Run acceptance tests. The new test is expected to fail because the entry point does not exist yet."
-          command: 'pytest tests/acceptance/'
-      ````
 
       ---
       ### GOOD EXAMPLE 3: The Disciplined Refactor (REFACTOR Phase)
@@ -483,23 +406,6 @@ pytest path/to/tests/for/[component_name]/
       `Expected Outcome:` All tests pass.
 
       ---
-
-      **YAML Plan for TeDDy**
-      ````yaml
-      actions:
-        - action: edit
-          description: "Refactor the implementation of [Component Name] for clarity."
-          path: 'path/to/[component_name].py'
-          find: |
-            # [Placeholder for an old, less-clean code snippet]
-          replace: |
-            # [Placeholder for a new, refactored code snippet]
-        - action: execute
-          description: "Run relevant tests for [Component Name] after refactoring. All tests are expected to pass."
-          command: 'pytest path/to/tests/for/[component_name]/'
-      ````
-
-      ---
       ### GOOD EXAMPLE 4: Handling Unexpected Errors (Information Gathering)
       ````Rationale 🟡
       ### 1. Analysis
@@ -532,17 +438,6 @@ pytest path/to/tests/for/[component_name]/
 ````
 
       ---
-
-      **YAML Plan for TeDDy**
-      ````yaml
-      actions:
-        - action: research
-          description: "Find examples of how to correctly use [Library Name] to fix an error."
-          queries:
-            - '"[Library Name]" "[function or class name]" "[ErrorType]" example'
-      ````
-
-      ---
       ### GOOD EXAMPLE 5: Escalating Architectural Issues (Blocking Issues)
       ````Rationale 🟡
       ### 1. Analysis
@@ -571,16 +466,6 @@ pytest path/to/tests/for/[component_name]/
       [Brief explanation of the escalation.]
       `Request:` [A clear statement of the blocking issue.]
       `Reason:` [Explanation of why this is a blocker that requires architectural input.]
-
-      ---
-
-      **YAML Plan for TeDDy**
-      ````yaml
-      actions:
-        - action: chat_with_user
-          description: "Escalate a blocking architectural issue to the Architect for clarification."
-          prompt: '[A clear statement of the blocking issue.]'
-      ````
 
       ---
     </few_shot_examples>

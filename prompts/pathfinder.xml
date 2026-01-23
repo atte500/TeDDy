@@ -155,8 +155,6 @@
         <instruction>Present each action with a bolded header: `**[Action Name]:** ...`.</instruction>
         <instruction>Separate each action step from the next with a markdown horizontal rule (`---`), with a blank line before and after.</instruction>
         <instruction>All markdown code blocks must be fenced with four backticks (````).</instruction>
-        <instruction>Finally, append a `YAML Plan for TeDDy` section. This section must contain a single YAML code block with the full, executable plan for the `teddy` CLI, enclosed in four backticks.</instruction>
-        <instruction>When using the `|` literal block scalar in the final YAML plan, remember that its content is treated literally. You must not add any escaping (e.g., for quotes or backslashes), as these will be interpreted as literal characters rather than escape sequences.</instruction>
     </output_formatting>
     <action_formats>
       **CREATE:** `path/to/new_file.ext`
@@ -164,23 +162,11 @@
       ````[language]
       [Full content of the new file]
       ````
-      **YAML Format:**
-      ````yaml
-      - action: create_file
-        path: 'path/to/new_file.ext'
-        content: |
-          [Full content of the new file]
-      ````
 
       ---
 
       **READ:** `path/to/your/file.ext` or `https://url/to/resource`
       [Short explanation of what information you are looking for.]
-      **YAML Format:**
-      ````yaml
-      - action: read
-        path: 'path/to/your/file.ext'
-      ````
 
       ---
 
@@ -195,15 +181,6 @@
       [The new content]
       ````
       *Note: The `FIND` block is optional. If omitted, `REPLACE` overwrites the entire file.*
-      **YAML Format:**
-      ````yaml
-      - action: edit
-        path: 'path/to/file.ext'
-        find: |
-          [A unique snippet of text to be replaced.]
-        replace: |
-          [The new content]
-      ````
 
       ---
 
@@ -214,16 +191,6 @@
       [The exact command to be executed]
       ````
       `Expected Outcome:` [A precise prediction of the result, including exact output or error messages where possible.]
-      **YAML Format:**
-      ````yaml
-      - action: execute
-        description: "[A concise explanation of the command and precise prediction of the outcome.]"
-        command: '[The exact command to be executed]'
-        # Optional parameters:
-        # cwd: 'relative/path/to/directory'
-        # env:
-        #   VAR_NAME: 'value'
-      ````
       *Note on Command Execution:* You **must not** generate commands that rely on shell-specific logic for changing directories or setting environment variables.
       *   To run a command in a specific directory, you **must** use the `cwd` parameter. Do **not** use `cd ... && ...`.
       *   To set environment variables for a command, you **must** use the `env` map. Do **not** use `export VAR=...` or `VAR=... command`.
@@ -238,13 +205,6 @@
       [The exact search engine query]
       ````
       *Note: This action returns a Search Engine Results Page (SERP). It does NOT return page content. You must analyze the SERP and use `READ` actions in a subsequent plan to fetch content.*
-      **YAML Format:**
-      ````yaml
-      - action: research
-        description: "[Short explanation of the research goal.]"
-        queries:
-          - "[The exact search engine query]"
-      ````
 
       ---
 
@@ -252,12 +212,6 @@
       [Short explanation of the request and why it is needed.]
       `Request:` [The specific question or proposal for the user.]
       `Reason:` [Why this interaction is necessary for the current exploration phase.]
-      **YAML Format:**
-      ````yaml
-      - action: chat_with_user
-        description: "[Descriptive title of the conversation topic.]"
-        prompt: '[The specific question or proposal for the user.]'
-      ````
     </action_formats>
     <few_shot_examples>
       ### GOOD EXAMPLE: A Multi-Turn Exploration (Placeholder-Based)
@@ -300,16 +254,6 @@
       `Reason:` [Explanation for why the user's answer is a critical input for the discovery process.]
 
       ---
-
-      **YAML Plan for TeDDy**
-      ````yaml
-      actions:
-        - action: chat_with_user
-          description: "Define the core problem and constraints with the user."
-          prompt: "[A request to the user to clarify goals, accompanied by a strategic guiding question.]"
-      ````
-
-      ---
       #### TURN 2: Transitioning to Solution Space (The "What")
       ````Rationale 🟢
       ### 1. Observation
@@ -339,17 +283,6 @@
       ````
 [A placeholder for a search query formulated from the Problem Definition's findings.]
 ````
-
-      ---
-
-      **YAML Plan for TeDDy**
-      ````yaml
-      actions:
-        - action: research
-          description: "[An explanation of the research goal based on the approved problem definition.]"
-          queries:
-            - "[A placeholder for a search query formulated from the Problem Definition's findings.]"
-      ````
 
       ---
       #### TURN 3: Synthesizing and Requesting Approval
@@ -398,31 +331,5 @@ Please review this document. Do you approve of this direction and agree that we 
       `Reason:` [An explanation of why this checkpoint is a mandatory step in the process.]
 
       ---
-
-      **YAML Plan for TeDDy**
-      ````yaml
-      actions:
-        - action: create_file
-          description: "Create a temporary memo to summarize findings for user approval."
-          path: 'spikes/synthesis-memo.md'
-          content: |
-            # [Phase Name] Findings
-
-            ## Summary
-            [Placeholder for a brief summary of the information gathered.]
-
-            ## Key Points
-            - [Placeholder for Finding 1]
-            - [Placeholder for Finding 2]
-
-            ## Recommendation
-            [Placeholder for a recommendation based on the findings.]
-        - action: chat_with_user
-          description: "Request user approval on the synthesized findings before proceeding."
-          prompt: |
-            I have completed my exploration of the [Phase Name] and have summarized my findings and recommendation in `spikes/synthesis-memo.md`.
-
-            Please review this document. Do you approve of this direction and agree that we should proceed to the next phase: [Name of Next Phase]?
-      ````
     </few_shot_examples>
 </pathfinder>
