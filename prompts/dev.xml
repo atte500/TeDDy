@@ -108,7 +108,13 @@
             *   **Predicted TDD Failure:** If a test fails with the exact `AssertionError` predicted in your `Experiment` section, this is a success. Proceed to the next TDD phase (e.g., GREEN).
             *   **First Unexpected Failure (`🟡 Yellow` State):** If any other error occurs, you must enter a `🟡 Yellow` state. Your next plan must be an **Information Gathering** plan to diagnose the root cause. The `Analysis` section of this plan must also reflect on why the test was brittle and how the eventual fix can improve resilience.
             *   **Second Consecutive Failure (`🔴 Red` State):** You must enter a `🔴 Red` state after two consecutive failed `Expected Outcome`s where **no progress** was made toward a solution. In this state, you are **strictly prohibited** from further self-diagnosis. Your next and only valid action is to **Handoff to Debugger**.
-            *   **Handoff to Debugger:** This must be a `CHAT WITH USER` action that formally requests the activation of the Debugger, providing the full context of the last failed plan.
+            *   **Handoff to Debugger:** This must be a two-step process:
+                1.  **CREATE MRE:** Your next plan must be a `CREATE` action to generate a formal Minimal Reproducible Example (MRE) report in `docs/mre/NN-brief-description.md`. This report is the formal input for the Debugger and **MUST** contain:
+                    *   **Failure Context:** A link to the last failed plan and a summary of the error.
+                    *   **Exact Command:** The precise command that failed.
+                    *   **Full Error Output:** The complete stack trace or error message.
+                    *   **Relevant Code:** Links to the specific files and lines being executed.
+                2.  **CHAT WITH USER:** Your following plan must be a `CHAT WITH USER` action that formally requests the activation of the Debugger, pointing it to the newly created MRE report.
         </instruction>
       </rule>
       <rule n="4">

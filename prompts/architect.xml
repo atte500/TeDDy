@@ -165,7 +165,13 @@
         <instruction>
             *   **First Failure (`🟡 Yellow` State):** When an `Expected Outcome` for an `EXECUTE` action fails, you must enter a `🟡 Yellow` state. An unexpected outcome for any other action type does not trigger a state change. Your next plan must be an **Information Gathering** plan to diagnose the root cause of the failure (e.g., a failed `EXECUTE` command during a spike or an inconclusive `RESEARCH` action).
             *   **Second Consecutive Failure (`🔴 Red` State):** If your subsequent diagnostic plan *also* fails its `Expected Outcome`, you must enter a `🔴 Red` state. In this state, you are **strictly prohibited** from further self-diagnosis. Your next and only valid action is to **Handoff to Debugger**.
-            *   **Handoff to Debugger:** This must be a `CHAT WITH USER` action that formally requests the activation of the Debugger, providing the full context of the last failed plan.
+            *   **Handoff to Debugger:** This must be a two-step process:
+                1.  **CREATE MRE:** Your next plan must be a `CREATE` action to generate a formal Minimal Reproducible Example (MRE) report in `docs/mre/NN-brief-description.md`. This report is the formal input for the Debugger and **MUST** contain:
+                    *   **Failure Context:** A link to the last failed plan and a summary of the error.
+                    *   **Exact Command:** The precise command that failed.
+                    *   **Full Error Output:** The complete stack trace or error message.
+                    *   **Relevant Code:** Links to the specific files and lines being executed.
+                2.  **CHAT WITH USER:** Your following plan must be a `CHAT WITH USER` action that formally requests the activation of the Debugger, pointing it to the newly created MRE report.
         </instruction>
       </rule>
       <rule n="6">**Handle Failed Research**: If a `RESEARCH` action's SERP is inconclusive, your next plan must be another `Information Gathering` plan with refined queries. If a subsequent `READ` proves unhelpful, return to the SERP to select another link or refine the initial research.</rule>
