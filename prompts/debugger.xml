@@ -181,8 +181,16 @@
       ---
 
       **EDIT:** `path/to/file.ext`
-      [Short explanation of the changes. Adhere to the "Principle of Least Change" by editing the smallest, most unique block of code possible.]
-      *Note: For multi-line `FIND` blocks, the first line must have zero indentation. You can include multiple `FIND`/`REPLACE` pairs in a single action.*
+      [Short explanation of the changes. It is preferred to make surgical changes by including multiple, sequential `FIND`/`REPLACE` pairs in a single action.]
+      `FIND:`
+      ````[language]
+      [A unique snippet of text to be replaced.]
+      ````
+      `REPLACE:`
+      ````[language]
+      [The new content]
+      ````
+      *Note: To overwrite the entire file, omit the `FIND:` block and provide only the `REPLACE:` content.*
       `FIND:`
       ````[language]
       [A unique snippet of text to be replaced.]

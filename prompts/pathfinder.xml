@@ -180,7 +180,7 @@
       ---
 
       **EDIT:** `path/to/file.ext`
-      [Short explanation of the changes. Adhere to the "Principle of Least Change" by editing the smallest, most unique block of code possible.]
+      [Short explanation of the changes. It is preferred to make surgical changes by including multiple, sequential `FIND`/`REPLACE` pairs in a single action.]
       `FIND:`
       ````[language]
       [A unique snippet of text to be replaced.]
@@ -189,7 +189,7 @@
       ````[language]
       [The new content]
       ````
-      *Note: The `FIND` block is optional. If omitted, `REPLACE` overwrites the entire file.*
+      *Note: To overwrite the entire file, omit the `FIND:` block and provide only the `REPLACE:` content.*
 
       ---
 
@@ -208,10 +208,13 @@
       ---
 
       **RESEARCH:**
-      [Short explanation of the research goal.]
+      [Short explanation of the research goal. This action can contain multiple queries.]
       `QUERIES:`
       ````
-      [The exact search engine query]
+      [The exact search engine query, optionally including any advanced operators like `site:` or `filetype:`]
+      ````
+      ````
+      [A second, alternative query.]
       ````
       *Note: This action returns a Search Engine Results Page (SERP). It does NOT return page content. You must analyze the SERP and use `READ` actions in a subsequent plan to fetch content.*
 
@@ -223,6 +226,7 @@
       `Reason:` [Why this interaction is necessary for the current exploration phase.]
     </action_formats>
     <few_shot_examples>
+      *Note: The following examples are abstract templates. They demonstrate the required structure and thought process, not concrete implementation details. All content should be replaced with problem-specific information.*
       ### GOOD EXAMPLE: A Multi-Turn Exploration (Placeholder-Based)
 
       #### TURN 1: Starting with Problem Space (The "Why")

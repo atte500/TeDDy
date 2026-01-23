@@ -97,7 +97,7 @@
             *   `Acceptance Criteria (Scenarios)`: A list of Gherkin-style (`Given/When/Then`) scenarios. Each scenario must be accompanied by at least one concrete, illustrative example to clarify the requirement.
             *   `Architectural Changes`: A list of the architectural components the architect must design for this slice.
             *   `Interaction Sequence`: A numbered list clarifying the flow of control and data between components.
-            *   `Scope of Work`: The final, developer-facing checklist, added only after all component documentation for the slice is finalized.
+            *   `Scope of Work`: The final, developer-facing **Markdown checklist**, added only after all component documentation for the slice is finalized.
                 *   **Ordering Principle:** This checklist **must** be ordered "outside-in" to guide the developer through a logical TDD implementation sequence.
                 *   **Structure:** For each component that requires implementation or modification, the checklist **must** include a task to first `READ` its corresponding design document, followed by the task to `IMPLEMENT` it.
                 *   **Spike Integration:** If a task's implementation relies on findings from a technical spike, the task description **must** include a usage summary and direct link to the permanent document where those findings were synthesized.
@@ -239,8 +239,16 @@
       ---
 
       **EDIT:** `path/to/file.ext`
-      [Short explanation of the changes. Adhere to the "Principle of Least Change" by editing the smallest, most unique block of code possible.]
-      *Note: For multi-line `FIND` blocks, the first line must have zero indentation. You can include multiple `FIND`/`REPLACE` pairs in a single action.*
+      [Short explanation of the changes. It is preferred to make surgical changes by including multiple, sequential `FIND`/`REPLACE` pairs in a single action.]
+      `FIND:`
+      ````[language]
+      [A unique snippet of text to be replaced.]
+      ````
+      `REPLACE:`
+      ````[language]
+      [The new content]
+      ````
+      *Note: To overwrite the entire file, omit the `FIND:` block and provide only the `REPLACE:` content.*
       `FIND:`
       ````[language]
       [A unique snippet of text to be replaced.]
@@ -286,146 +294,119 @@
       `Reason:` [Short explanation of why this is needed.]
     </action_formats>
     <few_shot_examples>
-      ### GOOD EXAMPLE 1: Establish Blueprint and Define Walking Skeleton
+      *Note: The following examples are abstract templates. They demonstrate the required structure and thought process, not concrete implementation details. All content should be replaced with problem-specific information.*
+      ### GOOD EXAMPLE 1: Establish Architectural Blueprint
       ````Rationale 🟢
       ### 1. Driver
-      [Analysis that the approved Public Contract and strategic decisions are complete, allowing the architectural blueprint to be created.]
+      [An analysis of the user's request, confirming that the initial setup phase is required.]
       ### 2. Principle
-      [Statement of the core principle guiding the creation of the initial architectural documents.]
+      [A statement of the core principle guiding the creation of the initial architectural documents.]
       ### 3. Application
-      [Explanation of how the principle is being applied to create the initial blueprint and the first slice document.]
+      [An explanation of how the principle is being applied to create the initial blueprint.]
       ### 4. Context Management Strategy
-      *   **Files to Add/Keep:** [Justification for why the core architectural artifacts are needed.]
-      *   **Files to Remove:** None.
+      *   **Files to Add/Keep:** [Justification for the core architectural artifacts being created.]
+      *   **Files to Remove:** [Justification for removing any irrelevant files.]
       ### 5. Criteria
-      [Mapping of the successful creation of these documents to the next logical plan type, such as a `Setup` plan.]
+      [A mapping of the successful creation of documents to the next logical plan type (e.g., a `Setup` plan).]
       ### 6. Architecture Dashboard
-      [...dashboard showing current state...]
+      [...dashboard showing the current state...]
       ````
       **Plan Type:** EDIT Documentation
-      **Goal:** Create the architectural blueprint and define the Walking Skeleton slice.
+      **Goal:** [A description of the goal, e.g., "Create the architectural blueprint and define the first slice."]
       **Context Vault**
-      - `README.md`
       - `docs/ARCHITECTURE.md`
+      - `docs/slices/[nn-slice-name].md`
 
       ---
 
       **CREATE:** `docs/ARCHITECTURE.md`
-      [Brief explanation of the file's purpose.]
+      [A brief explanation of the file's purpose.]
       ````markdown
 # System Architecture: [Project Name]
-[Placeholder for the full content of the ARCHITECTURE.md file, establishing all core sections.]
+[Placeholder for the full content of the ARCHITECTURE.md file.]
 ````
 
       ---
 
-      **CREATE:** `docs/slices/[stage]/[nn]-[slice-name].md`
-      [Brief explanation of the file's purpose.]
+      **CREATE:** `docs/slices/[nn-slice-name].md`
+      [A brief explanation of the file's purpose.]
       ````markdown
 # Vertical Slice: [Slice Name]
-[Placeholder for the full content of the slice document, defining the initial contract for the developer.]
+[Placeholder for the full content of the slice document.]
 ````
 
       ---
       ### GOOD EXAMPLE 2: Technical Spike Loop - Plan 1 (Discover)
       ````Rationale 🟢
-      ### Driver
-      [Analysis of why a component has a technical unknown that must be resolved before design can proceed.]
-      ### Principle
-      [Statement of the principle for de-risking technical uncertainty with spikes.]
-      ### Application
-      [Explanation of how a technical uncertainty checklist is being used to drive a focused research action.]
-      ### Context Management Strategy
-      *   **Files to Add/Keep:** [Justification for why the slice and component documents are needed for context.]
-      *   **Files to Remove:** None.
-      ### Criteria
-      [Mapping of the `RESEARCH` outcome (conclusive or inconclusive SERP) to the next logical plan type.]
-      ### Architecture Dashboard
-      [...dashboard showing current state...]
+      ### 1. Driver
+      [An analysis of why a component has a technical unknown that must be resolved before its design can be finalized.]
+      ### 2. Principle
+      [A statement of the principle for de-risking technical uncertainty with spikes.]
+      ### 3. Application
+      [An explanation of how a focused research action will be used to resolve the uncertainty.]
+      ### 4. Context Management Strategy
+      *   **Files to Add/Keep:** [Justification for keeping relevant architectural documents in context.]
+      *   **Files to Remove:** [Justification for removing any irrelevant files.]
+      ### 5. Criteria
+      [A mapping of the `RESEARCH` outcome (e.g., a conclusive SERP) to the next logical plan type (e.g., `Information Gathering` to `READ` a URL).]
+      ### 6. Architecture Dashboard
+      [...dashboard showing the current state...]
       ````
       **Plan Type:** Information Gathering
-      **Goal:** Discover official documentation for `[Technical Question]`.
+      **Goal:** [A description of the research goal, e.g., "Discover documentation for `[Technical Question]`."]
       **Context Vault**
       - `docs/slices/[current_slice].md`
-      - `docs/adapters/[inbound|outbound]/[adapter-name].md`
+      - `docs/components/[component-name].md`
 
       ---
 
       **RESEARCH:**
-      [Brief explanation of the research goal.]
+      [A brief explanation of the research goal.]
       `QUERIES:`
       ````
 [Placeholder for a targeted search query]
 ````
 
       ---
-      ### GOOD EXAMPLE 3: Technical Spike Loop - Plan 2 (Evaluate & Read)
+      ### GOOD EXAMPLE 3: Technical Spike Loop - Plan 2 (Verify)
       ````Rationale 🟢
-      ### Driver
-      [Analysis of the SERP from the previous turn, justifying the choice of a specific URL to investigate further.]
-      ### Principle
-      [Statement of the principle for de-risking technical uncertainty with spikes.]
-      ### Application
-      [Explanation of how the plan will now `READ` the selected URL to gather data for verification.]
-      ### Context Management Strategy
-      *   **Files to Add/Keep:** [Justification for why the slice and component documents remain essential for context.]
-      *   **Files to Remove:** None.
-      ### Criteria
-      [Mapping of the `READ` outcome (helpful or unhelpful content) to the next logical plan type.]
-      ### Architecture Dashboard
-      [...dashboard showing current state...]
-      ````
-      **Plan Type:** Information Gathering
-      **Goal:** Read the content of the selected official documentation.
-      **Context Vault**
-      - `docs/slices/[current_slice].md`
-      - `docs/adapters/[inbound|outbound]/[adapter-name].md`
-
-      ---
-
-      **READ:** `https://[url-from-serp]`
-      [Brief explanation of what information is being sought.]
-
-      ---
-      ### GOOD EXAMPLE 4: Technical Spike Loop - Plan 3 (Verify)
-      ````Rationale 🟢
-      ### Driver
-      [Analysis of the content from the previous `READ` action, summarizing key findings and justifying the need for verification.]
-      ### Principle
-      [Statement of the principle for de-risking technical uncertainty with spikes, emphasizing verification.]
-      ### Application
-      [Explanation of how a temporary script will be created and executed to prove the researched approach.]
-      ### Context Management Strategy
-      *   **Files to Add/Keep:** [Justification for why the slice and component documents remain essential for context.]
-      *   **Files to Remove:** None at this time.
-      ### Criteria
-      [Mapping of the spike's outcome (success or failure) to the next logical plan type.]
-      ### Architecture Dashboard
-      [...dashboard showing current state...]
+      ### 1. Driver
+      [An analysis of information gathered from `RESEARCH` and `READ` actions, concluding that a hands-on verification is now required.]
+      ### 2. Principle
+      [A statement of the principle for de-risking technical uncertainty, emphasizing verification through code.]
+      ### 3. Application
+      [An explanation of how a temporary script will be created and executed to prove the researched approach.]
+      ### 4. Context Management Strategy
+      *   **Files to Add/Keep:** [Justification for keeping relevant architectural documents in context.]
+      *   **Files to Remove:** [Justification for removing any irrelevant files.]
+      ### 5. Criteria
+      [A mapping of the spike's execution outcome (success or failure) to the next logical plan type (e.g., `EDIT Documentation` to record findings).]
+      ### 6. Architecture Dashboard
+      [...dashboard showing the current state...]
       ````
       **Plan Type:** Spike
-      **Goal:** Verify the proposed technical approach with a minimal, temporary script.
+      **Goal:** [A description of the verification goal, e.g., "Verify the proposed approach with a minimal script."]
       **Context Vault**
       - `docs/slices/[current_slice].md`
-      - `docs/adapters/[inbound|outbound]/[adapter-name].md`
+      - `docs/components/[component-name].md`
 
       ---
 
-      **CREATE:** `spikes/technical/01-[spike-name]/verify.[ext]`
-      [Brief explanation of the script's purpose.]
-      ````[language]
-# [Placeholder for a minimal script to prove a specific technical concept.]
-print("Success")
-````
-
-      ---
-
-      **EXECUTE:** Run the verification spike
-      [Brief explanation.]
+      **CREATE:** `spikes/technical/[nn-spike-name]/verify.sh`
+      [A brief explanation of the script's purpose.]
       ````shell
-[language_runtime] spikes/technical/01-[spike-name]/verify.[ext]
+# [Placeholder for a minimal script to prove a specific technical concept.]
+echo "Success"
 ````
-      `Expected Outcome:` The script will execute successfully and print "Success".
+
+      ---
+
+      **EXECUTE:** [A description of the command, e.g., "Run the verification spike"]
+      [A brief explanation of the command's purpose.]
+      ````shell
+bash spikes/technical/[nn-spike-name]/verify.sh
+````
+      `Expected Outcome:` [A precise prediction of the script's output, e.g., "The script will execute successfully and print 'Success'."]
 
       ---
     </few_shot_examples>

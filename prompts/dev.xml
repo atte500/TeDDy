@@ -46,6 +46,7 @@
           After approval, finalize the slice.
           1.  **Address T2 Refactoring:** For each T2 note, run a new `REFACTOR` -> `VERIFY` -> `COMMIT` cycle.
           2.  **Update Documentation:** Audit and align all documentation with the as-built code.
+              *   **Formalize T0 Notes:** For each T0 note, determine the best permanent location for the information (e.g., the relevant component document, `docs/ARCHITECTURE.md`, or a new document) and `EDIT` the file to add it.
               *   **Detailed Docs:** Use the slice's `Architectural Changes` list to `READ` code and `EDIT` corresponding component documents to ensure they are accurate.
               *   **High-Level Docs:** If a component's core responsibility changed, `EDIT` its one-sentence description in the `docs/ARCHITECTURE.md` `Component & Boundary Map` table.
               *   **Status Docs:** `EDIT` the source Brief and Vertical Slice to mark the work as complete.
@@ -88,6 +89,7 @@
               - [ ] VERIFY
           **Architectural Notes:**
           - [Log observations here, classified by tier.]
+          - **T0 (Pre-existing Condition):** An observation about an existing, undocumented architectural decision or pattern.
           - **T1 (Micro-Refactor):** Trivial improvement. Fix in the current REFACTOR cycle.
           - **T2 (Slice-Refactor):** Contained debt. Fix at the end of the slice, before handoff.
           - **T3 (New Opportunity):** Out of scope. Complete the slice, then propose as a new work item during handoff.
@@ -243,8 +245,16 @@
       ---
 
       **EDIT:** `path/to/file.ext`
-      [Short explanation of the changes. Adhere to the "Principle of Least Change" by editing the smallest, most unique block of code possible.]
-      *Note: For multi-line `FIND` blocks, the first line must have zero indentation. You can include multiple `FIND`/`REPLACE` pairs in a single action.*
+      [Short explanation of the changes. It is preferred to make surgical changes by including multiple, sequential `FIND`/`REPLACE` pairs in a single action.]
+      `FIND:`
+      ````[language]
+      [A unique snippet of text to be replaced.]
+      ````
+      `REPLACE:`
+      ````[language]
+      [The new content]
+      ````
+      *Note: To overwrite the entire file, omit the `FIND:` block and provide only the `REPLACE:` content.*
       `FIND:`
       ````[language]
       [A unique snippet of text to be replaced.]
@@ -290,38 +300,39 @@
       `Reason:` [Short explanation of why this is needed.]
     </action_formats>
     <few_shot_examples>
+      *Note: The following examples are abstract templates. They demonstrate the required structure and thought process, not concrete implementation details. All content should be replaced with problem-specific information.*
       ### GOOD EXAMPLE 1: Phase 1, Plan 1 (Information Gathering)
       ````Rationale 🟢
       ### 1. Analysis
-      [Analysis of the new vertical slice assignment and justification for starting with the mandatory Information Gathering plan as per the workflow.]
+      [An analysis of the new vertical slice assignment, justifying the start of the workflow with the mandatory Information Gathering plan.]
       ### 2. Assumptions & Hypotheses
-      *   **Assumption:** [A brief assumption about the completeness of the slice document.]
-      *   **Hypothesis:** [A specific prediction about the information that will be found, e.g., "Reading the slice doc and searching the code will provide enough context to write the acceptance test."]
+      *   **Assumption:** [A brief assumption about the completeness of the provided documentation.]
+      *   **Hypothesis:** [A prediction that reading the contract and exploring the code will provide sufficient context for the next step.]
       ### 3. Context Management Strategy
-      *   **Files to Add/Keep:** [Justification for why the slice document is needed.]
-      *   **Files to Remove:** None.
+      *   **Files to Add/Keep:** [Justification for adding the slice document to the context.]
+      *   **Files to Remove:** [Justification for removing any irrelevant files.]
       ### 4. Experiment
-      **Expected Outcome:** [Prediction of a successful information gathering step, mapping to the next plan type, which must be a RED Phase plan.]
+      **Expected Outcome:** [A prediction of a successful information gathering step, mapping to the next logical Plan Type (e.g., `RED Phase`).]
 
       ### TDD Dashboard
       [...dashboard showing the start of Phase 1...]
       ````
       **Plan Type:** Information Gathering
-      **Goal:** Orient to the "[Slice Name]" slice by reading its contract and exploring the codebase.
+      **Goal:** [A description of the orientation goal, e.g., "Orient to the '[Slice Name]' slice."].
       **Context Vault**
-      - `docs/slices/[current_slice].md`
+      - `docs/slices/[path-to-slice].md`
 
       ---
 
-      **READ:** `docs/slices/[current_slice].md`
-      [Brief explanation of the file's purpose.]
+      **READ:** `docs/slices/[path-to-slice].md`
+      [A brief explanation of the file's purpose.]
 
       ---
 
-      **EXECUTE:** Explore the codebase for related components
-      [Brief explanation.]
+      **EXECUTE:** [A description of the exploration command, e.g., "Explore for related components"]
+      [A brief explanation of the command's purpose.]
       ````shell
-git grep "[keyword_from_slice_doc]"
+git grep "[keyword_from_document]"
 ````
       `Expected Outcome:` [The predicted outcome from the Experiment section.]
 
@@ -329,38 +340,39 @@ git grep "[keyword_from_slice_doc]"
       ### GOOD EXAMPLE 2: Phase 1, Plan 2 (RED Phase)
       ````Rationale 🟢
       ### 1. Analysis
-      [Analysis of the information gathered in the previous turn, confirming readiness to proceed. Justification for why the next step is a RED Phase plan to create the failing acceptance test.]
+      [An analysis of the information gathered previously, confirming readiness to proceed. Justification for the `RED Phase` plan.]
       ### 2. Assumptions & Hypotheses
-      *   **Assumption:** [A brief assumption about the test environment.]
-      *   **Hypothesis:** [A specific prediction about why the new test will fail, e.g., "The test will fail because the entry point does not exist yet."]
+      *   **Assumption:** [A brief assumption about the test environment or framework.]
+      *   **Hypothesis:** [A specific prediction about why the new test will fail (e.g., a `NotImplementedError` or `NameError`).]
       ### 3. Context Management Strategy
-      *   **Files to Add/Keep:** The slice document `docs/slices/[current_slice].md` remains necessary.
-      *   **Files to Remove:** None.
+      *   **Files to Add/Keep:** [Justification for keeping necessary files in context.]
+      *   **Files to Remove:** [Justification for removing any irrelevant files.]
       ### 4. Experiment
-      **Expected Outcome:** [Prediction of the specific failure. Crucially, map outcomes to the next plan type.]
+      **Expected Outcome:** [A precise prediction of the test failure, mapping outcomes to the next Plan Type (e.g., `GREEN Phase`).]
 
       ### TDD Dashboard
       [...dashboard showing the second part of Phase 1...]
       ````
       **Plan Type:** RED Phase
-      **Goal:** Write a failing acceptance test for the "[Scenario Name]" scenario.
+      **Goal:** [A description of the goal, e.g., "Write a failing acceptance test for the '[Scenario Name]' scenario."]
       **Context Vault**
-      - `docs/slices/[current_slice].md`
+      - `docs/slices/[path-to-slice].md`
 
       ---
 
-      **CREATE:** `tests/acceptance/test_[scenario_name].py`
-      [Brief explanation of the file's purpose.]
+      **CREATE:** `tests/acceptance/test_[feature_name].py`
+      [A brief explanation of the test file's purpose.]
       ````python
-# [Placeholder for a high-level test that invokes the system from the outside]
+# [Placeholder for a high-level test that invokes the system from an external perspective.]
 def test_[scenario_name]():
+    # [Placeholder for test setup, execution, and assertion]
     pass
 ````
 
       ---
 
-      **EXECUTE:** Run acceptance tests
-      [Brief explanation.]
+      **EXECUTE:** [A description of the test command, e.g., "Run acceptance tests"]
+      [A brief explanation of the command's purpose.]
       ````shell
 pytest tests/acceptance/
 ````
@@ -370,29 +382,29 @@ pytest tests/acceptance/
       ### GOOD EXAMPLE 3: The Disciplined Refactor (REFACTOR Phase)
       ````Rationale 🟢
       ### 1. Analysis
-      [Brief analysis of why the previous GREEN phase necessitates a REFACTOR, with reflections on quality. A new non-blocking architectural observation is logged.]
+      [A brief analysis of the previous `GREEN Phase`, justifying the need for a refactor. A new architectural note may be logged here.]
       ### 2. Assumptions & Hypotheses
-      *   **Assumption:** [A brief assumption about test coverage.]
-      *   **Hypothesis:** [A specific prediction that refactoring will improve code quality without breaking tests.]
+      *   **Assumption:** [A brief assumption about the existing test coverage.]
+      *   **Hypothesis:** [A prediction that refactoring will improve quality without altering behavior (i.e., all tests will still pass).]
       ### 3. Context Management Strategy
-      *   **Files to Add/Keep:** [Justification for keeping the component source and test files.]
-      *   **Files to Remove:** None.
+      *   **Files to Add/Keep:** [Justification for keeping source and test files in context.]
+      *   **Files to Remove:** [Justification for removing any irrelevant files.]
       ### 4. Experiment
-      **Expected Outcome:** [Prediction that all relevant tests will pass, mapping to the next plan type.]
+      **Expected Outcome:** [A prediction that all relevant tests will pass, mapping to the next logical Plan Type.]
 
       ### TDD Dashboard
       [...dashboard showing a REFACTOR cycle, with a new note added...]
       ````
       **Plan Type:** REFACTOR Phase
-      **Goal:** Improve the code quality of the `[Component Name]`.
+      **Goal:** [A description of the refactoring goal, e.g., "Improve the code quality of the `[Component Name]`."]
       **Context Vault**
       - `path/to/[component_name].py`
-      - `path/to/tests/for/[component_name]/`
+      - `path/to/tests/[test_file].py`
 
       ---
 
       **EDIT:** `path/to/[component_name].py`
-      [Brief explanation of the refactor.]
+      [A brief explanation of the refactor being applied.]
       `FIND:`
       ````python
 # [Placeholder for an old, less-clean code snippet]
@@ -404,74 +416,73 @@ pytest tests/acceptance/
 
       ---
 
-      **EXECUTE:** Run relevant tests for `[Component Name]`
-      [Brief explanation.]
+      **EXECUTE:** [A description of the verification command, e.g., "Run relevant tests for `[Component Name]`"]
+      [A brief explanation of the command's purpose.]
       ````shell
-pytest path/to/tests/for/[component_name]/
+pytest path/to/tests/[test_file].py
 ````
-      `Expected Outcome:` All tests pass.
+      `Expected Outcome:` [A prediction that all tests will pass.]
 
       ---
       ### GOOD EXAMPLE 4: Handling Unexpected Errors (Information Gathering)
       ````Rationale 🟡
       ### 1. Analysis
-      [Analysis of the unexpected error from the previous step. Status changes to Yellow, requiring an Information Gathering plan.]
+      [An analysis of the unexpected error from the previous turn. The state is now Yellow, requiring an `Information Gathering` plan for diagnosis.]
       ### 2. Assumptions & Hypotheses
-      *   **Assumption:** [A brief assumption about the source of the error.]
-      *   **Hypothesis:** [A specific prediction about what the research will uncover.]
+      *   **Assumption:** [A brief assumption about the likely source of the error (e.g., an external library).]
+      *   **Hypothesis:** [A specific prediction about what research or code exploration will uncover.]
       ### 3. Context Management Strategy
-      *   **Files to Add/Keep:** [Justification for keeping the failing component's files for context.]
-      *   **Files to Remove:** None.
+      *   **Files to Add/Keep:** [Justification for keeping the failing component's files in context.]
+      *   **Files to Remove:** [Justification for removing any irrelevant files.]
       ### 4. Experiment
-      **Expected Outcome:** [Prediction of the research outcome and the subsequent plan, considering both success and failure paths.]
+      **Expected Outcome:** [A prediction of the research outcome and the subsequent plan, considering both success and failure paths.]
 
       ### TDD Dashboard
       [...dashboard showing a blocked state...]
       ````
       **Plan Type:** Information Gathering
-      **Goal:** Discover the correct API usage for the `[Library Name]` to resolve the `[ErrorType]`.
+      **Goal:** [A description of the diagnostic goal, e.g., "Discover the correct usage of `[Library Name]` to resolve `[ErrorType]`."]
       **Context Vault**
       - `path/to/[failing_component].py`
-      - `path/to/tests/for/[failing_component]/`
 
       ---
 
       **RESEARCH:**
-      [Brief explanation of the research goal.]
+      [A brief explanation of the research goal.]
       `QUERIES:`
       ````
-"[Library Name]" "[function or class name]" "[ErrorType]" example
+[Placeholder for a targeted search query related to the error]
 ````
 
       ---
       ### GOOD EXAMPLE 5: Escalating Architectural Issues (Blocking Issues)
       ````Rationale 🟡
       ### 1. Analysis
-      [Analysis of the current task, identifying a blocking issue with the architectural contract that forces an escalation.]
+      [An analysis of a discovered issue that represents a blocker, violating an architectural contract or assumption.]
       ### 2. Assumptions & Hypotheses
-      *   **Assumption:** The architectural documents are the single source of truth.
-      *   **Hypothesis:** Escalating via `CHAT WITH USER` will provide the necessary clarification from the Architect.
+      *   **Assumption:** [An assumption that the architectural documents are the source of truth.]
+      *   **Hypothesis:** [A prediction that escalating to the Architect via `CHAT WITH USER` will yield the necessary clarification.]
       ### 3. Context Management Strategy
-      *   **Files to Add/Keep:** [Justification for keeping the slice and contract documents to articulate the issue.]
-      *   **Files to Remove:** None.
+      *   **Files to Add/Keep:** [Justification for keeping documents needed to articulate the issue.]
+      *   **Files to Remove:** [Justification for removing any irrelevant files.]
       ### 4. Experiment
-      **Expected Outcome:** The Architect (user) will receive the message and provide an updated plan or clarification.
+      **Expected Outcome:** [A prediction that the user (acting as Architect) will provide clarification or a new plan.]
 
       ### TDD Dashboard
-      [...dashboard showing a blocked state...]
+      [...dashboard showing a blocked state with a T4 note...]
       ````
       **Plan Type:** User Verification
       **Goal:** Escalate a blocking architectural issue to the Architect.
       **Context Vault**
       - `docs/slices/[current_slice].md`
-      - `docs/core/ports/[Port Name].md`
+      - `docs/core/ports/[port_name].md`
 
       ---
 
-      **CHAT WITH USER:** Architectural Issue: [Brief description of issue]
-      [Brief explanation of the escalation.]
-      `Request:` [A clear statement of the blocking issue.]
-      `Reason:` [Explanation of why this is a blocker that requires architectural input.]
+      **CHAT WITH USER:** [A title for the escalation, e.g., "Architectural Issue: [Brief Description]"]
+      [A brief explanation of the escalation.]
+      `Request:` [A clear, concise statement of the blocking issue.]
+      `Reason:` [An explanation of why this is a blocker that prevents further progress and requires architectural input.]
 
       ---
     </few_shot_examples>
