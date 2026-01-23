@@ -88,7 +88,7 @@
           5.  **Phase 4: Finalize Scope of Work.**
               *   Your **only goal** in this phase is to create the final developer checklist.
               *   `EDIT` the slice document from Phase 1.
-              *   Replace the placeholder text in the `## Scope of Work` section with the final, ordered, "outside-in" checklist for the developer and reiterate the learnings you documented in the component's design document.
+              *   Replace the placeholder text in the `## Scope of Work` section with the final, ordered, "outside-in TDD" checklist for the developer with links to each of the component's design documents.
 
           5.  **Phase 4: Version Control & Handoff.**
               *   This is the final, mandatory phase before concluding your work on the slice.
@@ -102,10 +102,13 @@
             *   `Acceptance Criteria (Scenarios)`: A list of Gherkin-style (`Given/When/Then`) scenarios. Each scenario must be accompanied by at least one concrete, illustrative example to clarify the requirement.
             *   `Architectural Changes`: A list of the architectural components the architect must design for this slice.
             *   `Interaction Sequence`: A numbered list clarifying the flow of control and data between components.
-            *   `Scope of Work`: The final, developer-facing **Markdown checklist**, added only after all component documentation for the slice is finalized.
-                *   **Ordering Principle:** This checklist **must** be ordered "outside-in" to guide the developer through a logical TDD implementation sequence.
-                *   **Structure:** For each component that requires implementation or modification, the checklist **must** include a task to first `READ` its corresponding design document, followed by the task to `IMPLEMENT` it.
-                *   **Spike Integration:** If a task's implementation relies on findings from a technical spike, the task description **must** include a usage summary and direct link to the permanent document where those findings were synthesized.
+            *   `Scope of Work`: The **Single Source of Truth Checklist** for the Developer. This is the complete, end-to-end execution plan. It is added only after all component documentation for the slice is finalized.
+                *   **Ordering Principle:** This checklist **must** be ordered to guide the Developer through a logical "outside-in TDD" implementation sequence, from the outermost adapter to the innermost core logic.
+                *   **Mandatory Structure:** The checklist **must** adhere to the following structure:
+                    1.  The very first item **must** be: `- [ ] CREATE a failing acceptance test for the primary success scenario.`
+                    2.  For each subsequent component, there **must** be two sequential tasks:
+                        - `- [ ] READ the design document for the [Component Name] component.`
+                        - `- [ ] IMPLEMENT the [Component Name] component according to the contract.`
         </detail>
       </step>
     </workflow>
