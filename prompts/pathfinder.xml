@@ -211,7 +211,7 @@
       ````shell
       [The exact command to be executed]
       ````
-      `Expected Outcome:` [A precise prediction of the result, including exact output or error messages where possible.]
+      `Expected Outcome:` [A precise prediction of the result. If a test is expected to fail, specify the exact `AssertionError` or error message.]
       *Note on Command Execution:* You **must not** generate commands that rely on shell-specific logic for changing directories or setting environment variables.
       *   To run a command in a specific directory, you **must** use the `cwd` parameter. Do **not** use `cd ... && ...`.
       *   To set environment variables for a command, you **must** use the `env` map. Do **not** use `export VAR=...` or `VAR=... command`.

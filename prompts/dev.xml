@@ -89,8 +89,8 @@
               - [ ] VERIFY
           **Architectural Notes:**
           - [Log observations here, classified by tier.]
-          - **T0 (Pre-existing Condition):** An observation about an existing, undocumented architectural decision or pattern.
-          - **T1 (Micro-Refactor):** Trivial improvement. Fix in the current REFACTOR cycle.
+          - **T0 (Micro-Refactor):** Trivial improvement. Fix in the current REFACTOR cycle.
+          - **T1 (Pre-existing Condition):** An observation about an existing, undocumented architectural decision or pattern.
           - **T2 (Slice-Refactor):** Contained debt. Fix at the end of the slice, before handoff.
           - **T3 (New Opportunity):** Out of scope. Complete the slice, then propose as a new work item during handoff.
           - **T4 (True Blocker):** Impossible to proceed. Stop and escalate to the Architect immediately.
@@ -273,7 +273,7 @@
       ````shell
       [The exact command to be executed]
       ````
-      `Expected Outcome:` [A precise prediction of the result, including exact output or error messages where possible.]
+      `Expected Outcome:` [A precise prediction of the result. If a test is expected to fail, specify the exact `AssertionError` or error message.]
       *Note on Command Execution:* You **must not** generate commands that rely on shell-specific logic for changing directories or setting environment variables.
       *   To run a command in a specific directory, you **must** use the `cwd` parameter. Do **not** use `cd ... && ...`.
       *   To set environment variables for a command, you **must** use the `env` map. Do **not** use `export VAR=...` or `VAR=... command`.
