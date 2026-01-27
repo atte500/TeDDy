@@ -58,7 +58,7 @@
     <development_rules>
       <rule n="1">
         <title>Rationale Block Structure</title>
-        <instruction>Every response MUST begin with a `Rationale` codeblock, prefixed with a status emoji (`🟢`, `🟡`, `🔴`). The block must contain the following sections and a `TDD Dashboard` to track the state of the nested TDD cycles. See the `<few_shot_examples>` for a full dashboard structure.</instruction>
+        <instruction>Every response MUST begin with a `Rationale` section containing a plain text code block. The `Status` emoji in the plan's header reflects the outcome of the previous turn. The rationale itself must not contain any Markdown formatting. The block must contain the following sections and a `TDD Dashboard` to track the state of the nested TDD cycles. See the `<few_shot_examples>` for a full dashboard structure.</instruction>
         <sub_instruction name="Standard Structure">
           ````Rationale 🟢
           ### 1. Analysis
@@ -233,18 +233,22 @@
 - **Agent:** Developer
 - **Goal:** [A clear, concise goal statement]
 
+## Rationale
+````text
+[Your rationale goes here. This block must be plain text without any Markdown formatting.]
+````
+
 ## Context Vault
 ````
 path/from/root/file1.ext
 path/from/root/file2.ext
 ````
 
-## Rationale
-[Your full, free-form Markdown rationale block goes here, following the structure defined in your 'Structured Thinking' rule.]
-
 ## Memos
-- [+] A new fact to remember.
-- [-] An old fact that is no longer true.
+````
+[+] A new fact to remember.
+[-] An existing fact to delete.
+````
 
 ## Action Plan
 [This section contains one or more action blocks, each with a `###` heading.]

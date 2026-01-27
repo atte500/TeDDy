@@ -18,10 +18,10 @@ A plan is a single Markdown file with the following top-level structure:
 - **Agent:** ...
 ...
 
-## Context Vault
+## Rationale
 ...
 
-## Rationale
+## Context Vault
 ...
 
 ## Memos
@@ -56,7 +56,20 @@ To ensure links work correctly in local previews (like VSCode) while referencing
     ```
 -   **Parsing Rules:** The plan's title is the content of the `#` heading. The metadata is the bulleted list that immediately follows it. The parser should treat this list as key-value pairs.
 
-### 4.2. Context Vault
+### 4.2. Rationale
+
+-   **Purpose:** Contains the agent's reasoning, state, and thought process.
+-   **Format:**
+    ```markdown
+    ## Rationale
+    ````text
+    This section contains the agent's free-form thinking.
+    It is not meant for structured data, but for human-readable context.
+    ````
+    ```
+-   **Parsing Rules:** The content is the raw text within the fenced code block and is primarily for human consumption.
+
+### 4.3. Context Vault
 
 -   **Purpose:** Lists the file paths relevant to the current task.
 -   **Format:**
@@ -69,28 +82,19 @@ To ensure links work correctly in local previews (like VSCode) while referencing
     ```
 -   **Parsing Rules:** The parser should extract the content of the code block and treat each line as a separate file path.
 
-### 4.3. Memos (Optional)
+### 4.4. Memos (Optional)
 
 -   **Purpose:** Lists the proposed changes (creations and deletions) to the agent's long-term memory.
 -   **Format:**
     ```markdown
     ## Memos
-    - [+] A new fact to remember.
-    - [+] Another new fact.
-    - [-] An old fact that is no longer true.
+    ````
+    [+] A new fact to remember.
+    [+] Another new fact.
+    [-] An old fact that is no longer true.
+    ````
     ```
--   **Parsing Rules:** The parser should treat this as a list of change requests. Each list item must start with either `[+]` for creation or `[-]` for deletion. The text following the marker is the content of the memo.
-
-### 4.4. Rationale
-
--   **Purpose:** Contains the agent's reasoning, state, and thought process.
--   **Format:**
-    ```markdown
-    ## Rationale
-    1. **Observation:** Free-form Markdown content...
-    2. **Analysis:** More free-form Markdown...
-    ```
--   **Parsing Rules:** The content is free-form Markdown and is primarily for human consumption.
+-   **Parsing Rules:** The parser should treat the content of the code block as a list of change requests. Each line must start with either `[+]` for creation or `[-]` for deletion. The text following the marker is the content of the memo.
 
 ## 5. Action Blocks
 
@@ -122,7 +126,7 @@ All actions are located under the `## Action Plan` heading. Each action is defin
     - **Resource:** [docs/ARCHITECTURE.md](/docs/ARCHITECTURE.md)
     - **Description:** Read the current architectural conventions.
     ```
--   **Parsing Rules:** Extract `Resource` and `Description` from the metadata list.
+-   **Parsing Rules:** Extract `Resource` and `Description` from the metadata list. The value for `Resource` uses the root-relative link format (`[text](/destination)`); the parser must use the link's destination to get the path of the file or URL.
 
 ### 5.3. `EDIT`
 
@@ -236,18 +240,26 @@ The following is a complete, realistic example of a plan file from start to fini
 - **Agent:** Pathfinder
 - **Goal:** Research the concept of a "Finisher" agent and create a formal brief.
 
+## Rationale
+````text
+Observation: The user has requested a new "Finisher" agent role responsible for final cleanup, versioning, and handoff tasks. The exact responsibilities are not yet defined.
+Analysis: This requires a discovery process. I need to research existing patterns for this type of role and then synthesize the findings into a concrete proposal (a brief) for the user to approve. This follows the standard Pathfinder workflow of Why -> What -> How.
+Next Step:
+- Current Focus: Solution Space Exploration
+- Justification: I need to gather external information before I can propose a solution. The first step is to perform web research.
+````
+
 ## Context Vault
 ````
 docs/briefs/01-finisher-agent-brief.md
 prompts/pathfinder.xml
 ````
 
-## Rationale
-1. **Observation:** The user has requested a new "Finisher" agent role responsible for final cleanup, versioning, and handoff tasks. The exact responsibilities are not yet defined.
-2. **Analysis:** This requires a discovery process. I need to research existing patterns for this type of role and then synthesize the findings into a concrete proposal (a brief) for the user to approve. This follows the standard Pathfinder workflow of Why -> What -> How.
-3. **Next Step**
-   - **Current Focus:** Solution Space Exploration
-   - **Justification:** I need to gather external information before I can propose a solution. The first step is to perform web research.
+## Memos
+````
+[+] A new 'Finisher' agent role is being explored.
+[-] The 'Architect' agent is responsible for all handoffs.
+````
 
 ## Action Plan
 
