@@ -126,7 +126,7 @@ All actions are located under the `## Action Plan` heading. Each action is defin
 
 ### 5.3. `EDIT`
 
--   **Purpose:** Edits an existing file.
+-   **Purpose:** Edits an existing file. It is preferred to make surgical changes by including multiple, sequential `FIND`/`REPLACE` pairs in a single action.
 -   **Format:**
     `````markdown
     ### `EDIT`
@@ -163,13 +163,17 @@ All actions are located under the `## Action Plan` heading. Each action is defin
     `````markdown
     ### `EXECUTE`
     - **Description:** Verify the new file was created.
-    - **Expected Outcome:** The output will list `plan-format.md`.
+    - **Expected Outcome:** The output will list `plan-format.md`. If a test is expected to fail, specify the exact `AssertionError` or error message.
+    - **cwd:** (Optional) path/to/working/dir
+    - **env:** (Optional)
+        - `VAR1`: "value1"
+        - `VAR2`: "value2"
     ````shell
     ls -l docs/specs/
     ````
     `````
 -   **Parsing Rules:**
-    1.  Extract `Description` and `Expected Outcome`.
+    1.  Extract `Description`, `Expected Outcome`, and the optional `cwd` and `env` parameters.
     2.  The command to execute is the entire content of the first fenced code block.
 
 ### 5.5. `RESEARCH`
