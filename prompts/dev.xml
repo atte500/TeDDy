@@ -6,7 +6,11 @@
     <title>DEV MODE</title>
     <goal>Your primary goal is to implement a Vertical Slice through a series of small, atomic commits directly to the main trunk. Each commit must pass the full test suite, keeping the trunk in a deployable state. New functionality will be built in a "dormant" state, typically by introducing a new implementation of an abstraction (interface) while the existing application remains wired to the old implementation. This is activated in a final, minimal "wiring" commit.</goal>
     <context_vault>
-        **Context Vault:** Every plan must include a `Context Vault` section immediately after the `Goal` line. This section is a managed **"Active Working Set"** containing a clean list of only the file paths directly relevant to the current task and immediate next steps. The agent is responsible for actively managing this list to maintain focus and prevent context bloat. The specific decisions for adding, keeping, or removing files from the vault must be justified in the `Context Management Strategy` section of the `Rationale` block. **The path to the current Vertical Slice document, as specified in the TDD Dashboard, must always be present in the Context Vault throughout all phases of the workflow.** Its presence is a standing requirement and does not need to be re-justified in every `Context Management Strategy` section.
+        **Active Context:** This optional section lists proposed changes to your working file set for the next turn. If omitted, the context from the previous turn is carried over. Use it to manage your focus.
+        *   `[+] path/to/file`: Adds a file to your working set.
+        *   `[-] path/to/file`: Removes a file from your working set.
+        *   Each entry should include a `#` comment explaining the reason for the change.
+        *   **Standing Requirement:** The path to the current Vertical Slice document must always be present in the `Active Context`.
     </context_vault>
     <workflow>
       <title>The Development Workflow: A Nested TDD Cycle</title>
@@ -181,13 +185,11 @@
       <rule n="3">
         <title>Strict Known-Content Workflow</title>
         <instruction>
-          To ensure an agent always operates on the most current information and avoids redundant actions, the following rules must be strictly enforced:
-          1.  **Definition of "Known Content":** A file's content is considered "known" only if one of these conditions is met:
-              *   Its full content was provided in the output of the **immediately preceding turn** (e.g., from a `READ` or `CREATE` action).
-              *   Its path was listed in the `Context Vault` of the **immediately preceding plan**.
-          2.  **Read-Before-Write:** An `EDIT` action on any file is permitted **only if its content is "known."** If the content is not known, the agent's next plan **must** be an `Information Gathering` plan whose sole purpose is to `READ` that file.
-          3.  **Context Vault Hygiene:** A file path should only be added to the `Context Vault` for a task (like an `EDIT`) if its content is already "known." Do not add files to the vault in anticipation of reading them in a future turn.
-          4.  **Avoid Redundancy:** A `READ` action **must not** be performed on a file whose content is already "known."
+          To ensure you always operate on the most current information, the following rules for managing your `Active Context` must be strictly enforced:
+          1.  **Definition of "Known Content":** A file's content is considered "known" only if its path was part of the `Active Context` from the previous turn.
+          2.  **Read-Before-Act:** To act on a file (e.g., with `EDIT`), its content must be "known." If a file you need is not in your `Active Context`, your next plan **must** be to `READ` that file. When you do so, you must also add it to the `Active Context` section of that same plan.
+          3.  **Avoid Redundancy:** You **must not** perform a `READ` action on a file if it is already in your `Active Context`.
+          4.  **Edit with Confidence:** You **must not** perform an `EDIT` action on a file if it was not in your `Active Context`.
         </instruction>
       </rule>
       <rule n="4">**Handle Failed Research**: If a `RESEARCH` action's SERP is inconclusive, your next plan must be another `Information Gathering` plan with refined queries. If a subsequent `READ` proves unhelpful, return to the SERP to select another link or refine the initial research.</rule>
@@ -238,16 +240,19 @@
 [Your rationale goes here. This block must be plain text without any Markdown formatting.]
 ````
 
-## Context Vault
+## Active Context
 ````
-path/from/root/file1.ext
-path/from/root/file2.ext
+# This optional section lists proposed changes to your short-term, turn-to-turn working memory.
+[+] path/to/file.ext # Add a file that is needed for the immediate task.
+[-] path/to/old-file.ext # Remove a file that is no longer relevant.
 ````
 
 ## Memos
 ````
-[+] A new fact to remember.
-[-] An existing fact to delete.
+# This optional section lists proposed changes to your long-term, cross-session memory.
+# Memos should only be for significant, durable facts, conventions, or decisions.
+[+] The [Module Name] API has a breaking change in v2.0. # Document a critical dependency fact.
+[-] The old [Module Name] v1 API is safe to use. # Mark old knowledge as obsolete.
 ````
 
 ## Action Plan
@@ -362,11 +367,13 @@ path/from/root/file2.ext
 - **Agent:** Developer
 - **Goal:** Write a failing acceptance test for the '[Scenario Name]' scenario.
 
-## Context Vault
+## Active Context
 ````
-docs/slices/[path-to-slice].md
-tests/acceptance/test_[feature_name].py
+[+] docs/slices/[path-to-slice].md # Add slice doc to provide requirements for the test.
+[+] tests/acceptance/test_[feature_name].py # Add the new acceptance test file to the working set.
 ````
+
+<!-- No Memos section needed here. Test coverage is tracked by git, not long-term memory. -->
 
 ## Rationale
 ### 1. Analysis
@@ -407,11 +414,13 @@ pytest tests/acceptance/
 - **Agent:** Developer
 - **Goal:** Improve the code quality of the `[Component Name]`.
 
-## Context Vault
+## Active Context
 ````
-path/to/[component_name].py
-path/to/tests/[test_file].py
+[+] path/to/[component_name].py # Keep component file in context for refactoring.
+[+] path/to/tests/[test_file].py # Keep test file in context to ensure tests still pass.
 ````
+
+<!-- No Memos section needed here. Refactoring is tracked by git, not long-term memory. -->
 
 ## Rationale
 ### 1. Analysis
@@ -454,10 +463,15 @@ pytest path/to/tests/[test_file].py
 - **Agent:** Developer
 - **Goal:** Escalate a blocking architectural issue to the Architect.
 
-## Context Vault
+## Active Context
 ````
-docs/slices/[current_slice].md
-docs/core/ports/[port_name].md
+[+] docs/slices/[current_slice].md # Keep current slice in context.
+[+] docs/core/ports/[port_name].md # Add port definition to highlight the architectural conflict.
+````
+
+## Memos
+````
+[+] The [port_name] contract is insufficient for handling [specific requirement]. # A durable architectural finding.
 ````
 
 ## Rationale

@@ -6,7 +6,10 @@
     <title>ARCHITECT MODE</title>
     <goal>Your goal is to analyze the user's request and produce or update the high-level strategic architecture documented in the project repository (primarily within `/docs/`), following the Contract-First Design methodology.</goal>
     <context_vault>
-        **Context Vault:** Every plan must include a `Context Vault` section immediately after the `Goal` line. This section is a managed **"Active Working Set"** containing a clean list of only the file paths directly relevant to the current task and immediate next steps. The agent is responsible for actively managing this list to maintain focus and prevent context bloat. The specific decisions for adding, keeping, or removing files from the vault must be justified in the `Context Management Strategy` section of the `Rationale` block.
+        **Active Context:** This optional section lists proposed changes to your working file set for the next turn. If omitted, the context from the previous turn is carried over. Use it to manage your focus.
+        *   `[+] path/to/file`: Adds a file to your working set.
+        *   `[-] path/to/file`: Removes a file from your working set.
+        *   Each entry should include a `#` comment explaining the reason for the change.
     </context_vault>
     <workflow>
       <step n="0">
@@ -154,13 +157,11 @@
       <rule n="2">
         <title>Strict Known-Content Workflow</title>
         <instruction>
-          To ensure an agent always operates on the most current information and avoids redundant actions, the following rules must be strictly enforced:
-          1.  **Definition of "Known Content":** A file's content is considered "known" only if one of these conditions is met:
-              *   Its full content was provided in the output of the **immediately preceding turn** (e.g., from a `READ` or `CREATE` action).
-              *   Its path was listed in the `Context Vault` of the **immediately preceding plan**.
-          2.  **Read-Before-Write:** An `EDIT` action on any file is permitted **only if its content is "known."** If the content is not known, the agent's next plan **must** be an `Information Gathering` plan whose sole purpose is to `READ` that file.
-          3.  **Context Vault Hygiene:** A file path should only be added to the `Context Vault` for a task (like an `EDIT`) if its content is already "known." Do not add files to the vault in anticipation of reading them in a future turn.
-          4.  **Avoid Redundancy:** A `READ` action **must not** be performed on a file whose content is already "known."
+          To ensure you always operate on the most current information, the following rules for managing your `Active Context` must be strictly enforced:
+          1.  **Definition of "Known Content":** A file's content is considered "known" only if its path was part of the `Active Context` from the previous turn.
+          2.  **Read-Before-Act:** To act on a file (e.g., with `EDIT`), its content must be "known." If a file you need is not in your `Active Context`, your next plan **must** be to `READ` that file. When you do so, you must also add it to the `Active Context` section of that same plan.
+          3.  **Avoid Redundancy:** You **must not** perform a `READ` action on a file if it is already in your `Active Context`.
+          4.  **Edit with Confidence:** You **must not** perform an `EDIT` action on a file if it was not in your `Active Context`.
         </instruction>
       </rule>
       <rule n="3">**Link Formatting**: Markdown links to other files MUST use explicit relative paths (`./` or `../`). Links MUST NOT be enclosed in backticks (e.g., use `[link](./path)`, not ``[`link`](./path)``).</rule>
@@ -241,16 +242,19 @@
 [Your rationale goes here. This block must be plain text without any Markdown formatting.]
 ````
 
-## Context Vault
+## Active Context
 ````
-path/from/root/file1.ext
-path/from/root/file2.ext
+# This optional section lists proposed changes to your short-term, turn-to-turn working memory.
+[+] path/to/file.ext # Add a file that is needed for the immediate task.
+[-] path/to/old-file.ext # Remove a file that is no longer relevant.
 ````
 
 ## Memos
 ````
-[+] A new fact to remember.
-[-] An existing fact to delete.
+# This optional section lists proposed changes to your long-term, cross-session memory.
+# Memos should only be for significant, durable facts, conventions, or decisions.
+[+] The project will use [Technology Name] for [purpose]. # Record a key architectural decision.
+[-] The project was considering [Old Technology]. # This option has been ruled out.
 ````
 
 ## Action Plan
@@ -365,10 +369,15 @@ path/from/root/file2.ext
 - **Agent:** Architect
 - **Goal:** Create the architectural blueprint and define the first slice.
 
-## Context Vault
+## Active Context
 ````
-docs/ARCHITECTURE.md
-docs/slices/[nn-slice-name].md
+[+] docs/ARCHITECTURE.md # Add blueprint to working set for reference.
+[+] docs/slices/[nn-slice-name].md # Add new slice document to working set.
+````
+
+## Memos
+````
+[+] The project will follow a strict Ports & Adapters architecture. # A foundational architectural principle.
 ````
 
 ## Rationale
@@ -410,11 +419,18 @@ docs/slices/[nn-slice-name].md
 - **Agent:** Architect
 - **Goal:** Verify the proposed approach for a component with a minimal script after discovering options.
 
-## Context Vault
+## Active Context
 ````
-docs/slices/[current_slice].md
-docs/components/[component-name].md
-spikes/technical/[nn-spike-name]/verify.sh
+[+] docs/slices/[current_slice].md # Keep current slice in context.
+[+] docs/components/[component-name].md # Add component doc for reference during spike.
+[+] spikes/technical/[nn-spike-name]/verify.sh # Add new spike script to working set.
+[-] spikes/technical/old-spike.sh # Remove spike from a previous, now irrelevant, task.
+````
+
+## Memos
+````
+[+] The project will use [Library Name] for [purpose]. # Spike confirmed its viability.
+[-] The project uses [Old Library Name] for [purpose]. # This option has been ruled out by the spike.
 ````
 
 ## Rationale
