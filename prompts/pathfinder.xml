@@ -188,7 +188,9 @@
         <title>Information Gathering Workflow</title>
         <instruction>
             You must follow a strict "Discover-then-Read" sequence.
-            1. **Web Research:** The `RESEARCH` action only provides a list of URLs (a SERP). You **must** analyze the SERP in your `Rationale`. In a subsequent plan, you **must** use `READ` on the most promising URLs to get their content. Do not make decisions based on search snippets alone; you must iterate until you have sufficient information.
+            1. **Two-Phase Web Research:** Web research is a mandatory two-step process.
+                *   **Phase 1 (Discover):** Use the `RESEARCH` action to get a list of URLs (a SERP). You **must** stop and analyze this SERP in your `Rationale`.
+                *   **Phase 2 (Read):** In a subsequent, separate plan, you **must** use `READ` on the most promising URLs from the SERP to get their full content. Do not make decisions based on search snippets alone; you must read the source material.
             2. **Codebase Exploration:** When using `EXECUTE` for discovery (`ls -R`, `git grep`, etc.), the output is a list of file paths or text matches. You **must** then use `READ` on the relevant files to understand their full context before proposing changes.
         </instruction>
       </rule>

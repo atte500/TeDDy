@@ -131,14 +131,18 @@ All actions are located under the `## Action Plan` heading. Each action is defin
 
 ### 5.2. `READ`
 
--   **Purpose:** Reads a file or URL.
+-   **Purpose:** Reads the content of a local file or a remote URL.
 -   **Format:**
-    ```markdown
+    ````markdown
     ### `READ`
-    - **Resource:** [docs/ARCHITECTURE.md](/docs/ARCHITECTURE.md)
+    - **Resource:** [docs/ARCHITECTURE.md](/docs/ARCHITECTURE.md) or https://example.com/docs
     - **Description:** Read the current architectural conventions.
-    ```
--   **Parsing Rules:** Extract `Resource` and `Description` from the metadata list. The value for `Resource` uses the root-relative link format (`[text](/destination)`); the parser must use the link's destination to get the path of the file or URL.
+    ````
+-   **Parsing Rules:**
+    1.  Extract `Resource` and `Description` from the metadata list.
+    2.  The value for `Resource` can be either a root-relative Markdown link (`[text](/destination)`) or a plain URL string.
+    3.  If it is a Markdown link, the parser **must** use the link's destination (e.g., `/docs/ARCHITECTURE.md`) as the path.
+    4.  If it is a plain string starting with `http`, the parser **must** treat it as a URL.
 
 ### 5.3. `EDIT`
 
