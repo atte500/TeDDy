@@ -43,7 +43,21 @@ Implementation must be done incrementally through the following dependency-aware
     -   Implement the `new`, `plan`, and `branch` commands, orchestrating calls to the new services.
 
 ---
-### **Slice 2: Core Workflow & Enhanced Interactivity**
+### **Slice 2: Context Payload Generation**
+**Goal:** Implement the service responsible for generating the AI's context payload and a new session-aware `context` command.
+
+-   **[ ] Task: Implement `ContextPayloadBuilder` Service:**
+    -   Create a new service responsible for generating the complete context payload string.
+    -   The service must orchestrate calls to `ISessionManager`, `IFileSystemManager`, and `IRepoTreeGenerator` to gather all required information (system info, tree, memos, file contents).
+    -   The output **must** strictly adhere to the format defined in the [Context Payload Format Specification](/docs/specs/context-payload-format.md).
+-   **[ ] Task: Implement Session-Aware `context` Command:**
+    -   Create a new top-level `context` command.
+    -   This command will use the `ContextPayloadBuilder` service to generate the context for the current session and print it to `stdout`.
+-   **[ ] Task: Integrate into `plan` and `resume` Commands:**
+    -   Update the `plan` and `resume` commands to use the `ContextPayloadBuilder` service to generate the payload that is sent to the LLM.
+
+---
+### **Slice 3: Core Workflow & Enhanced Interactivity**
 **Goal:** Implement the main `resume` loop and the improved user prompts.
 
 -   **[ ] Task: Implement Smart `resume` Command:**
@@ -54,7 +68,7 @@ Implementation must be done incrementally through the following dependency-aware
     -   Update the prompt-building logic to show a cleaner, summarized view of each action.
 
 ---
-### **Slice 3: Action Reliability & Pre-validation**
+### **Slice 4: Action Reliability & Pre-validation**
 **Goal:** Eliminate the "approve-then-fail" problem by implementing a pre-flight check.
 
 -   **[ ] Task: Implement "Dry Run" Pre-validation:**
@@ -63,7 +77,7 @@ Implementation must be done incrementally through the following dependency-aware
     -   Enrich custom file system exceptions to include file content at the moment of failure.
 
 ---
-### **Slice 4: DX Enhancements & Bug Fixes**
+### **Slice 5: DX Enhancements & Bug Fixes**
 **Goal:** Improve the developer experience and fix legacy bugs.
 
 -   **[ ] Task: Implement File-Based Previews:**
@@ -78,7 +92,7 @@ Implementation must be done incrementally through the following dependency-aware
     -   Add the optional `description` field to the `ActionLog` model and ensure it's populated by the `ActionDispatcher`.
 
 ---
-### **Slice 5: Markdown Reporting & Finalization**
+### **Slice 6: Markdown Reporting & Finalization**
 **Goal:** Complete the transition to the new Markdown-first workflow.
 
 -   **[ ] Task: Implement Markdown Report Formatter:**

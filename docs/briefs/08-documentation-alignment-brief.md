@@ -32,7 +32,7 @@ This brief will be implemented in two distinct vertical slices.
     -   Explain the new `.teddy/sessions` directory structure and its purpose.
     -   Describe the new primary workflow centered around the `teddy new` and `teddy resume` commands.
     -   Update the "Installation & Usage" guide to reflect the flattened project structure (i.e., no more `poetry -C packages/executor ...`).
--   **[ ] Task: Update Command Reference:** Replace the old command reference with the new, flat command structure: `new`, `plan`, `resume`, `branch`, and the session-unaware `execute`.
+-   **[ ] Task: Update Command Reference:** Replace the old command reference with the new, flat command structure: `new`, `plan`, `resume`, `branch`, `context`, and the session-unaware `execute`. Describe the new session-aware behavior of the `context` command.
 -   **[ ] Task: Update Action Reference:** Rename the "YAML Action Reference" to simply "Action Reference". State that plans are now authored in Markdown and link to `ARCHITECTURE.md` for the detailed specification.
 -   **[ ] Task: Update Roadmap:** Modify the project roadmap to reflect that the "Interactive Session Workflow" is now complete.
 
@@ -43,6 +43,7 @@ This brief will be implemented in two distinct vertical slices.
 -   **[ ] Task: Update Setup & Conventions:** Revise all setup instructions, commands, and file paths to align with the flattened project structure. The `poetry -C` convention is obsolete and must be removed.
 -   **[ ] Task: Update Component & Boundary Map:** Add the new services and ports that were introduced to support the interactive workflow:
     -   `SessionManager` Service (`ISessionManager`, `LocalSessionManagerAdapter`)
+    -   `ContextPayloadBuilder` Service
     -   `ConfigService`
     -   `ILlmClient` Port & `LiteLLMAdapter`
     -   `MarkdownReportFormatter`
