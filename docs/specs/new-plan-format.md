@@ -21,8 +21,8 @@ A plan is a single Markdown file with the following top-level structure:
 ## Rationale
 ...
 
-## Context Vault
-...
+## Active Context
+... (Optional: Contains a list of context changes)
 
 ## Memos
 ... (Optional: Contains a list of memory changes)
@@ -69,18 +69,21 @@ To ensure links work correctly in local previews (like VSCode) while referencing
     ```
 -   **Parsing Rules:** The content is the raw text within the fenced code block and is primarily for human consumption.
 
-### 4.3. Context Vault
+### 4.3. Active Context (Optional)
 
--   **Purpose:** Lists the file paths relevant to the current task.
+-   **Purpose:** Lists the proposed *changes* (additions and deletions) to the agent's working file set for the next turn. If this section is omitted, the context from the previous turn is carried over unchanged.
 -   **Format:**
     ```markdown
-    ## Context Vault
+    ## Active Context
     ````
-    docs/specs/plan-format.md
-    prompts/architect.xml
+    [+] docs/specs/new-feature.md   # Add the new spec to the working set for editing.
+    [-] prompts/old-agent.xml      # This file is no longer relevant to the current task.
     ````
     ```
--   **Parsing Rules:** The parser should extract the content of the code block and treat each line as a separate file path.
+-   **Parsing Rules:** The parser should treat the content of the code block as a list of change requests.
+    -   Each line must start with either `[+]` for addition or `[-]` for deletion.
+    -   The text following the marker is the file path.
+    -   Any text following a `#` character on a line is considered a comment and should be ignored by the parser, but may be used by the presentation layer.
 
 ### 4.4. Memos (Optional)
 
@@ -89,12 +92,13 @@ To ensure links work correctly in local previews (like VSCode) while referencing
     ```markdown
     ## Memos
     ````
-    [+] A new fact to remember.
-    [+] Another new fact.
-    [-] An old fact that is no longer true.
+    [+] A new fact to remember. # A new global convention was established.
+    [-] An old fact that is no longer true. # This rule was superseded.
     ````
     ```
--   **Parsing Rules:** The parser should treat the content of the code block as a list of change requests. Each line must start with either `[+]` for creation or `[-]` for deletion. The text following the marker is the content of the memo.
+-   **Parsing Rules:** The parser should treat the content of the code block as a list of change requests.
+    -   Each line must start with either `[+]` for creation or `[-]` for deletion. The text following the marker is the content of the memo.
+    -   Any text following a `#` character on a line is considered a comment and should be ignored by the parser, but may be used by the presentation layer.
 
 ## 5. Action Blocks
 
@@ -249,10 +253,9 @@ Next Step:
 - Justification: I need to gather external information before I can propose a solution. The first step is to perform web research.
 ````
 
-## Context Vault
+## Active Context
 ````
-docs/briefs/01-finisher-agent-brief.md
-prompts/pathfinder.xml
+[+] docs/briefs/01-finisher-agent-brief.md # Add the new brief to the working set.
 ````
 
 ## Memos
