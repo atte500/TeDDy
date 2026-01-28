@@ -6,7 +6,7 @@ The strategic goal is to evolve `teddy` into a robust, file-based front-end for 
 
 ### Core System Requirements:
 -   **New CLI Workflow:** Implement a new flat command structure (`new`, `plan`, `resume`, `branch`, `execute`) to manage the session lifecycle.
--   **Enhanced Interactivity:** Introduce a `y/n/yolo` whole-plan approval prompt and provide unified diffs for complex `EDIT` actions.
+-   **Enhanced Interactivity:** Introduce a `(a)pprove all / (m)odify / (s)kip / (q)uit` whole-plan approval prompt and provide unified diffs for complex `EDIT` actions.
 -   **Markdown-First Reporting:** The `execute` and `resume` commands must generate a `report.md` in Markdown format.
 -   **Specification Alignment:** Align the codebase with the spec (e.g., creating `global.context`).
 
@@ -21,6 +21,7 @@ The implementation will be centered around a new `SessionManager` service and a 
 
 -   **`SessionManager` Service:** A new service will encapsulate all filesystem interactions related to sessions (creating directories/files, finding the latest turn, checking state).
 -   **Smart `resume` Command:** A new `resume` command will act as the primary entry point for continuing a session, intelligently choosing to either execute an existing plan or generate a new one.
+-   **Interactive TUI:** For granular control, the `(m)odify` path of the `resume` command will launch a full-screen interactive checklist built with the `textual` library, as validated by a technical spike.
 -   **Decoupled `execute` Command:** The `execute` command will be repurposed as a simple, session-unaware utility for running one-off plans from a file or clipboard.
 
 ## 4. Implementation Analysis (The "How")
@@ -62,8 +63,11 @@ Implementation must be done incrementally through the following dependency-aware
 
 -   **[ ] Task: Implement Smart `resume` Command:**
     -   Implement the logic to check the session state and delegate to either the planning or execution phase.
--   **[ ] Task: Implement `y/n/yolo` Prompt:**
+-   **[ ] Task: Implement `(a)pprove all / (m)odify / (s)kip / (q)uit` Prompt:**
     -   Enhance `ConsoleInteractorAdapter` and `ExecutionOrchestrator` to support the whole-plan approval workflow.
+-   **[ ] Task: Implement Tier 2 Interactive TUI:**
+    -   Add `textual` as a dependency.
+    -   Create the Textual-based interactive checklist for the `(m)odify` option in the `resume` command.
 -   **[ ] Task: Implement Simplified Approval Prompts:**
     -   Update the prompt-building logic to show a cleaner, summarized view of each action.
 

@@ -186,6 +186,9 @@ The primary "continue" command for a session. It intelligently determines the ne
         -   `CHAT_WITH_USER`: Displays the full message that will be sent to the user.
         -   `INVOKE`: Displays the target agent and the full handoff message.
 
+<!-- Implementation Note -->
+> A technical spike has validated that this interactive checklist will be implemented using the `textual` TUI framework, as it provides the necessary event loop and widget toolkit for this level of interactivity.
+
 ---
 
 ## 6. Configuration (`.teddy/config.yaml`)
