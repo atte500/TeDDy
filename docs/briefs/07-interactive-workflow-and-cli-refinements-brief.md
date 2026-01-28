@@ -10,7 +10,12 @@ The strategic goal is to evolve `teddy` into a robust, file-based front-end for 
 -   **Markdown-First Reporting:** The `execute` and `resume` commands must generate a `report.md` in Markdown format.
 -   **Specification Alignment:** Align the codebase with the spec (e.g., creating `global.context`).
 
-## 2. Architectural Approach (The "What")
+## 2. Referenced Specifications
+-   [Interactive Session Workflow Specification](/docs/specs/interactive-session-workflow.md)
+-   [Core Philosophy](/docs/specs/core-philosophy.md)
+-   [Report Format Specification](/docs/specs/report-format.md)
+
+## 3. Proposed Solution (The "What")
 
 The implementation will be centered around a new `SessionManager` service and a refactoring of the CLI commands in `main.py`. The new commands will be top-level, reflecting that the session workflow is the primary mode of interaction.
 
@@ -18,28 +23,16 @@ The implementation will be centered around a new `SessionManager` service and a 
 -   **Smart `resume` Command:** A new `resume` command will act as the primary entry point for continuing a session, intelligently choosing to either execute an existing plan or generate a new one.
 -   **Decoupled `execute` Command:** The `execute` command will be repurposed as a simple, session-unaware utility for running one-off plans from a file or clipboard.
 
-## 3. Key Architectural Considerations & Slices (The "How")
+## 4. Implementation Analysis (The "How")
 
-This is a large-scale initiative that consolidates the legacy `05-cli-refinements` and `06-interactive-session-workflow` briefs into a single, cohesive plan. Implementation must be done incrementally through the following dependency-aware vertical slices.
+This brief follows the foundational work in the `04-project-restructuring-brief.md` and `05-markdown-parser-brief.md`. It assumes the project structure has been flattened and the Markdown parser is available.
 
----
-### **Slice 1: Project Restructuring & Foundational Services**
-**Goal:** Prepare the codebase for the new workflow and establish core services.
+Implementation must be done incrementally through the following dependency-aware vertical slices.
 
--   **[ ] Task: Restructure Repository:**
-    -   Move all contents of `packages/executor/` to the project root.
-    -   Delete the obsolete `packages/tui/` directory.
-    -   Update all imports, `pyproject.toml`, and CI scripts to reflect the new structure.
--   **[ ] Task: Implement `ConfigService`:**
-    -   Create a service to read settings from `.teddy/config.yaml` as the primary source, falling back to environment variables. This will manage settings like `TEDDY_DIFF_TOOL` and `open_after_action`.
--   **[ ] Task: Implement `ILlmClient` Port:**
-    -   Add `litellm` as a dependency.
-    -   Define an `ILlmClient` outbound port.
-    -   Create a `LiteLLMAdapter` that implements the port.
-    -   Wire up the adapter in the `main.py` composition root.
+## 5. Vertical Slices
 
 ---
-### **Slice 2: Session Scaffolding & Core Commands**
+### **Slice 1: Session Scaffolding & Core Commands**
 **Goal:** Implement the basic file-based session management.
 
 -   **[ ] Task: Implement `SessionManager` Service:**
@@ -50,7 +43,7 @@ This is a large-scale initiative that consolidates the legacy `05-cli-refinement
     -   Implement the `new`, `plan`, and `branch` commands, orchestrating calls to the new services.
 
 ---
-### **Slice 3: Core Workflow & Enhanced Interactivity**
+### **Slice 2: Core Workflow & Enhanced Interactivity**
 **Goal:** Implement the main `resume` loop and the improved user prompts.
 
 -   **[ ] Task: Implement Smart `resume` Command:**
@@ -61,7 +54,7 @@ This is a large-scale initiative that consolidates the legacy `05-cli-refinement
     -   Update the prompt-building logic to show a cleaner, summarized view of each action.
 
 ---
-### **Slice 4: Action Reliability & Pre-validation**
+### **Slice 3: Action Reliability & Pre-validation**
 **Goal:** Eliminate the "approve-then-fail" problem by implementing a pre-flight check.
 
 -   **[ ] Task: Implement "Dry Run" Pre-validation:**
@@ -70,7 +63,7 @@ This is a large-scale initiative that consolidates the legacy `05-cli-refinement
     -   Enrich custom file system exceptions to include file content at the moment of failure.
 
 ---
-### **Slice 5: DX Enhancements & Bug Fixes**
+### **Slice 4: DX Enhancements & Bug Fixes**
 **Goal:** Improve the developer experience and fix legacy bugs.
 
 -   **[ ] Task: Implement File-Based Previews:**
@@ -85,12 +78,11 @@ This is a large-scale initiative that consolidates the legacy `05-cli-refinement
     -   Add the optional `description` field to the `ActionLog` model and ensure it's populated by the `ActionDispatcher`.
 
 ---
-### **Slice 6: Markdown Reporting & Finalization**
+### **Slice 5: Markdown Reporting & Finalization**
 **Goal:** Complete the transition to the new Markdown-first workflow.
 
 -   **[ ] Task: Implement Markdown Report Formatter:**
     -   Create a `MarkdownReportFormatter` service to convert the `ExecutionReport` object into a Markdown string.
+    -   The output **must** strictly adhere to the format defined in the [Report Format Specification](/docs/specs/report-format.md).
     -   Update the `resume` and `execute` commands to use this new formatter.
     -   Ensure the `RESEARCH` action output includes the required hint.
--   **[ ] Task: Deprecate Legacy Logic:**
-    -   The old YAML parsing logic for bug fixes (e.g., handling colons) can now be deprecated in favor of the new Markdown parser.

@@ -6,13 +6,20 @@ The strategic goal is to align the project's core documentation (`README.md` and
 
 This work is critical for maintaining project health, ensuring future development is consistent with the new standards, and providing a clear, accurate guide for users and contributors.
 
-## 2. Architectural Approach (The "What")
+## 2. Referenced Specifications
+-   [Core Philosophy](/docs/specs/core-philosophy.md)
+-   [Report Format Specification](/docs/specs/report-format.md)
+-   [Architectural Brief: Project Restructuring & Foundations](/docs/briefs/05-project-restructuring-brief.md)
+-   [Architectural Brief: Markdown Plan Parser](/docs/briefs/06-markdown-parser-brief.md)
+-   [Architectural Brief: Interactive Workflow & CLI Refinements](/docs/briefs/07-interactive-workflow-and-cli-refinements-brief.md)
+
+## 3. Proposed Solution (The "What")
 
 This is a documentation-centric task. The approach is to systematically refactor `README.md` and `ARCHITECTURE.md` to remove obsolete information and integrate the concepts, commands, and components from the new session-based workflow.
 
 The work will be divided into two main slices, one for each document, to ensure a focused and thorough update.
 
-## 3. Implementation Slices (The "How")
+## 4. Vertical Slices
 
 This brief will be implemented in two distinct vertical slices.
 
@@ -42,4 +49,5 @@ This brief will be implemented in two distinct vertical slices.
 -   **[ ] Task: Rewrite Key Architectural Decisions (ADRs):** This section requires a major overhaul.
     -   **Remove Obsolete ADRs:** The decisions related to the old plan format and execution model are no longer relevant (e.g., "Separation of I/O Concerns," "Test Plan Injection," "Context Configuration").
     -   **Add New ADRs:** Document the new foundational principles: "File-Based Session Management," "Markdown-First Plan & Report Format," "Cascading Context (`global.context`, `session.context`)", and "Dry-Run Pre-validation for Actions".
--   **[ ] Task: Replace Plan Specification:** The entire "YAML Plan Specification" section must be removed and replaced with a new "Markdown Plan Specification" section. This section should provide a concise summary of the `plan.md` format and link to the canonical spec in `docs/specs/new-plan-format.md` for full details.
+        - The "Markdown-First Plan & Report Format" ADR should link to both the [New Plan Format Specification](/docs/specs/new-plan-format.md) and the [Report Format Specification](/docs/specs/report-format.md).
+-   [ ] **Task: Replace Plan Specification:** The entire "YAML Plan Specification" section must be removed and replaced with a new "Markdown Plan Specification" section. This section should provide a concise summary of the `plan.md` format and link to the canonical spec in `docs/specs/new-plan-format.md` for full details.
