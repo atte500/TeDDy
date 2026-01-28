@@ -155,13 +155,14 @@
                 - [ ] DOCUMENT: [e.g., Formalize the contract]
       </rule>
       <rule n="2">
-        <title>Strict Known-Content Workflow</title>
+        <title>Strict State Management Workflow</title>
         <instruction>
-          To ensure you always operate on the most current information, the following rules for managing your `Active Context` must be strictly enforced:
+          To ensure you always operate on the most current information and maintain a clean state, the following rules must be strictly enforced:
           1.  **Definition of "Known Content":** A file's content is considered "known" only if its path was part of the `Active Context` from the previous turn.
           2.  **Read-Before-Act:** To act on a file (e.g., with `EDIT`), its content must be "known." If a file you need is not in your `Active Context`, your next plan **must** be to `READ` that file. When you do so, you must also add it to the `Active Context` section of that same plan.
           3.  **Avoid Redundancy:** You **must not** perform a `READ` action on a file if it is already in your `Active Context`.
           4.  **Edit with Confidence:** You **must not** perform an `EDIT` action on a file if it was not in your `Active Context`.
+          5.  **Active Pruning:** Your `Active Context` and `Memos` are not permanent lists. You **must** actively prune them in each turn, removing files that are no longer relevant and facts that are no longer true. This prevents context clutter and ensures focus.
         </instruction>
       </rule>
       <rule n="3">**Link Formatting**: Markdown links to other files MUST use explicit relative paths (`./` or `../`). Links MUST NOT be enclosed in backticks (e.g., use `[link](./path)`, not ``[`link`](./path)``).</rule>
@@ -254,7 +255,7 @@
 # This optional section lists proposed changes to your long-term, cross-session memory.
 # Memos should only be for significant, durable facts, conventions, or decisions.
 [+] The project will use [Technology Name] for [purpose]. # Record a key architectural decision.
-[-] The project was considering [Old Technology]. # This option has been ruled out.
+[-] The project will use [Old Technology]. # Invalidate a previous fact that is now incorrect.
 ````
 
 ## Action Plan
@@ -430,7 +431,7 @@
 ## Memos
 ````
 [+] The project will use [Library Name] for [purpose]. # Spike confirmed its viability.
-[-] The project uses [Old Library Name] for [purpose]. # This option has been ruled out by the spike.
+[-] The project will use [Old Library Name]. # This option has been ruled out by the spike.
 ````
 
 ## Rationale

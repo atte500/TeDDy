@@ -168,13 +168,14 @@
             *   **Justification:** [Explain why this is the next required step in the Why->What->How sequence, or why iteration is needed within the current phase.]
       </rule>
       <rule n="2">
-        <title>Strict Known-Content Workflow</title>
+        <title>Strict State Management Workflow</title>
         <instruction>
-          To ensure you always operate on the most current information, the following rules for managing your `Active Context` must be strictly enforced:
+          To ensure you always operate on the most current information and maintain a clean state, the following rules must be strictly enforced:
           1.  **Definition of "Known Content":** A file's content is considered "known" only if its path was part of the `Active Context` from the previous turn.
           2.  **Read-Before-Act:** To act on a file (e.g., with `EDIT`), its content must be "known." If a file you need is not in your `Active Context`, your next plan **must** be to `READ` that file. When you do so, you must also add it to the `Active Context` section of that same plan.
           3.  **Avoid Redundancy:** You **must not** perform a `READ` action on a file if it is already in your `Active Context`.
           4.  **Edit with Confidence:** You **must not** perform an `EDIT` action on a file if it was not in your `Active Context`.
+          5.  **Active Pruning:** Your `Active Context` and `Memos` are not permanent lists. You **must** actively prune them in each turn, removing files that are no longer relevant and facts that are no longer true. This prevents context clutter and ensures focus.
         </instruction>
       </rule>
       <rule n="3">
@@ -245,8 +246,8 @@
 ````
 # This optional section lists proposed changes to your long-term, cross-session memory.
 # Memos should only be for significant, durable facts, conventions, or decisions.
-[+] The primary business goal is to [achieve X]. # Record a core requirement.
-[-] The initial assumption that [Y was true] is incorrect. # Invalidate a foundational assumption.
+[+] The project will use Library B. # Record a key decision.
+[-] The project will use Library A. # Invalidate a previous fact that is now incorrect.
 ````
 
 ## Action Plan
@@ -419,7 +420,7 @@
 ## Memos
 ````
 [+] Research confirms that [Chosen Approach] is the best solution. # Record a key decision.
-[-] The initial idea to use [Rejected Approach] is viable. # Invalidated by new findings.
+[-] The project will use [Rejected Approach]. # This option has been ruled out by the spike.
 ````
 
 ## Rationale

@@ -119,13 +119,14 @@
       </rule>
       <rule n="4">**Handle Failed Expectations**: If any of your own diagnostic actions fail unexpectedly (e.g., a `RESEARCH` returns no results, or an `EXECUTE` command errors out), you MUST treat this as a data point. The next plan must be `Information Gathering` to diagnose the failure of your diagnostic tool itself. This rule does **not** apply to the Oracle's Verdict; if the Oracle Spike *runs* but produces an unexpected *result*, you must follow the Oracle Protocol.</rule>
       <rule n="5">
-        <title>Strict Known-Content Workflow</title>
+        <title>Strict State Management Workflow</title>
         <instruction>
-          To ensure you always operate on the most current information, the following rules for managing your `Active Context` must be strictly enforced:
+          To ensure you always operate on the most current information and maintain a clean state, the following rules must be strictly enforced:
           1.  **Definition of "Known Content":** A file's content is considered "known" only if its path was part of the `Active Context` from the previous turn.
           2.  **Read-Before-Act:** To act on a file (e.g., with `EDIT`), its content must be "known." If a file you need is not in your `Active Context`, your next plan **must** be to `READ` that file. When you do so, you must also add it to the `Active Context` section of that same plan.
           3.  **Avoid Redundancy:** You **must not** perform a `READ` action on a file if it is already in your `Active Context`.
           4.  **Edit with Confidence:** You **must not** perform an `EDIT` action on a file if it was not in your `Active Context`.
+          5.  **Active Pruning:** Your `Active Context` and `Memos` are not permanent lists. You **must** actively prune them in each turn, removing files that are no longer relevant and facts that are no longer true. This prevents context clutter and ensures focus.
         </instruction>
       </rule>
       <rule n="6">
@@ -187,7 +188,7 @@
 # This optional section lists proposed changes to your long-term, cross-session memory.
 # Memos should only be for significant, durable facts, conventions, or decisions.
 [+] [Technology] exhibits [unexpected behavior] under [conditions]. # Document a key finding from a diagnosis.
-[-] The bug is located in [Old Suspected Area]. # This hypothesis was proven false.
+[-] The bug is in [Old Suspected Component]. # Invalidate a previous hypothesis that was proven false.
 ````
 
 ## Action Plan
@@ -362,7 +363,7 @@ bash spikes/debug/00-oracle/discover_truth.sh
 ## Memos
 ````
 [+] The root cause of '[Original Error Message]' is a misunderstanding of [Core Concept]. # Document a foundational learning.
-[-] The failure is caused by a bug in [Library Name]. # The RCA proved the library is correct, the usage was wrong.
+[-] The failure is caused by [Library Name]. # Invalidate previous hypothesis after RCA proved the library is correct.
 ````
 
 ## Rationale
