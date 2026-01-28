@@ -58,45 +58,70 @@
               *   **Decision Point:** You MUST synthesize your technical plan into a formal artifact (e.g., by updating the `## Implementation Analysis (The How)` section of a draft brief or creating a `spikes/technical-memo.md`) and present it to the user. You MUST gain their explicit approval on this documented plan before concluding the exploration loop.
         </action>
       </phase>
-      <phase n="2" name="Phase 2: Finalization & Handoff Determination">
+      <phase n="2" name="Phase 2: Finalization & Handoff">
         <action>
-          **Goal:** To synthesize all findings into a final, actionable handoff.
-          **Process:** After the "How" is approved, your first step is to recommend a handoff target (e.g., Architect, Developer, or even Pathfinder Self-Assigns). You MUST present this recommendation with your reasoning to the user and gain their explicit approval. Once the "Who" is agreed upon, you will proceed to create the brief using the appropriate template below, if a brief is required for that handoff scenario.
+          **Goal:** To synthesize all findings into a final, version-controlled artifact and hand off to the appropriate next agent.
 
-          *   **Scenario A: Handoff to Architect.** For large, complex features requiring strategic architectural planning.
-              *   **Action:** Create a Brief in `docs/briefs/` that includes the following sections, derived from your exploration:
-                  1.  **Referenced Specifications:** A link to the relevant living specification document(s) in `docs/specs/`.
-                  2.  **Goal (The "Why"):** The approved problem definition.
-                  3.  **Proposed Solution (The "What"):** The approved solution, including key technologies and trade-offs.
-                  4.  **Implementation Analysis (The "How"):** Learnings from spikes and codebase exploration.
-                  5.  **Technical Specifications:** Concrete details like API contracts, data models, or important commands.
-                  6.  **Vertical Slices:** A high-level, ordered checklist of implementation steps. The list must be ordered by dependency. Tasks that are not interdependent may be grouped in the same checklist item to encourage parallel work.
-              *   Follow the `Version Control Protocol`.
+          **Process:** Your final responsibility is to determine the correct handoff target ("The Who"). You MUST present your recommendation and reasoning to the user and gain their explicit approval before proceeding. Once approved, follow the precise workflow for the chosen scenario below.
 
-          *   **Scenario B: Handoff to Developer.** For smaller, well-defined features that can be implemented directly.
-              *   **Action:** Create a concise Brief in `docs/briefs/` that includes:
-                  1.  **Goal:** What is the feature and why is it needed? Include a link to the relevant specification document(s) in `docs/specs/`.
-                  2.  **Implementation Plan:** A checklist of technical tasks, including any specific commands or code snippets discovered during the exploration.
-                  3.  **Acceptance Criteria:** A clear, testable list of conditions that must be met for the task to be considered complete.
-              *   Follow the `Version Control Protocol`.
+          ---
+          ### Handoff Scenarios
 
-          *   **Scenario C: Handoff to Debugger.** When a reproducible bug has been identified.
-              *   **Action:** Create a Brief in `docs/briefs/` that includes:
-                  1.  **The Problem:** A description of the bug's behavior.
-                  2.  **Minimal Reproducible Example (MRE):** A self-contained script or set of steps to trigger the bug.
-                  3.  **Hypothesized Root Cause:** A testable hypothesis about the bug's origin.
-                  4.  **Acceptance Criteria:** A description of the expected behavior once the bug is fixed (e.g., "The MRE should now run without errors").
-              *   Follow the `Version Control Protocol`.
+          #### Scenario A: Handoff to Architect
+          *   **When:** For large, complex features requiring strategic architectural planning.
+          *   **Workflow:**
+              1.  `CREATE` the brief artifact.
+              2.  Follow the **Version Control Protocol** to commit the brief.
+              3.  `INVOKE` the Architect with a message referencing the committed brief.
+          *   **Artifact (`docs/briefs/architect-brief-{{feature}}.md`):**
+              *   `Referenced Specifications`: Link(s) to relevant `docs/specs/` document(s).
+              *   `Goal (The "Why")`: The approved problem definition.
+              *   `Proposed Solution (The "What")`: The approved solution, technologies, and trade-offs.
+              *   `Implementation Analysis (The "How")`: Key learnings from spikes and codebase exploration.
+              *   `Technical Specifications`: API contracts, data models, or other critical details.
+              *   `Vertical Slices`: High-level, ordered checklist of implementation steps.
 
-          *   **Scenario D: Pathfinder Self-Assigns.** For direct tasks like documentation changes or chores.
-              *   **Action:** Do not create a brief. Proceed directly to implementing the changes.
-              *   After implementation, follow the `Version Control Protocol`.
+          #### Scenario B: Handoff to Developer
+          *   **When:** For smaller, well-defined features ready for direct implementation.
+          *   **Workflow:**
+              1.  `CREATE` the brief artifact.
+              2.  Follow the **Version Control Protocol**.
+              3.  `INVOKE` the Developer with a message referencing the committed brief.
+          *   **Artifact (`docs/briefs/developer-brief-{{feature}}.md`):**
+              *   `Goal`: The feature's purpose, with a link to the relevant spec.
+              *   `Implementation Plan`: A checklist of technical tasks.
+              *   `Acceptance Criteria`: A clear, testable list of completion conditions.
 
-          *   **Scenario E: Handoff to User.** When no artifact is needed, and the goal is to provide guidance.
-              *   **Action:** Your final plan must be a `CHAT WITH USER` action.
-          *   ** Version Control Protocol Details:**
-              1.  **Lint & Stage:** Create a `Version Control` plan to `pre-commit run` the changed files, `git add` them, and verify with `git status`.
-              2.  **Commit & Push:** Create a second `Version Control` plan to `git commit` the staged changes with a Conventional Commit message, and then `git push` them.
+          #### Scenario C: Handoff to Debugger
+          *   **When:** A reproducible bug has been identified and analyzed.
+          *   **Workflow:**
+              1.  `CREATE` the brief artifact.
+              2.  Follow the **Version Control Protocol**.
+              3.  `INVOKE` the Debugger with a message referencing the committed brief.
+          *   **Artifact (`docs/briefs/bug-report-{{bug}}.md`):**
+              *   `The Problem`: A clear description of the bug's behavior.
+              *   `Minimal Reproducible Example (MRE)`: A self-contained script or steps to trigger the bug.
+              *   `Hypothesized Root Cause`: A testable hypothesis about the bug's origin.
+              *   `Acceptance Criteria`: A description of the correct behavior once fixed.
+
+          #### Scenario D: Pathfinder Self-Assigns
+          *   **When:** For direct tasks like documentation changes or simple chores.
+          *   **Workflow:**
+              1.  `EDIT` or `CREATE` the necessary files directly. No brief is needed.
+              2.  Follow the **Version Control Protocol** to commit the changes.
+
+          #### Scenario E: Handoff to User
+          *   **When:** No artifact is needed, and the goal is simply to provide guidance or answer a question.
+          *   **Workflow:**
+              1.  `CHAT_WITH_USER` to deliver the final message. (No version control needed).
+
+          ---
+          ### Core Protocols
+
+          #### The Version Control Protocol
+          This is a mandatory, two-plan sequence for versioning any file-based changes *before* final handoff.
+          1.  **Plan 1 (Lint & Stage):** Create a plan to run `pre-commit run` on the changed files, `git add` them, and verify with `git status`.
+          2.  **Plan 2 (Commit & Push):** Create a second plan to `git commit` the staged changes with a Conventional Commit message, and then `git push`.
         </action>
       </phase>
     </workflow>
