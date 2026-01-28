@@ -10,6 +10,14 @@ This format is designed to be a perfectly readable Markdown document first, and 
 
 ## 2. Overall Document Structure
 
+### 2.1. Plan Lifecycle: Generation & Pre-processing
+
+It is important to understand the lifecycle of a plan file (`plan.md`) within the system.
+
+1.  **Generation:** An LLM generates a plan according to the specifications in this document. The agent prompts encourage the LLM to follow best practices for valid Markdown, such as using a sufficient number of backticks for nested code blocks.
+2.  **Pre-processing (Safety Net):** Before being saved or parsed, the raw LLM output is passed through a deterministic **pre-processor script**. This script's sole responsibility is to find and correct any invalid nested code block fences, ensuring the final output is 100% valid Markdown.
+3.  **Saving & Parsing:** The **post-processed, corrected version** of the plan is what gets saved to the session directory (e.g., `.teddy/sessions/session_name/01_plan.md`). This guarantees that any plan stored on the filesystem is a valid, parsable Markdown document. The raw, potentially invalid output from the LLM is discarded.
+
 A plan is a single Markdown file with the following top-level structure:
 
 ```markdown

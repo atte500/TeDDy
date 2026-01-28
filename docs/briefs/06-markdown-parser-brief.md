@@ -38,6 +38,7 @@ This section outlines the high-level considerations for the Architect to incorpo
 Per the final strategic decision, this feature will be implemented as a single, comprehensive vertical slice. The Architect's plan should incorporate the following tasks in a logical, dependency-aware order:
 
 -   [ ] **Dependency Management:** Add `mistletoe==1.3.0` as a project dependency.
+-   [ ] **Task: Implement Markdown Fencing Pre-processor:** Create a script/utility that runs before the parser. It must scan the input Markdown plan and deterministically correct any invalid nested code block fences (e.g., a ` ``` ` fence inside another ` ``` ` fence) by increasing the number of backticks on the outer fence. This ensures the plan is valid Markdown before it is passed to the `mistletoe` library. The corrected version of the plan should be saved to disk, not the original raw output.
 -   [ ] **Core Service Implementation:** Create and implement the `MarkdownPlanParser` service. It must be capable of parsing a `plan.md` file and all its components (header, context vault, all action types) into a `Plan` domain object, mirroring the interface of the existing `YamlPlanParser`.
 -   [ ] **Integration:** Update the factory in `main.py` to recognize and delegate Markdown plans to the new parser, while preserving the existing `YamlPlanParser` for backwards compatibility.
 -   [ ] **Comprehensive Testing:**
