@@ -35,6 +35,8 @@ A report is a single Markdown file with the following top-level structure:
     # Execution Report: Research and Propose a New "Finisher" Agent Role
     - **Overall Status:** Partial 🟡
     - **Original Plan:** [01/plan.md](/01/plan.md)
+    - **Start Time:** 2023-10-27T10:00:00.123Z
+    - **End Time:** 2023-10-27T10:00:05.567Z
     - **Actions:** 5 Total / 4 Approved / 1 Skipped
     - **Outcomes:** 3 Succeeded / 1 Failed
     ```
@@ -79,6 +81,7 @@ A report is a single Markdown file with the following top-level structure:
 ### `EDIT`
 - **Status:** Approved ✅
 - **Execution:** Failure 🔴
+- **Duration:** 53ms
 - **File Path:** [prompts/pathfinder.xml](/prompts/pathfinder.xml)
 - **Description:** Temporarily add the Finisher agent to the Pathfinder's list of handoff targets.
 
@@ -110,6 +113,7 @@ The report for `CHAT_WITH_USER` must capture the user's response.
 ### `CHAT_WITH_USER`
 - **Status:** Approved ✅
 - **Execution:** Success 🟢
+- **Duration:** 3045ms
 
 #### Execution Details
 **User Reply:**
@@ -124,6 +128,8 @@ Yes, this initial direction looks good. Please proceed with the research.
 # Execution Report: Research and Propose a New "Finisher" Agent Role
 - **Overall Status:** Partial 🟡
 - **Original Plan:** [01/plan.md](/01/plan.md)
+- **Start Time:** 2023-10-27T10:00:00.123Z
+- **End Time:** 2023-10-27T10:00:05.567Z
 - **Actions:** 5 Total / 4 Approved / 1 Skipped
 - **Outcomes:** 3 Succeeded / 1 Failed
 
@@ -147,6 +153,7 @@ Yes, this initial direction looks good. Please proceed with the research.
 ### `RESEARCH`
 - **Status:** Approved ✅
 - **Execution:** Success 🟢
+- **Duration:** 2450ms
 - **Description:** Research existing software development roles and CI/CD pipeline patterns related to finalization and release management.
 
 #### Execution Details
@@ -161,12 +168,14 @@ Yes, this initial direction looks good. Please proceed with the research.
 ### `CREATE`
 - **Status:** Approved ✅
 - **Execution:** Success 🟢
+- **Duration:** 15ms
 - **File Path:** [docs/briefs/01-finisher-agent-brief.md](/docs/briefs/01-finisher-agent-brief.md)
 - **Description:** Create the initial draft of the brief for the new "Finisher" agent.
 
 ### `EDIT`
 - **Status:** Approved ✅
 - **Execution:** Failure 🔴
+- **Duration:** 53ms
 - **File Path:** [prompts/pathfinder.xml](/prompts/pathfinder.xml)
 - **Description:** Temporarily add the Finisher agent to the Pathfinder's list of handoff targets.
 
@@ -179,6 +188,7 @@ Patch failed: FIND block could not be located in prompts/pathfinder.xml.
 ### `CHAT_WITH_USER`
 - **Status:** Approved ✅
 - **Execution:** Success 🟢
+- **Duration:** 3045ms
 
 #### Execution Details
 **User Reply:**

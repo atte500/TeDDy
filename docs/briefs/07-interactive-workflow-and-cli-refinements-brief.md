@@ -99,11 +99,16 @@ Implementation must be done incrementally through the following dependency-aware
 
 ---
 ### **Slice 6: Markdown Reporting & Finalization**
-**Goal:** Complete the transition to the new Markdown-first workflow.
+**Goal:** Complete the transition to the new Markdown-first workflow, including performance metrics.
 
+-   **[ ] Task: Update Domain Model for Timings:**
+    -   In `packages/executor/src/teddy_executor/core/domain/models/execution_report.py`, add a `duration_ms: int | None = None` field to the `ActionLog` dataclass.
+-   **[ ] Task: Update `ExecutionOrchestrator` to Capture Timings:**
+    -   In `packages/executor/src/teddy_executor/core/services/execution_orchestrator.py`, update the main execution loop to time each action and populate the new `duration_ms` field in the corresponding `ActionLog`.
 -   **[ ] Task: Implement Markdown Report Formatter:**
     -   Create a `MarkdownReportFormatter` service to convert the `ExecutionReport` object into a Markdown string.
     -   The output **must** strictly adhere to the format defined in the [Report Format Specification](/docs/specs/report-format.md).
+    -   The formatter must render the `start_time`, `end_time`, and action `duration_ms` fields.
     -   Update the `resume` and `execute` commands to use this new formatter.
     -   Ensure the `RESEARCH` action output includes the required hint.
 
