@@ -131,7 +131,8 @@ All actions are located under the `## Action Plan` heading. Each action is defin
 
 ### 5.2. `READ`
 
--   **Purpose:** Reads the content of a local file or a remote URL.
+-   **Purpose:** Performs an immediate, short-term read of a local file or remote URL to gather information needed for subsequent actions *within the same plan*.
+-   **Architectural Note:** This action has a system-level side-effect. As defined in the [Contextual History & Feedback Loop Specification](/docs/specs/contextual-history-and-feedback.md), a successful `READ` will cause the system to automatically add the target resource to the context for the *next* turn. The AI does not need to manage this in its `Active Context`.
 -   **Format:**
     ````markdown
     ### `READ`

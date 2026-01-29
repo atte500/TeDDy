@@ -29,7 +29,7 @@ The payload is a single Markdown document with the following top-level sections.
 ## 4. Active Context
 ...
 
-## 5. File Contents
+## 5. Resource Contents
 ...
 ```
 
@@ -91,16 +91,17 @@ This section lists only the file paths from the current `turn.context`. It repre
   ````
   `````
 
-### 3.5. File Contents
+### 3.5. Resource Contents
 
-The full, verbatim content of every file from the combined context (`global`, `session`, and `turn`). Each file's content is clearly delineated.
+The full, verbatim content of every resource (file or URL) from the combined context. Each resource's content is clearly delineated.
 
 - **Example:**
   `````markdown
-  ## 5. File Contents
+  ## 5. Resource Contents
 
   ---
-  **File:** `[README.md](/README.md)`
+  **Resource:** `[README.md](/README.md)`
+  **Tokens:** 152
   ````markdown
   # TeDDy: Your Contract-First & Test-Driven Pair-Programmer
   ... (full file content) ...
@@ -160,10 +161,11 @@ The following is a complete, realistic example of a context payload file from st
 - src/main.py
 ````
 
-## 5. File Contents
+## 5. Resource Contents
 
 ---
-**File:** `[docs/specs/interactive-session-workflow.md](/docs/specs/interactive-session-workflow.md)`
+**Resource:** `[docs/specs/interactive-session-workflow.md](/docs/specs/interactive-session-workflow.md)`
+**Tokens:** 431
 ````markdown
 # Interactive session workflow specs
 
@@ -173,7 +175,8 @@ This document specifies the design and behavior of the new interactive, file-bas
 ... (content truncated for example)
 ````
 ---
-**File:** `[src/main.py](/src/main.py)`
+**Resource:** `[src/main.py](/src/main.py)`
+**Tokens:** 88
 ````python
 # src/main.py
 

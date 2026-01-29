@@ -12,6 +12,8 @@ The strategic goal is to evolve `teddy` into a robust, file-based front-end for 
 
 ## 2. Referenced Specifications
 -   [Interactive Session Workflow Specification](/docs/specs/interactive-session-workflow.md)
+-   [Contextual History & Feedback Loop Specification](/docs/specs/contextual-history-and-feedback.md)
+-   [Context Payload Format Specification](/docs/specs/context-payload-format.md)
 -   [Core Philosophy](/docs/specs/core-philosophy.md)
 -   [Report Format Specification](/docs/specs/report-format.md)
 
@@ -104,3 +106,42 @@ Implementation must be done incrementally through the following dependency-aware
     -   The output **must** strictly adhere to the format defined in the [Report Format Specification](/docs/specs/report-format.md).
     -   Update the `resume` and `execute` commands to use this new formatter.
     -   Ensure the `RESEARCH` action output includes the required hint.
+
+---
+### **Slice 7: Contextual History & Enhanced Workflow**
+**Goal:** Implement the new turn artifacts and update the session workflow to provide the AI with historical context.
+
+-   **[ ] Task: Update `SessionManager` for New Artifacts:**
+    -   Modify the service to create `system_prompt.xml` and `user_prompt.txt` at the start of a planning phase.
+-   **[ ] Task: Update `resume` Command Workflow:**
+    -   Implement logic in the `resume` command to prompt for a user message when a new planning phase is initiated.
+-   **[ ] Task: Implement Automatic Historical Context:**
+    -   Update the `ContextPayloadBuilder` to locate the previous turn's `plan.md`, `report.md`, and `user_prompt.txt` and inject them into the `Active Context` for the current turn.
+
+---
+### **Slice 8: `READ` Action Refactor & Payload Enhancement**
+**Goal:** Implement the new side-effect for the `READ` action and enhance the context payload with token counts and URL support.
+
+-   **[ ] Task: Implement `READ` Action Side-Effect:**
+    -   Refactor the `ReadAction` handler and `ExecutionOrchestrator` to implement the system-level side-effect of automatically adding a read file to the next turn's context if it's not already present.
+-   **[ ] Task: Update Report for `READ` Action:**
+    -   Modify the `MarkdownReportFormatter` to output the new confirmation message for the `READ` action, omitting the full content.
+-   **[ ] Task: Enhance `ContextPayloadBuilder`:**
+    -   Add support for scraping URLs found in `.context` files.
+    -   Implement a token counting mechanism and add the token count to each resource in the `## Resource Contents` section.
+
+---
+### **Slice 9: Documentation Alignment**
+**Goal:** Update all relevant specifications to reflect the new architecture and workflow defined in the "Contextual History" feature.
+
+-   **[ ] Task: Update `interactive-session-workflow.md`:**
+    -   Update the "Core Directory Structure" section with the new turn artifacts (`system_prompt.xml`, `user_prompt.txt`).
+    -   Update the `resume` command specification to include the new user prompt behavior.
+-   **[ ] Task: Update `context-payload-format.md`:**
+    -   Rename `## File Contents` to `## Resource Contents`.
+    -   Add `Tokens` and `Resource` metadata fields to the example.
+    -   Add an example of a URL resource.
+-   **[ ] Task: Update `report-format.md`:**
+    -   Update the `READ` action example to show the new, content-free confirmation message.
+-   **[ ] Task: Update `new-plan-format.md`:**
+    -   Update the `READ` action to clarify its purpose for immediate information gathering, distinct from long-term context management.
