@@ -165,7 +165,7 @@
           5.  **Active Pruning:** Your `Active Context` and `Memos` are not permanent lists. You **must** actively prune them in each turn, removing files that are no longer relevant and facts that are no longer true. This prevents context clutter and ensures focus.
         </instruction>
       </rule>
-      <rule n="3">**Link Formatting**: Markdown links to other files MUST use explicit relative paths (`./` or `../`). Links MUST NOT be enclosed in backticks (e.g., use `[link](./path)`, not ``[`link`](./path)``).</rule>
+      <rule n="3">**Link Formatting**: Markdown links to other files MUST use explicit relative paths (`./` or `../`). Links MUST NOT be enclosed in backticks (e.g., use [link](./path), not `[link](./path)`).</rule>
       <rule n="4">**Action Paths**: Action file paths (e.g., `EDIT: path/to/file`) must NOT use the `./` prefix.</rule>
       <rule n="5">
         <title>Failure Handling & Escalation Protocol</title>
@@ -293,7 +293,7 @@
             <format>
             ````markdown
 ### `READ`
-- **Resource:** [path/to/your/file.ext](/path/to/your/file.ext) or https://url/to/resource
+- **Resource:** [path/to/your/file.ext](/path/to/your/file.ext) or [www.domain.com](https://www.domain.com)
 - **Description:** [Short explanation of what information you are looking for.]
 ````
             </format>

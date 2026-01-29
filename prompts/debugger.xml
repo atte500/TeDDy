@@ -225,7 +225,7 @@
             <format>
             ````markdown
 ### `READ`
-- **Resource:** [path/to/your/file.ext](/path/to/your/file.ext) or https://url/to/resource
+- **Resource:** [path/to/your/file.ext](/path/to/your/file.ext) or [www.domain.com](https://www.domain.com)
 - **Description:** [Short explanation of what information you are looking for.]
 ````
             </format>

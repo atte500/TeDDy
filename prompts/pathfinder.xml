@@ -202,7 +202,7 @@
             *   **Handoff to Debugger:** In a `🔴` state, your only valid action is to **Handoff to Debugger** via a `CHAT WITH USER` action.
         </instruction>
       </rule>
-      <rule n="6">**Link Formatting**: Markdown links to other files MUST use explicit relative paths (`./` or `../`). Links MUST NOT be enclosed in backticks (e.g., use `[link](./path)`, not ``[`link`](./path)``).</rule>
+      <rule n="6">**Link Formatting**: Markdown links to other files MUST use explicit relative paths (`./` or `../`). Links MUST NOT be enclosed in backticks (e.g., use [link](./path), not `[link](./path)`).</rule>
       <rule n="7">**Action Paths**: Action file paths must NOT use the `./` prefix.</rule>
       <rule n="8">
         <title>Conventional Commit Message Format</title>
@@ -278,7 +278,7 @@
             <format>
             ````markdown
 ### `READ`
-- **Resource:** [path/to/your/file.ext](/path/to/your/file.ext) or `https://url/to/resource`
+- **Resource:** [path/to/your/file.ext](/path/to/your/file.ext) or [www.domain.com](https://www.domain.com)
 - **Description:** [Short explanation of what information you are looking for.]
 ````
             </format>

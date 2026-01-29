@@ -136,20 +136,20 @@ All actions are located under the `## Action Plan` heading. Each action is defin
 -   **Format:**
     ````markdown
     ### `READ`
-    - **Resource:** [docs/ARCHITECTURE.md](/docs/ARCHITECTURE.md) or https://example.com/docs
+    - **Resource:** [docs/ARCHITECTURE.md](/docs/ARCHITECTURE.md) or [www.example.com](https://example.com/docs)
     - **Description:** Read the current architectural conventions.
     ````
 -   **Parsing Rules:**
-    1.  Extract `Resource` and `Description` from the metadata list.
-    2.  The value for `Resource` can be either a root-relative Markdown link (`[text](/destination)`) or a plain URL string.
-    3.  If it is a Markdown link, the parser **must** use the link's destination (e.g., `/docs/ARCHITECTURE.md`) as the path.
-    4.  If it is a plain string starting with `http`, the parser **must** treat it as a URL.
+  1.  Extract `Resource` and `Description` from the metadata list.
+  2.  The value for `Resource` can be a root-relative Markdown link `[text](/destination)` for a local file, or a standard Markdown link `[text](URL)` for a remote resource.
+  3.  If the destination starts with `/`, the parser **must** treat it as a local file path.
+  4.  If the destination starts with `http`, the parser **must** treat it as a URL.
 
 ### 5.3. `EDIT`
 
 -   **Purpose:** Edits an existing file. It is preferred to make surgical changes by including multiple, sequential `FIND`/`REPLACE` pairs in a single action.
 -   **Format:**
-    `````markdown
+    ``````markdown
     ### `EDIT`
     - **File Path:** [prompts/architect.xml](/prompts/architect.xml)
     - **Description:** Update the output formatting instructions.
@@ -171,7 +171,7 @@ All actions are located under the `## Action Plan` heading. Each action is defin
     ````xml
     Its corresponding new content.
     ````
-    `````
+    ``````
 -   **Parsing Rules:**
     1.  Extract `File Path` and `Description`.
     2.  The parser looks for sequential pairs of `FIND:` and `REPLACE:` blocks. Each block is a standard fenced code block.
