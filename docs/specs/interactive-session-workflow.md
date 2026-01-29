@@ -162,22 +162,22 @@ The primary "continue" command for a session. It intelligently determines the ne
 
     *Example UI:*
     ```text
-    Use [↑/↓] to navigate, [space] to toggle, (p)review details, [enter] to confirm.
+    Use [↑/↓] to navigate, [enter] to toggle, [a] to toggle all, [p] to preview details, [s] to confirm.
 
-    [✅] Active Context
+    - Active Context
      │
-     ├─[✅] [+] ADD: src/components/new_component/core.py
-     └─[✅] [+] ADD: tests/components/test_new_component.py
+     ├─[✓] [+] ADD: src/components/new_component/core.py
+     └─[✓] [+] ADD: tests/components/test_new_component.py
 
-    [✅] Memos
+    - Memos
      │
-     └─[✅] [+] ADD: All new components must have a core.py file.
+     └─[✓] [+] ADD: All new components must have a core.py file.
 
-    [✅] Action Plan
+    - Action Plan
      │
-     ├─[✅] CREATE: src/components/new_component/core.py
-     ├─[✅] EDIT:   pyproject.toml
-     └─[✅] EXECUTE: poetry lock
+     ├─[ ] CREATE: src/components/new_component/core.py
+     ├─[✓] EDIT:   pyproject.toml
+     └─[ ] EXECUTE: poetry lock
     ```
     -   **Controls:** Users can navigate the list, toggle items on/off with the spacebar, and press `[enter]` to confirm and execute the configured plan.
 
@@ -190,8 +190,19 @@ The primary "continue" command for a session. It intelligently determines the ne
         -   `CHAT_WITH_USER`: Displays the full message that will be sent to the user.
         -   `INVOKE`: Displays the target agent and the full handoff message.
 
-<!-- Implementation Note -->
-> A technical spike has validated that this interactive checklist will be implemented using the `textual` TUI framework, as it provides the necessary event loop and widget toolkit for this level of interactivity.
+### Implementation Guide & Reference Prototype
+
+An extensive, iterative prototyping process was conducted to validate the UX and de-risk the technical implementation of this feature. The key learnings from this process are captured below, and the final, polished prototype is included as a canonical reference.
+
+#### Key Implementation Learnings
+
+*   **Component Choice:** The `textual.widgets.Tree` is the correct primary component for the UI, as it natively handles the required hierarchical display.
+*   **State Management:** Selection state must be managed by updating a boolean in the `TreeNode.data` dictionary. The UI is then updated by re-rendering the node's label to simulate a checkbox (e.g., `[✓]` or `[ ]`). Direct embedding of widgets like `Checkbox` into a `Tree` is not supported.
+*   **Keybindings:** `Ctrl`-based keybindings (`ctrl+s`, `ctrl+a`) proved unreliable across different terminal environments. The final, validated keybinding scheme uses single, non-conflicting letters:
+    *   `a` for "toggle all".
+    *   `s` for "submit/confirm".
+*   **Toggle-All Logic:** The "toggle all" action must use a "select all / unselect all" model. The correct logic is: if *any* item is currently unselected, the action selects all. If *all* items are already selected, it unselects all.
+*   **String Manipulation:** When updating node labels, prefixes (`[✓] `) must be stripped robustly to avoid bugs where prefixes are duplicated. A helper function to get the "raw" label text is the recommended approach.
 
 ---
 
