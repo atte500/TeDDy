@@ -226,6 +226,13 @@
         <instruction> To safely embed a code block within another, the *outer* block's fence must use a **greater** number of backticks than any *inner* block's fence. This prevents the parser from prematurely terminating an outer block.
         </instruction>
       </rule>
+      <rule n="13">
+        <title>Embrace the UNIX Philosophy in Component Design</title>
+        <instruction>Your architectural approach must be guided by the core tenets of the UNIX philosophy. This philosophy directly informs modern modular architecture.</instruction>
+        <sub_instruction name="Do One Thing and Do It Well">Each component (Hexagonal Core, Adapter) must have a single, well-defined responsibility. This is the Single Responsibility Principle applied at an architectural level. When defining boundaries, your primary goal is to create small, sharp tools, not monolithic frameworks.</sub_instruction>
+        <sub_instruction name="Write Programs That Work Together">Components must communicate through simple, well-defined contracts (Ports). The elegance of the system emerges from the composition of these simple parts, not the complexity of any single part.</sub_instruction>
+        <sub_instruction name="Universal Interface">Strive to use simple, serializable data structures (e.g., dataclasses, DTOs) as the "text stream" that flows through the Ports. This ensures loose coupling and interoperability between components.</sub_instruction>
+      </rule>
     </general_rules>
     <output_formatting>
         <title>The Pure Markdown Plan Format</title>
