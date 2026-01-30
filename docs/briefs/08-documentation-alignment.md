@@ -19,7 +19,7 @@ This is a documentation-centric initiative. The approach is to systematically re
 The review of `README.md` and `ARCHITECTURE.md` confirms that both documents require significant rewrites, not just minor edits. The core sections describing the tool's usage, installation, and architecture are fundamentally tied to the old `packages/executor` structure and YAML-based workflow.
 
 -   **`README.md` Impact:** The entire section on "The `teddy` Executor" needs to be replaced. This includes the installation guide, the command reference, and the action reference. The project philosophy section should also be updated to explicitly state the "Markdown as UI" and "Local-First" principles.
--   **`ARCHITECTURE.md` Impact:** This document needs a structural overhaul. Obsolete setup instructions and conventions must be removed. The component map must be updated with the new services (`SessionManager`, `ContextPayloadBuilder`, etc.). The Architectural Decision Records (ADRs) need to be rewritten to reflect the new paradigms (File-Based Sessions, Markdown-First format, etc.), and the YAML plan specification must be replaced with a link to the canonical Markdown spec.
+-   **`ARCHITECTURE.md` Impact:** This document needs a structural overhaul. Obsolete setup instructions and conventions must be removed. The component map must be updated with the new services (`SessionManager`, `MarkdownReportFormatter`, etc.). The Architectural Decision Records (ADRs) need to be rewritten to reflect the new paradigms (File-Based Sessions, Markdown-First format, etc.), and the YAML plan specification must be replaced with a link to the canonical Markdown spec.
 
 ## 4. Vertical Slices
 
