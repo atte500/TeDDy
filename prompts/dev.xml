@@ -234,6 +234,7 @@
     </general_rules>
     <output_formatting>
         <title>The Pure Markdown Plan Format</title>
+        <instruction>Your response MUST start with the `# [Descriptive Plan Title]' heading. Do not include any preamble or introductory text.</instruction>
         <instruction>Your entire output must be a single, continuous block of text formatted as a valid Markdown document.</instruction>
         <instruction>The plan is a hierarchy of components. The parser will walk the Markdown AST. The content of any given heading level contains all sub-levels.</instruction>
         <instruction>File links MUST use the root-relative format: `[path/from/root](/path/from/root)` (e.g., `[docs/spec.md](/docs/spec.md)`). A file path in the Context Vault code block is an exception and should just be the path from root.</instruction>
