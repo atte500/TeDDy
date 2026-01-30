@@ -1,16 +1,16 @@
 # Report Format Specification
 
-## 1. Core Principles
+## 1. Overview and Core Principles
 
-This document specifies the format for `report.md`, the execution report generated after a plan is processed.
+This document specifies the format for `report.md`. This report is a multi-purpose, foundational artifact in the Teddy workflow, designed with three core principles in mind:
 
-1.  **Human & Machine Readable:** The format is Markdown-first, providing a clear, readable summary for humans while maintaining a strict, parsable structure for AI consumption.
-2.  **Factual Record:** The report is an immutable, factual log of what occurred during execution. It details which actions were approved, which were skipped, and the precise outcome of each executed action.
-3.  **Specular Structure:** The report's structure intentionally mirrors the `plan.md` from which it was generated, providing a clear, side-by-side comparison between what was intended and what was accomplished.
+1.  **A Factual Record of the Past:** It serves as an immutable, factual log of what occurred during the execution of a `plan.md`. It details which actions were approved, which were skipped, and the precise outcome of each.
+2.  **The Worldview for the Future:** It provides the AI with its complete, single-source-of-truth "worldview" for the *next* turn. By containing a full snapshot of the project's state *after* the execution, it serves as the primary input for the next planning phase.
+3.  **Human & Machine Readable:** The format is Markdown-first, providing a clear, readable document for humans while maintaining a strict, parsable structure for tooling and AI consumption.
 
 ## 2. Overall Document Structure
 
-A report is a single Markdown file with the following top-level structure:
+A report is a single Markdown file with three main sections:
 
 ```markdown
 # Execution Report: [Original Plan Title]
@@ -18,18 +18,23 @@ A report is a single Markdown file with the following top-level structure:
 - **Original Plan:** [path/to/original/plan.md](/path/to/original/plan.md)
 ...
 
-## Applied State Changes
-... (Optional: Contains reports for Active Context & Memos)
+## 1. Rationale
+... (The "Why" - Copied from the original plan)
 
-## Action Log
-... (Contains a report for each action from the original plan)
+## 2. Execution Summary
+... (The "What Happened" - The log of actions and outcomes)
+
+## 3. Workspace Snapshot
+... (The "What Now" - The state of the project for the next turn)
 ```
 
-## 3. Core Component Blocks
+---
+
+## 3. Section Specifications
 
 ### 3.1. Report Header
 
--   **Purpose:** Contains the report's title and high-level summary metadata.
+-   **Purpose:** Contains the report's title and high-level summary metadata about the execution phase.
 -   **Format:**
     ```markdown
     # Execution Report: Research and Propose a New "Finisher" Agent Role
@@ -39,165 +44,178 @@ A report is a single Markdown file with the following top-level structure:
     - **End Time:** 2023-10-27T10:00:05.567Z
     - **Actions:** 5 Total / 4 Approved / 1 Skipped
     - **Outcomes:** 3 Succeeded / 1 Failed
+    - **User Prompt:** (Optional) "I did not implement the EDIT because I feel it's redundant, please proceed without it."
     ```
--   **Parsing Rules:**
-    -   The title must start with `Execution Report:`.
-    -   The metadata list provides a quick summary of the turn's outcome.
 
-### 3.2. Applied State Changes (Optional)
+### 3.2. Section 1: Rationale
 
--   **Purpose:** Confirms which proposed changes to `Active Context` and `Memos` were actually approved and applied.
+-   **Purpose:** Provides the AI with the essential context of *why* the previous turn's actions were attempted.
+-   **Content:** This section contains the verbatim, unchanged `Rationale` block copied directly from the `plan.md` that was executed.
 -   **Format:**
     `````markdown
-    ## Applied State Changes
-
-    ### `Active Context`
-    - **Status:** Approved
-    ````
-    [+] docs/briefs/01-finisher-agent-brief.md # Add the new brief to the working set.
-    ````
-
-    ### `Memos`
-    - **Status:** Skipped
-    - **Reason:** User skipped this state change during the interactive review.
-    ````
-    [+] A new 'Finisher' agent role is being explored.
-    [-] The 'Architect' agent is responsible for all handoffs.
+    ## 1. Rationale
+    ````text
+    Observation: The user has requested a new "Finisher" agent role...
+    Analysis: This requires a discovery process...
+    Next Step: ...
     ````
     `````
--   **Parsing Rules:**
-    -   This section contains subsections for `Active Context` and `Memos`.
-    -   Each subsection must have a **Status** of `Approved` or `Skipped`.
-    -   If skipped, the **Reason** must be the verbatim reason provided by the user.
-    -   The code block contains the original proposed changes from `plan.md`.
 
-### 3.3. Action Log
+### 3.3. Section 2: Execution Summary
 
--   **Purpose:** Provides a detailed, action-by-action breakdown of the execution. The order of actions must be identical to the original `plan.md`.
--   **Format:** Each action from the plan is represented by its own `###` heading.
+-   **Purpose:** A detailed, factual log of what happened during plan execution. This section's structure intentionally mirrors the `Action Plan` of the original `plan.md` for easy comparison.
+-   **Content:** It contains subsections for `Applied State Changes` and the `Action Log`.
+-   **Format:**
+    `````markdown
+    ## 2. Execution Summary
 
-#### **Structure for an Executed Action (Approved)**
-`````markdown
-### `EDIT`
-- **Status:** Approved ✅
-- **Execution:** Failure 🔴
-- **Duration:** 53ms
-- **File Path:** [prompts/pathfinder.xml](/prompts/pathfinder.xml)
-- **Description:** Temporarily add the Finisher agent to the Pathfinder's list of handoff targets.
+    ### Applied State Changes
+    ...
 
-#### Execution Details
-**Error Output:**
-````
-Patching failed: The 'FIND' block could not be located in the target file.
-...
-````
-`````
+    ### Action Log
+    ...
+    `````
+-   **Subsection: Applied State Changes**
+    -   Confirms which proposed changes to `Active Context` and `Memos` were approved and applied.
+    -   Each state change type (`Active Context`, `Memos`) gets its own `####` heading, a status, and a code block showing the proposed change from the plan.
+-   **Subsection: Action Log**
+    -   Provides an action-by-action breakdown. Each action from the plan is represented by its own `####` heading.
+    -   **Crucially, each action block in the report preserves the complete, verbatim metadata list (e.g., `File Path`, `Description`, `Expected Outcome`, `cwd`, `env`) from the original plan.** This ensures a direct, one-to-one mapping between the plan and the report.
+    -   Every action must have a **Status** (`Approved ✅` or `Skipped 🟡`).
+    -   Approved actions must have an **Execution** status (`Success 🟢` or `Failure 🔴`) and may include an `Execution Details` block with outputs or errors.
 
-#### **Structure for a Skipped Action**
-```markdown
-### `INVOKE`
-- **Status:** Skipped 🟡
-- **Reason:** User chose not to invoke the next agent at this time.
-```
--   **Parsing Rules:**
-    -   Each action block mirrors the corresponding action in `plan.md`, preserving its heading and metadata (e.g., `File Path`, `Description`).
-    -   **Status:** Every action must have a `Status` of `Approved ✅` or `Skipped 🟡`.
-    -   **Reason (for Skipped):** If an action is skipped, the `Reason` field must contain the verbatim reason provided by the user.
-    -   **Execution (for Approved):** Approved actions must have an `Execution` status of `Success 🟢` or `Failure 🔴`.
-    -   **Execution Details (for Approved):** Any output (stdout, stderr, API responses, user replies) must be captured under a `#### Execution Details` heading, followed by a description and a fenced code block.
+### 3.4. Section 3: Workspace Snapshot
 
-#### **Special Case: `CHAT_WITH_USER`**
-The report for `CHAT_WITH_USER` must capture the user's response.
+-   **Purpose:** Provides the AI with a complete and comprehensive snapshot of the project's state *after* the turn's execution. This section serves as the primary input for the AI's next planning phase.
+-   **Content:** It is composed of several subsections that give the AI a full picture of the environment, project structure, and file contents.
 
-`````markdown
-### `CHAT_WITH_USER`
-- **Status:** Approved ✅
-- **Execution:** Success 🟢
-- **Duration:** 3045ms
+#### 3.4.1. System Information
+A simple key-value list of essential environment details.
+- **Example:**
+  ```markdown
+  #### 1. System Information
+  - **CWD:** /Users/developer/projects/TeDDy
+  - **OS:** Darwin 25.2.0
+  ```
 
-#### Execution Details
-**User Reply:**
-````
-Yes, this initial direction looks good. Please proceed with the research.
-````
-`````
+#### 3.4.2. Project Structure
+A textual representation of the repository's file tree.
+- **Example:**
+  `````markdown
+  #### 2. Project Structure
+  ````
+  .
+  ├── .teddy/
+  └── docs/
+      └── specs/
+          └── report-format.md
+  ````
+  `````
 
-## 4. Comprehensive Example Report
+#### 3.4.3. Memos
+The verbatim content of the `.teddy/memos.yaml` file.
+- **Example:**
+  `````markdown
+  #### 3. Memos
+  ````
+  - A new 'Finisher' agent role is being explored.
+  ````
+  `````
 
-`````markdown
-# Execution Report: Research and Propose a New "Finisher" Agent Role
-- **Overall Status:** Partial 🟡
+#### 3.4.4. Turn Context
+-   **Purpose:** Lists the file paths from the current turn's `turn.context` file. This represents the dynamic part of the AI's context—the "working set" that it can modify from turn to turn via the `Active Context` block in its plans.
+-   **Example:**
+    `````markdown
+    #### 4. Turn Context
+    ````
+    - docs/specs/interactive-session-workflow.md
+    ````
+    `````
+
+#### 3.4.5. Resource Contents
+-   **Purpose:** The full, verbatim content of every resource from the combined context.
+-   **Sourcing:** The list of resources is aggregated from `.teddy/global.context`, the session-specific `<session>/session.context`, and the current turn's `turn.context`. This provides the AI with a complete view of all relevant files.
+- **Example:**
+  `````markdown
+  #### 5. Resource Contents
+
+  ---
+  **Resource:** `[docs/specs/report-format.md](/docs/specs/report-format.md)`
+  ````markdown
+  # Report Format Specification
+  ... (full file content) ...
+  ````
+  ---
+  `````
+
+## 4. Comprehensive Example
+
+``````markdown
+# Execution Report: A New Report Format
+- **Overall Status:** Completed 🟢
 - **Original Plan:** [01/plan.md](/01/plan.md)
 - **Start Time:** 2023-10-27T10:00:00.123Z
 - **End Time:** 2023-10-27T10:00:05.567Z
-- **Actions:** 5 Total / 4 Approved / 1 Skipped
-- **Outcomes:** 3 Succeeded / 1 Failed
+- **Actions:** 1 Total / 1 Approved / 0 Skipped
+- **Outcomes:** 1 Succeeded / 0 Failed
+- **User Prompt:** "Your previous changes were good, but please add a section for the user prompt and clarify the action log metadata rule."
 
-## Applied State Changes
-
-### `Active Context`
-- **Status:** Approved
-````
-[+] docs/briefs/01-finisher-agent-brief.md # Add the new brief to the working set.
-````
-
-### `Memos`
-- **Status:** Approved
-````
-[+] A new 'Finisher' agent role is being explored.
-[-] The 'Architect' agent is responsible for all handoffs.
+## 1. Rationale
+````text
+Observation: The user wants to refactor the report format.
+Analysis: I need to perform a full-file replacement of `docs/specs/report-format.md`.
+Next Step: Execute the `EDIT` action.
 ````
 
-## Action Log
+## 2. Execution Summary
 
-### `RESEARCH`
-- **Status:** Approved ✅
-- **Execution:** Success 🟢
-- **Duration:** 2450ms
-- **Description:** Research existing software development roles and CI/CD pipeline patterns related to finalization and release management.
+### Applied State Changes
+*(No state changes were proposed in the plan.)*
 
-#### Execution Details
-**Output:**
-````json
-[
-  {"url": "https://example.com/release-manager", "title": "Release Manager Role"},
-  {"url": "https://example.com/gitflow", "title": "GitFlow vs Trunk-Based"}
-]
-````
+### Action Log
 
-### `CREATE`
+#### `EDIT`
 - **Status:** Approved ✅
 - **Execution:** Success 🟢
 - **Duration:** 15ms
-- **File Path:** [docs/briefs/01-finisher-agent-brief.md](/docs/briefs/01-finisher-agent-brief.md)
-- **Description:** Create the initial draft of the brief for the new "Finisher" agent.
+- **File Path:** [docs/specs/report-format.md](/docs/specs/report-format.md)
+- **Description:** Overhaul the report format specification.
+- **Expected Outcome:** The file should be updated with the new three-part structure.
 
-### `EDIT`
-- **Status:** Approved ✅
-- **Execution:** Failure 🔴
-- **Duration:** 53ms
-- **File Path:** [prompts/pathfinder.xml](/prompts/pathfinder.xml)
-- **Description:** Temporarily add the Finisher agent to the Pathfinder's list of handoff targets.
+## 3. Workspace Snapshot
 
-#### Execution Details
-**Error:**
+### 1. System Information
+- **CWD:** /Users/developer/projects/TeDDy
+- **OS:** Darwin 25.2.0
+
+### 2. Project Structure
 ````
-Patch failed: FIND block could not be located in prompts/pathfinder.xml.
-````
-
-### `CHAT_WITH_USER`
-- **Status:** Approved ✅
-- **Execution:** Success 🟢
-- **Duration:** 3045ms
-
-#### Execution Details
-**User Reply:**
-````
-Yes, this initial direction looks good. Please proceed with the research.
+.
+├── .teddy/
+└── docs/
+    └── specs/
+        └── report-format.md
 ````
 
-### `INVOKE`
-- **Status:** Skipped 🟡
-- **Reason:** I want to fix the failing EDIT action before handing off to the next agent.
-- **Agent:** Architect
-`````
+### 3. Memos
+````
+- A new 'Finisher' agent role is being explored.
+````
+
+### 4. Turn Context
+````
+- docs/specs/report-format.md
+````
+
+### 5. Resource Contents
+
+---
+**Resource:** `[docs/specs/report-format.md](/docs/specs/report-format.md)`
+````markdown
+# Report Format Specification
+
+## 1. Overview and Core Principles
+... (full, new content of this file) ...
+````
+---
+``````
