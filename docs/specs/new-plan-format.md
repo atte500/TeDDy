@@ -16,7 +16,7 @@ It is important to understand the lifecycle of a plan file (`plan.md`) within th
 
 1.  **Generation:** An LLM generates a plan according to the specifications in this document. The agent prompts encourage the LLM to follow best practices for valid Markdown, such as using a sufficient number of backticks for nested code blocks.
 2.  **Pre-processing (Safety Net):** Before being saved or parsed, the raw LLM output is passed through a deterministic **pre-processor script**. This script's sole responsibility is to find and correct any invalid nested code block fences, ensuring the final output is 100% valid Markdown.
-3.  **Saving & Parsing:** The **post-processed, corrected version** of the plan is what gets saved to the session directory (e.g., `.teddy/sessions/session_name/01_plan.md`). This guarantees that any plan stored on the filesystem is a valid, parsable Markdown document. The raw, potentially invalid output from the LLM is discarded.
+3.  **Saving & Parsing:** The **post-processed, corrected version** of the plan is what gets saved to the session directory (e.g., `.teddy/session_name/01/plan.md`). This guarantees that any plan stored on the filesystem is a valid, parsable Markdown document. The raw, potentially invalid output from the LLM is discarded.
 
 A plan is a single Markdown file with the following top-level structure:
 
@@ -175,7 +175,7 @@ All actions are located under the `## Action Plan` heading. Each action is defin
 -   **Parsing Rules:**
     1.  Extract `File Path` and `Description`.
     2.  The parser looks for sequential pairs of `FIND:` and `REPLACE:` blocks. Each block is a standard fenced code block.
-    3.  **Edge Case (Full Overwrite):** If the action contains only a single `REPLACE:` block, the entire file is overwritten.
+    3.  **Surgical Changes:** An `EDIT` action must contain at least one `FIND`/`REPLACE` pair. Full-file overwrites are not permitted; for this, use `CREATE` on a temporary file and then `mv` with `EXECUTE`, or simply delete and `CREATE` again.
 
 ### 5.4. `EXECUTE`
 

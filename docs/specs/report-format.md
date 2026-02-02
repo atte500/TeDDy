@@ -5,12 +5,12 @@
 This document specifies the format for `report.md`. This report is a multi-purpose, foundational artifact in the Teddy workflow, designed with three core principles in mind:
 
 1.  **A Factual Record of the Past:** It serves as an immutable, factual log of what occurred during the execution of a `plan.md`. It details which actions were approved, which were skipped, and the precise outcome of each.
-2.  **The Worldview for the Future:** It provides the AI with its complete, single-source-of-truth "worldview" for the *next* turn. By containing a full snapshot of the project's state *after* the execution, it serves as the primary input for the next planning phase.
+2.  **A Purely Historical Record:** It serves as an immutable, factual log of what occurred during the execution of a `plan.md`. It has no influence on future turns.
 3.  **Human & Machine Readable:** The format is Markdown-first, providing a clear, readable document for humans while maintaining a strict, parsable structure for tooling and AI consumption.
 
 ## 2. Overall Document Structure
 
-A report is a single Markdown file with three main sections:
+A report is a single Markdown file with two main sections:
 
 ```markdown
 # Execution Report: [Original Plan Title]
@@ -23,9 +23,6 @@ A report is a single Markdown file with three main sections:
 
 ## 2. Execution Summary
 ... (The "What Happened" - The log of actions and outcomes)
-
-## 3. Workspace Snapshot
-... (The "What Now" - The state of the project for the next turn)
 ```
 
 ---
@@ -64,20 +61,14 @@ A report is a single Markdown file with three main sections:
 ### 3.3. Section 2: Execution Summary
 
 -   **Purpose:** A detailed, factual log of what happened during plan execution. This section's structure intentionally mirrors the `Action Plan` of the original `plan.md` for easy comparison.
--   **Content:** It contains subsections for `Applied State Changes` and the `Action Log`.
+-   **Content:** It contains an `Action Log` which provides an action-by-action breakdown of the execution.
 -   **Format:**
     `````markdown
     ## 2. Execution Summary
 
-    ### Applied State Changes
-    ...
-
     ### Action Log
     ...
     `````
--   **Subsection: Applied State Changes**
-    -   Confirms which proposed changes to `Active Context` and `Memos` were approved and applied.
-    -   Each state change type (`Active Context`, `Memos`) gets its own `####` heading, a status, and a code block showing the proposed change from the plan.
 -   **Subsection: Action Log**
     -   Provides an action-by-action breakdown. Each action from the plan is represented by its own `####` heading.
     -   **Crucially, each action block in the report preserves the complete, verbatim metadata list (e.g., `File Path`, `Description`, `Expected Outcome`, `cwd`, `env`) from the original plan.** This ensures a direct, one-to-one mapping between the plan and the report.
