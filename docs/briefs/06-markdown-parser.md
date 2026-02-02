@@ -49,6 +49,8 @@ This brief will be implemented as a single, comprehensive vertical slice.
     -   In `main.py`, create a `plan_parser_factory` function that takes a file path or content string as input, determines the plan type, and returns an instance of either `YamlPlanParser` or `MarkdownPlanParser`.
     -   Update the `create_container` and `execute` functions to use this factory instead of directly registering a single parser type.
 
+-   **[ ] Task: Handle New Context Actions**
+    -   The `MarkdownPlanParser` must be updated to correctly parse the new `READ` and `PRUNE` actions as defined in the [New Plan Format Specification](/docs/specs/new-plan-format.md).
 -   **[ ] Task: Handle `INVOKE` Action**
     -   The `MarkdownPlanParser` must correctly parse the `INVOKE` action as defined in the spec.
     -   In `ActionDispatcher`, add a placeholder handler for the `INVOKE` action type that logs a message to the user confirming the action was recognized (e.g., "INVOKE action recognized for agent: [Agent Name]"). Full implementation is out of scope.

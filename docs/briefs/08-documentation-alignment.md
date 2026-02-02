@@ -31,10 +31,10 @@ This brief will be implemented in two distinct vertical slices, one for each doc
 
 -   **[ ] Task: Update Project Philosophy:** Replace the current introduction with the new "Obsidian for AI coding" philosophy and its guiding principles (Markdown as UI, Local-First, Transparency, Human-Centric).
 -   **[ ] Task: Rewrite Executor & Workflow Section:** The entire section on the `teddy` executor needs a complete rewrite.
-    -   Explain the new `.teddy/sessions` directory structure and its purpose.
+    -   Explain the new `.teddy/<session_name>` directory structure and its purpose, linking to the canonical [TeDDy Directory Structure Specification](/docs/specs/teddy-directory-structure.md).
     -   Describe the new primary workflow centered around the `teddy new` and `teddy resume` commands.
     -   Update the "Installation & Usage" guide to reflect the flattened project structure (i.e., no more `poetry -C packages/executor ...`).
--   **[ ] Task: Update Command Reference:** Replace the old command reference with the new, flat command structure: `new`, `plan`, `resume`, `branch`, `context`, and the session-unaware `execute`.
+-   **[ ] Task: Update Command Reference:** Replace the old command reference with the new, flat command structure: `new`, `plan`, `resume`, `execute`, and the optional `context`.
 -   **[ ] Task: Update Action Reference:** Rename the "YAML Action Reference" to "Action Reference," state that plans are now authored in Markdown, and link to the canonical spec.
 -   **[ ] Task: Update Roadmap:** Modify the project roadmap to mark the "Interactive Session Workflow" as complete.
 
@@ -43,7 +43,7 @@ This brief will be implemented in two distinct vertical slices, one for each doc
 **Goal:** Update the architectural documentation to serve as an accurate technical reference for the new, flattened, session-based architecture.
 
 -   **[ ] Task: Update Setup & Conventions:** Revise all setup instructions and commands to align with the flattened project structure. The `poetry -C` convention is obsolete and must be removed.
--   **[ ] Task: Update Component & Boundary Map:** Add the new services and ports introduced in the interactive workflow: `SessionManager`, `ContextPayloadBuilder`, `MarkdownReportFormatter`, `ConfigService`, and `ILlmClient`.
+-   **[ ] Task: Update Component & Boundary Map:** Add the new services and ports introduced in the interactive workflow: `SessionManager`, `ContextService`, `MarkdownReportFormatter`, `ConfigService`, and `ILlmClient`.
 -   **[ ] Task: Rewrite Key Architectural Decisions (ADRs):**
     -   Remove obsolete ADRs related to the old plan format (e.g., "Separation of I/O Concerns," "Test Plan Injection").
     -   Add new ADRs for "File-Based Session Management," "Markdown-First Plan & Report Format," and "Dry-Run Pre-validation for Actions".

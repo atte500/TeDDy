@@ -152,6 +152,7 @@ Executes a plan, generates a report, and prepares the subsequent turn.
     4.  **Reporting Phase (Post-flight):**
         -   Generates the factual `01/report.md`. This report is a historical log only and does not contain a workspace snapshot.
     5.  **Finalize Next Turn (Post-flight):**
+        -   The `teddy execute` command will automatically add the path of the report it just generated (e.g., `01/report.md`) to the `02/turn.context` file. This ensures the AI has a record of the previous turn's outcome.
         -   The next turn (`02/`) is now prepared with an updated `system_prompt.xml` and `turn.context`. The user will run `teddy context` in that directory to generate the new `input.md` when they are ready to proceed.
 
 ---
