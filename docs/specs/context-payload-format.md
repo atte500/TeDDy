@@ -66,11 +66,12 @@ A textual representation of the repository's file tree, using simple indentation
       specs/
         context-payload-format.md
         core-philosophy.md
-    packages/
-      executor/
-        pyproject.toml
+    src/
+      teddy_executor/
+        main.py
     prompts/
       architect.xml
+    pyproject.toml
     README.md
     ````
     `````

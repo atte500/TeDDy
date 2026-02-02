@@ -4,7 +4,7 @@
 
 This document specifies the design and behavior of the interactive, file-based session workflow for TeDDy. The goal is to create a robust, stateless, and versionable workflow that provides a complete, auditable history of the AI collaboration.
 
-The core of this workflow is the **Report-Centric Lifecycle**: the `report.md` from the previous turn serves as the single, complete input for the AI's next planning phase. This simplifies the system by creating a clear, linear flow of information from one turn to the next.
+The core of this workflow is the **Context-Centric Lifecycle**: a dedicated `input.md` file serves as the single, complete input for the AI's planning phase for each turn. This decouples the historical `report.md` from the forward-looking planning process, creating a clear, stateless flow of information from one turn to the next.
 
 ## 2. The Turn Lifecycle
 

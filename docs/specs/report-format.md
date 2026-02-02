@@ -4,9 +4,8 @@
 
 This document specifies the format for `report.md`. This report is a multi-purpose, foundational artifact in the Teddy workflow, designed with three core principles in mind:
 
-1.  **A Factual Record of the Past:** It serves as an immutable, factual log of what occurred during the execution of a `plan.md`. It details which actions were approved, which were skipped, and the precise outcome of each.
-2.  **A Purely Historical Record:** It serves as an immutable, factual log of what occurred during the execution of a `plan.md`. It has no influence on future turns.
-3.  **Human & Machine Readable:** The format is Markdown-first, providing a clear, readable document for humans while maintaining a strict, parsable structure for tooling and AI consumption.
+1.  **A Factual, Historical Record:** It serves as an immutable, factual log of what occurred during the execution of a `plan.md`. It details which actions were approved, which were skipped, and the precise outcome of each. Crucially, it is a purely historical document and has no direct influence on the context of future turns.
+2.  **Human & Machine Readable:** The format is Markdown-first, providing a clear, readable document for humans while maintaining a strict, parsable structure for tooling and AI consumption.
 
 ## 2. Overall Document Structure
 
@@ -75,70 +74,6 @@ A report is a single Markdown file with two main sections:
     -   Every action must have a **Status** (`Approved ✅` or `Skipped 🟡`).
     -   Approved actions must have an **Execution** status (`Success 🟢` or `Failure 🔴`) and may include an `Execution Details` block with outputs or errors.
 
-### 3.4. Section 3: Workspace Snapshot
-
--   **Purpose:** Provides the AI with a complete and comprehensive snapshot of the project's state *after* the turn's execution. This section serves as the primary input for the AI's next planning phase.
--   **Content:** It is composed of several subsections that give the AI a full picture of the environment, project structure, and file contents.
-
-#### 3.4.1. System Information
-A simple key-value list of essential environment details.
-- **Example:**
-  ```markdown
-  #### 1. System Information
-  - **CWD:** /Users/developer/projects/TeDDy
-  - **OS:** Darwin 25.2.0
-  ```
-
-#### 3.4.2. Project Structure
-A textual representation of the repository's file tree.
-- **Example:**
-  `````markdown
-  #### 2. Project Structure
-  ````
-  .
-  ├── .teddy/
-  └── docs/
-      └── specs/
-          └── report-format.md
-  ````
-  `````
-
-#### 3.4.3. Memos
-The verbatim content of the `.teddy/memos.yaml` file.
-- **Example:**
-  `````markdown
-  #### 3. Memos
-  ````
-  - A new 'Finisher' agent role is being explored.
-  ````
-  `````
-
-#### 3.4.4. Turn Context
--   **Purpose:** Lists the file paths from the current turn's `turn.context` file. This represents the dynamic part of the AI's context—the "working set" that it can modify from turn to turn via the `Active Context` block in its plans.
--   **Example:**
-    `````markdown
-    #### 4. Turn Context
-    ````
-    - docs/specs/interactive-session-workflow.md
-    ````
-    `````
-
-#### 3.4.5. Resource Contents
--   **Purpose:** The full, verbatim content of every resource from the combined context.
--   **Sourcing:** The list of resources is aggregated from `.teddy/global.context`, the session-specific `<session>/session.context`, and the current turn's `turn.context`. This provides the AI with a complete view of all relevant files.
-- **Example:**
-  `````markdown
-  #### 5. Resource Contents
-
-  ---
-  **Resource:** `[docs/specs/report-format.md](/docs/specs/report-format.md)`
-  ````markdown
-  # Report Format Specification
-  ... (full file content) ...
-  ````
-  ---
-  `````
-
 ## 4. Comprehensive Example
 
 ``````markdown
@@ -172,41 +107,4 @@ Next Step: Execute the `EDIT` action.
 - **File Path:** [docs/specs/report-format.md](/docs/specs/report-format.md)
 - **Description:** Overhaul the report format specification.
 - **Expected Outcome:** The file should be updated with the new three-part structure.
-
-## 3. Workspace Snapshot
-
-### 1. System Information
-- **CWD:** /Users/developer/projects/TeDDy
-- **OS:** Darwin 25.2.0
-
-### 2. Project Structure
-````
-.
-├── .teddy/
-└── docs/
-    └── specs/
-        └── report-format.md
-````
-
-### 3. Memos
-````
-- A new 'Finisher' agent role is being explored.
-````
-
-### 4. Turn Context
-````
-- docs/specs/report-format.md
-````
-
-### 5. Resource Contents
-
----
-**Resource:** `[docs/specs/report-format.md](/docs/specs/report-format.md)`
-````markdown
-# Report Format Specification
-
-## 1. Overview and Core Principles
-... (full, new content of this file) ...
-````
----
 ``````

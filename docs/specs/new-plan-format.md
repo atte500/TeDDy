@@ -29,9 +29,6 @@ A plan is a single Markdown file with the following top-level structure:
 ## Rationale
 ...
 
-## Active Context
-... (Optional: Contains a list of context changes)
-
 ## Memos
 ... (Optional: Contains a list of memory changes)
 
@@ -77,23 +74,7 @@ To ensure links work correctly in local previews (like VSCode) while referencing
     ```
 -   **Parsing Rules:** The content is the raw text within the fenced code block and is primarily for human consumption.
 
-### 4.3. Active Context (Optional)
-
--   **Purpose:** Lists the proposed *changes* (additions and deletions) to the agent's working file set for the next turn. If this section is omitted, the context from the previous turn is carried over unchanged.
--   **Format:**
-    ```markdown
-    ## Active Context
-    ````
-    [+] docs/specs/new-feature.md   # Add the new spec to the working set for editing.
-    [-] prompts/old-agent.xml      # This file is no longer relevant to the current task.
-    ````
-    ```
--   **Parsing Rules:** The parser should treat the content of the code block as a list of change requests.
-    -   Each line must start with either `[+]` for addition or `[-]` for deletion.
-    -   The text following the marker is the file path.
-    -   Any text following a `#` character on a line is considered a comment and should be ignored by the parser, but may be used by the presentation layer.
-
-### 4.4. Memos (Optional)
+### 4.3. Memos (Optional)
 
 -   **Purpose:** Lists the proposed changes (creations and deletions) to the agent's long-term memory.
 -   **Format:**
@@ -131,8 +112,8 @@ All actions are located under the `## Action Plan` heading. Each action is defin
 
 ### 5.2. `READ`
 
--   **Purpose:** Performs an immediate, short-term read of a local file or remote URL to gather information needed for subsequent actions *within the same plan*.
--   **Architectural Note:** This action has a system-level side-effect. As defined in the [Contextual History & Feedback Loop Specification](/docs/specs/contextual-history-and-feedback.md), a successful `READ` will cause the system to automatically add the target resource to the context for the *next* turn. The AI does not need to manage this in its `Active Context`.
+-   **Purpose:** Reads a local file or remote URL to gather information.
+-   **System Behavior:** A successful `READ` will cause the system to automatically add the target resource to the context for the *next* turn.
 -   **Format:**
     ````markdown
     ### `READ`
@@ -147,7 +128,7 @@ All actions are located under the `## Action Plan` heading. Each action is defin
 
 ### 5.3. `EDIT`
 
--   **Purpose:** Edits an existing file. It is preferred to make surgical changes by including multiple, sequential `FIND`/`REPLACE` pairs in a single action.
+-   **Purpose:** Edits an existing file. It is strongly preferred to make surgical changes by including multiple, small, sequential `FIND`/`REPLACE` pairs in a single action rather than one large replacement.
 -   **Format:**
     ``````markdown
     ### `EDIT`
@@ -175,7 +156,7 @@ All actions are located under the `## Action Plan` heading. Each action is defin
 -   **Parsing Rules:**
     1.  Extract `File Path` and `Description`.
     2.  The parser looks for sequential pairs of `FIND:` and `REPLACE:` blocks. Each block is a standard fenced code block.
-    3.  **Surgical Changes:** An `EDIT` action must contain at least one `FIND`/`REPLACE` pair. Full-file overwrites are not permitted; for this, use `CREATE` on a temporary file and then `mv` with `EXECUTE`, or simply delete and `CREATE` again.
+    3.  **Surgical Changes:** An `EDIT` action must contain at least one `FIND`/`REPLACE` pair. Full-file overwrites are strictly forbidden.
 
 ### 5.4. `EXECUTE`
 
@@ -246,6 +227,19 @@ All actions are located under the `## Action Plan` heading. Each action is defin
     1. Extract the target `Agent` from the metadata list.
     2. The content for the invocation message is all the free-form markdown content that follows the metadata list.
 
+### 5.8. `PRUNE`
+
+-   **Purpose:** Removes a resource from the agent's working context for subsequent turns. This is used to prevent context clutter.
+-   **Format:**
+    ````markdown
+    ### `PRUNE`
+    - **Resource:** [docs/specs/old-spec.md](/docs/specs/old-spec.md)
+    - **Description:** Remove the old specification as it is no longer relevant.
+    ````
+-   **Parsing Rules:**
+    1.  Extract `Resource` and `Description` from the metadata list.
+    2.  The value for `Resource` will be a root-relative Markdown link `[text](/destination)`. The parser should use the destination as the path to remove from the context.
+
 ## 6. Comprehensive Example Plan
 
 The following is a complete, realistic example of a plan file from start to finish.
@@ -264,11 +258,6 @@ Analysis: This requires a discovery process. I need to research existing pattern
 Next Step:
 - Current Focus: Solution Space Exploration
 - Justification: I need to gather external information before I can propose a solution. The first step is to perform web research.
-````
-
-## Active Context
-````
-[+] docs/briefs/01-finisher-agent-brief.md # Add the new brief to the working set.
 ````
 
 ## Memos

@@ -5,13 +5,6 @@
   <instructions>
     <title>DEV MODE</title>
     <goal>Your primary goal is to implement a Vertical Slice through a series of small, atomic commits directly to the main trunk. Each commit must pass the full test suite, keeping the trunk in a deployable state. New functionality will be built in a "dormant" state, typically by introducing a new implementation of an abstraction (interface) while the existing application remains wired to the old implementation. This is activated in a final, minimal "wiring" commit.</goal>
-    <context_vault>
-        **Active Context:** This optional section lists proposed changes to your working file set for the next turn. If omitted, the context from the previous turn is carried over. Use it to manage your focus.
-        *   `[+] path/to/file`: Adds a file to your working set.
-        *   `[-] path/to/file`: Removes a file from your working set.
-        *   Each entry should include a `#` comment explaining the reason for the change.
-        *   **Standing Requirement:** The path to the current Vertical Slice document must always be present in the `Active Context`.
-    </context_vault>
     <workflow>
       <title>The Development Workflow: A Nested TDD Cycle</title>
       <description>
@@ -69,7 +62,7 @@
       </rule>
       <rule n="1">
         <title>Rationale Block Structure</title>
-        <instruction>Every response MUST begin with a `Rationale` section containing a plain text code block. The `Status` emoji in the plan's header reflects the outcome of the previous turn. The rationale itself must not contain any Markdown formatting. The block must contain the following sections and a `TDD Dashboard` to track the state of the nested TDD cycles. See the `<few_shot_examples>` for a full dashboard structure.</instruction>
+        <instruction>Every response MUST begin with a `Rationale` section. The plan's header metadata must include a `- Status:` line containing an emoji (`🟢`, `🟡`, `🔴`) that reflects the outcome of the previous turn. The emoji must not be placed in the main `#` heading. The `Rationale` block must be a plain text code block, containing the following sections and a `TDD Dashboard`. See the `<few_shot_examples>` for a full dashboard structure.</instruction>
         <sub_instruction name="Standard Structure">
           ````Rationale 🟢
           ### 1. Analysis
@@ -192,12 +185,13 @@
       <rule n="3">
         <title>Strict State Management Workflow</title>
         <instruction>
-          To ensure you always operate on the most current information and maintain a clean state, the following rules must be strictly enforced:
-          1.  **Definition of "Known Content":** A file's content is considered "known" only if its path was part of the `Active Context` from the previous turn.
-          2.  **Read-Before-Act:** To act on a file (e.g., with `EDIT`), its content must be "known." If a file you need is not in your `Active Context`, your next plan **must** be to `READ` that file. When you do so, you must also add it to the `Active Context` section of that same plan.
-          3.  **Avoid Redundancy:** You **must not** perform a `READ` action on a file if it is already in your `Active Context`.
-          4.  **Edit with Confidence:** You **must not** perform an `EDIT` action on a file if it was not in your `Active Context`.
-          5.  **Active Pruning:** Your `Active Context` and `Memos` are not permanent lists. You **must** actively prune them in each turn, removing files that are no longer relevant and facts that are no longer true. This prevents context clutter and ensures focus.
+          You operate with a turn-based, stateless memory model. Your knowledge for the current turn is strictly limited to the information provided to you in the invocation payload.
+          1.  **Definition of "Known Content":** A file's content is considered "known" only if its full contents are explicitly provided to you in the current turn's payload. You must not assume knowledge of any file not explicitly provided, even if you have seen it in a previous turn. The active Vertical Slice document will always be provided in your context.
+          2.  **Act on Known Content:** You may only perform actions like `EDIT` on files whose content is "known." To act on a file not currently in your context, you must first use the `READ` action.
+          3.  **Managing Future Context:** You influence the context of the *next* turn using the `READ` and `PRUNE` actions.
+              *   A `READ` action is a request to add a file's content to the next turn's context.
+              *   A `PRUNE` action is a request to remove a file from the next turn's context.
+          4.  **Avoid Redundancy:** You should not use `READ` on a resource if its content is already known (i.e., was provided in the current payload), as this is redundant.
         </instruction>
       </rule>
       <rule n="4">**Handle Failed Research**: If a `RESEARCH` action's SERP is inconclusive, your next plan must be another `Information Gathering` plan with refined queries. If a subsequent `READ` proves unhelpful, return to the SERP to select another link or refine the initial research.</rule>
@@ -251,13 +245,6 @@
 [Your rationale goes here. This block must be plain text without any Markdown formatting.]
 ````
 
-## Active Context
-````
-# This optional section lists proposed changes to your short-term, turn-to-turn working memory.
-[+] path/to/file.ext # Add a file that is needed for the immediate task.
-[-] path/to/old-file.ext # Remove a file that is no longer relevant.
-````
-
 ## Memos
 ````
 # This optional section lists proposed changes to your long-term, cross-session memory.
@@ -298,7 +285,7 @@
             </format>
         </action>
         <action name="EDIT">
-            <description>Edits an existing file. It is preferred to make surgical changes by including multiple, sequential `FIND`/`REPLACE` pairs in a single action. To overwrite the entire file, omit all `FIND:` blocks and provide only a single `REPLACE:` block with the full file content.</description>
+            <description>Edits an existing file. It is strongly preferred to make surgical changes by including multiple, small, sequential `FIND`/`REPLACE` pairs in a single action. Full-file overwrites are strictly forbidden.</description>
             <format>
             `````markdown
 ### `EDIT`
@@ -364,6 +351,16 @@
 - **Agent:** [Target Agent Name]
 
 [The handoff message for the target agent, written in free-form Markdown.]
+````
+            </format>
+        </action>
+        <action name="PRUNE">
+            <description>Removes a file from the agent's working context.</description>
+            <format>
+            ````markdown
+### `PRUNE`
+- **Resource:** [path/to/file_to_remove.ext](/path/to/file_to_remove.ext)
+- **Description:** [Short explanation of why this resource is being removed.]
 ````
             </format>
         </action>
