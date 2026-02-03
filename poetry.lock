@@ -1138,6 +1138,18 @@ files = [
 ]
 
 [[package]]
+name = "mistletoe"
+version = "1.5.1"
+description = "A fast, extensible Markdown parser in pure Python."
+optional = false
+python-versions = "~=3.5"
+groups = ["main"]
+files = [
+    {file = "mistletoe-1.5.1-py3-none-any.whl", hash = "sha256:d3e97664798261503f685f6a6281b092628367cf3128fc68a015a993b0c4feb3"},
+    {file = "mistletoe-1.5.1.tar.gz", hash = "sha256:c5571ce6ca9cfdc7ce9151c3ae79acb418e067812000907616427197648030a3"},
+]
+
+[[package]]
 name = "mypy"
 version = "1.19.1"
 description = "Optional static typing for Python"
@@ -1928,4 +1940,4 @@ watchdog = ["watchdog (>=2.3)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10, <4.0"
-content-hash = "6d34c191d65b75db722131e6628c74f1450666176106853b52498170648b883a"
+content-hash = "7feba53c869eb3e5b1c34c80a26fd673ad1abdd8b6c074b7a44ec4c695066f61"

@@ -1,30 +1,35 @@
-# Application Service: PlanParser
+# Service: YamlPlanParser
 
-The `PlanParser` is a single-responsibility service within the hexagonal core. Its sole purpose is to parse a plan string, validate its structure, and convert it into a structured `Plan` domain object.
+- **Implements Port:** [IPlanParser](../ports/inbound/plan_parser.md)
 
-## 1. Design Principles
+## 1. Purpose
 
--   **Single Responsibility:** This service only deals with parsing. It does not execute actions or interact with the user.
+The `YamlPlanParser` service is the concrete implementation of `IPlanParser` responsible for parsing a plan from a YAML string into a structured `Plan` domain object. It acts as the primary validation and translation layer between the raw YAML input from the AI and the core application's domain model.
+
+## 2. Design Principles
+
+-   **Single Responsibility:** This service only deals with parsing YAML. It does not execute actions or interact with the user.
 -   **Error Handling:** It is responsible for gracefully handling parsing errors (e.g., invalid YAML, missing required fields) by raising a specific `InvalidPlanError` exception.
 -   **Decoupling:** The service is fully decoupled from the file system and other I/O. It operates purely on in-memory string data, making it highly portable and easy to test.
 
-## 2. Dependencies
+## 3. Dependencies
 
 -   **Outbound Ports:** None.
 
-## 3. Public Interface
+## 4. Public Interface
 
-The `PlanParser` service exposes a single method.
+The `YamlPlanParser` service implements the `parse` method from the `IPlanParser` port.
 
 ### `parse`
-Parses a plan string into a `Plan` domain object.
+Parses a YAML plan string into a `Plan` domain object.
 
 **Status:** Implemented
 
 ```python
 from teddy_executor.core.domain.models import Plan
+from teddy_executor.core.ports.inbound import IPlanParser
 
-class PlanParser:
+class YamlPlanParser(IPlanParser):
     def parse(self, plan_content: str) -> Plan:
         """
         Reads and parses the specified YAML plan string.
@@ -47,7 +52,7 @@ class PlanParser:
         pass
 ```
 
-## 4. Domain Models (Input/Output)
+## 5. Domain Models (Input/Output)
 
 ### `Plan` (Output)
-The `PlanParser` produces a `Plan` domain object, which is a strongly-typed dataclass representation of the plan. This model is defined in the [Domain Model documentation](../domain_model.md).
+The `YamlPlanParser` produces a `Plan` domain object. This model is defined in the [Domain Model documentation](../domain_model.md).

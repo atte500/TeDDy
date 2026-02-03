@@ -164,3 +164,15 @@ The `cli_formatter.py` module contains a `format_project_context` function. This
     print("Hello, World!")
     `````
     ```
+
+## 5. Plan Parser Factory
+
+To support both Markdown (`.md`) and YAML (`.yml`, `.yaml`) plan files, the `execute` command requires a factory mechanism to select the correct parser at runtime.
+
+### Logic
+The factory's logic must account for both file-based and clipboard-based input:
+
+1.  **File Input:** When a `[PLAN_FILE]` argument is provided, the factory will inspect the file's extension. `.md` will resolve to `MarkdownPlanParser`, while `.yml` or `.yaml` will resolve to `YamlPlanParser`.
+2.  **Clipboard Input:** When no file argument is given, the plan content is read from the clipboard. The factory will inspect the raw string content. If the first non-whitespace line of the string starts with `# ` (the standard for a level-1 Markdown heading), it will resolve `MarkdownPlanParser`. Otherwise, it will default to `YamlPlanParser`.
+
+This dual strategy ensures the correct parser is used transparently, decoupling the core application from the specific input source and format. The factory function will be part of the composition root in `main.py` and used by the `execute` command to retrieve the correct `IPlanParser` instance from the dependency injection container.
