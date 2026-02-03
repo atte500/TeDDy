@@ -15,6 +15,12 @@ class InvokeAction:
         return f"INVOKE action recognized for agent: {agent}"
 
 
+class PruneAction:
+    def execute(self, **kwargs: Any) -> str:
+        resource = kwargs.get("resource", "Unknown")
+        return f"PRUNE action recognized for resource: {resource}"
+
+
 class ActionFactory(IActionFactory):
     """
     A protocol-compliant factory that uses the DI container to resolve action handlers.
@@ -42,6 +48,7 @@ class ActionFactory(IActionFactory):
             "chat_with_user": IUserInteractor,
             "research": IWebSearcher,
             "invoke": InvokeAction,
+            "prune": PruneAction,
         }
 
     def _normalize_action_type(self, action_type: str) -> str:
@@ -67,6 +74,8 @@ class ActionFactory(IActionFactory):
         adapter_protocol = self._action_map[action_type_key]
         if adapter_protocol == InvokeAction:
             return InvokeAction()
+        if adapter_protocol == PruneAction:
+            return PruneAction()
         action_handler = self._container.resolve(adapter_protocol)
 
         method_map = {

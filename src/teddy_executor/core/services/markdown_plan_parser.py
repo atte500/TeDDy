@@ -363,7 +363,11 @@ class MarkdownPlanParser(IPlanParser):
                 if f"{key_text}:" in text:
                     link_node = self._find_node_in_tree(item, Link)
                     if link_node:
-                        params[param_key] = link_node.target
+                        target = link_node.target
+                        # Sanitize root-relative links (e.g., /path/to/file -> path/to/file)
+                        if target.startswith("/"):
+                            target = target[1:]
+                        params[param_key] = target
                     break
             else:  # If no link key matched, check for text keys
                 if text_key_map:

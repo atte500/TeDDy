@@ -59,7 +59,6 @@ class ActionDispatcher:
                 "create_file": {"file_path": "path"},
                 "edit": {"file_path": "path"},
                 "read": {"source": "path", "resource": "path"},
-                "prune": {"resource": "path"},
             }
 
             mapping = param_map.get(action_data.type.lower(), {})
