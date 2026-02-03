@@ -269,3 +269,42 @@ def test_parse_prune_action(parser: MarkdownPlanParser):
     assert action.params == {
         "resource": "/docs/specs/old-spec.md",
     }
+
+
+def test_parse_invoke_action(parser: MarkdownPlanParser):
+    """
+    Given a valid Markdown plan with an INVOKE action,
+    When the plan is parsed,
+    Then a valid Plan domain object is returned with correct action data.
+    """
+    # Arrange
+    plan_content = r"""
+# Invoke another agent
+- **Goal:** Handoff to the Architect.
+
+## Action Plan
+
+### `INVOKE`
+- **Agent:** Architect
+
+Handoff to the Architect.
+
+The brief is complete and located at `docs/briefs/01-brief.md`.
+"""
+    # Act
+    result_plan = parser.parse(plan_content)
+
+    # Assert
+    assert isinstance(result_plan, Plan)
+    assert len(result_plan.actions) == 1
+    action = result_plan.actions[0]
+
+    expected_message = (
+        "Handoff to the Architect.\n\n"
+        "The brief is complete and located at `docs/briefs/01-brief.md`."
+    )
+
+    assert action.type == "INVOKE"
+    assert action.description is None
+    assert action.params["agent"] == "Architect"
+    assert action.params["message"] == expected_message

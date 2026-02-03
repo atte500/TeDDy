@@ -72,6 +72,8 @@ class MarkdownPlanParser(IPlanParser):
                 actions.append(self._parse_chat_with_user_action(doc, heading))
             elif action_type == "PRUNE":
                 actions.append(self._parse_prune_action(doc, heading))
+            elif action_type == "INVOKE":
+                actions.append(self._parse_invoke_action(doc, heading))
 
         if not actions:
             raise InvalidPlanError("No actions found in the 'Action Plan' section.")
@@ -211,30 +213,55 @@ class MarkdownPlanParser(IPlanParser):
         params["edits"] = edits
         return ActionData(type="EDIT", description=description, params=params)
 
+    def _parse_invoke_action(
+        self, parent: Document, heading_node: Heading
+    ) -> ActionData:
+        """Parses an INVOKE action block."""
+        metadata_list = self._get_next_sibling(parent, heading_node)
+        if not isinstance(metadata_list, MdList):
+            raise InvalidPlanError("INVOKE action is missing metadata list.")
+
+        _, params = self._parse_action_metadata(
+            metadata_list, link_key_map={}, text_key_map={"Agent": "agent"}
+        )
+
+        content_nodes = self._get_subsequent_siblings(parent, metadata_list)
+        if not content_nodes:
+            raise InvalidPlanError("INVOKE action is missing message content.")
+
+        rendered_parts = []
+        with MarkdownRenderer() as renderer:
+            for node in content_nodes:
+                temp_doc = Document("")
+                temp_doc.children = [node]
+                rendered_parts.append(renderer.render(temp_doc).strip())
+        message = "\n\n".join(rendered_parts)
+
+        params["message"] = message
+
+        return ActionData(type="INVOKE", description=None, params=params)
+
     def _parse_execute_action(self, doc: Document, heading: Heading) -> ActionData:
         """Parses an EXECUTE action block."""
         metadata_list = self._get_next_sibling(doc, heading)
         if not isinstance(metadata_list, MdList):
             raise InvalidPlanError("EXECUTE action is missing metadata list.")
 
-        params: Dict[str, Any] = {}
-        description = ""
-        env_dict: Dict[str, str] = {}
+        description, params = self._parse_action_metadata(
+            metadata_list,
+            link_key_map={},
+            text_key_map={
+                "Expected Outcome": "expected_outcome",
+                "cwd": "cwd",
+            },
+        )
 
+        # Env is nested and needs special handling
+        env_dict: Dict[str, str] = {}
         if metadata_list.children:
             for item in metadata_list.children:
-                if not isinstance(item, ListItem):
-                    continue
-
                 item_text = self._get_child_text(item).strip()
-
-                if item_text.startswith("Description:"):
-                    description = item_text.split(":", 1)[1].strip()
-                elif item_text.startswith("Expected Outcome:"):
-                    params["expected_outcome"] = item_text.split(":", 1)[1].strip()
-                elif item_text.startswith("cwd:"):
-                    params["cwd"] = item_text.split(":", 1)[1].strip()
-                elif item_text.startswith("env:"):
+                if item_text.startswith("env:"):
                     env_list = self._find_node_in_tree(item, MdList)
                     if env_list and env_list.children:
                         for env_item in env_list.children:
@@ -245,7 +272,6 @@ class MarkdownPlanParser(IPlanParser):
                                         part.strip() for part in env_text.split(":", 1)
                                     ]
                                     env_dict[key] = value.strip('"')
-
         if env_dict:
             params["env"] = env_dict
 
@@ -313,7 +339,10 @@ class MarkdownPlanParser(IPlanParser):
         )
 
     def _parse_action_metadata(
-        self, metadata_list: MdList, link_key_map: dict[str, str]
+        self,
+        metadata_list: MdList,
+        link_key_map: dict[str, str],
+        text_key_map: Optional[dict[str, str]] = None,
     ) -> tuple[Optional[str], dict[str, Any]]:
         """
         Parses the common metadata list for an action.
@@ -336,6 +365,12 @@ class MarkdownPlanParser(IPlanParser):
                     if link_node:
                         params[param_key] = link_node.target
                     break
+            else:  # If no link key matched, check for text keys
+                if text_key_map:
+                    for key_text, param_key in text_key_map.items():
+                        if f"{key_text}:" in text:
+                            params[param_key] = text.split(":", 1)[1].strip()
+                            break
         return description, params
 
     # --- AST Helper Methods ---
