@@ -41,8 +41,8 @@ def test_get_prompt_retrieves_default_prompt_from_root(mock_clipboard, tmp_path)
 
     assert result.exit_code == 0
     assert "dummy root prompt content" in result.stdout
-    # The confirmation message is printed to the merged stdout
-    assert "Output copied to clipboard." in result.stdout
+    # The confirmation message is printed to stderr
+    assert "Output copied to clipboard." in result.stderr
 
 
 def test_get_prompt_retrieves_local_override_prompt(mock_clipboard, tmp_path):
@@ -76,7 +76,7 @@ def test_get_prompt_fails_for_non_existent_prompt(mock_clipboard):
     result = runner.invoke(app, ["get-prompt", "non-existent-prompt"])
 
     assert result.exit_code != 0
-    assert "Prompt 'non-existent-prompt' not found." in result.stdout
+    assert "Prompt 'non-existent-prompt' not found." in result.stderr
 
 
 def test_get_prompt_with_no_copy_flag(mock_clipboard, tmp_path):

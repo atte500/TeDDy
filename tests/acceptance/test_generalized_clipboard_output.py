@@ -41,7 +41,7 @@ def test_context_command_copies_to_clipboard_by_default(mock_pyperclip: MagicMoc
 
         mock_pyperclip.copy.assert_called_once()
         # Ensure the confirmation message is present
-        assert confirmation_message in result.stdout
+        assert confirmation_message in result.stderr
 
         # The content copied to the clipboard is everything *before* the confirmation message.
         # We use rsplit to ensure we split on the *last* occurrence (the actual message),
@@ -114,7 +114,7 @@ def test_execute_command_copies_to_clipboard_by_default(
 
     # Assert
     assert result.exit_code == 0
-    assert "Execution report copied to clipboard." in result.stdout
+    assert "Execution report copied to clipboard." in result.stderr
     mock_pyperclip.copy.assert_called_once()
 
     # Parse the stdout to get the canonical report dict

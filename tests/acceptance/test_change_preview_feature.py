@@ -59,9 +59,9 @@ def test_in_terminal_diff_is_shown_for_create_file(tmp_path: Path, monkeypatch):
         "+Second line.",
     ]
     for line in expected_diff:
-        assert line in result.stdout
+        assert line in result.stderr
 
-    assert "Approve? (y/n):" in result.stdout
+    assert "Approve? (y/n):" in result.stderr
 
 
 def test_in_terminal_diff_is_shown_as_fallback(tmp_path: Path, monkeypatch):
@@ -112,9 +112,9 @@ def test_in_terminal_diff_is_shown_as_fallback(tmp_path: Path, monkeypatch):
 -Hello, world!
 +Hello, TeDDy!
 ------------"""
-    assert expected_diff_output in result.stdout
+    assert expected_diff_output in result.stderr
 
-    assert "Approve? (y/n):" in result.stdout
+    assert "Approve? (y/n):" in result.stderr
 
 
 def test_vscode_is_used_as_fallback(tmp_path: Path, monkeypatch):
@@ -261,12 +261,12 @@ def test_invalid_custom_tool_falls_back_to_terminal(tmp_path: Path, monkeypatch)
     assert result.exit_code == 0
 
     # AND THEN: The in-terminal diff should be shown
-    assert "--- a/hello.txt" in result.stdout
-    assert "+Hello, TeDDy!" in result.stdout
+    assert "--- a/hello.txt" in result.stderr
+    assert "+Hello, TeDDy!" in result.stderr
     # AND a warning should be printed
     assert (
         "Warning: Custom diff tool 'nonexistent-tool' not found. Falling back to in-terminal diff."
-        in result.stdout
+        in result.stderr
     )
 
     # AND THEN: The external tool should NOT have been called
