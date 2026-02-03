@@ -123,3 +123,43 @@ class MyClass:
         action.params["edits"][0]["replace"]
         == "class MyClass:\n    def new_method(self):\n        pass"
     )
+
+
+def test_parse_execute_action(parser: MarkdownPlanParser):
+    """
+    Given a valid Markdown plan with an EXECUTE action,
+    When the plan is parsed,
+    Then a valid Plan domain object is returned with correct action data.
+    """
+    # Arrange
+    plan_content = """
+# Execute a command
+- **Goal:** Run a test.
+
+## Action Plan
+
+### `EXECUTE`
+- **Description:** Run the test suite.
+- **Expected Outcome:** All tests will pass.
+- **cwd:** /tmp/tests
+- **env:**
+    - `API_KEY`: "secret"
+    - `DEBUG`: "1"
+````shell
+poetry run pytest
+````
+"""
+    # Act
+    result_plan = parser.parse(plan_content)
+
+    # Assert
+    assert isinstance(result_plan, Plan)
+    assert len(result_plan.actions) == 1
+    action = result_plan.actions[0]
+
+    assert action.type == "EXECUTE"
+    assert action.description == "Run the test suite."
+    assert action.params["command"] == "poetry run pytest"
+    assert action.params["expected_outcome"] == "All tests will pass."
+    assert action.params["cwd"] == "/tmp/tests"
+    assert action.params["env"] == {"API_KEY": "secret", "DEBUG": "1"}

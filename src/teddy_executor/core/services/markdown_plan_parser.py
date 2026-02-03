@@ -1,9 +1,10 @@
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 import mistletoe
 from mistletoe.block_token import (
     CodeFence,
     Heading,
     List as MdList,
+    ListItem,
     Document,
     Paragraph,
 )
@@ -62,7 +63,8 @@ class MarkdownPlanParser(IPlanParser):
                 actions.append(self._parse_read_action(doc, heading))
             elif action_type == "EDIT":
                 actions.append(self._parse_edit_action(doc, heading))
-            # Other action parsers will be added hereedits"][0]["replace"] == "class MyClass:\n    def new_method(self):\n        pass"
+            elif action_type == "EXECUTE":
+                actions.append(self._parse_execute_action(doc, heading))
 
         if not actions:
             raise InvalidPlanError("No actions found in the 'Action Plan' section.")
@@ -189,6 +191,52 @@ class MarkdownPlanParser(IPlanParser):
 
         params["edits"] = edits
         return ActionData(type="EDIT", description=description, params=params)
+
+    def _parse_execute_action(self, doc: Document, heading: Heading) -> ActionData:
+        """Parses an EXECUTE action block."""
+        metadata_list = self._get_next_sibling(doc, heading)
+        if not isinstance(metadata_list, MdList):
+            raise InvalidPlanError("EXECUTE action is missing metadata list.")
+
+        params: Dict[str, Any] = {}
+        description = ""
+        env_dict: Dict[str, str] = {}
+
+        if metadata_list.children:
+            for item in metadata_list.children:
+                if not isinstance(item, ListItem):
+                    continue
+
+                item_text = self._get_child_text(item).strip()
+
+                if item_text.startswith("Description:"):
+                    description = item_text.split(":", 1)[1].strip()
+                elif item_text.startswith("Expected Outcome:"):
+                    params["expected_outcome"] = item_text.split(":", 1)[1].strip()
+                elif item_text.startswith("cwd:"):
+                    params["cwd"] = item_text.split(":", 1)[1].strip()
+                elif item_text.startswith("env:"):
+                    env_list = self._find_node_in_tree(item, MdList)
+                    if env_list and env_list.children:
+                        for env_item in env_list.children:
+                            if isinstance(env_item, ListItem):
+                                env_text = self._get_child_text(env_item).strip()
+                                if ":" in env_text:
+                                    key, value = [
+                                        part.strip() for part in env_text.split(":", 1)
+                                    ]
+                                    env_dict[key] = value.strip('"')
+
+        if env_dict:
+            params["env"] = env_dict
+
+        command_block = self._find_next_node_of_type(doc, metadata_list, CodeFence)
+        if not command_block:
+            raise InvalidPlanError("EXECUTE action is missing command code block.")
+
+        params["command"] = self._get_child_text(command_block).strip()
+
+        return ActionData(type="EXECUTE", description=description, params=params)
 
     def _parse_action_metadata(
         self, metadata_list: MdList, link_key_map: dict[str, str]
