@@ -52,6 +52,8 @@ class MarkdownPlanParser(IPlanParser):
             action_type = self._get_child_text(heading).strip().replace("`", "")
             if action_type == "CREATE":
                 actions.append(self._parse_create_action(doc, heading))
+            elif action_type == "READ":
+                actions.append(self._parse_read_action(doc, heading))
             # Other action parsers will be added here
 
         if not actions:
@@ -86,23 +88,9 @@ class MarkdownPlanParser(IPlanParser):
         if not isinstance(metadata_list, MdList):
             raise InvalidPlanError("CREATE action is missing metadata list.")
 
-        params = {}
-        description = None
-        if metadata_list.children:
-            for item in metadata_list.children:
-                text = self._get_child_text(item)
-                if "File Path:" in text:
-                    link_node = self._find_node_in_tree(item, Link)
-                    if link_node:
-                        # The mistletoe `Link.target` attribute contains the path.
-                        # For acceptance tests using `tmp_path`, this will be an absolute path.
-                        # For real plans, it will be a "root-relative" path (e.g., '/src/main.py').
-                        # We pass the path through unmodified, as downstream components are
-                        # responsible for handling both absolute and relative paths correctly.
-                        # DO NOT strip the leading '/' here.
-                        params["path"] = link_node.target
-                elif "Description:" in text:
-                    description = text.split(":", 1)[1].strip()
+        description, params = self._parse_action_metadata(
+            metadata_list, link_key_map={"File Path": "path"}
+        )
 
         code_block = self._find_next_node_of_type(parent, metadata_list, CodeFence)
         if not code_block:
@@ -114,6 +102,44 @@ class MarkdownPlanParser(IPlanParser):
             params["content"] = ""
 
         return ActionData(type="CREATE", description=description, params=params)
+
+    def _parse_read_action(self, parent: Document, heading_node: Heading) -> ActionData:
+        """Parses a READ action block."""
+        metadata_list = self._get_next_sibling(parent, heading_node)
+        if not isinstance(metadata_list, MdList):
+            raise InvalidPlanError("READ action is missing metadata list.")
+
+        description, params = self._parse_action_metadata(
+            metadata_list, link_key_map={"Resource": "resource"}
+        )
+
+        return ActionData(type="READ", description=description, params=params)
+
+    def _parse_action_metadata(
+        self, metadata_list: MdList, link_key_map: dict[str, str]
+    ) -> tuple[Optional[str], dict[str, Any]]:
+        """
+        Parses the common metadata list for an action.
+        Extracts the description and any specified link-based parameters.
+        """
+        params: dict[str, Any] = {}
+        description: Optional[str] = None
+        if not metadata_list.children:
+            return description, params
+
+        for item in metadata_list.children:
+            text = self._get_child_text(item)
+            if "Description:" in text:
+                description = text.split(":", 1)[1].strip()
+                continue
+
+            for key_text, param_key in link_key_map.items():
+                if f"{key_text}:" in text:
+                    link_node = self._find_node_in_tree(item, Link)
+                    if link_node:
+                        params[param_key] = link_node.target
+                    break
+        return description, params
 
     # --- AST Helper Methods ---
 

@@ -43,3 +43,35 @@ Hello, world!
         "path": "/hello.txt",
         "content": "Hello, world!",
     }
+
+
+def test_parse_read_action(parser: MarkdownPlanParser):
+    """
+    Given a valid Markdown plan with a READ action,
+    When the plan is parsed,
+    Then a valid Plan domain object is returned with correct action data.
+    """
+    # Arrange
+    plan_content = """
+# Read a file
+- **Goal:** Read the architecture document.
+
+## Action Plan
+
+### `READ`
+- **Resource:** [docs/ARCHITECTURE.md](/docs/ARCHITECTURE.md)
+- **Description:** Read the current architectural conventions.
+"""
+    # Act
+    result_plan = parser.parse(plan_content)
+
+    # Assert
+    assert isinstance(result_plan, Plan)
+    assert len(result_plan.actions) == 1
+    action = result_plan.actions[0]
+
+    assert action.type == "READ"
+    assert action.description == "Read the current architectural conventions."
+    assert action.params == {
+        "resource": "/docs/ARCHITECTURE.md",
+    }
