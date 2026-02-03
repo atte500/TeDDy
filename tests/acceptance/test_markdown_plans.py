@@ -1,9 +1,9 @@
 from pathlib import Path
 from unittest.mock import patch
-import yaml
 from typer.testing import CliRunner
 
 from teddy_executor.main import app, create_container
+from .helpers import parse_yaml_report
 
 
 def test_execute_markdown_plan_happy_path(tmp_path: Path):
@@ -52,7 +52,7 @@ Hello, world!
     )
 
     # Verify the report output
-    report = yaml.safe_load(result.stdout)
+    report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "SUCCESS"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "SUCCESS"

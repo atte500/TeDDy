@@ -22,13 +22,37 @@ def _convert_paths(data: Any) -> Any:
 
 def extract_yaml_from_stdout(output: str) -> str:
     """
-    Extracts the YAML report from the full stdout, stripping any trailing
-    human-readable messages.
+    Extracts the YAML report from the full stdout.
+
+    This is robust against preceding interactive prompts and trailing messages
+    by searching for the known start of the YAML report.
     """
+    # The YAML report reliably starts with "run_summary:".
+    # Some interactive prompts might add a "---" diff output first.
+    # The report itself might start with a document separator "---".
+    # Find the last occurrence of "---" if it exists, otherwise start from the beginning.
+
+    lines = output.splitlines()
+    start_index = 0
+    for i, line in enumerate(lines):
+        # The YAML report always contains this key.
+        if line.strip().startswith("run_summary:"):
+            # The report might start with a '---' separator on the line above.
+            if i > 0 and lines[i - 1].strip() == "---":
+                start_index = i - 1
+            else:
+                start_index = i
+            break
+
+    yaml_lines = lines[start_index:]
+
+    # Strip any trailing clipboard messages
+    yaml_str = "\n".join(yaml_lines)
     separator = "\nExecution report copied to clipboard."
-    if separator in output:
-        return output.split(separator)[0].strip()
-    return output.strip()
+    if separator in yaml_str:
+        yaml_str = yaml_str.split(separator)[0]
+
+    return yaml_str
 
 
 def parse_yaml_report(stdout: str) -> dict:

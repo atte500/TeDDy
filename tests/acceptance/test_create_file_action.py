@@ -4,6 +4,7 @@ import yaml
 from typer.testing import CliRunner
 
 from teddy_executor.main import app, create_container
+from .helpers import parse_yaml_report
 
 
 def test_create_file_happy_path(tmp_path: Path):
@@ -40,7 +41,7 @@ def test_create_file_happy_path(tmp_path: Path):
     )
 
     # Verify the report output
-    report = yaml.safe_load(result.stdout)
+    report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "SUCCESS"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "SUCCESS"
@@ -82,7 +83,7 @@ def test_create_file_when_file_exists_fails_gracefully(tmp_path: Path):
     assert existing_file.read_text() == original_content
 
     # The report should clearly indicate the failure
-    report = yaml.safe_load(result.stdout)
+    report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "FAILURE"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "FAILURE"

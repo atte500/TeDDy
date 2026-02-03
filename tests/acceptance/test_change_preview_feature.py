@@ -7,6 +7,7 @@ from typer.testing import CliRunner
 
 from teddy_executor.core.ports.outbound import IUserInteractor
 from teddy_executor.main import app, create_container
+from .helpers import parse_yaml_report
 
 runner = CliRunner()
 
@@ -44,12 +45,12 @@ def test_in_terminal_diff_is_shown_for_create_file(tmp_path: Path, monkeypatch):
 
     # THEN: The command should succeed and the file should be created
     assert result.exit_code == 0
-    report = yaml.safe_load(result.stdout)
+    report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "SUCCESS"
     assert new_file_path.exists()
     assert "Second line" in new_file_path.read_text()
 
-    # AND THEN: A diff should have been printed to stderr
+    # AND THEN: A diff should have been printed to the merged stdout
     expected_diff = [
         f"--- a/{new_file_path.name}",
         f"+++ b/{new_file_path.name}",
@@ -58,9 +59,9 @@ def test_in_terminal_diff_is_shown_for_create_file(tmp_path: Path, monkeypatch):
         "+Second line.",
     ]
     for line in expected_diff:
-        assert line in result.stderr
+        assert line in result.stdout
 
-    assert "Approve? (y/n):" in result.stderr
+    assert "Approve? (y/n):" in result.stdout
 
 
 def test_in_terminal_diff_is_shown_as_fallback(tmp_path: Path, monkeypatch):
@@ -99,12 +100,11 @@ def test_in_terminal_diff_is_shown_as_fallback(tmp_path: Path, monkeypatch):
 
     # THEN: The command should succeed and the file should be changed
     assert result.exit_code == 0
-    report = yaml.safe_load(result.stdout)
+    report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "SUCCESS"
     assert hello_path.read_text() == "Hello, TeDDy!"
 
-    # AND THEN: A diff should have been printed to stderr before the prompt
-    # We check stderr because prompts are written there.
+    # AND THEN: A diff should have been printed to the merged stdout before the prompt
     expected_diff_output = """--- Diff ---
 --- a/hello.txt
 +++ b/hello.txt
@@ -112,9 +112,9 @@ def test_in_terminal_diff_is_shown_as_fallback(tmp_path: Path, monkeypatch):
 -Hello, world!
 +Hello, TeDDy!
 ------------"""
-    assert expected_diff_output in result.stderr
+    assert expected_diff_output in result.stdout
 
-    assert "Approve? (y/n):" in result.stderr
+    assert "Approve? (y/n):" in result.stdout
 
 
 def test_vscode_is_used_as_fallback(tmp_path: Path, monkeypatch):
@@ -156,7 +156,7 @@ def test_vscode_is_used_as_fallback(tmp_path: Path, monkeypatch):
 
     # THEN: The command should succeed
     assert result.exit_code == 0
-    report = yaml.safe_load(result.stdout)
+    report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "SUCCESS"
 
     # AND THEN: subprocess.run should have been called with the correct args
@@ -168,7 +168,7 @@ def test_vscode_is_used_as_fallback(tmp_path: Path, monkeypatch):
     assert command_list[2] == "--diff"
     assert "--wait" not in command_list
     # Ensure the diff is not printed in the terminal as it's handled externally
-    assert "--- a/hello.txt" not in result.stderr
+    assert "--- a/hello.txt" not in result.stdout
 
 
 def test_custom_diff_tool_is_used_from_env(tmp_path: Path, monkeypatch):
@@ -261,12 +261,12 @@ def test_invalid_custom_tool_falls_back_to_terminal(tmp_path: Path, monkeypatch)
     assert result.exit_code == 0
 
     # AND THEN: The in-terminal diff should be shown
-    assert "--- a/hello.txt" in result.stderr
-    assert "+Hello, TeDDy!" in result.stderr
+    assert "--- a/hello.txt" in result.stdout
+    assert "+Hello, TeDDy!" in result.stdout
     # AND a warning should be printed
     assert (
         "Warning: Custom diff tool 'nonexistent-tool' not found. Falling back to in-terminal diff."
-        in result.stderr
+        in result.stdout
     )
 
     # AND THEN: The external tool should NOT have been called
@@ -312,4 +312,4 @@ def test_no_diff_is_shown_for_auto_approved_plans(tmp_path: Path):
     # AND THEN: The interactor's confirm_action method should never be called
     mock_interactor.confirm_action.assert_not_called()
     # And no diff should be in the output
-    assert "--- Diff ---" not in result.stderr
+    assert "--- Diff ---" not in result.stdout

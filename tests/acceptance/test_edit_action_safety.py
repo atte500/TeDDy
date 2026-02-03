@@ -4,6 +4,7 @@ import yaml
 from typer.testing import CliRunner
 
 from teddy_executor.main import app, create_container
+from .helpers import parse_yaml_report
 
 
 def test_edit_action_fails_on_multiple_occurrences(tmp_path: Path):
@@ -42,7 +43,7 @@ def test_edit_action_fails_on_multiple_occurrences(tmp_path: Path):
     assert result.exit_code == 1
     assert file_to_edit.read_text() == original_content  # File should be unchanged
 
-    report = yaml.safe_load(result.stdout)
+    report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "FAILURE"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "FAILURE"

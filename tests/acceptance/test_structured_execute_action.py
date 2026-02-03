@@ -117,7 +117,7 @@ def test_execute_action_fails_with_unsafe_cwd_traversal(tmp_path: Path):
         result = runner.invoke(app, ["execute", str(plan_file), "--yes"])
 
     # Assert
-    report = yaml.safe_load(result.stdout)
+    report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "FAILURE"
     error_log = report["action_logs"][0]
     assert error_log["status"] == "FAILURE"
@@ -157,7 +157,7 @@ def test_execute_action_fails_with_absolute_cwd(tmp_path: Path):
         result = runner.invoke(app, ["execute", str(plan_file), "--yes"])
 
     # Assert
-    report = yaml.safe_load(result.stdout)
+    report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "FAILURE"
     error_log = report["action_logs"][0]
     assert error_log["status"] == "FAILURE"

@@ -4,6 +4,8 @@ from unittest.mock import patch
 import yaml
 from typer.testing import CliRunner
 
+from .helpers import parse_yaml_report
+
 from teddy_executor.main import app, create_container
 
 
@@ -52,7 +54,7 @@ def test_create_file_on_existing_file_fails_and_reports_correctly(tmp_path: Path
         "The original file should not be modified"
     )
 
-    report = yaml.safe_load(result.stdout)
+    report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "FAILURE"
 
     action_log = report["action_logs"][0]

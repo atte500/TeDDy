@@ -5,6 +5,7 @@ from typer.testing import CliRunner
 
 from teddy_executor.main import app, create_container
 from teddy_executor.core.ports.outbound import IUserInteractor
+from .helpers import parse_yaml_report
 
 
 def test_interactive_approval_and_execution(tmp_path: Path):
@@ -42,7 +43,7 @@ def test_interactive_approval_and_execution(tmp_path: Path):
     assert test_file.read_text() == "Interactive Hello"
     mock_interactor.confirm_action.assert_called_once()
 
-    report = yaml.safe_load(result.stdout)
+    report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "SUCCESS"
 
 
@@ -77,7 +78,7 @@ def test_interactive_skip_with_reason(tmp_path: Path):
     assert result.exit_code == 1  # A skipped plan is a failed plan
     assert not test_file.exists()
 
-    report = yaml.safe_load(result.stdout)
+    report = parse_yaml_report(result.stdout)
     # The run is a FAILURE because an action did not complete successfully
     assert report["run_summary"]["status"] == "FAILURE"
     action_log = report["action_logs"][0]

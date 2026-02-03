@@ -4,6 +4,7 @@ import yaml
 from typer.testing import CliRunner
 
 from teddy_executor.main import app, create_container
+from .helpers import parse_yaml_report
 
 
 def test_read_action_happy_path(tmp_path: Path):
@@ -31,7 +32,7 @@ def test_read_action_happy_path(tmp_path: Path):
 
     # Assert
     assert result.exit_code == 0
-    report = yaml.safe_load(result.stdout)
+    report = parse_yaml_report(result.stdout)
     action_log = report["action_logs"][0]
     assert action_log["status"] == "SUCCESS"
 

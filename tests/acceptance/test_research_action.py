@@ -4,6 +4,7 @@ import yaml
 from typer.testing import CliRunner
 
 from teddy_executor.main import app, create_container
+from .helpers import parse_yaml_report
 from teddy_executor.core.ports.outbound import IWebSearcher
 from teddy_executor.core.domain.models._legacy_models import (
     SERPReport,
@@ -62,7 +63,7 @@ def test_research_action_success(tmp_path: Path):
     assert result.exit_code == 0
     mock_web_searcher.search.assert_called_once_with(queries=["python typer"])
 
-    report = yaml.safe_load(result.stdout)
+    report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "SUCCESS"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "SUCCESS"

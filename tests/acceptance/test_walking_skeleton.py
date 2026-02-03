@@ -4,6 +4,7 @@ import yaml
 from typer.testing import CliRunner
 
 from teddy_executor.main import app, create_container
+from .helpers import parse_yaml_report
 
 
 def test_successful_execution(tmp_path: Path):
@@ -33,7 +34,7 @@ def test_successful_execution(tmp_path: Path):
         f"Teddy should exit with 0 on success. Output: {result.stdout}"
     )
 
-    report = yaml.safe_load(result.stdout)
+    report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "SUCCESS"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "SUCCESS"
@@ -68,7 +69,7 @@ def test_failed_execution(tmp_path: Path):
     # ASSERT
     assert result.exit_code == 1, "Teddy should exit with 1 on failure"
 
-    report = yaml.safe_load(result.stdout)
+    report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "FAILURE"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "FAILURE"

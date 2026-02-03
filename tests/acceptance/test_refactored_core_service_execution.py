@@ -4,6 +4,7 @@ import yaml
 from typer.testing import CliRunner
 
 from teddy_executor.main import app, create_container
+from .helpers import parse_yaml_report
 
 
 def test_successful_plan_execution_with_refactored_services(tmp_path: Path):
@@ -36,6 +37,6 @@ def test_successful_plan_execution_with_refactored_services(tmp_path: Path):
     assert target_file.exists()
     assert target_file.read_text() == "Hello, World!"
 
-    report = yaml.safe_load(result.stdout)
+    report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "SUCCESS"
     assert report["action_logs"][0]["status"] == "SUCCESS"

@@ -3,9 +3,10 @@ import os
 import shlex
 import shutil
 import subprocess
-import sys
 import tempfile
 from pathlib import Path
+
+import typer
 
 from teddy_executor.core.domain.models.plan import ActionData
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
@@ -17,12 +18,14 @@ class ConsoleInteractorAdapter(IUserInteractor):
         Presents a prompt to the user on the console and captures their input.
         Input is terminated by a single empty line on stdin.
         """
-        # Print prompt to stderr so it doesn't interfere with stdout scraping in tests
-        print(prompt, file=sys.stderr, flush=True)
+        typer.echo(prompt, err=True)
 
         lines = []
         while True:
             try:
+                # Use typer.prompt to ensure it works correctly with CliRunner
+                # We expect multiline input, so we don't use typer.prompt directly
+                # for the whole block but line by line.
                 line = input()
                 if line == "":
                     break
@@ -69,9 +72,9 @@ class ConsoleInteractorAdapter(IUserInteractor):
             if not line.endswith("\n"):
                 diff_lines.append("\n")
 
-        print("--- Diff ---", file=sys.stderr)
-        sys.stderr.write("".join(diff_lines).rstrip() + "\n")
-        print("------------", file=sys.stderr)
+        typer.echo("--- Diff ---", err=True)
+        typer.echo("".join(diff_lines).rstrip(), err=True)
+        typer.echo("------------", err=True)
 
     def _get_diff_viewer_command(self) -> list[str] | None:
         """Determines the command for an external diff viewer, if available."""
@@ -87,10 +90,10 @@ class ConsoleInteractorAdapter(IUserInteractor):
 
             # If the user specified a tool but it wasn't found, warn them
             # and fall back to the terminal diff by returning None.
-            print(
+            typer.echo(
                 f"Warning: Custom diff tool '{tool_name}' not found. "
                 "Falling back to in-terminal diff.",
-                file=sys.stderr,
+                err=True,
             )
             return None
 
@@ -129,21 +132,21 @@ class ConsoleInteractorAdapter(IUserInteractor):
                     self._show_in_terminal_diff(action)
 
             prompt = f"{action_prompt}\nApprove? (y/n): "
-            # Use stderr for prompts to not pollute stdout
-            print(prompt, file=sys.stderr, flush=True, end="")
-            response = input().lower().strip()
+            # Use typer.prompt which handles echoing to stderr correctly
+            response = typer.prompt(prompt, default="n", show_default=False, err=True)
 
-            if response.startswith("y"):
+            if response.lower().strip().startswith("y"):
                 return True, ""
 
             reason_prompt = "Reason for skipping (optional): "
-            print(reason_prompt, file=sys.stderr, flush=True, end="")
-            reason = input().strip()
+            reason = typer.prompt(
+                reason_prompt, default="", show_default=False, err=True
+            )
             return False, reason
-        except EOFError:
+        except (EOFError, typer.Abort):
             # If input stream is closed (e.g., in non-interactive script),
             # default to denying the action.
-            print("\n", file=sys.stderr, flush=True)  # Ensure a newline after prompt
+            typer.echo("\nAborted.", err=True)
             return False, "Skipped due to non-interactive session."
         finally:
             for file_path in temp_files:
