@@ -1,5 +1,28 @@
 # Service: MarkdownPlanParser
 
+**Status:** Implemented
+
+## 1. Responsibilities
+- Parses a Markdown plan string into a `Plan` domain object using `mistletoe`.
+- Extracts plan metadata (Status, Agent, Goal) from the header.
+- Parses action blocks (`### ACTION`) and their specific parameters (metadata list + code blocks).
+- Supports atomic multi-edit operations in `EDIT` actions.
+- Pre-processes content to fix potential fence nesting issues (via `FencePreProcessor`).
+
+## 2. Collaborators
+- **Implements:** `IPlanParser` (Port)
+- **Uses:** `mistletoe` (AST Parser Library)
+- **Creates:** `Plan`, `ActionData` (Domain Models)
+
+## 3. Supported Actions
+- `CREATE`: Extracts content from code block.
+- `EDIT`: Extracts `FIND`/`REPLACE` pairs.
+- `READ`, `PRUNE`: Extracts resource path.
+- `EXECUTE`: Extracts command, env vars, and expected outcome.
+- `RESEARCH`: Extracts queries.
+- `CHAT_WITH_USER`: Extracts prompt text.
+- `INVOKE`: Extracts agent and message.
+
 - **Implements Port:** [IPlanParser](../ports/inbound/plan_parser.md)
 
 ## 1. Purpose
