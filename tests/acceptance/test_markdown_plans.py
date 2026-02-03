@@ -34,7 +34,7 @@ Hello, world!
 ````
 """
     plan_file = tmp_path / "plan.md"
-    plan_file.write_text(plan_content)
+    plan_file.write_text(plan_content, encoding="utf-8")
 
     real_container = create_container()
 
