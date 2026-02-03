@@ -26,23 +26,23 @@ The codebase exploration confirms that this refactoring is primarily a task of m
 
 This brief will be implemented as a single, comprehensive vertical slice. The order of operations is critical to ensure a clean transition.
 
--   **[ ] Task: Relocate Core Files**
+-   **[✅] Task: Relocate Core Files**
     -   Move the contents of `packages/executor/src/` to a new root-level `src/` directory.
     -   Move the contents of `packages/executor/tests/` to a new root-level `tests/` directory.
 
--   **[ ] Task: Consolidate `pyproject.toml`**
+-   **[✅] Task: Consolidate `pyproject.toml`**
     -   Merge all dependencies, dev dependencies, and scripts from `packages/executor/pyproject.toml` into the root `pyproject.toml`.
     -   Update the `[tool.poetry.packages]` definition in the root `pyproject.toml` to point to the new `src` directory.
     -   Delete `packages/executor/pyproject.toml` and `packages/executor/poetry.lock`.
 
--   **[ ] Task: Update CI & Pre-commit Configuration**
+-   **[✅] Task: Update CI & Pre-commit Configuration**
     -   In `.github/workflows/ci.yml`, remove all `working-directory` keys pointing to the old package and update the cache path.
     -   In `.pre-commit-config.yaml`, update all hooks to run `poetry run` directly from the project root.
 
--   **[ ] Task: Clean Up Old Structure**
+-   **[✅] Task: Clean Up Old Structure**
     -   Delete the now-empty `packages/` directory.
     -   Delete the obsolete `packages/tui/` directory as originally planned.
 
--   **[ ] Task: Verify the Transition**
+-   **[✅] Task: Verify the Transition**
     -   Run `poetry lock` and `poetry install` from the project root to ensure dependencies resolve correctly.
     -   Run the full test suite (`poetry run pytest`) to confirm that all tests pass with the new structure.
