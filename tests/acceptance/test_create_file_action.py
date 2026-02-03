@@ -13,7 +13,7 @@ def test_create_file_happy_path(tmp_path: Path):
     Then the file should be created with the correct content and the report is valid.
     """
     # Arrange
-    runner = CliRunner(mix_stderr=False)
+    runner = CliRunner()
     file_name = "new_file.txt"
     new_file_path = tmp_path / file_name
     plan_structure = [
@@ -54,7 +54,7 @@ def test_create_file_when_file_exists_fails_gracefully(tmp_path: Path):
     and the report should indicate the failure.
     """
     # Arrange
-    runner = CliRunner(mix_stderr=False)
+    runner = CliRunner()
     existing_file = tmp_path / "existing.txt"
     original_content = "Original content"
     existing_file.write_text(original_content)

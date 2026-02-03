@@ -19,7 +19,7 @@ def test_research_action_success(tmp_path: Path):
     Then it should return a report with the mocked search results.
     """
     # Arrange
-    runner = CliRunner(mix_stderr=False)
+    runner = CliRunner()
     plan_structure = [
         {
             "action": "research",

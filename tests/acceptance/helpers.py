@@ -6,7 +6,7 @@ from teddy_executor.main import app
 from typer.testing import CliRunner, Result
 
 
-runner = CliRunner(mix_stderr=False)
+runner = CliRunner()
 
 
 def _convert_paths(data: Any) -> Any:

@@ -8,7 +8,7 @@ from teddy_executor.core.ports.outbound import IUserInteractor
 from teddy_executor.core.services.action_dispatcher import ActionDispatcher
 from teddy_executor.core.domain.models import ActionLog, ActionStatus
 
-runner = CliRunner(mix_stderr=False)
+runner = CliRunner()
 
 
 def test_interactive_prompt_shows_description(tmp_path: Path):
@@ -62,7 +62,7 @@ def test_chat_with_user_skips_approval_prompt(tmp_path: Path):
     Then the approval prompt should be skipped and the action dispatched directly.
     """
     # Arrange
-    runner = CliRunner(mix_stderr=False)
+    runner = CliRunner()
     plan_structure = [{"action": "chat_with_user", "params": {"prompt": "Hello?"}}]
     plan_yaml = yaml.dump(plan_structure)
     plan_file = tmp_path / "plan.yaml"
@@ -101,33 +101,6 @@ def test_chat_with_user_skips_approval_prompt(tmp_path: Path):
     mock_dispatcher.dispatch_and_execute.assert_called_once()
 
 
-def test_execute_read_on_complex_file_formats_correctly(tmp_path: Path):
-    """
-    Verifies that reading a complex, multi-line file results in a
-    correctly formatted YAML report with a literal block.
-    This is a regression test for a bug caused by PyYAML's content-sniffing.
-    """
-    # Use the main README.md as the complex file input
-    plan_content = """
-actions:
-  - action: read
-    path: ../../README.md
-"""
-    plan_file = tmp_path / "plan.yaml"
-    plan_file.write_text(plan_content)
-
-    result = runner.invoke(app, ["execute", str(plan_file), "--yes", "--no-copy"])
-    assert result.exit_code == 0
-    output = result.stdout
-
-    # The most important assertion: check for the literal block indicator.
-    assert "content: |" in output
-    # Also check that it's not the incorrect, single-line escaped format.
-    assert (
-        r"# TeDDy: Your Contract-First & Test-Driven Pair-Programmer\n\n" not in output
-    )
-
-
 def test_read_action_report_formats_multiline_content_correctly(tmp_path: Path):
     """
     Verifies that the YAML report for a `read` action correctly formats
@@ -162,7 +135,7 @@ def test_read_action_is_formatted_as_literal_block(tmp_path: Path):
     Then the file content should be formatted as a YAML literal block.
     """
     # Arrange
-    runner = CliRunner(mix_stderr=False)
+    runner = CliRunner()
     file_content = """# TeDDy
 
 This is a paragraph with **bold** text.

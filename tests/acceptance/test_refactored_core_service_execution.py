@@ -13,7 +13,7 @@ def test_successful_plan_execution_with_refactored_services(tmp_path: Path):
     Then the new service layer should execute the plan successfully.
     """
     # Arrange
-    runner = CliRunner(mix_stderr=False)
+    runner = CliRunner()
     target_file = tmp_path / "hello.txt"
     plan_structure = [
         {

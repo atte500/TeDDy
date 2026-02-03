@@ -10,29 +10,21 @@ repos:
     hooks:
     -   id: ruff-lint
         name: Ruff Linter
-        # We tell ruff to check the 'src' and 'tests' directories inside its working directory
-        entry: poetry -C packages/executor run ruff check src tests --fix
+        entry: poetry run ruff check src tests --fix
         language: system
         types: [python]
-        # pass_filenames: false is crucial here to avoid the path conflict
         pass_filenames: false
-        # Run this hook if any python file inside packages/executor changes
-        files: ^packages/executor/
 
     -   id: ruff-format
         name: Ruff Formatter
-        # We tell ruff to format the 'src' and 'tests' directories
-        entry: poetry -C packages/executor run ruff format src tests
+        entry: poetry run ruff format src tests
         language: system
         types: [python]
         pass_filenames: false
-        files: ^packages/executor/
 
     -   id: mypy
         name: Mypy
-        # This command runs mypy on the entire package, which is standard practice.
-        entry: poetry -C packages/executor run mypy .
+        entry: poetry run mypy .
         language: system
         types: [python]
         pass_filenames: false
-        files: ^packages/executor/

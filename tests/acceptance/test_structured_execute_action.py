@@ -107,7 +107,7 @@ def test_execute_action_fails_with_unsafe_cwd_traversal(tmp_path: Path):
     ]
 
     # Act
-    runner = CliRunner(mix_stderr=False)
+    runner = CliRunner()
     plan_content = yaml.dump(plan)
     plan_file = tmp_path / "plan.yml"
     plan_file.write_text(plan_content)
@@ -147,7 +147,7 @@ def test_execute_action_fails_with_absolute_cwd(tmp_path: Path):
     ]
 
     # Act
-    runner = CliRunner(mix_stderr=False)
+    runner = CliRunner()
     plan_content = yaml.dump(plan)
     plan_file = tmp_path / "plan.yml"
     plan_file.write_text(plan_content)

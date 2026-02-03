@@ -32,13 +32,11 @@ def test_context_command_copies_to_clipboard_by_default(mock_pyperclip: MagicMoc
     assert "Context Vault" in result.stdout
 
     mock_pyperclip.copy.assert_called_once()
-    # Ensure the content copied is the same as what was printed
-    # The last line is the confirmation message, so we strip it.
-    stdout_lines = result.stdout.strip().splitlines()
+    # Ensure the content copied is the same as what was printed to stdout
     confirmation_message = "Output copied to clipboard."
-    assert confirmation_message in stdout_lines[-1]
+    assert confirmation_message in result.stderr
 
-    expected_content_to_copy = "\n".join(stdout_lines[:-1]).strip()
+    expected_content_to_copy = result.stdout.strip()
     mock_pyperclip.copy.assert_called_with(expected_content_to_copy)
 
 

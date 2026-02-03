@@ -13,7 +13,7 @@ def test_chat_with_user_action_successful(tmp_path: Path):
     Then the action should succeed and capture the response.
     """
     # Arrange
-    runner = CliRunner(mix_stderr=False)
+    runner = CliRunner()
     user_response = "Blue"
     # User input is the response, followed by an empty line to terminate.
     cli_input = f"{user_response}\n\n"

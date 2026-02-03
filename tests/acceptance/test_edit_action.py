@@ -13,7 +13,7 @@ def test_edit_action_happy_path(tmp_path: Path):
     Then the file content should be updated correctly.
     """
     # Arrange
-    runner = CliRunner(mix_stderr=False)
+    runner = CliRunner()
     file_to_edit = tmp_path / "test_file.txt"
     original_content = "Hello world, this is a test."
     file_to_edit.write_text(original_content)
@@ -54,7 +54,7 @@ def test_edit_action_file_not_found(tmp_path: Path):
     Then the action should fail and report the error.
     """
     # Arrange
-    runner = CliRunner(mix_stderr=False)
+    runner = CliRunner()
     non_existent_file = tmp_path / "non_existent.txt"
     plan_structure = [
         {

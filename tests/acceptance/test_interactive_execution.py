@@ -14,7 +14,7 @@ def test_interactive_approval_and_execution(tmp_path: Path):
     Then the action should be executed successfully.
     """
     # Arrange
-    runner = CliRunner(mix_stderr=False)
+    runner = CliRunner()
     test_file = tmp_path / "test_file.txt"
     plan_structure = [
         {
@@ -53,7 +53,7 @@ def test_interactive_skip_with_reason(tmp_path: Path):
     Then the action should be skipped and the reason reported.
     """
     # Arrange
-    runner = CliRunner(mix_stderr=False)
+    runner = CliRunner()
     test_file = tmp_path / "test.txt"
     plan_structure = [{"action": "create_file", "params": {"path": str(test_file)}}]
     plan_yaml = yaml.dump(plan_structure)

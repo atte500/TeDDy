@@ -15,7 +15,7 @@ def test_create_file_on_existing_file_fails_and_reports_correctly(tmp_path: Path
     and the report's details should contain the error message.
     """
     # ARRANGE
-    runner = CliRunner(mix_stderr=False)
+    runner = CliRunner()
     existing_file = tmp_path / "existing.txt"
     original_content = "original content"
     existing_file.write_text(original_content)

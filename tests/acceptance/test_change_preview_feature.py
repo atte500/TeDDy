@@ -8,7 +8,7 @@ from typer.testing import CliRunner
 from teddy_executor.core.ports.outbound import IUserInteractor
 from teddy_executor.main import app, create_container
 
-runner = CliRunner(mix_stderr=False)
+runner = CliRunner()
 
 
 def test_in_terminal_diff_is_shown_for_create_file(tmp_path: Path, monkeypatch):

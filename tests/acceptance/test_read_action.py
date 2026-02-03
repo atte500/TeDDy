@@ -13,7 +13,7 @@ def test_read_action_happy_path(tmp_path: Path):
     Then the action log's 'details' should contain the file's content.
     """
     # Arrange
-    runner = CliRunner(mix_stderr=False)
+    runner = CliRunner()
     file_content = "Hello, this is the content."
     file_to_read = tmp_path / "readable.txt"
     file_to_read.write_text(file_content)
@@ -47,7 +47,7 @@ def test_read_action_file_not_found(tmp_path: Path):
     Then the action should fail and the report should indicate the error.
     """
     # Arrange
-    runner = CliRunner(mix_stderr=False)
+    runner = CliRunner()
     non_existent_file = tmp_path / "non_existent.txt"
     plan_structure = [{"action": "read", "params": {"path": str(non_existent_file)}}]
     plan_content = yaml.dump(plan_structure)

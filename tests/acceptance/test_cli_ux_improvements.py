@@ -3,7 +3,7 @@ from typer.testing import CliRunner
 from teddy_executor.main import app
 import pytest
 
-runner = CliRunner(mix_stderr=False)
+runner = CliRunner()
 
 
 @pytest.fixture

@@ -14,7 +14,7 @@ def test_successful_execution(tmp_path: Path):
     And the report should show SUCCESS with the correct output.
     """
     # ARRANGE
-    runner = CliRunner(mix_stderr=False)
+    runner = CliRunner()
     plan_structure = [
         {"action": "execute", "params": {"command": 'echo "hello world"'}}
     ]
@@ -51,7 +51,7 @@ def test_failed_execution(tmp_path: Path):
     And the report should show FAILURE with the correct error output.
     """
     # ARRANGE
-    runner = CliRunner(mix_stderr=False)
+    runner = CliRunner()
     plan_structure = [
         {"action": "execute", "params": {"command": "nonexistentcommand12345"}}
     ]

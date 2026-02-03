@@ -12,7 +12,7 @@ from teddy_executor.core.domain.models import (
 from teddy_executor.core.ports.inbound.run_plan_use_case import RunPlanUseCase
 from teddy_executor.main import app
 
-runner = CliRunner(mix_stderr=False)
+runner = CliRunner()
 
 
 def test_cli_invokes_orchestrator_with_plan_file():

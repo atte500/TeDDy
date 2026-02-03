@@ -38,7 +38,7 @@ jobs:
       id: cached-poetry-dependencies
       uses: actions/cache@v4
       with:
-        path: packages/executor/.venv
+        path: .venv
         key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
 
     - name: Install clipboard backend (Linux)
@@ -49,9 +49,7 @@ jobs:
 
     - name: Install dependencies
       if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-      working-directory: ./packages/executor
       run: poetry install --no-interaction
 
     - name: Run tests
-      working-directory: ./packages/executor
       run: poetry run pytest
