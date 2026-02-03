@@ -1,7 +1,7 @@
 name: CI
 
 # Trigger check
-on:
+"on":
   push:
     branches: [ main ]
   pull_request:
