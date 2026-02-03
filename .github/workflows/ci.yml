@@ -1,5 +1,6 @@
 name: CI
 
+# Trigger check
 on:
   push:
     branches: [ main ]
