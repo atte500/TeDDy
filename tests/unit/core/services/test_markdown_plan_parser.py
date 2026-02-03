@@ -237,3 +237,35 @@ This is the second paragraph, with some `inline_code`.
     assert action.type == "CHAT_WITH_USER"
     assert action.description is None  # No description metadata for this action
     assert action.params["prompt"] == expected_prompt
+
+
+def test_parse_prune_action(parser: MarkdownPlanParser):
+    """
+    Given a valid Markdown plan with a PRUNE action,
+    When the plan is parsed,
+    Then a valid Plan domain object is returned with correct action data.
+    """
+    # Arrange
+    plan_content = """
+# Prune a resource from context
+- **Goal:** Clean up the context.
+
+## Action Plan
+
+### `PRUNE`
+- **Resource:** [docs/specs/old-spec.md](/docs/specs/old-spec.md)
+- **Description:** Remove the old specification.
+"""
+    # Act
+    result_plan = parser.parse(plan_content)
+
+    # Assert
+    assert isinstance(result_plan, Plan)
+    assert len(result_plan.actions) == 1
+    action = result_plan.actions[0]
+
+    assert action.type == "PRUNE"
+    assert action.description == "Remove the old specification."
+    assert action.params == {
+        "resource": "/docs/specs/old-spec.md",
+    }

@@ -70,6 +70,8 @@ class MarkdownPlanParser(IPlanParser):
                 actions.append(self._parse_research_action(doc, heading))
             elif action_type == "CHAT_WITH_USER":
                 actions.append(self._parse_chat_with_user_action(doc, heading))
+            elif action_type == "PRUNE":
+                actions.append(self._parse_prune_action(doc, heading))
 
         if not actions:
             raise InvalidPlanError("No actions found in the 'Action Plan' section.")
@@ -121,17 +123,29 @@ class MarkdownPlanParser(IPlanParser):
 
         return ActionData(type="CREATE", description=description, params=params)
 
-    def _parse_read_action(self, parent: Document, heading_node: Heading) -> ActionData:
-        """Parses a READ action block."""
+    def _parse_resource_action(
+        self, parent: Document, heading_node: Heading, action_type: str
+    ) -> ActionData:
+        """Parses a generic resource-based action block (e.g., READ, PRUNE)."""
         metadata_list = self._get_next_sibling(parent, heading_node)
         if not isinstance(metadata_list, MdList):
-            raise InvalidPlanError("READ action is missing metadata list.")
+            raise InvalidPlanError(f"{action_type} action is missing metadata list.")
 
         description, params = self._parse_action_metadata(
             metadata_list, link_key_map={"Resource": "resource"}
         )
 
-        return ActionData(type="READ", description=description, params=params)
+        return ActionData(type=action_type, description=description, params=params)
+
+    def _parse_read_action(self, parent: Document, heading_node: Heading) -> ActionData:
+        """Parses a READ action block."""
+        return self._parse_resource_action(parent, heading_node, "READ")
+
+    def _parse_prune_action(
+        self, parent: Document, heading_node: Heading
+    ) -> ActionData:
+        """Parses a PRUNE action block."""
+        return self._parse_resource_action(parent, heading_node, "PRUNE")
 
     def _parse_edit_action(self, parent: Document, heading_node: Heading) -> ActionData:
         """Parses an EDIT action block."""
