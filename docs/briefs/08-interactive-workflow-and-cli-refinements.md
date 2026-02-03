@@ -7,6 +7,7 @@ The strategic goal is to evolve `teddy` into a robust, file-based front-end for 
 This brief is based on the canonical specifications that define the new context-centric workflow:
 -   [Interactive Session Workflow Specification](/docs/specs/interactive-session-workflow.md)
 -   [Context Payload Format Specification](/docs/specs/context-payload-format.md)
+-   [Report Format Specification](/docs/specs/report-format.md)
 
 ## 2. Proposed Solution (The "What")
 
