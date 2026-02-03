@@ -1,5 +1,6 @@
-# Vertical Slice: Markdown Plan Parser
+# Vertical Slice: Markdown Plan Parser (Implemented)
 
+- **Status:** Implemented
 - **Source Brief:** [Architectural Brief: Markdown Plan Parser](./../briefs/06-markdown-parser.md)
 - **Specification:** [New Plan Format Specification](./../specs/new-plan-format.md)
 
@@ -77,6 +78,8 @@ This checklist provides the ordered, step-by-step implementation plan. Follow th
 - [x] Add `mistletoe==1.3.0` to `pyproject.toml` and run `poetry lock && poetry install`.
 
 ### Implementation (Outside-In TDD)
+
+- [x] All tasks completed and verified.
 
 1.  **Acceptance Test (Red)**
     -   [ ] CREATE a new failing acceptance test in a new file (`tests/acceptance/test_markdown_plans.py`) for the primary success scenario: executing a simple `.md` plan file that creates a file. This test will fail because the system cannot yet handle `.md` files.
