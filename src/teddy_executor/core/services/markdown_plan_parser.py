@@ -65,6 +65,8 @@ class MarkdownPlanParser(IPlanParser):
                 actions.append(self._parse_edit_action(doc, heading))
             elif action_type == "EXECUTE":
                 actions.append(self._parse_execute_action(doc, heading))
+            elif action_type == "RESEARCH":
+                actions.append(self._parse_research_action(doc, heading))
 
         if not actions:
             raise InvalidPlanError("No actions found in the 'Action Plan' section.")
@@ -237,6 +239,31 @@ class MarkdownPlanParser(IPlanParser):
         params["command"] = self._get_child_text(command_block).strip()
 
         return ActionData(type="EXECUTE", description=description, params=params)
+
+    def _parse_research_action(
+        self, parent: Document, heading_node: Heading
+    ) -> ActionData:
+        """Parses a RESEARCH action block."""
+        metadata_list = self._get_next_sibling(parent, heading_node)
+        if not isinstance(metadata_list, MdList):
+            raise InvalidPlanError("RESEARCH action is missing metadata list.")
+
+        description, _ = self._parse_action_metadata(metadata_list, link_key_map={})
+
+        content_nodes = self._get_subsequent_siblings(parent, metadata_list)
+        queries = []
+        for node in content_nodes:
+            if isinstance(node, CodeFence):
+                query = self._get_child_text(node).strip()
+                if query:
+                    queries.append(query)
+
+        if not queries:
+            raise InvalidPlanError("RESEARCH action found no query code blocks.")
+
+        return ActionData(
+            type="RESEARCH", description=description, params={"queries": queries}
+        )
 
     def _parse_action_metadata(
         self, metadata_list: MdList, link_key_map: dict[str, str]

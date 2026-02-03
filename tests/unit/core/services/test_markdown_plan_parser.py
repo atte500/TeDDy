@@ -163,3 +163,41 @@ poetry run pytest
     assert action.params["expected_outcome"] == "All tests will pass."
     assert action.params["cwd"] == "/tmp/tests"
     assert action.params["env"] == {"API_KEY": "secret", "DEBUG": "1"}
+
+
+def test_parse_research_action(parser: MarkdownPlanParser):
+    """
+    Given a valid Markdown plan with a RESEARCH action with multiple queries,
+    When the plan is parsed,
+    Then a valid Plan domain object is returned with correct action data.
+    """
+    # Arrange
+    plan_content = """
+# Research a topic
+- **Goal:** Find a library.
+
+## Action Plan
+
+### `RESEARCH`
+- **Description:** Find libraries for parsing Markdown.
+````text
+python markdown ast library
+````
+````text
+best python markdown parser
+````
+"""
+    # Act
+    result_plan = parser.parse(plan_content)
+
+    # Assert
+    assert isinstance(result_plan, Plan)
+    assert len(result_plan.actions) == 1
+    action = result_plan.actions[0]
+
+    assert action.type == "RESEARCH"
+    assert action.description == "Find libraries for parsing Markdown."
+    assert action.params["queries"] == [
+        "python markdown ast library",
+        "best python markdown parser",
+    ]
