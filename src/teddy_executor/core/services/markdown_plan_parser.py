@@ -8,6 +8,7 @@ from mistletoe.block_token import (
     Document,
     Paragraph,
 )
+from mistletoe.markdown_renderer import MarkdownRenderer
 from mistletoe.span_token import Link
 
 from teddy_executor.core.domain.models import ActionData, Plan
@@ -67,6 +68,8 @@ class MarkdownPlanParser(IPlanParser):
                 actions.append(self._parse_execute_action(doc, heading))
             elif action_type == "RESEARCH":
                 actions.append(self._parse_research_action(doc, heading))
+            elif action_type == "CHAT_WITH_USER":
+                actions.append(self._parse_chat_with_user_action(doc, heading))
 
         if not actions:
             raise InvalidPlanError("No actions found in the 'Action Plan' section.")
@@ -263,6 +266,36 @@ class MarkdownPlanParser(IPlanParser):
 
         return ActionData(
             type="RESEARCH", description=description, params={"queries": queries}
+        )
+
+    def _parse_chat_with_user_action(
+        self, parent: Document, heading_node: Heading
+    ) -> ActionData:
+        """Parses a CHAT_WITH_USER action block."""
+        content_nodes = self._get_subsequent_siblings(parent, heading_node)
+
+        if not content_nodes:
+            raise InvalidPlanError("CHAT_WITH_USER action is missing prompt content.")
+
+        # To correctly reconstruct the prompt while preserving formatting and
+        # paragraph breaks, we must render each block-level node individually
+        # and then join them with the appropriate separator.
+        rendered_parts = []
+        with MarkdownRenderer() as renderer:
+            for node in content_nodes:
+                temp_doc = Document("")
+                temp_doc.children = [node]
+                rendered_parts.append(renderer.render(temp_doc).strip())
+
+        prompt = "\n\n".join(rendered_parts)
+
+        if not prompt:
+            raise InvalidPlanError("CHAT_WITH_USER action is missing prompt content.")
+
+        return ActionData(
+            type="CHAT_WITH_USER",
+            description=None,  # This action type has no description metadata
+            params={"prompt": prompt},
         )
 
     def _parse_action_metadata(

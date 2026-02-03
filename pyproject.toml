@@ -44,3 +44,6 @@ exclude = ["spikes/"]
 [tool.mypy]
 ignore_missing_imports = true
 exclude = ["spikes/"]
+
+[tool.pytest.ini_options]
+norecursedirs = "spikes"

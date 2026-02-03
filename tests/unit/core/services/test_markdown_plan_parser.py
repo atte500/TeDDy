@@ -201,3 +201,39 @@ best python markdown parser
         "python markdown ast library",
         "best python markdown parser",
     ]
+
+
+def test_parse_chat_with_user_action(parser: MarkdownPlanParser):
+    """
+    Given a valid Markdown plan with a CHAT_WITH_USER action,
+    When the plan is parsed,
+    Then a valid Plan domain object is returned with correct action data.
+    """
+    # Arrange
+    plan_content = r"""
+# Chat with the user
+- **Goal:** Get feedback.
+
+## Action Plan
+
+### `CHAT_WITH_USER`
+This is the first paragraph of the prompt.
+
+This is the second paragraph, with some `inline_code`.
+"""
+    # Act
+    result_plan = parser.parse(plan_content)
+
+    # Assert
+    assert isinstance(result_plan, Plan)
+    assert len(result_plan.actions) == 1
+    action = result_plan.actions[0]
+
+    expected_prompt = (
+        "This is the first paragraph of the prompt.\n\n"
+        "This is the second paragraph, with some `inline_code`."
+    )
+
+    assert action.type == "CHAT_WITH_USER"
+    assert action.description is None  # No description metadata for this action
+    assert action.params["prompt"] == expected_prompt
