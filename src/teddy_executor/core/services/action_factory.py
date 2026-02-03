@@ -1,4 +1,4 @@
-from typing import Dict, Type
+from typing import Any, Dict, Type
 import punq
 from teddy_executor.core.ports.outbound import (
     IShellExecutor,
@@ -7,6 +7,12 @@ from teddy_executor.core.ports.outbound import (
     IWebSearcher,
 )
 from teddy_executor.core.services.action_dispatcher import IAction, IActionFactory
+
+
+class InvokeAction:
+    def execute(self, **kwargs: Any) -> str:
+        agent = kwargs.get("agent", "Unknown")
+        return f"INVOKE action recognized for agent: {agent}"
 
 
 class ActionFactory(IActionFactory):
@@ -20,6 +26,10 @@ class ActionFactory(IActionFactory):
         "EDIT": "edit",
         "READ": "read",
         "EXECUTE": "execute",
+        "INVOKE": "invoke",
+        "CHAT_WITH_USER": "chat_with_user",
+        "RESEARCH": "research",
+        "PRUNE": "prune",
     }
 
     def __init__(self, container: punq.Container):
@@ -31,6 +41,7 @@ class ActionFactory(IActionFactory):
             "read": IFileSystemManager,
             "chat_with_user": IUserInteractor,
             "research": IWebSearcher,
+            "invoke": InvokeAction,
         }
 
     def _normalize_action_type(self, action_type: str) -> str:
@@ -54,6 +65,8 @@ class ActionFactory(IActionFactory):
             raise ValueError(f"Unknown action type: '{action_type}'")
 
         adapter_protocol = self._action_map[action_type_key]
+        if adapter_protocol == InvokeAction:
+            return InvokeAction()
         action_handler = self._container.resolve(adapter_protocol)
 
         method_map = {

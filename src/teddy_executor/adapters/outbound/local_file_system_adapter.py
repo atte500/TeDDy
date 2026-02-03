@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 from teddy_executor.core.ports.outbound.file_system_manager import FileSystemManager
 from teddy_executor.core.domain.models import (
     SearchTextNotFoundError,
@@ -191,52 +192,60 @@ class LocalFileSystemAdapter(FileSystemManager):
                 content=content,
             )
 
-    def edit_file(self, path: str, find: str, replace: str) -> None:
-        """
-        Modifies an existing file by replacing a block of text, handling
-        indentation for multiline blocks. Fails if the `find` block is
-        ambiguous (multiple occurrences) or not found.
-        """
-        file_path = Path(path)
+    def _apply_single_edit(self, content: str, find: str, replace: str) -> str:
+        """Helper to apply a single find/replace operation to content."""
+        if not find:
+            return replace
 
-        if not find:  # If find is empty, replace the entire file content.
-            file_path.write_text(replace, encoding="utf-8")
-            return
-
-        original_content = file_path.read_text(encoding="utf-8")
-
-        # Use different strategies for single-line and multi-line `find` blocks.
         if "\n" not in find:
-            # For single-line, use robust substring counting.
-            num_matches = original_content.count(find)
-            self._check_matches_and_raise(num_matches, find, original_content)
-            # The check above ensures there's exactly one match, so a global replace is safe.
-            new_content = original_content.replace(find, replace)
-            file_path.write_text(new_content, encoding="utf-8")
+            num_matches = content.count(find)
+            self._check_matches_and_raise(num_matches, find, content)
+            return content.replace(find, replace)
         else:
-            # For multi-line, use line-based matching for indentation handling.
-            source_lines = original_content.splitlines()
-            # CORRECT FIX: Do not strip the find block, as it can contain meaningful newlines.
+            source_lines = content.splitlines()
             find_lines = find.splitlines()
 
-            if not find.strip():  # Handle case where find is just whitespace
-                file_path.write_text(replace, encoding="utf-8")
-                return
+            if not find.strip():
+                return replace
 
             match_indices = self._find_multiline_match_indices(source_lines, find_lines)
             num_matches = len(match_indices)
-            self._check_matches_and_raise(
-                num_matches, "multi-line block", original_content
-            )
+            self._check_matches_and_raise(num_matches, "multi-line block", content)
 
-            # Perform the replacement
             match_start_index = match_indices[0]
             replace_lines = replace.splitlines()
-            new_content = self._reconstruct_content(
-                original_content,
+            return self._reconstruct_content(
+                content,
                 source_lines,
                 find_lines,
                 replace_lines,
                 match_start_index,
             )
-            file_path.write_text(new_content, encoding="utf-8")
+
+    def edit_file(
+        self,
+        path: str,
+        find: Optional[str] = None,
+        replace: Optional[str] = None,
+        edits: Optional[list[dict[str, str]]] = None,
+    ) -> None:
+        """
+        Modifies an existing file by replacing block(s) of text.
+        Supports either a single find/replace pair or a list of edits.
+        """
+        file_path = Path(path)
+        content = file_path.read_text(encoding="utf-8")
+
+        if edits:
+            for edit in edits:
+                content = self._apply_single_edit(
+                    content, edit["find"], edit["replace"]
+                )
+        elif find is not None and replace is not None:
+            content = self._apply_single_edit(content, find, replace)
+        else:
+            raise ValueError(
+                "Either 'edits' list or 'find'/'replace' pair must be provided."
+            )
+
+        file_path.write_text(content, encoding="utf-8")

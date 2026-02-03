@@ -58,7 +58,8 @@ class ActionDispatcher:
             param_map = {
                 "create_file": {"file_path": "path"},
                 "edit": {"file_path": "path"},
-                "read": {"source": "path"},
+                "read": {"source": "path", "resource": "path"},
+                "prune": {"resource": "path"},
             }
 
             mapping = param_map.get(action_data.type.lower(), {})
@@ -66,6 +67,10 @@ class ActionDispatcher:
             for old_key, new_key in mapping.items():
                 if old_key in translated_params:
                     translated_params[new_key] = translated_params.pop(old_key)
+
+            # Remove metadata parameters that are not used by adapters
+            translated_params.pop("expected_outcome", None)
+
             # --- End of Translation ---
 
             action_handler = self._action_factory.create_action(action_data.type)
@@ -79,9 +84,10 @@ class ActionDispatcher:
 
             # --- Normalize successful results for consistent reporting ---
             if isinstance(result_to_serialize, str):
-                if action_data.type == "read":
+                normalized_type = action_data.type.lower()
+                if normalized_type == "read":
                     result_to_serialize = {"content": result_to_serialize}
-                elif action_data.type == "chat_with_user":
+                elif normalized_type == "chat_with_user":
                     result_to_serialize = {"response": result_to_serialize}
 
             # Determine status based on result type
