@@ -1,6 +1,12 @@
 from typing import Any, List, Optional
 import mistletoe
-from mistletoe.block_token import CodeFence, Heading, List as MdList, Document
+from mistletoe.block_token import (
+    CodeFence,
+    Heading,
+    List as MdList,
+    Document,
+    Paragraph,
+)
 from mistletoe.span_token import Link
 
 from teddy_executor.core.domain.models import ActionData, Plan
@@ -54,7 +60,9 @@ class MarkdownPlanParser(IPlanParser):
                 actions.append(self._parse_create_action(doc, heading))
             elif action_type == "READ":
                 actions.append(self._parse_read_action(doc, heading))
-            # Other action parsers will be added here
+            elif action_type == "EDIT":
+                actions.append(self._parse_edit_action(doc, heading))
+            # Other action parsers will be added hereedits"][0]["replace"] == "class MyClass:\n    def new_method(self):\n        pass"
 
         if not actions:
             raise InvalidPlanError("No actions found in the 'Action Plan' section.")
@@ -96,10 +104,13 @@ class MarkdownPlanParser(IPlanParser):
         if not code_block:
             raise InvalidPlanError("CREATE action is missing a content code block.")
 
+        params["content"] = ""
         if code_block.children:
-            params["content"] = code_block.children[0].content.strip()
-        else:
-            params["content"] = ""
+            children = list(code_block.children)
+            if children:
+                child = children[0]
+                if hasattr(child, "content"):
+                    params["content"] = child.content.strip()
 
         return ActionData(type="CREATE", description=description, params=params)
 
@@ -114,6 +125,70 @@ class MarkdownPlanParser(IPlanParser):
         )
 
         return ActionData(type="READ", description=description, params=params)
+
+    def _parse_edit_action(self, parent: Document, heading_node: Heading) -> ActionData:
+        """Parses an EDIT action block."""
+        metadata_list = self._get_next_sibling(parent, heading_node)
+        if not isinstance(metadata_list, MdList):
+            raise InvalidPlanError("EDIT action is missing metadata list.")
+
+        description, params = self._parse_action_metadata(
+            metadata_list, link_key_map={"File Path": "path"}
+        )
+
+        content_nodes = self._get_subsequent_siblings(parent, metadata_list)
+        edits = []
+        nodes_iter = iter(content_nodes)
+        for node in nodes_iter:
+            if not (
+                isinstance(node, Paragraph) and "FIND:" in self._get_child_text(node)
+            ):
+                continue
+
+            try:
+                find_code = next(nodes_iter)
+                replace_marker = next(nodes_iter)
+                replace_code = next(nodes_iter)
+
+                if (
+                    not isinstance(find_code, CodeFence)
+                    or not (
+                        isinstance(replace_marker, Paragraph)
+                        and "REPLACE:" in self._get_child_text(replace_marker)
+                    )
+                    or not isinstance(replace_code, CodeFence)
+                ):
+                    raise InvalidPlanError(
+                        "Malformed FIND/REPLACE block in EDIT action."
+                    )
+
+                find_children = list(find_code.children) if find_code.children else []
+                find_content = ""
+                if find_children:
+                    child = find_children[0]
+                    if hasattr(child, "content"):
+                        find_content = child.content.strip()
+
+                replace_children = (
+                    list(replace_code.children) if replace_code.children else []
+                )
+                replace_content = ""
+                if replace_children:
+                    child = replace_children[0]
+                    if hasattr(child, "content"):
+                        replace_content = child.content.strip()
+                edits.append({"find": find_content, "replace": replace_content})
+
+            except StopIteration:
+                raise InvalidPlanError(
+                    "Incomplete FIND/REPLACE block at end of EDIT action."
+                )
+
+        if not edits:
+            raise InvalidPlanError("EDIT action found no valid FIND/REPLACE blocks.")
+
+        params["edits"] = edits
+        return ActionData(type="EDIT", description=description, params=params)
 
     def _parse_action_metadata(
         self, metadata_list: MdList, link_key_map: dict[str, str]
@@ -200,3 +275,23 @@ class MarkdownPlanParser(IPlanParser):
             return children_list[index + 1]
         except (ValueError, IndexError):
             return None
+
+    def _get_subsequent_siblings(self, parent: Document, start_node: Any) -> list[Any]:
+        """
+        Returns a list of all sibling nodes after start_node until a heading
+        at level 3 or less is encountered.
+        """
+        siblings: list[Any] = []
+        if parent.children is None:
+            return siblings
+
+        children_list = list(parent.children)
+        try:
+            start_index = children_list.index(start_node)
+            for node in children_list[start_index + 1 :]:
+                if isinstance(node, Heading) and node.level <= 3:
+                    break
+                siblings.append(node)
+        except (ValueError, IndexError):
+            pass
+        return siblings
