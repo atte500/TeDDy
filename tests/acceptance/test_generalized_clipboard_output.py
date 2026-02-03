@@ -41,28 +41,39 @@ def test_context_command_copies_to_clipboard_by_default(mock_pyperclip: MagicMoc
 
 
 @patch("teddy_executor.main.pyperclip", new_callable=MagicMock)
-def test_context_command_suppresses_copy_with_flag(mock_pyperclip: MagicMock):
+@patch("teddy_executor.main.container")
+def test_context_command_suppresses_copy_with_flag(
+    mock_container: MagicMock, mock_pyperclip: MagicMock
+):
     """
-    Scenario 2: Clipboard behavior is suppressed with a flag
-    -   Given a user or script needs to prevent clipboard interaction
-    -   When they run a command with the suppression flag `teddy context --no-copy`
-    -   Then the command's primary output is printed to standard output
-    -   But the system clipboard is not modified
-    -   And no clipboard-related confirmation message is printed.
+    Scenario 2: Clipboard behavior is suppressed with a flag.
+    This test mocks the context service to prevent the test's assertion string from
+    colliding with the content of the files being printed.
     """
     # Arrange
-    # The mock_pyperclip is already arranged by the decorator.
+    from teddy_executor.core.domain.models import ContextResult
+    from teddy_executor.core.ports.inbound.get_context_use_case import (
+        IGetContextUseCase,
+    )
+
+    mock_context_service = MagicMock(spec=IGetContextUseCase)
+    mock_context_service.get_context.return_value = ContextResult(
+        system_info={}, repo_tree="", context_vault_paths=[], file_contents={}
+    )
+    mock_container.resolve.return_value = mock_context_service
+
+    confirmation_message = "Output copied to clipboard."
 
     # Act
     result = runner.invoke(app, ["context", "--no-copy"], catch_exceptions=False)
 
     # Assert
     assert result.exit_code == 0
-    assert "System Information" in result.stdout
-    assert "Context Vault" in result.stdout
-
     mock_pyperclip.copy.assert_not_called()
-    assert "Output copied to clipboard." not in result.stdout
+
+    # With --no-copy, the message should not appear in EITHER stream
+    assert confirmation_message not in result.stdout
+    assert confirmation_message not in result.stderr
 
 
 @patch("teddy_executor.main.pyperclip", new_callable=MagicMock)
