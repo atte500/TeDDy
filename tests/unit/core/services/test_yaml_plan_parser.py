@@ -1,10 +1,8 @@
 import pytest
 
 from teddy_executor.core.domain.models import Plan
-from teddy_executor.core.services.plan_parser import (
-    InvalidPlanError,
-    PlanParser,
-)
+from teddy_executor.core.ports.inbound.plan_parser import InvalidPlanError
+from teddy_executor.core.services.plan_parser import YamlPlanParser
 
 
 def test_parse_success_scenario():
@@ -24,7 +22,7 @@ def test_parse_success_scenario():
         params:
             command: "echo 'done'"
     """
-    plan_parser = PlanParser()
+    plan_parser = YamlPlanParser()
 
     # Act
     result_plan = plan_parser.parse(plan_content=plan_content)
@@ -51,7 +49,7 @@ def test_parse_raises_invalid_plan_error_for_malformed_yaml():
     """
     # Arrange
     malformed_content = "actions:\n\t- type: create_file"
-    plan_parser = PlanParser()
+    plan_parser = YamlPlanParser()
 
     # Act & Assert
     with pytest.raises(InvalidPlanError, match="Plan contains invalid YAML"):
@@ -65,7 +63,7 @@ def test_parse_raises_invalid_plan_error_for_empty_content():
     Then an InvalidPlanError should be raised.
     """
     # Arrange
-    plan_parser = PlanParser()
+    plan_parser = YamlPlanParser()
 
     # Act & Assert
     with pytest.raises(InvalidPlanError, match="Plan content cannot be empty"):

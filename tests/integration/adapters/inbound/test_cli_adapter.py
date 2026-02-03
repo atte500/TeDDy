@@ -1,7 +1,6 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-
-import punq
+import yaml
 from typer.testing import CliRunner
 
 from teddy_executor.core.domain.models import (
@@ -9,48 +8,48 @@ from teddy_executor.core.domain.models import (
     RunSummary,
     RunStatus,
 )
-from teddy_executor.core.ports.inbound.run_plan_use_case import RunPlanUseCase
+from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
 from teddy_executor.main import app
 
 runner = CliRunner()
 
 
-def test_cli_invokes_orchestrator_with_plan_file():
+@patch("teddy_executor.main.ExecutionOrchestrator")
+def test_cli_invokes_orchestrator_with_plan_file(mock_ExecutionOrchestrator: MagicMock):
     """
     Tests that the CLI correctly calls the orchestrator with the plan path.
     """
     # ARRANGE
     from datetime import datetime
 
-    mock_orchestrator = MagicMock(spec=RunPlanUseCase)
+    mock_orchestrator_instance = MagicMock(spec=ExecutionOrchestrator)
     mock_summary = RunSummary(
         status=RunStatus.SUCCESS,
         start_time=datetime.now(),
         end_time=datetime.now(),
     )
-    mock_orchestrator.execute.return_value = ExecutionReport(
+    mock_orchestrator_instance.execute.return_value = ExecutionReport(
         run_summary=mock_summary, action_logs=[]
     )
+    mock_ExecutionOrchestrator.return_value = mock_orchestrator_instance
 
-    test_container = punq.Container()
-    test_container.register(RunPlanUseCase, instance=mock_orchestrator)
+    valid_plan = yaml.dump([{"action": "read", "path": "a"}])
 
     # ACT
     with runner.isolated_filesystem() as temp_dir:
         p = Path(temp_dir) / "plan.yml"
-        p.write_text("plan content")
-
-        with patch("teddy_executor.main.container", test_container):
-            result = runner.invoke(app, ["execute", str(p), "--yes"])
+        p.write_text(valid_plan)
+        result = runner.invoke(app, ["execute", str(p), "--yes"])
 
     # ASSERT
     assert result.exit_code == 0, f"CLI exited with error: {result.stderr}"
-    mock_orchestrator.execute.assert_called_once_with(
-        plan_content="plan content", interactive=False
+    mock_orchestrator_instance.execute.assert_called_once_with(
+        plan_content=valid_plan, interactive=False
     )
 
 
-def test_cli_exits_with_error_code_on_failure():
+@patch("teddy_executor.main.ExecutionOrchestrator")
+def test_cli_exits_with_error_code_on_failure(mock_ExecutionOrchestrator: MagicMock):
     """
     Tests that the CLI exits with a non-zero code if the
     execution report indicates a failure.
@@ -58,26 +57,24 @@ def test_cli_exits_with_error_code_on_failure():
     # ARRANGE
     from datetime import datetime
 
-    mock_orchestrator = MagicMock(spec=RunPlanUseCase)
+    mock_orchestrator_instance = MagicMock(spec=ExecutionOrchestrator)
     mock_summary = RunSummary(
         status=RunStatus.FAILURE,
         start_time=datetime.now(),
         end_time=datetime.now(),
     )
-    mock_orchestrator.execute.return_value = ExecutionReport(
+    mock_orchestrator_instance.execute.return_value = ExecutionReport(
         run_summary=mock_summary, action_logs=[]
     )
+    mock_ExecutionOrchestrator.return_value = mock_orchestrator_instance
 
-    test_container = punq.Container()
-    test_container.register(RunPlanUseCase, instance=mock_orchestrator)
+    valid_plan = yaml.dump([{"action": "read", "path": "a"}])
 
     # ACT
     with runner.isolated_filesystem() as temp_dir:
         p = Path(temp_dir) / "plan.yml"
-        p.write_text("any plan")
-
-        with patch("teddy_executor.main.container", test_container):
-            result = runner.invoke(app, ["execute", str(p), "--yes"])
+        p.write_text(valid_plan)
+        result = runner.invoke(app, ["execute", str(p), "--yes"])
 
     # ASSERT
     assert result.exit_code == 1, (
@@ -85,36 +82,35 @@ def test_cli_exits_with_error_code_on_failure():
     )
 
 
-def test_cli_handles_interactive_mode_flag():
+@patch("teddy_executor.main.ExecutionOrchestrator")
+def test_cli_handles_interactive_mode_flag(mock_ExecutionOrchestrator: MagicMock):
     """
     Tests that the CLI correctly sets the interactive flag (default is True).
     """
     # ARRANGE
     from datetime import datetime
 
-    mock_orchestrator = MagicMock(spec=RunPlanUseCase)
+    mock_orchestrator_instance = MagicMock(spec=ExecutionOrchestrator)
     mock_summary = RunSummary(
         status=RunStatus.SUCCESS,
         start_time=datetime.now(),
         end_time=datetime.now(),
     )
-    mock_orchestrator.execute.return_value = ExecutionReport(
+    mock_orchestrator_instance.execute.return_value = ExecutionReport(
         run_summary=mock_summary, action_logs=[]
     )
+    mock_ExecutionOrchestrator.return_value = mock_orchestrator_instance
 
-    test_container = punq.Container()
-    test_container.register(RunPlanUseCase, instance=mock_orchestrator)
+    valid_plan = yaml.dump([{"action": "read", "path": "a"}])
 
     # ACT
     with runner.isolated_filesystem() as temp_dir:
         p = Path(temp_dir) / "plan.yml"
-        p.write_text("plan content")
-
-        with patch("teddy_executor.main.container", test_container):
-            # Note: No --yes flag
-            runner.invoke(app, ["execute", str(p)])
+        p.write_text(valid_plan)
+        # Note: No --yes flag
+        runner.invoke(app, ["execute", str(p)])
 
     # ASSERT
-    mock_orchestrator.execute.assert_called_once_with(
-        plan_content="plan content", interactive=True
+    mock_orchestrator_instance.execute.assert_called_once_with(
+        plan_content=valid_plan, interactive=True
     )

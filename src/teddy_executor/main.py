@@ -7,7 +7,6 @@ import typer
 
 from teddy_executor.core.domain.models import ExecutionReport, RunStatus
 from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
-from teddy_executor.core.ports.inbound.run_plan_use_case import RunPlanUseCase
 from teddy_executor.core.ports.outbound import (
     IEnvironmentInspector,
     IFileSystemManager,
@@ -24,7 +23,8 @@ from teddy_executor.core.services.action_dispatcher import (
 from teddy_executor.core.services.action_factory import ActionFactory
 from teddy_executor.core.services.context_service import ContextService
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
-from teddy_executor.core.services.plan_parser import PlanParser
+from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
+from teddy_executor.core.services.plan_parser import YamlPlanParser
 from teddy_executor.adapters.inbound.cli_formatter import (
     format_project_context,
     format_report_as_yaml,
@@ -45,6 +45,11 @@ from teddy_executor.adapters.outbound.web_searcher_adapter import WebSearcherAda
 
 
 def create_container() -> punq.Container:
+    """
+    Creates and configures the dependency injection container.
+    Note: The RunPlanUseCase/ExecutionOrchestrator is not registered here
+    because its PlanParser dependency is determined at runtime.
+    """
     container = punq.Container()
     container.register(IShellExecutor, ShellAdapter)
     container.register(IFileSystemManager, LocalFileSystemAdapter)
@@ -54,9 +59,9 @@ def create_container() -> punq.Container:
     container.register(IRepoTreeGenerator, LocalRepoTreeGenerator)
     container.register(IEnvironmentInspector, SystemEnvironmentInspector)
     container.register(IActionFactory, ActionFactory)
-    container.register(PlanParser)
+    # PlanParser is now created by the factory
     container.register(ActionDispatcher)
-    container.register(RunPlanUseCase, ExecutionOrchestrator)
+    # RunPlanUseCase is instantiated manually in the `execute` command
     container.register(IGetContextUseCase, ContextService)
     return container
 
@@ -192,11 +197,28 @@ def _get_plan_content(
         raise typer.Exit(code=1)
 
 
+def create_parser_for_plan(plan_file: Optional[Path], plan_content: str) -> IPlanParser:
+    """
+    Factory function to determine which plan parser to use.
+    """
+    is_markdown = False
+    if plan_file and plan_file.suffix.lower() == ".md":
+        is_markdown = True
+    # Naive content check for clipboard or stdin
+    elif not plan_file and plan_content.lstrip().startswith("#"):
+        is_markdown = True
+
+    if is_markdown:
+        raise NotImplementedError("Markdown plan parser is not yet implemented.")
+    else:
+        return YamlPlanParser()
+
+
 @app.command()
 def execute(
     plan_file: Optional[Path] = typer.Argument(
         None,
-        help="Path to the YAML plan file. If omitted, reads from the clipboard.",
+        help="Path to the plan file (.yml, .yaml, .md). If omitted, reads from clipboard.",
         show_default=False,
     ),
     yes: bool = typer.Option(
@@ -213,23 +235,35 @@ def execute(
     plan_content: Optional[str] = typer.Option(
         None,
         "--plan-content",
-        help="The YAML plan content as a string. Overrides plan_file and clipboard.",
+        help="The plan content as a string. Overrides plan_file and clipboard.",
         show_default=False,
         rich_help_panel="Advanced Options",
     ),
 ):
-    orchestrator: RunPlanUseCase = container.resolve(RunPlanUseCase)
     report: Optional[ExecutionReport] = None
     interactive_mode = not yes
 
     try:
         final_plan_content = _get_plan_content(plan_content, plan_file)
+
+        # Factory determines and creates the correct parser
+        parser = create_parser_for_plan(plan_file, final_plan_content)
+
+        # Manually construct the orchestrator with the runtime-determined parser
+        action_dispatcher = container.resolve(ActionDispatcher)
+        user_interactor = container.resolve(IUserInteractor)
+        orchestrator = ExecutionOrchestrator(
+            plan_parser=parser,
+            action_dispatcher=action_dispatcher,
+            user_interactor=user_interactor,
+        )
+
         report = orchestrator.execute(
             plan_content=final_plan_content, interactive=interactive_mode
         )
 
-    except pyperclip.PyperclipException as e:
-        typer.echo(f"Error accessing clipboard: {e}", err=True)
+    except (pyperclip.PyperclipException, NotImplementedError) as e:
+        typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(code=1)
 
     if report:

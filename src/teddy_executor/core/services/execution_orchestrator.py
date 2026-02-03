@@ -8,15 +8,16 @@ from teddy_executor.core.domain.models import (
     RunStatus,
     ActionStatus,
 )
+from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
+from teddy_executor.core.ports.inbound.run_plan_use_case import RunPlanUseCase
 from teddy_executor.core.ports.outbound import IUserInteractor
 from teddy_executor.core.services.action_dispatcher import ActionDispatcher
-from teddy_executor.core.services.plan_parser import PlanParser
 
 
-class ExecutionOrchestrator:
+class ExecutionOrchestrator(RunPlanUseCase):
     def __init__(
         self,
-        plan_parser: PlanParser,
+        plan_parser: IPlanParser,
         action_dispatcher: ActionDispatcher,
         user_interactor: IUserInteractor,
     ):

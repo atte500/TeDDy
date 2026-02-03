@@ -2,17 +2,12 @@ import re
 import yaml
 
 from teddy_executor.core.domain.models import ActionData, Plan
+from teddy_executor.core.ports.inbound.plan_parser import IPlanParser, InvalidPlanError
 
 
-class InvalidPlanError(Exception):
-    """Raised when the plan is malformed."""
-
-    pass
-
-
-class PlanParser:
+class YamlPlanParser(IPlanParser):
     """
-    A service responsible for parsing a plan string into a structured domain object.
+    A service responsible for parsing a YAML plan string into a structured domain object.
     """
 
     def parse(self, plan_content: str) -> Plan:
