@@ -91,17 +91,16 @@ class MarkdownPlanParser(IPlanParser):
         if metadata_list.children:
             for item in metadata_list.children:
                 text = self._get_child_text(item)
-                item_children = list(item.children) if item.children else []
-                if "File Path:" in text and item_children:
-                    first_child_children = (
-                        list(item_children[0].children)
-                        if item_children[0].children
-                        else []
-                    )
-                    if first_child_children:
-                        link_node = first_child_children[-1]
-                        if isinstance(link_node, Link):
-                            params["path"] = link_node.target
+                if "File Path:" in text:
+                    link_node = self._find_node_in_tree(item, Link)
+                    if link_node:
+                        # The mistletoe `Link.target` attribute contains the path.
+                        # For acceptance tests using `tmp_path`, this will be an absolute path.
+                        # For real plans, it will be a "root-relative" path (e.g., '/src/main.py').
+                        # We pass the path through unmodified, as downstream components are
+                        # responsible for handling both absolute and relative paths correctly.
+                        # DO NOT strip the leading '/' here.
+                        params["path"] = link_node.target
                 elif "Description:" in text:
                     description = text.split(":", 1)[1].strip()
 
@@ -117,6 +116,17 @@ class MarkdownPlanParser(IPlanParser):
         return ActionData(type="CREATE", description=description, params=params)
 
     # --- AST Helper Methods ---
+
+    def _find_node_in_tree(self, node: Any, node_type: type) -> Optional[Any]:
+        """Recursively searches for a node of a specific type in a tree."""
+        if isinstance(node, node_type):
+            return node
+        if hasattr(node, "children") and node.children is not None:
+            for child in node.children:
+                found = self._find_node_in_tree(child, node_type)
+                if found:
+                    return found
+        return None
 
     def _get_child_text(self, node: Any) -> str:
         """Recursively gets all text from a node's children."""

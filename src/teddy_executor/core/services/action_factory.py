@@ -14,6 +14,14 @@ class ActionFactory(IActionFactory):
     A protocol-compliant factory that uses the DI container to resolve action handlers.
     """
 
+    # Maps uppercase verbs from Markdown plans to the internal, descriptive keys.
+    _MARKDOWN_ACTION_MAP = {
+        "CREATE": "create_file",
+        "EDIT": "edit",
+        "READ": "read",
+        "EXECUTE": "execute",
+    }
+
     def __init__(self, container: punq.Container):
         self._container = container
         self._action_map: Dict[str, Type] = {
@@ -25,13 +33,23 @@ class ActionFactory(IActionFactory):
             "research": IWebSearcher,
         }
 
+    def _normalize_action_type(self, action_type: str) -> str:
+        """
+        Normalizes action types from different plan formats to the internal key format.
+        """
+        # First, check the explicit mapping for Markdown verbs.
+        if action_type in self._MARKDOWN_ACTION_MAP:
+            return self._MARKDOWN_ACTION_MAP[action_type]
+        # Fallback to lowercasing for YAML/other formats.
+        return action_type.lower()
+
     def create_action(self, action_type: str) -> IAction:
         """
         Looks up the adapter protocol for the given action type and asks the
         container to resolve an instance of it. It then binds the correct
         adapter method to the `execute` method required by the IAction protocol.
         """
-        action_type_key = action_type.lower()
+        action_type_key = self._normalize_action_type(action_type)
         if action_type_key not in self._action_map:
             raise ValueError(f"Unknown action type: '{action_type}'")
 
