@@ -25,7 +25,7 @@ from teddy_executor.core.services.context_service import ContextService
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
 from teddy_executor.core.services.markdown_plan_parser import MarkdownPlanParser
-from teddy_executor.core.services.plan_parser import YamlPlanParser
+from teddy_executor.core.services.yaml_plan_parser import YamlPlanParser
 from teddy_executor.adapters.inbound.cli_formatter import (
     format_project_context,
     format_report_as_yaml,

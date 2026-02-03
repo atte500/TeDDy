@@ -2,7 +2,7 @@ import pytest
 
 from teddy_executor.core.domain.models import Plan
 from teddy_executor.core.ports.inbound.plan_parser import InvalidPlanError
-from teddy_executor.core.services.plan_parser import YamlPlanParser
+from teddy_executor.core.services.yaml_plan_parser import YamlPlanParser
 
 
 def test_parse_success_scenario():
