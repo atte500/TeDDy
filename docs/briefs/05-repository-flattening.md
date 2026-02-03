@@ -12,12 +12,6 @@ The solution is a pure architectural refactoring initiative comprised of three d
 
 1.  **Repository Flattening:** The legacy `packages/executor` directory will be eliminated. All core source code will be moved to a root-level `src/` directory. This will simplify the development workflow, dependency management, and CI/CD scripts. The obsolete `packages/tui/` directory will also be removed.
 
-2.  **Centralized Configuration Service:** A new `ConfigService` will be created. It will be responsible for reading all system settings from a `.teddy/config.yaml` file as the primary source, with a fallback to environment variables. This service will provide a single, stable interface for accessing configuration throughout the application.
-
-3.  **LLM Client Abstraction:** To decouple the core application from specific LLM providers, we will introduce a port-and-adapter pattern.
-    -   **Port:** An `ILlmClient` interface will be defined in the core domain, specifying the contract for LLM interactions.
-    -   **Adapter:** A `LiteLLMAdapter` will be created as the first implementation of this port, using the `litellm` library to handle communication with various LLM APIs. This adapter will be wired up in the application's composition root (`main.py`).
-
 ## 3. Implementation Analysis (The "How")
 
 The codebase exploration confirms that this refactoring is primarily a task of moving files and updating configuration. No core application logic needs to be changed, but several key configuration files that assume the `packages/executor` structure must be updated.
@@ -48,11 +42,6 @@ This brief will be implemented as a single, comprehensive vertical slice. The or
 -   **[ ] Task: Clean Up Old Structure**
     -   Delete the now-empty `packages/` directory.
     -   Delete the obsolete `packages/tui/` directory as originally planned.
-
--   **[ ] Task: Implement Core Services**
-    -   Create the `ConfigService` for managing `.teddy/config.yaml`.
-    -   Define the `ILlmClient` port.
-    -   Implement the `LiteLLMAdapter`, add `litellm` as a dependency, and wire it into `src/teddy_executor/main.py`.
 
 -   **[ ] Task: Verify the Transition**
     -   Run `poetry lock` and `poetry install` from the project root to ensure dependencies resolve correctly.
