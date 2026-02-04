@@ -365,11 +365,6 @@
 - **Agent:** Pathfinder
 - **Goal:** Define and validate the core problem with the user.
 
-## Active Context
-````
-# This plan is for initial problem definition and requires no files in context yet.
-````
-
 ## Memos
 ````
 [+] The user's overall goal is to [The user's high-level objective.]. # A durable mission statement.
@@ -411,12 +406,6 @@
 - **Plan Type:** Synthesis
 - **Agent:** Pathfinder
 - **Goal:** Present findings and gain user approval to proceed to the next exploration phase.
-
-## Active Context
-````
-[+] spikes/synthesis-memo.md # Add the new synthesis artifact to the working set for user review.
-[-] docs/specs/old-approach.md # This document is now superseded by the new synthesis.
-````
 
 ## Memos
 ````

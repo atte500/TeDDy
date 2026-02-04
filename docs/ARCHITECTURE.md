@@ -1,19 +1,19 @@
 # System Architecture: TeDDy
 
-This document outlines the technical standards, conventions, and setup process for the `TeDDy` project, which currently consists of the `executor` and `tui` packages.
+This document outlines the technical standards, conventions, and setup process for the `TeDDy` project.
 
 ## 1. Setup Checklist
 
 This checklist guides the initial setup of the project environment. Each step must be completed in order.
 
 - [x] Verify system prerequisites (Python 3.9+, pip, Poetry).
-- [x] Create the initial source code directory structure for the `executor` package (`packages/executor/src/teddy_executor`).
-- [x] Create the test directory structure for the `executor` package (`packages/executor/tests/...`).
+- [x] Create the initial source code directory structure for the `teddy_executor` (`src/teddy_executor`).
+- [x] Create the test directory structure for the `teddy_executor` (`tests/...`).
 - [x] Create a root `.gitignore` file.
-- [x] Create the `pyproject.toml` file for the `executor` package.
-- [x] Install project dependencies for a specific package (e.g., `cd packages/executor && poetry install`).
+- [x] Create the `pyproject.toml` file at the project root.
+- [x] Install project dependencies (`poetry install`).
 - [x] Initialize pre-commit hooks from the root directory.
-- [x] Run the initial test suite to verify the setup (e.g., `cd packages/executor && poetry run pytest`).
+- [x] Run the initial test suite to verify the setup (`poetry run pytest`).
 
 ## 2. Conventions & Standards
 
@@ -23,7 +23,7 @@ This checklist guides the initial setup of the project environment. Each step mu
 
 ### Dependency Management
 - **Tool:** `Poetry`.
-- **Usage:** Dependencies are defined in `pyproject.toml` within each package. The `executor` package is configured as an installable CLI tool. Once installed via `poetry -C packages/executor install`, the `teddy` command is available within the activated Poetry shell. For development tasks from the project root, commands must be directed to the correct package, e.g., `poetry -C packages/executor run ...`.
+- **Usage:** Dependencies are defined in `pyproject.toml` at the project root. The `teddy_executor` package is configured as an installable CLI tool. Once installed via `poetry install`, the `teddy` command is available within the activated Poetry shell. For development tasks, commands should be run directly from the project root using `poetry run ...`.
 
 ### Version Control Strategy
 - **System:** Git
@@ -36,33 +36,33 @@ This checklist guides the initial setup of the project environment. Each step mu
 - **Pipeline:** The CI pipeline will lint, type-check, test, and build the packages.
 
 ### Service Layer Naming Convention
-- **Dependency Attributes:** Injected dependencies in the core application services (`packages/executor/src/teddy_executor/core/services/`) MUST be private.
+- **Dependency Attributes:** Injected dependencies in the core application services (`src/teddy_executor/core/services/`) MUST be private.
 - **Rationale:** This enforces a consistent pattern across the service layer, clearly distinguishing injected dependencies from public methods or other attributes.
 
 ### Command Execution with Poetry
-- **Principle:** Commands are executed from the **project root**, but `poetry`'s `-C` flag changes the working directory *before* the command runs. For example, `poetry -C packages/executor run ...` executes the command as if you were already inside the `packages/executor/` directory.
-- **Rule:** All file paths provided to such commands **MUST be relative to the package directory**, not the project root.
+- **Principle:** Commands are executed from the **project root**.
+- **Rule:** All file paths provided to such commands **MUST be relative to the project root**.
 - **Correct Pattern:**
   ```bash
-  # Correctly provides a path relative to packages/executor/
-  poetry -C packages/executor run pytest tests/acceptance/test_chat_with_user_action.py
+  # Correctly provides a path relative to the project root
+  poetry run pytest tests/acceptance/test_chat_with_user_action.py
   ```
 - **Incorrect Pattern:**
   ```bash
-  # Incorrectly duplicates the path because the CWD is already packages/executor/
-  poetry -C packages/executor run pytest packages/executor/tests/acceptance/test_quality_of_life_improvements.py
+  # Incorrectly assumes a different CWD; paths must always be from project root.
+  poetry run pytest src/teddy_executor/tests/acceptance/test_quality_of_life_improvements.py
   ```
 
 ### Testing Strategy
 - **Framework:** `pytest`.
-- **Location of Tests:** Within each package, tests are organized as follows:
+- **Location of Tests:** Tests are organized as follows:
     - `tests/acceptance/`: End-to-end tests.
     - `tests/integration/`: Tests for components that interact with external systems.
     - `tests/unit/`: Tests for individual functions or classes in isolation.
-- **Execution:** Tests are run from the **project root** using the `poetry -C` flag. See the **"Command Execution with Poetry"** section for the required path conventions.
-    - **Run all tests for a package:** `poetry -C packages/executor run pytest`
-    - **Run tests in a specific file:** `poetry -C packages/executor run pytest tests/acceptance/test_chat_with_user_action.py`
-    - **Run a specific test by name:** `poetry -C packages/executor run pytest -k "test_chat_with_user_gets_response"`
+- **Execution:** Tests are run from the **project root** using `poetry run pytest`.
+    - **Run all tests:** `poetry run pytest`
+    - **Run tests in a specific file:** `poetry run pytest tests/acceptance/test_chat_with_user_action.py`
+    - **Run a specific test by name:** `poetry run pytest -k "test_chat_with_user_gets_response"`
 
 ### Pre-commit Hooks
 - **Framework:** `pre-commit`.
@@ -90,45 +90,45 @@ The `spikes/` directory is intentionally excluded from `ruff` and `mypy` checks 
 
 This section serves as both the strategic **Boundary Map** and the detailed **Component Map** for the system.
 
-**Boundary Analysis:** The `executor` package follows a Hexagonal Architecture. The boundary separates the core business logic (domain models, services, and ports) from the platform-specific integration layer (the CLI) and infrastructure (the local filesystem, shell, and web). **Primary Adapters** act as the explicit translation layer across this boundary, ensuring the core remains isolated and independently testable.
+**Boundary Analysis:** The `teddy_executor` follows a Hexagonal Architecture. The boundary separates the core business logic (domain models, services, and ports) from the platform-specific integration layer (the CLI) and infrastructure (the local filesystem, shell, and web). **Primary Adapters** act as the explicit translation layer across this boundary, ensuring the core remains isolated and independently testable.
 
-### `executor` Package
+### `teddy_executor` Package
 
 #### Hexagonal Core
 
-| Component                 | Description                                                                                                     | Contract                                                                        |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| **Domain Model**          | Defines the core entities, value objects, and ubiquitous language of the application.                           | [Domain Model & Ubiquitous Language](./contexts/executor/domain_model.md)       |
-| **ExecutionReport**       | A strongly-typed, immutable data structure representing the outcome of a plan execution.                        | [ExecutionReport](./contexts/executor/domain/execution_report.md)               |
-| **IGetContextUseCase**    | Defines the inbound port for orchestrating the collection of project context.                                   | [IGetContextUseCase](./contexts/executor/ports/inbound/get_context_use_case.md) |
-| **IRunPlanUseCase**       | Defines the primary inbound port for executing a plan from a raw YAML string.                                   | [IRunPlanUseCase](./core/ports/inbound/run_plan_use_case.md)                    |
-| **IPlanParser**           | Defines the inbound port for parsing a plan from a raw string into a `Plan` object.                             | [IPlanParser](./core/ports/inbound/plan_parser.md)                              |
-| **IEnvironmentInspector** | Defines the outbound port for gathering information about the host operating environment.                       | [IEnvironmentInspector](./core/ports/outbound/environment_inspector.md)         |
-| **IFileSystemManager**    | Defines a technology-agnostic outbound port for all file system operations (create, read, edit).                | [IFileSystemManager](./core/ports/outbound/file_system_manager.md)              |
-| **IRepoTreeGenerator**    | Defines the outbound port for generating a file tree, respecting `.gitignore` and `.teddyignore` files.         | [IRepoTreeGenerator](./core/ports/outbound/repo_tree_generator.md)              |
-| **IShellExecutor**        | Defines the outbound port for executing shell commands in a specific context (CWD, env).                        | [IShellExecutor](./core/ports/outbound/shell_executor.md)                       |
-| **IUserInteractor**       | Defines the outbound port for prompting the user for confirmation and free-text input.                          | [IUserInteractor](./core/ports/outbound/user_interactor.md)                     |
-| **IWebScraper**           | Defines the outbound port for fetching and converting remote web page content to Markdown.                      | [IWebScraper](./core/ports/outbound/web_scraper.md)                             |
-| **IWebSearcher**          | Defines the outbound port for performing web searches and returning structured results.                         | [IWebSearcher](./core/ports/outbound/web_searcher.md)                           |
-| **ActionDispatcher**      | A service that resolves and executes a single action, delegating to the `ActionFactory`.                        | [ActionDispatcher](./core/services/action_dispatcher.md)                        |
-| **ActionFactory**         | A factory service that creates validated `Action` domain objects from raw plan data.                            | [ActionFactory](./core/services/action_factory.md)                              |
-| **ContextService**        | The service that implements `IGetContextUseCase` by orchestrating outbound ports.                               | [ContextService](./core/services/context_service.md)                            |
-| **ExecutionOrchestrator** | The primary service that implements `IRunPlanUseCase`, managing the step-by-step execution of a plan.           | [ExecutionOrchestrator](./core/services/execution_orchestrator.md)              |
-| **MarkdownPlanParser**    | **Status: Implemented.** A service that parses a Markdown plan string into a `Plan` domain object using an AST. | [MarkdownPlanParser](./core/services/markdown_plan_parser.md)                   |
-| **YamlPlanParser**        | **Status: Implemented.** A service that parses a YAML plan string into a structured `Plan` domain object.       | [YamlPlanParser](./core/services/yaml_plan_parser.md)                           |
+| Component                 | Description                                                                                             | Contract                                                                     |
+| ------------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| **Domain Model**          | Defines the core entities, value objects, and ubiquitous language of the application.                   | [Domain Model & Ubiquitous Language](./docs/core/domain_model.md)            |
+| **ExecutionReport**       | A strongly-typed, immutable data structure representing the outcome of a plan execution.                | [ExecutionReport](./docs/core/domain/execution_report.md)                    |
+| **IGetContextUseCase**    | Defines the inbound port for orchestrating the collection of project context.                           | [IGetContextUseCase](./docs/core/ports/inbound/get_context_use_case.md)      |
+| **IRunPlanUseCase**       | Defines the primary inbound port for executing a plan from a raw YAML string.                           | [IRunPlanUseCase](./docs/core/ports/inbound/run_plan_use_case.md)            |
+| **IPlanParser**           | Defines the inbound port for parsing a plan from a raw string into a `Plan` object.                     | [IPlanParser](./docs/core/ports/inbound/plan_parser.md)                      |
+| **IEnvironmentInspector** | Defines the outbound port for gathering information about the host operating environment.               | [IEnvironmentInspector](./docs/core/ports/outbound/environment_inspector.md) |
+| **IFileSystemManager**    | Defines a technology-agnostic outbound port for all file system operations (create, read, edit).        | [IFileSystemManager](./docs/core/ports/outbound/file_system_manager.md)      |
+| **IRepoTreeGenerator**    | Defines the outbound port for generating a file tree, respecting `.gitignore` and `.teddyignore` files. | [IRepoTreeGenerator](./docs/core/ports/outbound/repo_tree_generator.md)      |
+| **IShellExecutor**        | Defines the outbound port for executing shell commands in a specific context (CWD, env).                | [IShellExecutor](./docs/core/ports/outbound/shell_executor.md)               |
+| **IUserInteractor**       | Defines the outbound port for prompting the user for confirmation and free-text input.                  | [IUserInteractor](./docs/core/ports/outbound/user_interactor.md)             |
+| **IWebScraper**           | Defines the outbound port for fetching and converting remote web page content to Markdown.              | [IWebScraper](./docs/core/ports/outbound/web_scraper.md)                     |
+| **IWebSearcher**          | Defines the outbound port for performing web searches and returning structured results.                 | [IWebSearcher](./docs/core/ports/outbound/web_searcher.md)                   |
+| **ActionDispatcher**      | A service that resolves and executes a single action, delegating to the `ActionFactory`.                | [ActionDispatcher](./docs/core/services/action_dispatcher.md)                |
+| **ActionFactory**         | A factory service that creates validated `Action` domain objects from raw plan data.                    | [ActionFactory](./docs/core/services/action_factory.md)                      |
+| **ContextService**        | The service that implements `IGetContextUseCase` by orchestrating outbound ports.                       | [ContextService](./docs/core/services/context_service.md)                    |
+| **ExecutionOrchestrator** | The primary service that implements `IRunPlanUseCase`, managing the step-by-step execution of a plan.   | [ExecutionOrchestrator](./docs/core/services/execution_orchestrator.md)      |
+| **MarkdownPlanParser**    | A service that parses a Markdown plan string into a `Plan` domain object using an AST.                  | [MarkdownPlanParser](./docs/core/services/markdown_plan_parser.md)           |
+| **YamlPlanParser**        | A service that parses a YAML plan string into a structured `Plan` domain object.                        | [YamlPlanParser](./docs/core/services/yaml_plan_parser.md)                   |
 
 #### Primary Adapters
 
-| Component                      | Description                                                                                | Contract                                                                                   |
-| ------------------------------ | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| **CLI Adapter**                | The primary inbound adapter that drives the application via the `Typer` CLI framework.     | [CLI Adapter](./adapters/executor/inbound/cli.md)                                          |
-| **ConsoleInteractor**          | Implements `IUserInteractor` for the console, providing diff previews for file operations. | [ConsoleInteractorAdapter](./adapters/executor/outbound/console_interactor.md)             |
-| **LocalFileSystemAdapter**     | Implements `IFileSystemManager` for the local disk using Python's `pathlib`.               | [LocalFileSystemAdapter](./adapters/executor/outbound/local_file_system_adapter.md)        |
-| **LocalRepoTreeGenerator**     | Implements `IRepoTreeGenerator` using the `pathspec` library to handle ignore files.       | [LocalRepoTreeGenerator](./adapters/executor/outbound/local_repo_tree_generator.md)        |
-| **ShellAdapter**               | Implements `IShellExecutor` using Python's `subprocess` module.                            | [ShellAdapter](./adapters/executor/outbound/shell_adapter.md)                              |
-| **SystemEnvironmentInspector** | Implements `IEnvironmentInspector` using Python's `os`, `platform`, and `sys` modules.     | [SystemEnvironmentInspector](./adapters/executor/outbound/system_environment_inspector.md) |
-| **WebScraperAdapter**          | Implements `IWebScraper` using the `requests` and `markdownify` libraries.                 | [WebScraperAdapter](./adapters/executor/outbound/web_scraper_adapter.md)                   |
-| **WebSearcherAdapter**         | Implements `IWebSearcher` using the `ddgs` library for keyless DuckDuckGo searches.        | [WebSearcherAdapter](./adapters/executor/outbound/web_searcher_adapter.md)                 |
+| Component                      | Description                                                                                | Contract                                                                                        |
+| ------------------------------ | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| **CLI Adapter**                | The primary inbound adapter that drives the application via the `Typer` CLI framework.     | [CLI Adapter](./docs/adapters/executor/inbound/cli.md)                                          |
+| **ConsoleInteractor**          | Implements `IUserInteractor` for the console, providing diff previews for file operations. | [ConsoleInteractorAdapter](./docs/adapters/executor/outbound/console_interactor.md)             |
+| **LocalFileSystemAdapter**     | Implements `IFileSystemManager` for the local disk using Python's `pathlib`.               | [LocalFileSystemAdapter](./docs/adapters/executor/outbound/local_file_system_adapter.md)        |
+| **LocalRepoTreeGenerator**     | Implements `IRepoTreeGenerator` using the `pathspec` library to handle ignore files.       | [LocalRepoTreeGenerator](./docs/adapters/executor/outbound/local_repo_tree_generator.md)        |
+| **ShellAdapter**               | Implements `IShellExecutor` using Python's `subprocess` module.                            | [ShellAdapter](./docs/adapters/executor/outbound/shell_adapter.md)                              |
+| **SystemEnvironmentInspector** | Implements `IEnvironmentInspector` using Python's `os`, `platform`, and `sys` modules.     | [SystemEnvironmentInspector](./docs/adapters/executor/outbound/system_environment_inspector.md) |
+| **WebScraperAdapter**          | Implements `IWebScraper` using the `requests` and `markdownify` libraries.                 | [WebScraperAdapter](./docs/adapters/executor/outbound/web_scraper_adapter.md)                   |
+| **WebSearcherAdapter**         | Implements `IWebSearcher` using the `ddgs` library for keyless DuckDuckGo searches.        | [WebSearcherAdapter](./docs/adapters/executor/outbound/web_searcher_adapter.md)                 |
 
 ---
 

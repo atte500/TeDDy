@@ -378,12 +378,6 @@
 - **Agent:** Architect
 - **Goal:** Create the architectural blueprint and define the first slice.
 
-## Active Context
-````
-[+] docs/ARCHITECTURE.md # Add blueprint to working set for reference.
-[+] docs/slices/[nn-slice-name].md # Add new slice document to working set.
-````
-
 ## Memos
 ````
 [+] The project will follow a strict Ports & Adapters architecture. # A foundational architectural principle.
@@ -427,14 +421,6 @@
 - **Plan Type:** Spike
 - **Agent:** Architect
 - **Goal:** Verify the proposed approach for a component with a minimal script after discovering options.
-
-## Active Context
-````
-[+] docs/slices/[current_slice].md # Keep current slice in context.
-[+] docs/components/[component-name].md # Add component doc for reference during spike.
-[+] spikes/technical/[nn-spike-name]/verify.sh # Add new spike script to working set.
-[-] spikes/technical/old-spike.sh # Remove spike from a previous, now irrelevant, task.
-````
 
 ## Memos
 ````

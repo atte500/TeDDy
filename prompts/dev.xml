@@ -375,12 +375,6 @@
 - **Agent:** Developer
 - **Goal:** Write a failing acceptance test for the '[Scenario Name]' scenario.
 
-## Active Context
-````
-[+] docs/slices/[path-to-slice].md # Add slice doc to provide requirements for the test.
-[+] tests/acceptance/test_[feature_name].py # Add the new acceptance test file to the working set.
-````
-
 <!-- No Memos section needed here. Test coverage is tracked by git, not long-term memory. -->
 
 ## Rationale
@@ -421,12 +415,6 @@ pytest tests/acceptance/
 - **Plan Type:** REFACTOR Phase
 - **Agent:** Developer
 - **Goal:** Improve the code quality of the `[Component Name]`.
-
-## Active Context
-````
-[+] path/to/[component_name].py # Keep component file in context for refactoring.
-[+] path/to/tests/[test_file].py # Keep test file in context to ensure tests still pass.
-````
 
 <!-- No Memos section needed here. Refactoring is tracked by git, not long-term memory. -->
 
@@ -470,13 +458,6 @@ pytest path/to/tests/[test_file].py
 - **Plan Type:** User Verification
 - **Agent:** Developer
 - **Goal:** Escalate a blocking architectural issue to the Architect.
-
-## Active Context
-````
-[+] docs/slices/[current_slice].md # Keep current slice in context.
-[+] docs/core/ports/[port_name].md # Add port definition to highlight the architectural conflict.
-[-] src/implementation/details.py # No longer relevant after discovering the architectural blocker.
-````
 
 ## Memos
 ````

@@ -309,11 +309,6 @@
 - **Agent:** Debugger
 - **Goal:** Consult the Oracle to discover the ground truth of the core technical assumption.
 
-## Active Context
-````
-[+] spikes/debug/00-oracle/discover_truth.sh # Add the new Oracle spike script to the working set.
-````
-
 <!-- No Memos section needed here, as no durable facts have been established yet. -->
 
 ## Rationale
@@ -360,12 +355,6 @@ bash spikes/debug/00-oracle/discover_truth.sh
 - **Plan Type:** Synthesis Phase
 - **Agent:** Debugger
 - **Goal:** Document the systemic root cause, provide the verified fix, and recommend preventative changes.
-
-## Active Context
-````
-[+] docs/rca/[brief-error-description].md # Add the new RCA report to the working set.
-[-] spikes/debug/[...]/verify_fix.py # This spike is ephemeral and has served its purpose.
-````
 
 ## Memos
 ````

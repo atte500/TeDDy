@@ -174,7 +174,7 @@ The primary "continue" command for a session. It intelligently determines the ne
 This phase implements a two-tiered workflow to give the user both speed and granular control.
 
 **Tier 1: High-Level Summary & Prompt**
-The command first presents a high-level summary of all proposed state changes (`Active Context`, `Memos`) and the actions to be performed.
+The command first presents a high-level summary of all proposed state changes (`Memos`) and the actions to be performed.
 
 *Example UI:*
 ```text
@@ -203,11 +203,6 @@ If the user selects `(m)odify`, they enter an interactive checklist to configure
 *Example UI:*
 ```text
 Use [↑/↓] to navigate, [enter] to toggle, [a] to toggle all, [p] to preview details, [s] to confirm.
-
-- Active Context
- │
- ├─[✓] [+] ADD: src/components/new_component/core.py
- └─[✓] [+] ADD: tests/components/test_new_component.py
 
 - Memos
  │
