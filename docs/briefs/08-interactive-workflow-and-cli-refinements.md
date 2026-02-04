@@ -96,3 +96,21 @@ Implementation must be done incrementally through the following dependency-aware
     -   Ensure the path of a report just generated (e.g., `01/report.md`) is added to the `02/turn.context` file.
 -   **[ ] Task: Implement `MarkdownReportFormatter`:**
     -   Create the `MarkdownReportFormatter` service to convert the `ExecutionReport` object into a simplified Markdown string, adhering to the updated [Report Format Specification](/docs/specs/report-format.md).
+
+---
+### **Slice 6: Agent Collaboration Model**
+**Goal:** Evolve the session workflow to support branching and specialist agent sub-routines.
+
+-   **[ ] Task: Implement `meta.yaml` Ledger:**
+    -   Update the `SessionManager` to create and manage the `meta.yaml` file in each turn directory.
+    -   Ensure it correctly populates `turn_id`, `parent_turn_id`, and `caller_turn_id` based on the turn transition logic.
+-   **[ ] Task: Enhance Plan Parser:**
+    -   Add support for the `CONCLUDE` action.
+    -   Update `INVOKE` and add `CONCLUDE` to parse the optional `Handoff Resources` list.
+-   **[ ] Task: Refactor `ExecutionOrchestrator` for Branching:**
+    -   Refactor the orchestrator (or a higher-level service) to fully implement the "Turn Transition Algorithm" from the `interactive-session-workflow.md` spec. This is the core of this slice.
+-   **[ ] Task: Create Acceptance Tests:**
+    -   Develop end-to-end tests for the `INVOKE`/`CONCLUDE` cycle.
+    -   Include a test for a multi-turn specialist agent to validate that `caller_turn_id` is correctly managed.
+-   **[ ] Task: Update Agent Prompts:**
+    -   Review and update all agent prompts (`prompts/*.xml`) to utilize the new `CONCLUDE` action and the `Handoff Resources` format for `INVOKE`.

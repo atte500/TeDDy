@@ -213,21 +213,38 @@ All actions are located under the `## Action Plan` heading. Each action is defin
 
 ### 5.7. `INVOKE`
 
--   **Purpose:** Hands off control to another agent.
+-   **Purpose:** Hands off control to another agent, resetting the context for a new task.
 -   **Format:**
     ```markdown
     ### `INVOKE`
     - **Agent:** Architect
+    - **Handoff Resources:** (Optional)
+      - [docs/briefs/new-feature.md](/docs/briefs/new-feature.md)
 
-    Handoff to the Architect.
-
-    The brief is complete and located at `docs/briefs/01-finisher-agent-brief.md`. Please proceed with creating a detailed technical design and implementation plan.
+    Handoff to the Architect. The brief is complete.
     ```
 -   **Parsing Rules:**
     1. Extract the target `Agent` from the metadata list.
-    2. The content for the invocation message is all the free-form markdown content that follows the metadata list.
+    2. Extract the optional list of `Handoff Resources`.
+    3. The content for the invocation message is all the free-form markdown content that follows the metadata list.
 
-### 5.8. `PRUNE`
+### 5.8. `CONCLUDE`
+
+-   **Purpose:** Returns control to the calling agent after a specialist sub-task is complete.
+-   **Format:**
+    ```markdown
+    ### `CONCLUDE`
+    - **Handoff Resources:** (Optional)
+      - [docs/rca/the-bug.md](/docs/rca/the-bug.md)
+      - [spikes/fix-script.sh](/spikes/fix-script.sh)
+
+    My analysis is complete. The root cause and a verified fix are attached.
+    ```
+-   **Parsing Rules:**
+    1. Extract the optional list of `Handoff Resources`.
+    2. The content for the message is all the free-form markdown content that follows the metadata list.
+
+### 5.9. `PRUNE`
 
 -   **Purpose:** Removes a resource from the agent's working context for subsequent turns. This is used to prevent context clutter.
 -   **Format:**

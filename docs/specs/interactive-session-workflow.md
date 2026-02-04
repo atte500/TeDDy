@@ -133,27 +133,41 @@ Generates a `plan.md` within a turn directory.
 
 ### `teddy execute [plan_file]`
 
-Executes a plan, generates a report, and prepares the subsequent turn.
+Executes a plan, generates a report, and prepares the subsequent turn based on a precise, deterministic algorithm.
 
 -   **Arguments:**
     -   `[plan_file]`: Path to a `plan.md` file (e.g., `01/plan.md`).
 -   **Options:**
     -   `-y`: (Optional) Auto-approve all actions.
--   **Behavior (Sequence of Operations):**
-    1.  **Approval Phase:** Initiates the interactive **Approval & Execution Phase**. If the plan is not approved, the command terminates.
-    2.  **Prepare Next Turn (Pre-flight):**
-        -   Creates the next turn's directory (e.g., `02/`).
-        -   Copies `01/system_prompt.xml` to `02/system_prompt.xml`.
-        -   If `01/turn.context` exists, it is copied to `02/turn.context`.
-    3.  **Action Execution Phase:**
-        -   Executes the approved actions from `01/plan.md` sequentially.
-        -   `READ` and `PRUNE` actions modify the `02/turn.context` file.
-        -   An `INVOKE <agent_name>` action calls `teddy get-prompt <agent_name>` and **overwrites** the `02/system_prompt.xml` file.
-    4.  **Reporting Phase (Post-flight):**
-        -   Generates the factual `01/report.md`. This report is a historical log only and does not contain a workspace snapshot.
-    5.  **Finalize Next Turn (Post-flight):**
-        -   The `teddy execute` command will automatically add the path of the report it just generated (e.g., `01/report.md`) to the `02/turn.context` file. This ensures the AI has a record of the previous turn's outcome.
-        -   The next turn (`02/`) is now prepared with an updated `system_prompt.xml` and `turn.context`. The user will run `teddy context` in that directory to generate the new `input.md` when they are ready to proceed.
+
+#### The Turn Transition Algorithm
+The `teddy execute` command creates the *next* turn (`T_next`) based on the state of the *current* turn (`T_current`) and its `plan.md`. The following algorithm is executed in order.
+
+1.  **Approval Phase:** Initiates the interactive **Approval & Execution Phase**. If the plan is not approved, the command terminates.
+2.  **Initialize Next Turn (`T_next`):**
+    -   Create the `T_next` directory.
+    -   **Default State:** `T_next` starts as a direct continuation of `T_current`.
+        -   Copy `T_current/system_prompt.xml` to `T_next/`.
+        -   Copy `T_current/turn.context` to `T_next/`.
+        -   Create `T_next/meta.yaml` with `turn_id`, `parent_turn_id` pointing to `T_current`'s ID, and `caller_turn_id` copied from `T_current`.
+3.  **Apply Standard Context Changes from `plan.md`:**
+    -   Process all standard actions in `T_current/plan.md`:
+        -   For each `READ` action, add its resource path to `T_next/turn.context`.
+        -   For each `PRUNE` action, remove its resource path from `T_next/turn.context`.
+4.  **Apply Special Action Overrides:**
+    -   If `T_current/plan.md` contains an `INVOKE` or `CONCLUDE` action, it overrides the default state.
+    -   **If `INVOKE`:**
+        -   **Context:** `T_next/turn.context` is wiped and replaced with files from `Handoff Resources`.
+        -   **Agent:** `T_next/system_prompt.xml` is overwritten with the invoked agent's prompt.
+        -   **Ledger:** `caller_turn_id` in `T_next/meta.yaml` is set to `T_current`'s ID.
+    -   **If `CONCLUDE`:**
+        -   Find the original `caller_turn_id` from `T_current/meta.yaml`.
+        -   **Context:** `T_next/turn.context` is replaced with the *caller's* context, then files from `Handoff Resources` are appended.
+        -   **Agent:** `T_next/system_prompt.xml` is overwritten with the *caller's* prompt.
+        -   **Ledger:** `parent_turn_id` in `T_next/meta.yaml` is set to the `caller_turn_id`, and `caller_turn_id` is cleared.
+5.  **Finalize and Report:**
+    -   **Append Report:** The path to the newly generated `T_current/report.md` is always appended to `T_next/turn.context`.
+    -   **Generate Report:** The factual `T_current/report.md` is generated.
 
 ---
 
