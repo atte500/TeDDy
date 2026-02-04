@@ -57,22 +57,32 @@ To ensure links work correctly in local previews (like VSCode) while referencing
     - **Status:** Green 🟢
     - **Plan Type:** Implementation
     - **Agent:** Pathfinder
-    - **Goal:** Create the initial documentation for the new plan format.
     ```
 -   **Parsing Rules:** The plan's title is the content of the `#` heading. The metadata is the bulleted list that immediately follows it. The parser should treat this list as key-value pairs.
 
 ### 4.2. Rationale
 
--   **Purpose:** Contains the agent's reasoning, state, and thought process.
+-   **Purpose:** Contains the agent's reasoning, state, and thought process, structured to enforce methodical thinking.
 -   **Format:**
-    ```markdown
+    `````markdown
     ## Rationale
     ````text
-    This section contains the agent's free-form thinking.
-    It is not meant for structured data, but for human-readable context.
+    ### 1. Synthesis
+    [A two-part analysis: first, a review of the previous turn's outcome, quoting new information; second, a synthesis of what that means for the broader mission.]
+
+    ### 2. Justification
+    *   **Principle:** [The core methodological rule being followed.]
+    *   **Application:** [A brief explanation of how the principle applies to the current synthesis.]
+
+    ### 3. Criteria
+    *   **Expected Success:** [The predicted successful outcome and the next plan type.]
+    *   **Expected Failure:** [Potential failure modes and the planned diagnostic response.]
+
+    ### 4. State Dashboard
+    [The agent's high-level workflow dashboard (e.g., TDD Dashboard, Pathfinder's Log).]
     ````
-    ```
--   **Parsing Rules:** The content is the raw text within the fenced code block and is primarily for human consumption.
+    `````
+-   **Parsing Rules:** The parser treats the entire content as a single, raw text block within the fenced code block. The internal structure is a convention for the LLM agent to follow, not for machine parsing.
 
 ### 4.3. Memos (Optional)
 
@@ -266,15 +276,10 @@ The following is a complete, realistic example of a plan file from start to fini
 - **Status:** Green 🟢
 - **Plan Type:** Exploration
 - **Agent:** Pathfinder
-- **Goal:** Research the concept of a "Finisher" agent and create a formal brief.
 
 ## Rationale
 ````text
-Observation: The user has requested a new "Finisher" agent role responsible for final cleanup, versioning, and handoff tasks. The exact responsibilities are not yet defined.
-Analysis: This requires a discovery process. I need to research existing patterns for this type of role and then synthesize the findings into a concrete proposal (a brief) for the user to approve. This follows the standard Pathfinder workflow of Why -> What -> How.
-Next Step:
-- Current Focus: Solution Space Exploration
-- Justification: I need to gather external information before I can propose a solution. The first step is to perform web research.
+...
 ````
 
 ## Memos
