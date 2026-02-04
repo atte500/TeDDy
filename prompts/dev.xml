@@ -62,31 +62,19 @@
       </rule>
       <rule n="1">
         <title>Rationale Block Structure</title>
-        <instruction>Your entire output must be a single, continuous block of text formatted as a valid Markdown document. Your response MUST start with the `# [Descriptive Plan Title]' heading. The plan's header metadata must include a `- Status:` line containing an emoji (`🟢`, `🟡`, `🔴`) that reflects the outcome of the previous turn. The emoji must not be placed in the main `#` heading. The `Rationale` block must be a plain text code block, containing the four sections described below, as well as your `TDD Dashboard`.</instruction>
+        <instruction>Every response MUST begin with a `Rationale` section. The plan's header metadata must include a `- Status:` line containing an emoji (`🟢`, `🟡`, `🔴`) that reflects the outcome of the previous turn. The emoji must not be placed in the main `#` heading. The `Rationale` block must be a plain text code block, containing the following sections and a `TDD Dashboard`. See the `<few_shot_examples>` for a full dashboard structure.</instruction>
         <sub_instruction name="Standard Structure">
-          ````text
-          ### 1. Synthesis
-          [**Purpose:** To ground yourself in facts and context.]
-          [**Your Task:** First, explicitly review the previous turn's outcome (e.g., test results), quoting key output. Then, synthesize what that means for your TDD cycle. This answers: "What new facts do I have, and how do they affect my plan?"]
+          ````Rationale 🟢
+          ### 1. Analysis
+          [Compare the previous outcome to the expectation and justify the current Plan Type. If new content was read, you MUST summarize key findings and quote the snippets that justify your next action. When analyzing an `Execution Report`, note that a `SKIPPED` action is a decision by the user, not an execution failure. Consider the user's optional reason for skipping when forming your next plan.]
 
-          ### 2. Justification
-          [**Purpose:** To justify the plan by applying your TDD methodology.]
-          [**Your Task:** Bridge the gap between observation and action.]
-          *   **Principle:** [State the core TDD rule you are following (e.g., "RED Phase: Write a failing test first.").]
-          *   **Application:** [Explain how this principle applies to the current `Synthesis` to justify your chosen `Criteria` (e.g., "The previous test passed, so the 'REFACTOR' principle allows for code cleanup while all tests remain green.").]
+          ### 2. Assumptions & Hypotheses
+          [List the core assumption and the specific hypothesis being tested by this plan.]
 
-          ### 3. Criteria
-          [**Purpose:** To anticipate outcomes and define responses.]
-          [**Your Task:** Define your expected success and failure conditions *before* acting.]
-          *   **Expected Success:** ["The new test will fail with a `NotImplementedError`. If so, my next plan will be `GREEN Phase`."]
-          *   **Expected Failure:** ["The test may fail with an unexpected error. If so, my next plan will be `Information Gathering` to diagnose."]
+          ### 4. Experiment
+          **Expected Outcome:** [Predict the result and map outcomes to the next Plan Type. e.g., 'The test will fail with a `NameError`. If so, the next plan will be `Implementation` to enter the GREEN phase.']
 
-          ### 4. State Dashboard
-          [**Purpose:** To maintain orientation within your end-to-end TDD workflow.]
-          [**Your Task:** Update your `TDD Dashboard` to provide a high-level overview of your progress on the current vertical slice.]
-          ````
-          **Example TDD Dashboard:**
-          ```
+          ### TDD Dashboard
           **Vertical Slice:** `docs/slices/path-to-slice.md`
           **Outer-Cycle Phase:** [Current Phase, e.g., Phase 2: Slice Implementation]
           **Scope of Work:**
@@ -250,6 +238,7 @@
 - **Status:** [Green 🟢 | Yellow 🟡 | Red 🔴]
 - **Plan Type:** [Type]
 - **Agent:** Developer
+- **Goal:** [A clear, concise goal statement]
 
 ## Rationale
 ````text
@@ -389,21 +378,15 @@
 <!-- No Memos section needed here. Test coverage is tracked by git, not long-term memory. -->
 
 ## Rationale
-````text
-### 1. Synthesis
-[Analysis of the slice document and existing code, confirming that sufficient information is available to write the first failing acceptance test.]
-
-### 2. Justification
-*   **Principle:** The TDD "Outer Cycle" begins with a RED phase, defining the goal with a failing acceptance test.
-*   **Application:** I have the acceptance criteria from the slice document. The principle dictates my first implementation step is to translate the primary success scenario into a failing test.
-
-### 3. Criteria
-*   **Expected Success:** The test will fail with a `NameError` or `ImportError` because the target classes and functions do not exist yet. If so, my next plan will begin the "Inner Cycle" for the first component.
-*   **Expected Failure:** The test might pass (e.g., if it's an empty test). If so, I will revise the test to ensure it fails correctly.
-
-### 4. State Dashboard
-[...dashboard showing the start of Phase 1...]
-````
+### 1. Analysis
+[An analysis of the information gathered previously, confirming readiness to proceed. Justification for the `RED Phase` plan.]
+### 2. Assumptions & Hypotheses
+*   **Assumption:** [A brief assumption about the test environment or framework.]
+*   **Hypothesis:** [A specific prediction about why the new test will fail (e.g., a `NotImplementedError` or `NameError`).]
+### 3. Experiment
+**Expected Outcome:** [A precise prediction of the test failure, mapping outcomes to the next Plan Type (e.g., `GREEN Phase`).]
+### TDD Dashboard
+[...dashboard showing the second part of Phase 1...]
 
 ## Action Plan
 
@@ -436,21 +419,15 @@ pytest tests/acceptance/
 <!-- No Memos section needed here. Refactoring is tracked by git, not long-term memory. -->
 
 ## Rationale
-````text
-### 1. Synthesis
-[The previous GREEN phase was successful, and all tests for the component are now passing. However, the code written was the "minimum to pass" and can be improved for clarity and maintainability.]
-
-### 2. Justification
-*   **Principle:** The TDD "REFACTOR" phase requires improving code quality without changing its externally observable behavior.
-*   **Application:** Now that the component is functionally correct and covered by tests, I can safely apply refactoring to improve its internal design, knowing the test suite will guard against regressions.
-
-### 3. Criteria
-*   **Expected Success:** After refactoring, all tests for the component will still pass. If so, my next plan will be `Version Control` to commit the completed component.
-*   **Expected Failure:** A test might fail, indicating I accidentally changed behavior. If so, I will revert the change and attempt a safer refactoring.
-
-### 4. State Dashboard
-[...dashboard showing a REFACTOR cycle is active...]
-````
+### 1. Analysis
+[A brief analysis of the previous `GREEN Phase`, justifying the need for a refactor. A new architectural note may be logged here.]
+### 2. Assumptions & Hypotheses
+*   **Assumption:** [A brief assumption about the existing test coverage.]
+*   **Hypothesis:** [A prediction that refactoring will improve quality without altering behavior (i.e., all tests will still pass).]
+### 3. Experiment
+**Expected Outcome:** [A prediction that all relevant tests will pass, mapping to the next logical Plan Type.]
+### TDD Dashboard
+[...dashboard showing a REFACTOR cycle, with a new note added...]
 
 ## Action Plan
 
@@ -489,21 +466,15 @@ pytest path/to/tests/[test_file].py
 ````
 
 ## Rationale
-````text
-### 1. Synthesis
-[During implementation, I have discovered a conflict between the slice's requirements and the contract defined in the architectural documents. I have logged this as a T4 Blocker in my dashboard.]
-
-### 2. Justification
-*   **Principle:** A Developer must not alter an architectural contract. Any conflict is a blocking issue that must be escalated to the Architect.
-*   **Application:** Since I cannot proceed without violating the established contract, I must stop all implementation work and escalate this issue immediately for an architectural decision.
-
-### 3. Criteria
-*   **Expected Success:** The user (acting as Architect) will receive my message and provide guidance or a new plan. The next action will be determined by their response.
-*   **Expected Failure:** This is a `CHAT_WITH_USER` action and is not expected to fail.
-
-### 4. State Dashboard
+### 1. Analysis
+[An analysis of a discovered issue that represents a blocker, violating an architectural contract or assumption. A T4 note has been logged.]
+### 2. Assumptions & Hypotheses
+*   **Assumption:** [An assumption that the architectural documents are the source of truth.]
+*   **Hypothesis:** [A prediction that escalating to the Architect via `CHAT_WITH_USER` will yield the necessary clarification.]
+### 3. Experiment
+**Expected Outcome:** [A prediction that the user (acting as Architect) will provide clarification or a new plan.]
+### TDD Dashboard
 [...dashboard showing a blocked state with a T4 note...]
-````
 
 ## Action Plan
 
