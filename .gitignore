@@ -96,6 +96,5 @@ error_screenshot.png
 # Spikes (temporary experimental code) - Located in the executor project
 spikes/
 
-# Archived
-docs/slices/archive
-docs/briefs/archive
+# Archived Folders
+*archive

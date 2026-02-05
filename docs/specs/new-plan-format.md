@@ -57,34 +57,43 @@ To ensure links work correctly in local previews (like VSCode) while referencing
     - **Status:** Green 🟢
     - **Plan Type:** Implementation
     - **Agent:** Pathfinder
-    - **Goal:** Create the initial documentation for the new plan format.
     ```
 -   **Parsing Rules:** The plan's title is the content of the `#` heading. The metadata is the bulleted list that immediately follows it. The parser should treat this list as key-value pairs.
 
 ### 4.2. Rationale
 
--   **Purpose:** Contains the agent's reasoning, state, and thought process.
--   **Format:**
-    ```markdown
+-   **Purpose:** Contains the agent's reasoning, state, and thought process. It acts as a **cognitive forcing function** to ensure every plan is grounded, deliberate, and strategic.
+-   **Format:** The `Rationale` block is a plain text code block that **must** contain four distinct sections, each with a `###` heading, in the following order: `### 1. Synthesis`, `### 2. Justification`, `### 3. Expected Outcome`, and `4. State Dashboard`.
+
+    `````markdown
     ## Rationale
     ````text
-    This section contains the agent's free-form thinking.
-    It is not meant for structured data, but for human-readable context.
+    ### 1. Synthesis
+    [A review of the previous turn's outcome and what it means for the mission.]
+
+    ### 2. Justification
+    [A direct narrative that synthesizes the current situation and explains how the proposed plan is the next logical step according to all applicable principles of the agent's core methodology.]
+
+    ### 3. Expected Outcome
+    [A clear statement of what will happen in both success and failure scenarios, including the `Plan Type` of the subsequent plan.]
+
+    ### 4. State Dashboard
+    [The agent's complete, multi-step workflow status (e.g., Pathfinder's Log).]
     ````
-    ```
--   **Parsing Rules:** The content is the raw text within the fenced code block and is primarily for human consumption.
+    `````
+-   **Parsing Rules:** The content is the raw text within the fenced code block and is primarily for human consumption and agent self-correction.
 
 ### 4.3. Memos (Optional)
 
 -   **Purpose:** Lists the proposed changes (creations and deletions) to the agent's long-term memory.
 -   **Format:**
-    ```markdown
+    `````markdown
     ## Memos
     ````
     [+] A new fact to remember. # A new global convention was established.
     [-] An old fact that is no longer true. # This rule was superseded.
     ````
-    ```
+    `````
 -   **Parsing Rules:** The parser should treat the content of the code block as a list of change requests.
     -   Each line must start with either `[+]` for creation or `[-]` for deletion. The text following the marker is the content of the memo.
     -   Any text following a `#` character on a line is considered a comment and should be ignored by the parser, but may be used by the presentation layer.
@@ -266,15 +275,24 @@ The following is a complete, realistic example of a plan file from start to fini
 - **Status:** Green 🟢
 - **Plan Type:** Exploration
 - **Agent:** Pathfinder
-- **Goal:** Research the concept of a "Finisher" agent and create a formal brief.
 
 ## Rationale
 ````text
-Observation: The user has requested a new "Finisher" agent role responsible for final cleanup, versioning, and handoff tasks. The exact responsibilities are not yet defined.
-Analysis: This requires a discovery process. I need to research existing patterns for this type of role and then synthesize the findings into a concrete proposal (a brief) for the user to approve. This follows the standard Pathfinder workflow of Why -> What -> How.
-Next Step:
-- Current Focus: Solution Space Exploration
-- Justification: I need to gather external information before I can propose a solution. The first step is to perform web research.
+### 1. Synthesis
+The user has requested a new "Finisher" agent role, but the exact responsibilities are undefined. This requires a discovery process before implementation.
+
+### 2. Justification
+This plan adheres to the Pathfinder "Why -> What -> How" workflow. The problem is understood ("Why"), but the solution is not. Therefore, the next logical step is to explore the Solution Space ("What") by gathering external information to inform a proposal.
+
+### 3. Expected Outcome
+The research is expected to yield patterns for release management roles, allowing me to draft a brief. The next plan will be a `Synthesis` plan. If the research yields no clear patterns, the next plan will be a `CHAT_WITH_USER` plan to propose a brainstorming session with the user.
+
+### 4. State Dashboard
+- **Overall Goal:** Define and get approval for a new "Finisher" agent.
+- **Phase A: Problem Space (Why):** Approved
+- **Phase B: Solution Space (What):** In Progress
+- **Phase C: Implementation Space (How):** Not Started
+- **Phase D: Handoff (Who):** Not Started
 ````
 
 ## Memos
