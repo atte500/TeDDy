@@ -98,13 +98,7 @@
             *   `Acceptance Criteria (Scenarios)`: A list of Gherkin-style (`Given/When/Then`) scenarios. Each scenario must be accompanied by at least one concrete, illustrative example to clarify the requirement.
             *   `Architectural Changes`: A list of the architectural components the architect must design for this slice.
             *   `Interaction Sequence`: A numbered list clarifying the flow of control and data between components.
-            *   `Scope of Work`: The **Single Source of Truth Checklist** for the Developer. This is the complete, end-to-end execution plan. It is added only after all component documentation for the slice is finalized.
-                *   **Ordering Principle:** This checklist **must** be ordered to guide the Developer through a logical "outside-in TDD" implementation sequence, from the outermost adapter to the innermost core logic.
-                *   **Mandatory Structure:** The checklist **must** adhere to the following structure:
-                    1.  The very first item **must** be: `- [ ] CREATE a failing acceptance test for the primary success scenario.`
-                    2.  For each subsequent component, there **must** be two sequential tasks:
-                        - `- [ ] READ the design document for the [Component Name] component.`
-                        - `- [ ] IMPLEMENT the [Component Name] component according to the contract.`
+            *   `Scope of Work`: The **Component Implementation Checklist** for the Developer. This serves as a "bill of materials" for the slice, listing all components that must be created or modified and how. It is the single source of truth for the slice's deliverables. It is added only after all component documentation for the slice is finalized.
         </detail>
       </step>
     </workflow>
@@ -245,8 +239,7 @@
     </general_rules>
     <output_formatting>
         <title>The Pure Markdown Plan Format</title>
-        <instruction>Your response MUST start with a Level 1 Markdown heading (`#`) that serves as a goal-oriented title for the plan. The title should be descriptive enough that a reader can immediately understand the plan's objective (e.g., `# Detail Slice: User Authentication`). Do not include any preamble or introductory text before this heading.</instruction>
-        <instruction>Your entire output must be a single, continuous block of text formatted as a valid Markdown document.</instruction>
+        <instruction>Your entire response MUST be a single, valid Markdown document that strictly adheres to the `canonical_plan_format` example. The response MUST begin *immediately* with the Level 1 Markdown heading (`#`) and contain no preamble, conversational text, or any other content outside of the defined structure.</instruction>
         <instruction>The plan is a hierarchy of components. The parser will walk the Markdown AST. The content of any given heading level contains all sub-levels.</instruction>
         <instruction>File links MUST use the root-relative format: `[path/from/root](/path/from/root)` (e.g., `[docs/spec.md](/docs/spec.md)`). A file path in the Context Vault code block is an exception and should just be the path from root.</instruction>
         <structure>
