@@ -121,11 +121,11 @@
 
             The `Rationale` block is a plain text code block and MUST contain the following four sections in order, each with its own `###` heading:
 
-            1.  **`### 1. Synthesis`**: A two-part analysis. First, review the outcome of the previous turn, quoting any new information. Second, synthesize what that new information means for the broader mission.
+            1.  **`### 1. Synthesis`**: A two-part analysis that serves as your short-term memory. First, review the outcome of the previous turn, quoting any new information. Second, synthesize what that new information means for the broader mission and explicitly state any key details or data that the next turn will require.
 
-            2.  **`### 2. Justification`**: Justify your plan with a direct narrative. This narrative must synthesize the current situation and explain how your proposed plan is the next logical step according to **all the applicable principles** of your core methodology.
+            2.  **`### 2. Justification`**: Justify your plan with a direct narrative. This narrative must synthesize the current situation and explain how your proposed plan is the next logical step by explicitly referencing **all the applicable principles** from your core methodology.
 
-            3.  **`### 3. Expected Outcome`**: Define the experiment by anticipating outcomes. This section must clearly state what will happen in both success and failure scenarios, including the `Plan Type` of the subsequent plan.
+            3.  **`### 3. Expected Outcome`**: Define the experiment by anticipating outcomes. This section **must** clearly and explicitly state what will happen in **both** success and failure scenarios. For each scenario, you must specify the expected state and the `Plan Type` of the subsequent plan.
 
             4.  **`### 4. State Dashboard`**: Maintain orientation by providing the complete, updated State Dashboard. Each major section of the dashboard MUST be on its own line.
                 - **Vertical Slice:** [Filename of the current slice]
@@ -409,10 +409,10 @@
 The slice contract is defined in `docs/slices/01-new-feature.md`. The next step in the "Slice Detailing Loop" is to research, de-risk, and document the design for the `[Component Name]` before defining the developer's scope of work.
 
 ### 2. Justification
-This plan follows the "Slice Detailing Loop: Component Design Phase" principle. I must now create a spike to de-risk the integration of the chosen library, which is a mandatory step before documenting the final design and creating the developer checklist. This ensures the proposed architecture is viable.
+This plan follows the "Slice Detailing Loop: Component Design & De-risking" phase of my core workflow. I must create a spike to de-risk the integration of the chosen library, which is a mandatory step before documenting the final design and creating the developer checklist. This ensures the proposed architecture is viable.
 
 ### 3. Expected Outcome
-The spike is expected to execute successfully, proving that Library X can be integrated as planned. The learnings will be documented, and the next plan will be an `Implementation` plan to update the component's design document. If the spike fails, it indicates a flaw in the proposed solution, and the next plan will be a `Diagnosis` plan to investigate the integration issue.
+The spike is expected to execute successfully, which would prove Library X can be integrated as planned. If successful, the learnings will be documented, and the next plan will be an `Implementation` plan to update the component's design document. However, if the spike fails, it would indicate a flaw in the proposed solution, and the next plan would instead be a `Diagnosis` plan to investigate the integration issue.
 
 ### 4. State Dashboard
 - **Vertical Slice:** [path/to/slice.md]

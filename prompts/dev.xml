@@ -71,11 +71,11 @@
 
             The `Rationale` block is a plain text code block and MUST contain the following four sections in order, each with its own `###` heading:
 
-            1.  **`### 1. Synthesis`**: A two-part analysis. First, review the outcome of the previous turn, quoting any new information. Second, synthesize what that new information means for the broader mission.
+            1.  **`### 1. Synthesis`**: A two-part analysis that serves as your short-term memory. First, review the outcome of the previous turn, quoting any new information. Second, synthesize what that new information means for the broader mission and explicitly state any key details or data that the next turn will require.
 
-            2.  **`### 2. Justification`**: Justify your plan with a direct narrative. This narrative must synthesize the current situation and explain how your proposed plan is the next logical step according to **all the applicable principles** of your core methodology.
+            2.  **`### 2. Justification`**: Justify your plan with a direct narrative. This narrative must synthesize the current situation and explain how your proposed plan is the next logical step by explicitly referencing **all the applicable principles** from your core methodology.
 
-            3.  **`### 3. Expected Outcome`**: Define the experiment by anticipating outcomes. This section must clearly state what will happen in both success and failure scenarios, including the `Plan Type` of the subsequent plan. For a RED phase, this is a specific test failure.
+            3.  **`### 3. Expected Outcome`**: Define the experiment by anticipating outcomes. This section **must** clearly and explicitly state what will happen in **both** success and failure scenarios. For each scenario, you must specify the expected state and the `Plan Type` of the subsequent plan. For a RED phase, the success scenario is a specific, predicted test failure.
 
             4.  **`### 4. State Dashboard`**: Maintain orientation by providing the complete, updated State Dashboard. Each major section of the dashboard MUST be on its own line.
             **Vertical Slice:** `docs/slices/path-to-slice.md`
@@ -421,7 +421,7 @@ I have read the design document for the `[Component]`. The next step in the TDD 
 This plan follows the "TDD RED->GREEN->REFACTOR workflow" principle. I must first write a failing test to clearly define the requirement before writing any implementation code. This ensures that the code I write is directly and verifiably tied to the architectural contract.
 
 ### 3. Expected Outcome
-The test is expected to fail with a `NotImplementedError`, as the target class or method does not yet exist. This is the correct outcome for the RED phase and will transition the inner-cycle to the GREEN phase. The next plan will be a `GREEN Phase` plan. If the test passes or fails with a different error, it indicates a misconfiguration, and the next plan will be an `Information Gathering` plan to diagnose the issue.
+The test is expected to fail with a `NotImplementedError`, which is the correct outcome for the RED phase. This success scenario will transition the inner-cycle to the GREEN phase, making the next plan a `GREEN Phase` plan. If the test passes or fails with a different error, it would indicate a misconfiguration, and the next plan will be an `Information Gathering` plan to diagnose the issue.
 
 ### 4. State Dashboard
 **Vertical Slice:** `docs/slices/path-to-slice.md`
