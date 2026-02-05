@@ -265,6 +265,7 @@ The following checks are performed on the `plan.md` and the current state of the
     -   The target file path must exist.
     -   The target file must be listed in the current `turn.context`.
     -   Each `FIND` block must match a unique, single block of text in the target file. Failures occur for zero matches or multiple matches.
+    -   The `REPLACE` block must be different than the `FIND` block it's replacing.
 -   **`PRUNE`**: The target file must be listed in the current `turn.context`.
 
 ### 8.3 The Automated Re-plan Loop
