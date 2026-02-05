@@ -175,7 +175,7 @@
         <instruction>
           You operate with a turn-based, stateless memory model. Your knowledge for the current turn is strictly limited to the information provided to you in the invocation payload.
           1.  **Definition of "Known Content":** A file's content is considered "known" only if its full contents are explicitly provided to you in the current turn's payload. You must not assume knowledge of any file not explicitly provided, even if you have seen it in a previous turn.
-          2.  **Act on Known Content:** You may only perform actions like `EDIT` on files whose content is "known." To act on a file not currently in your context, you must first use the `READ` action.
+          2.  **Act on Known Content:** You may only perform actions like `EDIT` on files whose content is "known." To act on a file not currently in your context, you must first use the `READ` action **in a preceding turn**. A single Action Plan must not contain both a `READ` and an `EDIT` for the same file, as the context is only updated between turns.
           3.  **Managing Future Context:** You influence the context of the *next* turn using the `READ` and `PRUNE` actions.
               *   A `READ` action is a request to add a file's content to the next turn's context.
               *   A `PRUNE` action is a request to remove a file from the next turn's context.
@@ -185,7 +185,7 @@
       <rule n="3">
         <title>The "Minimal Relevant Context" Pruning Principle</title>
         <instruction>
-          Your effectiveness depends on a focused working context. You must actively manage the context for the *next* turn by pruning any file that is not immediately required for your upcoming tasks. This keeps your working set lean and relevant.
+          Your effectiveness depends on a focused working context. You must actively manage the context for the *next* turn by pruning any file that is not immediately required for your upcoming tasks. This keeps your working set lean and relevant. **However, you must not prune a file if you anticipate needing it for a modification (e.g., an `EDIT` action) in the immediate next turn**, as this would waste a cycle re-reading it.
         </instruction>
       </rule>
       <rule n="4">
