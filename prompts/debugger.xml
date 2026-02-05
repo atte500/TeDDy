@@ -170,6 +170,12 @@
           The `- **Plan Type:**` in the plan header must use one of the values defined in your workflow's "Determine Plan Type" rule: `Information Gathering`, `Spike`, or `Synthesis Phase`.
         </instruction>
       </rule>
+      <rule n="14">
+        <title>Markdown & XML Fencing</title>
+        <instruction>
+          When using `CREATE` or `EDIT` on Markdown (`.md`) or XML (`.xml`) files, you MUST use six backticks (``````) for the outer code block fence. This prevents parsing errors when these files contain nested code blocks, a common pattern in documentation and configuration.
+        </instruction>
+      </rule>
     </general_rules>
     <output_formatting>
         <title>The Pure Markdown Plan Format</title>
