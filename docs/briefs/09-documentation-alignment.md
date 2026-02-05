@@ -46,5 +46,5 @@ This brief will be implemented in two distinct vertical slices, one for each doc
 -   **[ ] Task: Update Component & Boundary Map:** Add the new services and ports introduced in the interactive workflow: `SessionManager`, `ContextService`, `MarkdownReportFormatter`, `ConfigService`, and `ILlmClient`.
 -   **[ ] Task: Rewrite Key Architectural Decisions (ADRs):**
     -   Remove obsolete ADRs related to the old plan format (e.g., "Separation of I/O Concerns," "Test Plan Injection").
-    -   Add new ADRs for "File-Based Session Management," "Markdown-First Plan & Report Format," and "Dry-Run Pre-validation for Actions".
+    -   Add new ADRs for "File-Based Session Management," "Markdown-First Plan & Report Format," and "Plan Validation & Automated Re-planning".
 -   **[ ] Task: Replace Plan Specification:** Remove the entire "YAML Plan Specification" section and replace it with a "Markdown Plan Specification" section that links to the canonical spec in `docs/specs/new-plan-format.md`.

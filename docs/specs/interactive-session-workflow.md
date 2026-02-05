@@ -143,18 +143,19 @@ Executes a plan, generates a report, and prepares the subsequent turn based on a
 #### The Turn Transition Algorithm
 The `teddy execute` command creates the *next* turn (`T_next`) based on the state of the *current* turn (`T_current`) and its `plan.md`. The following algorithm is executed in order.
 
-1.  **Approval Phase:** Initiates the interactive **Approval & Execution Phase**. If the plan is not approved, the command terminates.
-2.  **Initialize Next Turn (`T_next`):**
+1.  **Validation Phase:** The plan is first validated against a series of pre-flight checks. See Section 8 for details. If validation fails, the command triggers the **Automated Re-plan Loop** (which generates a failure report and initiates a new turn) and then terminates. If validation succeeds, it proceeds to the Approval Phase.
+2.  **Approval Phase:** Initiates the interactive **Approval & Execution Phase**. If the plan is not approved, the command terminates.
+3.  **Initialize Next Turn (`T_next`):**
     -   Create the `T_next` directory.
     -   **Default State:** `T_next` starts as a direct continuation of `T_current`.
         -   Copy `T_current/system_prompt.xml` to `T_next/`.
         -   Copy `T_current/turn.context` to `T_next/`.
         -   Create `T_next/meta.yaml` with `turn_id`, `parent_turn_id` pointing to `T_current`'s ID, and `caller_turn_id` copied from `T_current`.
-3.  **Apply Standard Context Changes from `plan.md`:**
+4.  **Apply Standard Context Changes from `plan.md`:**
     -   Process all standard actions in `T_current/plan.md`:
         -   For each `READ` action, add its resource path to `T_next/turn.context`.
         -   For each `PRUNE` action, remove its resource path from `T_next/turn.context`.
-4.  **Apply Special Action Overrides:**
+5.  **Apply Special Action Overrides:**
     -   If `T_current/plan.md` contains an `INVOKE` or `CONCLUDE` action, it overrides the default state.
     -   **If `INVOKE`:**
         -   **Context:** `T_next/turn.context` is wiped and replaced with files from `Handoff Resources`.
@@ -165,9 +166,9 @@ The `teddy execute` command creates the *next* turn (`T_next`) based on the stat
         -   **Context:** `T_next/turn.context` is replaced with the *caller's* context, then files from `Handoff Resources` are appended.
         -   **Agent:** `T_next/system_prompt.xml` is overwritten with the *caller's* prompt.
         -   **Ledger:** `parent_turn_id` in `T_next/meta.yaml` is set to the `caller_turn_id`, and `caller_turn_id` is cleared.
-5.  **Finalize and Report:**
+6.  **Finalize and Report:**
+    -   **Generate Report:** The factual `T_current/report.md` is generated based on the successful execution of the approved plan.
     -   **Append Report:** The path to the newly generated `T_current/report.md` is always appended to `T_next/turn.context`.
-    -   **Generate Report:** The factual `T_current/report.md` is generated.
 
 ---
 
@@ -239,7 +240,68 @@ Use [↑/↓] to navigate, [enter] to toggle, [a] to toggle all, [p] to preview 
     -   `CHAT_WITH_USER`: Displays the full message that will be sent to the user.
     -   `INVOKE`: Displays the target agent and the full handoff message.
 
-## 8. Implementation Guide & Reference Prototype
+## 8. Plan Validation & Automated Re-planning
+
+To enhance reliability and reduce manual correction cycles, `teddy` incorporates a robust pre-flight validation system for all plans before execution. If a plan fails validation, it triggers an automated re-planning loop that instructs the AI to correct its own plan.
+
+### 8.1 The Validation Phase
+
+This phase occurs at the beginning of the `teddy execute` command, before the user is prompted for approval. It acts as a gatekeeper, ensuring that only valid and executable plans are presented to the user.
+
+### 8.2 Pre-flight Checks
+
+The following checks are performed on the `plan.md` and the current state of the workspace:
+
+#### General Checks
+-   **Parsing:** The `plan.md` must be well-formed and parsable.
+
+#### Memo Checks
+-   **`[+] ADD`**: The memo to be added must not already exist in `memos.yaml` to prevent duplicates.
+-   **`[-] REMOVE`**: The memo to be removed must exist exactly as specified in `memos.yaml`.
+
+#### Action Checks
+-   **`CREATE`**: The target file path must not already exist.
+-   **`EDIT`**:
+    -   The target file path must exist.
+    -   The target file must be listed in the current `turn.context`.
+    -   Each `FIND` block must match a unique, single block of text in the target file. Failures occur for zero matches or multiple matches.
+-   **`PRUNE`**: The target file must be listed in the current `turn.context`.
+
+### 8.3 The Automated Re-plan Loop
+
+If any of the pre-flight checks fail, the following automated process is initiated to preserve a full audit trail while providing the AI with the context to self-correct.
+
+1.  **Log the Failure:**
+    -   The `teddy execute` command generates a `T_current/report.md` file detailing the specific validation errors that occurred. This preserves the immutable record of the failed attempt.
+2.  **Prepare Feedback Payload:**
+    -   The system prepares a rich, structured feedback message for the AI. This message is ephemeral and is not stored in the persistent `turn.context`. The message includes:
+        -   The list of specific validation errors.
+        -   The full, verbatim content of the original, faulty `plan.md`.
+    -   *Example Message:*
+        ```markdown
+        The previous plan failed validation. Please review the errors and the original plan, then generate a corrected version.
+
+        ## Validation Errors:
+        - `EDIT` on `pyproject.toml`: FIND block did not match.
+
+        ## Original Faulty Plan:
+        ````markdown
+        # Original Plan Title
+        ... (full content of the failed plan) ...
+        ````
+        ````
+3.  **Initiate Next Turn (with Exception):**
+    -   The system creates the `T_next` directory using the standard Turn Transition Algorithm, but with **one critical exception**: the path to the failure report (`T_current/report.md`) is **NOT** appended to `T_next/turn.context`. This keeps the AI's working context clean.
+4.  **Automatic Re-plan:**
+    -   The system automatically invokes `teddy plan` within the `T_next` directory, passing the entire feedback payload from Step 2 as the user's message (`--message`).
+5.  **Halt Execution & Handoff:**
+    -   The current `teddy execute` command terminates. The user is left in the new turn directory, where the AI is generating a corrected plan. The user's next action is to review the newly generated plan and run `teddy execute` again.
+
+This loop turns the AI into a self-correcting agent, using structured, "just-in-time" feedback to improve its own output without polluting the long-term context or requiring manual user intervention for common, predictable errors.
+
+---
+
+## 9. Implementation Guide & Reference Prototype
 
 An extensive, iterative prototyping process was conducted to validate the UX and de-risk the technical implementation of this feature. The key learnings from this process are captured below, and the final, polished prototype is included as a canonical reference.
 
@@ -255,7 +317,7 @@ An extensive, iterative prototyping process was conducted to validate the UX and
 
 ---
 
-## 9. Configuration (`.teddy/config.yaml`)
+## 10. Configuration (`.teddy/config.yaml`)
 
 User-specific behavior for the `teddy` tool can be defined in an optional `.teddy/config.yaml` file.
 

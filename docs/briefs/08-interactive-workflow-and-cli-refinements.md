@@ -23,7 +23,7 @@ The solution is centered around a set of new, single-responsibility services orc
     -   **Tier 1:** A high-level summary prompt in the `ConsoleInteractorAdapter` will offer `(a)pprove all / (m)odify / (s)kip / (q)uit` options.
     -   **Tier 2:** The `(m)odify` path will launch a full-screen interactive checklist built with the `textual` library, allowing for granular action selection.
 
-5.  **Pre-flight Validation:** To eliminate "approve-then-fail" errors, the `ExecutionOrchestrator` will be updated with a two-phase "dry run" validation process for `CREATE` and `EDIT` actions, calling new preview methods on the `IFileSystemManager` before execution.
+5.  **Plan Validation & Automated Re-planning:** Before any plan is presented to the user, it will undergo a comprehensive validation phase. This checks for common errors like `FIND` block mismatches, `CREATE` conflicts, and context violations. If validation fails, an automated re-planning loop is triggered, instructing the AI to correct its own plan based on the specific validation errors. This entire process is detailed in the canonical [Interactive Session Workflow Specification](/docs/specs/interactive-session-workflow.md).
 
 6.  **Markdown-First Reporting:** A new `MarkdownReportFormatter` service will be created to convert the `ExecutionReport` domain object into a Markdown string, strictly adhering to the report format spec, including action timings.
 
@@ -76,13 +76,20 @@ Implementation must be done incrementally through the following dependency-aware
     -   Create the Textual-based interactive checklist for the `(m)odify` option.
 
 ---
-### **Slice 4: Action Reliability & Pre-validation**
-**Goal:** Eliminate the "approve-then-fail" problem.
+### **Slice 4: Plan Validation & Automated Re-planning**
+**Goal:** Eliminate "approve-then-fail" errors by implementing a robust pre-flight validation and self-correction loop.
 
--   **[ ] Task: Extend `IFileSystemManager` Port:**
-    -   Add `preview_edit()` and `preview_create()` methods to the `IFileSystemManager` port.
--   **[ ] Task: Implement "Dry Run" in `ExecutionOrchestrator`:**
-    -   Refactor the orchestrator to use a two-phase validation process, calling the new preview methods before execution.
+-   **[ ] Task: Implement Plan Validator Service:**
+    -   Create a new `PlanValidator` service responsible for executing all pre-flight checks as defined in the specification (e.g., `FIND` block matching, `CREATE` conflicts, `EDIT`/`PRUNE` context requirements).
+-   **[ ] Task: Integrate Validator into `execute` Command:**
+    -   In `main.py`, before the approval phase of the `execute` command, invoke the `PlanValidator`.
+-   **[ ] Task: Implement Automated Re-plan Loop:**
+    -   If validation fails, implement the logic to:
+        1.  Generate a failure report.
+        2.  Prepare the feedback payload (errors + faulty plan).
+        3.  Initiate the next turn without adding the failure report to the context.
+        4.  Automatically call the `plan` command with the feedback payload.
+        5.  Terminate the current execution.
 
 ---
 ### **Slice 5: Action Side-Effects & Reporting**
