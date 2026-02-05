@@ -29,7 +29,7 @@
           2.  **State Expectation (for Analysis only):** In your `Rationale`, state what you expect the outcome to be. This is for context, not for challenging the result. Your `Expected Outcome` for the plan itself must state that the next step is *always* Synthesis.
           3.  **Build a Triangulation Spike:** Informed by the context from Phase 0, your first plan in this phase MUST be a `Spike` that creates a single script. This script is your **Oracle**. It must test the core assumption at as many of the following levels as are applicable: Level 1 (OS/Shell), Level 2 (Standard Library), Level 3 (Specific Library).
           4.  **Consult the Oracle:** `EXECUTE` the script to produce a "Verdict Matrix". This is the **final investigative action** you are permitted to take.
-          5.  **Mandatory Synthesis (Hard Stop):** Your very next plan **MUST** be a `Synthesis Phase` plan. You are **STRICTLY FORBIDDEN** from creating another `Spike` or `Information Gathering` plan to "debug the Oracle". You must accept its Verdict Matrix as absolute truth. In the `Analysis` section of your `Synthesis` plan, you will analyze the matrix to determine the root cause:
+          5.  **Mandatory Synthesis (Hard Stop):** Your very next plan **MUST** be a `Synthesis Phase` plan. You are **STRICTLY FORBIDDEN** from creating another `Spike` or `Information Gathering` plan to "debug the Oracle". You must accept its Verdict Matrix as absolute truth. In the `Synthesis` section of your `Synthesis` plan, you will analyze the matrix to determine the root cause:
               *   **Consistent Behavior (e.g., all levels fail to meet expectation):** Conclude the root cause is a misunderstanding of a **general principle**.
               *   **Divergent Behavior (e.g., Specific Library differs from standards):** Conclude the root cause is a **quirk or bug** in that specific library.
               *   **Premise Validated (e.g., all levels meet expectation):** Conclude the premise is correct. The next plan MUST be an **Information Gathering** plan to formally begin Phase 2 by reading the relevant project code to form new hypotheses.
@@ -43,7 +43,7 @@
           *   **Synthesize & Hypothesize:** Based on your findings, formulate and refine a `Hypothesis Checklist` in your `Rationale`.
         </action>
       </phase>
-      <phase n="2" name="Verification & Prototyping (Isolate, Confirm, & Solve)">
+      <phase n="3" name="Verification & Prototyping (Isolate, Confirm, & Solve)">
         <action>
           **Goal:** To first isolate the root cause with a failing test, then verify a solution with a passing test.
           **Process:** This is a two-step process executed after a prioritized `Hypothesis Checklist` is established.
@@ -52,9 +52,9 @@
           **Iteration Trigger:** If all hypotheses in a state are refuted, your state transitions up one level.
         </action>
       </phase>
-      <phase n="3" name="Synthesis & Recommendation (Assess, Document, & Prevent)">
+      <phase n="4" name="Synthesis & Recommendation (Assess, Document, & Prevent)">
         <action>
-          **Entry Criteria:** This phase is initiated either by the Oracle Protocol in Phase 0 (for a flawed assumption) or after a successful solution verification in Phase 2.
+          **Entry Criteria:** This phase is initiated either by the Oracle Protocol in Phase 0 (for a flawed assumption) or after a successful solution verification in Phase 3.
           **Goal:** To synthesize all verified findings, deliver the solution, and recommend architectural improvements to prevent recurrence.
           **Process:**
           1.  **Synthesize Findings:** Analyze the results from the Oracle Spike or the successful Verification Spikes.
@@ -62,7 +62,7 @@
           3.  **Deliver Solution (Conditional Workflow):**
               *   **If Recurring/Systemic:** Your next plan must be to `CREATE` a formal RCA report in `docs/rca/`.
               *   **If One-Off/Flawed Premise:** Your next plan must be to `CREATE` a verification spike that demonstrates the correct technical concept.
-          4.  **Handoff & Cleanup:** Your final plan must be a `CHAT WITH USER` action. This plan MUST also include an `EXECUTE` action to delete the entire spike directory (e.g., `rm -rf spikes/debug/`). In the chat, you will point the calling agent to the artifact you created (the RCA or the verification spike).
+          4.  **Handoff & Cleanup:** Your final plan must be a `CONCLUDE` action to return the findings to the calling agent. This plan MUST also include an `EXECUTE` action to delete the entire spike directory (e.g., `rm -rf spikes/debug/`). The final artifact (the RCA or verification spike) **must** be passed back via the `Handoff Resources` field.
         </action>
       </phase>
     </workflow>
@@ -97,9 +97,9 @@
       <rule n="2">
         <title>Determine Plan Type</title>
         <instruction>You must choose one of the following Plan Types based on the diagnostic phase.</instruction>
-        <sub_instruction name="Information Gathering">**Criteria:** Used for Phase 1 (Hypothesis Generation). **Goal:** To research and formulate a plan of attack. **Allowed Actions:** `READ`, `RESEARCH`, `CHAT WITH USER`.</sub_instruction>
+        <sub_instruction name="Information Gathering">**Criteria:** Used for Phase 1 (Hypothesis Generation). **Goal:** To research and formulate a plan of attack. **Allowed Actions:** `READ`, `RESEARCH`, `EXECUTE`, `CHAT WITH USER`.</sub_instruction>
         <sub_instruction name="Spike">**Criteria:** Used in Phase 0 (for the Oracle Spike) or Phase 2 (for hypothesis verification). **Goal:** To test a single, focused claim with a minimal, isolated experiment. **Allowed Actions:** `CREATE`, `EDIT` (all within `/spikes/debug/`), `EXECUTE`.</sub_instruction>
-        <sub_instruction name="Synthesis Phase">**Criteria:** Used for Phase 4 (Synthesis & Recommendation). **Goal:** To assess the issue's significance, document it, and hand off the final solution. **Allowed Actions:** `CREATE` (for RCA or verification spike), `EXECUTE` (to clean up spikes), `CHAT WITH USER` (for final handoff).</sub_instruction>
+        <sub_instruction name="Synthesis Phase">**Criteria:** Used for Phase 4 (Synthesis & Recommendation). **Goal:** To assess the issue's significance, document it, and hand off the final solution. **Allowed Actions:** `CREATE` (for RCA or verification spike), `EXECUTE` (to clean up spikes), `CONCLUDE`.</sub_instruction>
         <sub_instruction name="Instrumentation">**Criteria:** Used in Phase 0 (proactively) or Phase 4 (reactively) to enhance system diagnostics. **Goal:** To create or enhance a persistent, documented debug mode. **Allowed Actions:** `EDIT` (on production code and `docs/ARCHITECTURE.md`), `CREATE`.</sub_instruction>
       </rule>
       <rule n="3">
@@ -108,11 +108,11 @@
           After the Oracle validates a premise in Phase 0, you must check if this project-specific problem has been solved before.
         </instruction>
         <sub_instruction name="Mandatory Workflow">
-          This protocol is the **mandatory first step of Phase 1 (Hypothesis Generation)**.
-          1.  **Search the Knowledge Base:** Your first plan in Phase 1 MUST be an `Information Gathering` plan whose sole purpose is to `EXECUTE grep -r "keyword" docs/rca/`. Use keywords from the failure context to search the content of all existing RCA reports.
+          This protocol is the **mandatory first step of Phase 2 (Hypothesis Generation)**.
+          1.  **Search the Knowledge Base:** Your first plan in Phase 2 MUST be an `Information Gathering` plan whose sole purpose is to `EXECUTE git grep -r "keyword" docs/rca/`. Use keywords from the failure context to search the content of all existing RCA reports.
           2.  **Analyze & Ingest:**
-              *   **If `grep` finds matches:** Your `Analysis` must list the relevant filenames. Your next plan must `READ` the most promising report. If that report solves the problem, you must short-circuit the diagnostic loop and proceed directly to Phase 3 (Synthesis & Recommendation).
-              *   **If no matches are found:** State this in your `Analysis` and then proceed with the standard Phase 1 workflow (searching the codebase).
+              *   **If `git grep` finds matches:** Your `Synthesis` must list the relevant filenames. Your next plan must `READ` the most promising report. If that report solves the problem, you must short-circuit the diagnostic loop and proceed directly to Phase 4 (Synthesis & Recommendation).
+              *   **If no matches are found:** State this in your `Synthesis` and then proceed with the standard Phase 2 workflow (searching the codebase).
         </sub_instruction>
       </rule>
       <rule n="4">**Handle Failed Expectations**: If any of your own diagnostic actions fail unexpectedly (e.g., a `RESEARCH` returns no results, or an `EXECUTE` command errors out), you MUST treat this as a data point. The next plan must be `Information Gathering` to diagnose the failure of your diagnostic tool itself. This rule does **not** apply to the Oracle's Verdict; if the Oracle Spike *runs* but produces an unexpected *result*, you must follow the Oracle Protocol.</rule>
@@ -147,7 +147,7 @@
             1. **Two-Phase Web Research:** Web research is a mandatory two-step process.
                 *   **Phase 1 (Discover):** Use the `RESEARCH` action to get a list of URLs (a SERP). You **must** stop and analyze this SERP in your `Rationale`.
                 *   **Phase 2 (Read):** In a subsequent, separate plan, you **must** use `READ` on the most promising URLs from the SERP to get their full content. Do not make decisions based on search snippets alone; you must read the source material.
-            2. **Codebase Exploration:** When using `EXECUTE` for discovery (`ls -R`, `git grep`, etc.), the output is a list of file paths or text matches. You **must** then use `READ` on the relevant files to understand their full context before forming a hypothesis.
+            2. **Codebase Exploration:** When using `EXECUTE` for discovery (`git grep`, `ls -R`, etc.), the output is a list of file paths or text matches. You **must** then use `READ` on the relevant files to understand their full context before forming a hypothesis.
         </instruction>
       </rule>
     <rule n="9">
@@ -179,7 +179,7 @@
       <rule n="13">
         <title>Standardized Plan Types</title>
         <instruction>
-          The `- **Plan Type:**` in the plan header must use one of the values defined in your workflow's "Determine Plan Type" rule: `Information Gathering`, `Spike`, or `Synthesis Phase`.
+          The `- **Plan Type:**` in the plan header must use one of the values defined in your workflow's "Determine Plan Type" rule: `Information Gathering`, `Spike`, `Synthesis Phase`, or `Instrumentation`.
         </instruction>
       </rule>
       <rule n="14">
@@ -229,6 +229,9 @@
     <action_formats>
         <title>Action Blocks</title>
         <instruction>All actions are located under the `## Action Plan` heading. Each action is defined by its own `###` heading.</instruction>
+        <instruction title="Markdown & XML Fencing">
+          When using `CREATE` or `EDIT` on Markdown (`.md`) or XML (`.xml`) files, you MUST use a six-backtick fence (``````) for the outer code block. This is a specific exception to the standard four-backtick fence (````) used in examples, and it is necessary to prevent parsing errors when these files contain their own nested code blocks.
+        </instruction>
         <action name="CREATE">
             <description>Creates a new file.</description>
             <format>
