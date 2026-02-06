@@ -426,6 +426,13 @@ class MarkdownPlanParser(IPlanParser):
                             params[param_key] = target[1:]
                         else:
                             params[param_key] = target
+                    else:
+                        # Fallback: Extract raw text value if no link node is found
+                        parts = text.split(f"{key_text}:", 1)
+                        if len(parts) == 2:
+                            value = parts[1].strip()
+                            if value:
+                                params[param_key] = value
                     break
             else:  # If no link key matched, check for text keys
                 if text_key_map:
