@@ -12,7 +12,8 @@ from tests.acceptance.helpers import (
 
 # Define platform-agnostic commands
 LIST_COMMAND = "dir" if sys.platform == "win32" else "ls -a"
-ECHO_COMMAND = "(echo %MY_VAR%)" if sys.platform == "win32" else "echo $MY_VAR"
+# A python command to print an environment variable. This avoids shell-specific syntax.
+ECHO_COMMAND = f"{sys.executable} -c \"import os; print(os.environ.get('MY_VAR', ''))\""
 
 
 def test_execute_action_with_custom_cwd(tmp_path: Path, monkeypatch):
@@ -162,7 +163,7 @@ def test_execute_action_fails_with_absolute_cwd(tmp_path: Path):
     error_log = report["action_logs"][0]
     assert error_log["status"] == "FAILURE"
     assert "Validation failed" in error_log["details"]
-    assert "must be relative" in error_log["details"]
+    assert "is outside the project directory" in error_log["details"]
     assert result.exit_code != 0
 
 
@@ -201,12 +202,10 @@ def test_execute_action_with_both_cwd_and_env(tmp_path: Path, monkeypatch):
     sub_dir.mkdir()
     expected_value = "secret_message"
 
-    # Command to write the env var into a file in the subdir
-    write_command = (
-        "(echo %MY_VAR% > output.txt)"
-        if sys.platform == "win32"
-        else "echo $MY_VAR > output.txt"
-    )
+    # Command to write the env var into a file in the subdir, using Python
+    # to avoid shell-specific redirection.
+    write_command = f"""{sys.executable} -c "import os; f = open('output.txt', 'w'); f.write(os.environ.get('MY_VAR', '')); f.close()"
+    """
 
     plan = [
         {
