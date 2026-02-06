@@ -1,9 +1,10 @@
-from typing import Any, Dict, Type
+from typing import Any, Dict, Type, Optional
 import punq
 from teddy_executor.core.ports.outbound import (
     IShellExecutor,
     IFileSystemManager,
     IUserInteractor,
+    IWebScraper,
     IWebSearcher,
 )
 from teddy_executor.core.services.action_dispatcher import IAction, IActionFactory
@@ -44,7 +45,7 @@ class ActionFactory(IActionFactory):
             "execute": IShellExecutor,
             "create_file": IFileSystemManager,
             "edit": IFileSystemManager,
-            "read": IFileSystemManager,
+            "read_file": IFileSystemManager,
             "chat_with_user": IUserInteractor,
             "research": IWebSearcher,
             "invoke": InvokeAction,
@@ -61,12 +62,29 @@ class ActionFactory(IActionFactory):
         # Fallback to lowercasing for YAML/other formats.
         return action_type.lower()
 
-    def create_action(self, action_type: str) -> IAction:
+    def create_action(self, action_type: str, params: Optional[dict] = None) -> IAction:
         """
         Looks up the adapter protocol for the given action type and asks the
         container to resolve an instance of it. It then binds the correct
         adapter method to the `execute` method required by the IAction protocol.
         """
+        # --- Special Routing for READ action ---
+        if action_type.lower() == "read":
+            safe_params = params or {}
+            resource = safe_params.get("resource", safe_params.get("path", ""))
+            if resource.startswith("http"):
+                action_handler = self._container.resolve(IWebScraper)
+                setattr(
+                    action_handler,
+                    "execute",
+                    lambda **kwargs: action_handler.get_content(url=kwargs["path"]),
+                )
+                return action_handler
+            else:
+                # Fall through to standard file system handler
+                action_type = "read_file"
+        # --- End of Special Routing ---
+
         action_type_key = self._normalize_action_type(action_type)
         if action_type_key not in self._action_map:
             raise ValueError(f"Unknown action type: '{action_type}'")
@@ -81,14 +99,23 @@ class ActionFactory(IActionFactory):
         method_map = {
             "create_file": "create_file",
             "edit": "edit_file",
-            "read": "read_file",
+            "read_file": "read_file",
             "chat_with_user": "ask_question",
             "research": "search",
         }
 
+        # The execute method now needs to handle the renamed 'resource' -> 'path' param
         if action_type_key in method_map:
             method_name = method_map[action_type_key]
-            setattr(action_handler, "execute", getattr(action_handler, method_name))
+            original_method = getattr(action_handler, method_name)
+
+            def execute_wrapper(**kwargs):
+                # Translate 'resource' to 'path' for file system methods
+                if "resource" in kwargs and "path" not in kwargs:
+                    kwargs["path"] = kwargs.pop("resource")
+                return original_method(**kwargs)
+
+            setattr(action_handler, "execute", execute_wrapper)
         elif not hasattr(action_handler, "execute"):
             raise NotImplementedError(
                 f"Adapter for {action_type} does not have a default 'execute' method."

@@ -60,8 +60,8 @@ def create_container() -> punq.Container:
     container.register(IRepoTreeGenerator, LocalRepoTreeGenerator)
     container.register(IEnvironmentInspector, SystemEnvironmentInspector)
     container.register(IActionFactory, ActionFactory)
-    # PlanParser is now created by the factory
     container.register(ActionDispatcher)
+    # PlanParser is now created by the factory
     # RunPlanUseCase is instantiated manually in the `execute` command
     container.register(IGetContextUseCase, ContextService)
     return container

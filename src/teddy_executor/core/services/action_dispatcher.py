@@ -1,5 +1,5 @@
 from dataclasses import is_dataclass, asdict
-from typing import Protocol, Any
+from typing import Protocol, Any, Optional
 
 from teddy_executor.core.domain.models import ActionData, ActionLog, CommandResult
 
@@ -16,7 +16,9 @@ class IAction(Protocol):
 class IActionFactory(Protocol):
     """Defines the interface for the factory that creates actions."""
 
-    def create_action(self, action_type: str) -> IAction: ...
+    def create_action(
+        self, action_type: str, params: Optional[dict] = None
+    ) -> IAction: ...
 
 
 # --- Service Implementation ---
@@ -72,7 +74,9 @@ class ActionDispatcher:
 
             # --- End of Translation ---
 
-            action_handler = self._action_factory.create_action(action_data.type)
+            action_handler = self._action_factory.create_action(
+                action_data.type, translated_params
+            )
             execution_result = action_handler.execute(**translated_params)
 
             # Convert dataclass to dict for serialization

@@ -1,5 +1,7 @@
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Optional, Any
+import tempfile
+from typing import Generator, Optional, Any
 
 import yaml
 from teddy_executor.main import app
@@ -86,3 +88,20 @@ def run_cli_with_plan(monkeypatch, plan_structure: list | dict, cwd: Path) -> Re
     with monkeypatch.context() as m:
         m.chdir(cwd)
         return runner.invoke(app, ["execute", str(plan_file), "--yes"])
+
+
+@contextmanager
+def create_plan_file(
+    content: str, extension: str = ".yml"
+) -> Generator[Path, None, None]:
+    """A context manager to create a temporary plan file."""
+    with tempfile.NamedTemporaryFile(
+        mode="w", delete=False, suffix=extension, encoding="utf-8"
+    ) as tmp_file:
+        tmp_file.write(content)
+        plan_path = Path(tmp_file.name)
+    try:
+        yield plan_path
+    finally:
+        if plan_path.exists():
+            plan_path.unlink()
