@@ -93,8 +93,8 @@
                 - [ ] VERIFY
             **Architectural Notes:**
             - [Log observations here, classified by tier.]
-            - **T0 (Micro-Refactor):** Trivial improvement. Fix in the current REFACTOR cycle.
-            - **T1 (Pre-existing Condition):** An observation about an existing, undocumented architectural decision or pattern.
+            - **T0 (Pre-existing Condition):** An observation about an existing, undocumented architectural decision or pattern.
+            - **T1 (Micro-Refactor):** Trivial improvement. Fix in the current REFACTOR cycle.
             - **T2 (Slice-Refactor):** Contained debt. Fix at the end of the slice, before handoff.
             - **T3 (New Opportunity):** Out of scope. Complete the slice, then propose as a new work item during handoff.
             - **T4 (True Blocker):** Impossible to proceed. Stop and escalate to the Architect immediately.
