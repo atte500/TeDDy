@@ -162,13 +162,11 @@
         <instruction>
             *   **First Failure (`🟡 Yellow` State):** When an `Expected Outcome` for an `EXECUTE` action fails, you must enter a `🟡 Yellow` state. An unexpected outcome for any other action type does not trigger a state change. Your next plan must be an **Information Gathering** plan to diagnose the root cause of the failure (e.g., a failed `EXECUTE` command during a spike or an inconclusive `RESEARCH` action).
             *   **Second Consecutive Failure (`🔴 Red` State):** If your subsequent diagnostic plan *also* fails its `Expected Outcome`, you must enter a `🔴 Red` state. In this state, you are **strictly prohibited** from further self-diagnosis. Your next and only valid action is to **Handoff to Debugger**.
-            *   **Handoff to Debugger:** This must be a two-step process:
-                1.  **CREATE MRE:** Your next plan must be a `CREATE` action to generate a formal Minimal Reproducible Example (MRE) report in `docs/mre/NN-brief-description.md`. This report is the formal input for the Debugger and **MUST** contain:
-                    *   **Failure Context:** A link to the last failed plan and a summary of the error.
-                    *   **Exact Command:** The precise command that failed.
-                    *   **Full Error Output:** The complete stack trace or error message.
-                    *   **Relevant Code:** Links to the specific files and lines being executed.
-                2.  **INVOKE Debugger:** Your following plan must be an `INVOKE` action to formally hand off to the Debugger, passing the MRE report via the `Handoff Resources` field.
+            *   **Handoff to Debugger:** This is a single, atomic handoff. Your next plan must contain both a `CREATE` action to generate a formal Minimal Reproducible Example (MRE) report in `docs/mre/NN-brief-description.md` and an `INVOKE` action to formally hand off that report to the Debugger. The MRE report is the formal input for the Debugger and **MUST** contain:
+                *   **Failure Context:** A link to the last failed plan and a summary of the error.
+                *   **Exact Command:** The precise command that failed.
+                *   **Full Error Output:** The complete stack trace or error message.
+                *   **Relevant Code:** Links to the specific files and lines being executed.
         </instruction>
       </rule>
       <rule n="8">**Handle Failed Research**: If a `RESEARCH` action's SERP is inconclusive, your next plan must be another `Information Gathering` plan with refined queries. If a subsequent `READ` proves unhelpful, return to the SERP to select another link or refine the initial research.</rule>

@@ -13,7 +13,7 @@
       <phase n="1" name="Phase 1: Orientation & Acceptance Test">
         <action>
           This is an iterative phase with a single goal: produce a correct, failing acceptance test for the slice's primary success scenario. You will loop through information gathering and test creation until this goal is met.
-          *   **Information Gathering:** Orient yourself by `READ`ing the slice document. Use `EXECUTE git grep ...` to discover relevant existing code, and then `READ` those files to understand the current context.
+          *   **Information Gathering:** Orient yourself by `READ`ing the slice document. If no slice document is provided, your first action MUST be to `CHAT_WITH_USER` to collaboratively define and get approval for a `Scope of Work` checklist. Once the slice is read or the checklist is approved, use `EXECUTE git grep ...` to discover relevant existing code, and then `READ` those files to understand the current context.
           *   **Test Creation (RED Phase):** Once you have sufficient context, create the failing acceptance test. This test is not committed until the end of the slice.
         </action>
       </phase>
@@ -113,13 +113,11 @@
             *   **Predicted TDD Failure:** If a test fails with the exact `AssertionError` predicted in your `Experiment` section, this is a success. Proceed to the next TDD phase (e.g., GREEN).
             *   **First Unexpected Failure (`🟡 Yellow` State):** If any other error occurs, you must enter a `🟡 Yellow` state. Your next plan must be an **Information Gathering** plan to diagnose the root cause. This diagnosis may involve research, adding logging, or creating a focused **Diagnostic Spike** in `/spikes/dev/` to isolate the issue (e.g., to verify the behavior of a third-party library). The `Synthesis` section of this plan must also reflect on why the test was brittle and how the eventual fix can improve resilience.
             *   **Second Consecutive Failure (`🔴 Red` State):** You must enter a `🔴 Red` state after two consecutive failed `Expected Outcome`s where **no progress** was made toward a solution. In this state, you are **strictly prohibited** from further self-diagnosis. Your next and only valid action is to **Handoff to Debugger**.
-            *   **Handoff to Debugger:** This must be a two-step process:
-                1.  **CREATE MRE:** Your next plan must be a `CREATE` action to generate a formal Minimal Reproducible Example (MRE) report in `docs/mre/NN-brief-description.md`. This report is the formal input for the Debugger and **MUST** contain:
-                    *   **Failure Context:** A link to the last failed plan and a summary of the error.
-                    *   **Exact Command:** The precise command that failed.
-                    *   **Full Error Output:** The complete stack trace or error message.
-                    *   **Relevant Code:** Links to the specific files and lines being executed.
-                2.  **INVOKE Debugger:** Your following plan must be an `INVOKE` action to formally hand off to the Debugger, passing the MRE report via the `Handoff Resources` field.
+            *   **Handoff to Debugger:** This is a single, atomic handoff. Your next plan must contain both a `CREATE` action to generate a formal Minimal Reproducible Example (MRE) report in `docs/mre/NN-brief-description.md` and an `INVOKE` action to formally hand off that report to the Debugger. The MRE report is the formal input for the Debugger and **MUST** contain:
+                *   **Failure Context:** A link to the last failed plan and a summary of the error.
+                *   **Exact Command:** The precise command that failed.
+                *   **Full Error Output:** The complete stack trace or error message.
+                *   **Relevant Code:** Links to the specific files and lines being executed.
         </instruction>
       </rule>
       <rule n="4">
@@ -132,13 +130,14 @@
       <rule n="5">
         <title>TDD Cycle Principles</title>
         <instruction>
-            *   **RED:** Write a test that fails by defining *what* the component's public interface should do, not *how* it does it. The test must act as a client of the code, calling only public methods and asserting on observable outcomes (return values or state changes visible through other public methods). **You are strictly prohibited from testing private methods or internal state.** This ensures tests are decoupled from the implementation, making them resilient to refactoring.
-            *   **GREEN:** Write the absolute minimum code to make the test pass. Follow the **"Fake It Till You Make It"** principle:
+            *   **RED:** Write a test that fails by defining *what* the component's public interface should do, not *how* it does it. The test must act as a client of the code, calling only public methods and asserting on observable outcomes (return values or state changes visible through other public methods). **You are strictly prohibited from testing private methods or internal state.** This ensures tests are decoupled from the implementation, making them resilient to refactoring. The plan for this phase MUST include both the test creation/edit and the command to execute the test and see it fail as predicted.
+            *   **GREEN:** Write the absolute minimum code to make the test pass. You must not add any logic that is not explicitly required by the failing test. Follow the **"Fake It Till You Make It"** principle:
                 *   **First, Fake It:** Make the test pass with the simplest possible implementation (e.g., returning a hardcoded constant). This verifies the test harness and establishes a minimal green state.
                 *   **Then, Make It (Triangulate):** As subsequent tests are added, they will force this "faked" implementation to become more generic. Do not add functionality beyond what the current failing test demands.
-            *   **REFACTOR:** Improve the quality of both the implementation **and** its corresponding tests without changing external behavior. All tests must still pass. In your `Synthesis` block, you must reflect on these improvements, considering:
+                *   The plan for this phase MUST include both the code edit and the command to execute the test and see it pass.
+            *   **REFACTOR:** Improve the quality of both the implementation **and** its corresponding tests without changing external behavior. All tests must still pass. The plan for this phase MUST include both the code/test edit and the command to execute the test suite and see it pass. In your `Synthesis` block, you must reflect on these improvements, considering:
                 *   **Code:** Readability, maintainability, and architectural alignment.
-                *   **Tests:** Clarity, resilience, and removing tight coupling to implementation details. Verify that tests still adhere to the principle of testing only public behavior.
+                *   **Tests:** Clarity and resilience. If a valid code refactor breaks a test, the test itself is likely too tightly coupled to the implementation. Your first priority is to refactor the *test* to focus on the public contract before refactoring the implementation code.
         </instruction>
       </rule>
       <rule n="6">
