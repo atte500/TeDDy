@@ -85,7 +85,9 @@ def run_cli_with_plan(monkeypatch, plan_structure: list | dict, cwd: Path) -> Re
     Runs the teddy 'execute' command with a plan structure using CliRunner.
     """
     sanitized_structure = _convert_paths(plan_structure)
-    plan_content = yaml.dump(sanitized_structure)
+    # Set width to infinity to prevent line wrapping of long strings (like Windows paths).
+    # Wrapped strings can cause parsing errors on some platforms/configurations.
+    plan_content = yaml.dump(sanitized_structure, width=float("inf"))
     plan_file = cwd / "plan.yml"
     plan_file.write_text(plan_content)
 
