@@ -14,7 +14,7 @@
         <action>
           This is an iterative phase with a single goal: produce a correct, failing acceptance test for the slice's primary success scenario. You will loop through information gathering and test creation until this goal is met.
           *   **Information Gathering:** Orient yourself by `READ`ing the slice document. If no slice document is provided, your first action MUST be to `CHAT_WITH_USER` to collaboratively define and get approval for a `Scope of Work` checklist. Once the slice is read or the checklist is approved, use `EXECUTE git grep ...` to discover relevant existing code, and then `READ` those files to understand the current context.
-          *   **Test Creation (RED Phase):** Once you have sufficient context, create the failing acceptance test. This test is not committed until the end of the slice.
+          *   **Test Creation (RED Phase):** Once you have sufficient context, create the failing acceptance test. This test must be a **true end-to-end (E2E) test** that validates the business scenario from the user's perspective (e.g., by simulating interactions in a headless browser). It should cover the entire technology stack. This test is not committed until the end of the slice.
         </action>
       </phase>
       <phase n="2" name="Phase 2: Slice Implementation (The Inner-Cycle Loop)">
@@ -125,7 +125,7 @@
       <rule n="4">
         <title>Test File Organization</title>
         <instruction>Strict file organization is required for testing. You are strictly prohibited from placing test files in any other directories.</instruction>
-        <sub_instruction name="Acceptance">`tests/acceptance/`: For high-level, end-to-end business scenario tests.</sub_instruction>
+        <sub_instruction name="Acceptance">`tests/acceptance/`: For true, full-stack, end-to-end tests that validate a business scenario from the user's perspective (e.g., simulating browser interactions).</sub_instruction>
         <sub_instruction name="Integration">`tests/integration/`: For testing adapters against real frameworks or test doubles of ports.</sub_instruction>
         <sub_instruction name="Unit">`tests/unit/`: For isolated testing of the core business logic and domain model.</sub_instruction>
       </rule>
