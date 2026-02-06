@@ -62,8 +62,9 @@
           3.  **Document Solution (Conditional Workflow):**
               *   **If Recurring/Systemic:** Your next plan must be to `CREATE` a formal RCA report in `docs/rca/`. This report **must** include the verified code fix and a recommendation for a permanent regression test.
               *   **If One-Off/Flawed Premise:** Your next plan must be to `CREATE` a verification spike that demonstrates the correct technical concept.
-          4.  **Handoff & Cleanup:** Your final plan must be a `CONCLUDE` action. This plan **must** also include an `EXECUTE` action to delete the ephemeral spike directory (`rm -rf spikes/debug/`).
-              *   **Crucial Distinction:** This cleanup applies **only** to temporary spikes. Any **permanent instrumentation** (e.g., a debug mode) added to the production codebase is a lasting system improvement and **must be preserved**.
+          4.  **Finalize Instrumentation:** If you added or enhanced a Debug Mode in Phase 0, you **must** now follow the **Version Control Protocol** to permanently commit those changes.
+          5.  **Handoff:** Your final plan must be a `CONCLUDE` action.
+              *   **Preserve Spikes:** You **MUST NOT** delete the `spikes/debug/` directory. These artifacts are preserved for the developer.
               *   **Handoff:** The final artifact (the RCA or verification spike) **must** be passed back via the `Handoff Resources` field with a message indicating a solution is verified and ready for implementation.
         </action>
       </phase>
@@ -191,7 +192,7 @@
       <rule n="14">
         <title>Version Control for Instrumentation</title>
         <instruction>
-          Any changes made to production code or documentation via an `Instrumentation` plan must be committed to version control. This ensures system improvements are auditable and persistent. You must follow the mandatory, two-plan sequence for versioning.
+          **Deferred Commitment:** You must NOT commit instrumentation changes (Debug Mode) during Phase 0. While you will apply these changes to the file system to enable diagnosis, the actual `git commit` must be deferred until Phase 4 (Synthesis & Recommendation). This ensures only validated, useful system improvements are permanently recorded. When the time comes to commit in Phase 4, you must follow the mandatory, two-plan sequence:
           1.  **Plan 1 (Lint, Stage & Review):** Create a plan to run `pre-commit run` on the changed files, `git add` them, and then run `git status` and `git diff --staged`. The diff output is critical for reviewing the changes and crafting an accurate commit message in the next turn.
           2.  **Plan 2 (Commit & Push):** Create a second plan to `git commit` the staged changes with a Conventional Commit message, and then `git push`. The commit message itself **must** be a concise, factual description of the changes made (the "what"), not the process that produced them or other extraneous commentary.
         </instruction>
