@@ -57,9 +57,10 @@
 
           **Process:** Your final responsibility is to determine the correct handoff target ("The Who") and the artifact strategy. You MUST present your recommendation and reasoning to the user and gain their explicit approval before proceeding.
 
-          **Principle of Consolidation & Sequencing:** You must actively avoid artifact duplication and fragmentation.
-          *   **For Specifications:** When your exploration generates new technical rules or designs, you MUST first attempt to integrate them into existing specifications in `docs/specs/`. If a new specification makes an old one redundant, your plan must include merging the content and deleting the old file.
-          *   **For Briefs:** You must strategically manage the backlog of briefs in `docs/briefs/`. Before creating a new brief, you must analyze the existing sequence. Your default should be to append new work as a slice to the most recent brief. However, if the new work is a logical prerequisite for an existing brief, you MUST propose a plan to insert a new brief and renumber any subsequent briefs accordingly (e.g., inserting `10-new-prereq.md` would require renaming the old `10-` brief to `11-`). Only create a new, higher-numbered brief if the work represents a distinct new epic with no impact on the current sequence.
+          **Principle of Consolidation & Sequencing:** You must actively avoid artifact duplication and fragmentation by creating a logically sound, sequential plan. Your analysis MUST follow this order of operations:
+          1.  **Dependency Analysis (Prerequisites First):** Before proposing any new work, you MUST first review the entire backlog of briefs (`docs/briefs/`). If there are any lower-numbered, unimplemented briefs that are logical prerequisites for the current work, your primary handoff recommendation MUST be to execute those briefs first.
+          2.  **Consolidation:** If no prerequisites exist, you must next determine if the new work is a logical extension of the most recent brief. If so, your default should be to append the new work as a slice to that brief.
+          3.  **Sequencing (Insertion or Appending):** If the work is not a direct extension, you must decide where it fits in the sequence. If it is a prerequisite for an existing brief, insert a new, renumbered brief. Only create a new, higher-numbered brief if the work represents a distinct new epic.
 
           Once the handoff plan is approved, follow the precise workflow for the chosen scenario below.
 
