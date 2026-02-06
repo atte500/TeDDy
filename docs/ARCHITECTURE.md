@@ -148,6 +148,17 @@ This section captures significant, long-standing architectural decisions and pat
 
 ---
 
+## 5. Debug Mode
+
+To aid in fault isolation, the `teddy` executor includes a debug mode that can be activated via an environment variable.
+
+-   **Activation:** Set the `TEDDY_DEBUG` environment variable to any non-empty value (e.g., `export TEDDY_DEBUG=true`).
+-   **Behavior:** When active, this mode enables detailed logging for specific, hard-to-diagnose components.
+-   **Current Implementations:**
+    -   **`LocalFileSystemAdapter`:** Logs the inputs, intermediate values, and final output of its internal `_resolve_path` method. This is useful for debugging issues related to how file paths are constructed and resolved.
+
+---
+
 ## 6. YAML Plan Specification
 
 This section defines the formal contract for the `actions` list in a `plan.yaml` file used by the `teddy execute` command. Each item in the list is a dictionary representing a single action.
