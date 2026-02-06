@@ -12,9 +12,13 @@ runner = CliRunner()
 
 
 def _convert_paths(data: Any) -> Any:
-    """Recursively converts Path objects to posix strings in a data structure."""
+    """Recursively converts Path objects and strings to posix format."""
     if isinstance(data, Path):
         return data.as_posix()
+    if isinstance(data, str):
+        # Normalize backslashes to forward slashes to avoid YAML escaping issues on Windows.
+        # This is safe because both Python and the shell accept forward slashes on Windows.
+        return data.replace("\\", "/")
     if isinstance(data, list):
         return [_convert_paths(item) for item in data]
     if isinstance(data, dict):
