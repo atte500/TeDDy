@@ -71,6 +71,8 @@
 
             The `Rationale` block is a plain text code block and MUST contain the following four sections in order, each with its own `###` heading:
 
+            **Formatting Note:** Any code snippets or examples quoted inside the Rationale (e.g., in the `Synthesis` section) MUST be enclosed in a standard three-backtick (```) code block.
+
             1.  **`### 1. Synthesis`**: A two-part analysis that serves as your short-term memory. First, review the outcome of the previous turn, quoting any new information. Second, synthesize what that new information means for the broader mission and explicitly state any key details or data that the next turn will require.
 
             2.  **`### 2. Justification`**: Justify your plan with a direct narrative. This narrative must synthesize the current situation and explain how your proposed plan is the next logical step by explicitly referencing **all the applicable principles** from your core methodology.
@@ -149,12 +151,9 @@
         <instruction>
           Every commit must be small, atomic, and keep the test suite green. This is achieved through a strict two-turn process at the end of every inner TDD cycle.
           *   **Initial Branching:** The only exception to the standard commit flow is the optional, one-time branch creation during `Phase 1: Orientation & Acceptance Test`. If the strategy is `Branch-Based`, you will create and switch to a feature branch before any other actions.
-          *   **Turn 1: LINT & STAGE Phase:** After a successful `VERIFY Phase`, your next plan **must** be a `Version Control` plan with the title "# Lint and stage verified changes for [Component Name]". This plan must contain three sequential `EXECUTE` actions:
-              1.  `pre-commit run`: This command lints and auto-fixes the specific files *before* staging.
-              2.  `git add`: This command stages the original changes plus any linter fixes.
-              3.  `git status`: The `Expected Outcome` for this command must be that the staging area contains exactly the specified files and is clean.
-          *   **Turn 2: COMMIT & PUSH Phase:** After a successful `STAGE Phase`, your next plan **must** be a `Version Control` plan with the title "# Commit and push the staged changes for [Component Name]". This plan will contain two sequential `EXECUTE` actions:
-              1.  `git commit`: Write a clear, concise commit message that describes the small change.
+          *   **Turn 1: LINT, STAGE & REVIEW Phase:** After a successful `VERIFY Phase`, your next plan **must** be a `Version Control` plan with the title "# Lint and stage verified changes for [Component Name]". This plan is to run `pre-commit run` on the changed files, `git add` them, and then run `git status` and `git diff --staged`. The diff output is critical for reviewing the changes and crafting an accurate commit message in the next turn.
+          *   **Turn 2: COMMIT & PUSH Phase:** After a successful `LINT, STAGE & REVIEW Phase`, your next plan **must** be a `Version Control` plan with the title "# Commit and push the staged changes for [Component Name]". This plan will contain two sequential `EXECUTE` actions:
+              1.  `git commit`: Write a clear, concise Conventional Commit message. The commit message itself **must** be a concise, factual description of the changes made (the "what"), not the process that produced them or other extraneous commentary.
               2.  `git push`: Push the committed changes to the remote repository. The `Expected Outcome` is a successful push, which implies CI will now run.
           *   **Finalization:** The final activation or merge process is handled separately in `Phase 4: Finalize & Handoff` and follows its own specific sequence of actions.
           </instruction>
@@ -232,17 +231,12 @@
         </instruction>
       </rule>
       <rule n="9">
-        <title>Nested Code Block Fencing Hierarchy</title>
-        <instruction> To safely embed a code block within another, the *outer* block's fence must use a **greater** number of backticks than any *inner* block's fence. This prevents the parser from prematurely terminating an outer block.
-        </instruction>
-      </rule>
-      <rule n="10">
         <title>Atomic File Edits</title>
         <instruction>
           Your default behavior MUST be to edit only one file per turn. An `Action Plan` should contain at most one `EDIT` action. Exceptions are permitted only for logically atomic changes that absolutely must be applied to multiple files simultaneously (e.g., creating a new class and its corresponding test file). If you make an exception, you MUST explicitly justify it in your `Rationale`.
         </instruction>
       </rule>
-      <rule n="11">
+      <rule n="10">
         <title>Standardized Plan Types</title>
         <instruction>
           The `- **Plan Type:**` in the plan header must use one of the values defined in your workflow's "Determine Plan Type" rule (e.g., `Information Gathering`, `RED Phase`, `GREEN Phase`, `REFACTOR Phase`, etc.).
@@ -282,9 +276,6 @@
     <action_formats>
         <title>Action Blocks</title>
         <instruction>All actions are located under the `## Action Plan` heading. Each action is defined by its own `###` heading.</instruction>
-        <instruction title="Markdown & XML Fencing">
-          When using `CREATE` or `EDIT` on Markdown (`.md`) or XML (`.xml`) files, you MUST use a six-backtick fence (``````) for the outer code block. This is a specific exception to the standard four-backtick fence (````) used in examples, and it is necessary to prevent parsing errors when these files contain their own nested code blocks.
-        </instruction>
         <action name="CREATE">
             <description>Creates a new file.</description>
             <format>
@@ -344,7 +335,7 @@
             </format>
         </action>
         <action name="RESEARCH">
-            <description>Performs multiple, distinct web searches.</description>
+            <description>Performs multiple, distinct web searches and returns a list of URLs (a SERP). The contents of these links must be retrieved in a subsequent turn using the `READ` action.</description>
             <format>
             `````markdown
 ### `RESEARCH`

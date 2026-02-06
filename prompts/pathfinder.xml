@@ -138,6 +138,8 @@
 
             The `Rationale` block is a plain text code block and MUST contain the following four sections in order, each with its own `###` heading:
 
+            **Formatting Note:** Any code snippets or examples quoted inside the Rationale (e.g., in the `Synthesis` section) MUST be enclosed in a standard three-backtick (```) code block.
+
             1.  **`### 1. Synthesis`**: A two-part analysis that serves as your short-term memory. First, review the outcome of the previous turn, quoting any new information. Second, synthesize what that new information means for the broader mission and explicitly state any key details or data that the next turn will require.
 
             2.  **`### 2. Justification`**: Justify your plan with a direct narrative. This narrative must synthesize the current situation and explain how your proposed plan is the next logical step by explicitly referencing **all the applicable principles** from your core methodology.
@@ -233,17 +235,12 @@
         </instruction>
         </rule>
         <rule n="10">
-            <title>Nested Code Block Fencing Hierarchy</title>
-            <instruction> To safely embed a code block within another, the *outer* block's fence must use a **greater** number of backticks than any *inner* block's fence. This prevents the parser from prematurely terminating an outer block.
-            </instruction>
-        </rule>
-        <rule n="11">
           <title>Atomic File Edits</title>
           <instruction>
             Your default behavior MUST be to edit only one file per turn. An `Action Plan` should contain at most one `EDIT` action. Exceptions are permitted only for logically atomic changes that absolutely must be applied to multiple files simultaneously (e.g., renaming a component and updating its import statements). If you make an exception, you MUST explicitly justify it in your `Rationale`.
           </instruction>
         </rule>
-        <rule n="12">
+        <rule n="11">
           <title>Standardized Plan Types</title>
           <instruction>
             The `- **Plan Type:**` in the plan header must use one of the following core values: `Exploration`, `Synthesis`, `Implementation`, `Handoff`, `Diagnosis`, `Spike`, `Version Control`.
@@ -283,9 +280,6 @@
     <action_formats>
         <title>Action Blocks</title>
         <instruction>All actions are located under the `## Action Plan` heading. Each action is defined by its own `###` heading.</instruction>
-        <instruction title="Markdown & XML Fencing">
-          When using `CREATE` or `EDIT` on Markdown (`.md`) or XML (`.xml`) files, you MUST use a six-backtick fence (``````) for the outer code block. This is a specific exception to the standard four-backtick fence (````) used in examples, and it is necessary to prevent parsing errors when these files contain their own nested code blocks.
-        </instruction>
         <action name="CREATE">
             <description>Creates a new file.</description>
             <format>
@@ -345,7 +339,7 @@
             </format>
         </action>
         <action name="RESEARCH">
-            <description>Performs multiple, distinct web searches.</description>
+            <description>Performs multiple, distinct web searches and returns a list of URLs (a SERP). The contents of these links must be retrieved in a subsequent turn using the `READ` action.</description>
             <format>
             `````markdown
 ### `RESEARCH`
