@@ -23,7 +23,9 @@ jobs:
 
       - name: Install dependencies
         run: poetry install
+        shell: bash
 
       - name: Consult the Oracle on Windows
         id: oracle
         run: poetry run python spikes/debug/oracle.py
+        shell: bash
