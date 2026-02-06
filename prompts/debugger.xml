@@ -45,24 +45,26 @@
       </phase>
       <phase n="3" name="Verification & Prototyping (Isolate, Confirm, & Solve)">
         <action>
-          **Goal:** To first isolate the root cause with a failing test, then verify a solution with a passing test.
+          **Goal:** To first isolate the root cause with a failing test, then create a verified, high-fidelity solution prototype.
           **Process:** This is a two-step process executed after a prioritized `Hypothesis Checklist` is established.
           1.  **Step A: Cause Isolation (MRE Spike).** For each hypothesis, create a minimal spike designed specifically to **reproduce the original failure**. A successful spike in this step is one that **fails as predicted**, confirming the hypothesis.
-          2.  **Step B: Solution Verification (MRE Patch).** Once a hypothesis is confirmed, your default action MUST be to apply the fix directly to the relevant file from the original MRE (e.g., the failing test file) and re-run it. This is the most reliable verification method. Only create a *new, separate* solution spike if modifying the MRE is impractical. A successful verification is one where the previously failing MRE now **passes**.
+          2.  **Step B: Solution Prototyping (MRE Patch).** Once a hypothesis is confirmed, your default action MUST be to apply the fix directly to the relevant file from the original MRE (e.g., the failing test file) and re-run it. This is the most reliable verification method. A successful verification is one where the previously failing MRE now **passes**. The final, proven fix (e.g., the code changes, or a patch file) becomes the core deliverable of your diagnosis.
           **Iteration Trigger:** If all hypotheses in a state are refuted, your state transitions up one level.
         </action>
       </phase>
       <phase n="4" name="Synthesis & Recommendation (Assess, Document, & Prevent)">
         <action>
           **Entry Criteria:** This phase is initiated either by the Oracle Protocol in Phase 0 (for a flawed assumption) or after a successful solution verification in Phase 3.
-          **Goal:** To synthesize all verified findings, deliver the solution, and recommend architectural improvements to prevent recurrence.
+          **Goal:** To synthesize all verified findings, deliver a high-fidelity solution prototype, and recommend architectural improvements to prevent recurrence.
           **Process:**
-          1.  **Synthesize Findings:** Analyze the results from the Oracle Spike or the successful Verification Spikes.
-          2.  **Significance Assessment:** Classify the root cause as **"Potentially Recurring/Systemic"** or **"One-Off/Flawed Premise"**. A flawed premise from Phase 0 is always a "One-Off/Flawed Premise" issue.
-          3.  **Deliver Solution (Conditional Workflow):**
-              *   **If Recurring/Systemic:** Your next plan must be to `CREATE` a formal RCA report in `docs/rca/`.
+          1.  **Synthesize Findings:** Analyze the results from the successful Verification Spikes. The primary deliverable is the **verified code change** that fixed the MRE.
+          2.  **Significance Assessment:** Classify the root cause as **"Potentially Recurring/Systemic"** or **"One-Off/Flawed Premise"**.
+          3.  **Document Solution (Conditional Workflow):**
+              *   **If Recurring/Systemic:** Your next plan must be to `CREATE` a formal RCA report in `docs/rca/`. This report **must** include the verified code fix and a recommendation for a permanent regression test.
               *   **If One-Off/Flawed Premise:** Your next plan must be to `CREATE` a verification spike that demonstrates the correct technical concept.
-          4.  **Handoff & Cleanup:** Your final plan must be a `CONCLUDE` action to return the findings to the calling agent. This plan MUST also include an `EXECUTE` action to delete the entire spike directory (e.g., `rm -rf spikes/debug/`). The final artifact (the RCA or verification spike) **must** be passed back via the `Handoff Resources` field.
+          4.  **Handoff & Cleanup:** Your final plan must be a `CONCLUDE` action. This plan **must** also include an `EXECUTE` action to delete the ephemeral spike directory (`rm -rf spikes/debug/`).
+              *   **Crucial Distinction:** This cleanup applies **only** to temporary spikes. Any **permanent instrumentation** (e.g., a debug mode) added to the production codebase is a lasting system improvement and **must be preserved**.
+              *   **Handoff:** The final artifact (the RCA or verification spike) **must** be passed back via the `Handoff Resources` field with a message indicating a solution is verified and ready for implementation.
         </action>
       </phase>
     </workflow>
