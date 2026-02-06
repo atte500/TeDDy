@@ -123,7 +123,7 @@ class MarkdownPlanParser(IPlanParser):
             if children:
                 child = children[0]
                 if hasattr(child, "content"):
-                    params["content"] = child.content.strip()
+                    params["content"] = child.content.rstrip("\n")
 
         return ActionData(type="CREATE", description=description, params=params)
 
@@ -192,7 +192,7 @@ class MarkdownPlanParser(IPlanParser):
                 if find_children:
                     child = find_children[0]
                     if hasattr(child, "content"):
-                        find_content = child.content.strip()
+                        find_content = child.content.rstrip("\n")
 
                 replace_children = (
                     list(replace_code.children) if replace_code.children else []
@@ -201,7 +201,7 @@ class MarkdownPlanParser(IPlanParser):
                 if replace_children:
                     child = replace_children[0]
                     if hasattr(child, "content"):
-                        replace_content = child.content.strip()
+                        replace_content = child.content.rstrip("\n")
                 edits.append({"find": find_content, "replace": replace_content})
 
             except StopIteration:

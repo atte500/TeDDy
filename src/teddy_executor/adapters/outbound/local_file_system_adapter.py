@@ -210,12 +210,19 @@ class LocalFileSystemAdapter(FileSystemManager):
         pre_match_lines = source_lines[:match_start_index]
         post_match_lines = source_lines[match_start_index + len(find_lines) :]
 
+        # The replace_lines are treated as a literal block. No indentation is added.
         final_lines = pre_match_lines + replace_lines + post_match_lines
         new_content = "\n".join(final_lines)
 
-        # Preserve a single trailing newline if the original had one
-        if original_content.endswith("\n") and not new_content.endswith("\n"):
+        # Preserve the original file's trailing newline state
+        original_has_trailing_newline = original_content.endswith("\n")
+        new_has_trailing_newline = new_content.endswith("\n")
+
+        if original_has_trailing_newline and not new_has_trailing_newline:
             new_content += "\n"
+        elif not original_has_trailing_newline and new_has_trailing_newline:
+            # This can happen if the replace block ends with a newline but the original didn't
+            new_content = new_content.rstrip("\n")
 
         return new_content
 

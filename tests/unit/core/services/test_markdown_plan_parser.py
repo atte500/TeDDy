@@ -311,6 +311,67 @@ The brief is complete.
     assert action.params["handoff_resources"] == ["docs/briefs/new-feature.md"]
 
 
+def test_parse_edit_action_preserves_indentation_in_find_and_replace(
+    parser: MarkdownPlanParser,
+):
+    """
+    Given a Markdown plan with an EDIT action,
+    When the find and replace blocks contain critical indentation,
+    Then the parser should preserve this indentation exactly, except for the
+    single trailing newline, which is consistently stripped by the AST parser.
+    """
+    from textwrap import dedent
+
+    # Arrange
+    indented_find_block = dedent(
+        """\
+        def hello():
+            print("Hello")
+    """
+    )
+    indented_replace_block = dedent(
+        """\
+        def world():
+            print("World")
+    """
+    )
+
+    plan_content = f"""
+# Edit a file with indentation
+- **Goal:** Update a class.
+
+## Action Plan
+
+### `EDIT`
+- **File Path:** [/path/to/file.py](/path/to/file.py)
+- **Description:** A test edit with indentation.
+
+`FIND:`
+````python
+{indented_find_block}
+````
+`REPLACE:`
+````python
+{indented_replace_block}
+````
+"""
+    # Act
+    plan = parser.parse(plan_content)
+
+    # Assert
+    assert len(plan.actions) == 1
+    edit_action = plan.actions[0]
+    assert edit_action.type == "EDIT"
+
+    assert len(edit_action.params["edits"]) == 1
+    edit_block = edit_action.params["edits"][0]
+
+    # The mistletoe parser strips the single trailing newline from a code block.
+    # We must rstrip the expected value to match this valid behavior.
+    assert edit_block["find"] == indented_find_block.rstrip("\n")
+    assert edit_block["replace"] == indented_replace_block.rstrip("\n")
+
+
 def test_parse_conclude_action(parser: MarkdownPlanParser):
     """
     Given a valid Markdown plan with a CONCLUDE action,
