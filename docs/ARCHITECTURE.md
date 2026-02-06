@@ -145,6 +145,12 @@ This section captures significant, long-standing architectural decisions and pat
 -   **Context Configuration:** The `context` command's behavior is explicitly driven by the contents of `.teddy/*.context` files, providing a clear, user-configurable contract.
 -   **Interactive Diff Previews:** During interactive execution, `create` and `edit` actions provide a visual diff. This feature is configured via a prioritized strategy: the `TEDDY_DIFF_TOOL` environment variable, a fallback to the `code` (VS Code) CLI if present, and a final fallback to an in-terminal view. This provides a better user experience while remaining environment-agnostic.
 -   **Dependency Versioning:** Dependency updates, even minor ones, can introduce breaking API changes (e.g., `typer.testing.CliRunner` API change in a `typer` update). While flexible version specifiers (`^X.Y.Z`) are convenient, production dependencies should be reviewed and potentially pinned to specific versions to improve stability and prevent unexpected CI failures.
+-   **Cross-Platform Shell Execution (The "Smart Router"):** To handle the fundamental differences between POSIX and Windows command execution, the `ShellAdapter` employs a dynamic routing strategy.
+    -   **POSIX:** Uses `shlex.split()` and `shell=False`. This is the standard, secure approach.
+    -   **Windows:** Uses a "Smart Router" that inspects the command.
+        -   If the command resolves to an executable file (via `shutil.which()`), it uses `shell=False` and passes the **raw command string** (bypassing `shlex` and `list2cmdline` quoting issues).
+        -   If the command does not resolve to a file (implying a shell built-in like `dir`), it uses `shell=True` and passes the raw command string.
+    -   **Rationale:** This strategy avoids the fragile and error-prone splitting of Windows paths while correctly supporting both standalone executables and shell built-ins without a hardcoded whitelist.
 
 ---
 
@@ -156,6 +162,7 @@ To aid in fault isolation, the `teddy` executor includes a debug mode that can b
 -   **Behavior:** When active, this mode enables detailed logging for specific, hard-to-diagnose components.
 -   **Current Implementations:**
     -   **`LocalFileSystemAdapter`:** Logs the inputs, intermediate values, and final output of its internal `_resolve_path` method. This is useful for debugging issues related to how file paths are constructed and resolved.
+-   **`ShellAdapter`:** Logs detailed information about the command execution process, including the platform, input command, whether a shell is used, the tokenized arguments, and the final result (`stdout`, `stderr`, `return_code`). This is critical for diagnosing cross-platform command execution issues.
 
 ---
 
