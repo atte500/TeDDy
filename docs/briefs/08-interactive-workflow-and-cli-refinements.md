@@ -19,9 +19,10 @@ The solution is centered around a set of new, single-responsibility services orc
 
 3.  **Refactored CLI & Smart `resume` Command:** The CLI in `main.py` will be refactored to support the new command structure (`new`, `resume`, `plan`, `execute`, and an optional `context`). The `resume` command will be the primary entry point for users, intelligently determining whether to initiate a planning or execution phase based on the session's state.
 
-4.  **Two-Tiered Interactive TUI:** The plan approval workflow will be implemented in two tiers:
-    -   **Tier 1:** A high-level summary prompt in the `ConsoleInteractorAdapter` will offer `(a)pprove all / (m)odify / (s)kip / (q)uit` options.
-    -   **Tier 2:** The `(m)odify` path will launch a full-screen interactive checklist built with the `textual` library, allowing for granular action selection.
+4.  **Context-Aware Interactive TUI:** The plan approval workflow will be implemented using a sophisticated, multi-layered TUI that allows for rich interaction, including manual editing of the plan.
+    -   **Tier 1 (Approval Prompt):** The initial prompt will now include an option to review the full plan (`(r)eview full plan`) before deciding on a course of action.
+    -   **Tier 2 (Interactive Checklist):** The `(m)odify` option will launch a `textual`-based checklist. This is no longer a simple selection tool; it is the entry point for the **"Context-Aware Editing"** model. Pressing `(p)` on a highlighted action will trigger a preview/edit workflow that is specific to the action type (`CREATE`, `EDIT`, `EXECUTE`, etc.), including non-blocking calls to external editors.
+    -   **Audit Trail:** All user modifications will be tracked and explicitly noted in the final `report.md` to ensure a complete and accurate audit trail.
 
 5.  **Plan Validation & Automated Re-planning:** Before any plan is presented to the user, it will undergo a comprehensive validation phase. This checks for common errors like `FIND` block mismatches, `CREATE` conflicts, and context violations. If validation fails, an automated re-planning loop is triggered, instructing the AI to correct its own plan based on the specific validation errors. This entire process is detailed in the canonical [Interactive Session Workflow Specification](/docs/specs/interactive-session-workflow.md).
 
@@ -65,15 +66,26 @@ Implementation must be done incrementally through the following dependency-aware
 
 ---
 ### **Slice 3: Core Workflow & Enhanced Interactivity**
-**Goal:** Implement the main `resume` loop and the improved user prompts.
+**Goal:** Implement the main `resume` loop and the new "Context-Aware Editing" TUI.
 
 -   **[ ] Task: Implement Smart `resume` Command:**
     -   Implement the logic in `main.py` to check session state and delegate to either planning (which now includes implicit context generation) or execution.
 -   **[ ] Task: Implement Tier 1 Approval Prompt:**
-    -   Refactor `ConsoleInteractorAdapter` to support the `(a)pprove all / (m)odify / (s)kip / (q)uit` prompt.
--   **[ ] Task: Implement Tier 2 Interactive TUI:**
+    -   Refactor `ConsoleInteractorAdapter` to support the `(a)pprove all / (r)eview full plan / (m)odify / (s)kip / (q)uit` prompt.
+-   **[ ] Task: Implement Core `textual` TUI Framework:**
     -   Add `textual` as a dependency.
-    -   Create the Textual-based interactive checklist for the `(m)odify` option.
+    -   Create the base interactive checklist, including navigation, selection, and the `(p)` keybinding for preview/edit.
+-   **[ ] Task: Implement In-Terminal Editor for Simple Actions:**
+    -   For actions like `EXECUTE`, `RESEARCH`, etc., implement the in-terminal preview and edit prompt.
+-   **[ ] Task: Implement Non-Blocking Editor for `CREATE`:**
+    -   Implement the "Save As" workflow: launch a non-blocking editor for content, and simultaneously prompt for the file path in the terminal.
+    -   Implement the final user confirmation step to synchronize the action.
+-   **[ ] Task: Implement Non-Blocking Editor for `EDIT`:**
+    -   Implement the workflow: create a temporary file with the proposed changes, launch a non-blocking editor, and use a final confirmation prompt for synchronization.
+-   **[ ] Task: Implement Modification Tracking:**
+    -   Add logic to detect if a user has actually changed an action.
+    -   Apply a `*modified` tag in the UI only when changes have been made.
+    -   Update the `report.md` generation to include a "modified by user" indicator for any edited actions.
 
 ---
 ### **Slice 4: Plan Validation & Automated Re-planning**

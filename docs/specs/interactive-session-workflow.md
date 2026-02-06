@@ -205,9 +205,10 @@ The command first presents a high-level summary of all proposed state changes (`
   - EXECUTE: 1 command
 
 --------------------------------------------------------------------
-Execute this plan? (a)pprove all / (m)odify / (s)kip / (q)uit ›
+Execute this plan? (a)pprove all / (r)eview full plan / (m)odify / (s)kip / (q)uit ›
 ```
 -   `(a)pprove all`: Executes the entire plan non-interactively.
+-   `(r)eview full plan`: Opens the complete `plan.md` file in the configured previewer (read-only) for a full review. After the previewer is closed, the user is returned to this prompt.
 -   `(m)odify`: Enters Tier 2 for granular control.
 -   `(s)kip`: Aborts execution and prompts for a message to generate a new plan.
 -   `(q)uit`: Exits the session.
@@ -231,14 +232,41 @@ Use [↑/↓] to navigate, [enter] to toggle, [a] to toggle all, [p] to preview 
 ```
 -   **Controls:** Users can navigate the list, toggle items on/off with the spacebar, and press `[enter]` to confirm and execute the configured plan.
 
--   **Universal On-Demand Previews:** When any item is highlighted, pressing `(p)` will show a detailed preview. This feature is designed to provide complete transparency before execution. The preview mechanism is configurable and follows a defined fallback order (see Configuration section below).
-    -   `CREATE`: Shows the full content of the new file.
-    -   `READ`: Reads the target file/URL and displays its content.
-    -   `EDIT`: Computes and displays a colorized diff of the proposed changes.
-    -   `EXECUTE`: Displays the full command and any associated parameters (e.g., `cwd`, `env` variables).
-    -   `RESEARCH`: Displays the list of search queries that will be executed.
-    -   `CHAT_WITH_USER`: Displays the full message that will be sent to the user.
-    -   `INVOKE`: Displays the target agent and the full handoff message.
+-   **Interactive Previews & Manual Editing:** When any item is highlighted, pressing `(p)` will trigger the **"Context-Aware Editing"** workflow, allowing for both preview and direct manual modification of the action. If a user makes changes to an action, it will be marked with a `*modified` tag in the UI. To ensure a complete audit trail, the `report.md` will explicitly note any user modifications, and the final executed action will reflect the user's changes, not the AI's original proposal.
+
+    The behavior of the `(p)` key is context-dependent:
+
+    -   **For `CREATE` actions (The "Save As" Workflow):**
+        1.  The tool immediately opens the proposed file content in a temporary file using the user's configured external editor (non-blocking).
+        2.  Simultaneously, the terminal displays a message and prompts for the file path:
+            ```text
+            Your editor has been opened to preview the new file's content. You may edit it directly in this preview.
+
+            File path: [src/new_component.py]
+            Press Enter to confirm, or type a new path ›
+            ```
+        3.  After the path is confirmed, a final confirmation prompt (`Have you finished editing and saved the file content? (y/n)`) appears. This user confirmation acts as the synchronization signal.
+        4.  Once confirmed, the tool uses the (potentially modified) path and content for execution.
+
+    -   **For `EDIT` actions:**
+        1.  The tool creates a temporary file representing the **proposed final version** of the target file (i.e., the original file with the AI's changes already applied).
+        2.  This temporary file is opened in the user's external editor (non-blocking).
+        3.  Simultaneously, the terminal displays a message and a confirmation prompt, including the path of the file being edited for clarity:
+            ```text
+            Editing: [pyproject.toml]
+
+            Your editor has been opened to preview the proposed changes. You may edit the file directly in this preview to make final adjustments.
+
+            Have you finished editing and saved the file? (y/n) ›
+            ```
+        4.  Once confirmed, the tool calculates the final changes and updates the action. The final `diff` is what will be recorded in the `report.md`.
+
+    -   **For simple actions (`EXECUTE`, `RESEARCH`, etc.):**
+        1.  A simple, in-terminal view of the action's content (e.g., the shell command) is displayed.
+        2.  The user is prompted to `(e)dit` or `(c)lose`. Selecting edit provides a simple input field to change the content.
+
+    -   **For read-only actions (`READ`, `PRUNE`):**
+        1.  A simple preview of the target resource is shown without an option to edit.
 
 ## 8. Plan Validation & Automated Re-planning
 
