@@ -20,13 +20,13 @@ The `ActionFactory` is a core component responsible for taking raw action data (
     *   `TypeError`: If the `params` dictionary is missing required keys for the specified action.
 
 ## 3. Implementation Strategy
-1.  The factory will maintain an internal registry (e.g., a dictionary) that maps action type strings to their corresponding `Action` handler classes.
+1.  The factory maintains an internal registry mapping action type strings (e.g., `"create_file"`) to the corresponding Port protocol (e.g., `IFileSystemManager`).
 
-2.  **Dependency Injection:** The factory will be injected with all necessary outbound ports (e.g., `IFileSystemManager`, `IWebScraper`, etc.) at creation time. It will then inject the required dependencies into the constructor of each action handler it creates.
+2.  When `create_action` is called, it resolves an instance of the required adapter from the dependency injection container.
 
-3.  **URL Handling in `ReadAction`:**
-    *   The handler for the `read` action will be injected with both `IFileSystemManager` and `IWebScraper`.
-    *   Its `execute` method will inspect the `path` parameter. If the path starts with `http://` or `https://`, it will delegate the call to the web scraper. Otherwise, it will delegate to the file system manager.
+3.  **Specialized Routing for `READ`:** The `create_action` method contains special logic for the `read` action type. It inspects the parameters passed along with the action type. If the `resource` or `path` parameter starts with `http`, it resolves the `IWebScraper` protocol. Otherwise, it resolves the `IFileSystemManager` protocol. This moves the routing decision into the factory, simplifying the `ActionDispatcher`.
+
+4.  **Method Binding:** For adapters that handle multiple actions (like `IFileSystemManager`), the factory binds the correct method (e.g., `read_file`) to the generic `execute` method required by the `IAction` protocol that the `ActionDispatcher` expects.
 
 4.  **Backwards Compatibility:** For the `execute` action, it checks if `params` is a simple string. If so, it converts it to a dictionary (`{"command": "..."}`) to support the legacy plan format.
 

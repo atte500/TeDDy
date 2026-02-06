@@ -26,6 +26,11 @@ Resolves and executes a single action, returning its result.
 from teddy_executor.core.domain.models import ActionData, ActionLog
 from teddy_executor.core.services.action_factory import IActionFactory
 
+from typing import Optional
+
+class IActionFactory(Protocol):
+    def create_action(self, action_type: str, params: Optional[dict] = None) -> IAction: ...
+
 class ActionDispatcher:
     def __init__(self, action_factory: IActionFactory):
         self._action_factory = action_factory
