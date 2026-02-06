@@ -1,35 +1,12 @@
 import os
 import shlex
+import shutil
 import subprocess
 import sys
 from typing import Optional, Dict, List
 
 from teddy_executor.core.domain.models import CommandResult
 from teddy_executor.core.ports.outbound.shell_executor import IShellExecutor
-
-# A list of common Windows shell built-ins.
-# This list is not exhaustive but covers frequent commands.
-WINDOWS_SHELL_BUILTINS = [
-    "dir",
-    "copy",
-    "del",
-    "erase",
-    "ren",
-    "rename",
-    "mkdir",
-    "rmdir",
-    "echo",
-    "type",
-    "vol",
-    "ver",
-    "date",
-    "time",
-    "cls",
-    "call",
-    "set",
-    "path",
-    "prompt",
-]
 
 
 class ShellAdapter(IShellExecutor):
@@ -64,19 +41,33 @@ class ShellAdapter(IShellExecutor):
         command_args: List[str] | str = ""
 
         if is_windows:
-            # On Windows, check if the command is a known shell built-in.
-            # If so, we MUST use shell=True.
-            first_word = command.strip().split()[0].lower()
-            if first_word in WINDOWS_SHELL_BUILTINS:
-                use_shell = True
-                command_args = command
-            else:
-                # For executables, use shell=False for safety, but ensure
-                # shlex splits in non-POSIX mode to handle backslashes correctly.
+            # On Windows, we prefer to pass the raw command string directly to the OS.
+            # This bypasses the complex and often buggy quoting rules of list2cmdline
+            # and shlex, allowing complex commands (like Python scripts) to work reliably.
+            #
+            # We use a dynamic router strategy:
+            # 1. Extract the command name (first token).
+            # 2. Check if it's an executable file using shutil.which().
+            # 3. If it is a file -> Use shell=False (Clean Path to Kernel).
+            # 4. If it is NOT a file -> Assume it's a shell built-in (Dirty Path to cmd.exe).
+
+            command_args = command
+            first_word = command.strip().split()[0]
+
+            # shutil.which returns the full path if found, or None.
+            executable_path = shutil.which(first_word)
+
+            if executable_path:
+                # It's a real file (e.g., python.exe, git.exe).
+                # We can run it directly via the kernel.
                 use_shell = False
-                command_args = shlex.split(command, posix=False)
+            else:
+                # It's not a file. It must be a built-in (e.g., dir, echo) or a typo.
+                # We must invoke the shell to handle it.
+                use_shell = True
         else:
             # On POSIX, the default strategy is generally safe and robust.
+            # We must split the string into a list for shell=False.
             use_shell = False
             command_args = shlex.split(command)
 
