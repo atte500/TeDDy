@@ -204,8 +204,8 @@ def test_execute_action_with_both_cwd_and_env(tmp_path: Path, monkeypatch):
 
     # Command to write the env var into a file in the subdir, using Python
     # to avoid shell-specific redirection.
-    write_command = f"""{sys.executable} -c "import os; f = open('output.txt', 'w'); f.write(os.environ.get('MY_VAR', '')); f.close()"
-    """
+    # We use a single line to avoid YAML scalar formatting issues on Windows CI.
+    write_command = f"{sys.executable} -c \"import os; f = open('output.txt', 'w'); f.write(os.environ.get('MY_VAR', '')); f.close()\""
 
     plan = [
         {

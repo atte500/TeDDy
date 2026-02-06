@@ -39,8 +39,14 @@ def test_shell_adapter_handles_failed_command():
     # ASSERT
     assert result.return_code != 0
     assert result.stdout == ""
-    # Check that stderr contains the correct FileNotFoundError message
-    assert "No such file or directory" in result.stderr
+    # Check that stderr contains the correct error message (platform dependent)
+    # POSIX: "No such file or directory"
+    # Windows: "is not recognized as an internal or external command" or "The system cannot find the file specified"
+    assert (
+        "No such file or directory" in result.stderr
+        or "not recognized" in result.stderr
+        or "cannot find the file" in result.stderr
+    )
 
 
 def test_shell_adapter_executes_in_specified_cwd():
