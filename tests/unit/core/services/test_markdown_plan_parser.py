@@ -40,7 +40,7 @@ Hello, world!
     assert action.type == "CREATE"
     assert action.description == "Create a hello world file."
     assert action.params == {
-        "path": "/hello.txt",
+        "path": "hello.txt",
         "content": "Hello, world!",
     }
 
@@ -73,7 +73,7 @@ def test_parse_read_action(parser: MarkdownPlanParser):
     assert action.type == "READ"
     assert action.description == "Read the current architectural conventions."
     assert action.params == {
-        "resource": "/docs/ARCHITECTURE.md",
+        "resource": "docs/ARCHITECTURE.md",
     }
 
 
@@ -116,7 +116,7 @@ class MyClass:
 
     assert action.type == "EDIT"
     assert action.description == "Add a new method."
-    assert action.params["path"] == "/src/my_class.py"
+    assert action.params["path"] == "src/my_class.py"
     assert len(action.params["edits"]) == 1
     assert action.params["edits"][0]["find"] == "class MyClass:\n    pass"
     assert (
@@ -267,7 +267,7 @@ def test_parse_prune_action(parser: MarkdownPlanParser):
     assert action.type == "PRUNE"
     assert action.description == "Remove the old specification."
     assert action.params == {
-        "resource": "/docs/specs/old-spec.md",
+        "resource": "docs/specs/old-spec.md",
     }
 
 

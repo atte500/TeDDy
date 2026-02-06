@@ -1,11 +1,22 @@
+import logging
+import os
 from pathlib import Path
 from typing import Optional
 from teddy_executor.core.ports.outbound.file_system_manager import FileSystemManager
+
+# Configure debug logging
+if os.environ.get("TEDDY_DEBUG"):
+    logging.basicConfig(level=logging.DEBUG)
+else:
+    logging.basicConfig(level=logging.INFO)
+
 from teddy_executor.core.domain.models import (
     SearchTextNotFoundError,
     FileAlreadyExistsError,
     MultipleMatchesFoundError,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class LocalFileSystemAdapter(FileSystemManager):
@@ -15,6 +26,38 @@ class LocalFileSystemAdapter(FileSystemManager):
 
     def __init__(self, root_dir: str = "."):
         self.root_dir = Path(root_dir)
+
+    def _resolve_path(self, path: str) -> Path:
+        """
+        Resolves a path relative to the root_dir.
+        Handles project-root-relative paths (e.g., '/file.txt') by stripping the
+        leading slash before joining with the root directory.
+        """
+        logger.debug("--- Resolving Path ---")
+        logger.debug(f"Input path: '{path}'")
+        logger.debug(f"Adapter root_dir: '{self.root_dir}'")
+
+        path_obj = Path(path)
+
+        # First, check if the original path is absolute. If so, use it directly.
+        # This correctly handles paths from pytest's tmp_path fixture on Unix.
+        if path_obj.is_absolute():
+            logger.debug(f"Path is absolute, returning directly: '{path_obj}'")
+            return path_obj
+
+        # Handle the project-root-relative convention (e.g., '/file.txt').
+        # This is now safe because we've already handled true absolute paths.
+        if path.startswith("/"):
+            path = path[1:]
+            logger.debug(f"Path after stripping '/': '{path}'")
+
+        resolved_root = self.root_dir.resolve()
+        logger.debug(f"Resolved adapter root_dir: '{resolved_root}'")
+
+        final_path = resolved_root / path
+        logger.debug(f"Final resolved path: '{final_path}'")
+        logger.debug("----------------------")
+        return final_path
 
     def create_default_context_file(self) -> None:
         """
@@ -71,29 +114,28 @@ class LocalFileSystemAdapter(FileSystemManager):
         """
         Checks if a path (file or directory) exists relative to the root_dir.
         """
-        return (self.root_dir / path).exists()
+        return self._resolve_path(path).exists()
 
     def create_directory(self, path: str) -> None:
         """
         Creates a directory, including any necessary parent directories.
         Does not raise an error if the directory already exists.
         """
-        Path(path).mkdir(parents=True, exist_ok=True)
+        self._resolve_path(path).mkdir(parents=True, exist_ok=True)
 
     def write_file(self, path: str, content: str) -> None:
         """
         Writes content to a file, creating it if it doesn't exist
         and overwriting it if it does.
         """
-        Path(path).write_text(content, encoding="utf-8")
+        self._resolve_path(path).write_text(content, encoding="utf-8")
 
     def create_file(self, path: str, content: str) -> None:
         """
         Creates a new file with the given content using exclusive creation mode.
         """
         try:
-            # FIX: Ensure the parent directory exists before writing the file.
-            file_path = Path(path)
+            file_path = self._resolve_path(path)
             file_path.parent.mkdir(parents=True, exist_ok=True)
 
             with open(file_path, "x", encoding="utf-8") as f:
@@ -112,7 +154,7 @@ class LocalFileSystemAdapter(FileSystemManager):
         Reads the content of a file from the specified path.
         """
         try:
-            return Path(path).read_text(encoding="utf-8")
+            return self._resolve_path(path).read_text(encoding="utf-8")
         except FileNotFoundError:
             # Re-raise to conform to the port's contract
             raise
@@ -233,7 +275,7 @@ class LocalFileSystemAdapter(FileSystemManager):
         Modifies an existing file by replacing block(s) of text.
         Supports either a single find/replace pair or a list of edits.
         """
-        file_path = Path(path)
+        file_path = self._resolve_path(path)
         content = file_path.read_text(encoding="utf-8")
 
         if edits:

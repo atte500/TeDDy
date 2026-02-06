@@ -15,7 +15,7 @@ def test_execute_markdown_plan_happy_path(tmp_path: Path):
     # Arrange
     runner = CliRunner()
     file_name = "hello.txt"
-    new_file_path = tmp_path / file_name
+    plan_name = "plan.md"
 
     plan_content = f"""
 # Create a test file
@@ -27,24 +27,26 @@ def test_execute_markdown_plan_happy_path(tmp_path: Path):
 ## Action Plan
 
 ### `CREATE`
-- **File Path:** [{str(new_file_path)}]({str(new_file_path)})
+- **File Path:** [{file_name}](/{file_name})
 - **Description:** Create a hello world file.
 ````text
 Hello, world!
 ````
 """
-    plan_file = tmp_path / "plan.md"
-    plan_file.write_text(plan_content, encoding="utf-8")
-
     real_container = create_container()
 
     # Act
-    with patch("teddy_executor.main.container", real_container):
-        result = runner.invoke(app, ["execute", str(plan_file), "--yes"])
+    with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+        plan_file = Path(td) / plan_name
+        plan_file.write_text(plan_content, encoding="utf-8")
+        new_file_path = Path(td) / file_name
+
+        with patch("teddy_executor.main.container", real_container):
+            result = runner.invoke(app, ["execute", str(plan_file), "--yes"])
 
     # Assert
     assert result.exit_code == 0, (
-        f"Teddy failed with stderr: {result.stderr}\\n{result.exception}"
+        f"Teddy failed!\nException: {result.exception}\nStdout: {result.stdout}"
     )
     assert new_file_path.exists(), "The new file was not created."
     assert new_file_path.read_text() == "Hello, world!", (
@@ -66,8 +68,8 @@ def test_markdown_edit_action(tmp_path: Path):
     """
     # Arrange
     runner = CliRunner()
-    file_path = tmp_path / "code.py"
-    file_path.write_text("def foo():\n    return 1\n")
+    file_name = "code.py"
+    plan_name = "plan.md"
 
     plan_content = f"""
 # Edit Plan
@@ -76,7 +78,7 @@ def test_markdown_edit_action(tmp_path: Path):
 ## Action Plan
 
 ### `EDIT`
-- **File Path:** [{file_path.name}]({str(file_path)})
+- **File Path:** [{file_name}](/{file_name})
 - **Description:** Change return value.
 
 `FIND:`
@@ -90,17 +92,23 @@ def foo():
     return 2
 ````
 """
-    plan_file = tmp_path / "plan.md"
-    plan_file.write_text(plan_content, encoding="utf-8")
     real_container = create_container()
 
     # Act
-    with patch("teddy_executor.main.container", real_container):
-        result = runner.invoke(app, ["execute", str(plan_file), "--yes"])
+    with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+        plan_file = Path(td) / plan_name
+        plan_file.write_text(plan_content, encoding="utf-8")
+        file_to_edit = Path(td) / file_name
+        file_to_edit.write_text("def foo():\n    return 1\n")
+
+        with patch("teddy_executor.main.container", real_container):
+            result = runner.invoke(app, ["execute", str(plan_file), "--yes"])
 
     # Assert
-    assert result.exit_code == 0
-    assert "return 2" in file_path.read_text()
+    assert result.exit_code == 0, (
+        f"Teddy failed with exception: {result.exception}\\n{result.stdout}"
+    )
+    assert "return 2" in file_to_edit.read_text()
 
 
 def test_markdown_execute_action(tmp_path: Path):
@@ -141,8 +149,8 @@ def test_markdown_read_action(tmp_path: Path):
     Then the file content is returned in the report.
     """
     runner = CliRunner()
-    target_file = tmp_path / "read_me.txt"
-    target_file.write_text("Secret Content")
+    file_name = "read_me.txt"
+    plan_name = "plan.md"
 
     plan_content = f"""
 # Read Plan
@@ -150,17 +158,23 @@ def test_markdown_read_action(tmp_path: Path):
 ## Action Plan
 
 ### `READ`
-- **Resource:** [{target_file.name}]({str(target_file)})
+- **Resource:** [{file_name}](/{file_name})
 - **Description:** Read the secret.
 """
-    plan_file = tmp_path / "plan.md"
-    plan_file.write_text(plan_content, encoding="utf-8")
     real_container = create_container()
 
-    with patch("teddy_executor.main.container", real_container):
-        result = runner.invoke(app, ["execute", str(plan_file), "--yes"])
+    with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+        plan_file = Path(td) / plan_name
+        plan_file.write_text(plan_content, encoding="utf-8")
+        target_file = Path(td) / file_name
+        target_file.write_text("Secret Content")
 
-    assert result.exit_code == 0
+        with patch("teddy_executor.main.container", real_container):
+            result = runner.invoke(app, ["execute", str(plan_file), "--yes"])
+
+    assert result.exit_code == 0, (
+        f"Teddy failed with exception: {result.exception}\\n{result.stdout}"
+    )
     report = parse_yaml_report(result.stdout)
     assert report["action_logs"][0]["status"] == "SUCCESS"
     assert report["action_logs"][0]["details"]["content"] == "Secret Content"

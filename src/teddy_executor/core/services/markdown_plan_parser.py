@@ -364,7 +364,12 @@ class MarkdownPlanParser(IPlanParser):
                     link_node = self._find_node_in_tree(item, Link)
                     if link_node:
                         target = link_node.target
-                        params[param_key] = target
+                        # Per RCA, strip the leading '/' to convert project-root-relative
+                        # paths into CWD-relative paths for the adapter.
+                        if target.startswith("/"):
+                            params[param_key] = target[1:]
+                        else:
+                            params[param_key] = target
                     break
             else:  # If no link key matched, check for text keys
                 if text_key_map:
