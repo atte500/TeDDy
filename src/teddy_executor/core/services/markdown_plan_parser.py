@@ -74,6 +74,8 @@ class MarkdownPlanParser(IPlanParser):
                 actions.append(self._parse_prune_action(doc, heading))
             elif action_type == "INVOKE":
                 actions.append(self._parse_invoke_action(doc, heading))
+            elif action_type == "CONCLUDE":
+                actions.append(self._parse_conclude_action(doc, heading))
 
         if not actions:
             raise InvalidPlanError("No actions found in the 'Action Plan' section.")
@@ -213,6 +215,66 @@ class MarkdownPlanParser(IPlanParser):
         params["edits"] = edits
         return ActionData(type="EDIT", description=description, params=params)
 
+    def _parse_conclude_action(
+        self, parent: Document, heading_node: Heading
+    ) -> ActionData:
+        """Parses a CONCLUDE action block."""
+        next_node = self._get_next_sibling(parent, heading_node)
+        start_node = next_node if isinstance(next_node, MdList) else heading_node
+
+        params = self._parse_message_and_optional_resources(parent, start_node)
+
+        if "message" not in params:
+            raise InvalidPlanError("CONCLUDE action is missing message content.")
+
+        return ActionData(type="CONCLUDE", description=None, params=params)
+
+    def _parse_message_and_optional_resources(
+        self, parent: Document, start_node: Any
+    ) -> dict[str, Any]:
+        """
+        Parses a block that contains optional Handoff Resources and a message body.
+        `start_node` is the node from which to start searching for subsequent siblings
+        that make up the message body. If `start_node` is a list, it will also be
+        checked for Handoff Resources.
+        """
+        params: dict[str, Any] = {}
+        content_nodes_start_node = start_node
+
+        if isinstance(start_node, MdList):
+            resources = []
+            if start_node.children:
+                for item in start_node.children:
+                    item_text = self._get_child_text(item).strip()
+                    if item_text.startswith("Handoff Resources:"):
+                        resource_list = self._find_node_in_tree(item, MdList)
+                        if resource_list and resource_list.children:
+                            for res_item in resource_list.children:
+                                link = self._find_node_in_tree(res_item, Link)
+                                if link:
+                                    target = link.target
+                                    # Normalize path
+                                    resources.append(
+                                        target[1:] if target.startswith("/") else target
+                                    )
+            if resources:
+                params["handoff_resources"] = resources
+
+        content_nodes = self._get_subsequent_siblings(parent, content_nodes_start_node)
+
+        if content_nodes:
+            rendered_parts = []
+            with MarkdownRenderer() as renderer:
+                for node in content_nodes:
+                    temp_doc = Document("")
+                    temp_doc.children = [node]
+                    rendered_parts.append(renderer.render(temp_doc).strip())
+            message = "\n\n".join(rendered_parts)
+            if message:
+                params["message"] = message
+
+        return params
+
     def _parse_invoke_action(
         self, parent: Document, heading_node: Heading
     ) -> ActionData:
@@ -225,19 +287,13 @@ class MarkdownPlanParser(IPlanParser):
             metadata_list, link_key_map={}, text_key_map={"Agent": "agent"}
         )
 
-        content_nodes = self._get_subsequent_siblings(parent, metadata_list)
-        if not content_nodes:
+        message_params = self._parse_message_and_optional_resources(
+            parent, metadata_list
+        )
+        params.update(message_params)
+
+        if "message" not in params:
             raise InvalidPlanError("INVOKE action is missing message content.")
-
-        rendered_parts = []
-        with MarkdownRenderer() as renderer:
-            for node in content_nodes:
-                temp_doc = Document("")
-                temp_doc.children = [node]
-                rendered_parts.append(renderer.render(temp_doc).strip())
-        message = "\n\n".join(rendered_parts)
-
-        params["message"] = message
 
         return ActionData(type="INVOKE", description=None, params=params)
 

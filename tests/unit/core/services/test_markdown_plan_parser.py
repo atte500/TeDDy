@@ -286,10 +286,50 @@ def test_parse_invoke_action(parser: MarkdownPlanParser):
 
 ### `INVOKE`
 - **Agent:** Architect
+- **Handoff Resources:**
+  - [docs/briefs/new-feature.md](/docs/briefs/new-feature.md)
 
 Handoff to the Architect.
 
-The brief is complete and located at `docs/briefs/01-brief.md`.
+The brief is complete.
+"""
+    # Act
+    result_plan = parser.parse(plan_content)
+
+    # Assert
+    assert isinstance(result_plan, Plan)
+    assert len(result_plan.actions) == 1
+    action = result_plan.actions[0]
+
+    expected_message = "Handoff to the Architect.\n\nThe brief is complete."
+
+    assert action.type == "INVOKE"
+    assert action.description is None
+    assert action.params["agent"] == "Architect"
+    assert action.params["message"] == expected_message
+    assert "handoff_resources" in action.params
+    assert action.params["handoff_resources"] == ["docs/briefs/new-feature.md"]
+
+
+def test_parse_conclude_action(parser: MarkdownPlanParser):
+    """
+    Given a valid Markdown plan with a CONCLUDE action,
+    When the plan is parsed,
+    Then a valid Plan domain object is returned with correct action data.
+    """
+    # Arrange
+    plan_content = r"""
+# Conclude a sub-task
+- **Goal:** Handoff to the calling agent.
+
+## Action Plan
+
+### `CONCLUDE`
+- **Handoff Resources:**
+  - [docs/rca/the-bug.md](/docs/rca/the-bug.md)
+  - [spikes/fix-script.sh](/spikes/fix-script.sh)
+
+My analysis is complete. The root cause and a verified fix are attached.
 """
     # Act
     result_plan = parser.parse(plan_content)
@@ -300,11 +340,14 @@ The brief is complete and located at `docs/briefs/01-brief.md`.
     action = result_plan.actions[0]
 
     expected_message = (
-        "Handoff to the Architect.\n\n"
-        "The brief is complete and located at `docs/briefs/01-brief.md`."
+        "My analysis is complete. The root cause and a verified fix are attached."
     )
 
-    assert action.type == "INVOKE"
+    assert action.type == "CONCLUDE"
     assert action.description is None
-    assert action.params["agent"] == "Architect"
     assert action.params["message"] == expected_message
+    assert "handoff_resources" in action.params
+    assert action.params["handoff_resources"] == [
+        "docs/rca/the-bug.md",
+        "spikes/fix-script.sh",
+    ]
