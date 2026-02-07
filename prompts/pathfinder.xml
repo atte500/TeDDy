@@ -291,7 +291,7 @@
             </format>
         </action>
         <action name="READ">
-            <description>Reads a file or URL.</description>
+            <description>Reads the content of a local file or a remote URL.</description>
             <format>
             ````markdown
 ### `READ`

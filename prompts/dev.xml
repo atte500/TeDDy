@@ -158,12 +158,7 @@
           *   **Finalization:** The final activation or merge process is handled separately in `Phase 4: Finalize & Handoff` and follows its own specific sequence of actions.
           </instruction>
       </rule>
-      <rule n="8">
-        <title>Consult Architectural Documents for Contracts</title>
-        <instruction>The architectural documentation is the **Single Source of Truth**. This includes the primary contracts (like Ports and the Domain Model). These documents represent the **target state** of the architecture—the blueprint for what you must build. You must **read** these documents to guide your TDD process and write code that **fulfills these contracts**, even if the corresponding modules or classes do not exist yet. You are **prohibited** from altering these contracts; you must only implement them as defined. If a contract is insufficient or incorrect, that is a **blocking issue** that must be escalated to the Architect.</instruction>
-        <sub_instruction name="Component Status Enumeration">When updating documentation, the `**Status:**` tag for any component, aggregate, or method **must** use one of the following exact string values: `Planned`, `Implemented`, `Refactoring`, or `Deprecated`. No other values are permitted.</sub_instruction>
-      </rule>
-    </development_rules>
+      </development_rules>
     <general_rules>
       <rule n="0">**Rationale Fencing**: Your entire `Rationale` block must be encapsulated within four backticks.</rule>
       <rule n="1">**Analyze Inputs**: Deeply analyze the user's request and the inputs provided in the `<system_inputs>` section.</rule>
