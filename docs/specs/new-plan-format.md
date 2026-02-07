@@ -10,13 +10,21 @@ This format is designed to be a perfectly readable Markdown document first, and 
 
 ## 2. Overall Document Structure
 
-### 2.1. Plan Lifecycle: Generation & Pre-processing
+### 2.1. Dynamic Code Fencing
+
+A core principle of this format is that it must reliably handle nested code blocks, which is a common source of errors in LLM-generated Markdown.
+
+-   **The Problem:** If a code block's content contains a sequence of backticks (e.g., ` ``` `) that is the same length as the enclosing fence, the Markdown becomes invalid and cannot be parsed correctly.
+-   **The Rule (Primary Defense):** When creating a fenced code block, the fence **must** use a number of backticks that is strictly greater than the longest sequence of backticks found anywhere inside the content. This instruction is the primary defense against parsing errors.
+-   **System Support (Pragmatic Safety Net):** The system includes a pre-processor that acts as a **best-effort safety net**, not a perfect parser. It is designed to catch the single most common failure mode: an outer fence (e.g., ` ``` `) that is the same length as a fence marker within its content. In this specific case, it can reliably increase the length of the outer fence. This makes the system significantly more robust but does not guarantee correction of all possible malformed Markdown, reinforcing the importance of the agent's adherence to the primary rule.
+
+### 2.2. Plan Lifecycle: Generation & Pre-processing
 
 It is important to understand the lifecycle of a plan file (`plan.md`) within the system.
 
-1.  **Generation:** An LLM generates a plan according to the specifications in this document. The agent prompts encourage the LLM to follow best practices for valid Markdown, such as using a sufficient number of backticks for nested code blocks.
-2.  **Pre-processing (Safety Net):** Before being saved or parsed, the raw LLM output is passed through a deterministic **pre-processor script**. This script's sole responsibility is to find and correct any invalid nested code block fences, ensuring the final output is 100% valid Markdown.
-3.  **Saving & Parsing:** The **post-processed, corrected version** of the plan is what gets saved to the session directory (e.g., `.teddy/session_name/01/plan.md`). This guarantees that any plan stored on the filesystem is a valid, parsable Markdown document. The raw, potentially invalid output from the LLM is discarded.
+1.  **Generation:** An LLM generates a plan according to the specifications in this document, including the **Dynamic Code Fencing** rule.
+2.  **Pre-processing (Safety Net):** Before being saved or parsed, the raw LLM output is passed through the deterministic pre-processor script described above. Its sole responsibility is to correct the most common type of invalid nested code block fence.
+3.  **Saving & Parsing:** The **post-processed, corrected version** of the plan is what gets saved. This guarantees that any plan stored on the filesystem is a valid, parsable Markdown document. The raw, potentially invalid output from the LLM is discarded.
 
 A plan is a single Markdown file with the following top-level structure:
 
@@ -81,7 +89,7 @@ To ensure links work correctly in local previews (like VSCode) while referencing
     [The agent's complete, multi-step workflow status (e.g., Pathfinder's Log).]
     ````
     `````
--   **Parsing Rules:** The content is the raw text within the fenced code block and is primarily for human consumption and agent self-correction.
+-   **Parsing Rules:** The content is the raw text within the fenced code block and is primarily for human consumption and agent self-correction. The outer fence for the `Rationale` block must follow the **Dynamic Code Fencing** rule.
 
 ### 4.3. Memos (Optional)
 
@@ -145,13 +153,13 @@ All actions are located under the `## Action Plan` heading. Each action is defin
     - **Description:** Update the output formatting instructions.
 
     `FIND:`
-    ````xml
-    A unique snippet of text to be replaced.
-    ````
+    `````xml
+    A unique snippet of text, which might include ``` backticks, to be replaced.
+    `````
     `REPLACE:`
-    ````xml
+    `````xml
     The new content.
-    ````
+    `````
 
     `FIND:`
     ````xml

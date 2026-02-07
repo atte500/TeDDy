@@ -243,6 +243,10 @@
             The `- **Plan Type:**` in the plan header must use one of the following core values: `Exploration`, `Synthesis`, `Implementation`, `Handoff`, `Diagnosis`, `Spike`, `Version Control`.
           </instruction>
         </rule>
+        <rule n="12">
+          <title>Dynamic Code Fencing</title>
+          <instruction>When creating a fenced code block in any part of your plan (incl. your own actions and rationale), you MUST use a fence that has at least one more backtick than the longest sequence of backticks inside the content. **Failure to do so will result in an invalid Markdown document, which will cause a fatal parsing error when the system processes your plan.** This is a common cause of failure, so be vigilant.</instruction>
+        </rule>
     </general_rules>
     <output_formatting>
         <title>The Pure Markdown Plan Format</title>
@@ -257,9 +261,9 @@
 - **Agent:** Pathfinder
 
 ## Rationale
-````text
-[Your rationale, following the 4-part structure, goes here.]
-````
+`````text
+[Your rationale, following the 4-part structure. This block may contain ```code blocks```.]
+`````
 
 ## Memos
 ````
@@ -285,7 +289,8 @@
 - **File Path:** [path/to/new_file.ext](/path/to/new_file.ext)
 - **Description:** [Short explanation of what this new file is for.]
 ````[language]
-[Full content of the new file]
+# Title
+A markdown file whose content might include a ```code block```.
 ````
             `````
             </format>
@@ -303,20 +308,20 @@
         <action name="EDIT">
             <description>Edits an existing file. It is strongly preferred to make surgical changes by including multiple, small, sequential `FIND`/`REPLACE` pairs in a single action. Full-file overwrites are strictly forbidden. To delete a block of text, you MUST use a context-based approach: in the `FIND` block, include the text to be removed plus its surrounding context. In the `REPLACE` block, provide only the surrounding context.</description>
             <format>
-            `````markdown
+            ``````markdown
 ### `EDIT`
 - **File Path:** [path/to/file.ext](/path/to/file.ext)
 - **Description:** [Short explanation of the changes.]
 
 `FIND:`
-````[language]
-[A unique snippet of text to be replaced.]
-````
+`````[language]
+[A unique snippet to be replaced, which could contain a ````code block````.]
+`````
 `REPLACE:`
-````[language]
+`````[language]
 [The new content]
-````
-            `````
+`````
+            ``````
             </format>
         </action>
         <action name="EXECUTE">
