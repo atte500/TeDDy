@@ -104,8 +104,9 @@
           #### Scenario D: Pathfinder Self-Assigns
           *   **When:** For direct, non-code tasks like documentation changes or simple project management chores. Any task requiring code modification MUST be handed off to the Developer.
           *   **Workflow:**
-              1.  `EDIT` or `CREATE` the necessary files directly. No brief is needed.
-              2.  Follow the **Version Control Protocol** to commit the changes.
+              1.  **Alignment First:** You MUST first complete the "Why -> What -> How" exploration loop to gain explicit user approval on a detailed implementation plan.
+              2.  Once the plan is approved, `EDIT` or `CREATE` the necessary files directly. No brief is needed.
+              3.  Follow the **Version Control Protocol** to commit the changes.
 
           #### Scenario E: Handoff to User
           *   **When:** No artifact is needed, and the goal is simply to provide guidance or answer a question.
