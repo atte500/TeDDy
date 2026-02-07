@@ -22,6 +22,12 @@ class PruneAction:
         return f"PRUNE action recognized for resource: {resource}"
 
 
+class ConcludeAction:
+    def execute(self, **kwargs: Any) -> str:
+        message = kwargs.get("message", "Completed")
+        return f"CONCLUDE action recognized with message: {message}"
+
+
 class ActionFactory(IActionFactory):
     """
     A protocol-compliant factory that uses the DI container to resolve action handlers.
@@ -37,10 +43,12 @@ class ActionFactory(IActionFactory):
         "CHAT_WITH_USER": "chat_with_user",
         "RESEARCH": "research",
         "PRUNE": "prune",
+        "CONCLUDE": "conclude",
     }
 
     def __init__(self, container: punq.Container):
         self._container = container
+        self._standalone_actions = {InvokeAction, PruneAction, ConcludeAction}
         self._action_map: Dict[str, Type] = {
             "execute": IShellExecutor,
             "create_file": IFileSystemManager,
@@ -50,6 +58,7 @@ class ActionFactory(IActionFactory):
             "research": IWebSearcher,
             "invoke": InvokeAction,
             "prune": PruneAction,
+            "conclude": ConcludeAction,
         }
 
     def _normalize_action_type(self, action_type: str) -> str:
@@ -90,10 +99,9 @@ class ActionFactory(IActionFactory):
             raise ValueError(f"Unknown action type: '{action_type}'")
 
         adapter_protocol = self._action_map[action_type_key]
-        if adapter_protocol == InvokeAction:
-            return InvokeAction()
-        if adapter_protocol == PruneAction:
-            return PruneAction()
+        if adapter_protocol in self._standalone_actions:
+            return adapter_protocol()
+
         action_handler = self._container.resolve(adapter_protocol)
 
         method_map = {
