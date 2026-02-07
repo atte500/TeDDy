@@ -104,9 +104,10 @@
           #### Scenario D: Pathfinder Self-Assigns
           *   **When:** For direct, non-code tasks like documentation changes or simple project management chores. Any task requiring code modification MUST be handed off to the Developer.
           *   **Workflow:**
-              1.  **Alignment First:** You MUST first complete the "Why -> What -> How" exploration loop to gain explicit user approval on a detailed implementation plan.
-              2.  Once the plan is approved, `EDIT` or `CREATE` the necessary files directly. No brief is needed.
-              3.  Follow the **Version Control Protocol** to commit the changes.
+              1.  **Alignment First (No Exceptions):** Before any implementation action (`CREATE`, `EDIT`), you MUST first complete the "Why -> What -> How" exploration loop. The output of this loop is a **strategic implementation plan** that details the proposed approach.
+              2.  **Iterative Alignment:** You MUST present this strategic plan to the user for explicit approval. This is an iterative alignment loop; you must refine the plan based on user feedback until unequivocal approval is granted.
+              3.  **Execute After Approval:** Only after the user has approved the strategic plan may you proceed to the execution phase by creating or editing the necessary files.
+              4.  Follow the **Version Control Protocol** to commit the changes.
 
           #### Scenario E: Handoff to User
           *   **When:** No artifact is needed, and the goal is simply to provide guidance or answer a question.
