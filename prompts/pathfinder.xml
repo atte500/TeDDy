@@ -145,34 +145,25 @@
 
             4.  **`### 4. State Dashboard`**: Maintain orientation by providing the complete, updated State Dashboard.
             **Overall Goal:** [The user's high-level objective.]
-
-            **Phase A: Triage & Framing**
-            - **Status:** [Not Started | In Progress | Approved]
-            - **Findings:**
+            **Pathfinder Workflow:**
+            - [✅ | ▶️ |  ] Phase A: Triage & Framing
+            - [✅ | ▶️ |  ] Phase B: The Problem Space (Why)
+            - [✅ | ▶️ |  ] Phase C: The Solution Space (What)
+            - [✅ | ▶️ |  ] Phase D: The Implementation Space (How)
+            - [✅ | ▶️ |  ] Phase E: The Handoff (Who)
+            **Findings:**
+            - **(Phase A: Triage & Framing)**
                 - [Initial assessment of the request's clarity and feasibility.]
-
-            **Phase B: The Problem Space (Why)**
-            - **Status:** [Not Started | In Progress | Approved]
-            - **Findings:**
+            - **(Phase B: The Problem Space)**
                 - [List of discovered requirements, constraints, and priorities.]
-
-            **Phase C: The Solution Space (What)**
-            - **Status:** [Not Started | In Progress | Approved]
-            - **Findings:**
+            - **(Phase C: The Solution Space)**
                 - [List of discovered external tools, libraries, or patterns.]
-
-            **Phase D: The Implementation Space (How)**
-            - **Status:** [Not Started | In Progress | Approved]
-            - **Findings:**
+            - **(Phase D: The Implementation Space)**
                 - [List of findings from the codebase; relevant files, key logic.]
-
-            **Phase E: The Handoff (Who)**
-            - **Status:** [Not Started | In Progress | Approved]
-            - **Findings:**
+            - **(Phase E: The Handoff)**
                 - [Identified handoff target and required artifact.]
-
             **Intermediary Artifacts:**
-            - [List of ephemeral documents created during the exploration (e.g., `spikes/problem-definition.md`)]
+            - [List of ephemeral documents created during the exploration]
         </instruction>
       </rule>
       <rule n="2">
@@ -421,11 +412,23 @@ The user is expected to provide clear answers to my questions, which will provid
 
 ### 4. State Dashboard
 **Overall Goal:** [The user's high-level objective.]
-**Phase A: Triage & Framing:** Approved
-**Phase B: The Problem Space (Why):** In Progress
-**Phase C: The Solution Space (What):** Not Started
-**Phase D: The Implementation Space (How):** Not Started
-**Phase E: The Handoff (Who):** Not Started
+**Pathfinder Workflow:**
+- [✅] Phase A: Triage & Framing
+- [▶️] Phase B: The Problem Space (Why)
+- [ ] Phase C: The Solution Space (What)
+- [ ] Phase D: The Implementation Space (How)
+- [ ] Phase E: The Handoff (Who)
+**Findings:**
+- **(Phase A: Triage & Framing)**
+    - The user's request is clear and feasible.
+- **(Phase B: The Problem Space)**
+    - The existing dashboard is misaligned with the agent's workflow.
+- **(Phase C: The Solution Space)**
+    - A new dashboard structure has been proposed.
+- **(Phase D: The Implementation Space)**
+    - [Pending]
+- **(Phase E: The Handoff)**
+    - [Pending]
 **Intermediary Artifacts:**
 - []
 ````

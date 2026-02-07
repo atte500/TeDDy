@@ -104,12 +104,22 @@
             3.  **`### 3. Expected Outcome`**: Define the experiment by anticipating outcomes. This section **must** clearly and explicitly state what will happen in **both** success and failure scenarios. For each scenario, you must specify the expected state and the `Plan Type` of the subsequent plan.
 
             4.  **`### 4. State Dashboard`**: Maintain orientation by providing the complete, updated State Dashboard. Each major section of the dashboard MUST be on its own line.
-                - **Failure Context:** [Brief description of the original error from the MRE]
-                - **Triage Summary:** [Oracle Verdict: PREMISE FLAWED or PREMISE VALIDATED]
-                - **Investigative State:** [Green (App) | Yellow (Integration) | Red (Env)]
-                - **Hypothesis Checklist:**
-                    - [✅ | ▶️ | ❌] [Hypothesis 1]
-                    - [✅ | ▶️ | ❌] [Hypothesis 2]
+                - **MRE:** [path/to/mre.md]
+                - **Failure:** [Brief description of the original error from the MRE]
+                - **Diagnose & Solve Loop:**
+                    - **Part 1: Diagnosis**
+                        - [✅ | ▶️ |  ] Phase 0: Context & Instrumentation
+                        - [✅ | ▶️ |  ] Phase 1: Oracle (Ground Truth)
+                        - [✅ | ▶️ |  ] Phase 2: Hypothesis Generation
+                        - [✅ | ▶️ |  ] Phase 3: Root Cause Verification
+                    - **Part 2: Solution**
+                        - [✅ | ▶️ |  ] Phase 4: Solution Exploration
+                        - [✅ | ▶️ |  ] Phase 5: Implementation & Handoff
+                - **Current Findings:**
+                    - **Oracle Verdict:** [Pending | Premise Flawed | Premise Validated]
+                    - **Root Cause:** [Pending | Identified: (brief description)]
+                    - **Hypotheses:**
+                        - [✅ | ▶️ | ❌] [Hypothesis 1]
         </instruction>
       </rule>
       <rule n="2">
@@ -374,11 +384,22 @@ This plan follows the "Triangulation Oracle Protocol". I will create a minimal, 
 The Oracle script is expected to execute successfully and print a clear verdict. If the output is `PREMISE VALIDATED`, the core assumption is correct, and the next plan will be an `Information Gathering` plan to begin investigating the project's codebase. Conversely, if the output is `PREMISE FLAWED`, the root cause is a misunderstanding of a fundamental concept, and the next plan will be a `Synthesis Phase` plan to report this finding and conclude the diagnosis.
 
 ### 4. State Dashboard
-- **Failure Context:** [Brief description of the original error from the MRE]
-- **Triage Summary:** [Pending Oracle Verdict]
-- **Investigative State:** [Green (App)]
-- **Hypothesis Checklist:**
-    - [▶️] Meta-Hypothesis: [The core technical assumption being tested]
+- **MRE:** [docs/mre/some-bug.md]
+- **Failure:** [Brief description of the original error from the MRE]
+- **Diagnose & Solve Loop:**
+    - **Part 1: Diagnosis**
+        - [✅] Phase 0: Context & Instrumentation
+        - [▶️] Phase 1: Oracle (Ground Truth)
+        - [ ] Phase 2: Hypothesis Generation
+        - [ ] Phase 3: Root Cause Verification
+    - **Part 2: Solution**
+        - [ ] Phase 4: Solution Exploration
+        - [ ] Phase 5: Implementation & Handoff
+- **Current Findings:**
+    - **Oracle Verdict:** [Pending]
+    - **Root Cause:** [Pending]
+    - **Hypotheses:**
+        - [▶️] Foundational Assumption: [The core technical assumption being tested]
 ````
 
 ## Action Plan

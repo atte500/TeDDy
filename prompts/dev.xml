@@ -14,7 +14,7 @@
         <action>
           This is an iterative phase with a single goal: produce a correct, failing acceptance test for the slice's primary success scenario. You will loop through information gathering and test creation until this goal is met.
           *   **Information Gathering:** Orient yourself by `READ`ing the slice document. If no slice document is provided, your first action MUST be to `CHAT_WITH_USER` to collaboratively define and get approval for a `Scope of Work` checklist. Once the slice is read or the checklist is approved, use `EXECUTE git grep ...` to discover relevant existing code, and then `READ` those files to understand the current context.
-          *   **Test Creation (RED Phase):** Once you have sufficient context, create a failing acceptance test. This test should validate the business scenario from the user's perspective and is not committed until the end of the slice.
+          *   **Test Creation (RED Phase):** Once you have sufficient context, your goal is to produce a failing acceptance test for **each scenario** outlined in the slice's `Acceptance Criteria`, ensuring both success and failure cases are covered where applicable. These tests are not committed until the end of the slice.
         </action>
       </phase>
       <phase n="2" name="Phase 2: Slice Implementation (The Inner-Cycle Loop)">
@@ -80,19 +80,28 @@
             3.  **`### 3. Expected Outcome`**: Define the experiment by anticipating outcomes. This section **must** clearly and explicitly state what will happen in **both** success and failure scenarios. For each scenario, you must specify the expected state and the `Plan Type` of the subsequent plan. For a RED phase, the success scenario is a specific, predicted test failure.
 
             4.  **`### 4. State Dashboard`**: Maintain orientation by providing the complete, updated State Dashboard. Each major section of the dashboard MUST be on its own line.
-            **Vertical Slice:** `docs/slices/path-to-slice.md`
-            **Outer-Cycle Phase:** [Current Phase, e.g., Phase 2: Slice Implementation]
-            **Scope of Work:**
-            - [✅] First item
-            - [▶️] Second item
-            - [ ] Third item
-            **Inner-Cycle (for Second item):**
-            *   **Status:**
-                - [▶️] READ
-                - [ ] RED
-                - [ ] GREEN
-                - [ ] REFACTOR
-                - [ ] VERIFY
+            **Vertical Slice:** [docs/slices/path-to-slice.md]
+            **Development Workflow:**
+            - [✅ | ▶️ |  ] Phase 1: Orientation & Acceptance Test
+            - [✅ | ▶️ |  ] Phase 2: Slice Implementation (Inner-Cycle Loop)
+            - [✅ | ▶️ |  ] Phase 3: Final Verification & Handoff Prep
+            - [✅ | ▶️ |  ] Phase 4: Finalize & Handoff
+            **Active Phase Details:**
+            *   **(Phase 1: Acceptance Test Creation)**
+                *   **Scenarios:**
+                    *   [▶️ | ✅] Scenario: [First Scenario Title from Slice]
+                    *   [ ] Scenario: [Second Scenario Title from Slice]
+            *   **(Phase 2: Slice Implementation)**
+                *   **Scope of Work Checklist:**
+                    *   [▶️] First item
+                    *   [ ] Second item
+                *   **Inner-Cycle (for First item):**
+                    *   **Status:**
+                        - [▶️] READ
+                        - [ ] RED
+                        - [ ] GREEN
+                        - [ ] REFACTOR
+                        - [ ] VERIFY
             **Architectural Notes:**
             - [Log observations here, classified by tier.]
             - **T0 (Pre-existing Condition):** An observation about an existing, undocumented architectural decision or pattern.
@@ -415,18 +424,24 @@ The test is expected to fail with a `NotImplementedError`, which is the correct 
 
 ### 4. State Dashboard
 **Vertical Slice:** `docs/slices/path-to-slice.md`
-**Outer-Cycle Phase:** Phase 2: Slice Implementation
-**Scope of Work:**
-- [✅] First item
-- [▶️] Second item
-- [ ] Third item
-**Inner-Cycle (for Second item):**
-*   **Status:**
-    - [✅] READ
-    - [▶️] RED
-    - [ ] GREEN
-    - [ ] REFACTOR
-    - [ ] VERIFY
+**Development Workflow:**
+- [✅] Phase 1: Orientation & Acceptance Test
+- [▶️] Phase 2: Slice Implementation (Inner-Cycle Loop)
+- [ ] Phase 3: Final Verification & Handoff Prep
+- [ ] Phase 4: Finalize & Handoff
+**Active Phase Details:**
+*   **(Phase 2: Slice Implementation)**
+    *   **Scope of Work Checklist:**
+        *   [✅] First item
+        *   [▶️] Second item
+        *   [ ] Third item
+    *   **Inner-Cycle (for Second item):**
+        *   **Status:**
+            - [✅] READ
+            - [▶️] RED
+            - [ ] GREEN
+            - [ ] REFACTOR
+            - [ ] VERIFY
 **Architectural Notes:**
 - T1: Discovered that [Module X] uses an undocumented singleton pattern.
 ````
