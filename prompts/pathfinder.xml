@@ -236,7 +236,7 @@
         </rule>
         <rule n="12">
           <title>Dynamic Code Fencing</title>
-          <instruction>When creating a fenced code block in any part of your plan (incl. your own actions and rationale), you MUST use a fence that has at least one more backtick than the longest sequence of backticks inside the content. **Failure to do so will result in an invalid Markdown document, which will cause a fatal parsing error when the system processes your plan.** This is a common cause of failure, so be vigilant.</instruction>
+          <instruction>When creating a fenced code block in any part of your plan (incl. your own actions and rationale), you MUST use an opening fence that has at least one more backtick than the longest sequence of backticks inside the content. **The closing fence MUST use the exact same number of backticks as the opening fence.** **Failure to follow either of these rules will result in an invalid Markdown document, which will cause a fatal parsing error when the system processes your plan and might lead to misapplied edits.**</instruction>
         </rule>
     </general_rules>
     <output_formatting>
