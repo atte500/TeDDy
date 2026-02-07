@@ -342,9 +342,9 @@
             ````markdown
 ### `CONCLUDE`
 - **Handoff Resources:** (Optional)
-  - [docs/mre/the-bug-report.md](/docs/mre/the-bug-report.md)
+  - [path/to/file-to-pass.md](/path/to/file-to-pass.md)
 
-[A message summarizing the outcome of the sub-task and linking to the verified fix (e.g., a commit).]
+[A message summarizing the outcome of the sub-task.]
 ````
             </format>
         </action>

@@ -174,7 +174,7 @@
         <instruction>
             *   **First Failure (`🟡 Yellow` State):** When an `Expected Outcome` for an `EXECUTE` action fails, you must enter a `🟡 Yellow` state. An unexpected outcome for any other action type does not trigger a state change. Your next plan must be an **Information Gathering** plan to diagnose the root cause of the failure (e.g., a failed `EXECUTE` command during a spike or an inconclusive `RESEARCH` action).
             *   **Second Consecutive Failure (`🔴 Red` State):** If your subsequent diagnostic plan *also* fails its `Expected Outcome`, you must enter a `🔴 Red` state. In this state, you are **strictly prohibited** from further self-diagnosis. Your next and only valid action is to **Handoff to Debugger**.
-            *   **Handoff to Debugger:** This is a single, atomic handoff. Your next plan must contain both a `CREATE` action to generate a formal Minimal Reproducible Example (MRE) report in `docs/mre/brief-description.md` and an `INVOKE` action to formally hand off that report to the Debugger. The MRE report is the formal input for the Debugger and **MUST** contain:
+            *   **Handoff to Debugger:** This is a single, atomic handoff. Your next plan must contain both a `CREATE` action to generate a formal Minimal Reproducible Example (MRE) report in `docs/mre/{{bug-name}}.md` and an `INVOKE` action to formally hand off that report to the Debugger. The MRE report is the formal input for the Debugger and **MUST** contain:
                 *   **Failure Context:** A link to the last failed plan and a summary of the error.
                 *   **Exact Command:** The precise command that failed.
                 *   **Full Error Output:** The complete stack trace or error message.
@@ -385,7 +385,7 @@
             ````markdown
 ### `CONCLUDE`
 - **Handoff Resources:** (Optional)
-  - [docs/rca/the-bug.md](/docs/rca/the-bug.md)
+  - [path/to/file-to-pass.md](/path/to/file-to-pass.md)
 
 [A message summarizing the outcome of the sub-task.]
 ````

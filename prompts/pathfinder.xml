@@ -216,7 +216,7 @@
             *   **First Failure (`🟡 Yellow` State):** When an `EXECUTE` action fails, you enter a `🟡 Yellow` state. Your next plan must be to diagnose the root cause.
             *   **Second Consecutive Failure (`🔴 Red` State):** If your subsequent diagnostic plan *also* fails, you must enter a `🔴 Red` state. You are **prohibited** from further self-diagnosis.
             *   **Escalation to Debugger:** In a `🔴` state, you must escalate to the Debugger. This is a two-step process:
-                1.  **CREATE MRE:** Your next plan must be a `CREATE` action to generate a formal Minimal Reproducible Example (MRE) report in `docs/mre/NN-brief-description.md`.
+                1.  **CREATE MRE:** Your next plan must be a `CREATE` action to generate a formal Minimal Reproducible Example (MRE) report in `docs/mre/{{bug-name}}.md`.
                 2.  **INVOKE Debugger:** Your following plan must be an `INVOKE` action to formally hand off the MRE to the Debugger, passing the report via the `Handoff Resources` field.
         </instruction>
       </rule>
@@ -388,7 +388,7 @@
             ````markdown
 ### `CONCLUDE`
 - **Handoff Resources:** (Optional)
-  - [docs/briefs/my-brief.md](/docs/briefs/my-brief.md)
+  - [path/to/file-to-pass.md](/path/to/file-to-pass.md)
 
 [A message summarizing the outcome of the sub-task.]
 ````
