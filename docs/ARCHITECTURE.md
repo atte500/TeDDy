@@ -2,20 +2,7 @@
 
 This document outlines the technical standards, conventions, and setup process for the `TeDDy` project.
 
-## 1. Setup Checklist
-
-This checklist guides the initial setup of the project environment. Each step must be completed in order.
-
-- [x] Verify system prerequisites (Python 3.9+, pip, Poetry).
-- [x] Create the initial source code directory structure for the `teddy_executor` (`src/teddy_executor`).
-- [x] Create the test directory structure for the `teddy_executor` (`tests/...`).
-- [x] Create a root `.gitignore` file.
-- [x] Create the `pyproject.toml` file at the project root.
-- [x] Install project dependencies (`poetry install`).
-- [x] Initialize pre-commit hooks from the root directory.
-- [x] Run the initial test suite to verify the setup (`poetry run pytest`).
-
-## 2. Conventions & Standards
+## 1. Conventions & Standards
 
 ### Language & Runtime
 - **Language:** Python
@@ -86,7 +73,7 @@ The `spikes/` directory is intentionally excluded from `ruff` and `mypy` checks 
 
 ---
 
-## 3. Component & Boundary Map
+## 2. Component & Boundary Map
 
 This section serves as both the strategic **Boundary Map** and the detailed **Component Map** for the system.
 
@@ -132,7 +119,7 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 
 ---
 
-## 4. Key Architectural Decisions
+## 3. Key Architectural Decisions
 
 This section captures significant, long-standing architectural decisions and patterns that define the system's design.
 
@@ -154,7 +141,7 @@ This section captures significant, long-standing architectural decisions and pat
 
 ---
 
-## 5. Debug Mode
+## 4. Debug Mode
 
 To aid in fault isolation, the `teddy` executor includes a debug mode that can be activated via an environment variable.
 
