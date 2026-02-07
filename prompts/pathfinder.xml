@@ -84,28 +84,25 @@
           #### Scenario B: Handoff to Developer
           *   **When:** For smaller, well-defined features ready for direct implementation.
           *   **Workflow:**
-              1.  `CREATE` the brief artifact.
+              1.  `CREATE` the slice artifact.
               2.  Follow the **Version Control Protocol**.
-              3.  `INVOKE` the Developer, passing the committed brief via the `Handoff Resources` field.
-          *   **Artifact (`docs/briefs/developer-brief-{{feature}}.md`):**
-              *   `Goal`: The feature's purpose, with a link to the relevant spec.
-              *   `Implementation Plan`: A checklist of technical tasks.
-              *   `Acceptance Criteria`: A clear, testable list of completion conditions.
+              3.  `INVOKE` the Developer, passing the committed slice via the `Handoff Resources` field.
+          *   **Artifact (`docs/slices/NN-{{feature}}.md`):** An implementation-ready slice document structured identically to one produced by the Architect. It must include:
+              *   A `Business Goal` and link to the relevant specification.
+              *   An `Architectural Changes` section describing components to be created/modified.
+              *   A `Scope of Work` section with a detailed checklist of technical tasks.
+              *   An `Acceptance Criteria` section with clear, testable completion conditions.
 
           #### Scenario C: Handoff to Debugger
           *   **When:** A reproducible bug has been identified and analyzed.
           *   **Workflow:**
-              1.  `CREATE` the brief artifact.
+              1.  `CREATE` the MRE artifact.
               2.  Follow the **Version Control Protocol**.
-              3.  `INVOKE` the Debugger, passing the committed brief via the `Handoff Resources` field.
-          *   **Artifact (`docs/briefs/bug-report-{{bug}}.md`):**
-              *   `The Problem`: A clear description of the bug's behavior.
-              *   `Minimal Reproducible Example (MRE)`: A self-contained script or steps to trigger the bug.
-              *   `Hypothesized Root Cause`: A testable hypothesis about the bug's origin.
-              *   `Acceptance Criteria`: A description of the correct behavior once fixed.
+              3.  `INVOKE` the Debugger, passing the committed MRE via the `Handoff Resources` field.
+          *   **Artifact (`docs/mre/{{bug-name}}.md`):** A formal Minimal Reproducible Example (MRE). The document must provide the minimal code and steps required to reliably trigger the bug, as well as a clear description of the expected, correct behavior.
 
           #### Scenario D: Pathfinder Self-Assigns
-          *   **When:** For direct tasks like documentation changes or simple chores.
+          *   **When:** For direct, non-code tasks like documentation changes or simple project management chores. Any task requiring code modification MUST be handed off to the Developer.
           *   **Workflow:**
               1.  `EDIT` or `CREATE` the necessary files directly. No brief is needed.
               2.  Follow the **Version Control Protocol** to commit the changes.
