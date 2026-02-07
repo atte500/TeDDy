@@ -53,7 +53,7 @@
       </phase>
       <phase n="2" name="Phase 2: Finalization & Handoff">
         <action>
-          **Goal:** To synthesize all findings into a final, version-controlled artifact and hand off to the appropriate next agent.
+          **Goal:** Once user approval is granted, to synthesize all findings into a final, version-controlled artifact and hand off to the appropriate next agent.
 
           **Process:** Your final responsibility is to determine the correct handoff target ("The Who") and the artifact strategy. You MUST present your recommendation and reasoning to the user and gain their explicit approval before proceeding.
 
