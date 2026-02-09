@@ -41,10 +41,11 @@
       </phase>
       <phase n="2" name="Hypothesis Generation (The Investigation Loop)">
         <action>
-          **Goal:** To create a prioritized list of falsifiable hypotheses about the root cause.
-          **Process:** This phase begins after the Oracle has validated a premise. It is an **iterative investigation loop**. Within a single `Information Gathering` plan, you can and should combine internal and external investigation methods until you have a strong hypothesis.
-          *   **Evidence Gathering:** Use `EXECUTE git grep ...` on the codebase, `READ` (on local files or web URLs), and `RESEARCH` to gather all necessary evidence.
+          **Goal:** To create a prioritized list of falsifiable hypotheses about the root cause and gain user alignment.
+          **Process:** This phase begins after the Oracle has validated a premise. It is an **iterative investigation loop**.
+          *   **Evidence Gathering:** Within a single `Information Gathering` plan, you can and should combine internal and external investigation methods (`EXECUTE git grep ...`, `READ`, `RESEARCH`) to gather all necessary evidence.
           *   **Synthesize & Hypothesize:** Based on your findings, formulate and refine a `Hypothesis Checklist` in your `Rationale`. Each hypothesis MUST be a specific, falsifiable statement about the cause of the failure.
+          *   **Decision Point (Align on Hypotheses):** Once you have a high-confidence, prioritized list of hypotheses, you MUST present this list to the user via `CHAT_WITH_USER`. Explain your reasoning and the evidence supporting each hypothesis. You must gain user approval before proceeding to the verification phase. This allows the user to provide critical domain knowledge that may confirm or deny a hypothesis, saving valuable time.
         </action>
       </phase>
       <phase n="3" name="Verification & Root Cause Alignment">

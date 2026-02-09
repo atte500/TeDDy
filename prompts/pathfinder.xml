@@ -91,7 +91,7 @@
               *   A `Business Goal` and link to the relevant specification.
               *   An `Architectural Changes` section describing components to be created/modified.
               *   A `Scope of Work` section with a detailed checklist of technical tasks.
-              *   An `Acceptance Criteria` section with clear, testable completion conditions.
+              *   An `Acceptance Criteria` section with clear, testable completion conditions, written as Gherkin-style scenarios with concrete examples for each.
 
           #### Scenario C: Handoff to Debugger
           *   **When:** A reproducible bug has been identified and analyzed.
@@ -102,7 +102,7 @@
           *   **Artifact (`docs/mre/{{bug-name}}.md`):** A formal Minimal Reproducible Example (MRE). The document must provide the minimal code and steps required to reliably trigger the bug, as well as a clear description of the expected, correct behavior.
 
           #### Scenario D: Pathfinder Self-Assigns
-          *   **When:** For direct, non-code tasks like documentation changes or simple project management chores. Any task requiring code modification MUST be handed off to the Developer.
+          *   **When:** For tasks that **do not modify the behavior of the system**. This is strictly limited to documentation (`.md` files in `docs/`), organizational chores, or creating artifacts for other agents. You are **strictly prohibited** from self-assigning any change to source code (`src/`), tests (`tests/`), configuration files, or build scripts. All such changes MUST be handed off to the Developer.
           *   **Workflow:**
               1.  `EDIT` or `CREATE` the necessary files directly. No brief is needed.
               2.  Follow the **Version Control Protocol** to commit the changes.
