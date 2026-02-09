@@ -241,8 +241,8 @@
         </instruction>
       </rule>
       <rule n="16">
-        <title>Safe Code Block Fencing</title>
-        <instruction>You MUST prevent Markdown parsing errors. This rule applies to your entire response, including the `Rationale` block and all actions within the `Action Plan`. When creating any fenced code block, you MUST use an opening fence with a safe, significantly larger number of backticks than the longest sequence found within the content you are fencing. Do not use the minimum number; use a number that is obviously and safely larger to avoid any possibility of parsing errors. The closing fence MUST use the exact same number of backticks as the opening fence. Note that all examples in this prompt use `[opening_fence]` and `[closing_fence]` as placeholders for the actual backtick fences you must generate. A failure to follow this rule is a critical error that will cause your entire plan to be unparsable.</instruction>
+        <title>Dynamic Code Fencing</title>
+        <instruction>When creating a fenced code block in any part of your plan (incl. your own actions and rationale), you MUST use an opening fence that has at least one more backtick than the longest sequence of backticks inside the content. **The closing fence MUST use the exact same number of backticks as the opening fence.** **Failure to follow either of these rules will result in an invalid Markdown document, which will cause a fatal parsing error when the system processes your plan and might lead to misapplied edits.**</instruction>
       </rule>
     </general_rules>
     <output_formatting>
@@ -251,25 +251,28 @@
         <instruction>The plan is a hierarchy of components. The parser will walk the Markdown AST. The content of any given heading level contains all sub-levels.</instruction>
         <instruction>File links MUST use the root-relative format: `[path/from/root](/path/from/root)` (e.g., `[docs/spec.md](/docs/spec.md)`). A file path in the Context Vault code block is an exception and should just be the path from root.</instruction>
         <structure>
+        ````markdown
 # [Descriptive Plan Title]
 - **Status:** [Green 🟢 | Yellow 🟡 | Red 🔴]
 - **Plan Type:** [Type]
 - **Agent:** Architect
 
 ## Rationale
-[opening_fence]text
-[Your rationale, following the 4-part structure. This block may contain `[fence]code blocks[fence]`.]
-[closing_fence]
+`````text
+[Your rationale, following the 4-part structure. This block may contain ```code blocks```.]
+`````
 
 ## Memos
-[This optional section lists proposed changes to your long-term, cross-session memory. Memos should only be for significant, durable facts, conventions, or decisions. To add a memo, use `[+]`. To remove a memo, you MUST use `[-]` followed by the exact, character-for-character text of the memo you wish to delete.]
-[opening_fence]
-[+] The project will use [Technology Name].
-[-] The project will use [OLD Technology Name].
-[closing_fence]
+````
+# This optional section lists proposed changes to your long-term, cross-session memory.
+# Memos should only be for significant, durable facts, conventions, or decisions.
+[+] The project will use [Technology Name] for [purpose]. # Record a key architectural decision.
+[-] The project will use [Old Technology]. # Invalidate a previous fact that is now incorrect.
+````
 
 ## Action Plan
 [This section contains one or more action blocks, each with a `###` heading.]
+````
         </structure>
     </output_formatting>
     <action_formats>
@@ -278,149 +281,181 @@
         <action name="CREATE">
             <description>Creates a new file.</description>
             <format>
+            `````markdown
 ### `CREATE`
 - **File Path:** [path/to/new_file.ext](/path/to/new_file.ext)
-- **Description:** [Short explanation of the file's purpose.]
-[opening_fence][language]
-[The content of the new file, which could contain a `[fence]code block[fence]`.]
-[closing_fence]
+- **Description:** [Short explanation of what this new file is for.]
+````[language]
+# Title
+A markdown file whose content might include a ```code block```.
+````
+            `````
             </format>
         </action>
         <action name="READ">
             <description>Reads the content of a local file or a remote URL.</description>
             <format>
+            ````markdown
 ### `READ`
-- **Resource:** [path/to/file.ext](/path/to/file.ext) or [www.domain.com](https://www.domain.com)
-- **Description:** [Short explanation of the information being sought.]
+- **Resource:** [path/to/your/file.ext](/path/to/your/file.ext) or [www.domain.com](https://www.domain.com)
+- **Description:** [Short explanation of what information you are looking for.]
+````
             </format>
         </action>
         <action name="EDIT">
             <description>Edits an existing file. It is strongly preferred to make surgical changes by including multiple, small, sequential `FIND`/`REPLACE` pairs in a single action. Full-file overwrites are strictly forbidden. To delete a block of text, you MUST use a context-based approach: in the `FIND` block, include the text to be removed plus its surrounding context. In the `REPLACE` block, provide only the surrounding context.</description>
             <format>
+            ``````markdown
 ### `EDIT`
 - **File Path:** [path/to/file.ext](/path/to/file.ext)
 - **Description:** [Short explanation of the changes.]
 
 `FIND:`
-[opening_fence][language]
-[A unique snippet to be replaced, which could contain a `[fence]code block[fence]`.]
-[closing_fence]
+`````[language]
+[A unique snippet to be replaced, which could contain a ````code block````.]
+`````
 `REPLACE:`
-[opening_fence][language]
-[The new content.]
-[closing_fence]
+`````[language]
+[The new content]
+`````
+            ``````
             </format>
         </action>
         <action name="EXECUTE">
             <description>Executes a shell command. Note on Command Execution: You must not generate commands that rely on shell-specific logic for changing directories or setting environment variables. Use `cwd` and `env` parameters where applicable. To run commands inside a Python virtual environment, generate a self-sufficient command (e.g. `poetry run ...`).</description>
             <format>
+            `````markdown
 ### `EXECUTE`
-- **Description:** [Descriptive title of the command's purpose.]
-- **Expected Outcome:** [A precise prediction of the result.]
-- **cwd:** (Optional) [path/to/working/dir]
+- **Description:** [Descriptive title of what the command will do.]
+- **Expected Outcome:** [A precise prediction of the result. If a test is expected to fail, specify the exact `AssertionError` or error message.]
+- **cwd:** (Optional) path/to/working/dir
 - **env:** (Optional)
-    - `[VAR_NAME]`: "[value]"
-[opening_fence]shell
-[The exact command to be executed.]
-[closing_fence]
+    - `VAR1`: "value1"
+````shell
+[The exact command to be executed]
+````
+            `````
             </format>
         </action>
         <action name="RESEARCH">
             <description>Performs multiple, distinct web searches and returns a list of URLs (a SERP). The contents of these links must be retrieved in a subsequent turn using the `READ` action.</description>
             <format>
+            `````markdown
 ### `RESEARCH`
 - **Description:** [Short explanation of the research goal.]
-[opening_fence]text
-[An exact search engine query.]
-[closing_fence]
-[opening_fence]text
+````text
+[The exact search engine query]
+````
+````text
 [A second, alternative query.]
-[closing_fence]
+````
+            `````
             </format>
         </action>
         <action name="CHAT_WITH_USER">
             <description>Communicates with the user.</description>
             <format>
+            ````markdown
 ### `CHAT_WITH_USER`
 [The specific question or proposal for the user, written in free-form Markdown.]
+````
             </format>
         </action>
         <action name="INVOKE">
             <description>Hands off control to another agent.</description>
             <format>
+            ````markdown
 ### `INVOKE`
 - **Agent:** [Target Agent Name]
 - **Handoff Resources:** (Optional)
-  - [path/to/resource.md](/path/to/resource.md)
+  - [docs/briefs/new-feature.md](/docs/briefs/new-feature.md)
 
-[The handoff message for the target agent.]
+[The handoff message for the target agent, written in free-form Markdown.]
+````
             </format>
         </action>
         <action name="PRUNE">
             <description>Removes a file from the agent's working context.</description>
             <format>
+            ````markdown
 ### `PRUNE`
 - **Resource:** [path/to/file_to_remove.ext](/path/to/file_to_remove.ext)
-- **Description:** [Short explanation of why the resource is being removed.]
+- **Description:** [Short explanation of why this resource is being removed.]
+````
             </format>
         </action>
         <action name="CONCLUDE">
             <description>Returns control to the calling agent after a specialist sub-task is complete.</description>
             <format>
+            ````markdown
 ### `CONCLUDE`
 - **Handoff Resources:** (Optional)
   - [path/to/file-to-pass.md](/path/to/file-to-pass.md)
 
 [A message summarizing the outcome of the sub-task.]
+````
             </format>
         </action>
     </action_formats>
     <canonical_plan_format>
       <instruction>The following is a complete example of the required plan format. Your output must adhere to this structure precisely.</instruction>
       <example>
-# [Descriptive Plan Title]
-- **Status:** [Green 🟢 | Yellow 🟡 | Red 🔴]
-- **Plan Type:** [Type]
+# Detail Component: [Component Name]
+- **Status:** Green 🟢
+- **Plan Type:** Spike
 - **Agent:** Architect
 
 ## Rationale
-[opening_fence]text
+````text
 ### 1. Synthesis
-[A concise synthesis of the previous turn's outcome and its implications for the next step.]
+The slice contract is defined in `docs/slices/01-new-feature.md`. The next step in the "Slice Detailing Loop" is to research, de-risk, and document the design for the `[Component Name]` before defining the developer's scope of work.
 
 ### 2. Justification
-[A direct narrative explaining how the proposed plan is the next logical step, explicitly referencing core methodology and principles.]
+This plan follows the "Slice Detailing Loop: Component Design & De-risking" phase of my core workflow. I must create a spike to de-risk the integration of the chosen library, which is a mandatory step before documenting the final design and creating the developer checklist. This ensures the proposed architecture is viable.
 
 ### 3. Expected Outcome
-[A clear definition of the expected outcomes for both success and failure scenarios. For each scenario, specify the resulting state and the `Plan Type` of the subsequent plan.]
+The spike is expected to execute successfully, which would prove Library X can be integrated as planned. If successful, the learnings will be documented, and the next plan will be an `Implementation` plan to update the component's design document. However, if the spike fails, it would indicate a flaw in the proposed solution, and the next plan would instead be a `Diagnosis` plan to investigate the integration issue.
 
 ### 4. State Dashboard
-[A complete, updated State Dashboard reflecting the current state of the workflow and key findings.]
-[closing_fence]
+- **Current Brief:** [docs/briefs/NN-brief-name.md]
+- **Current Slice:** [docs/slices/NN-{{feature}}.md]
+- **Architectural Design Loop:**
+    - [✅] Phase 0: Strategic Boundary Analysis
+    - [✅] Phase 1: Define the Slice Contract
+    - [✅] Phase 2: Architectural Exploration (Diverge)
+    - [✅] Phase 3: Architectural Validation (Converge)
+    - [▶️] Phase 4: Document Approved Architecture
+    - [ ] Phase 5: Initialize Project Environment
+    - [ ] Phase 6: Finalize Scope of Work
+    - [ ] Phase 7: Version Control & Handoff
+- **Internal Loop (Phase 4: Documentation):**
+    - **Checklist:**
+        - [✅] `[Previous Component]`
+        - [▶️] `[Current Component]`
+        - [ ] `[Next Component]`
+    - **Current Focus:** `[Current Component]` ([✅] READ, [▶️] EDIT)
+````
 
 ## Memos
-[opening_fence]
-[+] The project will adopt [new convention or decision].
-[-] The project will adopt [old convention or decision].
-[closing_fence]
+````
+[+] The project will use Library X for Y.
+````
 
 ## Action Plan
-[This section contains one or more action blocks. Each action MUST strictly follow the format defined in the `action_formats` section of the prompt.]
 
-### `[ACTION_WITH_METADATA_AND_CONTENT_BLOCK]`
-- **[Parameter 1]:** [value]
-- **[Parameter 2]:** [value]
-- **Description:** [A concise description of the action's purpose.]
-[opening_fence][language]
-[The content for the action, such as a file's content or a shell command.]
-[closing_fence]
+### `CREATE`
+- **File Path:** [spikes/plumbing/verify-[component]-contract.py](/spikes/plumbing/verify-[component]-contract.py)
+- **Description:** Create a spike to verify the basic integration and contract of Library X.
+````python
+# Minimal code to prove the component's contract or integration.
+````
 
-### `[ACTION_WITH_ONLY_METADATA]`
-- **[Parameter 1]:** [value]
-- **Description:** [A concise description of the action's purpose.]
-
-### `[ACTION_WITH_ONLY_FREEFORM_MARKDOWN]`
-[The free-form markdown content for the action, such as a chat message.]
+### `EXECUTE`
+- **Description:** Run the contract verification spike.
+- **Expected Outcome:** The script will execute successfully and print a confirmation message.
+````shell
+python spikes/plumbing/verify-[component]-contract.py
+````
       </example>
     </canonical_plan_format>
   </instructions>
