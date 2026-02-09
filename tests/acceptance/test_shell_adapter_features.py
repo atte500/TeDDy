@@ -81,3 +81,37 @@ def test_shell_adapter_handles_pipes_on_posix():
     action_log = report["action_logs"][0]
     assert action_log["status"] == "SUCCESS"
     assert "hello world" in action_log["details"]["stdout"]
+
+
+def test_shell_adapter_handles_env_vars_on_posix(monkeypatch):
+    """
+    Verify that the shell adapter can execute commands with environment variable expansion.
+    This is a POSIX-specific feature test.
+    """
+    if sys.platform == "win32":
+        return  # This feature is for POSIX shells
+
+    # GIVEN: an environment variable is set
+    monkeypatch.setenv("TEDDY_TEST_VAR", "SUCCESS_VAR")
+
+    plan_content = """
+    actions:
+      - name: env_var_command
+        action: execute
+        command: 'echo $TEDDY_TEST_VAR'
+    """
+
+    # WHEN: A plan that uses the env var is executed
+    result = runner.invoke(
+        app,
+        ["execute", "--plan-content", plan_content, "-y"],
+        catch_exceptions=False,
+    )
+
+    # THEN: The command succeeds and the output contains the expanded variable
+    assert result.exit_code == 0
+    report = yaml.safe_load(result.stdout)
+    assert report["run_summary"]["status"] == "SUCCESS"
+    action_log = report["action_logs"][0]
+    assert action_log["status"] == "SUCCESS"
+    assert "SUCCESS_VAR" in action_log["details"]["stdout"]
