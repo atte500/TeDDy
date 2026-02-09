@@ -127,8 +127,7 @@ Generates a `plan.md` within a turn directory.
     2.  **Implicitly runs the `teddy context` logic** to generate an up-to-date `input.md` file.
     3.  Reads the content of the newly generated `input.md` and the existing `system_prompt.xml`.
     4.  Passes the user's message along with the content of these two files to the LLM.
-    5.  **Receives the raw Markdown response from the LLM and automatically runs the `preprocess` logic on it to correct any ambiguous code fencing.**
-    6.  Saves the **sanitized, corrected response** as `01/plan.md`.
+    5.  Saves the raw Markdown response from the LLM as `01/plan.md`.
 
 ---
 
@@ -360,20 +359,6 @@ User-specific behavior for the `teddy` tool can be defined in an optional `.tedd
     1.  **Configured Editor:** If `preview_command` is set in `.teddy/config.yaml`, it will be used.
     2.  **Visual Studio Code (Default):** If the `code` command is available in the system's `PATH`, it will be used as the default external editor.
     3.  **In-Terminal Display (Fallback):** If neither of the above is available, a colorized diff or formatted content will be printed directly to the terminal.
-
----
-
-### `teddy preprocess [plan_file]`
-
-A utility command that sanitizes a Markdown plan by correcting ambiguous code fencing. It ensures that plans from any source are safe to parse and execute.
-
--   **Arguments:**
-    -   `[plan_file]`: (Optional) The path to a plan file. If provided, the file will be modified **in-place**.
--   **Options:**
-    -   `--no-copy`: (Optional) If running in clipboard mode, this flag prevents the corrected output from being copied back to the clipboard.
--   **Behavior:**
-    -   **File Mode:** When `[plan_file]` is provided, the command reads the file, corrects any ambiguous fences, and writes the sanitized content back to the original file.
-    -   **Clipboard Mode:** When no arguments are provided, the command reads from the system clipboard, prints the corrected content to `stdout`, and copies the corrected content back to the clipboard.
 
 ---
 
