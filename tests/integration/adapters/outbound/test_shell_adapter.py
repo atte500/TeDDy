@@ -42,11 +42,12 @@ def test_shell_adapter_handles_failed_command():
     # Check that stderr contains the correct error message (platform dependent)
     # POSIX: "No such file or directory"
     # Windows: "is not recognized as an internal or external command" or "The system cannot find the file specified"
+    # The exact error message for a failed command can vary between shells
+    # (e.g., 'command not found' vs 'not found'). We check for a common substring.
     assert (
-        "No such file or directory" in result.stderr
+        "not found" in result.stderr
         or "not recognized" in result.stderr
         or "cannot find the file" in result.stderr
-        or "command not found" in result.stderr
     )
 
 
