@@ -44,14 +44,19 @@ Implementation must be done incrementally through the following dependency-aware
 
 ---
 ### **Slice 1: Session Scaffolding & Core Commands**
-**Goal:** Implement the basic file-based session management and the CLI structure.
+**Goal:** Implement the basic file-based session management and the CLI structure, including the plan sanitization pre-processor.
 
+-   **[ ] Task: Implement `FencePreProcessor` Service:**
+    -   Create a new `FencePreProcessor` service containing the core regex-based logic for correcting ambiguous code fences in `Rationale`, `CREATE`, and `EDIT` blocks, as per the [specification](/docs/specs/preprocess-command-spec.md).
+    -   Add comprehensive unit tests for this service.
 -   **[ ] Task: Implement `SessionManager` Service:**
     -   Define an `ISessionManager` port and a `LocalSessionManagerAdapter`.
     -   Implement logic for creating session/turn directories according to the [TeDDy Directory Structure Specification](/docs/specs/teddy-directory-structure.md).
 -   **[ ] Task: Refactor CLI in `main.py`:**
     -   Refactor `main.py` to support the new command structure.
-    -   Implement the `new`, `plan`, `execute` commands.
+    -   Implement the `new`, `plan`, `execute`, and the manual `preprocess` commands.
+-   **[ ] Task: Integrate Automatic Pre-processing:**
+    -   Modify the `plan` command's workflow to automatically use the `FencePreProcessor` service to sanitize the LLM's raw output before saving it to `plan.md`.
 
 ---
 ### **Slice 2: Context-Centric Workflow**
