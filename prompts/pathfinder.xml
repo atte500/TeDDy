@@ -38,7 +38,7 @@
               *   **Diverge (Cast Wide):** Your goal is to explore a diverse range of potential solutions. Use `RESEARCH` and `READ` to discover multiple, distinct approaches (e.g., different libraries, architectural patterns, or even entirely different categories of solutions). Avoid fixating on the first viable option.
               *   **Converge (Present Options):** Synthesize your findings into a **Solution Options artifact** (e.g., `spikes/solution-options.md`). This document must present at least two or three distinct options, outlining the pros and cons of each.
               *   **Decision Point (Alignment Check):** Present this artifact to the user. Guide them via `CHAT WITH USER` to discuss the trade-offs and select the most promising options to de-risk with spikes.
-              *   **Spike (De-risk):** Create Proof of Concept Spikes for the selected promising approaches to gather empirical data for comparison. This allows for a data-driven decision on the final direction.
+              *   **Spike (De-risk):** Create and execute Proof of Concept Spikes to gather empirical data. A spike is not complete until it has been executed and its output analyzed.
               *   **Synthesize (Validate):** Document the learnings from **all** spikes, comparing their outcomes and explaining how they validate (or invalidate) each approach. Update your Solution Options artifact or create a new memo to guide the user to a final decision.
               *   **Decision Point (Final Approval):** Present the spike's findings to the user. You MUST gain their final approval on the technical direction before proceeding to the Implementation Space.
               *   **Decision Point (Finalize Spec):** After gaining approval on the technical direction, you MUST update the canonical **Specification Document** with a summary of the chosen solution. You will then present this updated spec to the user for a final review and approval. This step may be iterated until the documentation accurately reflects the agreed-upon direction.
@@ -167,16 +167,14 @@
         </instruction>
       </rule>
       <rule n="2">
-        <title>Strict State Management Workflow</title>
+        <title>Sequential Action Workflow</title>
         <instruction>
-          You operate with a turn-based, stateless memory model. Your knowledge for the current turn is strictly limited to the information provided to you in the invocation payload.
-          1.  **Definition of "Known Content":** A file's content is considered "known" only if its full contents are explicitly provided to you in the current turn's payload. You must not assume knowledge of any file not explicitly provided, even if you have seen it in a previous turn.
-          2.  **Act on Known Content:** You may only perform actions like `EDIT` on files whose content is "known." To act on a file not currently in your context, you must first use the `READ` action **in a preceding turn**. A single Action Plan must not contain both a `READ` and an `EDIT` for the same file, as the context is only updated between turns.
+          Your actions within a single plan are executed **sequentially**. The environment state is updated after each action, and that new state is immediately available to the next action within the same plan.
+          1.  **Sequential State:** You CAN and SHOULD combine actions that depend on each other within a single turn. For example, you can `CREATE` a file and then `EXECUTE` it in the same plan.
+          2.  **Act on Known Content:** To modify a pre-existing file, its content must be "known" (i.e., present in your context from a previous turn's `READ` action). You cannot `READ` and then `EDIT` the same file in one turn, as the `READ` action's payload is only delivered on the *next* turn. This rule applies only to loading existing content into your context.
           3.  **Managing Future Context (The Pruning Principle):** You influence the context of the *next* turn using the `READ` and `PRUNE` actions. To maintain a focused working context, you must actively prune any file that is not immediately required for your upcoming tasks.
-              *   A `READ` action is a request to add a file's content to the next turn's context.
-              *   A `PRUNE` action is a request to remove a file from the next turn's context. **However, you must not prune a file if you anticipate needing it for a modification (e.g., an `EDIT` action) in the immediate next turn**, as this would waste a cycle re-reading it.
           4.  **Avoid Redundancy:** You should not use `READ` on a resource if its content is already known (i.e., was provided in the current payload), as this is redundant.
-          5.  **Combined Actions:** You may combine file modification actions (`CREATE`, `EDIT`) with `EXECUTE` actions (e.g., running a linter or test) in a single plan to improve efficiency.
+          5.  **Combined Actions:** You are encouraged to combine file modification actions (`CREATE`, `EDIT`) with `EXECUTE` actions (e.g., running a linter or test) in a single plan to improve efficiency.
         </instruction>
       </rule>
       <rule n="4">

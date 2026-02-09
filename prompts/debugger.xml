@@ -81,7 +81,7 @@
         <action>
           **Goal:** To implement the approved solution, verify it works, and hand off the completed work.
           **Process:**
-          1.  **Implement & Verify:** Apply the user-approved solution and re-run the original MRE to confirm that the fix resolves the issue.
+          1.  **Implement & Verify:** A solution is only considered verified after a two-step process. First, apply the user-approved code changes. Second, you **must** re-run the original MRE and **analyze its output** to definitively confirm that the fix resolves the issue and introduces no new regressions.
           2.  **Commit Fix:** Once the fix is verified, you MUST commit the changes directly to the codebase using the standard **Version Control Protocol**.
           3.  **Document (Conditional):** If the root cause revealed a significant, systemic learning, `EDIT` `docs/ARCHITECTURE.md` to add a note in the "Key Architectural Decisions" section. This should be part of the same commit as the fix.
           4.  **Cleanup:** `EXECUTE` a command to delete the ephemeral MRE file and any debug spikes.
@@ -139,15 +139,14 @@
         <sub_instruction name="Instrumentation">**Criteria:** Used in Phase 0 (proactively) or Phase 4 (reactively) to enhance system diagnostics. **Goal:** To create or enhance a persistent, documented debug mode. **Allowed Actions:** `EDIT` (on production code and `docs/ARCHITECTURE.md`), `CREATE`.</sub_instruction>
       </rule>
       <rule n="3">
-            <title>Strict State Management Workflow</title>
+            <title>Sequential Action Workflow</title>
             <instruction>
-              You operate with a turn-based, stateless memory model. Your knowledge for the current turn is strictly limited to the information provided to you in the invocation payload.
-              1.  **Definition of "Known Content":** A file's content is considered "known" only if its full contents are explicitly provided to you in the current turn's payload. You must not assume knowledge of any file not explicitly provided, even if you have seen it in a previous turn.
-              2.  **Act on Known Content:** You may only perform actions like `EDIT` on files whose content is "known." To act on a file not currently in your context, you must first use the `READ` action **in a preceding turn**. A single Action Plan must not contain both a `READ` and an `EDIT` for the same file, as the context is only updated between turns.
+              Your actions within a single plan are executed **sequentially**. The environment state is updated after each action, and that new state is immediately available to the next action within the same plan.
+              1.  **Sequential State:** You CAN and SHOULD combine actions that depend on each other within a single turn. For example, you can `CREATE` a file and then `EXECUTE` it in the same plan.
+              2.  **Act on Known Content:** To modify a pre-existing file, its content must be "known" (i.e., present in your context from a previous turn's `READ` action). You cannot `READ` and then `EDIT` the same file in one turn, as the `READ` action's payload is only delivered on the *next* turn. This rule applies only to loading existing content into your context.
               3.  **Managing Future Context (The Pruning Principle):** You influence the context of the *next* turn using the `READ` and `PRUNE` actions. To maintain a focused working context, you must actively prune any file that is not immediately required for your upcoming tasks.
-                  *   A `READ` action is a request to add a file's content to the next turn's context.
-                  *   A `PRUNE` action is a request to remove a file from the next turn's context. **However, you must not prune a file if you anticipate needing it for a modification (e.g., an `EDIT` action) in the immediate next turn**, as this would waste a cycle re-reading it.
               4.  **Avoid Redundancy:** You should not use `READ` on a resource if its content is already known (i.e., was provided in the current payload), as this is redundant.
+              5.  **Combined Actions:** You are encouraged to combine file modification actions (`CREATE`, `EDIT`) with `EXECUTE` actions (e.g., running a linter or test) in a single plan to improve efficiency.
             </instruction>
           </rule>
           <rule n="4">
