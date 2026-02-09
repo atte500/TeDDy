@@ -228,12 +228,9 @@ class LocalFileSystemAdapter(FileSystemManager):
         # whitespace/newlines which are often artifacts of code generation.
         normalized_replace_block = textwrap.dedent(replace.strip()).strip("\n")
 
-        # 3. Apply Base Indentation
-        indented_replace_lines = []
-        for line in normalized_replace_block.split("\n"):
-            indented_replace_lines.append(f"{base_indent}{line}")
-
-        final_replace_block = "\n".join(indented_replace_lines)
+        # 3. Apply Base Indentation using the standard library for robustness.
+        # This correctly handles empty lines, which was the source of the bug.
+        final_replace_block = textwrap.indent(normalized_replace_block, base_indent)
 
         # 4. Perform Replacement
         return content.replace(actual_find_block, final_replace_block, 1)
