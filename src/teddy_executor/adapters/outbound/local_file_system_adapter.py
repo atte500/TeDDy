@@ -1,7 +1,5 @@
 import logging
 import os
-import re
-import textwrap
 from pathlib import Path
 from typing import Optional
 from teddy_executor.core.ports.outbound.file_system_manager import FileSystemManager
@@ -180,60 +178,19 @@ class LocalFileSystemAdapter(FileSystemManager):
 
     def _apply_single_edit(self, content: str, find: str, replace: str) -> str:
         """
-        Applies a single find/replace operation to content using smart indentation.
-        This implementation is based on the verified spike: spikes/spike_smart_indent.py
+        Applies a single find/replace operation to content.
+
+        This is a simple, verbatim replacement. The AI is responsible for
+        providing an exact `find` block and a correctly indented `replace` block.
         """
-        if not find:
-            return replace
+        # An empty find string would result in len(content) + 1 matches,
+        # which would correctly raise MultipleMatchesFoundError. No special handling needed.
+        num_matches = content.count(find)
 
-        # Handle simple string replacement for single-line finds for performance and simplicity.
-        # The regex approach is powerful but complex for simple cases.
-        if "\n" not in find:
-            num_matches = content.count(find)
-            self._check_matches_and_raise(num_matches, find, content)
-            return content.replace(find, replace, 1)
+        # Use repr() to make whitespace visible in error messages.
+        self._check_matches_and_raise(num_matches, repr(find), content)
 
-        # 1. Normalize the find_block and build a regex to find it and capture indentation.
-        normalized_find_block = textwrap.dedent(find).strip()
-        if not normalized_find_block:  # Handle find blocks with only whitespace
-            num_matches = content.count(find)
-            self._check_matches_and_raise(num_matches, repr(find), content)
-            return content.replace(find, replace, 1)
-
-        find_lines = normalized_find_block.split("\n")
-
-        # The regex captures the indentation of the first line (\s*) and uses a
-        # backreference (\1) to ensure subsequent lines have the same indentation.
-        pattern_lines = [re.escape(find_lines[0])]
-        for line in find_lines[1:]:
-            pattern_lines.append(r"\1" + re.escape(line))
-
-        pattern = r"(\s*)" + r"\n".join(pattern_lines)
-
-        # Search for the pattern in the source content.
-        matches = list(re.finditer(pattern, content, re.MULTILINE))
-
-        self._check_matches_and_raise(len(matches), "multi-line block", content)
-
-        match = matches[0]
-
-        # The captured group 1 is the base indentation.
-        base_indent = match.group(1)
-
-        # The full match (group 0) is the actual block to be replaced.
-        actual_find_block = match.group(0)
-
-        # 2. Normalize Replace Block
-        # Dedent to preserve relative internal indentation. Strip surrounding
-        # whitespace/newlines which are often artifacts of code generation.
-        normalized_replace_block = textwrap.dedent(replace.strip()).strip("\n")
-
-        # 3. Apply Base Indentation using the standard library for robustness.
-        # This correctly handles empty lines, which was the source of the bug.
-        final_replace_block = textwrap.indent(normalized_replace_block, base_indent)
-
-        # 4. Perform Replacement
-        return content.replace(actual_find_block, final_replace_block, 1)
+        return content.replace(find, replace, 1)
 
     def edit_file(
         self,
