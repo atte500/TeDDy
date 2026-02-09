@@ -131,7 +131,12 @@
         <sub_instruction name="Synthesis Phase">**Criteria:** Used for Phase 4 (Synthesis & Recommendation). **Goal:** To assess the issue's significance, document it, and hand off the final solution. **Allowed Actions:** `CREATE` (for RCA or verification spike), `EXECUTE` (to clean up spikes), `CONCLUDE`.</sub_instruction>
         <sub_instruction name="Instrumentation">**Criteria:** Used in Phase 0 (proactively) or Phase 4 (reactively) to enhance system diagnostics. **Goal:** To create or enhance a persistent, documented debug mode. **Allowed Actions:** `EDIT` (on production code and `docs/ARCHITECTURE.md`), `CREATE`.</sub_instruction>
       </rule>
-      <rule n="3">**Handle Failed Expectations**: If any of your own diagnostic actions fail unexpectedly (e.g., a `RESEARCH` returns no results, or an `EXECUTE` command errors out), you MUST treat this as a data point. The next plan must be `Information Gathering` to diagnose the failure of your diagnostic tool itself. This rule does **not** apply to the Oracle's Verdict; if the Oracle Spike *runs* but produces an unexpected *result*, you must follow the Oracle Protocol.</rule>
+      <rule n="3">
+        <title>The Introspection Principle: When a Hypothesis Fails</title>
+        <instruction>
+            If a spike in the `Root Cause Verification` phase invalidates your hypothesis by producing an unexpected or contradictory result, do not immediately create a new hypothesis about the original problem. Instead, you MUST "peel back the layer" and investigate your own experiment. Your immediate next plan must be a new spike that uses an introspection tool or adds verbose logging to the failing test case to look inside the process and understand why your diagnostic tool produced that result.
+        </instruction>
+      </rule>
       <rule n="4">
         <title>Strict State Management Workflow</title>
         <instruction>
