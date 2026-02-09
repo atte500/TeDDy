@@ -115,3 +115,42 @@ def test_shell_adapter_handles_env_vars_on_posix(monkeypatch):
     action_log = report["action_logs"][0]
     assert action_log["status"] == "SUCCESS"
     assert "SUCCESS_VAR" in action_log["details"]["stdout"]
+
+
+def test_shell_adapter_handles_simple_command_on_posix():
+    """
+    Verify that the shell adapter still handles simple commands without shell features.
+    This is a POSIX-specific feature test.
+    """
+    if sys.platform == "win32":
+        return  # This feature is for POSIX shells
+
+    # GIVEN: a directory exists
+    test_dir = Path("test_dir_for_simple_command")
+    test_dir.mkdir()
+
+    plan_content = f"""
+    actions:
+      - name: simple_ls
+        action: execute
+        command: 'ls -d {test_dir.name}'
+    """
+
+    try:
+        # WHEN: A plan with a simple command is executed
+        result = runner.invoke(
+            app,
+            ["execute", "--plan-content", plan_content, "-y"],
+            catch_exceptions=False,
+        )
+
+        # THEN: The command succeeds and the output is correct
+        assert result.exit_code == 0
+        report = yaml.safe_load(result.stdout)
+        assert report["run_summary"]["status"] == "SUCCESS"
+        action_log = report["action_logs"][0]
+        assert action_log["status"] == "SUCCESS"
+        assert test_dir.name in action_log["details"]["stdout"]
+    finally:
+        if test_dir.exists():
+            test_dir.rmdir()
