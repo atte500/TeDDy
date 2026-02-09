@@ -46,6 +46,7 @@ def test_shell_adapter_handles_failed_command():
         "No such file or directory" in result.stderr
         or "not recognized" in result.stderr
         or "cannot find the file" in result.stderr
+        or "command not found" in result.stderr
     )
 
 

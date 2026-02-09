@@ -110,6 +110,7 @@ class ActionFactory(IActionFactory):
             "read_file": "read_file",
             "chat_with_user": "ask_question",
             "research": "search",
+            "execute": "execute",  # Explicitly map execute to its method
         }
 
         # The execute method now needs to handle the renamed 'resource' -> 'path' param
@@ -121,6 +122,23 @@ class ActionFactory(IActionFactory):
                 # Translate 'resource' to 'path' for file system methods
                 if "resource" in kwargs and "path" not in kwargs:
                     kwargs["path"] = kwargs.pop("resource")
+
+                # For 'execute', pluck only the valid arguments for IShellExecutor
+                if method_name == "execute":
+                    execute_params = {
+                        "command": kwargs.get("command"),
+                        "cwd": kwargs.get("cwd"),
+                        "env": kwargs.get("env"),
+                    }
+                    filtered_params = {
+                        k: v for k, v in execute_params.items() if v is not None
+                    }
+                    if "command" not in filtered_params:
+                        raise ValueError(
+                            "The 'command' parameter is required for the execute action."
+                        )
+                    return original_method(**filtered_params)
+
                 return original_method(**kwargs)
 
             setattr(action_handler, "execute", execute_wrapper)

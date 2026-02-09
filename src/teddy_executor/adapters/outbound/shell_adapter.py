@@ -1,5 +1,4 @@
 import os
-import shlex
 import shutil
 import subprocess
 import sys
@@ -66,10 +65,10 @@ class ShellAdapter(IShellExecutor):
                 # We must invoke the shell to handle it.
                 use_shell = True
         else:
-            # On POSIX, the default strategy is generally safe and robust.
-            # We must split the string into a list for shell=False.
-            use_shell = False
-            command_args = shlex.split(command)
+            # On POSIX, use shell=True to support features like globbing, pipes, etc.
+            # This is safe in TeDDy's context where users approve commands before execution.
+            use_shell = True
+            command_args = command
 
         is_debug_mode = os.getenv("TEDDY_DEBUG")
         if is_debug_mode:
