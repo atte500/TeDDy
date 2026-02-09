@@ -132,12 +132,12 @@ This section captures significant, long-standing architectural decisions and pat
 -   **Context Configuration:** The `context` command's behavior is explicitly driven by the contents of `.teddy/*.context` files, providing a clear, user-configurable contract.
 -   **Interactive Diff Previews:** During interactive execution, `create` and `edit` actions provide a visual diff. This feature is configured via a prioritized strategy: the `TEDDY_DIFF_TOOL` environment variable, a fallback to the `code` (VS Code) CLI if present, and a final fallback to an in-terminal view. This provides a better user experience while remaining environment-agnostic.
 -   **Dependency Versioning:** Dependency updates, even minor ones, can introduce breaking API changes (e.g., `typer.testing.CliRunner` API change in a `typer` update). While flexible version specifiers (`^X.Y.Z`) are convenient, production dependencies should be reviewed and potentially pinned to specific versions to improve stability and prevent unexpected CI failures.
--   **Cross-Platform Shell Execution (The "Smart Router"):** To handle the fundamental differences between POSIX and Windows command execution, the `ShellAdapter` employs a dynamic routing strategy.
-    -   **POSIX:** Uses `shlex.split()` and `shell=False`. This is the standard, secure approach.
-    -   **Windows:** Uses a "Smart Router" that inspects the command.
-        -   If the command resolves to an executable file (via `shutil.which()`), it uses `shell=False` and passes the **raw command string** (bypassing `shlex` and `list2cmdline` quoting issues).
-        -   If the command does not resolve to a file (implying a shell built-in like `dir`), it uses `shell=True` and passes the raw command string.
-    -   **Rationale:** This strategy avoids the fragile and error-prone splitting of Windows paths while correctly supporting both standalone executables and shell built-ins without a hardcoded whitelist.
+-   **Cross-Platform Shell Execution (The "Smart Router"):** To handle the fundamental differences between POSIX and Windows command execution, the `ShellAdapter` employs a platform-specific strategy.
+    -   **POSIX:** Uses `shell=True` and passes the raw command string. This approach is chosen to support shell features like globbing and pipes directly. The security risks typically associated with `shell=True` are mitigated by TeDDy's core workflow, which requires the user to approve every command before execution.
+    -   **Windows:** Uses a "Smart Router" that inspects the command to decide whether to use a shell.
+        -   It first checks if the command (e.g., `python.exe`) is a known executable file using `shutil.which()`. If it is, the command is executed directly with `shell=False`.
+        -   If the command is not found as an executable, it is assumed to be a shell built-in (e.g., `dir`), and it is executed with `shell=True`.
+    -   **Rationale:** This hybrid strategy provides maximum compatibility. On Windows, it avoids the complex and error-prone quoting issues of `list2cmdline` by passing raw command strings. On POSIX, it provides the power and convenience of the shell in a supervised environment.
 
 ---
 
