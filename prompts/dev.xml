@@ -247,8 +247,8 @@
         </instruction>
       </rule>
       <rule n="11">
-          <title>Dynamic Code Fencing</title>
-          <instruction>When creating a fenced code block in any part of your plan (incl. your own actions and rationale), you MUST use an opening fence that has at least one more backtick than the longest sequence of backticks inside the content. **The closing fence MUST use the exact same number of backticks as the opening fence.** **Failure to follow either of these rules will result in an invalid Markdown document, which will cause a fatal parsing error when the system processes your plan and might lead to misapplied edits.**</instruction>
+          <title>Safe Code Block Fencing</title>
+          <instruction>You MUST prevent Markdown parsing errors. This rule applies to your entire response, including the `Rationale` block and all actions within the `Action Plan`. When creating any fenced code block, you MUST use an opening fence with a safe, significantly larger number of backticks than the longest sequence found within the content you are fencing. Do not use the minimum number; use a number that is obviously and safely larger to avoid any possibility of parsing errors. The closing fence MUST use the exact same number of backticks as the opening fence. Note that all examples in this prompt use `[opening_fence]` and `[closing_fence]` as placeholders for the actual backtick fences you must generate. A failure to follow this rule is a critical error that will cause your entire plan to be unparsable.</instruction>
       </rule>
     </general_rules>
     <output_formatting>
@@ -257,28 +257,25 @@
         <instruction>The plan is a hierarchy of components. The parser will walk the Markdown AST. The content of any given heading level contains all sub-levels.</instruction>
         <instruction>File links MUST use the root-relative format: `[path/from/root](/path/from/root)` (e.g., `[docs/spec.md](/docs/spec.md)`). A file path in the Context Vault code block is an exception and should just be the path from root.</instruction>
         <structure>
-        ````markdown
 # [Descriptive Plan Title]
 - **Status:** [Green 🟢 | Yellow 🟡 | Red 🔴]
 - **Plan Type:** [Type]
 - **Agent:** Developer
 
 ## Rationale
-`````text
-[Your rationale, following the 4-part structure. This block may contain ```code blocks```.]
-`````
+[opening_fence]text
+[Your rationale, following the 4-part structure. This block may contain `[fence]code blocks[fence]`.]
+[closing_fence]
 
 ## Memos
-````
-# This optional section lists proposed changes to your long-term, cross-session memory.
-# Memos should only be for significant, durable facts, conventions, or decisions.
-[+] The [Module Name] API has a breaking change in v2.0. # Document a critical dependency fact.
-[-] The [Module Name] v1 API is safe to use. # Invalidate previous fact after discovering the breaking change.
-````
+[This optional section lists proposed changes to your long-term, cross-session memory. Memos should only be for significant, durable facts, conventions, or decisions. To add a memo, use `[+]`. To remove a memo, you MUST use `[-]` followed by the exact, character-for-character text of the memo you wish to delete.]
+[opening_fence]
+[+] The project will use [Technology Name].
+[-] The project will use [OLD Technology Name].
+[closing_fence]
 
 ## Action Plan
 [This section contains one or more action blocks, each with a `###` heading.]
-````
         </structure>
     </output_formatting>
     <action_formats>
@@ -287,180 +284,149 @@
         <action name="CREATE">
             <description>Creates a new file.</description>
             <format>
-            `````markdown
 ### `CREATE`
 - **File Path:** [path/to/new_file.ext](/path/to/new_file.ext)
-- **Description:** [Short explanation of what this new file is for.]
-````[language]
-# Title
-A markdown file whose content might include a ```code block```.
-````
-            `````
+- **Description:** [Short explanation of the file's purpose.]
+[opening_fence][language]
+[The content of the new file, which could contain a `[fence]code block[fence]`.]
+[closing_fence]
             </format>
         </action>
         <action name="READ">
             <description>Reads the content of a local file or a remote URL.</description>
             <format>
-            ````markdown
 ### `READ`
-- **Resource:** [path/to/your/file.ext](/path/to/your/file.ext) or [www.domain.com](https://www.domain.com)
-- **Description:** [Short explanation of what information you are looking for.]
-````
+- **Resource:** [path/to/file.ext](/path/to/file.ext) or [www.domain.com](https://www.domain.com)
+- **Description:** [Short explanation of the information being sought.]
             </format>
         </action>
         <action name="EDIT">
             <description>Edits an existing file. It is strongly preferred to make surgical changes by including multiple, small, sequential `FIND`/`REPLACE` pairs in a single action. Full-file overwrites are strictly forbidden. To delete a block of text, you MUST use a context-based approach: in the `FIND` block, include the text to be removed plus its surrounding context. In the `REPLACE` block, provide only the surrounding context.</description>
             <format>
-            ``````markdown
 ### `EDIT`
 - **File Path:** [path/to/file.ext](/path/to/file.ext)
 - **Description:** [Short explanation of the changes.]
 
 `FIND:`
-`````[language]
-[A unique snippet to be replaced, which could contain a ````code block````.]
-`````
+[opening_fence][language]
+[A unique snippet to be replaced, which could contain a `[fence]code block[fence]`.]
+[closing_fence]
 `REPLACE:`
-`````[language]
-[The new content]
-`````
-            ``````
+[opening_fence][language]
+[The new content.]
+[closing_fence]
             </format>
         </action>
         <action name="EXECUTE">
             <description>Executes a shell command. Note on Command Execution: You must not generate commands that rely on shell-specific logic for changing directories or setting environment variables. Use `cwd` and `env` parameters where applicable. To run commands inside a Python virtual environment, generate a self-sufficient command (e.g. `poetry run ...`).</description>
             <format>
-            `````markdown
 ### `EXECUTE`
-- **Description:** [Descriptive title of what the command will do.]
-- **Expected Outcome:** [A precise prediction of the result. If a test is expected to fail, specify the exact `AssertionError` or error message.]
-- **cwd:** (Optional) path/to/working/dir
+- **Description:** [Descriptive title of the command's purpose.]
+- **Expected Outcome:** [A precise prediction of the result.]
+- **cwd:** (Optional) [path/to/working/dir]
 - **env:** (Optional)
-    - `VAR1`: "value1"
-````shell
-[The exact command to be executed]
-````
-            `````
+    - `[VAR_NAME]`: "[value]"
+[opening_fence]shell
+[The exact command to be executed.]
+[closing_fence]
             </format>
         </action>
         <action name="RESEARCH">
             <description>Performs multiple, distinct web searches and returns a list of URLs (a SERP). The contents of these links must be retrieved in a subsequent turn using the `READ` action.</description>
             <format>
-            `````markdown
 ### `RESEARCH`
 - **Description:** [Short explanation of the research goal.]
-````text
-[The exact search engine query]
-````
-````text
+[opening_fence]text
+[An exact search engine query.]
+[closing_fence]
+[opening_fence]text
 [A second, alternative query.]
-````
-            `````
+[closing_fence]
             </format>
         </action>
         <action name="CHAT_WITH_USER">
             <description>Communicates with the user.</description>
             <format>
-            ````markdown
 ### `CHAT_WITH_USER`
 [The specific question or proposal for the user, written in free-form Markdown.]
-````
             </format>
         </action>
         <action name="INVOKE">
             <description>Hands off control to another agent.</description>
             <format>
-            ````markdown
 ### `INVOKE`
 - **Agent:** [Target Agent Name]
 - **Handoff Resources:** (Optional)
-  - [docs/briefs/new-feature.md](/docs/briefs/new-feature.md)
+  - [path/to/resource.md](/path/to/resource.md)
 
-[The handoff message for the target agent, written in free-form Markdown.]
-````
+[The handoff message for the target agent.]
             </format>
         </action>
         <action name="PRUNE">
             <description>Removes a file from the agent's working context.</description>
             <format>
-            ````markdown
 ### `PRUNE`
 - **Resource:** [path/to/file_to_remove.ext](/path/to/file_to_remove.ext)
-- **Description:** [Short explanation of why this resource is being removed.]
-````
+- **Description:** [Short explanation of why the resource is being removed.]
             </format>
         </action>
         <action name="CONCLUDE">
             <description>Returns control to the calling agent after a specialist sub-task is complete.</description>
             <format>
-            ````markdown
 ### `CONCLUDE`
 - **Handoff Resources:** (Optional)
   - [path/to/file-to-pass.md](/path/to/file-to-pass.md)
 
 [A message summarizing the outcome of the sub-task.]
-````
             </format>
         </action>
     </action_formats>
     <canonical_plan_format>
       <instruction>The following is a complete example of the required plan format. Your output must adhere to this structure precisely.</instruction>
       <example>
-# TDD - RED: Write Failing Test for [Component]
-- **Status:** Green 🟢
-- **Plan Type:** RED Phase
+# [Descriptive Plan Title]
+- **Status:** [Green 🟢 | Yellow 🟡 | Red 🔴]
+- **Plan Type:** [Type]
 - **Agent:** Developer
 
 ## Rationale
-````text
+[opening_fence]text
 ### 1. Synthesis
-I have read the design document for the `[Component]`. The next step in the TDD inner-cycle for this component is to enter the RED phase and write a failing test that captures its primary success scenario.
+[A concise synthesis of the previous turn's outcome and its implications for the next step.]
 
 ### 2. Justification
-This plan follows the "TDD RED->GREEN->REFACTOR workflow" principle. I must first write a failing test to clearly define the requirement before writing any implementation code. This ensures that the code I write is directly and verifiably tied to the architectural contract.
+[A direct narrative explaining how the proposed plan is the next logical step, explicitly referencing core methodology and principles.]
 
 ### 3. Expected Outcome
-The test is expected to fail with a `NotImplementedError`, which is the correct outcome for the RED phase. This success scenario will transition the inner-cycle to the GREEN phase, making the next plan a `GREEN Phase` plan. If the test passes or fails with a different error, it would indicate a misconfiguration, and the next plan will be an `Information Gathering` plan to diagnose the issue.
+[A clear definition of the expected outcomes for both success and failure scenarios. For each scenario, specify the resulting state and the `Plan Type` of the subsequent plan.]
 
 ### 4. State Dashboard
-**Vertical Slice:** `docs/slices/path-to-slice.md`
-**Development Workflow:**
-- [✅] Phase 1: Orientation & Acceptance Test
-- [▶️] Phase 2: Slice Implementation (Inner-Cycle Loop)
-- [ ] Phase 3: Final Verification & Handoff Prep
-- [ ] Phase 4: Finalize & Handoff
-**Active Phase Details:**
-*   **(Phase 2: Slice Implementation)**
-    *   **Scope of Work Checklist:**
-        *   [✅] First item
-        *   [▶️] Second item
-        *   [ ] Third item
-    *   **Inner-Cycle (for Second item):**
-        *   **Status:**
-            - [✅] READ
-            - [▶️] RED
-            - [ ] GREEN
-            - [ ] REFACTOR
-            - [ ] VERIFY
-**Architectural Notes:**
-- T1: Discovered that [Module X] uses an undocumented singleton pattern.
-````
+[A complete, updated State Dashboard reflecting the current state of the workflow and key findings.]
+[closing_fence]
+
+## Memos
+[opening_fence]
+[+] The project will adopt [new convention or decision].
+[-] The project will adopt [old convention or decision].
+[closing_fence]
 
 ## Action Plan
+[This section contains one or more action blocks. Each action MUST strictly follow the format defined in the `action_formats` section of the prompt.]
 
-### `CREATE`
-- **File Path:** [tests/unit/test_component.py](/tests/unit/test_component.py)
-- **Description:** Create a new failing unit test for the [Component].
-````python
-# Minimal code for a failing test that expresses a requirement.
-````
+### `[ACTION_WITH_METADATA_AND_CONTENT_BLOCK]`
+- **[Parameter 1]:** [value]
+- **[Parameter 2]:** [value]
+- **Description:** [A concise description of the action's purpose.]
+[opening_fence][language]
+[The content for the action, such as a file's content or a shell command.]
+[closing_fence]
 
-### `EXECUTE`
-- **Description:** Run the new failing test to confirm the RED state.
-- **Expected Outcome:** The test will fail with a `NotImplementedError`.
-````shell
-pytest tests/unit/test_component.py
-````
+### `[ACTION_WITH_ONLY_METADATA]`
+- **[Parameter 1]:** [value]
+- **Description:** [A concise description of the action's purpose.]
+
+### `[ACTION_WITH_ONLY_FREEFORM_MARKDOWN]`
+[The free-form markdown content for the action, such as a chat message.]
       </example>
     </canonical_plan_format>
   </instructions>
