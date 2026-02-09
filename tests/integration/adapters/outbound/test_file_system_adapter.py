@@ -336,13 +336,13 @@ def test_edit_file_handles_unindented_replace_block_with_mixed_indentation(
     """).strip()
 
     # The expected content applies the indent from the find block ('    ') to
-    # all lines of the (dedented) replace block. An empty line in the replace
-    # block will become an indented empty line.
+    # all lines of the (dedented) replace block. The `textwrap.indent` function
+    # does not indent empty lines, so the empty line should remain unindented.
     expected_content = (
         "def test_one():\n"
         "    # new indented content\n"
         "    assert True\n"
-        "    \n"
+        "\n"
         "    def test_two():\n"
         "        # a new top-level function\n"
         "        pass"

@@ -66,12 +66,14 @@ def test_edit_action_file_not_found(monkeypatch, tmp_path: Path):
     assert "No such file or directory" in action_log["details"]
 
 
-def test_edit_action_handles_multiline_with_indentation(monkeypatch, tmp_path: Path):
+def test_edit_action_handles_multiline_with_smart_indentation(
+    monkeypatch, tmp_path: Path
+):
     """
-    Given a plan to perform a multiline edit with indentation,
-    When the plan is executed,
-    Then the file should be updated correctly because the replace block is
-    a literal with the correct indentation provided.
+    Given a plan to perform a multiline edit,
+    When the plan is executed with a dedented replace block,
+    Then the file should be updated correctly because the smart indentation
+    logic handles applying the correct indentation.
     """
     # Arrange
     file_to_edit = tmp_path / "my_class.py"
@@ -88,8 +90,8 @@ def test_edit_action_handles_multiline_with_indentation(monkeypatch, tmp_path: P
     )
     file_to_edit.write_text(original_content)
 
-    # The find block is unindented via dedent, but the match logic will find
-    # the indented version in the source file.
+    # The find block is unindented. The smart logic will find the
+    # indented version in the source and capture its indentation ('    ').
     find_block = dedent(
         """\
         def existing_method(self):
@@ -98,9 +100,8 @@ def test_edit_action_handles_multiline_with_indentation(monkeypatch, tmp_path: P
         """
     )
 
-    # The replace block must be a literal with the correct final indentation.
-    # We construct it by indenting the unindented source text.
-    unindented_replace_block = dedent(
+    # The replace block is ALSO provided unindented, per the new contract.
+    replace_block = dedent(
         """\
         def existing_method(self):
             \"\"\"An existing method.\"\"\"
@@ -111,8 +112,10 @@ def test_edit_action_handles_multiline_with_indentation(monkeypatch, tmp_path: P
             return self.value * multiplier
         """
     )
-    replace_block = indent(unindented_replace_block, "    ")
 
+    # The expected content is constructed by manually applying the indent
+    # that the smart logic SHOULD apply automatically.
+    expected_replace_block = indent(replace_block, "    ")
     expected_content = (
         dedent(
             """\
@@ -122,17 +125,16 @@ def test_edit_action_handles_multiline_with_indentation(monkeypatch, tmp_path: P
 
         """
         )
-        + replace_block
+        + expected_replace_block
     )
-    # Remove the final newline added by dedent for accurate comparison
     expected_content = expected_content.strip()
 
     plan = [
         {
             "action": "edit",
-            "description": "Test multiline edit with literal indentation.",
+            "description": "Test multiline edit with smart indentation.",
             "params": {
-                "path": file_to_edit,
+                "path": str(file_to_edit),
                 "find": find_block,
                 "replace": replace_block,
             },
