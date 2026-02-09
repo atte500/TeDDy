@@ -1,5 +1,7 @@
 import logging
 import os
+import re
+import textwrap
 from pathlib import Path
 from typing import Optional
 from teddy_executor.core.ports.outbound.file_system_manager import FileSystemManager
@@ -161,71 +163,6 @@ class LocalFileSystemAdapter(FileSystemManager):
         except IOError as e:
             raise IOError(f"Failed to read file at {path}: {e}") from e
 
-    def _normalize_lines_by_common_indent(self, lines: list[str]) -> list[str]:
-        """
-        Removes the common leading whitespace from a list of strings.
-        Preserves relative indentation.
-        """
-        non_empty_lines = [line for line in lines if line.strip()]
-        if not non_empty_lines:
-            return lines
-
-        min_indent = min(len(line) - len(line.lstrip(" ")) for line in non_empty_lines)
-
-        return [line[min_indent:] for line in lines]
-
-    def _find_multiline_match_indices(
-        self, source_lines: list[str], find_lines: list[str]
-    ) -> list[int]:
-        """
-        Finds the starting indices of all multiline matches, ignoring absolute
-        indentation but respecting relative indentation.
-        """
-        if not find_lines:
-            return []
-
-        normalized_find_lines = self._normalize_lines_by_common_indent(find_lines)
-
-        match_indices = []
-        for i in range(len(source_lines) - len(normalized_find_lines) + 1):
-            source_slice = source_lines[i : i + len(normalized_find_lines)]
-            normalized_source_slice = self._normalize_lines_by_common_indent(
-                source_slice
-            )
-
-            if normalized_source_slice == normalized_find_lines:
-                match_indices.append(i)
-
-        return match_indices
-
-    def _reconstruct_content(
-        self,
-        original_content: str,
-        source_lines: list[str],
-        find_lines: list[str],
-        replace_lines: list[str],
-        match_start_index: int,
-    ) -> str:
-        """Reconstructs the file content with the replacement."""
-        pre_match_lines = source_lines[:match_start_index]
-        post_match_lines = source_lines[match_start_index + len(find_lines) :]
-
-        # The replace_lines are treated as a literal block. No indentation is added.
-        final_lines = pre_match_lines + replace_lines + post_match_lines
-        new_content = "\n".join(final_lines)
-
-        # Preserve the original file's trailing newline state
-        original_has_trailing_newline = original_content.endswith("\n")
-        new_has_trailing_newline = new_content.endswith("\n")
-
-        if original_has_trailing_newline and not new_has_trailing_newline:
-            new_content += "\n"
-        elif not original_has_trailing_newline and new_has_trailing_newline:
-            # This can happen if the replace block ends with a newline but the original didn't
-            new_content = new_content.rstrip("\n")
-
-        return new_content
-
     def _check_matches_and_raise(
         self, num_matches: int, find_str_repr: str, content: str
     ):
@@ -242,34 +179,64 @@ class LocalFileSystemAdapter(FileSystemManager):
             )
 
     def _apply_single_edit(self, content: str, find: str, replace: str) -> str:
-        """Helper to apply a single find/replace operation to content."""
+        """
+        Applies a single find/replace operation to content using smart indentation.
+        This implementation is based on the verified spike: spikes/spike_smart_indent.py
+        """
         if not find:
             return replace
 
+        # Handle simple string replacement for single-line finds for performance and simplicity.
+        # The regex approach is powerful but complex for simple cases.
         if "\n" not in find:
             num_matches = content.count(find)
             self._check_matches_and_raise(num_matches, find, content)
-            return content.replace(find, replace)
-        else:
-            source_lines = content.splitlines()
-            find_lines = find.splitlines()
+            return content.replace(find, replace, 1)
 
-            if not find.strip():
-                return replace
+        # 1. Normalize the find_block and build a regex to find it and capture indentation.
+        normalized_find_block = textwrap.dedent(find).strip()
+        if not normalized_find_block:  # Handle find blocks with only whitespace
+            num_matches = content.count(find)
+            self._check_matches_and_raise(num_matches, repr(find), content)
+            return content.replace(find, replace, 1)
 
-            match_indices = self._find_multiline_match_indices(source_lines, find_lines)
-            num_matches = len(match_indices)
-            self._check_matches_and_raise(num_matches, "multi-line block", content)
+        find_lines = normalized_find_block.split("\n")
 
-            match_start_index = match_indices[0]
-            replace_lines = replace.splitlines()
-            return self._reconstruct_content(
-                content,
-                source_lines,
-                find_lines,
-                replace_lines,
-                match_start_index,
-            )
+        # The regex captures the indentation of the first line (\s*) and uses a
+        # backreference (\1) to ensure subsequent lines have the same indentation.
+        pattern_lines = [re.escape(find_lines[0])]
+        for line in find_lines[1:]:
+            pattern_lines.append(r"\1" + re.escape(line))
+
+        pattern = r"(\s*)" + r"\n".join(pattern_lines)
+
+        # Search for the pattern in the source content.
+        matches = list(re.finditer(pattern, content, re.MULTILINE))
+
+        self._check_matches_and_raise(len(matches), "multi-line block", content)
+
+        match = matches[0]
+
+        # The captured group 1 is the base indentation.
+        base_indent = match.group(1)
+
+        # The full match (group 0) is the actual block to be replaced.
+        actual_find_block = match.group(0)
+
+        # 2. Normalize Replace Block
+        # Dedent to preserve relative internal indentation. Strip surrounding
+        # whitespace/newlines which are often artifacts of code generation.
+        normalized_replace_block = textwrap.dedent(replace.strip()).strip("\n")
+
+        # 3. Apply Base Indentation
+        indented_replace_lines = []
+        for line in normalized_replace_block.split("\n"):
+            indented_replace_lines.append(f"{base_indent}{line}")
+
+        final_replace_block = "\n".join(indented_replace_lines)
+
+        # 4. Perform Replacement
+        return content.replace(actual_find_block, final_replace_block, 1)
 
     def edit_file(
         self,

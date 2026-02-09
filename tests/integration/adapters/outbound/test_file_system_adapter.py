@@ -299,10 +299,13 @@ def test_get_context_paths(tmp_path: Path):
     assert actual_paths == expected_paths
 
 
-def test_edit_file_preserves_indentation_in_multiline_replace(tmp_path: Path):
+def test_edit_file_handles_unindented_replace_block_with_mixed_indentation(
+    tmp_path: Path,
+):
     """
-    Tests that a multiline `replace` block with internal indentation and
-    top-level definitions is inserted correctly, without being altered.
+    This test is a refactoring of a legacy test. It now verifies that the
+    smart indentation logic correctly handles a `replace` block that contains
+    both indented and unindented lines (e.g., a new function definition).
     """
     from textwrap import dedent
 
@@ -317,22 +320,33 @@ def test_edit_file_preserves_indentation_in_multiline_replace(tmp_path: Path):
     test_file.write_text(original_content)
 
     find_block = dedent("""
-            # content to be replaced
-            pass
-        """).strip()
+        # content to be replaced
+        pass
+    """).strip()
 
-    # The replace block is what we want to insert. Its indentation must be literal.
-    replace_block = (
+    # The replace block is unindented. The smart logic should apply the base
+    # indent to all lines, preserving the relative structure.
+    replace_block = dedent("""
+        # new indented content
+        assert True
+
+        def test_two():
+            # a new top-level function
+            pass
+    """).strip()
+
+    # The expected content applies the indent from the find block ('    ') to
+    # all lines of the (dedented) replace block. An empty line in the replace
+    # block will become an indented empty line.
+    expected_content = (
+        "def test_one():\n"
         "    # new indented content\n"
         "    assert True\n"
-        "\n"
-        "def test_two():\n"
-        "    # a new top-level function\n"
-        "    pass"
+        "    \n"
+        "    def test_two():\n"
+        "        # a new top-level function\n"
+        "        pass"
     )
-
-    # The expected content is the original function definition line, plus the replace block.
-    expected_content = "def test_one():\n" + replace_block
 
     # Act
     adapter.edit_file(path=str(test_file), find=find_block, replace=replace_block)
@@ -383,3 +397,48 @@ def test_create_default_context_file(tmp_path: Path):
     # Assert
     assert expected_file.exists()
     assert expected_file.read_text() == expected_content
+
+
+def test_edit_file_applies_smart_indentation_to_replace_block(tmp_path: Path):
+    """
+    Tests that the new 'smart indentation' logic correctly applies the
+    indentation of the found block to an unindented replacement block.
+    """
+    from textwrap import dedent
+
+    # Arrange
+    adapter = LocalFileSystemAdapter()
+    test_file = tmp_path / "test.py"
+    original_content = dedent("""
+        def my_function():
+            # This is the part to find
+            print("Hello")
+    """).strip()
+    test_file.write_text(original_content)
+
+    find_block = dedent("""
+        # This is the part to find
+        print("Hello")
+    """).strip()
+
+    # The replace block is unindented, but has relative indentation.
+    # The smart replace logic should apply the indentation from the find block.
+    replace_block = dedent("""
+        # A new implementation
+        if True:
+            print("World")
+    """).strip()
+
+    expected_content = dedent("""
+        def my_function():
+            # A new implementation
+            if True:
+                print("World")
+    """).strip()
+
+    # Act
+    adapter.edit_file(path=str(test_file), find=find_block, replace=replace_block)
+
+    # Assert
+    actual_content = test_file.read_text()
+    assert actual_content == expected_content
