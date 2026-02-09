@@ -18,69 +18,16 @@ The `ShellAdapter` is a "driven" adapter that provides the concrete implementati
 *   **Technology:** The adapter will be implemented using Python's built-in `subprocess` module.
 *   **Entry Point:** The class `ShellAdapter` will be located in `src/teddy_executor/adapters/outbound/shell_adapter.py`.
 
-### `execute(command: str, cwd: Optional[str], env: Optional[Dict[str, str]])` Method Logic
+### Cross-Platform Execution Strategy
 
-The `execute` method will implement the contract defined by the `IShellExecutor` port.
+The `execute` method implements a cross-platform strategy to handle the differences between POSIX (Linux/macOS) and Windows shells.
 
-1.  **Validate `cwd`:** If `cwd` is provided, the adapter performs security validation:
-    *   It raises a `ValueError` if the path is absolute.
-    *   It resolves the real path of `os.getcwd()` joined with the relative `cwd` path.
-    *   It raises a `ValueError` if the resolved path does not start with the project root's real path, preventing directory traversal attacks (e.g., `../..`).
-2.  **Invoke Subprocess:** It will call `subprocess.run()`, passing the *validated and resolved absolute path* for `cwd`, and the `env` parameter directly.
-    *   `command`: The command string to execute.
-    *   `shell=True`: To ensure the command is interpreted by the system's shell.
-    *   `capture_output=True`: To capture `stdout` and `stderr`.
-    *   `text=True`: To decode `stdout` and `stderr` as text.
-    *   `cwd=cwd`: The working directory for the command.
-    *   `env=env`: The environment variables for the command's process.
-2.  **Handle Results:** The `subprocess.run()` call returns a `CompletedProcess` object.
-3.  **Create Domain Object:** The adapter will extract `stdout`, `stderr`, and `returncode` from the `CompletedProcess` object.
-4.  **Return `CommandResult`:** It will instantiate and return a `CommandResult` domain object, populating it with the captured values.
-
-```python
-# Conceptual implementation
-import os
-import subprocess
-from typing import Dict, Optional
-from teddy_executor.core.domain.models import CommandResult
-from teddy_executor.core.ports.outbound import IShellExecutor
-
-class ShellAdapter(IShellExecutor):
-    def execute(
-        self,
-        command: str,
-        cwd: Optional[str] = None,
-        env: Optional[Dict[str, str]] = None
-    ) -> CommandResult:
-        validated_cwd = cwd
-        if cwd:
-            if os.path.isabs(cwd):
-                raise ValueError("`cwd` path must be relative.")
-
-            project_root = os.getcwd()
-            full_path = os.path.realpath(os.path.join(project_root, cwd))
-
-            if not full_path.startswith(os.path.realpath(project_root)):
-                raise ValueError("`cwd` path is outside the project directory.")
-
-            validated_cwd = full_path
-
-        result = subprocess.run(
-            command,
-            shell=True,
-            capture_output=True,
-            text=True,
-            cwd=validated_cwd,
-            env=env,
-            check=False
-        )
-        return CommandResult(
-            stdout=result.stdout,
-            stderr=result.stderr,
-            return_code=result.returncode
-        )
-```
-
-## 4. Rationale for No Spike
-
-A technical spike is not required. The `subprocess` module's handling of `cwd` and `env` is a core, stable, and well-understood part of the Python standard library. There is no technical uncertainty to resolve.
+1.  **CWD Validation:** It first validates the `cwd` parameter to ensure it resolves to a path within the project directory, preventing directory traversal.
+2.  **Environment Merging:** It merges any provided `env` variables with the current process's environment.
+3.  **Platform-Specific Execution:**
+    *   **On POSIX (Linux/macOS):** The adapter uses `shell=True` and passes the raw command string to `subprocess.run`. This enables full, standard shell functionality, including globbing (`*`), pipes (`|`), and environment variable expansion (`$VAR`). This is considered safe within the TeDDy workflow because every command execution must be explicitly approved by the user in interactive mode.
+    *   **On Windows:** The adapter uses a "Smart Router" strategy to avoid common quoting and path issues. It inspects the command to determine if it's a standalone executable (e.g., `git.exe`) or a shell built-in (e.g., `dir`).
+        *   If it's an executable, it runs the command with `shell=False`.
+        *   If it's a shell built-in, it runs the command with `shell=True`.
+4.  **Result Mapping:** The adapter captures the `stdout`, `stderr`, and `returncode` from the executed process and maps them to a `CommandResult` domain object.
+5.  **Debug Mode:** If the `TEDDY_DEBUG` environment variable is set, the adapter will print detailed logs about the execution process to `stderr`, aiding in diagnostics.
