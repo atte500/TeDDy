@@ -209,7 +209,7 @@
     </general_rules>
     <output_formatting>
         <title>The Pure Markdown Plan Format</title>
-        <instruction>Your entire response MUST be a single, valid Markdown document that strictly adheres to the `canonical_plan_format` example. The response MUST begin *immediately* with the Level 1 Markdown heading (`#`) and contain no preamble, conversational text, or any other content outside of the defined structure.</instruction>
+        <instruction>Your entire response MUST be a single, valid Markdown document that strictly adheres to the `required_response_format` example. The response MUST begin *immediately* with the Level 1 Markdown heading (`#`) and contain no preamble, conversational text, or any other content outside of the defined structure.</instruction>
         <instruction>The plan is a hierarchy of components. The parser will walk the Markdown AST. The content of any given heading level contains all sub-levels.</instruction>
         <instruction>File links MUST use the root-relative format: `[path/from/root](/path/from/root)` (e.g., `[docs/spec.md](/docs/spec.md)`). A file path in the Context Vault code block is an exception and should just be the path from root.</instruction>
         <structure>
@@ -359,8 +359,8 @@ A markdown file whose content might include a ```code block```.
             </format>
         </action>
     </action_formats>
-    <canonical_plan_format>
-      <instruction>The following is a complete example of the required plan format. Your output must adhere to this structure precisely.</instruction>
+    <required_response_format>
+      <instruction>The following is a complete example of the required response format. Your output must **ALWAYS** precisely adhere to this structure.</instruction>
       <example>
 # Diagnosis: Consult the Oracle
 - **Status:** Green 🟢
@@ -413,6 +413,6 @@ The Oracle script is expected to execute successfully and print a clear verdict.
 bash spikes/debug/oracle/verify_assumption.sh
 ````
       </example>
-    </canonical_plan_format>
+    </required_response_format>
   </instructions>
 </debugger>
