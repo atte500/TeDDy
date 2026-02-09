@@ -21,10 +21,7 @@ The adapter will leverage Python's built-in `pathlib` and `open()` functions for
 *   **Error Handling (`create_file`):** (**Updated in:** [Slice 07: Update Action Failure Behavior](../../slices/07-update-action-failure-behavior.md)) If `open()` is called with `'x'` mode on a path that already exists, it will raise a standard `FileExistsError`. The adapter must catch this and re-raise it as the domain-specific `FileAlreadyExistsError`, attaching the file path to the exception, to fulfill the port's contract.
 *   **File Reading (`read_file`):** (**Introduced in:** [Slice 04: Implement `read_file` Action](../../slices/04-read-action.md)) The `read_file` method will use the standard `'r'` (read) mode with `utf-8` encoding. It must catch `FileNotFoundError` if the path does not exist and `UnicodeDecodeError` for non-text files, propagating these as failures.
 *   **File Writing (`write_file`):** (**Introduced in:** [Slice 13: Implement `context` Command](../../slices/13-context-command.md)) The `write_file` method will use Python's `pathlib.Path.write_text()`. This conveniently handles both creating a new file and overwriting an existing one, fulfilling the "upsert" requirement of the port.
-*   **File Editing (`edit_file`):** (**Updated in:** [Slice 09: Enhance `edit` Action Safety](../../slices/09-enhance-edit-action-safety.md)) The `edit_file` method first reads the file's content. It then counts the number of occurrences of the `find` string.
-    *   If the count is 0, it raises `SearchTextNotFoundError`.
-    *   If the count is greater than 1, it raises `MultipleMatchesFoundError`.
-    *   If the count is exactly 1, it performs the replacement and writes the new content back to the file.
+*   **File Editing (`edit_file`):** (**Updated in:** [Slice 11: Implement Smart Indentation for Edit Action](/docs/slices/11-smart-indentation-for-edit-action.md)) The `edit_file` method implements a "smart indentation" feature for multiline edits. It first finds the requested block of text and captures its base indentation. It then normalizes the `replace` block (using `textwrap.dedent`) to preserve its internal relative indentation. Finally, it applies the captured base indentation to the normalized `replace` block before performing the replacement. This makes the action more robust by relieving the AI of the need to calculate precise indentation. For safety, it still raises `SearchTextNotFoundError` if the `find` block is not found and `MultipleMatchesFoundError` if it is ambiguous.
 *   **Path Existence (`path_exists`):** (**Introduced in:** [Slice 13: Implement `context` Command](../../slices/13-context-command.md)) This will be implemented using `pathlib.Path.exists()`, which correctly checks for both files and directories.
 *   **Directory Creation (`create_directory`):** (**Introduced in:** [Slice 13: Implement `context` Command](../../slices/executor/13-context-command.md)) This will use `pathlib.Path.mkdir()` with the `parents=True` and `exist_ok=True` flags. This ensures the method is idempotent and can create parent directories as needed.
 *   **Default Context File Creation (`create_default_context_file`):** (**Introduced in:** [Slice 17: Refactor `context` Command Output](../../slices/executor/17-refactor-context-command-output.md)) This method creates the `.teddy` directory if it doesn't exist, adds a `.gitignore` file inside it to ignore all contents, and creates a default `perm.context` file with a simple list of starting files (`README.md`, `docs/ARCHITECTURE.md`).
@@ -80,34 +77,8 @@ def write_file(self, path: str, content: str) -> None:
 ```
 
 ### `edit_file`
-**(Updated in: [Slice 09: Enhance `edit` Action Safety](../../slices/09-enhance-edit-action-safety.md))**
-```python
-# Note: Exceptions are from the domain model
-from teddy.core.domain.models import SearchTextNotFoundError, MultipleMatchesFoundError
-
-def edit_file(self, path: str, find: str, replace: str) -> None:
-    # This is a conceptual example. The actual implementation handles multiline cases.
-    original_content = Path(path).read_text(encoding="utf-8")
-
-    # 1. Count occurrences to check for ambiguity.
-    num_matches = original_content.count(find)
-
-    # 2. Raise domain-specific exceptions based on the count.
-    if num_matches > 1:
-        raise MultipleMatchesFoundError(
-            message=f"Found {num_matches} occurrences. Aborting.",
-            content=original_content,
-        )
-    if num_matches == 0:
-        raise SearchTextNotFoundError(
-            message="Search text was not found.",
-            content=original_content,
-        )
-
-    # 3. Perform the replacement, now guaranteed to be a single, unambiguous match.
-    new_content = original_content.replace(find, replace, 1)
-    Path(path).write_text(new_content, encoding="utf-8")
-```
+**(Updated in: [Slice 11: Implement Smart Indentation for Edit Action](/docs/slices/11-smart-indentation-for-edit-action.md))**
+The implementation for multiline edits uses a regex-based approach to find the indented block and `textwrap.indent` to apply the correct indentation to the replacement. A simplified code snippet would not accurately capture the logic. Please refer to the implementation notes above and the source code for details.
 
 ### `path_exists`
 **Introduced in:** [Slice 13: Implement `context` Command](../../slices/13-context-command.md)
