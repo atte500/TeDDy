@@ -50,3 +50,4 @@ exclude = ["spikes/"]
 
 [tool.pytest.ini_options]
 norecursedirs = "spikes"
+addopts = ["--import-mode=importlib"]
