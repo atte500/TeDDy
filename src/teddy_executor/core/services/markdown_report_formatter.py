@@ -23,14 +23,20 @@ class MarkdownReportFormatter(IMarkdownReportFormatter):
     def _prepare_context(self, report: ExecutionReport) -> dict[str, Any]:
         """Prepares the report data for rendering."""
 
+        import json
+
         def format_datetime(dt):
             if dt.tzinfo is None:
                 dt = dt.replace(tzinfo=timezone.utc)
             return dt.isoformat()
 
+        def to_json(obj):
+            return json.dumps(obj, default=str)
+
         return {
             "report": report,
             "format_datetime": format_datetime,
+            "to_json": to_json,
         }
 
     def format(self, report: ExecutionReport) -> str:
