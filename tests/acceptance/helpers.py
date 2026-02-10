@@ -261,14 +261,18 @@ def parse_markdown_report(stdout: str) -> Dict[str, Any]:
                                 except (ValueError, SyntaxError):
                                     current_action["details"] = val_text
                             elif k_clean == "params":
+                                import json
                                 import ast
 
                                 try:
-                                    current_action["params"] = ast.literal_eval(
-                                        val_text
-                                    )
-                                except (ValueError, SyntaxError):
-                                    current_action["params"] = val_text
+                                    current_action["params"] = json.loads(val_text)
+                                except json.JSONDecodeError:
+                                    try:
+                                        current_action["params"] = ast.literal_eval(
+                                            val_text
+                                        )
+                                    except (ValueError, SyntaxError):
+                                        current_action["params"] = val_text
 
         # Append the last action
         if current_action:

@@ -26,7 +26,7 @@
 - **Status:** {{ log.status.value }} {% if log.status.value == "FAILURE" %}🔴{% elif log.status.value == "SUCCESS" %}🟢{% endif %}
 
 {% if log.params %}
-- **Params:** {{ log.params }}
+- **Params:** {{ to_json(log.params) }}
 {% endif %}
 {% if log.details %}
 - **Details:** {{ log.details }}
