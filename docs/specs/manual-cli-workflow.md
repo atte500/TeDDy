@@ -40,20 +40,16 @@ A core safety feature of TeDDy is the approval loop. When `teddy execute` is run
 
 ## 4. `teddy execute` CLI Output
 
-### 4.1. CLI Output vs. File Format
-To serve both workflows, we distinguish between the persistent file format and the ephemeral CLI output.
+### 4.1. Report Generation: The Concise Report
 
--   **Canonical File Format (`report.md`):** Used by the stateful interactive workflow, this is a **"Rich Report"** containing full original plan details. It is specified in the [Report Format Specification](./report-format.md).
--   **CLI Output (Manual Workflow):** The output printed to `stdout`/clipboard by `teddy execute` is a **"Concise Report"**, a subset of the rich report optimized for chat.
+The manual workflow uses a **Concise Report** for its CLI output, which is optimized for a chat-based, copy-paste workflow. This report is a compact rendering of the canonical report data model.
 
-### 4.2. Structure and Content of the Concise Report
-The concise report includes:
--   A top-level execution summary (`Overall Status`, timings, etc.).
--   Special, context-aware sections (Failures, `READ` additions, etc.), as needed.
--   A concisely formatted Action Log.
+The canonical data model and the distinction between the "Rich Report" (for files) and the "Concise Report" (for CLI) are formally defined in the [Report Format Specification](./report-format.md).
 
-#### Concise Action Log Formatting
-To minimize verbosity, the action log entries in the concise CLI output will include all metadata (`File Path`, `Description`, etc.) and the execution status, but will **omit** the large, verbatim content blocks from the original plan.
+The primary characteristics of the Concise Report are:
+-   It includes a top-level execution summary (`Overall Status`, timings, etc.).
+-   It includes special, context-aware sections (Failures, `READ` additions, etc.), as needed.
+-   Its Action Log includes all action metadata and status but **omits** the large, verbatim content blocks from the original plan (e.g., the `Rationale` and the full bodies of `CREATE` or `EDIT` actions).
 
 ## 5. Special Sections in the Concise Report
 

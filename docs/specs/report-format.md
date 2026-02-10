@@ -7,6 +7,15 @@ This document specifies the format for `report.md`. This report is a multi-purpo
 1.  **A Factual, Historical Record:** It serves as an immutable, factual log of what occurred during the execution of a `plan.md`. It details which actions were approved, which were skipped, and the precise outcome of each. Crucially, it is a purely historical document and has no direct influence on the context of future turns.
 2.  **Human & Machine Readable:** The format is Markdown-first, providing a clear, readable document for humans while maintaining a strict, parsable structure for tooling and AI consumption.
 
+### 1.2. Architecture: Single Data Model, Multiple Renderers
+
+To support different workflows, the system uses a single, canonical report data model that can be "rendered" into two distinct formats:
+
+1.  **Rich Report (this document):** The format detailed in this specification is the **Rich Report**. It is a verbose, file-based artifact (`report.md`) that serves as a complete, auditable historical record, including verbatim content from the original plan. This format is used by the stateful, interactive session workflow.
+2.  **Concise Report (CLI Output):** This is a compact rendering of the same underlying report data, optimized for the chat-based manual workflow. It omits large verbatim content blocks (like the full `Rationale` and action bodies) but preserves the essential outcomes and status information. Its specific content requirements are defined in the [Manual CLI Workflow Specification](./manual-cli-workflow.md).
+
+The core principle is that the `teddy execute` command always generates a single, structured report object internally. Different "renderer" components are then responsible for formatting that object into the appropriate output for the user's workflow.
+
 ## 2. Overall Document Structure
 
 A report is a single Markdown file with three main sections: the Report Header, the Original Plan Details, and the Execution Summary.
