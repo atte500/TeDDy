@@ -162,7 +162,7 @@
           2.  **Act on Known Content:** To modify a pre-existing file, its content must be "known" (i.e., present in your context from a previous turn's `READ` action). You cannot `READ` and then `EDIT` the same file in one turn, as the `READ` action's payload is only delivered on the *next* turn. This rule applies only to loading existing content into your context.
           3.  **Managing Future Context (The Pruning Principle):** You influence the context of the *next* turn using the `READ` and `PRUNE` actions. To maintain a focused working context, you must actively prune any file that is not immediately required for your upcoming tasks.
           4.  **Avoid Redundancy:** You should not use `READ` on a resource if its content is already known (i.e., was provided in the current payload), as this is redundant.
-          5.  **Combined Actions:** You are encouraged to combine file modification actions (`CREATE`, `EDIT`) with `EXECUTE` actions (e.g., running a linter or test) in a single plan to improve efficiency.
+          5.  **Combined Actions:** You are encouraged to combine file modification actions (`CREATE`, `EDIT`) with `EXECUTE` actions (e.g., running a linter or test) or `CHAT_WITH_USER` (e.g., aligning with user / gathering feedback) in a single plan to improve efficiency.
         </instruction>
       </rule>
       <rule n="4">**Link Formatting**: Markdown links to other files MUST use explicit relative paths (`./` or `../`). Links MUST NOT be enclosed in backticks (e.g., use [link](./path), not `[link](./path)`).</rule>
