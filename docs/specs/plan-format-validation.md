@@ -37,7 +37,6 @@ These checks ensure the overall document is well-formed.
 These checks ensure the `## Action Plan` section and the individual action blocks are correctly structured according to the [New Plan Format Specs](/docs/specs/new-plan-format.md).
 
 -   **[✓] Action headers must be H3:** Each action must be defined by a Level 3 (`###`) heading (e.g., `### `CREATE``).
--   **[✓] Actions must be separated by a horizontal rule:** A `---` must exist between each action block.
 
 ---
 
