@@ -27,4 +27,8 @@ actions:
 
     assert result.exit_code == 0
     assert "hello:world" in result.stdout
-    assert "status: SUCCESS" in result.stdout
+
+    from .helpers import parse_yaml_report
+
+    report = parse_yaml_report(result.stdout)
+    assert report["run_summary"]["status"] == "SUCCESS"

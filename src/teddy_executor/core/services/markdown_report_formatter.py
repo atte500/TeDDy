@@ -1,11 +1,10 @@
-"""
-This module contains the implementation of the MarkdownReportFormatter service.
-"""
+import os
+from datetime import timezone
+from typing import Any
 
-# Placeholder content
-# The Developer will implement this based on the design document.
-# See: docs/core/services/markdown_report_formatter.md
+from jinja2 import Environment, FileSystemLoader
 
+from teddy_executor.core.domain.models import ExecutionReport
 from teddy_executor.core.ports.outbound.markdown_report_formatter import (
     IMarkdownReportFormatter,
 )
@@ -16,6 +15,25 @@ class MarkdownReportFormatter(IMarkdownReportFormatter):
     Implements IMarkdownReportFormatter using the Jinja2 template engine.
     """
 
-    def format(self, report) -> str:
-        # The Developer will implement the Jinja2 rendering logic here.
-        return "# Execution Report: NOT IMPLEMENTED"
+    def __init__(self):
+        template_dir = os.path.join(os.path.dirname(__file__), "templates")
+        self.env = Environment(loader=FileSystemLoader(template_dir), trim_blocks=True)
+        self.template = self.env.get_template("concise_report.md.j2")
+
+    def _prepare_context(self, report: ExecutionReport) -> dict[str, Any]:
+        """Prepares the report data for rendering."""
+
+        def format_datetime(dt):
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt.isoformat()
+
+        return {
+            "report": report,
+            "format_datetime": format_datetime,
+        }
+
+    def format(self, report: ExecutionReport) -> str:
+        """Renders the execution report to a Markdown string."""
+        context = self._prepare_context(report)
+        return self.template.render(context)

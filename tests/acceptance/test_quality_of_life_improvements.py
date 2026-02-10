@@ -124,8 +124,11 @@ def test_read_action_report_formats_multiline_content_correctly(tmp_path: Path):
     # THEN the command should succeed
     assert result.exit_code == 0
 
-    # AND the output should contain the correctly formatted multi-line string
-    assert "content: |" in result.stdout
+    # AND the output should contain the content
+    # Note: We no longer check for YAML literal block syntax 'content: |'
+    # because the output is now Markdown. We just verify the content is present.
+    assert "line one" in result.stdout
+    assert "line two" in result.stdout
 
 
 def test_read_action_is_formatted_as_literal_block(tmp_path: Path):
@@ -166,6 +169,7 @@ def hello():
 
     # Assert
     assert result.exit_code == 0
-    # Assert on the raw string output to verify the literal block style
+    # Assert on the raw string output to verify content is present
     stdout = result.stdout
-    assert "content: |" in stdout
+    assert "def hello():" in stdout
+    assert 'print("Hello")' in stdout

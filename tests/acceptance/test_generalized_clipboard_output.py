@@ -121,7 +121,7 @@ def test_execute_command_copies_to_clipboard_by_default(
     report_dict = parse_yaml_report(result.stdout)
     # The actual copied content might have slightly different whitespace,
     # so we parse it too and compare the dictionaries for robustness.
-    actual_copied_dict = yaml.safe_load(mock_pyperclip.copy.call_args[0][0])
+    actual_copied_dict = parse_yaml_report(mock_pyperclip.copy.call_args[0][0])
     assert report_dict == actual_copied_dict
 
 

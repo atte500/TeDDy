@@ -1,5 +1,4 @@
 from typer.testing import CliRunner
-import yaml
 from pytest_httpserver import HTTPServer
 
 from teddy_executor.main import app
@@ -41,7 +40,9 @@ def test_read_action_can_read_from_url(httpserver: HTTPServer):
 
     # Assert
     assert result.exit_code == 0, f"CLI exited with error: {result.stdout}"
-    report = yaml.safe_load(result.stdout)
+    from tests.acceptance.helpers import parse_yaml_report
+
+    report = parse_yaml_report(result.stdout)
 
     assert "action_logs" in report
     assert len(report["action_logs"]) == 1

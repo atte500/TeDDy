@@ -1,6 +1,5 @@
 import sys
 from pathlib import Path
-import yaml
 from typer.testing import CliRunner
 
 from teddy_executor.main import app
@@ -38,8 +37,10 @@ def test_shell_adapter_handles_wildcards_on_posix():
         # THEN: The command succeeds and the output contains the filename
         assert result.exit_code == 0
 
-        # Parse the YAML output to make assertions resilient
-        report = yaml.safe_load(result.stdout)
+        # Parse the output to make assertions resilient
+        from .helpers import parse_yaml_report
+
+        report = parse_yaml_report(result.stdout)
         assert report["run_summary"]["status"] == "SUCCESS"
         action_log = report["action_logs"][0]
         assert action_log["status"] == "SUCCESS"
@@ -76,7 +77,9 @@ def test_shell_adapter_handles_pipes_on_posix():
 
     # THEN: The command succeeds and the output is correct
     assert result.exit_code == 0
-    report = yaml.safe_load(result.stdout)
+    from .helpers import parse_yaml_report
+
+    report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "SUCCESS"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "SUCCESS"
@@ -110,7 +113,9 @@ def test_shell_adapter_handles_env_vars_on_posix(monkeypatch):
 
     # THEN: The command succeeds and the output contains the expanded variable
     assert result.exit_code == 0
-    report = yaml.safe_load(result.stdout)
+    from .helpers import parse_yaml_report
+
+    report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "SUCCESS"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "SUCCESS"
@@ -146,7 +151,9 @@ def test_shell_adapter_handles_simple_command_on_posix():
 
         # THEN: The command succeeds and the output is correct
         assert result.exit_code == 0
-        report = yaml.safe_load(result.stdout)
+        from .helpers import parse_yaml_report
+
+        report = parse_yaml_report(result.stdout)
         assert report["run_summary"]["status"] == "SUCCESS"
         action_log = report["action_logs"][0]
         assert action_log["status"] == "SUCCESS"

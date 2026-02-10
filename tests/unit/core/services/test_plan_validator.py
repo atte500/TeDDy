@@ -1,10 +1,8 @@
-import pytest
 from pathlib import Path
 
 from teddy_executor.core.domain.models.plan import Plan, ActionData
 from teddy_executor.core.services.plan_validator import (
     PlanValidator,
-    PlanValidationError,
 )
 
 
@@ -36,11 +34,12 @@ def test_validate_edit_action_with_nonexistent_find_block(fs):
 
     validator = PlanValidator()
 
-    # Act & Assert
-    with pytest.raises(
-        PlanValidationError, match="The `FIND` block could not be located in the file"
-    ):
-        validator.validate(plan)
+    # Act
+    errors = validator.validate(plan)
+
+    # Assert
+    assert len(errors) == 1
+    assert "The `FIND` block could not be located in the file" in errors[0]
 
 
 def test_validate_edit_action_with_nonexistent_file(fs):
@@ -68,9 +67,12 @@ def test_validate_edit_action_with_nonexistent_file(fs):
 
     validator = PlanValidator()
 
-    # Act & Assert
-    with pytest.raises(PlanValidationError, match="File to edit does not exist"):
-        validator.validate(plan)
+    # Act
+    errors = validator.validate(plan)
+
+    # Assert
+    assert len(errors) == 1
+    assert "File to edit does not exist" in errors[0]
 
 
 def test_validate_edit_action_with_valid_find_block(fs):
@@ -100,8 +102,8 @@ def test_validate_edit_action_with_valid_find_block(fs):
 
     validator = PlanValidator()
 
-    # Act & Assert
-    try:
-        validator.validate(plan)
-    except PlanValidationError:
-        pytest.fail("PlanValidationError was raised unexpectedly.")
+    # Act
+    errors = validator.validate(plan)
+
+    # Assert
+    assert len(errors) == 0, f"Expected no errors, but got: {errors}"

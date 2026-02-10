@@ -1,7 +1,12 @@
 from dataclasses import is_dataclass, asdict
 from typing import Protocol, Any, Optional
 
-from teddy_executor.core.domain.models import ActionData, ActionLog, CommandResult
+from teddy_executor.core.domain.models import (
+    ActionData,
+    ActionLog,
+    ActionStatus,
+    CommandResult,
+)
 
 
 # --- Protocols for Dependencies ---
@@ -96,15 +101,15 @@ class ActionDispatcher:
             # Determine status based on result type
             if isinstance(execution_result, CommandResult):
                 if execution_result.return_code == 0:
-                    log_data["status"] = "SUCCESS"
+                    log_data["status"] = ActionStatus.SUCCESS
                 else:
-                    log_data["status"] = "FAILURE"
+                    log_data["status"] = ActionStatus.FAILURE
             else:
-                log_data["status"] = "SUCCESS"
+                log_data["status"] = ActionStatus.SUCCESS
 
             log_data["details"] = result_to_serialize
         except Exception as e:
-            log_data["status"] = "FAILURE"
+            log_data["status"] = ActionStatus.FAILURE
             log_data["details"] = str(e)
 
         return ActionLog(**log_data)

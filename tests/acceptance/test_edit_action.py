@@ -59,7 +59,9 @@ def test_edit_action_file_not_found(monkeypatch, tmp_path: Path):
     # Assert
     assert result.exit_code == 1
     report = parse_yaml_report(result.stdout)
+    # The new validation logic catches this before execution
+    # So the status is FAILURE (mapped from VALIDATION_FAILED)
     assert report["run_summary"]["status"] == "FAILURE"
-    action_log = report["action_logs"][0]
-    assert action_log["status"] == "FAILURE"
-    assert "No such file or directory" in action_log["details"]
+    # Validation errors are not in action_logs, so we skip checking action_logs
+    # and instead verify the error message in the output if possible, or just accept the status.
+    assert "File to edit does not exist" in result.stdout
