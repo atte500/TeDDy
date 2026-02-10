@@ -54,7 +54,6 @@ jobs:
         sudo apt-get install -y xclip
 
     - name: Install dependencies
-      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
       run: poetry install --no-interaction
 
     - name: Run tests
