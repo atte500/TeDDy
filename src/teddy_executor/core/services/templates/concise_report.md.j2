@@ -1,16 +1,34 @@
 {#
-  Placeholder template for the concise Markdown report.
-  The Developer will implement the full template based on the specifications.
-  See: docs/specs/manual-cli-workflow.md
-  See: docs/specs/report-format.md
+  Minimal working template for the concise Markdown report.
+  Supports basic status reporting and failure details.
 #}
-# Execution Report: {{ report.overall_status }}
+# Execution Report: {% if report.run_summary.status.value == "VALIDATION_FAILED" %}Validation Failed{% else %}{{ report.run_summary.status.value }}{% endif %} {% if report.run_summary.status.value == "SUCCESS" %}🟢{% elif report.run_summary.status.value == "FAILURE" %}🔴{% elif report.run_summary.status.value == "VALIDATION_FAILED" %}🔴{% else %}🟡{% endif %}
 
-## Summary
-| # | Action | Details | Status |
-|---|---|---|---|
-{% for action in report.actions %}
-| {{ loop.index }} | `{{ action.type }}` | {{ action.details }} | {{ action.status }} |
+- **Overall Status:** {% if report.run_summary.status.value == "VALIDATION_FAILED" %}Validation Failed{% else %}{{ report.run_summary.status.value }}{% endif %} {% if report.run_summary.status.value == "SUCCESS" %}🟢{% elif report.run_summary.status.value == "FAILURE" %}🔴{% elif report.run_summary.status.value == "VALIDATION_FAILED" %}🔴{% else %}🟡{% endif %}
+
+- **Execution Start Time:** {{ format_datetime(report.run_summary.start_time) }}
+
+- **Execution End Time:** {{ format_datetime(report.run_summary.end_time) }}
+
+{% if report.validation_result %}
+## Validation Errors
+{% for error in report.validation_result %}
+- {{ error }}
 {% endfor %}
+{% endif %}
 
-{# Add sections for Validation Errors, Resource Contents, and Failed Action Details as needed #}
+## Execution Summary
+
+### Action Log
+{% for log in report.action_logs %}
+
+#### `{{ log.action_type.upper() }}`
+- **Status:** {{ log.status.value }} {% if log.status.value == "FAILURE" %}🔴{% elif log.status.value == "SUCCESS" %}🟢{% endif %}
+
+{% if log.params %}
+- **Params:** {{ log.params }}
+{% endif %}
+{% if log.details %}
+- **Details:** {{ log.details }}
+{% endif %}
+{% endfor %}

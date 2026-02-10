@@ -9,6 +9,7 @@ class RunStatus(str, Enum):
 
     SUCCESS = "SUCCESS"
     FAILURE = "FAILURE"
+    VALIDATION_FAILED = "VALIDATION_FAILED"
 
 
 class ActionStatus(str, Enum):
@@ -46,3 +47,4 @@ class ExecutionReport:
 
     run_summary: RunSummary
     action_logs: Sequence[ActionLog] = field(default_factory=list)
+    validation_result: Sequence[str] | None = None

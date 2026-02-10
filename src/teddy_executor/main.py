@@ -5,11 +5,21 @@ import pyperclip
 import punq
 import typer
 
-from teddy_executor.core.domain.models import ExecutionReport, RunStatus
+from datetime import datetime, timezone
+
+
+from teddy_executor.core.domain.models import (
+    ExecutionReport,
+    RunStatus,
+    RunSummary,
+)
 from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
+from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
+from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
 from teddy_executor.core.ports.outbound import (
     IEnvironmentInspector,
     IFileSystemManager,
+    IMarkdownReportFormatter,
     IRepoTreeGenerator,
     IShellExecutor,
     IUserInteractor,
@@ -23,13 +33,13 @@ from teddy_executor.core.services.action_dispatcher import (
 from teddy_executor.core.services.action_factory import ActionFactory
 from teddy_executor.core.services.context_service import ContextService
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
-from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
 from teddy_executor.core.services.markdown_plan_parser import MarkdownPlanParser
-from teddy_executor.core.services.yaml_plan_parser import YamlPlanParser
-from teddy_executor.adapters.inbound.cli_formatter import (
-    format_project_context,
-    format_report_as_yaml,
+from teddy_executor.core.services.markdown_report_formatter import (
+    MarkdownReportFormatter,
 )
+from teddy_executor.core.services.plan_validator import PlanValidator
+from teddy_executor.core.services.yaml_plan_parser import YamlPlanParser
+from teddy_executor.adapters.inbound.cli_formatter import format_project_context
 from teddy_executor.adapters.outbound.console_interactor import ConsoleInteractorAdapter
 from teddy_executor.adapters.outbound.local_file_system_adapter import (
     LocalFileSystemAdapter,
@@ -61,6 +71,8 @@ def create_container() -> punq.Container:
     container.register(IEnvironmentInspector, SystemEnvironmentInspector)
     container.register(IActionFactory, ActionFactory)
     container.register(ActionDispatcher)
+    container.register(IPlanValidator, PlanValidator)
+    container.register(IMarkdownReportFormatter, MarkdownReportFormatter)
     # PlanParser is now created by the factory
     # RunPlanUseCase is instantiated manually in the `execute` command
     container.register(IGetContextUseCase, ContextService)
@@ -243,39 +255,57 @@ def execute(
 ):
     report: Optional[ExecutionReport] = None
     interactive_mode = not yes
+    start_time = datetime.now(timezone.utc)
 
     try:
         final_plan_content = _get_plan_content(plan_content, plan_file)
-
-        # Factory determines and creates the correct parser
         parser = create_parser_for_plan(plan_file, final_plan_content)
+        plan = parser.parse(final_plan_content)
 
-        # Manually construct the orchestrator with the runtime-determined parser
-        action_dispatcher = container.resolve(ActionDispatcher)
-        user_interactor = container.resolve(IUserInteractor)
-        orchestrator = ExecutionOrchestrator(
-            plan_parser=parser,
-            action_dispatcher=action_dispatcher,
-            user_interactor=user_interactor,
-        )
+        # Pre-flight validation
+        plan_validator = container.resolve(IPlanValidator)
+        # The PlanValidator's internal logic correctly handles paths relative to cwd.
+        validation_result = plan_validator.validate(plan)
 
-        report = orchestrator.execute(
-            plan_content=final_plan_content, interactive=interactive_mode
-        )
+        if validation_result.errors:
+            report = ExecutionReport(
+                run_summary=RunSummary(
+                    status=RunStatus.VALIDATION_FAILED,
+                    start_time=start_time,
+                    end_time=datetime.now(timezone.utc),
+                ),
+                validation_result=validation_result,
+            )
+        else:
+            # Manually construct the orchestrator
+            action_dispatcher = container.resolve(ActionDispatcher)
+            user_interactor = container.resolve(IUserInteractor)
+            orchestrator = ExecutionOrchestrator(
+                plan_parser=parser,  # Re-uses the parser
+                action_dispatcher=action_dispatcher,
+                user_interactor=user_interactor,
+            )
+            report = orchestrator.execute(
+                plan_content=final_plan_content, interactive=interactive_mode
+            )
 
     except (pyperclip.PyperclipException, NotImplementedError) as e:
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(code=1)
 
     if report:
-        formatted_report = format_report_as_yaml(report)
+        report_formatter = container.resolve(IMarkdownReportFormatter)
+        formatted_report = report_formatter.format(report)
         _echo_and_copy(
             formatted_report,
             no_copy=no_copy,
             confirmation_message="Execution report copied to clipboard.",
         )
 
-        if report.run_summary.status == RunStatus.FAILURE:
+        if report.run_summary.status in (
+            RunStatus.FAILURE,
+            RunStatus.VALIDATION_FAILED,
+        ):
             raise typer.Exit(code=1)
 
 

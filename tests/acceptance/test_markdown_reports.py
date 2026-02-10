@@ -50,6 +50,6 @@ Hello, TeDDy!
     assert result.exit_code == 1, (
         f"Expected exit code 1, but got {result.exit_code}. Output:\\n{result.stdout}"
     )
-    assert "Overall Status: Validation Failed 🔴" in result.stdout
+    assert "**Overall Status:** Validation Failed 🔴" in result.stdout
     assert "## Validation Errors" in result.stdout
     assert "The `FIND` block could not be located in the file" in result.stdout
