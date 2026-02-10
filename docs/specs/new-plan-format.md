@@ -144,27 +144,27 @@ All actions are located under the `## Action Plan` heading. Each action is defin
     - **File Path:** [prompts/architect.xml](/prompts/architect.xml)
     - **Description:** Update the output formatting instructions.
 
-    `FIND:`
+    #### `FIND:`
     `````xml
     A unique snippet of text, which might include ``` backticks, to be replaced.
     `````
-    `REPLACE:`
+    #### `REPLACE:`
     `````xml
     The new content.
     `````
 
-    `FIND:`
+    #### `FIND:`
     ````xml
     Another snippet to replace.
     ````
-    `REPLACE:`
+    #### `REPLACE:`
     ````xml
     Its corresponding new content.
     ````
     ``````
 -   **Parsing Rules:**
     1.  Extract `File Path` and `Description`.
-    2.  The parser looks for sequential pairs of `FIND:` and `REPLACE:` blocks. Each block is a standard fenced code block.
+    2.  The parser looks for sequential pairs of `#### FIND:` and `#### REPLACE:` headings. The content for each is the fenced code block that immediately follows the heading.
     3.  **Surgical Changes:** An `EDIT` action must contain at least one `FIND`/`REPLACE` pair. Full-file overwrites are strictly forbidden.
 
 ### 5.4. `EXECUTE`
@@ -312,6 +312,8 @@ software development release manager responsibilities
 gitflow vs trunk-based development final steps
 ````
 
+---
+
 ### `CREATE`
 - **File Path:** [docs/briefs/01-finisher-agent-brief.md](/docs/briefs/01-finisher-agent-brief.md)
 - **Description:** Create the initial draft of the brief for the new "Finisher" agent.
@@ -325,18 +327,20 @@ To streamline the end-of-task workflow by automating final code/documentation cl
 *(This section will be populated after research is complete.)*
 ````
 
+---
+
 ### `EDIT`
 - **File Path:** [prompts/pathfinder.xml](/prompts/pathfinder.xml)
 - **Description:** Temporarily add the Finisher agent to the Pathfinder's list of handoff targets.
 
-`FIND:`
+#### `FIND:`
 ````xml
 <handoff_targets>
   <agent>Architect</agent>
   <agent>Debugger</agent>
 </handoff_targets>
 ````
-`REPLACE:`
+#### `REPLACE:`
 ````xml
 <handoff_targets>
   <agent>Architect</agent>
@@ -345,10 +349,14 @@ To streamline the end-of-task workflow by automating final code/documentation cl
 </handoff_targets>
 ````
 
+---
+
 ### `CHAT_WITH_USER`
 I have created a draft brief at `docs/briefs/01-finisher-agent-brief.md` and will now begin my research. I will report back with my findings and a more detailed proposal for the brief.
 
 Does this initial direction meet with your approval?
+
+---
 
 ### `INVOKE`
 - **Agent:** Architect

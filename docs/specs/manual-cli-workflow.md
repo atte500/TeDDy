@@ -138,11 +138,7 @@ The `INVOKE`, `CONCLUDE`, and `MEMO` actions are specific to stateful, automated
 ## 6. Pre-flight Validation
 To ensure robustness and provide fast feedback, a comprehensive validation phase must be executed *before* any action is performed, regardless of the workflow mode (interactive or manual).
 
--   **Requirement:** Before attempting execution, the `teddy execute` command MUST run a series of pre-flight checks against the plan and the current workspace. These checks are detailed in the `interactive-session-workflow.md` specification and include, but are not limited to:
-    -   Plan parsability and valid formatting.
-    -   `CREATE`: Target file path must not exist.
-    -   `EDIT`: Target file must exist and `FIND` blocks must match uniquely.
-    -   `PRUNE`: Target file must be in the context.
+-   **Requirement:** Before attempting execution, the `teddy execute` command MUST run a series of pre-flight checks against the plan and the current workspace. The complete, canonical list of these checks is defined in the **[Plan Validation Specification](/docs/specs/plan-format-validation.md)**.
 
 -   **Behavior in Manual Workflow:** If any validation check fails:
     1.  Execution is **immediately terminated**. No actions are performed.

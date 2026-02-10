@@ -292,23 +292,9 @@ This phase occurs at the beginning of the `teddy execute` command, before the us
 
 ### 8.2 Pre-flight Checks
 
-The following checks are performed on the `plan.md` and the current state of the workspace:
+The plan is validated against a comprehensive set of structural and logical rules. These rules ensure the plan is not only well-formed but also executable against the current state of the workspace.
 
-#### General Checks
--   **Parsing:** The `plan.md` must be well-formed and parsable.
-
-#### Memo Checks
--   **`[+] ADD`**: The memo to be added must not already exist in `memos.yaml` to prevent duplicates.
--   **`[-] REMOVE`**: The memo to be removed must exist exactly as specified in `memos.yaml`.
-
-#### Action Checks
--   **`CREATE`**: The target file path must not already exist.
--   **`EDIT`**:
-    -   The target file path must exist.
-    -   The target file must be listed in the current `turn.context`.
-    -   Each `FIND` block must match a unique, single block of text in the target file. Failures occur for zero matches or multiple matches.
-    -   The `REPLACE` block must be different than the `FIND` block it's replacing.
--   **`PRUNE`**: The target file must be listed in the current `turn.context`.
+The complete, canonical list of these checks is defined in the **[Plan Validation Specification](./plan-format-validation.md)**.
 
 ### 8.3 The Automated Re-plan Loop
 

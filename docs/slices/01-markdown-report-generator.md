@@ -55,11 +55,12 @@ To improve the usability and observability of the TeDDy manual workflow by repla
   ````markdown
   ### `EDIT`
   - **File Path:** `hello.txt`
-  `FIND:`
+
+  #### `FIND:`
   ````text
   Goodbye, world!
   ````
-  `REPLACE:`
+  #### `REPLACE:`
   ````text
   Hello, TeDDy!
   ````
@@ -187,7 +188,7 @@ This feature will be implemented by following a strict outside-in, Test-Driven D
     -   Create a new test file: `tests/acceptance/test_markdown_reports.py`.
 -   **[ ] 2. Test & Implement Plan Validation:**
     -   In the new test file, write a failing acceptance test for the **"Plan fails pre-flight validation"** scenario defined in the acceptance criteria.
-    -   Implement the `PlanValidator` service by following a TDD approach with unit tests in `tests/unit/core/services/test_plan_validator.py`.
+    -   Implement the `PlanValidator` service by following a TDD approach with unit tests in `tests/unit/core/services/test_plan_validator.py`. The service must implement all checks defined in the canonical **[Plan Validation Specification](../../specs/plan-format-validation.md)**.
         -   Reference: [`PlanValidator` Design Doc](../core/services/plan_validator.md)
     -   Refactor the `execute` command in `src/teddy_executor/main.py` to use the new `PlanValidator` service. Wire up the dependency in the composition root.
     -   Ensure the acceptance test now passes.

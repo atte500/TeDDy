@@ -93,9 +93,7 @@ Implementation must be done incrementally through the following dependency-aware
 **Goal:** Eliminate "approve-then-fail" errors by implementing a robust pre-flight validation and self-correction loop.
 
 -   **[ ] Task: Implement Plan Validator Service:**
-    -   Create a new `PlanValidator` service responsible for executing all pre-flight checks as defined in the specification.
-    -   This must include a check to ensure the `plan.md` is well-formed and parsable.
-    -   It must also include checks for `FIND` block matching, `CREATE` conflicts, and `EDIT`/`PRUNE` context requirements.
+    -   Create a new `PlanValidator` service responsible for executing all pre-flight checks as defined in the canonical **[Plan Validation Specification](/docs/specs/plan-format-validation.md)**.
 -   **[ ] Task: Integrate Validator into `execute` Command:**
     -   In `main.py`, before the approval phase of the `execute` command, invoke the `PlanValidator`.
 -   **[ ] Task: Implement Automated Re-plan Loop:**
