@@ -80,6 +80,19 @@ def run_cli_command(
         return runner.invoke(app, args, input=input)
 
 
+def run_cli_with_markdown_plan_on_clipboard(
+    monkeypatch, plan_content: str, cwd: Path
+) -> Result:
+    """
+    Runs the teddy 'execute' command, simulating a Markdown plan on the clipboard.
+    """
+    with monkeypatch.context() as m:
+        m.chdir(cwd)
+        # By default, `execute` reads from clipboard, which is simulated by stdin in tests.
+        # We also pass --yes to auto-approve any steps, though for validation tests it won't get that far.
+        return runner.invoke(app, ["execute", "--yes", "--no-copy"], input=plan_content)
+
+
 def run_cli_with_plan(monkeypatch, plan_structure: list | dict, cwd: Path) -> Result:
     """
     Runs the teddy 'execute' command with a plan structure using CliRunner.
