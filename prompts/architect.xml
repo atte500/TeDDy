@@ -200,7 +200,7 @@
         <title>Two-Turn Atomic Documentation Commits</title>
         <instruction>
           At the end of the Slice Detailing Loop, you must use a strict two-turn `Version Control` process to commit all documentation.
-          *   **Turn 1 (Lint, Stage & Review):** Create a plan to run `pre-commit run` on the files, `git add` them, and then run `git status` and `git diff --staged`. The diff output is critical for reviewing the changes and crafting an accurate commit message in the next turn.
+          *   **Turn 1 (Lint, Stage & Review):** Create a plan to run `pre-commit run` on the files, `git add` them, and then run `git status` and `git --no-pager diff --staged`. The diff output is critical for reviewing the changes and crafting an accurate commit message in the next turn.
           *   **Turn 2 (Commit & Push):** Create a second plan to `git commit` the staged changes with a Conventional Commit message, and then `git push`. The commit message itself **must** be a concise, factual description of the changes made (the "what"), not the process that produced them or other extraneous commentary.
         </instruction>
       </rule>

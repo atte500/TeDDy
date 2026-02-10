@@ -117,7 +117,7 @@
 
           #### The Version Control Protocol
           This is a mandatory, two-plan sequence for versioning any file-based changes *before* final handoff.
-          1.  **Plan 1 (Lint, Stage & Review):** Create a plan to run `pre-commit run` on the changed files, `git add` them, and then run `git status` and `git diff --staged`. The diff output is critical for reviewing the changes and crafting an accurate commit message in the next turn.
+          1.  **Plan 1 (Lint, Stage & Review):** Create a plan to run `pre-commit run` on the changed files, `git add` them, and then run `git status` and `git --no-pager diff --staged`. The diff output is critical for reviewing the changes and crafting an accurate commit message in the next turn.
           2.  **Plan 2 (Commit & Push):** Create a second plan to `git commit` the staged changes with a Conventional Commit message, and then `git push`. The commit message itself **must** be a concise, factual description of the changes made (the "what"), not the process that produced them or other extraneous commentary.
         </action>
       </phase>
