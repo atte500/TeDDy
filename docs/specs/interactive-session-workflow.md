@@ -117,10 +117,14 @@ Initializes a new session directory and bootstraps it for "Turn 1".
 
 -   **Arguments:**
     -   `<name>`: A descriptive, kebab-case name for the session (e.g., "implement-auth-flow").
+-   **Options:**
+    -   `--agent <agent_name>`: (Optional) The name of the agent to use for the session. Defaults to `pathfinder`.
 -   **Behavior:**
     1.  Creates the session directory and the `01/` turn directory.
     2.  Creates the session-specific context file at `<session>/session.context`.
-    3.  Uses `teddy get-prompt` to fetch the default agent prompt and saves it as `01/system_prompt.xml`.
+    3.  Uses `teddy get-prompt` to fetch the agent prompt and saves it as `01/system_prompt.xml`.
+        -   If the `--agent` option is provided, it fetches the specified agent's prompt. If the agent name is invalid, the command fails with an error.
+        -   If the `--agent` option is not provided, it fetches the `pathfinder` agent's prompt by default.
     4.  The session is now ready. The user's next step is typically to run `teddy context` to generate the initial `input.md`.
     5.  Outputs the path to the new session directory.
 

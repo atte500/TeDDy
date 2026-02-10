@@ -52,6 +52,7 @@ Implementation must be done incrementally through the following dependency-aware
 -   **[ ] Task: Refactor CLI in `main.py`:**
     -   Refactor `main.py` to support the new command structure.
     -   Implement the `new`, `plan`, and `execute` commands.
+        -   The `teddy new` command must support an optional `--agent <agent_name>` flag, defaulting to `pathfinder` and erroring on invalid agent names.
 
 ---
 ### **Slice 2: Context-Centric Workflow**
