@@ -1,4 +1,4 @@
-# Architectural Brief: Markdown Report Generator & Manual Workflow
+# Markdown Report Generator & Manual Workflow
 
 ## 1. Goal (The "Why")
 

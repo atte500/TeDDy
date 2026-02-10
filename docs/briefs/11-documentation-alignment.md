@@ -1,4 +1,4 @@
-# Architectural Brief: Documentation Alignment
+# Documentation Alignment
 
 ## 1. Goal (The "Why")
 

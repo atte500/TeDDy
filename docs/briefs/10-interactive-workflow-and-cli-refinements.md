@@ -1,4 +1,4 @@
-# Architectural Brief: Interactive Workflow & CLI Refinements
+# Interactive Workflow & CLI Refinements
 
 ## 1. Goal (The "Why")
 

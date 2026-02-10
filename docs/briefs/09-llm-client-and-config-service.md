@@ -1,4 +1,4 @@
-# Architectural Brief: LLM Client and Config Service
+# LLM Client and Config Service
 
 ## 1. Goal (The "Why")
 

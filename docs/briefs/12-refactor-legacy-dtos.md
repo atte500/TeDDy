@@ -1,4 +1,4 @@
-# Architectural Brief: Refactor Legacy Domain DTOs
+# Refactor Legacy Domain DTOs
 
 ## 1. Goal (The "Why")
 
