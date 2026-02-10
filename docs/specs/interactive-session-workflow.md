@@ -2,6 +2,16 @@
 
 ## 1. Overview
 
+### Architectural Distinction: Stateless vs. Stateful Execution
+
+It is critical to distinguish between two modes of operation:
+
+1.  **Stateless (Manual) Execution:** This is the default behavior of the `teddy execute` command when run as a standalone tool. It performs the core loop of validating a plan, executing actions, and generating a self-contained report. It has **no side-effects** on the file system beyond the actions in the plan itself (i.e., it does not create turn directories or manage context files). This is the mode defined in the [Manual CLI Workflow Specification](./manual-cli-workflow.md).
+
+2.  **Stateful (Interactive) Execution:** This mode is an extension of the stateless core. It is orchestrated by higher-level session commands like `teddy resume`. These commands will *call* the core `execute` logic internally and then perform additional, stateful session management tasks, such as the "Turn Transition Algorithm" (creating the next turn directory, managing context files, etc.).
+
+This specification primarily defines the behavior of the **stateful** session commands and the side-effects they layer on top of the core, stateless executor.
+
 This document specifies the design and behavior of the interactive, file-based session workflow for TeDDy. The goal is to create a robust, stateless, and versionable workflow that provides a complete, auditable history of the AI collaboration.
 
 The core of this workflow is the **Context-Centric Lifecycle**: a dedicated `input.md` file serves as the single, complete input for the AI's planning phase for each turn. This decouples the historical `report.md` from the forward-looking planning process, creating a clear, stateless flow of information from one turn to the next.

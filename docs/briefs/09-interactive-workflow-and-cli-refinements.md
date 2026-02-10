@@ -115,8 +115,7 @@ Implementation must be done incrementally through the following dependency-aware
     -   Update the main execution loop to time each action and populate `duration_ms`.
     -   Implement the system-level side-effects for `READ`, `PRUNE`, and `INVOKE` actions, ensuring they modify the artifacts in the *next* (`N+1`) turn directory.
     -   Ensure the path of a report just generated (e.g., `01/report.md`) is added to the `02/turn.context` file.
--   **[ ] Task: Implement `MarkdownReportFormatter`:**
-    -   Create the `MarkdownReportFormatter` service to convert the `ExecutionReport` object into a simplified Markdown string, adhering to the updated [Report Format Specification](/docs/specs/report-format.md).
+
 
 ---
 ### **Slice 6: Agent Collaboration Model**

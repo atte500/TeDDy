@@ -9,7 +9,7 @@ This document specifies the format for `report.md`. This report is a multi-purpo
 
 ## 2. Overall Document Structure
 
-A report is a single Markdown file with two main sections:
+A report is a single Markdown file with three main sections: the Report Header, the Original Plan Details, and the Execution Summary.
 
 ```markdown
 # Execution Report: [Original Plan Title]
@@ -17,8 +17,11 @@ A report is a single Markdown file with two main sections:
 - **Original Plan:** [path/to/original/plan.md](/path/to/original/plan.md)
 ...
 
-## 1. Rationale
-... (The "Why" - Copied from the original plan)
+## 1. Original Plan Details
+### Header
+... (The verbatim header from the plan)
+### Rationale
+... (The verbatim rationale from the plan)
 
 ## 2. Execution Summary
 ... (The "What Happened" - The log of actions and outcomes)
@@ -28,25 +31,40 @@ A report is a single Markdown file with two main sections:
 
 ## 3. Section Specifications
 
-### 3.1. Report Header
+### 3.1. Report Header & Summary
 
--   **Purpose:** Contains the report's title and high-level summary metadata about the execution phase.
+-   **Purpose:** Provides a high-level summary of the execution phase itself.
 -   **Format:**
-    ```markdown
-    # Execution Report: Research and Propose a New "Finisher" Agent Role
+    ````markdown
+    # Execution Report: [Original Plan Title]
     - **Overall Status:** Partial 🟡
     - **Original Plan:** [01/plan.md](/01/plan.md)
-    - **Start Time:** 2023-10-27T10:00:00.123Z
-    - **End Time:** 2023-10-27T10:00:05.567Z
+    - **Execution Start Time:** 2023-10-27T10:00:00.123Z
+    - **Execution End Time:** 2023-10-27T10:00:05.567Z
     - **Actions:** 5 Total / 4 Approved / 1 Skipped
     - **Outcomes:** 3 Succeeded / 1 Failed
     - **User Prompt:** (Optional) "I did not implement the EDIT because I feel it's redundant, please proceed without it."
-    ```
+    ````
 
-### 3.2. Section 1: Rationale
+### 3.2. Section 1: Original Plan Details
 
--   **Purpose:** Provides the AI with the essential context of *why* the previous turn's actions were attempted.
--   **Content:** This section contains the verbatim, unchanged `Rationale` block copied directly from the `plan.md` that was executed.
+-   **Purpose:** Provides the AI with the complete context of the original plan.
+-   **Content:** This section contains the verbatim, unchanged header (Title, Status, Agent, etc.) and the full `Rationale` block copied directly from the `plan.md` that was executed. This ensures zero context loss.
+-   **Format:**
+    ````markdown
+    ## 1. Original Plan Details
+
+    ### Header
+    ````markdown
+    # [Original Plan Title]
+    - **Status:** [Original Status]
+    - **Plan Type:** [Original Plan Type]
+    - **Agent:** [Original Agent]
+    ````
+
+    ### Rationale
+    ... (The verbatim "Rationale" block from the plan)
+    ````
 -   **Format:**
     `````markdown
     ## 1. Rationale
@@ -70,7 +88,7 @@ A report is a single Markdown file with two main sections:
     `````
 -   **Subsection: Action Log**
     -   Provides an action-by-action breakdown. Each action from the plan is represented by its own `####` heading.
-    -   **Crucially, each action block in the report preserves the complete, verbatim metadata list (e.g., `File Path`, `Description`, `Expected Outcome`, `cwd`, `env`) from the original plan.** This ensures a direct, one-to-one mapping between the plan and the report.
+    -   **Crucially, to ensure the report is a complete, self-contained artifact that prevents context loss between turns, each action log MUST preserve the entire original action block from the plan.** This includes all metadata *and* all content blocks (e.g., the full code block for a `CREATE` action, or both the `FIND` and `REPLACE` blocks for an `EDIT` action). The execution status and details are then appended to this original content.
     -   Every action must have a **Status** (`Approved ✅` or `Skipped 🟡`).
     -   Approved actions must have an **Execution** status (`Success 🟢` or `Failure 🔴`) and may include an `Execution Details` block with outputs or errors.
 
