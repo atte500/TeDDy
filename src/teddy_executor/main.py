@@ -267,7 +267,7 @@ def execute(
         # The PlanValidator's internal logic correctly handles paths relative to cwd.
         validation_result = plan_validator.validate(plan)
 
-        if validation_result.errors:
+        if validation_result:
             report = ExecutionReport(
                 run_summary=RunSummary(
                     status=RunStatus.VALIDATION_FAILED,
