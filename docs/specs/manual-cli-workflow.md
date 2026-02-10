@@ -59,7 +59,7 @@ The concise report will conditionally include the following sections as needed.
 
 When a `READ` action is successfully executed, the system's internal logic would normally add the file to the next turn's context. In the manual workflow, this must be made explicit.
 
--   **Requirement:** If any `READ` actions were successful, the report must include a top-level `## Context Additions` section. This section provides a clear, copyable list of files that should be considered part of the context for the *next* turn.
+-   **Requirement:** If any `READ` actions were successful, the report must include a top-level `## Resource Contents` section. This section provides the full, verbatim content of the read files.
 
 -   **Example Report Snippet:**
     `````markdown
@@ -67,10 +67,15 @@ When a `READ` action is successfully executed, the system's internal logic would
     - **Overall Status:** Completed 🟢
     ...
 
-    ## Context Additions
-    The following resources were successfully read and should be included in the context for your next plan:
-    - [docs/ARCHITECTURE.md](/docs/ARCHITECTURE.md)
-    - [src/teddy_executor/main.py](/src/teddy_executor/main.py)
+    ## Resource Contents
+    The following resource contents were successfully read.
+    ---
+    **Resource:** `[docs/ARCHITECTURE.md](/docs/ARCHITECTURE.md)`
+    ````markdown
+    # System Architecture: TeDDy
+    ... (full content of the architecture file) ...
+    ````
+    ---
 
     ## Execution Summary
     ...
@@ -116,10 +121,10 @@ When an action fails, the report must provide a complete, self-contained "error 
     ...
     `````
 
-### 5.3. Handling Unsupported Actions (`INVOKE`, `CONCLUDE`)
-The `INVOKE` and `CONCLUDE` actions are specific to the stateful, interactive session workflow and have no equivalent in the manual mode.
+### 5.3. Handling Unsupported Actions (`INVOKE`, `CONCLUDE`, `MEMO`)
+The `INVOKE`, `CONCLUDE`, and `MEMO` actions are specific to stateful, automated workflows and have no equivalent in the manual mode.
 
--   **Requirement:** If a plan contains an `INVOKE` or `CONCLUDE` action, the executor should treat it as a no-op. The action will be logged in the report with a status indicating it was recognized but skipped because it is unsupported in this mode.
+-   **Requirement:** If a plan contains an `INVOKE`, `CONCLUDE`, or `MEMO` action, the executor should treat it as a no-op. The action will be logged in the report with a status indicating it was recognized but skipped because it is unsupported in this mode.
 
 -   **Example Report Snippet:**
     ````markdown

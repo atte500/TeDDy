@@ -20,6 +20,7 @@ ddgs = "^9.10.0"
 pathspec = "^0.12.1"
 punq = "^0.7.0"
 mistletoe = "^1.3.0"
+jinja2 = "^3.1.6"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"

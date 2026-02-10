@@ -20,7 +20,7 @@ We will introduce a new, dedicated service for formatting reports and integrate 
     -   **Responsibility:** To convert the `ExecutionReport` domain object into a Markdown string.
     -   **Compliance:** The output must strictly adhere to the `report-format.md` spec.
     -   **Manual Workflow Features:** It must implement the special formatting rules from the `manual-cli-workflow.md` spec, including:
-        -   A `## Context Additions` section for successful `READ` actions.
+        -   A `## Resource Contents` section for successful `READ` actions.
         -   A `## Failed Action Details` section, including the actual content of relevant files.
         -   Graceful reporting of unsupported actions (`INVOKE`, `CONCLUDE`).
         -   "Smart Fencing" for all code blocks to ensure robust parsing.
@@ -64,8 +64,8 @@ This brief will be implemented in two distinct vertical slices.
 -   **[ ] Task: Enhance Data Gathering:**
     -   Update the execution logic to capture the results of `READ` actions.
     -   Update the failure handling logic to read the contents of files when `CREATE` or `EDIT` actions fail.
--   **[ ] Task: Enhance Formatter for Context Additions:**
-    -   Update the `MarkdownReportFormatter` to add the `## Context Additions` section to the report.
+-   **[ ] Task: Enhance Formatter for Resource Contents:**
+    -   Update the `MarkdownReportFormatter` to add the `## Resource Contents` section to the report for successful `READ` actions.
 -   **[ ] Task: Enhance Formatter for Failures:**
     -   Update the formatter to add the `## Failed Action Details` section, including the fetched file contents.
 -   **[ ] Task: Enhance Formatter for Unsupported Actions:**

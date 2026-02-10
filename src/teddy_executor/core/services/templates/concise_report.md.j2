@@ -1,0 +1,16 @@
+{#
+  Placeholder template for the concise Markdown report.
+  The Developer will implement the full template based on the specifications.
+  See: docs/specs/manual-cli-workflow.md
+  See: docs/specs/report-format.md
+#}
+# Execution Report: {{ report.overall_status }}
+
+## Summary
+| # | Action | Details | Status |
+|---|---|---|---|
+{% for action in report.actions %}
+| {{ loop.index }} | `{{ action.type }}` | {{ action.details }} | {{ action.status }} |
+{% endfor %}
+
+{# Add sections for Validation Errors, Resource Contents, and Failed Action Details as needed #}
