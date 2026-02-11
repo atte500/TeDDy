@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from .helpers import run_cli_with_markdown_plan_on_clipboard
+from .plan_builder import MarkdownPlanBuilder
 
 
 def test_plan_fails_pre_flight_validation(monkeypatch, tmp_path: Path):
@@ -14,32 +15,19 @@ def test_plan_fails_pre_flight_validation(monkeypatch, tmp_path: Path):
     file_to_edit = tmp_path / "hello.txt"
     file_to_edit.write_text("Hello, world!")
 
-    # Using as_posix() to ensure cross-platform compatibility for paths in plans
-    plan_content = f"""
-# Test Plan: Validation Failure
-- **Status:** Green 🟢
-- **Plan Type:** RED Phase
-- **Agent:** Developer
-
-## Rationale
-````text
-This plan is designed to fail validation because the FIND block doesn't exist.
-````
-
-## Action Plan
-### `EDIT`
-- **File Path:** {file_to_edit.as_posix()}
-- **Description:** An edit that should fail validation.
-
-`FIND:`
-`````text
-Goodbye, world!
-`````
-`REPLACE:`
-`````text
-Hello, TeDDy!
-`````
-"""
+    builder = MarkdownPlanBuilder("Test Plan: Validation Failure")
+    builder.add_action(
+        "EDIT",
+        params={
+            "File Path": file_to_edit.as_posix(),
+            "Description": "An edit that should fail validation.",
+        },
+        content_blocks={
+            "`FIND:`": ("text", "Goodbye, world!"),
+            "`REPLACE:`": ("text", "Hello, TeDDy!"),
+        },
+    )
+    plan_content = builder.build()
 
     # Act
     result = run_cli_with_markdown_plan_on_clipboard(

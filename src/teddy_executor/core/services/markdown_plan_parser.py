@@ -6,7 +6,6 @@ from mistletoe.block_token import (
     List as MdList,
     ListItem,
     Document,
-    Paragraph,
 )
 from mistletoe.markdown_renderer import MarkdownRenderer
 from mistletoe.span_token import Link
@@ -172,51 +171,55 @@ class MarkdownPlanParser(IPlanParser):
 
         content_nodes = self._get_subsequent_siblings(parent, metadata_list)
         edits = []
-        nodes_iter = iter(content_nodes)
-        for node in nodes_iter:
-            if not (
-                isinstance(node, Paragraph) and "FIND:" in self._get_child_text(node)
-            ):
-                continue
 
-            try:
-                find_code = next(nodes_iter)
-                replace_marker = next(nodes_iter)
-                replace_code = next(nodes_iter)
-
-                if (
-                    not isinstance(find_code, CodeFence)
-                    or not (
-                        isinstance(replace_marker, Paragraph)
-                        and "REPLACE:" in self._get_child_text(replace_marker)
-                    )
-                    or not isinstance(replace_code, CodeFence)
-                ):
-                    raise InvalidPlanError(
-                        "Malformed FIND/REPLACE block in EDIT action."
-                    )
-
-                find_children = list(find_code.children) if find_code.children else []
-                find_content = ""
-                if find_children:
-                    child = find_children[0]
-                    if hasattr(child, "content"):
-                        find_content = child.content.rstrip("\n")
-
-                replace_children = (
-                    list(replace_code.children) if replace_code.children else []
+        i = 0
+        while i < len(content_nodes):
+            # Check for FIND Heading
+            find_heading_node = content_nodes[i]
+            if isinstance(find_heading_node, Heading) and find_heading_node.level == 4:
+                inline_code = self._find_node_in_tree(
+                    find_heading_node, mistletoe.span_token.InlineCode
                 )
-                replace_content = ""
-                if replace_children:
-                    child = replace_children[0]
-                    if hasattr(child, "content"):
-                        replace_content = child.content.rstrip("\n")
-                edits.append({"find": find_content, "replace": replace_content})
+                if inline_code and self._get_child_text(inline_code) == "FIND:":
+                    # Found a valid FIND heading, check the next nodes
+                    if i + 3 < len(content_nodes):
+                        find_code_node = content_nodes[i + 1]
+                        replace_heading_node = content_nodes[i + 2]
+                        replace_code_node = content_nodes[i + 3]
 
-            except StopIteration:
-                raise InvalidPlanError(
-                    "Incomplete FIND/REPLACE block at end of EDIT action."
-                )
+                        # Check for REPLACE heading
+                        is_replace_heading = False
+                        if (
+                            isinstance(replace_heading_node, Heading)
+                            and replace_heading_node.level == 4
+                        ):
+                            replace_inline_code = self._find_node_in_tree(
+                                replace_heading_node, mistletoe.span_token.InlineCode
+                            )
+                            if (
+                                replace_inline_code
+                                and self._get_child_text(replace_inline_code)
+                                == "REPLACE:"
+                            ):
+                                is_replace_heading = True
+
+                        if (
+                            isinstance(find_code_node, CodeFence)
+                            and is_replace_heading
+                            and isinstance(replace_code_node, CodeFence)
+                        ):
+                            find_content = self._get_child_text(find_code_node).rstrip(
+                                "\n"
+                            )
+                            replace_content = self._get_child_text(
+                                replace_code_node
+                            ).rstrip("\n")
+                            edits.append(
+                                {"find": find_content, "replace": replace_content}
+                            )
+                            i += 4  # advance past the block
+                            continue
+            i += 1  # advance to next node
 
         if not edits:
             raise InvalidPlanError("EDIT action found no valid FIND/REPLACE blocks.")

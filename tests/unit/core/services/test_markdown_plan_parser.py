@@ -94,12 +94,12 @@ def test_parse_edit_action(parser: MarkdownPlanParser):
 - **File Path:** [src/my_class.py](/src/my_class.py)
 - **Description:** Add a new method.
 
-`FIND:`
+#### `FIND:`
 ````python
 class MyClass:
     pass
 ````
-`REPLACE:`
+#### `REPLACE:`
 ````python
 class MyClass:
     def new_method(self):
@@ -346,11 +346,11 @@ def test_parse_edit_action_preserves_indentation_in_find_and_replace(
 - **File Path:** [/path/to/file.py](/path/to/file.py)
 - **Description:** A test edit with indentation.
 
-`FIND:`
+#### `FIND:`
 ````python
 {indented_find_block}
 ````
-`REPLACE:`
+#### `REPLACE:`
 ````python
 {indented_replace_block}
 ````
@@ -370,6 +370,59 @@ def test_parse_edit_action_preserves_indentation_in_find_and_replace(
     # We must rstrip the expected value to match this valid behavior.
     assert edit_block["find"] == indented_find_block.rstrip("\n")
     assert edit_block["replace"] == indented_replace_block.rstrip("\n")
+
+
+def test_parse_edit_action_ignores_find_in_codeblock(parser: MarkdownPlanParser):
+    """
+    Given a valid Markdown plan with an EDIT action,
+    When the FIND block contains text that looks like another FIND/REPLACE block,
+    Then the parser should not be confused and should parse the action correctly.
+    """
+    # Arrange
+    plan_content = r"""
+# Edit a file
+- **Goal:** Update a class.
+
+## Action Plan
+
+### `EDIT`
+- **File Path:** [src/my_class.py](/src/my_class.py)
+- **Description:** Add a new method.
+
+#### `FIND:`
+````markdown
+Some documentation about `FIND:` blocks.
+#### `FIND:`
+This should be ignored.
+#### `REPLACE:`
+This too.
+````
+#### `REPLACE:`
+````markdown
+New documentation.
+````
+"""
+    # Act
+    result_plan = parser.parse(plan_content)
+
+    # Assert
+    assert isinstance(result_plan, Plan)
+    assert len(result_plan.actions) == 1
+    action = result_plan.actions[0]
+
+    assert action.type == "EDIT"
+    assert action.description == "Add a new method."
+    assert action.params["path"] == "src/my_class.py"
+    assert len(action.params["edits"]) == 1
+
+    expected_find = """Some documentation about `FIND:` blocks.
+#### `FIND:`
+This should be ignored.
+#### `REPLACE:`
+This too."""
+
+    assert action.params["edits"][0]["find"] == expected_find
+    assert action.params["edits"][0]["replace"] == "New documentation."
 
 
 def test_parse_conclude_action(parser: MarkdownPlanParser):

@@ -164,7 +164,7 @@ All actions are located under the `## Action Plan` heading. Each action is defin
     ``````
 -   **Parsing Rules:**
     1.  Extract `File Path` and `Description`.
-    2.  The parser looks for sequential pairs of `#### FIND:` and `#### REPLACE:` headings. The content for each is the fenced code block that immediately follows the heading.
+    2.  The parser looks for sequential pairs of `#### `FIND:`` and `#### `REPLACE:`` headings. The keywords **must** be enclosed in backticks. The content for each is the fenced code block that immediately follows the heading.
     3.  **Surgical Changes:** An `EDIT` action must contain at least one `FIND`/`REPLACE` pair. Full-file overwrites are strictly forbidden.
 
 ### 5.4. `EXECUTE`

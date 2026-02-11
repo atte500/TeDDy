@@ -81,12 +81,12 @@ def test_markdown_edit_action(tmp_path: Path):
 - **File Path:** [{file_name}](/{file_name})
 - **Description:** Change return value.
 
-`FIND:`
+#### `FIND:`
 ````python
 def foo():
     return 1
 ````
-`REPLACE:`
+#### `REPLACE:`
 ````python
 def foo():
     return 2
