@@ -44,8 +44,17 @@ class MarkdownPlanParser(IPlanParser):
         processed_content = self._preprocessor.process(plan_content)
         doc = mistletoe.Document(processed_content)
 
+        title = self._parse_title(doc)
         actions = self._parse_actions(doc)
-        return Plan(actions=actions)
+        return Plan(title=title, actions=actions)
+
+    def _parse_title(self, doc: Document) -> str:
+        """Finds and returns the text of the first H1 heading."""
+        if doc.children:
+            for node in doc.children:
+                if isinstance(node, Heading) and node.level == 1:
+                    return self._get_child_text(node).strip()
+        return "Untitled Plan"
 
     def _parse_actions(self, doc: Document) -> List[ActionData]:
         """Finds and parses all action blocks within the 'Action Plan' section."""

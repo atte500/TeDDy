@@ -19,6 +19,7 @@ def test_validate_edit_action_with_nonexistent_find_block(fs):
     fs.create_file(file_path, contents="Hello world")
 
     plan = Plan(
+        title="Test Plan",
         actions=[
             ActionData(
                 type="edit",
@@ -29,7 +30,7 @@ def test_validate_edit_action_with_nonexistent_find_block(fs):
                 },
                 description="Test edit action validation",
             )
-        ]
+        ],
     )
 
     validator = PlanValidator()
@@ -52,6 +53,7 @@ def test_validate_edit_action_with_nonexistent_file(fs):
     file_path = Path("/app/nonexistent.txt")
 
     plan = Plan(
+        title="Test Plan",
         actions=[
             ActionData(
                 type="edit",
@@ -62,7 +64,7 @@ def test_validate_edit_action_with_nonexistent_file(fs):
                 },
                 description="Test edit on non-existent file",
             )
-        ]
+        ],
     )
 
     validator = PlanValidator()
@@ -87,6 +89,7 @@ def test_validate_edit_action_with_valid_find_block(fs):
     fs.create_file(file_path, contents="Hello world")
 
     plan = Plan(
+        title="Test Plan",
         actions=[
             ActionData(
                 type="edit",
@@ -97,7 +100,7 @@ def test_validate_edit_action_with_valid_find_block(fs):
                 },
                 description="Test edit action validation",
             )
-        ]
+        ],
     )
 
     validator = PlanValidator()

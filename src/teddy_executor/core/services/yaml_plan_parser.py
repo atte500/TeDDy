@@ -82,4 +82,4 @@ class YamlPlanParser(IPlanParser):
         if not actions_data:
             raise InvalidPlanError("Plan must contain at least one action.")
 
-        return Plan(actions=actions_data)
+        return Plan(title="YAML Plan", actions=actions_data)

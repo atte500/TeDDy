@@ -35,6 +35,7 @@ class MarkdownReportFormatter(IMarkdownReportFormatter):
 
         return {
             "report": report,
+            "plan_title": report.plan_title,
             "format_datetime": format_datetime,
             "to_json": to_json,
         }

@@ -46,5 +46,6 @@ class ExecutionReport:
     """The comprehensive report of a plan execution."""
 
     run_summary: RunSummary
+    plan_title: str | None = None
     action_logs: Sequence[ActionLog] = field(default_factory=list)
     validation_result: Sequence[str] | None = None

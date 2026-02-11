@@ -269,6 +269,7 @@ def execute(
 
         if validation_result:
             report = ExecutionReport(
+                plan_title=plan.title,
                 run_summary=RunSummary(
                     status=RunStatus.VALIDATION_FAILED,
                     start_time=start_time,
@@ -285,8 +286,15 @@ def execute(
                 action_dispatcher=action_dispatcher,
                 user_interactor=user_interactor,
             )
-            report = orchestrator.execute(
+            execution_report = orchestrator.execute(
                 plan_content=final_plan_content, interactive=interactive_mode
+            )
+            # Inject the plan title into the report
+            report = ExecutionReport(
+                plan_title=plan.title,
+                run_summary=execution_report.run_summary,
+                action_logs=execution_report.action_logs,
+                validation_result=execution_report.validation_result,
             )
 
     except (pyperclip.PyperclipException, NotImplementedError) as e:

@@ -52,7 +52,7 @@ def test_execute_with_failing_action(
     plan_content = "fake plan content"
     action1_params = {"name": "failing action", "details": {}}
     action1 = ActionData(type="action1", params=action1_params)
-    plan = Plan(actions=[action1])
+    plan = Plan(title="Test Plan", actions=[action1])
     failing_log = ActionLog(
         status=ActionStatus.FAILURE,
         action_type="action1",
@@ -88,7 +88,7 @@ def test_execute_interactive_and_skipped(
     # Arrange
     plan_content = "fake plan content"
     action1 = ActionData(type="action1", params={})
-    plan = Plan(actions=[action1])
+    plan = Plan(title="Test Plan", actions=[action1])
 
     mock_plan_parser.parse.return_value = plan
     mock_user_interactor.confirm_action.return_value = (False, "Just because")
@@ -119,7 +119,7 @@ def test_execute_interactive_and_approved(
     plan_content = "fake plan content"
     action1_params = {"name": "first action", "details": {}}
     action1 = ActionData(type="action1", params=action1_params)
-    plan = Plan(actions=[action1])
+    plan = Plan(title="Test Plan", actions=[action1])
     action_log1 = ActionLog(
         status=ActionStatus.SUCCESS,
         action_type="action1",
@@ -156,7 +156,7 @@ def test_execute_happy_path_non_interactive(
     plan_content = "fake plan content"
     action1_params = {"name": "first action", "details": {}}
     action1 = ActionData(type="action1", params=action1_params)
-    plan = Plan(actions=[action1])
+    plan = Plan(title="Test Plan", actions=[action1])
     action_log1 = ActionLog(
         status=ActionStatus.SUCCESS,
         action_type="action1",

@@ -110,7 +110,7 @@ def test_plan_raises_error_on_empty_actions_list():
     Tests that a Plan cannot be instantiated with an empty list of actions.
     """
     with pytest.raises(ValueError, match="Plan must contain at least one action"):
-        Plan(actions=[])
+        Plan(title="Test Plan", actions=[])
 
 
 def test_execution_report_instantiation():
@@ -142,7 +142,7 @@ def test_plan_instantiation():
     Tests that a Plan can be instantiated with a list of actions.
     """
     actions = [ExecuteAction(command="ls")]
-    plan = Plan(actions=actions)
+    plan = Plan(title="Test Plan", actions=actions)
     assert plan.actions == actions
 
 
