@@ -1,6 +1,11 @@
 from pathlib import Path
 
-from .helpers import parse_yaml_report, run_cli_with_plan
+from .helpers import (
+    parse_yaml_report,
+    run_cli_with_markdown_plan_on_clipboard,
+    parse_markdown_report,
+)
+from .plan_builder import MarkdownPlanBuilder
 
 
 def test_edit_action_happy_path(monkeypatch, tmp_path: Path):
@@ -13,20 +18,21 @@ def test_edit_action_happy_path(monkeypatch, tmp_path: Path):
     file_to_edit = tmp_path / "test_file.txt"
     file_to_edit.write_text("Hello world, this is a test.")
 
-    plan = [
-        {
-            "action": "edit",
-            "description": "Test basic find and replace.",
-            "params": {
-                "path": file_to_edit,
-                "find": "world",
-                "replace": "planet",
-            },
-        }
-    ]
+    builder = MarkdownPlanBuilder("Test Edit Action")
+    builder.add_action(
+        "EDIT",
+        params={
+            "File Path": f"[{file_to_edit.name}](/{file_to_edit.name})",
+            "Description": "Test basic find and replace.",
+        },
+        content_blocks={"`FIND:`": ("text", "world"), "`REPLACE:`": ("text", "planet")},
+    )
+    plan_content = builder.build()
 
     # Act
-    result = run_cli_with_plan(monkeypatch, plan, tmp_path)
+    result = run_cli_with_markdown_plan_on_clipboard(
+        monkeypatch, plan_content, tmp_path
+    )
 
     # Assert
     assert result.exit_code == 0
@@ -45,23 +51,24 @@ def test_edit_action_file_not_found(monkeypatch, tmp_path: Path):
     """
     # Arrange
     non_existent_file = tmp_path / "non_existent.txt"
-    plan = [
-        {
-            "action": "edit",
-            "description": "Test edit on non-existent file.",
-            "params": {"path": non_existent_file, "find": "foo", "replace": "bar"},
-        }
-    ]
+    builder = MarkdownPlanBuilder("Test Edit Non-Existent File")
+    builder.add_action(
+        "EDIT",
+        params={
+            "File Path": f"[{non_existent_file.name}](/{non_existent_file.name})",
+            "Description": "Test edit on non-existent file.",
+        },
+        content_blocks={"`FIND:`": ("text", "foo"), "`REPLACE:`": ("text", "bar")},
+    )
+    plan_content = builder.build()
 
     # Act
-    result = run_cli_with_plan(monkeypatch, plan, tmp_path)
+    result = run_cli_with_markdown_plan_on_clipboard(
+        monkeypatch, plan_content, tmp_path
+    )
 
     # Assert
     assert result.exit_code == 1
-    report = parse_yaml_report(result.stdout)
-    # The new validation logic catches this before execution
-    # So the status is FAILURE (mapped from VALIDATION_FAILED)
-    assert report["run_summary"]["status"] == "FAILURE"
-    # Validation errors are not in action_logs, so we skip checking action_logs
-    # and instead verify the error message in the output if possible, or just accept the status.
+    report = parse_markdown_report(result.stdout)
+    assert report["run_summary"]["Overall Status"] == "Validation Failed"
     assert "File to edit does not exist" in result.stdout

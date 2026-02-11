@@ -1,41 +1,41 @@
 from pathlib import Path
-from unittest.mock import patch
-import yaml
-from typer.testing import CliRunner
 
-from teddy_executor.main import app, create_container
-from .helpers import parse_yaml_report
+from .helpers import parse_yaml_report, run_cli_with_markdown_plan_on_clipboard
+from .plan_builder import MarkdownPlanBuilder
 
 
-def test_successful_plan_execution_with_refactored_services(tmp_path: Path):
+def test_successful_plan_execution_with_refactored_services(
+    monkeypatch, tmp_path: Path
+):
     """
     Given a valid plan,
     When the user runs the executor,
     Then the new service layer should execute the plan successfully.
     """
     # Arrange
-    runner = CliRunner()
     target_file = tmp_path / "hello.txt"
-    plan_structure = [
-        {
-            "action": "create_file",
-            "params": {"path": str(target_file), "content": "Hello, World!"},
-        }
-    ]
-    plan_content = yaml.dump(plan_structure)
-    plan_file = tmp_path / "plan.yml"
-    plan_file.write_text(plan_content)
+    file_content = "Hello, World!"
 
-    real_container = create_container()
+    builder = MarkdownPlanBuilder("Test Core Service Execution")
+    builder.add_action(
+        "CREATE",
+        params={
+            "File Path": f"[{target_file.name}](/{target_file.name})",
+            "Description": "Create a test file.",
+        },
+        content_blocks={"": ("text", file_content)},
+    )
+    plan_content = builder.build()
 
     # Act
-    with patch("teddy_executor.main.container", real_container):
-        result = runner.invoke(app, ["execute", str(plan_file), "--yes"])
+    result = run_cli_with_markdown_plan_on_clipboard(
+        monkeypatch, plan_content, tmp_path
+    )
 
     # Assert
     assert result.exit_code == 0
     assert target_file.exists()
-    assert target_file.read_text() == "Hello, World!"
+    assert target_file.read_text() == file_content
 
     report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "SUCCESS"

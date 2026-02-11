@@ -1,34 +1,33 @@
 from pathlib import Path
-from unittest.mock import patch
-import yaml
-from typer.testing import CliRunner
-
-from teddy_executor.main import app, create_container
-from .helpers import parse_yaml_report
+from .helpers import parse_yaml_report, run_cli_with_markdown_plan_on_clipboard
+from .plan_builder import MarkdownPlanBuilder
 
 
-def test_read_action_happy_path(tmp_path: Path):
+def test_read_action_happy_path(monkeypatch, tmp_path: Path):
     """
     Given an existing file,
     When a 'read' action is executed,
     Then the action log's 'details' should contain the file's content.
     """
     # Arrange
-    runner = CliRunner()
     file_content = "Hello, this is the content."
     file_to_read = tmp_path / "readable.txt"
     file_to_read.write_text(file_content)
 
-    plan_structure = [{"action": "read", "params": {"path": str(file_to_read)}}]
-    plan_content = yaml.dump(plan_structure)
-    plan_file = tmp_path / "plan.yml"
-    plan_file.write_text(plan_content)
-
-    real_container = create_container()
+    builder = MarkdownPlanBuilder("Test Read Action")
+    builder.add_action(
+        "READ",
+        params={
+            "Resource": f"[{file_to_read.name}](/{file_to_read.name})",
+            "Description": "Read a test file.",
+        },
+    )
+    plan_content = builder.build()
 
     # Act
-    with patch("teddy_executor.main.container", real_container):
-        result = runner.invoke(app, ["execute", str(plan_file), "--yes"])
+    result = run_cli_with_markdown_plan_on_clipboard(
+        monkeypatch, plan_content, tmp_path
+    )
 
     # Assert
     assert result.exit_code == 0
@@ -41,25 +40,28 @@ def test_read_action_happy_path(tmp_path: Path):
     assert details_dict["content"] == file_content
 
 
-def test_read_action_file_not_found(tmp_path: Path):
+def test_read_action_file_not_found(monkeypatch, tmp_path: Path):
     """
     Given a non-existent file path,
     When a 'read' action is executed,
     Then the action should fail and the report should indicate the error.
     """
     # Arrange
-    runner = CliRunner()
     non_existent_file = tmp_path / "non_existent.txt"
-    plan_structure = [{"action": "read", "params": {"path": str(non_existent_file)}}]
-    plan_content = yaml.dump(plan_structure)
-    plan_file = tmp_path / "plan.yml"
-    plan_file.write_text(plan_content)
-
-    real_container = create_container()
+    builder = MarkdownPlanBuilder("Test Read Non-Existent File")
+    builder.add_action(
+        "READ",
+        params={
+            "Resource": f"[{non_existent_file.name}](/{non_existent_file.name})",
+            "Description": "Read a non-existent file.",
+        },
+    )
+    plan_content = builder.build()
 
     # Act
-    with patch("teddy_executor.main.container", real_container):
-        result = runner.invoke(app, ["execute", str(plan_file), "--yes"])
+    result = run_cli_with_markdown_plan_on_clipboard(
+        monkeypatch, plan_content, tmp_path
+    )
 
     # Assert
     assert result.exit_code == 1

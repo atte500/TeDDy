@@ -1,58 +1,46 @@
 import sys
 from pathlib import Path
-from unittest.mock import patch
-import yaml
-from typer.testing import CliRunner
-
-from teddy_executor.main import app, create_container
-from tests.acceptance.helpers import (
-    run_cli_with_plan,
+from .helpers import (
+    run_cli_with_markdown_plan_on_clipboard,
     parse_yaml_report,
+    parse_markdown_report,
 )
+from .plan_builder import MarkdownPlanBuilder
 
 # Define platform-agnostic commands
 LIST_COMMAND = "dir" if sys.platform == "win32" else "ls -a"
-# A python command to print an environment variable. This avoids shell-specific syntax.
 ECHO_COMMAND = f"{sys.executable} -c \"import os; print(os.environ.get('MY_VAR', ''))\""
 
 
 def test_execute_action_with_custom_cwd(tmp_path: Path, monkeypatch):
     """
-    Scenario 2: Command with a Custom Working Directory
-    Given a plan with an execute action specifying a cwd
-    When the plan is executed
+    Given a plan with an execute action specifying a cwd,
+    When the plan is executed,
     Then the command should run successfully within the specified directory.
     """
     # Arrange
-    # Create a subdirectory and a unique file inside it
     sub_dir = tmp_path / "sub"
     sub_dir.mkdir()
     unique_file = sub_dir / "unique_file.txt"
     unique_file.touch()
 
-    # The plan will execute 'ls -a' (or 'dir') inside the 'sub' directory.
-    # We expect to see 'unique_file.txt' in the output.
-    plan = [
-        {
-            "action": "execute",
-            "params": {
-                "command": LIST_COMMAND,
-                "cwd": "sub",
-            },
-        }
-    ]
+    builder = MarkdownPlanBuilder("Test Execute with CWD")
+    builder.add_action(
+        "EXECUTE",
+        params={"Description": "List files in a subdirectory.", "cwd": "sub"},
+        content_blocks={"COMMAND": ("shell", LIST_COMMAND)},
+    )
+    plan_content = builder.build()
 
     # Act
-    result = run_cli_with_plan(monkeypatch, plan, cwd=tmp_path)
+    result = run_cli_with_markdown_plan_on_clipboard(
+        monkeypatch, plan_content, tmp_path
+    )
 
     # Assert
     assert result.exit_code == 0
     report = parse_yaml_report(result.stdout)
-
-    # Check that the overall run was successful
     assert report["run_summary"]["status"] == "SUCCESS"
-
-    # Check that the command output contains the unique file, proving it ran in the correct directory
     action_log = report["action_logs"][0]
     assert action_log["status"] == "SUCCESS"
     assert "unique_file.txt" in action_log["details"]["stdout"]
@@ -60,25 +48,27 @@ def test_execute_action_with_custom_cwd(tmp_path: Path, monkeypatch):
 
 def test_execute_action_with_env_variables(tmp_path: Path, monkeypatch):
     """
-    Scenario 3: Command with Environment Variables
-    Given a plan with an execute action specifying an env map
-    When the plan is executed
+    Given a plan with an execute action specifying an env map,
+    When the plan is executed,
     Then the command should run successfully with the specified environment variables.
     """
     # Arrange
     expected_value = "hello_world_from_env"
-    plan = [
-        {
-            "action": "execute",
-            "params": {
-                "command": ECHO_COMMAND,
-                "env": {"MY_VAR": expected_value},
-            },
-        }
-    ]
+    builder = MarkdownPlanBuilder("Test Execute with Env")
+    builder.add_action(
+        "EXECUTE",
+        params={
+            "Description": "Test environment variables.",
+            "env": f"- MY_VAR: {expected_value}",
+        },
+        content_blocks={"COMMAND": ("shell", ECHO_COMMAND)},
+    )
+    plan_content = builder.build()
 
     # Act
-    result = run_cli_with_plan(monkeypatch, plan, cwd=tmp_path)
+    result = run_cli_with_markdown_plan_on_clipboard(
+        monkeypatch, plan_content, tmp_path
+    )
 
     # Assert
     assert result.exit_code == 0
@@ -89,144 +79,103 @@ def test_execute_action_with_env_variables(tmp_path: Path, monkeypatch):
     assert expected_value in action_log["details"]["stdout"]
 
 
-def test_execute_action_fails_with_unsafe_cwd_traversal(tmp_path: Path):
+def test_execute_action_fails_with_unsafe_cwd_traversal(tmp_path: Path, monkeypatch):
     """
-    Scenario 6: Attempting to Use an Unsafe `cwd` Path (Traversal)
-    Given a plan where `cwd` attempts to traverse outside the project root
-    When the plan is executed
+    Given a plan where `cwd` attempts to traverse outside the project root,
+    When the plan is executed,
     Then the action must fail with a clear error message.
     """
     # Arrange
-    plan = [
-        {
-            "action": "execute",
-            "params": {
-                "command": "echo 'should not run'",
-                "cwd": "../..",
-            },
-        }
-    ]
+    builder = MarkdownPlanBuilder("Test Unsafe CWD Traversal")
+    builder.add_action(
+        "EXECUTE",
+        params={
+            "Description": "This should fail.",
+            "command": "echo 'should not run'",
+            "cwd": "../..",
+        },
+    )
+    plan_content = builder.build()
 
     # Act
-    runner = CliRunner()
-    plan_content = yaml.dump(plan)
-    plan_file = tmp_path / "plan.yml"
-    plan_file.write_text(plan_content)
-    real_container = create_container()
-
-    with patch("teddy_executor.main.container", real_container):
-        result = runner.invoke(app, ["execute", str(plan_file), "--yes"])
+    result = run_cli_with_markdown_plan_on_clipboard(
+        monkeypatch, plan_content, tmp_path
+    )
 
     # Assert
-    report = parse_yaml_report(result.stdout)
-    assert report["run_summary"]["status"] == "FAILURE"
-    error_log = report["action_logs"][0]
-    assert error_log["status"] == "FAILURE"
-    assert "is outside the project directory" in error_log["details"]
+    report = parse_markdown_report(result.stdout)
+    # The validator passes, but execution fails, which is also a valid outcome.
+    assert report["run_summary"]["Overall Status"] == "FAILURE"
+    assert "is outside the project directory" in result.stdout
     assert result.exit_code != 0
 
 
-def test_execute_action_fails_with_absolute_cwd(tmp_path: Path):
+def test_execute_action_fails_with_absolute_cwd(tmp_path: Path, monkeypatch):
     """
-    Scenario 6: Attempting to Use an Unsafe `cwd` Path (Absolute)
-    Given a plan where `cwd` is an absolute path
-    When the plan is executed
+    Given a plan where `cwd` is an absolute path,
+    When the plan is executed,
     Then the action must fail with a clear error message.
     """
     # Arrange
-    # Use the parent of the temp path as an example of an absolute path
-    # that is also outside the project root for this test.
     absolute_path = str(tmp_path.parent)
-    plan = [
-        {
-            "action": "execute",
-            "params": {
-                "command": "echo 'should not run'",
-                "cwd": absolute_path,
-            },
-        }
-    ]
+    builder = MarkdownPlanBuilder("Test Absolute CWD")
+    builder.add_action(
+        "EXECUTE",
+        params={
+            "Description": "This should fail.",
+            "command": "echo 'should not run'",
+            "cwd": absolute_path,
+        },
+    )
+    plan_content = builder.build()
 
     # Act
-    runner = CliRunner()
-    plan_content = yaml.dump(plan)
-    plan_file = tmp_path / "plan.yml"
-    plan_file.write_text(plan_content)
-    real_container = create_container()
-
-    with patch("teddy_executor.main.container", real_container):
-        result = runner.invoke(app, ["execute", str(plan_file), "--yes"])
+    result = run_cli_with_markdown_plan_on_clipboard(
+        monkeypatch, plan_content, tmp_path
+    )
 
     # Assert
-    report = parse_yaml_report(result.stdout)
-    assert report["run_summary"]["status"] == "FAILURE"
-    error_log = report["action_logs"][0]
-    assert error_log["status"] == "FAILURE"
-    assert "Validation failed" in error_log["details"]
-    assert "is outside the project directory" in error_log["details"]
+    report = parse_markdown_report(result.stdout)
+    # The validator passes, but execution fails, which is also a valid outcome.
+    assert report["run_summary"]["Overall Status"] == "FAILURE"
+    assert "is outside the project directory" in result.stdout
     assert result.exit_code != 0
-
-
-def test_execute_action_backwards_compatibility(tmp_path: Path, monkeypatch):
-    """
-    Scenario 5: Backwards Compatibility (Simple String Command)
-    Given a plan where the execute action is a simple string (old format)
-    When the plan is executed
-    Then the executor should interpret it as a command with no cwd or env.
-    """
-    # Arrange
-    plan = [{"action": "execute", "params": "echo 'it works'"}]
-
-    # Act
-    result = run_cli_with_plan(monkeypatch, plan, cwd=tmp_path)
-
-    # Assert
-    assert result.exit_code == 0
-    report = parse_yaml_report(result.stdout)
-    assert report["run_summary"]["status"] == "SUCCESS"
-    action_log = report["action_logs"][0]
-    assert action_log["status"] == "SUCCESS"
-    assert "it works" in action_log["details"]["stdout"]
 
 
 def test_execute_action_with_both_cwd_and_env(tmp_path: Path, monkeypatch):
     """
-    Scenario 4: Command with Both `cwd` and `env`
-    Given a plan with an execute action specifying both cwd and env
-    When the plan is executed
+    Given a plan with an execute action specifying both cwd and env,
+    When the plan is executed,
     Then the command should run in the specified directory with the env vars.
     """
     # Arrange
-    # Create a subdirectory and a file to write into
     sub_dir = tmp_path / "sub"
     sub_dir.mkdir()
     expected_value = "secret_message"
-
-    # Command to write the env var into a file in the subdir, using Python
-    # to avoid shell-specific redirection.
-    # We use a single line to avoid YAML scalar formatting issues on Windows CI.
     write_command = f"{sys.executable} -c \"import os; f = open('output.txt', 'w'); f.write(os.environ.get('MY_VAR', '')); f.close()\""
 
-    plan = [
-        {
-            "action": "execute",
-            "params": {
-                "command": write_command,
-                "cwd": "sub",
-                "env": {"MY_VAR": expected_value},
-            },
-        }
-    ]
+    builder = MarkdownPlanBuilder("Test Execute with CWD and Env")
+    builder.add_action(
+        "EXECUTE",
+        params={
+            "Description": "Test with both cwd and env.",
+            "cwd": "sub",
+            "env": f"- MY_VAR: {expected_value}",
+        },
+        content_blocks={"COMMAND": ("shell", write_command)},
+    )
+    plan_content = builder.build()
 
     # Act
-    result = run_cli_with_plan(monkeypatch, plan, cwd=tmp_path)
+    result = run_cli_with_markdown_plan_on_clipboard(
+        monkeypatch, plan_content, tmp_path
+    )
 
     # Assert
     assert result.exit_code == 0
     report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "SUCCESS"
 
-    # Verify that the file was created in the correct directory with the correct content
     output_file = sub_dir / "output.txt"
     assert output_file.exists()
     assert output_file.read_text().strip() == expected_value

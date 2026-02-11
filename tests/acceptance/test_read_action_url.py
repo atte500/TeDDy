@@ -1,13 +1,13 @@
-from typer.testing import CliRunner
 from pytest_httpserver import HTTPServer
 
-from teddy_executor.main import app
-from tests.acceptance.helpers import create_plan_file
+from tests.acceptance.helpers import (
+    run_cli_with_markdown_plan_on_clipboard,
+    parse_yaml_report,
+)
+from .plan_builder import MarkdownPlanBuilder
 
-runner = CliRunner()
 
-
-def test_read_action_can_read_from_url(httpserver: HTTPServer):
+def test_read_action_can_read_from_url(httpserver: HTTPServer, monkeypatch, tmp_path):
     """
     Given a plan with a READ action targeting a URL,
     When the plan is executed,
@@ -20,27 +20,23 @@ def test_read_action_can_read_from_url(httpserver: HTTPServer):
     )
     url = httpserver.url_for("/testpage")
 
-    plan_content = f"""
-# Read from a URL
-- **Goal:** Verify URL reading capability.
+    builder = MarkdownPlanBuilder("Test Read URL")
+    builder.add_action(
+        "READ",
+        params={
+            "Resource": f"[{url}]({url})",
+            "Description": "Read content from a remote URL.",
+        },
+    )
+    plan_content = builder.build()
 
-## Action Plan
-
-### `READ`
-- **Resource:** [{url}]({url})
-- **Description:** Read content from a remote URL.
-"""
-    with create_plan_file(plan_content, ".md") as plan_path:
-        # Act
-        result = runner.invoke(
-            app,
-            ["execute", str(plan_path), "--no-copy", "-y"],
-            catch_exceptions=False,
-        )
+    # Act
+    result = run_cli_with_markdown_plan_on_clipboard(
+        monkeypatch, plan_content, tmp_path
+    )
 
     # Assert
     assert result.exit_code == 0, f"CLI exited with error: {result.stdout}"
-    from tests.acceptance.helpers import parse_yaml_report
 
     report = parse_yaml_report(result.stdout)
 

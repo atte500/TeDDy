@@ -1,44 +1,39 @@
 from pathlib import Path
-from unittest.mock import patch
-import yaml
-from typer.testing import CliRunner
-
-from teddy_executor.main import app, create_container
-from .helpers import parse_yaml_report
+from .helpers import parse_yaml_report, run_cli_with_markdown_plan_on_clipboard
+from .plan_builder import MarkdownPlanBuilder
 
 
-def test_create_file_happy_path(tmp_path: Path):
+def test_create_file_happy_path(monkeypatch, tmp_path: Path):
     """
-    Given a YAML plan to create a new file,
+    Given a Markdown plan to create a new file,
     When the user executes the plan,
     Then the file should be created with the correct content and the report is valid.
     """
     # Arrange
-    runner = CliRunner()
     file_name = "new_file.txt"
     new_file_path = tmp_path / file_name
-    plan_structure = [
-        {
-            "action": "create_file",
-            "params": {"path": str(new_file_path), "content": "Hello, World!"},
-        }
-    ]
-    plan_content = yaml.dump(plan_structure)
-    plan_file = tmp_path / "plan.yml"
-    plan_file.write_text(plan_content)
+    file_content = "Hello, World!"
 
-    real_container = create_container()
+    builder = MarkdownPlanBuilder("Test Create File")
+    builder.add_action(
+        "CREATE",
+        params={
+            "File Path": f"[{file_name}](/{file_name})",
+            "Description": "Create a test file.",
+        },
+        content_blocks={"": ("text", file_content)},
+    )
+    plan_content = builder.build()
 
     # Act
-    with patch("teddy_executor.main.container", real_container):
-        result = runner.invoke(app, ["execute", str(plan_file), "--yes"])
+    result = run_cli_with_markdown_plan_on_clipboard(
+        monkeypatch, plan_content, tmp_path
+    )
 
     # Assert
     assert result.exit_code == 0, f"Teddy failed with stderr: {result.stderr}"
     assert new_file_path.exists(), "The new file was not created."
-    assert new_file_path.read_text() == "Hello, World!", (
-        "The file content is incorrect."
-    )
+    assert new_file_path.read_text() == file_content, "The file content is incorrect."
 
     # Verify the report output
     report = parse_yaml_report(result.stdout)
@@ -47,7 +42,7 @@ def test_create_file_happy_path(tmp_path: Path):
     assert action_log["status"] == "SUCCESS"
 
 
-def test_create_file_when_file_exists_fails_gracefully(tmp_path: Path):
+def test_create_file_when_file_exists_fails_gracefully(monkeypatch, tmp_path: Path):
     """
     Given a file that already exists,
     When a plan is executed to create the same file,
@@ -55,26 +50,25 @@ def test_create_file_when_file_exists_fails_gracefully(tmp_path: Path):
     and the report should indicate the failure.
     """
     # Arrange
-    runner = CliRunner()
     existing_file = tmp_path / "existing.txt"
     original_content = "Original content"
     existing_file.write_text(original_content)
 
-    plan_structure = [
-        {
-            "action": "create_file",
-            "params": {"path": str(existing_file), "content": "Hello, World!"},
-        }
-    ]
-    plan_content = yaml.dump(plan_structure)
-    plan_file = tmp_path / "plan.yml"
-    plan_file.write_text(plan_content)
-
-    real_container = create_container()
+    builder = MarkdownPlanBuilder("Test Create on Existing File")
+    builder.add_action(
+        "CREATE",
+        params={
+            "File Path": f"[{existing_file.name}](/{existing_file.name})",
+            "Description": "Attempt to create an existing file.",
+        },
+        content_blocks={"": ("text", "New content")},
+    )
+    plan_content = builder.build()
 
     # Act
-    with patch("teddy_executor.main.container", real_container):
-        result = runner.invoke(app, ["execute", str(plan_file), "--yes"])
+    result = run_cli_with_markdown_plan_on_clipboard(
+        monkeypatch, plan_content, tmp_path
+    )
 
     # Assert
     assert result.exit_code == 1, (

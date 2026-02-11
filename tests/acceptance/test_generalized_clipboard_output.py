@@ -1,7 +1,6 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import yaml
 from teddy_executor.main import app
 from typer.testing import CliRunner
 
@@ -96,18 +95,19 @@ def test_execute_command_copies_to_clipboard_by_default(
     Verify the execute command copies its report to the clipboard by default.
     """
     # Arrange
-    plan_content = {
-        "actions": [
-            {
-                "action": "create_file",
-                "path": "hello.txt",
-                "content": "Hello, World!",
-            }
-        ]
-    }
-    plan_file = tmp_path / "plan.yml"
-    plan_file.write_text(yaml.dump(plan_content))
-    args = ["execute", str(plan_file), "--yes"]
+    from .plan_builder import MarkdownPlanBuilder
+
+    builder = MarkdownPlanBuilder("Test Clipboard Output")
+    builder.add_action(
+        "CREATE",
+        params={
+            "File Path": "[hello.txt](/hello.txt)",
+            "Description": "Test file.",
+        },
+        content_blocks={"": ("text", "Hello, World!")},
+    )
+    plan_content = builder.build()
+    args = ["execute", "--plan-content", plan_content, "--yes"]
 
     # Act
     result = run_cli_command(monkeypatch, args, cwd=tmp_path)
@@ -133,18 +133,19 @@ def test_execute_command_suppresses_copy_with_flag(
     Verify the execute command does not copy with the --no-copy flag.
     """
     # Arrange
-    plan_content = {
-        "actions": [
-            {
-                "action": "create_file",
-                "path": "hello.txt",
-                "content": "Hello, World!",
-            }
-        ]
-    }
-    plan_file = tmp_path / "plan.yml"
-    plan_file.write_text(yaml.dump(plan_content))
-    args = ["execute", str(plan_file), "--yes", "--no-copy"]
+    from .plan_builder import MarkdownPlanBuilder
+
+    builder = MarkdownPlanBuilder("Test No-Copy Flag")
+    builder.add_action(
+        "CREATE",
+        params={
+            "File Path": "[hello.txt](/hello.txt)",
+            "Description": "Test file.",
+        },
+        content_blocks={"": ("text", "Hello, World!")},
+    )
+    plan_content = builder.build()
+    args = ["execute", "--plan-content", plan_content, "--yes", "--no-copy"]
 
     # Act
     result = run_cli_command(monkeypatch, args, cwd=tmp_path)

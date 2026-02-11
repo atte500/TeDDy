@@ -1,7 +1,8 @@
 from pathlib import Path
 from textwrap import dedent
 
-from .helpers import run_cli_with_plan
+from .helpers import run_cli_with_markdown_plan_on_clipboard
+from .plan_builder import MarkdownPlanBuilder
 
 
 def test_edit_action_replaces_verbatim_without_smart_indent(
@@ -29,57 +30,54 @@ def test_edit_action_replaces_verbatim_without_smart_indent(
     )
     file_to_edit.write_text(original_content)
 
-    # The find block is an EXACT, character-for-character match of the
-    # target text in the source file, including its leading indentation.
+    # The find_block must be an exact substring of the original content,
+    # including the correct indentation. Using dedent here was creating
+    # an unindented string that could not be found.
     find_block = (
         "    def existing_method(self):\n"
         '        """An existing method."""\n'
         "        return self.value"
     )
 
-    # The replace block is also provided with its exact, final indentation,
-    # as required by the new, simplified contract.
+    # The replace block also needs to have the correct indentation.
     replace_block = (
         "    def updated_method(self, multiplier):\n"
         '        """An updated method."""\n'
         "        return self.value * multiplier"
     )
 
-    plan = [
-        {
-            "action": "edit",
-            "description": "Test multiline edit with verbatim replacement.",
-            "params": {
-                "path": str(file_to_edit),
-                "find": find_block,
-                "replace": replace_block,
-            },
-        }
-    ]
+    builder = MarkdownPlanBuilder("Test Multiline Edit")
+    builder.add_action(
+        "EDIT",
+        params={
+            "File Path": f"[{file_to_edit.name}](/{file_to_edit.name})",
+            "Description": "Test multiline edit with verbatim replacement.",
+        },
+        content_blocks={
+            "`FIND:`": ("python", find_block),
+            "`REPLACE:`": ("python", replace_block),
+        },
+    )
+    plan_content = builder.build()
 
-    # The expected content is the original content with a simple,
-    # verbatim replacement of the find block with the replace block.
-    expected_content = (
-        dedent(
-            """\
+    expected_content = dedent(
+        """\
         class MyClass:
             def __init__(self, value):
                 self.value = value
 
+            def updated_method(self, multiplier):
+                \"\"\"An updated method.\"\"\"
+                return self.value * multiplier
         """
-        )
-        + replace_block
-        + "\n"
     )
 
     # Act
-    result = run_cli_with_plan(monkeypatch, plan, tmp_path)
+    result = run_cli_with_markdown_plan_on_clipboard(
+        monkeypatch, plan_content, tmp_path
+    )
 
     # Assert
     assert result.exit_code == 0, f"CLI command failed: {result.stdout}"
-
     actual_content = file_to_edit.read_text()
-
-    # We strip trailing whitespace to make the comparison robust.
-    # The key assertion is that the indentation of the block itself is correct.
     assert actual_content.strip() == expected_content.strip()

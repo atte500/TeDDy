@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from .helpers import run_cli_with_markdown_plan_on_clipboard
+from .helpers import run_cli_with_markdown_plan_on_clipboard, parse_markdown_report
+from .plan_builder import MarkdownPlanBuilder
 
 
 def test_create_file_on_existing_file_fails_and_reports_correctly(
@@ -17,15 +18,16 @@ def test_create_file_on_existing_file_fails_and_reports_correctly(
     original_content = "original content"
     existing_file.write_text(original_content)
 
-    plan_content = f"""
-## Action Plan
-### `CREATE`
-- **File Path:** {existing_file.as_posix()}
-- **Description:** A test create action.
-````text
-This is new content.
-````
-"""
+    builder = MarkdownPlanBuilder("Test Create on Existing File")
+    builder.add_action(
+        "CREATE",
+        params={
+            "File Path": f"[{existing_file.name}](/{existing_file.name})",
+            "Description": "A test create action.",
+        },
+        content_blocks={"": ("text", "This is new content.")},
+    )
+    plan_content = builder.build()
 
     # ACT
     result = run_cli_with_markdown_plan_on_clipboard(
@@ -39,8 +41,6 @@ This is new content.
     assert existing_file.read_text() == original_content, (
         "The original file should not be modified"
     )
-
-    from .helpers import parse_markdown_report
 
     # Assert on the Markdown report content using robust parser
     report = parse_markdown_report(result.stdout)

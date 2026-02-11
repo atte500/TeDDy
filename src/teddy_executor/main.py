@@ -304,23 +304,15 @@ def execute(
     if report:
         import sys
 
-        print(
-            "!!! DEBUG: Report object exists. Preparing to format and print.",
-            file=sys.stderr,
-        )
         report_formatter = container.resolve(IMarkdownReportFormatter)
         formatted_report = report_formatter.format(report)
-        print(
-            f"!!! DEBUG: Report formatted. Content length: {len(formatted_report)}",
-            file=sys.stderr,
-        )
+
 
         _echo_and_copy(
             formatted_report,
             no_copy=no_copy,
             confirmation_message="Execution report copied to clipboard.",
         )
-        print("!!! DEBUG: _echo_and_copy has been called.", file=sys.stderr)
 
         if report.run_summary.status in (
             RunStatus.FAILURE,

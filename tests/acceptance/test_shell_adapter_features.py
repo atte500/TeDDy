@@ -1,84 +1,62 @@
 import sys
 from pathlib import Path
-from typer.testing import CliRunner
 
-from teddy_executor.main import app
-
-runner = CliRunner()
+from .helpers import run_cli_with_markdown_plan_on_clipboard, parse_yaml_report
+from .plan_builder import MarkdownPlanBuilder
 
 
-def test_shell_adapter_handles_wildcards_on_posix():
+def test_shell_adapter_handles_wildcards_on_posix(monkeypatch, tmp_path: Path):
     """
     Verify that the shell adapter can execute commands with wildcards (globbing).
     This is a POSIX-specific feature test.
     """
     if sys.platform == "win32":
-        return  # This feature is for POSIX shells
+        return
 
-    # GIVEN: A file exists that can be matched by a wildcard
-    test_file = Path("test_file_for_wildcard.py")
+    test_file = tmp_path / "test_file_for_wildcard.py"
     test_file.touch()
 
-    plan_content = """
-    actions:
-      - name: list_python_files
-        action: execute
-        command: "ls *.py"
-    """
+    builder = MarkdownPlanBuilder("Test Wildcard Execution")
+    builder.add_action(
+        "EXECUTE",
+        params={"Description": "List python files using wildcard."},
+        content_blocks={"COMMAND": ("shell", "ls *.py")},
+    )
+    plan_content = builder.build()
 
-    try:
-        # WHEN: A plan with a wildcard command is executed
-        result = runner.invoke(
-            app,
-            ["execute", "--plan-content", plan_content, "-y"],
-            catch_exceptions=False,
-        )
+    result = run_cli_with_markdown_plan_on_clipboard(
+        monkeypatch, plan_content, tmp_path
+    )
 
-        # THEN: The command succeeds and the output contains the filename
-        assert result.exit_code == 0
-
-        # Parse the output to make assertions resilient
-        from .helpers import parse_yaml_report
-
-        report = parse_yaml_report(result.stdout)
-        assert report["run_summary"]["status"] == "SUCCESS"
-        action_log = report["action_logs"][0]
-        assert action_log["status"] == "SUCCESS"
-        assert action_log["params"]["name"] == "list_python_files"
-        assert test_file.name in action_log["details"]["stdout"]
-
-    finally:
-        # Clean up the created file
-        if test_file.exists():
-            test_file.unlink()
+    assert result.exit_code == 0
+    report = parse_yaml_report(result.stdout)
+    assert report["run_summary"]["status"] == "SUCCESS"
+    action_log = report["action_logs"][0]
+    assert action_log["status"] == "SUCCESS"
+    assert test_file.name in action_log["details"]["stdout"]
 
 
-def test_shell_adapter_handles_pipes_on_posix():
+def test_shell_adapter_handles_pipes_on_posix(monkeypatch, tmp_path: Path):
     """
     Verify that the shell adapter can execute commands with pipes.
     This is a POSIX-specific feature test.
     """
     if sys.platform == "win32":
-        return  # This feature is for POSIX shells
+        return
 
-    plan_content = """
-    actions:
-      - name: pipe_command
-        action: execute
-        command: 'echo "hello world" | grep "world"'
-    """
+    builder = MarkdownPlanBuilder("Test Pipe Execution")
+    builder.add_action(
+        "EXECUTE",
+        params={"Description": "Test a piped command."},
+        content_blocks={"COMMAND": ("shell", 'echo "hello world" | grep "world"')},
+    )
+    plan_content = builder.build()
 
-    # WHEN: A plan with a pipe command is executed
-    result = runner.invoke(
-        app,
-        ["execute", "--plan-content", plan_content, "-y"],
-        catch_exceptions=False,
+    result = run_cli_with_markdown_plan_on_clipboard(
+        monkeypatch, plan_content, tmp_path
     )
 
-    # THEN: The command succeeds and the output is correct
     assert result.exit_code == 0
-    from .helpers import parse_yaml_report
-
     report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "SUCCESS"
     action_log = report["action_logs"][0]
@@ -86,35 +64,28 @@ def test_shell_adapter_handles_pipes_on_posix():
     assert "hello world" in action_log["details"]["stdout"]
 
 
-def test_shell_adapter_handles_env_vars_on_posix(monkeypatch):
+def test_shell_adapter_handles_env_vars_on_posix(monkeypatch, tmp_path: Path):
     """
     Verify that the shell adapter can execute commands with environment variable expansion.
     This is a POSIX-specific feature test.
     """
     if sys.platform == "win32":
-        return  # This feature is for POSIX shells
+        return
 
-    # GIVEN: an environment variable is set
     monkeypatch.setenv("TEDDY_TEST_VAR", "SUCCESS_VAR")
+    builder = MarkdownPlanBuilder("Test Env Var Execution")
+    builder.add_action(
+        "EXECUTE",
+        params={"Description": "Echo an environment variable."},
+        content_blocks={"COMMAND": ("shell", "echo $TEDDY_TEST_VAR")},
+    )
+    plan_content = builder.build()
 
-    plan_content = """
-    actions:
-      - name: env_var_command
-        action: execute
-        command: 'echo $TEDDY_TEST_VAR'
-    """
-
-    # WHEN: A plan that uses the env var is executed
-    result = runner.invoke(
-        app,
-        ["execute", "--plan-content", plan_content, "-y"],
-        catch_exceptions=False,
+    result = run_cli_with_markdown_plan_on_clipboard(
+        monkeypatch, plan_content, tmp_path
     )
 
-    # THEN: The command succeeds and the output contains the expanded variable
     assert result.exit_code == 0
-    from .helpers import parse_yaml_report
-
     report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "SUCCESS"
     action_log = report["action_logs"][0]
@@ -122,42 +93,32 @@ def test_shell_adapter_handles_env_vars_on_posix(monkeypatch):
     assert "SUCCESS_VAR" in action_log["details"]["stdout"]
 
 
-def test_shell_adapter_handles_simple_command_on_posix():
+def test_shell_adapter_handles_simple_command_on_posix(monkeypatch, tmp_path: Path):
     """
     Verify that the shell adapter still handles simple commands without shell features.
     This is a POSIX-specific feature test.
     """
     if sys.platform == "win32":
-        return  # This feature is for POSIX shells
+        return
 
-    # GIVEN: a directory exists
-    test_dir = Path("test_dir_for_simple_command")
+    test_dir = tmp_path / "test_dir_for_simple_command"
     test_dir.mkdir()
 
-    plan_content = f"""
-    actions:
-      - name: simple_ls
-        action: execute
-        command: 'ls -d {test_dir.name}'
-    """
+    builder = MarkdownPlanBuilder("Test Simple Command Execution")
+    builder.add_action(
+        "EXECUTE",
+        params={"Description": "Run a simple ls command."},
+        content_blocks={"COMMAND": ("shell", f"ls -d {test_dir.name}")},
+    )
+    plan_content = builder.build()
 
-    try:
-        # WHEN: A plan with a simple command is executed
-        result = runner.invoke(
-            app,
-            ["execute", "--plan-content", plan_content, "-y"],
-            catch_exceptions=False,
-        )
+    result = run_cli_with_markdown_plan_on_clipboard(
+        monkeypatch, plan_content, tmp_path
+    )
 
-        # THEN: The command succeeds and the output is correct
-        assert result.exit_code == 0
-        from .helpers import parse_yaml_report
-
-        report = parse_yaml_report(result.stdout)
-        assert report["run_summary"]["status"] == "SUCCESS"
-        action_log = report["action_logs"][0]
-        assert action_log["status"] == "SUCCESS"
-        assert test_dir.name in action_log["details"]["stdout"]
-    finally:
-        if test_dir.exists():
-            test_dir.rmdir()
+    assert result.exit_code == 0
+    report = parse_yaml_report(result.stdout)
+    assert report["run_summary"]["status"] == "SUCCESS"
+    action_log = report["action_logs"][0]
+    assert action_log["status"] == "SUCCESS"
+    assert test_dir.name in action_log["details"]["stdout"]

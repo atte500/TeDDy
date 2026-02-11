@@ -1,6 +1,8 @@
+import os
 from typing import Any, Dict, List, Optional
 import mistletoe
 from mistletoe.block_token import (
+    BlockCode,
     CodeFence,
     Heading,
     List as MdList,
@@ -131,6 +133,8 @@ class MarkdownPlanParser(IPlanParser):
             if children:
                 child = children[0]
                 if hasattr(child, "content"):
+                    # Use content directly to preserve trailing newlines, but strip the
+                    # single trailing newline that mistletoe always includes.
                     params["content"] = child.content.rstrip("\n")
 
         return ActionData(type="CREATE", description=description, params=params)
@@ -160,7 +164,7 @@ class MarkdownPlanParser(IPlanParser):
         return self._parse_resource_action(parent, heading_node, "PRUNE")
 
     def _parse_edit_action(self, parent: Document, heading_node: Heading) -> ActionData:
-        """Parses an EDIT action block."""
+        """Parses an EDIT action block using a robust state machine."""
         metadata_list = self._get_next_sibling(parent, heading_node)
         if not isinstance(metadata_list, MdList):
             raise InvalidPlanError("EDIT action is missing metadata list.")
@@ -172,54 +176,65 @@ class MarkdownPlanParser(IPlanParser):
         content_nodes = self._get_subsequent_siblings(parent, metadata_list)
         edits = []
 
-        i = 0
-        while i < len(content_nodes):
-            # Check for FIND Heading
-            find_heading_node = content_nodes[i]
-            if isinstance(find_heading_node, Heading) and find_heading_node.level == 4:
-                inline_code = self._find_node_in_tree(
-                    find_heading_node, mistletoe.span_token.InlineCode
-                )
-                if inline_code and self._get_child_text(inline_code) == "FIND:":
-                    # Found a valid FIND heading, check the next nodes
-                    if i + 3 < len(content_nodes):
-                        find_code_node = content_nodes[i + 1]
-                        replace_heading_node = content_nodes[i + 2]
-                        replace_code_node = content_nodes[i + 3]
+        # State machine variables
+        state = "AWAITING_FIND_HEADING"
+        current_find_content: Optional[str] = None
 
-                        # Check for REPLACE heading
-                        is_replace_heading = False
-                        if (
-                            isinstance(replace_heading_node, Heading)
-                            and replace_heading_node.level == 4
-                        ):
-                            replace_inline_code = self._find_node_in_tree(
-                                replace_heading_node, mistletoe.span_token.InlineCode
-                            )
-                            if (
-                                replace_inline_code
-                                and self._get_child_text(replace_inline_code)
-                                == "REPLACE:"
-                            ):
-                                is_replace_heading = True
+        if os.environ.get("TEDDY_DEBUG"):
+            print("\n--- AST Node Trace for EDIT Action ---")
+            for i, node in enumerate(content_nodes):
+                print(f"Node {i}: {repr(node)}")
+            print("--------------------------------------\n")
 
-                        if (
-                            isinstance(find_code_node, CodeFence)
-                            and is_replace_heading
-                            and isinstance(replace_code_node, CodeFence)
-                        ):
-                            find_content = self._get_child_text(find_code_node).rstrip(
-                                "\n"
-                            )
-                            replace_content = self._get_child_text(
-                                replace_code_node
+        for node in content_nodes:
+            if state == "AWAITING_FIND_HEADING":
+                if isinstance(node, Heading) and "FIND:" in self._get_child_text(node):
+                    state = "AWAITING_FIND_CODE"
+                continue
+
+            if state == "AWAITING_FIND_CODE":
+                if isinstance(node, (CodeFence, BlockCode)):
+                    # Directly access the content of the code block's child RawText node
+                    # to get the verbatim content, preserving any trailing newlines.
+                    if node.children:
+                        raw_text_node = list(node.children)[0]
+                        current_find_content = getattr(
+                            raw_text_node, "content", ""
+                        ).rstrip("\n")
+                    else:
+                        current_find_content = ""
+                    state = "AWAITING_REPLACE_HEADING"
+                elif isinstance(node, Heading):
+                    state = "AWAITING_FIND_HEADING"
+                continue
+
+            if state == "AWAITING_REPLACE_HEADING":
+                if isinstance(node, Heading) and "REPLACE:" in self._get_child_text(
+                    node
+                ):
+                    state = "AWAITING_REPLACE_CODE"
+                continue
+
+            if state == "AWAITING_REPLACE_CODE":
+                if isinstance(node, (CodeFence, BlockCode)):
+                    if current_find_content is not None:
+                        if node.children:
+                            raw_text_node = list(node.children)[0]
+                            replace_content = getattr(
+                                raw_text_node, "content", ""
                             ).rstrip("\n")
-                            edits.append(
-                                {"find": find_content, "replace": replace_content}
-                            )
-                            i += 4  # advance past the block
-                            continue
-            i += 1  # advance to next node
+                        else:
+                            replace_content = ""
+                        edits.append(
+                            {"find": current_find_content, "replace": replace_content}
+                        )
+                    # Reset for the next potential FIND/REPLACE pair
+                    state = "AWAITING_FIND_HEADING"
+                    current_find_content = None
+                # If we see another heading before a code block, it's malformed. Reset.
+                elif isinstance(node, Heading):
+                    state = "AWAITING_FIND_HEADING"
+                continue
 
         if not edits:
             raise InvalidPlanError("EDIT action found no valid FIND/REPLACE blocks.")

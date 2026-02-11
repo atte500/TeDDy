@@ -67,21 +67,52 @@ class MarkdownPlanBuilder:
             for action in self._actions:
                 action_type_upper = action["type"].upper()
                 action_str = f"\n### `{action_type_upper}`"
-                for key, value in action["params"].items():
+                params = action["params"]
+                content_blocks = action.get("content_blocks") or {}
+
+                # Pop special-handled keys from params to avoid double-printing
+                command = params.pop("command", None)
+                handoff_message = params.pop("Handoff Message", None)
+                env_val = params.pop("env", None)
+
+                # Render all remaining standard parameters
+                for key, value in params.items():
                     action_str += f"\n- **{key}:** {value}"
 
-                if action.get("content_blocks"):
-                    block_parts = []
-                    for key, (lang, content) in action["content_blocks"].items():
-                        block = dedent(
-                            f"""
-                            #### {key}
-                            `````{lang}
-                            {content}
-                            `````"""
-                        )
-                        block_parts.append(block.strip())
-                    action_str += "\n\n" + "\n".join(block_parts)
+                # Render special nested list for env if it exists
+                if env_val:
+                    action_str += f"\n- **env:**\n  {env_val}"
+
+                # Action-specific content block rendering
+                if action_type_upper == "EXECUTE":
+                    # Command can come from params or content_blocks
+                    command_content = command
+                    if not command_content:
+                        # Check both `COMMAND` and `` `COMMAND:` `` for compatibility
+                        command_block = content_blocks.get(
+                            "COMMAND"
+                        ) or content_blocks.get("`COMMAND:`")
+                        if command_block:
+                            _, command_content = command_block
+
+                    if command_content:
+                        action_str += f"\n\n````shell\n{command_content}\n````"
+
+                elif action_type_upper == "INVOKE":
+                    if handoff_message:
+                        action_str += f"\n\n{handoff_message}"
+
+                else:  # Generic handling for CREATE, EDIT
+                    if content_blocks:
+                        block_parts = []
+                        for key, (lang, content) in content_blocks.items():
+                            key_str = f"#### {key}" if key else ""
+                            fence_str = f"`````{lang}\n{content}\n`````"
+                            block = f"{key_str}\n{fence_str}" if key else fence_str
+                            block_parts.append(block)
+
+                        # Join with a single newline. The test expects no blank line between blocks.
+                        action_str += "\n\n" + "\n".join(block_parts)
 
                 action_plan_parts.append(action_str)
 

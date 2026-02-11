@@ -1,19 +1,21 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-import yaml
+
 from typer.testing import CliRunner
 
-from teddy_executor.main import app, create_container
-from .helpers import parse_yaml_report
-from teddy_executor.core.ports.outbound import IWebSearcher
 from teddy_executor.core.domain.models._legacy_models import (
-    SERPReport,
     QueryResult,
     SearchResult,
+    SERPReport,
 )
+from teddy_executor.core.ports.outbound import IWebSearcher
+from teddy_executor.main import create_container
+
+from .helpers import parse_yaml_report, run_cli_with_markdown_plan_on_clipboard
+from .plan_builder import MarkdownPlanBuilder
 
 
-def test_research_action_success(tmp_path: Path):
+def test_research_action_success(monkeypatch, tmp_path: Path):
     """
     Given a plan with a `research` action,
     When the plan is executed with a mocked web searcher,
@@ -21,20 +23,16 @@ def test_research_action_success(tmp_path: Path):
     """
     # Arrange
     runner = CliRunner()
-    plan_structure = [
-        {
-            "action": "research",
-            "params": {"queries": ["python typer"]},
-        }
-    ]
-    plan_content = yaml.dump(plan_structure)
-    plan_file = tmp_path / "plan.yml"
-    plan_file.write_text(plan_content)
 
-    # 1. Create a mock for the IWebSearcher port
+    builder = MarkdownPlanBuilder("Test Research Action")
+    builder.add_action(
+        "RESEARCH",
+        params={"Description": "Research python typer."},
+        content_blocks={"QUERY": ("text", "python typer")},
+    )
+    plan_content = builder.build()
+
     mock_web_searcher = MagicMock(spec=IWebSearcher)
-
-    # 2. Configure the mock to return a predictable domain object
     serp_report = SERPReport(
         results=[
             QueryResult(
@@ -51,13 +49,14 @@ def test_research_action_success(tmp_path: Path):
     )
     mock_web_searcher.search.return_value = serp_report
 
-    # 3. Create a test-specific DI container and register the mock
     test_container = create_container()
     test_container.register(IWebSearcher, instance=mock_web_searcher)
 
     # Act
     with patch("teddy_executor.main.container", test_container):
-        result = runner.invoke(app, ["execute", str(plan_file), "--yes"])
+        result = run_cli_with_markdown_plan_on_clipboard(
+            monkeypatch, plan_content, tmp_path
+        )
 
     # Assert
     assert result.exit_code == 0
@@ -68,7 +67,6 @@ def test_research_action_success(tmp_path: Path):
     action_log = report["action_logs"][0]
     assert action_log["status"] == "SUCCESS"
 
-    # The details should be the JSON representation of the SERPReport
     details_dict = action_log["details"]
     assert details_dict["results"][0]["query"] == "python typer"
     assert details_dict["results"][0]["search_results"][0]["title"] == "Typer Tutorial"

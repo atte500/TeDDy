@@ -1,34 +1,28 @@
-from typer.testing import CliRunner
-
-from teddy_executor.main import app
-
-runner = CliRunner()
+from .helpers import run_cli_with_markdown_plan_on_clipboard, parse_yaml_report
+from .plan_builder import MarkdownPlanBuilder
 
 
-def test_yaml_parsing_with_unquoted_colon():
+def test_markdown_parsing_of_execute_action(monkeypatch, tmp_path):
     """
-    Scenario 1: Robust YAML Parsing
-    Given a plan.yaml file containing an execute action where the command string
-    has a colon but is not quoted.
-    When the user executes the plan with teddy.
-    Then the plan is parsed and executed successfully without raising a yaml.ScannerError.
+    Given a markdown plan with an execute action,
+    When the plan is run,
+    Then it should execute successfully.
+    This replaces the legacy YAML colon test with a modern markdown equivalent.
     """
-    plan_content = """
-actions:
-  - action: execute
-    description: "Run a specific pytest test."
-    command: echo hello:world
-"""
-    result = runner.invoke(
-        app,
-        ["execute", "--plan-content", plan_content, "-y"],
-        catch_exceptions=False,
+    builder = MarkdownPlanBuilder("Test Execute Action")
+    builder.add_action(
+        "EXECUTE",
+        params={"Description": "Run a command with a colon."},
+        content_blocks={"COMMAND": ("shell", "echo hello:world")},
+    )
+    plan_content = builder.build()
+
+    result = run_cli_with_markdown_plan_on_clipboard(
+        monkeypatch, plan_content, tmp_path
     )
 
     assert result.exit_code == 0
     assert "hello:world" in result.stdout
-
-    from .helpers import parse_yaml_report
 
     report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "SUCCESS"

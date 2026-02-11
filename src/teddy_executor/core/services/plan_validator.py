@@ -6,6 +6,7 @@ This module contains the implementation of the PlanValidator service.
 # The Developer will implement this based on the design document.
 # See: docs/core/services/plan_validator.md
 
+import os
 from pathlib import Path
 from typing import List
 
@@ -69,6 +70,12 @@ class PlanValidator(IPlanValidator):
         if isinstance(edits, list):
             for edit in edits:
                 find_block = edit.get("find")
+                if os.environ.get("TEDDY_DEBUG"):
+                    print("\n--- TEDDY DEBUG: PlanValidator ---")
+                    print(f"File: {file_path}")
+                    print(f"Content (repr): {repr(content)}")
+                    print(f"Find Block (repr): {repr(find_block)}")
+                    print("--- END TEDDY DEBUG ---\n")
                 if isinstance(find_block, str) and find_block not in content:
                     raise PlanValidationError(
                         f"The `FIND` block could not be located in the file: {file_path}"

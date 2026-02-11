@@ -83,30 +83,30 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 
 #### Hexagonal Core
 
-| Component                 | Description                                                                                             | Contract                                                                     |
-| ------------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| **Domain Model**          | Defines the core entities, value objects, and ubiquitous language of the application.                   | [Domain Model & Ubiquitous Language](./docs/core/domain_model.md)            |
-| **ExecutionReport**       | A strongly-typed, immutable data structure representing the outcome of a plan execution.                | [ExecutionReport](./docs/core/domain/execution_report.md)                    |
-| **IGetContextUseCase**    | Defines the inbound port for orchestrating the collection of project context.                           | [IGetContextUseCase](./docs/core/ports/inbound/get_context_use_case.md)      |
-| **IRunPlanUseCase**       | Defines the primary inbound port for executing a plan from a raw YAML string.                           | [IRunPlanUseCase](./docs/core/ports/inbound/run_plan_use_case.md)            |
-| **IPlanParser**           | Defines the inbound port for parsing a plan from a raw string into a `Plan` object.                     | [IPlanParser](./docs/core/ports/inbound/plan_parser.md)                      |
-| **IPlanValidator**        | Defines the inbound port for performing pre-flight validation of a `Plan` object.                       | [IPlanValidator](./docs/core/ports/inbound/plan_validator.md)                |
-| **IEnvironmentInspector** | Defines the outbound port for gathering information about the host operating environment.               | [IEnvironmentInspector](./docs/core/ports/outbound/environment_inspector.md) |
-| **IFileSystemManager**    | Defines a technology-agnostic outbound port for all file system operations (create, read, edit).        | [IFileSystemManager](./docs/core/ports/outbound/file_system_manager.md)      |
-| **IMarkdownReportFormatter** | Defines the outbound port for formatting an `ExecutionReport` into a Markdown string.                | [IMarkdownReportFormatter](./docs/core/ports/outbound/markdown_report_formatter.md) |
-| **IRepoTreeGenerator**    | Defines the outbound port for generating a file tree, respecting `.gitignore` and `.teddyignore` files. | [IRepoTreeGenerator](./docs/core/ports/outbound/repo_tree_generator.md)      |
-| **IShellExecutor**        | Defines the outbound port for executing shell commands in a specific context (CWD, env).                | [IShellExecutor](./docs/core/ports/outbound/shell_executor.md)               |
-| **IUserInteractor**       | Defines the outbound port for prompting the user for confirmation and free-text input.                  | [IUserInteractor](./docs/core/ports/outbound/user_interactor.md)             |
-| **IWebScraper**           | Defines the outbound port for fetching and converting remote web page content to Markdown.              | [IWebScraper](./docs/core/ports/outbound/web_scraper.md)                     |
-| **IWebSearcher**          | Defines the outbound port for performing web searches and returning structured results.                 | [IWebSearcher](./docs/core/ports/outbound/web_searcher.md)                   |
-| **ActionDispatcher**      | A service that resolves and executes a single action, delegating to the `ActionFactory`.                | [ActionDispatcher](./docs/core/services/action_dispatcher.md)                |
-| **ActionFactory**         | A factory service that creates validated `Action` domain objects from raw plan data.                    | [ActionFactory](./docs/core/services/action_factory.md)                      |
-| **ContextService**        | The service that implements `IGetContextUseCase` by orchestrating outbound ports.                       | [ContextService](./docs/core/services/context_service.md)                    |
-| **ExecutionOrchestrator** | The primary service that implements `IRunPlanUseCase`, managing the step-by-step execution of a plan.   | [ExecutionOrchestrator](./docs/core/services/execution_orchestrator.md)      |
-| **MarkdownPlanParser**    | A service that parses a Markdown plan string into a `Plan` domain object using an AST.                  | [MarkdownPlanParser](./docs/core/services/markdown_plan_parser.md)           |
-| **MarkdownReportFormatter** | Implements `IMarkdownReportFormatter` using the Jinja2 template engine to generate CLI reports.         | [MarkdownReportFormatter](./docs/core/services/markdown_report_formatter.md) |
-| **PlanValidator**         | Implements `IPlanValidator` using a strategy pattern to run pre-flight checks on a plan's actions.    | [PlanValidator](./docs/core/services/plan_validator.md)                      |
-| **YamlPlanParser**        | A service that parses a YAML plan string into a structured `Plan` domain object.                        | [YamlPlanParser](./docs/core/services/yaml_plan_parser.md)                   |
+| Component                    | Description                                                                                             | Contract                                                                            |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| **Domain Model**             | Defines the core entities, value objects, and ubiquitous language of the application.                   | [Domain Model & Ubiquitous Language](./docs/core/domain_model.md)                   |
+| **ExecutionReport**          | A strongly-typed, immutable data structure representing the outcome of a plan execution.                | [ExecutionReport](./docs/core/domain/execution_report.md)                           |
+| **IGetContextUseCase**       | Defines the inbound port for orchestrating the collection of project context.                           | [IGetContextUseCase](./docs/core/ports/inbound/get_context_use_case.md)             |
+| **IRunPlanUseCase**          | Defines the primary inbound port for executing a plan from a raw YAML string.                           | [IRunPlanUseCase](./docs/core/ports/inbound/run_plan_use_case.md)                   |
+| **IPlanParser**              | Defines the inbound port for parsing a plan from a raw string into a `Plan` object.                     | [IPlanParser](./docs/core/ports/inbound/plan_parser.md)                             |
+| **IPlanValidator**           | Defines the inbound port for performing pre-flight validation of a `Plan` object.                       | [IPlanValidator](./docs/core/ports/inbound/plan_validator.md)                       |
+| **IEnvironmentInspector**    | Defines the outbound port for gathering information about the host operating environment.               | [IEnvironmentInspector](./docs/core/ports/outbound/environment_inspector.md)        |
+| **IFileSystemManager**       | Defines a technology-agnostic outbound port for all file system operations (create, read, edit).        | [IFileSystemManager](./docs/core/ports/outbound/file_system_manager.md)             |
+| **IMarkdownReportFormatter** | Defines the outbound port for formatting an `ExecutionReport` into a Markdown string.                   | [IMarkdownReportFormatter](./docs/core/ports/outbound/markdown_report_formatter.md) |
+| **IRepoTreeGenerator**       | Defines the outbound port for generating a file tree, respecting `.gitignore` and `.teddyignore` files. | [IRepoTreeGenerator](./docs/core/ports/outbound/repo_tree_generator.md)             |
+| **IShellExecutor**           | Defines the outbound port for executing shell commands in a specific context (CWD, env).                | [IShellExecutor](./docs/core/ports/outbound/shell_executor.md)                      |
+| **IUserInteractor**          | Defines the outbound port for prompting the user for confirmation and free-text input.                  | [IUserInteractor](./docs/core/ports/outbound/user_interactor.md)                    |
+| **IWebScraper**              | Defines the outbound port for fetching and converting remote web page content to Markdown.              | [IWebScraper](./docs/core/ports/outbound/web_scraper.md)                            |
+| **IWebSearcher**             | Defines the outbound port for performing web searches and returning structured results.                 | [IWebSearcher](./docs/core/ports/outbound/web_searcher.md)                          |
+| **ActionDispatcher**         | A service that resolves and executes a single action, delegating to the `ActionFactory`.                | [ActionDispatcher](./docs/core/services/action_dispatcher.md)                       |
+| **ActionFactory**            | A factory service that creates validated `Action` domain objects from raw plan data.                    | [ActionFactory](./docs/core/services/action_factory.md)                             |
+| **ContextService**           | The service that implements `IGetContextUseCase` by orchestrating outbound ports.                       | [ContextService](./docs/core/services/context_service.md)                           |
+| **ExecutionOrchestrator**    | The primary service that implements `IRunPlanUseCase`, managing the step-by-step execution of a plan.   | [ExecutionOrchestrator](./docs/core/services/execution_orchestrator.md)             |
+| **MarkdownPlanParser**       | A service that parses a Markdown plan string into a `Plan` domain object using an AST.                  | [MarkdownPlanParser](./docs/core/services/markdown_plan_parser.md)                  |
+| **MarkdownReportFormatter**  | Implements `IMarkdownReportFormatter` using the Jinja2 template engine to generate CLI reports.         | [MarkdownReportFormatter](./docs/core/services/markdown_report_formatter.md)        |
+| **PlanValidator**            | Implements `IPlanValidator` using a strategy pattern to run pre-flight checks on a plan's actions.      | [PlanValidator](./docs/core/services/plan_validator.md)                             |
+| **YamlPlanParser**           | A service that parses a YAML plan string into a structured `Plan` domain object.                        | [YamlPlanParser](./docs/core/services/yaml_plan_parser.md)                          |
 
 #### Primary Adapters
 
@@ -154,3 +154,5 @@ To aid in fault isolation, the `teddy` executor includes a debug mode that can b
 -   **Current Implementations:**
     -   **`LocalFileSystemAdapter`:** Logs the inputs, intermediate values, and final output of its internal `_resolve_path` method. This is useful for debugging issues related to how file paths are constructed and resolved.
 -   **`ShellAdapter`:** Logs detailed information about the command execution process, including the platform, input command, whether a shell is used, the tokenized arguments, and the final result (`stdout`, `stderr`, `return_code`). This is critical for diagnosing cross-platform command execution issues.
+-   **`PlanValidator`:** In the `_validate_edit_action` method, logs the `repr()` of the file content and the `find_block` being compared. This is essential for debugging validation failures caused by subtle differences in whitespace or other invisible characters.
+-   **`MarkdownPlanParser`:** In the `_parse_edit_action` method, logs the `repr()` of every AST node it processes. This is critical for debugging the state machine that traverses the `mistletoe` AST.
