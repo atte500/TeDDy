@@ -48,9 +48,9 @@
           ### **Phase 4: Document Approved Architecture**
           *   **Goal:** To codify the approved architectural decision into the project's single source of truth.
           *   **Process:**
-              1.  If `docs/ARCHITECTURE.md` does not yet exist, `CREATE` it based on the **`ARCHITECTURE.md` Blueprint**. Otherwise, `EDIT` the existing file.
-              2.  `EDIT` the slice document from Phase 1 to replace the `Architectural Changes` placeholder with the definitive list of components to be created or modified.
-              3.  For **each component** in that list, `CREATE` or `EDIT` its corresponding design document and update the `Component & Boundary Map` in `docs/ARCHITECTURE.md`.
+              1.  **Update Central Architecture:** If the slice introduces a significant architectural decision, first `EDIT` `docs/ARCHITECTURE.md` to add the detailed **reasoning, trade-offs, and justification** to the `Key Architectural Decisions` section.
+              2.  **Update Slice Document:** Next, `EDIT` the slice document to replace the `Architectural Changes` placeholder. This section must now state the **outcome** of the decision and provide a direct **link** to the new entry in `docs/ARCHITECTURE.md`.
+              3.  **Update Component Designs:** Finally, for **each component** listed in the `Architectural Changes`, `CREATE` or `EDIT` its corresponding design document and update the `Component & Boundary Map` in `docs/ARCHITECTURE.md`.
 
           ---
           ### **Phase 5: Initialize Project Environment**
