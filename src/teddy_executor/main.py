@@ -302,11 +302,8 @@ def execute(
         raise typer.Exit(code=1)
 
     if report:
-        import sys
-
         report_formatter = container.resolve(IMarkdownReportFormatter)
         formatted_report = report_formatter.format(report)
-
 
         _echo_and_copy(
             formatted_report,

@@ -1,7 +1,6 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from typer.testing import CliRunner
 
 from teddy_executor.core.domain.models._legacy_models import (
     QueryResult,
@@ -22,8 +21,6 @@ def test_research_action_success(monkeypatch, tmp_path: Path):
     Then it should return a report with the mocked search results.
     """
     # Arrange
-    runner = CliRunner()
-
     builder = MarkdownPlanBuilder("Test Research Action")
     builder.add_action(
         "RESEARCH",
