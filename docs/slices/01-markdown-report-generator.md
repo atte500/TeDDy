@@ -218,3 +218,12 @@ This feature will be implemented by following a strict outside-in, Test-Driven D
     -   Enhance the `ExecutionOrchestrator` to identify and gracefully skip unsupported actions (`INVOKE`, `CONCLUDE`, `MEMO`).
     -   Enhance the `MarkdownReportFormatter` to correctly report these actions as "Skipped".
     -   Ensure the acceptance test now passes.
+
+---
+## 6. Implementation Notes
+
+-   **Parser Implementation Debt:** During analysis, a critical discrepancy was found between the official `new-plan-format.md` specification and the current `MarkdownPlanParser` implementation for `EDIT` actions.
+    -   **The Spec:** The spec correctly defines `FIND:` and `REPLACE:` blocks using Level 4 (`####`) headings. The `PlanValidator` service was implemented correctly against this spec.
+    -   **The Bug:** The `MarkdownPlanParser` contains legacy logic that incorrectly looks for `Paragraph` nodes instead of `Heading` nodes.
+    -   **The Flow:** The execution flow in `main.py` is `parse -> validate`. The validator receives the malformed `Plan` object from the parser and performs its logical checks, which is why the structural error is not caught.
+    -   **The Fix:** This should be remediated at the **end of Slice 2**. The fix involves updating the `_parse_edit_action` method in `src/teddy_executor/core/services/markdown_plan_parser.py` to correctly identify `Heading` nodes with `level == 4`.
