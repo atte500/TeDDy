@@ -27,8 +27,9 @@ The following checks are performed in order. The first failure terminates the va
 These checks ensure the overall document is well-formed.
 
 -   **[✓] Must be valid Markdown:** The file must be parsable as a standard Markdown document.
--   **[✓] Must have a single H1 Title:** The plan must contain exactly one Level 1 (`#`) heading, which is treated as the plan's title.
+-   **[✓] Must start with a single H1 Title:** The plan must begin with exactly one Level 1 (`#`) heading.
 -   **[✓] Must contain core sections:** The plan must contain `## Rationale` and `## Action Plan` Level 2 (`##`) headings.
+-   **[✓] H1 must be followed by required metadata:** The H1 heading must be immediately followed by an unordered list containing the keys `Status`, `Plan Type`, and `Agent`.
 
 ---
 

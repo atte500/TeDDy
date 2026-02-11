@@ -1,13 +1,11 @@
 {#
-  Minimal working template for the concise Markdown report.
-  Supports basic status reporting and failure details.
+  Unified template for the concise Markdown report.
+  Renders both execution outcomes and pre-flight validation failures.
 #}
-# Execution Report: {% if report.run_summary.status.value == "VALIDATION_FAILED" %}Validation Failed{% else %}{{ report.run_summary.status.value }}{% endif %} {% if report.run_summary.status.value == "SUCCESS" %}🟢{% elif report.run_summary.status.value == "FAILURE" %}🔴{% elif report.run_summary.status.value == "VALIDATION_FAILED" %}🔴{% else %}🟡{% endif %}
+# Execution Report: {{ report.plan_title | default('Untitled Plan') }}
 
-- **Overall Status:** {% if report.run_summary.status.value == "VALIDATION_FAILED" %}Validation Failed{% else %}{{ report.run_summary.status.value }}{% endif %} {% if report.run_summary.status.value == "SUCCESS" %}🟢{% elif report.run_summary.status.value == "FAILURE" %}🔴{% elif report.run_summary.status.value == "VALIDATION_FAILED" %}🔴{% else %}🟡{% endif %}
-
+- **Overall Status:** {{ "Validation Failed" if report.run_summary.status.value == "VALIDATION_FAILED" else report.run_summary.status.value }}
 - **Execution Start Time:** {{ format_datetime(report.run_summary.start_time) }}
-
 - **Execution End Time:** {{ format_datetime(report.run_summary.end_time) }}
 
 {% if report.validation_result %}
@@ -23,12 +21,13 @@
 {% for log in report.action_logs %}
 
 #### `{{ log.action_type.upper() }}`
-- **Status:** {{ log.status.value }} {% if log.status.value == "FAILURE" %}🔴{% elif log.status.value == "SUCCESS" %}🟢{% endif %}
-
+- **Status:** {{ log.status.value }}
 {% if log.params %}
 - **Params:** `{{ to_json(log.params) }}`
 {% endif %}
 {% if log.details %}
 - **Details:** {{ log.details }}
 {% endif %}
+{% else %}
+*(No actions were executed.)*
 {% endfor %}

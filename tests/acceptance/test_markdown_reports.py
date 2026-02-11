@@ -50,6 +50,13 @@ Hello, TeDDy!
     assert result.exit_code == 1, (
         f"Expected exit code 1, but got {result.exit_code}. Output:\\n{result.stdout}"
     )
-    assert "**Overall Status:** Validation Failed 🔴" in result.stdout
+
+    # Assert on the Markdown report content using robust parser
+    from .helpers import parse_markdown_report
+
+    report = parse_markdown_report(result.stdout)
+    assert report["run_summary"].get("Overall Status") == "Validation Failed"
+
+    # Also check for the specific error message text
     assert "## Validation Errors" in result.stdout
     assert "The `FIND` block could not be located in the file" in result.stdout
