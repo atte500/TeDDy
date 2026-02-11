@@ -5,6 +5,7 @@ from pathlib import Path
 from typer.testing import CliRunner
 
 from teddy_executor.main import app
+from .plan_builder import MarkdownPlanBuilder
 
 runner = CliRunner()
 
@@ -20,25 +21,22 @@ def test_execute_action_can_see_file_from_create_action(tmp_path: Path):
     test_content = "Hello from the spike!"
     test_file_path = tmp_path / test_file_name
 
-    plan_content = f"""
-# Test Plan: Create then Read
-
-## Action Plan
-
-### `CREATE`
-- **File Path:** {test_file_path}
-- **Description:** Create a test file.
-````text
-{test_content}
-````
-
-### `EXECUTE`
-- **Description:** Read the content of the newly created file using 'cat'.
-`COMMAND:`
-````shell
-cat {test_file_path}
-````
-"""
+    builder = MarkdownPlanBuilder("Test Plan: Create then Read")
+    builder.add_action(
+        "CREATE",
+        params={
+            "File Path": str(test_file_path),
+            "Description": "Create a test file.",
+        },
+        content_blocks={"": ("text", test_content)},
+    ).add_action(
+        "EXECUTE",
+        params={
+            "Description": "Read the content of the newly created file using 'cat'."
+        },
+        content_blocks={"`COMMAND:`": ("shell", f"cat {test_file_path}")},
+    )
+    plan_content = builder.build()
 
     # 2. Act
     # Add a pre-condition assertion to guarantee the file does not exist before the run.
