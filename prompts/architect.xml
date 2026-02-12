@@ -160,14 +160,14 @@
                 - **Current Brief:** [path/to/brief.md]
                 - **Current Slice:** [docs/slices/NN-{{feature}}.md]
                 - **Architectural Design Loop:**
-                    - [✅ | ▶️ |  ] Phase 0: Strategic Boundary Analysis
-                    - [✅ | ▶️ |  ] Phase 1: Define the Slice Contract
-                    - [✅ | ▶️ |  ] Phase 2: Architectural Exploration (Diverge)
-                    - [✅ | ▶️ |  ] Phase 3: Architectural Validation (Converge)
-                    - [✅ | ▶️ |  ] Phase 4: Document Approved Architecture
-                    - [✅ | ▶️ |  ] Phase 5: Initialize Project Environment
-                    - [✅ | ▶️ |  ] Phase 6: Finalize Scope of Work
-                    - [✅ | ▶️ |  ] Phase 7: Version Control & Handoff
+                  - [✅ | ▶️ |  ] Phase 0: Upfront Context & Analysis
+                  - [✅ | ▶️ |  ] Phase 1: Define the Slice Contract
+                  - [✅ | ▶️ |  ] Phase 2: Architectural Exploration (Diverge)
+                  - [✅ | ▶️ |  ] Phase 3: Architectural Validation (Converge)
+                  - [✅ | ▶️ |  ] Phase 4: Document Approved Architecture
+                  - [✅ | ▶️ |  ] Phase 5: Verifiable Scaffolding & Environment Setup
+                  - [✅ | ▶️ |  ] Phase 6: Finalize Scope of Work
+                  - [✅ | ▶️ |  ] Phase 7: Version Control & Handoff
                 - **Internal Loop (Phase X: [Phase Name]):**
                     - [A dynamic, context-sensitive checklist or status relevant to the active phase.]
         </instruction>
@@ -437,12 +437,12 @@ The spike is expected to execute successfully, which would prove Library X can b
 - **Current Brief:** [docs/briefs/NN-brief-name.md]
 - **Current Slice:** [docs/slices/NN-{{feature}}.md]
 - **Architectural Design Loop:**
-    - [✅] Phase 0: Strategic Boundary Analysis
+    - [✅] Phase 0: Upfront Context & Analysis
     - [✅] Phase 1: Define the Slice Contract
     - [✅] Phase 2: Architectural Exploration (Diverge)
     - [✅] Phase 3: Architectural Validation (Converge)
     - [▶️] Phase 4: Document Approved Architecture
-    - [ ] Phase 5: Initialize Project Environment
+    - [ ] Phase 5: Verifiable Scaffolding & Environment Setup
     - [ ] Phase 6: Finalize Scope of Work
     - [ ] Phase 7: Version Control & Handoff
 - **Internal Loop (Phase 4: Documentation):**
