@@ -143,7 +143,7 @@ This section captures significant, long-standing architectural decisions and pat
     -   **Rationale:** This hybrid strategy provides maximum compatibility. On Windows, it avoids the complex and error-prone quoting issues of `list2cmdline` by passing raw command strings. On POSIX, it provides the power and convenience of the shell in a supervised environment.
 -   **Defensive Type Handling for `mistletoe`:** The `mistletoe` Markdown parsing library exhibits a discrepancy between its runtime behavior and its static type hints. Specifically, attributes like `Token.children` are typed as a nullable `Iterable` but are consistently `list` instances at runtime.
     -   **Required Pattern:** To satisfy `mypy` and prevent runtime errors, any access to these attributes MUST be defensively converted to a concrete, non-nullable list first. Example: `children_list = list(token.children) if token.children else []`. This pattern ensures type safety and makes the code resilient to the library's loose type definitions.
--   **Cross-Platform File I/O:** All operations that read from or write to text files MUST explicitly specify `encoding="utf-8"`.
+-   **Cross-Platform File I/O:** All operations that read from or write to text files MUST explicitly specify `encoding="utf-8"`. This applies to both application code (`src/`) and test code (`tests/`).
     -   **Rationale:** The default file encoding is platform-dependent (e.g., UTF-8 on macOS/Linux, but often `cp1252` on Windows). Failing to specify the encoding can lead to `UnicodeEncodeError` or `UnicodeDecodeError` when handling files with non-ASCII characters on different operating systems. This convention ensures predictable, platform-agnostic behavior.
 
 ---

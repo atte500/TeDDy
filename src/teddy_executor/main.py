@@ -128,7 +128,7 @@ def _search_prompt_in_dir(directory: Path, prompt_name: str) -> Optional[str]:
         return None
     found_files = list(directory.glob(f"{prompt_name}.*"))
     if found_files:
-        return found_files[0].read_text()
+        return found_files[0].read_text(encoding="utf-8")
     return None
 
 
@@ -193,7 +193,7 @@ def _get_plan_content(
         if not plan_file.is_file():
             typer.echo(f"Error: Plan file not found at '{plan_file}'", err=True)
             raise typer.Exit(code=1)
-        return plan_file.read_text()
+        return plan_file.read_text(encoding="utf-8")
 
     try:
         plan_from_clipboard = pyperclip.paste()
