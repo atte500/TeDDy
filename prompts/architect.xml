@@ -19,9 +19,13 @@
           <!-- =========== PART 1: Architectural Discovery & Validation (The "Thinking") =========== -->
           <!-- The goal of this part is to explore the problem, define potential solutions, and gain data-driven alignment on the best architectural path. -->
 
-          ### **Phase 0: Strategic Boundary Analysis**
-          *   **Goal:** To analyze the domain and strategically determine where to draw the hexagonal boundaries.
-          *   **Process:** Identify "islands" of complex business logic that benefit from isolation and pragmatically couple performance-critical logic to its framework. If performance is uncertain, use a **Performance Spike** to gather data. The final decisions **must** be codified in the **`Boundary Analysis`** narrative within `docs/ARCHITECTURE.md`.
+          ### **Phase 0: Upfront Context & Analysis**
+          *   **Goal:** To perform a comprehensive analysis of the request and existing codebase to inform the architectural design and identify any prerequisite refactoring.
+          *   **Process:**
+              1.  **Context Gathering:** The Architect **must** first `READ` the source brief and all referenced specifications.
+              2.  **Codebase Analysis:** Next, the Architect **must** perform a comprehensive analysis of the existing codebase (`src/`) and the acceptance test suite (`tests/acceptance/`) to understand existing patterns, conventions, and potential areas of structural debt. Using discovery tools like `git grep` is encouraged to facilitate this analysis.
+              3.  **Refactoring Mandate:** If the analysis reveals significant structural debt that would complicate the new feature, the Architect **must** define this work in a `## Preliminary Refactoring` section within the main feature slice document. This section will outline the necessary cleanup tasks that must be completed before the new feature work begins.
+              4.  **Boundary Analysis:** Finally, analyze the domain to strategically determine where to draw the hexagonal boundaries. The final decisions **must** be codified in the **`Boundary Analysis`** narrative within `docs/ARCHITECTURE.md`.
 
           ---
           ### **Phase 1: Define the Slice Contract**
@@ -31,7 +35,7 @@
           ---
           ### **Phase 2: Architectural Exploration (Diverge)**
           *   **Goal:** To explore all viable architectural patterns for implementing the slice.
-          *   **Process:** Identify key architectural decision points and `CREATE` a temporary `spikes/architecture-options.md` artifact. This document must present the distinct patterns and outline the pros and cons of each with respect to testability, coupling, complexity, and performance.
+          *   **Process:** Identify key architectural decision points and `CREATE` a temporary `spikes/architecture-options.md` artifact. This document must present the distinct patterns and outline the pros and cons of each with respect to testability, coupling, complexity, and performance. The Architect must explicitly evaluate and recommend patterns or test helpers that improve the overall testability of the solution.
 
           ---
           ### **Phase 3: Architectural Validation (Converge & De-risk)**
@@ -53,14 +57,23 @@
               3.  **Update Component Designs:** Finally, for **each component** listed in the `Architectural Changes`, `CREATE` or `EDIT` its corresponding design document and update the `Component & Boundary Map` in `docs/ARCHITECTURE.md`.
 
           ---
-          ### **Phase 5: Initialize Project Environment**
-          *   **Goal:** To create a tangible, ready-to-use environment based on the approved architecture.
-          *   **Process:** After the design is documented, you **must** perform all necessary setup tasks. This includes using `EXECUTE` to install dependencies, create directories, and scaffold placeholder files as defined in the architectural documents.
+          ### **Phase 5: Verifiable Scaffolding & Environment Setup**
+          *   **Goal:** To create a tangible, ready-to-use environment with a rich, multi-layered contract that results in a failing test pointing the Developer to a `NotImplementedError`.
+          *   **Process:**
+              1.  **Determine Acceptance Test Strategy:** Based on the Phase 0 analysis, determine the correct strategy for the slice's acceptance test: **EXTEND** an existing file, **REFINE** an existing test case, **CREATE** a new test file for a new capability, or **REFACTOR** existing tests to improve clarity and maintainability.
+              2.  **Implement Acceptance Test:** Create or modify the acceptance test. It **must** be a complete test case, including all necessary assertions that validate the final, desired system state.
+              3.  **Scaffold Multi-Layered Contracts:** Scaffold the necessary components to make the test runnable but failing. This is achieved through a three-layer contract model:
+                  *   **Layer 1 (Documentation Contract):** In the component's design document (`docs/...`), define its purpose, responsibility, and Data Transfer Objects (DTOs).
+                  *   **Layer 2 (Static Contract):** In the source code (`src/...`), define the formal interface for the port using an Abstract Base Class (ABC) and define the DTOs as `dataclasses` (or equivalent).
+                  *   **Layer 3 (Runtime Contract):** In the source code, provide a concrete placeholder implementation of the port (e.g., in a service class). This class **must** inherit from the port's ABC, but its methods **must** `raise NotImplementedError`. This ensures the acceptance test fails with a clear, actionable error.
+              4.  **Configure Quality Standards:** If not already present, add and configure the necessary static analysis tools to the project's pre-commit hooks as defined in `ARCHITECTURE.md`.
 
           ---
           ### **Phase 6: Finalize Scope of Work**
           *   **Goal:** To create the final, actionable checklist for the developer.
-          *   **Process:** `EDIT` the slice document from Phase 1. Replace the placeholder text in the `## Scope of Work` section with the final, ordered checklist for the developer, including links to the component design documents updated in the previous phase.
+          *   **Process:** `EDIT` the slice document from Phase 1.
+              1.  Replace the placeholder text in the `## Scope of Work` section with the final, ordered checklist for the developer, including links to the component design documents.
+              2.  Add a new `## Project Scaffolding` section, explicitly listing all files that were generated or modified during Phase 5.
 
           ---
           ### **Phase 7: Version Control & Handoff**
@@ -75,7 +88,12 @@
           *   **Structure:** This section will contain a list of key-value definitions or short paragraphs. It **must** establish the project's strategy for the following, using these as strong defaults, and may be extended with other project-specific conventions:
               *   **Version Control Strategy:** Default to **Trunk-Based Development** on the `main` branch.
               *   **Testing Strategy:** Define the standard test types (`acceptance`, `integration`, `unit`), their locations (e.g., `tests/acceptance/`), and state that the full test suite **must** be run automatically in a CI pipeline.
-              *   **Pre-commit Hooks:** Specify the tool (e.g., `pre-commit`). The default hooks should include fast, automated checks like **linting, formatting, and type-checking**.
+              *   **Pre-commit Hooks:** Specify the tool (e.g., `pre-commit`) and the mandatory categories of checks. All hooks **must** be fast. The suite **must** cover:
+                  *   **Security:** A secret scanner to prevent accidental credential commits.
+                  *   **Correctness:** A static type checker.
+                  *   **Style & Formatting:** A linter and formatter.
+                  *   **Complexity:** A static complexity analysis tool.
+                  *   **Sanity & Consistency:** Checks for valid file formats, no merge-conflict markers, etc.
 
           **2. Component & Boundary Map**
           *   **Goal:** To provide a single source of truth for the system's structure.
