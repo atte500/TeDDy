@@ -1,12 +1,12 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-import yaml
 from typer.testing import CliRunner
 
 from teddy_executor.main import app, create_container
 from teddy_executor.core.ports.outbound import IUserInteractor
 from teddy_executor.core.services.action_dispatcher import ActionDispatcher
 from teddy_executor.core.domain.models import ActionLog, ActionStatus
+from tests.acceptance.plan_builder import MarkdownPlanBuilder
 
 runner = CliRunner()
 
@@ -19,19 +19,18 @@ def test_interactive_prompt_shows_description(tmp_path: Path):
     """
     # Arrange
     test_file = tmp_path / "test.txt"
-    plan_structure = {
-        "actions": [
-            {
-                "action": "create_file",
-                "description": "Create a test file for the QoL feature.",
-                "path": str(test_file),
-                "content": "hello",
-            }
-        ]
-    }
-    plan_yaml = yaml.dump(plan_structure)
-    plan_file = tmp_path / "plan.yaml"
-    plan_file.write_text(plan_yaml)
+    plan_content = (
+        MarkdownPlanBuilder("QoL Test Plan: Description")
+        .add_action(
+            "create",
+            params={
+                "File Path": str(test_file),
+                "Description": "Create a test file for the QoL feature.",
+            },
+            content_blocks={"": ("text", "hello")},
+        )
+        .build()
+    )
 
     # Mock the UserInteractor to simulate user approval and capture the prompt
     mock_interactor = MagicMock(spec=IUserInteractor)
@@ -42,7 +41,7 @@ def test_interactive_prompt_shows_description(tmp_path: Path):
 
     # Act
     with patch("teddy_executor.main.container", test_container):
-        result = runner.invoke(app, ["execute", str(plan_file)])
+        result = runner.invoke(app, ["execute", "--plan-content", plan_content])
 
     # Assert
     assert result.exit_code == 0
@@ -62,11 +61,11 @@ def test_chat_with_user_skips_approval_prompt(tmp_path: Path):
     Then the approval prompt should be skipped and the action dispatched directly.
     """
     # Arrange
-    runner = CliRunner()
-    plan_structure = [{"action": "chat_with_user", "params": {"prompt": "Hello?"}}]
-    plan_yaml = yaml.dump(plan_structure)
-    plan_file = tmp_path / "plan.yaml"
-    plan_file.write_text(plan_yaml)
+    plan_content = (
+        MarkdownPlanBuilder("QoL Test Plan: Chat")
+        .add_action("chat_with_user", params={"prompt": "Hello?"})
+        .build()
+    )
 
     mock_interactor = MagicMock(spec=IUserInteractor)
     # Configure confirm_action to prevent a ValueError if it's called.
@@ -79,7 +78,7 @@ def test_chat_with_user_skips_approval_prompt(tmp_path: Path):
     # that the orchestrator calls it.
     mock_dispatcher = MagicMock(spec=ActionDispatcher)
     mock_dispatcher.dispatch_and_execute.return_value = ActionLog(
-        action_type="chat_with_user",
+        action_type="CHAT_WITH_USER",
         status=ActionStatus.SUCCESS,
         params={"prompt": "Hello?"},
     )
@@ -91,7 +90,7 @@ def test_chat_with_user_skips_approval_prompt(tmp_path: Path):
     # Act
     with patch("teddy_executor.main.container", test_container):
         # Run in interactive mode (no --yes flag)
-        result = runner.invoke(app, ["execute", str(plan_file)])
+        result = runner.invoke(app, ["execute", "--plan-content", plan_content])
 
     # Assert
     assert result.exit_code == 0
@@ -103,42 +102,43 @@ def test_chat_with_user_skips_approval_prompt(tmp_path: Path):
 
 def test_read_action_report_formats_multiline_content_correctly(tmp_path: Path):
     """
-    Verifies that the YAML report for a `read` action correctly formats
-    multi-line file content using a literal block scalar. (Regression Test)
+    Verifies that the Markdown report for a `read` action correctly formats
+    multi-line file content. (Regression Test)
     """
     # GIVEN a file with multi-line content
     test_file = tmp_path / "multi_line.txt"
     test_file.write_text("line one\nline two")
 
     # and a plan to read that file
-    plan_dict = [{"action": "read", "path": str(test_file)}]
-    plan_file = tmp_path / "plan.yaml"
-    plan_file.write_text(yaml.dump(plan_dict))
+    plan_content = (
+        MarkdownPlanBuilder("QoL Test Plan: Read multiline")
+        .add_action("read", params={"Resource": str(test_file)})
+        .build()
+    )
 
     real_container = create_container()
 
     # WHEN the plan is executed
     with patch("teddy_executor.main.container", real_container):
-        result = runner.invoke(app, ["execute", str(plan_file), "--yes"])
+        result = runner.invoke(
+            app, ["execute", "--plan-content", plan_content, "--yes"]
+        )
 
     # THEN the command should succeed
     assert result.exit_code == 0
 
-    # AND the output should contain the content
-    # Note: We no longer check for YAML literal block syntax 'content: |'
-    # because the output is now Markdown. We just verify the content is present.
+    # AND the output should contain the content in the report
     assert "line one" in result.stdout
     assert "line two" in result.stdout
 
 
 def test_read_action_is_formatted_as_literal_block(tmp_path: Path):
     """
-    Given a read action on a multi-line file,
+    Given a read action on a multi-line file containing markdown,
     When the execution report is generated,
-    Then the file content should be formatted as a YAML literal block.
+    Then the file content should be correctly included in the report.
     """
     # Arrange
-    runner = CliRunner()
     file_content = """# TeDDy
 
 This is a paragraph with **bold** text.
@@ -155,17 +155,20 @@ def hello():
     test_file = tmp_path / "test.txt"
     test_file.write_text(file_content)
 
-    plan_structure = [{"action": "read", "path": str(test_file)}]
-    plan_yaml = yaml.dump(plan_structure)
-    plan_file = tmp_path / "plan.yml"
-    plan_file.write_text(plan_yaml)
+    plan_content = (
+        MarkdownPlanBuilder("QoL Test Plan: Read complex markdown")
+        .add_action("read", params={"Resource": str(test_file)})
+        .build()
+    )
 
     # Use the real container to test the full formatting pipeline
     real_container = create_container()
 
     # Act
     with patch("teddy_executor.main.container", real_container):
-        result = runner.invoke(app, ["execute", str(plan_file), "--yes"])
+        result = runner.invoke(
+            app, ["execute", "--plan-content", plan_content, "--yes"]
+        )
 
     # Assert
     assert result.exit_code == 0

@@ -38,7 +38,7 @@ class ExecutionOrchestrator(RunPlanUseCase):
         for action in plan.actions:
             should_dispatch = True
             reason = ""
-            if interactive and action.type != "chat_with_user":
+            if interactive and action.type.lower() != "chat_with_user":
                 action_for_prompt = action  # Default to the original action
 
                 # --- Pre-confirmation Data Normalization for Diffing ---

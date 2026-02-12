@@ -70,6 +70,13 @@ class MarkdownPlanBuilder:
                 params = action["params"]
                 content_blocks = action.get("content_blocks") or {}
 
+                if action_type_upper == "CHAT_WITH_USER":
+                    prompt = params.get("prompt")
+                    if prompt:
+                        action_str += f"\n\n{prompt}"
+                    action_plan_parts.append(action_str)
+                    continue
+
                 # Pop special-handled keys from params to avoid double-printing
                 command = params.pop("command", None)
                 handoff_message = params.pop("Handoff Message", None)
