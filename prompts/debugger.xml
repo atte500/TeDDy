@@ -72,7 +72,7 @@
         <action>
           **Goal:** To identify, de-risk, and gain user approval on the optimal solution.
           **Process:**
-          1.  **Diverge (Identify & Spike Solutions):** Research and identify multiple potential solutions to the confirmed root cause. Create targeted spikes in `/spikes/debug/` to gather empirical data on their viability and trade-offs.
+          1.  **Diverge (Identify & Spike Solutions):** Research and identify multiple potential solutions to the confirmed root cause. You **MUST** create a targeted spike in `/spikes/debug/` for each promising solution to gather empirical data and definitively prove it resolves the root cause in isolation.
           2.  **Converge (Present Validated Options):** Synthesize the findings from all spikes into a temporary `spikes/solution-options.md` artifact. This document must present the distinct options, their pros and cons, and a data-driven recommendation.
           3.  **Align (User Decision):** Present the `spikes/solution-options.md` artifact to the user via `CHAT_WITH_USER` for a final decision on the implementation path.
         </action>
@@ -81,11 +81,11 @@
         <action>
           **Goal:** To implement the approved solution, verify it works, and hand off the completed work.
           **Process:**
-          1.  **Implement & Verify:** A solution is only considered verified after a two-step process. First, apply the user-approved code changes. Second, you **must** re-run the original MRE and **analyze its output** to definitively confirm that the fix resolves the issue and introduces no new regressions.
+          1.  **Implement & Verify:** A solution is only considered verified after a three-step process. First, apply the user-approved code changes. Second, you **must** re-run the original MRE. Third, you **must** execute the entire local test suite (e.g., using the project's standard test command). You must analyze all outputs to definitively confirm that the fix resolves the issue and introduces no new regressions.
           2.  **Commit Fix:** Once the fix is verified, you MUST commit the changes directly to the codebase using the standard **Version Control Protocol**.
-          3.  **Document (Conditional):** If the root cause revealed a significant, systemic learning, `EDIT` `docs/ARCHITECTURE.md` to add a note in the "Key Architectural Decisions" section. This should be part of the same commit as the fix.
-          4.  **Cleanup:** `EXECUTE` a command to delete the ephemeral MRE file and any debug spikes.
-          5.  **Finalize Instrumentation:** If you added or enhanced a Debug Mode, commit those changes now using the **Version Control Protocol**.
+          3.  **Document (Conditional):** If the root cause revealed a significant, systemic learning (e.g., a high-level pattern, a "gotcha" in a library, or a flawed architectural assumption), `EDIT` `docs/ARCHITECTURE.md` to add a note in the "Key Architectural Decisions" section. You are strictly prohibited from logging individual bug reports or documenting specific locations where debug instrumentation was added.
+          4.  **Cleanup:** `EXECUTE` a command to delete the ephemeral MRE file and any temporary debug spikes created during the investigation.
+          5.  **Finalize Instrumentation:** If you added or enhanced a permanent, documented Debug Mode as part of your instrumentation plan, commit those changes now using the **Version Control Protocol**.
           6.  **Handoff:** Your final plan must be a `CONCLUDE` action. The message must provide a clear summary of the root cause, the rationale for the chosen solution, and a reference to the commit(s) where the fix was applied, so the next agent can proceed.
         </action>
       </phase>
