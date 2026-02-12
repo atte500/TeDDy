@@ -45,8 +45,9 @@ def test_read_action_can_read_from_url(httpserver: HTTPServer, monkeypatch, tmp_
     read_action_log = report["action_logs"][0]
 
     assert read_action_log["status"] == "SUCCESS"
-    assert "details" in read_action_log
-    assert "content" in read_action_log["details"]
+
+    # The contract for a successful read is the Resource Contents section in stdout
+    assert "## Resource Contents" in result.stdout
     # markdownify uses Setext-style headers by default
     expected_content = "Hello\n=====\n\nWorld"
-    assert read_action_log["details"]["content"].strip() == expected_content
+    assert expected_content in result.stdout

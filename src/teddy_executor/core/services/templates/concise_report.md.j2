@@ -75,10 +75,7 @@ The following resource contents were successfully read.
 #### `{{ log.action_type.upper() }}`
 - **Status:** {{ log.status.value }}
 {% if log.params %}
-- **Params:**
-  {% for k, v in log.params.items() %}
-  - **{{ k }}:** `{{ v }}`
-  {% endfor %}
+- **Params:** `{{ log.params }}`
 {% endif %}
 {% if log.details and not (log.action_type.lower() == 'read' and log.status.value == 'SUCCESS') %}
 - **Details:** `{{ log.details }}`

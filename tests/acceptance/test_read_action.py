@@ -35,9 +35,9 @@ def test_read_action_happy_path(monkeypatch, tmp_path: Path):
     action_log = report["action_logs"][0]
     assert action_log["status"] == "SUCCESS"
 
-    # The 'details' field is already a dict because of yaml.safe_load
-    details_dict = action_log["details"]
-    assert details_dict["content"] == file_content
+    # The contract for a successful read is the Resource Contents section
+    assert "## Resource Contents" in result.stdout
+    assert file_content in result.stdout
 
 
 def test_read_action_file_not_found(monkeypatch, tmp_path: Path):

@@ -1,16 +1,16 @@
-import os
 import uuid
 from pathlib import Path
 
 from typer.testing import CliRunner
 
 from teddy_executor.main import app
+from .helpers import parse_yaml_report
 from .plan_builder import MarkdownPlanBuilder
 
 runner = CliRunner()
 
 
-def test_execute_action_can_see_file_from_create_action(tmp_path: Path):
+def test_execute_action_can_see_file_from_create_action(tmp_path: Path, monkeypatch):
     """
     Spike to validate filesystem visibility between actions.
     This test simulates a plan that first creates a file and then
@@ -25,7 +25,7 @@ def test_execute_action_can_see_file_from_create_action(tmp_path: Path):
     builder.add_action(
         "CREATE",
         params={
-            "File Path": str(test_file_path),
+            "File Path": f"[{test_file_name}](/{test_file_name})",
             "Description": "Create a test file.",
         },
         content_blocks={"": ("text", test_content)},
@@ -34,38 +34,28 @@ def test_execute_action_can_see_file_from_create_action(tmp_path: Path):
         params={
             "Description": "Read the content of the newly created file using 'cat'."
         },
-        content_blocks={"`COMMAND:`": ("shell", f"cat {test_file_path}")},
+        content_blocks={"COMMAND": ("shell", f"cat {test_file_name}")},
     )
     plan_content = builder.build()
 
     # 2. Act
     # Add a pre-condition assertion to guarantee the file does not exist before the run.
-    # This directly addresses the risk of a contaminated test environment.
     assert not test_file_path.exists(), (
         f"Pre-condition failed: File {test_file_path} already exists."
     )
 
-    # Use the --plan-content option to inject the plan directly.
-    # We must also change the CWD to a temporary directory to isolate the test.
-    # Note: chdir is a safe operation for tests as pytest isolates them.
-    original_cwd = Path.cwd()
-    try:
-        os.chdir(tmp_path)
+    with monkeypatch.context() as m:
+        m.chdir(tmp_path)
         result = runner.invoke(
             app,
-            ["execute", "-y", "--plan-content", plan_content],
+            ["execute", "-y", "--no-copy", "--plan-content", plan_content],
             catch_exceptions=False,
         )
-    finally:
-        os.chdir(original_cwd)
 
     # 3. Assert
     assert result.exit_code == 0, (
         f"CLI command failed with exit code {result.exit_code}: {result.stdout}"
     )
-
-    # Parse the report into a Python dictionary for robust assertions.
-    from .helpers import parse_yaml_report
 
     report = parse_yaml_report(result.stdout)
     assert report is not None, "Report output is not valid."
@@ -82,7 +72,7 @@ def test_execute_action_can_see_file_from_create_action(tmp_path: Path):
     execute_log = action_logs[1]
     assert execute_log["status"] == "SUCCESS"
     assert execute_log["action_type"] == "EXECUTE"
-    assert execute_log["params"]["command"].strip() == f"cat {test_file_path}"
+    assert execute_log["params"]["command"].strip() == f"cat {test_file_name}"
 
     # This is the key assertion: verify the stdout of the shell command.
     # The .strip() is important as shell output often has trailing newlines.

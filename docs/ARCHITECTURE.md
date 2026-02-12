@@ -142,6 +142,8 @@ This section captures significant, long-standing architectural decisions and pat
         -   It first checks if the command (e.g., `python.exe`) is a known executable file using `shutil.which()`. If it is, the command is executed directly with `shell=False`.
         -   If the command is not found as an executable, it is assumed to be a shell built-in (e.g., `dir`), and it is executed with `shell=True`.
     -   **Rationale:** This hybrid strategy provides maximum compatibility. On Windows, it avoids the complex and error-prone quoting issues of `list2cmdline` by passing raw command strings. On POSIX, it provides the power and convenience of the shell in a supervised environment.
+-   **Defensive Type Handling for `mistletoe`:** The `mistletoe` Markdown parsing library exhibits a discrepancy between its runtime behavior and its static type hints. Specifically, attributes like `Token.children` are typed as a nullable `Iterable` but are consistently `list` instances at runtime.
+    -   **Required Pattern:** To satisfy `mypy` and prevent runtime errors, any access to these attributes MUST be defensively converted to a concrete, non-nullable list first. Example: `children_list = list(token.children) if token.children else []`. This pattern ensures type safety and makes the code resilient to the library's loose type definitions.
 
 ---
 

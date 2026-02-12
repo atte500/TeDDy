@@ -37,12 +37,12 @@ class ConsoleInteractorAdapter(IUserInteractor):
     def _get_diff_content(self, action: ActionData) -> tuple[str, str, Path]:
         path_str = action.params["path"]
         path = Path(path_str)
-        if action.type == "edit":
+        if action.type.lower() == "edit":
             before_content = path.read_text()
             after_content = before_content.replace(
                 action.params["find"], action.params["replace"]
             )
-        else:  # create_file
+        else:  # create
             before_content = ""
             after_content = action.params["content"]
         return before_content, after_content, path
@@ -107,7 +107,7 @@ class ConsoleInteractorAdapter(IUserInteractor):
     ) -> tuple[bool, str]:
         temp_files = []
         try:
-            if action.type in ["edit", "create_file"]:
+            if action.type.lower() in ["edit", "create"]:
                 if diff_command := self._get_diff_viewer_command():
                     before_content, after_content, _ = self._get_diff_content(action)
 

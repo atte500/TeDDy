@@ -1,14 +1,14 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-import yaml
 from typer.testing import CliRunner
 
 from teddy_executor.main import app, create_container
 from teddy_executor.core.ports.outbound import IUserInteractor
 from .helpers import parse_yaml_report
+from .plan_builder import MarkdownPlanBuilder
 
 
-def test_interactive_approval_and_execution(tmp_path: Path):
+def test_interactive_approval_and_execution(tmp_path: Path, monkeypatch):
     """
     Given a plan from the clipboard,
     When the user runs `execute` interactively and approves,
@@ -17,13 +17,18 @@ def test_interactive_approval_and_execution(tmp_path: Path):
     # Arrange
     runner = CliRunner()
     test_file = tmp_path / "test_file.txt"
-    plan_structure = [
-        {
-            "action": "create_file",
-            "params": {"path": str(test_file), "content": "Interactive Hello"},
-        }
-    ]
-    plan_yaml = yaml.dump(plan_structure)
+    file_content = "Interactive Hello"
+
+    builder = MarkdownPlanBuilder("Test Interactive Approval")
+    builder.add_action(
+        "CREATE",
+        params={
+            "File Path": f"[{test_file.name}](/{test_file.name})",
+            "Description": "Create a file interactively.",
+        },
+        content_blocks={"": ("text", file_content)},
+    )
+    plan_content = builder.build()
 
     # Mock the UserInteractor to simulate user approval
     mock_interactor = MagicMock(spec=IUserInteractor)
@@ -33,21 +38,24 @@ def test_interactive_approval_and_execution(tmp_path: Path):
     test_container.register(IUserInteractor, instance=mock_interactor)
 
     # Act
-    with patch("teddy_executor.main.pyperclip.paste", return_value=plan_yaml):
+    with monkeypatch.context() as m:
+        m.chdir(tmp_path)
         with patch("teddy_executor.main.container", test_container):
-            result = runner.invoke(app, ["execute"])  # No --yes flag for interactive
+            result = runner.invoke(
+                app, ["execute", "--no-copy", "--plan-content", plan_content]
+            )  # No --yes flag for interactive
 
     # Assert
     assert result.exit_code == 0
     assert test_file.exists()
-    assert test_file.read_text() == "Interactive Hello"
+    assert test_file.read_text() == file_content
     mock_interactor.confirm_action.assert_called_once()
 
     report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "SUCCESS"
 
 
-def test_interactive_skip_with_reason(tmp_path: Path):
+def test_interactive_skip_with_reason(tmp_path: Path, monkeypatch):
     """
     Given a plan from the clipboard,
     When the user runs `execute` interactively and denies with a reason,
@@ -56,8 +64,17 @@ def test_interactive_skip_with_reason(tmp_path: Path):
     # Arrange
     runner = CliRunner()
     test_file = tmp_path / "test.txt"
-    plan_structure = [{"action": "create_file", "params": {"path": str(test_file)}}]
-    plan_yaml = yaml.dump(plan_structure)
+
+    builder = MarkdownPlanBuilder("Test Interactive Skip")
+    builder.add_action(
+        "CREATE",
+        params={
+            "File Path": f"[{test_file.name}](/{test_file.name})",
+            "Description": "A file that will be skipped.",
+        },
+        content_blocks={"": ("text", "This should not be created.")},
+    )
+    plan_content = builder.build()
 
     # Mock the UserInteractor to simulate user denial with a reason
     mock_interactor = MagicMock(spec=IUserInteractor)
@@ -67,12 +84,17 @@ def test_interactive_skip_with_reason(tmp_path: Path):
     test_container.register(IUserInteractor, instance=mock_interactor)
 
     # Act
-    with patch("teddy_executor.main.pyperclip.paste", return_value=plan_yaml):
+    with monkeypatch.context() as m:
+        m.chdir(tmp_path)
         with patch("teddy_executor.main.container", test_container):
             # We must provide some input to stdin to satisfy the `input()`
             # call inside the mocked `confirm_action` if it were real.
             # Even with a mock, Typer's runner may expect it.
-            result = runner.invoke(app, ["execute"], input="n\nManual check needed\n")
+            result = runner.invoke(
+                app,
+                ["execute", "--no-copy", "--plan-content", plan_content],
+                input="n\nManual check needed\n",
+            )
 
     # Assert
     assert result.exit_code == 1  # A skipped plan is a failed plan

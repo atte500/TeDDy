@@ -53,6 +53,8 @@ class ActionDispatcher:
                 # Handle legacy case where a single string param is provided for 'execute'
                 if action_data.type == "execute":
                     execution_params = {"command": execution_params}
+                    # Also update the params that will be logged
+                    log_data["params"] = execution_params
                 else:
                     # For other actions, a non-dict param is an error, as the
                     # intended keyword is ambiguous.
@@ -76,6 +78,9 @@ class ActionDispatcher:
 
             # Remove metadata parameters that are not used by adapters
             translated_params.pop("expected_outcome", None)
+
+            # Ensure the params for logging are updated with any translations
+            log_data["params"] = translated_params
 
             # --- End of Translation ---
 

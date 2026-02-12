@@ -1,13 +1,14 @@
 from pathlib import Path
 from unittest.mock import patch
-import yaml
+
 from typer.testing import CliRunner
 
 from teddy_executor.main import app, create_container
 from .helpers import parse_yaml_report
+from .plan_builder import MarkdownPlanBuilder
 
 
-def test_chat_with_user_action_successful(tmp_path: Path):
+def test_chat_with_user_action_successful(tmp_path: Path, monkeypatch):
     """
     Given a plan containing a 'chat_with_user' action,
     When the plan is executed and the user provides input,
@@ -19,26 +20,29 @@ def test_chat_with_user_action_successful(tmp_path: Path):
     # User input is the response, followed by an empty line to terminate.
     cli_input = f"{user_response}\n\n"
 
-    plan_structure = [
-        {
-            "action": "chat_with_user",
-            "params": {"prompt": "What is your favorite color?"},
-        }
-    ]
-    plan_content = yaml.dump(plan_structure)
-    plan_file = tmp_path / "plan.yml"
-    plan_file.write_text(plan_content)
+    builder = MarkdownPlanBuilder("Test Chat Action")
+    # Refactored to use MarkdownPlanBuilder instead of yaml.dump
+    builder.add_action(
+        "CHAT_WITH_USER",
+        params={"prompt": "What is your favorite color?"},
+    )
+    plan_content = builder.build()
 
     real_container = create_container()
 
     # Act
-    with patch("teddy_executor.main.container", real_container):
-        result = runner.invoke(
-            app, ["execute", str(plan_file), "--yes"], input=cli_input
-        )
+    # Refactored to use --plan-content and run from a temp dir
+    with monkeypatch.context() as m:
+        m.chdir(tmp_path)
+        with patch("teddy_executor.main.container", real_container):
+            result = runner.invoke(
+                app,
+                ["execute", "--yes", "--no-copy", "--plan-content", plan_content],
+                input=cli_input,
+            )
 
     # Assert
-    assert result.exit_code == 0
+    assert result.exit_code == 0, f"CLI failed: {result.stdout}"
 
     report = parse_yaml_report(result.stdout)
     assert report["run_summary"]["status"] == "SUCCESS"

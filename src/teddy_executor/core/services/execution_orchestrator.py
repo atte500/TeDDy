@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from teddy_executor.core.domain.models import (
+    ActionData,
     ActionLog,
     ExecutionReport,
     Plan,
@@ -38,24 +39,63 @@ class ExecutionOrchestrator(RunPlanUseCase):
             should_dispatch = True
             reason = ""
             if interactive and action.type != "chat_with_user":
+                action_for_prompt = action  # Default to the original action
+
+                # --- Pre-confirmation Data Normalization for Diffing ---
+                # The ConsoleInteractor's diffing logic expects a flat param structure.
+                # The MarkdownParser provides a different structure. To respect the ActionData
+                # model's immutability, we create a temporary, normalized ActionData
+                # object specifically for the prompt and interactor.
+                params_for_prompt = action.params.copy()
+
+                # Normalize file path for both CREATE and EDIT
+                if action.type in ("CREATE", "EDIT"):
+                    if "File Path" in params_for_prompt:
+                        path_link = params_for_prompt["File Path"]
+                        if isinstance(path_link, str) and path_link.endswith(")"):
+                            params_for_prompt["path"] = path_link.split("(")[-1].strip(
+                                ")/"
+                            )
+                        else:
+                            params_for_prompt["path"] = path_link
+
+                # For EDIT, flatten the 'edits' list into 'find' and 'replace'
+                if action.type == "EDIT":
+                    edits = params_for_prompt.get("edits")
+                    if edits and isinstance(edits, list) and len(edits) > 0:
+                        # The diff preview only supports the first edit block.
+                        first_edit = edits[0]
+                        params_for_prompt["find"] = first_edit.get("find")
+                        params_for_prompt["replace"] = first_edit.get("replace")
+
+                # Reconstruct an ActionData for the prompt if params were changed
+                if params_for_prompt != action.params:
+                    action_for_prompt = ActionData(
+                        type=action.type,
+                        params=params_for_prompt,
+                        description=action.description,
+                    )
+                # --- End Normalization ---
+
                 # Build a more descriptive, multi-line prompt for readability
-                # and correctly include the description.
                 prompt_parts = [
                     "---",
-                    f"Action: {action.type}",
+                    f"Action: {action_for_prompt.type}",
                 ]
-                if action.description:
-                    prompt_parts.append(f"Description: {action.description}")
+                if action_for_prompt.description:
+                    prompt_parts.append(f"Description: {action_for_prompt.description}")
 
-                # Use a cleaner representation of params
-                param_str = "\n".join(f"  - {k}: {v}" for k, v in action.params.items())
+                # Use a cleaner representation of params from the (potentially normalized) action
+                param_str = "\n".join(
+                    f"  - {k}: {v}" for k, v in action_for_prompt.params.items()
+                )
                 prompt_parts.append("Parameters:")
                 prompt_parts.append(param_str)
                 prompt_parts.append("---\nApprove action?")
 
                 prompt = "\n".join(prompt_parts)
                 should_dispatch, reason = self._user_interactor.confirm_action(
-                    action=action, action_prompt=prompt
+                    action=action_for_prompt, action_prompt=prompt
                 )
 
             if should_dispatch:

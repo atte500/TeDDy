@@ -142,9 +142,12 @@ def test_markdown_read_action(monkeypatch, tmp_path: Path):
     assert result.exit_code == 0, (
         f"Teddy failed with exception: {result.exception}\\n{result.stdout}"
     )
+    # Assert on the raw output for Resource Contents, as this is the contract
+    assert "## Resource Contents" in result.stdout
+    assert "Secret Content" in result.stdout
+
     report = parse_yaml_report(result.stdout)
     assert report["action_logs"][0]["status"] == "SUCCESS"
-    assert report["action_logs"][0]["details"]["content"] == "Secret Content"
 
 
 def test_markdown_invoke_action(monkeypatch, tmp_path: Path):
