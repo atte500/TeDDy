@@ -28,7 +28,7 @@ def test_edit_action_replaces_verbatim_without_smart_indent(
                 return self.value
         """
     )
-    file_to_edit.write_text(original_content)
+    file_to_edit.write_text(original_content, encoding="utf-8")
 
     # The find_block must be an exact substring of the original content,
     # including the correct indentation. Using dedent here was creating

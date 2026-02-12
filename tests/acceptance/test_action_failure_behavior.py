@@ -16,7 +16,7 @@ def test_create_file_on_existing_file_fails_and_reports_correctly(
     # ARRANGE
     existing_file = tmp_path / "existing.txt"
     original_content = "original content"
-    existing_file.write_text(original_content)
+    existing_file.write_text(original_content, encoding="utf-8")
 
     builder = MarkdownPlanBuilder("Test Create on Existing File")
     builder.add_action(

@@ -12,7 +12,7 @@ def test_read_action_happy_path(monkeypatch, tmp_path: Path):
     # Arrange
     file_content = "Hello, this is the content."
     file_to_read = tmp_path / "readable.txt"
-    file_to_read.write_text(file_content)
+    file_to_read.write_text(file_content, encoding="utf-8")
 
     builder = MarkdownPlanBuilder("Test Read Action")
     builder.add_action(

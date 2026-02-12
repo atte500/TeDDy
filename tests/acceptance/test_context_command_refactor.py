@@ -45,11 +45,17 @@ def test_context_generates_standard_output_and_is_clean(tmp_path: Path, monkeypa
     """
     # Arrange
     (tmp_path / ".teddy").mkdir()
-    (tmp_path / ".teddy/perm.context").write_text("README.md\nnon_existent_file.md\n")
-    (tmp_path / ".teddy/temp.context").write_text("docs/ARCHITECTURE.md\n")
-    (tmp_path / "README.md").write_text("# Test README")
+    (tmp_path / ".teddy/perm.context").write_text(
+        "README.md\nnon_existent_file.md\n", encoding="utf-8"
+    )
+    (tmp_path / ".teddy/temp.context").write_text(
+        "docs/ARCHITECTURE.md\n", encoding="utf-8"
+    )
+    (tmp_path / "README.md").write_text("# Test README", encoding="utf-8")
     (tmp_path / "docs").mkdir()
-    (tmp_path / "docs/ARCHITECTURE.md").write_text("# Test Architecture")
+    (tmp_path / "docs/ARCHITECTURE.md").write_text(
+        "# Test Architecture", encoding="utf-8"
+    )
 
     # Act
     result = run_cli_command(monkeypatch, ["context"], cwd=tmp_path)

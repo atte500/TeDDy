@@ -52,7 +52,7 @@ def test_markdown_edit_action(monkeypatch, tmp_path: Path):
     # Arrange
     file_name = "code.py"
     file_to_edit = tmp_path / file_name
-    file_to_edit.write_text("def foo():\n    return 1\n")
+    file_to_edit.write_text("def foo():\n    return 1\n", encoding="utf-8")
 
     find_block = dedent(
         """\
@@ -123,7 +123,7 @@ def test_markdown_read_action(monkeypatch, tmp_path: Path):
     """
     file_name = "read_me.txt"
     target_file = tmp_path / file_name
-    target_file.write_text("Secret Content")
+    target_file.write_text("Secret Content", encoding="utf-8")
 
     builder = MarkdownPlanBuilder("Test Read Action")
     builder.add_action(

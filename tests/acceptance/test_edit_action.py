@@ -15,7 +15,7 @@ def test_edit_action_happy_path(monkeypatch, tmp_path: Path):
     """
     # Arrange
     file_to_edit = tmp_path / "test_file.txt"
-    file_to_edit.write_text("Hello world, this is a test.")
+    file_to_edit.write_text("Hello world, this is a test.", encoding="utf-8")
 
     builder = MarkdownPlanBuilder("Test Edit Action")
     builder.add_action(

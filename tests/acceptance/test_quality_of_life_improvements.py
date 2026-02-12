@@ -107,7 +107,7 @@ def test_read_action_report_formats_multiline_content_correctly(tmp_path: Path):
     """
     # GIVEN a file with multi-line content
     test_file = tmp_path / "multi_line.txt"
-    test_file.write_text("line one\nline two")
+    test_file.write_text("line one\nline two", encoding="utf-8")
 
     # and a plan to read that file
     plan_content = (
@@ -153,7 +153,7 @@ def hello():
 ```
 """
     test_file = tmp_path / "test.txt"
-    test_file.write_text(file_content)
+    test_file.write_text(file_content, encoding="utf-8")
 
     plan_content = (
         MarkdownPlanBuilder("QoL Test Plan: Read complex markdown")

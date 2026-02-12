@@ -52,7 +52,7 @@ def test_create_file_when_file_exists_fails_gracefully(monkeypatch, tmp_path: Pa
     # Arrange
     existing_file = tmp_path / "existing.txt"
     original_content = "Original content"
-    existing_file.write_text(original_content)
+    existing_file.write_text(original_content, encoding="utf-8")
 
     builder = MarkdownPlanBuilder("Test Create on Existing File")
     builder.add_action(

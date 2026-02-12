@@ -74,7 +74,7 @@ def test_in_terminal_diff_is_shown_as_fallback(tmp_path: Path, monkeypatch):
     """
     # GIVEN: An initial file and a plan to edit it
     hello_path = tmp_path / "hello.txt"
-    hello_path.write_text("Hello, world!")
+    hello_path.write_text("Hello, world!", encoding="utf-8")
 
     builder = MarkdownPlanBuilder("Test Edit with Diff")
     builder.add_action(
@@ -130,7 +130,7 @@ def test_vscode_is_used_as_fallback(tmp_path: Path, monkeypatch):
     """
     # GIVEN: An initial file and a plan to edit it
     hello_path = tmp_path / "hello.txt"
-    hello_path.write_text("Hello, world!")
+    hello_path.write_text("Hello, world!", encoding="utf-8")
 
     builder = MarkdownPlanBuilder("Test VSCode Fallback")
     builder.add_action(
@@ -187,7 +187,7 @@ def test_custom_diff_tool_is_used_from_env(tmp_path: Path, monkeypatch):
     """
     # GIVEN: An initial file and a plan to edit it
     hello_path = tmp_path / "hello.txt"
-    hello_path.write_text("Hello, world!")
+    hello_path.write_text("Hello, world!", encoding="utf-8")
 
     builder = MarkdownPlanBuilder("Test Custom Diff Tool")
     builder.add_action(
@@ -295,7 +295,7 @@ def test_no_diff_is_shown_for_auto_approved_plans(tmp_path: Path, monkeypatch):
     """
     # GIVEN: An initial file and a plan to edit it
     hello_path = tmp_path / "hello.txt"
-    hello_path.write_text("Hello, world!")
+    hello_path.write_text("Hello, world!", encoding="utf-8")
     builder = MarkdownPlanBuilder("Test No Diff on Auto-Approve")
     builder.add_action(
         "EDIT",

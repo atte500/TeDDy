@@ -18,7 +18,7 @@ def test_create_file_raises_custom_error_if_file_exists(tmp_path: Path):
     # Arrange
     adapter = LocalFileSystemAdapter()
     file_path = tmp_path / "existing_file.txt"
-    file_path.write_text("initial content")
+    file_path.write_text("initial content", encoding="utf-8")
 
     # Act & Assert
     with pytest.raises(FileAlreadyExistsError) as excinfo:
@@ -75,7 +75,7 @@ def test_read_file_happy_path(tmp_path: Path):
     adapter = LocalFileSystemAdapter()
     file_path = tmp_path / "test_file.txt"
     expected_content = "Hello, Teddy Executor!"
-    file_path.write_text(expected_content)
+    file_path.write_text(expected_content, encoding="utf-8")
 
     # Act
     content = adapter.read_file(path=str(file_path))
@@ -105,7 +105,7 @@ def test_edit_file_successfully_replaces_content(tmp_path: Path):
     adapter = LocalFileSystemAdapter()
     test_file = tmp_path / "test.txt"
     initial_content = "Hello world, this is a test."
-    test_file.write_text(initial_content)
+    test_file.write_text(initial_content, encoding="utf-8")
 
     # Act
     adapter.edit_file(path=str(test_file), find="world", replace="TeDDy")
@@ -125,7 +125,7 @@ def test_edit_file_raises_error_if_find_text_not_found(tmp_path: Path):
     adapter = LocalFileSystemAdapter()
     test_file = tmp_path / "test.txt"
     initial_content = "Hello world, this is a test."
-    test_file.write_text(initial_content)
+    test_file.write_text(initial_content, encoding="utf-8")
 
     # Act & Assert
     with pytest.raises(SearchTextNotFoundError) as excinfo:
@@ -144,7 +144,7 @@ def test_edit_file_raises_error_on_multiple_occurrences(tmp_path: Path):
     adapter = LocalFileSystemAdapter()
     test_file = tmp_path / "test.txt"
     original_content = "hello world, hello again"
-    test_file.write_text(original_content)
+    test_file.write_text(original_content, encoding="utf-8")
 
     # Act & Assert
     with pytest.raises(MultipleMatchesFoundError) as exc_info:
@@ -218,9 +218,9 @@ def test_read_files_in_vault(tmp_path: Path):
     """
     # Arrange
     adapter = LocalFileSystemAdapter(root_dir=str(tmp_path))
-    (tmp_path / "file1.txt").write_text("content1")
+    (tmp_path / "file1.txt").write_text("content1", encoding="utf-8")
     (tmp_path / "docs").mkdir()
-    (tmp_path / "docs" / "file2.txt").write_text("content2")
+    (tmp_path / "docs" / "file2.txt").write_text("content2", encoding="utf-8")
 
     paths_to_read = ["file1.txt", "docs/file2.txt", "non_existent_file.txt"]
 
@@ -269,7 +269,7 @@ def test_edit_file_handles_leading_newline_in_find_block(tmp_path: Path):
     adapter = LocalFileSystemAdapter()
     test_file = tmp_path / "test.txt"
     original_content = "line one\n\n    line two\nline three"
-    test_file.write_text(original_content)
+    test_file.write_text(original_content, encoding="utf-8")
 
     # This find block is a literal match of a blank line and an indented line.
     # The previous buggy implementation would .strip() this and fail to find it.

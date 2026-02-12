@@ -28,7 +28,7 @@ def test_context_command_copies_to_clipboard_by_default(mock_pyperclip: MagicMoc
     with runner.isolated_filesystem():
         # Create a dummy file to have some context. We use README.md because
         # the default context gatherer looks for it.
-        Path("README.md").write_text("Hello World")
+        Path("README.md").write_text("Hello World", encoding="utf-8")
 
         # Act
         result = runner.invoke(app, ["context"], catch_exceptions=False)

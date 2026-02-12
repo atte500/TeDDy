@@ -64,7 +64,9 @@ def test_shell_adapter_executes_in_specified_cwd():
 
     try:
         # Create a file in the temp directory
-        with open(os.path.join(temp_dir_path, "testfile.txt"), "w") as f:
+        with open(
+            os.path.join(temp_dir_path, "testfile.txt"), "w", encoding="utf-8"
+        ) as f:
             f.write("hello")
 
         # Command to list contents of the directory

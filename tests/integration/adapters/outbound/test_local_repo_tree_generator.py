@@ -20,7 +20,7 @@ def test_repo_tree_generator_produces_correct_format(tmp_path: Path):
     (tmp_path / "README.md").touch()
 
     # .gitignore to ignore nothing for this test
-    (tmp_path / ".gitignore").write_text("")
+    (tmp_path / ".gitignore").write_text("", encoding="utf-8")
 
     adapter = LocalRepoTreeGenerator(root_dir=str(tmp_path))
 
@@ -83,7 +83,7 @@ def test_repo_tree_generator_respects_gitignore(tmp_path: Path):
         log.txt
     """
     )
-    (tmp_path / ".gitignore").write_text(gitignore_content)
+    (tmp_path / ".gitignore").write_text(gitignore_content, encoding="utf-8")
 
     adapter = LocalRepoTreeGenerator(root_dir=str(tmp_path))
 

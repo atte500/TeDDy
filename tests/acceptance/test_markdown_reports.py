@@ -13,7 +13,7 @@ def test_plan_fails_pre_flight_validation(monkeypatch, tmp_path: Path):
     """
     # Arrange
     file_to_edit = tmp_path / "hello.txt"
-    file_to_edit.write_text("Hello, world!")
+    file_to_edit.write_text("Hello, world!", encoding="utf-8")
 
     builder = MarkdownPlanBuilder("Test Plan: Validation Failure")
     builder.add_action(
@@ -61,7 +61,7 @@ def test_successful_read_action_includes_content_in_report(monkeypatch, tmp_path
     # Arrange
     file_to_read = tmp_path / "document.md"
     file_content = "# Hello World\n\nThis is the content."
-    file_to_read.write_text(file_content)
+    file_to_read.write_text(file_content, encoding="utf-8")
 
     builder = MarkdownPlanBuilder("Test Plan: Read Action")
     builder.add_action(
@@ -99,7 +99,7 @@ def test_failed_edit_action_includes_file_content_in_report(
     # Arrange
     file_to_edit = tmp_path / "protected.txt"
     original_content = "This is protected content."
-    file_to_edit.write_text(original_content)
+    file_to_edit.write_text(original_content, encoding="utf-8")
 
     # Make the file read-only to force an execution failure
     import os

@@ -27,7 +27,9 @@ def test_get_prompt_retrieves_default_prompt_from_root(mock_clipboard, tmp_path)
     # Setup root prompt with a .md extension to test extension-agnostic logic
     prompt_dir = tmp_path / "prompts"
     prompt_dir.mkdir()
-    (prompt_dir / "architect.md").write_text("dummy root prompt content")
+    (prompt_dir / "architect.md").write_text(
+        "dummy root prompt content", encoding="utf-8"
+    )
 
     # Use a .git folder as the project root sentinel
     (tmp_path / ".git").mkdir()
@@ -57,7 +59,9 @@ def test_get_prompt_retrieves_local_override_prompt(mock_clipboard, tmp_path):
         # Setup local prompt override inside the CWD
         prompt_dir = Path.cwd() / ".teddy" / "prompts"
         prompt_dir.mkdir(parents=True)
-        (prompt_dir / "architect.md").write_text("local override content")
+        (prompt_dir / "architect.md").write_text(
+            "local override content", encoding="utf-8"
+        )
 
         result = runner.invoke(app, ["get-prompt", "architect"])
 
@@ -90,7 +94,7 @@ def test_get_prompt_with_no_copy_flag(mock_clipboard, tmp_path):
     # Setup root prompt
     prompt_dir = tmp_path / "prompts"
     prompt_dir.mkdir()
-    (prompt_dir / "architect.xml").write_text("dummy prompt")
+    (prompt_dir / "architect.xml").write_text("dummy prompt", encoding="utf-8")
     (tmp_path / ".git").mkdir()
 
     with runner.isolated_filesystem(temp_dir=tmp_path):
