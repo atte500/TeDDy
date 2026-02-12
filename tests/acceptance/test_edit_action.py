@@ -1,7 +1,6 @@
 from pathlib import Path
 
 from .helpers import (
-    parse_yaml_report,
     run_cli_with_markdown_plan_on_clipboard,
     parse_markdown_report,
 )
@@ -38,8 +37,8 @@ def test_edit_action_happy_path(monkeypatch, tmp_path: Path):
     assert result.exit_code == 0
     assert file_to_edit.read_text() == "Hello planet, this is a test."
 
-    report = parse_yaml_report(result.stdout)
-    assert report["run_summary"]["status"] == "SUCCESS"
+    report = parse_markdown_report(result.stdout)
+    assert report["run_summary"]["Overall Status"] == "SUCCESS"
     assert report["action_logs"][0]["status"] == "SUCCESS"
 
 

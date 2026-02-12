@@ -1,4 +1,4 @@
-from .helpers import run_cli_with_markdown_plan_on_clipboard, parse_yaml_report
+from .helpers import run_cli_with_markdown_plan_on_clipboard, parse_markdown_report
 from .plan_builder import MarkdownPlanBuilder
 
 
@@ -24,5 +24,5 @@ def test_markdown_parsing_of_execute_action(monkeypatch, tmp_path):
     assert result.exit_code == 0
     assert "hello:world" in result.stdout
 
-    report = parse_yaml_report(result.stdout)
-    assert report["run_summary"]["status"] == "SUCCESS"
+    report = parse_markdown_report(result.stdout)
+    assert report["run_summary"]["Overall Status"] == "SUCCESS"

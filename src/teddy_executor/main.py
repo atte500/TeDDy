@@ -38,7 +38,6 @@ from teddy_executor.core.services.markdown_report_formatter import (
     MarkdownReportFormatter,
 )
 from teddy_executor.core.services.plan_validator import PlanValidator
-from teddy_executor.core.services.yaml_plan_parser import YamlPlanParser
 from teddy_executor.adapters.inbound.cli_formatter import format_project_context
 from teddy_executor.adapters.outbound.console_interactor import ConsoleInteractorAdapter
 from teddy_executor.adapters.outbound.local_file_system_adapter import (
@@ -214,24 +213,15 @@ def create_parser_for_plan(plan_file: Optional[Path], plan_content: str) -> IPla
     """
     Factory function to determine which plan parser to use.
     """
-    is_markdown = False
-    if plan_file and plan_file.suffix.lower() == ".md":
-        is_markdown = True
-    # Naive content check for clipboard or stdin
-    elif not plan_file and plan_content.lstrip().startswith("#"):
-        is_markdown = True
-
-    if is_markdown:
-        return MarkdownPlanParser()
-    else:
-        return YamlPlanParser()
+    # Legacy YAML plans are deprecated. Only Markdown is supported.
+    return MarkdownPlanParser()
 
 
 @app.command()
 def execute(
     plan_file: Optional[Path] = typer.Argument(
         None,
-        help="Path to the plan file (.yml, .yaml, .md). If omitted, reads from clipboard.",
+        help="Path to the plan file (.md). If omitted, reads from clipboard.",
         show_default=False,
     ),
     yes: bool = typer.Option(

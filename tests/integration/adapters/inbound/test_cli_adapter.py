@@ -1,7 +1,8 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-import yaml
 from typer.testing import CliRunner
+
+from tests.acceptance.plan_builder import MarkdownPlanBuilder
 
 from teddy_executor.core.domain.models import (
     ExecutionReport,
@@ -33,11 +34,13 @@ def test_cli_invokes_orchestrator_with_plan_file(mock_ExecutionOrchestrator: Mag
     )
     mock_ExecutionOrchestrator.return_value = mock_orchestrator_instance
 
-    valid_plan = yaml.dump([{"action": "read", "path": "a"}])
+    builder = MarkdownPlanBuilder("Test Plan")
+    builder.add_action("READ", params={"Resource": "[a](/a)"})
+    valid_plan = builder.build()
 
     # ACT
     with runner.isolated_filesystem() as temp_dir:
-        p = Path(temp_dir) / "plan.yml"
+        p = Path(temp_dir) / "plan.md"
         p.write_text(valid_plan)
         result = runner.invoke(app, ["execute", str(p), "--yes"])
 
@@ -68,11 +71,13 @@ def test_cli_exits_with_error_code_on_failure(mock_ExecutionOrchestrator: MagicM
     )
     mock_ExecutionOrchestrator.return_value = mock_orchestrator_instance
 
-    valid_plan = yaml.dump([{"action": "read", "path": "a"}])
+    builder = MarkdownPlanBuilder("Test Plan")
+    builder.add_action("READ", params={"Resource": "[a](/a)"})
+    valid_plan = builder.build()
 
     # ACT
     with runner.isolated_filesystem() as temp_dir:
-        p = Path(temp_dir) / "plan.yml"
+        p = Path(temp_dir) / "plan.md"
         p.write_text(valid_plan)
         result = runner.invoke(app, ["execute", str(p), "--yes"])
 
@@ -101,11 +106,13 @@ def test_cli_handles_interactive_mode_flag(mock_ExecutionOrchestrator: MagicMock
     )
     mock_ExecutionOrchestrator.return_value = mock_orchestrator_instance
 
-    valid_plan = yaml.dump([{"action": "read", "path": "a"}])
+    builder = MarkdownPlanBuilder("Test Plan")
+    builder.add_action("READ", params={"Resource": "[a](/a)"})
+    valid_plan = builder.build()
 
     # ACT
     with runner.isolated_filesystem() as temp_dir:
-        p = Path(temp_dir) / "plan.yml"
+        p = Path(temp_dir) / "plan.md"
         p.write_text(valid_plan)
         # Note: No --yes flag
         runner.invoke(app, ["execute", str(p)])

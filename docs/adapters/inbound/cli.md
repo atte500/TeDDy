@@ -97,7 +97,7 @@ This is the primary command for executing a plan.
 
 *   **Signature:** `teddy execute [PLAN_FILE] [--yes] [--no-copy]`
 *   **Input:**
-    *   `PLAN_FILE` (Positional Argument, Optional): A path to a YAML plan file.
+    *   `PLAN_FILE` (Positional Argument, Optional): A path to a Markdown plan file (`.md`).
     *   If `PLAN_FILE` is omitted, the command reads the plan from the system clipboard. This introduces a dependency on the `pyperclip` library.
         *   **Dependency Vetting:** The `pyperclip` library was vetted via a technical spike (`spikes/technical/spike_clipboard_access.py`, now deleted) to confirm its cross-platform reliability, in accordance with the project's third-party dependency standards.
     *   `--yes` (Optional Flag): If provided, the plan will be executed in non-interactive mode, automatically approving all actions.
@@ -105,7 +105,7 @@ This is the primary command for executing a plan.
     1.  The `typer` command function resolves the `ExecutionOrchestrator` service from the DI container.
     2.  It invokes the `orchestrator.execute()` method, passing the `plan_path` and a boolean `interactive` flag (which is `False` if `--yes` is present).
     3.  It receives the `ExecutionReport` domain model in return.
-    4.  It passes the report to a formatter and prints the final YAML report to standard output and the clipboard.
+    4.  It passes the report to a formatter and prints the final Markdown report to standard output and the clipboard.
 
 ### Utility Command: `context`
 **Status:** Implemented
@@ -167,12 +167,4 @@ The `cli_formatter.py` module contains a `format_project_context` function. This
 
 ## 5. Plan Parser Factory
 
-To support both Markdown (`.md`) and YAML (`.yml`, `.yaml`) plan files, the `execute` command requires a factory mechanism to select the correct parser at runtime.
-
-### Logic
-The factory's logic must account for both file-based and clipboard-based input:
-
-1.  **File Input:** When a `[PLAN_FILE]` argument is provided, the factory will inspect the file's extension. `.md` will resolve to `MarkdownPlanParser`, while `.yml` or `.yaml` will resolve to `YamlPlanParser`.
-2.  **Clipboard Input:** When no file argument is given, the plan content is read from the clipboard. The factory will inspect the raw string content. If the first non-whitespace line of the string starts with `# ` (the standard for a level-1 Markdown heading), it will resolve `MarkdownPlanParser`. Otherwise, it will default to `YamlPlanParser`.
-
-This dual strategy ensures the correct parser is used transparently, decoupling the core application from the specific input source and format. The factory function will be part of the composition root in `main.py` and used by the `execute` command to retrieve the correct `IPlanParser` instance from the dependency injection container.
+The `execute` command is designed to parse plan files written in Markdown. The logic for this resides in the `create_parser_for_plan` factory function within `main.py`, which instantiates the `MarkdownPlanParser`. Legacy support for YAML-based plans has been deprecated and removed.

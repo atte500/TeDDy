@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "teddy-executor"
 version = "0.1.0"
-description = "A CLI tool to safely execute AI-generated YAML plans."
+description = "A CLI tool to safely execute AI-generated action plans."
 authors = ["atte500"]
 license = "MIT"
 packages = [{ include = "teddy_executor", from = "src" }]
@@ -9,7 +9,6 @@ packages = [{ include = "teddy_executor", from = "src" }]
 [tool.poetry.dependencies]
 python = ">=3.10, <4.0"
 typer = { version = "*", extras = ["all"] }
-ruamel-yaml = "^0.18.6"
 pyperclip = "*"
 markdownify = "*"
 playwright = "*"

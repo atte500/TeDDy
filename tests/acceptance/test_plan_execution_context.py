@@ -4,7 +4,7 @@ from pathlib import Path
 from typer.testing import CliRunner
 
 from teddy_executor.main import app
-from .helpers import parse_yaml_report
+from .helpers import parse_markdown_report
 from .plan_builder import MarkdownPlanBuilder
 
 runner = CliRunner()
@@ -57,7 +57,7 @@ def test_execute_action_can_see_file_from_create_action(tmp_path: Path, monkeypa
         f"CLI command failed with exit code {result.exit_code}: {result.stdout}"
     )
 
-    report = parse_yaml_report(result.stdout)
+    report = parse_markdown_report(result.stdout)
     assert report is not None, "Report output is not valid."
 
     action_logs = report.get("action_logs", [])

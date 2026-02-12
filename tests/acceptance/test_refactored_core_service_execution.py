@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from .helpers import parse_yaml_report, run_cli_with_markdown_plan_on_clipboard
+from .helpers import parse_markdown_report, run_cli_with_markdown_plan_on_clipboard
 from .plan_builder import MarkdownPlanBuilder
 
 
@@ -37,6 +37,6 @@ def test_successful_plan_execution_with_refactored_services(
     assert target_file.exists()
     assert target_file.read_text() == file_content
 
-    report = parse_yaml_report(result.stdout)
-    assert report["run_summary"]["status"] == "SUCCESS"
+    report = parse_markdown_report(result.stdout)
+    assert report["run_summary"]["Overall Status"] == "SUCCESS"
     assert report["action_logs"][0]["status"] == "SUCCESS"

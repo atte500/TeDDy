@@ -6,7 +6,7 @@ from typer.testing import CliRunner
 
 from teddy_executor.core.ports.outbound import IUserInteractor
 from teddy_executor.main import app, create_container
-from .helpers import parse_yaml_report
+from .helpers import parse_markdown_report
 from .plan_builder import MarkdownPlanBuilder
 
 runner = CliRunner()
@@ -47,8 +47,8 @@ def test_in_terminal_diff_is_shown_for_create_file(tmp_path: Path, monkeypatch):
 
     # THEN: The command should succeed and the file should be created
     assert result.exit_code == 0
-    report = parse_yaml_report(result.stdout)
-    assert report["run_summary"]["status"] == "SUCCESS"
+    report = parse_markdown_report(result.stdout)
+    assert report["run_summary"]["Overall Status"] == "SUCCESS"
     assert new_file_path.exists()
     assert "Second line" in new_file_path.read_text()
 
@@ -105,8 +105,8 @@ def test_in_terminal_diff_is_shown_as_fallback(tmp_path: Path, monkeypatch):
 
     # THEN: The command should succeed and the file should be changed
     assert result.exit_code == 0
-    report = parse_yaml_report(result.stdout)
-    assert report["run_summary"]["status"] == "SUCCESS"
+    report = parse_markdown_report(result.stdout)
+    assert report["run_summary"]["Overall Status"] == "SUCCESS"
     assert hello_path.read_text() == "Hello, TeDDy!"
 
     # AND THEN: A diff should have been printed to the merged stdout before the prompt
@@ -164,8 +164,8 @@ def test_vscode_is_used_as_fallback(tmp_path: Path, monkeypatch):
 
     # THEN: The command should succeed
     assert result.exit_code == 0
-    report = parse_yaml_report(result.stdout)
-    assert report["run_summary"]["status"] == "SUCCESS"
+    report = parse_markdown_report(result.stdout)
+    assert report["run_summary"]["Overall Status"] == "SUCCESS"
 
     # AND THEN: subprocess.run should have been called with the correct args
     mock_run.assert_called_once()

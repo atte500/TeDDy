@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 from teddy_executor.main import app
 from typer.testing import CliRunner
 
-from .helpers import run_cli_command, parse_yaml_report
+from .helpers import run_cli_command, parse_markdown_report
 
 runner = CliRunner()
 
@@ -118,10 +118,10 @@ def test_execute_command_copies_to_clipboard_by_default(
     mock_pyperclip.copy.assert_called_once()
 
     # Parse the stdout to get the canonical report dict
-    report_dict = parse_yaml_report(result.stdout)
+    report_dict = parse_markdown_report(result.stdout)
     # The actual copied content might have slightly different whitespace,
     # so we parse it too and compare the dictionaries for robustness.
-    actual_copied_dict = parse_yaml_report(mock_pyperclip.copy.call_args[0][0])
+    actual_copied_dict = parse_markdown_report(mock_pyperclip.copy.call_args[0][0])
     assert report_dict == actual_copied_dict
 
 

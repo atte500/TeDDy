@@ -1,71 +1,7 @@
-import io
-import json
 import os
-from dataclasses import asdict, is_dataclass
-from enum import Enum
-from typing import Any
-
-from ruamel.yaml import YAML
-from ruamel.yaml.representer import RoundTripRepresenter
-
-from teddy_executor.core.domain.models import ContextResult, ExecutionReport
 
 
-# --- Start of Verified Fix ---
-
-
-class MyRepresenter(RoundTripRepresenter):
-    """Custom representer to force literal style for multi-line strings."""
-
-    def represent_str(self, s: str):
-        if "\n" in s:
-            return self.represent_scalar("tag:yaml.org,2002:str", s, style="|")
-        return super().represent_str(s)
-
-
-# Register the custom representer to handle all strings
-MyRepresenter.add_representer(str, MyRepresenter.represent_str)
-
-# --- End of Verified Fix ---
-
-
-def to_dict(obj: Any) -> Any:
-    """Recursively convert dataclasses, enums, etc., to JSON-serializable types."""
-    if is_dataclass(obj):
-        return to_dict(asdict(obj))  # type: ignore[arg-type]
-    elif isinstance(obj, dict):
-        return {k: to_dict(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return [to_dict(i) for i in obj]
-    elif isinstance(obj, Enum):
-        return obj.value
-    elif hasattr(obj, "isoformat"):
-        return obj.isoformat()
-    return obj
-
-
-def format_report_as_yaml(report: ExecutionReport) -> str:
-    """Formats the full execution report into a YAML string."""
-    report_dict = to_dict(report)
-    cleaned_action_logs = []
-    if "action_logs" in report_dict:
-        for log in report_dict["action_logs"]:
-            if isinstance(log.get("details"), str):
-                try:
-                    log["details"] = json.loads(log["details"])
-                except (json.JSONDecodeError, TypeError):
-                    pass
-            cleaned_action_logs.append(log)
-        report_dict["action_logs"] = cleaned_action_logs
-
-    # --- Start of Verified Fix ---
-    yaml = YAML()
-    yaml.Representer = MyRepresenter
-    yaml.indent(mapping=2, sequence=4, offset=2)
-    string_stream = io.StringIO()
-    yaml.dump(report_dict, string_stream)
-    return string_stream.getvalue()
-    # --- End of Verified Fix ---
+from teddy_executor.core.domain.models import ContextResult
 
 
 def _get_file_extension(file_path: str) -> str:

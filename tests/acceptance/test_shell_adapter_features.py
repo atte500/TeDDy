@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 
-from .helpers import run_cli_with_markdown_plan_on_clipboard, parse_yaml_report
+from .helpers import run_cli_with_markdown_plan_on_clipboard, parse_markdown_report
 from .plan_builder import MarkdownPlanBuilder
 
 
@@ -29,8 +29,8 @@ def test_shell_adapter_handles_wildcards_on_posix(monkeypatch, tmp_path: Path):
     )
 
     assert result.exit_code == 0
-    report = parse_yaml_report(result.stdout)
-    assert report["run_summary"]["status"] == "SUCCESS"
+    report = parse_markdown_report(result.stdout)
+    assert report["run_summary"]["Overall Status"] == "SUCCESS"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "SUCCESS"
     assert test_file.name in action_log["details"]["stdout"]
@@ -57,8 +57,8 @@ def test_shell_adapter_handles_pipes_on_posix(monkeypatch, tmp_path: Path):
     )
 
     assert result.exit_code == 0
-    report = parse_yaml_report(result.stdout)
-    assert report["run_summary"]["status"] == "SUCCESS"
+    report = parse_markdown_report(result.stdout)
+    assert report["run_summary"]["Overall Status"] == "SUCCESS"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "SUCCESS"
     assert "hello world" in action_log["details"]["stdout"]
@@ -86,8 +86,8 @@ def test_shell_adapter_handles_env_vars_on_posix(monkeypatch, tmp_path: Path):
     )
 
     assert result.exit_code == 0
-    report = parse_yaml_report(result.stdout)
-    assert report["run_summary"]["status"] == "SUCCESS"
+    report = parse_markdown_report(result.stdout)
+    assert report["run_summary"]["Overall Status"] == "SUCCESS"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "SUCCESS"
     assert "SUCCESS_VAR" in action_log["details"]["stdout"]
@@ -117,8 +117,8 @@ def test_shell_adapter_handles_simple_command_on_posix(monkeypatch, tmp_path: Pa
     )
 
     assert result.exit_code == 0
-    report = parse_yaml_report(result.stdout)
-    assert report["run_summary"]["status"] == "SUCCESS"
+    report = parse_markdown_report(result.stdout)
+    assert report["run_summary"]["Overall Status"] == "SUCCESS"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "SUCCESS"
     assert test_dir.name in action_log["details"]["stdout"]

@@ -1,5 +1,5 @@
 from pathlib import Path
-from .helpers import parse_yaml_report, run_cli_with_markdown_plan_on_clipboard
+from .helpers import parse_markdown_report, run_cli_with_markdown_plan_on_clipboard
 from .plan_builder import MarkdownPlanBuilder
 
 
@@ -36,8 +36,8 @@ def test_create_file_happy_path(monkeypatch, tmp_path: Path):
     assert new_file_path.read_text() == file_content, "The file content is incorrect."
 
     # Verify the report output
-    report = parse_yaml_report(result.stdout)
-    assert report["run_summary"]["status"] == "SUCCESS"
+    report = parse_markdown_report(result.stdout)
+    assert report["run_summary"]["Overall Status"] == "SUCCESS"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "SUCCESS"
 
@@ -77,8 +77,8 @@ def test_create_file_when_file_exists_fails_gracefully(monkeypatch, tmp_path: Pa
     assert existing_file.read_text() == original_content
 
     # The report should clearly indicate the failure
-    report = parse_yaml_report(result.stdout)
-    assert report["run_summary"]["status"] == "FAILURE"
+    report = parse_markdown_report(result.stdout)
+    assert report["run_summary"]["Overall Status"] == "FAILURE"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "FAILURE"
 

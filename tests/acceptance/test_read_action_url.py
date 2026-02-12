@@ -2,7 +2,7 @@ from pytest_httpserver import HTTPServer
 
 from tests.acceptance.helpers import (
     run_cli_with_markdown_plan_on_clipboard,
-    parse_yaml_report,
+    parse_markdown_report,
 )
 from .plan_builder import MarkdownPlanBuilder
 
@@ -38,7 +38,7 @@ def test_read_action_can_read_from_url(httpserver: HTTPServer, monkeypatch, tmp_
     # Assert
     assert result.exit_code == 0, f"CLI exited with error: {result.stdout}"
 
-    report = parse_yaml_report(result.stdout)
+    report = parse_markdown_report(result.stdout)
 
     assert "action_logs" in report
     assert len(report["action_logs"]) == 1

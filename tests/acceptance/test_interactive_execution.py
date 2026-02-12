@@ -4,7 +4,7 @@ from typer.testing import CliRunner
 
 from teddy_executor.main import app, create_container
 from teddy_executor.core.ports.outbound import IUserInteractor
-from .helpers import parse_yaml_report
+from .helpers import parse_markdown_report
 from .plan_builder import MarkdownPlanBuilder
 
 
@@ -51,8 +51,8 @@ def test_interactive_approval_and_execution(tmp_path: Path, monkeypatch):
     assert test_file.read_text() == file_content
     mock_interactor.confirm_action.assert_called_once()
 
-    report = parse_yaml_report(result.stdout)
-    assert report["run_summary"]["status"] == "SUCCESS"
+    report = parse_markdown_report(result.stdout)
+    assert report["run_summary"]["Overall Status"] == "SUCCESS"
 
 
 def test_interactive_skip_with_reason(tmp_path: Path, monkeypatch):
@@ -100,9 +100,9 @@ def test_interactive_skip_with_reason(tmp_path: Path, monkeypatch):
     assert result.exit_code == 1  # A skipped plan is a failed plan
     assert not test_file.exists()
 
-    report = parse_yaml_report(result.stdout)
+    report = parse_markdown_report(result.stdout)
     # The run is a FAILURE because an action did not complete successfully
-    assert report["run_summary"]["status"] == "FAILURE"
+    assert report["run_summary"]["Overall Status"] == "FAILURE"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "SKIPPED"
     expected_details = "User skipped this action. Reason: Manual check needed"

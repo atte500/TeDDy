@@ -2,7 +2,6 @@ import sys
 from pathlib import Path
 from .helpers import (
     run_cli_with_markdown_plan_on_clipboard,
-    parse_yaml_report,
     parse_markdown_report,
 )
 from .plan_builder import MarkdownPlanBuilder
@@ -39,8 +38,8 @@ def test_execute_action_with_custom_cwd(tmp_path: Path, monkeypatch):
 
     # Assert
     assert result.exit_code == 0
-    report = parse_yaml_report(result.stdout)
-    assert report["run_summary"]["status"] == "SUCCESS"
+    report = parse_markdown_report(result.stdout)
+    assert report["run_summary"]["Overall Status"] == "SUCCESS"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "SUCCESS"
     assert "unique_file.txt" in action_log["details"]["stdout"]
@@ -72,8 +71,8 @@ def test_execute_action_with_env_variables(tmp_path: Path, monkeypatch):
 
     # Assert
     assert result.exit_code == 0
-    report = parse_yaml_report(result.stdout)
-    assert report["run_summary"]["status"] == "SUCCESS"
+    report = parse_markdown_report(result.stdout)
+    assert report["run_summary"]["Overall Status"] == "SUCCESS"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "SUCCESS"
     assert expected_value in action_log["details"]["stdout"]
@@ -173,8 +172,8 @@ def test_execute_action_with_both_cwd_and_env(tmp_path: Path, monkeypatch):
 
     # Assert
     assert result.exit_code == 0
-    report = parse_yaml_report(result.stdout)
-    assert report["run_summary"]["status"] == "SUCCESS"
+    report = parse_markdown_report(result.stdout)
+    assert report["run_summary"]["Overall Status"] == "SUCCESS"
 
     output_file = sub_dir / "output.txt"
     assert output_file.exists()

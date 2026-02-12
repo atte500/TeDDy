@@ -1,5 +1,5 @@
 from pathlib import Path
-from .helpers import parse_yaml_report, run_cli_with_markdown_plan_on_clipboard
+from .helpers import parse_markdown_report, run_cli_with_markdown_plan_on_clipboard
 from .plan_builder import MarkdownPlanBuilder
 
 
@@ -37,8 +37,8 @@ def test_edit_action_fails_on_multiple_occurrences(monkeypatch, tmp_path: Path):
     assert result.exit_code == 1
     assert file_to_edit.read_text() == original_content  # File should be unchanged
 
-    report = parse_yaml_report(result.stdout)
-    assert report["run_summary"]["status"] == "FAILURE"
+    report = parse_markdown_report(result.stdout)
+    assert report["run_summary"]["Overall Status"] == "FAILURE"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "FAILURE"
 

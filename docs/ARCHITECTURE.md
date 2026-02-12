@@ -106,7 +106,6 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 | **MarkdownPlanParser**       | A service that parses a Markdown plan string into a `Plan` domain object using an AST.                  | [MarkdownPlanParser](./docs/core/services/markdown_plan_parser.md)                  |
 | **MarkdownReportFormatter**  | Implements `IMarkdownReportFormatter` using the Jinja2 template engine to generate CLI reports.         | [MarkdownReportFormatter](./docs/core/services/markdown_report_formatter.md)        |
 | **PlanValidator**            | Implements `IPlanValidator` using a strategy pattern to run pre-flight checks on a plan's actions.      | [PlanValidator](./docs/core/services/plan_validator.md)                             |
-| **YamlPlanParser**           | A service that parses a YAML plan string into a structured `Plan` domain object.                        | [YamlPlanParser](./docs/core/services/yaml_plan_parser.md)                          |
 
 #### Primary Adapters
 

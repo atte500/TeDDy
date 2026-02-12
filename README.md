@@ -73,8 +73,8 @@ The `teddy` command-line tool, located in the `packages/executor` directory, is 
 
 ### Execution Flow
 
-1.  **Plan Generation:** An AI agent generates a multi-step plan in YAML format.
-2.  **Execution:** You save the plan to a file (e.g., `plan.yaml`) and run `teddy` against it. The recommended way is to use the `--plan-file` option to avoid conflicts with interactive prompts.
+1.  **Plan Generation:** An AI agent generates a multi-step plan in Markdown format.
+2.  **Execution:** You save the plan to a file (e.g., `plan.md`) and run `teddy` against it. The recommended way is to use the `--plan-file` option to avoid conflicts with interactive prompts.
 3.  **Interactive Approval:** By default, `teddy` runs in interactive mode. It prints each action and prompts for your approval (`y/n`). If you reject a step, you will be prompted for an optional reason. The action is not performed, and the final report will mark it as `SKIPPED`, including your reason, confirming that no changes were made.
 4.  **Execution Report:** After execution, `teddy` prints a pure YAML **Execution Report** to the console. This report is the single source of truth about the outcome of the plan and is pasted back to the AI to provide a complete feedback loop.
 
@@ -111,10 +111,10 @@ Once your environment is active (see "Installation & Usage"), you can run the `t
 cd /path/to/my-web-app
 
 # Execute a plan file located in this directory
-teddy plan.yaml
+teddy plan.md
 
 # To automatically approve all steps, use the -y flag:
-teddy plan.yaml -y
+teddy plan.md -y
 ```
 
 To streamline the workflow, commands that produce significant output (like `context` and `execute`) will now **copy their output to the clipboard by default**. A confirmation message will be printed to `stderr`. This behavior can be disabled by adding the `--no-copy` flag to the command.
@@ -134,9 +134,9 @@ The `teddy` executor can be configured using the following environment variables
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `TEDDY_DIFF_TOOL` | Specifies a custom command-line tool for viewing diffs during interactive plan approval. If set, this tool takes precedence over the default fallback (VS Code). The command string is parsed to support arguments, e.g., `export TEDDY_DIFF_TOOL="nvim -d"`. |
 
-### YAML Action Reference
+### Action Reference
 
-This section defines the contract for the YAML plans the AI can generate. For the full specification, see the executor's architectural documentation.
+This section defines the contract for the Markdown plans the AI can generate. The full specification is defined in [docs/specs/new-plan-format.md](/docs/specs/new-plan-format.md).
 
 -   `create_file`
 -   `read`
@@ -169,7 +169,7 @@ Before starting, it's crucial to give the AI a clear picture of your project's l
 1.  Start a new chat session.
 2.  Add and save the content of `Prompts/dev.xml` as the "System instructions".
 3.  **Provide the project file tree** and the architectural documents from the Architect.
-4.  Instruct the Developer to begin implementing the first vertical slice. The Developer will provide you with `plan.yaml` files to execute using the `teddy` tool.
+4.  Instruct the Developer to begin implementing the first vertical slice. The Developer will provide you with `plan.md` files to execute using the `teddy` tool.
 
 ### Phase 4: Debugging (When Needed)
 This phase is only initiated when another agent enters a failure loop. Follow the instructions in the `Prompts/debugger.xml` system prompt.
@@ -186,12 +186,11 @@ Here's a look at our development priorities.
 
 ### Core Framework
 
-|    Status     | Stage / Feature Set        | Description                                                                                                                                 |
-| :-----------: | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-|  ✅ Completed  | **Agent Prompts v1**       | Core prompts for Architect, Developer, and Debugger are defined and functional.                                                             |
-| ▶️ In Progress | **YAML Plan Generation**   | Refining agent prompts to reliably generate YAML-compliant plans, improving executor compatibility and reducing the need for manual fixes.  |
-|   📝 Planned   | **Agents & Core Workflow** | Solidifying the interaction protocols and distribuition of responsibilities between agents to ensure a robust, repeatable workflow.         |
-|   📝 Planned   | **Prompt Decomposition**   | Decompose large prompts into smaller, chained states. This improves reliability and enables using smaller, local models for specific tasks. |
+|   Status    | Stage / Feature Set        | Description                                                                                                                                 |
+| :---------: | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| ✅ Completed | **Agent Prompts v1**       | Core prompts for Architect, Developer, and Debugger are defined and functional.                                                             |
+|  📝 Planned  | **Agents & Core Workflow** | Solidifying the interaction protocols and distribuition of responsibilities between agents to ensure a robust, repeatable workflow.         |
+|  📝 Planned  | **Prompt Decomposition**   | Decompose large prompts into smaller, chained states. This improves reliability and enables using smaller, local models for specific tasks. |
 
 ### `teddy` Executor CLI
 

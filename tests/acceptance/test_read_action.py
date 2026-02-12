@@ -1,5 +1,5 @@
 from pathlib import Path
-from .helpers import parse_yaml_report, run_cli_with_markdown_plan_on_clipboard
+from .helpers import parse_markdown_report, run_cli_with_markdown_plan_on_clipboard
 from .plan_builder import MarkdownPlanBuilder
 
 
@@ -31,7 +31,7 @@ def test_read_action_happy_path(monkeypatch, tmp_path: Path):
 
     # Assert
     assert result.exit_code == 0
-    report = parse_yaml_report(result.stdout)
+    report = parse_markdown_report(result.stdout)
     action_log = report["action_logs"][0]
     assert action_log["status"] == "SUCCESS"
 
@@ -65,7 +65,7 @@ def test_read_action_file_not_found(monkeypatch, tmp_path: Path):
 
     # Assert
     assert result.exit_code == 1
-    report = parse_yaml_report(result.stdout)
+    report = parse_markdown_report(result.stdout)
     action_log = report["action_logs"][0]
     assert action_log["status"] == "FAILURE"
     assert "No such file or directory" in action_log["details"]

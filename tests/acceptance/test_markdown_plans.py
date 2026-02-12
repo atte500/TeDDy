@@ -1,6 +1,6 @@
 from pathlib import Path
 from textwrap import dedent
-from .helpers import parse_yaml_report, run_cli_with_markdown_plan_on_clipboard
+from .helpers import parse_markdown_report, run_cli_with_markdown_plan_on_clipboard
 from .plan_builder import MarkdownPlanBuilder
 
 
@@ -38,8 +38,8 @@ def test_execute_markdown_plan_happy_path(monkeypatch, tmp_path: Path):
     assert new_file_path.exists(), "The new file was not created."
     assert new_file_path.read_text() == file_content, "The file content is incorrect."
 
-    report = parse_yaml_report(result.stdout)
-    assert report["run_summary"]["status"] == "SUCCESS"
+    report = parse_markdown_report(result.stdout)
+    assert report["run_summary"]["Overall Status"] == "SUCCESS"
     assert report["action_logs"][0]["status"] == "SUCCESS"
 
 
@@ -112,8 +112,8 @@ def test_markdown_execute_action(monkeypatch, tmp_path: Path):
     )
 
     assert result.exit_code == 0
-    report = parse_yaml_report(result.stdout)
-    assert report["run_summary"]["status"] == "SUCCESS"
+    report = parse_markdown_report(result.stdout)
+    assert report["run_summary"]["Overall Status"] == "SUCCESS"
 
 
 def test_markdown_read_action(monkeypatch, tmp_path: Path):
@@ -146,7 +146,7 @@ def test_markdown_read_action(monkeypatch, tmp_path: Path):
     assert "## Resource Contents" in result.stdout
     assert "Secret Content" in result.stdout
 
-    report = parse_yaml_report(result.stdout)
+    report = parse_markdown_report(result.stdout)
     assert report["action_logs"][0]["status"] == "SUCCESS"
 
 
@@ -167,6 +167,6 @@ def test_markdown_invoke_action(monkeypatch, tmp_path: Path):
     )
 
     assert result.exit_code == 0
-    report = parse_yaml_report(result.stdout)
-    assert report["run_summary"]["status"] == "SUCCESS"
+    report = parse_markdown_report(result.stdout)
+    assert report["run_summary"]["Overall Status"] == "SUCCESS"
     assert report["action_logs"][0]["status"] == "SUCCESS"

@@ -3,7 +3,6 @@ from pathlib import Path
 import tempfile
 from typing import Any, Dict, Generator, Optional, List as PyList
 
-import yaml
 from mistletoe import Document
 from mistletoe.block_token import List, Paragraph
 from mistletoe.span_token import RawText, Strong
@@ -49,45 +48,6 @@ def run_cli_with_markdown_plan_on_clipboard(
         m.chdir(cwd)
         args = ["execute", "--yes", "--no-copy", "--plan-content", plan_content]
         return runner.invoke(app, args)
-
-
-def parse_yaml_report(stdout: str) -> Dict[str, Any]:
-    """
-    Legacy helper. Wraps parse_markdown_report to maintain backward compatibility.
-    Maps new Markdown keys to the old internal keys expected by legacy tests.
-    """
-    report = parse_markdown_report(stdout)
-
-    # --- Compatibility Shim ---
-
-    # 1. Map 'Overall Status' -> 'status'
-    if "Overall Status" in report["run_summary"]:
-        # Strip emoji and handle potential squashed text
-        # e.g. "SUCCESS 🟢- **Execution..." -> "SUCCESS"
-        raw_val = report["run_summary"]["Overall Status"]
-        # Split by space first to get "SUCCESS"
-        # If squashed like "SUCCESS-", split by "-"
-        first_token = raw_val.split()[0]
-        if "-" in first_token:
-            first_token = first_token.split("-")[0]
-
-        status = first_token.strip()
-        # Handle new human-readable string "Validation Failed"
-        if status == "Validation" or status == "VALIDATION_FAILED":
-            status = "FAILURE"
-        report["run_summary"]["status"] = status
-
-    # 2. Map 'Execution Start Time' -> 'start_time'
-    if "Execution Start Time" in report["run_summary"]:
-        report["run_summary"]["start_time"] = report["run_summary"][
-            "Execution Start Time"
-        ]
-
-    # 3. Map 'Execution End Time' -> 'end_time'
-    if "Execution End Time" in report["run_summary"]:
-        report["run_summary"]["end_time"] = report["run_summary"]["Execution End Time"]
-
-    return report
 
 
 def parse_markdown_report(stdout: str) -> Dict[str, Any]:
@@ -357,19 +317,6 @@ def parse_markdown_report(stdout: str) -> Dict[str, Any]:
                 log["details"]["content"] = resource_contents[resource_key]
 
     return report
-
-
-def run_cli_with_plan(monkeypatch, plan_structure: list | dict, cwd: Path) -> Result:
-    """
-    Runs the teddy 'execute' command with a plan structure using CliRunner.
-    """
-    sanitized_structure = _convert_paths(plan_structure)
-    plan_content = yaml.dump(sanitized_structure, width=float("inf"))
-    with monkeypatch.context() as m:
-        m.chdir(cwd)
-        return runner.invoke(
-            app, ["execute", "--plan-content", plan_content, "--yes", "--no-copy"]
-        )
 
 
 @contextmanager
