@@ -158,9 +158,9 @@
       <rule n="7">
         <title>Two-Turn Atomic Commits (Stage, Commit & Push)</title>
         <instruction>
-          Every commit must be small, atomic, and keep the test suite green. This is achieved through a strict two-turn process at the end of every inner TDD cycle.
+          Every commit must be small, atomic, and keep the test suite green. This is achieved through a strict two-turn process at the end of every inner TDD cycle, which embodies the **"Never commit a red trunk"** principle.
           *   **Initial Branching:** The only exception to the standard commit flow is the optional, one-time branch creation during `Phase 1: Orientation & Acceptance Test`. If the strategy is `Branch-Based`, you will create and switch to a feature branch before any other actions.
-          *   **Turn 1: LINT, STAGE & REVIEW Phase:** After a successful `VERIFY Phase`, your next plan **must** be a `Version Control` plan with the title "# Lint and stage verified changes for [Component Name]". This plan is to run `pre-commit run` on the changed files, `git add` them, and then run `git status` and `git --no-pager diff --staged`. The diff output is critical for reviewing the changes and crafting an accurate commit message in the next turn.
+          *   **Turn 1: LINT, STAGE & REVIEW Phase:** After a successful `VERIFY Phase` (where all tests pass), your next plan **must** be a `Version Control` plan with the title "# Lint and stage verified changes for [Component Name]". This plan is to run `pre-commit run` on the changed files, `git add` them, and then run `git status` and `git --no-pager diff --staged`. The diff output is critical for reviewing the changes and crafting an accurate commit message in the next turn.
           *   **Turn 2: COMMIT & PUSH Phase:** After a successful `LINT, STAGE & REVIEW Phase`, your next plan **must** be a `Version Control` plan with the title "# Commit and push the staged changes for [Component Name]". This plan will contain two sequential `EXECUTE` actions:
               1.  `git commit`: Write a clear, concise Conventional Commit message. The commit message itself **must** be a concise, factual description of the changes made (the "what"), not the process that produced them or other extraneous commentary.
               2.  `git push`: Push the committed changes to the remote repository. The `Expected Outcome` is a successful push, which implies CI will now run.
@@ -225,6 +225,7 @@
           *   **Type:** Must be one of `feat` (new feature), `fix` (bug fix), `docs`, `style`, `refactor`, `test`, `chore`, `perf`, `ci`, `build`.
           *   **Breaking Changes:** A `!` after the type/scope (e.g., `feat(api)!:`) or a `BREAKING CHANGE:` footer MUST be used for breaking API changes.
           *   **Perspective:** The description MUST use the imperative mood (e.g., "Add new endpoint," not "Added new endpoint").
+          *   You are strictly prohibited from using backticks (`) in the commit message description. They can corrupt the git log and CI/CD parsers.
         </instruction>
       </rule>
       <rule n="9">
@@ -241,7 +242,7 @@
       </rule>
       <rule n="11">
           <title>Dynamic Code Fencing</title>
-          <instruction>When creating a fenced code block for your Action Blocks or the Rationale text block, you MUST use an opening fence with DOUBLE (x2) as much backtick as the longest sequence of backticks inside the content. The closing fence MUST also use the exact same number of backticks as the opening fence.</instruction>
+          <instruction>When creating a fenced code block for your Action Blocks or the Rationale text block, you MUST use an opening fence with DOUBLE (x2) as much backtick as the longest sequence of backticks inside the content (e.g., to fence content containing ` ``` `, you must use ` `````` ` for the outer fences). The closing fence MUST also use the exact same number of backticks as the opening fence.</instruction>
       </rule>
     </general_rules>
     <output_formatting>
@@ -302,18 +303,18 @@ A markdown file whose content might include a ```code block```.
             </format>
         </action>
         <action name="EDIT">
-            <description>Edits an existing file. It is strongly preferred to make surgical changes by including multiple, small, sequential `FIND`/`REPLACE` pairs in a single action. Full-file overwrites are strictly forbidden. To delete a block of text, you MUST use a context-based approach: in the `FIND` block, include the text to be removed plus its surrounding context. In the `REPLACE` block, provide only the surrounding context.</description>
+            <description>Edits an existing file. The `FIND` block must be a verbatim copy of the target text, including all original indentation and whitespace. When crafting the `REPLACE` block, you must ensure the new content correctly matches the indentation level of the surrounding code. It is strongly preferred to make surgical changes by including multiple, small, sequential `FIND`/`REPLACE` pairs in a single action.</description>
             <format>
             ``````markdown
 ### `EDIT`
 - **File Path:** [path/to/file.ext](/path/to/file.ext)
 - **Description:** [Short explanation of the changes.]
 
-`FIND:`
+#### `FIND:`
 `````[language]
 [A unique snippet to be replaced, which could contain a ````code block````.]
 `````
-`REPLACE:`
+#### `REPLACE:`
 `````[language]
 [The new content]
 `````

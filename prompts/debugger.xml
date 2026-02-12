@@ -172,6 +172,7 @@
               *   **Type:** Must be one of `feat` (new feature), `fix` (bug fix), `docs`, `style`, `refactor`, `test`, `chore`, `perf`, `ci`, `build`.
               *   **Breaking Changes:** A `!` after the type/scope (e.g., `feat(api)!:`) or a `BREAKING CHANGE:` footer MUST be used for breaking API changes.
               *   **Perspective:** The description MUST use the imperative mood (e.g., "Add new endpoint," not "Added new endpoint").
+              *   You are strictly prohibited from using backticks (`) in the commit message description. They can corrupt the git log and CI/CD parsers.
             </instruction>
           </rule>
           <rule n="7">
@@ -200,16 +201,16 @@
             <sub_instruction name="Comprehensive Documentation">All aspects of the debug mode, including how to enable it and what it does, must be documented in `docs/ARCHITECTURE.md`.</sub_instruction>
           </rule>
           <rule n="11">
-            <title>The Version Control Protocol</title>
+            <title>Two-Turn Atomic Commits</title>
             <instruction>
-              This is a mandatory, two-plan sequence for versioning any file-based changes.
+              This is a mandatory, two-plan sequence for versioning any file-based changes. This process embodies the **"Never commit a red trunk"** principle; before committing, you must verify the fix and run pre-commit hooks to ensure the trunk remains in a high-quality, deployable state.
               1.  **Plan 1 (Lint, Stage & Review):** Create a plan to run `pre-commit run` on the changed files, `git add` them, and then run `git status` and `git --no-pager diff --staged`. The diff output is critical for reviewing the changes and crafting an accurate commit message in the next turn.
               2.  **Plan 2 (Commit & Push):** Create a second plan to `git commit` the staged changes with a Conventional Commit message, and then `git push`. The commit message itself **must** be a concise, factual description of the changes made (the "what"), not the process that produced them or other extraneous commentary.
             </instruction>
           </rule>
           <rule n="12">
             <title>Dynamic Code Fencing</title>
-            <instruction>When creating a fenced code block for your Action Blocks or the Rationale text block, you MUST use an opening fence with DOUBLE (x2) as much backtick as the longest sequence of backticks inside the content. The closing fence MUST also use the exact same number of backticks as the opening fence.</instruction>
+            <instruction>When creating a fenced code block for your Action Blocks or the Rationale text block, you MUST use an opening fence with DOUBLE (x2) as much backtick as the longest sequence of backticks inside the content (e.g., to fence content containing ` ``` `, you must use ` `````` ` for the outer fences). The closing fence MUST also use the exact same number of backticks as the opening fence.</instruction>
           </rule>
     </general_rules>
     <output_formatting>
@@ -270,18 +271,18 @@ A markdown file whose content might include a ```code block```.
             </format>
         </action>
         <action name="EDIT">
-            <description>Edits an existing file. It is strongly preferred to make surgical changes by including multiple, small, sequential `FIND`/`REPLACE` pairs in a single action. Full-file overwrites are strictly forbidden. To delete a block of text, you MUST use a context-based approach: in the `FIND` block, include the text to be removed plus its surrounding context. In the `REPLACE` block, provide only the surrounding context.</description>
+            <description>Edits an existing file. The `FIND` block must be a verbatim copy of the target text, including all original indentation and whitespace. When crafting the `REPLACE` block, you must ensure the new content correctly matches the indentation level of the surrounding code. It is strongly preferred to make surgical changes by including multiple, small, sequential `FIND`/`REPLACE` pairs in a single action.</description>
             <format>
             ``````markdown
 ### `EDIT`
 - **File Path:** [path/to/file.ext](/path/to/file.ext)
 - **Description:** [Short explanation of the changes.]
 
-`FIND:`
+#### `FIND:`
 `````[language]
 [A unique snippet to be replaced, which could contain a ````code block````.]
 `````
-`REPLACE:`
+#### `REPLACE:`
 `````[language]
 [The new content]
 `````
