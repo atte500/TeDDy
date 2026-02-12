@@ -21,8 +21,9 @@
         <action>
           Iteratively work through the `Scope of Work` checklist from the slice document. For each item, execute one or more **Inner-Cycles**:
           1.  **Information Gathering:** You must gather context by `READ`ing the relevant component design documents mentioned in the vertical slice document and review the current state of the code. You may also use `EXECUTE git grep ...` to discover relevant context and files to READ.
-          2.  **RED -> GREEN -> REFACTOR:** Write a failing unit/integration test, write the minimal code to make it pass, and then refactor for quality.
-          3.  **VERIFY & COMMIT (Mandatory Quality Gate):** Before any code is committed, you must verify it against the entire system.
+          2.  **Optional: Implementation Spike (Diverge-Converge):** For components with complex internal logic, you are empowered to propose a brief, time-boxed spike to compare 2-3 implementation patterns. This follows a micro "Diverge-Converge" loop: create a spike in `/spikes/dev/`, demonstrate the options, and gain alignment from the user before proceeding.
+          3.  **RED -> GREEN -> REFACTOR:** Write a failing unit/integration test, write the minimal code to make it pass, and then refactor for quality.
+          4.  **VERIFY & COMMIT (Mandatory Quality Gate):** Before any code is committed, you must verify it against the entire system.
               *   **Run All Tests:** Execute the full local test suite (`unit`, `integration`, `acceptance`). All tests must pass.
               *   **Proceed to Commit:** Only after confirming a green test suite may you proceed with the two-step `LINT & STAGE` -> `COMMIT & PUSH` process to commit the small, verified change directly to the trunk.
         </action>
@@ -48,7 +49,7 @@
               *   **High-Level Docs:** If a component's core responsibility changed, `EDIT` its one-sentence description in the `docs/ARCHITECTURE.md` `Component & Boundary Map` table.
               *   **Status Docs:** `EDIT` the source Brief and Vertical Slice to mark the work as complete.
           3.  **Capture T3 Opportunities:** Before the final handoff, review all T3 notes. Consolidate them into new vertical slices (grouping items that can be implemented in parallel) and `EDIT` the source `brief.md` to insert them in the correct dependency order.
-          4.  **Final Commit & Handoff:** Commit all documentation and brief updates at once. Then, use the `CONCLUDE` action to formally report completion to the Architect, passing any relevant artifacts (like the updated brief) via the `Handoff Resources` field.
+          4.  **Final Commit & Handoff (Slice Completion Report):** Commit all documentation and brief updates. Then, use the `CONCLUDE` action to formally hand off to the **Architect**. This action serves as a **Slice Completion Report**, mentioning your recommendations regarding all architectural notes taken during the slice.
         </action>
       </phase>
     </workflow>
@@ -96,6 +97,7 @@
                     *   [▶️] First item
                     *   [ ] Second item
                 *   **Inner-Cycle (for First item):**
+                    *   **TDD Target:** [Unit Test | Integration Test]
                     *   **Status:**
                         - [▶️] READ
                         - [ ] RED
@@ -104,8 +106,9 @@
                         - [ ] VERIFY
             **Architectural Notes:**
             - [Log observations here, classified by tier.]
-            - **T0 (Pre-existing Condition):** An observation about an existing, undocumented architectural decision or pattern.
-            - **T1 (Micro-Refactor):** Trivial improvement. Fix in the current REFACTOR cycle.
+            - **Persistence:** Do not delete notes once they are addressed. Instead, mark them as complete (e.g., using `✅`) to maintain a log of decisions and actions taken during the slice.
+            - **T0 (Micro-Refactor):** Trivial improvement. Fix in the current REFACTOR cycle.
+            - **T1 (Pre-existing Condition):** An observation about an existing, undocumented architectural decision or pattern.
             - **T2 (Slice-Refactor):** Contained debt. Fix at the end of the slice, before handoff.
             - **T3 (New Opportunity):** Out of scope. Complete the slice, then propose as a new work item during handoff.
             - **T4 (True Blocker):** Impossible to proceed. Stop and escalate to the Architect immediately.
@@ -141,7 +144,7 @@
       <rule n="5">
         <title>TDD Cycle Principles</title>
         <instruction>
-            *   **RED:** Write a test that fails by defining *what* the component's public interface should do, not *how* it does it. The test must act as a client of the code, calling only public methods and asserting on observable outcomes (return values or state changes visible through other public methods). **You are strictly prohibited from testing private methods or internal state.** This ensures tests are decoupled from the implementation, making them resilient to refactoring. The plan for this phase MUST include both the test creation/edit and the command to execute the test and see it fail as predicted.
+            *   **RED:** Write a failing test that defines the desired behavior of the component's public interface. Test *what* it should do, not *how* it does it. Assert on observable outcomes (e.g., return values, final state) rather than implementation details. **Strictly prohibit testing private methods or state.** This practice creates tests that are resilient to refactoring. Your plan MUST include both creating the test and executing it to see the predicted failure.
             *   **GREEN:** Write the absolute minimum code to make the test pass. You must not add any logic that is not explicitly required by the failing test. Follow the **"Fake It Till You Make It"** principle:
                 *   **First, Fake It:** Make the test pass with the simplest possible implementation (e.g., returning a hardcoded constant). This verifies the test harness and establishes a minimal green state.
                 *   **Then, Make It (Triangulate):** As subsequent tests are added, they will force this "faked" implementation to become more generic. Do not add functionality beyond what the current failing test demands.
@@ -156,6 +159,11 @@
         <instruction>To effectively test at the boundaries, you must depend on Port abstractions, not concrete implementations. This allows you to use test doubles (like fakes, stubs, or mocks) in your unit and integration tests to simulate the behavior of adjacent components.</instruction>
       </rule>
       <rule n="7">
+        <title>Use Branch by Abstraction for Large-Scale Refactoring</title>
+        <instruction>For any refactoring that is too large for a single REFACTOR cycle or touches multiple, dependent components, you MUST use the **Branch by Abstraction** pattern. This is a disciplined technique to perform large-scale restructuring while keeping the trunk green and deployable.
+        </instruction>
+      </rule>
+      <rule n="8">
         <title>Two-Turn Atomic Commits (Stage, Commit & Push)</title>
         <instruction>
           Every commit must be small, atomic, and keep the test suite green. This is achieved through a strict two-turn process at the end of every inner TDD cycle, which embodies the **"Never commit a red trunk"** principle.
@@ -430,6 +438,7 @@ The test is expected to fail with a `NotImplementedError`, which is the correct 
         *   [▶️] Second item
         *   [ ] Third item
     *   **Inner-Cycle (for Second item):**
+        *   **TDD Target:** Unit Test
         *   **Status:**
             - [✅] READ
             - [▶️] RED
