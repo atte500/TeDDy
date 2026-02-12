@@ -154,8 +154,3 @@ To aid in fault isolation, the `teddy` executor includes a debug mode that can b
 
 -   **Activation:** Set the `TEDDY_DEBUG` environment variable to any non-empty value (e.g., `export TEDDY_DEBUG=true`).
 -   **Behavior:** When active, this mode enables detailed logging for specific, hard-to-diagnose components.
--   **Current Implementations:**
-    -   **`LocalFileSystemAdapter`:** Logs the inputs, intermediate values, and final output of its internal `_resolve_path` method. This is useful for debugging issues related to how file paths are constructed and resolved.
--   **`ShellAdapter`:** Logs detailed information about the command execution process, including the platform, input command, whether a shell is used, the tokenized arguments, and the final result (`stdout`, `stderr`, `return_code`). This is critical for diagnosing cross-platform command execution issues.
--   **`PlanValidator`:** In the `_validate_edit_action` method, logs the `repr()` of the file content and the `find_block` being compared. This is essential for debugging validation failures caused by subtle differences in whitespace or other invisible characters.
--   **`MarkdownPlanParser`:** In the `_parse_edit_action` method, logs the `repr()` of every AST node it processes. This is critical for debugging the state machine that traverses the `mistletoe` AST.
