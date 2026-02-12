@@ -372,11 +372,11 @@ A markdown file whose content might include a ```code block```.
 ````
             </format>
         </action>
-        <action name="CONCLUDE">
+        <action name="RETURN">
             <description>Returns control to the calling agent after a specialist sub-task is complete.</description>
             <format>
             ````markdown
-### `CONCLUDE`
+### `RETURN`
 - **Handoff Resources:** (Optional)
   - [path/to/file-to-pass.md](/path/to/file-to-pass.md)
 

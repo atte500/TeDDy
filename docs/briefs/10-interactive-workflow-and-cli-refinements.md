@@ -124,12 +124,12 @@ Implementation must be done incrementally through the following dependency-aware
     -   Update the `SessionManager` to create and manage the `meta.yaml` file in each turn directory.
     -   Ensure it correctly populates `turn_id`, `parent_turn_id`, and `caller_turn_id` based on the turn transition logic.
 -   **[ ] Task: Enhance Plan Parser:**
-    -   Add support for the `CONCLUDE` action.
-    -   Update `INVOKE` and add `CONCLUDE` to parse the optional `Handoff Resources` list.
+    -   Add support for the `RETURN` action.
+    -   Update `INVOKE` and add `RETURN` to parse the optional `Handoff Resources` list.
 -   **[ ] Task: Refactor `ExecutionOrchestrator` for Branching:**
     -   Refactor the orchestrator (or a higher-level service) to fully implement the "Turn Transition Algorithm" from the `interactive-session-workflow.md` spec. This is the core of this slice.
 -   **[ ] Task: Create Acceptance Tests:**
-    -   Develop end-to-end tests for the `INVOKE`/`CONCLUDE` cycle.
+    -   Develop end-to-end tests for the `INVOKE`/`RETURN` cycle.
     -   Include a test for a multi-turn specialist agent to validate that `caller_turn_id` is correctly managed.
 -   **[ ] Task: Update Agent Prompts:**
-    -   Review and update all agent prompts (`prompts/*.xml`) to utilize the new `CONCLUDE` action and the `Handoff Resources` format for `INVOKE`.
+    -   Review and update all agent prompts (`prompts/*.xml`) to utilize the new `RETURN` action and the `Handoff Resources` format for `INVOKE`.

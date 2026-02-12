@@ -25,7 +25,7 @@ class PruneAction:
 class ConcludeAction:
     def execute(self, **kwargs: Any) -> str:
         message = kwargs.get("message", "Completed")
-        return f"CONCLUDE action recognized with message: {message}"
+        return f"RETURN action recognized with message: {message}"
 
 
 class ActionFactory(IActionFactory):
@@ -43,7 +43,7 @@ class ActionFactory(IActionFactory):
         "CHAT_WITH_USER": "chat_with_user",
         "RESEARCH": "research",
         "PRUNE": "prune",
-        "CONCLUDE": "conclude",
+        "RETURN": "return",
     }
 
     def __init__(self, container: punq.Container):
@@ -58,7 +58,7 @@ class ActionFactory(IActionFactory):
             "research": IWebSearcher,
             "invoke": InvokeAction,
             "prune": PruneAction,
-            "conclude": ConcludeAction,
+            "return": ConcludeAction,
         }
 
     def _normalize_action_type(self, action_type: str) -> str:

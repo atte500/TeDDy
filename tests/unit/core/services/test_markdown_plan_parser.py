@@ -425,9 +425,9 @@ This too."""
     assert action.params["edits"][0]["replace"] == "New documentation."
 
 
-def test_parse_conclude_action(parser: MarkdownPlanParser):
+def test_parse_return_action(parser: MarkdownPlanParser):
     """
-    Given a valid Markdown plan with a CONCLUDE action,
+    Given a valid Markdown plan with a RETURN action,
     When the plan is parsed,
     Then a valid Plan domain object is returned with correct action data.
     """
@@ -438,7 +438,7 @@ def test_parse_conclude_action(parser: MarkdownPlanParser):
 
 ## Action Plan
 
-### `CONCLUDE`
+### `RETURN`
 - **Handoff Resources:**
   - [docs/rca/the-bug.md](/docs/rca/the-bug.md)
   - [spikes/fix-script.sh](/spikes/fix-script.sh)
@@ -457,7 +457,7 @@ My analysis is complete. The root cause and a verified fix are attached.
         "My analysis is complete. The root cause and a verified fix are attached."
     )
 
-    assert action.type == "CONCLUDE"
+    assert action.type == "RETURN"
     assert action.description is None
     assert action.params["message"] == expected_message
     assert "handoff_resources" in action.params

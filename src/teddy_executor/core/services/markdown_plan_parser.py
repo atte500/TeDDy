@@ -84,8 +84,8 @@ class MarkdownPlanParser(IPlanParser):
                 actions.append(self._parse_prune_action(doc, heading))
             elif action_type == "INVOKE":
                 actions.append(self._parse_invoke_action(doc, heading))
-            elif action_type == "CONCLUDE":
-                actions.append(self._parse_conclude_action(doc, heading))
+            elif action_type == "RETURN":
+                actions.append(self._parse_return_action(doc, heading))
 
         if not actions:
             raise InvalidPlanError("No actions found in the 'Action Plan' section.")
@@ -242,19 +242,19 @@ class MarkdownPlanParser(IPlanParser):
         params["edits"] = edits
         return ActionData(type="EDIT", description=description, params=params)
 
-    def _parse_conclude_action(
+    def _parse_return_action(
         self, parent: Document, heading_node: Heading
     ) -> ActionData:
-        """Parses a CONCLUDE action block."""
+        """Parses a RETURN action block."""
         next_node = self._get_next_sibling(parent, heading_node)
         start_node = next_node if isinstance(next_node, MdList) else heading_node
 
         params = self._parse_message_and_optional_resources(parent, start_node)
 
         if "message" not in params:
-            raise InvalidPlanError("CONCLUDE action is missing message content.")
+            raise InvalidPlanError("RETURN action is missing message content.")
 
-        return ActionData(type="CONCLUDE", description=None, params=params)
+        return ActionData(type="RETURN", description=None, params=params)
 
     def _parse_message_and_optional_resources(
         self, parent: Document, start_node: Any

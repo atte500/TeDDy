@@ -215,7 +215,7 @@ This feature will be implemented by following a strict outside-in, Test-Driven D
     -   Ensure the acceptance test now passes.
 -   **[ ] 3. Test & Implement Handling of Unsupported Actions:**
     -   Write a failing acceptance test for the **"Plan contains an unsupported action"** scenario.
-    -   Enhance the `ExecutionOrchestrator` to identify and gracefully skip unsupported actions (`INVOKE`, `CONCLUDE`, `MEMO`).
+    -   Enhance the `ExecutionOrchestrator` to identify and gracefully skip unsupported actions (`INVOKE`, `RETURN`, `MEMO`).
     -   Enhance the `MarkdownReportFormatter` to correctly report these actions as "Skipped".
     -   Ensure the acceptance test now passes.
 

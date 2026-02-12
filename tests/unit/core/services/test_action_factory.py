@@ -70,16 +70,16 @@ def test_create_action_raises_error_for_unknown_type(factory: ActionFactory):
         factory.create_action(action_type)
 
 
-def test_create_action_for_conclude_returns_handler(factory: ActionFactory):
+def test_create_action_for_return_returns_handler(factory: ActionFactory):
     """
-    Given the 'CONCLUDE' action type,
+    Given the 'RETURN' action type,
     When create_action is called,
     Then it should return a ConcludeAction handler.
     """
     # Arrange
     from teddy_executor.core.services.action_factory import ConcludeAction
 
-    action_type = "CONCLUDE"
+    action_type = "RETURN"
 
     # Act
     action_handler = factory.create_action(action_type)

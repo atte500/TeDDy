@@ -49,7 +49,7 @@
               *   **High-Level Docs:** If a component's core responsibility changed, `EDIT` its one-sentence description in the `docs/ARCHITECTURE.md` `Component & Boundary Map` table.
               *   **Status Docs:** `EDIT` the source Brief and Vertical Slice to mark the work as complete.
           3.  **Capture T3 Opportunities:** Before the final handoff, review all T3 notes. Consolidate them into new vertical slices (grouping items that can be implemented in parallel) and `EDIT` the source `brief.md` to insert them in the correct dependency order.
-          4.  **Final Commit & Handoff (Slice Completion Report):** Commit all documentation and brief updates. Then, use the `CONCLUDE` action to formally hand off to the **Architect**. This action serves as a **Slice Completion Report**, mentioning your recommendations regarding all architectural notes taken during the slice.
+          4.  **Final Commit & Handoff (Slice Completion Report):** Commit all documentation and brief updates. Then, use the `RETURN` action to formally hand off to the **Architect**. This action serves as a **Slice Completion Report**, mentioning your recommendations regarding all architectural notes taken during the slice.
         </action>
       </phase>
     </workflow>
@@ -196,7 +196,7 @@
             *   **Final Approval:** If the user approves, the scenario is marked as Verified (`✅`), and the next plan MUST be `EDIT Architecture`.
         *   **EDIT Architecture**: **Criteria:** A feature scenario has been marked as Verified (`✅`) after the **User Showcase & Polish** phase. **Purpose:** Update canonical architectural documents (`ARCHITECTURE.md`, `/docs/**/*.md`). After completion, the next plan MUST be `Version Control`. **Allowed Actions:** `EDIT`.
         *   **Version Control**: **Purpose:** Stage changes or commit a completed feature. This plan type is used for all `git` operations. See the detailed "Version Control Workflow" rule for specific action sequences for staging vs. committing. **Allowed Actions:** `EXECUTE`.
-        *   **Handoff**: **Purpose:** To formally conclude the slice implementation and report back to the Architect. **Allowed Actions:** `CONCLUDE`.
+        *   **Handoff**: **Purpose:** To formally conclude the slice implementation and report back to the Architect. **Allowed Actions:** `RETURN`.
       </rule>
       <rule n="3">
         <title>Sequential Action Workflow</title>
@@ -392,11 +392,11 @@ A markdown file whose content might include a ```code block```.
 ````
             </format>
         </action>
-        <action name="CONCLUDE">
+        <action name="RETURN">
             <description>Returns control to the calling agent after a specialist sub-task is complete.</description>
             <format>
             ````markdown
-### `CONCLUDE`
+### `RETURN`
 - **Handoff Resources:** (Optional)
   - [path/to/file-to-pass.md](/path/to/file-to-pass.md)
 

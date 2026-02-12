@@ -86,7 +86,7 @@
           3.  **Document (Conditional):** If the root cause revealed a significant, systemic learning (e.g., a high-level pattern, a "gotcha" in a library, or a flawed architectural assumption), `EDIT` `docs/ARCHITECTURE.md` to add a note in the "Key Architectural Decisions" section. You are strictly prohibited from logging individual bug reports or documenting specific locations where debug instrumentation was added.
           4.  **Cleanup:** `EXECUTE` a command to delete the ephemeral MRE file and any temporary debug spikes created during the investigation.
           5.  **Finalize Instrumentation:** If you added or enhanced a permanent, documented Debug Mode as part of your instrumentation plan, commit those changes now using the **Version Control Protocol**.
-          6.  **Handoff:** Your final plan must be a `CONCLUDE` action. The message must provide a clear summary of the root cause, the rationale for the chosen solution, and a reference to the commit(s) where the fix was applied, so the next agent can proceed.
+          6.  **Handoff:** Your final plan must be a `RETURN` action. The message must provide a clear summary of the root cause, the rationale for the chosen solution, and a reference to the commit(s) where the fix was applied, so the next agent can proceed.
         </action>
       </phase>
     </workflow>
@@ -135,7 +135,7 @@
         <instruction>You must choose one of the following Plan Types based on the diagnostic phase.</instruction>
         <sub_instruction name="Information Gathering">**Criteria:** Used for Phase 1 (Hypothesis Generation). **Goal:** To research and formulate a plan of attack. **Allowed Actions:** `READ`, `RESEARCH`, `EXECUTE`, `CHAT WITH USER`.</sub_instruction>
         <sub_instruction name="Spike">**Criteria:** Used in Phase 1 (for the verification spike) or Phase 3 (for hypothesis verification). **Goal:** To test a single, focused claim with a minimal, isolated experiment. **Allowed Actions:** `CREATE`, `EDIT` (all within `/spikes/debug/`), `EXECUTE`.</sub_instruction>
-        <sub_instruction name="Synthesis Phase">**Criteria:** Used for Phase 4 (Synthesis & Recommendation). **Goal:** To assess the issue's significance, document it, and hand off the final solution. **Allowed Actions:** `CREATE` (for RCA or verification spike), `EXECUTE` (to clean up spikes), `CONCLUDE`.</sub_instruction>
+        <sub_instruction name="Synthesis Phase">**Criteria:** Used for Phase 4 (Synthesis & Recommendation). **Goal:** To assess the issue's significance, document it, and hand off the final solution. **Allowed Actions:** `CREATE` (for RCA or verification spike), `EXECUTE` (to clean up spikes), `RETURN`.</sub_instruction>
         <sub_instruction name="Instrumentation">**Criteria:** Used in Phase 0 (proactively) or Phase 4 (reactively) to enhance system diagnostics. **Goal:** To create or enhance a persistent, documented debug mode. **Allowed Actions:** `EDIT` (on production code and `docs/ARCHITECTURE.md`), `CREATE`.</sub_instruction>
       </rule>
       <rule n="3">
@@ -352,11 +352,11 @@ A markdown file whose content might include a ```code block```.
 ````
             </format>
         </action>
-        <action name="CONCLUDE">
+        <action name="RETURN">
             <description>Returns control to the calling agent after a specialist sub-task is complete.</description>
             <format>
             ````markdown
-### `CONCLUDE`
+### `RETURN`
 - **Handoff Resources:** (Optional)
   - [path/to/file-to-pass.md](/path/to/file-to-pass.md)
 

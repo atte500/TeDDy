@@ -22,7 +22,7 @@ We will introduce a new, dedicated service for formatting reports and integrate 
     -   **Manual Workflow Features:** It must implement the special formatting rules from the `manual-cli-workflow.md` spec, including:
         -   A `## Resource Contents` section for successful `READ` actions.
         -   A `## Failed Action Details` section, including the actual content of relevant files.
-        -   Graceful reporting of unsupported actions (`INVOKE`, `CONCLUDE`).
+        -   Graceful reporting of unsupported actions (`INVOKE`, `RETURN`).
         -   "Smart Fencing" for all code blocks to ensure robust parsing.
 
 3.  **CLI Integration:** The `teddy execute` command in `main.py` will be refactored to:
@@ -69,4 +69,4 @@ This brief will be implemented in two distinct vertical slices.
 -   **[ ] Task: Enhance Formatter for Failures:**
     -   Update the formatter to add the `## Failed Action Details` section, including the fetched file contents.
 -   **[ ] Task: Enhance Formatter for Unsupported Actions:**
-    -   Update the formatter to correctly report `INVOKE` and `CONCLUDE` actions as "Not Supported" in manual mode.
+    -   Update the formatter to correctly report `INVOKE` and `RETURN` actions as "Not Supported" in manual mode.

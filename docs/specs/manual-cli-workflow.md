@@ -121,10 +121,10 @@ When an action fails, the report must provide a complete, self-contained "error 
     ...
     `````
 
-### 5.3. Handling Unsupported Actions (`INVOKE`, `CONCLUDE`, `MEMO`)
-The `INVOKE`, `CONCLUDE`, and `MEMO` actions are specific to stateful, automated workflows and have no equivalent in the manual mode.
+### 5.3. Handling Unsupported Actions (`INVOKE`, `RETURN`, `MEMO`)
+The `INVOKE`, `RETURN`, and `MEMO` actions are specific to stateful, automated workflows and have no equivalent in the manual mode.
 
--   **Requirement:** If a plan contains an `INVOKE`, `CONCLUDE`, or `MEMO` action, the executor should treat it as a no-op. The action will be logged in the report with a status indicating it was recognized but skipped because it is unsupported in this mode.
+-   **Requirement:** If a plan contains an `INVOKE`, `RETURN`, or `MEMO` action, the executor should treat it as a no-op. The action will be logged in the report with a status indicating it was recognized but skipped because it is unsupported in this mode.
 
 -   **Example Report Snippet:**
     ````markdown

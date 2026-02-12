@@ -237,12 +237,12 @@ All actions are located under the `## Action Plan` heading. Each action is defin
     2. Extract the optional list of `Handoff Resources`.
     3. The content for the invocation message is all the free-form markdown content that follows the metadata list.
 
-### 5.8. `CONCLUDE`
+### 5.8. `RETURN`
 
 -   **Purpose:** Returns control to the calling agent after a specialist sub-task is complete.
 -   **Format:**
     ```markdown
-    ### `CONCLUDE`
+    ### `RETURN`
     - **Handoff Resources:** (Optional)
       - [docs/rca/the-bug.md](/docs/rca/the-bug.md)
       - [spikes/fix-script.sh](/spikes/fix-script.sh)

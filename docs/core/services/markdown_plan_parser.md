@@ -22,7 +22,7 @@
 - `RESEARCH`: Extracts queries.
 - `CHAT_WITH_USER`: Extracts prompt text.
 - `INVOKE`: Extracts agent and message.
-- `CONCLUDE`: Extracts message and handoff resources.
+- `RETURN`: Extracts message and handoff resources.
 
 - **Implements Port:** [IPlanParser](../ports/inbound/plan_parser.md)
 
