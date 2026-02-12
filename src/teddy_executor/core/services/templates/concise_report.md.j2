@@ -15,6 +15,58 @@
 {% endfor %}
 {% endif %}
 
+{# Extract successful READ logs for the Resource Contents section #}
+{% set ns = namespace(read_logs=[]) %}
+{% for log in report.action_logs %}
+  {% if log.action_type.lower() == 'read' and log.status.value == 'SUCCESS' and log.details and 'content' in log.details %}
+    {% set ns.read_logs = ns.read_logs + [log] %}
+  {% endif %}
+{% endfor %}
+
+{% if ns.read_logs %}
+## Resource Contents
+The following resource contents were successfully read.
+
+---
+{% for log in ns.read_logs %}
+**Resource:** `{{ log.params.get('Resource') or log.params.get('resource') }}`
+````text
+{{ log.details.content }}
+````
+---
+{% endfor %}
+{% endif %}
+
+{# Extract failed logs for the Failed Action Details section #}
+{% set ns.failed_logs = [] %}
+{% for log in report.action_logs %}
+  {% if log.status.value == 'FAILURE' %}
+    {% set ns.failed_logs = ns.failed_logs + [log] %}
+  {% endif %}
+{% endfor %}
+
+{% if ns.failed_logs %}
+## Failed Action Details
+
+{% for log in ns.failed_logs %}
+### `{{ log.action_type.upper() }}` on `{{ log.params.get('File Path') or log.params.get('path') or log.params.get('Resource') or 'Unknown' }}`
+{% if log.details and log.details.error %}
+- **Error:** {{ log.details.error }}
+{% endif %}
+{% if log.details and log.details.content %}
+
+### Resource Contents
+
+---
+**Resource:** `{{ log.params.get('File Path') or log.params.get('path') or log.params.get('Resource') or 'Unknown' }}`
+````text
+{{ log.details.content }}
+````
+---
+{% endif %}
+{% endfor %}
+{% endif %}
+
 ## Execution Summary
 
 ### Action Log
@@ -23,10 +75,13 @@
 #### `{{ log.action_type.upper() }}`
 - **Status:** {{ log.status.value }}
 {% if log.params %}
-- **Params:** `{{ to_json(log.params) }}`
+- **Params:**
+  {% for k, v in log.params.items() %}
+  - **{{ k }}:** `{{ v }}`
+  {% endfor %}
 {% endif %}
-{% if log.details %}
-- **Details:** {{ log.details }}
+{% if log.details and not (log.action_type.lower() == 'read' and log.status.value == 'SUCCESS') %}
+- **Details:** `{{ log.details }}`
 {% endif %}
 {% else %}
 *(No actions were executed.)*

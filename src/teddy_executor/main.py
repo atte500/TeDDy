@@ -281,10 +281,12 @@ def execute(
             # Manually construct the orchestrator
             action_dispatcher = container.resolve(ActionDispatcher)
             user_interactor = container.resolve(IUserInteractor)
+            file_system_manager = container.resolve(IFileSystemManager)
             orchestrator = ExecutionOrchestrator(
                 plan_parser=parser,  # Re-uses the parser
                 action_dispatcher=action_dispatcher,
                 user_interactor=user_interactor,
+                file_system_manager=file_system_manager,
             )
             execution_report = orchestrator.execute(
                 plan_content=final_plan_content, interactive=interactive_mode

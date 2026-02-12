@@ -41,4 +41,10 @@ def test_edit_action_fails_on_multiple_occurrences(monkeypatch, tmp_path: Path):
     assert report["run_summary"]["status"] == "FAILURE"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "FAILURE"
-    assert "Aborting edit to prevent ambiguity" in action_log["details"]
+
+    details = action_log["details"]
+    if isinstance(details, dict):
+        error_msg = details.get("original_details", str(details))
+    else:
+        error_msg = str(details)
+    assert "Aborting edit to prevent ambiguity" in str(error_msg)

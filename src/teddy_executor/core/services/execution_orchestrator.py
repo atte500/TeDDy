@@ -10,7 +10,7 @@ from teddy_executor.core.domain.models import (
 )
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
 from teddy_executor.core.ports.inbound.run_plan_use_case import RunPlanUseCase
-from teddy_executor.core.ports.outbound import IUserInteractor
+from teddy_executor.core.ports.outbound import IFileSystemManager, IUserInteractor
 from teddy_executor.core.services.action_dispatcher import ActionDispatcher
 
 
@@ -20,10 +20,12 @@ class ExecutionOrchestrator(RunPlanUseCase):
         plan_parser: IPlanParser,
         action_dispatcher: ActionDispatcher,
         user_interactor: IUserInteractor,
+        file_system_manager: IFileSystemManager,
     ):
         self._plan_parser = plan_parser
         self._action_dispatcher = action_dispatcher
         self._user_interactor = user_interactor
+        self._file_system_manager = file_system_manager
 
     def execute(self, plan_content: str, interactive: bool) -> ExecutionReport:
         start_time = datetime.now()
@@ -58,6 +60,34 @@ class ExecutionOrchestrator(RunPlanUseCase):
 
             if should_dispatch:
                 action_log = self._action_dispatcher.dispatch_and_execute(action)
+
+                # If CREATE or EDIT failed, try to capture file content for context
+                if action_log.status == ActionStatus.FAILURE and action.type in (
+                    "CREATE",
+                    "EDIT",
+                ):
+                    path = action.params.get("path")
+                    if path:
+                        try:
+                            content = self._file_system_manager.read_file(path)
+                            # Create a new ActionLog with updated details
+                            new_details = (
+                                action_log.details
+                                if isinstance(action_log.details, dict)
+                                else {"original_details": action_log.details}
+                            )
+                            new_details["content"] = content
+
+                            action_log = ActionLog(
+                                status=action_log.status,
+                                action_type=action_log.action_type,
+                                params=action_log.params,
+                                details=new_details,
+                            )
+                        except Exception:
+                            # If we can't read the file (e.g. doesn't exist), just ignore
+                            pass
+
             else:
                 action_log = ActionLog(
                     status=ActionStatus.SKIPPED,

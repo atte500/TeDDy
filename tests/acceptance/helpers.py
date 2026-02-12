@@ -7,7 +7,6 @@ import yaml
 from mistletoe import Document
 from mistletoe.block_token import List, Paragraph
 from mistletoe.span_token import RawText, Strong
-from mistletoe.token import Token
 from typer.testing import CliRunner, Result
 
 from teddy_executor.main import app
@@ -99,7 +98,9 @@ def parse_markdown_report(stdout: str) -> Dict[str, Any]:
     doc = Document(stdout)
     report: Dict[str, Any] = {"run_summary": {}, "action_logs": []}
     # Ensure doc.children is treated as a list
-    doc_children: PyList[Token] = list(doc.children) if doc.children else []
+    # Mypy sees doc.children as Iterable[Token], so we must cast the result of list() to List[Token]
+    # or rely on type inference which seems to be failing. We will use a broader type if needed.
+    doc_children: PyList[Any] = list(doc.children) if doc.children else []
 
     # --- 1. Parse Run Summary (First List) ---
     summary_list = next(
@@ -155,6 +156,63 @@ def parse_markdown_report(stdout: str) -> Dict[str, Any]:
 
                         if key:
                             report["run_summary"][key] = value
+
+    # --- 1.5 Parse Resource Contents ---
+    # We need to map resource contents back to their READ actions for backward compatibility
+    resource_contents = {}
+    resource_contents_heading_index = -1
+
+    # Find "## Resource Contents" heading
+    for i, child in enumerate(doc_children):
+        if hasattr(child, "level") and child.level == 2:
+            if (
+                child.children
+                and isinstance(child.children[0], RawText)
+                and "Resource Contents" in child.children[0].content
+            ):
+                resource_contents_heading_index = i
+                break
+
+    if resource_contents_heading_index != -1:
+        # Iterate through content to find resources
+        # Structure: **Resource:** `path` \n ```content```
+
+        def extract_text(token: Any) -> str:
+            if hasattr(token, "content") and token.content is not None:
+                return str(token.content)
+            if hasattr(token, "children") and token.children:
+                return "".join(extract_text(c) for c in token.children)
+            return ""
+
+        for i in range(resource_contents_heading_index + 1, len(doc_children)):
+            node = doc_children[i]
+            # Stop at next section
+            if hasattr(node, "level") and node.level <= 2:
+                break
+
+            # Look for CodeFence/BlockCode
+            if hasattr(node, "language"):  # CodeFence
+                # Look back at previous nodes for the Resource Paragraph
+                # Skip ThematicBreaks (which might separate entries)
+                resource_name = None
+                for j in range(i - 1, resource_contents_heading_index, -1):
+                    prev = doc_children[j]
+                    if isinstance(prev, Paragraph):
+                        text = extract_text(prev)
+                        if "Resource:" in text:
+                            parts = text.split("Resource:", 1)
+                            if len(parts) > 1:
+                                resource_name = parts[1].strip().strip("`")
+                                break
+                    # Stop looking back if we hit another code block or section start
+                    if hasattr(prev, "language") or (
+                        hasattr(prev, "level") and prev.level <= 2
+                    ):
+                        break
+
+                if resource_name:
+                    content = node.children[0].content if node.children else ""
+                    resource_contents[resource_name] = content.strip()
 
     # --- 2. Parse Action Logs ---
     # Look for "### Action Log" heading
@@ -277,6 +335,25 @@ def parse_markdown_report(stdout: str) -> Dict[str, Any]:
         # Append the last action
         if current_action:
             report["action_logs"].append(current_action)
+
+    # --- 3. Re-hydrate READ actions with content ---
+    for log in report["action_logs"]:
+        if log.get("action_type") == "READ" and log.get("status") == "SUCCESS":
+            # Check if we have content for this resource
+            # Params might be a dict or string
+            params = log.get("params", {})
+            resource_key = None
+            if isinstance(params, dict):
+                resource_key = params.get("Resource") or params.get("resource")
+
+            if resource_key and resource_key in resource_contents:
+                if "details" not in log:
+                    log["details"] = {}
+                # Ensure it's a dict
+                if isinstance(log["details"], str):
+                    log["details"] = {"original": log["details"]}
+
+                log["details"]["content"] = resource_contents[resource_key]
 
     return report
 

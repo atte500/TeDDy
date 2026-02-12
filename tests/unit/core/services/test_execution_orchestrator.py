@@ -8,6 +8,7 @@ from teddy_executor.core.domain.models import (
     ActionStatus,
     Plan,
 )
+from teddy_executor.core.ports.outbound import IFileSystemManager
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
 
 
@@ -27,13 +28,22 @@ def mock_user_interactor() -> Mock:
 
 
 @pytest.fixture
+def mock_file_system_manager() -> Mock:
+    return Mock(spec=IFileSystemManager)
+
+
+@pytest.fixture
 def orchestrator(
-    mock_plan_parser, mock_action_dispatcher, mock_user_interactor
+    mock_plan_parser,
+    mock_action_dispatcher,
+    mock_user_interactor,
+    mock_file_system_manager,
 ) -> ExecutionOrchestrator:
     return ExecutionOrchestrator(
         plan_parser=mock_plan_parser,
         action_dispatcher=mock_action_dispatcher,
         user_interactor=mock_user_interactor,
+        file_system_manager=mock_file_system_manager,
     )
 
 
