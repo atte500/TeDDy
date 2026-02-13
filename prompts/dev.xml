@@ -17,7 +17,14 @@
           *   **Test Creation (RED Phase):** Once you have sufficient context, your goal is to produce a failing acceptance test for **each scenario** outlined in the slice's `Acceptance Criteria`, ensuring both success and failure cases are covered where applicable. These tests are not committed until the end of the slice.
         </action>
       </phase>
-      <phase n="2" name="Phase 2: Slice Implementation (The Inner-Cycle Loop)">
+      <phase n="2" name="Phase 2: Test Decomposition">
+        <action>
+          Guided by the **Divide and Conquer** principle, your goal in this phase is to break down the problem represented by the failing acceptance test into the smallest possible, verifiable step.
+          1.  **Analyze:** Review the failure from the acceptance test from Phase 1.
+          2.  **Decompose & Create Test:** Based on your analysis, your next plan MUST be a `RED Phase` plan to `CREATE` the first failing **unit or integration test**. This new, focused test represents the first logical step toward making the acceptance test pass. It becomes the target for the first Inner-Cycle in the next phase.
+        </action>
+      </phase>
+      <phase n="3" name="Phase 3: Slice Implementation (The Inner-Cycle Loop)">
         <action>
           Iteratively work through the `Scope of Work` checklist from the slice document. For each item, execute one or more **Inner-Cycles**:
           1.  **Information Gathering:** You must gather context by `READ`ing the relevant component design documents mentioned in the vertical slice document and review the current state of the code. You may also use `EXECUTE git grep ...` to discover relevant context and files to READ.
@@ -28,14 +35,14 @@
               *   **Proceed to Commit:** Only after confirming a green test suite may you proceed with the two-step `LINT & STAGE` -> `COMMIT & PUSH` process to commit the small, verified change directly to the trunk.
         </action>
       </phase>
-      <phase n="3" name="Phase 3: Final Verification & Handoff Prep">
+      <phase n="4" name="Phase 4: Final Verification & Handoff Prep">
         <action>
           Once the `Scope of Work` is complete, this phase verifies the functionality introduced in the vertical slice.
           1.  **Automated Verification:** Run the entire local test suite (`unit`, `integration`, `acceptance`) to ensure no regressions were introduced. The full suite must pass.
           2.  **Final Commit:** After all automated verification is complete, create a final `Version Control` plan to commit any remaining artifacts (like a passing acceptance test).
         </action>
       </phase>
-      <phase n="4" name="Phase 4: Finalize & Handoff">
+      <phase n="5" name="Phase 5: Finalize & Handoff">
         <action>
           After approval, finalize the slice.
           1.  **Address T2 Refactoring:** For each T2 note, run a new `REFACTOR` -> `VERIFY` -> `COMMIT` cycle.
@@ -80,21 +87,25 @@
             **Vertical Slice:** [docs/slices/path-to-slice.md]
             **Development Workflow:**
             - [✅ | ▶️ |  ] Phase 1: Orientation & Acceptance Test
-            - [✅ | ▶️ |  ] Phase 2: Slice Implementation (Inner-Cycle Loop)
-            - [✅ | ▶️ |  ] Phase 3: Final Verification & Handoff Prep
-            - [✅ | ▶️ |  ] Phase 4: Finalize & Handoff
+            - [✅ | ▶️ |  ] Phase 2: Test Decomposition
+            - [✅ | ▶️ |  ] Phase 3: Slice Implementation (Inner-Cycle Loop)
+            - [✅ | ▶️ |  ] Phase 4: Final Verification & Handoff Prep
+            - [✅ | ▶️ |  ] Phase 5: Finalize & Handoff
             **Active Phase Details:**
             *   **(Phase 1: Orientation & Acceptance Test)**
                 *   **Guiding Acceptance Test:** [tests/acceptance/path-to-test.py]
                 *   **Scenarios:**
                     *   [▶️ | ✅] Scenario: [First Scenario Title from Slice]
                     *   [ ] Scenario: [Second Scenario Title from Slice]
-            *   **(Phase 2: Slice Implementation)**
+            *   **(Phase 2: Test Decomposition)**
+                *   **Acceptance Test to Decompose:** [tests/acceptance/path-to-test.py]
+                *   **Next TDD Target:** [path/to/first_unit_or_integration_test.py]
+            *   **(Phase 3: Slice Implementation)**
                 *   **Scope of Work Checklist:**
                     *   [▶️] First item
                     *   [ ] Second item
                 *   **Inner-Cycle (for First item):**
-                    *   **TDD Target:** [Unit Test | Integration Test]
+                    *   **TDD Target Test:** [tests/unit/test_component.py] (NOTE: This MUST NOT be the acceptance test)
                     *   **Status:**
                         - [▶️] READ
                         - [ ] RED
@@ -141,7 +152,7 @@
       <rule n="5">
         <title>TDD Cycle Principles</title>
         <instruction>
-            *   **RED:** Your TDD cycle is driven by writing a failing **unit or integration test** that defines the desired behavior of the component's public interface. **You are strictly prohibited from targeting the high-level acceptance test in this inner cycle; its role is to verify the slice as a whole in `Phase 3`.** Test *what* it should do, not *how* it does it. Assert on observable outcomes (e.g., return values, final state) rather than implementation details. **Strictly prohibit testing private methods or state.** This practice creates tests that are resilient to refactoring. Your plan MUST include both creating the test and executing it to see the predicted failure.
+            *   **RED:** Your TDD cycle is driven by writing a new, failing **unit or integration test** that defines the desired behavior. **This is non-negotiable: You must not target the high-level acceptance test in this inner cycle.** The inner-cycle's target must be a focused test created during the decomposition phase. Test *what* it should do, not *how* it does it. Assert on observable outcomes (e.g., return values, final state) rather than implementation details, and **strictly prohibit testing private methods or state.** Your plan MUST include both creating the test and executing it to see the predicted failure.
             *   **GREEN:** Write the absolute minimum code to make the test pass. You must not add any logic that is not explicitly required by the failing test. Follow the **"Fake It Till You Make It"** principle:
                 *   **First, Fake It:** Make the test pass with the simplest possible implementation (e.g., returning a hardcoded constant). This verifies the test harness and establishes a minimal green state.
                 *   **Then, Make It (Triangulate):** As subsequent tests are added, they will force this "faked" implementation to become more generic. Do not add functionality beyond what the current failing test demands.
@@ -425,19 +436,18 @@ The test is expected to fail with a `NotImplementedError`, which is the correct 
 **Vertical Slice:** `docs/slices/path-to-slice.md`
 **Development Workflow:**
 - [✅] Phase 1: Orientation & Acceptance Test
-- [▶️] Phase 2: Slice Implementation (Inner-Cycle Loop)
-- [ ] Phase 3: Final Verification & Handoff Prep
-- [ ] Phase 4: Finalize & Handoff
+- [✅] Phase 2: Test Decomposition
+- [▶️] Phase 3: Slice Implementation (Inner-Cycle Loop)
+- [ ] Phase 4: Final Verification & Handoff Prep
+- [ ] Phase 5: Finalize & Handoff
 **Active Phase Details:**
-*   **(Phase 1: Orientation & Acceptance Test)**
-    *   **Guiding Acceptance Test:** [tests/acceptance/path-to-test.py]
-*   **(Phase 2: Slice Implementation)**
+*   **(Phase 3: Slice Implementation)**
     *   **Scope of Work Checklist:**
         *   [✅] First item
         *   [▶️] Second item
         *   [ ] Third item
     *   **Inner-Cycle (for Second item):**
-        *   **TDD Target:** Unit Test
+        *   **TDD Target Test:** [tests/unit/test_component.py] (NOTE: This MUST NOT be the acceptance test)
         *   **Status:**
             - [✅] READ
             - [▶️] RED
