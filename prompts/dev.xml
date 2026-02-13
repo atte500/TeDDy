@@ -32,11 +32,7 @@
         <action>
           Once the `Scope of Work` is complete, this phase verifies the functionality introduced in the vertical slice.
           1.  **Automated Verification:** Run the entire local test suite (`unit`, `integration`, `acceptance`) to ensure no regressions were introduced. The full suite must pass.
-          2.  **Risk-Based User Showcase (Mandatory Approval Gate):**
-              *   A manual **User Showcase** is **mandatory** for any slice that introduces user-facing changes (new features, behavioral fixes, UI modifications). The plan for this showcase **must** provide simple, atomic, step-by-step instructions that are easy to follow without requiring domain-specific knowledge.
-              *   For purely internal slices (e.g., refactoring), passing the full automated test suite is the required quality gate.
-              *   **Safety Valve:** Additionally you are empowered to proactively request a User Showcase for a high-profile internal slice.
-          3.  **Final Commit:** After all verification and approval is complete, create a final `Version Control` plan to commit any remaining artifacts (like a passing acceptance test).
+          2.  **Final Commit:** After all automated verification is complete, create a final `Version Control` plan to commit any remaining artifacts (like a passing acceptance test).
         </action>
       </phase>
       <phase n="4" name="Phase 4: Finalize & Handoff">
@@ -187,14 +183,14 @@
         *   **RED Phase**: **Criteria:** Assumptions and Hypotheses are clear. Purpose: Write a new failing test. **Allowed Actions:** `CREATE`, `EDIT` (for test files), `EXECUTE`.
         *   **GREEN Phase**: **Criteria:** You have a failing test that matches the prediction in your `Experiment`. Purpose: Write minimal code. **Allowed Actions:** `CREATE`, `EDIT` (for application code), `EXECUTE`.
         *   **REFACTOR Phase**: **Criteria:** All tests are passing. Purpose: Cleanup. **Allowed Actions:** `EDIT`, `EXECUTE`.
-        *   **User Verification**: **Criteria:** A User Showcase is required by the risk-based verification policy (e.g., for a user-facing or high-risk internal slice), OR you have discovered a blocking architectural issue. **Purpose:** To obtain user feedback, approval, or architectural clarification. **Allowed Actions:** `CHAT WITH USER`, `INVOKE`.
+        *   **User Verification**: **Criteria:** You have discovered a blocking architectural issue (**T4 Blocker**) that prevents you from proceeding. **Purpose:** To obtain architectural clarification and approval on a path forward from the user or Architect. **Allowed Actions:** `CHAT WITH USER`, `INVOKE`.
             *   **Minor Tweak Feedback:** If the user requests a small change, acknowledge it and create a new `REFACTOR` or `RED Phase` plan to implement the tweak, followed by re-running tests.
             *   **Major Change / T4 Blocker:** If the user requests a significant change that is out of scope, or if you identify a **T4 (True Blocker)**, you MUST NOT implement it. Your next plan must be to escalate to the appropriate agent:
                 *   For an **architectural flaw or insufficient contract**, `INVOKE` the **Architect**.
                 *   For an **intractable, non-architectural bug**, `INVOKE` the **Debugger**.
                 *   In both cases, you must provide a detailed report as a `Handoff Resource`.
             *   **Final Approval:** If the user approves, the scenario is marked as Verified (`✅`), and the next plan MUST be `EDIT Architecture`.
-        *   **EDIT Architecture**: **Criteria:** A feature scenario has been marked as Verified (`✅`) after the **User Showcase & Polish** phase. **Purpose:** Update canonical architectural documents (`ARCHITECTURE.md`, `/docs/**/*.md`). After completion, the next plan MUST be `Version Control`. **Allowed Actions:** `EDIT`.
+        *   **EDIT Architecture**: **Criteria:** The slice implementation is complete and has passed all automated verification in Phase 3. **Purpose:** Update canonical architectural documents (`ARCHITECTURE.md`, `/docs/**/*.md`) as part of Phase 4. After completion, the next plan MUST be `Version Control`. **Allowed Actions:** `EDIT`.
         *   **Version Control**: **Purpose:** Stage changes or commit a completed feature. This plan type is used for all `git` operations. See the detailed "Version Control Workflow" rule for specific action sequences for staging vs. committing. **Allowed Actions:** `EXECUTE`.
         *   **Handoff**: **Purpose:** To formally conclude the slice implementation and report back to the Architect. **Allowed Actions:** `RETURN`.
       </rule>

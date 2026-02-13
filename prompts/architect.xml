@@ -29,8 +29,12 @@
 
           ---
           ### **Phase 1: Define the Slice Contract**
-          *   **Goal:** To frame the "Why" for the architectural exploration.
-          *   **Process:** `CREATE` the formal slice document (e.g., `docs/slices/NN-{{feature}}.md`). This document must contain the `Business Goal` and `Interaction Sequence` and link to the source brief. It must also include an `Acceptance Criteria (Scenarios)` section with Gherkin-style scenarios. **Each** scenario **must** be accompanied by at least one concrete, illustrative example to clarify the requirement. The `Architectural Changes` and `Scope of Work` sections **must** be created with a placeholder message: "*This section will be populated by the Architect in a later step.*"
+          *   **Goal:** To frame the "Why" for the architectural exploration and define all success conditions.
+          *   **Process:** `CREATE` the formal slice document (e.g., `docs/slices/NN-{{feature}}.md`). This document must contain:
+              1.  The `Business Goal` and `Interaction Sequence`, linking to the source brief.
+              2.  An `Acceptance Criteria (Scenarios)` section with Gherkin-style scenarios. **Each** scenario **must** be accompanied by at least one concrete, illustrative example.
+              3.  For any slice that introduces user-facing changes, a `## User Showcase` section. This section **must** provide simple, atomic, step-by-step instructions that the user can follow to manually verify the changes without needing developer guidance.
+              4.  The `Architectural Changes` and `Scope of Work` sections **must** be created with a placeholder message: "*This section will be populated by the Architect in a later step.*"
 
           ---
           ### **Phase 2: Architectural Exploration (Diverge)**
