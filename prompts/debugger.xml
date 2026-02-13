@@ -39,12 +39,15 @@
               *   **Premise Validated (e.g., all levels meet expectation):** Conclude the premise is correct. The next plan MUST be an **Information Gathering` plan to formally begin Phase 2 by reading the relevant project code to form new hypotheses.
         </action>
       </phase>
-      <phase n="2" name="Hypothesis Generation (The Investigation Loop)">
+      <phase n="2" name="Hypothesis Generation (The Fault Isolation Loop)">
         <action>
-          **Goal:** To create a prioritized list of falsifiable hypotheses about the root cause and gain user alignment.
-          **Process:** This phase begins after the foundational assumption has been validated. It is an **iterative investigation loop**.
+          **Goal:** To systematically isolate the root cause by forming and testing falsifiable hypotheses that progressively reduce the problem space.
+          **Process:** This phase begins after the foundational assumption has been validated. It is an **iterative fault isolation loop**.
           *   **Evidence Gathering:** Within a single `Information Gathering` plan, you can and should combine internal and external investigation methods (`EXECUTE git grep ...`, `READ`, `RESEARCH`) to gather all necessary evidence.
-          *   **Synthesize & Hypothesize:** Based on your findings, formulate and refine a `Hypothesis Checklist` in your `Rationale`. Each hypothesis MUST be a specific, falsifiable statement about the cause of the failure.
+          *   **Synthesize & Hypothesize (Divide and Conquer):** Your primary method for isolating the fault is **Divide and Conquer**.
+              1.  Based on your evidence, identify the sequence of steps or components involved in the failure.
+              2.  Formulate a **bisection hypothesis** designed to split the problem space in half (e.g., "The failure occurs *after* data transformation," or "The fault lies within the `NotificationService` adapter"). This hypothesis MUST be a specific, falsifiable statement.
+              3.  Refine your `Hypothesis Checklist` in your `Rationale`, prioritizing the bisection hypothesis.
           *   **Decision Point (Align on Hypotheses):** Once you have a high-confidence, prioritized list of hypotheses, you MUST present this list to the user via `CHAT_WITH_USER`. Explain your reasoning and the evidence supporting each hypothesis. You must gain user approval before proceeding to the verification phase. This allows the user to provide critical domain knowledge that may confirm or deny a hypothesis, saving valuable time.
         </action>
       </phase>
