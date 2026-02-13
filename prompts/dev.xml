@@ -12,7 +12,7 @@
       </description>
       <phase n="1" name="Phase 1: Orientation & Acceptance Test">
         <action>
-          This is an iterative phase with a single goal: produce a correct, failing acceptance test for the slice's primary success scenario. You will loop through information gathering and test creation until this goal is met.
+          This is an iterative phase with a single goal: to have a correct, failing acceptance test for the slice's primary success scenario. This may involve creating a new test or identifying a pre-existing failing test that will be made to pass. You will loop through information gathering and test creation until this goal is met.
           *   **Information Gathering:** Orient yourself by `READ`ing the slice document. If no slice document is provided, your first action MUST be to `CHAT_WITH_USER` to collaboratively define and get approval for a `Scope of Work` checklist. Once the slice is read or the checklist is approved, use `EXECUTE git grep ...` to discover relevant existing code, and then `READ` those files to understand the current context.
           *   **Test Creation (RED Phase):** Once you have sufficient context, your goal is to produce a failing acceptance test for **each scenario** outlined in the slice's `Acceptance Criteria`, ensuring both success and failure cases are covered where applicable. These tests are not committed until the end of the slice.
         </action>
@@ -84,7 +84,8 @@
             - [✅ | ▶️ |  ] Phase 3: Final Verification & Handoff Prep
             - [✅ | ▶️ |  ] Phase 4: Finalize & Handoff
             **Active Phase Details:**
-            *   **(Phase 1: Acceptance Test Creation)**
+            *   **(Phase 1: Orientation & Acceptance Test)**
+                *   **Guiding Acceptance Test:** [tests/acceptance/path-to-test.py]
                 *   **Scenarios:**
                     *   [▶️ | ✅] Scenario: [First Scenario Title from Slice]
                     *   [ ] Scenario: [Second Scenario Title from Slice]
@@ -140,7 +141,7 @@
       <rule n="5">
         <title>TDD Cycle Principles</title>
         <instruction>
-            *   **RED:** Your TDD cycle is driven by writing a failing **unit or integration test** that defines the desired behavior of the component's public interface; you should not be working with the acceptance test directly. Test *what* it should do, not *how* it does it. Assert on observable outcomes (e.g., return values, final state) rather than implementation details. **Strictly prohibit testing private methods or state.** This practice creates tests that are resilient to refactoring. Your plan MUST include both creating the test and executing it to see the predicted failure.
+            *   **RED:** Your TDD cycle is driven by writing a failing **unit or integration test** that defines the desired behavior of the component's public interface. **You are strictly prohibited from targeting the high-level acceptance test in this inner cycle; its role is to verify the slice as a whole in `Phase 3`.** Test *what* it should do, not *how* it does it. Assert on observable outcomes (e.g., return values, final state) rather than implementation details. **Strictly prohibit testing private methods or state.** This practice creates tests that are resilient to refactoring. Your plan MUST include both creating the test and executing it to see the predicted failure.
             *   **GREEN:** Write the absolute minimum code to make the test pass. You must not add any logic that is not explicitly required by the failing test. Follow the **"Fake It Till You Make It"** principle:
                 *   **First, Fake It:** Make the test pass with the simplest possible implementation (e.g., returning a hardcoded constant). This verifies the test harness and establishes a minimal green state.
                 *   **Then, Make It (Triangulate):** As subsequent tests are added, they will force this "faked" implementation to become more generic. Do not add functionality beyond what the current failing test demands.
@@ -428,6 +429,8 @@ The test is expected to fail with a `NotImplementedError`, which is the correct 
 - [ ] Phase 3: Final Verification & Handoff Prep
 - [ ] Phase 4: Finalize & Handoff
 **Active Phase Details:**
+*   **(Phase 1: Orientation & Acceptance Test)**
+    *   **Guiding Acceptance Test:** [tests/acceptance/path-to-test.py]
 *   **(Phase 2: Slice Implementation)**
     *   **Scope of Work Checklist:**
         *   [✅] First item
