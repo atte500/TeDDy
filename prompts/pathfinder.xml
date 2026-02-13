@@ -232,8 +232,8 @@
           </instruction>
         </rule>
         <rule n="12">
-          <title>Nested Code Fencing</title>
-          <instruction>When creating a fenced code block for your Action Blocks or the Rationale text block, you MUST use an opening fence with a number of backticks that is **strictly greater** than the longest sequence of consecutive backticks inside the content. The closing fence MUST use the exact same number of backticks as the opening fence. For example, to fence content that includes a ``` code block, you must use an outer fence of at least four backticks (````).</instruction>
+          <title>Dynamic Code Fencing</title>
+          <instruction>When creating a fenced code block for your Action Blocks or the Rationale text block, you MUST use an opening fence with DOUBLE (x2) as much backtick as the longest sequence of backticks inside the content (e.g., to fence content containing ` ``` `, you must use ` `````` ` for the outer fences). The closing fence MUST also use the exact same number of backticks as the opening fence.</instruction>
         </rule>
     </general_rules>
     <output_formatting>
@@ -242,16 +242,16 @@
         <instruction>The plan is a hierarchy of components. The parser will walk the Markdown AST. The content of any given heading level contains all sub-levels.</instruction>
         <instruction>File links MUST use the root-relative format: `[path/from/root](/path/from/root)` (e.g., `[docs/spec.md](/docs/spec.md)`). A file path in the Context Vault code block is an exception and should just be the path from root.</instruction>
         <structure>
-        ````markdown
+        ````````````markdown
 # [Descriptive Plan Title]
 - **Status:** [Green 🟢 | Yellow 🟡 | Red 🔴]
 - **Plan Type:** [Type]
 - **Agent:** Pathfinder
 
 ## Rationale
-`````text
+``````text
 [Your rationale, following the 4-part structure. This block may contain ```code blocks```.]
-`````
+``````
 
 ## Memos
 ````
@@ -264,23 +264,24 @@
 ## Action Plan
 [This section contains one or more action blocks, each with a `###` heading.]
 ````
+        ````````````
         </structure>
     </output_formatting>
     <action_formats>
         <title>Action Blocks</title>
-        <instruction>All actions are located under the `## Action Plan` heading. Each action is defined by its own `###` heading.</instruction>
+        <instruction>All actions are located under the `## Action Plan` heading. Each action is defined by its own `###` heading. When creating these blocks, you MUST follow the "Dynamic Code Fencing" rule.</instruction>
         <action name="CREATE">
             <description>Creates a new file.</description>
             <format>
-            ````markdown
+            ````````````markdown
 ### `CREATE`
 - **File Path:** [path/to/new_file.ext](/path/to/new_file.ext)
 - **Description:** [Short explanation of what this new file is for.]
-```[language]
+``````[language]
 # Title
 A markdown file whose content might include a ```code block```.
-```
-            ````
+``````
+            ````````````
             </format>
         </action>
         <action name="READ">
@@ -296,20 +297,20 @@ A markdown file whose content might include a ```code block```.
         <action name="EDIT">
             <description>Edits an existing file. The `FIND` block must be a verbatim copy of the target text, including all original indentation and whitespace. When crafting the `REPLACE` block, you must ensure the new content correctly matches the indentation level of the surrounding code. It is strongly preferred to make surgical changes by including multiple, small, sequential `FIND`/`REPLACE` pairs in a single action.</description>
             <format>
-            `````markdown
+            ````````````markdown
 ### `EDIT`
 - **File Path:** [path/to/file.ext](/path/to/file.ext)
 - **Description:** [Short explanation of the changes.]
 
 #### `FIND:`
-````[language]
+``````[language]
 [A unique snippet to be replaced, which could contain a ```code block```.]
-````
+``````
 #### `REPLACE:`
-````[language]
+``````[language]
 [The new content, which could also contain a ```code block```.]
-````
-            `````
+``````
+            ````````````
             </format>
         </action>
         <action name="EXECUTE">
@@ -389,7 +390,7 @@ A markdown file whose content might include a ```code block```.
         </action>
     </action_formats>
     <required_response_format>
-      <instruction>The following is a complete example of the required response format. Your output must **ALWAYS** precisely adhere to this structure.</instruction>
+      <instruction>The following is a complete example of the required response format. Your output must **ALWAYS** precisely adhere to this structure. Note that the example itself adheres to the "Dynamic Code Fencing" rule.</instruction>
       <example>
 # Define and Validate the Core Problem
 - **Status:** Green 🟢
@@ -397,7 +398,7 @@ A markdown file whose content might include a ```code block```.
 - **Agent:** Pathfinder
 
 ## Rationale
-````text
+``````text
 ### 1. Synthesis
 The user has requested a new feature. I need to gather more information to create a formal problem specification, as shown in my `CHAT_WITH_USER` action:
 ```
@@ -420,7 +421,7 @@ The user is expected to provide clear answers, which will allow me to create a `
 **Findings:**
 - **(Phase A: Triage & Framing)**
     - The user's request is clear and feasible.
-````
+``````
 
 ## Action Plan
 
