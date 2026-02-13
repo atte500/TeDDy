@@ -91,12 +91,12 @@
           *   **Goal:** To establish the foundational engineering practices for the project.
           *   **Structure:** This section will contain a list of key-value definitions or short paragraphs. It **must** establish the project's strategy for the following, using these as strong defaults, and may be extended with other project-specific conventions:
               *   **Version Control Strategy:** Default to **Trunk-Based Development** on the `main` branch.
-              *   **Testing Strategy:** Define the standard test types (`acceptance`, `integration`, `unit`), their locations (e.g., `tests/acceptance/`), and state that the full test suite **must** be run automatically in a CI pipeline.
+              *   **Testing Strategy:** Define the standard test types (`acceptance`, `integration`, `unit`), their locations (e.g., `tests/acceptance/`), and state that the full test suite **must** be run automatically in a CI pipeline. The pipeline **must** also perform test coverage analysis and be configured to fail if coverage drops below a project-defined threshold.
               *   **Pre-commit Hooks:** Specify the tool (e.g., `pre-commit`) and the mandatory categories of checks. All hooks **must** be fast. The suite **must** cover:
                   *   **Security:** A secret scanner to prevent accidental credential commits.
                   *   **Correctness:** A static type checker.
                   *   **Style & Formatting:** A linter and formatter.
-                  *   **Complexity:** A static complexity analysis tool.
+                  *   **Complexity:** A static complexity analysis tool. Define and document project-specific thresholds for **Cyclomatic Complexity** per function and **Source Lines of Code (SLOC)** per file.
                   *   **Sanity & Consistency:** Checks for valid file formats, no merge-conflict markers, etc.
 
           **2. Component & Boundary Map**
