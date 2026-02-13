@@ -282,7 +282,7 @@ class MarkdownPlanParser(IPlanParser):
                                     target = link.target
                                     # Normalize path
                                     resources.append(
-                                        target[1:] if target.startswith("/") else target
+                                        self._normalize_link_target(target)
                                     )
             if resources:
                 params["handoff_resources"] = resources
@@ -449,13 +449,9 @@ class MarkdownPlanParser(IPlanParser):
                 if f"{key_text}:" in text:
                     link_node = self._find_node_in_tree(item, Link)
                     if link_node:
-                        target = link_node.target
-                        # Per RCA, strip the leading '/' to convert project-root-relative
-                        # paths into CWD-relative paths for the adapter.
-                        if target.startswith("/"):
-                            params[param_key] = target[1:]
-                        else:
-                            params[param_key] = target
+                        params[param_key] = self._normalize_link_target(
+                            link_node.target
+                        )
                     else:
                         # Fallback: Extract raw text value if no link node is found
                         parts = text.split(f"{key_text}:", 1)
@@ -473,6 +469,41 @@ class MarkdownPlanParser(IPlanParser):
         return description, params
 
     # --- AST Helper Methods ---
+
+    def _normalize_link_target(self, target: str) -> str:
+        """
+        Differentiates between a project-relative path (e.g., `[/docs/spec.md]`)
+        and a true absolute path (e.g., `[/tmp/file.txt]`).
+
+        - Strips the leading '/' from project-relative paths.
+        - Preserves true absolute paths.
+        - Handles URLs gracefully.
+        """
+        # Heuristic for POSIX: `os.path.isabs` is true for both `/tmp/file` and `/docs/spec`,
+        # so we check for common system roots to identify "true" absolute paths.
+        is_likely_true_absolute = False
+        if os.name == "posix" and os.path.isabs(target):
+            common_roots = (
+                "/bin",
+                "/etc",
+                "/home",
+                "/lib",
+                "/opt",
+                "/private",
+                "/proc",
+                "/root",
+                "/tmp",
+                "/usr",
+                "/var",
+            )
+            if target.startswith(common_roots):
+                is_likely_true_absolute = True
+        elif os.name == "nt" and os.path.isabs(target):
+            is_likely_true_absolute = True
+
+        if target.startswith("/") and not is_likely_true_absolute:
+            return target[1:]
+        return target
 
     def _find_node_in_tree(self, node: Any, node_type: type) -> Optional[Any]:
         """Recursively searches for a node of a specific type in a tree."""

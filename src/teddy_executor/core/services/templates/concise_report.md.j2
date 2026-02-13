@@ -29,7 +29,8 @@ The following resource contents were successfully read.
 
 ---
 {% for log in ns.read_logs %}
-**Resource:** `{{ log.params.get('Resource') or log.params.get('resource') }}`
+{% set res_path = log.params.get('Resource') or log.params.get('resource') or log.params.get('path') %}
+**Resource:** `[{{ res_path }}]({% if not res_path.startswith('/') %}/{% endif %}{{ res_path }})`
 ````text
 {{ log.details.content }}
 ````
@@ -49,7 +50,8 @@ The following resource contents were successfully read.
 ## Failed Action Details
 
 {% for log in ns.failed_logs %}
-### `{{ log.action_type.upper() }}` on `{{ log.params.get('File Path') or log.params.get('path') or log.params.get('Resource') or 'Unknown' }}`
+{% set action_target = log.params.get('File Path') or log.params.get('path') or log.params.get('Resource') or log.params.get('Description') or log.params.get('description') or 'Unknown' %}
+### `{{ log.action_type.upper() }}` on `{{ action_target }}`
 {% if log.details and log.details.error %}
 - **Error:** {{ log.details.error }}
 {% endif %}

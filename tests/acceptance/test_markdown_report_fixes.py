@@ -1,3 +1,6 @@
+import textwrap
+from pathlib import Path
+
 from typer.testing import CliRunner
 
 
@@ -33,3 +36,48 @@ def test_execute_action_report_shows_description():
 
     assert result.exit_code == 0
     assert '#### `EXECUTE` on "My Test Command"' in result.stdout
+
+
+def test_read_action_shows_correct_resource_path(tmp_path: Path):
+    """
+    Given a plan with a successful READ action,
+    When the plan is executed,
+    Then the final report's ## Resource Contents section must correctly identify the resource path.
+    """
+    # GIVEN
+    test_file = tmp_path / "test_read_file.txt"
+    test_file.write_text("Hello from the test file.")
+
+    plan_content = textwrap.dedent(f"""
+    # Test Plan
+    - **Agent:** Developer
+
+    ## Rationale
+    ````text
+    Test
+    ````
+
+    ## Action Plan
+    ### `READ`
+    - **Resource:** [{test_file.as_posix()}]({test_file.as_posix()})
+    - **Description:** Read a test file.
+    """)
+
+    # WHEN
+    result = runner.invoke(
+        app,
+        ["execute", "--plan-content", plan_content, "-y"],
+        catch_exceptions=False,
+    )
+
+    # THEN
+    assert result.exit_code == 0
+    output = result.stdout
+    assert "## Resource Contents" in output
+    # The parser uses the link destination, which will be the full path.
+    # The template renders it as a link inside backticks.
+    expected_resource = (
+        f"**Resource:** `[{test_file.as_posix()}]({test_file.as_posix()})`"
+    )
+    assert expected_resource in output
+    assert "Hello from the test file." in output

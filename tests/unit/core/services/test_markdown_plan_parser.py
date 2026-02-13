@@ -465,3 +465,22 @@ My analysis is complete. The root cause and a verified fix are attached.
         "docs/rca/the-bug.md",
         "spikes/fix-script.sh",
     ]
+
+
+def test_parse_read_action_with_absolute_path(parser):
+    """
+    Verify that the parser preserves the leading slash for absolute paths,
+    and does not mistakenly treat them as project-root-relative paths.
+    """
+    plan_content = """
+# Test Plan
+## Action Plan
+### `READ`
+- **Resource:** [/tmp/test.txt](/tmp/test.txt)
+- **Description:** Read a file with an absolute path.
+"""
+    plan = parser.parse(plan_content)
+    assert len(plan.actions) == 1
+    action = plan.actions[0]
+    assert action.type == "READ"
+    assert action.params["resource"] == "/tmp/test.txt"

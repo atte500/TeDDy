@@ -44,7 +44,7 @@ def test_formats_read_action_with_resource_contents():
     # Assert
     assert "## Resource Contents" in formatted_report
     assert file_content in formatted_report
-    assert "**Resource:** `test.txt`" in formatted_report
+    assert "**Resource:** `[test.txt](/test.txt)`" in formatted_report
 
 
 def test_formats_failed_edit_action_with_file_content():
