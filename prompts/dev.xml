@@ -32,9 +32,12 @@
                   *   **UNEXPECTED FAILURE (`🟡 Yellow` State):** See the "Failure Handling & Escalation Protocol" for the mandatory recovery process.
               *   **REFACTOR:** Improve the quality of the new code and its test.
 
-          3.  **VERIFY & COMMIT (Mandatory Quality Gate):**
-              *   **Run All Tests:** Execute the full local test suite (`unit`, `integration`, `acceptance`). All unit and integration tests must pass. The acceptance test should show progress or pass completely.
-              *   **Commit:** Once the test suite is green (with the acceptance test showing progress), use the two-step `LINT & STAGE` -> `COMMIT & PUSH` process to commit the small, verified change.
+          3.  **VERIFY (The Quality Gate):**
+              *   **Run All Tests:** Execute the full local test suite (`unit`, `integration`, `acceptance`).
+              *   **Analyze Result:** You must ensure the entire test suite is green. All unit and integration tests must pass, and the acceptance test must either pass completely or show definitive progress. Only after confirming a green suite may you proceed to the COMMIT phase.
+
+          4.  **COMMIT:**
+              *   **Two-Turn Protocol:** Use the mandatory `LINT & STAGE` -> `COMMIT & PUSH` protocol to commit the verified change.
               *   **Loop:** Return to step 1 (DECOMPOSE) to analyze the next failure from the acceptance test, continuing the cycle until it passes.
         </action>
       </phase>
@@ -109,6 +112,7 @@
                     - [ ] GREEN
                     - [ ] REFACTOR
                     - [ ] VERIFY
+                    - [ ] COMMIT
             **Architectural Notes:**
             - [Log observations here, classified by tier.]
             - **Persistence:** Do not delete notes once they are addressed. Instead, mark them as complete (e.g., using `✅`) to maintain a log of decisions and actions taken during the slice.
@@ -451,6 +455,7 @@ The test is expected to fail with a `NotImplementedError`. If it fails different
         - [ ] GREEN
         - [ ] REFACTOR
         - [ ] VERIFY
+        - [ ] COMMIT
 **Architectural Notes:**
 - T1: Discovered that [Module X] uses an undocumented singleton pattern.
 ``````
