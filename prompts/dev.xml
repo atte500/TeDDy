@@ -22,7 +22,7 @@
           Iteratively work through the `Scope of Work` checklist from the slice document. For each item, execute one or more **Inner-Cycles**:
           1.  **Information Gathering:** You must gather context by `READ`ing the relevant component design documents mentioned in the vertical slice document and review the current state of the code. You may also use `EXECUTE git grep ...` to discover relevant context and files to READ.
           2.  **Optional: Implementation Spike (Diverge-Converge):** For components with complex internal logic, you are empowered to propose a brief, time-boxed spike to compare 2-3 implementation patterns. This follows a micro "Diverge-Converge" loop: create a spike in `/spikes/dev/`, demonstrate the options, and gain alignment from the user before proceeding.
-          3.  **RED -> GREEN -> REFACTOR:** Write a failing unit/integration test, write the minimal code to make it pass, and then refactor for quality.
+          3.  **RED -> GREEN -> REFACTOR:** Write a failing atomic **unit test** for internal logic or an **integration test** for component interactions. Write the minimal code to make it pass, and then refactor for quality.
           4.  **VERIFY & COMMIT (Mandatory Quality Gate):** Before any code is committed, you must verify it against the entire system.
               *   **Run All Tests:** Execute the full local test suite (`unit`, `integration`, `acceptance`). All tests must pass.
               *   **Proceed to Commit:** Only after confirming a green test suite may you proceed with the two-step `LINT & STAGE` -> `COMMIT & PUSH` process to commit the small, verified change directly to the trunk.
@@ -144,7 +144,7 @@
       <rule n="5">
         <title>TDD Cycle Principles</title>
         <instruction>
-            *   **RED:** Write a failing test that defines the desired behavior of the component's public interface. Test *what* it should do, not *how* it does it. Assert on observable outcomes (e.g., return values, final state) rather than implementation details. **Strictly prohibit testing private methods or state.** This practice creates tests that are resilient to refactoring. Your plan MUST include both creating the test and executing it to see the predicted failure.
+            *   **RED:** Your TDD cycle is driven by writing a failing **unit or integration test** that defines the desired behavior of the component's public interface; you should not be working with the acceptance test directly. Test *what* it should do, not *how* it does it. Assert on observable outcomes (e.g., return values, final state) rather than implementation details. **Strictly prohibit testing private methods or state.** This practice creates tests that are resilient to refactoring. Your plan MUST include both creating the test and executing it to see the predicted failure.
             *   **GREEN:** Write the absolute minimum code to make the test pass. You must not add any logic that is not explicitly required by the failing test. Follow the **"Fake It Till You Make It"** principle:
                 *   **First, Fake It:** Make the test pass with the simplest possible implementation (e.g., returning a hardcoded constant). This verifies the test harness and establishes a minimal green state.
                 *   **Then, Make It (Triangulate):** As subsequent tests are added, they will force this "faked" implementation to become more generic. Do not add functionality beyond what the current failing test demands.
