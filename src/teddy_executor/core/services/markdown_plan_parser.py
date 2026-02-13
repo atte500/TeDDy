@@ -364,6 +364,9 @@ class MarkdownPlanParser(IPlanParser):
 
         params["command"] = self._get_child_text(command_block).strip()
 
+        if description:
+            params["Description"] = description
+
         return ActionData(type="EXECUTE", description=description, params=params)
 
     def _parse_research_action(

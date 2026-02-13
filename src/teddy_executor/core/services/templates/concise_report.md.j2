@@ -72,7 +72,8 @@ The following resource contents were successfully read.
 ### Action Log
 {% for log in report.action_logs %}
 
-#### `{{ log.action_type.upper() }}`
+{% set description = log.params.get('Description') or log.params.get('description') %}
+#### `{{ log.action_type.upper() }}`{% if description %} on "{{ description }}"{% endif %}
 - **Status:** {{ log.status.value }}
 {% if log.params %}
 - **Params:** `{{ log.params }}`
