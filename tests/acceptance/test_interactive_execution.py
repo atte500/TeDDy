@@ -93,7 +93,9 @@ def test_interactive_skip_with_reason(tmp_path: Path, monkeypatch):
             result = runner.invoke(
                 app,
                 ["execute", "--no-copy", "--plan-content", plan_content],
-                input="n\nManual check needed\n",
+                input="""n
+Manual check needed
+""",
             )
 
     # Assert
