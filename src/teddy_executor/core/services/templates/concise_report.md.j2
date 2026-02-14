@@ -1,6 +1,13 @@
 {#
   Unified template for the concise Markdown report.
   Renders both execution outcomes and pre-flight validation failures.
+
+  NOTE ON WHITESPACE CONTROL:
+  This template uses manual whitespace control (`-%}`) on blocks that are
+  followed by blank lines. The Jinja2 `trim_blocks=True` setting only
+  removes the *first* newline after a tag, not subsequent blank lines.
+  The manual control is necessary to prevent extra newlines in the final
+  rendered output when conditional sections are not rendered.
 #}
 {% macro render_resource(path, content) %}
 ---
@@ -28,7 +35,7 @@
 {{ render_resource(path, content) }}
 {% endfor %}
 {% endif %}
-{% endif %}
+{% endif -%}
 
 {# Extract successful READ logs for the Resource Contents section #}
 {% set ns = namespace(read_logs=[]) %}
@@ -36,7 +43,7 @@
   {% if log.action_type.lower() == 'read' and log.status.value == 'SUCCESS' and log.details and 'content' in log.details %}
     {% set ns.read_logs = ns.read_logs + [log] %}
   {% endif %}
-{% endfor %}
+{% endfor -%}
 
 {% if ns.read_logs %}
 ## Resource Contents
@@ -45,7 +52,7 @@ The following resource contents were successfully read.
 {% set res_path = log.params.get('Resource') or log.params.get('resource') or log.params.get('path') %}
 {{ render_resource(res_path, log.details.content) }}
 {% endfor %}
-{% endif %}
+{% endif -%}
 
 {# Extract failed logs for the Failed Action Details section #}
 {% set ns.failed_logs = [] %}
@@ -53,7 +60,7 @@ The following resource contents were successfully read.
   {% if log.status.value == 'FAILURE' %}
     {% set ns.failed_logs = ns.failed_logs + [log] %}
   {% endif %}
-{% endfor %}
+{% endfor -%}
 
 {% if ns.failed_logs %}
 ## Failed Action Details
@@ -71,7 +78,7 @@ The following resource contents were successfully read.
 {{ render_resource(res_path, log.details.content) }}
 {% endif %}
 {% endfor %}
-{% endif %}
+{% endif -%}
 
 ## Execution Summary
 

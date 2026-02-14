@@ -1,7 +1,13 @@
 from pathlib import Path
 
-from .helpers import run_cli_with_markdown_plan_on_clipboard
+import re
+from typer.testing import CliRunner
+
+from teddy_executor.main import app
+from .helpers import parse_markdown_report, run_cli_with_markdown_plan_on_clipboard
 from .plan_builder import MarkdownPlanBuilder
+
+runner = CliRunner()
 
 
 def test_plan_fails_pre_flight_validation(monkeypatch, tmp_path: Path):
@@ -143,3 +149,46 @@ def test_failed_edit_action_includes_file_content_in_report(
     finally:
         # Cleanup: Restore write permissions so the tmp_path fixture can clean up
         os.chmod(file_to_edit, stat.S_IWRITE | stat.S_IREAD)
+
+
+def test_report_has_no_extra_newlines_on_successful_validation():
+    """
+    Given a plan that passes pre-flight validation
+    When the plan is executed
+    Then the final report must not have a large gap of empty newlines before the ## Execution Summary section.
+    """
+    # GIVEN a simple valid plan
+    plan_builder = MarkdownPlanBuilder("Test Plan: Newline bug")
+    plan_builder.add_action(
+        "READ", {"Resource": "dummy_file.txt", "Description": "read dummy file"}
+    )
+    plan_content = plan_builder.build()
+
+    # AND the user will skip the action to get a report quickly without file I/O
+    user_input = "n\n\n"
+
+    # WHEN the command is run in an isolated filesystem where the target file exists
+    with runner.isolated_filesystem():
+        Path("dummy_file.txt").touch()
+
+        result = runner.invoke(
+            app,
+            ["execute", "--plan-content", plan_content],
+            input=user_input,
+            catch_exceptions=False,
+        )
+
+    # THEN the command should succeed (exit code 0)
+    assert result.exit_code == 0, f"CLI invocation failed: {result.stdout}"
+
+    # AND the report should be parsed correctly with a SUCCESS status
+    report = parse_markdown_report(result.stdout)
+    assert report["run_summary"]["Overall Status"] == "SUCCESS"
+
+    # AND the report should not have excessive newlines before the summary
+    # The bug manifests as multiple newlines, potentially with whitespace.
+    # We check for a pattern of 3 or more newline/whitespace sequences.
+    excessive_newlines_pattern = r"(\s*\n){3,}## Execution Summary"
+    assert not re.search(excessive_newlines_pattern, result.stdout), (
+        "Found excessive newlines before Execution Summary"
+    )
