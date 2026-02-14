@@ -25,6 +25,20 @@ class PlanValidator(IPlanValidator):
     Implements IPlanValidator using a strategy pattern to run pre-flight checks.
     """
 
+    def _validate_path_is_safe(self, path_str: str, action_type: str):
+        """
+        Ensures a file path is safe by checking for absolute paths and
+        directory traversal attempts.
+        """
+        if os.path.isabs(path_str):
+            raise PlanValidationError(
+                f"Action `{action_type}` contains an absolute path, which is not allowed: {path_str}"
+            )
+        if ".." in Path(path_str).parts:
+            raise PlanValidationError(
+                f"Action `{action_type}` contains a directory traversal attempt ('..'), which is not allowed: {path_str}"
+            )
+
     def validate(self, plan: Plan) -> List[str]:
         """
         Validates a plan by dispatching each action to a specific validation method.
@@ -45,6 +59,21 @@ class PlanValidator(IPlanValidator):
                     errors.append(str(e))
         return errors
 
+    def _validate_create_action(self, action: ActionData):
+        """Validates a 'create' action."""
+        path_str = action.params.get("path")
+        if isinstance(path_str, str):
+            self._validate_path_is_safe(path_str, "CREATE")
+
+    def _validate_read_action(self, action: ActionData):
+        """Validates a 'read' action."""
+        path_str = action.params.get("resource")
+        # URLs are not file paths and should be ignored by this validator.
+        if isinstance(path_str, str) and not path_str.startswith(
+            ("http://", "https://")
+        ):
+            self._validate_path_is_safe(path_str, "READ")
+
     def _validate_edit_action(self, action: ActionData):
         """
         Validates an 'edit' action.
@@ -58,6 +87,8 @@ class PlanValidator(IPlanValidator):
 
         if not isinstance(path_str, str):
             return
+
+        self._validate_path_is_safe(path_str, "EDIT")
 
         file_path = Path(path_str)
         if not file_path.exists():

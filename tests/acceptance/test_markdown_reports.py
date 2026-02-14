@@ -19,7 +19,7 @@ def test_plan_fails_pre_flight_validation(monkeypatch, tmp_path: Path):
     builder.add_action(
         "EDIT",
         params={
-            "File Path": file_to_edit.as_posix(),
+            "File Path": file_to_edit.name,
             "Description": "An edit that should fail validation.",
         },
         content_blocks={
@@ -67,7 +67,7 @@ def test_successful_read_action_includes_content_in_report(monkeypatch, tmp_path
     builder.add_action(
         "READ",
         params={
-            "Resource": file_to_read.as_posix(),
+            "Resource": file_to_read.name,
             "Description": "Read the document.",
         },
     )
@@ -112,7 +112,7 @@ def test_failed_edit_action_includes_file_content_in_report(
         builder.add_action(
             "EDIT",
             params={
-                "File Path": file_to_edit.as_posix(),
+                "File Path": file_to_edit.name,
                 "Description": "Attempt to edit a read-only file.",
             },
             content_blocks={
@@ -134,8 +134,8 @@ def test_failed_edit_action_includes_file_content_in_report(
         assert "## Failed Action Details" in result.stdout
         # The report should include the file content for context
         assert original_content in result.stdout
-        # Assert the full path is present, as the builder uses absolute paths
-        assert f"**Resource:** `{file_to_edit.as_posix()}`" in result.stdout
+        # Assert the relative path is present, as the path is now relative
+        assert f"**Resource:** `{file_to_edit.name}`" in result.stdout
 
     finally:
         # Cleanup: Restore write permissions so the tmp_path fixture can clean up

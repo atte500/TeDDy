@@ -1,3 +1,5 @@
+import os
+
 import pytest
 
 from teddy_executor.core.domain.models import Plan
@@ -469,18 +471,27 @@ My analysis is complete. The root cause and a verified fix are attached.
 
 def test_parse_read_action_with_absolute_path(parser):
     """
-    Verify that the parser preserves the leading slash for absolute paths,
-    and does not mistakenly treat them as project-root-relative paths.
+    Verify that the parser preserves a true absolute path on the current OS,
+    and does not mistakenly treat it as project-root-relative.
     """
-    plan_content = """
+    # Arrange: Use an appropriate absolute path for the current OS
+    if os.name == "nt":
+        absolute_path = "C:\\Users\\test.txt"
+    else:
+        absolute_path = "/tmp/test.txt"
+
+    plan_content = f"""
 # Test Plan
 ## Action Plan
 ### `READ`
-- **Resource:** [/tmp/test.txt](/tmp/test.txt)
+- **Resource:** [{absolute_path}]({absolute_path})
 - **Description:** Read a file with an absolute path.
 """
+    # Act
     plan = parser.parse(plan_content)
+
+    # Assert
     assert len(plan.actions) == 1
     action = plan.actions[0]
     assert action.type == "READ"
-    assert action.params["resource"] == "/tmp/test.txt"
+    assert action.params["resource"] == absolute_path

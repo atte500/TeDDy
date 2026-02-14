@@ -15,7 +15,7 @@ def test_validate_edit_action_with_nonexistent_find_block(fs):
     Then a PlanValidationError should be raised.
     """
     # Arrange
-    file_path = Path("/app/test.txt")
+    file_path = Path("app/test.txt")
     fs.create_file(file_path, contents="Hello world")
 
     plan = Plan(
@@ -50,7 +50,7 @@ def test_validate_edit_action_with_nonexistent_file(fs):
     Then a PlanValidationError should be raised.
     """
     # Arrange
-    file_path = Path("/app/nonexistent.txt")
+    file_path = Path("app/nonexistent.txt")
 
     plan = Plan(
         title="Test Plan",
@@ -85,7 +85,7 @@ def test_validate_edit_action_with_valid_find_block(fs):
     Then no exception should be raised.
     """
     # Arrange
-    file_path = Path("/app/test.txt")
+    file_path = Path("app/test.txt")
     fs.create_file(file_path, contents="Hello world")
 
     plan = Plan(

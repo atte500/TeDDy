@@ -479,10 +479,21 @@ class MarkdownPlanParser(IPlanParser):
         - Preserves true absolute paths.
         - Handles URLs gracefully.
         """
-        # Heuristic for POSIX: `os.path.isabs` is true for both `/tmp/file` and `/docs/spec`,
-        # so we check for common system roots to identify "true" absolute paths.
+        if target.startswith(("http://", "https://")):
+            return target
+
+        is_abs = os.path.isabs(target)
         is_likely_true_absolute = False
-        if os.name == "posix" and os.path.isabs(target):
+
+        if os.name == "nt":
+            # On Windows, a "true" absolute path has a drive letter.
+            # A path like "/file.txt" is absolute relative to the current drive,
+            # but in our context, it should be treated as project-relative.
+            has_drive, _ = os.path.splitdrive(target)
+            if is_abs and has_drive:
+                is_likely_true_absolute = True
+        elif os.name == "posix" and is_abs:
+            # On POSIX, use a heuristic of common system directories.
             common_roots = (
                 "/bin",
                 "/etc",
@@ -498,11 +509,12 @@ class MarkdownPlanParser(IPlanParser):
             )
             if target.startswith(common_roots):
                 is_likely_true_absolute = True
-        elif os.name == "nt" and os.path.isabs(target):
-            is_likely_true_absolute = True
 
+        # We strip the leading slash only if it's a project-relative path
+        # (i.e., it starts with '/' but is not a "true" absolute path).
         if target.startswith("/") and not is_likely_true_absolute:
-            return target[1:]
+            return target.lstrip("/")
+
         return target
 
     def _find_node_in_tree(self, node: Any, node_type: type) -> Optional[Any]:

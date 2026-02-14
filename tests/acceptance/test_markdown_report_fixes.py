@@ -1,3 +1,4 @@
+import os
 import textwrap
 from pathlib import Path
 
@@ -59,25 +60,28 @@ def test_read_action_shows_correct_resource_path(tmp_path: Path):
 
     ## Action Plan
     ### `READ`
-    - **Resource:** [{test_file.as_posix()}]({test_file.as_posix()})
+    - **Resource:** [{test_file.name}](/{test_file.name})
     - **Description:** Read a test file.
     """)
 
     # WHEN
-    result = runner.invoke(
-        app,
-        ["execute", "--plan-content", plan_content, "-y"],
-        catch_exceptions=False,
-    )
+    original_cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        result = runner.invoke(
+            app,
+            ["execute", "--plan-content", plan_content, "-y"],
+            catch_exceptions=False,
+        )
+    finally:
+        os.chdir(original_cwd)
 
     # THEN
     assert result.exit_code == 0
     output = result.stdout
     assert "## Resource Contents" in output
-    # The parser uses the link destination, which will be the full path.
+    # The parser now normalizes the path, so we expect the relative path in the report.
     # The template renders it as a link inside backticks.
-    expected_resource = (
-        f"**Resource:** `[{test_file.as_posix()}]({test_file.as_posix()})`"
-    )
+    expected_resource = f"**Resource:** `[{test_file.name}](/{test_file.name})`"
     assert expected_resource in output
     assert "Hello from the test file." in output

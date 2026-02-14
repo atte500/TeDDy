@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 from typer.testing import CliRunner
@@ -24,7 +25,7 @@ def test_interactive_prompt_shows_description(tmp_path: Path):
         .add_action(
             "create",
             params={
-                "File Path": str(test_file),
+                "File Path": f"[{test_file.name}](/{test_file.name})",
                 "Description": "Create a test file for the QoL feature.",
             },
             content_blocks={"": ("text", "hello")},
@@ -40,8 +41,14 @@ def test_interactive_prompt_shows_description(tmp_path: Path):
     test_container.register(IUserInteractor, instance=mock_interactor)
 
     # Act
-    with patch("teddy_executor.main.container", test_container):
-        result = runner.invoke(app, ["execute", "--plan-content", plan_content])
+    # Change CWD to the temp path so file operations in the plan are contained
+    original_cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        with patch("teddy_executor.main.container", test_container):
+            result = runner.invoke(app, ["execute", "--plan-content", plan_content])
+    finally:
+        os.chdir(original_cwd)
 
     # Assert
     assert result.exit_code == 0
@@ -112,17 +119,25 @@ def test_read_action_report_formats_multiline_content_correctly(tmp_path: Path):
     # and a plan to read that file
     plan_content = (
         MarkdownPlanBuilder("QoL Test Plan: Read multiline")
-        .add_action("read", params={"Resource": str(test_file)})
+        .add_action(
+            "read", params={"Resource": f"[{test_file.name}](/{test_file.name})"}
+        )
         .build()
     )
 
     real_container = create_container()
 
     # WHEN the plan is executed
-    with patch("teddy_executor.main.container", real_container):
-        result = runner.invoke(
-            app, ["execute", "--plan-content", plan_content, "--yes"]
-        )
+    # Change CWD to the temp path so file operations in the plan are contained
+    original_cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        with patch("teddy_executor.main.container", real_container):
+            result = runner.invoke(
+                app, ["execute", "--plan-content", plan_content, "--yes"]
+            )
+    finally:
+        os.chdir(original_cwd)
 
     # THEN the command should succeed
     assert result.exit_code == 0
@@ -157,7 +172,9 @@ def hello():
 
     plan_content = (
         MarkdownPlanBuilder("QoL Test Plan: Read complex markdown")
-        .add_action("read", params={"Resource": str(test_file)})
+        .add_action(
+            "read", params={"Resource": f"[{test_file.name}](/{test_file.name})"}
+        )
         .build()
     )
 
@@ -165,10 +182,16 @@ def hello():
     real_container = create_container()
 
     # Act
-    with patch("teddy_executor.main.container", real_container):
-        result = runner.invoke(
-            app, ["execute", "--plan-content", plan_content, "--yes"]
-        )
+    # Change CWD to the temp path so file operations in the plan are contained
+    original_cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        with patch("teddy_executor.main.container", real_container):
+            result = runner.invoke(
+                app, ["execute", "--plan-content", plan_content, "--yes"]
+            )
+    finally:
+        os.chdir(original_cwd)
 
     # Assert
     assert result.exit_code == 0
