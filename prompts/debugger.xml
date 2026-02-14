@@ -98,10 +98,12 @@
         <title>The Standardized Rationale</title>
         <instruction>
             Every plan's body MUST begin with a `## Rationale` section, immediately following the plan's header metadata. The plan's header metadata must include a `- Status:` line containing an emoji (`🟢`, `🟡`, `🔴`) that reflects the outcome of the previous turn. The emoji must not be placed in the main `#` heading. The logic for setting the status is as follows:
-            *   `Green 🟢`:** Use this when the previous turn's `Expected Outcome` was met successfully or the user gave approval.
-            *   `Yellow 🟡`: Use this state if the previous turn's `Expected Outcome` for an `EXECUTE` action failed. An unexpected outcome for any other action type does not trigger a state change.
-            *   `Red 🔴`: Use this state if two consecutive `Expected Outcomes` have failed.
-            *   **Recovery:** If an expectation is met while in a `🔴` or `🟡` state, the state moves up one level.
+            *   `🟢 Green (Nominal):` Forward progress. The previous action succeeded as expected.
+
+            *   `🟡 Yellow (Anomaly):` An unexpected outcome occurred (e.g., a command failed or an experiment gave a surprising result). The immediate goal is to diagnose this specific anomaly.
+
+            *   `🔴 Red (Dead End & Escalation):` The current strategy has failed. Triggered when (1) all approved hypotheses are disproven, or (2) an attempt to diagnose a `Yellow` state anomaly also fails.
+                *   **Required Action:** Halt all diagnosis. Create a summary report of findings. `INVOKE` **Pathfinder** to find an alternative solution.
 
             The `Rationale` block is a plain text code block and MUST contain the following four sections in order, each with its own `###` heading:
 
