@@ -40,7 +40,7 @@ def test_validate_edit_action_with_nonexistent_find_block(fs):
 
     # Assert
     assert len(errors) == 1
-    assert "The `FIND` block could not be located in the file" in errors[0]
+    assert "The `FIND` block could not be located in the file" in errors[0].message
 
 
 def test_validate_edit_action_with_nonexistent_file(fs):
@@ -74,7 +74,7 @@ def test_validate_edit_action_with_nonexistent_file(fs):
 
     # Assert
     assert len(errors) == 1
-    assert "File to edit does not exist" in errors[0]
+    assert "File to edit does not exist" in errors[0].message
 
 
 def test_validate_edit_action_with_valid_find_block(fs):

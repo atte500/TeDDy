@@ -14,10 +14,25 @@ from teddy_executor.core.domain.models.plan import ActionData, Plan
 from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
 
 
+from dataclasses import dataclass
+from typing import Optional
+
+
+@dataclass
+class ValidationError:
+    """Represents a structured validation error."""
+
+    message: str
+    file_path: Optional[str] = None
+
+
 class PlanValidationError(Exception):
     """Custom exception for plan validation errors."""
 
-    pass
+    def __init__(self, message: str, file_path: Optional[str] = None):
+        super().__init__(message)
+        self.message = message
+        self.file_path = file_path
 
 
 class PlanValidator(IPlanValidator):
@@ -39,14 +54,14 @@ class PlanValidator(IPlanValidator):
                 f"Action `{action_type}` contains a directory traversal attempt ('..'), which is not allowed: {path_str}"
             )
 
-    def validate(self, plan: Plan) -> List[str]:
+    def validate(self, plan: Plan) -> List[ValidationError]:
         """
         Validates a plan by dispatching each action to a specific validation method.
 
         Returns:
-            A list of validation error strings. An empty list signifies success.
+            A list of validation error objects. An empty list signifies success.
         """
-        errors: List[str] = []
+        errors: List[ValidationError] = []
         for action in plan.actions:
             # Normalize action type to lowercase to match method names
             validator_method = getattr(
@@ -56,7 +71,9 @@ class PlanValidator(IPlanValidator):
                 try:
                     validator_method(action)
                 except PlanValidationError as e:
-                    errors.append(str(e))
+                    errors.append(
+                        ValidationError(message=e.message, file_path=e.file_path)
+                    )
         return errors
 
     def _validate_create_action(self, action: ActionData):
@@ -92,9 +109,11 @@ class PlanValidator(IPlanValidator):
 
         file_path = Path(path_str)
         if not file_path.exists():
-            raise PlanValidationError(f"File to edit does not exist: {file_path}")
+            raise PlanValidationError(
+                f"File to edit does not exist: {file_path}", file_path=str(file_path)
+            )
 
-        content = file_path.read_text()
+        content = file_path.read_text(encoding="utf-8")
 
         # Handle 'edits' list (from Markdown parser)
         edits = action.params.get("edits")
@@ -109,12 +128,14 @@ class PlanValidator(IPlanValidator):
                     print("--- END TEDDY DEBUG ---\n")
                 if isinstance(find_block, str) and find_block not in content:
                     raise PlanValidationError(
-                        f"The `FIND` block could not be located in the file: {file_path}"
+                        f"The `FIND` block could not be located in the file: {file_path}",
+                        file_path=str(file_path),
                     )
         else:
             # Handle single 'find' param (legacy/YAML parser)
             find_block = action.params.get("find") or action.params.get("FIND")
             if isinstance(find_block, str) and find_block not in content:
                 raise PlanValidationError(
-                    f"The `FIND` block could not be located in the file: {file_path}"
+                    f"The `FIND` block could not be located in the file: {file_path}",
+                    file_path=str(file_path),
                 )

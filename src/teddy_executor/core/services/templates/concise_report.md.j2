@@ -21,6 +21,13 @@
 {% for error in report.validation_result %}
 - {{ error }}
 {% endfor %}
+{% if report.failed_resources %}
+
+### Resource Contents
+{% for path, content in report.failed_resources.items() %}
+{{ render_resource(path, content) }}
+{% endfor %}
+{% endif %}
 {% endif %}
 
 {# Extract successful READ logs for the Resource Contents section #}

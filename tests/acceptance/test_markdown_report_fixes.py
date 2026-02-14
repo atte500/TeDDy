@@ -154,3 +154,56 @@ def test_failed_edit_action_reports_file_content(tmp_path: Path):
         "Report missing correct resource link"
     )
     assert file_content in report, "File content not found in report"
+
+
+def test_edit_validation_failure_reports_file_content(tmp_path: Path):
+    """
+    Given an EDIT action that will fail validation (FIND block mismatch)
+    When the plan is executed
+    Then the validation failure report must include the content of the target file.
+    """
+    # GIVEN a file with known content
+    file_path = tmp_path / "hello.txt"
+    file_content = "Hello, world!"
+    file_path.write_text(file_content)
+
+    # AND a plan with an EDIT action with a FIND block that won't match
+    # Note: Using a relative path, so we must execute from within tmp_path
+    plan_content = textwrap.dedent(f"""
+        # Test Plan
+        - **Agent:** Developer
+        ## Action Plan
+        ### `EDIT`
+        - **File Path:** {file_path.name}
+        #### `FIND:`
+        ```text
+        This will not be found.
+        ```
+        #### `REPLACE:`
+        ```text
+        This doesn't matter.
+        ```
+    """).strip()
+
+    # WHEN
+    original_cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        result = runner.invoke(
+            app,
+            ["execute", "--plan-content", plan_content, "-y"],
+            catch_exceptions=False,
+        )
+    finally:
+        os.chdir(original_cwd)
+
+    # THEN the command should fail
+    assert result.exit_code != 0
+    report = result.stdout
+
+    # AND the report should indicate validation failure
+    assert "- **Overall Status:** Validation Failed" in report
+    assert "The `FIND` block could not be located in the file" in report
+
+    # AND the report MUST contain the original content of the file
+    assert file_content in report, "File content not found in validation failure report"

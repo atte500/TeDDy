@@ -258,6 +258,20 @@ def execute(
         validation_result = plan_validator.validate(plan)
 
         if validation_result:
+            failed_resources: dict[str, str] = {}
+            error_messages: list[str] = []
+            for error in validation_result:
+                error_messages.append(error.message)
+                if error.file_path:
+                    try:
+                        path = Path(error.file_path)
+                        if path.exists():
+                            failed_resources[error.file_path] = path.read_text(
+                                encoding="utf-8"
+                            )
+                    except OSError:
+                        pass  # Ignore if reading fails
+
             report = ExecutionReport(
                 plan_title=plan.title,
                 run_summary=RunSummary(
@@ -265,7 +279,8 @@ def execute(
                     start_time=start_time,
                     end_time=datetime.now(timezone.utc),
                 ),
-                validation_result=validation_result,
+                validation_result=error_messages,
+                failed_resources=failed_resources if failed_resources else None,
             )
         else:
             # Manually construct the orchestrator

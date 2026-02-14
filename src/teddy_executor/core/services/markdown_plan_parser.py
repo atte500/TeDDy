@@ -87,9 +87,6 @@ class MarkdownPlanParser(IPlanParser):
             elif action_type == "RETURN":
                 actions.append(self._parse_return_action(doc, heading))
 
-        if not actions:
-            raise InvalidPlanError("No actions found in the 'Action Plan' section.")
-
         return actions
 
     def _find_action_headings(
