@@ -2,6 +2,14 @@
   Unified template for the concise Markdown report.
   Renders both execution outcomes and pre-flight validation failures.
 #}
+{% macro render_resource(path, content) %}
+---
+**Resource:** `[{{ path | basename }}]({% if not path.startswith('/') %}/{% endif %}{{ path }})`
+````text
+{{ content }}
+````
+---
+{% endmacro %}
 # Execution Report: {{ report.plan_title | default('Untitled Plan') }}
 
 - **Overall Status:** {{ "Validation Failed" if report.run_summary.status.value == "VALIDATION_FAILED" else report.run_summary.status.value }}
@@ -26,15 +34,9 @@
 {% if ns.read_logs %}
 ## Resource Contents
 The following resource contents were successfully read.
-
----
 {% for log in ns.read_logs %}
 {% set res_path = log.params.get('Resource') or log.params.get('resource') or log.params.get('path') %}
-**Resource:** `[{{ res_path }}]({% if not res_path.startswith('/') %}/{% endif %}{{ res_path }})`
-````text
-{{ log.details.content }}
-````
----
+{{ render_resource(res_path, log.details.content) }}
 {% endfor %}
 {% endif %}
 
@@ -58,13 +60,8 @@ The following resource contents were successfully read.
 {% if log.details and log.details.content %}
 
 ### Resource Contents
-
----
-**Resource:** `{{ log.params.get('File Path') or log.params.get('path') or log.params.get('Resource') or 'Unknown' }}`
-````text
-{{ log.details.content }}
-````
----
+{% set res_path = log.params.get('File Path') or log.params.get('path') or log.params.get('Resource') %}
+{{ render_resource(res_path, log.details.content) }}
 {% endif %}
 {% endfor %}
 {% endif %}

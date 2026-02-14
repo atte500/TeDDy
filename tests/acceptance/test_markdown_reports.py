@@ -134,8 +134,11 @@ def test_failed_edit_action_includes_file_content_in_report(
         assert "## Failed Action Details" in result.stdout
         # The report should include the file content for context
         assert original_content in result.stdout
-        # Assert the relative path is present, as the path is now relative
-        assert f"**Resource:** `{file_to_edit.name}`" in result.stdout
+        # Assert the relative path is present as a correct markdown link
+        assert (
+            f"**Resource:** `[{file_to_edit.name}](/{file_to_edit.name})`"
+            in result.stdout
+        )
 
     finally:
         # Cleanup: Restore write permissions so the tmp_path fixture can clean up

@@ -80,5 +80,5 @@ def test_formats_failed_edit_action_with_file_content():
     # Assert
     assert "## Failed Action Details" in formatted_report
     assert f"- **Error:** {error_message}" in formatted_report
-    assert "**Resource:** `config.txt`" in formatted_report
+    assert "**Resource:** `[config.txt](/config.txt)`" in formatted_report
     assert file_content in formatted_report

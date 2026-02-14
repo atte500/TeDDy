@@ -18,6 +18,7 @@ class MarkdownReportFormatter(IMarkdownReportFormatter):
     def __init__(self):
         template_dir = os.path.join(os.path.dirname(__file__), "templates")
         self.env = Environment(loader=FileSystemLoader(template_dir), trim_blocks=True)
+        self.env.filters["basename"] = os.path.basename
         self.template = self.env.get_template("concise_report.md.j2")
 
     def _prepare_context(self, report: ExecutionReport) -> dict[str, Any]:

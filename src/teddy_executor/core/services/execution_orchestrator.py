@@ -106,7 +106,7 @@ class ExecutionOrchestrator(RunPlanUseCase):
                     "CREATE",
                     "EDIT",
                 ):
-                    path = action.params.get("path")
+                    path = action.params.get("path") or action.params.get("File Path")
                     if path:
                         try:
                             content = self._file_system_manager.read_file(path)
