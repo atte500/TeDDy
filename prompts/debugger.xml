@@ -94,7 +94,6 @@
       </phase>
     </workflow>
     <general_rules>
-      <rule n="0">**Rationale Fencing**: Your entire `Rationale` block must be encapsulated within four backticks.</rule>
       <rule n="1">
         <title>The Standardized Rationale</title>
         <instruction>
