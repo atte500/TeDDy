@@ -10,7 +10,7 @@ This format is designed to be a perfectly readable Markdown document first, and 
 
 ## 2. Overall Document Structure
 
-### 2.1. Dynamic Code Fencing
+### 2.1. Code Block Nesting
 
 A core principle of this format is that it must reliably handle nested code blocks, which is a common source of errors in LLM-generated Markdown.
 
@@ -81,7 +81,7 @@ To ensure links work correctly in local previews (like VSCode) while referencing
     [The agent's complete, multi-step workflow status (e.g., Pathfinder's Log).]
     ````
     `````
--   **Parsing Rules:** The content is the raw text within the fenced code block and is primarily for human consumption and agent self-correction. The outer fence for the `Rationale` block must follow the **Dynamic Code Fencing** rule.
+-   **Parsing Rules:** The content is the raw text within the fenced code block and is primarily for human consumption and agent self-correction. The outer fence for the `Rationale` block must follow the **Code Block Nesting** rule.
 
 ### 4.3. Memos (Optional)
 

@@ -265,7 +265,7 @@
         </instruction>
       </rule>
       <rule n="16">
-        <title>Dynamic Code Fencing</title>
+        <title>Code Block Nesting</title>
         <instruction>When creating a fenced code block for your Action Blocks or the Rationale text block, you MUST use an opening fence with DOUBLE (x2) as much backtick as the longest sequence of backticks inside the content (e.g., to fence content containing ` ``` `, you must use ` `````` ` for the outer fences). The closing fence MUST also use the exact same number of backticks as the opening fence.</instruction>
       </rule>
     </general_rules>
@@ -302,11 +302,10 @@
     </output_formatting>
     <action_formats>
         <title>Action Blocks</title>
-        <instruction>All actions are located under the `## Action Plan` heading. Each action is defined by its own `###` heading. When creating these blocks, you MUST follow the "Dynamic Code Fencing" rule.</instruction>
+        <instruction>All actions are located under the `## Action Plan` heading. Each action is defined by its own `###` heading. When creating these blocks, you MUST follow the "Code Block Nesting" rule.</instruction>
         <action name="CREATE">
             <description>Creates a new file.</description>
             <format>
-            ````````````markdown
 ### `CREATE`
 - **File Path:** [path/to/new_file.ext](/path/to/new_file.ext)
 - **Description:** [Short explanation of what this new file is for.]
@@ -314,23 +313,19 @@
 # Title
 A markdown file whose content might include a ```code block```.
 ``````
-            ````````````
             </format>
         </action>
         <action name="READ">
             <description>Reads the content of a local file or a remote URL.</description>
             <format>
-            ````markdown
 ### `READ`
 - **Resource:** [path/to/your/file.ext](/path/to/your/file.ext) or [www.domain.com](https://www.domain.com)
 - **Description:** [Short explanation of what information you are looking for.]
-````
             </format>
         </action>
         <action name="EDIT">
             <description>Edits an existing file. The `FIND` block must be a verbatim copy of the target text, including all original indentation and whitespace. When crafting the `REPLACE` block, you must ensure the new content correctly matches the indentation level of the surrounding code. It is strongly preferred to make surgical changes by including multiple, small, sequential `FIND`/`REPLACE` pairs in a single action.</description>
             <format>
-            ````````````markdown
 ### `EDIT`
 - **File Path:** [path/to/file.ext](/path/to/file.ext)
 - **Description:** [Short explanation of the changes.]
@@ -343,13 +338,11 @@ A markdown file whose content might include a ```code block```.
 ``````[language]
 [The new content, which could also contain a ```code block```.]
 ``````
-            ````````````
             </format>
         </action>
         <action name="EXECUTE">
             <description>Executes a shell command. Note on Command Execution: You must not generate commands that rely on shell-specific logic for changing directories or setting environment variables. Use `cwd` and `env` parameters where applicable. To run commands inside a Python virtual environment, generate a self-sufficient command (e.g. `poetry run ...`).</description>
             <format>
-            `````markdown
 ### `EXECUTE`
 - **Description:** [Descriptive title of what the command will do.]
 - **Expected Outcome:** [A precise prediction of the result. If a test is expected to fail, specify the exact `AssertionError` or error message.]
@@ -359,13 +352,11 @@ A markdown file whose content might include a ```code block```.
 ````shell
 [The exact command to be executed]
 ````
-            `````
             </format>
         </action>
         <action name="RESEARCH">
             <description>Performs multiple, distinct web searches and returns a list of URLs (a SERP). The contents of these links must be retrieved in a subsequent turn using the `READ` action.</description>
             <format>
-            `````markdown
 ### `RESEARCH`
 - **Description:** [Short explanation of the research goal.]
 ````text
@@ -374,56 +365,47 @@ A markdown file whose content might include a ```code block```.
 ````text
 [A second, alternative query.]
 ````
-            `````
             </format>
         </action>
         <action name="CHAT_WITH_USER">
             <description>Communicates with the user.</description>
             <format>
-            ````markdown
 ### `CHAT_WITH_USER`
 [The specific question or proposal for the user, written in free-form Markdown.]
-````
             </format>
         </action>
         <action name="INVOKE">
             <description>Hands off control to another agent.</description>
             <format>
-            ````markdown
 ### `INVOKE`
 - **Agent:** [Target Agent Name]
 - **Handoff Resources:** (Optional)
   - [docs/briefs/new-feature.md](/docs/briefs/new-feature.md)
 
 [The handoff message for the target agent, written in free-form Markdown.]
-````
             </format>
         </action>
         <action name="PRUNE">
             <description>Removes a file from the agent's working context.</description>
             <format>
-            ````markdown
 ### `PRUNE`
 - **Resource:** [path/to/file_to_remove.ext](/path/to/file_to_remove.ext)
 - **Description:** [Short explanation of why this resource is being removed.]
-````
             </format>
         </action>
         <action name="RETURN">
             <description>Returns control to the calling agent after a specialist sub-task is complete.</description>
             <format>
-            ````markdown
 ### `RETURN`
 - **Handoff Resources:** (Optional)
   - [path/to/file-to-pass.md](/path/to/file-to-pass.md)
 
 [A message summarizing the outcome of the sub-task.]
-````
             </format>
         </action>
     </action_formats>
     <required_response_format>
-      <instruction>The following is a complete example of the required response format. Your output must **ALWAYS** precisely adhere to this structure. Note that the example itself adheres to the "Dynamic Code Fencing" rule.</instruction>
+      <instruction>The following is a complete example of the required response format. Your output must **ALWAYS** precisely adhere to this structure. Note that the example itself adheres to the "Code Block Nesting" rule.</instruction>
       <example>
 # Detail Component: [Component Name]
 - **Status:** Green 🟢

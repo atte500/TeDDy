@@ -9,7 +9,7 @@ This document specifies the user experience and system behavior for a non-intera
 -   **Clipboard-First:** The primary method for passing multi-line text (plans, reports, context) between the user and the tool is the system clipboard.
 -   **Stateless & Explicit:** Each `teddy execute` command is a self-contained operation. The execution report must contain all necessary information for the user and AI to decide on the next step.
 -   **User-in-the-Loop:** The user is responsible for bridging the gap between the `teddy` tool and the AI. The tool's output must be designed to make this as seamless as possible.
--   **Robust Markdown Generation (Smart Fencing):** All system-generated Markdown containing file contents (e.g., in reports from `teddy execute` or context payloads from `teddy context`) must use dynamic code fencing. The number of backticks used for a code block's fence must be greater than the longest sequence of backticks found within the content itself, preventing parsing errors.
+-   **Robust Markdown Generation (Smart Fencing):** All system-generated Markdown containing file contents (e.g., in reports from `teddy execute` or context payloads from `teddy context`) must use Code Block Nesting. The number of backticks used for a code block's fence must be greater than the longest sequence of backticks found within the content itself, preventing parsing errors.
 
 ## 3. The Core Workflow Loop
 
