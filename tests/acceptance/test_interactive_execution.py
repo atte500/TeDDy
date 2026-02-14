@@ -97,12 +97,13 @@ def test_interactive_skip_with_reason(tmp_path: Path, monkeypatch):
             )
 
     # Assert
-    assert result.exit_code == 1  # A skipped plan is a failed plan
+    # A skipped plan is not a system failure, so the exit code should be 0.
+    assert result.exit_code == 0
     assert not test_file.exists()
 
     report = parse_markdown_report(result.stdout)
-    # The run is a FAILURE because an action did not complete successfully
-    assert report["run_summary"]["Overall Status"] == "FAILURE"
+    # The run is a SUCCESS because the system correctly handled the user's choice.
+    assert report["run_summary"]["Overall Status"] == "SUCCESS"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "SKIPPED"
     expected_details = "User skipped this action. Reason: Manual check needed"

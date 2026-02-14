@@ -7,6 +7,7 @@ from teddy_executor.core.domain.models import (
     ActionLog,
     ActionStatus,
     Plan,
+    RunStatus,
 )
 from teddy_executor.core.ports.outbound import IFileSystemManager
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
@@ -107,11 +108,51 @@ def test_execute_interactive_and_skipped(
     report = orchestrator.execute(plan_content=plan_content, interactive=True)
 
     # Assert
-    assert report.run_summary.status == "FAILURE"
+    # A skipped plan is not a failure.
+    assert report.run_summary.status == RunStatus.SUCCESS
     assert len(report.action_logs) == 1
     assert report.action_logs[0].status == ActionStatus.SKIPPED
     mock_user_interactor.confirm_action.assert_called_once()
     mock_action_dispatcher.dispatch_and_execute.assert_not_called()
+
+
+def test_execute_with_mixed_success_and_skipped_is_success(
+    orchestrator: ExecutionOrchestrator,
+    mock_plan_parser: Mock,
+    mock_action_dispatcher: Mock,
+    mock_user_interactor: Mock,
+):
+    """
+    Given a plan where one action succeeds and one is skipped
+    When the plan is executed
+    Then the final report status should be 'SUCCESS'
+    """
+    # Arrange
+    plan_content = "fake plan content"
+    action1 = ActionData(type="action1", params={})
+    action2 = ActionData(type="action2", params={})
+    plan = Plan(title="Test Plan", actions=[action1, action2])
+    success_log = ActionLog(
+        status=ActionStatus.SUCCESS,
+        action_type="action1",
+        params={},
+        details="Success",
+    )
+
+    mock_plan_parser.parse.return_value = plan
+    # User approves first action, skips second
+    mock_user_interactor.confirm_action.side_effect = [(True, ""), (False, "skip")]
+    mock_action_dispatcher.dispatch_and_execute.return_value = success_log
+
+    # Act
+    report = orchestrator.execute(plan_content=plan_content, interactive=True)
+
+    # Assert
+    assert report.run_summary.status == RunStatus.SUCCESS
+    assert len(report.action_logs) == 2
+    assert report.action_logs[0].status == ActionStatus.SUCCESS
+    assert report.action_logs[1].status == ActionStatus.SKIPPED
+    mock_action_dispatcher.dispatch_and_execute.assert_called_once_with(action1)
 
 
 def test_execute_interactive_and_approved(

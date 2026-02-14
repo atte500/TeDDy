@@ -1,5 +1,7 @@
 from datetime import datetime
 
+from typing import Sequence
+
 from teddy_executor.core.domain.models import (
     ActionData,
     ActionLog,
@@ -28,10 +30,20 @@ class ExecutionOrchestrator(RunPlanUseCase):
         self._user_interactor = user_interactor
         self._file_system_manager = file_system_manager
 
+    def _determine_overall_status(self, action_logs: Sequence[ActionLog]) -> RunStatus:
+        """Determines the final run status based on the hierarchy of action outcomes."""
+        statuses = {log.status for log in action_logs}
+        if ActionStatus.FAILURE in statuses:
+            return RunStatus.FAILURE
+        if ActionStatus.SUCCESS in statuses:
+            return RunStatus.SUCCESS
+        # If no failures and no successes, it means everything was skipped or is pending.
+        # For a completed run, this implies all were skipped.
+        return RunStatus.SUCCESS
+
     def execute(self, plan_content: str, interactive: bool) -> ExecutionReport:
         start_time = datetime.now()
         action_logs = []
-        overall_status: RunStatus = RunStatus.SUCCESS
 
         plan: Plan = self._plan_parser.parse(plan_content)
 
@@ -137,10 +149,9 @@ class ExecutionOrchestrator(RunPlanUseCase):
                 )
 
             action_logs.append(action_log)
-            if action_log.status in [ActionStatus.FAILURE, ActionStatus.SKIPPED]:
-                overall_status = RunStatus.FAILURE
 
         end_time = datetime.now()
+        overall_status = self._determine_overall_status(action_logs)
         summary = RunSummary(
             status=overall_status,
             start_time=start_time,
