@@ -145,6 +145,9 @@ This section captures significant, long-standing architectural decisions and pat
     -   **Required Pattern:** To satisfy `mypy` and prevent runtime errors, any access to these attributes MUST be defensively converted to a concrete, non-nullable list first. Example: `children_list = list(token.children) if token.children else []`. This pattern ensures type safety and makes the code resilient to the library's loose type definitions.
 -   **Cross-Platform File I/O:** All operations that read from or write to text files MUST explicitly specify `encoding="utf-8"`. This applies to both application code (`src/`) and test code (`tests/`).
     -   **Rationale:** The default file encoding is platform-dependent (e.g., UTF-8 on macOS/Linux, but often `cp1252` on Windows). Failing to specify the encoding can lead to `UnicodeEncodeError` or `UnicodeDecodeError` when handling files with non-ASCII characters on different operating systems. This convention ensures predictable, platform-agnostic behavior.
+-   **Cross-Platform Path Normalization:** To distinguish project-relative paths (e.g., `[/docs/spec.md]`) from true absolute paths, the `MarkdownPlanParser` uses an OS-aware heuristic.
+    -   **Rule:** A path is considered a "true" absolute path only if it starts with a common system directory on POSIX (e.g., `/tmp`, `/etc`) or a drive letter on Windows. Other paths starting with `/` are treated as project-relative.
+    -   **Rationale:** This allows the parser to normalize project-relative paths (by stripping the leading slash) while preserving true absolute paths to be rejected by the `PlanValidator`, ensuring consistent security and behavior across platforms.
 
 ---
 
