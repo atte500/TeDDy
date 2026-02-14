@@ -35,16 +35,41 @@ class ConsoleInteractorAdapter(IUserInteractor):
         return "\n".join(lines)
 
     def _get_diff_content(self, action: ActionData) -> tuple[str, str, Path]:
-        path_str = action.params["path"]
+        # --- Data Normalization for Diffing ---
+        # This adapter normalizes the canonical ActionData from the parser to a flat
+        # structure suitable for generating a diff.
+
+        # 1. Normalize path from Markdown link
+        # The parser normalizes "File Path" to "path"
+        path_link = action.params.get("path", "")
+        if isinstance(path_link, str) and path_link.endswith(")"):
+            path_str = path_link.split("(")[-1].strip(")/")
+        else:
+            path_str = path_link
+
+        if not path_str:
+            # If there's no path, there's nothing to diff.
+            return "", "", Path()
+
         path = Path(path_str)
+
+        # 2. Get before/after content based on action type
         if action.type.lower() == "edit":
-            before_content = path.read_text()
-            after_content = before_content.replace(
-                action.params["find"], action.params["replace"]
-            )
+            before_content = path.read_text() if path.exists() else ""
+            # The diff preview only supports the first edit block.
+            edits = action.params.get("edits", [])
+            if edits:
+                first_edit = edits[0]
+                find_block = first_edit.get("find", "")
+                replace_block = first_edit.get("replace", "")
+                after_content = before_content.replace(find_block, replace_block)
+            else:
+                # If no edits are provided, the content is unchanged.
+                after_content = before_content
         else:  # create
             before_content = ""
-            after_content = action.params["content"]
+            after_content = action.params.get("content", "")
+
         return before_content, after_content, path
 
     def _show_external_diff(
