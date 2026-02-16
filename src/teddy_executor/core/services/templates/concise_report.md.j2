@@ -92,8 +92,8 @@ The following resource contents were successfully read.
 ## Failed Action Details
 
 {% for log in ns.failed_logs %}
-{% set action_target = log.params.get('File Path') or log.params.get('path') or log.params.get('Resource') or log.params.get('Description') or log.params.get('description') or 'Unknown' %}
-### `{{ log.action_type.upper() }}` on `{{ action_target }}`
+{% set description = log.params.get('Description') or log.params.get('description') %}
+### `{{ log.action_type.upper() }}`{% if description %} on "{{ description }}"{% endif %}
 {% if log.details and log.details.error %}
 - **Error:** {{ log.details.error }}
 {% endif %}

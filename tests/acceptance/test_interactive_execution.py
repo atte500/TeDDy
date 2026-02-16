@@ -104,8 +104,8 @@ Manual check needed
     assert not test_file.exists()
 
     report = parse_markdown_report(result.stdout)
-    # The run is a SUCCESS because the system correctly handled the user's choice.
-    assert report["run_summary"]["Overall Status"] == "SUCCESS"
+    # The run status should be SKIPPED as all actions were skipped.
+    assert report["run_summary"]["Overall Status"] == "SKIPPED"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "SKIPPED"
     expected_details = "User skipped this action. Reason: Manual check needed"

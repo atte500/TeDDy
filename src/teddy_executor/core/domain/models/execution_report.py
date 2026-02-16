@@ -10,6 +10,7 @@ class RunStatus(str, Enum):
     SUCCESS = "SUCCESS"
     FAILURE = "FAILURE"
     VALIDATION_FAILED = "VALIDATION_FAILED"
+    SKIPPED = "SKIPPED"
 
 
 class ActionStatus(str, Enum):

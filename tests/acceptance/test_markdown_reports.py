@@ -181,9 +181,9 @@ def test_report_has_no_extra_newlines_on_successful_validation():
     # THEN the command should succeed (exit code 0)
     assert result.exit_code == 0, f"CLI invocation failed: {result.stdout}"
 
-    # AND the report should be parsed correctly with a SUCCESS status
+    # AND the report should be parsed correctly with a SKIPPED status
     report = parse_markdown_report(result.stdout)
-    assert report["run_summary"]["Overall Status"] == "SUCCESS"
+    assert report["run_summary"]["Overall Status"] == "SKIPPED"
 
     # AND the report should not have excessive newlines before the summary
     # The bug manifests as multiple newlines, potentially with whitespace.
@@ -238,3 +238,52 @@ def test_failed_execute_action_formats_details_human_readably(
     assert "- **Return Code:** `42`" in report_text
     assert "stdout message" in report_text
     assert "stderr message" in report_text
+
+
+def test_markdown_report_for_all_skipped_actions(
+    tmp_path: Path,
+):
+    """
+    Scenario: Plan where all actions are skipped reports "Skipped" status
+    """
+    # GIVEN a valid plan with two actions
+    (tmp_path / "hello.txt").write_text("Hello, world!")
+    plan_builder = MarkdownPlanBuilder("Test Plan: All Skipped")
+    plan_builder.add_action(
+        "READ", {"Resource": "hello.txt", "Description": "Read the file"}
+    )
+    plan_builder.add_action(
+        "EXECUTE",
+        {"command": "echo 'hello'", "Description": "Run a simple command"},
+    )
+    plan = plan_builder.build()
+
+    # WHEN the user runs `teddy execute` and skips every action
+    with runner.isolated_filesystem(temp_dir=tmp_path) as isolated_path:
+        Path(isolated_path, "hello.txt").write_text("Hello, world!")
+        result = runner.invoke(
+            app,
+            ["execute", "--plan-content", plan],
+            # Answer "n" to both prompts, with reasons
+            input="n\nreason1\nn\nreason2\n",
+            catch_exceptions=False,
+        )
+
+    # THEN the command should exit with a success code
+    assert result.exit_code == 0, f"CLI failed unexpectedly:\n{result.stdout}"
+
+    # AND the final Markdown report's Overall Status must be `SKIPPED`
+    # Use regex for a more robust check against markdown formatting
+    pattern = r"- \*\*Overall Status:\*\* SKIPPED"
+    assert re.search(pattern, result.stdout), (
+        f"Pattern '{pattern}' not found in output:\n{result.stdout}"
+    )
+    assert '#### `READ` on "Read the file"' in result.stdout, (
+        "The READ action should be in the log"
+    )
+    assert "- **Status:** SKIPPED" in result.stdout, (
+        "The READ action should be marked as skipped"
+    )
+    assert '#### `EXECUTE` on "Run a simple command"' in result.stdout, (
+        "The EXECUTE action should be in the log"
+    )

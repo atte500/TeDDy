@@ -146,8 +146,8 @@ def test_failed_edit_action_reports_file_content(tmp_path: Path):
 
     # AND the report must contain a failed action details section with the file content
     assert "## Failed Action Details" in report, "Report missing failed details section"
-    assert f"### `EDIT` on `{target_file_name}`" in report, (
-        "Report missing correct action title"
+    assert '### `EDIT` on "Update the project name."' in report, (
+        "Report missing correct action title with description"
     )
     assert "### Resource Contents" in report, "Report missing resource contents section"
     assert f"**Resource:** `[{target_file_name}](/{target_file_name})`" in report, (

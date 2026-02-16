@@ -76,6 +76,7 @@ def test_parse_read_action(parser: MarkdownPlanParser):
     assert action.description == "Read the current architectural conventions."
     assert action.params == {
         "resource": "docs/ARCHITECTURE.md",
+        "Description": "Read the current architectural conventions.",
     }
 
 
@@ -270,6 +271,7 @@ def test_parse_prune_action(parser: MarkdownPlanParser):
     assert action.description == "Remove the old specification."
     assert action.params == {
         "resource": "docs/specs/old-spec.md",
+        "Description": "Remove the old specification.",
     }
 
 

@@ -148,6 +148,9 @@ class MarkdownPlanParser(IPlanParser):
             metadata_list, link_key_map={"Resource": "resource"}
         )
 
+        if description:
+            params["Description"] = description
+
         return ActionData(type=action_type, description=description, params=params)
 
     def _parse_read_action(self, parent: Document, heading_node: Heading) -> ActionData:

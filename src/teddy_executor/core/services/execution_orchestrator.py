@@ -31,13 +31,17 @@ class ExecutionOrchestrator(RunPlanUseCase):
 
     def _determine_overall_status(self, action_logs: Sequence[ActionLog]) -> RunStatus:
         """Determines the final run status based on the hierarchy of action outcomes."""
+        if not action_logs:
+            return RunStatus.SUCCESS
+
         statuses = {log.status for log in action_logs}
         if ActionStatus.FAILURE in statuses:
             return RunStatus.FAILURE
         if ActionStatus.SUCCESS in statuses:
             return RunStatus.SUCCESS
-        # If no failures and no successes, it means everything was skipped or is pending.
-        # For a completed run, this implies all were skipped.
+        # If no failures and no successes, it means everything was skipped.
+        if all(s == ActionStatus.SKIPPED for s in statuses):
+            return RunStatus.SKIPPED
         return RunStatus.SUCCESS
 
     def execute(self, plan_content: str, interactive: bool) -> ExecutionReport:
@@ -100,10 +104,15 @@ class ExecutionOrchestrator(RunPlanUseCase):
                             pass
 
             else:
+                # Ensure the description from the action is included in the logged params.
+                log_params = action.params.copy()
+                if action.description:
+                    log_params["Description"] = action.description
+
                 action_log = ActionLog(
                     status=ActionStatus.SKIPPED,
                     action_type=action.type,
-                    params=action.params,
+                    params=log_params,
                     details=f"User skipped this action. Reason: {reason}",
                 )
 

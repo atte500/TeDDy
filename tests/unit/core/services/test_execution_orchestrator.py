@@ -108,8 +108,8 @@ def test_execute_interactive_and_skipped(
     report = orchestrator.execute(plan_content=plan_content, interactive=True)
 
     # Assert
-    # A skipped plan is not a failure.
-    assert report.run_summary.status == RunStatus.SUCCESS
+    # A plan where all actions are skipped should have an overall status of SKIPPED.
+    assert report.run_summary.status == RunStatus.SKIPPED
     assert len(report.action_logs) == 1
     assert report.action_logs[0].status == ActionStatus.SKIPPED
     mock_user_interactor.confirm_action.assert_called_once()
