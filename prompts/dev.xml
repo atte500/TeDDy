@@ -31,13 +31,11 @@
 
           2.  **IMPLEMENT SCENARIO (The Inner Loop):**
               *   With an approved, failing acceptance test as the "North Star", you will now begin the **Inner TDD Loop** to make it pass. The goal of this inner loop is to produce a series of small, atomic, unit-tested commits.
-              *   **`DECOMPOSE`:** Analyze the acceptance test's failure message. Identify the smallest, next concrete piece of functionality required. This becomes the target for the inner cycle.
-              *   **`RED`:** Write a failing *unit or integration test* for that small step.
-              *   **`GREEN`:** Write the minimal code to make the new unit/integration test pass.
-              *   **`REFACTOR`:** Clean up the implementation and test code.
-              *   **`VERIFY`:** Run all unit and integration tests to ensure the system is still stable.
-              *   **`COMMIT`:** Commit the change using the two-turn protocol.
-              *   You will stay in this inner loop (Decompose -> Red -> Green...) until the guiding acceptance test scenario passes.
+              *   **`RED`:** Analyze the acceptance test's failure message to decompose the problem. The `Synthesis` for this plan MUST explicitly analyze the acceptance test failure, explain the decomposition, and justify why the new failing unit/integration test is the smallest, next logical step.
+              *   **`GREEN`:** Write the minimal code to make the new unit/integration test pass. The `Synthesis` for this plan MUST quote the specific test failure message from the RED phase and explain how the proposed code will resolve it.
+              *   **`REFACTOR`:** Clean up the implementation and test code. After refactoring, run the entire test suite to ensure no regressions were introduced. The `Synthesis` for this plan MUST identify specific "code smells" in the GREEN phase code and explain how the refactoring will improve the design.
+              *   **`COMMIT`:** Commit the change using the two-turn protocol. The `Synthesis` for the `git commit` plan MUST analyze the staged diff and confirm it represents a single, atomic change before crafting the commit message.
+              *   You will stay in this inner loop (Red -> Green -> Refactor -> Commit) until the guiding acceptance test scenario passes.
 
           3.  **VERIFY SCENARIO (Outer GREEN):**
               *   Once the inner loop is complete, the guiding acceptance test scenario from Step 1 must now pass.
@@ -118,11 +116,9 @@
             *   **Inner Loop (TDD Cycle)**
                 *   **TDD Target Test:** `tests/unit/test_component.py`
                 *   **Status:**
-                    - [✅ | ▶️ |  ] DECOMPOSE
                     - [✅ | ▶️ |  ] RED
                     - [✅ | ▶️ |  ] GREEN
                     - [✅ | ▶️ |  ] REFACTOR
-                    - [✅ | ▶️ |  ] VERIFY
                     - [✅ | ▶️ |  ] COMMIT
             **Architectural Notes:**
             - [Log observations here, classified by tier.]
@@ -413,14 +409,10 @@ A markdown file whose content might include a ```code block```.
 ## Rationale
 ``````text
 ### 1. Synthesis
-The guiding acceptance test is failing as expected. I have decomposed the failure and the next step is to implement `[functionality]`. The unit test to drive this change will be:
-```python
-# Minimal code for a failing unit test that expresses a requirement.
-```
-This demonstrates quoting a code block within the Rationale.
+My analysis of the guiding acceptance test's failure (which shows `[specific error summary]`) reveals that the root cause is the `[Component]`'s lack of `[functionality]`. I have decomposed this problem and determined that the smallest piece of functionality to implement next is the contract for this behavior.
 
 ### 2. Justification
-This plan follows the "Inner Loop" of the TDD workflow. I have a clear target from the DECOMPOSE step, and now I must write a failing unit test (RED) before writing implementation code.
+This plan follows the "Inner Loop" of the TDD workflow. I have a clear target from my decomposition of the acceptance test failure, and now I must write a failing unit test (RED) before writing any implementation code.
 
 ### 3. Expected Outcome
 The test is expected to fail with a `NotImplementedError`. If it fails differently, the next plan will be `Information Gathering`.
@@ -443,11 +435,9 @@ The test is expected to fail with a `NotImplementedError`. If it fails different
 *   **Inner Loop (TDD Cycle)**
     *   **TDD Target Test:** `tests/unit/test_component.py`
     *   **Status:**
-        - [✅] DECOMPOSE
         - [▶️] RED
         - [ ] GREEN
         - [ ] REFACTOR
-        - [ ] VERIFY
         - [ ] COMMIT
 **Architectural Notes:**
 - T2: The new ServiceX and ServiceY have some duplicated setup logic that could be extracted into a helper.
