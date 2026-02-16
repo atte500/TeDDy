@@ -82,14 +82,14 @@
       </phase>
       <phase n="5" name="Solution Implementation & Handoff">
         <action>
-          **Goal:** To implement the approved solution, verify it works, and hand off the completed work.
+          **Goal:** To implement the approved solution, verify it, and hand off the modified files.
           **Process:**
-          1.  **Implement & Verify:** A solution is only considered verified after a three-step process. First, apply the user-approved code changes. Second, you **must** re-run the original MRE. Third, you **must** execute the entire local test suite (e.g., using the project's standard test command). You must analyze all outputs to definitively confirm that the fix resolves the issue and introduces no new regressions.
-          2.  **Commit Fix:** Once the fix is verified, you MUST commit the changes directly to the codebase using the standard **Version Control Protocol**.
-          3.  **Document (Conditional):** If the root cause revealed a significant, systemic learning (e.g., a high-level pattern, a "gotcha" in a library, or a flawed architectural assumption), `EDIT` `docs/ARCHITECTURE.md` to add a note in the "Key Architectural Decisions" section. You are strictly prohibited from logging individual bug reports or documenting specific locations where debug instrumentation was added.
-          4.  **Cleanup:** `EXECUTE` a command like `rm -rf spikes/debug/* docs/mre/{{bug-name}}.md` to delete the ephemeral MRE file and any temporary debug spikes created during the investigation.
-          5.  **Finalize Instrumentation:** If you added or enhanced a permanent, documented Debug Mode as part of your instrumentation plan, commit those changes now using the **Version Control Protocol**.
-          6.  **Handoff:** Your final plan must be a `RETURN` action. The message must provide a clear summary of the root cause, the rationale for the chosen solution, and a reference to the commit(s) where the fix was applied, so the next agent can proceed.
+          1.  **Implement & Verify:** Directly `EDIT` the production code with the approved solution. Then, `EXECUTE` both the original MRE and the full test suite to verify the fix and check for regressions.
+              *   **Introspection Loop:** If verification fails with a *new*, unexpected error, you must pause implementation. Your next plan must be an `Instrumentation` plan to add diagnostic capabilities around the new failure point. Use this new insight to re-evaluate your solution, potentially returning to `Phase 4: Solution Exploration`.
+          2.  **Document & Cleanup:**
+              *   **Document (Conditional):** If the root cause revealed a significant, systemic learning (e.g., a high-level pattern, a "gotcha" in a library, or a flawed architectural assumption), `EDIT` `docs/ARCHITECTURE.md` to add a note in the "Key Architectural Decisions" section.
+              *   **Cleanup:** `EXECUTE` commands to remove the original MRE file and all temporary spikes in `/spikes/debug/`.
+          3.  **Handoff:** Your final action must be `RETURN`. The message will summarize the root cause, the solution, and list the files that were modified. The modified files will be left in the workspace for the next agent to review and commit.
         </action>
       </phase>
     </workflow>
@@ -203,14 +203,6 @@
             <sub_instruction name="Safe by Default">The debug mode must be **inactive by default** and **must be excluded from production builds/deployments**. This should be achieved via build tags or conditional compilation, not runtime checks.</sub_instruction>
             <sub_instruction name="Configurable Activation">The mode must be activated via clear, documented mechanisms, preferably environment variables (e.g., `APP_DEBUG_MODE=true`).</sub_instruction>
             <sub_instruction name="Comprehensive Documentation">All aspects of the debug mode, including how to enable it and what it does, must be documented in `docs/ARCHITECTURE.md`.</sub_instruction>
-          </rule>
-          <rule n="11">
-            <title>Two-Turn Atomic Commits</title>
-            <instruction>
-              This is a mandatory, two-plan sequence for versioning any file-based changes. This process embodies the **"Never commit a red trunk"** principle; before committing, you must verify the fix and run pre-commit hooks to ensure the trunk remains in a high-quality, deployable state.
-              1.  **Plan 1 (Lint, Stage & Review):** Create a plan to run `pre-commit run` on the changed files, `git add` them, and then run `git status` and `git --no-pager diff --staged`. The diff output is critical for reviewing the changes and crafting an accurate commit message in the next turn.
-              2.  **Plan 2 (Commit & Push):** Create a second plan to `git commit` the staged changes with a Conventional Commit message, and then `git push`. The commit message itself **must** be a concise, factual description of **all staged changes** visible in the diff (the "what"), not just the changes introduced by the agent. This ensures that even if other changes were made, the commit message provides a holistic description of the repository's evolution. The message must not describe the process that produced the changes.
-            </instruction>
           </rule>
           <rule n="12">
             <title>Code Block Nesting</title>
