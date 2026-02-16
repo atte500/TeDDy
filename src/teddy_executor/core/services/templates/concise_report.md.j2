@@ -46,7 +46,6 @@
 - **Overall Status:** {{ "Validation Failed" if report.run_summary.status.value == "VALIDATION_FAILED" else report.run_summary.status.value }}
 - **Execution Start Time:** {{ format_datetime(report.run_summary.start_time) }}
 - **Execution End Time:** {{ format_datetime(report.run_summary.end_time) }}
-
 {% if report.validation_result %}
 ## Validation Errors
 {% for error in report.validation_result %}
@@ -110,7 +109,9 @@ The following resource contents were successfully read.
 {% for log in report.action_logs %}
 
 {% set description = log.params.get('Description') or log.params.get('description') %}
+
 #### `{{ log.action_type.upper() }}`{% if description %} on "{{ description }}"{% endif %}
+
 - **Status:**
   - {{ log.status.value }}
 {% if log.params %}
