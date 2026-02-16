@@ -102,11 +102,12 @@ def test_execute_action_fails_with_unsafe_cwd_traversal(tmp_path: Path, monkeypa
     )
 
     # Assert
-    report = parse_markdown_report(result.stdout)
-    # The validator passes, but execution fails, which is also a valid outcome.
-    assert report["run_summary"]["Overall Status"] == "FAILURE"
-    assert "is outside the project directory" in result.stdout
     assert result.exit_code != 0
+    report = parse_markdown_report(result.stdout)
+    assert report["run_summary"]["Overall Status"] == "FAILURE"
+    action_log = report["action_logs"][0]
+    assert action_log["status"] == "FAILURE"
+    assert "is outside the project directory" in action_log["details"]["error"]
 
 
 def test_execute_action_fails_with_absolute_cwd(tmp_path: Path, monkeypatch):
@@ -134,11 +135,12 @@ def test_execute_action_fails_with_absolute_cwd(tmp_path: Path, monkeypatch):
     )
 
     # Assert
-    report = parse_markdown_report(result.stdout)
-    # The validator passes, but execution fails, which is also a valid outcome.
-    assert report["run_summary"]["Overall Status"] == "FAILURE"
-    assert "is outside the project directory" in result.stdout
     assert result.exit_code != 0
+    report = parse_markdown_report(result.stdout)
+    assert report["run_summary"]["Overall Status"] == "FAILURE"
+    action_log = report["action_logs"][0]
+    assert action_log["status"] == "FAILURE"
+    assert "is outside the project directory" in action_log["details"]["error"]
 
 
 def test_execute_action_with_both_cwd_and_env(tmp_path: Path, monkeypatch):

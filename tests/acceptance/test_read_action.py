@@ -68,4 +68,4 @@ def test_read_action_file_not_found(monkeypatch, tmp_path: Path):
     report = parse_markdown_report(result.stdout)
     action_log = report["action_logs"][0]
     assert action_log["status"] == "FAILURE"
-    assert "No such file or directory" in action_log["details"]
+    assert "No such file or directory" in action_log["details"]["error"]
