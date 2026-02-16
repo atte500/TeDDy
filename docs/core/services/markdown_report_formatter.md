@@ -1,4 +1,4 @@
-**Status:** Planned
+**Status:** Implemented
 **Introduced in:** [Slice 01: Markdown Report Generator](../../slices/01-markdown-report-generator.md)
 
 ## 1. Purpose / Responsibility

@@ -102,10 +102,12 @@ This is the primary command for executing a plan.
         *   **Dependency Vetting:** The `pyperclip` library was vetted via a technical spike (`spikes/technical/spike_clipboard_access.py`, now deleted) to confirm its cross-platform reliability, in accordance with the project's third-party dependency standards.
     *   `--yes` (Optional Flag): If provided, the plan will be executed in non-interactive mode, automatically approving all actions.
 *   **Behavior (Post-Refactoring):**
-    1.  The `typer` command function resolves the `ExecutionOrchestrator` service from the DI container.
-    2.  It invokes the `orchestrator.execute()` method, passing the `plan_path` and a boolean `interactive` flag (which is `False` if `--yes` is present).
-    3.  It receives the `ExecutionReport` domain model in return.
-    4.  It passes the report to a formatter and prints the final Markdown report to standard output and the clipboard.
+    1.  The `typer` command function resolves the `PlanValidator` and `ExecutionOrchestrator` services from the DI container.
+    2.  It first invokes the `validator.validate()` method.
+    3.  **Validation Failure:** If validation returns errors, execution stops immediately. An `ExecutionReport` is generated with a `VALIDATION_FAILED` status and the list of validation errors.
+    4.  **Validation Success:** If validation passes, the command then invokes the `orchestrator.execute()` method, passing the `plan` object and a boolean `interactive` flag (which is `False` if `--yes` is present).
+    5.  It receives the `ExecutionReport` domain model in return from either the validation step or the execution step.
+    6.  It passes the report to a formatter (`MarkdownReportFormatter`) and prints the final Markdown report to standard output and the clipboard.
 
 ### Utility Command: `context`
 **Status:** Implemented
