@@ -14,12 +14,11 @@ This document specifies the format for the **Concise Report**, which is the prim
 
 ## 3. Report Structure
 
-The report is composed of a header, followed by the `Execution Summary`, and then any conditional sections for failures or resource contents.
+The report is composed of a header, followed by the `Execution Summary`, and then a conditional section for resource contents. All action details, both for success and failure, are included directly within the `Execution Summary`.
 
 1.  **Report Header:** High-level summary (Overall Status, Timestamps).
-2.  **Execution Summary:** The primary action-by-action log.
-3.  **Failed Action Details (Conditional):** Appears only if actions failed.
-4.  **Resource Contents (Conditional):** Appears only if `READ` actions succeeded.
+2.  **Execution Summary:** The single source of truth for the action-by-action log.
+3.  **Resource Contents (Conditional):** Appears if `READ` actions succeeded, or if `CREATE` or `EDIT` actions failed, to provide necessary context.
 
 ## 4. Core Formatting Requirements
 
@@ -50,10 +49,12 @@ The report is composed of a header, followed by the `Execution Summary`, and the
 -   **Show Expected Outcome:** The log for an `EXECUTE` action must include the `Expected Outcome` from the original plan.
 
 ### 5.3. Failure Handling & Hints
+All failure details are rendered inline within the `Execution Summary` for the specific action that failed.
+
 -   **Specify Failed `FIND` Block:** For an `EDIT` failure, the error must specify *which exact* `FIND` block failed.
 -   **Provide Actionable Hint:** For a `FIND` mismatch, include the hint: *"Hint: Try to provide more context...including whitespace and indentations."*
 -   **Check for Pre-existing Changes:** Before reporting a `FIND` mismatch, check if the `REPLACE` content is already present. If so, note that the change may have already been applied.
--   **Include Content on Failure:** If a `CREATE` or `EDIT` action fails, the `Failed Action Details` section must include the actual, current content of the target file to provide context for correction.
+-   **Include Content on Failure:** If a `CREATE` or `EDIT` action fails, the full content of the target file must be displayed in the `Resource Contents` section to provide context for correction.
 
 ## 6. Example Structure
 
@@ -74,6 +75,13 @@ The report is composed of a header, followed by the `Execution Summary`, and the
 #### `EDIT`: src/teddy_executor/core/services/action_factory.py
 - **Status:**
   - FAILURE
+- **Error:** The `FIND` block did not match. The change may have already been applied.
+  - **FIND Block Content:**
+    ````python
+    # Old logic to be replaced
+    return legacy_logic()
+    ````
+  - **Hint:** Try to provide more context in the FIND block and match the content exactly, including whitespace and indentations.
 
 #### `EXECUTE`: "Run unit tests for the action factory"
 - **Status:**
@@ -85,19 +93,4 @@ The report is composed of a header, followed by the `Execution Summary`, and the
   ````text
   PASSED tests/unit/core/services/test_action_factory.py::test_creation
   ````
-
----
-
-## Failed Action Details
-
-### `EDIT`: src/teddy_executor/core/services/action_factory.py
-- **Status:**
-  - FAILURE
-- **Error:** The `FIND` block did not match. The change may have already been applied.
-  - **FIND Block Content:**
-    ````python
-    # Old logic to be replaced
-    return legacy_logic()
-    ````
-  - **Hint:** Try to provide more context in the FIND block and match the content exactly, including whitespace and indentations.
 ``````

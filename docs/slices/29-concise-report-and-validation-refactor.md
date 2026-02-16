@@ -28,7 +28,7 @@ To improve the clarity, correctness, and robustness of the `teddy execute` workf
     -   [ ] Ensure an action's `Status` is rendered on a new, indented line.
     -   [ ] Remove all unnecessary horizontal lines (`---`).
     -   [ ] Ensure all code blocks (`stdout`, `stderr`, resource content) are rendered without any indentation.
-    -   [ ] Implement logic to display `Failed Action Details` only when actions have failed, including file content for `EDIT`/`CREATE` failures.
+    -   [ ] Implement logic to display `Resource Contents` when a `CREATE` or `EDIT` action fails.
     -   [ ] Implement logic to display `Resource Contents` only when `READ` actions have succeeded.
 -   [ ] **Update Formatter Service (`.../markdown_report_formatter.py`):**
     -   [ ] Remove the `to_json` filter. The template must be responsible for rendering `params` as a clean Markdown list.
@@ -65,7 +65,7 @@ To improve the clarity, correctness, and robustness of the `teddy execute` workf
 
 ### Report Formatting
 -   **Given** a plan that executes successfully, **when** `teddy execute` is run, **then** the report's `Execution Summary` should appear immediately after the header, with each action's `Status` on a new line.
--   **Given** a plan with a failed `EDIT` action, **when** `teddy execute` is run, **then** the report must contain a `Failed Action Details` section showing the error, hints, and the full, non-indented content of the target file.
+-   **Given** a plan with a failed `EDIT` action, **when** `teddy execute` is run, **then** the error details must be shown inline within the `Execution Summary`, and the report must contain a `Resource Contents` section showing the full content of the target file.
 -   **Given** a plan with a failed `EXECUTE` action, **when** `teddy execute` is run, **then** the `stdout` and `stderr` must be displayed in separate, non-indented code blocks.
 
 ### Validation Logic
