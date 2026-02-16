@@ -497,3 +497,78 @@ def test_parse_read_action_with_absolute_path(parser):
     action = plan.actions[0]
     assert action.type == "READ"
     assert action.params["resource"] == absolute_path
+
+
+def test_parser_raises_error_on_unknown_action(parser: MarkdownPlanParser):
+    """
+    Given a Markdown plan with an unknown action header,
+    When the parser parses it,
+    Then it should raise an InvalidPlanError.
+    """
+    from teddy_executor.core.ports.inbound.plan_parser import InvalidPlanError
+
+    plan_content = """
+# Test Plan
+- Status: Green 🟢
+- Plan Type: Test
+- Agent: Dev
+
+## Rationale
+Rationale.
+
+## Action Plan
+
+### `UNKNOWN_ACTION`
+- **Description:** This should fail.
+    """
+
+    with pytest.raises(InvalidPlanError) as excinfo:
+        parser.parse(plan_content)
+
+    assert "Unknown action type: UNKNOWN_ACTION" in str(excinfo.value)
+
+
+def test_parser_raises_error_on_malformed_structure_between_actions(
+    parser: MarkdownPlanParser,
+):
+    """
+    Given a Markdown plan with free text between action blocks,
+    When the parser parses it,
+    Then it should raise an InvalidPlanError.
+    """
+    from teddy_executor.core.ports.inbound.plan_parser import InvalidPlanError
+
+    plan_content = """
+# Test Plan
+- Status: Green 🟢
+- Plan Type: Test
+- Agent: Dev
+
+## Rationale
+Rationale.
+
+## Action Plan
+
+### `EXECUTE`
+- **Description:** First action.
+- **Expected Outcome:** Success.
+- **cwd:** /tmp
+````shell
+echo 1
+````
+
+This is some free text that shouldn't be here.
+
+### `EXECUTE`
+- **Description:** Second action.
+- **Expected Outcome:** Success.
+- **cwd:** /tmp
+````shell
+echo 2
+````
+    """
+
+    with pytest.raises(InvalidPlanError) as excinfo:
+        parser.parse(plan_content)
+
+    assert "Unexpected content found between actions" in str(excinfo.value)

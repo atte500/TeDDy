@@ -66,28 +66,85 @@ class MarkdownPlanParser(IPlanParser):
 
         action_headings = self._find_action_headings(doc, action_plan_heading)
 
-        for heading in action_headings:
+        dispatch_map = {
+            "CREATE": self._parse_create_action,
+            "READ": self._parse_read_action,
+            "EDIT": self._parse_edit_action,
+            "EXECUTE": self._parse_execute_action,
+            "RESEARCH": self._parse_research_action,
+            "CHAT_WITH_USER": self._parse_chat_with_user_action,
+            "PRUNE": self._parse_prune_action,
+            "INVOKE": self._parse_invoke_action,
+            "RETURN": self._parse_return_action,
+        }
+
+        # Iterate through action headings and validate/parse each action
+        for i, heading in enumerate(action_headings):
             action_type = self._get_child_text(heading).strip().replace("`", "")
-            if action_type == "CREATE":
-                actions.append(self._parse_create_action(doc, heading))
-            elif action_type == "READ":
-                actions.append(self._parse_read_action(doc, heading))
-            elif action_type == "EDIT":
-                actions.append(self._parse_edit_action(doc, heading))
-            elif action_type == "EXECUTE":
-                actions.append(self._parse_execute_action(doc, heading))
-            elif action_type == "RESEARCH":
-                actions.append(self._parse_research_action(doc, heading))
-            elif action_type == "CHAT_WITH_USER":
-                actions.append(self._parse_chat_with_user_action(doc, heading))
-            elif action_type == "PRUNE":
-                actions.append(self._parse_prune_action(doc, heading))
-            elif action_type == "INVOKE":
-                actions.append(self._parse_invoke_action(doc, heading))
-            elif action_type == "RETURN":
-                actions.append(self._parse_return_action(doc, heading))
+
+            # 1. Validation: Unknown Action Type
+            if action_type not in dispatch_map:
+                raise InvalidPlanError(f"Unknown action type: {action_type}")
+
+            # 2. Validation: Strict Structure (No Unexpected Content)
+            # Determine the range of nodes belonging to this action
+            next_heading = (
+                action_headings[i + 1] if i + 1 < len(action_headings) else None
+            )
+            self._validate_action_structure(doc, heading, next_heading, action_type)
+
+            # 3. Parsing
+            parse_method = dispatch_map[action_type]
+            actions.append(parse_method(doc, heading))
 
         return actions
+
+    def _validate_action_structure(
+        self,
+        doc: Document,
+        current_heading: Heading,
+        next_heading: Optional[Heading],
+        action_type: str,
+    ):
+        """
+        Validates that the content between the current action heading and the next
+        (or end of doc) strictly matches the expected structure for the action type.
+        This prevents free-form text or junk from accumulating between actions.
+        """
+        if doc.children is None:
+            return
+
+        children_list = list(doc.children)
+        try:
+            start_index = children_list.index(current_heading)
+        except ValueError:
+            return
+
+        end_index = (
+            children_list.index(next_heading) if next_heading else len(children_list)
+        )
+        # Slices get the nodes strictly between the headings
+        action_nodes = children_list[start_index + 1 : end_index]
+
+        # Actions that allow free-form text (Paragraphs)
+        if action_type in {"CHAT_WITH_USER", "INVOKE", "RETURN"}:
+            return
+
+        # Structured actions: Must NOT contain standalone Paragraphs or unrecognized nodes.
+        # They typically consist of a Metadata List and optionally Code Blocks or Sub-Headings.
+        for node in action_nodes:
+            # We strictly whitelist the types of nodes allowed in structured actions.
+            # - MdList: For params
+            # - CodeFence/BlockCode: For content/commands
+            # - Heading: For sub-headings like #### FIND / #### REPLACE
+            if not isinstance(node, (MdList, CodeFence, BlockCode, Heading)):
+                # We found a Paragraph or other unexpected node (like Quote, ThematicBreak, etc.)
+                # This is "unexpected content".
+                # Note: mistletoe parses blank lines as nothing, but text as Paragraphs.
+                raise InvalidPlanError(
+                    f"Unexpected content found between actions (in {action_type}). "
+                    f"Found unexpected {type(node).__name__}."
+                )
 
     def _find_action_headings(
         self, doc: Document, start_node: Heading

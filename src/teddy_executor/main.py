@@ -248,9 +248,15 @@ def execute(
     start_time = datetime.now(timezone.utc)
 
     try:
+        from teddy_executor.core.ports.inbound.plan_parser import InvalidPlanError
+
         final_plan_content = _get_plan_content(plan_content, plan_file)
         parser = create_parser_for_plan(plan_file, final_plan_content)
-        plan = parser.parse(final_plan_content)
+        try:
+            plan = parser.parse(final_plan_content)
+        except InvalidPlanError as e:
+            typer.echo(f"Error: {e}", err=True)
+            raise typer.Exit(code=1)
 
         # Pre-flight validation
         plan_validator = container.resolve(IPlanValidator)
