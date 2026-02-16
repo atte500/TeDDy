@@ -16,6 +16,7 @@ To improve the clarity, correctness, and robustness of the `teddy execute` workf
 -   **`tests/acceptance/test_markdown_reports.py` (MODIFY):** Acceptance tests will be refactored to assert against the new report format.
 -   **`tests/unit/core/services/test_plan_validator.py` (MODIFY):** A new unit test will be added for the new validation rule.
 -   **`tests/unit/core/services/test_markdown_plan_parser.py` (MODIFY/CREATE):** New unit tests will be added for the new parsing validation rules.
+-   **`src/teddy_executor/core/services/context_service.py` (MODIFY):** The context generation logic will be updated to use smart fencing for code blocks.
 
 ## 3. Scope of Work
 
@@ -49,6 +50,17 @@ To improve the clarity, correctness, and robustness of the `teddy execute` workf
     -   [ ] In `.../test_plan_validator.py`, add new test cases for the three new validation rules (`CREATE` file exists, `EDIT` `FIND` is not unique, and `EDIT` `find`/`replace` are identical).
     -   [ ] In the appropriate test file (e.g., `test_markdown_plan_parser.py`), add new test cases that assert `InvalidPlanError` is raised for plans containing unknown actions or malformed structures.
 
+### Feature 3: Robust Markdown Generation (Smart Fencing)
+
+-   [ ] **Create Shared Utility for Smart Fencing:**
+    -   [ ] Create a utility function (e.g., in `src/teddy_executor/core/utils/markdown.py`) that takes a string of content and returns the correct number of backticks for a code fence (i.e., one more than the longest sequence of backticks found in the content).
+-   [ ] **Integrate Smart Fencing into Report Generation:**
+    -   [ ] Create a custom Jinja2 filter that uses the new smart fencing utility.
+    -   [ ] Register this custom filter with the Jinja2 environment used by the `MarkdownReportFormatter`.
+    -   [ ] Update the `concise_report.md.j2` template to use this filter for all fenced code blocks.
+-   [ ] **Integrate Smart Fencing into Context Payload Generation:**
+    -   [ ] Modify the `ContextService` to use the new smart fencing utility when rendering resource contents.
+
 ## 4. Acceptance Criteria
 
 ### Report Formatting
@@ -60,3 +72,7 @@ To improve the clarity, correctness, and robustness of the `teddy execute` workf
 -   **Given** a plan containing an action type of `UNKNOWN_ACTION`, **when** `teddy execute` is run, **then** the command must fail with a validation error stating the action is unknown.
 -   **Given** a plan with free-form text between two valid action blocks, **when** `teddy execute` is run, **then** the command must fail with a validation error about a malformed structure.
 -   **Given** a plan with an `EDIT` action where the `FIND` and `REPLACE` blocks are identical, **when** `teddy execute` is run, **then** the command must fail with a validation error stating that the blocks are the same.
+
+### Robust Markdown Generation
+-   **Given** a file whose content contains a sequence of three backticks (e.g., ` ``` `), **when** that file's content is rendered in the context payload, **then** the enclosing fenced code block must use four or more backticks.
+-   **Given** an action's `stdout` or a file's content in an execution report contains a sequence of three backticks (e.g., ` ``` `), **when** the report is generated, **then** the enclosing fenced code block in the report must use four or more backticks.
