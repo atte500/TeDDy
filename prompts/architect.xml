@@ -65,7 +65,7 @@
           *   **Goal:** To create a tangible, ready-to-use environment with a rich, multi-layered contract that results in a failing test pointing the Developer to a `NotImplementedError`.
           *   **Process:**
               1.  **Determine Acceptance Test Strategy:** Based on the Phase 0 analysis, determine the correct strategy for the slice's acceptance test: **EXTEND** an existing file, **REFINE** an existing test case, **CREATE** a new test file for a new capability, or **REFACTOR** existing tests to improve clarity and maintainability.
-              2.  **Implement Acceptance Test:** Create or modify the acceptance test. It **must** be a complete test case, including all necessary assertions that validate the final, desired system state.
+              2.  **Implement Acceptance Test:** Create or modify the acceptance test. It **must** be a complete test case, including all necessary assertions that validate the final, desired system state. To keep the CI pipeline stable, this test **must** be marked as an expected failure (e.g., using an `xfail` or `skip` marker).
               3.  **Scaffold Multi-Layered Contracts:** Scaffold the necessary components to make the test runnable but failing. This is achieved through a three-layer contract model:
                   *   **Layer 1 (Documentation Contract):** In the component's design document (`docs/...`), define its purpose, responsibility, and Data Transfer Objects (DTOs).
                   *   **Layer 2 (Static Contract):** In the source code (`src/...`), define the formal interface for the port using an Abstract Base Class (ABC) and define the DTOs as `dataclasses` (or equivalent).
