@@ -78,14 +78,8 @@ def test_create_file_when_file_exists_fails_gracefully(monkeypatch, tmp_path: Pa
 
     # The report should clearly indicate the failure
     report = parse_markdown_report(result.stdout)
-    assert report["run_summary"]["Overall Status"] == "FAILURE"
-    action_log = report["action_logs"][0]
-    assert action_log["status"] == "FAILURE"
+    # Validation failure occurs before execution
+    assert report["run_summary"]["Overall Status"] == "Validation Failed"
 
-    details = action_log["details"]
-    # Handle both old string format (if any) and new dict format
-    if isinstance(details, dict):
-        error_msg = details.get("original_details", str(details))
-    else:
-        error_msg = str(details)
-    assert "File exists" in str(error_msg)
+    # In validation failure, actions aren't run, so we check the output directly for the error
+    assert "File already exists" in result.stdout

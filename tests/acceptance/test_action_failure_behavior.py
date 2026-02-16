@@ -44,7 +44,8 @@ def test_create_file_on_existing_file_fails_and_reports_correctly(
 
     # Assert on the Markdown report content using robust parser
     report = parse_markdown_report(result.stdout)
-    assert report["run_summary"].get("Overall Status") == "FAILURE"
+    # With strict validation, this is caught before execution
+    assert report["run_summary"].get("Overall Status") == "Validation Failed"
 
     # Check that the failure detail is present in the output
-    assert "File exists:" in result.stdout
+    assert "File already exists" in result.stdout

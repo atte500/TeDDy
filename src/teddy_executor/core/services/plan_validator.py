@@ -81,6 +81,10 @@ class PlanValidator(IPlanValidator):
         path_str = action.params.get("path")
         if isinstance(path_str, str):
             self._validate_path_is_safe(path_str, "CREATE")
+            if Path(path_str).exists():
+                raise PlanValidationError(
+                    f"File already exists: {path_str}", file_path=path_str
+                )
 
     def _validate_read_action(self, action: ActionData):
         """Validates a 'read' action."""
@@ -120,22 +124,46 @@ class PlanValidator(IPlanValidator):
         if isinstance(edits, list):
             for edit in edits:
                 find_block = edit.get("find")
+                replace_block = edit.get("replace")
+
                 if os.environ.get("TEDDY_DEBUG"):
                     print("\n--- TEDDY DEBUG: PlanValidator ---")
                     print(f"File: {file_path}")
                     print(f"Content (repr): {repr(content)}")
                     print(f"Find Block (repr): {repr(find_block)}")
                     print("--- END TEDDY DEBUG ---\n")
-                if isinstance(find_block, str) and find_block not in content:
+
+                if isinstance(find_block, str):
+                    if find_block == replace_block:
+                        raise PlanValidationError(
+                            f"FIND and REPLACE blocks are identical in: {file_path}",
+                            file_path=str(file_path),
+                        )
+
+                    matches = content.count(find_block)
+                    if matches == 0:
+                        raise PlanValidationError(
+                            f"The `FIND` block could not be located in the file: {file_path}",
+                            file_path=str(file_path),
+                        )
+                    if matches > 1:
+                        raise PlanValidationError(
+                            f"The `FIND` block is ambiguous. Found {matches} matches in: {file_path}",
+                            file_path=str(file_path),
+                        )
+        else:
+            # Handle single 'find' param (legacy/YAML parser)
+            find_block = action.params.get("find") or action.params.get("FIND")
+            replace_block = action.params.get("replace") or action.params.get("REPLACE")
+
+            if isinstance(find_block, str):
+                if find_block == replace_block:
+                    raise PlanValidationError(
+                        f"FIND and REPLACE blocks are identical in: {file_path}",
+                        file_path=str(file_path),
+                    )
+                if find_block not in content:
                     raise PlanValidationError(
                         f"The `FIND` block could not be located in the file: {file_path}",
                         file_path=str(file_path),
                     )
-        else:
-            # Handle single 'find' param (legacy/YAML parser)
-            find_block = action.params.get("find") or action.params.get("FIND")
-            if isinstance(find_block, str) and find_block not in content:
-                raise PlanValidationError(
-                    f"The `FIND` block could not be located in the file: {file_path}",
-                    file_path=str(file_path),
-                )

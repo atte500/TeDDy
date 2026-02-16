@@ -38,13 +38,7 @@ def test_edit_action_fails_on_multiple_occurrences(monkeypatch, tmp_path: Path):
     assert file_to_edit.read_text() == original_content  # File should be unchanged
 
     report = parse_markdown_report(result.stdout)
-    assert report["run_summary"]["Overall Status"] == "FAILURE"
-    action_log = report["action_logs"][0]
-    assert action_log["status"] == "FAILURE"
-
-    details = action_log["details"]
-    if isinstance(details, dict):
-        error_msg = details.get("original_details", str(details))
-    else:
-        error_msg = str(details)
-    assert "Aborting edit to prevent ambiguity" in str(error_msg)
+    # Validation failure occurs before execution
+    assert report["run_summary"]["Overall Status"] == "Validation Failed"
+    # Verify the error message is present
+    assert "The `FIND` block is ambiguous" in result.stdout
