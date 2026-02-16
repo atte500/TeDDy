@@ -109,4 +109,4 @@ Manual check needed
     action_log = report["action_logs"][0]
     assert action_log["status"] == "SKIPPED"
     expected_details = "User skipped this action. Reason: Manual check needed"
-    assert action_log["details"] == expected_details
+    assert expected_details in action_log["details"]["error"]

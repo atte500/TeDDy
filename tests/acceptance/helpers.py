@@ -50,74 +50,86 @@ def run_cli_with_markdown_plan_on_clipboard(
 
 
 def _parse_action_chunk(chunk: str) -> Dict[str, Any]:
-    """Parses a single action text chunk into a dictionary."""
-    log = {}
+    """
+    Parses a single action text chunk into a dictionary. This function is
+    designed to be resilient to multiple formats and always returns a dictionary
+    for the 'details' key.
+    """
+    log: Dict[str, Any] = {"details": {}}
 
-    # --- 1. Parse Heading ---
+    # --- 1. Parse Heading and Status ---
     heading_match = re.match(r"####\s*`(\w+)`.*", chunk)
     if not heading_match:
         return {}
     log["action_type"] = heading_match.group(1).upper()
 
-    status_in_heading = re.search(r"- \*\*Status:\*\* (\w+)", chunk)
-    status_in_body = re.search(r"\*\*Status:\*\*\s*(\w+)", chunk)
+    status_match = re.search(r"- \*\*Status:\*\* (\w+)", chunk)
+    log["status"] = status_match.group(1).upper() if status_match else "UNKNOWN"
 
-    if status_in_heading:
-        log["status"] = status_in_heading.group(1).upper()
-    elif status_in_body:
-        log["status"] = status_in_body.group(1).upper()
-    else:
-        log["status"] = "UNKNOWN"
+    # --- 2. Parse Params (Handles single and multi-line) ---
+    params_content = ""
+    params_match = re.search(
+        r"-\s*\*\*Params:\*\*\s*(.*?)(?=\n- \*\*|\n#### `|$)", chunk, re.DOTALL
+    )
+    if params_match:
+        params_content = params_match.group(1).strip()
 
-    # --- 2. Slice Chunk into Sections ---
-    params_section = ""
-    details_section = ""
-
-    details_start_index = chunk.find("- **Details:**")
-    params_start_index = chunk.find("- **Params:**")
-
-    if params_start_index != -1:
-        end_index = details_start_index if details_start_index != -1 else len(chunk)
-        params_section = chunk[params_start_index:end_index]
-
-    if details_start_index != -1:
-        details_section = chunk[details_start_index:]
-
-    # --- 3. Parse Params Section ---
-    if params_section:
-        single_line_match = re.search(r"`(\{.*\})`", params_section)
+    if params_content:
+        single_line_match = re.search(r"`(\{.*\})`", params_content)
         if single_line_match:
             param_str = single_line_match.group(1)
             try:
                 log["params"] = ast.literal_eval(param_str)
             except (ValueError, SyntaxError):
                 log["params"] = {"raw": param_str}
-        else:  # Multi-line
+        else:
             params_dict = {}
-            lines = params_section.split("\n")[1:]  # Skip the '- **Params:**' line
-            for line in lines:
-                line = line.strip()
-                match = re.match(r"-\s*\*\*(.+?):\*\*\s*`(.+?)`", line)
-                if match:
-                    params_dict[match.group(1)] = match.group(2)
+            multi_line_matches = re.findall(
+                r"-\s*\*\*(.+?):\*\*\s*`(.+?)`", params_content
+            )
+            for key, value in multi_line_matches:
+                params_dict[key] = value
             if params_dict:
                 log["params"] = params_dict
 
-    # --- 4. Parse Details Section ---
-    if details_section:
-        single_line_dict_match = re.search(r"`(\{.*\})`", details_section)
-        if single_line_dict_match:
-            detail_str = single_line_dict_match.group(1)
-            try:
-                log["details"] = ast.literal_eval(detail_str)
-            except (ValueError, SyntaxError):
-                log["details"] = detail_str
-        else:  # Raw string
-            details_text = details_section.split(":", 1)[1].strip()
-            # Strip common markdown formatting characters from the ends
-            details_text = details_text.strip("`* ")
-            log["details"] = details_text
+    # --- 3. Parse Details (Process specific formats first, then generic) ---
+    details_dict: Dict[str, Any] = {}
 
+    # Specific: Structured EXECUTE format
+    rc_match = re.search(r"- \*\*Return Code:\*\* `(\d*)`", chunk)
+    if rc_match and rc_match.group(1):
+        details_dict["return_code"] = int(rc_match.group(1))
+
+    stdout_match = re.search(r"#### `stdout`\s*````text\n(.*?)\n````", chunk, re.DOTALL)
+    if stdout_match:
+        details_dict["stdout"] = stdout_match.group(1).strip()
+
+    stderr_match = re.search(r"#### `stderr`\s*````text\n(.*?)\n````", chunk, re.DOTALL)
+    if stderr_match:
+        details_dict["stderr"] = stderr_match.group(1).strip()
+
+    # Specific: Legacy format (Details as a dict in backticks)
+    details_dict_match = re.search(r"- \*\*Details:\*\* `(\{.*\})`", chunk)
+    if details_dict_match:
+        try:
+            details_dict.update(ast.literal_eval(details_dict_match.group(1)))
+        except (ValueError, SyntaxError):
+            pass
+
+    # Generic: Multi-line Error/Details block (as a fallback)
+    if not details_dict:
+        error_block_match = re.search(
+            r"-\s*\*\*(Error|Details):\*\*\s*(.*?)(?=\n\s*- \*\*|\n\s*#### `|$)",
+            chunk,
+            re.DOTALL,
+        )
+        if error_block_match:
+            error_content = error_block_match.group(2).strip()
+            if error_content.startswith("`") and error_content.endswith("`"):
+                error_content = error_content[1:-1]
+            details_dict["error"] = error_content
+
+    log["details"] = details_dict
     return log
 
 
@@ -151,14 +163,17 @@ def parse_markdown_report(stdout: str) -> Dict[str, Any]:
         try:
             action_log_content = rest_of_report.split("### Action Log")[1]
 
-            # The delimiter is the '####' heading. A positive lookahead `(?=...)` is used
-            # to keep the delimiter as part of the next chunk.
-            action_chunks = re.split(r"(?m)^\s*####\s", action_log_content)
+            # The delimiter is a '#### `ACTION_TYPE`' heading. A positive lookahead `(?=...)`
+            # is used to keep the delimiter as part of the next chunk. This prevents
+            # splitting on sub-headings like '#### `stdout`'.
+            action_chunks = re.split(
+                r"(?m)(?=^\s*####\s*`[A-Z_]+`)", action_log_content
+            )
 
             for chunk in action_chunks:
                 if chunk.strip():
-                    full_chunk_text = "#### " + chunk
-                    parsed_log = _parse_action_chunk(full_chunk_text)
+                    # The chunk is the full text, no need to prepend anything.
+                    parsed_log = _parse_action_chunk(chunk)
                     if parsed_log:
                         report["action_logs"].append(parsed_log)
         except IndexError:
