@@ -192,3 +192,49 @@ def test_report_has_no_extra_newlines_on_successful_validation():
     assert not re.search(excessive_newlines_pattern, result.stdout), (
         "Found excessive newlines before Execution Summary"
     )
+
+
+def test_failed_execute_action_formats_details_human_readably(
+    monkeypatch, tmp_path: Path
+):
+    """
+    Given a plan with an EXECUTE action that fails,
+    When the plan is executed,
+    Then the final report's "Failed Action Details" section
+    should format the stdout, stderr, and return code in a human-readable way.
+    """
+    # GIVEN a plan with a failing command that produces stdout, stderr, and a non-zero exit code
+    failing_command = "python -c \"import sys; print('stdout message'); print('stderr message', file=sys.stderr); sys.exit(42)\""
+    plan_builder = MarkdownPlanBuilder("Test Plan: Failing Execute")
+    plan_builder.add_action(
+        "EXECUTE",
+        {
+            "Description": "Run a failing command",
+            "command": failing_command,
+        },
+    )
+    plan_content = plan_builder.build()
+
+    # WHEN the command is run
+    result = run_cli_with_markdown_plan_on_clipboard(
+        monkeypatch, plan_content, tmp_path
+    )
+
+    # THEN the command should fail
+    assert result.exit_code != 0, "The command should have failed but it succeeded."
+    report_text = result.stdout
+
+    # AND the report should contain the failed action details
+    assert "## Failed Action Details" in report_text
+    assert '### `EXECUTE` on "Run a failing command"' in report_text
+
+    # AND the details should be formatted nicely, not as a raw dict string
+    assert "{'stdout':" not in report_text, "Found raw dictionary key for stdout"
+    assert "'return_code': 42" not in report_text, (
+        "Found raw dictionary key for return_code"
+    )
+
+    # AND the key components of the formatted output should be present
+    assert "- **Return Code:** `42`" in report_text
+    assert "stdout message" in report_text
+    assert "stderr message" in report_text

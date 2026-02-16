@@ -82,3 +82,49 @@ def test_formats_failed_edit_action_with_file_content():
     assert f"- **Error:** {error_message}" in formatted_report
     assert "**Resource:** `[config.txt](/config.txt)`" in formatted_report
     assert file_content in formatted_report
+
+
+def test_formats_failed_execute_action_details_human_readably():
+    """
+    Given an ExecutionReport with a failed EXECUTE action,
+    When the report is formatted,
+    Then the output should format the details in a human-readable way.
+    """
+    # Arrange
+    formatter = MarkdownReportFormatter()
+    details = {
+        "stdout": "stdout message",
+        "stderr": "stderr message",
+        "return_code": 42,
+    }
+    report = ExecutionReport(
+        plan_title="Test Plan",
+        run_summary=RunSummary(
+            status=RunStatus.FAILURE,
+            start_time=datetime.now(timezone.utc),
+            end_time=datetime.now(timezone.utc),
+        ),
+        action_logs=[
+            ActionLog(
+                action_type="execute",
+                status=ActionStatus.FAILURE,
+                params={"command": "a bad command"},
+                details=details,
+            )
+        ],
+    )
+
+    # Act
+    formatted_report = formatter.format(report)
+
+    # Assert
+    # Raw dictionary string should NOT be present
+    assert "{'stdout':" not in formatted_report
+    assert "'return_code': 42" not in formatted_report
+
+    # Human-readable format SHOULD be present
+    assert "- **Return Code:** `42`" in formatted_report
+    assert "#### `stdout`" in formatted_report
+    assert "```text\nstdout message\n```" in formatted_report
+    assert "#### `stderr`" in formatted_report
+    assert "```text\nstderr message\n```" in formatted_report

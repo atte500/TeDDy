@@ -17,6 +17,32 @@
 ````
 ---
 {% endmacro %}
+
+{% macro render_action_details(log) %}
+{% if log.details and not (log.action_type.lower() == 'read' and log.status.value == 'SUCCESS') -%}
+{% if log.details is mapping and log.details.get("error") -%}
+- **Error:** {{ log.details.error }}
+{% elif log.details is mapping and log.action_type.lower() == 'execute' and log.status.value == 'FAILURE' -%}
+{% if log.details.get("return_code") is not none -%}
+- **Return Code:** `{{ log.details.return_code }}`
+{% endif -%}
+{% if log.details.get("stdout") -%}
+#### `stdout`
+````text
+{{ log.details.stdout | trim }}
+````
+{%- endif %}
+{% if log.details.get("stderr") -%}
+#### `stderr`
+````text
+{{ log.details.stderr | trim }}
+````
+{%- endif %}
+{%- else -%}
+- **Details:** `{{ log.details }}`
+{%- endif %}
+{% endif %}
+{% endmacro %}
 # Execution Report: {{ report.plan_title | default('Untitled Plan') }}
 
 - **Overall Status:** {{ "Validation Failed" if report.run_summary.status.value == "VALIDATION_FAILED" else report.run_summary.status.value }}
@@ -91,9 +117,7 @@ The following resource contents were successfully read.
 {% if log.params %}
 - **Params:** `{{ log.params }}`
 {% endif %}
-{% if log.details and not (log.action_type.lower() == 'read' and log.status.value == 'SUCCESS') %}
-- **Details:** `{{ log.details }}`
-{% endif %}
+{{ render_action_details(log) }}
 {% else %}
 *(No actions were executed.)*
 {% endfor %}
