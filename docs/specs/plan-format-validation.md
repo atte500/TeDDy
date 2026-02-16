@@ -9,6 +9,7 @@ This document specifies the pre-flight validation checks that **must** be run on
 -   **Fail Fast:** The system must identify and report errors at the earliest possible opportunity, preventing "approve-then-fail" scenarios that waste time and effort.
 -   **Provide Actionable Feedback:** Validation errors must be specific, clear, and provide enough context for an AI agent to understand the mistake and correct it.
 -   **Enable Self-Correction:** This validation system is the foundation of the **Automated Re-plan Loop**, as defined in the [Interactive Session Workflow Specification](/docs/specs/interactive-session-workflow.md). A failure here triggers the AI's self-correction mechanism.
+-   **Guarantee Graceful Handling:** The validation layer is the primary defense against runtime errors. If a plan passes all validation checks, it should execute without unexpected crashes. Any potential error that can be anticipated (e.g., file not found, command failure) must be caught, handled gracefully, and documented clearly in the final execution report.
 
 ## 2. The Validation Process
 
@@ -56,6 +57,7 @@ These checks validate the *content* of an action against the current state of th
     -   *Failure Example:* A plan tries to `EDIT` `src/utils.py` but that file does not exist.
 -   **[✓] Target path must be in context:** The specified file must be listed in the current turn's context (`turn.context`). This is a safety measure to ensure the AI is not editing files it hasn't "read."
 -   **[✓] Must contain `FIND`/`REPLACE` pairs:** The action block must contain at least one pair of `#### FIND:` and `#### REPLACE:` headings.
+-   **[✓] `FIND` and `REPLACE` must be different:** For each pair, the content of the `FIND` and `REPLACE` blocks must not be identical.
 -   **[✓] `FIND` block must match exactly once:** For each `FIND`/`REPLACE` pair, the content of the `FIND` code block must be found **exactly one time** within the target file.
     -   *Failure (0 matches):* The specified text to find does not exist in the file.
     -   *Failure (>1 matches):* The specified text is ambiguous because it appears multiple times in the file.
