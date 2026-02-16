@@ -37,7 +37,7 @@ def run_cli_command(
 
 
 def run_cli_with_markdown_plan_on_clipboard(
-    monkeypatch, plan_content: str, cwd: Path
+    monkeypatch, plan_content: str, cwd: Path, user_input: Optional[str] = None
 ) -> Result:
     """
     Runs the teddy 'execute' command with a Markdown plan, using the canonical
@@ -46,7 +46,7 @@ def run_cli_with_markdown_plan_on_clipboard(
     with monkeypatch.context() as m:
         m.chdir(cwd)
         args = ["execute", "--yes", "--no-copy", "--plan-content", plan_content]
-        return runner.invoke(app, args)
+        return runner.invoke(app, args, input=user_input)
 
 
 def _parse_action_chunk(chunk: str) -> Dict[str, Any]:
@@ -63,34 +63,29 @@ def _parse_action_chunk(chunk: str) -> Dict[str, Any]:
         return {}
     log["action_type"] = heading_match.group(1).upper()
 
-    status_match = re.search(r"- \*\*Status:\*\* (\w+)", chunk)
+    status_match = re.search(
+        r"-\s*\*\*Status:\*\*\s*\n\s*-\s*(\w+)", chunk, re.MULTILINE
+    )
     log["status"] = status_match.group(1).upper() if status_match else "UNKNOWN"
 
     # --- 2. Parse Params (Handles single and multi-line) ---
     params_content = ""
     params_match = re.search(
-        r"-\s*\*\*Params:\*\*\s*(.*?)(?=\n- \*\*|\n#### `|$)", chunk, re.DOTALL
+        r"-\s*\*\*Params:\*\*\s*\n(.*?)(?=\n- \*\*|\n#### `|$)", chunk, re.DOTALL
     )
     if params_match:
         params_content = params_match.group(1).strip()
 
     if params_content:
-        single_line_match = re.search(r"`(\{.*\})`", params_content)
-        if single_line_match:
-            param_str = single_line_match.group(1)
-            try:
-                log["params"] = ast.literal_eval(param_str)
-            except (ValueError, SyntaxError):
-                log["params"] = {"raw": param_str}
-        else:
-            params_dict = {}
-            multi_line_matches = re.findall(
-                r"-\s*\*\*(.+?):\*\*\s*`(.+?)`", params_content
-            )
-            for key, value in multi_line_matches:
-                params_dict[key] = value
-            if params_dict:
-                log["params"] = params_dict
+        params_dict = {}
+        # Updated regex for the new list format: "- **Key:** Value" or "- **Key:** `Value`"
+        multi_line_matches = re.findall(
+            r"-\s*\*\*(.+?):\*\*\s*`?(.+?)`?$", params_content, re.MULTILINE
+        )
+        for key, value in multi_line_matches:
+            params_dict[key.strip()] = value.strip()
+        if params_dict:
+            log["params"] = params_dict
 
     # --- 3. Parse Details (Process specific formats first, then generic) ---
     details_dict: Dict[str, Any] = {}

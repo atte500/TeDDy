@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import re
+import pytest
 from typer.testing import CliRunner
 
 from teddy_executor.main import app
@@ -240,6 +241,83 @@ def test_failed_execute_action_formats_details_human_readably(
     assert "stderr message" in report_text
 
 
+@pytest.mark.xfail(
+    reason="This test expects the new, concise report format, which is not yet implemented."
+)
+def test_successful_plan_execution_report_format(monkeypatch, tmp_path: Path):
+    """
+    Given a plan that executes successfully,
+    When `teddy execute` is run,
+    Then the report's `Execution Summary` should appear immediately after the header,
+    And each action's `Status` should be on a new, indented line.
+    """
+    # Arrange
+    builder = MarkdownPlanBuilder("Test Plan: Successful Execution")
+    builder.add_action(
+        "CREATE",
+        params={
+            "File Path": "new_file.txt",
+            "Description": "Create a new file.",
+        },
+        content_blocks={"`Content:`": ("text", "Hello, TeDDy!")},
+    )
+    builder.add_action(
+        "EXECUTE",
+        params={
+            "Description": "Simple echo",
+            "command": "echo 'Success!'",
+            "Expected Outcome": "The command should run successfully.",
+        },
+    )
+    plan_content = builder.build()
+
+    # Act
+    result = run_cli_with_markdown_plan_on_clipboard(
+        monkeypatch, plan_content, tmp_path, user_input="y\ny\n"
+    )
+
+    # Assert
+    assert result.exit_code == 0, f"CLI invocation failed: {result.stdout}"
+
+    report_lines = [line.strip() for line in result.stdout.strip().split("\n")]
+
+    # Find the start of the summary
+    try:
+        summary_start_index = report_lines.index("## Execution Summary")
+    except ValueError:
+        pytest.fail(
+            f"The '## Execution Summary' header was not found in the report.\\nReport:\\n{result.stdout}"
+        )
+
+    # Assert that the summary comes right after the header block
+    # The header block consists of the H1, Overall Status, Start Time, End Time, and a blank line.
+    assert summary_start_index <= 5, (
+        f"Execution Summary is not positioned correctly after the header. Report:\\n{result.stdout}"
+    )
+
+    # Assert status formatting for the CREATE action
+    try:
+        create_status_index = report_lines.index("- SUCCESS", summary_start_index)
+        assert report_lines[create_status_index - 1] == "- Status:", (
+            "Status for CREATE is not on a new, indented line."
+        )
+    except ValueError:
+        pytest.fail(
+            f"Could not find the expected status format for the CREATE action.\\nReport:\\n{result.stdout}"
+        )
+
+    # Assert status formatting for the EXECUTE action
+    try:
+        execute_status_index = report_lines.index("- SUCCESS", create_status_index + 1)
+        assert report_lines[execute_status_index - 1] == "- Status:", (
+            "Status for EXECUTE is not on a new, indented line."
+        )
+    except ValueError:
+        pytest.fail(
+            f"Could not find the expected status format for the EXECUTE action.\\nReport:\\n{result.stdout}"
+        )
+
+
 def test_markdown_report_for_all_skipped_actions(
     tmp_path: Path,
 ):
@@ -281,8 +359,12 @@ def test_markdown_report_for_all_skipped_actions(
     assert '#### `READ` on "Read the file"' in result.stdout, (
         "The READ action should be in the log"
     )
-    assert "- **Status:** SKIPPED" in result.stdout, (
-        "The READ action should be marked as skipped"
+    # Check for the new multi-line status format
+    expected_status_string = "- **Status:**\n  - SKIPPED"
+    # Normalize newlines for cross-platform compatibility
+    normalized_stdout = result.stdout.replace("\r\n", "\n")
+    assert expected_status_string in normalized_stdout, (
+        f"The READ action should be marked as skipped with the new format. Got:\\n{result.stdout}"
     )
     assert '#### `EXECUTE` on "Run a simple command"' in result.stdout, (
         "The EXECUTE action should be in the log"

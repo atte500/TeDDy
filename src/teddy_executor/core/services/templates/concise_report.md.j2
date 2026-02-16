@@ -10,12 +10,10 @@
   rendered output when conditional sections are not rendered.
 #}
 {% macro render_resource(path, content) %}
----
 **Resource:** `[{{ path | basename }}]({% if not path.startswith('/') %}/{% endif %}{{ path }})`
 ````text
 {{ content }}
 ````
----
 {% endmacro %}
 
 {% macro render_action_details(log) %}
@@ -113,9 +111,13 @@ The following resource contents were successfully read.
 
 {% set description = log.params.get('Description') or log.params.get('description') %}
 #### `{{ log.action_type.upper() }}`{% if description %} on "{{ description }}"{% endif %}
-- **Status:** {{ log.status.value }}
+- **Status:**
+  - {{ log.status.value }}
 {% if log.params %}
-- **Params:** `{{ log.params }}`
+- **Params:**
+  {% for key, value in log.params.items() %}
+  - **{{ key }}:** {{ value }}
+  {% endfor %}
 {% endif %}
 {{ render_action_details(log) }}
 {% else %}

@@ -84,6 +84,38 @@ def test_formats_failed_edit_action_with_file_content():
     assert file_content in formatted_report
 
 
+def test_formats_action_status_on_new_line():
+    """
+    Given an ExecutionReport with a successful action,
+    When the report is formatted,
+    Then the action's status should be on a new, indented line.
+    """
+    # Arrange
+    formatter = MarkdownReportFormatter()
+    report = ExecutionReport(
+        plan_title="Test Plan",
+        run_summary=RunSummary(
+            status=RunStatus.SUCCESS,
+            start_time=datetime.now(timezone.utc),
+            end_time=datetime.now(timezone.utc),
+        ),
+        action_logs=[
+            ActionLog(
+                action_type="create",
+                status=ActionStatus.SUCCESS,
+                params={"path": "new_file.txt"},
+            )
+        ],
+    )
+    expected_status_format = "- **Status:**\n  - SUCCESS"
+
+    # Act
+    formatted_report = formatter.format(report)
+
+    # Assert
+    assert expected_status_format in formatted_report
+
+
 def test_formats_failed_execute_action_details_human_readably():
     """
     Given an ExecutionReport with a failed EXECUTE action,
