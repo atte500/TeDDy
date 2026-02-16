@@ -2,6 +2,7 @@ import os
 
 
 from teddy_executor.core.domain.models import ContextResult
+from teddy_executor.core.utils.markdown import get_fence_for_content
 
 
 def _get_file_extension(file_path: str) -> str:
@@ -39,6 +40,7 @@ def format_project_context(context: ContextResult) -> str:
             output_parts.append(f"--- {path} (Not Found) ---")
         else:
             extension = _get_file_extension(path)
+            fence = get_fence_for_content(content)
             output_parts.append(f"--- {path} ---")
-            output_parts.append(f"````{extension}\n{content}\n````")
+            output_parts.append(f"{fence}{extension}\n{content}\n{fence}")
     return "\n".join(output_parts)

@@ -49,9 +49,10 @@ def test_format_project_context():
 
     # 5. Check content of File Contents
     assert "--- src/main.py ---" in output
-    assert "````python\nprint('hello')\n````" in output
+    # Smart fencing uses 3 backticks for simple content
+    assert "```python\nprint('hello')\n```" in output
     assert "--- README.md ---" in output
-    assert "````markdown\n# Title\n````" in output
+    assert "```markdown\n# Title\n```" in output
     assert "--- missing.txt (Not Found) ---" in output
 
     # 6. Check order of headers

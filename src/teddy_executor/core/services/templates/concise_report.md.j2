@@ -11,9 +11,9 @@
 #}
 {% macro render_resource(path, content) %}
 **Resource:** `[{{ path | basename }}]({% if not path.startswith('/') %}/{% endif %}{{ path }})`
-````text
+{{ content | fence }}text
 {{ content }}
-````
+{{ content | fence }}
 {% endmacro %}
 
 {% macro render_action_details(log) %}
@@ -30,15 +30,15 @@
 {% endif -%}
 {% if log.details.get("stdout") -%}
 #### `stdout`
-````text
+{{ log.details.stdout | trim | fence }}text
 {{ log.details.stdout | trim }}
-````
+{{ log.details.stdout | trim | fence }}
 {% endif -%}
 {% if log.details.get("stderr") -%}
 #### `stderr`
-````text
+{{ log.details.stderr | trim | fence }}text
 {{ log.details.stderr | trim }}
-````
+{{ log.details.stderr | trim | fence }}
 {% endif -%}
 {# Render generic details if no specific fields matched, but avoid rendering if it's just content #}
 {% if not log.details.get("error") and not log.details.get("return_code") and not log.details.get("stdout") and not log.details.get("stderr") and not log.details.get("content") %}

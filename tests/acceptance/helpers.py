@@ -95,13 +95,21 @@ def _parse_action_chunk(chunk: str) -> Dict[str, Any]:
     if rc_match and rc_match.group(1):
         details_dict["return_code"] = int(rc_match.group(1))
 
-    stdout_match = re.search(r"#### `stdout`\s*````text\n(.*?)\n````", chunk, re.DOTALL)
+    # Matches `stdout` block with variable fence length (3 or more backticks)
+    # Group 1: The opening fence (e.g., "```" or "````")
+    # Group 2: The content inside
+    # \1: Backreference to match the closing fence to the opening fence
+    stdout_match = re.search(
+        r"#### `stdout`\s*(`{3,})text\n(.*?)\n\1", chunk, re.DOTALL
+    )
     if stdout_match:
-        details_dict["stdout"] = stdout_match.group(1).strip()
+        details_dict["stdout"] = stdout_match.group(2).strip()
 
-    stderr_match = re.search(r"#### `stderr`\s*````text\n(.*?)\n````", chunk, re.DOTALL)
+    stderr_match = re.search(
+        r"#### `stderr`\s*(`{3,})text\n(.*?)\n\1", chunk, re.DOTALL
+    )
     if stderr_match:
-        details_dict["stderr"] = stderr_match.group(1).strip()
+        details_dict["stderr"] = stderr_match.group(2).strip()
 
     # Specific: Legacy format (Details as a dict in backticks)
     details_dict_match = re.search(r"- \*\*Details:\*\* `(\{.*\})`", chunk)

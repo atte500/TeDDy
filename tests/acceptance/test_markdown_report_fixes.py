@@ -209,3 +209,45 @@ def test_edit_validation_failure_reports_file_content(tmp_path: Path):
 
     # AND the report MUST contain the original content of the file
     assert file_content in report, "File content not found in validation failure report"
+
+
+def test_smart_fencing_in_report():
+    """
+    Given an EXECUTE action that outputs triple backticks,
+    When the report is generated,
+    Then the stdout block in the report must be fenced with quad backticks (or more).
+    """
+    # GIVEN a plan that echoes triple backticks
+    # Note: We use single quotes in the echo command to avoid shell expansion errors
+    # AND we use quad backticks for the plan's code block to allow nesting triple backticks inside
+    plan_content = textwrap.dedent("""
+        # Smart Fence Test
+        - **Agent:** Developer
+        ## Action Plan
+        ### `EXECUTE`
+        - **Description:** Echo backticks
+        ````shell
+        echo 'Here are ``` backticks'
+        ````
+    """).strip()
+
+    # WHEN
+    result = runner.invoke(
+        app,
+        ["execute", "--plan-content", plan_content, "-y"],
+        catch_exceptions=False,
+    )
+
+    # THEN
+    if result.exit_code != 0:
+        print(result.stdout)
+    assert result.exit_code == 0
+    report = result.stdout
+
+    # The report should contain the output
+    assert "Here are ``` backticks" in report
+
+    # AND the surrounding fence must be 4 backticks
+    # We look for the pattern: \n````text\n...```\n````
+    assert "\n````text\n" in report, "Report did not use quad backticks for fencing"
+    assert "\n````\n" in report, "Report did not close with quad backticks"
