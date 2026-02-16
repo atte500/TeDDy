@@ -17,10 +17,14 @@
 {% endmacro %}
 
 {% macro render_action_details(log) %}
-{% if log.details and not (log.action_type.lower() == 'read' and log.status.value == 'SUCCESS') -%}
-{% if log.details is mapping and log.details.get("error") -%}
+{% if log.details -%}
+{% if log.details is mapping -%}
+{% if log.details.get("error") -%}
 - **Error:** {{ log.details.error }}
-{% elif log.details is mapping and log.action_type.lower() == 'execute' and log.status.value == 'FAILURE' -%}
+{% endif -%}
+{% if log.details.get("original_details") -%}
+- **Error:** {{ log.details.original_details }}
+{% endif -%}
 {% if log.details.get("return_code") is not none -%}
 - **Return Code:** `{{ log.details.return_code }}`
 {% endif -%}
@@ -29,16 +33,20 @@
 ````text
 {{ log.details.stdout | trim }}
 ````
-{%- endif %}
+{% endif -%}
 {% if log.details.get("stderr") -%}
 #### `stderr`
 ````text
 {{ log.details.stderr | trim }}
 ````
-{%- endif %}
-{%- else -%}
+{% endif -%}
+{# Render generic details if no specific fields matched, but avoid rendering if it's just content #}
+{% if not log.details.get("error") and not log.details.get("return_code") and not log.details.get("stdout") and not log.details.get("stderr") and not log.details.get("content") %}
 - **Details:** `{{ log.details }}`
-{%- endif %}
+{% endif -%}
+{% else -%}
+- **Details:** `{{ log.details }}`
+{% endif -%}
 {% endif %}
 {% endmacro %}
 # Execution Report: {{ report.plan_title | default('Untitled Plan') }}
@@ -60,46 +68,22 @@
 {% endif %}
 {% endif -%}
 
-{# Extract successful READ logs for the Resource Contents section #}
-{% set ns = namespace(read_logs=[]) %}
+{# Extract logs that should display resource content #}
+{% set ns = namespace(content_logs=[]) %}
 {% for log in report.action_logs %}
-  {% if log.action_type.lower() == 'read' and log.status.value == 'SUCCESS' and log.details and 'content' in log.details %}
-    {% set ns.read_logs = ns.read_logs + [log] %}
+  {% if log.details and log.details is mapping and log.details.get('content') %}
+    {# Include if it's a successful READ OR if it's a failed EDIT/CREATE #}
+    {% if (log.action_type.lower() == 'read' and log.status.value == 'SUCCESS') or (log.status.value == 'FAILURE') %}
+      {% set ns.content_logs = ns.content_logs + [log] %}
+    {% endif %}
   {% endif %}
 {% endfor -%}
 
-{% if ns.read_logs %}
+{% if ns.content_logs %}
 ## Resource Contents
-The following resource contents were successfully read.
-{% for log in ns.read_logs %}
-{% set res_path = log.params.get('Resource') or log.params.get('resource') or log.params.get('path') %}
+{% for log in ns.content_logs %}
+{% set res_path = log.params.get('File Path') or log.params.get('Resource') or log.params.get('resource') or log.params.get('path') %}
 {{ render_resource(res_path, log.details.content) }}
-{% endfor %}
-{% endif -%}
-
-{# Extract failed logs for the Failed Action Details section #}
-{% set ns.failed_logs = [] %}
-{% for log in report.action_logs %}
-  {% if log.status.value == 'FAILURE' %}
-    {% set ns.failed_logs = ns.failed_logs + [log] %}
-  {% endif %}
-{% endfor -%}
-
-{% if ns.failed_logs %}
-## Failed Action Details
-
-{% for log in ns.failed_logs %}
-{% set description = log.params.get('Description') or log.params.get('description') %}
-### `{{ log.action_type.upper() }}`{% if description %} on "{{ description }}"{% endif %}
-{% if log.details and log.details.error %}
-- **Error:** {{ log.details.error }}
-{% endif %}
-{% if log.details and log.details.content %}
-
-### Resource Contents
-{% set res_path = log.params.get('File Path') or log.params.get('path') or log.params.get('Resource') %}
-{{ render_resource(res_path, log.details.content) }}
-{% endif %}
 {% endfor %}
 {% endif -%}
 

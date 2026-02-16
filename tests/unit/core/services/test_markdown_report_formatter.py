@@ -49,9 +49,10 @@ def test_formats_read_action_with_resource_contents():
 
 def test_formats_failed_edit_action_with_file_content():
     """
-    Given an ExecutionReport with a failed EDIT action containing file content in details,
-    When the report is formatted,
-    Then the output should include a 'Failed Action Details' section with the file content.
+    Given an ExecutionReport for a failed EDIT action,
+    When the report is formatted according to the new spec,
+    Then it should not contain a 'Failed Action Details' section,
+    And it should contain a 'Resource Contents' section.
     """
     # Arrange
     formatter = MarkdownReportFormatter()
@@ -78,9 +79,15 @@ def test_formats_failed_edit_action_with_file_content():
     formatted_report = formatter.format(report)
 
     # Assert
-    assert "## Failed Action Details" in formatted_report
-    assert f"- **Error:** {error_message}" in formatted_report
-    assert "**Resource:** `[config.txt](/config.txt)`" in formatted_report
+    assert "## Failed Action Details" not in formatted_report
+    assert "## Execution Summary" in formatted_report
+
+    # Check for the multi-line status format for FAILURE
+    expected_status_string = "- **Status:**\n  - FAILURE"
+    normalized_report = formatted_report.replace("\r\n", "\n")
+    assert expected_status_string in normalized_report
+
+    assert "## Resource Contents" in formatted_report
     assert file_content in formatted_report
 
 

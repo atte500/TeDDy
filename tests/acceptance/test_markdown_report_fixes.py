@@ -144,12 +144,14 @@ def test_failed_edit_action_reports_file_content(tmp_path: Path):
     assert result.exit_code != 0, "Command should fail"
     report = result.stdout
 
-    # AND the report must contain a failed action details section with the file content
-    assert "## Failed Action Details" in report, "Report missing failed details section"
-    assert '### `EDIT` on "Update the project name."' in report, (
-        "Report missing correct action title with description"
+    # AND the report must contain a Resource Contents section with the file content
+    assert "## Failed Action Details" not in report, (
+        "Report contains deprecated failed details section"
     )
-    assert "### Resource Contents" in report, "Report missing resource contents section"
+    assert '#### `EDIT` on "Update the project name."' in report, (
+        "Report missing correct action title with description in summary"
+    )
+    assert "## Resource Contents" in report, "Report missing resource contents section"
     assert f"**Resource:** `[{target_file_name}](/{target_file_name})`" in report, (
         "Report missing correct resource link"
     )

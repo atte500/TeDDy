@@ -97,11 +97,10 @@ def test_failed_edit_action_includes_file_content_in_report(
     monkeypatch, tmp_path: Path
 ):
     """
-    Given a plan with an EDIT action that fails during execution (not validation),
-    When the user runs `teddy execute`,
-    Then the command should fail,
-    And the final markdown report should contain a "Failed Action Details" section
-    with the current content of the file.
+    Given a plan with an EDIT action that fails during execution,
+    When `teddy execute` is run,
+    Then the report should show failure details inline within the `Execution Summary`,
+    And the report must contain a `Resource Contents` section with the file's content.
     """
     # Arrange
     file_to_edit = tmp_path / "protected.txt"
@@ -138,13 +137,19 @@ def test_failed_edit_action_includes_file_content_in_report(
         assert result.exit_code == 1, (
             f"Expected exit code 1, but got {result.exit_code}. Output:\\n{result.stdout}"
         )
-        assert "## Failed Action Details" in result.stdout
-        # The report should include the file content for context
-        assert original_content in result.stdout
-        # Assert the relative path is present as a correct markdown link
+
+        report_text = result.stdout
+        assert "## Failed Action Details" not in report_text
+        assert "## Execution Summary" in report_text
+        assert "- **Status:**\n  - FAILURE" in report_text.replace("\r\n", "\n")
+
+        # Assert that the file content is present in the correct section
+        assert "## Resource Contents" in report_text
+        assert original_content in report_text
+        # Assert the relative path is present as a correct markdown link inside the content section
         assert (
             f"**Resource:** `[{file_to_edit.name}](/{file_to_edit.name})`"
-            in result.stdout
+            in report_text
         )
 
     finally:
@@ -225,9 +230,12 @@ def test_failed_execute_action_formats_details_human_readably(
     assert result.exit_code != 0, "The command should have failed but it succeeded."
     report_text = result.stdout
 
-    # AND the report should contain the failed action details
-    assert "## Failed Action Details" in report_text
-    assert '### `EXECUTE` on "Run a failing command"' in report_text
+    # AND the report should contain the failed action details inline in the summary
+    assert "## Failed Action Details" not in report_text
+    assert '#### `EXECUTE` on "Run a failing command"' in report_text
+
+    # AND the status should be FAILURE
+    assert "- **Status:**\n  - FAILURE" in report_text.replace("\r\n", "\n")
 
     # AND the details should be formatted nicely, not as a raw dict string
     assert "{'stdout':" not in report_text, "Found raw dictionary key for stdout"
@@ -241,9 +249,6 @@ def test_failed_execute_action_formats_details_human_readably(
     assert "stderr message" in report_text
 
 
-@pytest.mark.xfail(
-    reason="This test expects the new, concise report format, which is not yet implemented."
-)
 def test_successful_plan_execution_report_format(monkeypatch, tmp_path: Path):
     """
     Given a plan that executes successfully,
@@ -298,7 +303,7 @@ def test_successful_plan_execution_report_format(monkeypatch, tmp_path: Path):
     # Assert status formatting for the CREATE action
     try:
         create_status_index = report_lines.index("- SUCCESS", summary_start_index)
-        assert report_lines[create_status_index - 1] == "- Status:", (
+        assert report_lines[create_status_index - 1] == "- **Status:**", (
             "Status for CREATE is not on a new, indented line."
         )
     except ValueError:
@@ -309,7 +314,7 @@ def test_successful_plan_execution_report_format(monkeypatch, tmp_path: Path):
     # Assert status formatting for the EXECUTE action
     try:
         execute_status_index = report_lines.index("- SUCCESS", create_status_index + 1)
-        assert report_lines[execute_status_index - 1] == "- Status:", (
+        assert report_lines[execute_status_index - 1] == "- **Status:**", (
             "Status for EXECUTE is not on a new, indented line."
         )
     except ValueError:
