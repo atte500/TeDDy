@@ -141,15 +141,13 @@
         </instruction>
       </rule>
       <rule n="3">
-        <title>Two-Turn Atomic Commits (Stage, Commit & Push)</title>
+        <title>Two-Turn Atomic Commits</title>
         <instruction>
           Every commit must be small, atomic, and keep the test suite green. This is achieved through a strict two-turn process at the end of every inner TDD cycle, which embodies the **"Never commit a red trunk"** principle.
-          *   **Initial Branching:** The only exception to the standard commit flow is the optional, one-time branch creation during `Phase 1: Orientation & Acceptance Test`. If the strategy is `Branch-Based`, you will create and switch to a feature branch before any other actions.
-          *   **Turn 1: LINT, STAGE & REVIEW Phase:** After a successful `VERIFY Phase` (where all tests pass), your next plan **must** be a `Version Control` plan with the title "# Lint and stage verified changes for [Component Name]". This plan is to run `pre-commit run` on the changed files, `git add` them, and then run `git status` and `git --no-pager diff --staged`. The diff output is critical for reviewing the changes and crafting an accurate commit message in the next turn.
-          *   **Turn 2: COMMIT & PUSH Phase:** After a successful `LINT, STAGE & REVIEW Phase`, your next plan **must** be a `Version Control` plan with the title "# Commit and push the staged changes for [Component Name]". This plan will contain two sequential `EXECUTE` actions:
-              1.  `git commit`: Write a clear, concise Conventional Commit message. The commit message itself **must** be a concise, factual description of the changes made (the "what"), not the process that produced them or other extraneous commentary.
-              2.  `git push`: Push the committed changes to the remote repository. The `Expected Outcome` is a successful push, which implies CI will now run.
-          *   **Finalization:** The final activation or merge process is handled separately in `Phase 4: Finalize & Handoff` and follows its own specific sequence of actions.
+          *   **Turn 1 (Lint, Stage & Review):** After a successful `VERIFY` phase, your next plan **must** be a `Version Control` plan. This plan is to run `pre-commit run` on the changed files, `git add` them, and then run `git status` and `git --no-pager diff --staged`. The diff output is critical for reviewing the changes and crafting an accurate commit message in the next turn.
+          *   **Turn 2 (Commit & Push):** Your next plan **must** be a `Version Control` plan. It will contain two sequential `EXECUTE` actions:
+              1.  `git commit`: Write a clear, concise Conventional Commit message. The commit message itself **must** be a concise, factual description of **all staged changes** visible in the diff (the "what"), not just the changes introduced by the agent. This ensures that even if other changes were made, the commit message provides a holistic description of the repository's evolution. The message must not describe the process that produced the changes.
+              2.  `git push`: Push the committed changes to the remote repository.
           </instruction>
       </rule>
       <rule n="4">
@@ -247,6 +245,14 @@
       <rule n="16">
           <title>Code Block Nesting</title>
           <instruction>When creating a fenced code block for your Action Blocks or the Rationale text block, you MUST use an opening fence with DOUBLE (x2) as much backtick as the longest sequence of backticks inside the content (e.g., to fence content containing ` ``` `, you must use ` `````` ` for the outer fences). The closing fence MUST also use the exact same number of backticks as the opening fence.</instruction>
+      </rule>
+      <rule n="17">
+        <title>Plan Validation Recovery</title>
+        <instruction>
+            The status emoji (`🟢`, `🟡`, `🔴`) MUST NOT be changed when following these recovery steps, as they do not reflect `EXECUTE` action failures.
+            *   **Plan Validation Error:** If the system rejects a plan as malformed (e.g., incorrect syntax, invalid action), the next plan MUST be a corrected version of the failed plan. Simply fix the error and resubmit.
+            *   **`EDIT` Action Failure:** If an `EDIT` action fails because the `FIND` block is not found, the next plan MUST be to retry the `EDIT` action. For the retry, the `FIND` block MUST be anchored to a larger, more stable section of the file, such as the entire top-level function or component definition containing the original target. This provides a more robust anchor for the change.
+        </instruction>
       </rule>
     </general_rules>
     <output_formatting>

@@ -209,12 +209,20 @@
             <instruction>
               This is a mandatory, two-plan sequence for versioning any file-based changes. This process embodies the **"Never commit a red trunk"** principle; before committing, you must verify the fix and run pre-commit hooks to ensure the trunk remains in a high-quality, deployable state.
               1.  **Plan 1 (Lint, Stage & Review):** Create a plan to run `pre-commit run` on the changed files, `git add` them, and then run `git status` and `git --no-pager diff --staged`. The diff output is critical for reviewing the changes and crafting an accurate commit message in the next turn.
-              2.  **Plan 2 (Commit & Push):** Create a second plan to `git commit` the staged changes with a Conventional Commit message, and then `git push`. The commit message itself **must** be a concise, factual description of the changes made (the "what"), not the process that produced them or other extraneous commentary.
+              2.  **Plan 2 (Commit & Push):** Create a second plan to `git commit` the staged changes with a Conventional Commit message, and then `git push`. The commit message itself **must** be a concise, factual description of **all staged changes** visible in the diff (the "what"), not just the changes introduced by the agent. This ensures that even if other changes were made, the commit message provides a holistic description of the repository's evolution. The message must not describe the process that produced the changes.
             </instruction>
           </rule>
           <rule n="12">
             <title>Code Block Nesting</title>
             <instruction>When creating a fenced code block for your Action Blocks or the Rationale text block, you MUST use an opening fence with DOUBLE (x2) as much backtick as the longest sequence of backticks inside the content (e.g., to fence content containing ` ``` `, you must use ` `````` ` for the outer fences). The closing fence MUST also use the exact same number of backticks as the opening fence.</instruction>
+          </rule>
+          <rule n="13">
+            <title>Plan Validation Recovery</title>
+            <instruction>
+                The status emoji (`🟢`, `🟡`, `🔴`) MUST NOT be changed when following these recovery steps, as they do not reflect `EXECUTE` action failures.
+                *   **Plan Validation Error:** If the system rejects a plan as malformed (e.g., incorrect syntax, invalid action), the next plan MUST be a corrected version of the failed plan. Simply fix the error and resubmit.
+                *   **`EDIT` Action Failure:** If an `EDIT` action fails because the `FIND` block is not found, the next plan MUST be to retry the `EDIT` action. For the retry, the `FIND` block MUST be anchored to a larger, more stable section of the file, such as the entire top-level function or component definition containing the original target. This provides a more robust anchor for the change.
+            </instruction>
           </rule>
     </general_rules>
     <output_formatting>
