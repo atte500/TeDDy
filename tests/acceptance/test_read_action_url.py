@@ -40,6 +40,11 @@ def test_read_action_can_read_from_url(httpserver: HTTPServer, monkeypatch, tmp_
 
     report = parse_markdown_report(result.stdout)
 
+    # Check for correct header link format: ### READ: [http://...](http://...)
+    # We check raw stdout because the parser might abstract the header away
+    expected_header = f"### `READ`: [{url}]({url})"
+    assert expected_header in result.stdout
+
     assert "action_logs" in report
     assert len(report["action_logs"]) == 1
     read_action_log = report["action_logs"][0]

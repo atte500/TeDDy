@@ -112,9 +112,9 @@ def test_context_generates_standard_output_and_is_clean(tmp_path: Path, monkeypa
     assert file_contents_match is not None, "File Contents section not found"
     file_contents_section = file_contents_match.group(1)
 
-    assert "--- README.md ---" in file_contents_section
-    assert "--- docs/ARCHITECTURE.md ---" in file_contents_section
-    assert "--- non_existent_file.md (Not Found) ---" in file_contents_section
+    assert "## [README.md](/README.md)" in file_contents_section
+    assert "## [docs/ARCHITECTURE.md](/docs/ARCHITECTURE.md)" in file_contents_section
+    assert "## non_existent_file.md (Not Found)" in file_contents_section
 
     # Assert - Direct Repository Tree Output (Scenario 4)
     assert not (tmp_path / "repotree.txt").exists()

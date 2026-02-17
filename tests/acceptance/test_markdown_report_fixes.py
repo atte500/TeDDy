@@ -36,7 +36,8 @@ def test_execute_action_report_shows_description():
     )
 
     assert result.exit_code == 0
-    assert '#### `EXECUTE` on "My Test Command"' in result.stdout
+    # New format: ### `EXECUTE`: "My Test Command"
+    assert '### `EXECUTE`: "My Test Command"' in result.stdout
 
 
 def test_read_action_shows_correct_resource_path(tmp_path: Path):
@@ -81,8 +82,8 @@ def test_read_action_shows_correct_resource_path(tmp_path: Path):
     output = result.stdout
     assert "## Resource Contents" in output
     # The parser now normalizes the path, so we expect the relative path in the report.
-    # The template renders it as a link inside backticks.
-    expected_resource = f"**Resource:** `[{test_file.name}](/{test_file.name})`"
+    # New format: H3 Header with link.
+    expected_resource = f"### [{test_file.name}](/{test_file.name})"
     assert expected_resource in output
     assert "Hello from the test file." in output
 
@@ -148,11 +149,14 @@ def test_failed_edit_action_reports_file_content(tmp_path: Path):
     assert "## Failed Action Details" not in report, (
         "Report contains deprecated failed details section"
     )
-    assert '#### `EDIT` on "Update the project name."' in report, (
-        "Report missing correct action title with description in summary"
+    # New format: ### `EDIT`: [pyproject.toml](/pyproject.toml)
+    # Note: The template now uses the path link in the header
+    assert f"### `EDIT`: [{target_file_name}](/{target_file_name})" in report, (
+        "Report missing correct action title with file link in summary"
     )
     assert "## Resource Contents" in report, "Report missing resource contents section"
-    assert f"**Resource:** `[{target_file_name}](/{target_file_name})`" in report, (
+    # New format: H3 Header with link.
+    assert f"### [{target_file_name}](/{target_file_name})" in report, (
         "Report missing correct resource link"
     )
     assert file_content in report, "File content not found in report"

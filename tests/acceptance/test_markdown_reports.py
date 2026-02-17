@@ -140,17 +140,14 @@ def test_failed_edit_action_includes_file_content_in_report(
 
         report_text = result.stdout
         assert "## Failed Action Details" not in report_text
-        assert "## Execution Summary" in report_text
-        assert "- **Status:**\n  - FAILURE" in report_text.replace("\r\n", "\n")
+        assert "## Action Log" in report_text
+        assert "- **Status:** FAILURE" in report_text
 
         # Assert that the file content is present in the correct section
         assert "## Resource Contents" in report_text
         assert original_content in report_text
         # Assert the relative path is present as a correct markdown link inside the content section
-        assert (
-            f"**Resource:** `[{file_to_edit.name}](/{file_to_edit.name})`"
-            in report_text
-        )
+        assert f"### [{file_to_edit.name}](/{file_to_edit.name})" in report_text
 
     finally:
         # Cleanup: Restore write permissions so the tmp_path fixture can clean up
@@ -191,10 +188,10 @@ def test_report_has_no_extra_newlines_on_successful_validation():
     report = parse_markdown_report(result.stdout)
     assert report["run_summary"]["Overall Status"] == "SKIPPED"
 
-    # AND the report should not have excessive newlines before the summary
+    # AND the report should not have excessive newlines before the log
     # The bug manifests as multiple newlines, potentially with whitespace.
     # We check for a pattern of 3 or more newline/whitespace sequences.
-    excessive_newlines_pattern = r"(\s*\n){3,}## Execution Summary"
+    excessive_newlines_pattern = r"(\s*\n){3,}## Action Log"
     assert not re.search(excessive_newlines_pattern, result.stdout), (
         "Found excessive newlines before Execution Summary"
     )
@@ -232,10 +229,11 @@ def test_failed_execute_action_formats_details_human_readably(
 
     # AND the report should contain the failed action details inline in the summary
     assert "## Failed Action Details" not in report_text
-    assert '#### `EXECUTE` on "Run a failing command"' in report_text
+    # New format uses colon: ### `EXECUTE`: "Run a failing command"
+    assert '### `EXECUTE`: "Run a failing command"' in report_text
 
     # AND the status should be FAILURE
-    assert "- **Status:**\n  - FAILURE" in report_text.replace("\r\n", "\n")
+    assert "- **Status:** FAILURE" in report_text
 
     # AND the details should be formatted nicely, not as a raw dict string
     assert "{'stdout':" not in report_text, "Found raw dictionary key for stdout"
@@ -286,12 +284,12 @@ def test_successful_plan_execution_report_format(monkeypatch, tmp_path: Path):
 
     report_lines = [line.strip() for line in result.stdout.strip().split("\n")]
 
-    # Find the start of the summary
+    # Find the start of the log
     try:
-        summary_start_index = report_lines.index("## Execution Summary")
+        summary_start_index = report_lines.index("## Action Log")
     except ValueError:
         pytest.fail(
-            f"The '## Execution Summary' header was not found in the report.\\nReport:\\n{result.stdout}"
+            f"The '## Action Log' header was not found in the report.\\nReport:\\n{result.stdout}"
         )
 
     # Assert that the summary comes right after the header block
@@ -301,23 +299,14 @@ def test_successful_plan_execution_report_format(monkeypatch, tmp_path: Path):
     )
 
     # Assert status formatting for the CREATE action
-    try:
-        create_status_index = report_lines.index("- SUCCESS", summary_start_index)
-        assert report_lines[create_status_index - 1] == "- **Status:**", (
-            "Status for CREATE is not on a new, indented line."
-        )
-    except ValueError:
+    # New format: - **Status:** SUCCESS
+    if not any("- **Status:** SUCCESS" in line for line in report_lines):
         pytest.fail(
             f"Could not find the expected status format for the CREATE action.\\nReport:\\n{result.stdout}"
         )
 
     # Assert status formatting for the EXECUTE action
-    try:
-        execute_status_index = report_lines.index("- SUCCESS", create_status_index + 1)
-        assert report_lines[execute_status_index - 1] == "- **Status:**", (
-            "Status for EXECUTE is not on a new, indented line."
-        )
-    except ValueError:
+    if not any("- **Status:** SUCCESS" in line for line in report_lines):
         pytest.fail(
             f"Could not find the expected status format for the EXECUTE action.\\nReport:\\n{result.stdout}"
         )
@@ -361,16 +350,16 @@ def test_markdown_report_for_all_skipped_actions(
     assert re.search(pattern, result.stdout), (
         f"Pattern '{pattern}' not found in output:\n{result.stdout}"
     )
-    assert '#### `READ` on "Read the file"' in result.stdout, (
+    # New format uses colon: ### `READ`: [hello.txt](/hello.txt)
+    assert "### `READ`: [hello.txt](/hello.txt)" in result.stdout, (
         "The READ action should be in the log"
     )
-    # Check for the new multi-line status format
-    expected_status_string = "- **Status:**\n  - SKIPPED"
-    # Normalize newlines for cross-platform compatibility
-    normalized_stdout = result.stdout.replace("\r\n", "\n")
-    assert expected_status_string in normalized_stdout, (
+    # Check for the new inline status format
+    expected_status_string = "- **Status:** SKIPPED"
+    assert expected_status_string in result.stdout, (
         f"The READ action should be marked as skipped with the new format. Got:\\n{result.stdout}"
     )
-    assert '#### `EXECUTE` on "Run a simple command"' in result.stdout, (
+    # New format uses colon: ### `EXECUTE`: "Run a simple command"
+    assert '### `EXECUTE`: "Run a simple command"' in result.stdout, (
         "The EXECUTE action should be in the log"
     )

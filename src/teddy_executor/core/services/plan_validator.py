@@ -136,19 +136,25 @@ class PlanValidator(IPlanValidator):
                 if isinstance(find_block, str):
                     if find_block == replace_block:
                         raise PlanValidationError(
-                            f"FIND and REPLACE blocks are identical in: {file_path}",
+                            f"FIND and REPLACE blocks are identical in: {file_path}\n"
+                            f"**Block Content:**\n"
+                            f"```\n{find_block}\n```",
                             file_path=str(file_path),
                         )
 
                     matches = content.count(find_block)
                     if matches == 0:
                         raise PlanValidationError(
-                            f"The `FIND` block could not be located in the file: {file_path}",
+                            f"The `FIND` block could not be located in the file: {file_path}\n"
+                            f"**FIND Block:**\n"
+                            f"```\n{find_block}\n```",
                             file_path=str(file_path),
                         )
                     if matches > 1:
                         raise PlanValidationError(
-                            f"The `FIND` block is ambiguous. Found {matches} matches in: {file_path}",
+                            f"The `FIND` block is ambiguous. Found {matches} matches in: {file_path}\n"
+                            f"**FIND Block:**\n"
+                            f"```\n{find_block}\n```",
                             file_path=str(file_path),
                         )
         else:
@@ -159,11 +165,15 @@ class PlanValidator(IPlanValidator):
             if isinstance(find_block, str):
                 if find_block == replace_block:
                     raise PlanValidationError(
-                        f"FIND and REPLACE blocks are identical in: {file_path}",
+                        f"FIND and REPLACE blocks are identical in: {file_path}\n"
+                        f"**Block Content:**\n"
+                        f"```\n{find_block}\n```",
                         file_path=str(file_path),
                     )
                 if find_block not in content:
                     raise PlanValidationError(
-                        f"The `FIND` block could not be located in the file: {file_path}",
+                        f"The `FIND` block could not be located in the file: {file_path}\n"
+                        f"**FIND Block:**\n"
+                        f"```\n{find_block}\n```",
                         file_path=str(file_path),
                     )

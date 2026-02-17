@@ -14,15 +14,12 @@ def test_parse_markdown_report_with_params_and_details():
 - **Execution Start Time:** 2024-01-01T12:00:00
 - **Execution End Time:** 2024-01-01T12:00:01
 
-## Execution Summary
+## Action Log
 
-### Action Log
-
-#### `EXECUTE`
+### `EXECUTE`
 - **Status:** SUCCESS
-- **Params:**
-  - **command:** `echo "hello"`
-  - **cwd:** `/tmp`
+- **Command:** `echo "hello"`
+- **Cwd:** `/tmp`
 - **Details:** `{'stdout': 'hello', 'stderr': '', 'return_code': 0}`
 """
     parsed = parse_markdown_report(report_md)
@@ -30,7 +27,8 @@ def test_parse_markdown_report_with_params_and_details():
     action_log = parsed["action_logs"][0]
 
     assert "params" in action_log
-    assert action_log["params"] == {"command": 'echo "hello"', "cwd": "/tmp"}
+    # Parser keys are Case Sensitive based on MD input.
+    assert action_log["params"] == {"Command": 'echo "hello"', "Cwd": "/tmp"}
 
     assert "details" in action_log
     assert action_log["details"] == {"stdout": "hello", "stderr": "", "return_code": 0}

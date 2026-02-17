@@ -10,9 +10,9 @@ from mistletoe.block_token import (
     Document,
 )
 from mistletoe.markdown_renderer import MarkdownRenderer
-from mistletoe.span_token import Link
+from mistletoe.span_token import Link, InlineCode
 
-from teddy_executor.core.domain.models import ActionData, Plan
+from teddy_executor.core.domain.models import ActionData, Plan, ActionType
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser, InvalidPlanError
 
 
@@ -149,16 +149,44 @@ class MarkdownPlanParser(IPlanParser):
     def _find_action_headings(
         self, doc: Document, start_node: Heading
     ) -> List[Heading]:
-        """Finds all H3 headings that represent actions."""
+        """
+        Finds all H3 headings that represent actions.
+        It strictly validates that the heading text matches a known action type
+        to avoid treating content sub-headings (e.g. inside CHAT_WITH_USER) as actions.
+        """
         headings: List[Heading] = []
         if doc.children is None:
             return headings
+
+        valid_actions = {action.value for action in ActionType}
+
         children_list = list(doc.children)
         try:
             start_index = children_list.index(start_node)
             for child in children_list[start_index + 1 :]:
                 if isinstance(child, Heading) and child.level == 3:
-                    headings.append(child)
+                    # Check if this heading is a valid action header
+                    # Expected format: ### `ACTION_TYPE`
+                    text = self._get_child_text(child).strip()
+                    # A naive check: does the text (minus backticks) match a valid action?
+                    # We look for the action type at the start of the string
+                    # e.g. "`CREATE`" or "`CREATE`: some description"
+
+                    # Extract the first token which should be the action type
+                    # We handle the case where it might be wrapped in backticks
+                    potential_type = text.split(":")[0].strip().replace("`", "")
+
+                    if potential_type in valid_actions:
+                        headings.append(child)
+                    else:
+                        # Include unknown actions if formatted as code (e.g., `UNKNOWN`)
+                        # so they fail validation explicitly.
+                        # mistletoe types .children as Iterable, but it's usually a list.
+                        # We cast to list to safely index it.
+                        children = list(child.children) if child.children else []
+                        if children and isinstance(children[0], InlineCode):
+                            headings.append(child)
+
                 elif isinstance(child, Heading) and child.level <= 2:
                     break
         except ValueError:
@@ -634,19 +662,32 @@ class MarkdownPlanParser(IPlanParser):
 
     def _get_subsequent_siblings(self, parent: Document, start_node: Any) -> list[Any]:
         """
-        Returns a list of all sibling nodes after start_node until a heading
-        at level 3 or less is encountered.
+        Returns a list of all sibling nodes after start_node until a new Action
+        (valid H3 action header) or a new Section (H1/H2) is encountered.
         """
         siblings: list[Any] = []
         if parent.children is None:
             return siblings
 
+        valid_actions = {action.value for action in ActionType}
+
         children_list = list(parent.children)
         try:
             start_index = children_list.index(start_node)
             for node in children_list[start_index + 1 :]:
-                if isinstance(node, Heading) and node.level <= 3:
-                    break
+                if isinstance(node, Heading):
+                    # Always break on H1 or H2 (Major Sections)
+                    if node.level <= 2:
+                        break
+
+                    # For H3, check if it is a valid Action Header
+                    if node.level == 3:
+                        text = self._get_child_text(node).strip()
+                        potential_type = text.split(":")[0].strip().replace("`", "")
+                        if potential_type in valid_actions:
+                            break
+                        # If H3 but not a valid action, treat as content and continue loop.
+
                 siblings.append(node)
         except (ValueError, IndexError):
             pass

@@ -59,11 +59,19 @@ def test_research_action_success(monkeypatch, tmp_path: Path):
     assert result.exit_code == 0
     mock_web_searcher.search.assert_called_once_with(queries=["python typer"])
 
+    # Verify structured output
+    assert "### `RESEARCH`: Research python typer." in result.stdout
+    assert "**Query:** `python typer`" in result.stdout
+    # Expect link format: [Title](URL)
+    assert "[Typer Tutorial](https://typer.tiangolo.com/)" in result.stdout
+    # Expect unindented Snippet block
+    assert "```Snippet" in result.stdout
+    assert "A great tutorial for Typer." in result.stdout
+
     report = parse_markdown_report(result.stdout)
     assert report["run_summary"]["Overall Status"] == "SUCCESS"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "SUCCESS"
 
-    details_dict = action_log["details"]
-    assert details_dict["results"][0]["query"] == "python typer"
-    assert details_dict["results"][0]["search_results"][0]["title"] == "Typer Tutorial"
+    # Note: Raw details are no longer rendered for RESEARCH actions in the concise report.
+    # We verify the content via the structured output checks above.

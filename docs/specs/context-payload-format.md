@@ -120,7 +120,7 @@ The full, verbatim content of every resource (file or URL) listed in the `Contex
     ## 5. Resource Contents
 
     ---
-    **Resource:** `[https://example.com/docs](https://example.com/docs)`
+    ### [https://example.com/docs](https://example.com/docs)
     ````html
     <!doctype html>
     <html>
@@ -134,10 +134,9 @@ The full, verbatim content of every resource (file or URL) listed in the `Contex
     </html>
     ````
     ---
-    **Resource:** `[docs/specs/core-philosophy.md](/docs/specs/core-philosophy.md)`
+    ### [docs/specs/core-philosophy.md](/docs/specs/core-philosophy.md)
     ````markdown
     # TeDDy CLI: A File-Based Front-End for Agentic Coding
     ... (full file content) ...
     ````
-    ---
     `````

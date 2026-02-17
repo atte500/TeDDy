@@ -48,12 +48,12 @@ def test_format_project_context():
     assert "README.md" in output
 
     # 5. Check content of File Contents
-    assert "--- src/main.py ---" in output
+    assert "## [src/main.py](/src/main.py)" in output
     # Smart fencing uses 3 backticks for simple content
     assert "```python\nprint('hello')\n```" in output
-    assert "--- README.md ---" in output
+    assert "## [README.md](/README.md)" in output
     assert "```markdown\n# Title\n```" in output
-    assert "--- missing.txt (Not Found) ---" in output
+    assert "## missing.txt (Not Found)" in output
 
     # 6. Check order of headers
     assert (
@@ -85,7 +85,7 @@ def test_format_project_context_uses_smart_fencing():
 
     # THEN
     # We look for the file header
-    assert "--- README.md ---" in result
+    assert "## [README.md](/README.md)" in result
     # And we expect a smart fence (quad backticks)
     assert "````markdown" in result or "````" in result
     assert file_content_with_backticks in result

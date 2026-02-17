@@ -5,7 +5,7 @@ from .execution_report import (
     RunStatus,
     RunSummary,
 )
-from .plan import ActionData, Plan
+from .plan import ActionData, ActionType, Plan
 from ._legacy_models import (
     CommandResult,
     ContextResult,
@@ -27,6 +27,7 @@ from ._legacy_models import (
 __all__ = [
     "Plan",
     "ActionData",
+    "ActionType",
     "ExecutionReport",
     "ActionLog",
     "RunSummary",

@@ -44,7 +44,8 @@ def test_formats_read_action_with_resource_contents():
     # Assert
     assert "## Resource Contents" in formatted_report
     assert file_content in formatted_report
-    assert "**Resource:** `[test.txt](/test.txt)`" in formatted_report
+    # New format: H3 header with link
+    assert "### [test.txt](/test.txt)" in formatted_report
 
 
 def test_formats_failed_edit_action_with_file_content():
@@ -80,10 +81,10 @@ def test_formats_failed_edit_action_with_file_content():
 
     # Assert
     assert "## Failed Action Details" not in formatted_report
-    assert "## Execution Summary" in formatted_report
+    assert "## Action Log" in formatted_report
 
-    # Check for the multi-line status format for FAILURE
-    expected_status_string = "- **Status:**\n  - FAILURE"
+    # Check for the inline status format for FAILURE
+    expected_status_string = "- **Status:** FAILURE"
     normalized_report = formatted_report.replace("\r\n", "\n")
     assert expected_status_string in normalized_report
 
@@ -91,11 +92,11 @@ def test_formats_failed_edit_action_with_file_content():
     assert file_content in formatted_report
 
 
-def test_formats_action_status_on_new_line():
+def test_formats_action_status_inline():
     """
     Given an ExecutionReport with a successful action,
     When the report is formatted,
-    Then the action's header and status should be on separate lines.
+    Then the action's status should be on the same line as the label.
     """
     # Arrange
     formatter = MarkdownReportFormatter()
@@ -119,20 +120,7 @@ def test_formats_action_status_on_new_line():
     formatted_report = formatter.format(report)
 
     # Assert
-    # Find the action header and assert that the *next* line is the status.
-    # This is more robust than a simple substring check.
-    report_lines = [line.strip() for line in formatted_report.strip().split("\n")]
-    try:
-        header_index = next(
-            i for i, line in enumerate(report_lines) if "#### `CREATE`" in line
-        )
-        assert report_lines[header_index + 1] == "- **Status:**"
-        # Check that the success status appears somewhere after the header
-        assert "- SUCCESS" in report_lines[header_index:]
-    except (StopIteration, IndexError) as e:
-        assert False, (
-            f"Could not find expected action header and status format. Error: {e}. Report:\n{formatted_report}"
-        )
+    assert "- **Status:** SUCCESS" in formatted_report
 
 
 def test_report_header_has_no_extra_newlines():
@@ -161,15 +149,15 @@ def test_report_header_has_no_extra_newlines():
     # Assert
     report_lines = [line.strip() for line in formatted_report.strip().split("\n")]
 
-    # Assert that the summary comes right after the header block.
+    # Assert that the Action Log comes right after the header block.
     # The header block consists of the H1, Overall Status, Start Time,
     # and End Time, plus surrounding blank lines.
-    # We expect the summary to be at or before line index 5.
+    # We expect the log to be at or before line index 5.
     try:
-        summary_index = report_lines.index("## Execution Summary")
+        summary_index = report_lines.index("## Action Log")
         assert summary_index <= 5
     except ValueError:
-        assert False, "'## Execution Summary' not found in report"
+        assert False, "'## Action Log' not found in report"
 
 
 def test_formats_failed_execute_action_details_human_readably():

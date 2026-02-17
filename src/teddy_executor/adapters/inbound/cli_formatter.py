@@ -37,10 +37,14 @@ def format_project_context(context: ContextResult) -> str:
     for path in sorted(context.file_contents.keys()):
         content = context.file_contents[path]
         if content is None:
-            output_parts.append(f"--- {path} (Not Found) ---")
+            output_parts.append(f"## {path} (Not Found)")
         else:
             extension = _get_file_extension(path)
             fence = get_fence_for_content(content)
-            output_parts.append(f"--- {path} ---")
+            if path.startswith("http:") or path.startswith("https:"):
+                link_path = path
+            else:
+                link_path = f"/{path}" if not path.startswith("/") else path
+            output_parts.append(f"## [{path}]({link_path})")
             output_parts.append(f"{fence}{extension}\n{content}\n{fence}")
     return "\n".join(output_parts)

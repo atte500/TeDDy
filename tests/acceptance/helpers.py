@@ -58,34 +58,41 @@ def _parse_action_chunk(chunk: str) -> Dict[str, Any]:
     log: Dict[str, Any] = {"details": {}}
 
     # --- 1. Parse Heading and Status ---
-    heading_match = re.match(r"####\s*`(\w+)`.*", chunk)
+    heading_match = re.match(r"###\s*`(\w+)`.*", chunk)
     if not heading_match:
         return {}
     log["action_type"] = heading_match.group(1).upper()
 
+    # Matches: - **Status:** SUCCESS  OR  - **Status:** \n  - SUCCESS
     status_match = re.search(
-        r"-\s*\*\*Status:\*\*\s*\n\s*-\s*(\w+)", chunk, re.MULTILINE
+        r"-\s*\*\*Status:\*\*\s*(?:\n\s*-\s*)?(\w+)", chunk, re.MULTILINE
     )
     log["status"] = status_match.group(1).upper() if status_match else "UNKNOWN"
 
-    # --- 2. Parse Params (Handles single and multi-line) ---
-    params_content = ""
-    params_match = re.search(
-        r"-\s*\*\*Params:\*\*\s*\n(.*?)(?=\n- \*\*|\n#### `|$)", chunk, re.DOTALL
-    )
-    if params_match:
-        params_content = params_match.group(1).strip()
+    # --- 2. Parse Params (Flattened) ---
+    # We look for lines starting with "- **Key:** Value" that are NOT "Status", "Error", "Details", or "Return Code".
+    # This regex iterates through the lines of the chunk.
+    params_dict = {}
 
-    if params_content:
-        params_dict = {}
-        # Updated regex for the new list format: "- **Key:** Value" or "- **Key:** `Value`"
-        multi_line_matches = re.findall(
-            r"-\s*\*\*(.+?):\*\*\s*`?(.+?)`?$", params_content, re.MULTILINE
-        )
-        for key, value in multi_line_matches:
-            params_dict[key.strip()] = value.strip()
-        if params_dict:
-            log["params"] = params_dict
+    # Iterate over all lines to find top-level bullet points
+    for line in chunk.split("\n"):
+        match = re.match(r"-\s*\*\*(.+?):\*\*\s*(.*)", line)
+        if match:
+            key = match.group(1).strip()
+            value = match.group(2).strip()
+            # Skip reserved keys that are parsed elsewhere or distinct
+            if key in ["Status", "Error", "Return Code", "Details"]:
+                continue
+
+            # Clean up value (remove backticks if it's a simple command, but careful with code blocks)
+            # For test simplicity, we take the value as is, or strip surrounding backticks if present
+            if value.startswith("`") and value.endswith("`") and len(value) > 1:
+                value = value[1:-1]
+
+            params_dict[key] = value
+
+    if params_dict:
+        log["params"] = params_dict
 
     # --- 3. Parse Details (Process specific formats first, then generic) ---
     details_dict: Dict[str, Any] = {}
@@ -119,6 +126,19 @@ def _parse_action_chunk(chunk: str) -> Dict[str, Any]:
         except (ValueError, SyntaxError):
             pass
 
+    # Specific: CHAT_WITH_USER response (Old Format)
+    response_match = re.search(r"\*\*User Response:\*\*\s*(.*)", chunk)
+    if response_match:
+        details_dict["response"] = response_match.group(1).strip()
+
+    # Specific: CHAT_WITH_USER response (New Format - Fenced Block)
+    # Matches #### User Response followed by a fenced code block
+    new_response_match = re.search(
+        r"#### User Response\s*(`{3,})text\n(.*?)\n\1", chunk, re.DOTALL
+    )
+    if new_response_match:
+        details_dict["response"] = new_response_match.group(2).strip()
+
     # Generic: Multi-line Error/Details block (as a fallback)
     if not details_dict:
         error_block_match = re.search(
@@ -144,8 +164,8 @@ def parse_markdown_report(stdout: str) -> Dict[str, Any]:
     report: Dict[str, Any] = {"run_summary": {}, "action_logs": []}
 
     # --- 1. Split Report into Summary and Action Log Sections ---
-    # We split by the first '##' heading to separate the summary from the rest.
-    parts = re.split(r"\n## ", stdout, maxsplit=1)
+    # We split by '## Action Log' to separate the summary from the logs.
+    parts = stdout.split("\n## Action Log")
     summary_text = parts[0]
     rest_of_report = ""
     if len(parts) > 1:
@@ -162,16 +182,14 @@ def parse_markdown_report(stdout: str) -> Dict[str, Any]:
             report["run_summary"][key] = value
 
     # --- 3. Parse Action Logs ---
-    if "### Action Log" in rest_of_report:
+    # Since we already split by '## Action Log', rest_of_report (if present) IS the content.
+    if rest_of_report:
         try:
-            action_log_content = rest_of_report.split("### Action Log")[1]
+            action_log_content = rest_of_report.replace("## Action Log", "", 1)
 
-            # The delimiter is a '#### `ACTION_TYPE`' heading. A positive lookahead `(?=...)`
-            # is used to keep the delimiter as part of the next chunk. This prevents
-            # splitting on sub-headings like '#### `stdout`'.
-            action_chunks = re.split(
-                r"(?m)(?=^\s*####\s*`[A-Z_]+`)", action_log_content
-            )
+            # The delimiter is a '### `ACTION_TYPE`' heading (H3). A positive lookahead `(?=...)`
+            # is used to keep the delimiter as part of the next chunk.
+            action_chunks = re.split(r"(?m)(?=^\s*###\s*`[A-Z_]+`)", action_log_content)
 
             for chunk in action_chunks:
                 if chunk.strip():

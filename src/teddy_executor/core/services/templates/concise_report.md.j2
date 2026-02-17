@@ -10,7 +10,11 @@
   rendered output when conditional sections are not rendered.
 #}
 {% macro render_resource(path, content) %}
-**Resource:** `[{{ path | basename }}]({% if not path.startswith('/') %}/{% endif %}{{ path }})`
+{% if path.startswith('http:') or path.startswith('https:') %}
+### [{{ path }}]({{ path }})
+{% else %}
+### [{{ path }}]({% if not path.startswith('/') %}/{% endif %}{{ path }})
+{% endif %}
 {{ content | fence }}text
 {{ content }}
 {{ content | fence }}
@@ -61,7 +65,7 @@
 {% endfor %}
 {% if report.failed_resources %}
 
-### Resource Contents
+## Resource Contents
 {% for path, content in report.failed_resources.items() %}
 {{ render_resource(path, content) }}
 {% endfor %}
@@ -87,24 +91,100 @@
 {% endfor %}
 {% endif -%}
 
-## Execution Summary
-
-### Action Log
+## Action Log
 {% for log in report.action_logs %}
+{% set action_type = log.action_type.upper() %}
+{% set params = log.params or {} %}
+{% set target = '' %}
 
-{% set description = log.params.get('Description') or log.params.get('description') %}
+{# Determine Header Target #}
+{% if action_type == 'EXECUTE' %}
+  {% set target = '"' ~ (params.get('description') or params.get('Description') or 'Execute Command') ~ '"' %}
+{% elif action_type == 'RESEARCH' %}
+  {% set target = params.get('description') or params.get('Description') or 'Research' %}
+{% elif action_type == 'CHAT_WITH_USER' %}
+  {% set target = '' %}
+{% else %}
+  {# Use Markdown Link for CREATE/EDIT/READ #}
+  {% set full_path = params.get('File Path') or params.get('file_path') or params.get('Resource') or params.get('resource') or params.get('path') or '' %}
+  {# Check for URL schemes http and https #}
+  {% if full_path.startswith('http:') or full_path.startswith('https:') %}
+    {% set target = '[' ~ full_path ~ '](' ~ full_path ~ ')' %}
+  {% else %}
+    {% set target = '[' ~ (full_path | basename) ~ '](' ~ ('/' ~ full_path if not full_path.startswith('/') else full_path) ~ ')' %}
+  {% endif %}
+{% endif %}
 
-#### `{{ log.action_type.upper() }}`{% if description %} on "{{ description }}"{% endif %}
+{% if target %}
+### `{{ action_type }}`: {{ target }}
+{% else %}
+### `{{ action_type }}`
+{% endif %}
+- **Status:** {{ log.status.value }}
 
-- **Status:**
-  - {{ log.status.value }}
-{% if log.params %}
-- **Params:**
-  {% for key, value in log.params.items() %}
-  - **{{ key }}:** {{ value }}
+{# Params Rendering - Flattened #}
+{% if action_type == 'EXECUTE' %}
+  {% set cmd = params.get('command') or params.get('cmd') %}
+  {% if cmd %}
+- **Command:** {% if '\n' in cmd %}{{ '\n' }}{{ cmd | fence }}{{ cmd }}{{ cmd | fence }}{% else %}`{{ cmd }}`{% endif %}
+  {% endif %}
+  {% set outcome = params.get('expected_outcome') or params.get('Expected Outcome') %}
+  {% if outcome %}
+
+- **Expected outcome:** {{ outcome }}
+  {% endif %}
+
+{% else %}
+{# Generic Params for CREATE, EDIT, READ, RESEARCH etc #}
+{% if params %}
+  {% for key, value in params.items() %}
+    {% set k_lower = key.lower() %}
+    {# Filter out standard huge fields #}
+    {% set ignored_keys = ['content', 'find', 'replace', 'edits'] %}
+    {# For RESEARCH, hide description (in header) and queries (in body) #}
+    {% if action_type == 'RESEARCH' %}
+        {% set ignored_keys = ignored_keys + ['description', 'queries'] %}
+    {% endif %}
+    {% if k_lower not in ignored_keys %}
+      {# Normalize key to Title Case (simple approximation or explicit mapping) #}
+      {% set display_key = key.replace('_', ' ').title() %}
+      {# Skip path params in body since they are in header #}
+      {# Special handling for CHAT_WITH_USER prompt #}
+      {% if action_type == 'CHAT_WITH_USER' and k_lower == 'prompt' %}
+
+{{ value }}
+      {% elif k_lower not in ['file path', 'file_path', 'resource', 'path'] %}
+- **{{ display_key }}:** {{ value }}
+      {% endif %}
+    {% endif %}
   {% endfor %}
 {% endif %}
+{% endif %}
+
+{% if action_type == 'RESEARCH' and log.details and log.details.results %}
+{% for result in log.details.results %}
+
+**Query:** `{{ result.query }}`
+{% for item in result.search_results %}
+[{{ item.title }}]({{ item.url }})
+```Snippet
+{{ item.snippet }}
+```
+{% endfor %}
+{% endfor %}
+{% endif %}
+
+{% if action_type == 'CHAT_WITH_USER' %}
+{% if log.details and log.details.response %}
+
+#### User Response
+{{ log.details.response | fence }}text
+{{ log.details.response }}
+{{ log.details.response | fence }}
+{% endif %}
+{% elif action_type != 'RESEARCH' %}
 {{ render_action_details(log) }}
+{% endif %}
 {% else %}
 *(No actions were executed.)*
 {% endfor %}

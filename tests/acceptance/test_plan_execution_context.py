@@ -72,7 +72,8 @@ def test_execute_action_can_see_file_from_create_action(tmp_path: Path, monkeypa
     execute_log = action_logs[1]
     assert execute_log["status"] == "SUCCESS"
     assert execute_log["action_type"] == "EXECUTE"
-    assert execute_log["params"]["command"].strip() == f"cat {test_file_name}"
+    # The template renders this as "- **Command:** ...", so the key is "Command"
+    assert execute_log["params"]["Command"].strip() == f"cat {test_file_name}"
 
     # This is the key assertion: verify the stdout of the shell command.
     # The .strip() is important as shell output often has trailing newlines.
