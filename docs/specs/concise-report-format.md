@@ -49,7 +49,8 @@ The report is composed of a header, followed by the `Execution Summary`, and the
 -   **Omit Redundant Content:** The report **must not** include the verbatim content of `CREATE` or `EDIT` (`FIND`/`REPLACE`) blocks from the plan.
 
 ### 5.2. `EXECUTE` Action Log
--   **Show Expected Outcome:** The log for an `EXECUTE` action must include the `Expected Outcome` from the original plan.
+-   **Field Order:** The `Expected Outcome` must appear *before* the `Command` block.
+-   **Code Blocks:** Multi-line commands must use `shell` syntax highlighting and ensure proper fence spacing.
 
 ### 5.3. Failure Handling & Hints
 All failure details are rendered inline within the `Execution Summary` for the specific action that failed.
@@ -85,13 +86,11 @@ All failure details are rendered inline within the `Execution Summary` for the s
   - **Hint:** Try to provide more context in the FIND block and match the content exactly, including whitespace and indentations.
 
 ### `EXECUTE`: "Run unit tests for the action factory"
-- **Status:**
-  - SUCCESS
+- **Status:** SUCCESS
 - **Expected Outcome:** All tests for the action factory should pass.
-- **Execution Details:**
-  - **Return Code:** `0`
-  #### `stdout`
-  ````text
-  PASSED tests/unit/core/services/test_action_factory.py::test_creation
-  ````
+
+- **Command:**
+  ```shell
+  poetry run pytest tests/unit/core/services/test_action_factory.py
+  ```
 ``````

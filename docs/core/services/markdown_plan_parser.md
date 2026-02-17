@@ -4,6 +4,7 @@
 
 ## 1. Responsibilities
 - Parses a Markdown plan string into a `Plan` domain object using `mistletoe`.
+- Strictly validates action headers against the `ActionType` enum, rejecting unknown actions (even if formatted as code blocks).
 - Extracts plan metadata (Status, Agent, Goal) from the header.
 - Parses action blocks (`### ACTION`) and their specific parameters (metadata list + code blocks).
 - Supports atomic multi-edit operations in `EDIT` actions.

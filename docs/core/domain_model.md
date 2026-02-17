@@ -15,7 +15,16 @@ This document defines the core entities for the `teddy` executor application. Th
 
 ---
 
-## 1. Action & CommandResult
+## 1. ActionType (Enum)
+**Status:** Implemented
+
+Enumerates the supported action types in the system.
+
+*   `CREATE`, `READ`, `EDIT`, `EXECUTE`, `RESEARCH`, `CHAT_WITH_USER`, `PRUNE`, `INVOKE`, `RETURN`
+
+---
+
+## 2. Action & CommandResult
 
 ### `CommandResult` (Value Object)
 **Status:** Implemented

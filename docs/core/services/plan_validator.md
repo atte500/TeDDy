@@ -2,7 +2,7 @@
 **Introduced in:** [Slice 01: Markdown Report Generator](../../slices/01-markdown-report-generator.md)
 
 ## 1. Purpose / Responsibility
-To implement the `IPlanValidator` inbound port. This service orchestrates the pre-flight validation of a plan by delegating to specialized, action-specific validator strategies.
+To implement the `IPlanValidator` inbound port. This service orchestrates the pre-flight validation of a plan by delegating to specialized, action-specific validator strategies. It ensures validation errors provide rich context, including code blocks for failed `FIND` patterns, to enable AI self-correction.
 
 ## 2. Ports
 -   **Implements (Inbound):** `IPlanValidator`
