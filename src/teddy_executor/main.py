@@ -252,63 +252,72 @@ def execute(
 
         final_plan_content = _get_plan_content(plan_content, plan_file)
         parser = create_parser_for_plan(plan_file, final_plan_content)
+
         try:
             plan = parser.parse(final_plan_content)
         except InvalidPlanError as e:
-            typer.echo(f"Error: {e}", err=True)
-            raise typer.Exit(code=1)
-
-        # Pre-flight validation
-        plan_validator = container.resolve(IPlanValidator)
-        # The PlanValidator's internal logic correctly handles paths relative to cwd.
-        validation_result = plan_validator.validate(plan)
-
-        if validation_result:
-            failed_resources: dict[str, str] = {}
-            error_messages: list[str] = []
-            for error in validation_result:
-                error_messages.append(error.message)
-                if error.file_path:
-                    try:
-                        path = Path(error.file_path)
-                        if path.exists():
-                            failed_resources[error.file_path] = path.read_text(
-                                encoding="utf-8"
-                            )
-                    except OSError:
-                        pass  # Ignore if reading fails
-
+            # Generate a report for parsing errors
             report = ExecutionReport(
-                plan_title=plan.title,
+                plan_title="Invalid Plan",
                 run_summary=RunSummary(
                     status=RunStatus.VALIDATION_FAILED,
                     start_time=start_time,
                     end_time=datetime.now(timezone.utc),
                 ),
-                validation_result=error_messages,
-                failed_resources=failed_resources if failed_resources else None,
+                validation_result=[str(e)],
+                action_logs=[],
             )
         else:
-            # Manually construct the orchestrator
-            action_dispatcher = container.resolve(ActionDispatcher)
-            user_interactor = container.resolve(IUserInteractor)
-            file_system_manager = container.resolve(IFileSystemManager)
-            orchestrator = ExecutionOrchestrator(
-                plan_parser=parser,  # Re-uses the parser
-                action_dispatcher=action_dispatcher,
-                user_interactor=user_interactor,
-                file_system_manager=file_system_manager,
-            )
-            execution_report = orchestrator.execute(
-                plan_content=final_plan_content, interactive=interactive_mode
-            )
-            # Inject the plan title into the report
-            report = ExecutionReport(
-                plan_title=plan.title,
-                run_summary=execution_report.run_summary,
-                action_logs=execution_report.action_logs,
-                validation_result=execution_report.validation_result,
-            )
+            # Pre-flight validation (only if parsing succeeded)
+            plan_validator = container.resolve(IPlanValidator)
+            validation_result = plan_validator.validate(plan)
+
+            if validation_result:
+                failed_resources: dict[str, str] = {}
+                error_messages: list[str] = []
+                for error in validation_result:
+                    error_messages.append(error.message)
+                    if error.file_path:
+                        try:
+                            path = Path(error.file_path)
+                            if path.exists():
+                                failed_resources[error.file_path] = path.read_text(
+                                    encoding="utf-8"
+                                )
+                        except OSError:
+                            pass  # Ignore if reading fails
+
+                report = ExecutionReport(
+                    plan_title=plan.title,
+                    run_summary=RunSummary(
+                        status=RunStatus.VALIDATION_FAILED,
+                        start_time=start_time,
+                        end_time=datetime.now(timezone.utc),
+                    ),
+                    validation_result=error_messages,
+                    failed_resources=failed_resources if failed_resources else None,
+                )
+            else:
+                # Manually construct the orchestrator
+                action_dispatcher = container.resolve(ActionDispatcher)
+                user_interactor = container.resolve(IUserInteractor)
+                file_system_manager = container.resolve(IFileSystemManager)
+                orchestrator = ExecutionOrchestrator(
+                    plan_parser=parser,  # Re-uses the parser
+                    action_dispatcher=action_dispatcher,
+                    user_interactor=user_interactor,
+                    file_system_manager=file_system_manager,
+                )
+                execution_report = orchestrator.execute(
+                    plan_content=final_plan_content, interactive=interactive_mode
+                )
+                # Inject the plan title into the report
+                report = ExecutionReport(
+                    plan_title=plan.title,
+                    run_summary=execution_report.run_summary,
+                    action_logs=execution_report.action_logs,
+                    validation_result=execution_report.validation_result,
+                )
 
     except (pyperclip.PyperclipException, NotImplementedError) as e:
         typer.echo(f"Error: {e}", err=True)

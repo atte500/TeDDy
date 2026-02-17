@@ -121,6 +121,12 @@
 ### `{{ action_type }}`
 {% endif %}
 - **Status:** {{ log.status.value }}
+{% if action_type in ['CREATE', 'EDIT'] %}
+  {% set path_val = params.get('File Path') or params.get('file_path') or params.get('path') %}
+  {% if path_val %}
+- **File Path:** `{{ path_val }}`
+  {% endif %}
+{% endif %}
 
 {# Params Rendering - Flattened #}
 {% if action_type == 'EXECUTE' %}

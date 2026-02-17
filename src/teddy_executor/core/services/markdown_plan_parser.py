@@ -143,7 +143,10 @@ class MarkdownPlanParser(IPlanParser):
                 # Note: mistletoe parses blank lines as nothing, but text as Paragraphs.
                 raise InvalidPlanError(
                     f"Unexpected content found between actions (in {action_type}). "
-                    f"Found unexpected {type(node).__name__}."
+                    f"Found unexpected {type(node).__name__}.\n"
+                    f"Hint: This often happens if a code block is not properly nested. "
+                    f"Ensure you use enough backticks for outer fences (e.g. 4 or 5) "
+                    f"if your content contains backticks."
                 )
 
     def _find_action_headings(

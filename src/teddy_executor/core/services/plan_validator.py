@@ -147,7 +147,8 @@ class PlanValidator(IPlanValidator):
                         raise PlanValidationError(
                             f"The `FIND` block could not be located in the file: {file_path}\n"
                             f"**FIND Block:**\n"
-                            f"```\n{find_block}\n```",
+                            f"```\n{find_block}\n```\n"
+                            f"**Hint:** Try to provide more context in the FIND block and match the content exactly, including whitespace and indentations.",
                             file_path=str(file_path),
                         )
                     if matches > 1:
@@ -174,6 +175,7 @@ class PlanValidator(IPlanValidator):
                     raise PlanValidationError(
                         f"The `FIND` block could not be located in the file: {file_path}\n"
                         f"**FIND Block:**\n"
-                        f"```\n{find_block}\n```",
+                        f"```\n{find_block}\n```\n"
+                        f"**Hint:** Try to provide more context in the FIND block and match the content exactly, including whitespace and indentations.",
                         file_path=str(file_path),
                     )
