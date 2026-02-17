@@ -207,6 +207,45 @@ def test_formats_multiline_execute_command_correctly():
     assert "- **Command:** \n```shell\ngit add .\ngit commit\n```" in output
 
 
+def test_formats_return_action_correctly():
+    """
+    Given a RETURN action with resources and message,
+    When formatted,
+    Then resources should be in a code block and message should be free-form.
+    """
+    formatter = MarkdownReportFormatter()
+    report = ExecutionReport(
+        plan_title="Test",
+        run_summary=RunSummary(
+            status=RunStatus.SUCCESS,
+            start_time=datetime.now(timezone.utc),
+            end_time=datetime.now(timezone.utc),
+        ),
+        action_logs=[
+            ActionLog(
+                action_type="RETURN",
+                status=ActionStatus.SUCCESS,
+                params={
+                    "handoff_resources": ["docs/A.md", "docs/B.md"],
+                    "message": "Task complete.\n\nSummary here.",
+                },
+            )
+        ],
+    )
+
+    output = formatter.format(report)
+
+    # Check Handoff Resources formatting
+    # Should be in a code block
+    assert "```text\ndocs/A.md\ndocs/B.md\n```" in output
+
+    # Check Message formatting
+    # Should be free text (not bulleted param)
+    assert "\nTask complete.\n\nSummary here." in output
+    # Ensure it's not rendered as "- **Message:** ..."
+    assert "- **Message:**" not in output
+
+
 def test_formats_failed_execute_action_details_human_readably():
     """
     Given an ExecutionReport with a failed EXECUTE action,

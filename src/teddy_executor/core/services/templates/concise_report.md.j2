@@ -156,6 +156,10 @@
     {% if action_type == 'RESEARCH' %}
         {% set ignored_keys = ignored_keys + ['description', 'queries'] %}
     {% endif %}
+    {# For RETURN/INVOKE, hide message and resources (handled separately) #}
+    {% if action_type in ['RETURN', 'INVOKE'] %}
+        {% set ignored_keys = ignored_keys + ['message', 'handoff_resources', 'handoff resources'] %}
+    {% endif %}
     {% if k_lower not in ignored_keys %}
       {# Normalize key to Title Case (simple approximation or explicit mapping) #}
       {% set display_key = key.replace('_', ' ').title() %}
@@ -193,6 +197,20 @@
 {{ log.details.response }}
 {{ log.details.response | fence }}
 {% endif %}
+{% elif action_type in ['RETURN', 'INVOKE'] %}
+  {% set resources = params.get('handoff_resources') or params.get('Handoff Resources') %}
+  {% if resources %}
+- **Handoff Resources:**
+{{ resources | join('\n') | fence }}text
+{{ resources | join('\n') }}
+{{ resources | join('\n') | fence }}
+  {% endif %}
+  {% set msg = params.get('message') or params.get('Message') %}
+  {% if msg %}
+
+{{ msg }}
+  {% endif %}
+  {{ render_action_details(log) }}
 {% elif action_type != 'RESEARCH' %}
 {{ render_action_details(log) }}
 {% endif %}
