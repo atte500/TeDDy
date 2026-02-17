@@ -160,6 +160,53 @@ def test_report_header_has_no_extra_newlines():
         assert False, "'## Action Log' not found in report"
 
 
+def test_formats_multiline_execute_command_correctly():
+    """
+    Given an EXECUTE action with a multi-line command,
+    When formatted,
+    Then the code block should have correct newlines for fences.
+    """
+    formatter = MarkdownReportFormatter()
+    report = ExecutionReport(
+        plan_title="Test",
+        run_summary=RunSummary(
+            status=RunStatus.SUCCESS,
+            start_time=datetime.now(timezone.utc),
+            end_time=datetime.now(timezone.utc),
+        ),
+        action_logs=[
+            ActionLog(
+                action_type="EXECUTE",
+                status=ActionStatus.SUCCESS,
+                params={
+                    "command": "git add .\ngit commit",
+                    "expected_outcome": "Commit succeeds",
+                },
+            )
+        ],
+    )
+
+    output = formatter.format(report)
+
+    # We expect:
+    # - **Expected outcome:** Commit succeeds
+    #
+    # - **Command:**
+    # ```shell
+    # git add .
+    # git commit
+    # ```
+
+    # Ensure expected outcome is first
+    assert "- **Expected outcome:** Commit succeeds" in output
+
+    # Ensure command follows with correct spacing and language
+    # The template renders:
+    # - **Command:**
+    # ```shell
+    assert "- **Command:** \n```shell\ngit add .\ngit commit\n```" in output
+
+
 def test_formats_failed_execute_action_details_human_readably():
     """
     Given an ExecutionReport with a failed EXECUTE action,

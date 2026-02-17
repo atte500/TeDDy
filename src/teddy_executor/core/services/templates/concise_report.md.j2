@@ -124,14 +124,19 @@
 
 {# Params Rendering - Flattened #}
 {% if action_type == 'EXECUTE' %}
-  {% set cmd = params.get('command') or params.get('cmd') %}
-  {% if cmd %}
-- **Command:** {% if '\n' in cmd %}{{ '\n' }}{{ cmd | fence }}{{ cmd }}{{ cmd | fence }}{% else %}`{{ cmd }}`{% endif %}
-  {% endif %}
   {% set outcome = params.get('expected_outcome') or params.get('Expected Outcome') %}
   {% if outcome %}
-
 - **Expected outcome:** {{ outcome }}
+  {% endif %}
+
+  {% set cmd = params.get('command') or params.get('cmd') %}
+  {% if cmd %}
+
+- **Command:** {% if '\n' in cmd %}
+{{ '\n' }}{{ cmd | fence }}shell
+{{ cmd }}
+{{ cmd | fence }}
+{% else %}`{{ cmd }}`{% endif %}
   {% endif %}
 
 {% else %}
