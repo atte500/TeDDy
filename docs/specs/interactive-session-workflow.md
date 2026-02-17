@@ -182,7 +182,8 @@ The `teddy execute` command creates the *next* turn (`T_next`) based on the stat
         -   **Ledger:** `parent_turn_id` in `T_next/meta.yaml` is set to the `caller_turn_id`, and `caller_turn_id` is cleared.
 6.  **Finalize and Report:**
     -   **Generate Report:** The factual `T_current/report.md` is generated based on the successful execution of the approved plan.
-    -   **Append Report:** The path to the newly generated `T_current/report.md` is always appended to `T_next/turn.context`.
+    -   **Update Session Log:** The system will create or append to the `<session_name>/session-log.md` file. It will append the full content of `T_current/plan.md` and the "Action Log" section from `T_current/report.md`. See the [Automatic Session Log Specification](./session-history-view.md) for details.
+    -   **Append Report to Context:** The path to the newly generated `T_current/report.md` is always appended to `T_next/turn.context`.
 
 ---
 

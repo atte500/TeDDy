@@ -133,3 +133,19 @@ Implementation must be done incrementally through the following dependency-aware
     -   Include a test for a multi-turn specialist agent to validate that `caller_turn_id` is correctly managed.
 -   **[ ] Task: Update Agent Prompts:**
     -   Review and update all agent prompts (`prompts/*.xml`) to utilize the new `RETURN` action and the `Handoff Resources` format for `INVOKE`.
+
+---
+### **Slice 7: Automatic Session Log Generation**
+**Goal:** Implement the automatic generation of a `session-log.md` file at the root of a session directory, providing a consolidated, human-readable history of the session, as defined in the [Automatic Session Log Specification](/docs/specs/session-history-view.md).
+
+-   **[ ] Task: Add `PyYAML` Dependency:**
+    -   Add `pyyaml` to the project's dependencies in `pyproject.toml`.
+-   **[ ] Task: Update `meta.yaml` Generation:**
+    -   In the `SessionManager` service (from Slice 6), update the `meta.yaml` creation logic to include a `creation_timestamp` field.
+-   **[ ] Task: Implement `SessionLogGenerator` Service:**
+    -   Create a new `SessionLogGenerator` service responsible for generating the `session-log.md` content.
+    -   Implement the history reconstruction logic: scan directories, parse `meta.yaml`, build the dependency graph using `parent_turn_id`, and sort turns within branches by `creation_timestamp`.
+    -   Implement the content aggregation logic: read `plan.md` and `report.md` for each turn, extract the required sections, and format the output according to the specification.
+-   **[ ] Task: Integrate into `execute` Command:**
+    -   In `main.py`, update the `execute` command's "Turn Transition Algorithm".
+    -   After a turn is successfully executed and the report is generated, call the `SessionLogGenerator` to update the `session-log.md` file.
