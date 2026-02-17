@@ -16,5 +16,10 @@ This service will be implemented using the **Jinja2 Template Engine**, as valida
 
 This approach provides a clean separation of concerns between data preparation (Python) and presentation (the template file).
 
+## 5. Responsibilities
+-   **Execution Reporting:** Formats the results of successful or failed actions.
+-   **Validation Reporting:** Renders `validation_result` errors and `failed_resources` (content of files that failed validation) to aid in debugging.
+-   **Smart Fencing:** Uses a custom Jinja2 filter (`| fence`) to ensure that code blocks nested within the report (e.g., file content containing backticks) are wrapped in fences with a sufficient number of backticks to remain valid Markdown.
+
 ## 4. Data Contracts / Methods
 This service implements the `format` method as defined by the `IMarkdownReportFormatter` port.
