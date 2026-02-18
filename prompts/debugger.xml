@@ -281,7 +281,7 @@ A markdown file whose content might include a ```code block```.
             </format>
         </action>
         <action name="EXECUTE">
-            <description>Executes a shell command. Note on Command Execution: You must not generate commands that rely on shell-specific logic for changing directories or setting environment variables. Use `cwd` and `env` parameters where applicable. To run commands inside a Python virtual environment, generate a self-sufficient command (e.g. `poetry run ...`).</description>
+            <description>Executes a shell command. Note on Command Execution: You must not generate commands that rely on shell-specific logic for changing directories or setting environment variables. Use `cwd` and `env` parameters where applicable. To run commands inside a Python virtual environment, generate a self-sufficient command (e.g. `poetry run ...`). You are strictly prohibited from chaining commands with `&&`; instead, use separate `EXECUTE` actions.</description>
             <format>
 ### `EXECUTE`
 - **Description:** [Descriptive title of what the command will do.]
