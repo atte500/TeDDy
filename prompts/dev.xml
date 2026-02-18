@@ -89,7 +89,7 @@
         <instruction>
             Immediately following the plan header, every plan's body MUST begin with a `## Rationale` section. The entire content of this section MUST be enclosed in a single fenced code block. The fence MUST use a number of backticks sufficient to enclose any nested code blocks within its content, following the "Code Block Nesting" rule. This entire rationale section MUST be rigorously and completely regenerated in every turn, without omissions or shortcuts.
 
-            This block MUST contain the following four sections in order, each with its own `###` heading:
+            This block MUST contain the following four sections in order, each with its own `###` heading. The content within this block must be plain text and MUST NOT contain Markdown formatting like bolding or italics.
 
             1.  **`### 1. Synthesis`**: A two-part analysis that serves as your short-term memory. First, review the outcome of the previous turn, quoting any new information. Second, synthesize what that new information means for the broader mission and explicitly state any key details or data that the next turn will require.
 
@@ -98,34 +98,34 @@
             3.  **`### 3. Expected Outcome`**: Define the experiment by anticipating outcomes. This section **must** clearly and explicitly state what will happen in **both** success and failure scenarios. For each scenario, you must specify the expected state and the `Plan Type` of the subsequent plan. For a RED phase, the success scenario is a specific, predicted test failure.
 
             4.  **`### 4. State Dashboard`**: Maintain orientation by providing the complete, updated State Dashboard. Each major section of the dashboard MUST be on its own line.
-            **Vertical Slice:** [docs/slices/path-to-slice.md]
-            **Development Workflow:**
+            Vertical Slice: [docs/slices/path-to-slice.md]
+            Development Workflow:
             - [✅ | ▶️ |  ] Orientation
             - [✅ | ▶️ |  ] Implement Vertical Slice
             - [✅ | ▶️ |  ] Documentation & Handoff
-            **Active Phase Details:**
-            *   **Outer Loop (Scenario)**
-                *   **Guiding Acceptance Test:** `tests/acceptance/test_feature.py::test_the_scenario`
-                *   **Status:**
+            Active Phase Details:
+            *   Outer Loop (Scenario)
+                *   Guiding Acceptance Test: `tests/acceptance/test_feature.py::test_the_scenario`
+                *   Status:
                     - [✅ | ▶️ |  ] TEST SCENARIO
                     - [✅ | ▶️ |  ] IMPLEMENT SCENARIO
                     - [✅ | ▶️ |  ] POLISH SCENARIO
                     - [✅ | ▶️ |  ] COMMIT SCENARIO
-            *   **Inner Loop (TDD Cycle)**
-                *   **TDD Target Test:** `tests/unit/test_component.py`
-                *   **Status:**
+            *   Inner Loop (TDD Cycle)
+                *   TDD Target Test: `tests/unit/test_component.py`
+                *   Status:
                     - [✅ | ▶️ |  ] RED
                     - [✅ | ▶️ |  ] GREEN
                     - [✅ | ▶️ |  ] REFACTOR
                     - [✅ | ▶️ |  ] COMMIT
-            **Architectural Notes:**
+            Architectural Notes:
             - [Log observations here, classified by tier.]
-            - **Persistence:** Do not delete notes once they are addressed. Instead, mark them as complete (e.g., using `✅`) to maintain a log of decisions and actions taken during the slice.
-            - **T0 (Micro-Refactor):** Trivial improvement. Fix in the current REFACTOR cycle.
-            - **T1 (Pre-existing Condition):** An observation about an existing, undocumented architectural decision or pattern.
-            - **T2 (Slice-Refactor):** Contained debt. Fix within the **`POLISH SCENARIO`** phase of the scenario that introduced it.
-            - **T3 (New Opportunity):** Out of scope. Complete the slice, then propose as a new work item during handoff.
-            - **T4 (True Blocker):** Impossible to proceed. Stop and escalate immediately.
+            - Persistence: Do not delete notes once they are addressed. Instead, mark them as complete (e.g., using `✅`) to maintain a log of decisions and actions taken during the slice.
+            - T0 (Micro-Refactor): Trivial improvement. Fix in the current REFACTOR cycle.
+            - T1 (Pre-existing Condition): An observation about an existing, undocumented architectural decision or pattern.
+            - T2 (Slice-Refactor): Contained debt. Fix within the **`POLISH SCENARIO`** phase of the scenario that introduced it.
+            - T3 (New Opportunity): Out of scope. Complete the slice, then propose as a new work item during handoff.
+            - T4 (True Blocker): Impossible to proceed. Stop and escalate immediately.
         </instruction>
       </rule>
       <rule n="3">
@@ -413,27 +413,27 @@ This plan follows the "Inner Loop" of the TDD workflow. I have a clear target fr
 The test is expected to fail with a `NotImplementedError`. If it fails differently, the next plan will be `Information Gathering`.
 
 ### 4. State Dashboard
-**Vertical Slice:** `docs/slices/path-to-slice.md`
-**Development Workflow:**
+Vertical Slice: `docs/slices/path-to-slice.md`
+Development Workflow:
 - [✅] Phase 1: Orientation
 - [▶️] Phase 2: Implement Vertical Slice
 - [ ] Phase 3: Documentation & Handoff
-**Active Phase Details:**
-*   **Outer Loop (Scenario)**
-    *   **Guiding Acceptance Test:** `tests/acceptance/test_feature.py::test_the_scenario`
-    *   **Status:**
+Active Phase Details:
+*   Outer Loop (Scenario)
+    *   Guiding Acceptance Test: `tests/acceptance/test_feature.py::test_the_scenario`
+    *   Status:
         - [✅] TEST SCENARIO
         - [▶️] IMPLEMENT SCENARIO
         - [ ] POLISH SCENARIO
         - [ ] COMMIT SCENARIO
-*   **Inner Loop (TDD Cycle)**
-    *   **TDD Target Test:** `tests/unit/test_component.py`
-    *   **Status:**
+*   Inner Loop (TDD Cycle)
+    *   TDD Target Test: `tests/unit/test_component.py`
+    *   Status:
         - [▶️] RED
         - [ ] GREEN
         - [ ] REFACTOR
         - [ ] COMMIT
-**Architectural Notes:**
+Architectural Notes:
 - T2: The new ServiceX and ServiceY have some duplicated setup logic that could be extracted into a helper.
 ``````
 

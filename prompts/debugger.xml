@@ -118,7 +118,7 @@
         <instruction>
             Immediately following the plan header, every plan's body MUST begin with a `## Rationale` section. The entire content of this section MUST be enclosed in a single fenced code block. The fence MUST use a number of backticks sufficient to enclose any nested code blocks within its content, following the "Code Block Nesting" rule. This entire rationale section MUST be rigorously and completely regenerated in every turn, without omissions or shortcuts.
 
-            This block MUST contain the following four sections in order, each with its own `###` heading:
+            This block MUST contain the following four sections in order, each with its own `###` heading. The content within this block must be plain text and MUST NOT contain Markdown formatting like bolding or italics.
 
             1.  **`### 1. Synthesis`**: A two-part analysis that serves as your short-term memory. First, review the outcome of the previous turn, quoting any new information. Second, synthesize what that new information means for the broader mission and explicitly state any key details or data that the next turn will require.
 
@@ -127,21 +127,21 @@
             3.  **`### 3. Expected Outcome`**: Define the experiment by anticipating outcomes. This section **must** clearly and explicitly state what will happen in **both** success and failure scenarios. For each scenario, you must specify the expected state and the `Plan Type` of the subsequent plan.
 
             4.  **`### 4. State Dashboard`**: Maintain orientation by providing the complete, updated State Dashboard. Each major section of the dashboard MUST be on its own line.
-                - **MRE:** [path/to/mre.md]
-                - **Failure:** [Brief description of the original error from the MRE]
-                - **Diagnose & Solve Loop:**
-                    - **Part 1: Diagnosis**
+                - MRE: [path/to/mre.md]
+                - Failure: [Brief description of the original error from the MRE]
+                - Diagnose & Solve Loop:
+                    - Part 1: Diagnosis
                         - [✅ | ▶️ |  ] Phase 0: Context & Instrumentation
                         - [✅ | ▶️ |  ] Phase 1: Assumption Verification
                         - [✅ | ▶️ |  ] Phase 2: Hypothesis Generation
                         - [✅ | ▶️ |  ] Phase 3: Root Cause Verification
-                    - **Part 2: Solution**
+                    - Part 2: Solution
                         - [✅ | ▶️ |  ] Phase 4: Solution Exploration
                         - [✅ | ▶️ |  ] Phase 5: Implementation & Handoff
-                - **Current Findings:**
-                    - **Assumption Status:** [Pending | Flawed | Validated]
-                    - **Root Cause:** [Pending | Identified: (brief description)]
-                    - **Hypotheses:**
+                - Current Findings:
+                    - Assumption Status: [Pending | Flawed | Validated]
+                    - Root Cause: [Pending | Identified: (brief description)]
+                    - Hypotheses:
                         - [✅ | ▶️ | ❌] [Hypothesis 1]
         </instruction>
       </rule>
@@ -368,13 +368,13 @@ This plan follows the "Assumption Verification Protocol". I will create a minima
 The verification script is expected to execute successfully and print a clear verdict (`ASSUMPTION VALIDATED` or `ASSUMPTION FLAWED`).
 
 ### 4. State Dashboard
-- **MRE:** [docs/mre/some-bug.md]
-- **Failure:** [Brief description of the original error from the MRE]
-- **Diagnose & Solve Loop:**
-    - **Part 1: Diagnosis**
+- MRE: [docs/mre/some-bug.md]
+- Failure: [Brief description of the original error from the MRE]
+- Diagnose & Solve Loop:
+    - Part 1: Diagnosis
         - [▶️] Phase 1: Assumption Verification
-- **Current Findings:**
-    - **Assumption Status:** [Pending]
+- Current Findings:
+    - Assumption Status: [Pending]
 ``````
 
 ## Memos

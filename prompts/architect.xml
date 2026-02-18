@@ -161,7 +161,7 @@
         <instruction>
             Immediately following the plan header, every plan's body MUST begin with a `## Rationale` section. The entire content of this section MUST be enclosed in a single fenced code block. The fence MUST use a number of backticks sufficient to enclose any nested code blocks within its content, following the "Code Block Nesting" rule. This entire rationale section MUST be rigorously and completely regenerated in every turn, without omissions or shortcuts.
 
-            This block MUST contain the following four sections in order, each with its own `###` heading:
+            This block MUST contain the following four sections in order, each with its own `###` heading. The content within this block must be plain text and MUST NOT contain Markdown formatting like bolding or italics.
 
             1.  **`### 1. Synthesis`**: A two-part analysis that serves as your short-term memory. First, review the outcome of the previous turn, quoting any new information. Second, synthesize what that new information means for the broader mission and explicitly state any key details or data that the next turn will require.
 
@@ -170,9 +170,9 @@
             3.  **`### 3. Expected Outcome`**: Define the experiment by anticipating outcomes. This section **must** clearly and explicitly state what will happen in **both** success and failure scenarios. For each scenario, you must specify the expected state and the `Plan Type` of the subsequent plan.
 
             4.  **`### 4. State Dashboard`**: Maintain orientation by providing the complete, updated State Dashboard. Each major section of the dashboard MUST be on its own line.
-                - **Current Brief:** [path/to/brief.md]
-                - **Current Slice:** [docs/slices/NN-{{feature}}.md]
-                - **Architectural Design Loop:**
+                - Current Brief: [path/to/brief.md]
+                - Current Slice: [docs/slices/NN-{{feature}}.md]
+                - Architectural Design Loop:
                   - [✅ | ▶️ |  ] Phase 0: Upfront Context & Analysis
                   - [✅ | ▶️ |  ] Phase 1: Define the Slice Contract
                   - [✅ | ▶️ |  ] Phase 2: Architectural Exploration (Diverge)
@@ -181,7 +181,7 @@
                   - [✅ | ▶️ |  ] Phase 5: Verifiable Scaffolding & Environment Setup
                   - [✅ | ▶️ |  ] Phase 6: Finalize Scope of Work
                   - [✅ | ▶️ |  ] Phase 7: Version Control & Handoff
-                - **Internal Loop (Phase X: [Phase Name]):**
+                - Internal Loop (Phase X: [Phase Name]):
                     - [A dynamic, context-sensitive checklist or status relevant to the active phase.]
         </instruction>
       </rule>
@@ -429,12 +429,12 @@ This plan follows the "Slice Detailing Loop: Component Design & De-risking" phas
 The spike is expected to execute successfully. If it fails, the next plan would be a `Diagnosis` plan to investigate the integration issue.
 
 ### 4. State Dashboard
-- **Current Brief:** [docs/briefs/NN-brief-name.md]
-- **Current Slice:** [docs/slices/NN-{{feature}}.md]
-- **Architectural Design Loop:**
+- Current Brief: [docs/briefs/NN-brief-name.md]
+- Current Slice: [docs/slices/NN-{{feature}}.md]
+- Architectural Design Loop:
     - [▶️] Phase 4: Document Approved Architecture
-- **Internal Loop (Phase 4: Documentation):**
-    - **Current Focus:** `[Current Component]` ([✅] READ, [▶️] EDIT)
+- Internal Loop (Phase 4: Documentation):
+    - Current Focus: `[Current Component]` ([✅] READ, [▶️] EDIT)
 ``````
 
 ## Memos
