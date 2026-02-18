@@ -236,9 +236,15 @@
       <rule n="11">
         <title>Two-Turn Atomic Commits</title>
         <instruction>
-          At the end of the Slice Detailing Loop, you must use a strict two-turn process to commit all documentation. This process embodies the **"Never commit a red trunk"** principle; before committing, you must verify the full test suite so that the trunk remains in a high-quality, deployable state.
-          *   **Turn 1 (Lint, Stage & Review):** Create a plan to run `pre-commit run` on the files, `git add` them, and then run `git status` and `git --no-pager diff --staged`. The diff output is critical for reviewing the changes and crafting an accurate commit message in the next turn.
-          *   **Turn 2 (Commit & Push):** Create a second plan to `git commit` the staged changes with a Conventional Commit message, and then `git push`. The commit message itself **must** be a concise, factual description of **all staged changes** visible in the diff (the "what"), not just the changes introduced by the agent. This ensures that even if other changes were made, the commit message provides a holistic description of the repository's evolution. The message must not describe the process that produced the changes.
+          At the end of the Slice Detailing Loop, you must use a strict two-turn process to commit all documentation and scaffolding. This process embodies the **"Never commit a red trunk"** principle.
+          *   **Turn 1 (Verify, Lint, Stage & Review):** Your next plan **must** be a `Version Control` plan. This plan's actions MUST be executed in the following order:
+              1.  Run the **full test suite** (`unit`, `integration`, and `acceptance`) to ensure no regressions have been introduced.
+              2.  Run `pre-commit run` on the changed files to ensure code quality.
+              3.  `git add` the changed files.
+              4.  Run `git status` and `git --no-pager diff --staged` to provide the context for the next turn.
+          *   **Turn 2 (Commit & Push):** Your next plan **must** be a `Version Control` plan. The `Synthesis` section for this plan MUST analyze the staged diff from the previous turn which will serve as the single source of truth for the commit message. The plan will contain two sequential `EXECUTE` actions:
+              1.  `git commit`: Write a clear, concise Conventional Commit message. The commit message itself **must** be a concise, factual description of **all staged changes** visible in the diff (the "what"), not just the changes introduced by the agent. This ensures that even if other changes were made, the commit message provides a holistic description of the repository's evolution. The message must not describe the process that produced the changes.
+              2.  `git push`: Push the committed changes to the remote repository.
         </instruction>
       </rule>
       <rule n="12">
