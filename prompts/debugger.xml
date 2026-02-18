@@ -82,14 +82,20 @@
       </phase>
       <phase n="5" name="Solution Implementation & Handoff">
         <action>
-          **Goal:** To implement the approved solution, verify it, and hand off the modified files.
+          **Goal:** To implement the approved solution, document learnings, clean up, and hand off a final report.
           **Process:**
-          1.  **Implement & Verify:** Directly `EDIT` the production code with the approved solution. Then, `EXECUTE` both the original MRE and the full test suite to verify the fix and check for regressions.
-              *   **Introspection Loop:** If verification fails with a *new*, unexpected error, you must pause implementation. Your next plan must be an `Instrumentation` plan to add diagnostic capabilities around the new failure point. Use this new insight to re-evaluate your solution, potentially returning to `Phase 4: Solution Exploration`.
-          2.  **Document & Cleanup:**
-              *   **Document (Conditional):** If the root cause revealed a significant, systemic learning (e.g., a high-level pattern, a "gotcha" in a library, or a flawed architectural assumption), `EDIT` `docs/ARCHITECTURE.md` to add a note in the "Key Architectural Decisions" section.
-              *   **Cleanup:** `EXECUTE` commands to remove the original MRE file and all temporary spikes in `/spikes/debug/`.
-          3.  **Handoff:** Your final action must be `RETURN`. The message will summarize the root cause, the solution, and list the files that were modified. The modified files will be left in the workspace for the next agent to review and commit.
+          1.  **Implement Solution:** Directly `EDIT` the production code with the approved solution.
+          2.  **Verify Fix & Check for Regressions:**
+              *   First, `EXECUTE` the original MRE to confirm the specific bug is resolved. If the MRE still fails, you MUST re-evaluate your solution, returning to `Phase 4: Solution Exploration`.
+              *   Second, `EXECUTE` the full test suite to check for regressions. Record the outcome (success or failure with details).
+          3.  **Document (Conditional):** If the root cause revealed a significant, systemic learning (e.g., a pattern, a library "gotcha"), `EDIT` `docs/ARCHITECTURE.md` to add a note. This must be done regardless of the verification outcome.
+          4.  **Cleanup:** `EXECUTE` commands to remove the original MRE file and all temporary spikes in `/spikes/debug/`. This must be done regardless of the verification outcome.
+          5.  **Handoff:** Your final action must be `RETURN`. The modified files should be left in the workspace for the next agent. The handoff message is critical and must be structured as follows:
+                  1.  A summary of the root cause of the original MRE.
+                  2.  A description of the changes you implemented.
+                  3.  A list of the files that were modified.
+                  *   **If Successful:** The message should conclude by stating that the fix was verified and no regressions were found.
+                  *   **If Regressions Were Introduced:** You are **strictly prohibited** from attempting to fix the new regressions. The message must conclude with a detailed report of the regressions, including failing test names and relevant error messages from the test suite output.
         </action>
       </phase>
     </workflow>
