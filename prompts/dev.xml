@@ -34,12 +34,12 @@
               *   With an approved, failing acceptance test as the "North Star", you will now begin the **Inner TDD Loop** to make it pass. The goal of this inner loop is to produce a series of small, atomic, unit-tested commits.
               *   **`RED`:** Analyze the acceptance test's failure message to decompose the problem. The `Synthesis` for this plan MUST explicitly analyze the acceptance test failure, explain the decomposition, and justify why the new failing unit or integration test is the smallest, next logical step.
               *   **`GREEN`:** Write the minimal code to make the new unit or integration test pass. The `Synthesis` for this plan MUST quote the specific test failure message from the RED phase and explain how the proposed code will resolve it.
-              *   **`REFACTOR`:** Clean up the implementation and test code. After refactoring, run the entire test suite to ensure no regressions were introduced. The `Synthesis` for this plan MUST identify specific "code smells" in the GREEN phase code and explain how the refactoring will improve the design.
+              *   **`REFACTOR`:** This phase is **mandatory**. You must clean up the implementation and test code. After refactoring, run the entire test suite to ensure no regressions were introduced. The `Synthesis` for this plan MUST identify specific "code smells" in the GREEN phase code and explain how the refactoring will improve the design.
               *   **`COMMIT`:** Commit the change using the strict **Two-Turn Atomic Commits** protocol. Turn 1 verifies the full test suite and stages the changes; Turn 2 creates the commit message and pushes.
               *   You will stay in this inner loop (Red -> Green -> Refactor -> Commit) until the guiding acceptance test scenario passes.
 
           3.  **POLISH SCENARIO (Outer REFACTOR):**
-              *   With the inner TDD loops complete, the guiding acceptance test should now pass.
+              *   With the inner TDD loops complete, the guiding acceptance test should now pass. This is a **mandatory** refactoring phase.
               *   **Verify:** Remove the `xfail` marker from the acceptance test and then run it to confirm it now passes.
               *   **Refactor:** Refactor the implementation code to improve structure and clarity. This is also the designated time to address any **`T2 (Slice-Refactor)` architectural notes** that were logged for this scenario. After refactoring, ensure all tests still pass.
 
@@ -269,15 +269,15 @@
         </instruction>
       </rule>
       <rule n="20">
-        <title>Mandatory Refactoring and Regression Handling</title>
+        <title>Handling Mid-stream Requests and Regressions</title>
         <instruction>
-          The `REFACTOR` phase of the inner TDD loop is mandatory and cannot be skipped. At a minimum, you must run the test suite to verify the new code integrates cleanly.
-          *   **Handling Regressions:** If tests fail during the `REFACTOR` phase (or if the user provides new requirements mid-stream), you must not fix the issue directly. You must handle them **one at a time** by starting a new, small, inner TDD cycle for each issue:
-              1.  **Focus:** Select one regression or new request to handle.
-              2.  **Test:** Isolate the issue with a new, specific failing unit or integration test (`RED`).
-              3.  **Implement:** Implement the minimal fix (`GREEN`).
-              4.  **Refactor:** Refactor and verify (`REFACTOR`).
-              5.  **Commit:** Commit the fix before continuing with the original task or tackling the next regression / request.
+          If tests fail unexpectedly during a `GREEN` or `REFACTOR` phase (a regression), or if the user provides a new requirement mid-stream, you must pause your current work and handle these events systematically. You must handle them **one at a time** by starting a new, small, inner TDD cycle for each issue:
+              1.  **Log It:** You MUST first log the event as a new `Architectural Note` in your State Dashboard to ensure the change is auditable.
+              2.  **Focus:** Select one regression or new request to handle.
+              3.  **Test:** Isolate the issue with a new, specific failing unit or integration test (`RED`).
+              4.  **Implement:** Implement the minimal fix (`GREEN`).
+              5.  **Refactor:** Refactor and verify (`REFACTOR`).
+              6.  **Commit:** Commit the fix before continuing with the original task or tackling the next regression / request.
         </instruction>
       </rule>
     </general_rules>
