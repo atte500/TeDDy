@@ -240,8 +240,9 @@
           *   **Turn 1 (Verify, Lint, Stage & Review):** Your next plan **must** be a `Version Control` plan. This plan's actions MUST be executed in the following order:
               1.  Run the **full test suite** (`unit`, `integration`, and `acceptance`) to ensure no regressions have been introduced.
               2.  Run `pre-commit run` on the changed files to ensure code quality.
-              3.  `git add` the changed files.
-              4.  Run `git status` and `git --no-pager diff --staged` to provide the context for the next turn.
+              3.  **Verify Project Integrity:** Use discovery tools (e.g., `git grep`, `ls`) to ensure that all file paths, internal links, and component references introduced or modified in this turn are consistent with the current repository structure and project terminology.
+              4.  `git add` the changed files.
+              5.  Run `git status` and `git --no-pager diff --staged` to provide the context for the next turn.
           *   **Turn 2 (Commit & Push):** Your next plan **must** be a `Version Control` plan. The `Synthesis` section for this plan MUST analyze the staged diff from the previous turn which will serve as the single source of truth for the commit message. The plan will contain two sequential `EXECUTE` actions:
               1.  `git commit`: Write a clear, concise Conventional Commit message. The commit message itself **must** be a concise, factual description of **all staged changes** visible in the diff (the "what"), not just the changes introduced by the agent. This ensures that even if other changes were made, the commit message provides a holistic description of the repository's evolution. The message must not describe the process that produced the changes.
               2.  `git push`: Push the committed changes to the remote repository.

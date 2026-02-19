@@ -26,14 +26,13 @@ This table tracks the status of high-level Milestones, their associated specific
 | [08-replace-markdownify-with-trafilatura](./milestones/08-replace-markdownify-with-trafilatura.md)         | `Planned`     | N/A                                                                                                                                                                 | - Replace `markdownify` with `trafilatura`<br>- Improve web scraping quality |
 | [09-llm-client-and-config-service](./milestones/09-llm-client-and-config-service.md)                       | `Planned`     | [Foundational Restructuring](./specs/foundational-restructuring.md)                                                                                                 | - Centralized config service<br>- LLM client abstraction                     |
 | [10-interactive-workflow-and-cli-refinements](./milestones/10-interactive-workflow-and-cli-refinements.md) | `Planned`     | [Interactive Session](./specs/interactive-session-workflow.md)<br>[Context Payload](./specs/context-payload-format.md)<br>[Report Format](./specs/report-format.md) | - File-based session management<br>- Interactive TUI for plan editing        |
-
 | [11-refactor-legacy-dtos](./milestones/11-refactor-legacy-dtos.md)                                         | `Planned`     | N/A                                                                                                                                                                 | - Refactor legacy DTOs<br>- Modernize domain model structure                 |
 
 ## Workflow Standards
 
 This section defines the conventions for our project management artifacts.
 
-- **Artifact Lifecycle:** Work flows from `Spec` (the "why") -> `Milestone` (the "what") -> `Slice` (the "how").
+- **Artifact Lifecycle:** Work flows from `Spec` -> `Milestone` -> `Slice`.
 - **Numbering:** Milestones and Slices are numbered sequentially.
-- **Dashboard Policy:** The **Roadmap** table above tracks the status of high-level Milestones. The Pathfinder is the sole agent responsible for updating this table.
+- **Dashboard Policy:** The **Roadmap** table above tracks the status of high-level Milestones.
 - **Archiving Policy:** Once a Milestone is completed, its entry is removed from the Roadmap table, and its corresponding `.md` file (along with its slices) is moved into an `archive/` subdirectory.
