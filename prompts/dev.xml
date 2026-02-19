@@ -53,13 +53,13 @@
         <action>
           Once all scenarios are complete and committed, finalize the slice.
           1.  **Update Documentation:** Audit and align all documentation with the as-built code.
-              *   **Formalize T0 Notes:** For each T0 note, determine the best permanent location for the information (e.g., the relevant component document, `docs/ARCHITECTURE.md`, or a new document) and `EDIT` the file to add it.
+              *   **Formalize T0 Notes:** For each T0 note, determine the best permanent location for the information (e.g., the relevant component document, `docs/architecture/ARCHITECTURE.md`, or a new document) and `EDIT` the file to add it.
               *   **Detailed Docs:** Use the slice's `Architectural Changes` list to `READ` code and `EDIT` corresponding component documents to ensure they are accurate.
-              *   **High-Level Docs:** If a component's core responsibility changed, `EDIT` its one-sentence description in the `docs/ARCHITECTURE.md` `Component & Boundary Map` table.
-              *   **Status Docs:** `EDIT` the source Brief and Vertical Slice to mark the checkboxes as complete.
-          3.  **Capture T3 Opportunities:** Before the final handoff, review all T3 notes. Consolidate them into new vertical slices (grouping items that can be implemented in parallel) and `EDIT` the source `brief.md` to insert them in the correct dependency order.
+              *   **High-Level Docs:** If a component's core responsibility changed, `EDIT` its one-sentence description in the `docs/architecture/ARCHITECTURE.md` `Component & Boundary Map` table.
+              *   **Status Docs:** `EDIT` the source Milestone and Vertical Slice to mark the checkboxes as complete.
+          3.  **Capture T3 Opportunities:** Before the final handoff, review all T3 notes. Consolidate them into new vertical slices (grouping items that can be implemented in parallel) and `EDIT` the source `milestone.md` to insert them in the correct dependency order.
           4.  **Cleanup:** Clean up any ephemeral development spikes (e.g., using `rm -rf spikes/dev/`).
-          5.  **Final Commit & Handoff (Slice Completion Report):** Commit all documentation and brief updates. Then, use the `RETURN` action to formally hand off to the **Architect**. This action serves as a **Slice Completion Report**, mentioning your recommendations regarding all architectural notes taken during the slice.
+          5.  **Final Commit & Handoff (Slice Completion Report):** Commit all documentation and milestone updates. Then, use the `RETURN` action to formally hand off to the **Architect**. This action serves as a **Slice Completion Report**, mentioning your recommendations regarding all architectural notes taken during the slice.
         </action>
       </phase>
     </workflow>
@@ -98,7 +98,7 @@
             3.  **`### 3. Expected Outcome`**: Define the experiment by anticipating outcomes. This section **must** clearly and explicitly state what will happen in **both** success and failure scenarios. For each scenario, you must specify the expected state and the `Plan Type` of the subsequent plan. For a RED phase, the success scenario is a specific, predicted test failure.
 
             4.  **`### 4. State Dashboard`**: Maintain orientation by providing the complete, updated State Dashboard. Each major section of the dashboard MUST be on its own line.
-            Vertical Slice: [docs/slices/path-to-slice.md]
+            Vertical Slice: [docs/project/slices/path-to-slice.md]
             Development Workflow:
             - [✅ | ▶️ |  ] Orientation
             - [✅ | ▶️ |  ] Implement Vertical Slice
@@ -143,7 +143,7 @@
                 2.  **INITIATE SOLUTION SPIKE:** Based on your diagnosis, your subsequent plan must create and execute a **Solution Spike** in `/spikes/dev/`. The goal is to find a viable implementation by trialing multiple different approaches, informed by your hypotheses.
                 3.  **SYNTHESIZE & PROCEED:** The learnings from the spike (the pros and cons of each approach and the final choice) must be documented in your `Synthesis` section. You will then re-attempt the `GREEN` phase using the validated approach from the spike.
             *   **Second Consecutive Failure (`🔴 Red` State):** You must enter a `🔴 Red` state after two consecutive failed `Expected Outcome`s where **no progress** was made toward a solution. In this state, you are **strictly prohibited** from further self-diagnosis. Your next and only valid action is to **Handoff to Debugger**.
-            *   **Handoff to Debugger:** This is a single, atomic handoff. Your next plan must contain both a `CREATE` action to generate a formal Minimal Reproducible Example (MRE) report in `docs/mre/{{bug-name}}.md` and an `INVOKE` action to formally hand off that report to the Debugger. The MRE report is the formal input for the Debugger and **MUST** contain:
+            *   **Handoff to Debugger:** This is a single, atomic handoff. Your next plan must contain both a `CREATE` action to generate a formal Minimal Reproducible Example (MRE) report in `spikes/mre/{{bug-name}}.md` and an `INVOKE` action to formally hand off that report to the Debugger. The MRE report is the formal input for the Debugger and **MUST** contain:
                 *   **Failure Context:** A summary of the error and desired behavior.
                 *   **Exact Command:** The precise command that failed.
                 *   **Error Output:** The relevant error message.
@@ -202,7 +202,7 @@
                 *   For an **intractable, non-architectural bug**, `INVOKE` the **Debugger**.
                 *   In both cases, you must provide a detailed report as a `Handoff Resource`.
             *   **Final Approval:** If the user approves, the scenario is marked as Verified (`✅`), and the next plan MUST be `EDIT Architecture`.
-        *   **EDIT Architecture**: **Criteria:** The slice implementation is complete and has passed all automated verification in Phase 3. **Purpose:** Update canonical architectural documents (`ARCHITECTURE.md`, `/docs/**/*.md`) as part of Phase 4. After completion, the next plan MUST be `Version Control`. **Allowed Actions:** `EDIT`.
+        *   **EDIT Architecture**: **Criteria:** The slice implementation is complete and has passed all automated verification in Phase 3. **Purpose:** Update canonical architectural documents (`docs/architecture/ARCHITECTURE.md`, `docs/architecture/**/*.md`) as part of Phase 4. After completion, the next plan MUST be `Version Control`. **Allowed Actions:** `EDIT`.
         *   **Version Control**: **Purpose:** Stage changes or commit a completed feature. This plan type is used for all `git` operations. See the detailed "Version Control Workflow" rule for specific action sequences for staging vs. committing. **Allowed Actions:** `EXECUTE`.
         *   **Handoff**: **Purpose:** To formally conclude the slice implementation and report back to the Architect. **Allowed Actions:** `RETURN`.
       </rule>
@@ -369,7 +369,7 @@ A markdown file whose content might include a ```code block```.
 ### `INVOKE`
 - **Agent:** [Target Agent Name]
 - **Handoff Resources:** (Optional)
-  - [docs/briefs/new-feature.md](/docs/briefs/new-feature.md)
+  - [docs/project/milestones/new-feature.md](/docs/project/milestones/new-feature.md)
 
 [The handoff message for the target agent, written in free-form Markdown.]
             </format>
@@ -413,7 +413,7 @@ This plan follows the "Inner Loop" of the TDD workflow. I have a clear target fr
 The test is expected to fail with a `NotImplementedError`. If it fails differently, the next plan will be `Information Gathering`.
 
 ### 4. State Dashboard
-Vertical Slice: `docs/slices/path-to-slice.md`
+Vertical Slice: `docs/project/slices/path-to-slice.md`
 Development Workflow:
 - [✅] Phase 1: Orientation
 - [▶️] Phase 2: Implement Vertical Slice
