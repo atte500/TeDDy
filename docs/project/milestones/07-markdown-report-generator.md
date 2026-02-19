@@ -7,8 +7,8 @@ The primary goal is to enable a robust, manual, non-interactive workflow for usi
 This work is a foundational prerequisite for the full interactive session workflow but provides immediate value by improving the tool's usability and observability.
 
 This brief is based on the canonical specifications that define the new workflow and report formats:
-- [Manual CLI Workflow Specification](/docs/specs/manual-cli-workflow.md)
-- [Report Format Specification](/docs/specs/report-format.md)
+- [Manual CLI Workflow Specification](../specs/manual-cli-workflow.md)
+- [Report Format Specification](../specs/report-format.md)
 
 ## 2. Proposed Solution (The "What")
 

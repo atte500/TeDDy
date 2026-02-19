@@ -256,7 +256,7 @@ def test_parse_prune_action(parser: MarkdownPlanParser):
 ## Action Plan
 
 ### `PRUNE`
-- **Resource:** [docs/specs/old-spec.md](/docs/specs/old-spec.md)
+- **Resource:** [docs/project/specs/old-spec.md](/docs/project/specs/old-spec.md)
 - **Description:** Remove the old specification.
 """
     # Act

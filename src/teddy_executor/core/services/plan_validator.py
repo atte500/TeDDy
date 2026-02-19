@@ -4,7 +4,7 @@ This module contains the implementation of the PlanValidator service.
 
 # Placeholder content
 # The Developer will implement this based on the design document.
-# See: docs/core/services/plan_validator.md
+# See: docs/architecture/core/services/plan_validator.md
 
 import os
 from pathlib import Path

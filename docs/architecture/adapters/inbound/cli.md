@@ -2,16 +2,16 @@
 
 **Status:** Implemented
 **Language:** Python 3.9+
-**Introduced in:** [Slice 01: Walking Skeleton](../../../slices/executor/01-walking-skeleton.md)
+**Introduced in:** [Slice 01: Walking Skeleton](../../../project/slices/01-walking-skeleton.md)
 
 ## 1. Dependency Injection & Composition Root
 
 **Status:** Planned
 
-To address the complexity in the composition root and decouple the CLI commands from concrete service implementations, we will use a Dependency Injection (DI) container. This is a central part of the [Comprehensive Refactoring Brief](../../../briefs/01-comprehensive-refactoring.md).
+To address the complexity in the composition root and decouple the CLI commands from concrete service implementations, we will use a Dependency Injection (DI) container. This is a central part of the [Comprehensive Refactoring Milestone](../../../project/milestones/01-comprehensive-refactoring.md).
 
 -   **Library:** `punq`
--   **Strategy:** A single DI container will be initialized at application startup in `packages/executor/src/teddy_executor/main.py`. It will be responsible for instantiating and wiring all services, adapters, and their dependencies. CLI command functions will then resolve the top-level use case (`ExecutionOrchestrator`) from this container.
+-   **Strategy:** A single DI container will be initialized at application startup in `src/teddy_executor/main.py`. It will be responsible for instantiating and wiring all services, adapters, and their dependencies. CLI command functions will then resolve the top-level use case (`ExecutionOrchestrator`) from this container.
 
 ### Example Composition Root (`main.py`)
 
@@ -81,17 +81,17 @@ The CLI adapter is the primary entry point for the `teddy` application. It is re
 
 This adapter is a "driving" adapter that uses inbound ports to interact with the application core.
 
-*   For plan execution: [`RunPlanUseCase`](../../../contexts/executor/ports/inbound/run_plan_use_case.md), implemented by the `ExecutionOrchestrator` service.
-*   For context gathering: [`IGetContextUseCase`](../../../contexts/executor/ports/inbound/get_context_use_case.md) (**Introduced in:** [Slice 13: Implement `context` Command](../../../slices/executor/13-context-command.md))
+*   For plan execution: [`RunPlanUseCase`](../../core/ports/inbound/run_plan_use_case.md), implemented by the `ExecutionOrchestrator` service.
+*   For context gathering: [`IGetContextUseCase`](../../core/ports/inbound/get_context_use_case.md) (**Introduced in:** [Slice 13: Implement `context` Command](../../../project/slices/13-context-command.md))
 
 ## 4. Command-Line Interface
 
 *   **Technology:** `Typer`
-*   **Composition Root:** The application's dependency injection and wiring are handled in `packages/executor/src/teddy_executor/main.py` as described in the Dependency Injection section above.
+*   **Composition Root:** The application's dependency injection and wiring are handled in `src/teddy_executor/main.py` as described in the Dependency Injection section above.
 
 ### Main Command: `execute`
 **Status:** Implemented
-**Updated in:** [Slice 19: Unified `execute` Command & Interactive Approval](../../../slices/executor/19-unified-execute-command.md)
+**Updated in:** [Slice 19: Unified `execute` Command & Interactive Approval](../../../project/slices/19-unified-execute-command.md)
 
 This is the primary command for executing a plan.
 
@@ -111,7 +111,7 @@ This is the primary command for executing a plan.
 
 ### Utility Command: `context`
 **Status:** Implemented
-**Introduced in:** [Slice 13: Implement `context` Command](../../../slices/executor/13-context-command.md)
+**Introduced in:** [Slice 13: Implement `context` Command](../../../project/slices/13-context-command.md)
 
 This command provides a comprehensive snapshot of the project for an AI agent.
 
@@ -121,7 +121,7 @@ This command provides a comprehensive snapshot of the project for an AI agent.
 
 ### Utility Command: `get-prompt`
 **Status:** Implemented
-**Introduced in:** [Slice 23: Foundational CLI Additions & Refactoring](../../../slices/executor/23-cli-ux-foundations.md)
+**Introduced in:** [Slice 23: Foundational CLI Additions & Refactoring](../../../project/slices/23-cli-ux-foundations.md)
 
 This command provides a convenient way for users to access and override system prompts.
 
@@ -136,7 +136,7 @@ This command provides a convenient way for users to access and override system p
     4.  If the prompt is not found in either location, an error is printed to `stderr` and the command exits with a non-zero status code.
 
 ### Standard Output Handling
-**Updated in:** [Slice 22: Generalized Clipboard Output](../../../slices/executor/22-generalized-clipboard-output.md)
+**Updated in:** [Slice 22: Generalized Clipboard Output](../../../project/slices/22-generalized-clipboard-output.md)
 
 To streamline the interactive user workflow, commands that produce substantial text output (like `context` and `execute`) follow a standard behavior, encapsulated in a private helper function within `main.py`:
 
@@ -148,7 +148,7 @@ To streamline the interactive user workflow, commands that produce substantial t
 The application exits with a non-zero status code if any action in the `execute` plan fails.
 
 #### Project Context Snapshot
-**(Updated in: [Slice 17: Refactor `context` Command Output](../../../slices/executor/17-refactor-context-command-output.md))**
+**(Updated in: [Slice 17: Refactor `context` Command Output](../../../project/slices/17-refactor-context-command-output.md))**
 
 The `cli_formatter.py` module contains a `format_project_context` function. This function takes the `ContextResult` DTO and renders it as a single string with four distinct sections, in order.
 

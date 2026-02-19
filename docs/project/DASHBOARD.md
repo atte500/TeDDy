@@ -4,21 +4,17 @@ The **TeDDy CLI** applies the **[UNIX philosophy](https://en.wikipedia.org/wiki/
 
 ## 1. Guiding Principles
 
-### 1.1. Markdown Files as Interface
+### 1.1. The File System is the UI
+We interact exclusively through Markdown files. Our workflow is integrated with our code, allowing us to use standard editors and version control as our primary interface.
 
-With TeDDy, your interface *is* the file system. You interact with the AI through simple Markdown files that you can edit, search, and manage with the tools you already use every day. Your AI workflow lives and breathes alongside your code, not in a separate, siloed application.
+### 1.2. Local-First & Versionable
+All session data and memory reside locally in plain text. This ensures absolute data ownership, privacy, and the ability to branch or revert our collaboration history just like our source code.
 
-### 1.2. Local-First & Data Ownership
+### 1.3. Explicit Context & Statelessness
+Every turn is a standalone transaction. We pass the complete required context in and get a deterministic execution report out. This transparency ensures we always know *why* a decision was made.
 
-Your complete AI collaboration history resides on your machine in a simple, open format. There is no cloud service, no vendor lock-in. This gives you absolute control over your privacy and full ownership of your data. Your sessions are as portable, private, and versionable as the rest of your codebase.
-
-### 1.3. Stateless & Transparent
-
-TeDDy is stateless by design. The AI's complete context is passed in as a file, and its results are written out as a file. This explicitness makes every turn completely transparent and auditable. Because the entire state is just text on your disk, the workflow is also incredibly hackable. Agent personas are defined in simple prompt files you can easily edit or create, allowing you to tailor the AI's skills, rules, and personality to perfectly fit your project's unique needs.
-
-### 1.4. Human-Centric Workflow
-
-Instead of executing actions directly, each turn, agents outline their plan using a **TeDDy-specific Markdown protocol** structured to clearly present the agent's rationale and every intended action for your approval, while also being precisely executable by the CLI. Once approved, the actions are executed *deterministically*, and the results are summarized in a Markdown execution report that is passed back to the AI to inform the next turn.
+### 1.4. Supervised Automation
+Agents propose; humans dispose. We use a structured Markdown protocol to ensure every action is justified and approved before execution, maintaining a high-trust, "built-in quality" loop.
 
 ## Roadmap
 
@@ -30,8 +26,8 @@ This table tracks the status of high-level Milestones, their associated specific
 | [08-replace-markdownify-with-trafilatura](./milestones/08-replace-markdownify-with-trafilatura.md)         | `Planned`     | N/A                                                                                                                                                                 | - Replace `markdownify` with `trafilatura`<br>- Improve web scraping quality |
 | [09-llm-client-and-config-service](./milestones/09-llm-client-and-config-service.md)                       | `Planned`     | [Foundational Restructuring](./specs/foundational-restructuring.md)                                                                                                 | - Centralized config service<br>- LLM client abstraction                     |
 | [10-interactive-workflow-and-cli-refinements](./milestones/10-interactive-workflow-and-cli-refinements.md) | `Planned`     | [Interactive Session](./specs/interactive-session-workflow.md)<br>[Context Payload](./specs/context-payload-format.md)<br>[Report Format](./specs/report-format.md) | - File-based session management<br>- Interactive TUI for plan editing        |
-| [11-documentation-alignment](./milestones/11-documentation-alignment.md)                                   | `Planned`     | N/A                                                                                                                                                                 | - Refactor `README.md`<br>- Refactor `ARCHITECTURE.md`                       |
-| [12-refactor-legacy-dtos](./milestones/12-refactor-legacy-dtos.md)                                         | `Planned`     | N/A                                                                                                                                                                 | - Refactor legacy DTOs<br>- Modernize domain model structure                 |
+
+| [11-refactor-legacy-dtos](./milestones/11-refactor-legacy-dtos.md)                                         | `Planned`     | N/A                                                                                                                                                                 | - Refactor legacy DTOs<br>- Modernize domain model structure                 |
 
 ## Workflow Standards
 

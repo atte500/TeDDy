@@ -2,7 +2,7 @@
 
 ## 1. Goal (The "Why")
 
-The goal is to establish core services for configuration management and LLM interaction. This initiative will decouple the application from specific LLM provider implementations and centralize all system settings, improving maintainability and extensibility. This work is the second part of the strategic initiative defined in [docs/specs/foundational-restructuring.md](/docs/specs/foundational-restructuring.md).
+The goal is to establish core services for configuration management and LLM interaction. This initiative will decouple the application from specific LLM provider implementations and centralize all system settings, improving maintainability and extensibility. This work is the second part of the strategic initiative defined in [docs/project/specs/foundational-restructuring.md](../specs/foundational-restructuring.md).
 
 ## 2. Proposed Solution (The "What")
 
@@ -16,7 +16,7 @@ Based on the existing conventions in `docs/ARCHITECTURE.md`, we will implement t
 2.  **LLM Client Abstraction (`ILlmClient` and `LiteLLMAdapter`)**
     -   **Port (`ILlmClient`):** An interface defining the contract for LLM interactions.
         -   **Location:** `src/teddy_executor/core/ports/outbound/llm_client.py`
-        -   **Contract:** Based on the workflow in `docs/specs/interactive-session-workflow.md`, it will have a primary method: `generate_plan(system_prompt: str, context_payload: str, user_instruction: str) -> str`.
+        -   **Contract:** Based on the workflow in `docs/project/specs/interactive-session-workflow.md`, it will have a primary method: `generate_plan(system_prompt: str, context_payload: str, user_instruction: str) -> str`.
     -   **Adapter (`LiteLLMAdapter`):** The concrete implementation of the `ILlmClient` port.
         -   **Location:** `src/teddy_executor/adapters/outbound/litellm_adapter.py`
         -   **Technology:** It will use the `litellm` library to communicate with various LLM APIs.

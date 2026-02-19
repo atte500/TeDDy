@@ -16,7 +16,7 @@ A core principle of this format is that it must reliably handle nested code bloc
 
 -   **The Problem:** If a code block's content contains a sequence of backticks (e.g., ` ``` `) that is the same length as the enclosing fence, the Markdown becomes invalid and cannot be parsed correctly.
 -   **The Rule (Primary Defense):** When creating a fenced code block, the fence **must** use a number of backticks that is strictly greater than the longest sequence of backticks found anywhere inside the content. This instruction is the primary defense against parsing errors.
--   **System Support (Validation & Self-Correction):** To guarantee robustness, the system includes a pre-flight validation check that is **run automatically** by the `teddy execute` command. Before any plan is presented to the user for approval, the system first ensures it is well-formed and parsable. If parsing fails (e.g., due to an ambiguous code fence), it triggers the **Automated Re-plan Loop** which instructs the AI to correct its own formatting error. See the [Plan Validation & Automated Re-planning](/docs/specs/interactive-session-workflow.md#8-plan-validation--automated-re-planning) section for full details.
+-   **System Support (Validation & Self-Correction):** To guarantee robustness, the system includes a pre-flight validation check that is **run automatically** by the `teddy execute` command. Before any plan is presented to the user for approval, the system first ensures it is well-formed and parsable. If parsing fails (e.g., due to an ambiguous code fence), it triggers the **Automated Re-plan Loop** which instructs the AI to correct its own formatting error. See the [Plan Validation & Automated Re-planning](/docs/project/specs/interactive-session-workflow.md#8-plan-validation--automated-re-planning) section for full details.
 
 A plan is a single Markdown file with the following top-level structure:
 
@@ -108,7 +108,7 @@ All actions are located under the `## Action Plan` heading. Each action is defin
 -   **Format:**
     `````markdown
     ### `CREATE`
-    - **File Path:** [docs/specs/plan-format.md](/docs/specs/plan-format.md)
+    - **File Path:** [docs/project/specs/plan-format.md](/docs/project/specs/plan-format.md)
     - **Description:** Create the initial specification document.
     ````markdown
     # Specification: The Pure Markdown Plan Format
@@ -180,7 +180,7 @@ All actions are located under the `## Action Plan` heading. Each action is defin
         - `VAR1`: "value1"
         - `VAR2`: "value2"
     ````shell
-    ls -l docs/specs/
+    ls -l docs/project/specs/
     ````
     `````
 -   **Parsing Rules:**
@@ -214,7 +214,7 @@ All actions are located under the `## Action Plan` heading. Each action is defin
 -   **Format:**
     ```markdown
     ### `CHAT_WITH_USER`
-    I have created a draft brief at `docs/briefs/01-finisher-agent-brief.md` and will now begin my research.
+    I have created a new milestone at `docs/project/milestones/01-finisher-agent.md` and will now begin my research.
 
     This is a standard checkpoint to ensure we are aligned before I proceed with the research phase. Does this initial direction meet with your approval?
     ```
@@ -228,9 +228,9 @@ All actions are located under the `## Action Plan` heading. Each action is defin
     ### `INVOKE`
     - **Agent:** Architect
     - **Handoff Resources:** (Optional)
-      - [docs/briefs/new-feature.md](/docs/briefs/new-feature.md)
+      - [docs/project/milestones/new-feature.md](/docs/project/milestones/new-feature.md)
 
-    Handoff to the Architect. The brief is complete.
+    Handoff to the Architect. The milestone is complete.
     ```
 -   **Parsing Rules:**
     1. Extract the target `Agent` from the metadata list.
@@ -244,7 +244,7 @@ All actions are located under the `## Action Plan` heading. Each action is defin
     ```markdown
     ### `RETURN`
     - **Handoff Resources:** (Optional)
-      - [docs/rca/the-bug.md](/docs/rca/the-bug.md)
+      - [docs/architecture/rca/the-bug.md](/docs/architecture/rca/the-bug.md)
       - [spikes/fix-script.sh](/spikes/fix-script.sh)
 
     My analysis is complete. The root cause and a verified fix are attached.
@@ -259,7 +259,7 @@ All actions are located under the `## Action Plan` heading. Each action is defin
 -   **Format:**
     ````markdown
     ### `PRUNE`
-    - **Resource:** [docs/specs/old-spec.md](/docs/specs/old-spec.md)
+    - **Resource:** [docs/project/specs/old-spec.md](/docs/project/specs/old-spec.md)
     - **Description:** Remove the old specification as it is no longer relevant.
     ````
 -   **Parsing Rules:**
@@ -315,10 +315,10 @@ gitflow vs trunk-based development final steps
 ---
 
 ### `CREATE`
-- **File Path:** [docs/briefs/01-finisher-agent-brief.md](/docs/briefs/01-finisher-agent-brief.md)
-- **Description:** Create the initial draft of the brief for the new "Finisher" agent.
+- **File Path:** [docs/project/milestones/01-finisher-agent.md](/docs/project/milestones/01-finisher-agent.md)
+- **Description:** Create the initial draft of the milestone for the new "Finisher" agent.
 ````markdown
-# Brief: The "Finisher" Agent
+# Milestone: The "Finisher" Agent
 
 ## 1. Business Goal
 To streamline the end-of-task workflow by automating final code/documentation cleanup, versioning, and handoff notifications.
@@ -352,7 +352,7 @@ To streamline the end-of-task workflow by automating final code/documentation cl
 ---
 
 ### `CHAT_WITH_USER`
-I have created a draft brief at `docs/briefs/01-finisher-agent-brief.md` and will now begin my research. I will report back with my findings and a more detailed proposal for the brief.
+I have created a draft milestone at `docs/project/milestones/01-finisher-agent.md` and will now begin my research. I will report back with my findings and a more detailed proposal for the milestone.
 
 Does this initial direction meet with your approval?
 
@@ -361,5 +361,5 @@ Does this initial direction meet with your approval?
 ### `INVOKE`
 - **Agent:** Architect
 
-Handoff to Architect to begin implementation of the approved brief.
+Handoff to Architect to begin implementation of the approved milestone.
 `````

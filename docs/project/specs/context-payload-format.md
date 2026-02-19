@@ -102,10 +102,10 @@ This section provides a scannable summary of all file paths and URLs that make u
     - [tests/test_main.py](/tests/test_main.py)
 
     ### Session
-    - [docs/specs/interactive-session-workflow.md](/docs/specs/interactive-session-workflow.md)
+    - [docs/project/specs/interactive-session-workflow.md](/docs/project/specs/interactive-session-workflow.md)
 
     ### Global
-    - [docs/specs/core-philosophy.md](/docs/specs/core-philosophy.md)
+    - [docs/project/specs/core-philosophy.md](/docs/project/specs/core-philosophy.md)
     ````
     `````
 
@@ -134,7 +134,7 @@ The full, verbatim content of every resource (file or URL) listed in the `Contex
     </html>
     ````
     ---
-    ### [docs/specs/core-philosophy.md](/docs/specs/core-philosophy.md)
+    ### [docs/project/specs/core-philosophy.md](/docs/project/specs/core-philosophy.md)
     ````markdown
     # TeDDy CLI: A File-Based Front-End for Agentic Coding
     ... (full file content) ...

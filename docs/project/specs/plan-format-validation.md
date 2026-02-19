@@ -8,7 +8,7 @@ This document specifies the pre-flight validation checks that **must** be run on
 
 -   **Fail Fast:** The system must identify and report errors at the earliest possible opportunity, preventing "approve-then-fail" scenarios that waste time and effort.
 -   **Provide Actionable Feedback:** Validation errors must be specific, clear, and provide enough context for an AI agent to understand the mistake and correct it.
--   **Enable Self-Correction:** This validation system is the foundation of the **Automated Re-plan Loop**, as defined in the [Interactive Session Workflow Specification](/docs/specs/interactive-session-workflow.md). A failure here triggers the AI's self-correction mechanism.
+-   **Enable Self-Correction:** This validation system is the foundation of the **Automated Re-plan Loop**, as defined in the [Interactive Session Workflow Specification](./interactive-session-workflow.md). A failure here triggers the AI's self-correction mechanism.
 -   **Guarantee Graceful Handling:** The validation layer is the primary defense against runtime errors. If a plan passes all validation checks, it should execute without unexpected crashes. Any potential error that can be anticipated (e.g., file not found, command failure) must be caught, handled gracefully, and documented clearly in the final execution report.
 
 ## 2. The Validation Process
@@ -36,7 +36,7 @@ These checks ensure the overall document is well-formed.
 
 ### 3.2. Action Block Checks
 
-These checks ensure the `## Action Plan` section and the individual action blocks are correctly structured according to the [New Plan Format Specs](/docs/specs/new-plan-format.md).
+These checks ensure the `## Action Plan` section and the individual action blocks are correctly structured according to the [New Plan Format Specs](./new-plan-format.md).
 
 -   **[✓] Action headers must be H3:** Each action must be defined by a Level 3 (`###`) heading (e.g., `### `CREATE``).
 

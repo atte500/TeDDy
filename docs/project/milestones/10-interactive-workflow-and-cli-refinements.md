@@ -5,9 +5,9 @@
 The strategic goal is to evolve `teddy` into a robust, file-based front-end for agentic coding, guided by the "Obsidian for AI coding" philosophy. This involves implementing a seamless, local-first, CLI-driven workflow for stateful, multi-turn AI collaboration.
 
 This brief is based on the canonical specifications that define the new context-centric workflow:
--   [Interactive Session Workflow Specification](/docs/specs/interactive-session-workflow.md)
--   [Context Payload Format Specification](/docs/specs/context-payload-format.md)
--   [Report Format Specification](/docs/specs/report-format.md)
+-   [Interactive Session Workflow Specification](../specs/interactive-session-workflow.md)
+-   [Context Payload Format Specification](../specs/context-payload-format.md)
+-   [Report Format Specification](../specs/report-format.md)
 
 ## 2. Proposed Solution (The "What")
 
@@ -24,7 +24,7 @@ The solution is centered around a set of new, single-responsibility services orc
     -   **Tier 2 (Interactive Checklist):** The `(m)odify` option will launch a `textual`-based checklist. This is no longer a simple selection tool; it is the entry point for the **"Context-Aware Editing"** model. Pressing `(p)` on a highlighted action will trigger a preview/edit workflow that is specific to the action type (`CREATE`, `EDIT`, `EXECUTE`, etc.), including non-blocking calls to external editors.
     -   **Audit Trail:** All user modifications will be tracked and explicitly noted in the final `report.md` to ensure a complete and accurate audit trail.
 
-5.  **Plan Validation & Automated Re-planning:** Before any plan is presented to the user, it will undergo a comprehensive validation phase. This checks for common errors like `FIND` block mismatches, `CREATE` conflicts, and context violations. If validation fails, an automated re-planning loop is triggered, instructing the AI to correct its own plan based on the specific validation errors. This entire process is detailed in the canonical [Interactive Session Workflow Specification](/docs/specs/interactive-session-workflow.md).
+5.  **Plan Validation & Automated Re-planning:** Before any plan is presented to the user, it will undergo a comprehensive validation phase. This checks for common errors like `FIND` block mismatches, `CREATE` conflicts, and context violations. If validation fails, an automated re-planning loop is triggered, instructing the AI to correct its own plan based on the specific validation errors. This entire process is detailed in the canonical [Interactive Session Workflow Specification](../specs/interactive-session-workflow.md).
 
 6.  **Markdown-First Reporting:** A new `MarkdownReportFormatter` service will be created to convert the `ExecutionReport` domain object into a Markdown string, strictly adhering to the report format spec, including action timings.
 
@@ -48,7 +48,7 @@ Implementation must be done incrementally through the following dependency-aware
 
 -   [ ] Task: Implement `SessionManager` Service:
     -   Define an `ISessionManager` port and a `LocalSessionManagerAdapter`.
-    -   Implement logic for creating session/turn directories according to the [TeDDy Directory Structure Specification](/docs/specs/teddy-directory-structure.md).
+    -   Implement logic for creating session/turn directories according to the [TeDDy Directory Structure Specification](../specs/teddy-directory-structure.md).
 -   [ ] Task: Refactor CLI in `main.py`:
     -   Refactor `main.py` to support the new command structure.
     -   Implement the `new`, `plan`, and `execute` commands.
@@ -59,7 +59,7 @@ Implementation must be done incrementally through the following dependency-aware
 **Goal:** Implement the core logic for generating the `input.md` payload and using it for planning.
 
 -   [ ] Task: Implement Context Service:
-    -   Create a `ContextService` responsible for the logic of gathering context files and building the `input.md` payload, adhering to the [Context Payload Format Specification](/docs/specs/context-payload-format.md).
+    -   Create a `ContextService` responsible for the logic of gathering context files and building the `input.md` payload, adhering to the [Context Payload Format Specification](../specs/context-payload-format.md).
 -   [ ] Task: Integrate Context Service into CLI:
     -   Modify the `plan` command to call the `ContextService` to generate `input.md` before calling the `ILlmClient`.
     -   Expose the `ContextService` logic via a standalone `teddy context` command for debugging.
@@ -93,7 +93,7 @@ Implementation must be done incrementally through the following dependency-aware
 **Goal:** Eliminate "approve-then-fail" errors by implementing a robust pre-flight validation and self-correction loop.
 
 -   [ ] Task: Implement Plan Validator Service:
-    -   Create a new `PlanValidator` service responsible for executing all pre-flight checks as defined in the canonical **[Plan Validation Specification](/docs/specs/plan-format-validation.md)**.
+    -   Create a new `PlanValidator` service responsible for executing all pre-flight checks as defined in the canonical **[Plan Validation Specification](../specs/plan-format-validation.md)**.
 -   [ ] Task: Integrate Validator into `execute` Command:
     -   In `main.py`, before the approval phase of the `execute` command, invoke the `PlanValidator`.
 -   [ ] Task: Implement Automated Re-plan Loop:
@@ -139,7 +139,7 @@ Implementation must be done incrementally through the following dependency-aware
 
 ---
 ### **Slice 7: Automatic Session Log Generation**
-**Goal:** Implement the automatic generation of a `session-log.md` file at the root of a session directory, providing a consolidated, human-readable history of the session, as defined in the [Automatic Session Log Specification](/docs/specs/session-history-view.md).
+**Goal:** Implement the automatic generation of a `session-log.md` file at the root of a session directory, providing a consolidated, human-readable history of the session, as defined in the [Automatic Session Log Specification](../specs/session-history-view.md).
 
 -   [ ] Task: Add `PyYAML` Dependency:
     -   Add `pyyaml` to the project's dependencies in `pyproject.toml`.

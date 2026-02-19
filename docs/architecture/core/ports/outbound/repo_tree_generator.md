@@ -21,4 +21,4 @@ The `IRepoTreeGenerator` port defines a technology-agnostic interface for genera
 
 ## 3. Related Spikes
 
-*   N/A - However, the implementation is based on the findings from the RCA documented in [`docs/rca/unreliable-third-party-library-gitwalk.md`](../../rca/unreliable-third-party-library-gitwalk.md).
+*   N/A - However, the implementation is based on the findings from the RCA documented in [`docs/architecture/rca/unreliable-third-party-library-gitwalk.md`](../../../rca/unreliable-third-party-library-gitwalk.md).
