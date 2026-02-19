@@ -15,34 +15,68 @@ We will modify the `PlanValidator` service to ensure its `_validate_edit_action`
 
 ## 3. Scope of Work
 
-### 3.1. Create a Failing Acceptance Test
+### Part 1: Report All Failures in a Single Action
+
+#### 3.1. Create a Failing Acceptance Test
 
 1.  **Create a new test file** at `tests/acceptance/test_comprehensive_validation.py`.
-2.  **Add a new test case**, `test_edit_action_reports_all_find_block_failures`, that follows the pattern established by our spike:
-    -   It should use `plan_content` to define a plan with a single `EDIT` action targeting `README.md`.
-    -   This `EDIT` action must contain at least two `FIND`/`REPLACE` pairs.
-    -   Both `FIND` blocks must contain unique text that is guaranteed not to exist in `README.md`.
-    -   The test should execute `teddy execute` with this plan.
-    -   Assert that the command fails (non-zero exit code).
-    -   Assert that the captured `stdout` contains the error messages for **both** of the failing `FIND` blocks.
-3.  **Run the test** and confirm that it fails as expected, because the current implementation only reports the first error.
+2.  **Add a new test case**, `test_edit_action_reports_all_find_block_failures`:
+    -   Define a plan with a single `EDIT` action targeting `README.md`.
+    -   The `EDIT` action must contain at least two `FIND`/`REPLACE` pairs, both with `FIND` blocks guaranteed not to exist.
+    -   Execute the plan and assert that the command fails.
+    -   Assert that the output contains the error messages for **both** failing `FIND` blocks.
+3.  **Run the test** and confirm it fails as expected.
 
-### 3.2. Implement the Logic Change
+#### 3.2. Implement the Architectural Change
+
+This task requires a small refactoring of the `PlanValidator` to support collecting multiple errors from a single action validator.
+
+1.  **Modify the `validate` method** in `PlanValidator`:
+    -   The current `try...except` block only captures the first error raised by a validator method. Change this logic.
+    -   Instead of `try...except`, call the `validator_method` and expect it to return a list of `ValidationError` objects.
+    -   Use `errors.extend()` to add all returned errors to the main list.
+2.  **Modify the `_validate_*_action` helper methods**:
+    -   Change the signature of `_validate_create_action`, `_validate_read_action`, and `_validate_edit_action` to return `List[ValidationError]` instead of `None`.
+    -   In `_validate_create_action` and `_validate_read_action`, wrap the existing logic in a `try...except PlanValidationError` block. On success, `return []`. On failure, catch the exception and `return [ValidationError(message=e.message, file_path=e.file_path)]`.
+3.  **Implement the core logic in `_validate_edit_action`**:
+    -   At the beginning of the method, create an empty list, `action_errors: List[ValidationError] = []`.
+    -   Inside the `for edit in edits:` loop, for each validation check (`find_block == replace_block`, `matches == 0`, `matches > 1`), **append** a `ValidationError` object to `action_errors` instead of raising an exception.
+    -   At the end of the method, `return action_errors`.
+
+#### 3.3. Verify the Fix
+
+1.  **Re-run the acceptance test** and confirm it now passes.
+
+---
+
+### Part 2: Enhance "Not Found" Errors with a Diff
+
+#### 3.4. Create a Failing Acceptance Test for Diff Feedback
+
+1.  **Create a new test file** at `tests/acceptance/test_edit_validation_feedback.py`.
+2.  **Add a new test case**, `test_edit_action_with_no_match_provides_diff`:
+    -   Define a plan with an `EDIT` action targeting a file.
+    -   The `FIND` block should have a subtle, one-character difference from the actual content.
+    -   Execute the plan and assert that the command fails.
+    -   Assert that the output report contains a `diff` block that clearly highlights the character-level mismatch.
+
+#### 3.5. Implement Diff Generation Logic
 
 1.  **Modify `_validate_edit_action`** in `src/teddy_executor/core/services/plan_validator.py`.
-2.  **Introduce a local `errors` list** at the beginning of the `if isinstance(edits, list):` block.
-3.  **Change the loop** (`for edit in edits:`) so that instead of `raise PlanValidationError`, it appends a new `PlanValidationError` instance to the local `errors` list for each failed validation check.
-4.  **After the loop completes**, if the local `errors` list is not empty, `raise` all the collected errors. The existing `validate` method in the `PlanValidator` which calls `_validate_edit_action` already handles a `PlanValidationError` by appending it to a list of `ValidationError` objects. So we need to raise a `PlanValidationError` for each error found.
-5.  **Ensure all `FIND` checks** (identical content, 0 matches, >1 matches) append to the list instead of raising immediately.
+2.  **Import the `difflib` module**.
+3.  **Create a new private helper method**, `_find_best_match_and_diff(self, file_content: str, find_block: str) -> str`.
+    -   This method will encapsulate the "sliding window" and `SequenceMatcher` logic from our spike to find the best match.
+    -   It will then use `difflib.ndiff` to generate and return a high-clarity diff string.
+4.  **In `_validate_edit_action`**, within the `if matches == 0:` block, call this new helper method.
+5.  **Raise the `PlanValidationError`** with a new, rich error message that includes the generated diff.
 
-### 3.3. Verify the Fix
+#### 3.6. Verify the Fix
 
-1.  **Re-run the acceptance test** from step 3.1.
-2.  Confirm that the test now passes, as the report in `stdout` should contain the error messages for all failing `FIND` blocks.
+1.  **Re-run the acceptance test** from step 3.4 and confirm it now passes.
 
 ## 4. Acceptance Criteria
 
-### Scenario: An `EDIT` action with multiple invalid `FIND` blocks is validated
+### Scenario 1: An `EDIT` action with multiple invalid `FIND` blocks is validated
 
 -   **Given** a `plan.md` file with a single `EDIT` action targeting an existing file.
 -   **And** the `EDIT` action contains a `FIND` block for "NonExistentText1" and another `FIND` block for "NonExistentText2".
@@ -50,3 +84,12 @@ We will modify the `PlanValidator` service to ensure its `_validate_edit_action`
 -   **Then** the command should fail.
 -   **And** the output report must contain a validation error for "NonExistentText1".
 -   **And** the output report must also contain a validation error for "NonExistentText2".
+
+### Scenario 2: An `EDIT` action with a mismatched `FIND` block is validated
+
+-   **Given** a file containing the text "This is the original content".
+-   **And** a `plan.md` with an `EDIT` action targeting that file.
+-   **And** the `EDIT` action's `FIND` block contains "This is the orignal content" (note the typo).
+-   **When** I run `teddy execute` on that plan.
+-   **Then** the command should fail.
+-   **And** the output report must contain a validation error that includes a `diff` clearly highlighting the "original" vs. "orignal" discrepancy.

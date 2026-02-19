@@ -61,6 +61,7 @@ These checks validate the *content* of an action against the current state of th
 -   **[✓] `FIND` block must match exactly once:** For each `FIND`/`REPLACE` pair, the content of the `FIND` code block must be found **exactly one time** within the target file.
     -   *Failure (0 matches):* The specified text to find does not exist in the file.
     -   *Failure (>1 matches):* The specified text is ambiguous because it appears multiple times in the file.
+    -   **Enhanced Feedback on Mismatch:** If the `FIND` block fails with 0 matches, the validation system will find the "best" or "closest" match in the document using `difflib.SequenceMatcher`. The failure report provided to the AI must then include a high-clarity, intra-line `diff` (generated via a method like `difflib.ndiff`) that uses character-level markers to pinpoint the exact locations of the discrepancies. This provides a precise, actionable signal for self-correction.
 
 #### `READ`
 -   **[✓] `Resource` must be specified:** The metadata block must contain a `Resource`.
