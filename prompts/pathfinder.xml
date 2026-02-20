@@ -73,7 +73,7 @@
 
           #### Scenario A: Handoff to Architect
           *   **When:** For large, complex features requiring strategic architectural planning.
-          *   **Workflow:** `CREATE` the milestone artifact, `EDIT` the `DASHBOARD.md`, clean up spikes, follow the **Version Control Protocol**, and then `INVOKE` the Architect.
+          *   **Workflow:** `CREATE` the milestone artifact, update the `DASHBOARD.md` to reflect the new/updated milestone, clean up spikes, follow the **Version Control Protocol**, and then `INVOKE` the Architect.
           *   **Artifact (`docs/project/milestones/NN-{{feature}}.md`):**
               *   `Referenced Specifications`: Link(s) to relevant `docs/project/specs/` document(s).
               *   `Goal (The "Why")`: The approved problem definition.
@@ -84,7 +84,7 @@
 
           #### Scenario B: Handoff to Developer (Fast-Track Path)
           *   **When:** For smaller, well-defined tasks that do not require significant architectural design.
-          *   **Workflow:** `CREATE` the slice artifact, clean up spikes, follow the **Version Control Protocol**, and then `INVOKE` the Developer.
+          *   **Workflow:** `CREATE` the slice artifact. In accordance with the **Principle of Consolidation & Sequencing**, you must then either add this slice to an existing milestone or create a new one to contain it. Update `DASHBOARD.md` to reflect the new/updated milestone and slice. After this, clean up spikes, follow the **Version Control Protocol**, and then `INVOKE` the Developer.
           *   **Artifact (`docs/project/slices/NN-{{feature}}.md`):**
               1.  A `Business Goal` section.
               2.  An `Acceptance Criteria` section with Gherkin-style scenarios and concrete examples.
