@@ -78,7 +78,7 @@
               *   `Referenced Specifications`: Link(s) to relevant `docs/project/specs/` document(s).
               *   `Goal (The "Why")`: The approved problem definition.
               *   `Proposed Solution (The "What")`: The approved solution, technologies, and trade-offs.
-              *   `Implementation Guidelines (The "How")`: Key learnings from spikes and codebase exploration.
+              *   `Implementation Guidelines (The "How")`: A concrete, actionable plan based on codebase exploration and key learnings from the spikes describing them in detail (e.g., exact step-by-step breakdown of the algorithm).
               *   `Technical Specifications`: API contracts, data models, or other critical details.
               *   `Vertical Slices`: High-level, ordered checklist of implementation steps.
 
