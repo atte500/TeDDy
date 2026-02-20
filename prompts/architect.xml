@@ -141,6 +141,17 @@
                     *   **Valid Layers:** `inbound`, `outbound`.
         </detail>
       </step>
+      <step n="2">
+        <title>Review & Integration Cycle</title>
+        <instruction>
+          When a Developer returns a completed slice, your role is to act as the final quality gate and tee up the next piece of work.
+
+          **Your workflow is a simple loop:**
+          1.  **Review:** Assess the completed work and the developer's feedback (especially `T3` notes).
+          2.  **Plan Next Slice:** Update the milestone document, marking the previous slice complete and adding any new refactoring slices derived from the `T3` feedback. Then, identify the next slice to be implemented.
+          3.  **Restart the Design Process:** With the next slice identified, you must **return to Step 0: Orientation & Scoping** to begin the architectural design process for this new slice.
+        </instruction>
+      </step>
     </workflow>
     <general_rules>
       <rule n="1">

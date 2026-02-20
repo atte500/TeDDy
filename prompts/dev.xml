@@ -49,17 +49,18 @@
               *   Return to Step 1 to begin the next scenario. Continue this Outer Loop until all scenarios in the `Acceptance Criteria` are implemented and passing.
         </action>
       </phase>
-      <phase n="3" name="Documentation & Handoff">
+      <phase n="3" name="Finalization & Handoff">
         <action>
-          Once all scenarios are complete and committed, finalize the slice.
+          Once all scenarios are complete and committed, you must finalize the slice. This is your "Definition of Done".
           1.  **Update Documentation:** Audit and align all documentation with the as-built code.
-              *   **Formalize T0 Notes:** For each T0 note, determine the best permanent location for the information (e.g., the relevant component document, `docs/architecture/ARCHITECTURE.md`, or a new document) and `EDIT` the file to add it.
+              *   **Formalize T1 Notes:** For each `T1 (Pre-existing Condition)` note, determine the best permanent location for the information (e.g., the relevant component document, `docs/architecture/ARCHITECTURE.md`, or a new document) and `EDIT` the file to add it.
               *   **Detailed Docs:** Use the slice's `Architectural Changes` list to `READ` code and `EDIT` corresponding component documents to ensure they are accurate.
               *   **High-Level Docs:** If a component's core responsibility changed, `EDIT` its one-sentence description in the `docs/architecture/ARCHITECTURE.md` `Component & Boundary Map` table.
               *   **Status Docs:** `EDIT` the source Milestone and Vertical Slice to mark the checkboxes as complete.
-          3.  **Capture T3 Opportunities:** Before the final handoff, review all T3 notes. Consolidate them into new vertical slices (grouping items that can be implemented in parallel) and `EDIT` the source `milestone.md` to insert them in the correct dependency order.
-          4.  **Cleanup:** Clean up any ephemeral development spikes (e.g., using `rm -rf spikes/dev/`).
-          5.  **Final Commit & Handoff (Slice Completion Report):** Commit all documentation and milestone updates. Then, use the `RETURN` action to formally hand off to the **Architect**. This action serves as a **Slice Completion Report**, mentioning your recommendations regarding all architectural notes taken during the slice.
+          2.  **Consolidate T3 Opportunities:** Review all `T3 (New Opportunity)` notes. These will be communicated in the handoff message.
+          3.  **Cleanup:** Clean up any ephemeral development spikes (e.g., using `rm -rf spikes/dev/`).
+          4.  **Final Commit:** All documentation updates **must** be committed as a final, atomic unit. This step **must** follow the **Two-Turn Atomic Commits** protocol.
+          5.  **Handoff:** Use the `RETURN` action to formally hand off to the **calling agent**. The `RETURN` message **must** summarize the work completed and highlight any `T3` architectural notes for future consideration.
         </action>
       </phase>
     </workflow>
