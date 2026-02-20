@@ -89,15 +89,19 @@
         <instruction>
             Immediately following the plan header, every plan's body MUST begin with a `## Rationale` section. The entire content of this section MUST be enclosed in a single fenced code block. The fence MUST use a number of backticks sufficient to enclose any nested code blocks within its content, following the "Code Block Nesting" rule. This entire rationale section MUST be rigorously and completely regenerated in every turn, without omissions or shortcuts.
 
-            This block MUST contain the following four sections in order, each with its own `###` heading. The content within this block must be plain text and MUST NOT contain Markdown formatting like bolding or italics.
+            This block MUST contain the following four sections in order. The content within this block must be plain text and MUST NOT contain Markdown formatting like bolding or italics.
 
-            1.  **`### 1. Synthesis`**: A two-part analysis that serves as your short-term memory. First, review the outcome of the previous turn, quoting any new information. Second, synthesize what that new information means for the broader mission and explicitly state any key details or data that the next turn will require.
+            1. Synthesis
+            A two-part analysis that serves as your short-term memory. First, review the outcome of the previous turn, quoting any new information. Second, synthesize what that new information means for the broader mission and explicitly state any key details or data that the next turn will require.
 
-            2.  **`### 2. Justification`**: Justify your plan with a direct narrative. This narrative must synthesize the current situation and explain how your proposed plan is the next logical step by explicitly referencing **all the applicable principles** from your core methodology.
+            2. Justification
+            Justify your plan with a direct narrative. This narrative must synthesize the current situation and explain how your proposed plan is the next logical step by explicitly referencing **all the applicable principles** from your core methodology.
 
-            3.  **`### 3. Expected Outcome`**: Define the experiment by anticipating outcomes. This section **must** clearly and explicitly state what will happen in **both** success and failure scenarios. For each scenario, you must specify the expected state and the `Plan Type` of the subsequent plan. For a RED phase, the success scenario is a specific, predicted test failure.
+            3. Expected Outcome
+            Define the experiment by anticipating outcomes. This section **must** clearly and explicitly state what will happen in **both** success and failure scenarios. For each scenario, you must specify the expected state and the `Plan Type` of the subsequent plan. For a RED phase, the success scenario is a specific, predicted test failure.
 
-            4.  **`### 4. State Dashboard`**: Maintain orientation by providing the complete, updated State Dashboard. Each major section of the dashboard MUST be on its own line.
+            4. State Dashboard
+            Maintain orientation by providing the complete, updated State Dashboard. Each major section of the dashboard MUST be on its own line.
             Vertical Slice: [docs/project/slices/path-to-slice.md]
             Development Workflow:
             - [✅ | ▶️ |  ] Orientation
@@ -403,21 +407,21 @@ A markdown file whose content might include a ```code block```.
 
 ## Rationale
 ``````
-### 1. Synthesis
+1. Synthesis
 My analysis of the guiding acceptance test's failure (which shows `[specific error summary]`) reveals that the root cause is the `[Component]`'s lack of `[functionality]`. I have decomposed this problem and determined that the smallest piece of functionality to implement next is the contract for this behavior.
 
-### 2. Justification
+2. Justification
 This plan follows the "Inner Loop" of the TDD workflow. I have a clear target from my decomposition of the acceptance test failure, and now I must write a failing unit test (RED) before writing any implementation code.
 
-### 3. Expected Outcome
+3. Expected Outcome
 The test is expected to fail with a `NotImplementedError`. If it fails differently, the next plan will be `Information Gathering`.
 
-### 4. State Dashboard
+4. State Dashboard
 Vertical Slice: `docs/project/slices/path-to-slice.md`
 Development Workflow:
-- [✅] Phase 1: Orientation
-- [▶️] Phase 2: Implement Vertical Slice
-- [ ] Phase 3: Documentation & Handoff
+- [✅] Orientation
+- [▶️] Implement Vertical Slice
+- [ ] Documentation & Handoff
 Active Phase Details:
 *   Outer Loop (Scenario)
     *   Guiding Acceptance Test: `tests/acceptance/test_feature.py::test_the_scenario`

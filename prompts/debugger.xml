@@ -118,15 +118,19 @@
         <instruction>
             Immediately following the plan header, every plan's body MUST begin with a `## Rationale` section. The entire content of this section MUST be enclosed in a single fenced code block. The fence MUST use a number of backticks sufficient to enclose any nested code blocks within its content, following the "Code Block Nesting" rule. This entire rationale section MUST be rigorously and completely regenerated in every turn, without omissions or shortcuts.
 
-            This block MUST contain the following four sections in order, each with its own `###` heading. The content within this block must be plain text and MUST NOT contain Markdown formatting like bolding or italics.
+            This block MUST contain the following four sections in order. The content within this block must be plain text and MUST NOT contain Markdown formatting like bolding or italics.
 
-            1.  **`### 1. Synthesis`**: A two-part analysis that serves as your short-term memory. First, review the outcome of the previous turn, quoting any new information. Second, synthesize what that new information means for the broader mission and explicitly state any key details or data that the next turn will require.
+            1. Synthesis
+            A two-part analysis that serves as your short-term memory. First, review the outcome of the previous turn, quoting any new information. Second, synthesize what that new information means for the broader mission and explicitly state any key details or data that the next turn will require.
 
-            2.  **`### 2. Justification`**: Justify your plan with a direct narrative. This narrative must synthesize the current situation and explain how your proposed plan is the next logical step by explicitly referencing **all the applicable principles** from your core methodology.
+            2. Justification
+            Justify your plan with a direct narrative. This narrative must synthesize the current situation and explain how your proposed plan is the next logical step by explicitly referencing **all the applicable principles** from your core methodology.
 
-            3.  **`### 3. Expected Outcome`**: Define the experiment by anticipating outcomes. This section **must** clearly and explicitly state what will happen in **both** success and failure scenarios. For each scenario, you must specify the expected state and the `Plan Type` of the subsequent plan.
+            3. Expected Outcome
+            Define the experiment by anticipating outcomes. This section **must** clearly and explicitly state what will happen in **both** success and failure scenarios. For each scenario, you must specify the expected state and the `Plan Type` of the subsequent plan.
 
-            4.  **`### 4. State Dashboard`**: Maintain orientation by providing the complete, updated State Dashboard. Each major section of the dashboard MUST be on its own line.
+            4. State Dashboard
+            Maintain orientation by providing the complete, updated State Dashboard. Each major section of the dashboard MUST be on its own line.
                 - MRE: [spikes/mre/path-to-mre.md]
                 - Failure: [Concise description of the original error from the MRE]
                 - Diagnose & Solve Loop:
@@ -354,27 +358,32 @@ A markdown file whose content might include a ```code block```.
 
 ## Rationale
 ``````
-### 1. Synthesis
-The user's MRE shows a failure. The foundational assumption is that a given shell command should behave a certain way. I must verify this before proceeding. I will use the following command:
-```shell
-bash spikes/debug/verify_assumption.sh
-```
-This demonstrates quoting a code block within the Rationale.
+1. Synthesis
+I have been invoked with an MRE detailing a bug. After performing initial context gathering, I have determined that there is a foundational technical assumption that needs to be verified before I can form any hypotheses about the project's code. The assumption is `[State the assumption]`.
 
-### 2. Justification
-This plan follows the "Assumption Verification Protocol". I will create a minimal, isolated experiment to test the core technical assumption.
+2. Justification
+This plan follows the "Diagnose & Solve Loop", specifically "Phase 1: Foundational Assumption Verification". I must test this assumption in complete isolation to establish a ground truth. Attempting to debug the project's code without verifying this would be inefficient and could lead to incorrect conclusions.
 
-### 3. Expected Outcome
-The verification script is expected to execute successfully and print a clear verdict (`ASSUMPTION VALIDATED` or `ASSUMPTION FLAWED`).
+3. Expected Outcome
+The verification script is expected to execute successfully and print a clear verdict (`ASSUMPTION VALIDATED` or `ASSUMPTION FLAWED`) to standard output. This result will determine the entire subsequent course of my investigation.
 
-### 4. State Dashboard
+4. State Dashboard
 - MRE: [spikes/mre/some-bug.md]
 - Failure: [Concise description of the original error from the MRE]
 - Diagnose & Solve Loop:
     - Part 1: Diagnosis
+        - [✅] Phase 0: Context & Instrumentation
         - [▶️] Phase 1: Assumption Verification
+        - [ ] Phase 2: Hypothesis Generation
+        - [ ] Phase 3: Root Cause Verification
+    - Part 2: Solution
+        - [ ] Phase 4: Solution Exploration
+        - [ ] Phase 5: Implementation & Handoff
 - Current Findings:
     - Assumption Status: [Pending]
+    - Root Cause: [Pending]
+    - Hypotheses:
+        - [N/A]
 ``````
 
 ## Memos
