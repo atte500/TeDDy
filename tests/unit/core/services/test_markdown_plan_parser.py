@@ -270,7 +270,7 @@ def test_parse_prune_action(parser: MarkdownPlanParser):
     assert action.type == "PRUNE"
     assert action.description == "Remove the old specification."
     assert action.params == {
-        "resource": "docs/specs/old-spec.md",
+        "resource": "docs/project/specs/old-spec.md",
         "Description": "Remove the old specification.",
     }
 
