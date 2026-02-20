@@ -47,26 +47,74 @@ This brief will be implemented in two distinct vertical slices.
 ### **Slice 1: Implement Pre-flight Validation & Core Formatter**
 **Goal:** Replace the YAML report with a basic Markdown report and introduce the critical pre-flight validation gate.
 
--   **[ ] Task: Implement Plan Validator:**
+-   [ ] Task: Implement Plan Validator:
     -   Create a `PlanValidator` service responsible for executing all pre-flight checks as defined in the specifications.
     -   Integrate this validator at the beginning of the `execute` command.
--   **[ ] Task: Implement Core `MarkdownReportFormatter`:**
+-   [ ] Task: Implement Core `MarkdownReportFormatter`:**
     -   Define the `IMarkdownReportFormatter` port.
     -   Create the `MarkdownReportFormatter` service.
     -   Implement the logic to generate a valid Markdown report for a successful execution, adhering to the base `report-format.md` spec.
--   **[ ] Task: Integrate Formatter:**
+-   [ ] Task: Integrate Formatter:
     -   Refactor the `execute` command to use the new formatter for all outputs (successful execution or validation failure), replacing the YAML report.
 
 ---
 ### **Slice 2: Implement Manual Workflow Report Enhancements**
 **Goal:** Enhance the Markdown report with the specific sections required for a smooth manual, copy-paste workflow.
 
--   **[ ] Task: Enhance Data Gathering:**
+-   [ ] Task: Enhance Data Gathering:
     -   Update the execution logic to capture the results of `READ` actions.
     -   Update the failure handling logic to read the contents of files when `CREATE` or `EDIT` actions fail.
--   **[ ] Task: Enhance Formatter for Resource Contents:**
+-   [ ] Task: Enhance Formatter for Resource Contents:
     -   Update the `MarkdownReportFormatter` to add the `## Resource Contents` section to the report for successful `READ` actions.
--   **[ ] Task: Enhance Formatter for Failures:**
+-   [ ] Task: Enhance Formatter for Failures:
     -   Update the formatter to add the `## Failed Action Details` section, including the fetched file contents.
--   **[ ] Task: Enhance Formatter for Unsupported Actions:**
+-   [ ] Task: Enhance Formatter for Unsupported Actions:
     -   Update the formatter to correctly report `INVOKE` and `RETURN` actions as "Not Supported" in manual mode.
+
+---
+### **Slice 3: Implement Centralized Path Normalization**
+**Goal:** Ensure file-based actions are robust to path separator variations across operating systems.
+
+-   [ ] **Task: Implement Normalization Utility:**
+    -   In `src/teddy_executor/core/services/markdown_plan_parser.py`, create a private helper `_normalize_path` to replace `\` with `/`.
+-   [ ] **Task: Integrate into Parsing Logic:**
+    -   Modify `_parse_action_metadata` and `_parse_message_and_optional_resources` to use `_normalize_path`.
+-   [ ] **Task: Add Unit & Acceptance Tests:**
+    -   Add tests to assert that Windows-style and mixed-style paths are correctly normalized and executed.
+
+---
+### **Slice 4: Implement Auto-Skip on Execution Failure**
+**Goal:** Make plan execution more robust by automatically skipping subsequent actions after a failure.
+
+-   [ ] **Task: Refactor `ExecutionOrchestrator`:**
+    -   In the `execute` method, add a `halt_execution` flag that is set on failure.
+    -   If the flag is `True`, subsequent actions are logged as `SKIPPED`.
+-   [ ] **Task: Add Acceptance Test:**
+    -   Create a test with a failing action followed by a valid action and assert the second action is `SKIPPED`.
+
+---
+### **Slice 5: Implement Comprehensive EDIT Validation**
+**Goal:** Improve validation by reporting all `FIND` block failures in an `EDIT` action at once and providing a diff for mismatches.
+
+-   [ ] **Task: Report All Failures in a Single Action:**
+    -   Refactor `PlanValidator` to collect and return all validation errors from `_validate_edit_action` instead of raising on the first one.
+-   [ ] **Task: Enhance "Not Found" Errors with a Diff:**
+    -   Implement a helper in `PlanValidator` to find the best match for a failed `FIND` block and include a `difflib` diff in the validation error message.
+
+---
+### **Slice 6: Implement Report Generation Enhancements**
+**Goal:** Improve the clarity, robustness, and user experience of the execution report.
+
+-   [ ] **Task: Refactor Template:**
+    -   Rename `concise_report.md.j2` to `execution_report.md.j2` and update all references.
+-   [ ] **Task: Enhance Jinja2 Template:**
+    -   Add smart fencing to validation errors and make reports for `chat_with_user`, `invoke`, and `return` more compact.
+-   [ ] **Task: Implement Dynamic Code-Block Language:**
+    -   Create a `get_language_from_path` utility, register it as a Jinja2 filter, and use it in the template.
+
+---
+### **Slice 7: Implement Execution Progress Logging**
+**Goal:** Improve user experience by providing real-time console feedback during plan execution.
+
+-   [ ] **Task: Add Logging to `ActionDispatcher`:**
+    -   In `dispatch_and_execute`, add `INFO` level logs for "Executing", "Success", and "Failure" of each action.

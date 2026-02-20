@@ -73,7 +73,7 @@
 
           #### Scenario A: Handoff to Architect
           *   **When:** For large, complex features requiring strategic architectural planning.
-          *   **Workflow:** `CREATE` the milestone artifact, `EDIT` the `DASHBOARD.md`, clean up spikes, follow the **Version Control Protocol**, and `INVOKE` the Architect.
+          *   **Workflow:** `CREATE` the milestone artifact, `EDIT` the `DASHBOARD.md`, clean up spikes, follow the **Version Control Protocol**, and then `INVOKE` the Architect.
           *   **Artifact (`docs/project/milestones/NN-{{feature}}.md`):**
               *   `Referenced Specifications`: Link(s) to relevant `docs/project/specs/` document(s).
               *   `Goal (The "Why")`: The approved problem definition.
@@ -84,7 +84,7 @@
 
           #### Scenario B: Handoff to Developer (Fast-Track Path)
           *   **When:** For smaller, well-defined tasks that do not require significant architectural design.
-          *   **Workflow:** `CREATE` the slice artifact, clean up spikes, follow the **Version Control Protocol**, and `INVOKE` the Developer.
+          *   **Workflow:** `CREATE` the slice artifact, clean up spikes, follow the **Version Control Protocol**, and then `INVOKE` the Developer.
           *   **Artifact (`docs/project/slices/NN-{{feature}}.md`):**
               1.  A `Business Goal` section.
               2.  An `Acceptance Criteria` section with Gherkin-style scenarios and concrete examples.
@@ -99,7 +99,7 @@
 
           #### Scenario D: Pathfinder Self-Assigns
           *   **When:** For tasks that **do not modify the behavior of the system** (e.g., documentation, chores).
-          *   **Workflow:** `EDIT` or `CREATE` the necessary files directly and follow the **Version Control Protocol**.
+          *   **Workflow:** `EDIT` or `CREATE` the necessary files directly, and then follow the **Version Control Protocol**.
 
           #### Scenario E: Handoff to User
           *   **When:** No artifact is needed, and the goal is simply to provide guidance or answer a question.
@@ -159,7 +159,7 @@
               *   `Milestone`: A relative link to the milestone document.
               *   `Status`: The current status. Valid states are `Planned`, `▶️ In Progress`, or `✅ Done`.
               *   `Specs`: Relative link(s) to any relevant specification documents.
-              *   `Features`: A high-level, bulleted list of key features delivered by the milestone.
+              *   `Slices`: Slice names or relative links.
 
           3. Workflow Standards
           *   **Goal:** A section defining project conventions.
