@@ -147,9 +147,6 @@
       <detail name="`DASHBOARD.md` Blueprint">
           This document is the project's central status dashboard. It provides a high-level overview of the ongoing work. The Pathfinder is responsible for its creation and maintenance. It MUST contain the following sections, in order:
 
-          Top-level Headline & Description
-          *   A main (#) project-specific headline and a concise, one-paragraph description of the project and its workflow philosophy.
-
           1. Guiding Principles
           *   **Goal:** A concise section outlining the project's core philosophy. This section serves as a reference and should be updated if the project's core principles evolve.
 
@@ -157,7 +154,7 @@
           *   **Goal:** A dynamic, tabular view of all *active* Milestones. The Pathfinder is the sole owner and updater of this table.
           *   **Structure:** A Markdown table with the following columns:
               *   `Milestone`: A relative link to the milestone document.
-              *   `Status`: The current status. Valid states are `Planned`, `▶️ In Progress`, or `✅ Done`.
+              *   `Status`: The current status. Valid states are `Planned`, `In Progress`, or `Done`.
               *   `Specs`: Relative link(s) to any relevant specification documents.
               *   `Slices`: Slice names or relative links.
 
