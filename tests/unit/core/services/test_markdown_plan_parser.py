@@ -538,7 +538,10 @@ def test_parse_read_action_with_absolute_path(parser):
     assert len(plan.actions) == 1
     action = plan.actions[0]
     assert action.type == "READ"
-    assert action.params["resource"] == absolute_path
+
+    # The parser normalizes all paths to POSIX style (/) at the boundary.
+    expected_path = absolute_path.replace("\\", "/")
+    assert action.params["resource"] == expected_path
 
 
 def test_parser_raises_error_on_unknown_action(parser: MarkdownPlanParser):
