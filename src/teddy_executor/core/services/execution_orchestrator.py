@@ -70,7 +70,23 @@ class ExecutionOrchestrator(RunPlanUseCase):
                 action_logs=[],
             )
 
+        halt_execution = False
+
         for action in plan.actions:
+            if halt_execution:
+                log_params = action.params.copy()
+                if action.description:
+                    log_params["Description"] = action.description
+                action_logs.append(
+                    ActionLog(
+                        status=ActionStatus.SKIPPED,
+                        action_type=action.type,
+                        params=log_params,
+                        details="Skipped because a previous action failed.",
+                    )
+                )
+                continue
+
             should_dispatch = True
             reason = ""
             if interactive and action.type.lower() != "chat_with_user":
@@ -122,6 +138,9 @@ class ExecutionOrchestrator(RunPlanUseCase):
                         except Exception:
                             # If we can't read the file (e.g. doesn't exist), just ignore
                             pass
+
+                if action_log.status == ActionStatus.FAILURE:
+                    halt_execution = True
 
             else:
                 # Ensure the description from the action is included in the logged params.

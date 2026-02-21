@@ -191,6 +191,63 @@ def test_execute_interactive_and_approved(
     mock_action_dispatcher.dispatch_and_execute.assert_called_once_with(action1)
 
 
+def test_execute_auto_skips_after_failure(
+    orchestrator: ExecutionOrchestrator,
+    mock_plan_parser: Mock,
+    mock_action_dispatcher: Mock,
+    mock_user_interactor: Mock,
+):
+    """
+    Given a plan with two actions
+    When the first action fails during execution
+    Then the second action should not be dispatched
+    And the second action's log should indicate it was skipped due to a previous failure
+    And the overall status should be FAILURE
+    """
+    # Arrange
+    plan_content = "fake plan content"
+    action1 = ActionData(type="action1", params={}, description="First Action")
+    action2 = ActionData(type="action2", params={}, description="Second Action")
+    plan = Plan(title="Test Plan", actions=[action1, action2])
+
+    failing_log = ActionLog(
+        status=ActionStatus.FAILURE,
+        action_type="action1",
+        params={},
+        details="It broke",
+    )
+
+    # We shouldn't reach the second dispatch, but if we do, return success to highlight the failure
+    success_log = ActionLog(
+        status=ActionStatus.SUCCESS,
+        action_type="action2",
+        params={},
+        details="Should not happen",
+    )
+
+    mock_plan_parser.parse.return_value = plan
+    mock_action_dispatcher.dispatch_and_execute.side_effect = [failing_log, success_log]
+
+    # Act
+    report = orchestrator.execute(plan_content=plan_content, interactive=False)
+
+    # Assert
+    assert report.run_summary.status == RunStatus.FAILURE
+    assert len(report.action_logs) == 2
+
+    # First action failed
+    assert report.action_logs[0].status == ActionStatus.FAILURE
+
+    # Second action should be skipped
+    assert report.action_logs[1].status == ActionStatus.SKIPPED
+    assert "Skipped because a previous action failed." in str(
+        report.action_logs[1].details
+    )
+
+    # Dispatcher should only be called once
+    mock_action_dispatcher.dispatch_and_execute.assert_called_once_with(action1)
+
+
 def test_execute_happy_path_non_interactive(
     orchestrator: ExecutionOrchestrator,
     mock_plan_parser: Mock,
