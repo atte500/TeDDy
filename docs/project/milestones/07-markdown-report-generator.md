@@ -47,39 +47,39 @@ This brief will be implemented in two distinct vertical slices.
 ### **Slice 1: Implement Pre-flight Validation & Core Formatter**
 **Goal:** Replace the YAML report with a basic Markdown report and introduce the critical pre-flight validation gate.
 
--   [ ] Task: Implement Plan Validator:
+-   [x] Task: Implement Plan Validator:
     -   Create a `PlanValidator` service responsible for executing all pre-flight checks as defined in the specifications.
     -   Integrate this validator at the beginning of the `execute` command.
--   [ ] Task: Implement Core `MarkdownReportFormatter`:**
+-   [x] Task: Implement Core `MarkdownReportFormatter`:**
     -   Define the `IMarkdownReportFormatter` port.
     -   Create the `MarkdownReportFormatter` service.
     -   Implement the logic to generate a valid Markdown report for a successful execution, adhering to the base `report-format.md` spec.
--   [ ] Task: Integrate Formatter:
+-   [x] Task: Integrate Formatter:
     -   Refactor the `execute` command to use the new formatter for all outputs (successful execution or validation failure), replacing the YAML report.
 
 ---
 ### **Slice 2: Implement Manual Workflow Report Enhancements**
 **Goal:** Enhance the Markdown report with the specific sections required for a smooth manual, copy-paste workflow.
 
--   [ ] Task: Enhance Data Gathering:
+-   [x] Task: Enhance Data Gathering:
     -   Update the execution logic to capture the results of `READ` actions.
     -   Update the failure handling logic to read the contents of files when `CREATE` or `EDIT` actions fail.
--   [ ] Task: Enhance Formatter for Resource Contents:
+-   [x] Task: Enhance Formatter for Resource Contents:
     -   Update the `MarkdownReportFormatter` to add the `## Resource Contents` section to the report for successful `READ` actions.
--   [ ] Task: Enhance Formatter for Failures:
+-   [x] Task: Enhance Formatter for Failures:
     -   Update the formatter to add the `## Failed Action Details` section, including the fetched file contents.
--   [ ] Task: Enhance Formatter for Unsupported Actions:
+-   [x] Task: Enhance Formatter for Unsupported Actions:
     -   Update the formatter to correctly report `INVOKE` and `RETURN` actions as "Not Supported" in manual mode.
 
 ---
 ### **Slice 3: Implement Centralized Path Normalization**
 **Goal:** Ensure file-based actions are robust to path separator variations across operating systems.
 
--   [ ] **Task: Implement Normalization Utility:**
+-   [x] **Task: Implement Normalization Utility:**
     -   In `src/teddy_executor/core/services/markdown_plan_parser.py`, create a private helper `_normalize_path` to replace `\` with `/`.
--   [ ] **Task: Integrate into Parsing Logic:**
+-   [x] **Task: Integrate into Parsing Logic:**
     -   Modify `_parse_action_metadata` and `_parse_message_and_optional_resources` to use `_normalize_path`.
--   [ ] **Task: Add Unit & Acceptance Tests:**
+-   [x] **Task: Add Unit & Acceptance Tests:**
     -   Add tests to assert that Windows-style and mixed-style paths are correctly normalized and executed.
 
 ---

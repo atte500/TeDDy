@@ -14,20 +14,20 @@ A new private helper method, `_normalize_path`, will be introduced and integrate
 
 ## 3. Scope of Work
 
--   [ ] **Implement Normalization Utility:**
+-   [x] **Implement Normalization Utility:**
     -   In `src/teddy_executor/core/services/markdown_plan_parser.py`, create a new private helper method `_normalize_path(self, path: str) -> str`.
     -   This method must replace all occurrences of `\` with `/`.
 
--   [ ] **Integrate into Parsing Logic:**
+-   [x] **Integrate into Parsing Logic:**
     -   Modify the `_parse_action_metadata` method to call `_normalize_path` on the file path value extracted from `link_node.target` or as raw text.
     -   Modify the `_parse_message_and_optional_resources` method to call `_normalize_path` on all file paths extracted for `Handoff Resources`.
 
--   [ ] **Add Unit Tests:**
+-   [x] **Add Unit Tests:**
     -   In a new or existing test file for the `MarkdownPlanParser`, add specific test cases that assert:
         -   A plan with a Windows-style path (e.g., `path\to\file.txt`) results in an `ActionData` object with a normalized path (`path/to/file.txt`).
         -   A plan with a mixed-style path (e.g., `path/to\file.txt`) is also correctly normalized.
 
--   [ ] **Add Acceptance Test:**
+-   [x] **Add Acceptance Test:**
     -   Create a new acceptance test file (e.g., `tests/acceptance/test_cross_platform_paths.py`).
     -   This test must perform the following:
         1.  Create a temporary file on disk.
