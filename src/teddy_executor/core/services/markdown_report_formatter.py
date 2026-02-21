@@ -27,7 +27,7 @@ class MarkdownReportFormatter(IMarkdownReportFormatter):
         self.env.filters["basename"] = os.path.basename
         self.env.filters["fence"] = get_fence_for_content
         self.env.filters["language_from_path"] = get_language_from_path
-        self.template = self.env.get_template("concise_report.md.j2")
+        self.template = self.env.get_template("execution_report.md.j2")
 
     def _prepare_context(self, report: ExecutionReport) -> dict[str, Any]:
         """Prepares the report data for rendering."""

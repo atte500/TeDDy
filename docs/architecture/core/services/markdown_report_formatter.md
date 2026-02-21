@@ -12,7 +12,7 @@ This service will be implemented using the **Jinja2 Template Engine**, as valida
 
 1.  **Template Loading:** The service will be initialized with a Jinja2 `Environment`. It will be configured to load templates from a dedicated directory within the project's source code (e.g., `src/teddy_executor/core/services/templates/`).
 2.  **Context Preparation:** The `format` method will receive an `ExecutionReport` object. It will transform this object into a simple dictionary (`context`) that is easy to work with inside the Jinja2 template. This separates the domain model from the presentation context.
-3.  **Rendering:** The `format` method will load a specific template (e.g., `concise_report.md.j2`), render it with the prepared context, and return the resulting string.
+3.  **Rendering:** The `format` method will load a specific template (e.g., `execution_report.md.j2`), render it with the prepared context, and return the resulting string.
 
 This approach provides a clean separation of concerns between data preparation (Python) and presentation (the template file).
 
