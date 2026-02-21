@@ -8,7 +8,10 @@ from teddy_executor.core.domain.models import ExecutionReport
 from teddy_executor.core.ports.outbound.markdown_report_formatter import (
     IMarkdownReportFormatter,
 )
-from teddy_executor.core.utils.markdown import get_fence_for_content
+from teddy_executor.core.utils.markdown import (
+    get_fence_for_content,
+    get_language_from_path,
+)
 
 
 class MarkdownReportFormatter(IMarkdownReportFormatter):
@@ -23,6 +26,7 @@ class MarkdownReportFormatter(IMarkdownReportFormatter):
         )
         self.env.filters["basename"] = os.path.basename
         self.env.filters["fence"] = get_fence_for_content
+        self.env.filters["language_from_path"] = get_language_from_path
         self.template = self.env.get_template("concise_report.md.j2")
 
     def _prepare_context(self, report: ExecutionReport) -> dict[str, Any]:

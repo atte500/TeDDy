@@ -79,3 +79,34 @@ Hello PathFinder!
 
     assert result.exit_code == 0
     assert "- **Details:**" not in result.stdout
+
+
+def test_dynamic_language_in_code_blocks(tmp_path, monkeypatch):
+    runner = CliRunner()
+    monkeypatch.chdir(tmp_path)
+
+    # Setup files
+    src_dir = tmp_path / "src"
+    src_dir.mkdir()
+    py_file = src_dir / "main.py"
+    py_file.write_text("print('hello')", encoding="utf-8")
+
+    cfg_file = tmp_path / "config.cfg"
+    cfg_file.write_text("debug=true", encoding="utf-8")
+
+    plan_content = """# Test Plan
+## Action Plan
+### `READ`
+- **Resource:** src/main.py
+
+### `READ`
+- **Resource:** config.cfg
+"""
+    result = runner.invoke(app, ["execute", "-y", "--plan-content", plan_content])
+
+    assert result.exit_code == 0
+
+    # Check for python code block
+    assert "```python\nprint('hello')\n```" in result.stdout
+    # Check for mapped config block (cfg -> ini)
+    assert "```ini\ndebug=true\n```" in result.stdout

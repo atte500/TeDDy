@@ -1,4 +1,46 @@
+import os
 import re
+
+
+def get_language_from_path(path: str) -> str:
+    """
+    Determines the appropriate markdown code block language identifier based on a file path.
+    Falls back to the extension itself, or 'text' if no extension exists.
+    """
+    _, ext = os.path.splitext(path)
+    if not ext:
+        return "text"
+
+    ext = ext.lower().lstrip(".")
+
+    # Common mappings where extension doesn't match language identifier exactly
+    extension_map = {
+        "py": "python",
+        "js": "javascript",
+        "jsx": "jsx",
+        "ts": "typescript",
+        "tsx": "tsx",
+        "md": "markdown",
+        "sh": "shell",
+        "bash": "shell",
+        "zsh": "shell",
+        "yml": "yaml",
+        "txt": "text",
+        "ps1": "powershell",
+        "cs": "csharp",
+        "tf": "terraform",
+        "ini": "ini",
+        "cfg": "ini",
+        "conf": "ini",
+        "h": "c",
+        "hpp": "cpp",
+        "cxx": "cpp",
+        "cc": "cpp",
+        "rb": "ruby",
+        "rs": "rust",
+    }
+
+    return extension_map.get(ext, ext)
 
 
 def get_fence_for_content(content: str) -> str:

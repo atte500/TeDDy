@@ -15,7 +15,7 @@
 {% else %}
 ### [{{ path }}]({% if not path.startswith('/') %}/{% endif %}{{ path }})
 {% endif %}
-{{ content | fence }}text
+{{ content | fence }}{{ path | language_from_path }}
 {{ content }}
 {{ content | fence }}
 {% endmacro %}
