@@ -81,3 +81,51 @@ def test_edit_action_replaces_verbatim_without_smart_indent(
     assert result.exit_code == 0, f"CLI command failed: {result.stdout}"
     actual_content = file_to_edit.read_text()
     assert actual_content.strip() == expected_content.strip()
+
+
+def test_empty_replace_removes_newline(monkeypatch, tmp_path: Path):
+    """
+    Scenario 3: An `EDIT` action with an empty `REPLACE` block leaves no orphaned empty line.
+    """
+    # Arrange
+    file_to_edit = tmp_path / "target.txt"
+    original_content = dedent(
+        """\
+        Line 1
+        Line 2
+        Line 3
+        """
+    )
+    file_to_edit.write_text(original_content, encoding="utf-8")
+
+    builder = MarkdownPlanBuilder("Test Clean Deletion")
+    builder.add_action(
+        "EDIT",
+        params={
+            "File Path": f"[{file_to_edit.name}](/{file_to_edit.name})",
+            "Description": "Delete middle line",
+        },
+        content_blocks={
+            "`FIND:`": ("text", "Line 2"),
+            "`REPLACE:`": ("text", ""),
+        },
+    )
+    plan_content = builder.build()
+
+    # The expected output should not have an empty line between 1 and 3.
+    expected_content = dedent(
+        """\
+        Line 1
+        Line 3
+        """
+    )
+
+    # Act
+    result = run_cli_with_markdown_plan_on_clipboard(
+        monkeypatch, plan_content, tmp_path
+    )
+
+    # Assert
+    assert result.exit_code == 0, f"CLI command failed: {result.stdout}"
+    actual_content = file_to_edit.read_text(encoding="utf-8")
+    assert actual_content == expected_content

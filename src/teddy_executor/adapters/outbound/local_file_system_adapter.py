@@ -190,6 +190,12 @@ class LocalFileSystemAdapter(FileSystemManager):
         # Use repr() to make whitespace visible in error messages.
         self._check_matches_and_raise(num_matches, repr(find), content)
 
+        if replace == "":
+            if find + "\n" in content:
+                return content.replace(find + "\n", "", 1)
+            if "\n" + find in content:
+                return content.replace("\n" + find, "", 1)
+
         return content.replace(find, replace, 1)
 
     def edit_file(
