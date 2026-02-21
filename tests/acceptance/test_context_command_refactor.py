@@ -118,3 +118,27 @@ def test_context_generates_standard_output_and_is_clean(tmp_path: Path, monkeypa
 
     # Assert - Direct Repository Tree Output (Scenario 4)
     assert not (tmp_path / "repotree.txt").exists()
+
+
+def test_context_uses_dynamic_language_fences(tmp_path: Path, monkeypatch):
+    """
+    Given a project with files of different extensions
+    When the user runs the `teddy context` command
+    Then the generated markdown payload MUST use dynamic language tags for the code fences.
+    """
+    # Arrange
+    (tmp_path / ".teddy").mkdir()
+    (tmp_path / ".teddy/perm.context").write_text(
+        "main.py\nconfig.cfg\n", encoding="utf-8"
+    )
+    (tmp_path / "main.py").write_text("print('hello')", encoding="utf-8")
+    (tmp_path / "config.cfg").write_text("debug=true", encoding="utf-8")
+
+    # Act
+    result = run_cli_command(monkeypatch, ["context"], cwd=tmp_path)
+    output = result.stdout
+
+    # Assert
+    assert result.exit_code == 0
+    assert "```python\nprint('hello')\n```" in output
+    assert "```ini\ndebug=true\n```" in output

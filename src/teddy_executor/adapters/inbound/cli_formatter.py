@@ -1,25 +1,8 @@
-import os
-
-
 from teddy_executor.core.domain.models import ContextResult
-from teddy_executor.core.utils.markdown import get_fence_for_content
-
-
-def _get_file_extension(file_path: str) -> str:
-    """Extracts the file extension for code block formatting."""
-    ext_map = {
-        ".py": "python",
-        ".md": "markdown",
-        ".js": "javascript",
-        ".html": "html",
-        ".css": "css",
-        ".yaml": "yaml",
-        ".yml": "yaml",
-        ".json": "json",
-        ".sh": "shell",
-    }
-    ext = os.path.splitext(file_path)[1]
-    return ext_map.get(ext, "")
+from teddy_executor.core.utils.markdown import (
+    get_fence_for_content,
+    get_language_from_path,
+)
 
 
 def format_project_context(context: ContextResult) -> str:
@@ -39,7 +22,7 @@ def format_project_context(context: ContextResult) -> str:
         if content is None:
             output_parts.append(f"## {path} (Not Found)")
         else:
-            extension = _get_file_extension(path)
+            extension = get_language_from_path(path)
             fence = get_fence_for_content(content)
             if path.startswith("http:") or path.startswith("https:"):
                 link_path = path
