@@ -86,10 +86,10 @@ This brief will be implemented in two distinct vertical slices.
 ### **Slice 4: Implement Auto-Skip on Execution Failure**
 **Goal:** Make plan execution more robust by automatically skipping subsequent actions after a failure.
 
--   [ ] **Task: Refactor `ExecutionOrchestrator`:**
+-   [x] **Task: Refactor `ExecutionOrchestrator`:**
     -   In the `execute` method, add a `halt_execution` flag that is set on failure.
     -   If the flag is `True`, subsequent actions are logged as `SKIPPED`.
--   [ ] **Task: Add Acceptance Test:**
+-   [x] **Task: Add Acceptance Test:**
     -   Create a test with a failing action followed by a valid action and assert the second action is `SKIPPED`.
 
 ---

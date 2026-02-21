@@ -12,7 +12,7 @@ The `execute` method's main loop will be refactored to incorporate a state flag 
 
 ## 3. Scope of Work
 
--   [ ] **Refactor `ExecutionOrchestrator`:**
+-   [x] **Refactor `ExecutionOrchestrator`:**
     -   In the `execute` method of `src/teddy_executor/core/services/execution_orchestrator.py`:
         -   Initialize a new boolean flag `halt_execution = False` before the main `for action in plan.actions:` loop.
         -   Inside the loop, at the beginning of each iteration, add a condition to check if `halt_execution` is `True`.
@@ -22,7 +22,7 @@ The `execute` method's main loop will be refactored to incorporate a state flag 
         -   After an action is dispatched and executed (`if should_dispatch:` block), check the returned `action_log.status`.
         -   If the status is `ActionStatus.FAILURE`, set `halt_execution = True`.
 
--   [ ] **Add Acceptance Test:**
+-   [x] **Add Acceptance Test:**
     -   Create a new acceptance test file (e.g., `tests/acceptance/test_execution_flow.py`) or add to an existing one.
     -   The test must perform the following:
         1.  Construct a plan with at least two `EXECUTE` actions. The first action must be designed to fail (e.g., `exit 1`), and the second should be a simple, valid command (e.g., `echo "hello"`).
