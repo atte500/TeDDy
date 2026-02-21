@@ -46,10 +46,14 @@
 {% endif -%}
 {# Render generic details if no specific fields matched, but avoid rendering if it's just content #}
 {% if not log.details.get("error") and not log.details.get("return_code") and not log.details.get("stdout") and not log.details.get("stderr") and not log.details.get("content") %}
+{% if log.action_type | upper not in ['INVOKE', 'RETURN'] %}
 - **Details:** `{{ log.details }}`
 {% endif -%}
+{% endif -%}
 {% else -%}
+{% if log.action_type | upper not in ['INVOKE', 'RETURN'] %}
 - **Details:** `{{ log.details }}`
+{% endif -%}
 {% endif -%}
 {% endif %}
 {% endmacro %}

@@ -61,3 +61,21 @@ The AI prompt string here.
     assert result.exit_code == 0
     assert "User response string here." in result.stdout
     assert "The AI prompt string here." not in result.stdout
+
+
+def test_invoke_report_omits_details(monkeypatch):
+    runner = CliRunner()
+
+    plan_content = """# Test Plan
+## Action Plan
+### `INVOKE`
+- **Agent:** PathFinder
+
+Hello PathFinder!
+"""
+    result = runner.invoke(
+        app, ["execute", "--plan-content", plan_content], input="y\n"
+    )
+
+    assert result.exit_code == 0
+    assert "- **Details:**" not in result.stdout
