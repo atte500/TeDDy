@@ -160,15 +160,15 @@
     {% if action_type in ['RETURN', 'INVOKE'] %}
         {% set ignored_keys = ignored_keys + ['message', 'handoff_resources', 'handoff resources'] %}
     {% endif %}
+    {# For CHAT_WITH_USER, hide the AI prompt #}
+    {% if action_type == 'CHAT_WITH_USER' %}
+        {% set ignored_keys = ignored_keys + ['prompt'] %}
+    {% endif %}
     {% if k_lower not in ignored_keys %}
       {# Normalize key to Title Case (simple approximation or explicit mapping) #}
       {% set display_key = key.replace('_', ' ').title() %}
       {# Skip path params in body since they are in header #}
-      {# Special handling for CHAT_WITH_USER prompt #}
-      {% if action_type == 'CHAT_WITH_USER' and k_lower == 'prompt' %}
-
-{{ value }}
-      {% elif k_lower not in ['file path', 'file_path', 'resource', 'path'] %}
+      {% if k_lower not in ['file path', 'file_path', 'resource', 'path'] %}
 - **{{ display_key }}:** {{ value }}
       {% endif %}
     {% endif %}

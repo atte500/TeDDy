@@ -41,3 +41,23 @@ def new_hello():
     # Assert smart fencing was applied. Since the inner content has 3 backticks,
     # the fence MUST use at least 4 backticks.
     assert "````\ndef old_hello():" in result.stdout
+
+
+def test_chat_with_user_report_omits_prompt(monkeypatch):
+    runner = CliRunner()
+
+    plan_content = """# Test Plan
+## Action Plan
+### `CHAT_WITH_USER`
+The AI prompt string here.
+"""
+    # Mock user input for the chat action and answer 'yes' to the approval prompt.
+    result = runner.invoke(
+        app,
+        ["execute", "--plan-content", plan_content],
+        input="y\nUser response string here.\n",
+    )
+
+    assert result.exit_code == 0
+    assert "User response string here." in result.stdout
+    assert "The AI prompt string here." not in result.stdout
