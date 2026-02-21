@@ -21,33 +21,33 @@ We will also modify the `EDIT` action execution logic (likely within `LocalFileS
 
 #### 3.1. Create a Failing Acceptance Test
 
-1.  **Create a new test file** at `tests/acceptance/test_comprehensive_validation.py`.
-2.  **Add a new test case**, `test_edit_action_reports_all_find_block_failures`:
+1.  **[x] Create a new test file** at `tests/acceptance/test_comprehensive_validation.py`.
+2.  **[x] Add a new test case**, `test_edit_action_reports_all_find_block_failures`:
     -   Define a plan with a single `EDIT` action targeting `README.md`.
     -   The `EDIT` action must contain at least two `FIND`/`REPLACE` pairs, both with `FIND` blocks guaranteed not to exist.
     -   Execute the plan and assert that the command fails.
     -   Assert that the output contains the error messages for **both** failing `FIND` blocks.
-3.  **Run the test** and confirm it fails as expected.
+3.  **[x] Run the test** and confirm it fails as expected.
 
 #### 3.2. Implement the Architectural Change
 
 This task requires a small refactoring of the `PlanValidator` to support collecting multiple errors from a single action validator.
 
-1.  **Modify the `validate` method** in `PlanValidator`:
+1.  **[x] Modify the `validate` method** in `PlanValidator`:
     -   The current `try...except` block only captures the first error raised by a validator method. Change this logic.
     -   Instead of `try...except`, call the `validator_method` and expect it to return a list of `ValidationError` objects.
     -   Use `errors.extend()` to add all returned errors to the main list.
-2.  **Modify the `_validate_*_action` helper methods**:
+2.  **[x] Modify the `_validate_*_action` helper methods**:
     -   Change the signature of `_validate_create_action`, `_validate_read_action`, and `_validate_edit_action` to return `List[ValidationError]` instead of `None`.
     -   In `_validate_create_action` and `_validate_read_action`, wrap the existing logic in a `try...except PlanValidationError` block. On success, `return []`. On failure, catch the exception and `return [ValidationError(message=e.message, file_path=e.file_path)]`.
-3.  **Implement the core logic in `_validate_edit_action`**:
+3.  **[x] Implement the core logic in `_validate_edit_action`**:
     -   At the beginning of the method, create an empty list, `action_errors: List[ValidationError] = []`.
     -   Inside the `for edit in edits:` loop, for each validation check (`find_block == replace_block`, `matches == 0`, `matches > 1`), **append** a `ValidationError` object to `action_errors` instead of raising an exception.
     -   At the end of the method, `return action_errors`.
 
 #### 3.3. Verify the Fix
 
-1.  **Re-run the acceptance test** and confirm it now passes.
+1.  **[x] Re-run the acceptance test** and confirm it now passes.
 
 ---
 
@@ -55,8 +55,8 @@ This task requires a small refactoring of the `PlanValidator` to support collect
 
 #### 3.4. Create a Failing Acceptance Test for Diff Feedback
 
-1.  **Create a new test file** at `tests/acceptance/test_edit_validation_feedback.py`.
-2.  **Add a new test case**, `test_edit_action_with_no_match_provides_diff`:
+1.  **[x] Create a new test file** at `tests/acceptance/test_edit_validation_feedback.py`. *(Note: implemented in `test_comprehensive_validation.py`)*
+2.  **[x] Add a new test case**, `test_edit_action_with_no_match_provides_diff`:
     -   Define a plan with an `EDIT` action targeting a file.
     -   The `FIND` block should have a subtle, one-character difference from the actual content.
     -   Execute the plan and assert that the command fails.
@@ -64,35 +64,35 @@ This task requires a small refactoring of the `PlanValidator` to support collect
 
 #### 3.5. Implement Diff Generation Logic
 
-1.  **Modify `_validate_edit_action`** in `src/teddy_executor/core/services/plan_validator.py`.
-2.  **Import the `difflib` module**.
-3.  **Create a new private helper method**, `_find_best_match_and_diff(self, file_content: str, find_block: str) -> str`.
+1.  **[x] Modify `_validate_edit_action`** in `src/teddy_executor/core/services/plan_validator.py`.
+2.  **[x] Import the `difflib` module**.
+3.  **[x] Create a new private helper method**, `_find_best_match_and_diff(self, file_content: str, find_block: str) -> str`.
     -   This method will encapsulate the "sliding window" and `SequenceMatcher` logic from our spike to find the best match.
     -   It will then use `difflib.ndiff` to generate and return a high-clarity diff string.
-4.  **In `_validate_edit_action`**, within the `if matches == 0:` block, call this new helper method.
-5.  **Raise the `PlanValidationError`** with a new, rich error message that includes the generated diff.
+4.  **[x] In `_validate_edit_action`**, within the `if matches == 0:` block, call this new helper method.
+5.  **[x] Raise the `PlanValidationError`** with a new, rich error message that includes the generated diff.
 
 #### 3.6. Verify the Fix
 
-1.  **Re-run the acceptance test** from step 3.4 and confirm it now passes.
+1.  **[x] Re-run the acceptance test** from step 3.4 and confirm it now passes.
 
 ---
 
 ### Part 3: Clean Line Deletion for Empty REPLACE Blocks
 
 #### 3.7. Create a Failing Acceptance Test
-1.  **Create a new test case** in an appropriate acceptance test file (e.g., `tests/acceptance/test_edit_action_refactor.py` or a new one).
-2.  Define a plan with an `EDIT` action where the `REPLACE` block is perfectly empty (`""`).
-3.  Assert that the resulting file does not contain an orphaned empty line where the target text used to be.
+1.  **[x] Create a new test case** in an appropriate acceptance test file (e.g., `tests/acceptance/test_edit_action_refactor.py` or a new one).
+2.  **[x]** Define a plan with an `EDIT` action where the `REPLACE` block is perfectly empty (`""`).
+3.  **[x]** Assert that the resulting file does not contain an orphaned empty line where the target text used to be.
 
 #### 3.8. Implement Smart Newline Deletion
-1.  **Locate the `EDIT` execution logic** (e.g., `edit_file` in `LocalFileSystemAdapter`).
-2.  Before performing the standard `content.replace(find_block, replace_block)`, check if `replace_block == ""`.
-3.  If true, attempt to match and replace `find_block + '\n'` first. If that doesn't match, fall back to `find_block`. (Consider cross-platform compatibility, though Python's text mode usually normalizes to `\n`).
-4.  Ensure this logic correctly removes the line without leaving a gap.
+1.  **[x] Locate the `EDIT` execution logic** (e.g., `edit_file` in `LocalFileSystemAdapter`).
+2.  **[x]** Before performing the standard `content.replace(find_block, replace_block)`, check if `replace_block == ""`.
+3.  **[x]** If true, attempt to match and replace `find_block + '\n'` first. If that doesn't match, fall back to `find_block`. (Consider cross-platform compatibility, though Python's text mode usually normalizes to `\n`).
+4.  **[x]** Ensure this logic correctly removes the line without leaving a gap.
 
 #### 3.9. Verify the Fix
-1.  **Re-run the acceptance test** and confirm it passes.
+1.  **[x] Re-run the acceptance test** and confirm it passes.
 
 ## 4. Acceptance Criteria
 
