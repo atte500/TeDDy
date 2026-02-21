@@ -13,6 +13,7 @@ from typing import List
 
 from teddy_executor.core.domain.models.plan import ActionData, Plan
 from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
+from teddy_executor.core.utils.markdown import get_fence_for_content
 
 
 from dataclasses import dataclass
@@ -180,12 +181,13 @@ class PlanValidator(IPlanValidator):
 
                 if isinstance(find_block, str):
                     if find_block == replace_block:
+                        fence = get_fence_for_content(find_block)
                         action_errors.append(
                             ValidationError(
                                 message=(
                                     f"FIND and REPLACE blocks are identical in: {file_path}\n"
                                     f"**Block Content:**\n"
-                                    f"```\n{find_block}\n```"
+                                    f"{fence}\n{find_block}\n{fence}"
                                 ),
                                 file_path=str(file_path),
                             )
@@ -195,15 +197,15 @@ class PlanValidator(IPlanValidator):
                     matches = content.count(find_block)
                     if matches == 0:
                         diff_text = self._find_best_match_and_diff(content, find_block)
+                        fence = get_fence_for_content(find_block)
                         error_msg = (
                             f"The `FIND` block could not be located in the file: {file_path}\n"
                             f"**FIND Block:**\n"
-                            f"```\n{find_block}\n```\n"
+                            f"{fence}\n{find_block}\n{fence}\n"
                         )
                         if diff_text:
-                            error_msg += (
-                                f"**Closest Match Diff:**\n```diff\n{diff_text}\n```\n"
-                            )
+                            diff_fence = get_fence_for_content(diff_text)
+                            error_msg += f"**Closest Match Diff:**\n{diff_fence}diff\n{diff_text}\n{diff_fence}\n"
                         error_msg += "**Hint:** You need to match the content exactly, including any whitespace and indentations."
 
                         action_errors.append(
@@ -213,12 +215,13 @@ class PlanValidator(IPlanValidator):
                             )
                         )
                     elif matches > 1:
+                        fence = get_fence_for_content(find_block)
                         action_errors.append(
                             ValidationError(
                                 message=(
                                     f"The `FIND` block is ambiguous. Found {matches} matches in: {file_path}\n"
                                     f"**FIND Block:**\n"
-                                    f"```\n{find_block}\n```"
+                                    f"{fence}\n{find_block}\n{fence}"
                                 ),
                                 file_path=str(file_path),
                             )
@@ -230,27 +233,28 @@ class PlanValidator(IPlanValidator):
 
             if isinstance(find_block, str):
                 if find_block == replace_block:
+                    fence = get_fence_for_content(find_block)
                     action_errors.append(
                         ValidationError(
                             message=(
                                 f"FIND and REPLACE blocks are identical in: {file_path}\n"
                                 f"**Block Content:**\n"
-                                f"```\n{find_block}\n```"
+                                f"{fence}\n{find_block}\n{fence}"
                             ),
                             file_path=str(file_path),
                         )
                     )
                 elif find_block not in content:
                     diff_text = self._find_best_match_and_diff(content, find_block)
+                    fence = get_fence_for_content(find_block)
                     error_msg = (
                         f"The `FIND` block could not be located in the file: {file_path}\n"
                         f"**FIND Block:**\n"
-                        f"```\n{find_block}\n```\n"
+                        f"{fence}\n{find_block}\n{fence}\n"
                     )
                     if diff_text:
-                        error_msg += (
-                            f"**Closest Match Diff:**\n```diff\n{diff_text}\n```\n"
-                        )
+                        diff_fence = get_fence_for_content(diff_text)
+                        error_msg += f"**Closest Match Diff:**\n{diff_fence}diff\n{diff_text}\n{diff_fence}\n"
                     error_msg += "**Hint:** You need to match the content exactly, including any whitespace and indentations."
 
                     action_errors.append(
