@@ -206,12 +206,6 @@
               Your default behavior MUST be to edit only one file per turn. An `Action Plan` should contain at most one `EDIT` action. Exceptions are permitted only for logically atomic changes that absolutely must be applied to multiple files simultaneously. If you make an exception, you MUST explicitly justify it in your `Rationale`.
             </instruction>
           </rule>
-          <rule n="10">
-            <title>Isolate Faults with Small, Sharp Tools</title>
-            <instruction>Your entire diagnostic process is an application of the UNIX philosophy. Your primary goal is to create or use "small, sharp tools" to isolate a fault, rather than attempting to debug the entire system at once.</instruction>
-            <sub_instruction name="The MRE as a Tool">A Minimal Reproducible Example (MRE) is the ultimate diagnostic tool. Its single purpose is to "do one thing well": trigger the specific failure and nothing else. It is the first and most important tool you must ensure is working correctly.</sub_instruction>
-            <sub_instruction name="Spikes as Tools">Each diagnostic spike you create must be a small, sharp tool with a single hypothesis. A spike that tries to test multiple things at once is a flawed tool. Your verification spike is the canonical example of this: it tests one foundational assumption and delivers a clear verdict.</sub_instruction>
-          </rule>
           <rule n="11">
             <title>Standardized Plan Types</title>
             <instruction>

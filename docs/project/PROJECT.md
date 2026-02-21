@@ -4,6 +4,7 @@
 
 1.  **Jidoka (Autonomation):** *Stop the line immediately when a defect is found.* In software, a "defect" is a wrong assumption. Test-Driven Development (TDD) is our implementation of Jidoka, preventing flawed code from ever being integrated.
 2.  **Poka-Yoke (Mistake-Proofing):** *Design processes so errors can't be made in the first place.* **Contract-First Design** is our Poka-Yoke. By defining clear "seams" and contracts between all parts of the system—starting with the user—we mistake-proof the architecture.
+3.  **The UNIX Philosophy (Small, Sharp Tools):** *Build small, independent components that do one thing well and compose them to handle complexity.* This principle is the foundation of our architecture and development workflow. Each component is a "small, sharp tool" with a single responsibility, and they communicate through simple, well-defined contracts (Ports). This is embodied in our use of TDD to build focused functions, our Hexagonal Architecture to define clear boundaries, and our disciplined fault isolation process.
 
 ## Roadmap
 
