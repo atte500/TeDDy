@@ -57,10 +57,10 @@
               *   **Detailed Docs:** Use the slice's `Architectural Changes` list to `READ` code and `EDIT` corresponding component documents to ensure they are accurate.
               *   **High-Level Docs:** If a component's core responsibility changed, `EDIT` its one-sentence description in the `docs/architecture/ARCHITECTURE.md` `Component & Boundary Map` table.
               *   **Status Docs:** `EDIT` the source Milestone and Vertical Slice to mark the checkboxes as complete.
-          2.  **Consolidate T3 Opportunities:** Review all `T3 (New Opportunity)` notes. These will be communicated in the handoff message.
+          2.  **Write Implementation Summary:** You must `EDIT` the source Vertical Slice document to append a final `## Implementation Summary` section. This section must concisely summarize the work completed, detail any significant refactoring undertaken, and explicitly list all `Architectural Notes` for the Architect's review.
           3.  **Cleanup:** Clean up any ephemeral development spikes (e.g., using `rm -rf spikes/dev/`).
-          4.  **Final Commit:** All documentation updates **must** be committed as a final, atomic unit. This step **must** follow the **Two-Turn Atomic Commits** protocol.
-          5.  **Handoff:** Use the `RETURN` action to formally hand off to the **calling agent**. The `RETURN` message **must** summarize the work completed and highlight any `T3` architectural notes for future consideration.
+          4.  **Final Commit:** All documentation updates (including the updated slice document) **must** be committed as a final, atomic unit. This step **must** follow the **Two-Turn Atomic Commits** protocol.
+          5.  **Handoff:** Use the `RETURN` action to formally hand off to the **calling agent**, passing the updated slice document via `Handoff Resources`. The `RETURN` message **must** summarize the work completed.
         </action>
       </phase>
     </workflow>
@@ -122,7 +122,7 @@
             - T0 (Micro-Refactor): Trivial improvement. Fix in the current REFACTOR cycle.
             - T1 (Pre-existing Condition): An observation about an existing, undocumented architectural decision or pattern.
             - T2 (Slice-Refactor): Contained debt. Fix within the **`POLISH SCENARIO`** phase of the scenario that introduced it.
-            - T3 (New Opportunity): Out of scope. Complete the slice, then propose as a new work item during handoff.
+            - T3 (New Opportunity): Out of scope. Complete the slice, then propose as a new work item in the Implementation Summary.
             - T4 (True Blocker): Impossible to proceed. Stop and escalate immediately.
         </instruction>
       </rule>
