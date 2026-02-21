@@ -471,6 +471,48 @@ My analysis is complete. The root cause and a verified fix are attached.
     ]
 
 
+def test_parser_normalizes_windows_style_paths(parser: MarkdownPlanParser):
+    """
+    Given a Markdown plan with Windows-style paths (backslashes) in action metadata,
+    When the plan is parsed,
+    Then the resulting ActionData parameters should have normalized POSIX-style paths (forward slashes).
+    """
+    plan_content = """
+# Test Windows Paths
+## Action Plan
+### `EDIT`
+- **File Path:** [target_dir\\pyproject.toml](/target_dir\\pyproject.toml)
+- **Description:** Edit a file.
+#### `FIND:`
+````text
+Hello
+````
+#### `REPLACE:`
+````text
+World
+````
+### `INVOKE`
+- **Agent:** Architect
+- **Handoff Resources:**
+  - [mixed\\path/file.md](/mixed\\path/file.md)
+
+Handoff message.
+"""
+    # Act
+    plan = parser.parse(plan_content)
+
+    # Assert
+    assert len(plan.actions) == 2
+
+    edit_action = plan.actions[0]
+    assert edit_action.type == "EDIT"
+    assert edit_action.params["path"] == "target_dir/pyproject.toml"
+
+    invoke_action = plan.actions[1]
+    assert invoke_action.type == "INVOKE"
+    assert invoke_action.params["handoff_resources"] == ["mixed/path/file.md"]
+
+
 def test_parse_read_action_with_absolute_path(parser):
     """
     Verify that the parser preserves a true absolute path on the current OS,

@@ -367,9 +367,11 @@ class MarkdownPlanParser(IPlanParser):
                                 if link:
                                     target = link.target
                                     # Normalize path
-                                    resources.append(
-                                        self._normalize_link_target(target)
+                                    normalized_target = self._normalize_link_target(
+                                        target
                                     )
+                                    clean_path = self._normalize_path(normalized_target)
+                                    resources.append(clean_path)
             if resources:
                 params["handoff_resources"] = resources
 
@@ -535,16 +537,17 @@ class MarkdownPlanParser(IPlanParser):
                 if f"{key_text}:" in text:
                     link_node = self._find_node_in_tree(item, Link)
                     if link_node:
-                        params[param_key] = self._normalize_link_target(
+                        normalized_target = self._normalize_link_target(
                             link_node.target
                         )
+                        params[param_key] = self._normalize_path(normalized_target)
                     else:
                         # Fallback: Extract raw text value if no link node is found
                         parts = text.split(f"{key_text}:", 1)
                         if len(parts) == 2:
                             value = parts[1].strip()
                             if value:
-                                params[param_key] = value
+                                params[param_key] = self._normalize_path(value)
                     break
             else:  # If no link key matched, check for text keys
                 if text_key_map:
@@ -555,6 +558,13 @@ class MarkdownPlanParser(IPlanParser):
         return description, params
 
     # --- AST Helper Methods ---
+
+    def _normalize_path(self, path: str) -> str:
+        """
+        Replaces Windows-style path separators (\\) with POSIX-style (/).
+        This ensures centralized normalization before paths enter the domain layer.
+        """
+        return path.replace("\\", "/")
 
     def _normalize_link_target(self, target: str) -> str:
         """
