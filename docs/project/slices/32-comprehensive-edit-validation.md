@@ -2,15 +2,17 @@
 
 ## 1. Business Goal
 
-As an AI Agent, I want the `PlanValidator` to report **all** `FIND` block failures within a single `EDIT` action, so that I can see the complete list of errors at once and correct my plan more efficiently.
+As an AI Agent, I want the `PlanValidator` to report **all** `FIND` block failures within a single `EDIT` action, so that I can see the complete list of errors at once and correct my plan more efficiently. Currently, the validator stops checking an `EDIT` action after the first `FIND` block fails, hiding any other potential errors in the same action.
 
-Currently, the validator stops checking an `EDIT` action after the first `FIND` block fails, hiding any other potential errors in the same action.
+Additionally, I want the `EDIT` execution logic to automatically handle clean line deletion. When a `REPLACE` block is completely empty, the system should remove the targeted `FIND` block *and* its associated newline, preventing the accumulation of orphaned empty lines in the codebase.
 
 ## 2. Architectural Changes
 
-We will modify the `PlanValidator` service to ensure its `_validate_edit_action` method iterates through all `FIND`/`REPLACE` pairs and collects all validation errors, rather than raising an exception on the first failure.
+We will modify the `PlanValidator` service to ensure its `_validate_edit_action` method iterates through all `FIND`/`REPLACE` pairs and collects all validation errors.
+We will also modify the `EDIT` action execution logic (likely within `LocalFileSystemAdapter` or the file system port) to implement the smart newline deletion when a `REPLACE` block is perfectly empty.
 
 -   **Modify:** `src/teddy_executor/core/services/plan_validator.py`
+-   **Modify:** `src/teddy_executor/adapters/outbound/local_file_system_adapter.py`
 -   **Create:** `tests/acceptance/test_comprehensive_validation.py`
 
 ## 3. Scope of Work
@@ -74,6 +76,24 @@ This task requires a small refactoring of the `PlanValidator` to support collect
 
 1.  **Re-run the acceptance test** from step 3.4 and confirm it now passes.
 
+---
+
+### Part 3: Clean Line Deletion for Empty REPLACE Blocks
+
+#### 3.7. Create a Failing Acceptance Test
+1.  **Create a new test case** in an appropriate acceptance test file (e.g., `tests/acceptance/test_edit_action_refactor.py` or a new one).
+2.  Define a plan with an `EDIT` action where the `REPLACE` block is perfectly empty (`""`).
+3.  Assert that the resulting file does not contain an orphaned empty line where the target text used to be.
+
+#### 3.8. Implement Smart Newline Deletion
+1.  **Locate the `EDIT` execution logic** (e.g., `edit_file` in `LocalFileSystemAdapter`).
+2.  Before performing the standard `content.replace(find_block, replace_block)`, check if `replace_block == ""`.
+3.  If true, attempt to match and replace `find_block + '\n'` first. If that doesn't match, fall back to `find_block`. (Consider cross-platform compatibility, though Python's text mode usually normalizes to `\n`).
+4.  Ensure this logic correctly removes the line without leaving a gap.
+
+#### 3.9. Verify the Fix
+1.  **Re-run the acceptance test** and confirm it passes.
+
 ## 4. Acceptance Criteria
 
 ### Scenario 1: An `EDIT` action with multiple invalid `FIND` blocks is validated
@@ -93,3 +113,13 @@ This task requires a small refactoring of the `PlanValidator` to support collect
 -   **When** I run `teddy execute` on that plan.
 -   **Then** the command should fail.
 -   **And** the output report must contain a validation error that includes a `diff` clearly highlighting the "original" vs. "orignal" discrepancy.
+
+### Scenario 3: An `EDIT` action with an empty `REPLACE` block leaves no orphaned empty line
+
+-   **Given** a file containing three lines of text.
+-   **And** a `plan.md` with an `EDIT` action targeting that file.
+-   **And** the `EDIT` action's `FIND` block targets the exact text of the second line.
+-   **And** the `EDIT` action's `REPLACE` block is completely empty.
+-   **When** I run `teddy execute` on that plan.
+-   **Then** the command should succeed.
+-   **And** the resulting file should contain only the first and third lines, with no empty line between them.
