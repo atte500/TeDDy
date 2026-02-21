@@ -6,6 +6,7 @@ This module contains the implementation of the PlanValidator service.
 # The Developer will implement this based on the design document.
 # See: docs/architecture/core/services/plan_validator.md
 
+import difflib
 import os
 from pathlib import Path
 from typing import List
@@ -39,6 +40,40 @@ class PlanValidator(IPlanValidator):
     """
     Implements IPlanValidator using a strategy pattern to run pre-flight checks.
     """
+
+    def _find_best_match_and_diff(self, file_content: str, find_block: str) -> str:
+        """
+        Finds the most similar block of text in the file content and generates a diff.
+        """
+        file_lines = file_content.splitlines(keepends=True)
+        find_lines = find_block.splitlines(keepends=True)
+        num_find_lines = len(find_lines)
+
+        if not file_lines or not find_lines:
+            return ""
+
+        best_ratio = 0.0
+        best_match_lines: List[str] = []
+
+        # Sliding window over the file content
+        for i in range(len(file_lines) - num_find_lines + 1):
+            window = file_lines[i : i + num_find_lines]
+            matcher = difflib.SequenceMatcher(None, "".join(window), find_block)
+            ratio = matcher.ratio()
+
+            if ratio > best_ratio:
+                best_ratio = ratio
+                best_match_lines = window
+
+        # If the file is smaller than the find block, just compare against the whole file
+        if len(file_lines) < num_find_lines:
+            best_match_lines = file_lines
+
+        if best_match_lines:
+            diff = difflib.ndiff(find_lines, best_match_lines)
+            return "".join(diff)
+
+        return ""
 
     def _validate_path_is_safe(self, path_str: str, action_type: str):
         """
@@ -159,14 +194,21 @@ class PlanValidator(IPlanValidator):
 
                     matches = content.count(find_block)
                     if matches == 0:
+                        diff_text = self._find_best_match_and_diff(content, find_block)
+                        error_msg = (
+                            f"The `FIND` block could not be located in the file: {file_path}\n"
+                            f"**FIND Block:**\n"
+                            f"```\n{find_block}\n```\n"
+                        )
+                        if diff_text:
+                            error_msg += (
+                                f"**Closest Match Diff:**\n```diff\n{diff_text}\n```\n"
+                            )
+                        error_msg += "**Hint:** Try to provide more context in the FIND block and match the content exactly, including whitespace and indentations."
+
                         action_errors.append(
                             ValidationError(
-                                message=(
-                                    f"The `FIND` block could not be located in the file: {file_path}\n"
-                                    f"**FIND Block:**\n"
-                                    f"```\n{find_block}\n```\n"
-                                    f"**Hint:** Try to provide more context in the FIND block and match the content exactly, including whitespace and indentations."
-                                ),
+                                message=error_msg,
                                 file_path=str(file_path),
                             )
                         )
@@ -199,14 +241,21 @@ class PlanValidator(IPlanValidator):
                         )
                     )
                 elif find_block not in content:
+                    diff_text = self._find_best_match_and_diff(content, find_block)
+                    error_msg = (
+                        f"The `FIND` block could not be located in the file: {file_path}\n"
+                        f"**FIND Block:**\n"
+                        f"```\n{find_block}\n```\n"
+                    )
+                    if diff_text:
+                        error_msg += (
+                            f"**Closest Match Diff:**\n```diff\n{diff_text}\n```\n"
+                        )
+                    error_msg += "**Hint:** Try to provide more context in the FIND block and match the content exactly, including whitespace and indentations."
+
                     action_errors.append(
                         ValidationError(
-                            message=(
-                                f"The `FIND` block could not be located in the file: {file_path}\n"
-                                f"**FIND Block:**\n"
-                                f"```\n{find_block}\n```\n"
-                                f"**Hint:** Try to provide more context in the FIND block and match the content exactly, including whitespace and indentations."
-                            ),
+                            message=error_msg,
                             file_path=str(file_path),
                         )
                     )

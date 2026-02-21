@@ -50,3 +50,46 @@ Replacement2
     assert "NonExistentText2" in result.output, (
         "Second FIND block error missing. Validator likely short-circuited."
     )
+
+
+def test_edit_action_with_no_match_provides_diff(monkeypatch, tmp_path: Path):
+    """
+    Scenario 2: An `EDIT` action with a mismatched `FIND` block is validated, providing a diff.
+    """
+    # Arrange
+    target_file = tmp_path / "target.txt"
+    target_file.write_text("This is the original content", encoding="utf-8")
+
+    plan_content = f"""# Diff Feedback Plan
+
+## Action Plan
+
+### `EDIT`
+- **File Path:** [{target_file.name}](/{target_file.name})
+- **Description:** Edit with a typo
+
+#### `FIND:`
+```text
+This is the orignal content
+```
+#### `REPLACE:`
+```text
+This is the new content
+```
+"""
+
+    # Act
+    result = run_cli_with_markdown_plan_on_clipboard(
+        monkeypatch, plan_content, tmp_path
+    )
+
+    # Assert
+    assert result.exit_code != 0, "CLI should fail due to validation error."
+
+    # The diff should highlight the missing 'i' in "original"
+    assert "- This is the orignal content" in result.output
+    assert "+ This is the original content" in result.output
+    assert "?" in result.output
+    assert (
+        "+" in result.output.split("?")[1].split("\n")[0]
+    )  # Check that a '+' is in the intraline diff line
