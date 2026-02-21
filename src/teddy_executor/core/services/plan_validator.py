@@ -204,7 +204,7 @@ class PlanValidator(IPlanValidator):
                             error_msg += (
                                 f"**Closest Match Diff:**\n```diff\n{diff_text}\n```\n"
                             )
-                        error_msg += "**Hint:** Try to provide more context in the FIND block and match the content exactly, including whitespace and indentations."
+                        error_msg += "**Hint:** You need to match the content exactly, including any whitespace and indentations."
 
                         action_errors.append(
                             ValidationError(
@@ -251,7 +251,7 @@ class PlanValidator(IPlanValidator):
                         error_msg += (
                             f"**Closest Match Diff:**\n```diff\n{diff_text}\n```\n"
                         )
-                    error_msg += "**Hint:** Try to provide more context in the FIND block and match the content exactly, including whitespace and indentations."
+                    error_msg += "**Hint:** You need to match the content exactly, including any whitespace and indentations."
 
                     action_errors.append(
                         ValidationError(
