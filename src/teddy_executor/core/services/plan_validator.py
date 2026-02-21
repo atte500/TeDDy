@@ -68,34 +68,39 @@ class PlanValidator(IPlanValidator):
                 self, f"_validate_{action.type.lower()}_action", None
             )
             if validator_method:
-                try:
-                    validator_method(action)
-                except PlanValidationError as e:
-                    errors.append(
-                        ValidationError(message=e.message, file_path=e.file_path)
-                    )
+                action_errors = validator_method(action)
+                if action_errors:
+                    errors.extend(action_errors)
         return errors
 
-    def _validate_create_action(self, action: ActionData):
+    def _validate_create_action(self, action: ActionData) -> List[ValidationError]:
         """Validates a 'create' action."""
-        path_str = action.params.get("path")
-        if isinstance(path_str, str):
-            self._validate_path_is_safe(path_str, "CREATE")
-            if Path(path_str).exists():
-                raise PlanValidationError(
-                    f"File already exists: {path_str}", file_path=path_str
-                )
+        try:
+            path_str = action.params.get("path")
+            if isinstance(path_str, str):
+                self._validate_path_is_safe(path_str, "CREATE")
+                if Path(path_str).exists():
+                    raise PlanValidationError(
+                        f"File already exists: {path_str}", file_path=path_str
+                    )
+            return []
+        except PlanValidationError as e:
+            return [ValidationError(message=e.message, file_path=e.file_path)]
 
-    def _validate_read_action(self, action: ActionData):
+    def _validate_read_action(self, action: ActionData) -> List[ValidationError]:
         """Validates a 'read' action."""
-        path_str = action.params.get("resource")
-        # URLs are not file paths and should be ignored by this validator.
-        if isinstance(path_str, str) and not path_str.startswith(
-            ("http://", "https://")
-        ):
-            self._validate_path_is_safe(path_str, "READ")
+        try:
+            path_str = action.params.get("resource")
+            # URLs are not file paths and should be ignored by this validator.
+            if isinstance(path_str, str) and not path_str.startswith(
+                ("http://", "https://")
+            ):
+                self._validate_path_is_safe(path_str, "READ")
+            return []
+        except PlanValidationError as e:
+            return [ValidationError(message=e.message, file_path=e.file_path)]
 
-    def _validate_edit_action(self, action: ActionData):
+    def _validate_edit_action(self, action: ActionData) -> List[ValidationError]:
         """
         Validates an 'edit' action.
         """
@@ -107,16 +112,21 @@ class PlanValidator(IPlanValidator):
         )
 
         if not isinstance(path_str, str):
-            return
+            return []
 
-        self._validate_path_is_safe(path_str, "EDIT")
+        try:
+            self._validate_path_is_safe(path_str, "EDIT")
 
-        file_path = Path(path_str)
-        if not file_path.exists():
-            raise PlanValidationError(
-                f"File to edit does not exist: {file_path}", file_path=str(file_path)
-            )
+            file_path = Path(path_str)
+            if not file_path.exists():
+                raise PlanValidationError(
+                    f"File to edit does not exist: {file_path}",
+                    file_path=str(file_path),
+                )
+        except PlanValidationError as e:
+            return [ValidationError(message=e.message, file_path=e.file_path)]
 
+        action_errors: List[ValidationError] = []
         content = file_path.read_text(encoding="utf-8")
 
         # Handle 'edits' list (from Markdown parser)
@@ -135,28 +145,41 @@ class PlanValidator(IPlanValidator):
 
                 if isinstance(find_block, str):
                     if find_block == replace_block:
-                        raise PlanValidationError(
-                            f"FIND and REPLACE blocks are identical in: {file_path}\n"
-                            f"**Block Content:**\n"
-                            f"```\n{find_block}\n```",
-                            file_path=str(file_path),
+                        action_errors.append(
+                            ValidationError(
+                                message=(
+                                    f"FIND and REPLACE blocks are identical in: {file_path}\n"
+                                    f"**Block Content:**\n"
+                                    f"```\n{find_block}\n```"
+                                ),
+                                file_path=str(file_path),
+                            )
                         )
+                        continue
 
                     matches = content.count(find_block)
                     if matches == 0:
-                        raise PlanValidationError(
-                            f"The `FIND` block could not be located in the file: {file_path}\n"
-                            f"**FIND Block:**\n"
-                            f"```\n{find_block}\n```\n"
-                            f"**Hint:** Try to provide more context in the FIND block and match the content exactly, including whitespace and indentations.",
-                            file_path=str(file_path),
+                        action_errors.append(
+                            ValidationError(
+                                message=(
+                                    f"The `FIND` block could not be located in the file: {file_path}\n"
+                                    f"**FIND Block:**\n"
+                                    f"```\n{find_block}\n```\n"
+                                    f"**Hint:** Try to provide more context in the FIND block and match the content exactly, including whitespace and indentations."
+                                ),
+                                file_path=str(file_path),
+                            )
                         )
-                    if matches > 1:
-                        raise PlanValidationError(
-                            f"The `FIND` block is ambiguous. Found {matches} matches in: {file_path}\n"
-                            f"**FIND Block:**\n"
-                            f"```\n{find_block}\n```",
-                            file_path=str(file_path),
+                    elif matches > 1:
+                        action_errors.append(
+                            ValidationError(
+                                message=(
+                                    f"The `FIND` block is ambiguous. Found {matches} matches in: {file_path}\n"
+                                    f"**FIND Block:**\n"
+                                    f"```\n{find_block}\n```"
+                                ),
+                                file_path=str(file_path),
+                            )
                         )
         else:
             # Handle single 'find' param (legacy/YAML parser)
@@ -165,17 +188,27 @@ class PlanValidator(IPlanValidator):
 
             if isinstance(find_block, str):
                 if find_block == replace_block:
-                    raise PlanValidationError(
-                        f"FIND and REPLACE blocks are identical in: {file_path}\n"
-                        f"**Block Content:**\n"
-                        f"```\n{find_block}\n```",
-                        file_path=str(file_path),
+                    action_errors.append(
+                        ValidationError(
+                            message=(
+                                f"FIND and REPLACE blocks are identical in: {file_path}\n"
+                                f"**Block Content:**\n"
+                                f"```\n{find_block}\n```"
+                            ),
+                            file_path=str(file_path),
+                        )
                     )
-                if find_block not in content:
-                    raise PlanValidationError(
-                        f"The `FIND` block could not be located in the file: {file_path}\n"
-                        f"**FIND Block:**\n"
-                        f"```\n{find_block}\n```\n"
-                        f"**Hint:** Try to provide more context in the FIND block and match the content exactly, including whitespace and indentations.",
-                        file_path=str(file_path),
+                elif find_block not in content:
+                    action_errors.append(
+                        ValidationError(
+                            message=(
+                                f"The `FIND` block could not be located in the file: {file_path}\n"
+                                f"**FIND Block:**\n"
+                                f"```\n{find_block}\n```\n"
+                                f"**Hint:** Try to provide more context in the FIND block and match the content exactly, including whitespace and indentations."
+                            ),
+                            file_path=str(file_path),
+                        )
                     )
+
+        return action_errors

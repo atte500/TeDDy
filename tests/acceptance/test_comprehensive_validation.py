@@ -1,0 +1,52 @@
+from pathlib import Path
+from .helpers import run_cli_with_markdown_plan_on_clipboard
+
+
+def test_edit_action_reports_all_find_block_failures(monkeypatch, tmp_path: Path):
+    """
+    Scenario 1: An `EDIT` action with multiple invalid `FIND` blocks is validated.
+    """
+    # Arrange
+    target_file = tmp_path / "target.txt"
+    target_file.write_text("This is the original content.", encoding="utf-8")
+
+    plan_content = f"""# Comprehensive Validation Plan
+
+## Action Plan
+
+### `EDIT`
+- **File Path:** [{target_file.name}](/{target_file.name})
+- **Description:** Edit with multiple bad finds
+
+#### `FIND:`
+```text
+NonExistentText1
+```
+#### `REPLACE:`
+```text
+Replacement1
+```
+
+#### `FIND:`
+```text
+NonExistentText2
+```
+#### `REPLACE:`
+```text
+Replacement2
+```
+"""
+
+    # Act
+    result = run_cli_with_markdown_plan_on_clipboard(
+        monkeypatch, plan_content, tmp_path
+    )
+
+    # Assert
+    assert result.exit_code != 0, "CLI should fail due to validation errors."
+
+    # Assert that BOTH errors are reported in the output
+    assert "NonExistentText1" in result.output, "First FIND block error missing."
+    assert "NonExistentText2" in result.output, (
+        "Second FIND block error missing. Validator likely short-circuited."
+    )
