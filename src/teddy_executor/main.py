@@ -1,3 +1,5 @@
+import logging
+import sys
 from pathlib import Path
 from typing import Optional
 
@@ -80,6 +82,15 @@ def create_container() -> punq.Container:
 
 app = typer.Typer()
 container = create_container()
+
+# Configure logging to output to stderr (which Typer handles well)
+# Using a simple format since this is intended for user progress updates.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(message)s",
+    handlers=[logging.StreamHandler(sys.stderr)],
+    force=True,
+)
 
 
 def _echo_and_copy(
@@ -341,16 +352,4 @@ def execute(
 
 
 if __name__ == "__main__":
-    import logging
-    import sys
-
-    # Configure logging to output to stderr (which Typer handles well)
-    # Using a simple format since this is intended for user progress updates.
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(message)s",
-        handlers=[logging.StreamHandler(sys.stderr)],
-        force=True,
-    )
-
     app()
