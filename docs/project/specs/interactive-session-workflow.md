@@ -363,4 +363,4 @@ User-specific behavior for the `teddy` tool can be defined in an optional `.tedd
 
 ---
 
-*(The `teddy branch` command has been removed. Branching can be easily and explicitly achieved by copying a turn directory, for example: `cp -r 02/ 02-branch-01/`.)*
+*(The `teddy branch` command has been removed. Branching is natively supported by the file system. The recommended approach is to copy the entire session directory (e.g., `cp -r session1 session1-branch`) and use `teddy resume`. Alternatively, you can copy a specific turn directory (e.g., `cp -r 02/ 02-branch/`). If this results in duplicate `creation_timestamp`s in `meta.yaml`, the system will deterministically break the tie by sorting the branches alphabetically by folder name.)*

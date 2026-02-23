@@ -23,7 +23,7 @@ The current session structure, with each turn in a separate directory, is optimi
 The session log must be resilient to manual user actions (renaming, branching). The generation logic will use a hybrid approach that combines metadata for robustness with folder names for user-friendly display.
 
 1.  **Build Dependency Graph:** The system will scan all turn directories and read their `meta.yaml` files to build a dependency graph using the `turn_id` and `parent_turn_id` fields. This correctly maps out all branches.
-2.  **Sort Turns:** Within each branch, turns will be sorted chronologically using the `creation_timestamp` from their `meta.yaml`.
+2.  **Sort Turns:** Within each branch, turns will be sorted chronologically using the `creation_timestamp` from their `meta.yaml`. *(Note: We rely on this explicit timestamp rather than the OS-level file modification time (`mtime`) because `mtime` is fragile and is not preserved across `git clone` operations. If two sibling branches have an identical `creation_timestamp` due to a user manually copying a turn folder, the system falls back to sorting alphabetically by folder name to break the tie.)*
 3.  **Generate Log:** The system will traverse the sorted graph to generate the final `session-log.md`, ensuring all branches are represented in a logical, chronological order.
 
 This ensures the underlying logic is robust and handles branching correctly, while still allowing for flexible sorting and display.
