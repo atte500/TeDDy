@@ -1,6 +1,6 @@
 # Slice: Refactor Parser and Fix Bug
 
-- **Status:** Planned
+- **Status:** Complete
 - **Milestone:** [08-core-refactoring-and-enhancements](/docs/project/milestones/08-core-refactoring-and-enhancements.md)
 - **Spec:** [Robust Plan Parsing](/docs/project/specs/robust-plan-parsing.md)
 
@@ -86,3 +86,18 @@ The parser will be refactored to provide clearer error messages for invalid plan
     -   Add new test case: `test_parse_plan_with_interstitial_content` (verifying `ThematicBreak` is ignored).
 3.  **Verify Fix:**
     -   Run the MRE `spikes/mre/parser_break_repro.py` against the *refactored* code (after moving/adapting it or creating a new test) to confirm the crash is gone.
+
+## Implementation Summary
+
+This slice was implemented to fix a bug where interstitial content (like a `---` thematic break) between actions would cause the `MarkdownPlanParser` to crash.
+
+### Key Changes
+1.  **Requirement Pivot:** The initial goal was to make the parser robustly *ignore* such content. After discussion, this was pivoted to a stricter requirement: the parser must *reject* any plan with unexpected content between actions. This aligns better with the project's "fail-fast" and "contract-first" principles.
+2.  **Parser Refactoring:** The `MarkdownPlanParser` was modified to remove the logic that ignored `ThematicBreak`s, causing it to correctly raise an `InvalidPlanError`.
+3.  **Orchestrator Refactoring:** A significant amount of work involved addressing a `T2` architectural note. The `ExecutionOrchestrator`'s contract was changed to accept a parsed `Plan` object instead of a raw string. This eliminated redundant parsing within the `CLIAdapter` (`main.py`) and clarified the separation of concerns between parsing and execution. This required updating the `RunPlanUseCase` interface and refactoring numerous unit and integration tests.
+4.  **Debugger Handoff:** A persistent `SystemExit(2)` crash during testing was misdiagnosed as an application bug. After two failed fix attempts, a handoff to the `Debugger` correctly identified the root cause as a faulty acceptance test using an invalid CLI flag. This unblocked the slice and highlighted the value of the escalation protocol.
+
+### Architectural Notes Log
+- **T1 (Pre-existing Condition):** The initial requirement for the parser to ignore thematic breaks was incorrect. The new requirement is to treat them as a validation error. This pivot was directed by the user. (Formalized in `ARCHITECTURE.md`)
+- **T4 (True Blocker):** An unhandled exception in the CLI adapter caused a silent crash. (Resolved by Debugger: issue was a faulty test.)
+- **T2 (Slice-Refactor):** The `execute` command in `main.py` parsed the plan twice. (Resolved by refactoring the orchestrator contract.)

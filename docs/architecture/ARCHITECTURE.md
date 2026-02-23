@@ -102,8 +102,8 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 | **ActionDispatcher**         | A service that resolves and executes a single action, delegating to the `ActionFactory`.                | [ActionDispatcher](./core/services/action_dispatcher.md)                       |
 | **ActionFactory**            | A factory service that creates validated `Action` domain objects from raw plan data.                    | [ActionFactory](./core/services/action_factory.md)                             |
 | **ContextService**           | The service that implements `IGetContextUseCase` by orchestrating outbound ports.                       | [ContextService](./core/services/context_service.md)                           |
-| **ExecutionOrchestrator**    | The primary service that implements `IRunPlanUseCase`, managing the step-by-step execution of a plan.   | [ExecutionOrchestrator](./core/services/execution_orchestrator.md)             |
-| **MarkdownPlanParser**       | A service that parses a Markdown plan string into a `Plan` domain object using an AST.                  | [MarkdownPlanParser](./core/services/markdown_plan_parser.md)                  |
+| **ExecutionOrchestrator**    | The primary service that implements `IRunPlanUseCase`, managing the step-by-step execution of a parsed `Plan` object. | [ExecutionOrchestrator](./core/services/execution_orchestrator.md)             |
+| **MarkdownPlanParser**       | A service that parses a Markdown plan string into a `Plan` domain object using a strict, single-pass AST traversal. | [MarkdownPlanParser](./core/services/markdown_plan_parser.md)                  |
 | **MarkdownReportFormatter**  | Implements `IMarkdownReportFormatter` using the Jinja2 template engine to generate CLI reports.         | [MarkdownReportFormatter](./core/services/markdown_report_formatter.md)        |
 | **PlanValidator**            | Implements `IPlanValidator` using a strategy pattern to run pre-flight checks on a plan's actions.      | [PlanValidator](./core/services/plan_validator.md)                             |
 
@@ -149,6 +149,9 @@ This section captures significant, long-standing architectural decisions and pat
 -   **Cross-Platform Path Normalization:** To distinguish project-relative paths (e.g., `[/docs/spec.md]`) from true absolute paths, the `MarkdownPlanParser` uses an OS-aware heuristic.
     -   **Rule:** A path is considered a "true" absolute path only if it starts with a common system directory on POSIX (e.g., `/tmp`, `/etc`) or a drive letter on Windows. Other paths starting with `/` are treated as project-relative.
     -   **Rationale:** This allows the parser to normalize project-relative paths (by stripping the leading slash) while preserving true absolute paths to be rejected by the `PlanValidator`, ensuring consistent security and behavior across platforms.
+-   **Strict Parser Validation:** The `MarkdownPlanParser` must enforce a strict structure within a plan's `## Action Plan` section.
+    -   **Rule:** Any content found between valid action blocks (e.g., a `ThematicBreak` (`---`) or stray paragraphs) must be treated as a validation error. The parser should not attempt to ignore or "auto-correct" malformed plan structures.
+    -   **Rationale:** This decision was the result of a pivot from an initial "robustness-first" approach. A strict, fail-fast parser is simpler, more predictable, and forces the upstream AI agent to produce well-formed plans, which is a core principle of the TeDDy workflow.
 
 ---
 

@@ -54,7 +54,7 @@ Execute a safe "Create, Migrate, Delete" sequence for each legacy model:
 
 ## 4. Vertical Slices
 
-- [ ] **Slice 1: Refactor Parser and Fix Bug** (Implement the single-pass AST strategy and verify against bug repro).
+- [x] **Slice 1: Refactor Parser and Fix Bug** (Implement the single-pass AST strategy and verify against bug repro).
 - [ ] **Slice 2: Simplify EXECUTE Action Syntax** (Implement the POSIX Shell Pre-Processor in the parser).
 - [ ] **Slice 3: Implement `trafilatura`** (Dependency swap and adapter update).
 - [ ] **Slice 4: Refactor `CommandResult` to `ShellOutput`** (Create, migrate, delete).
