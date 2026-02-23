@@ -573,6 +573,42 @@ Rationale.
     assert "Unknown action type: UNKNOWN_ACTION" in str(excinfo.value)
 
 
+def test_parser_can_parse_plan_with_thematic_break_between_actions(
+    parser: MarkdownPlanParser,
+):
+    """
+    Given a Markdown plan with a thematic break (---) between two actions,
+    When the parser parses it,
+    Then it should correctly identify both actions and not raise an error.
+    """
+    plan_content = """
+# Test Plan with Thematic Break Separator
+## Action Plan
+### `CREATE`
+- **File Path:** [file1.txt](/file1.txt)
+- **Description:** First file.
+````text
+content1
+````
+---
+### `CREATE`
+- **File Path:** [file2.txt](/file2.txt)
+- **Description:** Second file.
+````text
+content2
+````
+"""
+    # Act
+    plan = parser.parse(plan_content)
+
+    # Assert
+    assert len(plan.actions) == 2
+    assert plan.actions[0].type == "CREATE"
+    assert plan.actions[0].params["path"] == "file1.txt"
+    assert plan.actions[1].type == "CREATE"
+    assert plan.actions[1].params["path"] == "file2.txt"
+
+
 def test_parser_raises_error_on_malformed_structure_between_actions(
     parser: MarkdownPlanParser,
 ):
@@ -617,3 +653,36 @@ echo 2
         parser.parse(plan_content)
 
     assert "Unexpected content found between actions" in str(excinfo.value)
+
+
+def test_parser_succeeds_on_builder_generated_create_action(parser: MarkdownPlanParser):
+    """
+    This test verifies that the MarkdownPlanBuilder generates a valid CREATE
+    action that the refactored stream-based parser can successfully parse.
+    """
+    from tests.acceptance.plan_builder import MarkdownPlanBuilder
+
+    # Arrange
+    builder = MarkdownPlanBuilder("Test Plan")
+    builder.add_action(
+        "CREATE",
+        params={
+            "File Path": "new_file.txt",
+            "Description": "Create a new file.",
+        },
+        # Note: The key here is for the builder, but should not be rendered
+        # for a CREATE action.
+        content_blocks={"Content:": ("text", "Hello, TeDDy!")},
+    )
+    plan_content = builder.build()
+
+    # Act
+    plan = parser.parse(plan_content)
+
+    # Assert
+    assert len(plan.actions) == 1
+    action = plan.actions[0]
+    assert action.type == "CREATE"
+    assert action.params["path"] == "new_file.txt"
+    assert action.params["content"] == "Hello, TeDDy!"
+    assert action.description == "Create a new file."

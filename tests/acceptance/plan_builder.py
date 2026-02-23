@@ -113,12 +113,19 @@ class MarkdownPlanBuilder:
                     if content_blocks:
                         block_parts = []
                         for key, (lang, content) in content_blocks.items():
-                            key_str = f"#### {key}" if key else ""
-                            fence_str = f"`````{lang}\n{content}\n`````"
-                            block = f"{key_str}\n{fence_str}" if key else fence_str
+                            # EDIT action blocks have keys (e.g., FIND:), CREATE does not.
+                            key_str = (
+                                f"#### {key}"
+                                if key and action_type_upper == "EDIT"
+                                else ""
+                            )
+                            # Use different fence lengths for robustness in tests
+                            fence = "````" if action_type_upper == "CREATE" else "`````"
+                            fence_str = f"{fence}{lang}\n{content}\n{fence}"
+
+                            block = f"{key_str}\n{fence_str}" if key_str else fence_str
                             block_parts.append(block)
 
-                        # Join with a single newline. The test expects no blank line between blocks.
                         action_str += "\n\n" + "\n".join(block_parts)
 
                 action_plan_parts.append(action_str)
