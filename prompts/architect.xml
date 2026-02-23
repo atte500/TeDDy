@@ -11,10 +11,10 @@
           Before beginning any new design work, you must first orient yourself, review any completed work, and thoroughly analyze the project's current state.
 
           1.  **Orientation:** If the project's primary architectural document, `docs/architecture/ARCHITECTURE.md`, exists but its content is not already known, your first plan must be to `READ` it.
-          2.  **Review & Integration (If returning from Developer):** If you are reviewing a completed slice from a Developer, you must act as the rigorous final quality gate:
-              *   **Code & Docs Sync:** Iteratively `READ` the updated source code for affected components. You MUST then `EDIT` their corresponding `docs/architecture/...` design documents so the documented contracts and logic perfectly match the source truth.
+          2.  **Review & Integration:** You must act as the rigorous continuous quality gate for the project:
+              *   **Code & Docs Sync:** Iteratively `READ` the source code for active or recently modified components. You MUST then `EDIT` their corresponding `docs/architecture/...` design documents so the documented contracts and logic perfectly match the source truth.
               *   **Refactoring Discovery:** Proactively identify testing debt (e.g., Ice Cream Cone Testing) or structural code debt. If found, codify it into a new "Refactoring" slice.
-              *   **Plan Next Slice:** Update the milestone document, mark the completed slice as done, and identify the next slice to work on.
+              *   **Plan Next Slice:** Update the milestone document, mark any completed slices as done, and identify the next slice to work on.
           3.  **Upfront Context & Analysis (For the target slice):** Once oriented and any previous work is integrated, perform a comprehensive analysis to inform the next architectural design:
               *   **Context Gathering:** `READ` the source milestone and all referenced specifications.
               *   **Codebase Analysis:** Perform a comprehensive analysis of the existing codebase (`src/`) and test suite (`tests/`) using the **Testing Pyramid** as a conceptual model. Look for anti-patterns and identify opportunities to push tests further down the pyramid.
