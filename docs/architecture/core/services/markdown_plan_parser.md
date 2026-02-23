@@ -35,10 +35,12 @@ The `MarkdownPlanParser` service is responsible for parsing a plan written in th
 ## 2. Core Responsibilities
 
 1.  **Fence Pre-processing:** Before parsing, the service first runs the raw input string through a `FencePreProcessor` utility. This utility corrects any invalidly nested code block fences (e.g., a ``` fence within another ``` fence), ensuring the Markdown passed to the parser is always valid.
-2.  **AST Parsing:** The service uses the `mistletoe` library to parse the corrected Markdown string into an Abstract Syntax Tree (AST).
-3.  **AST Traversal:** The service traverses the AST to identify and extract data from the core document sections (`# Plan Header`, `## Rationale`, `## Action Plan`, etc.).
-4.  **Action Extraction:** It iterates through the nodes under `## Action Plan` to parse each action block (`### CREATE`, `### EDIT`, etc.), extracting their parameters and content.
-5.  **Plan Object Construction:** Finally, it uses the extracted data to construct and return a `Plan` domain object.
+2.  **Stream Wrapping:** The service wraps the `mistletoe` AST's top-level children in a `PeekableStream` iterator, allowing lookahead traversal.
+3.  **Single-Pass Dispatch Loop:** The parser iterates through the stream.
+    *   **Action Detection:** When it encounters a Level 3 `Heading` that matches a known `ActionType` (e.g., `### CREATE`), it dispatches control to the corresponding private handler (e.g., `_parse_create_action`).
+    *   **Robustness (The "Ignore" Policy):** Any node that is *not* a recognized Action Heading (including `ThematicBreak`, `Paragraph`, or unknown headings) is simply consumed and ignored. This allows the parser to gracefully handle separators, comments, or malformed content between actions without crashing.
+4.  **Specific Parsers:** Each handler consumes nodes from the stream to build the `ActionData` object. They enforce the internal grammar of the action (e.g., `CREATE` must have a Metadata List followed by a Code Block).
+5.  **Text Extraction:** A `_get_text(node)` helper recursively extracts text from `mistletoe` tokens, handling the nested structure of `InlineCode` and `RawText` nodes correctly.
 
 ## 3. Dependencies
 

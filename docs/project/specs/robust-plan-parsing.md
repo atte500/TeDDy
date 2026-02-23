@@ -6,42 +6,36 @@ The current `MarkdownPlanParser` service fails to parse valid plans that contain
 
 This is a critical flaw that prevents agents from editing documentation, specifications, or other plans, severely limiting the system's capabilities.
 
-### 1.1. Verifiable Failure Case
+### 1.1. Verifiable Failure Cases
 
-The following plan reliably reproduces the bug. The parser fails with an "Unexpected content found between actions" error.
+The current parser validation logic strictly whitelists allowed Markdown nodes (Lists, Code Blocks, Headings) within an action. It fails if it encounters valid Markdown content like horizontal rules (`---`) or nested code blocks that confuse the structure.
 
-``````markdown
-# Verbatim Failing Plan
+#### Case 1: Thematic Break (Horizontal Rule)
+The parser treats `---` as a `ThematicBreak` node, which is not in the allowed whitelist, causing an immediate crash.
+
+`````markdown
+# Failing Plan (Thematic Break)
 
 ### `EDIT`
-- **File Path:** [docs/project/specs/new-plan-format.md](/docs/project/specs/new-plan-format.md)
-- **Description:** Update functional links and illustrative examples.
+- **File Path:** [docs/doc.md](/docs/doc.md)
+- **Description:** Add a separator.
 
 #### `FIND:`
 ````markdown
-### 5.1. `CREATE`
-
--   **Purpose:** Creates a new file.
--   **Format:**
-    `````markdown
-    ### `CREATE`
-    - **File Path:** [docs/specs/plan-format.md](/docs/specs/plan-format.md)
-    - **Description:** Create the initial specification document.
-`````
+End of section.
 ````
 #### `REPLACE:`
 ````markdown
-### 5.1. `CREATE`
+End of section.
 
--   **Purpose:** Creates a new file.
--   **Format:**
-    `````markdown
-    ### `CREATE`
-    - **File Path:** [docs/project/specs/plan-format.md](/docs/project/specs/plan-format.md)
-    - **Description:** Create the initial specification document.
-`````
+---
+
+Start of new section.
 ````
-``````
+`````
+
+#### Case 2: Nested Code Blocks (Potential Edge Case)
+While the parser theoretically struggles with ambiguous nesting (e.g., three backticks inside three backticks), current tests suggest `mistletoe` handles standard nesting correctly. However, a robust parser should not rely on this library behavior and should explicitly handle stream consumption to prevent future regressions where nested content might leak into the top-level structure.
 
 ## 2. Acceptance Criteria
 
