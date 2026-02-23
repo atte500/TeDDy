@@ -45,7 +45,11 @@ class ActionDispatcher:
         Takes an ActionData object, finds the corresponding action handler
         via the factory, executes it, and returns the result as an ActionLog.
         """
-        logger.info(f"Executing: {action_data.type.upper()}")
+        action_name = action_data.type.upper()
+        log_desc = f" - {action_data.description}" if action_data.description else ""
+        action_summary = f"{action_name}{log_desc}"
+
+        logger.info(f"Executing Action: {action_summary}")
 
         # Make a copy of params for logging and defensively add the description
         # to it if it exists. This makes the dispatcher robust against parser
@@ -123,18 +127,18 @@ class ActionDispatcher:
             if isinstance(execution_result, CommandResult):
                 if execution_result.return_code == 0:
                     log_data["status"] = ActionStatus.SUCCESS
-                    logger.info(f"Success: {action_data.type.upper()}")
+                    logger.info(f"Success Action: {action_summary}")
                 else:
                     log_data["status"] = ActionStatus.FAILURE
-                    logger.info(f"Failure: {action_data.type.upper()}")
+                    logger.info(f"Failed Action: {action_summary}")
             else:
                 log_data["status"] = ActionStatus.SUCCESS
-                logger.info(f"Success: {action_data.type.upper()}")
+                logger.info(f"Success Action: {action_summary}")
 
             log_data["details"] = result_to_serialize
         except Exception as e:
             log_data["status"] = ActionStatus.FAILURE
             log_data["details"] = str(e)
-            logger.info(f"Failure: {action_data.type.upper()}")
+            logger.info(f"Failed Action: {action_summary}")
 
         return ActionLog(**log_data)

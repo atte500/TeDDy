@@ -5,10 +5,17 @@ from teddy_executor.main import app
 runner = CliRunner()
 
 
-def test_progress_logging_success(caplog, tmp_path, monkeypatch):
+def test_progress_logging_success(capsys, tmp_path, monkeypatch):
     """Scenario 1: Successful Action Execution logs Executing and Success."""
+    import sys
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(message)s",
+        handlers=[logging.StreamHandler(sys.stderr)],
+        force=True,
+    )
     monkeypatch.chdir(tmp_path)
-    caplog.set_level(logging.INFO)
     test_file = tmp_path / "test_file.txt"
     test_file.write_text("dummy content", encoding="utf-8")
 
@@ -21,14 +28,22 @@ def test_progress_logging_success(caplog, tmp_path, monkeypatch):
 """
     runner.invoke(app, ["execute", "--plan-content", plan_content, "-y"])
 
-    assert "Executing: READ" in caplog.text, "Expected 'Executing: READ' in log output"
-    assert "Success: READ" in caplog.text, "Expected 'Success: READ' in log output"
+    stderr_output = capsys.readouterr().err
+    assert "Executing Action: READ - Read an existing file" in stderr_output
+    assert "Success Action: READ - Read an existing file" in stderr_output
 
 
-def test_progress_logging_failure(caplog, tmp_path, monkeypatch):
+def test_progress_logging_failure(capsys, tmp_path, monkeypatch):
     """Scenario 2: Failed Action Execution logs Executing and Failure."""
+    import sys
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(message)s",
+        handlers=[logging.StreamHandler(sys.stderr)],
+        force=True,
+    )
     monkeypatch.chdir(tmp_path)
-    caplog.set_level(logging.INFO)
 
     plan_content = """
 # Test Plan
@@ -39,5 +54,6 @@ def test_progress_logging_failure(caplog, tmp_path, monkeypatch):
 """
     runner.invoke(app, ["execute", "--plan-content", plan_content, "-y"])
 
-    assert "Executing: READ" in caplog.text, "Expected 'Executing: READ' in log output"
-    assert "Failure: READ" in caplog.text, "Expected 'Failure: READ' in log output"
+    stderr_output = capsys.readouterr().err
+    assert "Executing Action: READ - Read a missing file" in stderr_output
+    assert "Failed Action: READ - Read a missing file" in stderr_output

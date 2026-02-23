@@ -350,6 +350,7 @@ if __name__ == "__main__":
         level=logging.INFO,
         format="%(message)s",
         handlers=[logging.StreamHandler(sys.stderr)],
+        force=True,
     )
 
     app()
