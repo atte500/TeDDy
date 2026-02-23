@@ -57,3 +57,4 @@ Execute a safe "Create, Migrate, Delete" sequence for each legacy model:
 - [ ] **Slice 7: Configure CI Quality Gates** (Add `pytest-cov`, set strict targets for Cyclomatic Complexity and SLOC via `ruff`, update `ci.yml`).
 - [ ] **Slice 8: Audit and Invert Test Pyramid** (Migrate acceptance tests to unit/integration).
 - [ ] **Slice 9: Remediate High-Complexity Code** (Refactor flagged functions and tighten thresholds).
+- [ ] **Slice 10: Refine CLI Help Descriptions** (Update Typer command docstrings/help parameters in `main.py`).
