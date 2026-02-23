@@ -5,17 +5,10 @@ from teddy_executor.main import app
 runner = CliRunner()
 
 
-def test_progress_logging_success(capsys, tmp_path, monkeypatch):
+def test_progress_logging_success(caplog, tmp_path, monkeypatch):
     """Scenario 1: Successful Action Execution logs Executing and Success."""
-    import sys
-
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(message)s",
-        handlers=[logging.StreamHandler(sys.stderr)],
-        force=True,
-    )
     monkeypatch.chdir(tmp_path)
+    caplog.set_level(logging.INFO)
     test_file = tmp_path / "test_file.txt"
     test_file.write_text("dummy content", encoding="utf-8")
 
@@ -28,22 +21,14 @@ def test_progress_logging_success(capsys, tmp_path, monkeypatch):
 """
     runner.invoke(app, ["execute", "--plan-content", plan_content, "-y"])
 
-    stderr_output = capsys.readouterr().err
-    assert "Executing Action: READ - Read an existing file" in stderr_output
-    assert "Success Action: READ - Read an existing file" in stderr_output
+    assert "Executing Action: READ - Read an existing file" in caplog.text
+    assert "SUCCESS" in caplog.text
 
 
-def test_progress_logging_failure(capsys, tmp_path, monkeypatch):
+def test_progress_logging_failure(caplog, tmp_path, monkeypatch):
     """Scenario 2: Failed Action Execution logs Executing and Failure."""
-    import sys
-
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(message)s",
-        handlers=[logging.StreamHandler(sys.stderr)],
-        force=True,
-    )
     monkeypatch.chdir(tmp_path)
+    caplog.set_level(logging.INFO)
 
     plan_content = """
 # Test Plan
@@ -54,6 +39,27 @@ def test_progress_logging_failure(capsys, tmp_path, monkeypatch):
 """
     runner.invoke(app, ["execute", "--plan-content", plan_content, "-y"])
 
-    stderr_output = capsys.readouterr().err
-    assert "Executing Action: READ - Read a missing file" in stderr_output
-    assert "Failed Action: READ - Read a missing file" in stderr_output
+    assert "Executing Action: READ - Read a missing file" in caplog.text
+    assert "FAILURE" in caplog.text
+
+
+def test_progress_logging_execute_stdout(caplog, tmp_path, monkeypatch):
+    """Scenario 3: Execution stdout is logged after success/failure."""
+    monkeypatch.chdir(tmp_path)
+    caplog.set_level(logging.INFO)
+
+    plan_content = """
+# Test Plan
+## Action Plan
+### `EXECUTE`
+- **Description:** Run a command
+- **Expected Outcome:** prints hello
+```shell
+echo "hello progress log"
+```
+"""
+    runner.invoke(app, ["execute", "--plan-content", plan_content, "-y"])
+
+    assert "Executing Action: EXECUTE - Run a command" in caplog.text
+    assert "SUCCESS" in caplog.text
+    assert "hello progress log" not in caplog.text

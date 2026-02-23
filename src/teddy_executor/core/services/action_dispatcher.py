@@ -127,18 +127,18 @@ class ActionDispatcher:
             if isinstance(execution_result, CommandResult):
                 if execution_result.return_code == 0:
                     log_data["status"] = ActionStatus.SUCCESS
-                    logger.info(f"Success Action: {action_summary}")
+                    logger.info("SUCCESS")
                 else:
                     log_data["status"] = ActionStatus.FAILURE
-                    logger.info(f"Failed Action: {action_summary}")
+                    logger.info("FAILURE")
             else:
                 log_data["status"] = ActionStatus.SUCCESS
-                logger.info(f"Success Action: {action_summary}")
+                logger.info("SUCCESS")
 
             log_data["details"] = result_to_serialize
         except Exception as e:
             log_data["status"] = ActionStatus.FAILURE
             log_data["details"] = str(e)
-            logger.info(f"Failed Action: {action_summary}")
+            logger.info("FAILURE")
 
         return ActionLog(**log_data)
