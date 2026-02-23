@@ -394,7 +394,7 @@ A markdown file whose content might include a ```code block```.
             <format>
 ### `PRUNE`
 - **Resource:** [path/to/file_to_remove.ext](/path/to/file_to_remove.ext)
-- **Description:** [Short explanation of why this resource is being removed.]
+- **Description:** [Brief summary of this resource's contents including a short explanation of why it is being removed from context.]
             </format>
         </action>
         <action name="RETURN">
