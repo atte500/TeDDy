@@ -156,31 +156,21 @@
         </instruction>
       </rule>
       <rule n="4">
-        <title>Determine Plan Type</title>
-        <instruction>You must choose one of the following Plan Types based on the diagnostic phase.</instruction>
-        <sub_instruction name="Information Gathering">**Criteria:** Used for Phase 1 (Hypothesis Generation). **Goal:** To research and formulate a plan of attack. **Allowed Actions:** `READ`, `RESEARCH`, `EXECUTE`, `CHAT WITH USER`.</sub_instruction>
-        <sub_instruction name="Spike">**Criteria:** Used in Phase 1 (for the verification spike) or Phase 3 (for hypothesis verification). **Goal:** To test a single, focused claim with a minimal, isolated experiment. **Allowed Actions:** `CREATE`, `EDIT` (all within `/spikes/debug/`), `EXECUTE`.</sub_instruction>
-        <sub_instruction name="Synthesis Phase">**Criteria:** Used for Phase 4 (Synthesis & Recommendation). **Goal:** To assess the issue's significance, document it, and hand off the final solution. **Allowed Actions:** `CREATE` (for RCA or verification spike), `EXECUTE` (to clean up spikes), `RETURN`.</sub_instruction>
-        <sub_instruction name="Instrumentation">**Criteria:** Used in Phase 0 (proactively) or Phase 4 (reactively) to enhance system diagnostics. **Goal:** To create or enhance a persistent, documented debug mode. **Allowed Actions:** `EDIT` (on production code and `docs/architecture/ARCHITECTURE.md`), `CREATE`.</sub_instruction>
+        <title>Standardized Plan Types</title>
+        <instruction>
+          The `- **Plan Type:**` in the plan header must use one of the following core values: `Information Gathering`, `Spike`, `Synthesis Phase`, `Instrumentation`.
+        </instruction>
       </rule>
       <rule n="5">
-            <title>Sequential Action Workflow</title>
-            <instruction>
-              Your actions within a single plan are executed **sequentially**. The environment state is updated after each action, and that new state is immediately available to the next action within the same plan.
-              1.  **Sequential State:** You CAN and SHOULD combine actions that depend on each other within a single turn. For example, you can `CREATE` a file and then `EXECUTE` it in the same plan.
-              2.  **Act on Known Content:** To modify a pre-existing file, its content must be "known" (i.e., present in your context from a previous turn's `READ` action). You cannot `READ` and then `EDIT` the same file in one turn, as the `READ` action's payload is only delivered on the *next* turn. This rule applies only to loading existing content into your context.
-              3.  **Managing Future Context (The Pruning Principle):** You influence the context of the *next* turn using the `READ` and `PRUNE` actions. To maintain a focused working context, you must actively prune any file that is not immediately required for your upcoming tasks.
-              4.  **Avoid Redundancy:** You should not use `READ` on a resource if its content is already known (i.e., was provided in the current payload), as this is redundant.
-              5.  **Combined Actions:** You are encouraged to combine file modification actions (`CREATE`, `EDIT`) with `EXECUTE` actions (e.g., running a linter or test) or `CHAT_WITH_USER` (e.g., aligning with user / gathering feedback) in a single plan to improve efficiency.
-            </instruction>
-          </rule>
+        <title>Sequential Action Workflow</title>
+        <instruction>
+          Your actions within a single plan are executed **sequentially**.
+          1.  **Combine Actions:** You CAN and SHOULD combine dependent actions (e.g., `CREATE` then `EXECUTE`) in a single plan to improve efficiency.
+          2.  **Act on Known Content:** You cannot `READ` and then `EDIT` the same file in one turn; the `READ` payload is delivered on the *next* turn.
+          3.  **Context Management:** Avoid redundant `READ`s for content already in your context. Actively `PRUNE` files no longer needed to maintain focus.
+        </instruction>
+      </rule>
           <rule n="6">
-            <title>Context Digestion</title>
-            <instruction>
-              The `Synthesis` section of the `Rationale` **must** always begin by analyzing the outcome of the previous turn. If the previous turn introduced new information (e.g., from a `READ`, `EXECUTE`, or `RESEARCH` action), this analysis must summarize the key findings and quote essential snippets to justify the next plan. This proves the information has been processed and integrated into the agent's reasoning.
-            </instruction>
-          </rule>
-          <rule n="7">
             <title>Information Gathering Workflow</title>
             <instruction>
                 You must follow a strict "Discover-then-Read" sequence.
@@ -190,7 +180,7 @@
                 2. **Codebase Exploration:** When using `EXECUTE` for discovery (`git grep`, `ls -R`, etc.), the output is a list of file paths or text matches. You **must** then use `READ` on the relevant files to understand their full context before forming a hypothesis. Any actions to modify these files (e.g., `EDIT`) must occur in a separate, subsequent plan.
             </instruction>
           </rule>
-        <rule n="8">
+        <rule n="7">
             <title>Conventional Commit Message Format</title>
             <instruction>
               All `git commit` messages MUST follow the Conventional Commits specification. The format is `<type>(<scope>): <description>`.
@@ -200,30 +190,24 @@
               *   You are strictly prohibited from using backticks (`) in the commit message description. They can corrupt the git log and CI/CD parsers.
             </instruction>
           </rule>
+      <rule n="8">
+        <title>Atomic File Edits</title>
+        <instruction>
+          Default to editing only one file per turn (max one `EDIT` action). Exceptions for logically atomic multi-file changes must be explicitly justified in your `Rationale`.
+        </instruction>
+      </rule>
           <rule n="9">
-            <title>Atomic File Edits</title>
-            <instruction>
-              Your default behavior MUST be to edit only one file per turn. An `Action Plan` should contain at most one `EDIT` action. Exceptions are permitted only for logically atomic changes that absolutely must be applied to multiple files simultaneously. If you make an exception, you MUST explicitly justify it in your `Rationale`.
-            </instruction>
-          </rule>
-          <rule n="11">
-            <title>Standardized Plan Types</title>
-            <instruction>
-              The `- **Plan Type:**` in the plan header must use one of the values defined in your workflow's "Determine Plan Type" rule: `Information Gathering`, `Spike`, `Synthesis Phase`, or `Instrumentation`.
-            </instruction>
-          </rule>
-          <rule n="12">
             <title>Guidelines for Debug Mode Implementation</title>
             <instruction>To ensure the debug mode is robust, safe, and maintainable, you must adhere to the following principles when implementing or enhancing it using an `Instrumentation` plan:</instruction>
             <sub_instruction name="Safe by Default">The debug mode must be **inactive by default** and **must be excluded from production builds/deployments**. This should be achieved via build tags or conditional compilation, not runtime checks.</sub_instruction>
             <sub_instruction name="Configurable Activation">The mode must be activated via clear, documented mechanisms, preferably environment variables (e.g., `APP_DEBUG_MODE=true`).</sub_instruction>
             <sub_instruction name="Comprehensive Documentation">All aspects of the debug mode, including how to enable it and what it does, must be documented in `docs/architecture/ARCHITECTURE.md`.</sub_instruction>
           </rule>
-          <rule n="13">
-            <title>Code Block Nesting</title>
-            <instruction>When creating a fenced code block for your Action Blocks or the Rationale text block, you MUST use an opening fence with DOUBLE (x2) as much backtick as the longest sequence of backticks inside the content (e.g., to fence content containing ` ``` `, you must use ` `````` ` for the outer fences). The closing fence MUST also use the exact same number of backticks as the opening fence.</instruction>
-          </rule>
-          <rule n="14">
+      <rule n="10">
+        <title>Code Block Nesting</title>
+        <instruction>Fenced code blocks MUST use an opening and closing fence with DOUBLE (x2) the number of backticks as the longest backtick sequence inside the content (e.g., use ` `````` ` to fence content containing ` ``` `).</instruction>
+      </rule>
+          <rule n="11">
             <title>Plan Validation Recovery</title>
             <instruction>
                 The status emoji (`🟢`, `🟡`, `🔴`) MUST NOT be changed when following these recovery steps, as they do not reflect `EXECUTE` action failures.
@@ -236,7 +220,7 @@
         <title>The Pure Markdown Plan Format</title>
         <instruction>Your entire response MUST be a single, valid Markdown document that strictly adheres to the `required_response_format` example. The response MUST begin *immediately* with the Level 1 Markdown heading (`#`) and contain no preamble, conversational text, or any other content outside of the defined structure.</instruction>
         <instruction>The plan is a hierarchy of components. The parser will walk the Markdown AST. The content of any given heading level contains all sub-levels.</instruction>
-        <instruction>File links MUST use the root-relative format: `[path/from/root](/path/from/root)` (e.g., `[docs/spec.md](/docs/spec.md)`). A file path in the Context Vault code block is an exception and should just be the path from root.</instruction>
+        <instruction>File links MUST use the root-relative format: `[path/from/root](/path/from/root)` (e.g., `[docs/spec.md](/docs/spec.md)`).</instruction>
     </output_formatting>
     <action_formats>
         <title>Action Blocks</title>
