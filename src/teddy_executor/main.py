@@ -269,7 +269,7 @@ def execute(
         except InvalidPlanError as e:
             # Generate a report for parsing errors
             report = ExecutionReport(
-                plan_title=plan.title,
+                plan_title="Invalid Plan",
                 run_summary=RunSummary(
                     status=RunStatus.VALIDATION_FAILED,
                     start_time=start_time,
