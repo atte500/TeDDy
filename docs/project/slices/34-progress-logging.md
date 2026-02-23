@@ -20,10 +20,10 @@ All changes will be made in `src/teddy_executor/core/services/action_dispatcher.
 
 - **Feature Delivered:** Real-time console progress logging during plan execution.
 - **Core Implementation:** Added standard Python `logging` to `ActionDispatcher.dispatch_and_execute` to emit `INFO` level logs for the `Executing`, `Success`, and `Failed` states of each action.
-- **User Feedback Iteration:** Following the initial implementation, the user requested a specific format (`Executing Action: [TYPE] - [Description]`) and the removal of the standard `INFO:logger_name:` prefix.
-- **Formatting Fix:** `ActionDispatcher` was updated to construct the string `f"{action.type.upper()} - {action.description}"` for the log message.
-- **Prefix Removal:** The entry point `main.py` was updated to call `logging.basicConfig(level=logging.INFO, format="%(message)s", handlers=[logging.StreamHandler(sys.stderr)], force=True)`. The `force=True` argument was strictly required to override default handlers injected by third-party libraries (like Typer), ensuring the logs appear cleanly as requested.
-- **Acceptance Testing:** The `test_progress_logging.py` test uses the `capsys` fixture to capture `stderr` (which bypasses Typer's `CliRunner` stdout capture when writing directly to `sys.stderr`) to assert the exact formatting of the logs.
+- **User Feedback Iteration:** Following the initial implementation, the user requested a specific format (`Executing Action: [TYPE] - [Description]`) and the removal of the standard `INFO:logger_name:` prefix. A subsequent request further simplified the status logs to just `SUCCESS` and `FAILURE`, and explicitly requested the removal of `stdout`/`stderr` from the progress logs.
+- **Formatting Fix:** `ActionDispatcher` was updated to construct the string `Executing Action: {action.type.upper()} - {action.description}` for the start log, and simple `SUCCESS` or `FAILURE` strings for the outcome.
+- **Prefix Removal:** The global entry point `main.py` was updated to call `logging.basicConfig(level=logging.INFO, format="%(message)s", handlers=[logging.StreamHandler(sys.stderr)], force=True)` before creating the Typer app. The `force=True` argument was strictly required to override default handlers injected by third-party libraries, ensuring the logs appear cleanly as requested.
+- **Acceptance Testing:** The `test_progress_logging.py` test uses the `capsys` fixture to capture `stderr` (which bypasses Typer's `CliRunner` stdout capture when writing directly to `sys.stderr`) to assert the exact, stripped formatting of the logs and ensure `stdout` is not present.
 
 ## 4. Acceptance Criteria
 
