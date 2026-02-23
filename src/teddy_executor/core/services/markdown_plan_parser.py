@@ -144,7 +144,7 @@ class MarkdownPlanParser(IPlanParser):
                 raise InvalidPlanError(
                     f"Unexpected content found between actions (in {action_type}). "
                     f"Found unexpected {type(node).__name__}.\n"
-                    f"**Hint:** This often happens if a code block is not properly nested."
+                    f"**Hint:** An Action or Rationale code block may be improperly nested. Try to increase the number of backticks for the outer blocks."
                 )
 
     def _find_action_headings(
