@@ -29,8 +29,8 @@ TeDDy structures the development process around four distinct AI personas, each 
 ### 1. The Pathfinder (Strategic Discovery)
 The Pathfinder navigates the journey from a vague idea to a technically-grounded plan. It uses a structured **Diverge-Converge** workflow to explore the **Problem Space (Why)**, **Solution Space (What)**, and **Implementation Space (How)**.
 
-### 2. The Architect (Contract-First Design)
-The Architect manages complexity by applying a **Contract-First Design** philosophy. It establishes a cascade of agreements: from the **Public Contract** (`README.md`) to the **Architectural Contract** (`ARCHITECTURE.md`) and tactical port interfaces.
+### 2. The Architect (System Design & Strategy)
+The Architect is responsible for big-picture system design. It uses a **Diverge-Converge** workflow to deeply understand the current system, evaluate alternative architectural solutions via spikes, and produce a detailed, Vertical Slice blueprint containing explicit contracts and DTOs.
 
 ### 3. The Developer (Outside-In TDD)
 The Developer implements the plan using a disciplined, **Outside-In TDD** workflow. It works in nested **Red-Green-Refactor** loops, ensuring every line of code is traceable to a business requirement.
