@@ -205,7 +205,7 @@
           </rule>
       <rule n="10">
         <title>Code Block Nesting</title>
-        <instruction>Fenced code blocks MUST use an opening and closing fence with DOUBLE (x2) the number of backticks as the longest backtick sequence inside the content (e.g., use ` `````` ` to fence content containing ` ``` `).</instruction>
+        <instruction>When creating a fenced code block for your Action Blocks or the Rationale text block, you MUST use an opening fence with DOUBLE (x2) as much backtick as the longest sequence of backticks inside the content (e.g., to fence content containing ` ``` `, you must use ` `````` ` for the outer fences). The closing fence MUST also use the exact same number of backticks as the opening fence.</instruction>
       </rule>
           <rule n="11">
             <title>Plan Validation Recovery</title>
