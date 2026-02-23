@@ -76,18 +76,8 @@ To streamline the workflow, `execute` and `context` **copy their output to the c
 
 Here's a look at our development priorities.
 
-### Core Framework
-
-|  Status   | Stage / Feature Set        | Description                                                                                                                         |
-| :-------: | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| Completed | **Agent Prompts v1**       | Core prompts for Architect, Developer, and Debugger are defined and functional.                                                     |
-|    WIP    | **Agents & Core Workflow** | Solidifying the interaction protocols and distribuition of responsibilities between agents to ensure a robust, repeatable workflow. |
-
-### `teddy` CLI
-
-| Status  | Stage / Feature Set               | Description                                                                                                                                                            |
-| :-----: | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|   WIP   | **Core Action & Utility Support** | The foundational actions (`create`, `read`, `edit`, `execute`, `chat`, `research`) and the `context` utility command are fully implemented and stable.                 |
-| Planned | **Interactive Session Workflow**  | A local-first, file-based workflow that eliminates chat UIs. Manages conversation history, context, and state snapshots directly on the filesystem with Git.           |
-| Planned | **Explicit YAML Pipelines**       | A robust, user-configurable system for chaining multiple LLM prompts to perform complex reasoning (e.g., analysis -> decision -> plan) before generating a final plan. |
-| Planned | **Autonomous Execution Mode**     | An enhancement to the session workflow that allows for continuous, unattended execution of AI-generated plans, pausing only for explicit user interaction points.      |
+|  Status   | Stage / Feature Set               | Description                                                                                                                                                  |
+| :-------: | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Completed | **Agent Prompts v1**              | Core prompts for Pathfinder, Architect, Developer, and Debugger are defined and functional.                                                                  |
+| Completed | **Core Action & Utility Support** | The foundational actions (`create`, `read`, `edit`, `execute`, `chat`, `research`) and the `context` utility command are fully implemented and stable.       |
+|    WIP    | **Interactive Session Workflow**  | A local-first, file-based workflow that eliminates chat UIs. Manages conversation history, context, and state snapshots directly on the filesystem with Git. |
