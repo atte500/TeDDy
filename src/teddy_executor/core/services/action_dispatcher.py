@@ -1,3 +1,4 @@
+import logging
 from dataclasses import is_dataclass, asdict
 from typing import Protocol, Any, Optional
 
@@ -26,6 +27,8 @@ class IActionFactory(Protocol):
     ) -> IAction: ...
 
 
+logger = logging.getLogger(__name__)
+
 # --- Service Implementation ---
 
 
@@ -42,6 +45,8 @@ class ActionDispatcher:
         Takes an ActionData object, finds the corresponding action handler
         via the factory, executes it, and returns the result as an ActionLog.
         """
+        logger.info(f"Executing: {action_data.type.upper()}")
+
         # Make a copy of params for logging and defensively add the description
         # to it if it exists. This makes the dispatcher robust against parser
         # inconsistencies where `description` is a separate attribute.
@@ -118,14 +123,18 @@ class ActionDispatcher:
             if isinstance(execution_result, CommandResult):
                 if execution_result.return_code == 0:
                     log_data["status"] = ActionStatus.SUCCESS
+                    logger.info(f"Success: {action_data.type.upper()}")
                 else:
                     log_data["status"] = ActionStatus.FAILURE
+                    logger.info(f"Failure: {action_data.type.upper()}")
             else:
                 log_data["status"] = ActionStatus.SUCCESS
+                logger.info(f"Success: {action_data.type.upper()}")
 
             log_data["details"] = result_to_serialize
         except Exception as e:
             log_data["status"] = ActionStatus.FAILURE
             log_data["details"] = str(e)
+            logger.info(f"Failure: {action_data.type.upper()}")
 
         return ActionLog(**log_data)
