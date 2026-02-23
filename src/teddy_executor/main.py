@@ -264,6 +264,11 @@ def execute(
         final_plan_content = _get_plan_content(plan_content, plan_file)
         parser = create_parser_for_plan(plan_file, final_plan_content)
 
+        # We now parse inside the orchestrator to handle InvalidPlanError correctly.
+        # But first, we need to pre-validate the plan to get the title and check for
+        # other validation errors.
+
+        plan = None
         try:
             plan = parser.parse(final_plan_content)
         except InvalidPlanError as e:
@@ -278,7 +283,8 @@ def execute(
                 validation_result=[str(e)],
                 action_logs=[],
             )
-        else:
+
+        if plan:
             # Pre-flight validation (only if parsing succeeded)
             plan_validator = container.resolve(IPlanValidator)
             validation_result = plan_validator.validate(plan)
@@ -320,7 +326,7 @@ def execute(
                     file_system_manager=file_system_manager,
                 )
                 execution_report = orchestrator.execute(
-                    plan_content=final_plan_content, interactive=interactive_mode
+                    plan=plan, interactive=interactive_mode
                 )
                 # Inject the plan title into the report
                 report = ExecutionReport(

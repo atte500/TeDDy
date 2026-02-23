@@ -60,7 +60,6 @@ def test_execute_with_failing_action(
     Then the final report status should be 'FAILURE'
     """
     # Arrange
-    plan_content = "fake plan content"
     action1_params = {"name": "failing action", "details": {}}
     action1 = ActionData(type="action1", params=action1_params)
     plan = Plan(title="Test Plan", actions=[action1])
@@ -71,15 +70,14 @@ def test_execute_with_failing_action(
         details="It broke",
     )
 
-    mock_plan_parser.parse.return_value = plan
     mock_action_dispatcher.dispatch_and_execute.return_value = failing_log
 
     # Act
-    report = orchestrator.execute(plan_content=plan_content, interactive=False)
+    report = orchestrator.execute(plan=plan, interactive=False)
 
     # Assert
     assert report.run_summary.status == "FAILURE"
-    mock_plan_parser.parse.assert_called_once_with(plan_content)
+    mock_plan_parser.parse.assert_not_called()
     mock_action_dispatcher.dispatch_and_execute.assert_called_once_with(action1)
     mock_user_interactor.confirm_action.assert_not_called()
 
@@ -97,15 +95,13 @@ def test_execute_interactive_and_skipped(
     And a 'SKIPPED' action log should be recorded
     """
     # Arrange
-    plan_content = "fake plan content"
     action1 = ActionData(type="action1", params={})
     plan = Plan(title="Test Plan", actions=[action1])
 
-    mock_plan_parser.parse.return_value = plan
     mock_user_interactor.confirm_action.return_value = (False, "Just because")
 
     # Act
-    report = orchestrator.execute(plan_content=plan_content, interactive=True)
+    report = orchestrator.execute(plan=plan, interactive=True)
 
     # Assert
     # A plan where all actions are skipped should have an overall status of SKIPPED.
@@ -128,7 +124,6 @@ def test_execute_with_mixed_success_and_skipped_is_success(
     Then the final report status should be 'SUCCESS'
     """
     # Arrange
-    plan_content = "fake plan content"
     action1 = ActionData(type="action1", params={})
     action2 = ActionData(type="action2", params={})
     plan = Plan(title="Test Plan", actions=[action1, action2])
@@ -139,13 +134,12 @@ def test_execute_with_mixed_success_and_skipped_is_success(
         details="Success",
     )
 
-    mock_plan_parser.parse.return_value = plan
     # User approves first action, skips second
     mock_user_interactor.confirm_action.side_effect = [(True, ""), (False, "skip")]
     mock_action_dispatcher.dispatch_and_execute.return_value = success_log
 
     # Act
-    report = orchestrator.execute(plan_content=plan_content, interactive=True)
+    report = orchestrator.execute(plan=plan, interactive=True)
 
     # Assert
     assert report.run_summary.status == RunStatus.SUCCESS
@@ -167,7 +161,6 @@ def test_execute_interactive_and_approved(
     Then the orchestrator should prompt the user and then dispatch the action
     """
     # Arrange
-    plan_content = "fake plan content"
     action1_params = {"name": "first action", "details": {}}
     action1 = ActionData(type="action1", params=action1_params)
     plan = Plan(title="Test Plan", actions=[action1])
@@ -178,12 +171,11 @@ def test_execute_interactive_and_approved(
         details="Success",
     )
 
-    mock_plan_parser.parse.return_value = plan
     mock_action_dispatcher.dispatch_and_execute.return_value = action_log1
     mock_user_interactor.confirm_action.return_value = (True, "")
 
     # Act
-    report = orchestrator.execute(plan_content=plan_content, interactive=True)
+    report = orchestrator.execute(plan=plan, interactive=True)
 
     # Assert
     assert report.run_summary.status == "SUCCESS"
@@ -205,7 +197,6 @@ def test_execute_auto_skips_after_failure(
     And the overall status should be FAILURE
     """
     # Arrange
-    plan_content = "fake plan content"
     action1 = ActionData(type="action1", params={}, description="First Action")
     action2 = ActionData(type="action2", params={}, description="Second Action")
     plan = Plan(title="Test Plan", actions=[action1, action2])
@@ -225,11 +216,10 @@ def test_execute_auto_skips_after_failure(
         details="Should not happen",
     )
 
-    mock_plan_parser.parse.return_value = plan
     mock_action_dispatcher.dispatch_and_execute.side_effect = [failing_log, success_log]
 
     # Act
-    report = orchestrator.execute(plan_content=plan_content, interactive=False)
+    report = orchestrator.execute(plan=plan, interactive=False)
 
     # Assert
     assert report.run_summary.status == RunStatus.FAILURE
@@ -261,7 +251,6 @@ def test_execute_happy_path_non_interactive(
     And it should not interact with the user
     """
     # Arrange
-    plan_content = "fake plan content"
     action1_params = {"name": "first action", "details": {}}
     action1 = ActionData(type="action1", params=action1_params)
     plan = Plan(title="Test Plan", actions=[action1])
@@ -272,16 +261,15 @@ def test_execute_happy_path_non_interactive(
         details="Success",
     )
 
-    mock_plan_parser.parse.return_value = plan
     mock_action_dispatcher.dispatch_and_execute.return_value = action_log1
 
     # Act
-    report = orchestrator.execute(plan_content=plan_content, interactive=False)
+    report = orchestrator.execute(plan=plan, interactive=False)
 
     # Assert
     assert report.run_summary.status == "SUCCESS"
     assert len(report.action_logs) == 1
     assert report.action_logs[0] == action_log1
-    mock_plan_parser.parse.assert_called_once_with(plan_content)
+    mock_plan_parser.parse.assert_not_called()
     mock_action_dispatcher.dispatch_and_execute.assert_called_once_with(action1)
     mock_user_interactor.confirm_action.assert_not_called()

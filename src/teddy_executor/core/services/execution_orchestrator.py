@@ -44,32 +44,9 @@ class ExecutionOrchestrator(RunPlanUseCase):
             return RunStatus.SKIPPED
         return RunStatus.SUCCESS
 
-    def execute(self, plan_content: str, interactive: bool) -> ExecutionReport:
+    def execute(self, plan: Plan, interactive: bool) -> ExecutionReport:
         start_time = datetime.now()
         action_logs = []
-
-        try:
-            plan: Plan = self._plan_parser.parse(plan_content)
-        except Exception as e:
-            # Handle parsing/validation errors gracefully
-            # We treat any exception during parsing as a validation failure
-            # import here to avoid circular dependency if any
-
-            error_message = str(e)
-            # If it's a ValueError (e.g. empty plan), wrap it nicely
-            if isinstance(e, ValueError) and "Plan must contain" in str(e):
-                error_message = str(e)
-
-            return ExecutionReport(
-                run_summary=RunSummary(
-                    status=RunStatus.VALIDATION_FAILED,
-                    start_time=start_time,
-                    end_time=datetime.now(),
-                ),
-                validation_result=[error_message],
-                action_logs=[],
-            )
-
         halt_execution = False
 
         for action in plan.actions:

@@ -45,9 +45,11 @@ def test_cli_invokes_orchestrator_with_plan_file(mock_ExecutionOrchestrator: Mag
         result = runner.invoke(app, ["execute", str(p), "--yes"])
 
     # ASSERT
+    from unittest.mock import ANY
+
     assert result.exit_code == 0, f"CLI exited with error: {result.stderr}"
     mock_orchestrator_instance.execute.assert_called_once_with(
-        plan_content=valid_plan, interactive=False
+        plan=ANY, interactive=False
     )
 
 
@@ -118,6 +120,8 @@ def test_cli_handles_interactive_mode_flag(mock_ExecutionOrchestrator: MagicMock
         runner.invoke(app, ["execute", str(p)])
 
     # ASSERT
+    from unittest.mock import ANY
+
     mock_orchestrator_instance.execute.assert_called_once_with(
-        plan_content=valid_plan, interactive=True
+        plan=ANY, interactive=True
     )

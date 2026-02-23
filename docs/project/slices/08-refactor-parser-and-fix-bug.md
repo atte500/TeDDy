@@ -14,14 +14,11 @@
 
 ## 2. Acceptance Criteria (Scenarios)
 
-### Scenario 1: Parsing Thematic Breaks (The Fix)
+### Scenario 1: Rejecting Invalid Separators
 **Given** a Markdown plan that contains a `ThematicBreak` (horizontal rule `---`) between two actions
 **When** the plan is parsed
-**Then** the parser must correctly identify both actions
-**And** the `ThematicBreak` node must be ignored or treated as a separator
-**And** no "Unexpected content found ... ThematicBreak" error is raised.
-
-*Note: Confirmed by MRE `spikes/mre/parser_break_repro.py`.*
+**Then** the parser must reject the plan
+**And** a validation error must be raised indicating that `ThematicBreak` is not a valid separator between actions.
 
 **Example (Failing Case - Thematic Break):**
 ````````markdown
@@ -69,14 +66,12 @@ Start of new section.
 ## 4. Architectural Changes
 
 ### `MarkdownPlanParser` Refactor
-The parser will be rewritten to use a **Single-Pass AST Stream** strategy.
+The parser will be refactored to provide clearer error messages for invalid plan structures.
 
-1.  **`PeekableStream` Utility:** A new internal helper class will wrap the `mistletoe` token iterator, allowing the parser to `peek()` at the next node without consuming it.
-2.  **`parse()` Method:** The main loop will iterate through the document's top-level children:
-    *   If it finds a Level 3 `Heading` matching a known `ActionType` (e.g., `### CREATE`), it dispatches control to a specific parser method (e.g., `_parse_create_action`).
-    *   **Crucially**, if it finds any other node (e.g., `ThematicBreak`, `Paragraph`, or unknown `Heading`), it simply consumes and **ignores** it. This behavior provides the requested robustness.
-3.  **Specific Action Parsers:** Each method (e.g., `_parse_edit_action(stream)`) will consume nodes from the stream until it satisfies its grammar or encounters a boundary (next Action Heading or Section Heading). It uses `peek()` to look ahead.
-4.  **`_get_text(node)` Helper:** A robust recursive helper to extract text from `mistletoe` tokens, prioritizing `children` (for spans) over `content` (for raw text), fixing the `InlineCode` access bug.
+1.  **Strict Structural Validation:** The parser will iterate through the document's `## Action Plan` section and validate that only known action headings (`### `...``) and their content are present.
+2.  **Enforced Separation:** Any content between valid action blocks, such as a `ThematicBreak` (`---`) or stray paragraphs, will be treated as a validation error.
+3.  **Clear Error Reporting:** The error message must clearly state which unexpected content was found (e.g., `ThematicBreak`) and that it is not permitted between actions.
+4.  **`_get_text(node)` Helper:** A robust recursive helper to extract text from `mistletoe` tokens, prioritizing `children` (for spans) over `content` (for raw text), fixing the `InlineCode` access bug, will be preserved or implemented.
 
 ## 5. Scope of Work
 

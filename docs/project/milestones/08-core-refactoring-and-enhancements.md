@@ -24,8 +24,8 @@ This milestone consolidates several critical technical debt cleanups and workflo
 
 ## 3. Implementation Guidelines (The "How")
 
-### 3.1. Single-Pass AST Parser & POSIX Pre-Processor
--   Rewrite `_parse_actions` in `MarkdownPlanParser` to consume nodes from a shared stream, eliminating the fragile multi-pass approach.
+### 3.1. Strict Parser Validation & POSIX Pre-Processor
+-   Refactor `MarkdownPlanParser` to enforce a strict structure within the `## Action Plan` section. Any interstitial content between action blocks (e.g., `---`, paragraphs) must trigger a clear validation error.
 -   Inside the `EXECUTE` parsing logic, process the code block content line-by-line:
     -   If a line starts with `cd `, extract the path into the `cwd` parameter dictionary.
     -   If a line starts with `export `, extract the key/value into the `env` parameter dictionary.

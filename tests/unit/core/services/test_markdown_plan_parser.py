@@ -573,14 +573,16 @@ Rationale.
     assert "Unknown action type: UNKNOWN_ACTION" in str(excinfo.value)
 
 
-def test_parser_can_parse_plan_with_thematic_break_between_actions(
+def test_parser_raises_error_on_thematic_break_between_actions(
     parser: MarkdownPlanParser,
 ):
     """
     Given a Markdown plan with a thematic break (---) between two actions,
     When the parser parses it,
-    Then it should correctly identify both actions and not raise an error.
+    Then it should raise an InvalidPlanError.
     """
+    from teddy_executor.core.ports.inbound.plan_parser import InvalidPlanError
+
     plan_content = """
 # Test Plan with Thematic Break Separator
 ## Action Plan
@@ -598,15 +600,12 @@ content1
 content2
 ````
 """
-    # Act
-    plan = parser.parse(plan_content)
+    # Act & Assert
+    with pytest.raises(InvalidPlanError) as excinfo:
+        parser.parse(plan_content)
 
-    # Assert
-    assert len(plan.actions) == 2
-    assert plan.actions[0].type == "CREATE"
-    assert plan.actions[0].params["path"] == "file1.txt"
-    assert plan.actions[1].type == "CREATE"
-    assert plan.actions[1].params["path"] == "file2.txt"
+    assert "Unexpected content found between actions" in str(excinfo.value)
+    assert "Found unexpected ThematicBreak" in str(excinfo.value)
 
 
 def test_parser_raises_error_on_malformed_structure_between_actions(

@@ -8,7 +8,6 @@ from mistletoe.block_token import (
     Heading,
     List as MdList,
     Document,
-    ThematicBreak,
 )
 from mistletoe.markdown_renderer import MarkdownRenderer
 from mistletoe.span_token import Link, InlineCode
@@ -138,33 +137,28 @@ class MarkdownPlanParser(IPlanParser):
         # Parse all subsequent actions
         while stream.has_next():
             node = stream.peek()
-            if isinstance(node, ThematicBreak):
-                stream.next()  # Consume and ignore separator
-                continue
-
             action_heading = self._get_action_heading(node)
-            if action_heading:
-                stream.next()  # Consume action heading
-                action_type_str = (
-                    self._get_child_text(action_heading).strip().replace("`", "")
+            if not action_heading:
+                # If we are here, we have found content that is not a valid action
+                error_content = self._get_child_text(node).strip().splitlines()
+                first_line = error_content[0][:100] if error_content else ""
+                raise InvalidPlanError(
+                    f"Unexpected content found between actions. "
+                    f"Found unexpected {type(node).__name__} "
+                    f"with content: '{first_line}...'.\n"
+                    f"**Hint:** An Action or Rationale code block may be improperly nested."
                 )
 
-                if action_type_str not in self._dispatch_map:
-                    raise InvalidPlanError(f"Unknown action type: {action_type_str}")
-
-                parse_method = self._dispatch_map[action_type_str]
-                actions.append(parse_method(stream))
-                continue
-
-            # If we are here, we have found content that is not a valid action or separator
-            error_content = self._get_child_text(node).strip().splitlines()
-            first_line = error_content[0][:100] if error_content else ""
-            raise InvalidPlanError(
-                f"Unexpected content found between actions. "
-                f"Found unexpected {type(node).__name__} "
-                f"with content: '{first_line}...'.\n"
-                f"**Hint:** An Action or Rationale code block may be improperly nested."
+            stream.next()  # Consume action heading
+            action_type_str = (
+                self._get_child_text(action_heading).strip().replace("`", "")
             )
+
+            if action_type_str not in self._dispatch_map:
+                raise InvalidPlanError(f"Unknown action type: {action_type_str}")
+
+            parse_method = self._dispatch_map[action_type_str]
+            actions.append(parse_method(stream))
 
         return actions
 
