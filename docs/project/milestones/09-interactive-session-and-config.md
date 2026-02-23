@@ -12,8 +12,9 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 
 ## 2. Proposed Solution (The "What")
 
-1.  **Config & LLM Foundation:**
-    -   A singleton `ConfigService` reading from `.teddy/config.yaml`.
+1.  **Config, Security & LLM Foundation:**
+    -   A singleton `ConfigService` reading from `.teddy/config.yaml` (which will contain sensitive LLM API keys).
+    -   **Pre-commit Secret Scanning:** Integration of a secret scanner (e.g., `detect-secrets` or `trufflehog`) into `.pre-commit-config.yaml` and the CI pipeline to strictly prevent API key leaks.
     -   An `ILlmClient` port with a `LiteLLMAdapter` implementation using the `litellm` library.
 2.  **Session Manager:** A service handling all stateful filesystem interactions (creating turn directories, managing session artifacts).
 3.  **Context-Centric Workflow:** An implicitly generated `input.md` file serving as the AI's complete worldview for each turn.
@@ -24,6 +25,7 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 
 ## 3. Implementation Guidelines (The "How")
 
+-   **Security First:** Before implementing the `ConfigService`, add a secret scanner to the pre-commit hooks and verify it catches mock API keys in test configurations.
 -   **Integration:** The `LiteLLMAdapter` and `ConfigService` will be instantiated in the `main.py` composition root.
 -   **CLI Refactoring:** `main.py` will be overhauled to orchestrate the new commands. Context generation will become an implicitly called service.
 -   **TUI:** The `ConsoleInteractorAdapter` will use `textual` for the interactive checklist, launching non-blocking editors for complex payload modifications.
@@ -32,8 +34,8 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 
 ## 4. Vertical Slices
 
-- [ ] **Slice 1: Implement Config Service and LLM Client**
-    - Add `litellm` dependency, implement `ConfigService` and `LiteLLMAdapter`, and wire them in `main.py`.
+- [ ] **Slice 1: Security Baselines, Config Service and LLM Client**
+    - Configure pre-commit secret scanning (e.g., `detect-secrets`). Add `litellm` dependency, implement `ConfigService` and `LiteLLMAdapter`, and wire them in `main.py`.
 - [ ] **Slice 2: Session Scaffolding & Core Commands**
     - Implement `SessionManager` and the basic `new`, `plan`, and `execute` commands.
 - [ ] **Slice 3: Context-Centric Workflow**
