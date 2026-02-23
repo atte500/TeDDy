@@ -5,6 +5,7 @@ The `ActionDispatcher` is a single-responsibility service within the hexagonal c
 ## 1. Design Principles
 
 -   **Single Responsibility:** This service only dispatches and executes a single action. It does not parse plans or orchestrate the overall execution flow.
+-   **Execution Progress Logging:** It utilizes the standard Python `logging` module to emit real-time, console-friendly progress updates (`Executing Action: [TYPE] - [Description]` and outcomes `SUCCESS`/`FAILURE`).
 -   **Factory-driven:** It relies on the `ActionFactory` to decouple itself from concrete action implementations. This adheres to the Open/Closed Principle, as new action types can be added to the factory without modifying the dispatcher.
 -   **Result-oriented:** Its output is always an `ActionLog` domain object, providing a consistent result contract for its callers.
 

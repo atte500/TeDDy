@@ -96,20 +96,20 @@ This brief will be implemented in two distinct vertical slices.
 ### **Slice 5: Implement Comprehensive EDIT Validation**
 **Goal:** Improve validation by reporting all `FIND` block failures in an `EDIT` action at once and providing a diff for mismatches.
 
--   [ ] **Task: Report All Failures in a Single Action:**
+-   [x] **Task: Report All Failures in a Single Action:**
     -   Refactor `PlanValidator` to collect and return all validation errors from `_validate_edit_action` instead of raising on the first one.
--   [ ] **Task: Enhance "Not Found" Errors with a Diff:**
+-   [x] **Task: Enhance "Not Found" Errors with a Diff:**
     -   Implement a helper in `PlanValidator` to find the best match for a failed `FIND` block and include a `difflib` diff in the validation error message.
 
 ---
 ### **Slice 6: Implement Report Generation Enhancements**
 **Goal:** Improve the clarity, robustness, and user experience of the execution report.
 
--   [ ] **Task: Refactor Template:**
+-   [x] **Task: Refactor Template:**
     -   Rename `concise_report.md.j2` to `execution_report.md.j2` and update all references.
--   [ ] **Task: Enhance Jinja2 Template:**
+-   [x] **Task: Enhance Jinja2 Template:**
     -   Add smart fencing to validation errors and make reports for `chat_with_user`, `invoke`, and `return` more compact.
--   [ ] **Task: Implement Dynamic Code-Block Language:**
+-   [x] **Task: Implement Dynamic Code-Block Language:**
     -   Create a `get_language_from_path` utility, register it as a Jinja2 filter, and use it in the template.
 
 ---
