@@ -128,6 +128,40 @@ class MyClass:
     )
 
 
+def test_parse_execute_action_with_cd_directive(parser: MarkdownPlanParser):
+    """
+    Given an EXECUTE action with a `cd` directive in the shell block,
+    When the plan is parsed,
+    Then the `cwd` is extracted and the `cd` line is stripped from the command.
+    """
+    # Arrange
+    plan_content = """
+# Execute a command in a specific directory
+- **Goal:** Run a test in a subdirectory.
+
+## Action Plan
+
+### `EXECUTE`
+- **Description:** Run the test suite in `src/`.
+- **Expected Outcome:** All tests will pass.
+````shell
+cd src/my_dir
+poetry run pytest
+````
+"""
+    # Act
+    result_plan = parser.parse(plan_content)
+
+    # Assert
+    assert len(result_plan.actions) == 1
+    action = result_plan.actions[0]
+
+    assert action.type == "EXECUTE"
+    assert action.params["cwd"] == "src/my_dir"
+    assert action.params["command"] == "poetry run pytest"
+    assert action.params.get("env") is None
+
+
 def test_parse_execute_action(parser: MarkdownPlanParser):
     """
     Given a valid Markdown plan with an EXECUTE action,

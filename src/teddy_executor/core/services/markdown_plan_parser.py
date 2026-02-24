@@ -337,6 +337,37 @@ class MarkdownPlanParser(IPlanParser):
 
         return params
 
+    def _extract_posix_headers(
+        self,
+        command_str: str,
+        initial_cwd: str | None,
+        initial_env: dict[str, str] | None,
+    ) -> tuple[str, str | None, dict[str, str] | None]:
+        """
+        Parses `cd` and `export` directives from the start of a shell command.
+        """
+        cwd = initial_cwd
+        env = initial_env
+
+        lines = command_str.strip().split("\n")
+        command_lines = []
+        header_processed = False
+
+        for line in lines:
+            stripped_line = line.strip()
+            if not header_processed and stripped_line.startswith("cd "):
+                cwd = stripped_line.split(" ", 1)[1].strip()
+                continue
+            # elif not header_processed and stripped_line.startswith("export "):
+            #     # Future implementation for export
+            #     continue
+            else:
+                header_processed = True
+                command_lines.append(line)
+
+        final_command = "\n".join(command_lines).strip()
+        return final_command, cwd, env
+
     def _parse_invoke_action(self, stream: _PeekableStream) -> ActionData:
         metadata_list = stream.peek()
         if not isinstance(metadata_list, MdList):
@@ -379,7 +410,25 @@ class MarkdownPlanParser(IPlanParser):
         command_block = stream.next()
         if not isinstance(command_block, CodeFence):
             raise InvalidPlanError("EXECUTE action is missing command code block.")
-        params["command"] = self._get_child_text(command_block).strip()
+        raw_command = self._get_child_text(command_block).strip()
+
+        # Handle POSIX headers
+        initial_cwd = params.get("cwd")
+        initial_env = params.get("env")
+        final_command, cwd, env = self._extract_posix_headers(
+            raw_command, initial_cwd, initial_env
+        )
+
+        params["command"] = final_command
+        if cwd is not None:
+            params["cwd"] = cwd
+        elif "cwd" in params:
+            del params["cwd"]
+
+        if env is not None:
+            params["env"] = env
+        elif "env" in params:
+            del params["env"]
 
         if description:
             params["Description"] = description
