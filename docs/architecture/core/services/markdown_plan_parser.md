@@ -20,7 +20,7 @@
 - `CREATE`: Extracts content from code block.
 - `EDIT`: Extracts `FIND`/`REPLACE` pairs.
 - `READ`, `PRUNE`: Extracts resource path.
-- `EXECUTE`: Extracts command, env vars, and expected outcome.
+- `EXECUTE`: Extracts command, env vars, and expected outcome. Also applies a POSIX Pre-Processor to the command string to extract `cwd` and `env` from shell directives (`cd`, `export`).
 - `RESEARCH`: Extracts queries.
 - `CHAT_WITH_USER`: Extracts prompt text.
 - `INVOKE`: Extracts agent and message.
@@ -41,6 +41,7 @@ The `MarkdownPlanParser` service is responsible for parsing a plan written in th
     *   **Strict Structural Validation:** The parser enforces a rigid, "fail-fast" structure. If it encounters any node between actions that is *not* a valid action heading (such as a `ThematicBreak` (`---`), stray text, or malformed blocks), it immediately raises an `InvalidPlanError`. It does not attempt to ignore or "auto-correct" invalid content.
 4.  **Specific Parsers:** Each handler (e.g., `_parse_create_action`) consumes nodes from the stream to build the `ActionData` object. They enforce the internal grammar of the specific action (e.g., expecting a Metadata List followed by a Code Block).
 5.  **Text Extraction:** A `_get_text(node)` helper recursively extracts text from `mistletoe` tokens, handling the nested structure of `InlineCode` and `RawText` nodes accurately.
+6.  **POSIX Pre-Processing:** For `EXECUTE` actions, the parser uses an `_extract_posix_headers` helper to process the raw shell command string. It extracts `cd <path>` and `export KEY=value` directives from the *top* of the script (the "Header Block"), maps them to the action's `cwd` and `env` parameters, and strips them from the final command. It stops extraction upon encountering the first standard command, leaving subsequent directives intact. It supports a graceful fallback by merging legacy `cwd`/`env` metadata with the extracted header directives.
 
 ## 3. Dependencies
 

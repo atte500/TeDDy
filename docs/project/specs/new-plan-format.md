@@ -175,17 +175,17 @@ All actions are located under the `## Action Plan` heading. Each action is defin
     ### `EXECUTE`
     - **Description:** Verify the new file was created.
     - **Expected Outcome:** The output will list `plan-format.md`. If a test is expected to fail, specify the exact `AssertionError` or error message.
-    - **cwd:** (Optional) path/to/working/dir
-    - **env:** (Optional)
-        - `VAR1`: "value1"
-        - `VAR2`: "value2"
     ````shell
-    ls -l docs/project/specs/
+    cd docs/project/specs/
+    export CI=true
+    ls -l
     ````
     `````
 -   **Parsing Rules:**
-    1.  Extract `Description`, `Expected Outcome`, and the optional `cwd` and `env` parameters.
-    2.  The command to execute is the entire content of the first fenced code block.
+    1.  Extract `Description` and `Expected Outcome`.
+    2.  The system uses a POSIX Pre-Processor on the code block. It scans the *top* of the script (the "Header Block") for `cd <path>` and `export KEY=value` directives. These are extracted to configure the execution environment (`cwd` and `env` parameters) and are removed from the command sent to the OS.
+    3.  Extraction stops immediately when the first non-directive line (e.g., `ls -l` above) is encountered.
+    4.  *(Legacy Support)*: If `- **cwd:**` or `- **env:**` are provided in the metadata list, they are merged with the shell directives, with shell directives taking precedence.
 
 ### 5.5. `RESEARCH`
 
