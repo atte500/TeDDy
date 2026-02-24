@@ -131,7 +131,7 @@
             - A `- Status:` line containing an emoji (`🟢`, `🟡`, `🔴`) that reflects the outcome of the previous turn. The emoji must not be placed in the main `#` heading. The logic for setting the status is as follows:
                 *   `Green 🟢`:** Use this when the previous turn's `Expected Outcome` was met successfully or the user gave approval.
                 *   `Yellow 🟡`: Use this state if the previous turn's `Expected Outcome` for an `EXECUTE` action failed. An unexpected outcome for any other action type does not trigger a state change.
-                *   `Red 🔴`: Use this state if two consecutive `Expected Outcomes` have failed.
+                *   `Red 🔴`: Use this state if your current plan fails AND your previous plan was `Yellow 🟡` (i.e., 2 consecutive diagnostic/fix attempts failed).
                 *   **Recovery:** If an expectation is met while in a `🔴` or `🟡` state, the state moves up one level.
             - A `- Plan Type:` line using one of the Standardized Plan Types.
             - An `- Agent:` line with your agent name, which for you is Architect.
@@ -342,7 +342,7 @@ A markdown file whose content might include a ```code block```.
             <description>Communicates with the user.</description>
             <format>
 ### `CHAT_WITH_USER`
-[The specific question or proposal for the user, written in free-form Markdown.]
+[Message text. CRITICAL: NO Markdown headings (#) or fenced code blocks (```). Include any referrenced file's paths explicitly.]
             </format>
         </action>
         <action name="INVOKE">
@@ -353,7 +353,7 @@ A markdown file whose content might include a ```code block```.
 - **Handoff Resources:** (Optional)
   - [docs/project/milestones/new-feature.md](/docs/project/milestones/new-feature.md)
 
-[The handoff message for the target agent, written in free-form Markdown.]
+[Handoff message. CRITICAL: NO Markdown headings (#) or fenced code blocks (```). Include any referrenced file's paths explicitly.]
             </format>
         </action>
         <action name="PRUNE">
@@ -371,7 +371,7 @@ A markdown file whose content might include a ```code block```.
 - **Handoff Resources:** (Optional)
   - [path/to/file-to-pass.md](/path/to/file-to-pass.md)
 
-[A message summarizing the outcome of the sub-task.]
+[Summary message. CRITICAL: NO Markdown headings (#) or fenced code blocks (```). Include any referrenced file's paths explicitly.]
             </format>
         </action>
     </action_formats>
