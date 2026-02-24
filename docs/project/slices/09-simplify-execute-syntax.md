@@ -1,6 +1,6 @@
 # Slice: Simplify EXECUTE Action Syntax
 
-- **Status:** Planned
+- **Status:** Completed
 - **Milestone:** [08-core-refactoring-and-enhancements](/docs/project/milestones/08-core-refactoring-and-enhancements.md)
 - **Spec:** [New Plan Format](/docs/project/specs/new-plan-format.md)
 
@@ -67,3 +67,14 @@ The official specification will be updated to deprecate the explicit `cwd` and `
         -   Strict header enforcement (stopping at the first real command).
         -   Graceful fallback (merging legacy metadata with shell directives).
         -   Preservation of comments and blank lines within the retained script.
+
+## Implementation Summary
+This slice was implemented successfully following a strict, outside-in TDD workflow. The core logic was built through a series of three small, atomic TDD cycles, each resulting in a commit to the main trunk:
+1.  **`cd` Directive:** A failing test was written to parse the `cd` directive, followed by the minimal implementation in a new `_extract_posix_headers` helper method.
+2.  **`export` Directive:** A failing test was written to parse `export` directives (including quoted values), and the helper method was extended to support it.
+3.  **Mixed Directives:** A final verification test was added to ensure both directives worked correctly together, which passed without requiring further implementation changes, acting as a valuable regression test.
+
+The specification document `docs/project/specs/new-plan-format.md` was found to be already up-to-date, so no changes were required there. The `MarkdownPlanParser`'s component documentation was also found to be current.
+
+### T3 Opportunities
+- **Inconsistent Metadata Handling:** The `MarkdownPlanParser`'s handling of the `Description` metadata is inconsistent across different action parsers. Some methods add it back to the `params` dictionary after parsing, while others do not. This should be harmonized in a future refactoring slice to improve consistency.
