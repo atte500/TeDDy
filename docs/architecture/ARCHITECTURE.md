@@ -161,3 +161,4 @@ To aid in fault isolation, the `teddy` executor includes a debug mode that can b
 
 -   **Activation:** Set the `TEDDY_DEBUG` environment variable to any non-empty value (e.g., `export TEDDY_DEBUG=true`).
 -   **Behavior:** When active, this mode enables detailed logging for specific, hard-to-diagnose components.
+    -   **`MarkdownPlanParser`:** Prints a detailed Abstract Syntax Tree (AST) of the parsed plan to standard output. This is crucial for debugging parsing logic and issues related to Markdown structure.

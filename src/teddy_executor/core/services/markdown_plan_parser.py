@@ -85,6 +85,9 @@ class MarkdownPlanParser(IPlanParser):
         processed_content = self._preprocessor.process(plan_content)
         doc = mistletoe.Document(processed_content)
 
+        if os.environ.get("TEDDY_DEBUG"):
+            self._print_ast(doc)
+
         stream = _PeekableStream(iter(doc.children or []))
 
         try:
@@ -563,3 +566,22 @@ class MarkdownPlanParser(IPlanParser):
         if hasattr(node, "children") and node.children is not None:
             return "".join([self._get_child_text(child) for child in node.children])
         return getattr(node, "content", "")
+
+    def _print_ast(self, token: Any, indent: int = 0):
+        """Recursively prints the AST in a readable format for debugging."""
+        prefix = "  " * indent
+        print(f"{prefix}- {type(token).__name__}")
+
+        content_attr = getattr(token, "content", None)
+        if content_attr is not None:
+            first_line = (
+                str(content_attr).splitlines()[0]
+                if "\n" in str(content_attr)
+                else str(content_attr)
+            )
+            print(f'{prefix}  Content: "{first_line[:80]}"')
+
+        children_attr = getattr(token, "children", None)
+        if children_attr is not None:
+            for child in children_attr:
+                self._print_ast(child, indent + 1)
