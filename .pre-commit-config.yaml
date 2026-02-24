@@ -9,21 +9,21 @@ repos:
     hooks:
     -   id: ruff-lint
         name: Ruff Linter
-        entry: poetry run ruff check src tests --fix
+        entry: ruff check src tests --fix
         language: system
         types: [python]
         pass_filenames: false
 
     -   id: ruff-format
         name: Ruff Formatter
-        entry: poetry run ruff format src tests
+        entry: ruff format src tests
         language: system
         types: [python]
         pass_filenames: false
 
     -   id: mypy
         name: Mypy
-        entry: poetry run mypy .
+        entry: mypy .
         language: system
         types: [python]
         pass_filenames: false
