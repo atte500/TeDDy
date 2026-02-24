@@ -11,13 +11,13 @@ The `.teddy/` directory is located at the root of the project.
 ```
 .teddy/
 ├── config.yaml
-├── global.context
+├── project.context
 ├── memos.yaml
 └── <session_name>/
 ```
 
 -   **`config.yaml`**: (Optional) User-specific configuration for the `teddy` CLI tool.
--   **`global.context`**: (Optional) A file containing newline-separated paths to be included in the context of *every* session.
+-   **`project.context`**: (Optional) A file containing newline-separated paths to be included in the context of *every* session.
 -   **`memos.yaml`**: A YAML file for the AI's global, long-term memory.
 -   **`<session_name>/`**: Individual session directories.
 

@@ -247,7 +247,9 @@ def test_get_context_paths(tmp_path: Path):
     teddy_dir = tmp_path / ".teddy"
     teddy_dir.mkdir()
 
-    (teddy_dir / "global.context").write_text("file1.py\n# comment\nfile2.py\nfile1.py")
+    (teddy_dir / "project.context").write_text(
+        "file1.py\n# comment\nfile2.py\nfile1.py"
+    )
     (teddy_dir / "temp.context").write_text("file3.py\n\nfile4.py")
     (teddy_dir / "other.txt").write_text("not_a_context_file.py")
 
@@ -287,12 +289,12 @@ def test_edit_file_handles_leading_newline_in_find_block(tmp_path: Path):
 
 def test_create_default_context_file(tmp_path: Path):
     """
-    Tests that create_default_context_file creates the .teddy/global.context
+    Tests that create_default_context_file creates the .teddy/project.context
     file with the correct, simplified default content.
     """
     # Arrange
     adapter = LocalFileSystemAdapter(root_dir=str(tmp_path))
-    expected_file = tmp_path / ".teddy" / "global.context"
+    expected_file = tmp_path / ".teddy" / "project.context"
     expected_content = "README.md\ndocs/ARCHITECTURE.md\n"
 
     # Act

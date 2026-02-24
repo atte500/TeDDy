@@ -58,7 +58,7 @@ def test_get_context_creates_default_file_if_not_exists(
 
     # Assert
     mock_file_system_manager.path_exists.assert_called_once_with(
-        ".teddy/global.context"
+        ".teddy/project.context"
     )
     mock_file_system_manager.create_default_context_file.assert_called_once()
 
@@ -86,7 +86,7 @@ def test_get_context_does_not_create_default_file_if_exists(
 
     # Assert
     mock_file_system_manager.path_exists.assert_called_once_with(
-        ".teddy/global.context"
+        ".teddy/project.context"
     )
     mock_file_system_manager.create_default_context_file.assert_not_called()
 
@@ -103,7 +103,7 @@ def test_get_context_orchestrates_and_returns_correct_dto(
     the ContextResult DTO with the data they provide.
     """
     # Arrange
-    # Simulate existing global.context file
+    # Simulate existing project.context file
     mock_file_system_manager.path_exists.return_value = True
 
     # Mock data from dependencies

@@ -85,14 +85,14 @@ The system uses a top-level `.teddy/` directory to store all persistent data. Th
 Context is determined by a cascading hierarchy of files, which are then snapshotted into the `report.md` for the AI to consume.
 
 1.  **Static Context (User-Managed):**
-    -   `.teddy/global.context`: Defines file paths included in *every* session.
+    -   `.teddy/project.context`: Defines file paths included in *every* session.
     -   `<session>/session.context`: Defines file paths relevant for the entire session.
 2.  **Dynamic Context (AI-Managed):**
     -   `turn.context`: Contains the file paths for the current turn's "working set." This file is not edited directly by the user.
 3.  **The Workflow:**
     -   The AI manages its working context via the `READ` (to add) and `PRUNE` (to remove) actions in its `plan.md`.
     -   During `teddy execute`, these actions modify the `turn.context` file for the *next* turn, ensuring all context changes are forward-looking.
-    -   The AI's worldview is generated explicitly via the `teddy context` command, which reads all context files (`global.context`, `session.context`, `turn.context`) and assembles the complete `input.md` payload.
+    -   The AI's worldview is generated explicitly via the `teddy context` command, which reads all context files (`project.context`, `session.context`, `turn.context`) and assembles the complete `input.md` payload.
 
 ## 6. CLI Command Specification
 
@@ -106,7 +106,7 @@ Assembles the complete `input.md` for the current turn. This is the primary way 
 
 -   **Behavior:**
     1.  Operates within the context of the current turn directory (e.g., `01/`).
-    2.  Aggregates context from `.teddy/global.context`, `<session>/session.context`, and the current turn's `turn.context` file.
+    2.  Aggregates context from `.teddy/project.context`, `<session>/session.context`, and the current turn's `turn.context` file.
     3.  Generates the `input.md` file according to the [Context Payload Format Specification](./context-payload-format.md).
 
 ---

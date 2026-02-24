@@ -24,7 +24,7 @@ The adapter will leverage Python's built-in `pathlib` and `open()` functions for
 *   **File Editing (`edit_file`):** (**Updated in:** [Slice 32: Comprehensive EDIT Validation](../../../project/slices/32-comprehensive-edit-validation.md)) The `edit_file` method applies robust textual replacements. It provides a clean line deletion fallback: if the `replace` block is an empty string, the adapter automatically attempts to delete the target string along with its trailing or leading newline to prevent the accumulation of orphaned blank lines. For safety, it raises `SearchTextNotFoundError` if the `find` block is not found and `MultipleMatchesFoundError` if it is ambiguous.
 *   **Path Existence (`path_exists`):** (**Introduced in:** [Slice 13: Implement `context` Command](../../slices/13-context-command.md)) This will be implemented using `pathlib.Path.exists()`, which correctly checks for both files and directories.
 *   **Directory Creation (`create_directory`):** (**Introduced in:** [Slice 13: Implement `context` Command](../../slices/executor/13-context-command.md)) This will use `pathlib.Path.mkdir()` with the `parents=True` and `exist_ok=True` flags. This ensures the method is idempotent and can create parent directories as needed.
-*   **Default Context File Creation (`create_default_context_file`):** (**Introduced in:** [Slice 17: Refactor `context` Command Output](../../slices/executor/17-refactor-context-command-output.md)) This method creates the `.teddy` directory if it doesn't exist, adds a `.gitignore` file inside it to ignore all contents, and creates a default `global.context` file with a simple list of starting files (`README.md`, `docs/ARCHITECTURE.md`).
+*   **Default Context File Creation (`create_default_context_file`):** (**Introduced in:** [Slice 17: Refactor `context` Command Output](../../slices/executor/17-refactor-context-command-output.md)) This method creates the `.teddy` directory if it doesn't exist, adds a `.gitignore` file inside it to ignore all contents, and creates a default `project.context` file with a simple list of starting files (`README.md`, `docs/ARCHITECTURE.md`).
 *   **Context Path Gathering (`get_context_paths`):** (**Introduced in:** [Slice 17: Refactor `context` Command Output](../../slices/executor/17-refactor-context-command-output.md)) This method finds all files ending with `.context` inside the `.teddy` directory, reads them, and returns a sorted, deduplicated list of all file paths, ignoring comments and empty lines.
 *   **Vault File Reading (`read_files_in_vault`):** (**Introduced in:** [Slice 17: Refactor `context` Command Output](../../slices/executor/17-refactor-context-command-output.md)) This method takes a list of file paths and returns a dictionary mapping each path to its content. If a file is not found, the path is still included in the dictionary, but its value is `None`.
 
@@ -108,7 +108,7 @@ def create_default_context_file(self) -> None:
     gitignore_file = teddy_dir / ".gitignore"
     gitignore_file.write_text("*", encoding="utf-8")
 
-    perm_context_file = teddy_dir / "global.context"
+    perm_context_file = teddy_dir / "project.context"
     default_content = "README.md\ndocs/ARCHITECTURE.md\n"
     perm_context_file.write_text(default_content, encoding="utf-8")
 ```
