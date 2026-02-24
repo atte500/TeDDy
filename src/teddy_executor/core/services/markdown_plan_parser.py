@@ -358,9 +358,20 @@ class MarkdownPlanParser(IPlanParser):
             if not header_processed and stripped_line.startswith("cd "):
                 cwd = stripped_line.split(" ", 1)[1].strip()
                 continue
-            # elif not header_processed and stripped_line.startswith("export "):
-            #     # Future implementation for export
-            #     continue
+            elif not header_processed and stripped_line.startswith("export "):
+                if env is None:
+                    env = {}
+                # Remove 'export ' prefix and split by '='
+                _, key_value_part = stripped_line.split(" ", 1)
+                if "=" in key_value_part:
+                    key, value = key_value_part.split("=", 1)
+                    # Handle quotes
+                    if (value.startswith('"') and value.endswith('"')) or (
+                        value.startswith("'") and value.endswith("'")
+                    ):
+                        value = value[1:-1]
+                    env[key] = value
+                continue
             else:
                 header_processed = True
                 command_lines.append(line)

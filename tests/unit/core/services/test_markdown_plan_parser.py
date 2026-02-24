@@ -128,6 +128,43 @@ class MyClass:
     )
 
 
+def test_parse_execute_action_with_export_directive(parser: MarkdownPlanParser):
+    """
+    Given an EXECUTE action with `export` directives in the shell block,
+    When the plan is parsed,
+    Then the `env` dict is populated and the `export` lines are stripped.
+    """
+    # Arrange
+    plan_content = r"""
+# Execute a command with environment variables
+- **Goal:** Run a command with custom env vars.
+
+## Action Plan
+
+### `EXECUTE`
+- **Description:** Run a command with env vars.
+- **Expected Outcome:** Success.
+````shell
+export FOO=bar
+export BAZ="qux"
+export OTHER='single_quotes'
+my_command --do-something
+````
+"""
+    # Act
+    result_plan = parser.parse(plan_content)
+
+    # Assert
+    assert len(result_plan.actions) == 1
+    action = result_plan.actions[0]
+
+    assert action.type == "EXECUTE"
+    expected_env = {"FOO": "bar", "BAZ": "qux", "OTHER": "single_quotes"}
+    assert action.params["env"] == expected_env
+    assert action.params["command"] == "my_command --do-something"
+    assert action.params.get("cwd") is None
+
+
 def test_parse_execute_action_with_cd_directive(parser: MarkdownPlanParser):
     """
     Given an EXECUTE action with a `cd` directive in the shell block,
