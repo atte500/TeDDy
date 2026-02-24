@@ -54,7 +54,7 @@ class FileSystemManager(Protocol):
 
     def create_default_context_file(self) -> None:
         """
-        Creates a default .teddy/perm.context file with simplified content.
+        Creates a default .teddy/global.context file with simplified content.
         """
         ...
 

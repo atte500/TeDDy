@@ -27,7 +27,7 @@ class ContextService(IGetContextUseCase):
         Gathers all project context information by orchestrating its dependencies.
         """
         # Scenario 2: Simplified Default Configuration
-        if not self._file_system_manager.path_exists(".teddy/perm.context"):
+        if not self._file_system_manager.path_exists(".teddy/global.context"):
             self._file_system_manager.create_default_context_file()
 
         # Gather all information from outbound ports

@@ -61,7 +61,7 @@ class LocalFileSystemAdapter(FileSystemManager):
 
     def create_default_context_file(self) -> None:
         """
-        Creates a default .teddy/perm.context file with simplified content
+        Creates a default .teddy/global.context file with simplified content
         and a .gitignore to ignore the directory's contents.
         """
         teddy_dir = self.root_dir / ".teddy"
@@ -71,8 +71,8 @@ class LocalFileSystemAdapter(FileSystemManager):
         gitignore_file = teddy_dir / ".gitignore"
         gitignore_file.write_text("*", encoding="utf-8")
 
-        # Create perm.context
-        perm_context_file = teddy_dir / "perm.context"
+        # Create global.context
+        perm_context_file = teddy_dir / "global.context"
         default_content = "README.md\ndocs/ARCHITECTURE.md\n"
         perm_context_file.write_text(default_content, encoding="utf-8")
 

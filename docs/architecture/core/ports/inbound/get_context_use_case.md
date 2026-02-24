@@ -19,7 +19,7 @@ The `IGetContextUseCase` port defines the primary entry point into the applicati
 *   **Preconditions:** None.
 *   **Postconditions:**
     *   Returns a `ContextResult` data transfer object containing the aggregated project context, structured for standardized output.
-    *   If `.teddy/perm.context` does not exist, it will be created with default content before the context is gathered.
+    *   If `.teddy/global.context` does not exist, it will be created with default content before the context is gathered.
 
 ## 3. Data Structures
 
