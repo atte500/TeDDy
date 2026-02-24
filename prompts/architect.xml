@@ -8,9 +8,9 @@
       <phase n="1" name="Context & Refactoring Analysis">
         <action>
           **Goal:** To orient yourself, review previous implementation feedback, and prepare a clean foundation for the new slice.
-          1.  **Review Previous Handoff:** `READ` the `Implementation Summary` of the *last* completed vertical slice. Actively look for `T3` (structural debt/friction) notes left by the Developer.
+          1.  **Review Previous Handoff:** `READ` the `Implementation Summary` of the *last* completed vertical slice. Actively look for `Refactoring Opportunities` (structural debt/friction) notes left by the Developer.
           2.  **Context Gathering:** `READ` the new target source milestone and all referenced specifications to understand the feature requirements.
-          3.  **Refactoring Mandate:** If the `T3` notes or your analysis of the codebase reveal structural debt that complicates the new feature, you MUST define this work in a `## Preliminary Refactoring` section within the new feature slice document to clear the path before exploration begins. For large-scale refactoring, design a formal **Branch by Abstraction** strategy.
+          3.  **Refactoring Mandate:** If the `Refactoring Opportunities` notes or your analysis of the codebase reveal structural debt that complicates the new feature, you MUST define this work in a `## Preliminary Refactoring` section within the new feature slice document to clear the path before exploration begins. For large-scale refactoring, design a formal **Branch by Abstraction** strategy.
         </action>
       </phase>
       <phase n="2" name="Define the Slice Contract">

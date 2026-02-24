@@ -76,5 +76,5 @@ This slice was implemented successfully following a strict, outside-in TDD workf
 
 The specification document `docs/project/specs/new-plan-format.md` was found to be already up-to-date, so no changes were required there. The `MarkdownPlanParser`'s component documentation was also found to be current.
 
-### T3 Opportunities
+### Refactoring Opportunities
 - **Inconsistent Metadata Handling:** The `MarkdownPlanParser`'s handling of the `Description` metadata is inconsistent across different action parsers. Some methods add it back to the `params` dictionary after parsing, while others do not. This should be harmonized in a future refactoring slice to improve consistency.
