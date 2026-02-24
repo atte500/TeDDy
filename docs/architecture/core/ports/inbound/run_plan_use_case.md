@@ -12,7 +12,7 @@ This port defines the primary entry point for executing a plan. It represents th
 
 ```python
 from abc import ABC, abstractmethod
-from teddy.core.domain import ExecutionReport
+from teddy_executor.core.domain.models import ExecutionReport, Plan
 
 class RunPlanUseCase(ABC):
     """
@@ -20,12 +20,12 @@ class RunPlanUseCase(ABC):
     """
 
     @abstractmethod
-    def execute(self, plan_content: str, interactive: bool) -> ExecutionReport:
+    def execute(self, plan: Plan, interactive: bool) -> ExecutionReport:
         """
-        Takes raw plan content, executes it, and returns a report.
+        Takes a parsed Plan object, executes it, and returns a report.
 
         Args:
-            plan_content: The YAML string representing the plan.
+            plan: The parsed Plan object to execute.
             interactive: A flag to enable/disable step-by-step user approval.
         """
         pass
@@ -33,14 +33,12 @@ class RunPlanUseCase(ABC):
 
 ## 3. Method Contracts
 
-### `execute(plan_content: str, auto_approve: bool = False) -> ExecutionReport`
+### `execute(plan: Plan, interactive: bool) -> ExecutionReport`
 **Status:** Implemented
 
-*   **Vertical Slice:** [Slice 01: Walking Skeleton](../../slices/01-walking-skeleton.md)
-*   **Description:** This is the sole method on the port. It accepts a string of raw YAML content, orchestrates the full execution of the plan described in the content, and returns a structured `ExecutionReport` domain object.
+*   **Description:** This is the sole method on the port. It accepts a pre-parsed `Plan` object, orchestrates the step-by-step execution of the actions described within it, and returns a structured `ExecutionReport` domain object.
 *   **Preconditions:**
-    *   `plan_content` must be a string. For the Walking Skeleton, it is expected to be valid YAML representing a list of actions.
+    *   `plan` must be a fully parsed and valid `Plan` domain object.
 *   **Postconditions:**
     *   A valid `ExecutionReport` object is returned.
-    *   If `plan_content` is syntactically invalid, the returned `ExecutionReport` will contain a single `ActionResult` with a `FAILURE` status and an error message detailing the parsing failure.
-    *   If the plan is valid, all actions within the plan will be attempted, and a corresponding `ActionResult` will be present in the final report for each.
+    *   All actions within the plan will be evaluated and either executed, skipped, or failed, with corresponding logs in the report.

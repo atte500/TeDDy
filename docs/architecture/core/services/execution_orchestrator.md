@@ -12,51 +12,50 @@ The `ExecutionOrchestrator` is the primary application service in the hexagonal 
 ## 2. Dependencies
 
 -   **Application Services:**
-    -   `PlanParser`: To load and parse the plan.
     -   `ActionDispatcher`: To execute each action in the plan.
 -   **Outbound Ports:**
     -   `IUserInteractor`: To prompt the user for step-by-step approval during interactive execution.
+    -   `IFileSystemManager`: For contextual file reading.
 
 ## 3. Public Interface
 
 The `ExecutionOrchestrator` service exposes a single method, fulfilling the `IRunPlanUseCase` inbound port.
 
 ### `execute`
-Orchestrates the parsing and execution of a plan, returning a final report.
+Orchestrates the execution of a pre-parsed plan, returning a final report.
 
 **Status:** Implemented
 
 ```python
-from teddy_executor.core.domain.models import ExecutionReport
-from teddy_executor.core.ports.outbound import IUserInteractor
-from teddy_executor.core.services import PlanParser, ActionDispatcher
+from teddy_executor.core.domain.models import ExecutionReport, Plan
+from teddy_executor.core.ports.outbound import IUserInteractor, IFileSystemManager
+from teddy_executor.core.services import ActionDispatcher
 
 class ExecutionOrchestrator:
     def __init__(
         self,
-        plan_parser: PlanParser,
         action_dispatcher: ActionDispatcher,
         user_interactor: IUserInteractor,
+        file_system_manager: IFileSystemManager,
     ):
-        self._plan_parser = plan_parser
         self._action_dispatcher = action_dispatcher
         self._user_interactor = user_interactor
+        self._file_system_manager = file_system_manager
 
-    def execute(self, plan_content: str, interactive: bool) -> ExecutionReport:
+    def execute(self, plan: Plan, interactive: bool) -> ExecutionReport:
         """
-        Coordinates the end-to-end execution of a plan.
+        Coordinates the execution of a Plan.
 
-        1.  Calls the PlanParser to load the plan from a string.
-        2.  Loops through each action in the plan.
-        3.  Checks for previous failures. If any action has failed (triggering the `halt_execution` flag), subsequent actions are automatically skipped to prevent cascading failures.
-        4.  If in interactive mode, calls the `IUserInteractor.confirm_action` method, passing the full `ActionData` object and a descriptive prompt string to get the user's approval.
+        1.  Loops through each action in the plan.
+        2.  Checks for previous failures. If any action has failed (triggering the `halt_execution` flag), subsequent actions are automatically skipped to prevent cascading failures.
+        3.  If in interactive mode, calls the `IUserInteractor.confirm_action` method, passing the full `ActionData` object and a descriptive prompt string to get the user's approval.
             - **Special Case:** The approval prompt is automatically skipped for `chat_with_user` actions to provide a more fluid user experience.
-        5.  If approved (or not in interactive mode), calls the ActionDispatcher.
+        4.  If approved (or not in interactive mode), calls the ActionDispatcher.
         5.  Collects the ActionLog from the dispatcher.
         6.  Builds and returns the final ExecutionReport.
 
         Args:
-            plan_content: A string containing the plan.
+            plan: The parsed Plan object.
             interactive: A flag to enable/disable step-by-step user approval.
 
         Returns:
@@ -67,5 +66,5 @@ class ExecutionOrchestrator:
 
 ## 4. Domain Models (Input/Output)
 
--   **Input:** `plan_content: str`, `interactive: bool`
+-   **Input:** `plan: Plan`, `interactive: bool`
 -   **Output:** `ExecutionReport` (from `execution_report.md`)

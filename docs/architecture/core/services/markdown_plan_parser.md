@@ -34,13 +34,13 @@ The `MarkdownPlanParser` service is responsible for parsing a plan written in th
 
 ## 2. Core Responsibilities
 
-1.  **Fence Pre-processing:** Before parsing, the service first runs the raw input string through a `FencePreProcessor` utility. This utility corrects any invalidly nested code block fences (e.g., a ``` fence within another ``` fence), ensuring the Markdown passed to the parser is always valid.
+1.  **Fence Pre-processing:** Before parsing, the service runs the raw input string through a `FencePreProcessor` utility to ensure structural validity.
 2.  **Stream Wrapping:** The service wraps the `mistletoe` AST's top-level children in a `PeekableStream` iterator, allowing lookahead traversal.
-3.  **Single-Pass Dispatch Loop:** The parser iterates through the stream.
-    *   **Action Detection:** When it encounters a Level 3 `Heading` that matches a known `ActionType` (e.g., `### CREATE`), it dispatches control to the corresponding private handler (e.g., `_parse_create_action`).
-    *   **Robustness (The "Ignore" Policy):** Any node that is *not* a recognized Action Heading (including `ThematicBreak`, `Paragraph`, or unknown headings) is simply consumed and ignored. This allows the parser to gracefully handle separators, comments, or malformed content between actions without crashing.
-4.  **Specific Parsers:** Each handler consumes nodes from the stream to build the `ActionData` object. They enforce the internal grammar of the action (e.g., `CREATE` must have a Metadata List followed by a Code Block).
-5.  **Text Extraction:** A `_get_text(node)` helper recursively extracts text from `mistletoe` tokens, handling the nested structure of `InlineCode` and `RawText` nodes correctly.
+3.  **Single-Pass Strict Dispatch Loop:** The parser iterates through the stream of top-level nodes in the `## Action Plan` section.
+    *   **Action Detection:** When it encounters a Level 3 `Heading` matching a known `ActionType` (e.g., `### CREATE`), it dispatches control to the corresponding specific parser handler.
+    *   **Strict Structural Validation:** The parser enforces a rigid, "fail-fast" structure. If it encounters any node between actions that is *not* a valid action heading (such as a `ThematicBreak` (`---`), stray text, or malformed blocks), it immediately raises an `InvalidPlanError`. It does not attempt to ignore or "auto-correct" invalid content.
+4.  **Specific Parsers:** Each handler (e.g., `_parse_create_action`) consumes nodes from the stream to build the `ActionData` object. They enforce the internal grammar of the specific action (e.g., expecting a Metadata List followed by a Code Block).
+5.  **Text Extraction:** A `_get_text(node)` helper recursively extracts text from `mistletoe` tokens, handling the nested structure of `InlineCode` and `RawText` nodes accurately.
 
 ## 3. Dependencies
 
