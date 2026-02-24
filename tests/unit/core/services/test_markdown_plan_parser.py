@@ -128,77 +128,6 @@ class MyClass:
     )
 
 
-def test_parse_execute_action_with_export_directive(parser: MarkdownPlanParser):
-    """
-    Given an EXECUTE action with `export` directives in the shell block,
-    When the plan is parsed,
-    Then the `env` dict is populated and the `export` lines are stripped.
-    """
-    # Arrange
-    plan_content = r"""
-# Execute a command with environment variables
-- **Goal:** Run a command with custom env vars.
-
-## Action Plan
-
-### `EXECUTE`
-- **Description:** Run a command with env vars.
-- **Expected Outcome:** Success.
-````shell
-export FOO=bar
-export BAZ="qux"
-export OTHER='single_quotes'
-my_command --do-something
-````
-"""
-    # Act
-    result_plan = parser.parse(plan_content)
-
-    # Assert
-    assert len(result_plan.actions) == 1
-    action = result_plan.actions[0]
-
-    assert action.type == "EXECUTE"
-    expected_env = {"FOO": "bar", "BAZ": "qux", "OTHER": "single_quotes"}
-    assert action.params["env"] == expected_env
-    assert action.params["command"] == "my_command --do-something"
-    assert action.params.get("cwd") is None
-
-
-def test_parse_execute_action_with_cd_directive(parser: MarkdownPlanParser):
-    """
-    Given an EXECUTE action with a `cd` directive in the shell block,
-    When the plan is parsed,
-    Then the `cwd` is extracted and the `cd` line is stripped from the command.
-    """
-    # Arrange
-    plan_content = """
-# Execute a command in a specific directory
-- **Goal:** Run a test in a subdirectory.
-
-## Action Plan
-
-### `EXECUTE`
-- **Description:** Run the test suite in `src/`.
-- **Expected Outcome:** All tests will pass.
-````shell
-cd src/my_dir
-poetry run pytest
-````
-"""
-    # Act
-    result_plan = parser.parse(plan_content)
-
-    # Assert
-    assert len(result_plan.actions) == 1
-    action = result_plan.actions[0]
-
-    assert action.type == "EXECUTE"
-    assert action.params["cwd"] == "src/my_dir"
-    assert action.params["command"] == "poetry run pytest"
-    assert action.params.get("env") is None
-
-
 def test_parse_execute_action(parser: MarkdownPlanParser):
     """
     Given a valid Markdown plan with an EXECUTE action,
@@ -237,6 +166,113 @@ poetry run pytest
     assert action.params["expected_outcome"] == "All tests will pass."
     assert action.params["cwd"] == "/tmp/tests"
     assert action.params["env"] == {"API_KEY": "secret", "DEBUG": "1"}
+
+
+def test_parse_execute_action_with_cd_directive(parser: MarkdownPlanParser):
+    """
+    Given an EXECUTE action with a `cd` directive in the shell block,
+    When the plan is parsed,
+    Then the `cwd` is extracted and the `cd` line is stripped from the command.
+    """
+    # Arrange
+    plan_content = """
+# Execute a command in a specific directory
+- **Goal:** Run a test in a subdirectory.
+
+## Action Plan
+
+### `EXECUTE`
+- **Description:** Run the test suite in `src/`.
+- **Expected Outcome:** All tests will pass.
+````shell
+cd src/my_dir
+poetry run pytest
+````
+"""
+    # Act
+    result_plan = parser.parse(plan_content)
+
+    # Assert
+    assert len(result_plan.actions) == 1
+    action = result_plan.actions[0]
+
+    assert action.type == "EXECUTE"
+    assert action.params["cwd"] == "src/my_dir"
+    assert action.params["command"] == "poetry run pytest"
+    assert action.params.get("env") is None
+
+
+def test_parse_execute_action_with_export_directive(parser: MarkdownPlanParser):
+    """
+    Given an EXECUTE action with `export` directives in the shell block,
+    When the plan is parsed,
+    Then the `env` dict is populated and the `export` lines are stripped.
+    """
+    # Arrange
+    plan_content = r"""
+# Execute a command with environment variables
+- **Goal:** Run a command with custom env vars.
+
+## Action Plan
+
+### `EXECUTE`
+- **Description:** Run a command with env vars.
+- **Expected Outcome:** Success.
+````shell
+export FOO=bar
+export BAZ="qux"
+export OTHER='single_quotes'
+my_command --do-something
+````
+"""
+    # Act
+    result_plan = parser.parse(plan_content)
+
+    # Assert
+    assert len(result_plan.actions) == 1
+    action = result_plan.actions[0]
+
+    assert action.type == "EXECUTE"
+    expected_env = {"FOO": "bar", "BAZ": "qux", "OTHER": "single_quotes"}
+    assert action.params["env"] == expected_env
+    assert action.params["command"] == "my_command --do-something"
+    assert action.params.get("cwd") is None
+
+
+def test_parse_execute_action_with_mixed_directives(parser: MarkdownPlanParser):
+    """
+    Given an EXECUTE action with both `cd` and `export` directives,
+    When the plan is parsed,
+    Then both are extracted correctly and stripped from the command.
+    """
+    # Arrange
+    plan_content = r"""
+# Execute a command with mixed directives
+- **Goal:** Run a test with context.
+
+## Action Plan
+
+### `EXECUTE`
+- **Description:** Run pytest in tests dir with CI flag.
+- **Expected Outcome:** Success.
+````shell
+cd tests
+export CI=true
+
+pytest -k "my_test"
+````
+"""
+    # Act
+    result_plan = parser.parse(plan_content)
+
+    # Assert
+    assert len(result_plan.actions) == 1
+    action = result_plan.actions[0]
+
+    assert action.type == "EXECUTE"
+    assert action.params["cwd"] == "tests"
+    assert action.params["env"] == {"CI": "true"}
+    assert action.params["command"] == 'pytest -k "my_test"'
 
 
 def test_parse_research_action(parser: MarkdownPlanParser):
