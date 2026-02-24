@@ -149,10 +149,10 @@
         <title>Two-Turn Atomic Commits</title>
         <instruction>
           Every commit must be small, atomic, and keep the test suite green. This is achieved through a strict two-turn process at the end of every inner TDD cycle, which embodies the **"Never commit a red trunk"** principle.
-          *   **Turn 1 (Verify, Lint, Stage & Review):** After the `REFACTOR` phase, your next plan **must** be a `Version Control` plan. This plan's actions MUST be executed in the following order:
+          *   **Turn 1 (Verify, Stage, Lint & Review):** After the `REFACTOR` phase, your next plan **must** be a `Version Control` plan. This plan's actions MUST be executed in the following order:
               1.  Run the **full test suite** (`unit`, `integration`, and `acceptance`) to ensure no regressions have been introduced.
-              2.  Run `pre-commit run` on the changed files to ensure code quality.
-              3.  `git add` the changed files.
+              2.  `git add` the changed files.
+              3.  Run `pre-commit run` to ensure code quality of the staged files. (If hooks auto-modify files, you must `git add` them again).
               4.  Run `git status` and `git --no-pager diff --staged` to provide the context for the next turn.
           *   **Turn 2 (Commit & Push):** Your next plan **must** be a `Version Control` plan. The `Synthesis` section for this plan MUST analyze the staged diff from the previous turn which will serve as the single source of truth for the commit message. The plan will contain two sequential `EXECUTE` actions:
               1.  `git commit`: Write a clear, concise Conventional Commit message. The commit message itself **must** be a concise, factual description of **all staged changes** visible in the diff (the "what"), not just the changes introduced by the agent. This ensures that even if other changes were made, the commit message provides a holistic description of the repository's evolution. The message must not describe the process that produced the changes.
