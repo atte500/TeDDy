@@ -14,6 +14,14 @@ def test_progress_logging_success(caplog, tmp_path, monkeypatch):
 
     plan_content = """
 # Test Plan
+- **Status:** Green 🟢
+- **Agent:** Developer
+
+## Rationale
+````text
+Rationale.
+````
+
 ## Action Plan
 ### `READ`
 - **Resource:** [test_file.txt](/test_file.txt)
@@ -32,6 +40,14 @@ def test_progress_logging_failure(caplog, tmp_path, monkeypatch):
 
     plan_content = """
 # Test Plan
+- **Status:** Green 🟢
+- **Agent:** Developer
+
+## Rationale
+````text
+Rationale.
+````
+
 ## Action Plan
 ### `READ`
 - **Resource:** [does_not_exist.txt](/does_not_exist.txt)
@@ -50,6 +66,14 @@ def test_progress_logging_execute_stdout(caplog, tmp_path, monkeypatch):
 
     plan_content = """
 # Test Plan
+- **Status:** Green 🟢
+- **Agent:** Developer
+
+## Rationale
+````text
+Rationale.
+````
+
 ## Action Plan
 ### `EXECUTE`
 - **Description:** Run a command

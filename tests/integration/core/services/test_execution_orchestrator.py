@@ -37,6 +37,14 @@ def test_execute_handles_invalid_plan_error_gracefully(
     # A valid plan is needed now.
     plan_content = """
 # Valid Plan
+- **Status:** Green 🟢
+- **Agent:** Developer
+
+## Rationale
+````text
+Rationale.
+````
+
 ## Action Plan
 ### `CREATE`
 - **File Path:** [file1.txt](/file1.txt)

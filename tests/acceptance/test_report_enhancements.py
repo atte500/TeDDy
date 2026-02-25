@@ -13,6 +13,14 @@ def test_smart_fencing_for_validation_errors(tmp_path, monkeypatch):
     # Create a plan with a FIND block that will fail validation (does not match file)
     # The FIND block contains a nested code block, simulating the need for smart fencing.
     plan_content = """# Test Plan
+- **Status:** Green 🟢
+- **Agent:** Developer
+
+## Rationale
+````text
+Rationale.
+````
+
 ## Action Plan
 ### `EDIT`
 - **File Path:** target.py
@@ -47,6 +55,14 @@ def test_chat_with_user_report_omits_prompt(monkeypatch):
     runner = CliRunner()
 
     plan_content = """# Test Plan
+- **Status:** Green 🟢
+- **Agent:** Developer
+
+## Rationale
+````text
+Rationale.
+````
+
 ## Action Plan
 ### `CHAT_WITH_USER`
 The AI prompt string here.
@@ -67,6 +83,14 @@ def test_invoke_report_omits_details(monkeypatch):
     runner = CliRunner()
 
     plan_content = """# Test Plan
+- **Status:** Green 🟢
+- **Agent:** Developer
+
+## Rationale
+````text
+Rationale.
+````
+
 ## Action Plan
 ### `INVOKE`
 - **Agent:** PathFinder
@@ -95,6 +119,14 @@ def test_dynamic_language_in_code_blocks(tmp_path, monkeypatch):
     cfg_file.write_text("debug=true", encoding="utf-8")
 
     plan_content = """# Test Plan
+- **Status:** Green 🟢
+- **Agent:** Developer
+
+## Rationale
+````text
+Rationale.
+````
+
 ## Action Plan
 ### `READ`
 - **Resource:** src/main.py

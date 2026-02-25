@@ -11,6 +11,13 @@ def test_edit_action_reports_all_find_block_failures(monkeypatch, tmp_path: Path
     target_file.write_text("This is the original content.", encoding="utf-8")
 
     plan_content = f"""# Comprehensive Validation Plan
+- **Status:** Green 🟢
+- **Agent:** Developer
+
+## Rationale
+````text
+Rationale.
+````
 
 ## Action Plan
 
@@ -61,6 +68,13 @@ def test_edit_action_with_no_match_provides_diff(monkeypatch, tmp_path: Path):
     target_file.write_text("This is the original content", encoding="utf-8")
 
     plan_content = f"""# Diff Feedback Plan
+- **Status:** Green 🟢
+- **Agent:** Developer
+
+## Rationale
+````text
+Rationale.
+````
 
 ## Action Plan
 

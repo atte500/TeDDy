@@ -27,6 +27,13 @@ def test_execute_plan_with_windows_style_paths(
 
     plan_content = f"""
 # Test Plan
+- **Status:** Green 🟢
+- **Agent:** Developer
+
+## Rationale
+````text
+Rationale.
+````
 
 ## Action Plan
 

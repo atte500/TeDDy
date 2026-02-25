@@ -111,7 +111,13 @@ def test_failed_edit_action_reports_file_content(tmp_path: Path):
     # A plan with a RELATIVE path that will pass validation but fail at runtime
     plan_content = textwrap.dedent(f"""
         # Edit pyproject.toml
+        - **Status:** Green 🟢
         - **Agent:** Developer
+
+        ## Rationale
+        ````text
+        Rationale.
+        ````
 
         ## Action Plan
         ### `EDIT`
@@ -177,7 +183,14 @@ def test_edit_validation_failure_reports_file_content(tmp_path: Path):
     # Note: Using a relative path, so we must execute from within tmp_path
     plan_content = textwrap.dedent(f"""
         # Test Plan
+        - **Status:** Green 🟢
         - **Agent:** Developer
+
+        ## Rationale
+        ````text
+        Rationale.
+        ````
+
         ## Action Plan
         ### `EDIT`
         - **File Path:** {file_path.name}
@@ -226,7 +239,14 @@ def test_smart_fencing_in_report():
     # AND we use quad backticks for the plan's code block to allow nesting triple backticks inside
     plan_content = textwrap.dedent("""
         # Smart Fence Test
+        - **Status:** Green 🟢
         - **Agent:** Developer
+
+        ## Rationale
+        ````text
+        Rationale.
+        ````
+
         ## Action Plan
         ### `EXECUTE`
         - **Description:** Echo backticks

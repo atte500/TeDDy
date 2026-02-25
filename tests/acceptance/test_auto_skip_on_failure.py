@@ -16,6 +16,14 @@ def test_auto_skip_on_execution_failure():
     And the report should show the second action as SKIPPED with the correct reason.
     """
     plan_content = """# Auto-Skip Plan
+- **Status:** Green 🟢
+- **Agent:** Developer
+
+## Rationale
+````text
+Rationale.
+````
+
 ## Action Plan
 ### `EXECUTE`
 - **Description:** This command will fail

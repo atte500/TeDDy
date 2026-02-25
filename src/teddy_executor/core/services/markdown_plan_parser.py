@@ -91,10 +91,13 @@ class MarkdownPlanParser(IPlanParser):
         stream = _PeekableStream(iter(doc.children or []))
 
         try:
-            title = self._parse_title(stream)
-            actions = self._parse_actions(stream)
+            title = self._parse_strict_top_level(stream, doc)
+            actions = self._parse_actions(stream, doc)
             return Plan(title=title, actions=actions)
         except InvalidPlanError as e:
+            if "--- Expected Document Structure ---" in str(e):
+                raise e
+
             ast_summary = []
             for i, child in enumerate(doc.children or []):
                 content = self._get_child_text(child).strip()
@@ -109,47 +112,172 @@ class MarkdownPlanParser(IPlanParser):
             )
             raise InvalidPlanError(f"{str(e)}{debug_info}") from e
 
-    def _parse_title(self, stream: _PeekableStream) -> str:
-        """Finds and returns the text of the first H1 heading from the stream."""
-        while stream.has_next():
-            node = stream.peek()
-            if isinstance(node, Heading) and node.level == 1:
-                stream.next()  # Consume the node
-                return self._get_child_text(node).strip()
-            # Consume non-H1 nodes before the title
-            stream.next()
-        return "Untitled Plan"
+    def _raise_structural_error(
+        self, doc: Document, expected_name: str, mismatch_idx: int, actual_node: Any
+    ):
+        actual_name = type(actual_node).__name__ if actual_node else "EOF"
+        if isinstance(actual_node, Heading):
+            actual_name += f" (Level {actual_node.level})"
 
-    def _parse_actions(self, stream: _PeekableStream) -> List[ActionData]:
-        """Finds and parses all action blocks within the 'Action Plan' section."""
-        actions: List[ActionData] = []
-        # Find 'Action Plan' heading
-        while stream.has_next():
-            node = stream.peek()
-            if (
-                isinstance(node, Heading)
-                and node.level == 2
-                and "Action Plan" in self._get_child_text(node)
-            ):
-                stream.next()  # Consume 'Action Plan' heading
-                break
+        def get_preview(n):
+            content = self._get_child_text(n).strip() if n else ""
+            return content.splitlines()[0][:30].strip() if content else ""
+
+        preview = get_preview(actual_node)
+        if preview:
+            actual_name += f': "{preview}..."'
+
+        msg = f"Plan structure is invalid. Expected {expected_name}, but found {actual_name}.\n\n"
+        msg += "--- Expected Document Structure ---\n"
+        msg += "[000] Heading (Level 1)\n"
+        msg += "[001] List (Metadata)\n"
+        msg += "[002] Heading (Level 2: Rationale)\n"
+        msg += "[003] BlockCode (Rationale Content)\n"
+        msg += "[004] [Optional] Heading (Level 2: Memos)\n"
+        msg += "[005] [Optional] BlockCode (Memos Content)\n"
+        msg += "[006] Heading (Level 2: Action Plan)\n"
+        msg += "[007...] Heading (Level 3: Action Type)\n"
+        msg += "[008...] (Action-specific AST nodes)\n"
+
+        msg += "\n--- Actual Document Structure ---\n"
+        children = list(doc.children) if doc.children else []
+
+        # If mismatch_idx is not provided, try to find the actual_node in the children list
+        if mismatch_idx == -1 and actual_node:
+            try:
+                mismatch_idx = children.index(actual_node)
+            except ValueError:
+                pass
+
+        # If we still don't have a valid index, just print all available children up to 20
+        end_idx = (
+            min(len(children), mismatch_idx + 1)
+            if mismatch_idx != -1
+            else min(len(children), 20)
+        )
+
+        for i in range(end_idx):
+            node = children[i]
+            n_name = type(node).__name__
+            if isinstance(node, Heading):
+                n_name += f" (Level {node.level})"
+
+            c_prev = get_preview(node)
+            if c_prev:
+                n_name += f': "{c_prev}..."'
+
+            if i == mismatch_idx:
+                msg += f"[{i:03d}] {n_name}  <-- MISMATCH\n"
+            else:
+                msg += f"[{i:03d}] {n_name}\n"
+
+        msg += "\n**Hint:** Parsing often fails because code blocks are not strictly nested. Try to **double** the number of backticks for your outer code blocks.\n"
+        raise InvalidPlanError(msg)
+
+    def _parse_strict_top_level(self, stream: _PeekableStream, doc: Document) -> str:
+        actual_idx = 0
+
+        # 0: H1 Title
+        node = stream.peek()
+        if not node or not (isinstance(node, Heading) and node.level == 1):
+            self._raise_structural_error(
+                doc, "a Level 1 Heading at the start of the document", actual_idx, node
+            )
+        title = self._get_child_text(node).strip()
+        stream.next()
+        actual_idx += 1
+
+        # 1: List Metadata
+        node = stream.peek()
+        if not node or not isinstance(node, MdList):
+            self._raise_structural_error(
+                doc,
+                "a List (Metadata) immediately following the title",
+                actual_idx,
+                node,
+            )
+        stream.next()
+        actual_idx += 1
+
+        # 2: H2 Rationale
+        node = stream.peek()
+        if not node or not (
+            isinstance(node, Heading)
+            and node.level == 2
+            and "Rationale" in self._get_child_text(node)
+        ):
+            self._raise_structural_error(
+                doc, "a Level 2 Heading containing 'Rationale'", actual_idx, node
+            )
+        stream.next()
+        actual_idx += 1
+
+        # 3: BlockCode Rationale
+        node = stream.peek()
+        if not node or not isinstance(node, (CodeFence, BlockCode)):
+            self._raise_structural_error(
+                doc,
+                "a CodeFence or BlockCode containing the rationale content",
+                actual_idx,
+                node,
+            )
+        stream.next()
+        actual_idx += 1
+
+        # 4/5: Optional H2 Memos -> BlockCode
+        node = stream.peek()
+        if (
+            node
+            and isinstance(node, Heading)
+            and node.level == 2
+            and "Memos" in self._get_child_text(node)
+        ):
             stream.next()
-        else:
-            raise InvalidPlanError("Plan is missing '## Action Plan' heading.")
+            actual_idx += 1
+
+            node = stream.peek()
+            if not node or not isinstance(node, (CodeFence, BlockCode)):
+                self._raise_structural_error(
+                    doc,
+                    "a CodeFence or BlockCode containing the memos content",
+                    actual_idx,
+                    node,
+                )
+            stream.next()
+            actual_idx += 1
+            node = stream.peek()
+
+        # 6: H2 Action Plan
+        node = stream.peek()
+        if not node or not (
+            isinstance(node, Heading)
+            and node.level == 2
+            and "Action Plan" in self._get_child_text(node)
+        ):
+            self._raise_structural_error(
+                doc, "a Level 2 Heading containing 'Action Plan'", actual_idx, node
+            )
+        stream.next()
+        actual_idx += 1  # Consume it!
+
+        return title
+
+    def _parse_actions(
+        self, stream: _PeekableStream, doc: Document
+    ) -> List[ActionData]:
+        actions: List[ActionData] = []
+        # 'Action Plan' heading is already consumed by _parse_strict_top_level.
 
         # Parse all subsequent actions
         while stream.has_next():
             node = stream.peek()
             action_heading = self._get_action_heading(node)
             if not action_heading:
-                # If we are here, we have found content that is not a valid action
-                error_content = self._get_child_text(node).strip().splitlines()
-                first_line = error_content[0][:100] if error_content else ""
-                raise InvalidPlanError(
-                    f"Unexpected content found between actions. "
-                    f"Found unexpected {type(node).__name__} "
-                    f"with content: '{first_line}...'.\n"
-                    f"**Hint:** An Action or Rationale code block may be improperly nested."
+                self._raise_structural_error(
+                    doc,
+                    "a Level 3 Action Heading",
+                    -1,  # Find the index dynamically
+                    node,
                 )
 
             stream.next()  # Consume action heading
@@ -227,9 +355,6 @@ class MarkdownPlanParser(IPlanParser):
             metadata_list, link_key_map={"Resource": "resource"}
         )
 
-        if description:
-            params["Description"] = description
-
         return ActionData(type=action_type, description=description, params=params)
 
     def _parse_read_action(self, stream: _PeekableStream) -> ActionData:
@@ -246,17 +371,24 @@ class MarkdownPlanParser(IPlanParser):
             metadata_list, link_key_map={"File Path": "path"}
         )
 
-        content_nodes = self._consume_content_until_next_action(stream)
         edits = []
         state = "AWAITING_FIND_HEADING"
         current_find_content: Optional[str] = None
 
-        for node in content_nodes:
+        while stream.has_next():
+            node = stream.peek()
+            if self._get_action_heading(node):
+                break
+
             if state == "AWAITING_FIND_HEADING":
                 if isinstance(node, Heading) and "FIND:" in self._get_child_text(node):
+                    stream.next()
                     state = "AWAITING_FIND_CODE"
+                else:
+                    break
             elif state == "AWAITING_FIND_CODE":
                 if isinstance(node, (CodeFence, BlockCode)):
+                    stream.next()
                     if node.children:
                         raw_text_node = list(node.children)[0]
                         current_find_content = getattr(
@@ -265,15 +397,23 @@ class MarkdownPlanParser(IPlanParser):
                     else:
                         current_find_content = ""
                     state = "AWAITING_REPLACE_HEADING"
-                elif isinstance(node, Heading):
-                    state = "AWAITING_FIND_HEADING"  # Reset
+                else:
+                    raise InvalidPlanError(
+                        "EDIT action has malformed FIND/REPLACE structure."
+                    )
             elif state == "AWAITING_REPLACE_HEADING":
                 if isinstance(node, Heading) and "REPLACE:" in self._get_child_text(
                     node
                 ):
+                    stream.next()
                     state = "AWAITING_REPLACE_CODE"
+                else:
+                    raise InvalidPlanError(
+                        "EDIT action has malformed FIND/REPLACE structure."
+                    )
             elif state == "AWAITING_REPLACE_CODE":
                 if isinstance(node, (CodeFence, BlockCode)):
+                    stream.next()
                     if current_find_content is not None:
                         if node.children:
                             raw_text_node = list(node.children)[0]
@@ -287,8 +427,10 @@ class MarkdownPlanParser(IPlanParser):
                         )
                     state = "AWAITING_FIND_HEADING"
                     current_find_content = None
-                elif isinstance(node, Heading):
-                    state = "AWAITING_FIND_HEADING"
+                else:
+                    raise InvalidPlanError(
+                        "EDIT action has malformed FIND/REPLACE structure."
+                    )
 
         if not edits:
             raise InvalidPlanError(
@@ -444,8 +586,6 @@ class MarkdownPlanParser(IPlanParser):
         elif "env" in params:
             del params["env"]
 
-        if description:
-            params["Description"] = description
         return ActionData(type="EXECUTE", description=description, params=params)
 
     def _parse_research_action(self, stream: _PeekableStream) -> ActionData:

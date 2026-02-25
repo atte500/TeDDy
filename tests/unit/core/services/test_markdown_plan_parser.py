@@ -22,6 +22,11 @@ def test_parse_create_action(parser: MarkdownPlanParser):
 # Create a test file
 - **Goal:** Create a simple file.
 
+## Rationale
+````text
+Rationale.
+````
+
 ## Action Plan
 
 ### `CREATE`
@@ -58,6 +63,11 @@ def test_parse_read_action(parser: MarkdownPlanParser):
 # Read a file
 - **Goal:** Read the architecture document.
 
+## Rationale
+````text
+Rationale.
+````
+
 ## Action Plan
 
 ### `READ`
@@ -74,10 +84,8 @@ def test_parse_read_action(parser: MarkdownPlanParser):
 
     assert action.type == "READ"
     assert action.description == "Read the current architectural conventions."
-    assert action.params == {
-        "resource": "docs/ARCHITECTURE.md",
-        "Description": "Read the current architectural conventions.",
-    }
+    assert action.params.get("Description") is None
+    assert action.params["resource"] == "docs/ARCHITECTURE.md"
 
 
 def test_parse_edit_action(parser: MarkdownPlanParser):
@@ -90,6 +98,11 @@ def test_parse_edit_action(parser: MarkdownPlanParser):
     plan_content = """
 # Edit a file
 - **Goal:** Update a class.
+
+## Rationale
+````text
+Rationale.
+````
 
 ## Action Plan
 
@@ -139,6 +152,11 @@ def test_parse_execute_action(parser: MarkdownPlanParser):
 # Execute a command
 - **Goal:** Run a test.
 
+## Rationale
+````text
+Rationale.
+````
+
 ## Action Plan
 
 ### `EXECUTE`
@@ -162,6 +180,7 @@ poetry run pytest
 
     assert action.type == "EXECUTE"
     assert action.description == "Run the test suite."
+    assert action.params.get("Description") is None
     assert action.params["command"] == "poetry run pytest"
     assert action.params["expected_outcome"] == "All tests will pass."
     assert action.params["cwd"] == "/tmp/tests"
@@ -178,6 +197,11 @@ def test_parse_execute_action_with_cd_directive(parser: MarkdownPlanParser):
     plan_content = """
 # Execute a command in a specific directory
 - **Goal:** Run a test in a subdirectory.
+
+## Rationale
+````text
+Rationale.
+````
 
 ## Action Plan
 
@@ -212,6 +236,11 @@ def test_parse_execute_action_with_export_directive(parser: MarkdownPlanParser):
     plan_content = r"""
 # Execute a command with environment variables
 - **Goal:** Run a command with custom env vars.
+
+## Rationale
+````text
+Rationale.
+````
 
 ## Action Plan
 
@@ -250,6 +279,11 @@ def test_parse_execute_action_with_mixed_directives(parser: MarkdownPlanParser):
 # Execute a command with mixed directives
 - **Goal:** Run a test with context.
 
+## Rationale
+````text
+Rationale.
+````
+
 ## Action Plan
 
 ### `EXECUTE`
@@ -285,6 +319,11 @@ def test_parse_research_action(parser: MarkdownPlanParser):
     plan_content = """
 # Research a topic
 - **Goal:** Find a library.
+
+## Rationale
+````text
+Rationale.
+````
 
 ## Action Plan
 
@@ -324,6 +363,11 @@ def test_parse_chat_with_user_action(parser: MarkdownPlanParser):
 # Chat with the user
 - **Goal:** Get feedback.
 
+## Rationale
+````text
+Rationale.
+````
+
 ## Action Plan
 
 ### `CHAT_WITH_USER`
@@ -360,6 +404,11 @@ def test_parse_prune_action(parser: MarkdownPlanParser):
 # Prune a resource from context
 - **Goal:** Clean up the context.
 
+## Rationale
+````text
+Rationale.
+````
+
 ## Action Plan
 
 ### `PRUNE`
@@ -376,10 +425,8 @@ def test_parse_prune_action(parser: MarkdownPlanParser):
 
     assert action.type == "PRUNE"
     assert action.description == "Remove the old specification."
-    assert action.params == {
-        "resource": "docs/project/specs/old-spec.md",
-        "Description": "Remove the old specification.",
-    }
+    assert action.params.get("Description") is None
+    assert action.params["resource"] == "docs/project/specs/old-spec.md"
 
 
 def test_parse_invoke_action(parser: MarkdownPlanParser):
@@ -392,6 +439,11 @@ def test_parse_invoke_action(parser: MarkdownPlanParser):
     plan_content = r"""
 # Invoke another agent
 - **Goal:** Handoff to the Architect.
+
+## Rationale
+````text
+Rationale.
+````
 
 ## Action Plan
 
@@ -451,6 +503,11 @@ def test_parse_edit_action_preserves_indentation_in_find_and_replace(
 # Edit a file with indentation
 - **Goal:** Update a class.
 
+## Rationale
+````text
+Rationale.
+````
+
 ## Action Plan
 
 ### `EDIT`
@@ -493,6 +550,11 @@ def test_parse_edit_action_ignores_find_in_codeblock(parser: MarkdownPlanParser)
     plan_content = r"""
 # Edit a file
 - **Goal:** Update a class.
+
+## Rationale
+````text
+Rationale.
+````
 
 ## Action Plan
 
@@ -547,6 +609,11 @@ def test_parse_return_action(parser: MarkdownPlanParser):
 # Conclude a sub-task
 - **Goal:** Handoff to the calling agent.
 
+## Rationale
+````text
+Rationale.
+````
+
 ## Action Plan
 
 ### `RETURN`
@@ -586,6 +653,14 @@ def test_parser_normalizes_windows_style_paths(parser: MarkdownPlanParser):
     """
     plan_content = """
 # Test Windows Paths
+- **Status:** Green 🟢
+- **Agent:** Developer
+
+## Rationale
+````text
+Rationale.
+````
+
 ## Action Plan
 ### `EDIT`
 - **File Path:** [target_dir\\pyproject.toml](/target_dir\\pyproject.toml)
@@ -633,6 +708,14 @@ def test_parse_read_action_with_absolute_path(parser):
 
     plan_content = f"""
 # Test Plan
+- **Status:** Green 🟢
+- **Agent:** Developer
+
+## Rationale
+````text
+Rationale.
+````
+
 ## Action Plan
 ### `READ`
 - **Resource:** [{absolute_path}]({absolute_path})
@@ -651,6 +734,49 @@ def test_parse_read_action_with_absolute_path(parser):
     assert action.params["resource"] == expected_path
 
 
+def test_parser_rejects_plan_with_preamble_and_shows_ast_diff(
+    parser: MarkdownPlanParser,
+):
+    """
+    Given a Markdown plan with conversational text (a preamble) before the H1,
+    When the parser parses it,
+    Then it should raise an InvalidPlanError detailing the structural mismatch
+    with a Desired vs Actual AST diff.
+    """
+    from teddy_executor.core.ports.inbound.plan_parser import InvalidPlanError
+
+    plan_content = """
+Here is the plan you asked for.
+
+# My Plan
+- **Status:** Green 🟢
+- **Plan Type:** Test
+- **Agent:** Dev
+
+## Rationale
+```text
+Synthesis, etc.
+```
+
+## Action Plan
+### `EXECUTE`
+- **Description:** test
+```shell
+echo 1
+```
+"""
+
+    with pytest.raises(InvalidPlanError) as excinfo:
+        parser.parse(plan_content)
+
+    error_msg = str(excinfo.value)
+    assert "Plan structure is invalid." in error_msg
+    assert "--- Expected Document Structure ---" in error_msg
+    assert "--- Actual Document Structure ---" in error_msg
+    assert "[000] Paragraph" in error_msg
+    assert "<-- MISMATCH" in error_msg
+
+
 def test_parser_raises_error_on_unknown_action(parser: MarkdownPlanParser):
     """
     Given a Markdown plan with an unknown action header,
@@ -661,12 +787,14 @@ def test_parser_raises_error_on_unknown_action(parser: MarkdownPlanParser):
 
     plan_content = """
 # Test Plan
-- Status: Green 🟢
-- Plan Type: Test
-- Agent: Dev
+- **Status:** Green 🟢
+- **Plan Type:** Test
+- **Agent:** Dev
 
 ## Rationale
+````text
 Rationale.
+````
 
 ## Action Plan
 
@@ -692,6 +820,14 @@ def test_parser_raises_error_on_thematic_break_between_actions(
 
     plan_content = """
 # Test Plan with Thematic Break Separator
+- **Status:** Green 🟢
+- **Agent:** Developer
+
+## Rationale
+````text
+Rationale.
+````
+
 ## Action Plan
 ### `CREATE`
 - **File Path:** [file1.txt](/file1.txt)
@@ -711,8 +847,10 @@ content2
     with pytest.raises(InvalidPlanError) as excinfo:
         parser.parse(plan_content)
 
-    assert "Unexpected content found between actions" in str(excinfo.value)
-    assert "Found unexpected ThematicBreak" in str(excinfo.value)
+    error_msg = str(excinfo.value)
+    assert "Plan structure is invalid. Expected a Level 3 Action Heading" in error_msg
+    assert "--- Actual Document Structure ---" in error_msg
+    assert "ThematicBreak  <-- MISMATCH" in error_msg
 
 
 def test_parser_raises_error_on_malformed_structure_between_actions(
@@ -721,18 +859,20 @@ def test_parser_raises_error_on_malformed_structure_between_actions(
     """
     Given a Markdown plan with free text between action blocks,
     When the parser parses it,
-    Then it should raise an InvalidPlanError.
+    Then it should raise an InvalidPlanError with a clear AST diff.
     """
     from teddy_executor.core.ports.inbound.plan_parser import InvalidPlanError
 
     plan_content = """
 # Test Plan
-- Status: Green 🟢
-- Plan Type: Test
-- Agent: Dev
+- **Status:** Green 🟢
+- **Plan Type:** Test
+- **Agent:** Dev
 
 ## Rationale
+````text
 Rationale.
+````
 
 ## Action Plan
 
@@ -758,7 +898,11 @@ echo 2
     with pytest.raises(InvalidPlanError) as excinfo:
         parser.parse(plan_content)
 
-    assert "Unexpected content found between actions" in str(excinfo.value)
+    error_msg = str(excinfo.value)
+    assert "Plan structure is invalid. Expected a Level 3 Action Heading" in error_msg
+    assert "Unexpected content found" not in error_msg  # Redundant phrasing removed
+    assert "--- Actual Document Structure ---" in error_msg
+    assert 'Paragraph: "This is some free text that sh..."  <-- MISMATCH' in error_msg
 
 
 def test_parser_succeeds_on_builder_generated_create_action(parser: MarkdownPlanParser):
@@ -766,6 +910,222 @@ def test_parser_succeeds_on_builder_generated_create_action(parser: MarkdownPlan
     This test verifies that the MarkdownPlanBuilder generates a valid CREATE
     action that the refactored stream-based parser can successfully parse.
     """
+    from tests.acceptance.plan_builder import MarkdownPlanBuilder
+
+    # Arrange
+    builder = MarkdownPlanBuilder("Test Plan")
+    builder.add_action(
+        "CREATE",
+        params={
+            "File Path": "new_file.txt",
+            "Description": "Create a new file.",
+        },
+        # Note: The key here is for the builder, but should not be rendered
+        # for a CREATE action.
+        content_blocks={"Content:": ("text", "Hello, TeDDy!")},
+    )
+    plan_content = builder.build()
+
+    # Act
+    plan = parser.parse(plan_content)
+
+    # Assert
+    assert len(plan.actions) == 1
+    action = plan.actions[0]
+    assert action.type == "CREATE"
+    assert action.params["path"] == "new_file.txt"
+    assert action.params["content"] == "Hello, TeDDy!"
+    assert action.description == "Create a new file."
+
+
+def test_parser_rejects_improperly_nested_code_fences(parser: MarkdownPlanParser):
+    """
+    Given a markdown plan with an improperly nested code block,
+    When the plan is parsed,
+    Then the parser must reject it with an InvalidPlanError.
+    """
+    from teddy_executor.core.ports.inbound.plan_parser import InvalidPlanError
+
+    # This plan is invalid because the inner markdown block uses ```
+    # which is the same as the outer fence for the CREATE action's content.
+    plan_content = """
+# Plan to Create a Failing Plan
+- **Status:** Green 🟢
+- **Agent:** Developer
+
+## Rationale
+````text
+Rationale.
+````
+
+## Action Plan
+
+### `CREATE`
+- **File Path:** failing_plan.md
+- **Description:** Create a plan that has invalid nesting.
+```markdown
+# This is the inner plan that will be created
+
+## Action Plan
+### `EXECUTE`
+- **Description:** A command.
+```shell
+echo "hello"
+```
+```
+"""
+    with pytest.raises(InvalidPlanError) as excinfo:
+        parser.parse(plan_content)
+
+    error_msg = str(excinfo.value)
+    assert "Plan structure is invalid. Expected a Level 3 Action Heading" in error_msg
+    assert "--- Actual Document Structure ---" in error_msg
+
+
+def test_parser_rejects_user_provided_invalidly_nested_edit_plan(
+    parser: MarkdownPlanParser,
+):
+    """
+    This test uses a real-world example provided by the user that should fail
+    due to an improperly nested code block within an EDIT action's REPLACE block.
+    The inner fence (````shell) has the same length as the outer fence (````python).
+    """
+    from teddy_executor.core.ports.inbound.plan_parser import InvalidPlanError
+
+    plan_content = r'''
+# Write Failing Unit Test for `cd` Directive
+- **Status:** Green 🟢
+- **Plan Type:** RED Phase
+- **Agent:** Developer
+
+## Rationale
+````text
+Rationale.
+````
+
+## Action Plan
+
+### `EDIT`
+- **File Path:** [tests/unit/core/services/test_markdown_plan_parser.py](/tests/unit/core/services/test_markdown_plan_parser.py)
+- **Description:** Add a new failing unit test.
+
+#### `FIND:`
+````python
+def test_parse_execute_action(parser: MarkdownPlanParser):
+    """
+    Given a valid Markdown plan with an EXECUTE action,
+    When the plan is parsed,
+    Then a valid Plan domain object is returned with correct action data.
+    """
+````
+#### `REPLACE:`
+````python
+def test_parse_execute_action_with_cd_directive(parser: MarkdownPlanParser):
+    """
+    Given an EXECUTE action with a `cd` directive in the shell block,
+    When the plan is parsed,
+    Then the `cwd` is extracted and the `cd` line is stripped from the command.
+    """
+    # Arrange
+    plan_content = """
+# Execute a command in a specific directory
+- **Goal:** Run a test in a subdirectory.
+
+## Rationale
+````text
+Rationale.
+````
+
+## Action Plan
+
+### `EXECUTE`
+- **Description:** Run the test suite in `src/`.
+- **Expected Outcome:** All tests will pass.
+````shell
+cd src/my_dir
+poetry run pytest
+````
+"""
+    # Act
+    result_plan = parser.parse(plan_content)
+
+    # Assert
+    assert len(result_plan.actions) == 1
+    action = result_plan.actions[0]
+
+    assert action.type == "EXECUTE"
+    assert action.params["cwd"] == "src/my_dir"
+    assert action.params["command"] == "poetry run pytest"
+    assert action.params.get("env") is None
+
+
+def test_parse_execute_action(parser: MarkdownPlanParser):
+    """
+    Given a valid Markdown plan with an EXECUTE action,
+    When the plan is parsed,
+    Then a valid Plan domain object is returned with correct action data.
+    """
+````
+'''
+    with pytest.raises(InvalidPlanError) as excinfo:
+        parser.parse(plan_content)
+
+    # The corrected _parse_edit_action leaves the malformed content (a Paragraph)
+    # in the stream, which is then caught by the main _parse_actions loop.
+    error_msg = str(excinfo.value)
+    assert "Plan structure is invalid. Expected a Level 3 Action Heading" in error_msg
+    assert "--- Actual Document Structure ---" in error_msg
+    assert "<-- MISMATCH" in error_msg
+
+
+def test_parser_accepts_properly_nested_code_fences(parser: MarkdownPlanParser):
+    """
+    Given a markdown plan with a properly nested code block,
+    When the plan is parsed,
+    Then the parser must accept it and parse correctly.
+    """
+    # This plan is valid because the outer fence (````) is longer
+    # than the inner fence (```).
+    plan_content = r"""
+# Plan to Create a Valid Plan
+- **Status:** Green 🟢
+- **Agent:** Developer
+
+## Rationale
+````text
+Rationale.
+````
+
+## Action Plan
+
+### `CREATE`
+- **File Path:** [valid_plan.md](/valid_plan.md)
+- **Description:** Create a plan with valid nesting.
+````markdown
+# This is the inner plan that will be created
+
+## Action Plan
+### `EXECUTE`
+- **Description:** A command.
+```shell
+echo "hello"
+```
+````
+"""
+    plan = parser.parse(plan_content)
+    assert len(plan.actions) == 1
+    action = plan.actions[0]
+    assert action.type == "CREATE"
+    assert action.params["path"] == "valid_plan.md"
+    expected_content = r"""# This is the inner plan that will be created
+
+## Action Plan
+### `EXECUTE`
+- **Description:** A command.
+```shell
+echo "hello"
+```"""
+    assert action.params["content"] == expected_content
     from tests.acceptance.plan_builder import MarkdownPlanBuilder
 
     # Arrange
