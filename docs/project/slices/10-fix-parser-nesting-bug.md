@@ -1,6 +1,6 @@
 # Slice: Fix Parser Nesting Bug
 
-- **Status:** Planned
+- **Status:** Completed
 - **Milestone:** [08-core-refactoring-and-enhancements](/docs/project/milestones/08-core-refactoring-and-enhancements.md)
 - **Spec:** [New Plan Format](/docs/project/specs/new-plan-format.md)
 
@@ -77,3 +77,9 @@ The parser will be refactored to implement the validated "Single-Pass State Mach
     -   Add a new test case, `test_accepts_properly_nested_code_fences`.
     -   Ensure the existing test `test_parse_plan_with_interstitial_content_fails` still passes.
     -   Verify all other existing parser tests pass after the refactor.
+
+## Implementation Summary
+- **Strict Document Validation:** Implemented `_parse_strict_top_level` to enforce an exact sequence of `H1`, Metadata `List`, `H2` Rationale, `CodeBlock`/`CodeFence`, (optional Memos), and `H2` Action Plan.
+- **Actionable AST Diffs:** Added `_raise_structural_error` to provide high-fidelity, actionable feedback (including AST node differences and code fence nesting hints) when validation fails, directly supporting the "Automated Re-plan Loop".
+- **Action Sequence Enforcement:** Updated `_parse_actions` to require exactly an `H3` Action heading, instantly failing on stray interstitial content.
+- **Metadata Harmonization:** Centralized the extraction of `Description` metadata across all action types using `_parse_action_metadata`.
