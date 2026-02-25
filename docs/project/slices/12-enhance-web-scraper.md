@@ -1,6 +1,6 @@
 # Slice: Enhance Web Scraper to Bypass Anti-Scraping Measures
 
-- **Status:** Planned
+- **Status:** Implemented
 - **Milestone:** [08-core-refactoring-and-enhancements](/docs/project/milestones/08-core-refactoring-and-enhancements.md)
 - **Spec:** None
 
@@ -51,3 +51,14 @@ This approach balances performance for the common case with reliability for edge
 3.  **Refactor and Finalize:**
     -   Refactor the code for clarity.
     -   Update the component design document `docs/architecture/adapters/outbound/web_scraper_adapter.md` to describe the new fallback strategy.
+
+## Implementation Summary
+
+This slice was implemented using a standard outside-in TDD workflow.
+
+1.  A new integration test, `test_get_content_falls_back_on_403_error`, was added to `tests/integration/adapters/outbound/test_web_scraper_adapter.py`. This test used `responses` to mock a `403 Forbidden` HTTP response and asserted that a fallback mechanism was correctly triggered.
+2.  The `WebScraperAdapter.get_content` method was refactored to wrap the initial `requests.get` call in a `try...except` block.
+3.  The `except` block specifically catches `requests.exceptions.HTTPError`, checks for a `403` status code, and then calls `trafilatura.fetch_url` to re-attempt the download.
+4.  The implementation was committed, and relevant documentation (this slice, the parent milestone, and the component design document) was updated to reflect the as-built changes.
+
+There were no significant refactoring opportunities discovered. The implementation is clean and follows the architectural guidelines.

@@ -16,28 +16,45 @@ The adapter employs a "smart router" pattern to choose the best scraping strateg
 
 1.  **GitHub URL Detection:** The adapter first inspects the URL. If it matches the pattern for a GitHub file view (e.g., `github.com/.../blob/...`), it bypasses the general-purpose extraction logic.
 2.  **Raw Content Fetching (for GitHub):** The GitHub URL is transformed into its corresponding "raw" content URL (e.g., `raw.githubusercontent.com/...`). The adapter then fetches this URL directly using `requests` and returns the raw file content. This was validated by the `spike_github_raw_scraper.py` spike.
-3.  **General Content Extraction (for all other URLs):** For all other URLs, the adapter uses `trafilatura` to fetch the page and extract the main article content, intelligently stripping away common boilerplate like navigation, ads, and footers. It is configured to convert the extracted content to Markdown (`output_format='markdown'`). Research and spikes confirmed that default formatting options are sufficient.
-4.  **User Agent:** A default browser-like `User-Agent` header is sent with all requests to avoid being blocked by simple anti-bot measures.
+3.  **General Content Extraction (for all other URLs):** For all other URLs, the adapter uses a two-stage process. It first attempts a direct fetch using the `requests` library.
+4.  **403 Fallback:** If the initial `requests` fetch is blocked with a `403 Forbidden` error, the adapter automatically falls back to using `trafilatura.fetch_url`. This second method is more robust and can bypass some simple anti-scraping measures.
+5.  **Content Conversion:** Once the HTML content is successfully fetched (either directly or via the fallback), `trafilatura.extract` is used to strip away boilerplate and convert the main content to Markdown.
+6.  **User Agent:** A default browser-like `User-Agent` header is sent with all initial `requests` calls to avoid being blocked by simple anti-bot measures.
 
 ## 4. Data Contracts / Methods
-The adapter implements the `scrape` method as defined by the `IWebScraper` port.
+The adapter implements the `get_content` method as defined by the `IWebScraper` port.
 
-The following snippet demonstrates the core logic for fetching and converting content.
+The following snippet demonstrates the core fallback logic.
 
 ```python
 import requests
-from markdownify import markdownify
-
-DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36"
+import trafilatura
 
 class WebScraperAdapter(WebScraper):
     def get_content(self, url: str) -> str:
-        headers = {"User-Agent": DEFAULT_USER_AGENT}
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()  # Raises an HTTPError for bad responses
-        html_content = response.text
-        markdown_content = markdownify(html_content)
-        return markdown_content
+        # ... GitHub handling logic ...
+
+        html_content = None
+        try:
+            response = requests.get(url, headers=headers)
+            response.raise_for_status()
+            html_content = response.text
+        except requests.exceptions.HTTPError as e:
+            if e.response is not None and e.response.status_code == 403:
+                # Fallback for 403 Forbidden errors
+                html_content = trafilatura.fetch_url(url)
+            else:
+                raise
+
+        if not html_content:
+            return ""
+
+        markdown_content = trafilatura.extract(
+            html_content,
+            output_format="markdown",
+            # ... other trafilatura options ...
+        )
+        return markdown_content if markdown_content else ""
 ```
 
 ## 5. External Documentation
