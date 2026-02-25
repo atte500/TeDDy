@@ -39,9 +39,20 @@ class WebScraperAdapter(WebScraper):
             response.raise_for_status()
             return response.text
 
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
-        html_content = response.text
+        html_content = None
+        try:
+            response = requests.get(url, headers=headers)
+            response.raise_for_status()
+            html_content = response.text
+        except requests.exceptions.HTTPError as e:
+            if e.response is not None and e.response.status_code == 403:
+                # Fallback for 403 Forbidden errors
+                html_content = trafilatura.fetch_url(url)
+            else:
+                raise
+
+        if not html_content:
+            return ""
 
         markdown_content = trafilatura.extract(
             html_content,
