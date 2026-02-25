@@ -14,8 +14,24 @@ def test_read_action_can_read_from_url(httpserver: HTTPServer, monkeypatch, tmp_
     Then the action should succeed and the report should contain the scraped content.
     """
     # Arrange
+    # Use a more realistic HTML structure so trafilatura can identify the main content
+    mock_html = """
+    <!DOCTYPE html>
+    <html>
+    <body>
+        <header><h1>Site Nav</h1></header>
+        <main>
+            <article>
+                <h1>Hello</h1>
+                <p>World</p>
+            </article>
+        </main>
+        <footer><p>Copyright</p></footer>
+    </body>
+    </html>
+    """
     httpserver.expect_request("/testpage").respond_with_data(
-        "<html><body><h1>Hello</h1><p>World</p></body></html>",
+        mock_html,
         content_type="text/html",
     )
     url = httpserver.url_for("/testpage")
@@ -53,6 +69,6 @@ def test_read_action_can_read_from_url(httpserver: HTTPServer, monkeypatch, tmp_
 
     # The contract for a successful read is the Resource Contents section in stdout
     assert "## Resource Contents" in result.stdout
-    # markdownify uses Setext-style headers by default
-    expected_content = "Hello\n=====\n\nWorld"
+    # trafilatura provides cleaner output than the old markdownify library
+    expected_content = "Hello\n\nWorld"
     assert expected_content in result.stdout
