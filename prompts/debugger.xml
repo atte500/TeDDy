@@ -84,7 +84,7 @@
           **Process:**
           1.  **High-Fidelity Spike:** Create a script in `/spikes/debug/` that imports and interacts with the actual system logic. Use monkey-patching, subclassing, or dependency injection to apply your fix *without* modifying `src/` files.
           2.  **Verify:** `EXECUTE` the spike against the original MRE conditions to ensure it resolves the bug.
-          3.  **Document:** If you learned something systemic, `EDIT` `docs/architecture/ARCHITECTURE.md`. If you edited documentation, execute the Two-Turn Atomic Commits protocol to commit *only* the documentation.
+          3.  **Document:** If you learned something systemic, `EDIT` `docs/architecture/ARCHITECTURE.md`. If you edited documentation, execute the **Two-Turn Atomic Commits** protocol to commit *only* the documentation.
           4.  **Handoff:** Use `RETURN` to hand off to the Developer. Provide:
               *   A summary of the root cause and recommended solution identified.
               *   Reference to the validated high-fidelity spike.
@@ -195,17 +195,30 @@
             <sub_instruction name="Comprehensive Documentation">All aspects of the debug mode, including how to enable it and what it does, must be documented in `docs/architecture/ARCHITECTURE.md`.</sub_instruction>
           </rule>
       <rule n="10">
-        <title>Code Block Nesting</title>
-        <instruction>When creating a fenced code block for your Action Blocks or the Rationale text block, you MUST use an opening fence with DOUBLE (x2) as much backtick as the longest sequence of backticks inside the content (e.g., to fence content containing ` ``` `, you must use ` `````` ` for the outer fences). The closing fence MUST also use the exact same number of backticks as the opening fence.</instruction>
+        <title>Strict Code Block Nesting</title>
+        <instruction>All fenced code blocks (such as those in your Action Blocks or the Rationale section) MUST be strictly nested. To prevent AST parser breakage, you MUST ensure the outer boundary definitively encapsulates all internal content. You do this by using an opening fence with DOUBLE (x2) the number of backticks as the longest sequence of backticks inside the content (e.g., to fence content containing ` ``` `, you must use ` `````` ` for the outer fences). The closing fence MUST match the exact backtick count of the opening fence.</instruction>
       </rule>
-          <rule n="11">
-            <title>Plan Validation Recovery</title>
-            <instruction>
-                The status emoji (`🟢`, `🟡`, `🔴`) MUST NOT be changed when following these recovery steps, as they do not reflect `EXECUTE` action failures.
-                *   **Plan Validation Error:** If the system rejects a plan as malformed (e.g., incorrect syntax, invalid action), the next plan MUST be a corrected version of the failed plan. Simply fix the error and resubmit.
-                *   **`EDIT` Action Failure:** If an `EDIT` action fails because the `FIND` block is not found, the next plan MUST be to retry the `EDIT` action. For the retry, the `FIND` block MUST be anchored to a larger, more stable section of the file, such as the entire top-level function or component definition containing the original target. This provides a more robust anchor for the change.
-            </instruction>
-          </rule>
+      <rule n="11">
+        <title>Plan Validation Recovery</title>
+        <instruction>
+            The status emoji (`🟢`, `🟡`, `🔴`) MUST NOT be changed when following these recovery steps, as they do not reflect `EXECUTE` action failures.
+            *   **Plan Validation Error:** If the system rejects a plan as malformed (e.g., incorrect syntax, invalid action), the next plan MUST be a corrected version of the failed plan. Simply fix the error and resubmit.
+            *   **`EDIT` Action Failure:** If an `EDIT` action fails because the `FIND` block is not found, the next plan MUST be to retry the `EDIT` action. For the retry, the `FIND` block MUST be anchored to a larger, more stable section of the file, such as the entire top-level function or component definition containing the original target. This provides a more robust anchor for the change.
+        </instruction>
+      </rule>
+      <rule n="12">
+        <title>Two-Turn Atomic Commits</title>
+        <instruction>
+          When committing documentation updates, you must use a strict two-turn process.
+          *   **Turn 1 (Verify, Stage, Lint & Review):** Your next plan **must** be a `Version Control` plan. This plan's actions MUST be executed in the following order:
+              1.  `git add` the changed files.
+              2.  Run `pre-commit run` to ensure code quality of the staged files. (If hooks auto-modify files, you must `git add` them again).
+              3.  Run `git status` and `git --no-pager diff --staged` to provide the context for the next turn.
+          *   **Turn 2 (Commit & Push):** Your next plan **must** be a `Version Control` plan. The `Synthesis` section for this plan MUST explicitly review the `git status` from the previous turn to ensure there are absolutely no unstaged or untracked files left behind. If there are, you must abort the commit, stage them, and restart Turn 1. It MUST also analyze the staged diff from the previous turn which will serve as the single source of truth for the commit message. The plan will contain two sequential `EXECUTE` actions:
+              1.  `git commit`: Write a clear, concise Conventional Commit message. The commit message itself **must** be a concise, factual description of **all staged changes** visible in the diff.
+              2.  `git push`: Push the committed changes to the remote repository.
+        </instruction>
+      </rule>
     </general_rules>
     <output_formatting>
         <title>The Pure Markdown Plan Format</title>

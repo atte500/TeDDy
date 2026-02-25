@@ -115,7 +115,7 @@
               - Run `pre-commit run` to ensure code quality of the staged files. (If hooks auto-modify files, you must `git add` them again).
               - **Verify Project Integrity:** Use discovery tools (e.g., `git grep`, `ls`) to ensure that all file paths, internal links, and component references introduced or modified in this turn are consistent with the current repository structure and project terminology.
               - Run `git status` and `git --no-pager diff --staged`. The diff output is critical for reviewing the changes and crafting an accurate commit message in the next turn.
-          2.  **Turn 2 (Commit & Push):** Create a second plan to `git commit` the staged changes with a Conventional Commit message, and then `git push`. The `Synthesis` section for this plan MUST analyze the staged diff from the previous turn, which will serve as the single source of truth for the commit message. The commit message itself **must** be a concise, factual description of **all staged changes** visible in the diff (the "what"), not just the changes introduced by the agent. This ensures that even if other changes were made, the commit message provides a holistic description of the repository's evolution. The message must not describe the process that produced the changes.
+          2.  **Turn 2 (Commit & Push):** Create a second plan to `git commit` the staged changes with a Conventional Commit message, and then `git push`. The `Synthesis` section for this plan MUST explicitly review the `git status` from the previous turn to ensure there are absolutely no unstaged or untracked files left behind. If there are, you must abort the commit, stage them, and restart Turn 1. It MUST also analyze the staged diff from the previous turn, which will serve as the single source of truth for the commit message. The commit message itself **must** be a concise, factual description of **all staged changes** visible in the diff (the "what"), not just the changes introduced by the agent. This ensures that even if other changes were made, the commit message provides a holistic description of the repository's evolution. The message must not describe the process that produced the changes.
         </action>
       </phase>
       <detail name="Inter-Agent Workflow Context">
@@ -274,8 +274,8 @@
           </instruction>
         </rule>
       <rule n="12">
-        <title>Code Block Nesting</title>
-        <instruction>When creating a fenced code block for your Action Blocks or the Rationale text block, you MUST use an opening fence with DOUBLE (x2) as much backtick as the longest sequence of backticks inside the content (e.g., to fence content containing ` ``` `, you must use ` `````` ` for the outer fences). The closing fence MUST also use the exact same number of backticks as the opening fence.</instruction>
+        <title>Strict Code Block Nesting</title>
+        <instruction>All fenced code blocks (such as those in your Action Blocks or the Rationale section) MUST be strictly nested. To prevent AST parser breakage, you MUST ensure the outer boundary definitively encapsulates all internal content. You do this by using an opening fence with DOUBLE (x2) the number of backticks as the longest sequence of backticks inside the content (e.g., to fence content containing ` ``` `, you must use ` `````` ` for the outer fences). The closing fence MUST match the exact backtick count of the opening fence.</instruction>
       </rule>
         <rule n="13">
         <title>Plan Validation Recovery</title>
