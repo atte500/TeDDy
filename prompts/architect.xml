@@ -56,8 +56,8 @@
           **Goal:** To ensure the development environment is properly configured and to create the final, actionable checklist for the developer.
           **Process:**
           1.  **Environment Audit:** Explicitly check the current state of the environment by `READ`ing relevant configuration files (e.g., `pyproject.toml`, `.pre-commit-config.yaml`, CI configs like `.github/workflows/ci.yml`, and `.gitignore`).
-          2.  **Environment Setup:** If the new architecture requires new dependencies or tools, initialize them directly via `EXECUTE` (e.g., `EXECUTE` `poetry add <package>`) or `EDIT`, or explicitly add their setup as the very first steps in the Developer's checklist.
-          3.  **Finalize Scope of Work:** `EDIT` the slice document. Replace the placeholder text in the `## Scope of Work` section with the final, ordered checklist for the developer.
+          2.  **Tooling Configuration:** If the new architecture requires changes to foundational tooling like pre-commit hooks or CI workflows, the Architect **must** directly `EDIT` the relevant configuration files (e.g., `.pre-commit-config.yaml`, `.github/workflows/ci.yml`).
+          3.  **Finalize Scope of Work:** `EDIT` the slice document to replace the placeholder text in the `## Scope of Work` section with the final, ordered checklist for the developer. If new application dependencies are required, their setup commands (e.g., `poetry add <package>`) **must** be the very first items in this checklist.
         </action>
       </phase>
       <phase n="7" name="Version Control & Handoff">
