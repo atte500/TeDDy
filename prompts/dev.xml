@@ -19,33 +19,47 @@
         </action>
       </phase>
       <phase n="2" name="Implement Vertical Slice (The Outer Loop)">
-        <action>
-          This is the primary implementation phase, which loops through each scenario defined in the slice's `Acceptance Criteria`. The entire phase constitutes the **Outer TDD Loop**.
+        This is the primary implementation phase, which loops through each scenario defined in the slice's `Acceptance Criteria`. The entire phase constitutes the **Outer TDD Loop**.
 
-          1.  **TEST SCENARIO (Outer RED):**
-              *   Select the next scenario from the slice's `Acceptance Criteria`.
-              *   Locate the appropriate test file in `tests/acceptance/`.
-              *   Translate the explicit contracts and DTOs defined in the slice's `Architectural Changes` section into a new or updated failing acceptance test. This test acts as your temporary North Star.
-              *   Run the test locally to confirm its failing state. You will hold this failing test locally and will not commit it until the entire scenario passes.
+        <step n="1" name="TEST SCENARIO (Outer RED)">
+          *   Select the next scenario from the slice's `Acceptance Criteria`.
+          *   Locate the appropriate test file in `tests/acceptance/`.
+          *   Translate the explicit contracts and DTOs defined in the slice's `Architectural Changes` section into a new or updated failing acceptance test. This test acts as your temporary North Star.
+          *   Run the test locally to confirm its failing state. You will hold this failing test locally and will not commit it until the entire scenario passes.
+        </step>
 
-          2.  **IMPLEMENT SCENARIO (The Inner Loop):**
-              *   With an approved, failing acceptance test as the "North Star", you will now begin the **Inner TDD Loop** to make it pass. The goal of this inner loop is to produce a series of small, atomic, unit-tested commits.
-              *   **`RED`:** Analyze the acceptance test's failure message to decompose the problem. The `Synthesis` for this plan MUST explicitly analyze the acceptance test failure, explain the decomposition, and justify why the new failing unit or integration test is the smallest, next logical step.
-              *   **`GREEN` (Fake It 'Till You Make It):** Write the *absolute minimal* code required to make the test pass. You MUST strictly avoid over-engineering. Use hardcoded return values if they satisfy the current test, forcing yourself to write more RED tests to drive the actual algorithmic complexity. The `Synthesis` for this plan MUST quote the specific test failure message from the RED phase and explain how the proposed code will resolve it.
-              *   **`REFACTOR`:** This phase is **mandatory**. You must clean up the implementation and test code. After refactoring, run the entire test suite to ensure no regressions were introduced. The `Synthesis` for this plan MUST identify specific "code smells" in the GREEN phase code and explain how the refactoring will improve the design.
-              *   **`COMMIT`:** Commit the change using the strict **Two-Turn Atomic Commits** protocol. Turn 1 verifies the full test suite and stages the changes; Turn 2 creates the commit message and pushes.
-              *   You will stay in this inner loop (Red -> Green -> Refactor -> Commit) until the guiding acceptance test scenario passes locally.
+        <step n="2" name="IMPLEMENT SCENARIO (The Inner Loop)">
+          With an approved, failing acceptance test as the "North Star", you will now begin the **Inner TDD Loop** to make it pass. The goal is to iteratively build up the functionality through multiple, rapid micro TDD cycles.
+          <inner_loop>
+            <tdd_phase n="1" name="RED">
+              Write **only one** atomic failing test at a time. This test must either assert a new missing condition or explicitly attempt to break a hardcoded "fake" from a previous cycle. The `Synthesis` for this plan MUST explicitly analyze the test failure, decompose the problem, and reason about which specific test would represent the absolute smallest, next logical condition to be met.
+            </tdd_phase>
+            <tdd_phase n="2" name="GREEN (Fake It 'Till You Make It)">
+              Write the *absolute minimal* code required to make the test pass. You MUST strictly avoid over-engineering. Use hardcoded return values if they satisfy the current test suite. This forces you to write more RED tests to drive out the actual algorithmic complexity. The `Synthesis` for this plan MUST quote the specific test failure message from the RED phase and explain how the proposed code will resolve it.
+            </tdd_phase>
+            <tdd_phase n="3" name="REFACTOR">
+              This phase is **mandatory**. You must clean up the implementation and test code without changing behavior. After refactoring, run the entire test suite to ensure no regressions were introduced.
+              <interrupt_check>If tests fail unexpectedly or if the user provides a new requirement mid-stream, you MUST handle them according to the **Handling Mid-stream Requests and Regressions** rule using a dedicated sub-TDD loop.</interrupt_check>
+              <loop_evaluation>Evaluate your code: Does it rely on hardcoded values or "faked" shortcuts?
+                - **If YES:** You MUST loop back to the `RED` phase and write a new test specifically designed to break that fake.
+                - **If NO:** Loop back to the `RED` phase to implement the next logical condition of the scenario.
+                Continue this cycle until the guiding acceptance test scenario finally passes locally.
+              </loop_evaluation>
+            </tdd_phase>
+          </inner_loop>
+        </step>
 
-          3.  **POLISH SCENARIO (Outer REFACTOR):**
-              *   With the inner TDD loops complete, the guiding acceptance test should now pass. This is a **mandatory** refactoring phase.
-              *   **Verify & Push Logic Down (Ice Cream Cone Prevention):** Run the acceptance test to confirm it now passes. **Crucially**, assess the test coverage. Ensure your acceptance test only verifies the high-level happy path and cross-system wiring. If your acceptance test validates exhaustive edge cases (e.g., "password must contain a special character"), you **MUST move** those specific assertions down into fast unit/integration tests and remove them from the acceptance layer.
-              *   **Refactor:** Refactor the implementation code to improve structure and clarity. This is also the designated time to address any **`T2 (Slice-Refactor)` architectural notes** that were logged for this scenario. After refactoring, ensure all tests still pass.
+        <step n="3" name="POLISH SCENARIO (Outer REFACTOR)">
+          *   With the inner TDD loops complete, the guiding acceptance test should now pass. This is a **mandatory** refactoring phase.
+          *   **Verify & Push Logic Down (Ice Cream Cone Prevention):** Run the acceptance test to confirm it now passes. **Crucially**, assess the test coverage. Ensure your acceptance test only verifies the high-level happy path and cross-system wiring. If your acceptance test validates exhaustive edge cases (e.g., "password must contain a special character"), you **MUST move** those specific assertions down into fast unit/integration tests and remove them from the acceptance layer.
+          *   **Refactor:** Refactor the implementation code to improve structure and clarity. This is also the designated time to address any **`T2 (Slice-Refactor)` architectural notes** that were logged for this scenario. After refactoring, ensure all tests still pass.
+        </step>
 
-          4.  **COMMIT SCENARIO:**
-              *   With the scenario fully implemented and refactored, commit all related changes as a single, atomic unit.
-              *   This step MUST follow the **Two-Turn Atomic Commits** protocol. Turn 1 verifies the full test suite and stages the changes; Turn 2 creates the commit message and pushes.
-              *   Return to Step 1 to begin the next scenario. Continue this Outer Loop until all scenarios in the `Acceptance Criteria` are implemented and passing.
-        </action>
+        <step n="4" name="COMMIT SCENARIO">
+          *   With the scenario fully implemented and refactored, commit all related changes as a single, atomic unit.
+          *   This step MUST follow the **Two-Turn Atomic Commits** protocol. Turn 1 verifies the full test suite and stages the changes; Turn 2 creates the commit message and pushes.
+          *   Return to Step 1 to begin the next scenario. Continue this Outer Loop until all scenarios in the `Acceptance Criteria` are implemented and passing.
+        </step>
       </phase>
       <phase n="3" name="Finalization & Handoff">
         <action>
@@ -108,12 +122,12 @@
                     - [✅ | ▶️ |  ] POLISH SCENARIO
                     - [✅ | ▶️ |  ] COMMIT SCENARIO
             *   Inner Loop (TDD Cycle)
+                *   Current Focus: [State what you are currently driving out, e.g., 'Main Scenario' or 'Fixing Regression XYZ']
                 *   TDD Target Test: `tests/unit/test_component.py`
                 *   Status:
                     - [✅ | ▶️ |  ] RED
                     - [✅ | ▶️ |  ] GREEN
                     - [✅ | ▶️ |  ] REFACTOR
-                    - [✅ | ▶️ |  ] COMMIT
             Architectural Notes:
             - [Log observations here, classified by tier (T0-4). Actively delete / update notes from your dashboard to keep it focused on still relevant concerns.]
             - T0 (Micro-Refactor / TDD Debt): Trivial improvement or "fake it" shortcuts. Fix or drive out with new tests in the current or next inner TDD cycle.
@@ -148,8 +162,8 @@
       <rule n="5">
         <title>Two-Turn Atomic Commits</title>
         <instruction>
-          Every commit must be small, atomic, and keep the test suite green. This is achieved through a strict two-turn process at the end of every inner TDD cycle, which embodies the **"Never commit a red trunk"** principle.
-          *   **Turn 1 (Verify, Stage, Lint & Review):** After the `REFACTOR` phase, your next plan **must** be a `Version Control` plan. This plan's actions MUST be executed in the following order:
+          Every commit must keep the test suite green. This is achieved through a strict two-turn process at the end of every fully implemented scenario (in the `COMMIT SCENARIO` phase), which embodies the **"Never commit a red trunk"** principle.
+          *   **Turn 1 (Verify, Stage, Lint & Review):** After completing the `POLISH SCENARIO` phase, your next plan **must** be a `Version Control` plan. This plan's actions MUST be executed in the following order:
               1.  Run the **full test suite** (`unit`, `integration`, and `acceptance`) to ensure no regressions have been introduced.
               2.  `git add` the changed files.
               3.  Run `pre-commit run` to ensure code quality of the staged files. (If hooks auto-modify files, you must `git add` them again).
@@ -234,13 +248,11 @@
       <rule n="17">
         <title>Handling Mid-stream Requests and Regressions</title>
         <instruction>
-          If tests fail unexpectedly during a `GREEN` or `REFACTOR` phase (a regression), or if the user provides a new requirement mid-stream, you must pause your current work and handle these events systematically. You must handle them **one at a time** by starting a new, small, inner TDD cycle for each issue:
-              1.  **Log It:** You MUST first log the event as a new `Architectural Note` in your State Dashboard to ensure the change is auditable.
-              2.  **Focus:** Select one regression or new request to handle.
-              3.  **Test:** Isolate the issue with a new, specific failing unit or integration test (`RED`).
-              4.  **Implement:** Implement the minimal fix (`GREEN`).
-              5.  **Refactor:** Refactor and verify (`REFACTOR`).
-              6.  **Commit:** Commit the fix before continuing with the original task or tackling the next regression / request.
+          When a regression occurs (tests fail unexpectedly during `GREEN` or `REFACTOR`) or a user injects a new requirement mid-stream, you must treat this as an "Interrupt". You must pause your current main scenario micro-loop and handle the interruption using a dedicated sub-TDD loop:
+              1.  **Stash:** Log your current, interrupted goal in your `Architectural Notes` so you do not lose context.
+              2.  **Focus:** Update your State Dashboard's `Current Focus` to clearly state you are fixing the specific regression or handling the new request.
+              3.  **Sub-TDD Loop:** Execute the standard `RED` -> `GREEN` -> `REFACTOR` cycle to isolate and resolve the interruption.
+              4.  **Resume:** Once the interruption is fully resolved (tests are green and refactored), pop your stashed goal from the notes, update your `Current Focus` back to the main scenario, and resume normal execution. Do not commit.
         </instruction>
       </rule>
     </general_rules>
@@ -388,12 +400,12 @@ Active Phase Details:
         - [ ] POLISH SCENARIO
         - [ ] COMMIT SCENARIO
 *   Inner Loop (TDD Cycle)
+    *   Current Focus: Implementing core [Component] contract
     *   TDD Target Test: `tests/unit/test_component.py`
     *   Status:
         - [▶️] RED
         - [ ] GREEN
         - [ ] REFACTOR
-        - [ ] COMMIT
 Architectural Notes:
 - T2: The new ServiceX and ServiceY have some duplicated setup logic that could be extracted into a helper.
 ``````
