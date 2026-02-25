@@ -1,6 +1,6 @@
 # Slice: Implement `trafilatura` for Web Scraping
 
-- **Status:** Planned
+- **Status:** Done
 - **Milestone:** [08-core-refactoring-and-enhancements](/docs/project/milestones/08-core-refactoring-and-enhancements.md)
 - **Spec:** None
 
@@ -61,3 +61,13 @@ This approach ensures the system uses the best tool for each specific context. T
     -   Delete or refactor existing tests that rely on `markdownify`.
     -   Add a new test case to verify that a GitHub file URL is correctly transformed and its raw content is fetched perfectly.
     -   Ensure all tests pass.
+
+## Implementation Summary
+
+The `WebScraperAdapter` was successfully refactored to use `trafilatura` instead of `markdownify`. The implementation followed a standard TDD workflow, starting with new integration tests that codified the desired behavior for handling GitHub URLs and stripping boilerplate from article content.
+
+A significant challenge arose during the process: `trafilatura`'s content extraction algorithm proved more sophisticated than `markdownify`'s, causing it to return empty strings for the overly simplistic HTML mocks used in the existing acceptance tests. This introduced a regression. The issue was resolved by following the established recovery protocol:
+1. A spike was conducted to verify that `trafilatura`'s `favor_precision=True` setting, combined with a more realistic HTML structure in the mock, would yield the correct behavior.
+2. This validated learning was applied to both the integration tests (to make them more robust) and the failing acceptance test (to fix the regression).
+
+The final implementation is robust and well-tested, fulfilling all acceptance criteria. A minor CI warning regarding deprecated pre-commit hooks was also discovered and fixed in a separate `chore` commit.

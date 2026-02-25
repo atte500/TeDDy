@@ -56,7 +56,7 @@ Execute a safe "Create, Migrate, Delete" sequence for each legacy model:
 - [x] **Slice 1: Refactor Parser and Fix Bug** (Implement the single-pass AST strategy and verify against bug repro).
 - [x] **Slice 2: Simplify EXECUTE Action Syntax** (Implement the POSIX Shell Pre-Processor in the parser).
 - [x] **Refactor Slice: Fix Parser Nesting Bug** (Implement strict structural AST validation to prevent nesting crashes).
-- [ ] **Slice 3: Implement `trafilatura`** (Dependency swap and adapter update).
+- [x] **Slice 3: Implement `trafilatura`** (Dependency swap and adapter update).
 - [ ] **Slice 4: Refactor `CommandResult` to `ShellOutput`** (Create, migrate, delete).
 - [ ] **Slice 5: Refactor `SERPReport` to `WebSearchResults`** (Create, migrate, delete).
 - [ ] **Slice 6: Refactor `ContextResult` to `ProjectContext`** (Create, migrate, delete).
