@@ -7,7 +7,7 @@ from typing import Any, Dict, Generator, Optional
 
 from typer.testing import CliRunner, Result
 
-from teddy_executor.main import app
+from teddy_executor.__main__ import app
 
 runner = CliRunner()
 

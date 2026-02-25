@@ -1,5 +1,5 @@
 from typer.testing import CliRunner
-from teddy_executor.main import app
+from teddy_executor.__main__ import app
 
 runner = CliRunner()
 

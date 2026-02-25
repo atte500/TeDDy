@@ -5,7 +5,7 @@ from pathlib import Path
 from typer.testing import CliRunner
 
 
-from teddy_executor.main import app
+from teddy_executor.__main__ import app
 from tests.acceptance.plan_builder import MarkdownPlanBuilder
 
 runner = CliRunner()

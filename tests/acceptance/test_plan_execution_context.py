@@ -3,7 +3,7 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from teddy_executor.main import app
+from teddy_executor.__main__ import app
 from .helpers import parse_markdown_report
 from .plan_builder import MarkdownPlanBuilder
 

@@ -10,12 +10,12 @@ from teddy_executor.core.domain.models import (
     RunStatus,
 )
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
-from teddy_executor.main import app
+from teddy_executor.__main__ import app
 
 runner = CliRunner()
 
 
-@patch("teddy_executor.main.ExecutionOrchestrator")
+@patch("teddy_executor.__main__.ExecutionOrchestrator")
 def test_cli_invokes_orchestrator_with_plan_file(mock_ExecutionOrchestrator: MagicMock):
     """
     Tests that the CLI correctly calls the orchestrator with the plan path.
@@ -53,7 +53,7 @@ def test_cli_invokes_orchestrator_with_plan_file(mock_ExecutionOrchestrator: Mag
     )
 
 
-@patch("teddy_executor.main.ExecutionOrchestrator")
+@patch("teddy_executor.__main__.ExecutionOrchestrator")
 def test_cli_exits_with_error_code_on_failure(mock_ExecutionOrchestrator: MagicMock):
     """
     Tests that the CLI exits with a non-zero code if the
@@ -89,7 +89,7 @@ def test_cli_exits_with_error_code_on_failure(mock_ExecutionOrchestrator: MagicM
     )
 
 
-@patch("teddy_executor.main.ExecutionOrchestrator")
+@patch("teddy_executor.__main__.ExecutionOrchestrator")
 def test_cli_handles_interactive_mode_flag(mock_ExecutionOrchestrator: MagicMock):
     """
     Tests that the CLI correctly sets the interactive flag (default is True).

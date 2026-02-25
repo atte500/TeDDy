@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from typer.testing import CliRunner
 
-from teddy_executor.main import app, create_container
+from teddy_executor.__main__ import app, create_container
 from .helpers import parse_markdown_report
 from .plan_builder import MarkdownPlanBuilder
 
@@ -34,7 +34,7 @@ def test_chat_with_user_action_successful(tmp_path: Path, monkeypatch):
     # Refactored to use --plan-content and run from a temp dir
     with monkeypatch.context() as m:
         m.chdir(tmp_path)
-        with patch("teddy_executor.main.container", real_container):
+        with patch("teddy_executor.__main__.container", real_container):
             result = runner.invoke(
                 app,
                 ["execute", "--yes", "--no-copy", "--plan-content", plan_content],

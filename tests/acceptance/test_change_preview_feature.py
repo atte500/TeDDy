@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 from typer.testing import CliRunner
 
 from teddy_executor.core.ports.outbound import IUserInteractor
-from teddy_executor.main import app, create_container
+from teddy_executor.__main__ import app, create_container
 from .helpers import parse_markdown_report
 from .plan_builder import MarkdownPlanBuilder
 
@@ -318,7 +318,7 @@ def test_no_diff_is_shown_for_auto_approved_plans(tmp_path: Path, monkeypatch):
     # WHEN: The plan is executed with the --yes flag
     with monkeypatch.context() as m:
         m.chdir(tmp_path)
-        with patch("teddy_executor.main.container", test_container):
+        with patch("teddy_executor.__main__.container", test_container):
             result = runner.invoke(
                 app, ["execute", "--yes", "--no-copy", "--plan-content", plan_content]
             )

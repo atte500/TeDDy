@@ -2,7 +2,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 from typer.testing import CliRunner
 
-from teddy_executor.main import app, create_container
+from teddy_executor.__main__ import app, create_container
 from teddy_executor.core.ports.outbound import IUserInteractor
 from .helpers import parse_markdown_report
 from .plan_builder import MarkdownPlanBuilder
@@ -40,7 +40,7 @@ def test_interactive_approval_and_execution(tmp_path: Path, monkeypatch):
     # Act
     with monkeypatch.context() as m:
         m.chdir(tmp_path)
-        with patch("teddy_executor.main.container", test_container):
+        with patch("teddy_executor.__main__.container", test_container):
             result = runner.invoke(
                 app, ["execute", "--no-copy", "--plan-content", plan_content]
             )  # No --yes flag for interactive
@@ -86,7 +86,7 @@ def test_interactive_skip_with_reason(tmp_path: Path, monkeypatch):
     # Act
     with monkeypatch.context() as m:
         m.chdir(tmp_path)
-        with patch("teddy_executor.main.container", test_container):
+        with patch("teddy_executor.__main__.container", test_container):
             # We must provide some input to stdin to satisfy the `input()`
             # call inside the mocked `confirm_action` if it were real.
             # Even with a mock, Typer's runner may expect it.

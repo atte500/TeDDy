@@ -3,7 +3,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 from typer.testing import CliRunner
 
-from teddy_executor.main import app, create_container
+from teddy_executor.__main__ import app, create_container
 from teddy_executor.core.ports.outbound import IUserInteractor
 from teddy_executor.core.services.action_dispatcher import ActionDispatcher
 from teddy_executor.core.domain.models import ActionLog, ActionStatus
@@ -45,7 +45,7 @@ def test_interactive_prompt_shows_description(tmp_path: Path):
     original_cwd = os.getcwd()
     os.chdir(tmp_path)
     try:
-        with patch("teddy_executor.main.container", test_container):
+        with patch("teddy_executor.__main__.container", test_container):
             result = runner.invoke(app, ["execute", "--plan-content", plan_content])
     finally:
         os.chdir(original_cwd)
@@ -95,7 +95,7 @@ def test_chat_with_user_skips_approval_prompt(tmp_path: Path):
     test_container.register(ActionDispatcher, instance=mock_dispatcher)
 
     # Act
-    with patch("teddy_executor.main.container", test_container):
+    with patch("teddy_executor.__main__.container", test_container):
         # Run in interactive mode (no --yes flag)
         result = runner.invoke(app, ["execute", "--plan-content", plan_content])
 
@@ -132,7 +132,7 @@ def test_read_action_report_formats_multiline_content_correctly(tmp_path: Path):
     original_cwd = os.getcwd()
     os.chdir(tmp_path)
     try:
-        with patch("teddy_executor.main.container", real_container):
+        with patch("teddy_executor.__main__.container", real_container):
             result = runner.invoke(
                 app, ["execute", "--plan-content", plan_content, "--yes"]
             )
@@ -186,7 +186,7 @@ def hello():
     original_cwd = os.getcwd()
     os.chdir(tmp_path)
     try:
-        with patch("teddy_executor.main.container", real_container):
+        with patch("teddy_executor.__main__.container", real_container):
             result = runner.invoke(
                 app, ["execute", "--plan-content", plan_content, "--yes"]
             )

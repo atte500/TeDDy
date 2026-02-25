@@ -8,7 +8,7 @@ from teddy_executor.core.domain.models._legacy_models import (
     SERPReport,
 )
 from teddy_executor.core.ports.outbound import IWebSearcher
-from teddy_executor.main import create_container
+from teddy_executor.__main__ import create_container
 
 from .helpers import parse_markdown_report, run_cli_with_markdown_plan_on_clipboard
 from .plan_builder import MarkdownPlanBuilder
@@ -50,7 +50,7 @@ def test_research_action_success(monkeypatch, tmp_path: Path):
     test_container.register(IWebSearcher, instance=mock_web_searcher)
 
     # Act
-    with patch("teddy_executor.main.container", test_container):
+    with patch("teddy_executor.__main__.container", test_container):
         result = run_cli_with_markdown_plan_on_clipboard(
             monkeypatch, plan_content, tmp_path
         )

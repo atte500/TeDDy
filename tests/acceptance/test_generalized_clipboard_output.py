@@ -1,7 +1,7 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from teddy_executor.main import app
+from teddy_executor.__main__ import app
 from typer.testing import CliRunner
 
 from .helpers import run_cli_command, parse_markdown_report
@@ -9,7 +9,7 @@ from .helpers import run_cli_command, parse_markdown_report
 runner = CliRunner()
 
 
-@patch("teddy_executor.main.pyperclip", new_callable=MagicMock)
+@patch("teddy_executor.__main__.pyperclip", new_callable=MagicMock)
 def test_context_command_copies_to_clipboard_by_default(mock_pyperclip: MagicMock):
     """
     Scenario 1: `context` command defaults to copying output
@@ -52,8 +52,8 @@ def test_context_command_copies_to_clipboard_by_default(mock_pyperclip: MagicMoc
         assert actual_copied_content.strip() == expected_content_from_stdout.strip()
 
 
-@patch("teddy_executor.main.pyperclip", new_callable=MagicMock)
-@patch("teddy_executor.main.container")
+@patch("teddy_executor.__main__.pyperclip", new_callable=MagicMock)
+@patch("teddy_executor.__main__.container")
 def test_context_command_suppresses_copy_with_flag(
     mock_container: MagicMock, mock_pyperclip: MagicMock
 ):
@@ -87,7 +87,7 @@ def test_context_command_suppresses_copy_with_flag(
     assert confirmation_message not in result.stdout
 
 
-@patch("teddy_executor.main.pyperclip", new_callable=MagicMock)
+@patch("teddy_executor.__main__.pyperclip", new_callable=MagicMock)
 def test_execute_command_copies_to_clipboard_by_default(
     mock_pyperclip: MagicMock, monkeypatch, tmp_path: Path
 ):
@@ -125,7 +125,7 @@ def test_execute_command_copies_to_clipboard_by_default(
     assert report_dict == actual_copied_dict
 
 
-@patch("teddy_executor.main.pyperclip", new_callable=MagicMock)
+@patch("teddy_executor.__main__.pyperclip", new_callable=MagicMock)
 def test_execute_command_suppresses_copy_with_flag(
     mock_pyperclip: MagicMock, monkeypatch, tmp_path: Path
 ):

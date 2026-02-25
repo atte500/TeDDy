@@ -4,7 +4,7 @@ import re
 import pytest
 from typer.testing import CliRunner
 
-from teddy_executor.main import app
+from teddy_executor.__main__ import app
 from .helpers import parse_markdown_report, run_cli_with_markdown_plan_on_clipboard
 from .plan_builder import MarkdownPlanBuilder
 

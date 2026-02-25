@@ -1,6 +1,6 @@
 from pathlib import Path
 from typer.testing import CliRunner
-from teddy_executor.main import app
+from teddy_executor.__main__ import app
 import pytest
 
 runner = CliRunner()

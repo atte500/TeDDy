@@ -1,5 +1,5 @@
 from typer.testing import CliRunner
-from teddy_executor.main import app
+from teddy_executor.__main__ import app
 
 
 def test_smart_fencing_for_validation_errors(tmp_path, monkeypatch):
