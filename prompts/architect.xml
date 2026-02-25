@@ -258,7 +258,7 @@
       <rule n="16">
         <title>Plan Validation Recovery</title>
         <instruction>
-          If the system rejects a plan as malformed (e.g., incorrect syntax, invalid action), the next plan MUST be a corrected version of the failed plan. Simply fix the error and resubmit as if the error never happened.
+          If the system rejects a plan as malformed (e.g., incorrect syntax, invalid action), the next plan MUST be a corrected version of the failed plan. Simply fix the error and resubmit without acknowledging the validation error in the new plan's Rationale.
           The status emoji (`🟢`, `🟡`, `🔴`) MUST NOT be changed when following these recovery steps, as they do not reflect `EXECUTE` action failures.
         </instruction>
       </rule>
