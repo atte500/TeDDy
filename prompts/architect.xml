@@ -258,9 +258,8 @@
       <rule n="16">
         <title>Plan Validation Recovery</title>
         <instruction>
-            The status emoji (`🟢`, `🟡`, `🔴`) MUST NOT be changed when following these recovery steps, as they do not reflect `EXECUTE` action failures.
-            *   **Plan Validation Error:** If the system rejects a plan as malformed (e.g., incorrect syntax, invalid action), the next plan MUST be a corrected version of the failed plan. Simply fix the error and resubmit.
-            *   **`EDIT` Action Failure:** If an `EDIT` action fails because the `FIND` block is not found, the next plan MUST be to retry the `EDIT` action. For the retry, the `FIND` block MUST be anchored to a larger, more stable section of the file, such as the entire top-level function or component definition containing the original target. This provides a more robust anchor for the change.
+          If the system rejects a plan as malformed (e.g., incorrect syntax, invalid action), the next plan MUST be a corrected version of the failed plan. Simply fix the error and resubmit as if the error never happened.
+          The status emoji (`🟢`, `🟡`, `🔴`) MUST NOT be changed when following these recovery steps, as they do not reflect `EXECUTE` action failures.
         </instruction>
       </rule>
     </general_rules>
