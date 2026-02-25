@@ -1,3 +1,4 @@
+import logging
 from typing import List
 from ddgs import DDGS
 from teddy_executor.core.domain.models import (
@@ -20,25 +21,31 @@ class WebSearcherAdapter(IWebSearcher):
         """
         all_query_results = []
         try:
-            with DDGS() as ddgs:
-                for query in queries:
-                    # DDGS.text returns a generator, so we convert it to a list
-                    results = list(ddgs.text(query, max_results=5))
+            # Globally disable logging (CRITICAL and below) to silence noisy
+            # third-party HTTP clients (urllib3, httpx, curl_cffi) used by DDGS.
+            logging.disable(logging.CRITICAL)
+            try:
+                with DDGS() as ddgs:
+                    for query in queries:
+                        # DDGS.text returns a generator, so we convert it to a list
+                        results = list(ddgs.text(query, max_results=5))
 
-                    search_results_for_query = [
-                        SearchResult(
-                            title=res.get("title", ""),
-                            url=res.get("href", ""),
-                            snippet=res.get("body", ""),
-                        )
-                        for res in results
-                    ]
+                        search_results_for_query = [
+                            SearchResult(
+                                title=res.get("title", ""),
+                                url=res.get("href", ""),
+                                snippet=res.get("body", ""),
+                            )
+                            for res in results
+                        ]
 
-                    all_query_results.append(
-                        QueryResult(
-                            query=query, search_results=search_results_for_query
+                        all_query_results.append(
+                            QueryResult(
+                                query=query, search_results=search_results_for_query
+                            )
                         )
-                    )
-            return SERPReport(results=all_query_results)
+                return SERPReport(results=all_query_results)
+            finally:
+                logging.disable(logging.NOTSET)
         except Exception as e:
             raise WebSearchError(f"Failed to execute search: {e}") from e

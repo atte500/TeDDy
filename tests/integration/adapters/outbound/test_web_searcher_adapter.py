@@ -28,7 +28,8 @@ def test_search_success_maps_results_correctly():
     ) as mock_ddgs_class:
         # Configure the instance and its text method
         mock_ddgs_instance = MagicMock()
-        mock_ddgs_instance.text.return_value = mock_ddgs_result
+        # Use side_effect to provide a fresh iterator/list for each call
+        mock_ddgs_instance.text.side_effect = [mock_ddgs_result, mock_ddgs_result]
         # The __enter__ method of the class's return value should return the instance
         mock_ddgs_class.return_value.__enter__.return_value = mock_ddgs_instance
 
@@ -52,6 +53,7 @@ def test_search_success_maps_results_correctly():
         # Check that the mock was called for each query
         assert mock_ddgs_instance.text.call_count == 2
         mock_ddgs_instance.text.assert_any_call("python", max_results=5)
+        mock_ddgs_instance.text.assert_any_call("teddy", max_results=5)
 
 
 def test_search_handles_library_exception():

@@ -108,7 +108,9 @@ def test_edit_file_successfully_replaces_content(tmp_path: Path):
     test_file.write_text(initial_content, encoding="utf-8")
 
     # Act
-    adapter.edit_file(path=str(test_file), find="world", replace="TeDDy")
+    adapter.edit_file(
+        path=str(test_file), edits=[{"find": "world", "replace": "TeDDy"}]
+    )
 
     # Assert
     final_content = test_file.read_text()
@@ -129,7 +131,9 @@ def test_edit_file_raises_error_if_find_text_not_found(tmp_path: Path):
 
     # Act & Assert
     with pytest.raises(SearchTextNotFoundError) as excinfo:
-        adapter.edit_file(path=str(test_file), find="goodbye", replace="TeDDy")
+        adapter.edit_file(
+            path=str(test_file), edits=[{"find": "goodbye", "replace": "TeDDy"}]
+        )
 
     # Assert that the original content is part of the exception
     assert excinfo.value.content == initial_content
@@ -148,7 +152,9 @@ def test_edit_file_raises_error_on_multiple_occurrences(tmp_path: Path):
 
     # Act & Assert
     with pytest.raises(MultipleMatchesFoundError) as exc_info:
-        adapter.edit_file(path=str(test_file), find="hello", replace="goodbye")
+        adapter.edit_file(
+            path=str(test_file), edits=[{"find": "hello", "replace": "goodbye"}]
+        )
 
     # Check the exception details (the repr() adds extra quotes)
     assert "Found 2 occurrences of ''hello''" in str(exc_info.value)
@@ -280,7 +286,9 @@ def test_edit_file_handles_leading_newline_in_find_block(tmp_path: Path):
     expected_content = "line one\n\n    line two (replaced)\nline three"
 
     # Act
-    adapter.edit_file(path=str(test_file), find=find_block, replace=replace_block)
+    adapter.edit_file(
+        path=str(test_file), edits=[{"find": find_block, "replace": replace_block}]
+    )
 
     # Assert
     actual_content = test_file.read_text()

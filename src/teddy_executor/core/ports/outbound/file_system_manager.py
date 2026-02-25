@@ -43,9 +43,9 @@ class FileSystemManager(Protocol):
         """
         ...
 
-    def edit_file(self, path: str, find: str, replace: str) -> None:
+    def edit_file(self, path: str, edits: list[dict[str, str]]) -> None:
         """
-        Modifies an existing file by replacing a string.
+        Modifies an existing file by applying a list of find-and-replace blocks.
 
         Raises:
             FileNotFoundError: If no file exists at the specified path.

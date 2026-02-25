@@ -75,11 +75,17 @@ class ExecutionOrchestrator(RunPlanUseCase):
                 if action.description:
                     prompt_parts.append(f"Description: {action.description}")
 
-                # Use a cleaner representation of params from the original action
-                param_str = "\n".join(f"  - {k}: {v}" for k, v in action.params.items())
-                prompt_parts.append("Parameters:")
-                prompt_parts.append(param_str)
-                prompt_parts.append("---\nApprove action?")
+                # Use a cleaner representation of params from the original action,
+                # omitting verbose fields like edits and content for the preview.
+                param_str = "\n".join(
+                    f"  - {k}: {v}"
+                    for k, v in action.params.items()
+                    if k.lower() not in ("edits", "content")
+                )
+                if param_str:
+                    prompt_parts.append("Parameters:")
+                    prompt_parts.append(param_str)
+                prompt_parts.append("---")
 
                 prompt = "\n".join(prompt_parts)
                 should_dispatch, reason = self._user_interactor.confirm_action(

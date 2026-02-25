@@ -29,7 +29,7 @@ Rationale.
 """
     runner.invoke(app, ["execute", "--plan-content", plan_content, "-y"])
 
-    assert "Executing Action: READ - Read an existing file" in caplog.text
+    assert "READ - Read an existing file" in caplog.text
     assert "SUCCESS" in caplog.text
 
 
@@ -55,7 +55,7 @@ Rationale.
 """
     runner.invoke(app, ["execute", "--plan-content", plan_content, "-y"])
 
-    assert "Executing Action: READ - Read a missing file" in caplog.text
+    assert "READ - Read a missing file" in caplog.text
     assert "FAILURE" in caplog.text
 
 
@@ -84,6 +84,6 @@ echo "hello progress log"
 """
     runner.invoke(app, ["execute", "--plan-content", plan_content, "-y"])
 
-    assert "Executing Action: EXECUTE - Run a command" in caplog.text
+    assert "EXECUTE - Run a command" in caplog.text
     assert "SUCCESS" in caplog.text
     assert "hello progress log" not in caplog.text

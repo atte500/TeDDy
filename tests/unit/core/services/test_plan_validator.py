@@ -25,8 +25,9 @@ def test_validate_edit_action_with_nonexistent_find_block(fs):
                 type="edit",
                 params={
                     "path": str(file_path),
-                    "find": "Goodbye world",
-                    "replace": "Hello pytest",
+                    "edits": [
+                        {"find": "Goodbye world", "replace": "Hello pytest"},
+                    ],
                 },
                 description="Test edit action validation",
             )

@@ -206,7 +206,7 @@ class PlanValidator(IPlanValidator):
                         if diff_text:
                             diff_fence = get_fence_for_content(diff_text)
                             error_msg += f"**Closest Match Diff:**\n{diff_fence}diff\n{diff_text}\n{diff_fence}\n"
-                        error_msg += "**Hint:** You need to match the content exactly, including any whitespace and indentations."
+                        error_msg += "**Hint:** You need to match the target content exactly, including any whitespace and indentations."
 
                         action_errors.append(
                             ValidationError(
@@ -226,42 +226,4 @@ class PlanValidator(IPlanValidator):
                                 file_path=str(file_path),
                             )
                         )
-        else:
-            # Handle single 'find' param (legacy/YAML parser)
-            find_block = action.params.get("find") or action.params.get("FIND")
-            replace_block = action.params.get("replace") or action.params.get("REPLACE")
-
-            if isinstance(find_block, str):
-                if find_block == replace_block:
-                    fence = get_fence_for_content(find_block)
-                    action_errors.append(
-                        ValidationError(
-                            message=(
-                                f"FIND and REPLACE blocks are identical in: {file_path}\n"
-                                f"**Block Content:**\n"
-                                f"{fence}\n{find_block}\n{fence}"
-                            ),
-                            file_path=str(file_path),
-                        )
-                    )
-                elif find_block not in content:
-                    diff_text = self._find_best_match_and_diff(content, find_block)
-                    fence = get_fence_for_content(find_block)
-                    error_msg = (
-                        f"The `FIND` block could not be located in the file: {file_path}\n"
-                        f"**FIND Block:**\n"
-                        f"{fence}\n{find_block}\n{fence}\n"
-                    )
-                    if diff_text:
-                        diff_fence = get_fence_for_content(diff_text)
-                        error_msg += f"**Closest Match Diff:**\n{diff_fence}diff\n{diff_text}\n{diff_fence}\n"
-                    error_msg += "**Hint:** You need to match the content exactly, including any whitespace and indentations."
-
-                    action_errors.append(
-                        ValidationError(
-                            message=error_msg,
-                            file_path=str(file_path),
-                        )
-                    )
-
         return action_errors

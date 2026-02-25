@@ -1,7 +1,6 @@
 import logging
 import os
 from pathlib import Path
-from typing import Optional
 from teddy_executor.core.ports.outbound.file_system_manager import FileSystemManager
 
 # Configure debug logging
@@ -201,27 +200,15 @@ class LocalFileSystemAdapter(FileSystemManager):
     def edit_file(
         self,
         path: str,
-        find: Optional[str] = None,
-        replace: Optional[str] = None,
-        edits: Optional[list[dict[str, str]]] = None,
+        edits: list[dict[str, str]],
     ) -> None:
         """
-        Modifies an existing file by replacing block(s) of text.
-        Supports either a single find/replace pair or a list of edits.
+        Modifies an existing file by applying a list of find-and-replace blocks.
         """
         file_path = self._resolve_path(path)
         content = file_path.read_text(encoding="utf-8")
 
-        if edits:
-            for edit in edits:
-                content = self._apply_single_edit(
-                    content, edit["find"], edit["replace"]
-                )
-        elif find is not None and replace is not None:
-            content = self._apply_single_edit(content, find, replace)
-        else:
-            raise ValueError(
-                "Either 'edits' list or 'find'/'replace' pair must be provided."
-            )
+        for edit in edits:
+            content = self._apply_single_edit(content, edit["find"], edit["replace"])
 
         file_path.write_text(content, encoding="utf-8")

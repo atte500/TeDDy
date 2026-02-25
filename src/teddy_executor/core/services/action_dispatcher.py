@@ -49,7 +49,7 @@ class ActionDispatcher:
         log_desc = f" - {action_data.description}" if action_data.description else ""
         action_summary = f"{action_name}{log_desc}"
 
-        logger.info(f"Executing Action: {action_summary}")
+        logger.info(action_summary)
 
         # Make a copy of params for logging and defensively add the description
         # to it if it exists. This makes the dispatcher robust against parser
