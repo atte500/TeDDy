@@ -81,6 +81,7 @@
                   *   **Correctness:** A static type checker.
                   *   **Style & Formatting:** A linter and formatter.
                   *   **Complexity:** A static complexity analysis tool. Define and document project-specific thresholds for **Cyclomatic Complexity** per function and **Source Lines of Code (SLOC)** per file.
+                  *   **Duplication:** A copy-paste detection (CPD) tool to identify duplicated code blocks. Define and document a project-specific threshold for the minimum token length to be considered a duplicate.
                   *   **Sanity & Consistency:** Checks for valid file formats, no merge-conflict markers, etc.
 
           **2. Component & Boundary Map**

@@ -10,8 +10,7 @@ This milestone consolidates several critical technical debt cleanups and workflo
 4.  **Refactor Legacy DTOs:** Modernize legacy data transfer objects (`ContextResult`, `CommandResult`, `SERPReport`) into domain-aligned, strictly typed models (`ProjectContext`, `ShellOutput`, `WebSearchResults`).
 5.  **Code Quality & Test Pyramid:** Introduce complexity linters (`ruff`), enforce test coverage in CI (`pytest-cov`), and invert the test pyramid by migrating overly broad acceptance tests down to the unit/integration level.
 6.  **CLI UX Improvements:** Streamline the interactive execution approval output. Hide raw `FIND`/`REPLACE` blocks and new file content, display a single unified diff for `EDIT` actions, and show a standard file preview for `CREATE` actions.
-
--   **Referenced Specification:** [Spec: Robust Plan Parsing](./../specs/robust-plan-parsing.md)
+7.  **Code Duplication Detection:** Integrate a Copy-Paste-Detector (CPD) tool into the CI pipeline to proactively flag and prevent duplicated code.
 
 ## 2. Proposed Solution (The "What")
 
@@ -19,7 +18,7 @@ This milestone consolidates several critical technical debt cleanups and workflo
 -   **POSIX Pre-Processor:** Update the parser for `EXECUTE` actions to intercept `cd` and `export` lines from multiline shell blocks. It will map these to internal `cwd` and `env` variables, stripping them from the raw command sent to the OS.
 -   **Trafilatura Migration:** Use `trafilatura.extract()` with specific parameters (`output_format='markdown'`, `include_links=True`, `include_formatting=True`) in the `WebScraperAdapter`.
 -   **DTO Modernization:** Systematically replace legacy DTOs with new `@dataclass` and `TypedDict` implementations in dedicated modules, migrating all dependent code.
--   **CI Quality Gates:** Add `pytest-cov` to track test coverage and configure `ruff` rules (e.g., McCabe complexity `C901`, `PLR` rules) in `pyproject.toml`. Update `.github/workflows/ci.yml` to run these checks.
+-   **CI Quality Gates:** Add `pytest-cov` to track test coverage and configure `ruff` rules (e.g., McCabe complexity `C901`, `PLR` rules) in `pyproject.toml`. Integrate a CPD tool (e.g., `pmd-bin`) with a defined token threshold to detect duplicated code. Update `.github/workflows/ci.yml` to run all checks.
 -   **Test Pyramid Refactoring:** Audit the 36 existing acceptance tests, isolating those that test internal implementation details, and migrate their assertions to the `tests/unit/` and `tests/integration/` directories.
 
 ## 3. Implementation Guidelines (The "How")
@@ -43,7 +42,7 @@ Execute a safe "Create, Migrate, Delete" sequence for each legacy model:
 -   `ContextResult` -> `ProjectContext` (Use `@dataclass` in `project_context.py`)
 
 ### 3.4. CI Quality Gates & Test Pyramid
--   **Phase 1 (Stop the Bleeding):** Update `pyproject.toml` to include `pytest-cov`. Add `tool.ruff.lint.extend-select = ["C901", "PLR"]`. Explicitly define target thresholds for Cyclomatic Complexity (e.g., McCabe `C901` <= 10) and Source Lines of Code / Statements (e.g., `PLR0915` <= 50). Initially configure these as warnings or with temporary `noqa` exclusions so CI doesn't break immediately, creating a clear burndown list. Add steps to `.github/workflows/ci.yml` to enforce `ruff check` and `pytest --cov=src`.
+-   **Phase 1 (Stop the Bleeding):** Update `pyproject.toml` to include `pytest-cov`. Add `tool.ruff.lint.extend-select = ["C901", "PLR"]`. Explicitly define target thresholds for Cyclomatic Complexity (e.g., McCabe `C901` <= 10) and Source Lines of Code / Statements (e.g., `PLR0915` <= 50). Initially configure these as warnings or with temporary `noqa` exclusions so CI doesn't break immediately, creating a clear burndown list. Add a step to `.github/workflows/ci.yml` to download and run a CPD tool like `pmd-bin`, configured with a reasonable `--minimum-tokens` threshold (e.g., 50). Add this check alongside `ruff check` and `pytest --cov=src`.
 -   **Phase 2 (The Great Refactor):** Review `tests/acceptance/`. Move assertions verifying individual components (e.g., `MarkdownPlanParser` behavior, `ActionDispatcher` routing) into corresponding unit/integration tests. Delete redundant acceptance tests to speed up the suite.
 -   **Phase 3 (Complexity Remediation):** Refactor the most complex functions identified by `ruff` (e.g., addressing "too many branches/statements") using the newly bolstered unit test suite to ensure safety.
 
@@ -62,7 +61,8 @@ Execute a safe "Create, Migrate, Delete" sequence for each legacy model:
 - [ ] **Slice 5: Refactor `SERPReport` to `WebSearchResults`** (Create, migrate, delete).
 - [ ] **Slice 6: Refactor `ContextResult` to `ProjectContext`** (Create, migrate, delete).
 - [ ] **Slice 7: Configure CI Quality Gates** (Add `pytest-cov`, set strict targets for Cyclomatic Complexity and SLOC via `ruff`, update `ci.yml`).
-- [ ] **Slice 8: Audit and Invert Test Pyramid** (Migrate acceptance tests to unit/integration).
-- [ ] **Slice 9: Remediate High-Complexity Code** (Refactor flagged functions and tighten thresholds).
-- [ ] **Slice 10: Refine CLI Help Descriptions** (Update Typer command docstrings/help parameters in `main.py`).
-- [ ] **Slice 11: Implement CLI UX Improvements** (Consolidate EDIT diffs, simplify CREATE previews, and hide raw payloads).
+- [ ] **Slice 8: Add CPD to CI Quality Gates** (Integrate PMD/CPD check into the CI workflow).
+- [ ] **Slice 9: Audit and Invert Test Pyramid** (Migrate acceptance tests to unit/integration).
+- [ ] **Slice 10: Remediate High-Complexity Code** (Refactor flagged functions and tighten thresholds).
+- [ ] **Slice 11: Refine CLI Help Descriptions** (Update Typer command docstrings/help parameters in `main.py`).
+- [ ] **Slice 12: Implement CLI UX Improvements** (Consolidate EDIT diffs, simplify CREATE previews, and hide raw payloads).
