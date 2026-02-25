@@ -117,7 +117,7 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 | **LocalRepoTreeGenerator**     | Implements `IRepoTreeGenerator` using the `pathspec` library to handle ignore files.       | [LocalRepoTreeGenerator](./adapters/outbound/local_repo_tree_generator.md)        |
 | **ShellAdapter**               | Implements `IShellExecutor` using Python's `subprocess` module.                            | [ShellAdapter](./adapters/outbound/shell_adapter.md)                              |
 | **SystemEnvironmentInspector** | Implements `IEnvironmentInspector` using Python's `os`, `platform`, and `sys` modules.     | [SystemEnvironmentInspector](./adapters/outbound/system_environment_inspector.md) |
-| **WebScraperAdapter**          | Implements `IWebScraper` using the `requests` and `markdownify` libraries.                 | [WebScraperAdapter](./adapters/outbound/web_scraper_adapter.md)                   |
+| **WebScraperAdapter**          | Implements `IWebScraper` using `trafilatura` for content extraction and a direct-fetch for GitHub URLs. | [WebScraperAdapter](./adapters/outbound/web_scraper_adapter.md)                   |
 | **WebSearcherAdapter**         | Implements `IWebSearcher` using the `ddgs` library for keyless DuckDuckGo searches.        | [WebSearcherAdapter](./adapters/outbound/web_searcher_adapter.md)                 |
 
 ---

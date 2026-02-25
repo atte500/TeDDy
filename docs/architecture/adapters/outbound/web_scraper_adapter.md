@@ -11,14 +11,16 @@ The `WebScraperAdapter` is the concrete implementation of the `WebScraper` outbo
 
 *   [`WebScraper`](../../core/ports/outbound/web_scraper.md)
 
-## 3. Implementation Notes
+## 3. Implementation Details / Logic
+The adapter employs a "smart router" pattern to choose the best scraping strategy based on the URL. This hybrid approach ensures both high-quality content extraction from general web pages and perfect fidelity for source code files from GitHub.
 
-*   **HTTP Client:** The `requests` library is used for its simplicity and widespread adoption for synchronous HTTP requests.
-*   **Error Handling:** The adapter calls `response.raise_for_status()` to automatically raise an `HTTPError` for non-2xx responses, which is then caught by the `PlanService`.
-*   **HTML Conversion:** The `markdownify` library is used to convert the fetched HTML content into clean Markdown.
-*   **User Agent:** A default browser-like `User-Agent` header is sent with requests to avoid being blocked by simple anti-bot measures.
+1.  **GitHub URL Detection:** The adapter first inspects the URL. If it matches the pattern for a GitHub file view (e.g., `github.com/.../blob/...`), it bypasses the general-purpose extraction logic.
+2.  **Raw Content Fetching (for GitHub):** The GitHub URL is transformed into its corresponding "raw" content URL (e.g., `raw.githubusercontent.com/...`). The adapter then fetches this URL directly using `requests` and returns the raw file content. This was validated by the `spike_github_raw_scraper.py` spike.
+3.  **General Content Extraction (for all other URLs):** For all other URLs, the adapter uses `trafilatura` to fetch the page and extract the main article content, intelligently stripping away common boilerplate like navigation, ads, and footers. It is configured to convert the extracted content to Markdown (`output_format='markdown'`). Research and spikes confirmed that default formatting options are sufficient.
+4.  **User Agent:** A default browser-like `User-Agent` header is sent with all requests to avoid being blocked by simple anti-bot measures.
 
-## 4. Key Code Snippet
+## 4. Data Contracts / Methods
+The adapter implements the `scrape` method as defined by the `IWebScraper` port.
 
 The following snippet demonstrates the core logic for fetching and converting content.
 
@@ -41,4 +43,4 @@ class WebScraperAdapter(WebScraper):
 ## 5. External Documentation
 
 *   [`requests` Official Documentation](https://requests.readthedocs.io/en/latest/)
-*   [`markdownify` on PyPI](https://pypi.org/project/markdownify/)
+*   [`trafilatura` Official Documentation](https://trafilatura.readthedocs.io/en/latest/)
