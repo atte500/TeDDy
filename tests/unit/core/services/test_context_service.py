@@ -1,6 +1,7 @@
 import pytest
-from unittest.mock import MagicMock, call, Mock
+from unittest.mock import MagicMock, Mock
 
+from teddy_executor.core.domain.models import ProjectContext
 from teddy_executor.core.services.context_service import ContextService
 
 
@@ -100,17 +101,22 @@ def test_get_context_orchestrates_and_returns_correct_dto(
     """
     Scenario: Standardized Output Format (Service Level)
     Tests that get_context calls all its dependencies correctly and assembles
-    the ContextResult DTO with the data they provide.
+    the ProjectContext DTO with correctly formatted strings.
     """
     # Arrange
     # Simulate existing project.context file
     mock_file_system_manager.path_exists.return_value = True
 
     # Mock data from dependencies
-    mock_sys_info = {"os": "test_os", "shell": "/bin/test"}
+    mock_sys_info = {
+        "os_name": "test_os",
+        "shell": "/bin/test",
+        "cwd": "/test/dir",
+        "os_version": "1.0",
+    }
     mock_repo_tree = "dir/\n  file.txt"
-    mock_vault_paths = ["file1.txt", "file2.txt"]
-    mock_file_contents = {"file1.txt": "content1", "file2.txt": "content2"}
+    mock_vault_paths = ["file1.txt", "file2.py"]
+    mock_file_contents = {"file1.txt": "content1", "file2.py": "print('hello')"}
 
     mock_environment_inspector.get_environment_info.return_value = mock_sys_info
     mock_repo_tree_generator.generate_tree.return_value = mock_repo_tree
@@ -129,14 +135,17 @@ def test_get_context_orchestrates_and_returns_correct_dto(
         mock_vault_paths
     )
 
-    # Check that the service does NOT write a repotree.txt file anymore
-    assert (
-        call(".teddy/repotree.txt")
-        not in mock_file_system_manager.write_file.call_args_list
-    )
+    # Check the type of the returned DTO
+    assert isinstance(result, ProjectContext)
 
-    # Check the contents of the returned DTO
-    assert result.system_info == mock_sys_info
-    assert result.repo_tree == mock_repo_tree
-    assert result.context_vault_paths == mock_vault_paths
-    assert result.file_contents == mock_file_contents
+    # Check header content
+    assert "os_name: test_os" in result.header
+    assert "shell: /bin/test" in result.header
+    assert "cwd: /test/dir" in result.header
+
+    # Check main content
+    assert mock_repo_tree in result.content
+    assert "[file1.txt](/file1.txt)" in result.content
+    assert "```txt\ncontent1\n```" in result.content
+    assert "[file2.py](/file2.py)" in result.content
+    assert "```py\nprint('hello')\n```" in result.content

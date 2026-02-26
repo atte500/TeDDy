@@ -63,14 +63,14 @@ def test_context_command_suppresses_copy_with_flag(
     colliding with the content of the files being printed.
     """
     # Arrange
-    from teddy_executor.core.domain.models import ContextResult
+    from teddy_executor.core.domain.models import ProjectContext
     from teddy_executor.core.ports.inbound.get_context_use_case import (
         IGetContextUseCase,
     )
 
     mock_context_service = MagicMock(spec=IGetContextUseCase)
-    mock_context_service.get_context.return_value = ContextResult(
-        system_info={}, repo_tree="", context_vault_paths=[], file_contents={}
+    mock_context_service.get_context.return_value = ProjectContext(
+        header="# Mock Header", content="# Mock Content"
     )
     mock_container.resolve.return_value = mock_context_service
 
