@@ -1,6 +1,6 @@
 # Slice: Refactor `ContextResult` to `ProjectContext`
 
-- **Status:** Planned
+- **Status:** Completed
 - **Milestone:** [08-core-refactoring-and-enhancements](/docs/project/milestones/08-core-refactoring-and-enhancements.md)
 - **Spec:** None
 
@@ -104,3 +104,13 @@ This refactoring will be executed using a safe "Create, Migrate, Delete" sequenc
 ### 5. Verification
 -   Run the entire test suite (`poetry run pytest`) to ensure all tests pass and the refactoring is complete and correct.
 -   Run the pre-commit hooks (`poetry run pre-commit run --all-files`) to ensure type-checking and linting pass.
+
+## Implementation Summary
+
+This refactoring was successfully completed using a disciplined "Create, Migrate, Delete" strategy to ensure the trunk remained green throughout the process.
+
+1.  **Create:** The new `ProjectContext` dataclass was created along with its unit test and committed in a dormant state.
+2.  **Migrate:** The `IGetContextUseCase` port was updated first, creating a deliberate type error in `ContextService`. This error was resolved by updating the service to return the new DTO. A key part of this migration was moving the context formatting logic from the `cli_formatter` adapter into the `ContextService`, making the service responsible for preparing the final presentation strings. This change triggered a regression in the acceptance tests, which was resolved in a dedicated sub-TDD loop by updating the formatter and the tests to align with the new contract.
+3.  **Delete:** Once all application code was migrated, the legacy `ContextResult` model and its associated unit test were safely removed.
+
+The entire refactoring was completed across three small, atomic commits, leaving the system in a cleaner, more type-safe state.

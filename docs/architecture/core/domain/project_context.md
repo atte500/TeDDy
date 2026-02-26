@@ -1,4 +1,4 @@
-**Status:** Planned
+**Status:** Implemented
 **Introduced in:** [Slice: Refactor `ContextResult` to `ProjectContext`](/docs/project/slices/16-refactor-contextresult-to-projectcontext.md)
 
 ## 1. Purpose / Responsibility
@@ -13,8 +13,8 @@ The `ProjectContext` model will be implemented as a Python `@dataclass`. This pr
 ## 4. Data Contracts / Methods
 
 ### `ProjectContext` Dataclass Attributes
--   **`header` (`str`):** A formatted string containing high-level system information and the repository file tree.
--   **`content` (`str`):** A formatted string containing the contents of all requested files from the context vault.
+-   **`header` (`str`):** A pre-formatted string containing high-level system information (CWD, OS, etc.).
+-   **`content` (`str`):** A pre-formatted string containing the repository file tree and the contents of all requested files from the context vault.
 
 ### Preconditions
 - All attributes (`header`, `content`) must be non-empty strings.

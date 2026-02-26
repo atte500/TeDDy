@@ -61,7 +61,7 @@ Execute a safe "Create, Migrate, Delete" sequence for each legacy model:
 - [x] **Refactor Slice: Trim Plan Preamble** (Update parser to ignore text before the H1 heading).
 - [x] **Slice 4: Refactor `CommandResult` to `ShellOutput`** (Create, migrate, delete).
 - [x] **Slice 5: Refactor `SERPReport` to `WebSearchResults`** (Create, migrate, delete).
-- [ ] **Slice 6: Refactor `ContextResult` to `ProjectContext`** (Create, migrate, delete).
+- [x] **Slice 6: Refactor `ContextResult` to `ProjectContext`** (Create, migrate, delete).
 - [ ] **Slice 7: Configure CI Quality Gates** (Add `pytest-cov`, set strict targets for Cyclomatic Complexity and SLOC via `ruff`, update `ci.yml`).
 - [ ] **Slice 8: Add CPD to CI Quality Gates** (Integrate PMD/CPD check into the CI workflow).
 - [ ] **Slice 9: Audit and Invert Test Pyramid** (Migrate acceptance tests to unit/integration).
