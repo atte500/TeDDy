@@ -1,6 +1,6 @@
 # Slice: Refactor `SERPReport` to `WebSearchResults`
 
-- **Status:** Planned
+- **Status:** Implemented
 - **Milestone:** [08-core-refactoring-and-enhancements](/docs/project/milestones/08-core-refactoring-and-enhancements.md)
 - **Spec:** None
 
@@ -96,3 +96,18 @@ This refactoring will be executed using a safe "Create, Migrate, Delete" sequenc
 
 ### 5. Verification
 -   Run the entire test suite (`poetry run pytest`) to ensure all tests pass and the refactoring is complete and correct.
+
+## Implementation Summary
+
+This refactoring was executed successfully following a "Create, Migrate, Delete" strategy, driven by a series of small TDD cycles.
+
+1.  **Create:** A new `WebSearchResults` `TypedDict` model was created in `src/teddy_executor/core/domain/models/web_search_results.py`, driven by a new unit test.
+2.  **Migrate:**
+    *   The `IWebSearcher` port and `WebSearcherAdapter` were updated to return the new `WebSearchResults` dictionary. This change was driven by an integration test.
+    *   The `MarkdownReportFormatter`'s Jinja2 template was updated to correctly render the new dictionary structure. This was driven by a failing acceptance test, which was then resolved via a new unit test for the formatter.
+3.  **Delete:** The legacy `SERPReport`, `QueryResult`, and `SearchResult` dataclasses were removed from `_legacy_models.py`, along with their associated unit tests. The final references were cleaned up from the `models/__init__.py` file.
+
+The entire refactoring was completed without changing any user-facing behavior, and the full test suite remained green at the end of the process. A minor `mypy` type-checking issue was caught and fixed during the pre-commit stage.
+
+### Refactoring Opportunities
+- None.
