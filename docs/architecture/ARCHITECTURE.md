@@ -58,12 +58,13 @@ This document outlines the technical standards, conventions, and setup process f
 - **Principle:** The CI pipeline **must** execute the exact same suite of checks as the pre-commit hooks to guarantee the trunk remains clean. All hooks **must** be fast.
 - **Included Hooks:**
     - **Style & Formatting:**
-        - `ruff`: For linting and formatting.
+        - `ruff`: For linting and formatting. **Note:** `E501` (Line too long) is explicitly ignored. We rely on the auto-formatter to wrap code and allow developers discretion for long comments/URLs.
     - **Correctness:**
         - `mypy`: For static type checking.
     - **Complexity & Dead Code:**
         - `ruff`: Configured to enforce a **Cyclomatic Complexity** limit of **10** per function (Rule `C901`) and a **Statement Limit** of **50** per function (Rule `PLR0915`).
         - `vulture`: For detecting dead (unreachable) code.
+        - **File Length (SLOC):** A custom check enforces a maximum of **300 lines** per Python file (excluding tests and spikes).
     - **Sanity & Consistency:**
         - `check-yaml`, `check-toml`: For syntax validation.
 

@@ -48,6 +48,7 @@ exclude = ["spikes/"]
 [tool.ruff.lint]
 # Enable Pyflakes (F), Pycodestyle (E, W), Pylint Refactor (PLR), and McCabe complexity (C90)
 select = ["F", "E", "W", "C901", "PLR"]
+ignore = ["E501"]
 
 [tool.ruff.lint.mccabe]
 # Enforce a maximum cyclomatic complexity of 10
@@ -56,6 +57,12 @@ max-complexity = 10
 [tool.ruff.lint.pylint]
 # Enforce a maximum of 50 statements per function
 max-statements = 50
+
+[tool.vulture]
+exclude = ["spikes/"]
+min_confidence = 80
+paths = ["src", "tests"]
+sort_by_size = true
 
 [tool.mypy]
 ignore_missing_imports = true

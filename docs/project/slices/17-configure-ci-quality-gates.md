@@ -7,7 +7,9 @@
 ## 1. Business Goal & Interaction Sequence
 **Goal:** To improve long-term code quality and maintainability by integrating automated quality gates into the CI pipeline. This initiative aims to "stop the bleeding" on technical debt by programmatically enforcing standards for test coverage and code complexity. This ensures that all new code adheres to a higher standard of quality, making the system more robust and easier to manage.
 
-**Interaction:** This is an internal, developer-focused change. There are no user-facing changes. The primary interaction is with the CI system; developers will see CI builds fail if their contributions do not meet the newly established quality thresholds.
+**Interaction:** This is an internal, developer-focused change. The primary interaction is with the CI system; developers will see CI builds fail if their contributions do not meet the newly established quality thresholds.
+
+**Developer Note (E501 Reversion):** We have explicitly disabled column-based line length checks (`E501`) because they often break readability for URLs and comments. However, we have implemented a strict **300-line limit per file** (SLOC). If the current codebase has "artificial" line breaks or awkward formatting introduced solely to pass the old 88-character limit, you should revert those changes to improve readability. Use `git diff` to identify and undo these specific formatting compromises.
 
 ## 2. Acceptance Criteria (Scenarios)
 
@@ -56,6 +58,8 @@ The core architectural changes are:
 1.  **Test Coverage Enforcement:** The CI pipeline will now fail if test coverage drops below 80%.
 2.  **Code Complexity Analysis:** `ruff` will now enforce a maximum Cyclomatic Complexity of 10 and a maximum of 50 statements per function.
 3.  **Dead Code Detection:** The `vulture` tool will be used to identify and flag unused, unreachable code.
+4.  **File Length Enforcement:** A custom pre-commit hook enforces a maximum of **300 lines** per Python file. **Note:** Currently, `markdown_plan_parser.py` (777 lines) and `__main__.py` (360 lines) violate this rule.
+5.  **Disabled E501:** Explicitly ignored `E501` to favor content readability over column constraints.
 
 These new standards have been formally documented in the project's single source of truth for architecture.
 
