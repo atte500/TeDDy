@@ -1,63 +1,49 @@
-# Application Component: Action Factory
+# Application Component: `ActionFactory`
 
 **Status:** Implemented
-**Related Slice:** [Slice 03: Refactor Action Dispatching](../../slices/03-refactor-action-dispatching.md)
 
 ## 1. Purpose
-The `ActionFactory` is a core component responsible for taking raw action data (typically deserialized from a YAML plan) and converting it into a validated, concrete `Action` domain object (e.g., `ExecuteAction`, `CreateFileAction`, `ReadAction`). It encapsulates the creation and validation logic, decoupling the `PlanService` from the specific details of each action type.
+The `ActionFactory` is the central component responsible for translating action data from a plan into executable `IAction` handlers. Instead of maintaining a registry of domain objects, the factory leverages a Dependency Injection (DI) container to resolve the appropriate Outbound Port adapters and dynamically binds their specific methods to a standardized `execute(**kwargs)` interface.
 
 ## 2. Public Interface
 
-### `create_action(action_data: dict) -> Action`
-**Status:** Implemented
-
-*   **Description:** The primary factory method. It inspects the `action` key in the input dictionary to determine which type of action object to create, validates the associated `params`, and returns an initialized instance of the appropriate `Action` subclass.
+### `create_action(action_type: str, params: dict) -> IAction`
+*   **Description:** Resolves and prepares an action handler for the specified action type.
 *   **Parameters:**
-    *   `action_data` (dict): A dictionary representing a single action from the plan (e.g., `{'action': 'execute', 'params': {'command': 'ls'}}`).
-*   **Returns:** An instance of a concrete class that inherits from `Action`.
-*   **Raises:**
-    *   `ValueError`: If the `action` key is missing, invalid, or does not map to a known action type.
-    *   `TypeError`: If the `params` dictionary is missing required keys for the specified action.
+    *   `action_type` (str): The verb representing the action (e.g., `CREATE`, `EXECUTE`).
+    *   `params` (dict): The parameters extracted from the plan for this action.
+*   **Returns:** An object implementing the `IAction` protocol (exposing a single `execute` method).
 
 ## 3. Implementation Strategy
-1.  The factory maintains an internal registry mapping action type strings (e.g., `"create_file"`) to the corresponding Port protocol (e.g., `IFileSystemManager`).
 
-2.  When `create_action` is called, it resolves an instance of the required adapter from the dependency injection container.
+### 3.1. Dependency Injection & Method Binding
+The factory uses the `punq` container to resolve concrete adapters for Outbound Ports. For adapters that support multiple operations (e.g., `IFileSystemManager` handles both `CREATE` and `EDIT`), the factory performs **Method Binding**:
+1.  It resolves the adapter instance from the container.
+2.  It identifies the specific adapter method required for the action (e.g., `create_file` for a `CREATE` action).
+3.  It wraps this method in a closure that implements the `IAction` protocol's `execute(**kwargs)` method.
+4.  This closure handles parameter normalization (e.g., mapping `resource` or `path` to the adapter's expected argument names).
 
-3.  **Specialized Routing for `READ`:** The `create_action` method contains special logic for the `read` action type. It inspects the parameters passed along with the action type. If the `resource` or `path` parameter starts with `http`, it resolves the `IWebScraper` protocol. Otherwise, it resolves the `IFileSystemManager` protocol. This moves the routing decision into the factory, simplifying the `ActionDispatcher`.
+### 3.2. Specialized Routing for `READ`
+The factory handles the polymorphic nature of the `READ` action. It inspects the target resource:
+- **Remote Resource (URL):** It resolves and binds the `IWebScraper` adapter.
+- **Local Resource (Path):** It resolves and binds the `IFileSystemManager.read_file` method.
 
-4.  **Method Binding:** For adapters that handle multiple actions (like `IFileSystemManager`), the factory binds the correct method (e.g., `read_file`) to the generic `execute` method required by the `IAction` protocol that the `ActionDispatcher` expects.
+### 3.3. Standalone Actions
+Actions that do not require external I/O or adapter delegation (e.g., `INVOKE`, `PRUNE`, `RETURN`) are handled by simple internal classes within the factory that implement the `IAction` protocol directly.
 
-4.  **Backwards Compatibility:** For the `execute` action, it checks if `params` is a simple string. If so, it converts it to a dictionary (`{"command": "..."}`) to support the legacy plan format.
+## 4. Key Mappings
 
-5.  The factory is also responsible for minor data transformations. For example, it converts a multi-line string of queries for the `research` action into the list of strings required by the `ResearchAction` domain object.
+The factory maintains a mapping between the Markdown verbs used in plans and the internal Port protocols:
 
-**Conceptual Registry:**
-```python
-# Conceptual registry
-self.action_registry = {
-    "execute": ExecuteAction,
-    "create_file": CreateFileAction,
-    "read": ReadAction, # Added in Slice 04
-    "edit": EditAction, # Added in Slice 06
-    "chat_with_user": ChatWithUserAction, # Added in Slice 10
-    "research": ResearchAction, # Added in Slice 11
-}
-```
-
-    ```python
-    # Conceptual registry
-    self.action_registry = {
-        "execute": ExecuteAction,
-        "create_file": CreateFileAction,
-        "read": ReadAction, # Added in Slice 04
-        "edit": EditAction, # Added in Slice 06
-        "chat_with_user": ChatWithUserAction, # Added in Slice 10
-        "research": ResearchAction, # Added in Slice 11
-    }
-    ```
-2.  The `create_action` method checks if the `action` type exists in the registry. If not, it raises a `ValueError`.
-3.  **Backwards Compatibility:** For the `execute` action, it checks if `params` is a simple string. If so, it converts it to a dictionary (`{"command": "..."}`) to support the legacy plan format.
-4.  It retrieves the corresponding class from the registry and attempts to instantiate it, passing the `params` dictionary as keyword arguments.
-5.  The `dataclass` constructor of the concrete action class handles the validation, raising `ValueError` or `TypeError` if parameters are invalid. These exceptions are propagated up to the `PlanService`.
-6.  The factory is also responsible for minor data transformations. For example, it converts a multi-line string of queries for the `research` action into the list of strings required by the `ResearchAction` domain object.
+| Action Verb      | Internal Key     | Port Protocol           | Adapter Method |
+| ---------------- | ---------------- | ----------------------- | -------------- |
+| `CREATE`         | `create_file`    | `IFileSystemManager`    | `create_file`  |
+| `EDIT`           | `edit`           | `IFileSystemManager`    | `edit_file`    |
+| `READ` (local)   | `read_file`      | `IFileSystemManager`    | `read_file`    |
+| `READ` (remote)  | `read_file`      | `IWebScraper`           | `get_content`  |
+| `EXECUTE`        | `execute`        | `IShellExecutor`        | `execute`      |
+| `CHAT_WITH_USER` | `chat_with_user` | `IUserInteractor`       | `ask_question` |
+| `RESEARCH`       | `research`       | `IWebSearcher`          | `search`       |
+| `INVOKE`         | `invoke`         | Internal `InvokeAction` | `execute`      |
+| `PRUNE`          | `prune`          | Internal `PruneAction`  | `execute`      |
+| `RETURN`         | `return`         | Internal `ReturnAction` | `execute`      |
