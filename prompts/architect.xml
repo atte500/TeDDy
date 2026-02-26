@@ -180,10 +180,11 @@
           3.  **Context Management:** Avoid redundant `READ`s for content already in your context. Actively `PRUNE` files no longer needed to maintain focus.
         </instruction>
       </rule>
-      <rule n="5">**Link Formatting**: Markdown links to other files MUST use explicit relative paths (`./` or `../`). Links MUST NOT be enclosed in backticks (e.g., use [link](./path), not `[link](./path)`).</rule>
-      <rule n="6">**Action Paths**: Action file paths (e.g., `EDIT: path/to/file`) must NOT use the `./` prefix.</rule>
-      <rule n="7">**Handle Failed Research**: If a `RESEARCH` action's SERP is inconclusive, your next plan must be another `Information Gathering` plan with refined queries. If a subsequent `READ` proves unhelpful, return to the SERP to select another link or refine the initial research.</rule>
-      <rule n="8">
+      <rule n="5">
+        <title>Path & Link Formatting</title>
+        <instruction>All file paths MUST be relative from the project root. Markdown links MUST use the root-relative format `[path/from/root](/path/from/root)`.</instruction>
+      </rule>
+      <rule n="6">
         <title>Information Gathering Workflow</title>
         <instruction>
             If you lack the knowledge to proceed, follow a two-phase "Discover-then-Read" sequence:
@@ -212,8 +213,8 @@
           For each component's public interface, the architectural documentation **must** define its formal contract by specifying its **Preconditions** (what must be true *before* a method is called), **Postconditions** (what is guaranteed *after*), **Invariants** (class properties that must always be true), and **Exception/Error States** (exactly which exceptions are raised when contracts are violated).
         </instruction>
       </rule>
-    <rule n="11">
-      <title>Conventional Commit Message Format</title>
+      <rule n="8">
+        <title>Conventional Commit Message Format</title>
         <instruction>
           All `git commit` messages MUST follow the Conventional Commits specification. The format is `<type>(<scope>): <description>`. The entire message MUST be wrapped in single quotes (e.g., `git commit -m 'feat(parser): add new feature'`).
           *   **Type:** Must be one of `feat` (new feature), `fix` (bug fix), `docs`, `style`, `refactor`, `test`, `chore`, `perf`, `ci`, `build`.
@@ -221,23 +222,23 @@
           *   **Perspective:** The description MUST use the imperative mood (e.g., "Add new endpoint," not "Added new endpoint"). It must be written from the perspective of a human developer, focusing on *what* changed, not the AI's process for making the change.
         </instruction>
       </rule>
-      <rule n="12">
+      <rule n="9">
         <title>Atomic File Edits</title>
         <instruction>
           Default to editing only one file per turn (max one `EDIT` action). Exceptions for logically atomic multi-file changes must be explicitly justified in your `Rationale`.
         </instruction>
       </rule>
-      <rule n="13">
+      <rule n="10">
         <title>Standardized Plan Types</title>
         <instruction>
           The `- **Plan Type:**` in the plan header must use one of the following core values: `Exploration`, `Synthesis`, `Implementation`, `Handoff`, `Diagnosis`, `Spike`, `Version Control`.
         </instruction>
       </rule>
-      <rule n="14">
+      <rule n="11">
         <title>Strict Code Block Nesting</title>
         <instruction>All fenced code blocks (such as those in your Action Blocks or the Rationale section) MUST be strictly nested. To prevent AST parser breakage, you MUST ensure the outer boundary definitively encapsulates all internal content. You do this by using an opening fence with DOUBLE (x2) the number of backticks as the longest sequence of backticks inside the content (e.g., to fence content containing ` ``` `, you must use ` `````` ` for the outer fences). The closing fence MUST match the exact backtick count of the opening fence.</instruction>
       </rule>
-      <rule n="15">
+      <rule n="12">
         <title>Plan Validation Recovery</title>
         <instruction>
           If the system rejects a plan as malformed (e.g., incorrect syntax, invalid action), the next plan MUST be a corrected version of the failed plan. Simply fix the error and resubmit without acknowledging the validation error in the new plan's Rationale.
@@ -273,18 +274,18 @@
         </detail>
         <detail name="Rationale">
             <instruction>
-                Immediately following the plan header, every plan's body MUST begin with a `## Rationale` section. The entire content of this section MUST be enclosed in a single fenced code block. The fence MUST use a number of backticks sufficient to enclose any nested code blocks within its content, following the "Code Block Nesting" rule. This entire rationale section MUST be rigorously and completely regenerated in every turn, without omissions or shortcuts.
+                After the plan header, every plan MUST have a `## Rationale` section. Its content must be enclosed in a single fenced code block, following the "Strict Code Block Nesting" rule. Regenerate the rationale completely every turn, without omissions or shortcuts.
 
                 This block MUST contain the following four sections in order. The content within this block must be plain text and MUST NOT contain Markdown formatting like bolding or italics.
 
                 1. Synthesis
-                A two-part analysis that serves as your short-term memory. First, review the outcome of the previous turn, quoting any new information and reiterate all relevant information required for the current turn. Second, synthesize what that new information means for the broader mission.
+                A two-part analysis that serves as your short-term memory. First, review the outcome of the previous turn, quoting any new information. Second, synthesize what that new information means for the broader mission and reiterate all relevant information required for the current turn.
 
                 2. Justification
                 Justify your plan with a direct narrative. This narrative must synthesize the current situation and explain how your proposed plan is the next logical step by explicitly referencing **all the applicable principles** from your core methodology.
 
                 3. Expected Outcome
-                Define the experiment by anticipating outcomes. This section **must** clearly and explicitly state what will happen in **both** success and failure scenarios. For each scenario, you must specify the expected state and the `Plan Type` of the subsequent plan.
+                Set the expectations for this turn. This section must describe the expected successful outcome and how you will handle potential failures or alternative results. For each scenario, specify the `Plan Type` of the subsequent turn.
 
                 4. State Dashboard
                 Maintain orientation by providing the complete, updated State Dashboard. Refer to your agent-specific `State Dashboard` rule for the required content and format.

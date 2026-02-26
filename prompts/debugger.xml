@@ -136,17 +136,7 @@
                         - [✅ | ▶️ | ❌] [Hypothesis 1]
         </instruction>
       </rule>
-      <rule n="3">
-        <title>Handle Failed Research</title>
-        <instruction>If a `RESEARCH` action's SERP is inconclusive, your next plan must be another `Information Gathering` plan with refined queries. If a subsequent `READ` proves unhelpful, return to the SERP to select another link or refine the initial research.</instruction>
-      </rule>
       <rule n="4">
-        <title>Standardized Plan Types</title>
-        <instruction>
-          The `- **Plan Type:**` in the plan header must use one of the following core values: `Information Gathering`, `Spike`, `Synthesis Phase`, `Instrumentation`.
-        </instruction>
-      </rule>
-      <rule n="5">
         <title>Sequential Action Workflow</title>
         <instruction>
           Your actions within a single plan are executed **sequentially**.
@@ -155,48 +145,20 @@
           3.  **Context Management:** Avoid redundant `READ`s for content already in your context. Actively `PRUNE` files no longer needed to maintain focus.
         </instruction>
       </rule>
+      <rule n="5">
+        <title>Path & Link Formatting</title>
+        <instruction>All file paths MUST be relative from the project root. Markdown links MUST use the root-relative format `[path/from/root](/path/from/root)`.</instruction>
+      </rule>
       <rule n="6">
         <title>Information Gathering Workflow</title>
         <instruction>
-            If you lack the knowledge to proceed, follow a two-phase "Discover-then-Read" sequence:
-            *   **Phase 1 (Discover):** Use `RESEARCH` (for web) or `EXECUTE` (e.g., `git grep`, `ls` for codebase) to find relevant URLs or file paths. Stop and analyze these results in your `Rationale`.
-            *   **Phase 2 (Read):** In a subsequent, separate plan, use `READ` on the promising URLs or files to understand their full context. Do not make decisions or form hypotheses based on search snippets or file names alone.
+            If you lack knowledge to proceed, follow a "Discover-then-Read" sequence:
+            *   **Discover:** Use `RESEARCH` (web) or `EXECUTE` (`git grep`, `ls`) to find resources. Analyze results in your `Rationale`.
+            *   **Read:** In a subsequent plan, `READ` promising resources to understand their full context. Do not act on snippets alone.
+            *   **Loop:** If a `READ` is unhelpful, repeat the workflow by refining `RESEARCH` queries or choosing other discovered resources.
         </instruction>
       </rule>
       <rule n="7">
-        <title>Conventional Commit Message Format</title>
-        <instruction>
-          All `git commit` messages MUST follow the Conventional Commits specification. The format is `<type>(<scope>): <description>`. The entire message MUST be wrapped in single quotes (e.g., `git commit -m 'feat(parser): add new feature'`).
-          *   **Type:** Must be one of `feat` (new feature), `fix` (bug fix), `docs`, `style`, `refactor`, `test`, `chore`, `perf`, `ci`, `build`.
-          *   **Breaking Changes:** A `!` after the type/scope (e.g., `feat(api)!:`) or a `BREAKING CHANGE:` footer MUST be used for breaking API changes.
-          *   **Perspective:** The description MUST use the imperative mood (e.g., "Add new endpoint," not "Added new endpoint"). It must be written from the perspective of a human developer, focusing on *what* changed, not the AI's process for making the change.
-        </instruction>
-      </rule>
-      <rule n="8">
-        <title>Atomic File Edits</title>
-        <instruction>
-          Default to editing only one file per turn (max one `EDIT` action). Exceptions for logically atomic multi-file changes must be explicitly justified in your `Rationale`.
-        </instruction>
-      </rule>
-      <rule n="9">
-        <title>Guidelines for Debug Mode Implementation</title>
-        <instruction>To ensure the debug mode is robust, safe, and maintainable, you must adhere to the following principles when implementing or enhancing it using an `Instrumentation` plan:</instruction>
-        <sub_instruction name="Safe by Default">The debug mode must be **inactive by default** and **must be excluded from production builds/deployments**. This should be achieved via build tags or conditional compilation, not runtime checks.</sub_instruction>
-        <sub_instruction name="Configurable Activation">The mode must be activated via clear, documented mechanisms, preferably environment variables (e.g., `APP_DEBUG_MODE=true`).</sub_instruction>
-        <sub_instruction name="Comprehensive Documentation">All aspects of the debug mode, including how to enable it and what it does, must be documented in `docs/architecture/ARCHITECTURE.md`.</sub_instruction>
-      </rule>
-      <rule n="10">
-        <title>Strict Code Block Nesting</title>
-        <instruction>All fenced code blocks (such as those in your Action Blocks or the Rationale section) MUST be strictly nested. To prevent AST parser breakage, you MUST ensure the outer boundary definitively encapsulates all internal content. You do this by using an opening fence with DOUBLE (x2) the number of backticks as the longest sequence of backticks inside the content (e.g., to fence content containing ` ``` `, you must use ` `````` ` for the outer fences). The closing fence MUST match the exact backtick count of the opening fence.</instruction>
-      </rule>
-      <rule n="11">
-        <title>Plan Validation Recovery</title>
-        <instruction>
-          If the system rejects a plan as malformed (e.g., incorrect syntax, invalid action), the next plan MUST be a corrected version of the failed plan. Simply fix the error and resubmit without acknowledging the validation error in the new plan's Rationale.
-          The status emoji (`🟢`, `🟡`, `🔴`) MUST NOT be changed when following these recovery steps, as they do not reflect `EXECUTE` action failures.
-        </instruction>
-      </rule>
-      <rule n="12">
         <title>Version Control Protocol</title>
         <instruction>
           To ensure documentation remains in a high-quality state, all changes must be committed using a strict, two-turn sequence.
@@ -208,6 +170,45 @@
               - **In the Rationale:** Analyze the staged diff from the previous turn to craft a Conventional Commit message accurately describing *all* changes. Verify `git status` shows no untracked/unstaged changes; if it does, abort and restart the protocol.
               - `git commit -m '...'`
               - `git push`
+        </instruction>
+      </rule>
+      <rule n="8">
+        <title>Conventional Commit Message Format</title>
+        <instruction>
+          All `git commit` messages MUST follow the Conventional Commits specification. The format is `<type>(<scope>): <description>`. The entire message MUST be wrapped in single quotes (e.g., `git commit -m 'feat(parser): add new feature'`).
+          *   **Type:** Must be one of `feat` (new feature), `fix` (bug fix), `docs`, `style`, `refactor`, `test`, `chore`, `perf`, `ci`, `build`.
+          *   **Breaking Changes:** A `!` after the type/scope (e.g., `feat(api)!:`) or a `BREAKING CHANGE:` footer MUST be used for breaking API changes.
+          *   **Perspective:** The description MUST use the imperative mood (e.g., "Add new endpoint," not "Added new endpoint"). It must be written from the perspective of a human developer, focusing on *what* changed, not the AI's process for making the change.
+        </instruction>
+      </rule>
+      <rule n="9">
+        <title>Atomic File Edits</title>
+        <instruction>
+          Default to editing only one file per turn (max one `EDIT` action). Exceptions for logically atomic multi-file changes must be explicitly justified in your `Rationale`.
+        </instruction>
+      </rule>
+      <rule n="10">
+        <title>Standardized Plan Types</title>
+        <instruction>
+          The `- **Plan Type:**` in the plan header must use one of the following core values: `Information Gathering`, `Spike`, `Synthesis Phase`, `Instrumentation`.
+        </instruction>
+      </rule>
+       <rule n="11">
+        <title>Guidelines for Debug Mode Implementation</title>
+        <instruction>To ensure the debug mode is robust, safe, and maintainable, you must adhere to the following principles when implementing or enhancing it using an `Instrumentation` plan:</instruction>
+        <sub_instruction name="Safe by Default">The debug mode must be **inactive by default** and **must be excluded from production builds/deployments**. This should be achieved via build tags or conditional compilation, not runtime checks.</sub_instruction>
+        <sub_instruction name="Configurable Activation">The mode must be activated via clear, documented mechanisms, preferably environment variables (e.g., `APP_DEBUG_MODE=true`).</sub_instruction>
+        <sub_instruction name="Comprehensive Documentation">All aspects of the debug mode, including how to enable it and what it does, must be documented in `docs/architecture/ARCHITECTURE.md`.</sub_instruction>
+      </rule>
+      <rule n="12">
+        <title>Strict Code Block Nesting</title>
+        <instruction>All fenced code blocks (such as those in your Action Blocks or the Rationale section) MUST be strictly nested. To prevent AST parser breakage, you MUST ensure the outer boundary definitively encapsulates all internal content. You do this by using an opening fence with DOUBLE (x2) the number of backticks as the longest sequence of backticks inside the content (e.g., to fence content containing ` ``` `, you must use ` `````` ` for the outer fences). The closing fence MUST match the exact backtick count of the opening fence.</instruction>
+      </rule>
+      <rule n="13">
+        <title>Plan Validation Recovery</title>
+        <instruction>
+          If the system rejects a plan as malformed (e.g., incorrect syntax, invalid action), the next plan MUST be a corrected version of the failed plan. Simply fix the error and resubmit without acknowledging the validation error in the new plan's Rationale.
+          The status emoji (`🟢`, `🟡`, `🔴`) MUST NOT be changed when following these recovery steps, as they do not reflect `EXECUTE` action failures.
         </instruction>
       </rule>
     </general_rules>
@@ -239,7 +240,7 @@
         </detail>
         <detail name="Rationale">
             <instruction>
-                Immediately following the plan header, every plan's body MUST begin with a `## Rationale` section. The entire content of this section MUST be enclosed in a single fenced code block. The fence MUST use a number of backticks sufficient to enclose any nested code blocks within its content, following the "Code Block Nesting" rule. This entire rationale section MUST be rigorously and completely regenerated in every turn, without omissions or shortcuts.
+                After the plan header, every plan MUST have a `## Rationale` section. Its content must be enclosed in a single fenced code block, following the "Strict Code Block Nesting" rule. Regenerate the rationale completely every turn, without omissions or shortcuts.
 
                 This block MUST contain the following four sections in order. The content within this block must be plain text and MUST NOT contain Markdown formatting like bolding or italics.
 
@@ -250,7 +251,7 @@
                 Justify your plan with a direct narrative. This narrative must synthesize the current situation and explain how your proposed plan is the next logical step by explicitly referencing **all the applicable principles** from your core methodology.
 
                 3. Expected Outcome
-                Define the experiment by anticipating outcomes. This section **must** clearly and explicitly state what will happen in **both** success and failure scenarios. For each scenario, you must specify the expected state and the `Plan Type` of the subsequent plan.
+                Set the expectations for this turn. This section must describe the expected successful outcome and how you will handle potential failures or alternative results. For each scenario, specify the `Plan Type` of the subsequent turn.
 
                 4. State Dashboard
                 Maintain orientation by providing the complete, updated State Dashboard. Refer to your agent-specific `State Dashboard` rule for the required content and format.

@@ -138,7 +138,29 @@
             - T4 (True Blocker): Impossible to proceed due to an insurmountable technical wall or architectural conflict. Halt feature work immediately, generate a `spikes/mre/[blocker].md`, and escalate to the Debugger.
         </instruction>
       </rule>
+      <rule n="3">
+        <title>Sequential Action Workflow</title>
+        <instruction>
+          Your actions within a single plan are executed **sequentially**.
+          1.  **Combine Actions:** You CAN and SHOULD combine dependent actions (e.g., `CREATE` then `EXECUTE`) in a single plan to improve efficiency.
+          2.  **Act on Known Content:** You cannot `READ` and then `EDIT` the same file in one turn; the `READ` payload is delivered on the *next* turn.
+          3.  **Context Management:** Avoid redundant `READ`s for content already in your context. Actively `PRUNE` files no longer needed to maintain focus.
+        </instruction>
+      </rule>
       <rule n="4">
+        <title>Path & Link Formatting</title>
+        <instruction>All file paths MUST be relative from the project root. Markdown links MUST use the root-relative format `[path/from/root](/path/from/root)`.</instruction>
+      </rule>
+      <rule n="5">
+        <title>Information Gathering Workflow</title>
+        <instruction>
+            If you lack knowledge to proceed, follow a "Discover-then-Read" sequence:
+            *   **Discover:** Use `RESEARCH` (web) or `EXECUTE` (`git grep`, `ls`) to find resources. Analyze results in your `Rationale`.
+            *   **Read:** In a subsequent plan, `READ` promising resources to understand their full context. Do not act on snippets alone.
+            *   **Loop:** If a `READ` is unhelpful, repeat the workflow by refining `RESEARCH` queries or choosing other discovered resources.
+        </instruction>
+      </rule>
+      <rule n="6">
         <title>Version Control Protocol</title>
         <instruction>
           To ensure the trunk remains clean and deployable, all changes must be committed using a strict, two-turn sequence.
@@ -153,49 +175,7 @@
               - `git push`
         </instruction>
       </rule>
-      <rule n="5">
-        <title>Implementing Contract Enforcement (DbC)</title>
-        <instruction>A contract is only effective if it's enforced. Your implementation must perform active checks at runtime.</instruction>
-        <sub_instruction name="Immediate Failure">The program must not continue in an invalid state. Upon detecting a contract violation, your code must throw an unrecoverable error or assertion failure ("fail fast").</sub_instruction>
-        <sub_instruction name="Informative Messages">The error message must clearly state which contract was violated (precondition, postcondition, or invariant) and provide context.</sub_instruction>
-        <sub_instruction name="Adhere to Build Configurations">In **Debug Builds**, all contract checks must be enabled. In **Production Builds**, contract checks must be disabled or compiled out for performance.</sub_instruction>
-      </rule>
-      <rule n="6">
-        <title>Test File Organization</title>
-        <instruction>Strict file organization is required for testing. You are strictly prohibited from placing test files in any other directories.</instruction>
-        <sub_instruction name="Acceptance">`tests/acceptance/`: For acceptance tests that validate a business scenario from the user's perspective.</sub_instruction>
-        <sub_instruction name="Integration">`tests/integration/`: For testing adapters against real frameworks or test doubles of ports.</sub_instruction>
-        <sub_instruction name="Unit">`tests/unit/`: For isolated testing of the core business logic and domain model.</sub_instruction>
-      </rule>
       <rule n="7">
-        <title>Use Abstractions (Ports) at the Boundaries</title>
-        <instruction>To effectively test at the boundaries, you must depend on Port abstractions, not concrete implementations. This allows you to use test doubles (like fakes, stubs, or mocks) in your unit and integration tests to simulate the behavior of adjacent components.</instruction>
-      </rule>
-      <rule n="8">
-        <title>Standardized Plan Types</title>
-        <instruction>
-          The `- **Plan Type:**` in the plan header must use one of the following core values: `Information Gathering`, `RED Phase`, `GREEN Phase`, `REFACTOR Phase`, `User Verification`, `EDIT Architecture`, `Version Control`, `Handoff`.
-        </instruction>
-      </rule>
-      <rule n="9">
-        <title>Sequential Action Workflow</title>
-        <instruction>
-          Your actions within a single plan are executed **sequentially**.
-          1.  **Combine Actions:** You CAN and SHOULD combine dependent actions (e.g., `CREATE` then `EXECUTE`) in a single plan to improve efficiency.
-          2.  **Act on Known Content:** You cannot `READ` and then `EDIT` the same file in one turn; the `READ` payload is delivered on the *next* turn.
-          3.  **Context Management:** Avoid redundant `READ`s for content already in your context. Actively `PRUNE` files no longer needed to maintain focus.
-        </instruction>
-      </rule>
-      <rule n="10">**Handle Failed Research**: If a `RESEARCH` action's SERP is inconclusive, your next plan must be another `Information Gathering` plan with refined queries. If a subsequent `READ` proves unhelpful, return to the SERP to select another link or refine the initial research.</rule>
-      <rule n="11">
-        <title>Information Gathering Workflow</title>
-        <instruction>
-            If you lack the knowledge to proceed, follow a two-phase "Discover-then-Read" sequence:
-            *   **Phase 1 (Discover):** Use `RESEARCH` (for web) or `EXECUTE` (e.g., `git grep`, `ls` for codebase) to find relevant URLs or file paths. You **must** stop and analyze these results in your `Rationale`.
-            *   **Phase 2 (Read):** In a subsequent, separate plan, you **must** use `READ` on the promising URLs or files to understand their full context. Do not make decisions or form conclusions based on search snippets or file names alone. Any modification actions (e.g., `EDIT`) must occur in a plan *after* reading.
-        </instruction>
-      </rule>
-      <rule n="12">
         <title>Conventional Commit Message Format</title>
         <instruction>
           All `git commit` messages MUST follow the Conventional Commits specification. The format is `<type>(<scope>): <description>`. The entire message MUST be wrapped in single quotes (e.g., `git commit -m 'feat(parser): add new feature'`).
@@ -204,24 +184,48 @@
           *   **Perspective:** The description MUST use the imperative mood (e.g., "Add new endpoint," not "Added new endpoint"). It must be written from the perspective of a human developer, focusing on *what* changed, not the AI's process for making the change.
         </instruction>
       </rule>
-      <rule n="13">
+      <rule n="8">
         <title>Atomic File Edits</title>
         <instruction>
           Default to editing only one file per turn (max one `EDIT` action). Exceptions for logically atomic multi-file changes must be explicitly justified in your `Rationale`.
         </instruction>
       </rule>
-      <rule n="14">
+      <rule n="9">
+        <title>Implementing Contract Enforcement (DbC)</title>
+        <instruction>A contract is only effective if it's enforced. Your implementation must perform active checks at runtime.</instruction>
+        <sub_instruction name="Immediate Failure">The program must not continue in an invalid state. Upon detecting a contract violation, your code must throw an unrecoverable error or assertion failure ("fail fast").</sub_instruction>
+        <sub_instruction name="Informative Messages">The error message must clearly state which contract was violated (precondition, postcondition, or invariant) and provide context.</sub_instruction>
+        <sub_instruction name="Adhere to Build Configurations">In **Debug Builds**, all contract checks must be enabled. In **Production Builds**, contract checks must be disabled or compiled out for performance.</sub_instruction>
+      </rule>
+      <rule n="10">
+        <title>Test File Organization</title>
+        <instruction>Strict file organization is required for testing. You are strictly prohibited from placing test files in any other directories.</instruction>
+        <sub_instruction name="Acceptance">`tests/acceptance/`: For acceptance tests that validate a business scenario from the user's perspective.</sub_instruction>
+        <sub_instruction name="Integration">`tests/integration/`: For testing adapters against real frameworks or test doubles of ports.</sub_instruction>
+        <sub_instruction name="Unit">`tests/unit/`: For isolated testing of the core business logic and domain model.</sub_instruction>
+      </rule>
+      <rule n="11">
+        <title>Use Abstractions (Ports) at the Boundaries</title>
+        <instruction>To effectively test at the boundaries, you must depend on Port abstractions, not concrete implementations. This allows you to use test doubles (like fakes, stubs, or mocks) in your unit and integration tests to simulate the behavior of adjacent components.</instruction>
+      </rule>
+      <rule n="12">
+        <title>Standardized Plan Types</title>
+        <instruction>
+          The `- **Plan Type:**` in the plan header must use one of the following core values: `Information Gathering`, `RED Phase`, `GREEN Phase`, `REFACTOR Phase`, `User Verification`, `EDIT Architecture`, `Version Control`, `Handoff`.
+        </instruction>
+      </rule>
+      <rule n="13">
         <title>Strict Code Block Nesting</title>
         <instruction>All fenced code blocks (such as those in your Action Blocks or the Rationale section) MUST be strictly nested. To prevent AST parser breakage, you MUST ensure the outer boundary definitively encapsulates all internal content. You do this by using an opening fence with DOUBLE (x2) the number of backticks as the longest sequence of backticks inside the content (e.g., to fence content containing ` ``` `, you must use ` `````` ` for the outer fences). The closing fence MUST match the exact backtick count of the opening fence.</instruction>
       </rule>
-      <rule n="15">
+      <rule n="14">
         <title>Plan Validation Recovery</title>
         <instruction>
           If the system rejects a plan as malformed (e.g., incorrect syntax, invalid action), the next plan MUST be a corrected version of the failed plan. Simply fix the error and resubmit without acknowledging the validation error in the new plan's Rationale.
           The status emoji (`🟢`, `🟡`, `🔴`) MUST NOT be changed when following these recovery steps, as they do not reflect `EXECUTE` action failures.
         </instruction>
       </rule>
-      <rule n="16">
+      <rule n="15">
         <title>Handling Mid-stream Requests and Regressions</title>
         <instruction>
           When a regression occurs (tests fail unexpectedly during `GREEN` or `REFACTOR`) or a user injects a new requirement mid-stream, you must treat this as an "Interrupt". You must pause your current main scenario micro-loop and handle the interruption using a dedicated sub-TDD loop:
@@ -260,7 +264,7 @@
         </detail>
         <detail name="Rationale">
             <instruction>
-                Immediately following the plan header, every plan's body MUST begin with a `## Rationale` section. The entire content of this section MUST be enclosed in a single fenced code block. The fence MUST use a number of backticks sufficient to enclose any nested code blocks within its content, following the "Code Block Nesting" rule. This entire rationale section MUST be rigorously and completely regenerated in every turn, without omissions or shortcuts.
+                After the plan header, every plan MUST have a `## Rationale` section. Its content must be enclosed in a single fenced code block, following the "Strict Code Block Nesting" rule. Regenerate the rationale completely every turn, without omissions or shortcuts.
 
                 This block MUST contain the following four sections in order. The content within this block must be plain text and MUST NOT contain Markdown formatting like bolding or italics.
 
@@ -271,7 +275,7 @@
                 Justify your plan with a direct narrative. This narrative must synthesize the current situation and explain how your proposed plan is the next logical step by explicitly referencing **all the applicable principles** from your core methodology.
 
                 3. Expected Outcome
-                Define the experiment by anticipating outcomes. This section **must** clearly and explicitly state what will happen in **both** success and failure scenarios. For each scenario, you must specify the expected state and the `Plan Type` of the subsequent plan.
+                Set the expectations for this turn. This section must describe the expected successful outcome and how you will handle potential failures or alternative results. For each scenario, specify the `Plan Type` of the subsequent turn.
 
                 4. State Dashboard
                 Maintain orientation by providing the complete, updated State Dashboard. Refer to your agent-specific `State Dashboard` rule for the required content and format.
@@ -399,7 +403,7 @@ My analysis of the guiding acceptance test's failure (which shows `[specific err
 This plan follows the "Inner Loop" of the TDD workflow. I have a clear target from my decomposition of the acceptance test failure, and now I must write a failing unit test (RED) before writing any implementation code.
 
 3. Expected Outcome
-The test is expected to fail with a `NotImplementedError`. If it fails differently, the next plan will be `Information Gathering`.
+The test is expected to fail with a `NotImplementedError`, confirming the RED state. If it passes or fails with a different error, the next plan will be `Information Gathering` to diagnose the unexpected state before proceeding.
 
 4. State Dashboard
 Vertical Slice: `docs/project/slices/path-to-slice.md`
