@@ -1,7 +1,6 @@
 import pytest
 
 from teddy_executor.core.domain.models import (
-    CommandResult,
     Plan,
     ExecutionReport,
     ExecuteAction,
@@ -16,16 +15,6 @@ from teddy_executor.core.domain.models import (
     FileAlreadyExistsError,
     WebSearchError,
 )
-
-
-def test_command_result_instantiation():
-    """
-    Tests that a CommandResult can be instantiated with valid data.
-    """
-    result = CommandResult(stdout="output", stderr="error", return_code=1)
-    assert result.stdout == "output"
-    assert result.stderr == "error"
-    assert result.return_code == 1
 
 
 class TestExecuteAction:

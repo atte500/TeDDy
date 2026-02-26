@@ -140,15 +140,6 @@ class Plan:
 
 
 @dataclass(frozen=True)
-class CommandResult:
-    """Represents the captured result of an external command."""
-
-    stdout: str
-    stderr: str
-    return_code: int
-
-
-@dataclass(frozen=True)
 class SearchResult:
     """Represents a single search result item."""
 

@@ -4,7 +4,7 @@ import subprocess
 import sys
 from typing import Optional, Dict, List
 
-from teddy_executor.core.domain.models import CommandResult
+from teddy_executor.core.domain.models.shell_output import ShellOutput
 from teddy_executor.core.ports.outbound.shell_executor import IShellExecutor
 
 
@@ -14,7 +14,7 @@ class ShellAdapter(IShellExecutor):
         command: str,
         cwd: Optional[str] = None,
         env: Optional[Dict[str, str]] = None,
-    ) -> CommandResult:
+    ) -> ShellOutput:
         validated_cwd = None
         project_root = os.path.realpath(os.getcwd())
 
@@ -98,19 +98,19 @@ class ShellAdapter(IShellExecutor):
                 print(f"STDERR:\n{result.stderr}", file=sys.stderr)
                 print("---------------------------", file=sys.stderr)
 
-            return CommandResult(
-                stdout=result.stdout,
-                stderr=result.stderr,
-                return_code=result.returncode,
-            )
+            return {
+                "stdout": result.stdout,
+                "stderr": result.stderr,
+                "return_code": result.returncode,
+            }
         except (FileNotFoundError, OSError) as e:
             if is_debug_mode:
                 print("--- ShellAdapter Error ---", file=sys.stderr)
                 print(f"Error: {e}", file=sys.stderr)
                 print("--------------------------", file=sys.stderr)
 
-            return CommandResult(
-                stdout="",
-                stderr=str(e),
-                return_code=getattr(e, "errno", 1),
-            )
+            return {
+                "stdout": "",
+                "stderr": str(e),
+                "return_code": getattr(e, "errno", 1),
+            }

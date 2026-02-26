@@ -7,7 +7,6 @@ from .execution_report import (
 )
 from .plan import ActionData, ActionType, Plan
 from ._legacy_models import (
-    CommandResult,
     ContextResult,
     FileAlreadyExistsError,
     MultipleMatchesFoundError,
@@ -34,7 +33,6 @@ __all__ = [
     "RunStatus",
     "ActionStatus",
     "ContextResult",
-    "CommandResult",
     "QueryResult",
     "SearchResult",
     "SERPReport",

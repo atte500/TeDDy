@@ -18,9 +18,9 @@ def test_shell_adapter_executes_command_successfully():
     result = adapter.execute(command)
 
     # ASSERT
-    assert result.return_code == 0
-    assert result.stdout.strip() == "hello from shell"
-    assert result.stderr == ""
+    assert result["return_code"] == 0
+    assert result["stdout"].strip() == "hello from shell"
+    assert result["stderr"] == ""
 
 
 def test_shell_adapter_handles_failed_command():
@@ -37,17 +37,17 @@ def test_shell_adapter_handles_failed_command():
     result = adapter.execute(command)
 
     # ASSERT
-    assert result.return_code != 0
-    assert result.stdout == ""
+    assert result["return_code"] != 0
+    assert result["stdout"] == ""
     # Check that stderr contains the correct error message (platform dependent)
     # POSIX: "No such file or directory"
     # Windows: "is not recognized as an internal or external command" or "The system cannot find the file specified"
     # The exact error message for a failed command can vary between shells
     # (e.g., 'command not found' vs 'not found'). We check for a common substring.
     assert (
-        "not found" in result.stderr
-        or "not recognized" in result.stderr
-        or "cannot find the file" in result.stderr
+        "not found" in result["stderr"]
+        or "not recognized" in result["stderr"]
+        or "cannot find the file" in result["stderr"]
     )
 
 
@@ -74,8 +74,8 @@ def test_shell_adapter_executes_in_specified_cwd():
         # We can use a relative path for the cwd
         result = adapter.execute(command, cwd=temp_dir_name)
 
-        assert result.return_code == 0
-        assert "testfile.txt" in result.stdout
+        assert result["return_code"] == 0
+        assert "testfile.txt" in result["stdout"]
 
     finally:
         # Clean up the temporary directory
@@ -98,11 +98,11 @@ def test_shell_adapter_preserves_parent_environment():
     env = {"CUSTOM_VAR": "custom_value"}
     result = adapter.execute(command, env=env)
 
-    assert result.return_code == 0
+    assert result["return_code"] == 0
     # Check that PATH from parent env is not empty
-    assert result.stdout.splitlines()[0] != ""
+    assert result["stdout"].splitlines()[0] != ""
     # Check that the custom env var was passed correctly
-    assert result.stdout.splitlines()[1] == "custom_value"
+    assert result["stdout"].splitlines()[1] == "custom_value"
 
 
 @pytest.mark.timeout(10)  # Add a timeout to prevent hanging indefinitely
@@ -118,5 +118,5 @@ def test_shell_adapter_handles_multiline_command_safely():
 
     result = adapter.execute(command)
 
-    assert result.return_code == 0
-    assert result.stdout.strip() == multiline_string.strip()
+    assert result["return_code"] == 0
+    assert result["stdout"].strip() == multiline_string.strip()

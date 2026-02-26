@@ -6,8 +6,8 @@ from teddy_executor.core.domain.models import (
     ActionData,
     ActionLog,
     ActionStatus,
-    CommandResult,
 )
+from teddy_executor.core.domain.models.shell_output import ShellOutput
 
 
 # --- Protocols for Dependencies ---
@@ -124,8 +124,13 @@ class ActionDispatcher:
                     result_to_serialize = {"response": result_to_serialize}
 
             # Determine status based on result type
-            if isinstance(execution_result, CommandResult):
-                if execution_result.return_code == 0:
+            # We check for a dict with 'return_code' to identify ShellOutput
+            if (
+                isinstance(result_to_serialize, dict)
+                and "return_code" in result_to_serialize
+            ):
+                shell_output: ShellOutput = result_to_serialize  # type: ignore
+                if shell_output["return_code"] == 0:
                     log_data["status"] = ActionStatus.SUCCESS
                     logger.info("SUCCESS")
                 else:

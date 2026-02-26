@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Dict
-from teddy_executor.core.domain.models import CommandResult
+from teddy_executor.core.domain.models.shell_output import ShellOutput
 
 
 class IShellExecutor(ABC):
@@ -14,7 +14,7 @@ class IShellExecutor(ABC):
         command: str,
         cwd: Optional[str] = None,
         env: Optional[Dict[str, str]] = None,
-    ) -> CommandResult:
+    ) -> ShellOutput:
         """
         Executes a shell command and returns its result.
         """
