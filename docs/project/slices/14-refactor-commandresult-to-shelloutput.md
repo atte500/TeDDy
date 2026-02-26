@@ -1,6 +1,6 @@
 # Slice: Refactor `CommandResult` to `ShellOutput`
 
-- **Status:** Planned
+- **Status:** Completed
 - **Milestone:** [08-core-refactoring-and-enhancements](/docs/project/milestones/08-core-refactoring-and-enhancements.md)
 - **Spec:** None
 
@@ -95,3 +95,16 @@ This refactoring will be executed using a safe "Create, Migrate, Delete" sequenc
     -   Update the document to reflect that the adapter now returns a `ShellOutput` dictionary, not a `CommandResult` object.
 -   **Verification:**
     -   Run the entire test suite (`poetry run pytest`) to ensure all tests pass and the refactoring is complete.
+
+## Implementation Summary
+
+The refactoring from `CommandResult` to `ShellOutput` was completed successfully using the "Create, Migrate, Delete" strategy.
+
+1.  **Create:** The new `ShellOutput` `TypedDict` was created in `src/teddy_executor/core/domain/models/shell_output.py`.
+2.  **Migrate:** The `IShellExecutor` port, `ShellAdapter` implementation, and the consuming `ActionDispatcher` service were all updated to use the new dictionary-based `ShellOutput` contract. All related tests were migrated from attribute access (`.`) to dictionary key access (`[]`).
+3.  **Delete:** After confirming the entire test suite passed, the legacy `CommandResult` class and its corresponding unit tests were removed from the codebase.
+
+The process was smooth and followed a test-driven approach, ensuring the system remained stable at each step.
+
+### Refactoring Opportunities
+- None identified in this slice.

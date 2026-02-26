@@ -59,7 +59,7 @@ Execute a safe "Create, Migrate, Delete" sequence for each legacy model:
 - [x] **Slice 3: Implement `trafilatura`** (Dependency swap and adapter update).
 - [x] **Refactor Slice: Enhance Web Scraper to Bypass Anti-Scraping Measures** (Implement fallback for 403 errors).
 - [x] **Refactor Slice: Trim Plan Preamble** (Update parser to ignore text before the H1 heading).
-- [ ] **Slice 4: Refactor `CommandResult` to `ShellOutput`** (Create, migrate, delete).
+- [x] **Slice 4: Refactor `CommandResult` to `ShellOutput`** (Create, migrate, delete).
 - [ ] **Slice 5: Refactor `SERPReport` to `WebSearchResults`** (Create, migrate, delete).
 - [ ] **Slice 6: Refactor `ContextResult` to `ProjectContext`** (Create, migrate, delete).
 - [ ] **Slice 7: Configure CI Quality Gates** (Add `pytest-cov`, set strict targets for Cyclomatic Complexity and SLOC via `ruff`, update `ci.yml`).
