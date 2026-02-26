@@ -180,14 +180,14 @@
 {% endif %}
 {% endif %}
 
-{% if action_type == 'RESEARCH' and log.details and log.details.results %}
-{% for result in log.details.results %}
+{% if action_type == 'RESEARCH' and log.details and log.details.get('query_results') %}
+{% for qr in log.details['query_results'] %}
 
-**Query:** `{{ result.query }}`
-{% for item in result.search_results %}
-[{{ item.title }}]({{ item.url }})
+**Query:** `{{ qr['query'] }}`
+{% for sr in qr['results'] %}
+[{{ sr['title'] }}]({{ sr['href'] }})
 ```Snippet
-{{ item.snippet }}
+{{ sr['body'] }}
 ```
 {% endfor %}
 {% endfor %}

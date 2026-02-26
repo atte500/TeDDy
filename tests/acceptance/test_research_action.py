@@ -1,12 +1,7 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-
-from teddy_executor.core.domain.models._legacy_models import (
-    QueryResult,
-    SearchResult,
-    SERPReport,
-)
+from teddy_executor.core.domain.models import WebSearchResults
 from teddy_executor.core.ports.outbound import IWebSearcher
 from teddy_executor.__main__ import create_container
 
@@ -14,10 +9,10 @@ from .helpers import parse_markdown_report, run_cli_with_markdown_plan_on_clipbo
 from .plan_builder import MarkdownPlanBuilder
 
 
-def test_research_action_success(monkeypatch, tmp_path: Path):
+def test_research_action_success_with_new_model(monkeypatch, tmp_path: Path):
     """
     Given a plan with a `research` action,
-    When the plan is executed with a mocked web searcher,
+    When the plan is executed with a mocked web searcher returning the new model,
     Then it should return a report with the mocked search results.
     """
     # Arrange
@@ -30,21 +25,22 @@ def test_research_action_success(monkeypatch, tmp_path: Path):
     plan_content = builder.build()
 
     mock_web_searcher = MagicMock(spec=IWebSearcher)
-    serp_report = SERPReport(
-        results=[
-            QueryResult(
-                query="python typer",
-                search_results=[
-                    SearchResult(
-                        title="Typer Tutorial",
-                        url="https://typer.tiangolo.com/",
-                        snippet="A great tutorial for Typer.",
-                    )
+    # This now returns the new TypedDict structure
+    search_result_dict: WebSearchResults = {
+        "query_results": [
+            {
+                "query": "python typer",
+                "results": [
+                    {
+                        "title": "Typer Tutorial",
+                        "href": "https://typer.tiangolo.com/",
+                        "body": "A great tutorial for Typer.",
+                    }
                 ],
-            )
+            }
         ]
-    )
-    mock_web_searcher.search.return_value = serp_report
+    }
+    mock_web_searcher.search.return_value = search_result_dict
 
     test_container = create_container()
     test_container.register(IWebSearcher, instance=mock_web_searcher)
@@ -59,7 +55,7 @@ def test_research_action_success(monkeypatch, tmp_path: Path):
     assert result.exit_code == 0
     mock_web_searcher.search.assert_called_once_with(queries=["python typer"])
 
-    # Verify structured output
+    # Verify structured output (this is where the failure is expected)
     assert "### `RESEARCH`: Research python typer." in result.stdout
     assert "**Query:** `python typer`" in result.stdout
     # Expect link format: [Title](URL)
@@ -72,6 +68,3 @@ def test_research_action_success(monkeypatch, tmp_path: Path):
     assert report["run_summary"]["Overall Status"] == "SUCCESS"
     action_log = report["action_logs"][0]
     assert action_log["status"] == "SUCCESS"
-
-    # Note: Raw details are no longer rendered for RESEARCH actions in the concise report.
-    # We verify the content via the structured output checks above.

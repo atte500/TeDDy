@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List
-from teddy_executor.core.domain.models import SERPReport
+from teddy_executor.core.domain.models import WebSearchResults
 
 
 class IWebSearcher(ABC):
@@ -9,7 +9,7 @@ class IWebSearcher(ABC):
     """
 
     @abstractmethod
-    def search(self, queries: List[str]) -> SERPReport:
+    def search(self, queries: List[str]) -> WebSearchResults:
         """
         Performs a web search for each query in the list.
 

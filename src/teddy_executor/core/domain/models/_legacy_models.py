@@ -140,30 +140,6 @@ class Plan:
 
 
 @dataclass(frozen=True)
-class SearchResult:
-    """Represents a single search result item."""
-
-    title: str
-    url: str
-    snippet: str
-
-
-@dataclass(frozen=True)
-class QueryResult:
-    """Represents the collection of results for a single search query."""
-
-    query: str
-    search_results: List[SearchResult]
-
-
-@dataclass(frozen=True)
-class SERPReport:
-    """Represents the aggregated results for all queries in a ResearchAction."""
-
-    results: List[QueryResult]
-
-
-@dataclass(frozen=True)
 class ContextResult:
     """
     Aggregates all information gathered by the context command.

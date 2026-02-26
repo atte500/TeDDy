@@ -12,9 +12,6 @@ from ._legacy_models import (
     MultipleMatchesFoundError,
     SearchTextNotFoundError,
     WebSearchError,
-    QueryResult,
-    SearchResult,
-    SERPReport,
     ExecuteAction,
     CreateFileAction,
     ReadAction,
@@ -22,6 +19,9 @@ from ._legacy_models import (
     ChatWithUserAction,
     ResearchAction,
 )
+from .web_search_results import QueryResult
+from .web_search_results import SearchResult
+from .web_search_results import WebSearchResults
 
 __all__ = [
     "Plan",
@@ -33,9 +33,6 @@ __all__ = [
     "RunStatus",
     "ActionStatus",
     "ContextResult",
-    "QueryResult",
-    "SearchResult",
-    "SERPReport",
     "FileAlreadyExistsError",
     "MultipleMatchesFoundError",
     "SearchTextNotFoundError",
@@ -46,4 +43,7 @@ __all__ = [
     "EditAction",
     "ChatWithUserAction",
     "ResearchAction",
+    "WebSearchResults",
+    "QueryResult",
+    "SearchResult",
 ]

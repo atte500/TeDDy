@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 
+from teddy_executor.core.domain.models import WebSearchResults
 from teddy_executor.core.domain.models.execution_report import (
     ActionLog,
     ActionStatus,
@@ -327,6 +328,57 @@ def test_formatter_smart_fencing_stdout():
     assert "`````text" in result
     assert stdout_content in result
     assert "`````" in result
+
+
+def test_formats_research_action_with_websearchresults():
+    """
+    Given an ExecutionReport with a RESEARCH action log containing a WebSearchResults dict,
+    When the report is formatted,
+    Then it should correctly render the results from the dictionary.
+    """
+    # Arrange
+    formatter = MarkdownReportFormatter()
+    web_search_results: WebSearchResults = {
+        "query_results": [
+            {
+                "query": "python typeddict",
+                "results": [
+                    {
+                        "title": "Python Docs - TypedDict",
+                        "href": "https://docs.python.org/3/library/typing.html#typing.TypedDict",
+                        "body": "Official documentation for TypedDict.",
+                    }
+                ],
+            }
+        ]
+    }
+    report = ExecutionReport(
+        plan_title="Test Plan",
+        run_summary=RunSummary(
+            status=RunStatus.SUCCESS,
+            start_time=datetime.now(timezone.utc),
+            end_time=datetime.now(timezone.utc),
+        ),
+        action_logs=[
+            ActionLog(
+                action_type="RESEARCH",
+                status=ActionStatus.SUCCESS,
+                params={"Description": "Research TypedDicts"},
+                details=web_search_results,
+            )
+        ],
+    )
+
+    # Act
+    formatted_report = formatter.format(report)
+
+    # Assert
+    assert "**Query:** `python typeddict`" in formatted_report
+    assert (
+        "[Python Docs - TypedDict](https://docs.python.org/3/library/typing.html#typing.TypedDict)"
+        in formatted_report
+    )
+    assert "Official documentation for TypedDict." in formatted_report
 
 
 def test_formatter_smart_fencing_resource_content():

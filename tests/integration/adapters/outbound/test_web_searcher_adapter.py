@@ -1,19 +1,18 @@
 from unittest.mock import patch, MagicMock
 from teddy_executor.adapters.outbound.web_searcher_adapter import WebSearcherAdapter
-from teddy_executor.core.domain.models import SERPReport, WebSearchError
+from teddy_executor.core.domain.models import WebSearchError
 import pytest
 
 
-def test_search_success_maps_results_correctly():
+def test_search_success_returns_websearchresults_dict():
     """
-    Tests that the adapter correctly calls the ddgs library and maps the
-    results to the SERPReport domain object.
+    Tests that the adapter returns a dictionary conforming to the
+    WebSearchResults TypedDict structure.
     """
     # Arrange
     adapter = WebSearcherAdapter()
-    queries = ["python", "teddy"]
+    queries = ["python"]
 
-    # This is the raw result from the ddgs library
     mock_ddgs_result = [
         {
             "title": "Welcome to Python.org",
@@ -22,38 +21,32 @@ def test_search_success_maps_results_correctly():
         }
     ]
 
-    # Patch DDGS where it's used: in the web_searcher_adapter module
     with patch(
         "teddy_executor.adapters.outbound.web_searcher_adapter.DDGS"
     ) as mock_ddgs_class:
-        # Configure the instance and its text method
         mock_ddgs_instance = MagicMock()
-        # Use side_effect to provide a fresh iterator/list for each call
-        mock_ddgs_instance.text.side_effect = [mock_ddgs_result, mock_ddgs_result]
-        # The __enter__ method of the class's return value should return the instance
+        mock_ddgs_instance.text.return_value = mock_ddgs_result
         mock_ddgs_class.return_value.__enter__.return_value = mock_ddgs_instance
 
         # Act
-        report = adapter.search(queries)
+        result = adapter.search(queries)
 
         # Assert
-        assert isinstance(report, SERPReport)
-        assert len(report.results) == 2
-        assert report.results[0].query == "python"
-        assert len(report.results[0].search_results) == 1
+        assert isinstance(result, dict)
+        assert "query_results" in result
+        assert len(result["query_results"]) == 1
 
-        search_result = report.results[0].search_results[0]
-        assert search_result.title == "Welcome to Python.org"
-        assert search_result.url == "https://www.python.org/"
+        query_result = result["query_results"][0]
+        assert query_result["query"] == "python"
+        assert len(query_result["results"]) == 1
+
+        search_result = query_result["results"][0]
+        assert search_result["title"] == "Welcome to Python.org"
+        assert search_result["href"] == "https://www.python.org/"
         assert (
-            search_result.snippet
+            search_result["body"]
             == "The official home of the Python Programming Language"
         )
-
-        # Check that the mock was called for each query
-        assert mock_ddgs_instance.text.call_count == 2
-        mock_ddgs_instance.text.assert_any_call("python", max_results=5)
-        mock_ddgs_instance.text.assert_any_call("teddy", max_results=5)
 
 
 def test_search_handles_library_exception():

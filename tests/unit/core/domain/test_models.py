@@ -9,9 +9,6 @@ from teddy_executor.core.domain.models import (
     EditAction,
     ChatWithUserAction,
     ResearchAction,
-    SearchResult,
-    QueryResult,
-    SERPReport,
     FileAlreadyExistsError,
     WebSearchError,
 )
@@ -241,38 +238,6 @@ class TestResearchAction:
         """Tests that a queries list with non-string elements raises a ValueError."""
         with pytest.raises(ValueError, match="All items in 'queries' must be strings"):
             ResearchAction(queries=["query1", 123])
-
-
-class TestSERPValueObjects:
-    def test_search_result_instantiation(self):
-        """Tests that a SearchResult value object can be instantiated."""
-        result = SearchResult(
-            title="Test Title",
-            url="http://example.com",
-            snippet="This is a test snippet.",
-        )
-        assert result.title == "Test Title"
-        assert result.url == "http://example.com"
-        assert result.snippet == "This is a test snippet."
-
-    def test_query_result_instantiation(self):
-        """Tests that a QueryResult value object can be instantiated."""
-        search_results = [
-            SearchResult("T1", "http://e.com/1", "S1"),
-            SearchResult("T2", "http://e.com/2", "S2"),
-        ]
-        query_result = QueryResult(query="test query", search_results=search_results)
-        assert query_result.query == "test query"
-        assert query_result.search_results == search_results
-
-    def test_serp_report_instantiation(self):
-        """Tests that a SERPReport value object can be instantiated."""
-        query_results = [
-            QueryResult("q1", [SearchResult("T1", "http://e.com/1", "S1")]),
-            QueryResult("q2", [SearchResult("T2", "http://e.com/2", "S2")]),
-        ]
-        serp_report = SERPReport(results=query_results)
-        assert serp_report.results == query_results
 
 
 def test_web_search_error_can_be_raised():
