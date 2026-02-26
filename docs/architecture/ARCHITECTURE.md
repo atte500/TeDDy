@@ -50,7 +50,7 @@ This document outlines the technical standards, conventions, and setup process f
     - **Run all tests:** `poetry run pytest`
     - **Run tests in a specific file:** `poetry run pytest tests/acceptance/test_chat_with_user_action.py`
     - **Run a specific test by name:** `poetry run pytest -k "test_chat_with_user_gets_response"`
-- **Test Coverage:** The CI pipeline **must** perform test coverage analysis using `pytest-cov`. It **must** be configured to fail if test coverage drops below a project-defined threshold of **80%**. The current project coverage is maintained above **90%**.
+- **Test Coverage:** The CI pipeline **must** perform test coverage analysis using `pytest-cov`. It **must** be configured to fail if test coverage drops below a project-defined threshold of **90%**.
 
 ### Pre-commit Hooks & CI Quality Gates
 - **Framework:** `pre-commit`.
@@ -62,7 +62,7 @@ This document outlines the technical standards, conventions, and setup process f
     - **Correctness:**
         - `mypy`: For static type checking.
     - **Complexity & Dead Code:**
-        - `ruff`: Configured to enforce a **Cyclomatic Complexity** limit of **10** per function (Rule `C901`) and a **Statement Limit** of **50** per function (Rule `PLR0915`).
+        - `ruff`: Configured to enforce a **Cyclomatic Complexity** limit of **9** per function (Rule `C901`) and a **Statement Limit** of **40** per function (Rule `PLR0915`).
         - `vulture`: For detecting dead (unreachable) code.
         - **File Length (SLOC):** A custom check enforces a maximum of **300 lines** per Python file (excluding tests and spikes). This ensures components remain focused and modular.
     - **Sanity & Consistency:**

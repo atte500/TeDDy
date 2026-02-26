@@ -82,48 +82,58 @@ def _parse_details(chunk: str) -> Dict[str, Any]:
     """Parses the details section from a log chunk."""
     details: Dict[str, Any] = {}
 
-    # Specific: Legacy format (Details as a dict in backticks)
-    details_dict_match = re.search(r"- \*\*Details:\*\* `(\{.*\})`", chunk)
-    if details_dict_match:
+    # 1. Legacy format (Details as a dict in backticks)
+    if legacy := _parse_legacy_details(chunk):
+        return legacy
+
+    # 2. Structured EXECUTE
+    _parse_execute_details(chunk, details)
+
+    # 3. CHAT_WITH_USER response
+    _parse_chat_details(chunk, details)
+
+    # 4. Generic error fallback
+    if not details:
+        _parse_error_details(chunk, details)
+
+    return details
+
+
+def _parse_legacy_details(chunk: str) -> Optional[Dict[str, Any]]:
+    match = re.search(r"- \*\*Details:\*\* `(\{.*\})`", chunk)
+    if match:
         try:
-            details.update(ast.literal_eval(details_dict_match.group(1)))
-            return details
+            return ast.literal_eval(match.group(1))
         except (ValueError, SyntaxError):
             pass
+    return None
 
-    # Structured EXECUTE
+
+def _parse_execute_details(chunk: str, details: Dict[str, Any]):
     rc_match = re.search(r"- \*\*Return Code:\*\* `(\d*)`", chunk)
     if rc_match and rc_match.group(1):
         details["return_code"] = int(rc_match.group(1))
 
-    for block_name in ["stdout", "stderr"]:
+    for block in ["stdout", "stderr"]:
         match = re.search(
-            rf"#### `{block_name}`\s*(`{{3,}})text\n(.*?)\n\1", chunk, re.DOTALL
+            rf"#### `{block}`\s*(`{{3,}})text\n(.*?)\n\1", chunk, re.DOTALL
         )
         if match:
-            details[block_name] = match.group(2).strip()
+            details[block] = match.group(2).strip()
 
-    # CHAT_WITH_USER response (New Format)
-    resp_match = re.search(
-        r"#### User Response\s*(`{3,})text\n(.*?)\n\1", chunk, re.DOTALL
-    )
-    if resp_match:
-        details["response"] = resp_match.group(2).strip()
-    # CHAT_WITH_USER response (Old Format)
-    elif old_resp_match := re.search(r"\*\*User Response:\*\*\s*(.*)", chunk):
-        details["response"] = old_resp_match.group(1).strip()
 
-    # Generic error fallback
-    if not details:
-        err_match = re.search(
-            r"-\s*\*\*(Error|Details):\*\*\s*(.*?)(?=\n\s*- \*\*|\n\s*#### `|$)",
-            chunk,
-            re.DOTALL,
-        )
-        if err_match:
-            content = err_match.group(2).strip()
-            details["error"] = content.strip("`")
-    return details
+def _parse_chat_details(chunk: str, details: Dict[str, Any]):
+    match = re.search(r"#### User Response\s*(`{3,})text\n(.*?)\n\1", chunk, re.DOTALL)
+    if match:
+        details["response"] = match.group(2).strip()
+    elif old_match := re.search(r"\*\*User Response:\*\*\s*(.*)", chunk):
+        details["response"] = old_match.group(1).strip()
+
+
+def _parse_error_details(chunk: str, details: Dict[str, Any]):
+    pattern = r"-\s*\*\*(Error|Details):\*\*\s*(.*?)(?=\n\s*- \*\*|\n\s*#### `|$)"
+    if match := re.search(pattern, chunk, re.DOTALL):
+        details["error"] = match.group(2).strip().strip("`")
 
 
 def _parse_action_chunk(chunk: str) -> Dict[str, Any]:

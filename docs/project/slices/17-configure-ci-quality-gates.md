@@ -90,8 +90,8 @@ This checklist provides the step-by-step implementation plan for integrating the
 Successfully integrated and codified CI quality gates to enforce project standards.
 
 ### Key Accomplishments:
-1.  **Enforced Test Coverage:** Added `pytest-cov` and configured CI to fail if coverage drops below **80%**. Current project coverage is **~91%**.
-2.  **Codified Complexity Limits:** Configured `ruff` to enforce a **Cyclomatic Complexity (McCabe) of 10** and a **Statement Limit of 50** per function.
+1.  **Enforced Test Coverage:** Tightened CI coverage gate to **90%**. Current project coverage is **~91%**.
+2.  **Codified Complexity Limits:** Tightened complexity gates to **Cyclomatic Complexity (McCabe) of 9** and a **Statement Limit of 40** per function.
 3.  **Restricted File Length:** Implemented a custom pre-commit hook enforcing a **300-line limit (SLOC)** per Python file to promote modularity.
 4.  **Major Parser Refactoring:** To meet these new standards, the `MarkdownPlanParser` was refactored and split into four focused modules:
     - `markdown_plan_parser.py`: High-level orchestration and top-level structural parsing.

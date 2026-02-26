@@ -96,6 +96,16 @@ class MarkdownPlanParser(IPlanParser):
     def _raise_structural_error(
         self, doc: Document, expected_name: str, mismatch_idx: int, actual_node: Any
     ):
+        """Constructs and raises a detailed structural validation error."""
+        raise InvalidPlanError(
+            self._format_structural_mismatch_msg(
+                doc, expected_name, mismatch_idx, actual_node
+            )
+        )
+
+    def _format_structural_mismatch_msg(
+        self, doc: Document, expected: str, mismatch_idx: int, actual_node: Any
+    ) -> str:
         actual_name = type(actual_node).__name__ if actual_node else "EOF"
         if isinstance(actual_node, Heading):
             actual_name += f" (Level {actual_node.level})"
@@ -108,7 +118,7 @@ class MarkdownPlanParser(IPlanParser):
         if preview:
             actual_name += f': "{preview}..."'
 
-        msg = f"Plan structure is invalid. Expected {expected_name}, but found {actual_name}.\n\n"
+        msg = f"Plan structure is invalid. Expected {expected}, but found {actual_name}.\n\n"
         msg += "--- Expected Document Structure ---\n"
         msg += "[000] Heading (Level 1)\n"
         msg += "[001] List (Metadata)\n"
@@ -123,16 +133,14 @@ class MarkdownPlanParser(IPlanParser):
         msg += "\n--- Actual Document Structure ---\n"
         children = list(doc.children) if doc.children else []
 
-        # If mismatch_idx is not provided, try to find the actual_node in the
-        # children list
+        # If mismatch_idx is not provided, try to find the actual_node
         if mismatch_idx == -1 and actual_node:
             try:
                 mismatch_idx = children.index(actual_node)
             except ValueError:
                 pass
 
-        # If we still don't have a valid index, just print all available
-        # children up to 20
+        # Print all available children up to mismatch or 20
         end_idx = (
             min(len(children), mismatch_idx + 1)
             if mismatch_idx != -1
@@ -149,67 +157,69 @@ class MarkdownPlanParser(IPlanParser):
             if c_prev:
                 n_name += f': "{c_prev}..."'
 
-            if i == mismatch_idx:
-                msg += f"[{i:03d}] {n_name}  <-- MISMATCH\n"
-            else:
-                msg += f"[{i:03d}] {n_name}\n"
+            msg += (
+                f"[{i:03d}] {n_name}{'  <-- MISMATCH' if i == mismatch_idx else ''}\n"
+            )
 
         msg += "\n**Hint:** Parsing often fails because code blocks are not strictly nested. Try to **double** the number of backticks for your outer code blocks.\n"
-        raise InvalidPlanError(msg)
+        return msg
+
+    def _consume_mandatory_node(
+        self, stream: _PeekableStream, doc: Document, idx: int, expected: str, predicate
+    ) -> Any:
+        node = stream.peek()
+        if not node or not predicate(node):
+            self._raise_structural_error(doc, expected, idx, node)
+        return stream.next()
 
     def _parse_strict_top_level(self, stream: _PeekableStream, doc: Document) -> str:
         # 0: Find H1 Title, ignoring preamble
         node = stream.peek()
         actual_idx = 0
         while node and not (isinstance(node, Heading) and node.level == H1_LEVEL):
-            stream.next()  # Consume preamble node
+            stream.next()
             node = stream.peek()
             actual_idx += 1
 
-        if not node:  # No H1 heading found in the entire document
+        if not node:
             raise InvalidPlanError(
                 "Plan parsing failed: No Level 1 heading found to indicate the plan's title."
             )
 
         title = get_child_text(node).strip()
-        stream.next()  # Consume the H1 title
+        stream.next()
         actual_idx += 1
 
         # 1: List Metadata
-        node = stream.peek()
-        if not node or not isinstance(node, MdList):
-            self._raise_structural_error(
-                doc,
-                "a List (Metadata) immediately following the title",
-                actual_idx,
-                node,
-            )
-        stream.next()
+        self._consume_mandatory_node(
+            stream,
+            doc,
+            actual_idx,
+            "a List (Metadata) immediately following the title",
+            lambda n: isinstance(n, MdList),
+        )
         actual_idx += 1
 
         # 2: H2 Rationale
-        node = stream.peek()
-        if not node or not (
-            isinstance(node, Heading)
-            and node.level == H2_LEVEL
-            and "Rationale" in get_child_text(node)
-        ):
-            self._raise_structural_error(
-                doc, "a Level 2 Heading containing 'Rationale'", actual_idx, node
-            )
-        stream.next()
+        self._consume_mandatory_node(
+            stream,
+            doc,
+            actual_idx,
+            "a Level 2 Heading containing 'Rationale'",
+            lambda n: isinstance(n, Heading)
+            and n.level == H2_LEVEL
+            and "Rationale" in get_child_text(n),
+        )
         actual_idx += 1
 
         # 3: BlockCode Rationale
-        node = stream.peek()
-        if not node or not isinstance(node, (CodeFence, BlockCode)):
-            self._raise_structural_error(
-                doc,
-                "a CodeFence or BlockCode containing the rationale content",
-                actual_idx,
-                node,
-            )
-        stream.next()
+        self._consume_mandatory_node(
+            stream,
+            doc,
+            actual_idx,
+            "a CodeFence or BlockCode containing the rationale content",
+            lambda n: isinstance(n, (CodeFence, BlockCode)),
+        )
         actual_idx += 1
 
         # 4/5: Optional H2 Memos -> BlockCode
@@ -222,31 +232,26 @@ class MarkdownPlanParser(IPlanParser):
         ):
             stream.next()
             actual_idx += 1
-
-            node = stream.peek()
-            if not node or not isinstance(node, (CodeFence, BlockCode)):
-                self._raise_structural_error(
-                    doc,
-                    "a CodeFence or BlockCode containing the memos content",
-                    actual_idx,
-                    node,
-                )
-            stream.next()
+            self._consume_mandatory_node(
+                stream,
+                doc,
+                actual_idx,
+                "a CodeFence or BlockCode containing the memos content",
+                lambda n: isinstance(n, (CodeFence, BlockCode)),
+            )
             actual_idx += 1
-            node = stream.peek()
 
         # 6: H2 Action Plan
-        node = stream.peek()
-        if not node or not (
-            isinstance(node, Heading)
-            and node.level == H2_LEVEL
-            and "Action Plan" in get_child_text(node)
-        ):
-            self._raise_structural_error(
-                doc, "a Level 2 Heading containing 'Action Plan'", actual_idx, node
-            )
-        stream.next()
-        actual_idx += 1  # Consume it!
+        self._consume_mandatory_node(
+            stream,
+            doc,
+            actual_idx,
+            "a Level 2 Heading containing 'Action Plan'",
+            lambda n: isinstance(n, Heading)
+            and n.level == H2_LEVEL
+            and "Action Plan" in get_child_text(n),
+        )
+        actual_idx += 1
 
         return title
 
