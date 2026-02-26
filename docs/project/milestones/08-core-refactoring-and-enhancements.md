@@ -58,7 +58,7 @@ Execute a safe "Create, Migrate, Delete" sequence for each legacy model:
 - [x] **Refactor Slice: Fix Parser Nesting Bug** (Implement strict structural AST validation to prevent nesting crashes).
 - [x] **Slice 3: Implement `trafilatura`** (Dependency swap and adapter update).
 - [x] **Refactor Slice: Enhance Web Scraper to Bypass Anti-Scraping Measures** (Implement fallback for 403 errors).
-- [ ] **Refactor Slice: Trim Plan Preamble** (Update parser to ignore text before the H1 heading).
+- [x] **Refactor Slice: Trim Plan Preamble** (Update parser to ignore text before the H1 heading).
 - [ ] **Slice 4: Refactor `CommandResult` to `ShellOutput`** (Create, migrate, delete).
 - [ ] **Slice 5: Refactor `SERPReport` to `WebSearchResults`** (Create, migrate, delete).
 - [ ] **Slice 6: Refactor `ContextResult` to `ProjectContext`** (Create, migrate, delete).

@@ -46,9 +46,23 @@ The core parsing logic within this service must be updated to find the first `H1
 
 ## Scope of Work
 
-- [ ] Modify the `parse` method in `src/teddy_executor/core/services/markdown_plan_parser.py`.
-- [ ] Update the logic to iterate through the initial tokens of the AST, discard them until the first `mistletoe.block_token.Heading` of `level=1` is found, and then begin parsing from that point.
-- [ ] If no Level 1 Heading is found in the document, raise a `PlanParsingError` to maintain existing validation behavior for plans without titles.
-- [ ] Create a new acceptance test file (e.g., `tests/acceptance/test_parser_robustness.py`).
-- [ ] Add tests to this file that cover all scenarios outlined in the Acceptance Criteria.
-- [ ] Ensure all existing unit, integration, and acceptance tests continue to pass.
+- [x] Modify the `parse` method in `src/teddy_executor/core/services/markdown_plan_parser.py`.
+- [x] Update the logic to iterate through the initial tokens of the AST, discard them until the first `mistletoe.block_token.Heading` of `level=1` is found, and then begin parsing from that point.
+- [x] If no Level 1 Heading is found in the document, raise a `PlanParsingError` to maintain existing validation behavior for plans without titles.
+- [x] Create a new acceptance test file (e.g., `tests/acceptance/test_parser_robustness.py`).
+- [x] Add tests to this file that cover all scenarios outlined in the Acceptance Criteria.
+- [x] Ensure all existing unit, integration, and acceptance tests continue to pass.
+
+## Implementation Summary
+
+This slice was implemented following a strict outside-in TDD workflow.
+
+1.  **Outer RED:** A new acceptance test file, `tests/acceptance/test_parser_robustness.py`, was created with a single failing test (`test_plan_with_preamble_is_parsed_successfully`) to act as the North Star.
+2.  **Inner TDD Loop:**
+    *   **RED:** A new failing unit test, `test_parse_succeeds_with_preamble_before_title`, was added to `tests/unit/core/services/test_markdown_plan_parser.py`.
+    *   **GREEN:** The `_parse_strict_top_level` method in `MarkdownPlanParser` was modified to iterate past any preamble tokens until it found the first H1 heading.
+    *   **REFACTOR:** The change introduced a regression in an existing test that asserted the old behavior. This obsolete test was removed. The parser logic was further refined to explicitly raise an error if no H1 heading is found at all, and a new unit test was added to cover this case.
+3.  **Outer GREEN:** The guiding acceptance test was run again and passed. Additional acceptance tests were added to cover the remaining scenarios (standard plan and no-title plan), which also passed.
+4.  **Polish & Commit:** The code was cleaned up, and the final implementation was committed as a single atomic unit.
+
+There were no significant deviations from the plan, and no new refactoring opportunities were identified.
