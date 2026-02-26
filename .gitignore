@@ -81,6 +81,10 @@ dmypy.json
 # IDE settings
 .idea/
 .vscode/
+
+# OS-generated files
+.DS_Store
+Thumbs.db
 debug_page.html
 debug_screenshot.png
 error_screenshot.png
