@@ -14,7 +14,10 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 
 1.  **Config, Security & LLM Foundation:**
     -   A singleton `ConfigService` reading from `.teddy/config.yaml` (which will contain sensitive LLM API keys).
-    -   **Pre-commit Secret Scanning:** Integration of a secret scanner (e.g., `detect-secrets` or `trufflehog`) into `.pre-commit-config.yaml` and the CI pipeline to strictly prevent API key leaks.
+    -   **Comprehensive Security Gates:**
+        -   **Secret Scanning:** Integration of `detect-secrets` or `trufflehog` to prevent API key leaks.
+        -   **Code Security Scanning:** Integration of `bandit` to identify insecure coding patterns.
+        -   **Dependency Auditing:** Integration of `pip-audit` to detect vulnerabilities in third-party libraries.
     -   An `ILlmClient` port with a `LiteLLMAdapter` implementation using the `litellm` library.
 2.  **Session Manager:** A service handling all stateful filesystem interactions (creating turn directories, managing session artifacts).
 3.  **Context-Centric Workflow:** An implicitly generated `input.md` file serving as the AI's complete worldview for each turn.
@@ -35,7 +38,7 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 ## 4. Vertical Slices
 
 - [ ] **Slice 1: Security Baselines, Config Service and LLM Client**
-    - Configure pre-commit secret scanning (e.g., `detect-secrets`). Add `litellm` dependency, implement `ConfigService` and `LiteLLMAdapter`, and wire them in `main.py`.
+    - Configure comprehensive security gates (secret scanning with `detect-secrets`, code scanning with `bandit`, and dependency auditing with `pip-audit`). Add `litellm` dependency, implement `ConfigService` and `LiteLLMAdapter`, and wire them in `main.py`.
 - [ ] **Slice 2: Session Scaffolding & Core Commands**
     - Implement `SessionManager` and the basic `new`, `plan`, and `execute` commands.
 - [ ] **Slice 3: Context-Centric Workflow**

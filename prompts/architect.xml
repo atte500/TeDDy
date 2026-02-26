@@ -80,8 +80,9 @@
                   *   **Security:** A secret scanner to prevent accidental credential commits.
                   *   **Correctness:** A static type checker.
                   *   **Style & Formatting:** A linter and formatter. Note: Column-based line length checks (e.g., E501) MUST be disabled; we rely on the formatter for wrapping and prioritize readability for URLs and comments.
-                  *   **Complexity:** A static complexity analysis tool. Define and document project-specific thresholds for **Cyclomatic Complexity** per function and **Source Lines of Code (SLOC)** per file.
-                  *   **Duplication:** A copy-paste detection (CPD) tool to identify duplicated code blocks. Define and document a project-specific threshold for the minimum token length to be considered a duplicate.
+                  *   **Complexity:** A static complexity analysis tool. You MUST define and document the **precise numerical thresholds** (e.g., exactly how many statements or decision points) for **Cyclomatic Complexity** per function and **Source Lines of Code (SLOC)** per file.
+                  *   **Dead Code:** A tool to identify unused or unreachable code (e.g., `vulture`). You MUST define and document the minimum confidence threshold for detection.
+                  *   **Duplication:** A copy-paste detection (CPD) tool to identify duplicated code blocks. You MUST define and document the precise numerical threshold for the minimum token length to be considered a duplicate.
                   *   **Sanity & Consistency:** Checks for valid file formats, no merge-conflict markers, etc.
 
           **2. Component & Boundary Map**

@@ -62,8 +62,8 @@ This document outlines the technical standards, conventions, and setup process f
     - **Correctness:**
         - `mypy`: For static type checking.
     - **Complexity & Dead Code:**
-        - `ruff`: Configured to enforce a **Cyclomatic Complexity** limit of **9** per function (Rule `C901`) and a **Statement Limit** of **40** per function (Rule `PLR0915`).
-        - `vulture`: For detecting dead (unreachable) code.
+        - `ruff`: Configured to enforce a **precise Cyclomatic Complexity** limit of **9** per function (Rule `C901`) and a **precise Statement Limit** of **40** per function (Rule `PLR0915`).
+        - `vulture`: For detecting dead (unreachable) code. Must be configured with a minimum confidence of **80%**.
         - **File Length (SLOC):** A custom check enforces a maximum of **300 lines** per Python file (excluding tests and spikes). This ensures components remain focused and modular.
     - **Sanity & Consistency:**
         - `check-yaml`, `check-toml`: For syntax validation.
