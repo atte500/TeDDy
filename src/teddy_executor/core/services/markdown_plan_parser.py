@@ -285,5 +285,3 @@ class MarkdownPlanParser(IPlanParser):
         return actions
 
     # Action-specific parsing logic moved to action_parser_strategies.py
-
-    # Action-specific parsing logic moved to action_parser_strategies.py
