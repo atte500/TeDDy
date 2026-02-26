@@ -27,3 +27,10 @@ repos:
         language: system
         types: [python]
         pass_filenames: false
+
+    -   id: vulture
+        name: Vulture (Dead Code)
+        entry: vulture src --min-confidence 80
+        language: system
+        types: [python]
+        pass_filenames: false

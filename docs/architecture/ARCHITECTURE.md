@@ -50,14 +50,22 @@ This document outlines the technical standards, conventions, and setup process f
     - **Run all tests:** `poetry run pytest`
     - **Run tests in a specific file:** `poetry run pytest tests/acceptance/test_chat_with_user_action.py`
     - **Run a specific test by name:** `poetry run pytest -k "test_chat_with_user_gets_response"`
+- **Test Coverage:** The CI pipeline **must** perform test coverage analysis using `pytest-cov`. It **must** be configured to fail if test coverage drops below a project-defined threshold of **80%**.
 
-### Pre-commit Hooks
+### Pre-commit Hooks & CI Quality Gates
 - **Framework:** `pre-commit`.
 - **Configuration:** Stored in `.pre-commit-config.yaml` at the repository root.
+- **Principle:** The CI pipeline **must** execute the exact same suite of checks as the pre-commit hooks to guarantee the trunk remains clean. All hooks **must** be fast.
 - **Included Hooks:**
-    - `ruff`: For linting and formatting.
-    - `mypy`: For static type checking.
-    - `check-yaml`, `check-toml`: For syntax validation.
+    - **Style & Formatting:**
+        - `ruff`: For linting and formatting.
+    - **Correctness:**
+        - `mypy`: For static type checking.
+    - **Complexity & Dead Code:**
+        - `ruff`: Configured to enforce a **Cyclomatic Complexity** limit of **10** per function (Rule `C901`) and a **Statement Limit** of **50** per function (Rule `PLR0915`).
+        - `vulture`: For detecting dead (unreachable) code.
+    - **Sanity & Consistency:**
+        - `check-yaml`, `check-toml`: For syntax validation.
 
 ### Spike Directory Exclusion
 The `spikes/` directory is intentionally excluded from `ruff` and `mypy` checks in `.pre-commit-config.yaml`.

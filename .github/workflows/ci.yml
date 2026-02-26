@@ -56,8 +56,11 @@ jobs:
     - name: Install dependencies
       run: poetry install --no-interaction
 
-    - name: Run pre-commit checks
+    - name: Run pre-commit checks (Lint, Format, Types)
       run: poetry run pre-commit run --all-files
 
-    - name: Run tests
+    - name: Run Vulture (Dead Code Detection)
+      run: poetry run vulture src --min-confidence 80
+
+    - name: Run tests (with coverage)
       run: poetry run pytest
