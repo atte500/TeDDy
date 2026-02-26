@@ -15,20 +15,13 @@ The `IGetContextUseCase` port defines the primary entry point into the applicati
 **Status:** Implemented
 
 *   **Description:** Gathers all project context information, including the repository file tree, system environment details, and the content of specified files.
-*   **Signature:** `get_context() -> ContextResult`
+*   **Signature:** `get_context() -> ProjectContext`
 *   **Preconditions:** None.
 *   **Postconditions:**
-    *   Returns a `ContextResult` data transfer object containing the aggregated project context, structured for standardized output.
+    *   Returns a `ProjectContext` data transfer object containing the aggregated project context, structured for standardized output.
     *   If `.teddy/project.context` does not exist, it will be created with default content before the context is gathered.
 
 ## 3. Data Structures
 
-### `ContextResult`
-This is a data transfer object (DTO) that aggregates all the information gathered by the use case.
-
-| Field                 | Type           | Description                                                              |
-| --------------------- | -------------- | ------------------------------------------------------------------------ |
-| `system_info`         | `dict`         | A dictionary containing system information (e.g., `os`, `cwd`, `shell`). |
-| `repo_tree`           | `str`          | A string representing the repository's file and directory structure.     |
-| `context_vault_paths` | `list[str]`    | A simple list of file paths gathered from all `.teddy/*.context` files.  |
-| `file_contents`       | `dict[str, str | None]`                                                                   | A dictionary mapping file paths to their content, or `None` if the file was not found. |
+### `ProjectContext`
+This is a data transfer object (DTO) that aggregates all the information gathered by the use case. For its detailed structure, see the [ProjectContext component design](/docs/architecture/core/domain/project_context.md).

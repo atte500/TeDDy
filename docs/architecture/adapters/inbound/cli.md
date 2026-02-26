@@ -117,7 +117,7 @@ This command provides a comprehensive snapshot of the project for an AI agent.
 
 *   **Input:**
     *   `--no-copy` (Optional Flag): If provided, suppresses the default behavior of copying the output to the system clipboard.
-*   **Behavior:** It invokes the `ContextService` via the `IGetContextUseCase` port. It receives a `ContextResult` domain object in return, formats it into a structured, human-readable string, and prints it to standard output while also copying it to the clipboard, as per the standard output handling rules.
+*   **Behavior:** It invokes the `ContextService` via the `IGetContextUseCase` port. It receives a `ProjectContext` domain object in return, formats its content, and prints it to standard output while also copying it to the clipboard, as per the standard output handling rules.
 
 ### Utility Command: `get-prompt`
 **Status:** Implemented
@@ -150,22 +150,7 @@ The application exits with a non-zero status code if any action in the `execute`
 #### Project Context Snapshot
 **(Updated in: [Slice 17: Refactor `context` Command Output](../../../project/slices/17-refactor-context-command-output.md))**
 
-The `cli_formatter.py` module contains a `format_project_context` function. This function takes the `ContextResult` DTO and renders it as a single string with four distinct sections, in order.
-
-1.  **`# System Information`**: This section is a markdown-formatted list of key-value pairs from the `system_info` attribute of the `ContextResult`. It **MUST** include the `shell` and **MUST NOT** include the `python_version`.
-
-2.  **`# Repository Tree`**: This section contains the verbatim string from the `repo_tree` attribute of the `ContextResult`.
-
-3.  **`# Context Vault`**: This section contains a simple, newline-delimited list of file paths from the `context_vault_paths` attribute. It **MUST NOT** be formatted as a code block.
-
-4.  **`# File Contents`**: This section iterates through the `file_contents` dictionary. For each file, it prints the file path followed by its content enclosed in a markdown code block with the appropriate language extension. For example:
-    ```
-    path/to/file.py
-    `````python
-    # Contents of file.py
-    print("Hello, World!")
-    `````
-    ```
+The `cli_formatter.py` module contains a `format_project_context` function. This function takes the `ProjectContext` DTO and renders its `header` and `content` attributes into a single string. The logic for constructing the detailed content of these strings now resides within the `ContextService`, simplifying the adapter's responsibility to pure presentation.
 
 ## 5. Plan Parser Factory
 

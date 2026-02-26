@@ -260,15 +260,3 @@ Represents the content and status of a single file requested for context.
     *   `status` (str): The read status, one of "found" or "not_found".
 *   **Invariants:**
     *   `status` must be either "found" or "not_found".
-
-### `ContextResult` (Aggregate Root)
-**Status:** Implemented
-**Introduced in:** [Implement `context` Command](../slices/13-context-command.md)
-
-A data structure that aggregates all the information gathered by the `GetContextUseCase`. It acts as the root of the Project Context aggregate.
-
-*   **Attributes:**
-    *   `repo_tree` (str): The file and directory structure of the repository.
-    *   `environment_info` (dict[str, str]): Key-value pairs of OS and environment information.
-    *   `gitignore_content` (str): The content of the root `.gitignore` file.
-    *   `file_contexts` (list[FileContext]): A list containing the content of each requested file.
