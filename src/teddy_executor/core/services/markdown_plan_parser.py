@@ -175,16 +175,21 @@ class MarkdownPlanParser(IPlanParser):
         raise InvalidPlanError(msg)
 
     def _parse_strict_top_level(self, stream: _PeekableStream, doc: Document) -> str:
-        actual_idx = 0
-
-        # 0: H1 Title
+        # 0: Find H1 Title, ignoring preamble
         node = stream.peek()
-        if not node or not (isinstance(node, Heading) and node.level == 1):
-            self._raise_structural_error(
-                doc, "a Level 1 Heading at the start of the document", actual_idx, node
+        actual_idx = 0
+        while node and not (isinstance(node, Heading) and node.level == 1):
+            stream.next()  # Consume preamble node
+            node = stream.peek()
+            actual_idx += 1
+
+        if not node:  # No H1 heading found in the entire document
+            raise InvalidPlanError(
+                "Plan parsing failed: No Level 1 heading found to indicate the plan's title."
             )
+
         title = self._get_child_text(node).strip()
-        stream.next()
+        stream.next()  # Consume the H1 title
         actual_idx += 1
 
         # 1: List Metadata

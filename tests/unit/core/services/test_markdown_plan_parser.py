@@ -734,47 +734,38 @@ Rationale.
     assert action.params["resource"] == expected_path
 
 
-def test_parser_rejects_plan_with_preamble_and_shows_ast_diff(
-    parser: MarkdownPlanParser,
-):
+def test_parse_succeeds_with_preamble_before_title(parser: MarkdownPlanParser):
     """
-    Given a Markdown plan with conversational text (a preamble) before the H1,
+    Given a Markdown plan with text before the H1 title,
     When the parser parses it,
-    Then it should raise an InvalidPlanError detailing the structural mismatch
-    with a Desired vs Actual AST diff.
+    Then it should successfully parse the plan, ignoring the preamble.
     """
-    from teddy_executor.core.ports.inbound.plan_parser import InvalidPlanError
-
     plan_content = """
-Here is the plan you asked for.
+This is some preamble text.
+It should be ignored.
 
-# My Plan
+# My Real Plan Title
 - **Status:** Green 🟢
 - **Plan Type:** Test
 - **Agent:** Dev
 
 ## Rationale
-```text
+````text
 Synthesis, etc.
-```
+````
 
 ## Action Plan
 ### `EXECUTE`
 - **Description:** test
-```shell
+````shell
 echo 1
-```
+````
 """
+    plan = parser.parse(plan_content)
 
-    with pytest.raises(InvalidPlanError) as excinfo:
-        parser.parse(plan_content)
-
-    error_msg = str(excinfo.value)
-    assert "Plan structure is invalid." in error_msg
-    assert "--- Expected Document Structure ---" in error_msg
-    assert "--- Actual Document Structure ---" in error_msg
-    assert "[000] Paragraph" in error_msg
-    assert "<-- MISMATCH" in error_msg
+    assert plan.title == "My Real Plan Title"
+    assert len(plan.actions) == 1
+    assert plan.actions[0].type == "EXECUTE"
 
 
 def test_parser_raises_error_on_unknown_action(parser: MarkdownPlanParser):
@@ -1126,29 +1117,22 @@ echo "hello"
 echo "hello"
 ```"""
     assert action.params["content"] == expected_content
-    from tests.acceptance.plan_builder import MarkdownPlanBuilder
 
-    # Arrange
-    builder = MarkdownPlanBuilder("Test Plan")
-    builder.add_action(
-        "CREATE",
-        params={
-            "File Path": "new_file.txt",
-            "Description": "Create a new file.",
-        },
-        # Note: The key here is for the builder, but should not be rendered
-        # for a CREATE action.
-        content_blocks={"Content:": ("text", "Hello, TeDDy!")},
-    )
-    plan_content = builder.build()
 
-    # Act
-    plan = parser.parse(plan_content)
+def test_parser_raises_error_if_no_title_found(parser: MarkdownPlanParser):
+    """
+    Given a Markdown plan with no H1 heading,
+    When the parser parses it,
+    Then it should raise an InvalidPlanError.
+    """
+    from teddy_executor.core.ports.inbound.plan_parser import InvalidPlanError
 
-    # Assert
-    assert len(plan.actions) == 1
-    action = plan.actions[0]
-    assert action.type == "CREATE"
-    assert action.params["path"] == "new_file.txt"
-    assert action.params["content"] == "Hello, TeDDy!"
-    assert action.description == "Create a new file."
+    plan_content = """
+This is a document without a title.
+## Just a Sub-heading
+- Some item
+"""
+    with pytest.raises(InvalidPlanError) as excinfo:
+        parser.parse(plan_content)
+
+    assert "No Level 1 heading found" in str(excinfo.value)
