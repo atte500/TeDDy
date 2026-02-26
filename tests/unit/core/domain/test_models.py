@@ -249,31 +249,3 @@ def test_web_search_error_can_be_raised():
     except WebSearchError as e:
         assert str(e) == message
         assert e.original_exception == original_exc
-
-
-def test_new_context_result_model_instantiation():
-    """
-    Tests that the new ContextResult model can be instantiated
-    with the fields defined in the architectural contract.
-    """
-    # Arrange
-    from teddy_executor.core.domain.models import ContextResult
-
-    system_info = {"os": "test_os", "shell": "/bin/test"}
-    repo_tree = "file.txt\ndir/"
-    context_vault_paths = ["file.txt"]
-    file_contents = {"file.txt": "content"}
-
-    # Act
-    context_result = ContextResult(
-        system_info=system_info,
-        repo_tree=repo_tree,
-        context_vault_paths=context_vault_paths,
-        file_contents=file_contents,
-    )
-
-    # Assert
-    assert context_result.system_info == system_info
-    assert context_result.repo_tree == repo_tree
-    assert context_result.context_vault_paths == context_vault_paths
-    assert context_result.file_contents == file_contents

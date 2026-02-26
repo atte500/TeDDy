@@ -139,19 +139,6 @@ class Plan:
             raise ValueError("Plan must contain at least one action")
 
 
-@dataclass(frozen=True)
-class ContextResult:
-    """
-    Aggregates all information gathered by the context command.
-    This is a data transfer object (DTO) that structures the data for the CLI formatter.
-    """
-
-    system_info: Dict[str, str]
-    repo_tree: str
-    context_vault_paths: List[str]
-    file_contents: Dict[str, Optional[str]]
-
-
 @dataclass
 class ExecutionReport:
     """A comprehensive report detailing the execution of an entire Plan."""
