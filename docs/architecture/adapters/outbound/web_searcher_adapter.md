@@ -13,7 +13,7 @@ The `WebSearcherAdapter` is the concrete implementation of the [`IWebSearcher`](
 ## 3. Implementation Notes
 
 *   **Library:** The `ddgs` library is used to interact with DuckDuckGo.
-*   **Data Mapping:** The results from the library are mapped to the `SearchResult` domain object. Specifically, the library's `href` key is mapped to `url`, and `body` is mapped to `snippet`. The adapter loops through each query and aggregates the results into a single `SERPReport` object.
+*   **Data Mapping:** The raw results from the `ddgs` library are mapped to the `WebSearchResults` `TypedDict` contract. Specifically, the library's `title`, `href` (as `url`), and `body` (as `snippet`) keys are used to construct the `SearchResult` dictionaries. The adapter aggregates all results into a single `WebSearchResults` object.
 *   **Error Handling:** Any exception raised during the interaction with the `ddgs` library is caught and re-raised as a domain-specific `WebSearchError` to honor the port contract.
 
 ## 4. External Documentation

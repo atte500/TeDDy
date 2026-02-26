@@ -8,12 +8,12 @@ This port defines the contract for a component that can perform web searches. It
 
 ## 2. Interface Definition
 
-### `search(queries: List[str]) -> SERPReport`
+### `search(queries: List[str]) -> WebSearchResults`
 **Status:** Implemented
 
 *   **Description:** Performs a web search for each query in the provided list.
 *   **Parameters:**
     *   `queries` (List[str]): A list of search query strings.
-*   **Returns:** A [`SERPReport`](../domain_model.md) domain object containing the aggregated search results.
+*   **Returns:** A [`WebSearchResults`](../domain/web_search_results.md) `TypedDict` containing the aggregated search results.
 *   **Raises:**
     *   [`WebSearchError`](../domain_model.md): If the search operation fails for any reason (e.g., network error, API failure).

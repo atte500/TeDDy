@@ -196,37 +196,6 @@ A comprehensive report detailing the execution of an entire `Plan`.
 
 ---
 
-## 4. Search Result Value Objects
-**Introduced in:** [Slice 11: Implement `research` action](../slices/11-research-action.md)
-
-This hierarchy of value objects represents the structured results from a web search. They are immutable data containers.
-
-### `SearchResult` (Value Object)
-**Status:** Implemented
-
-Represents a single search result item.
-
-*   **Attributes:**
-    *   `title` (str): The page title.
-    *   `url` (str): The full URL.
-    *   `snippet` (str): A descriptive snippet of the page content.
-
-### `QueryResult` (Value Object)
-**Status:** Implemented
-
-Represents the collection of results for a single search query.
-
-*   **Attributes:**
-    *   `query` (str): The original search query string.
-    *   `search_results` (list[SearchResult]): A list of individual search results.
-
-### `SERPReport` (Value Object)
-**Status:** Implemented
-
-Represents the aggregated results for all queries in a `ResearchAction`. This is the object returned by the `IWebSearcher` port.
-
-*   **Attributes:**
-    *   `results` (list[QueryResult]): A list of results, one for each query.
 
 ---
 
