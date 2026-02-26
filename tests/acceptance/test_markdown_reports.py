@@ -254,6 +254,7 @@ def test_successful_plan_execution_report_format(monkeypatch, tmp_path: Path):
     Then the report's `Execution Summary` should appear immediately after the header,
     And each action's `Status` should be on a new, indented line.
     """
+    max_header_lines = 5
     # Arrange
     builder = MarkdownPlanBuilder("Test Plan: Successful Execution")
     builder.add_action(
@@ -294,7 +295,7 @@ def test_successful_plan_execution_report_format(monkeypatch, tmp_path: Path):
 
     # Assert that the summary comes right after the header block
     # The header block consists of the H1, Overall Status, Start Time, End Time, and a blank line.
-    assert summary_start_index <= 5, (
+    assert summary_start_index <= max_header_lines, (
         f"Execution Summary is not positioned correctly after the header. Report:\\n{result.stdout}"
     )
 

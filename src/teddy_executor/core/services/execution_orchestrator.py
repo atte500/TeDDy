@@ -44,6 +44,78 @@ class ExecutionOrchestrator(RunPlanUseCase):
             return RunStatus.SKIPPED
         return RunStatus.SUCCESS
 
+    def _handle_skipped_action(self, action, reason: str) -> ActionLog:
+        """Creates an ActionLog for a skipped action."""
+        log_params = action.params.copy()
+        if action.description:
+            log_params["Description"] = action.description
+        return ActionLog(
+            status=ActionStatus.SKIPPED,
+            action_type=action.type,
+            params=log_params,
+            details=reason,
+        )
+
+    def _enrich_failed_log(self, action, action_log: ActionLog) -> ActionLog:
+        """If a CREATE or EDIT action failed, enrich the log with file content."""
+        if action.type not in ("CREATE", "EDIT"):
+            return action_log
+
+        path = action.params.get("path") or action.params.get("File Path")
+        if not path:
+            return action_log
+
+        try:
+            content = self._file_system_manager.read_file(path)
+            new_details = (
+                action_log.details
+                if isinstance(action_log.details, dict)
+                else {"original_details": action_log.details}
+            )
+            new_details["content"] = content
+            return ActionLog(
+                status=action_log.status,
+                action_type=action_log.action_type,
+                params=action_log.params,
+                details=new_details,
+            )
+        except Exception:
+            return action_log
+
+    def _confirm_and_dispatch_action(self, action, interactive: bool) -> ActionLog:
+        """Handles user confirmation and dispatches a single action."""
+        should_dispatch, reason = True, ""
+        if interactive and action.type.lower() != "chat_with_user":
+            prompt_parts = [
+                "---",
+                f"Action: {action.type}",
+                f"Description: {action.description}" if action.description else "",
+            ]
+            param_str = "\n".join(
+                f"  - {k}: {v}"
+                for k, v in action.params.items()
+                if k.lower() not in ("edits", "content")
+            )
+            if param_str:
+                prompt_parts.extend(["Parameters:", param_str])
+            prompt_parts.append("---")
+            prompt = "\n".join(filter(None, prompt_parts))
+            should_dispatch, reason = self._user_interactor.confirm_action(
+                action=action, action_prompt=prompt
+            )
+
+        if not should_dispatch:
+            return self._handle_skipped_action(
+                action, f"User skipped this action. Reason: {reason}"
+            )
+
+        action_log = self._action_dispatcher.dispatch_and_execute(action)
+
+        if action_log.status == ActionStatus.FAILURE:
+            return self._enrich_failed_log(action, action_log)
+
+        return action_log
+
     def execute(self, plan: Plan, interactive: bool) -> ExecutionReport:
         start_time = datetime.now()
         action_logs = []
@@ -51,104 +123,24 @@ class ExecutionOrchestrator(RunPlanUseCase):
 
         for action in plan.actions:
             if halt_execution:
-                log_params = action.params.copy()
-                if action.description:
-                    log_params["Description"] = action.description
                 action_logs.append(
-                    ActionLog(
-                        status=ActionStatus.SKIPPED,
-                        action_type=action.type,
-                        params=log_params,
-                        details="Skipped because a previous action failed.",
+                    self._handle_skipped_action(
+                        action, "Skipped because a previous action failed."
                     )
                 )
                 continue
 
-            should_dispatch = True
-            reason = ""
-            if interactive and action.type.lower() != "chat_with_user":
-                # Build a more descriptive, multi-line prompt for readability
-                prompt_parts = [
-                    "---",
-                    f"Action: {action.type}",
-                ]
-                if action.description:
-                    prompt_parts.append(f"Description: {action.description}")
-
-                # Use a cleaner representation of params from the original action,
-                # omitting verbose fields like edits and content for the preview.
-                param_str = "\n".join(
-                    f"  - {k}: {v}"
-                    for k, v in action.params.items()
-                    if k.lower() not in ("edits", "content")
-                )
-                if param_str:
-                    prompt_parts.append("Parameters:")
-                    prompt_parts.append(param_str)
-                prompt_parts.append("---")
-
-                prompt = "\n".join(prompt_parts)
-                should_dispatch, reason = self._user_interactor.confirm_action(
-                    action=action, action_prompt=prompt
-                )
-
-            if should_dispatch:
-                action_log = self._action_dispatcher.dispatch_and_execute(action)
-
-                # If CREATE or EDIT failed, try to capture file content for context
-                if action_log.status == ActionStatus.FAILURE and action.type in (
-                    "CREATE",
-                    "EDIT",
-                ):
-                    path = action.params.get("path") or action.params.get("File Path")
-                    if path:
-                        try:
-                            content = self._file_system_manager.read_file(path)
-                            # Create a new ActionLog with updated details
-                            new_details = (
-                                action_log.details
-                                if isinstance(action_log.details, dict)
-                                else {"original_details": action_log.details}
-                            )
-                            new_details["content"] = content
-
-                            action_log = ActionLog(
-                                status=action_log.status,
-                                action_type=action_log.action_type,
-                                params=action_log.params,
-                                details=new_details,
-                            )
-                        except Exception:
-                            # If we can't read the file (e.g. doesn't exist), just ignore
-                            pass
-
-                if action_log.status == ActionStatus.FAILURE:
-                    halt_execution = True
-
-            else:
-                # Ensure the description from the action is included in the logged params.
-                log_params = action.params.copy()
-                if action.description:
-                    log_params["Description"] = action.description
-
-                action_log = ActionLog(
-                    status=ActionStatus.SKIPPED,
-                    action_type=action.type,
-                    params=log_params,
-                    details=f"User skipped this action. Reason: {reason}",
-                )
-
+            action_log = self._confirm_and_dispatch_action(action, interactive)
             action_logs.append(action_log)
 
+            if action_log.status == ActionStatus.FAILURE:
+                halt_execution = True
+
         end_time = datetime.now()
-        overall_status = self._determine_overall_status(action_logs)
         summary = RunSummary(
-            status=overall_status,
+            status=self._determine_overall_status(action_logs),
             start_time=start_time,
             end_time=end_time,
         )
 
-        return ExecutionReport(
-            run_summary=summary,
-            action_logs=action_logs,
-        )
+        return ExecutionReport(run_summary=summary, action_logs=action_logs)

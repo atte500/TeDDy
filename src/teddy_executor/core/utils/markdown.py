@@ -4,8 +4,9 @@ import re
 
 def get_language_from_path(path: str) -> str:
     """
-    Determines the appropriate markdown code block language identifier based on a file path.
-    Falls back to the extension itself, or 'text' if no extension exists.
+    Determines the appropriate markdown code block language identifier based on
+    a file path. Falls back to the extension itself, or 'text' if no
+    extension exists.
     """
     _, ext = os.path.splitext(path)
     if not ext:

@@ -684,7 +684,8 @@ Handoff message.
     plan = parser.parse(plan_content)
 
     # Assert
-    assert len(plan.actions) == 2
+    expected_action_count = 2
+    assert len(plan.actions) == expected_action_count
 
     edit_action = plan.actions[0]
     assert edit_action.type == "EDIT"

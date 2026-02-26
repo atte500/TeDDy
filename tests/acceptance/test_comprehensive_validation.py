@@ -61,7 +61,8 @@ Replacement2
 
 def test_edit_action_with_no_match_provides_diff(monkeypatch, tmp_path: Path):
     """
-    Scenario 2: An `EDIT` action with a mismatched `FIND` block is validated, providing a diff.
+    Scenario 2: An `EDIT` action with a mismatched `FIND` block is validated,
+    providing a diff.
     """
     # Arrange
     target_file = tmp_path / "target.txt"

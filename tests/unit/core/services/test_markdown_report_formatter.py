@@ -154,9 +154,10 @@ def test_report_header_has_no_extra_newlines():
     # The header block consists of the H1, Overall Status, Start Time,
     # and End Time, plus surrounding blank lines.
     # We expect the log to be at or before line index 5.
+    max_header_lines = 5
     try:
         summary_index = report_lines.index("## Action Log")
-        assert summary_index <= 5
+        assert summary_index <= max_header_lines
     except ValueError:
         assert False, "'## Action Log' not found in report"
 

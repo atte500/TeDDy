@@ -26,6 +26,65 @@ class MarkdownPlanBuilder:
         )
         return self
 
+    def _render_params(self, params: Dict[str, Any]) -> str:
+        """Renders the key-value parameters for an action."""
+        lines = []
+        # Use .copy() to avoid modifying the original dict during iteration
+        params_copy = params.copy()
+        env_val = params_copy.pop("env", None)
+        for key, value in params_copy.items():
+            # These are handled by their specific action formatters
+            if key in ["command", "Handoff Message", "prompt"]:
+                continue
+            lines.append(f"- **{key}:** {value}")
+        if env_val:
+            lines.append(f"- **env:**\n  {env_val}")
+        return "\n" + "\n".join(lines) if lines else ""
+
+    def _render_content_blocks(
+        self, action_type: str, content_blocks: Optional[Dict[str, Tuple[str, str]]]
+    ) -> str:
+        """Renders code blocks like FIND/REPLACE or file content."""
+        if not content_blocks:
+            return ""
+        parts = []
+        for key, (lang, content) in content_blocks.items():
+            key_str = f"#### {key}" if key and action_type == "EDIT" else ""
+            fence = "````" if action_type == "CREATE" else "`````"
+            block = (
+                f"{key_str}\n{fence}{lang}\n{content}\n{fence}"
+                if key_str
+                else f"{fence}{lang}\n{content}\n{fence}"
+            )
+            parts.append(block)
+        return "\n\n" + "\n".join(parts)
+
+    def _build_action(self, action: Dict[str, Any]) -> str:
+        """Builds the string for a single action."""
+        action_type = action["type"].upper()
+        params = action.get("params", {})
+        content_blocks = action.get("content_blocks")
+
+        action_str = f"\n### `{action_type}`"
+        action_str += self._render_params(params)
+
+        if action_type == "CHAT_WITH_USER":
+            action_str += f"\n\n{params.get('prompt', '')}"
+        elif action_type == "EXECUTE":
+            command = (
+                params.get("command")
+                or (content_blocks or {}).get("COMMAND", ("", ""))[1]
+            )
+            if command:
+                action_str += f"\n\n````shell\n{command}\n````"
+        elif action_type == "INVOKE":
+            if handoff_message := params.get("Handoff Message"):
+                action_str += f"\n\n{handoff_message}"
+        else:
+            action_str += self._render_content_blocks(action_type, content_blocks)
+
+        return action_str
+
     def build(self) -> str:
         """Builds and returns the final Markdown plan string."""
         header = dedent(
@@ -65,67 +124,7 @@ class MarkdownPlanBuilder:
         action_plan_parts = ["## Action Plan"]
         if self._actions:
             for action in self._actions:
-                action_type_upper = action["type"].upper()
-                action_str = f"\n### `{action_type_upper}`"
-                params = action["params"]
-                content_blocks = action.get("content_blocks") or {}
-
-                if action_type_upper == "CHAT_WITH_USER":
-                    prompt = params.get("prompt")
-                    if prompt:
-                        action_str += f"\n\n{prompt}"
-                    action_plan_parts.append(action_str)
-                    continue
-
-                # Pop special-handled keys from params to avoid double-printing
-                command = params.pop("command", None)
-                handoff_message = params.pop("Handoff Message", None)
-                env_val = params.pop("env", None)
-
-                # Render all remaining standard parameters
-                for key, value in params.items():
-                    action_str += f"\n- **{key}:** {value}"
-
-                # Render special nested list for env if it exists
-                if env_val:
-                    action_str += f"\n- **env:**\n  {env_val}"
-
-                # Action-specific content block rendering
-                if action_type_upper == "EXECUTE":
-                    # Command can come from params or content_blocks
-                    command_content = command
-                    if not command_content:
-                        # Check both `COMMAND` and `` `COMMAND:` `` for compatibility
-                        command_block = content_blocks.get(
-                            "COMMAND"
-                        ) or content_blocks.get("`COMMAND:`")
-                        if command_block:
-                            _, command_content = command_block
-
-                    if command_content:
-                        action_str += f"\n\n````shell\n{command_content}\n````"
-
-                elif action_type_upper == "INVOKE":
-                    if handoff_message:
-                        action_str += f"\n\n{handoff_message}"
-
-                elif content_blocks:
-                    block_parts = []
-                    for key, (lang, content) in content_blocks.items():
-                        # EDIT action blocks have keys (e.g., FIND:), CREATE does not.
-                        key_str = (
-                            f"#### {key}" if key and action_type_upper == "EDIT" else ""
-                        )
-                        # Use different fence lengths for robustness in tests
-                        fence = "````" if action_type_upper == "CREATE" else "`````"
-                        fence_str = f"{fence}{lang}\n{content}\n{fence}"
-
-                        block = f"{key_str}\n{fence_str}" if key_str else fence_str
-                        block_parts.append(block)
-
-                    action_str += "\n\n" + "\n".join(block_parts)
-
-                action_plan_parts.append(action_str)
+                action_plan_parts.append(self._build_action(action))
 
         action_plan_section = "\n".join(action_plan_parts)
 

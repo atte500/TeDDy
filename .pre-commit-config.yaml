@@ -42,7 +42,7 @@ repos:
 
     -   id: file-length
         name: Check File Length (Max 300 Lines)
-        entry: bash -c 'if [ $(wc -l < "$1") -gt 300 ]; then echo "File $1 is too long (>300 lines). Please refactor."; exit 1; fi' --
+        entry: bash -c 'for f in "$@"; do if [ $(wc -l < "$f") -gt 300 ]; then echo "File $f is too long (>300 lines). Please refactor."; exit 1; fi; done' --
         language: system
         types: [python]
         exclude: ^tests/|^spikes/

@@ -142,8 +142,9 @@ def test_execute_with_mixed_success_and_skipped_is_success(
     report = orchestrator.execute(plan=plan, interactive=True)
 
     # Assert
+    expected_action_count = 2
     assert report.run_summary.status == RunStatus.SUCCESS
-    assert len(report.action_logs) == 2
+    assert len(report.action_logs) == expected_action_count
     assert report.action_logs[0].status == ActionStatus.SUCCESS
     assert report.action_logs[1].status == ActionStatus.SKIPPED
     mock_action_dispatcher.dispatch_and_execute.assert_called_once_with(action1)
@@ -222,8 +223,9 @@ def test_execute_auto_skips_after_failure(
     report = orchestrator.execute(plan=plan, interactive=False)
 
     # Assert
+    expected_action_count = 2
     assert report.run_summary.status == RunStatus.FAILURE
-    assert len(report.action_logs) == 2
+    assert len(report.action_logs) == expected_action_count
 
     # First action failed
     assert report.action_logs[0].status == ActionStatus.FAILURE

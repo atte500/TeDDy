@@ -279,8 +279,8 @@ def test_invalid_custom_tool_falls_back_to_terminal(tmp_path: Path, monkeypatch)
     assert "+Hello, TeDDy!" in result.stderr
     # AND a warning should be printed
     assert (
-        "Warning: Custom diff tool 'nonexistent-tool' not found. Falling back to in-terminal diff."
-        in result.stderr
+        "Warning: Custom diff tool 'nonexistent-tool' not found. "
+        "Falling back to in-terminal diff." in result.stderr
     )
 
     # AND THEN: The external tool should NOT have been called

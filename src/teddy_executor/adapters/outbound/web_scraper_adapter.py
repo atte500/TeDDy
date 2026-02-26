@@ -1,3 +1,5 @@
+from http import HTTPStatus
+
 import requests
 import trafilatura
 
@@ -45,7 +47,10 @@ class WebScraperAdapter(WebScraper):
             response.raise_for_status()
             html_content = response.text
         except requests.exceptions.HTTPError as e:
-            if e.response is not None and e.response.status_code == 403:
+            if (
+                e.response is not None
+                and e.response.status_code == HTTPStatus.FORBIDDEN
+            ):
                 # Fallback for 403 Forbidden errors
                 html_content = trafilatura.fetch_url(url)
             else:

@@ -71,29 +71,25 @@ class ActionFactory(IActionFactory):
         # Fallback to lowercasing for YAML/other formats.
         return action_type.lower()
 
-    def create_action(self, action_type: str, params: Optional[dict] = None) -> IAction:
-        """
-        Looks up the adapter protocol for the given action type and asks the
-        container to resolve an instance of it. It then binds the correct
-        adapter method to the `execute` method required by the IAction protocol.
-        """
-        # --- Special Routing for READ action ---
-        if action_type.lower() == "read":
-            safe_params = params or {}
-            resource = safe_params.get("resource", safe_params.get("path", ""))
-            if resource.startswith("http"):
-                action_handler = self._container.resolve(IWebScraper)
-                setattr(
-                    action_handler,
-                    "execute",
-                    lambda **kwargs: action_handler.get_content(url=kwargs["path"]),
-                )
-                return action_handler
-            else:
-                # Fall through to standard file system handler
-                action_type = "read_file"
-        # --- End of Special Routing ---
+    def _create_read_action(self, params: Optional[dict] = None) -> IAction:
+        """Handles the special routing for the READ action."""
+        safe_params = params or {}
+        resource = safe_params.get("resource", safe_params.get("path", ""))
+        if resource.startswith("http"):
+            action_handler = self._container.resolve(IWebScraper)
+            setattr(
+                action_handler,
+                "execute",
+                lambda **kwargs: action_handler.get_content(url=kwargs["path"]),
+            )
+            return action_handler
+        # Fall through to the standard file system handler for local files
+        return self._create_standard_action("read_file", params)
 
+    def _create_standard_action(
+        self, action_type: str, params: Optional[dict] = None
+    ) -> IAction:
+        """Creates an action handler for any action other than 'read'."""
         action_type_key = self._normalize_action_type(action_type)
         if action_type_key not in self._action_map:
             raise ValueError(f"Unknown action type: '{action_type}'")
@@ -110,41 +106,45 @@ class ActionFactory(IActionFactory):
             "read_file": "read_file",
             "chat_with_user": "ask_question",
             "research": "search",
-            "execute": "execute",  # Explicitly map execute to its method
+            "execute": "execute",
         }
 
-        # The execute method now needs to handle the renamed 'resource' -> 'path' param
-        if action_type_key in method_map:
-            method_name = method_map[action_type_key]
-            original_method = getattr(action_handler, method_name)
+        if action_type_key not in method_map:
+            if not hasattr(action_handler, "execute"):
+                raise NotImplementedError(
+                    f"Adapter for {action_type} does not have a mapped method "
+                    "or a default 'execute' method."
+                )
+            return action_handler
 
-            def execute_wrapper(**kwargs):
-                # Translate 'resource' to 'path' for file system methods
-                if "resource" in kwargs and "path" not in kwargs:
-                    kwargs["path"] = kwargs.pop("resource")
+        method_name = method_map[action_type_key]
+        original_method = getattr(action_handler, method_name)
 
-                # For 'execute', pluck only the valid arguments for IShellExecutor
-                if method_name == "execute":
-                    execute_params = {
-                        "command": kwargs.get("command"),
-                        "cwd": kwargs.get("cwd"),
-                        "env": kwargs.get("env"),
-                    }
-                    filtered_params = {
-                        k: v for k, v in execute_params.items() if v is not None
-                    }
-                    if "command" not in filtered_params:
-                        raise ValueError(
-                            "The 'command' parameter is required for the execute action."
-                        )
-                    return original_method(**filtered_params)
+        def execute_wrapper(**kwargs: Any) -> Any:
+            if "resource" in kwargs and "path" not in kwargs:
+                kwargs["path"] = kwargs.pop("resource")
+            if method_name == "execute":
+                execute_params = {
+                    k: v
+                    for k, v in kwargs.items()
+                    if k in ("command", "cwd", "env") and v is not None
+                }
+                if "command" not in execute_params:
+                    raise ValueError(
+                        "'command' parameter is required for the execute action."
+                    )
+                return original_method(**execute_params)
+            return original_method(**kwargs)
 
-                return original_method(**kwargs)
-
-            setattr(action_handler, "execute", execute_wrapper)
-        elif not hasattr(action_handler, "execute"):
-            raise NotImplementedError(
-                f"Adapter for {action_type} does not have a default 'execute' method."
-            )
-
+        setattr(action_handler, "execute", execute_wrapper)
         return action_handler
+
+    def create_action(self, action_type: str, params: Optional[dict] = None) -> IAction:
+        """
+        Looks up the adapter protocol for the given action type and asks the
+        container to resolve an instance of it. It then binds the correct
+        adapter method to the `execute` method required by the IAction protocol.
+        """
+        if action_type.lower() == "read":
+            return self._create_read_action(params)
+        return self._create_standard_action(action_type, params)

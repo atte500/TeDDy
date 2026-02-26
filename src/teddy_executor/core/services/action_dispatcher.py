@@ -40,6 +40,55 @@ class ActionDispatcher:
     def __init__(self, action_factory: IActionFactory):
         self._action_factory = action_factory
 
+    def _prepare_execution_params(self, action_data: ActionData) -> dict[str, Any]:
+        """Handles parameter validation, translation, and cleaning."""
+        params = action_data.params.copy()
+        if not isinstance(params, dict):
+            if action_data.type == "execute":
+                return {"command": params}
+            raise TypeError(
+                f"Action type '{action_data.type}' requires dictionary parameters, but received type '{type(params).__name__}'."
+            )
+
+        param_map = {
+            "create_file": {"file_path": "path"},
+            "edit": {"file_path": "path"},
+            "read": {"source": "path", "resource": "path"},
+        }
+        mapping = param_map.get(action_data.type.lower(), {})
+        for old_key, new_key in mapping.items():
+            if old_key in params:
+                params[new_key] = params.pop(old_key)
+
+        params.pop("expected_outcome", None)
+        params.pop("Description", None)
+        return params
+
+    def _execute_and_process_result(
+        self, action_type: str, execution_params: dict[str, Any]
+    ) -> tuple[Any, ActionStatus]:
+        """Executes the action, normalizes the result, and determines status."""
+        action_handler = self._action_factory.create_action(
+            action_type, execution_params
+        )
+        result = action_handler.execute(**execution_params)
+
+        if is_dataclass(result) and not isinstance(result, type):
+            result = asdict(result)
+
+        if isinstance(result, str):
+            if action_type.lower() == "read":
+                result = {"content": result}
+            elif action_type.lower() == "chat_with_user":
+                result = {"response": result}
+
+        status = ActionStatus.SUCCESS
+        if isinstance(result, dict) and "return_code" in result:
+            shell_output: ShellOutput = result  # type: ignore
+            if shell_output["return_code"] != 0:
+                status = ActionStatus.FAILURE
+        return result, status
+
     def dispatch_and_execute(self, action_data: ActionData) -> ActionLog:
         """
         Takes an ActionData object, finds the corresponding action handler
@@ -47,13 +96,8 @@ class ActionDispatcher:
         """
         action_name = action_data.type.upper()
         log_desc = f" - {action_data.description}" if action_data.description else ""
-        action_summary = f"{action_name}{log_desc}"
+        logger.info(f"{action_name}{log_desc}")
 
-        logger.info(action_summary)
-
-        # Make a copy of params for logging and defensively add the description
-        # to it if it exists. This makes the dispatcher robust against parser
-        # inconsistencies where `description` is a separate attribute.
         log_params = action_data.params.copy()
         if action_data.description and "Description" not in log_params:
             log_params["Description"] = action_data.description
@@ -64,83 +108,13 @@ class ActionDispatcher:
         }
 
         try:
-            params_to_translate = log_data["params"]
-            if not isinstance(params_to_translate, dict):
-                # Handle legacy case where a single string param is provided for 'execute'
-                if action_data.type == "execute":
-                    params_to_translate = {"command": params_to_translate}
-                    # Also update the params that will be logged
-                    log_data["params"] = params_to_translate
-                else:
-                    # For other actions, a non-dict param is an error, as the
-                    # intended keyword is ambiguous.
-                    raise TypeError(
-                        f"Action type '{action_data.type}' requires dictionary parameters, "
-                        f"but received type '{type(params_to_translate).__name__}'."
-                    )
-
-            # --- Parameter Translation for Backwards Compatibility ---
-            param_map = {
-                "create_file": {"file_path": "path"},
-                "edit": {"file_path": "path"},
-                "read": {"source": "path", "resource": "path"},
-            }
-
-            mapping = param_map.get(action_data.type.lower(), {})
-            translated_params = params_to_translate.copy()
-            for old_key, new_key in mapping.items():
-                if old_key in translated_params:
-                    translated_params[new_key] = translated_params.pop(old_key)
-
-            # The translated params (which include the Description) are now the
-            # source of truth for logging.
-            log_data["params"] = translated_params
-
-            # Create a final copy of params for execution, and remove metadata fields
-            # that are not intended for the action handlers.
-            execution_only_params = translated_params.copy()
-            execution_only_params.pop("expected_outcome", None)
-            execution_only_params.pop("Description", None)
-
-            # --- End of Translation ---
-
-            action_handler = self._action_factory.create_action(
-                action_data.type, execution_only_params
+            execution_params = self._prepare_execution_params(action_data)
+            details, status = self._execute_and_process_result(
+                action_data.type, execution_params
             )
-            execution_result = action_handler.execute(**execution_only_params)
-
-            # Convert dataclass to dict for serialization
-            if is_dataclass(execution_result):
-                result_to_serialize = asdict(execution_result)  # type: ignore[arg-type]
-            else:
-                result_to_serialize = execution_result
-
-            # --- Normalize successful results for consistent reporting ---
-            if isinstance(result_to_serialize, str):
-                normalized_type = action_data.type.lower()
-                if normalized_type == "read":
-                    result_to_serialize = {"content": result_to_serialize}
-                elif normalized_type == "chat_with_user":
-                    result_to_serialize = {"response": result_to_serialize}
-
-            # Determine status based on result type
-            # We check for a dict with 'return_code' to identify ShellOutput
-            if (
-                isinstance(result_to_serialize, dict)
-                and "return_code" in result_to_serialize
-            ):
-                shell_output: ShellOutput = result_to_serialize  # type: ignore
-                if shell_output["return_code"] == 0:
-                    log_data["status"] = ActionStatus.SUCCESS
-                    logger.info("SUCCESS")
-                else:
-                    log_data["status"] = ActionStatus.FAILURE
-                    logger.info("FAILURE")
-            else:
-                log_data["status"] = ActionStatus.SUCCESS
-                logger.info("SUCCESS")
-
-            log_data["details"] = result_to_serialize
+            log_data["details"] = details
+            log_data["status"] = status
+            logger.info(status.value.upper())
         except Exception as e:
             log_data["status"] = ActionStatus.FAILURE
             log_data["details"] = str(e)

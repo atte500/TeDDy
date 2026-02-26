@@ -1,3 +1,4 @@
+from http import HTTPStatus
 from unittest.mock import patch
 
 import responses
@@ -67,7 +68,7 @@ def test_get_content_falls_back_on_403_error(mock_extract, mock_fetch_url):
     # 1. The initial request was made
     assert len(responses.calls) == 1
     assert responses.calls[0].request.url == protected_url
-    assert responses.calls[0].response.status_code == 403
+    assert responses.calls[0].response.status_code == HTTPStatus.FORBIDDEN
 
     # 2. The fallback was triggered
     mock_fetch_url.assert_called_once_with(protected_url)

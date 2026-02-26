@@ -163,7 +163,7 @@ class LocalFileSystemAdapter(FileSystemManager):
     def _check_matches_and_raise(
         self, num_matches: int, find_str_repr: str, content: str
     ):
-        """Checks match count and raises domain exceptions for ambiguity or not found."""
+        """Checks match count, raising domain exceptions for ambiguity or not found."""
         if num_matches > 1:
             raise MultipleMatchesFoundError(
                 message=f"Found {num_matches} occurrences of '{find_str_repr}'. Aborting edit to prevent ambiguity.",

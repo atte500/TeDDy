@@ -8,7 +8,7 @@ class ProjectContext:
 
     Attributes:
         header: A string containing metadata about the context (e.g., CWD, OS).
-        content: A string containing the main body of the context (e.g., file tree and file contents).
+        content: The main body of the context (e.g., file tree and contents).
     """
 
     header: str

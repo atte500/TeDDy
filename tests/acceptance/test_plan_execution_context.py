@@ -61,7 +61,10 @@ def test_execute_action_can_see_file_from_create_action(tmp_path: Path, monkeypa
     assert report is not None, "Report output is not valid."
 
     action_logs = report.get("action_logs", [])
-    assert len(action_logs) == 2, "Expected two action logs in the report."
+    expected_action_count = 2
+    assert len(action_logs) == expected_action_count, (
+        "Expected two action logs in the report."
+    )
 
     # Check the CREATE action log
     create_log = action_logs[0]

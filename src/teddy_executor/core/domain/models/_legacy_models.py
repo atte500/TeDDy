@@ -149,7 +149,7 @@ class ExecutionReport:
 
 
 class SearchTextNotFoundError(ValueError):
-    """Custom exception raised when the search text is not found during an edit operation."""
+    """Exception for when search text is not found during an edit operation."""
 
     def __init__(self, message: str, content: str):
         super().__init__(message)
