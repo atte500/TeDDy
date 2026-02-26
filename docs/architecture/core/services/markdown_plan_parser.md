@@ -34,15 +34,16 @@ The `MarkdownPlanParser` service is responsible for parsing a plan written in th
 
 ## 2. Core Responsibilities
 
-1.  **Fence Pre-processing:** Before parsing, the service runs the raw input string through a `FencePreProcessor` utility to ensure structural validity.
-2.  **Stream Wrapping:** The service wraps the `mistletoe` AST's top-level children in a `PeekableStream` iterator, allowing lookahead traversal.
-3.  **Strict Top-Level Validation:** Before looking for actions, the `_parse_strict_top_level` method validates the overall document structure. It first scans the stream to find the first Level 1 Heading, ignoring any preamble text. If no H1 is found, it fails. Once the H1 is found, it enforces the exact subsequent sequence: Metadata `List` -> `H2` Rationale -> `CodeFence/BlockCode` -> (Optional `H2` Memos -> `CodeFence/BlockCode`) -> `H2` Action Plan.
-4.  **Single-Pass Strict Dispatch Loop:** The parser iterates through the stream of top-level nodes in the `## Action Plan` section.
-    *   **Action Detection:** When it encounters a Level 3 `Heading` matching a known `ActionType` (e.g., `### CREATE`), it dispatches control to the corresponding specific parser handler.
-    *   **Strict Structural Validation:** The parser enforces a rigid, "fail-fast" structure. If it encounters any node between actions that is *not* a valid action heading (such as a `ThematicBreak` (`---`), stray text, or malformed blocks), it immediately triggers a structural error. It does not attempt to ignore or "auto-correct" invalid content.
-5.  **Actionable AST Diff Feedback:** When a structural violation occurs, `_raise_structural_error` halts parsing and throws an `InvalidPlanError` containing a high-fidelity "AST Diff." This diff explicitly compares the expected document node blueprint against the actual AST nodes found, highlighting the exact mismatch and providing a hint regarding improperly nested code blocks.
-6.  **Specific Parsers:** Each handler (e.g., `_parse_create_action`) consumes nodes from the stream to build the `ActionData` object. They enforce the internal grammar of the specific action and rely on `_parse_action_metadata` to uniformly extract key-value pairs from the metadata list.
-6.  **POSIX Pre-Processing:** For `EXECUTE` actions, the parser uses an `_extract_posix_headers` helper to process the raw shell command string. It extracts `cd <path>` and `export KEY=value` directives from the *top* of the script (the "Header Block"), maps them to the action's `cwd` and `env` parameters, and strips them from the final command. It stops extraction upon encountering the first standard command, leaving subsequent directives intact. It supports a graceful fallback by merging legacy `cwd`/`env` metadata with the extracted header directives.
+1.  **Orchestration:** The service acts as the entry point for parsing, coordinating the document-level structure validation and delegating action-specific logic.
+2.  **Structural Validation:** Validates the overall document structure (H1 Title -> Metadata List -> Rationale -> optional Memos -> Action Plan). It uses a lookahead strategy via `_PeekableStream` to ensure the document strictly follows the specification.
+3.  **Dispatching:** Iterates through the nodes in the `## Action Plan` section and dispatches parsing control to specialized strategy functions in the `action_parser_strategies` module based on the detected action type.
+4.  **Error Reporting:** When structural violations are detected, it generates a high-fidelity "AST Diff" providing clear feedback on the discrepancy between the expected and actual document structure.
+
+## 3. Delegation & Helpers
+
+To maintain modularity and adhere to file length limits, the parser delegates to the following helper modules:
+- **[Parser Infrastructure](./parser_infrastructure.md):** Provides the `_PeekableStream`, `_FencePreProcessor`, and low-level AST traversal utilities.
+- **[Action Parser Strategies](./action_parser_strategies.md):** Implements the logic for parsing individual actions and their metadata.
 
 ## 3. Dependencies
 

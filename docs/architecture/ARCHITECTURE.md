@@ -116,6 +116,9 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 | **ContextService**           | The service that implements `IGetContextUseCase` by orchestrating outbound ports to gather and format project context. | [ContextService](./core/services/context_service.md)                           |
 | **ExecutionOrchestrator**    | The primary service that implements `IRunPlanUseCase`, managing the step-by-step execution of a parsed `Plan` object. | [ExecutionOrchestrator](./core/services/execution_orchestrator.md)             |
 | **MarkdownPlanParser**       | A service that parses a Markdown plan string into a `Plan` domain object using a strict, single-pass AST traversal. | [MarkdownPlanParser](./core/services/markdown_plan_parser.md)                  |
+| **Action Parser Strategies** | A set of strategy functions for parsing specific action types within a plan.                             | [ActionParserStrategies](./core/services/action_parser_strategies.md)          |
+| **Parser Metadata**          | Specialized logic for extracting parameters from metadata lists and messages during plan parsing.         | [ParserMetadata](./core/services/parser_metadata.md)                          |
+| **Parser Infrastructure**    | Low-level utilities for AST traversal, stream management, and path normalization used during plan parsing.    | [ParserInfrastructure](./core/services/parser_infrastructure.md)              |
 | **MarkdownReportFormatter**  | Implements `IMarkdownReportFormatter` using the Jinja2 template engine to generate CLI reports.         | [MarkdownReportFormatter](./core/services/markdown_report_formatter.md)        |
 | **PlanValidator**            | Implements `IPlanValidator` using a strategy pattern to run pre-flight checks on a plan's actions.      | [PlanValidator](./core/services/plan_validator.md)                             |
 
