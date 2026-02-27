@@ -120,3 +120,52 @@ def test_shell_adapter_handles_multiline_command_safely():
 
     assert result["return_code"] == 0
     assert result["stdout"].strip() == multiline_string.strip()
+
+
+def test_execute_halts_on_multiline_failure(tmp_path):
+    """
+    Tests that the ShellAdapter stops execution if a command in a multi-line
+    script fails.
+    """
+    adapter = ShellAdapter()
+    # GIVEN: A multiline command where the second line fails
+    # and a third line that should NOT be executed.
+    marker_file = tmp_path / "should_not_exist.txt"
+    command = (
+        f"echo 'Line 1'\n"
+        f"ls /non/existent/path/to/force/failure\n"
+        f"echo 'Line 3' > {marker_file}"
+    )
+
+    # WHEN: The command is executed
+    result = adapter.execute(command)
+
+    # THEN: The return code should be non-zero
+    assert result["return_code"] != 0
+    # AND: The marker file should NOT have been created
+    assert not marker_file.exists(), "Command execution did not halt after failure"
+
+
+def test_execute_halts_on_ampersand_chain_failure(tmp_path):
+    """
+    Tests that the ShellAdapter stops execution if a command in a && chain
+    fails.
+    """
+    adapter = ShellAdapter()
+    # GIVEN: A command chain using && where the second command fails
+    marker_file = tmp_path / "should_not_exist_chain.txt"
+    command = (
+        f"echo 'Part 1' && "
+        f"ls /non/existent/path/to/force/failure && "
+        f"echo 'Part 3' > {marker_file}"
+    )
+
+    # WHEN: The command is executed
+    result = adapter.execute(command)
+
+    # THEN: The return code should be non-zero
+    assert result["return_code"] != 0
+    # AND: The marker file should NOT have been created
+    assert not marker_file.exists(), (
+        "Command chain execution did not halt after failure"
+    )

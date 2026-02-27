@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -97,19 +98,92 @@ class ShellAdapter(IShellExecutor):
                 "return_code": getattr(e, "errno", 1),
             }
 
+    def _decompose_command(self, command: str) -> List[str]:
+        """Decomposes a command string into atomic steps, respecting quotes."""
+        pattern = r'("[^"]*"|\'[^\']*\'|&&|\n|[^\n&"\']+)'
+        tokens = re.findall(pattern, command.strip())
+
+        atomic_commands: List[str] = []
+        current_cmd_parts: List[str] = []
+        for token in tokens:
+            if token in ("\n", "&&"):
+                if current_cmd_parts:
+                    atomic_commands.append("".join(current_cmd_parts).strip())
+                    current_cmd_parts = []
+            else:
+                current_cmd_parts.append(token)
+
+        if current_cmd_parts:
+            atomic_commands.append("".join(current_cmd_parts).strip())
+
+        return [c for c in atomic_commands if c]
+
+    def _handle_directives(
+        self, cmd: str, current_cwd: str, current_env: Dict[str, str]
+    ) -> str:
+        """Processes cd/export/set directives and returns the updated CWD."""
+        if cmd.startswith("cd "):
+            path = cmd[3:].strip().strip("'").strip('"')
+            return self._validate_cwd(
+                path if os.path.isabs(path) else os.path.join(current_cwd, path)
+            )
+
+        if cmd.startswith("export "):
+            kv = cmd[7:].strip()
+            if "=" in kv:
+                k, v = kv.split("=", 1)
+                current_env[k.strip()] = v.strip().strip("'").strip('"')
+        elif sys.platform == "win32" and cmd.startswith("set "):
+            kv = cmd[4:].strip()
+            if "=" in kv:
+                k, v = kv.split("=", 1)
+                current_env[k.strip()] = v.strip().strip("'").strip('"')
+
+        return current_cwd
+
     def execute(
         self,
         command: str,
         cwd: Optional[str] = None,
         env: Optional[Dict[str, str]] = None,
     ) -> ShellOutput:
-        validated_cwd = self._validate_cwd(cwd)
-        merged_env = os.environ.copy()
+        current_cwd = self._validate_cwd(cwd)
+        current_env = os.environ.copy()
         if env:
-            merged_env.update(env)
+            current_env.update(env)
 
-        command_args, use_shell = self._prepare_command_for_platform(command)
+        total_stdout: List[str] = []
+        total_stderr: List[str] = []
 
-        self._log_debug_pre_execution(command, command_args, validated_cwd, use_shell)
+        for cmd in self._decompose_command(command):
+            if not cmd or cmd.startswith("#"):
+                continue
 
-        return self._run_subprocess(command_args, use_shell, validated_cwd, merged_env)
+            # Intercept directives and update context
+            new_cwd = self._handle_directives(cmd, current_cwd, current_env)
+            if new_cwd != current_cwd or cmd.startswith(("export ", "set ")):
+                current_cwd = new_cwd
+                continue
+
+            # Execute atomic command
+            command_args, use_shell = self._prepare_command_for_platform(cmd)
+            self._log_debug_pre_execution(cmd, command_args, current_cwd, use_shell)
+            result = self._run_subprocess(
+                command_args, use_shell, current_cwd, current_env
+            )
+
+            total_stdout.append(result["stdout"])
+            total_stderr.append(result["stderr"])
+
+            if result["return_code"] != 0:
+                return {
+                    "stdout": "".join(total_stdout),
+                    "stderr": "".join(total_stderr),
+                    "return_code": result["return_code"],
+                }
+
+        return {
+            "stdout": "".join(total_stdout),
+            "stderr": "".join(total_stderr),
+            "return_code": 0,
+        }
