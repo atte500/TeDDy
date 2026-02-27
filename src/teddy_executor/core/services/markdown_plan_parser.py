@@ -206,9 +206,11 @@ class MarkdownPlanParser(IPlanParser):
             doc,
             actual_idx,
             "a Level 2 Heading containing 'Rationale'",
-            lambda n: isinstance(n, Heading)
-            and n.level == H2_LEVEL
-            and "Rationale" in get_child_text(n),
+            lambda n: (
+                isinstance(n, Heading)
+                and n.level == H2_LEVEL
+                and "Rationale" in get_child_text(n)
+            ),
         )
         actual_idx += 1
 
@@ -247,9 +249,11 @@ class MarkdownPlanParser(IPlanParser):
             doc,
             actual_idx,
             "a Level 2 Heading containing 'Action Plan'",
-            lambda n: isinstance(n, Heading)
-            and n.level == H2_LEVEL
-            and "Action Plan" in get_child_text(n),
+            lambda n: (
+                isinstance(n, Heading)
+                and n.level == H2_LEVEL
+                and "Action Plan" in get_child_text(n)
+            ),
         )
         actual_idx += 1
 
