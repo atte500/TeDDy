@@ -85,14 +85,14 @@ The system uses a top-level `.teddy/` directory to store all persistent data. Th
 Context is determined by a cascading hierarchy of files, which are then snapshotted into the `report.md` for the AI to consume.
 
 1.  **Static Context (User-Managed):**
-    -   `.teddy/project.context`: Defines file paths included in *every* session.
-    -   `<session>/session.context`: Defines file paths relevant for the entire session.
+    -   `.teddy/init.context`: A global seed file defining default file paths for new sessions.
+    -   `<session>/session.context`: Defines file paths relevant for the entire session. Initialized from `init.context`.
 2.  **Dynamic Context (AI-Managed):**
     -   `turn.context`: Contains the file paths for the current turn's "working set." This file is not edited directly by the user.
 3.  **The Workflow:**
     -   The AI manages its working context via the `READ` (to add) and `PRUNE` (to remove) actions in its `plan.md`.
     -   During `teddy execute`, these actions modify the `turn.context` file for the *next* turn, ensuring all context changes are forward-looking.
-    -   The AI's worldview is generated explicitly via the `teddy context` command, which reads all context files (`project.context`, `session.context`, `turn.context`) and assembles the complete `input.md` payload.
+    -   The AI's worldview is generated explicitly via the `teddy context` command, which reads the active context files (`<session>/session.context` and `turn.context`) and assembles the complete `input.md` payload.
 
 ## 6. CLI Command Specification
 
@@ -106,7 +106,7 @@ Assembles the complete `input.md` for the current turn. This is the primary way 
 
 -   **Behavior:**
     1.  Operates within the context of the current turn directory (e.g., `01/`).
-    2.  Aggregates context from `.teddy/project.context`, `<session>/session.context`, and the current turn's `turn.context` file.
+    2.  Aggregates context from `<session>/session.context` and the current turn's `turn.context` file.
     3.  Generates the `input.md` file according to the [Context Payload Format Specification](./context-payload-format.md).
 
 ---
@@ -121,7 +121,7 @@ Initializes a new session directory and bootstraps it for "Turn 1".
     -   `--agent <agent_name>`: (Optional) The name of the agent to use for the session. Defaults to `pathfinder`.
 -   **Behavior:**
     1.  Creates the session directory and the `01/` turn directory.
-    2.  Creates the session-specific context file at `<session>/session.context`.
+    2.  Creates the session-specific context file at `<session>/session.context`. If `.teddy/init.context` exists, its contents are copied into this new file (with all `#` comments stripped out) to seed the session's default context.
     3.  Uses `teddy get-prompt` to fetch the agent prompt and saves it as `01/system_prompt.xml`.
         -   If the `--agent` option is provided, it fetches the specified agent's prompt. If the agent name is invalid, the command fails with an error.
         -   If the `--agent` option is not provided, it fetches the `pathfinder` agent's prompt by default.
@@ -140,8 +140,10 @@ Generates a `plan.md` within a turn directory.
     1.  Operates within the context of the current turn directory (e.g., `01/`).
     2.  **Implicitly runs the `teddy context` logic** to generate an up-to-date `input.md` file.
     3.  Reads the content of the newly generated `input.md` and the existing `system_prompt.xml`.
-    4.  Passes the user's message along with the content of these two files to the LLM.
-    5.  Saves the raw Markdown response from the LLM as `01/plan.md`.
+    4.  **Injects Contextual Hints** into the user's message based on the session state:
+        -   **Session Start:** If operating in the first turn (`01/`), appends `\n\n*(Hint: always start with alignment)*` to encourage the AI to clarify goals before acting.
+    5.  Passes the modified user message along with the content of the `input.md` and `system_prompt.xml` files to the LLM.
+    6.  Saves the raw Markdown response from the LLM as the turn's `plan.md`.
 
 ---
 
@@ -195,7 +197,7 @@ The primary "continue" command for a session. It intelligently determines the ne
     1.  Identifies the latest turn directory in the current session.
     2.  **State Check:**
         -   If the turn has a `plan.md` but no `report.md`, it behaves like `teddy execute`.
-        -   If the turn is complete (has a `report.md`), it prompts the user for a new message and then behaves like `teddy plan` for the *next* turn (which includes implicitly generating a new `input.md`).
+        -   If the turn is complete (has a `report.md`), it prompts the user for a new message. To ensure the AI doesn't blindly continue previous execution without addressing the new input, it appends `\n\n*(Stop to reply to this user request)*` to the user's message. It then behaves like `teddy plan` for the *next* turn (which includes implicitly generating a new `input.md`).
 
 ---
 
@@ -355,6 +357,8 @@ User-specific behavior for the `teddy` tool can be defined in an optional `.tedd
 
     -   *Example for Neovim:* `preview_command: "nvim -R"`
     -   *Example for VS Code:* `preview_command: "code"` # Note: Use without `--wait` for a non-blocking preview.
+
+-   **`context_pruning_threshold`**: (Optional) An integer defining the maximum token size of the context payload before the AI is explicitly prompted to prune. Defaults to `50000`.
 
 -   **Previewer Fallback Logic:** When the user triggers a preview, the tool will use the following logic to determine how to display it:
     1.  **Configured Editor:** If `preview_command` is set in `.teddy/config.yaml`, it will be used.

@@ -91,11 +91,16 @@ The verbatim content of the `.teddy/memos.yaml` file. This section is omitted if
 
 ### 3.4. Context Summary
 
-This section provides a scannable summary of all file paths and URLs that make up the AI's context for the turn, broken down by their scope of origin.
+This section provides a scannable summary of all file paths and URLs that make up the AI's context for the turn, broken down by their scope of origin. It must include a brief instruction block explaining how the AI can manage its working context.
 
 -   **Example:**
     `````markdown
     ## 4. Context Summary
+
+    > **Context Management:** Use the `READ` action to add files to the **Turn** context, and the `PRUNE` action to remove them. The **Session** context is managed by the user and cannot be modified by the AI.
+
+    *(If the payload exceeds the configured `context_pruning_threshold`, an additional hint is appended here:)*
+    > **Hint:** Context payload is above `context_pruning_threshold` tokens, please consider using `PRUNE` to remove irrelevant files from the Turn context.
 
     ### Turn
     - [src/main.py](/src/main.py)
@@ -103,8 +108,6 @@ This section provides a scannable summary of all file paths and URLs that make u
 
     ### Session
     - [docs/project/specs/interactive-session-workflow.md](/docs/project/specs/interactive-session-workflow.md)
-
-    ### Global
     - [docs/project/specs/core-philosophy.md](/docs/project/specs/core-philosophy.md)
     ````
     `````
@@ -113,7 +116,7 @@ This section provides a scannable summary of all file paths and URLs that make u
 
 The full, verbatim content of every resource (file or URL) listed in the `Context Summary`.
 
--   **Sourcing & De-duplication:** The content is aggregated in the following order of precedence: `turn` -> `session` -> `global`. If a resource is listed in multiple context files, its content will only be displayed once.
+-   **Sourcing & De-duplication:** The content is aggregated in the following order of precedence: `turn` -> `session`. If a resource is listed in both context files, its content will only be displayed once.
 -   **Format:** Each resource's content is preceded by a horizontal rule and a header line identifying it.
 -   **Example:**
     `````markdown
