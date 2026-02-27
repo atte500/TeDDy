@@ -16,7 +16,7 @@ This milestone consolidates several critical technical debt cleanups and workflo
 
 -   **Parser Refactor:** Implement a single-pass AST traversal algorithm in `MarkdownPlanParser` to ensure code block content is safely isolated from structural parsing.
 -   **POSIX Pre-Processor:** Update the parser for `EXECUTE` actions to intercept `cd` and `export` lines from multiline shell blocks. It will map these to internal `cwd` and `env` variables, stripping them from the raw command sent to the OS.
--   **Trafilatura Migration:** Use `trafilatura.extract()` with specific parameters (`output_format='markdown'`, `include_links=True`, `include_formatting=True`) in the `WebScraperAdapter`.
+-   **Lenient Web Scraping:** Update `WebScraperAdapter` to use "lenient" defaults (`favor_recall=True`, `include_comments=True`) to maximize gathered context.
 -   **DTO Modernization:** Systematically replace legacy DTOs with new `@dataclass` and `TypedDict` implementations in dedicated modules, migrating all dependent code.
 -   **CI Quality Gates:** Add `pytest-cov` to track test coverage and configure `ruff` rules (e.g., McCabe complexity `C901`, `PLR` rules) in `pyproject.toml`. Integrate a CPD tool (e.g., `pmd-bin`) with a defined token threshold to detect duplicated code. Update `.github/workflows/ci.yml` to run all checks.
 -   **Test Pyramid Refactoring:** Audit the 36 existing acceptance tests, isolating those that test internal implementation details, and migrate their assertions to the `tests/unit/` and `tests/integration/` directories.
@@ -58,6 +58,7 @@ Execute a safe "Create, Migrate, Delete" sequence for each legacy model:
 - [x] **Refactor Slice: Fix Parser Nesting Bug** (Implement strict structural AST validation to prevent nesting crashes).
 - [x] **Slice 3: Implement `trafilatura`** (Dependency swap and adapter update).
 - [x] **Refactor Slice: Enhance Web Scraper to Bypass Anti-Scraping Measures** (Implement fallback for 403 errors).
+- [x] **Refactor Slice: Implement Lenient Scraping Defaults** (Switch to `favor_recall=True`).
 - [x] **Refactor Slice: Trim Plan Preamble** (Update parser to ignore text before the H1 heading).
 - [x] **Slice 4: Refactor `CommandResult` to `ShellOutput`** (Create, migrate, delete).
 - [x] **Slice 5: Refactor `SERPReport` to `WebSearchResults`** (Create, migrate, delete).

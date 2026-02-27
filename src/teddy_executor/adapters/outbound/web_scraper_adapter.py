@@ -64,7 +64,9 @@ class WebScraperAdapter(WebScraper):
             output_format="markdown",
             include_links=True,
             include_formatting=True,
-            favor_precision=True,
+            favor_recall=True,
+            include_comments=True,
+            include_tables=True,
         )
 
         return markdown_content if markdown_content else ""

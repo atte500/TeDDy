@@ -39,6 +39,7 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 
 - [ ] **Slice 1: Security Baselines, Config Service and LLM Client**
     - Configure comprehensive security gates (secret scanning with `detect-secrets`, code scanning with `bandit`, and dependency auditing with `pip-audit`). Add `litellm` dependency, implement `ConfigService` and `LiteLLMAdapter`, and wire them in `main.py`.
+    - **Configurable Web Scraper:** Extend `WebScraperAdapter` to respect settings for precision, comments, and tables via the `ConfigService`.
 - [ ] **Slice 2: Session Scaffolding & Core Commands**
     - Implement `SessionManager` and the basic `new`, `plan`, and `execute` commands.
 - [ ] **Slice 3: Context-Centric Workflow**
