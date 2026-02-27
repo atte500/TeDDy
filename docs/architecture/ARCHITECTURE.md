@@ -6,7 +6,7 @@ This document outlines the technical standards, conventions, and setup process f
 
 ### Language & Runtime
 - **Language:** Python
-- **Version:** 3.9+
+- **Version:** 3.11+
 
 ### Dependency Management
 - **Tool:** `Poetry`.
