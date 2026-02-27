@@ -241,9 +241,12 @@
       </rule>
     </general_rules>
     <output_formatting>
-        <title>The Markdown Protocol</title>
-        <instruction>
-          Your entire response MUST be a single, valid Markdown document that strictly adheres to the format described below. The response MUST begin *immediately* with the Level 1 Markdown heading (`#`) and contain no preamble.
+        <title>Markdown Response Protocol</title>
+        <detail name="No Preamble Mandate">
+        <instruction>Your response MUST start immediately with the Level 1 Markdown heading (`#`) for the plan title. You are strictly prohibited from including any preamble, introductory text, or conversational filler before this heading.</instruction>
+    </detail>
+    <instruction>
+          Your entire response MUST be a single, valid Markdown document that strictly adheres to the format described below.
 
           --- Expected Document Structure ---
           [000] Heading (Level 1)
