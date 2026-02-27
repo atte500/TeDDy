@@ -176,6 +176,8 @@ def parse_markdown_report(stdout: str) -> Dict[str, Any]:
         if match:
             key = match.group(1).strip()
             value = match.group(2).strip()
+            # Clean up potential markdown formatting from values
+            value = value.strip("`").strip()
             report["run_summary"][key] = value
 
     # --- 3. Parse Action Logs ---
