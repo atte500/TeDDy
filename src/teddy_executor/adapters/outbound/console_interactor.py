@@ -20,7 +20,7 @@ class ConsoleInteractorAdapter(IUserInteractor):
         """
         typer.echo(prompt, err=True)
         typer.echo(
-            "Press [Enter] for single-line input, or type 'e' to open in Editor:",
+            "Press [Enter] for single-line input, or type 'e' + [Enter] to open in Editor:",
             err=True,
         )
 
@@ -44,9 +44,8 @@ class ConsoleInteractorAdapter(IUserInteractor):
 
     def _get_input_from_editor(self, prompt: str) -> str:
         """Opens a temporary file in an external editor and reads the response."""
-        marker = "# --- Please enter your response above this line ---"
-        prompt_comments = "\n".join(f"# {line}" for line in prompt.splitlines())
-        initial_content = f"{prompt_comments}\n\n\n{marker}\n# Anything below this line will be ignored.\n"
+        marker = "--- Please enter your response above this line ---"
+        initial_content = f"\n\n{marker}\n\n{prompt}\n"
 
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".md", delete=False, encoding="utf-8"

@@ -21,7 +21,7 @@ The core of this adapter is the logic to read multi-line input from `sys.stdin`.
 
 #### `ask_question(prompt: str) -> str`
 The `ask_question` method logic supports both standard input and external editor fallbacks:
-1.  **Print Prompt to Stderr:** The prompt is printed to `sys.stderr` to avoid polluting `stdout`. It explicitly offers the user the choice: `Press [Enter] for single-line input, or type 'e' to open in Editor:`.
+1.  **Print Prompt to Stderr:** The prompt is printed to `sys.stderr` to avoid polluting `stdout`. It explicitly offers the user the choice: `Press [Enter] for single-line input, or type 'e' + [Enter] to open in Editor:`.
 2.  **External Editor Flow ('e'):** If the user types 'e', a temporary markdown file is created. The AI's original prompt is prepended to this file as markdown comments to provide context, followed by instructional comments. The adapter then attempts to launch the user's preferred editor (`$VISUAL` or `$EDITOR`) or falls back to known defaults (`code -w`, `nano`, `vim`). Upon exit, the file is read, instructional comments and the prompt are stripped, and the multiline response is returned.
 3.  **Single-Line Standard Input:** If the user does not type 'e', they are opted into standard input. If they typed a response immediately on the first prompt, it is returned. If they just pressed Enter, the adapter reads exactly one more line from standard input. This provides a fast, immediate response mechanism without requiring empty terminating lines.
 

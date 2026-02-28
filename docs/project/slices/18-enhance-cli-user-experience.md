@@ -7,7 +7,7 @@ To improve the ergonomics and transparency of the TeDDy CLI by providing a robus
 *   **Scenario: Multiline Chat Input**
     *   **Given** a plan with a `CHAT_WITH_USER` action is executed interactively.
     *   **When** the CLI prompts for input.
-    *   **Then** the user is presented with an option: `Press [Enter] for single-line input, or type 'e' to open in Editor:`
+    *   **Then** the user is presented with an option: `Press [Enter] for single-line input, or type 'e' + [Enter] to open in Editor:`
     *   **If** the user types `e`, the CLI opens a temporary markdown file in the editor specified by `$VISUAL`, `$EDITOR`, or falls back to VS Code/nano/vim.
     *   **When** the user saves and closes the editor, the CLI reads the content, ignoring instructional comments.
 *   **Scenario: Orchestrator Console Warnings**
