@@ -44,7 +44,7 @@ class TestConsoleInteractorAdapter:
             filepath = Path(cmd[-1])
             file_content_before_editor = filepath.read_text(encoding="utf-8")
             filepath.write_text(
-                "Hello from editor\n\n--- Please enter your response above this line ---\n\nDon't read this.",
+                "Hello from editor\n\n--- Please enter your response above this line. Save and close this file to submit. ---\n\nDon't read this.",
                 encoding="utf-8",
             )
 
@@ -61,7 +61,7 @@ class TestConsoleInteractorAdapter:
         # Assert the prompt was written below the marker in the initial file content
         assert (
             file_content_before_editor
-            == f"\n\n--- Please enter your response above this line ---\n\n{prompt_text}\n"
+            == f"\n\n--- Please enter your response above this line. Save and close this file to submit. ---\n\n{prompt_text}\n"
         )
 
     def test_ask_question_editor_fallback_when_no_editor_found(

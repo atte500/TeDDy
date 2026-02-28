@@ -44,7 +44,7 @@ class ConsoleInteractorAdapter(IUserInteractor):
 
     def _get_input_from_editor(self, prompt: str) -> str:
         """Opens a temporary file in an external editor and reads the response."""
-        marker = "--- Please enter your response above this line ---"
+        marker = "--- Please enter your response above this line. Save and close this file to submit. ---"
         initial_content = f"\n\n{marker}\n\n{prompt}\n"
 
         with tempfile.NamedTemporaryFile(

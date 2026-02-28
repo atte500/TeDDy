@@ -28,11 +28,11 @@ To improve the ergonomics and transparency of the TeDDy CLI by providing a robus
 *   **`ExecutionOrchestrator`:** Update the `execute` loop. When an action is skipped due to `halt_execution = True`, call `self._user_interactor.notify_skipped_action`.
 
 ## 5. Scope of Work
-- [ ] Update `IUserInteractor` interface in `src/teddy_executor/core/ports/outbound/user_interactor.py`.
-- [ ] Implement `notify_skipped_action` in `ConsoleInteractorAdapter`.
-- [ ] Update `ExecutionOrchestrator` to call `notify_skipped_action` when `halt_execution` is true.
-- [ ] Implement the external editor fallback logic in `ConsoleInteractorAdapter.ask_question`. Ensure it strips instructions (e.g., `# --- Please enter your response above this line ---`).
-- [ ] Write unit tests for `ConsoleInteractorAdapter` testing both single-line and multiline editor fallback logic.
+- [x] Update `IUserInteractor` interface in `src/teddy_executor/core/ports/outbound/user_interactor.py`.
+- [x] Implement `notify_skipped_action` in `ConsoleInteractorAdapter`.
+- [x] Update `ExecutionOrchestrator` to call `notify_skipped_action` when `halt_execution` is true.
+- [x] Implement the external editor fallback logic in `ConsoleInteractorAdapter.ask_question`. Ensure it strips instructions (e.g., `# --- Please enter your response above this line. Save and close this file to submit. ---`).
+- [x] Write unit tests for `ConsoleInteractorAdapter` testing both single-line and multiline editor fallback logic.
 - [x] Write integration/acceptance tests verifying the new orchestrator skip warning behavior.
 
 ## Implementation Notes
