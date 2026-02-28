@@ -23,7 +23,7 @@ The core of this adapter is the logic to read multi-line input from `sys.stdin`.
 The `ask_question` method logic supports both standard input and external editor fallbacks:
 1.  **Print Prompt to Stderr:** The prompt is printed to `sys.stderr` to avoid polluting `stdout`. It explicitly offers the user the choice: `Press [Enter] for single-line input, or type 'e' to open in Editor:`.
 2.  **External Editor Flow ('e'):** If the user types 'e', a temporary markdown file is created with instructional comments. The adapter then attempts to launch the user's preferred editor (`$VISUAL` or `$EDITOR`) or falls back to known defaults (`code -w`, `nano`, `vim`). Upon exit, the file is read, instructional comments are stripped, and the multiline response is returned.
-3.  **Standard Read Input Loop:** If the user presses Enter or types anything else, the adapter reads lines from standard input using `input()` until an `EOFError` is caught or the user enters an empty line. This robustly handles both interactive sessions and piped input.
+3.  **Single-Line Standard Input:** If the user does not type 'e', they are opted into standard input. If they typed a response immediately on the first prompt, it is returned. If they just pressed Enter, the adapter reads exactly one more line from standard input. This provides a fast, immediate response mechanism without requiring empty terminating lines.
 
 #### `notify_skipped_action(action: ActionData, reason: str) -> None`
 This method prints a formatted, colorized warning to `sys.stderr` when an action is skipped by the orchestrator (e.g., due to a previous failure), ensuring the user is immediately aware of halted execution without needing to inspect the final markdown report.
