@@ -30,7 +30,7 @@ class ConsoleInteractorAdapter(IUserInteractor):
             return ""
 
         if first_input.lower() == "e":
-            return self._get_input_from_editor()
+            return self._get_input_from_editor(prompt)
 
         # If they typed a response immediately, return it.
         if first_input:
@@ -42,10 +42,11 @@ class ConsoleInteractorAdapter(IUserInteractor):
         except EOFError:
             return ""
 
-    def _get_input_from_editor(self) -> str:
+    def _get_input_from_editor(self, prompt: str) -> str:
         """Opens a temporary file in an external editor and reads the response."""
         marker = "# --- Please enter your response above this line ---"
-        initial_content = f"\n\n{marker}\n# Anything below this line will be ignored.\n"
+        prompt_comments = "\n".join(f"# {line}" for line in prompt.splitlines())
+        initial_content = f"{prompt_comments}\n\n\n{marker}\n# Anything below this line will be ignored.\n"
 
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".md", delete=False, encoding="utf-8"

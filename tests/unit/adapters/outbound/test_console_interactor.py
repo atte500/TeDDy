@@ -35,24 +35,31 @@ class TestConsoleInteractorAdapter:
 
         # We need to mock subprocess.run to intercept the editor launch and write to the temp file
         mock_run = MagicMock()
+        file_content_before_editor = ""
 
         def mock_subprocess_run(cmd, *args, **kwargs):
+            nonlocal file_content_before_editor
             mock_run(cmd, *args, **kwargs)
             # cmd is e.g. ["mock_editor", "/tmp/path/to/file.md"]
             filepath = Path(cmd[-1])
+            file_content_before_editor = filepath.read_text(encoding="utf-8")
             filepath.write_text(
-                "Hello from editor\n\n# --- Please enter your response above this line ---\nDon't read this."
+                "Hello from editor\n\n# --- Please enter your response above this line ---\nDon't read this.",
+                encoding="utf-8",
             )
 
         monkeypatch.setattr(subprocess, "run", mock_subprocess_run)
         monkeypatch.setenv("EDITOR", "mock_editor")
 
-        response = adapter.ask_question("Write a lot:")
+        prompt_text = "AI says: Write a lot:"
+        response = adapter.ask_question(prompt_text)
 
         assert "Hello from editor" == response.strip()
         assert "Don't read this." not in response
         assert mock_run.called
         assert mock_run.call_args[0][0][0] == "mock_editor"
+        # Assert the prompt was written as a comment in the initial file content
+        assert f"# {prompt_text}" in file_content_before_editor
 
     def test_ask_question_editor_fallback_when_no_editor_found(
         self, adapter: ConsoleInteractorAdapter, monkeypatch
