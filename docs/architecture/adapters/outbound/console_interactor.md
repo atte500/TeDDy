@@ -20,10 +20,13 @@ The core of this adapter is the logic to read multi-line input from `sys.stdin`.
 ### Implementation Details
 
 #### `ask_question(prompt: str) -> str`
-The `ask_question` method logic is as follows:
-1.  **Print Prompt to Stderr:** The prompt is printed to `sys.stderr` to avoid polluting `stdout`, which is reserved for the final machine-readable report.
-2.  **Read Input Loop:** The adapter reads lines from standard input using `input()` until an `EOFError` is caught or the user enters an empty line. This robustly handles both interactive sessions and piped input.
-3.  **Return Value:** The collected lines are joined into a single string.
+The `ask_question` method logic supports both standard input and external editor fallbacks:
+1.  **Print Prompt to Stderr:** The prompt is printed to `sys.stderr` to avoid polluting `stdout`. It explicitly offers the user the choice: `Press [Enter] for single-line input, or type 'e' to open in Editor:`.
+2.  **External Editor Flow ('e'):** If the user types 'e', a temporary markdown file is created with instructional comments. The adapter then attempts to launch the user's preferred editor (`$VISUAL` or `$EDITOR`) or falls back to known defaults (`code -w`, `nano`, `vim`). Upon exit, the file is read, instructional comments are stripped, and the multiline response is returned.
+3.  **Standard Read Input Loop:** If the user presses Enter or types anything else, the adapter reads lines from standard input using `input()` until an `EOFError` is caught or the user enters an empty line. This robustly handles both interactive sessions and piped input.
+
+#### `notify_skipped_action(action: ActionData, reason: str) -> None`
+This method prints a formatted, colorized warning to `sys.stderr` when an action is skipped by the orchestrator (e.g., due to a previous failure), ensuring the user is immediately aware of halted execution without needing to inspect the final markdown report.
 
 #### `confirm_action(action: ActionData, action_prompt: str) -> tuple[bool, str]`
 The `confirm_action` method is responsible for presenting a proposed action to the user and capturing their approval or denial. For `create_file` and `edit` actions, it first presents a visual diff before prompting.

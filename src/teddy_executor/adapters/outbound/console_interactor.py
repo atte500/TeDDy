@@ -32,20 +32,15 @@ class ConsoleInteractorAdapter(IUserInteractor):
         if first_input.lower() == "e":
             return self._get_input_from_editor()
 
-        # Otherwise, fall back to standard multi-line input reading.
-        lines = []
+        # If they typed a response immediately, return it.
         if first_input:
-            lines.append(first_input)
+            return first_input
 
-        while True:
-            try:
-                line = input()
-                if line == "":
-                    break
-                lines.append(line)
-            except EOFError:
-                break
-        return "\n".join(lines)
+        # If they just pressed Enter, read exactly one more line for their actual response.
+        try:
+            return input()
+        except EOFError:
+            return ""
 
     def _get_input_from_editor(self) -> str:
         """Opens a temporary file in an external editor and reads the response."""

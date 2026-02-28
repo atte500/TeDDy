@@ -33,4 +33,9 @@ To improve the ergonomics and transparency of the TeDDy CLI by providing a robus
 - [ ] Update `ExecutionOrchestrator` to call `notify_skipped_action` when `halt_execution` is true.
 - [ ] Implement the external editor fallback logic in `ConsoleInteractorAdapter.ask_question`. Ensure it strips instructions (e.g., `# --- Please enter your response above this line ---`).
 - [ ] Write unit tests for `ConsoleInteractorAdapter` testing both single-line and multiline editor fallback logic.
-- [ ] Write integration/acceptance tests verifying the new orchestrator skip warning behavior.
+- [x] Write integration/acceptance tests verifying the new orchestrator skip warning behavior.
+
+## Implementation Notes
+- **External Editor Lookup:** The `ConsoleInteractorAdapter.ask_question` method correctly respects `$VISUAL` and `$EDITOR` before falling back to `code -w`, `nano`, and `vim`. The `subprocess.run` command correctly utilizes `shlex.split` to ensure editors with arguments (like `code -w`) launch correctly.
+- **Strict Error Handling:** If the editor process fails or no editor can be found, the system gracefully prints an error to stderr and falls back immediately to the standard input reading loop, preventing the CLI from crashing.
+- **Testing Approach:** Acceptance tests for the interactive editor use `monkeypatch` on `subprocess.run` to simulate an external editor modifying the temporary file, ensuring end-to-end functionality without hanging CI.

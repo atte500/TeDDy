@@ -11,13 +11,12 @@ class TestConsoleInteractorAdapter:
     def adapter(self) -> ConsoleInteractorAdapter:
         return ConsoleInteractorAdapter()
 
-    def test_ask_question_standard_input(
+    def test_ask_question_standard_input_single_line(
         self, adapter: ConsoleInteractorAdapter, monkeypatch
     ):
-        """Test that ask_question reads from stdin normally if 'e' is not typed initially."""
-        inputs = iter(["\n", "My standard response", ""])
-        # The first input is empty (representing pressing Enter to bypass editor).
-        # The next is the actual text, then empty string to break.
+        """Test that ask_question reads exactly one line of standard input if 'e' is not typed."""
+        # The user just types their response and hits Enter.
+        inputs = iter(["My standard response"])
         monkeypatch.setattr("builtins.input", lambda: next(inputs))
 
         response = adapter.ask_question("What say you?")

@@ -67,11 +67,11 @@ Rationale.
 ### `CHAT_WITH_USER`
 The AI prompt string here.
 """
-    # Mock user input for the chat action and answer 'yes' to the approval prompt.
+    # Mock user input for the chat action. Note: CHAT_WITH_USER auto-approves.
     result = runner.invoke(
         app,
         ["execute", "--plan-content", plan_content],
-        input="y\nUser response string here.\n",
+        input="User response string here.\n",
     )
 
     assert result.exit_code == 0
