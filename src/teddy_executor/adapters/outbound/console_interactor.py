@@ -20,7 +20,7 @@ class ConsoleInteractorAdapter(IUserInteractor):
         """
         typer.echo(prompt, err=True)
         typer.echo(
-            "Press [Enter] for single-line input, or type 'e' + [Enter] to open in Editor:",
+            "Press [Enter] to submit single-line response, or type 'e' + [Enter] to open in Editor:",
             err=True,
         )
 
