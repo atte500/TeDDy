@@ -73,3 +73,24 @@ class TestConsoleInteractorAdapter:
         assert approved is False
         assert reason == "Skipped due to non-interactive session."
         # Prompting logic is now handled by typer.prompt and not asserted here.
+
+    def test_notify_skipped_action_prints_warning(
+        self, adapter: ConsoleInteractorAdapter, monkeypatch
+    ):
+        """Test that a skipped action prints a warning to stderr."""
+        import typer
+        from unittest.mock import MagicMock
+
+        mock_secho = MagicMock()
+        monkeypatch.setattr(typer, "secho", mock_secho)
+
+        dummy_action = ActionData(type="TEST_ACTION", params={})
+        reason = "A test skip reason"
+
+        adapter.notify_skipped_action(dummy_action, reason)
+
+        mock_secho.assert_called_once_with(
+            f"[SKIPPED] TEST_ACTION: {reason}",
+            fg=typer.colors.YELLOW,
+            err=True,
+        )

@@ -37,3 +37,14 @@ class IUserInteractor(ABC):
             - str: The user's reason for denial, or an empty string.
         """
         pass
+
+    @abstractmethod
+    def notify_skipped_action(self, action: "ActionData", reason: str) -> None:
+        """
+        Notifies the user that an action was skipped.
+
+        Args:
+            action: The Action that was skipped.
+            reason: The reason the action was skipped.
+        """
+        pass

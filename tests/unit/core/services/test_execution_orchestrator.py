@@ -239,6 +239,11 @@ def test_execute_auto_skips_after_failure(
     # Dispatcher should only be called once
     mock_action_dispatcher.dispatch_and_execute.assert_called_once_with(action1)
 
+    # Interactor should be notified of the skip
+    mock_user_interactor.notify_skipped_action.assert_called_once_with(
+        action2, "Skipped because a previous action failed."
+    )
+
 
 def test_execute_happy_path_non_interactive(
     orchestrator: ExecutionOrchestrator,

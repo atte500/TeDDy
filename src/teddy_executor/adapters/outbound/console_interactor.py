@@ -176,3 +176,8 @@ class ConsoleInteractorAdapter(IUserInteractor):
         finally:
             for file_path in temp_files:
                 os.unlink(file_path)
+
+    def notify_skipped_action(self, action: ActionData, reason: str) -> None:
+        """Prints a colorized warning that an action was skipped."""
+        message = f"[SKIPPED] {action.type}: {reason}"
+        typer.secho(message, fg=typer.colors.YELLOW, err=True)

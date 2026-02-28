@@ -50,3 +50,8 @@ echo "THIS_SHOULD_NOT_BE_EXECUTED"
     assert "Skipped because a previous action failed." in result.stdout, (
         "Should contain the system skip reason"
     )
+
+    # Assert the real-time console warning is printed
+    assert (
+        "[SKIPPED] EXECUTE: Skipped because a previous action failed." in result.stderr
+    ), "Should contain the console warning for the skipped action in standard error"

@@ -123,11 +123,9 @@ class ExecutionOrchestrator(RunPlanUseCase):
 
         for action in plan.actions:
             if halt_execution:
-                action_logs.append(
-                    self._handle_skipped_action(
-                        action, "Skipped because a previous action failed."
-                    )
-                )
+                reason = "Skipped because a previous action failed."
+                self._user_interactor.notify_skipped_action(action, reason)
+                action_logs.append(self._handle_skipped_action(action, reason))
                 continue
 
             action_log = self._confirm_and_dispatch_action(action, interactive)
