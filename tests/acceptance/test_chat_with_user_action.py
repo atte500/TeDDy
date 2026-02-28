@@ -80,7 +80,7 @@ def test_chat_with_user_action_multiline_editor(tmp_path: Path, monkeypatch):
         # cmd[0] is the editor, cmd[1] should be the temp file path
         filepath = Path(cmd[1])
         filepath.write_text(
-            f"{user_response}\n# --- Please enter your response above this line ---\n"
+            f"{user_response}\n--- Please enter your response above this line. Save and close this file to submit. ---\n"
         )
 
         # return a mock CompletedProcess
