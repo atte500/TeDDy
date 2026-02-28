@@ -16,16 +16,29 @@ class ConsoleInteractorAdapter(IUserInteractor):
     def ask_question(self, prompt: str) -> str:
         """
         Presents a prompt to the user on the console and captures their input.
-        Input is terminated by a single empty line on stdin.
+        Allows falling back to an external editor for multi-line text.
         """
         typer.echo(prompt, err=True)
+        typer.echo(
+            "Press [Enter] for single-line input, or type 'e' to open in Editor:",
+            err=True,
+        )
 
+        try:
+            first_input = input().strip()
+        except EOFError:
+            return ""
+
+        if first_input.lower() == "e":
+            return self._get_input_from_editor()
+
+        # Otherwise, fall back to standard multi-line input reading.
         lines = []
+        if first_input:
+            lines.append(first_input)
+
         while True:
             try:
-                # Use typer.prompt to ensure it works correctly with CliRunner
-                # We expect multiline input, so we don't use typer.prompt directly
-                # for the whole block but line by line.
                 line = input()
                 if line == "":
                     break
@@ -33,6 +46,53 @@ class ConsoleInteractorAdapter(IUserInteractor):
             except EOFError:
                 break
         return "\n".join(lines)
+
+    def _get_input_from_editor(self) -> str:
+        """Opens a temporary file in an external editor and reads the response."""
+        marker = "# --- Please enter your response above this line ---"
+        initial_content = f"\n\n{marker}\n# Anything below this line will be ignored.\n"
+
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".md", delete=False, encoding="utf-8"
+        ) as tf:
+            tf.write(initial_content)
+            temp_path = tf.name
+
+        editor = os.getenv("VISUAL") or os.getenv("EDITOR")
+        if not editor:
+            for fallback in ["code -w", "nano", "vim"]:
+                cmd = fallback.split()[0]
+                if shutil.which(cmd):
+                    editor = fallback
+                    break
+
+        if not editor:
+            typer.echo(
+                "Error: No suitable editor found. Falling back to standard input.",
+                err=True,
+            )
+            os.unlink(temp_path)
+            # Re-read from standard input if editor fails
+            return self.ask_question("Please provide your response:")
+
+        try:
+            # shlex.split handles cases like 'code -w' correctly
+            subprocess.run(shlex.split(editor) + [temp_path], check=True)
+            with open(temp_path, "r", encoding="utf-8") as f:
+                content = f.read()
+
+            # Extract content above the marker
+            if marker in content:
+                content = content.split(marker)[0]
+
+            return content.strip()
+
+        except subprocess.CalledProcessError:
+            typer.echo("Error: Editor process failed.", err=True)
+            return ""
+        finally:
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
 
     def _get_diff_content(self, action: ActionData) -> tuple[str, str, Path]:
         # --- Data Normalization for Diffing ---

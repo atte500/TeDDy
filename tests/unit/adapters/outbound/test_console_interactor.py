@@ -11,6 +11,83 @@ class TestConsoleInteractorAdapter:
     def adapter(self) -> ConsoleInteractorAdapter:
         return ConsoleInteractorAdapter()
 
+    def test_ask_question_standard_input(
+        self, adapter: ConsoleInteractorAdapter, monkeypatch
+    ):
+        """Test that ask_question reads from stdin normally if 'e' is not typed initially."""
+        inputs = iter(["\n", "My standard response", ""])
+        # The first input is empty (representing pressing Enter to bypass editor).
+        # The next is the actual text, then empty string to break.
+        monkeypatch.setattr("builtins.input", lambda: next(inputs))
+
+        response = adapter.ask_question("What say you?")
+        assert response == "My standard response"
+
+    def test_ask_question_opens_editor_on_e(
+        self, adapter: ConsoleInteractorAdapter, monkeypatch, tmp_path
+    ):
+        """Test that typing 'e' opens an editor, reads the temp file, and strips comments."""
+        import subprocess
+        from unittest.mock import MagicMock
+        from pathlib import Path
+
+        inputs = iter(["e"])
+        monkeypatch.setattr("builtins.input", lambda: next(inputs))
+
+        # We need to mock subprocess.run to intercept the editor launch and write to the temp file
+        mock_run = MagicMock()
+
+        def mock_subprocess_run(cmd, *args, **kwargs):
+            mock_run(cmd, *args, **kwargs)
+            # cmd is e.g. ["mock_editor", "/tmp/path/to/file.md"]
+            filepath = Path(cmd[-1])
+            filepath.write_text(
+                "Hello from editor\n\n# --- Please enter your response above this line ---\nDon't read this."
+            )
+
+        monkeypatch.setattr(subprocess, "run", mock_subprocess_run)
+        monkeypatch.setenv("EDITOR", "mock_editor")
+
+        response = adapter.ask_question("Write a lot:")
+
+        assert "Hello from editor" == response.strip()
+        assert "Don't read this." not in response
+        assert mock_run.called
+        assert mock_run.call_args[0][0][0] == "mock_editor"
+
+    def test_ask_question_editor_fallback_when_no_editor_found(
+        self, adapter: ConsoleInteractorAdapter, monkeypatch
+    ):
+        import shutil
+
+        inputs = iter(["e", "Fallback input", ""])
+        monkeypatch.setattr("builtins.input", lambda: next(inputs))
+
+        # Ensure no editor is found
+        monkeypatch.delenv("VISUAL", raising=False)
+        monkeypatch.delenv("EDITOR", raising=False)
+        monkeypatch.setattr(shutil, "which", lambda cmd: None)
+
+        response = adapter.ask_question("Prompt:")
+        assert response == "Fallback input"
+
+    def test_ask_question_editor_fails_returns_empty(
+        self, adapter: ConsoleInteractorAdapter, monkeypatch
+    ):
+        import subprocess
+
+        inputs = iter(["e"])
+        monkeypatch.setattr("builtins.input", lambda: next(inputs))
+        monkeypatch.setenv("EDITOR", "mock_editor")
+
+        def mock_subprocess_run(cmd, *args, **kwargs):
+            raise subprocess.CalledProcessError(1, cmd)
+
+        monkeypatch.setattr(subprocess, "run", mock_subprocess_run)
+
+        response = adapter.ask_question("Prompt:")
+        assert response == ""
+
     def test_confirm_action_approves_on_y(
         self, adapter: ConsoleInteractorAdapter, monkeypatch
     ):
