@@ -194,12 +194,14 @@
 {% endif %}
 
 {% if action_type == 'CHAT_WITH_USER' %}
-{% if log.details and log.details.response %}
+{% if log.details and log.details is mapping and log.details.get('response') %}
 
 #### User Response
 {{ log.details.response | fence }}text
 {{ log.details.response }}
 {{ log.details.response | fence }}
+{% else %}
+{{ render_action_details(log) }}
 {% endif %}
 {% elif action_type in ['RETURN', 'INVOKE'] %}
   {% set resources = params.get('handoff_resources') or params.get('Handoff Resources') %}
