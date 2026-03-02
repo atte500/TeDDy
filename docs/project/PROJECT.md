@@ -10,10 +10,10 @@
 
 This table tracks the status of active Milestones and provides a high-level summary of their included features.
 
-| Milestone | Status | Specs | Features |
-| :--- | :--- | :--- | :--- |
-| [08-core-refactoring-and-enhancements](./milestones/08-core-refactoring-and-enhancements.md) | `Completed` | [New Plan Format](./specs/new-plan-format.md) | Robust Parser, POSIX Shell Pre-processor, DTO Modernization, CI Quality Gates (Coverage/Complexity), and CLI UX Polish. |
-| [09-interactive-session-and-config](./milestones/09-interactive-session-and-config.md) | `Planned` | [Interactive Session](./specs/interactive-session-workflow.md)<br>[Context Payload](./specs/context-payload-format.md)<br>[Report Format](./specs/report-format.md) | Stateful Session Management, Security Scanning (Secrets/Bandit), LLM Integration (LiteLLM), TUI Workflow, and Agent Collaboration. |
+| Milestone                                                                                    | Status        | Specs                                                                                                                                                               | Features                                                                                                                           |
+| :------------------------------------------------------------------------------------------- | :------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :--------------------------------------------------------------------------------------------------------------------------------- |
+| [08-core-refactoring-and-enhancements](./milestones/08-core-refactoring-and-enhancements.md) | `In Progress` | [New Plan Format](./specs/new-plan-format.md)                                                                                                                       | Robust Parser, POSIX Shell Pre-processor, DTO Modernization, CI Quality Gates (Coverage/Complexity), and CLI UX Polish.            |
+| [09-interactive-session-and-config](./milestones/09-interactive-session-and-config.md)       | `Planned`     | [Interactive Session](./specs/interactive-session-workflow.md)<br>[Context Payload](./specs/context-payload-format.md)<br>[Report Format](./specs/report-format.md) | Stateful Session Management, Security Scanning (Secrets/Bandit), LLM Integration (LiteLLM), TUI Workflow, and Agent Collaboration. |
 
 ## Workflow Standards
 
