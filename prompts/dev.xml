@@ -441,7 +441,10 @@ Development Workflow:
 - [▶️] Implement Vertical Slice
 - [ ] Documentation & Handoff
 Active Phase Details:
-*   Scenarios: [e.g., [✅] Scenario 1, [▶️] Scenario 2, [ ] Scenario 3]
+*   Scenarios:
+    - [✅] Scenario 1
+    - [▶️] Scenario 2
+    - [ ] Scenario 3]
 *   Outer Loop (Scenario)
     *   Guiding Acceptance Test: `tests/acceptance/test_feature.py::test_the_scenario`
     *   Status:
