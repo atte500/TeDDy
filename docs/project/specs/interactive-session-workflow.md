@@ -141,7 +141,7 @@ Generates a `plan.md` within a turn directory.
     2.  **Implicitly runs the `teddy context` logic** to generate an up-to-date `input.md` file.
     3.  Reads the content of the newly generated `input.md` and the existing `system_prompt.xml`.
     4.  **Injects Contextual Hints** into the user's message based on the session state:
-        -   **Session Start:** If operating in the first turn (`01/`), appends `\n\n*(Hint: always start with alignment)*` to encourage the AI to clarify goals before acting.
+        -   **Session Start:** If operating in the first turn (`01/`), appends `\n\n*(Hint: first make sure you are aligned with the user's intentions and have the full context required)*` to encourage the AI to clarify goals before acting.
     5.  Passes the modified user message along with the content of the `input.md` and `system_prompt.xml` files to the LLM.
     6.  Saves the raw Markdown response from the LLM as the turn's `plan.md`.
 
