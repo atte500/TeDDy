@@ -79,3 +79,22 @@ This final slice of Milestone 08 focuses on the "Professional Grade" polish of t
 - [x] Update `src/teddy_executor/__main__.py`:
     - [x] Refine help strings for all commands and options.
 - [✅] Add/Fix acceptance tests in `tests/acceptance/test_cli_polish.py` to verify unified diffs and new file previews.
+
+## Implementation Notes
+
+### Work Summary
+Successfully implemented the "Professional Grade" CLI polish for Milestone 08.
+- **Unified Diffing:** Sequential `EDIT` operations are now consolidated into a single "Before vs. After" diff view, reducing cognitive load during interactive approval.
+- **Enhanced CREATE Previews:** New files now leverage the user's preferred external editor (e.g., VS Code) for single-file previews without triggering a split-pane diff against an empty source.
+- **Syntax Highlighting:** Temporary preview files now preserve the original file's extension, ensuring the editor provides correct syntax highlighting.
+- **OS Abstraction:** Decoupled CLI interaction from the host OS by introducing the `ISystemEnvironment` port, making the interactor pure and independently testable.
+- **CLI Discoverability:** Polished all Typer help strings to explicitly mention the project-root-relative path requirement.
+
+### Significant Refactoring
+- **String Manipulation Extraction:** Moved the logic for applying surgical edits from the `LocalFileSystemAdapter` to a new `EditSimulator` service. This ensures that the content seen in previews is bit-for-bit identical to what is eventually written to disk.
+- **Interactor Decoupling:** Removed all direct imports of `os`, `shutil`, `subprocess`, and `tempfile` from `ConsoleInteractorAdapter`, delegating these to the `ISystemEnvironment` port.
+
+### New Opportunities
+- **Text User Interface (TUI):** Explore using `Rich` or `Textual` to build a TUI for plan execution, providing an even more fluid and modern terminal experience than the current line-by-line prompt.
+- **Configurable Diff Flags:** Allow users to specify custom flags for their diff tools in the environment variable (e.g., to support tools that use flags other than `--diff` or `-d`).
+- **ChangeSet Expansion:** Extend the `ChangeSet` and `EditSimulator` to support `DELETE` and `RENAME` operations as the plan format matures.
