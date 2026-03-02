@@ -54,17 +54,19 @@ graph TD
 
 ## 3. The Core Directory Structure
 
-The system uses a top-level `.teddy/` directory to store all persistent data. The turn directories are now simplified to reflect the new report-centric model.
+The system uses a top-level `.teddy/` directory to store all persistent data. Session data is organized within a dedicated `sessions/` subdirectory to keep the root clean.
 
 ```
 .teddy/
-├── memos.yaml
-└── 20260124-add-user-auth/      # Session Directory
-    └── 01/                      # Turn 1
-        ├── input.md
-        ├── system_prompt.xml
-        ├── plan.md
-        └── report.md
+├── sessions/
+│   └── 20260124-add-user-auth/  # Session Directory
+│       └── 01/                  # Turn 1
+│           ├── input.md
+│           ├── system_prompt.xml
+│           ├── plan.md
+│           └── report.md
+├── init.context                 # Default context for new sessions
+└── memos.yaml                   # Global long-term memory
 ```
 
 ## 4. Core Artifacts
@@ -120,13 +122,14 @@ Initializes a new session directory and bootstraps it for "Turn 1".
 -   **Options:**
     -   `--agent <agent_name>`: (Optional) The name of the agent to use for the session. Defaults to `pathfinder`.
 -   **Behavior:**
-    1.  Creates the session directory and the `01/` turn directory.
-    2.  Creates the session-specific context file at `<session>/session.context`. If `.teddy/init.context` exists, its contents are copied into this new file (with all `#` comments stripped out) to seed the session's default context.
-    3.  Uses `teddy get-prompt` to fetch the agent prompt and saves it as `01/system_prompt.xml`.
+    1.  Creates the session directory inside `.teddy/sessions/` (e.g., `.teddy/sessions/<name>`) and the `01/` turn directory.
+    2.  Ensures `.teddy/init.context` exists. If the file is missing, it is created with a default content (`README.md`, `docs/project/PROJECT.md`, and `docs/architecture/ARCHITECTURE.md`). **An existing `init.context` file will not be overwritten.**
+    3.  Creates the session-specific context file at `<session>/session.context` and copies the full contents of `.teddy/init.context` into it (with all `#` comments stripped out) to seed the session's default context.
+    4.  Uses `teddy get-prompt` to fetch the agent prompt and saves it as `01/system_prompt.xml`.
         -   If the `--agent` option is provided, it fetches the specified agent's prompt. If the agent name is invalid, the command fails with an error.
         -   If the `--agent` option is not provided, it fetches the `pathfinder` agent's prompt by default.
-    4.  The session is now ready. The user's next step is typically to run `teddy context` to generate the initial `input.md`.
-    5.  Outputs the path to the new session directory.
+    5.  The session is now ready. The user's next step is typically to run `teddy context` to generate the initial `input.md`.
+    6.  Outputs the path to the new session directory.
 
 ---
 

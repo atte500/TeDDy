@@ -13,17 +13,18 @@ The `.teddy/` directory is located at the root of the project.
 ├── config.yaml
 ├── init.context
 ├── memos.yaml
-└── <session_name>/
+└── sessions/
+    └── <session_name>/
 ```
 
 -   **`config.yaml`**: (Optional) User-specific configuration for the `teddy` CLI tool.
--   **`init.context`**: (Optional) A file containing newline-separated paths to be included in the context of *every* session.
+-   **`init.context`**: (Optional) A file containing newline-separated paths to be included in the context of every *new* session.
 -   **`memos.yaml`**: A YAML file for the AI's global, long-term memory.
--   **`<session_name>/`**: Individual session directories.
+-   **`sessions/`**: Contains all individual session directories.
 
 ## 3. Session Directory Structure
 
-Each session is a self-contained directory within `.teddy/`. The session name is a descriptive, kebab-case string provided by the user (e.g., "implement-auth-flow").
+Each session is a self-contained directory within `.teddy/sessions/`. The session name is a descriptive, kebab-case string provided by the user (e.g., "implement-auth-flow").
 
 ```
 <session_name>/

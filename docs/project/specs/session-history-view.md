@@ -15,7 +15,7 @@ The current session structure, with each turn in a separate directory, is optimi
 ### 3.1. Artifact Definition
 
 1.  **File Name:** `session-log.md`
-2.  **Location:** The file will be created at the root of the session directory (e.g., `.teddy/<session_name>/session-log.md`).
+2.  **Location:** The file will be created at the root of the session directory (e.g., `.teddy/sessions/<session_name>/session-log.md`).
 3.  **Generation:** This file is automatically created and appended to by the `teddy execute` command upon the successful completion of each turn. It is a living document that grows with the session.
 
 ### 3.2. History Reconstruction Logic
