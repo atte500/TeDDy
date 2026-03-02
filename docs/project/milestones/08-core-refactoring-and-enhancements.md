@@ -45,9 +45,11 @@ Execute a safe "Create, Migrate, Delete" sequence for each legacy model:
 -   **Phase 2 (The Great Refactor):** Review `tests/acceptance/`. Move assertions verifying individual components (e.g., `MarkdownPlanParser` behavior, `ActionDispatcher` routing) into corresponding unit/integration tests. Delete redundant acceptance tests to speed up the suite.
 -   **Phase 3 (Complexity Remediation):** Refactor the most complex functions identified by `ruff` (e.g., addressing "too many branches/statements") using the newly bolstered unit test suite to ensure safety.
 
-### 3.5. CLI UX Improvements
-- Update `ConsoleInteractorAdapter._get_diff_content` to apply all `FIND`/`REPLACE` pairs of an `EDIT` action in memory to generate the `after_content` for the diff.
-- Update `ConsoleInteractorAdapter._show_in_terminal_diff` to handle `CREATE` actions by simply printing the new file content with a generic "New File Preview" header, rather than a full diff against an empty string.
+### 3.5. CLI UX Improvements & System Abstraction
+-   **ChangeSet Pattern:** Introduce a `ChangeSet` DTO (Path, before_content, after_content, type).
+-   **Orchestrator Logic:** Update `ExecutionOrchestrator` to use a new `EditSimulator` service to generate a `ChangeSet` *before* calling the interactor. This provides pre-execution validation of `EDIT` actions.
+-   **System Abstraction:** Create an `ISystemEnvironment` outbound port to encapsulate OS calls (`shutil.which`, `subprocess.run`, `os.getenv`). This ensures `ConsoleInteractorAdapter` is pure and testable without side effects.
+-   **Unified Previews:** Update the interactor to display exactly one diff for `EDIT` actions and a "New File Preview" for `CREATE` actions using the provided `ChangeSet`.
 
 ## 4. Vertical Slices
 

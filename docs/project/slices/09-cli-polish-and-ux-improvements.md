@@ -39,9 +39,14 @@ This final slice of Milestone 08 focuses on the "Professional Grade" polish of t
 -   **Refactor `LocalFileSystemAdapter`:** Update `edit_file` to delegate the string manipulation to the `EditSimulator`, keeping the adapter focused strictly on file I/O.
 
 ### CLI UX Refinement
+-   **`ExecutionOrchestrator`:**
+    -   Inject `IEditSimulator`.
+    -   In `_confirm_and_dispatch_action`, generate a `ChangeSet` for `CREATE` and `EDIT` actions.
+    -   Pass the `ChangeSet` to `user_interactor.confirm_action`.
 -   **`ConsoleInteractorAdapter`:**
-    -   Update `_get_diff_content` to use `IEditSimulator` to generate the `after_content` for `EDIT` actions, ensuring all blocks are applied before diffing.
-    -   Update `_show_in_terminal_diff` to detect `CREATE` actions and display a "New File Preview" instead of a diff against an empty string.
+    -   Inject `ISystemEnvironment`.
+    -   Remove direct imports of `os`, `shutil`, `subprocess`, and `tempfile`.
+    -   Use the provided `ChangeSet` to display unified diffs or "New File Previews".
 -   **`CLI Adapter` (`__main__.py`):**
     -   Enhance Typer command docstrings and help parameters for `execute`, `context`, and `get-prompt`.
     -   Ensure all help text emphasizes the project-root-relative path convention.
