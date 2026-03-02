@@ -2,7 +2,7 @@
 Validation rules for the 'EXECUTE' action.
 """
 
-import os
+from pathlib import Path
 from typing import List, Optional
 
 from teddy_executor.core.domain.models.plan import ActionData
@@ -86,12 +86,13 @@ def _check_for_multiple_commands(command: str) -> Optional[ValidationError]:
 
 def _check_cwd_safety(cwd: str) -> Optional[ValidationError]:
     """Checks if the cwd is safe (not absolute, no traversal)."""
-    if os.path.isabs(cwd):
+    p = Path(cwd)
+    if p.is_absolute():
         return ValidationError(
             message=f"CWD '{cwd}' is an absolute path and is not allowed"
         )
-    # Check for path traversal attempts
-    if ".." in cwd.split(os.path.sep):
+    # Check for path traversal attempts using pathlib for cross-platform safety
+    if ".." in p.parts:
         return ValidationError(message=f"CWD '{cwd}' is outside the project directory")
     return None
 
