@@ -83,3 +83,45 @@ def test_read_fails_if_file_missing(tmp_path: Path):
     # Assert
     assert len(errors) == 1
     assert "File to read does not exist" in errors[0].message
+
+
+def test_edit_fails_if_file_missing(tmp_path: Path):
+    """EDIT action fails if the target file does not exist."""
+    # Arrange
+    plan_content = """
+# Test Edit Missing
+- **Status:** Green 🟢
+- **Plan Type:** Test
+- **Agent:** Test Agent
+
+## Rationale
+````text
+Rationale.
+````
+
+## Action Plan
+### `EDIT`
+- **File Path:** [/missing.txt](/missing.txt)
+- **Description:** Edit it
+
+#### `FIND:`
+`````text
+old
+`````
+#### `REPLACE:`
+`````text
+new
+`````
+"""
+    parser = MarkdownPlanParser()
+    plan = parser.parse(plan_content)
+
+    fs_adapter = LocalFileSystemAdapter(root_dir=str(tmp_path))
+    validator = PlanValidator(fs_adapter)
+
+    # Act
+    errors = validator.validate(plan)
+
+    # Assert
+    assert len(errors) == 1
+    assert "File to edit does not exist" in errors[0].message
