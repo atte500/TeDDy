@@ -86,12 +86,18 @@ def _check_for_multiple_commands(command: str) -> Optional[ValidationError]:
 
 def _check_cwd_safety(cwd: str) -> Optional[ValidationError]:
     """Checks if the cwd is safe (not absolute, no traversal)."""
+    # Explicitly check for POSIX-style absolute paths for cross-platform safety
+    if cwd.startswith("/"):
+        return ValidationError(
+            message=f"CWD '{cwd}' is an absolute path and is not allowed"
+        )
+
     p = Path(cwd)
     if p.is_absolute():
         return ValidationError(
             message=f"CWD '{cwd}' is an absolute path and is not allowed"
         )
-    # Check for path traversal attempts using pathlib for cross-platform safety
+    # Check for path traversal attempts using pathlib
     if ".." in p.parts:
         return ValidationError(message=f"CWD '{cwd}' is outside the project directory")
     return None

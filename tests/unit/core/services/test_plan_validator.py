@@ -321,12 +321,18 @@ def test_validate_execute_fails_with_absolute_cwd(fs):
     When validated,
     Then it should return an error.
     """
+    # Use a platform-specific absolute path to ensure the test is robust.
+    # On Windows, this will be C:\, on POSIX /
+    abs_path = Path("/").resolve()
+    # Use a common directory to make the test more realistic
+    absolute_cwd = str(abs_path / "etc" / "passwd")
+
     plan = Plan(
         title="Test",
         actions=[
             ActionData(
                 type="EXECUTE",
-                params={"command": "echo 'test'", "cwd": "/etc/passwd"},
+                params={"command": "echo 'test'", "cwd": absolute_cwd},
             )
         ],
     )
