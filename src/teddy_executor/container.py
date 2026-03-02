@@ -21,6 +21,10 @@ from teddy_executor.core.services.markdown_report_formatter import (
     MarkdownReportFormatter,
 )
 from teddy_executor.core.services.plan_validator import PlanValidator
+from teddy_executor.core.services.validation_rules.create import CreateActionValidator
+from teddy_executor.core.services.validation_rules.edit import EditActionValidator
+from teddy_executor.core.services.validation_rules.execute import ExecuteActionValidator
+from teddy_executor.core.services.validation_rules.read import ReadActionValidator
 from teddy_executor.adapters.outbound.console_interactor import ConsoleInteractorAdapter
 from teddy_executor.adapters.outbound.local_file_system_adapter import (
     LocalFileSystemAdapter,
@@ -52,7 +56,20 @@ def create_container() -> punq.Container:
     container.register(IEnvironmentInspector, SystemEnvironmentInspector)
     container.register(IActionFactory, ActionFactory)
     container.register(ActionDispatcher)
-    container.register(IPlanValidator, PlanValidator)
+    container.register(CreateActionValidator)
+    container.register(EditActionValidator)
+    container.register(ExecuteActionValidator)
+    container.register(ReadActionValidator)
+    container.register(
+        IPlanValidator,
+        PlanValidator,
+        validators=[
+            container.resolve(CreateActionValidator),
+            container.resolve(EditActionValidator),
+            container.resolve(ExecuteActionValidator),
+            container.resolve(ReadActionValidator),
+        ],
+    )
     container.register(IMarkdownReportFormatter, MarkdownReportFormatter)
     # PlanParser is now created by the factory
     # RunPlanUseCase is instantiated manually in the `execute` command

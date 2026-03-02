@@ -6,7 +6,36 @@ from pathlib import Path
 from typing import List, Optional
 
 from teddy_executor.core.domain.models.plan import ActionData
-from teddy_executor.core.services.validation_rules.helpers import ValidationError
+from teddy_executor.core.services.validation_rules.helpers import (
+    IActionValidator,
+    ValidationError,
+)
+
+
+class ExecuteActionValidator(IActionValidator):
+    """Validator for the 'EXECUTE' action."""
+
+    def can_validate(self, action_type: str) -> bool:
+        return action_type.lower() == "execute"
+
+    def validate(self, action: ActionData) -> List[ValidationError]:
+        """Validates an 'execute' action."""
+        errors: List[ValidationError] = []
+        command = action.params.get("command", "")
+        cwd = action.params.get("cwd")
+
+        if cwd:
+            if error := _check_cwd_safety(cwd):
+                errors.append(error)
+
+        if command:
+            if error := _check_for_disallowed_chaining(command):
+                errors.append(error)
+
+            if error := _check_for_multiple_commands(command):
+                errors.append(error)
+
+        return errors
 
 
 def _check_for_disallowed_chaining(command: str) -> Optional[ValidationError]:
@@ -103,21 +132,4 @@ def _check_cwd_safety(cwd: str) -> Optional[ValidationError]:
     return None
 
 
-def validate_execute_action(action: ActionData) -> List[ValidationError]:
-    """Validates an 'execute' action."""
-    errors: List[ValidationError] = []
-    command = action.params.get("command", "")
-    cwd = action.params.get("cwd")
-
-    if cwd:
-        if error := _check_cwd_safety(cwd):
-            errors.append(error)
-
-    if command:
-        if error := _check_for_disallowed_chaining(command):
-            errors.append(error)
-
-        if error := _check_for_multiple_commands(command):
-            errors.append(error)
-
-    return errors
+# Removed legacy functional validation rule in favor of ExecuteActionValidator class.

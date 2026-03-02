@@ -5,7 +5,23 @@ Shared helper classes and functions for validation rules.
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional, Protocol
+
+from teddy_executor.core.domain.models.plan import ActionData
+
+
+class IActionValidator(Protocol):
+    """
+    Protocol for an action-specific validation rule.
+    """
+
+    def can_validate(self, action_type: str) -> bool:
+        """Returns True if this validator can handle the given action type."""
+        ...
+
+    def validate(self, action: ActionData) -> List["ValidationError"]:
+        """Validates the given action."""
+        ...
 
 
 @dataclass
