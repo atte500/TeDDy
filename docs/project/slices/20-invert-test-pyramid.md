@@ -60,23 +60,23 @@ This work involves migrating specific test cases from `tests/acceptance/` to the
 -   **Target Unit Test File:** `tests/unit/core/services/test_plan_validator.py`
 -   **Target Integration Test File:** `tests/integration/core/services/test_plan_validator_integration.py`
 -   **Cleanup:**
-    -   [ ] Delete `tests/acceptance/test_plan_validation_logic.py`
-    -   [ ] Delete `tests/acceptance/test_comprehensive_validation.py`
-    -   [ ] Delete `tests/acceptance/test_edit_action_safety.py`
-    -   [ ] Delete `tests/acceptance/test_action_failure_behavior.py`
+    -   [x] Delete `tests/acceptance/test_plan_validation_logic.py`
+    -   [x] Delete `tests/acceptance/test_comprehensive_validation.py`
+    -   [x] Delete `tests/acceptance/test_edit_action_safety.py`
+    -   [x] Delete `tests/acceptance/test_action_failure_behavior.py`
 
 ### Category 2: Core Service Logic (Unit Tests)
 
 #### 2.1. `ExecutionOrchestrator` Unit Tests
 -   **Target File:** `tests/unit/core/services/test_execution_orchestrator.py`
 -   **Cleanup:**
-    -   [ ] Delete `tests/acceptance/test_auto_skip_on_failure.py`
+    -   [x] Delete `tests/acceptance/test_auto_skip_on_failure.py`
 
 #### 2.2. `MarkdownReportFormatter` Unit Tests
 -   **Target File:** `tests/unit/core/services/test_markdown_report_formatter.py`
 -   **Cleanup:**
-    -   [ ] Delete `tests/acceptance/test_markdown_report_fixes.py`
-    -   [ ] Delete `tests/acceptance/test_markdown_reports.py` (Ensure `test_successful_plan_execution_report_format` logic is covered in unit tests before deleting).
+    -   [x] Delete `tests/acceptance/test_markdown_report_fixes.py`
+    -   [x] Delete `tests/acceptance/test_markdown_reports.py` (Ensure `test_successful_plan_execution_report_format` logic is covered in unit tests before deleting).
 
 ### Category 3: Adapter Logic (Integration Tests)
 
@@ -84,21 +84,21 @@ This work involves migrating specific test cases from `tests/acceptance/` to the
 -   **Target File:** `tests/integration/adapters/outbound/test_shell_adapter.py`
 -   **Source Files & Tests to Migrate:**
     -   From `test_shell_adapter_features.py`:
-        -   [ ] `test_shell_adapter_handles_wildcards_on_posix`
-        -   [ ] `test_shell_adapter_handles_pipes_on_posix`
-        -   [ ] `test_shell_adapter_handles_env_vars_on_posix`
+        -   [x] `test_shell_adapter_handles_wildcards_on_posix`
+        -   [x] `test_shell_adapter_handles_pipes_on_posix`
+        -   [x] `test_shell_adapter_handles_env_vars_on_posix`
 -   **Cleanup:**
-    -   [ ] Delete `tests/acceptance/test_shell_adapter_features.py`
+    -   [x] Delete `tests/acceptance/test_shell_adapter_features.py`
 
 #### 3.2. `WebScraperAdapter` Integration Tests
 -   **Target File:** `tests/integration/adapters/outbound/test_web_scraper_adapter.py`
 -   **Cleanup:**
-    -   [ ] Delete `tests/acceptance/test_read_action_url.py`
+    -   [x] Delete `tests/acceptance/test_read_action_url.py`
 
 #### 3.3. `WebSearcherAdapter` Integration Tests
 -   **Target File:** `tests/integration/adapters/outbound/test_web_searcher_adapter.py`
 -   **Cleanup:**
-    -   [ ] Delete `tests/acceptance/test_research_action.py`
+    -   [x] Delete `tests/acceptance/test_research_action.py`
 
 ### Final Verification
 -   [x] Run the entire test suite (`poetry run pytest`) and ensure all tests pass.
