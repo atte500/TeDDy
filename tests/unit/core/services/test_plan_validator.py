@@ -344,6 +344,73 @@ def test_validate_execute_fails_with_absolute_cwd(fs):
     assert "is an absolute path and is not allowed" in errors[0].message
 
 
+def test_validate_edit_reports_multiple_failures(fs):
+    """
+    Given an EDIT action with multiple FIND blocks that do not match,
+    When validated,
+    Then all errors should be reported.
+    """
+    file_path = Path("test.txt")
+    fs.create_file(file_path, contents="Some content")
+
+    plan = Plan(
+        title="Test",
+        actions=[
+            ActionData(
+                type="EDIT",
+                params={
+                    "path": str(file_path),
+                    "edits": [
+                        {"find": "Bad1", "replace": "Good1"},
+                        {"find": "Bad2", "replace": "Good2"},
+                    ],
+                },
+            )
+        ],
+    )
+
+    validator = PlanValidator(LocalFileSystemAdapter())
+    errors = validator.validate(plan)
+
+    expected_error_count = 2
+    assert len(errors) == expected_error_count
+    assert "Bad1" in errors[0].message
+    assert "Bad2" in errors[1].message
+
+
+def test_validate_edit_provides_diff_on_mismatch(fs):
+    """
+    Given an EDIT action with a near-match FIND block,
+    When validated,
+    Then the error message should contain a diff.
+    """
+    file_path = Path("test.txt")
+    fs.create_file(file_path, contents="This is the original content")
+
+    plan = Plan(
+        title="Test",
+        actions=[
+            ActionData(
+                type="EDIT",
+                params={
+                    "path": str(file_path),
+                    "edits": [
+                        {"find": "This is the orignal content", "replace": "New"},
+                    ],
+                },
+            )
+        ],
+    )
+
+    validator = PlanValidator(LocalFileSystemAdapter())
+    errors = validator.validate(plan)
+
+    assert len(errors) == 1
+    assert "- This is the orignal content" in errors[0].message
+    assert "+ This is the original content" in errors[0].message
+    assert "?" in errors[0].message
+
+
 def test_validate_edit_fails_if_find_and_replace_identical(fs):
     """
     Given an EDIT action where FIND and REPLACE are identical,
