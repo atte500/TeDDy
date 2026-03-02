@@ -67,11 +67,11 @@ This final slice of Milestone 08 focuses on the "Professional Grade" polish of t
 - [x] Update `src/teddy_executor/container.py` to register the new service.
 
 ### Phase 2: Refactor Existing Edits
-- [ ] Update `src/teddy_executor/adapters/outbound/local_file_system_adapter.py` to use `IEditSimulator`.
-- [ ] Verify existing `EDIT` tests pass.
+- [x] Update `src/teddy_executor/adapters/outbound/local_file_system_adapter.py` to use `IEditSimulator`.
+- [x] Verify existing `EDIT` tests pass.
 
 ### Phase 3: CLI UX Improvements
-- [▶️] Update `src/teddy_executor/adapters/outbound/console_interactor.py`:
+- [✅] Update `src/teddy_executor/adapters/outbound/console_interactor.py`:
     - [x] Inject `IEditSimulator` into the constructor. (Actually already injected SystemEnvironment, logic for unified diff is handled via ChangeSet from Orchestrator)
     - [x] Update `_get_diff_content` to apply all edits using the simulator. (Handled in Orchestrator)
     - [x] Refactor `confirm_action` to provide a "New File Preview" for `CREATE` actions, even when external diff tool is available.
@@ -95,6 +95,4 @@ Successfully implemented the "Professional Grade" CLI polish for Milestone 08.
 - **Interactor Decoupling:** Removed all direct imports of `os`, `shutil`, `subprocess`, and `tempfile` from `ConsoleInteractorAdapter`, delegating these to the `ISystemEnvironment` port.
 
 ### New Opportunities
-- **Text User Interface (TUI):** Explore using `Rich` or `Textual` to build a TUI for plan execution, providing an even more fluid and modern terminal experience than the current line-by-line prompt.
-- **Configurable Diff Flags:** Allow users to specify custom flags for their diff tools in the environment variable (e.g., to support tools that use flags other than `--diff` or `-d`).
-- **ChangeSet Expansion:** Extend the `ChangeSet` and `EditSimulator` to support `DELETE` and `RENAME` operations as the plan format matures.
+None identified (all discovered requirements are already covered by the Milestone 09 roadmap).
