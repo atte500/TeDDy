@@ -1,6 +1,8 @@
 import logging
 import os
 from pathlib import Path
+from typing import List
+from teddy_executor.core.ports.inbound.edit_simulator import EditPair, IEditSimulator
 from teddy_executor.core.ports.outbound.file_system_manager import FileSystemManager
 
 # Configure debug logging
@@ -10,9 +12,7 @@ else:
     logging.basicConfig(level=logging.INFO)
 
 from teddy_executor.core.domain.models import (
-    SearchTextNotFoundError,
     FileAlreadyExistsError,
-    MultipleMatchesFoundError,
 )
 
 logger = logging.getLogger(__name__)
@@ -23,7 +23,8 @@ class LocalFileSystemAdapter(FileSystemManager):
     An adapter that implements file system operations on the local machine.
     """
 
-    def __init__(self, root_dir: str = "."):
+    def __init__(self, edit_simulator: IEditSimulator, root_dir: str = "."):
+        self._edit_simulator = edit_simulator
         self.root_dir = Path(root_dir)
 
     def _resolve_path(self, path: str) -> Path:
@@ -160,43 +161,6 @@ class LocalFileSystemAdapter(FileSystemManager):
         except IOError as e:
             raise IOError(f"Failed to read file at {path}: {e}") from e
 
-    def _check_matches_and_raise(
-        self, num_matches: int, find_str_repr: str, content: str
-    ):
-        """Checks match count, raising domain exceptions for ambiguity or not found."""
-        if num_matches > 1:
-            raise MultipleMatchesFoundError(
-                message=f"Found {num_matches} occurrences of '{find_str_repr}'. Aborting edit to prevent ambiguity.",
-                content=content,
-            )
-        if num_matches == 0:
-            raise SearchTextNotFoundError(
-                message=f"Search text '{find_str_repr}' not found in file.",
-                content=content,
-            )
-
-    def _apply_single_edit(self, content: str, find: str, replace: str) -> str:
-        """
-        Applies a single find/replace operation to content.
-
-        This is a simple, verbatim replacement. The AI is responsible for
-        providing an exact `find` block and a correctly indented `replace` block.
-        """
-        # An empty find string would result in len(content) + 1 matches,
-        # which would correctly raise MultipleMatchesFoundError. No special handling needed.
-        num_matches = content.count(find)
-
-        # Use repr() to make whitespace visible in error messages.
-        self._check_matches_and_raise(num_matches, repr(find), content)
-
-        if replace == "":
-            if find + "\n" in content:
-                return content.replace(find + "\n", "", 1)
-            if "\n" + find in content:
-                return content.replace("\n" + find, "", 1)
-
-        return content.replace(find, replace, 1)
-
     def edit_file(
         self,
         path: str,
@@ -208,7 +172,10 @@ class LocalFileSystemAdapter(FileSystemManager):
         file_path = self._resolve_path(path)
         content = file_path.read_text(encoding="utf-8")
 
-        for edit in edits:
-            content = self._apply_single_edit(content, edit["find"], edit["replace"])
+        # Cast to match the port's expected EditPair structure
+        cast_edits: List[EditPair] = [
+            {"find": e["find"], "replace": e["replace"]} for e in edits
+        ]
+        new_content = self._edit_simulator.simulate_edits(content, cast_edits)
 
-        file_path.write_text(content, encoding="utf-8")
+        file_path.write_text(new_content, encoding="utf-8")

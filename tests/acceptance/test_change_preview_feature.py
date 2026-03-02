@@ -52,16 +52,12 @@ def test_in_terminal_diff_is_shown_for_create_file(tmp_path: Path, monkeypatch):
     assert new_file_path.exists()
     assert "Second line" in new_file_path.read_text()
 
-    # AND THEN: A diff should have been printed to the merged stdout
-    expected_diff = [
-        f"--- a/{new_file_path.name}",
-        f"+++ b/{new_file_path.name}",
-        "@@ -0,0 +1,2 @@",
-        "+First line.",
-        "+Second line.",
-    ]
-    for line in expected_diff:
-        assert line in result.stderr
+    # AND THEN: A New File Preview should have been printed to the merged stderr
+    assert "--- New File Preview ---" in result.stderr
+    assert f"Path: {new_file_path.name}" in result.stderr
+    assert "First line." in result.stderr
+    assert "Second line." in result.stderr
+    assert "------------------------" in result.stderr
 
     assert "Approve? (y/n):" in result.stderr
 

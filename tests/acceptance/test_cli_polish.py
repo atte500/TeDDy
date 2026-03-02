@@ -1,10 +1,22 @@
+import pytest
+from pathlib import Path
 from typer.testing import CliRunner
 from teddy_executor.__main__ import app
+from tests.acceptance.plan_builder import MarkdownPlanBuilder
 
-runner = CliRunner()
+
+@pytest.fixture
+def runner():
+    return CliRunner()
 
 
-def test_cli_help_is_descriptive_and_accurate():
+@pytest.fixture(autouse=True)
+def force_terminal_diff(monkeypatch):
+    """Ensure that tests always use the in-terminal diff to avoid launching GUI tools."""
+    monkeypatch.setenv("TEDDY_DIFF_TOOL", "disabled")
+
+
+def test_cli_help_is_descriptive_and_accurate(runner):
     """
     Scenario: CLI help is descriptive and accurate
     - Given the teddy CLI
@@ -30,3 +42,104 @@ def test_cli_help_is_descriptive_and_accurate():
     result_context = runner.invoke(app, ["context", "--help"])
     assert result_context.exit_code == 0
     assert "root-relative" in result_context.stdout.lower()
+
+
+def test_edit_action_shows_unified_diff(runner, tmp_path):
+    """
+    Scenario: EDIT actions show a unified diff
+    - Given a plan with an EDIT action containing multiple FIND/REPLACE pairs
+    - When the plan is executed interactively
+    - Then the CLI displays exactly one diff for that file.
+    - And the diff correctly represents the cumulative result of applying all pairs in sequence.
+    """
+    # 1. Setup a file to edit
+    with runner.isolated_filesystem(temp_dir=tmp_path):
+        current_dir = Path.cwd()
+        (current_dir / "hello.txt").write_text(
+            "line 1\nline 2\nline 3\n", encoding="utf-8"
+        )
+
+        # 2. Define a plan with multiple edits for the same file using the builder
+        builder = MarkdownPlanBuilder("Test Plan")
+        builder.add_action(
+            "EDIT",
+            params={
+                "File Path": "[hello.txt](hello.txt)",
+                "Description": "Update multiple lines.",
+            },
+            content_blocks={
+                "FIND:": ("text", "line 1"),
+                "REPLACE:": ("text", "LINE ONE"),
+                "FIND: ": ("text", "line 3"),
+                "REPLACE: ": ("text", "LINE THREE"),
+            },
+        )
+        plan_content = builder.build()
+
+        # 3. Run execute in interactive mode (mocking input 'y' for the action)
+        result = runner.invoke(
+            app, ["execute", "--plan-content", plan_content], input="y\n"
+        )
+
+        # The output should contain the "Unified Diff" indicator and headers.
+        assert "--- Diff ---" in result.output
+        assert "--- a/hello.txt" in result.output
+        assert "+++ b/hello.txt" in result.output
+
+        # Check that it applied BOTH changes in the preview/diff
+        assert "-line 1" in result.output
+        assert "+LINE ONE" in result.output
+        assert "-line 3" in result.output
+        assert "+LINE THREE" in result.output
+
+        # CRITICAL: Verify it's a UNIFIED diff (one set of headers)
+        assert result.output.count("--- a/hello.txt") == 1
+
+        # Verify file was actually updated correctly
+        assert (
+            current_dir / "hello.txt"
+        ).read_text() == "LINE ONE\nline 2\nLINE THREE\n"
+
+    assert result.exit_code == 0, f"CLI failed with output: {result.output}"
+
+
+def test_create_action_shows_simple_preview(runner, tmp_path):
+    """
+    Scenario: CREATE actions show a simple preview
+    - Given a plan with a CREATE action
+    - When the plan is executed interactively
+    - Then the CLI displays a "New File Preview" with the full content of the file.
+    """
+    # 1. Define a plan with a CREATE action
+    # Note: Parser strips trailing newlines from code blocks
+    new_content = "This is a brand new file.\nWith multiple lines."
+
+    builder = MarkdownPlanBuilder("Test Plan")
+    builder.add_action(
+        "CREATE",
+        params={
+            "File Path": "[new_file.txt](new_file.txt)",
+            "Description": "Create a new file.",
+        },
+        content_blocks={"": ("text", new_content)},
+    )
+    plan_content = builder.build()
+
+    # 2. Run execute in interactive mode
+    with runner.isolated_filesystem(temp_dir=tmp_path):
+        current_dir = Path.cwd()
+        result = runner.invoke(
+            app, ["execute", "--plan-content", plan_content], input="y\n"
+        )
+
+        # 4. Verify file was created
+        assert (current_dir / "new_file.txt").exists()
+        assert (current_dir / "new_file.txt").read_text() == new_content
+
+        assert result.exit_code == 0, f"CLI failed with output: {result.output}"
+
+        # 3. Verify "New File Preview" appears instead of a diff
+        assert "--- New File Preview ---" in result.output
+        assert "Path: new_file.txt" in result.output
+        assert new_content in result.output
+        assert "--- Diff ---" not in result.output

@@ -63,11 +63,15 @@ content1
         status=ActionStatus.SUCCESS, action_type="CREATE", params={}
     )
 
+    from unittest.mock import Mock
+    from teddy_executor.core.ports.inbound.edit_simulator import IEditSimulator
+
     orchestrator = ExecutionOrchestrator(
         plan_parser=plan_parser,
         action_dispatcher=mock_dispatcher,
         user_interactor=mock_interactor,
         file_system_manager=mock_file_system_manager,
+        edit_simulator=Mock(spec=IEditSimulator),
     )
 
     # Act

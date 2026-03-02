@@ -54,10 +54,10 @@ This final slice of Milestone 08 focuses on the "Professional Grade" polish of t
 ## 5. Scope of Work
 
 ### Phase 1: Edit Simulation Logic
-- [ ] Create `src/teddy_executor/core/ports/inbound/edit_simulator.py` defining the `IEditSimulator` protocol.
-- [ ] Create `src/teddy_executor/core/services/edit_simulator.py` implementing the logic.
-- [ ] Add unit tests for `EditSimulator` in `tests/unit/core/services/test_edit_simulator.py`.
-- [ ] Update `src/teddy_executor/container.py` to register the new service.
+- [x] Create `src/teddy_executor/core/ports/inbound/edit_simulator.py` defining the `IEditSimulator` protocol.
+- [x] Create `src/teddy_executor/core/services/edit_simulator.py` implementing the logic.
+- [x] Add unit tests for `EditSimulator` in `tests/unit/core/services/test_edit_simulator.py`.
+- [x] Update `src/teddy_executor/container.py` to register the new service.
 
 ### Phase 2: Refactor Existing Edits
 - [ ] Update `src/teddy_executor/adapters/outbound/local_file_system_adapter.py` to use `IEditSimulator`.

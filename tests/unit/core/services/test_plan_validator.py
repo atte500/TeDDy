@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 from teddy_executor.adapters.outbound.local_file_system_adapter import (
     LocalFileSystemAdapter,
 )
+from teddy_executor.core.services.edit_simulator import EditSimulator
 from teddy_executor.core.domain.models.plan import ActionData, Plan
 from teddy_executor.core.ports.outbound import IFileSystemManager
 from teddy_executor.core.services.plan_validator import PlanValidator
@@ -37,7 +38,7 @@ def test_validate_edit_action_with_nonexistent_find_block(fs):
         ],
     )
 
-    validator = PlanValidator(LocalFileSystemAdapter())
+    validator = PlanValidator(LocalFileSystemAdapter(edit_simulator=EditSimulator()))
 
     # Act
     errors = validator.validate(plan)
@@ -70,7 +71,7 @@ def test_validate_edit_action_with_nonexistent_file(fs):
         ],
     )
 
-    validator = PlanValidator(LocalFileSystemAdapter())
+    validator = PlanValidator(LocalFileSystemAdapter(edit_simulator=EditSimulator()))
 
     # Act
     errors = validator.validate(plan)
@@ -105,7 +106,7 @@ def test_validate_edit_action_with_valid_find_block(fs):
         ],
     )
 
-    validator = PlanValidator(LocalFileSystemAdapter())
+    validator = PlanValidator(LocalFileSystemAdapter(edit_simulator=EditSimulator()))
 
     # Act
     errors = validator.validate(plan)
@@ -129,7 +130,7 @@ def test_validate_create_fails_if_file_exists(fs):
         ],
     )
 
-    validator = PlanValidator(LocalFileSystemAdapter())
+    validator = PlanValidator(LocalFileSystemAdapter(edit_simulator=EditSimulator()))
     errors = validator.validate(plan)
 
     assert len(errors) == 1
@@ -160,7 +161,7 @@ def test_validate_edit_fails_if_find_block_not_unique(fs):
         ],
     )
 
-    validator = PlanValidator(LocalFileSystemAdapter())
+    validator = PlanValidator(LocalFileSystemAdapter(edit_simulator=EditSimulator()))
     errors = validator.validate(plan)
 
     assert len(errors) == 1
@@ -308,7 +309,7 @@ def test_validate_execute_fails_with_unsafe_cwd_traversal(fs):
             )
         ],
     )
-    validator = PlanValidator(LocalFileSystemAdapter())
+    validator = PlanValidator(LocalFileSystemAdapter(edit_simulator=EditSimulator()))
     errors = validator.validate(plan)
 
     assert len(errors) == 1
@@ -337,7 +338,7 @@ def test_validate_execute_fails_with_absolute_cwd(fs):
             )
         ],
     )
-    validator = PlanValidator(LocalFileSystemAdapter())
+    validator = PlanValidator(LocalFileSystemAdapter(edit_simulator=EditSimulator()))
     errors = validator.validate(plan)
 
     assert len(errors) == 1
@@ -369,7 +370,7 @@ def test_validate_edit_reports_multiple_failures(fs):
         ],
     )
 
-    validator = PlanValidator(LocalFileSystemAdapter())
+    validator = PlanValidator(LocalFileSystemAdapter(edit_simulator=EditSimulator()))
     errors = validator.validate(plan)
 
     expected_error_count = 2
@@ -402,7 +403,7 @@ def test_validate_edit_provides_diff_on_mismatch(fs):
         ],
     )
 
-    validator = PlanValidator(LocalFileSystemAdapter())
+    validator = PlanValidator(LocalFileSystemAdapter(edit_simulator=EditSimulator()))
     errors = validator.validate(plan)
 
     assert len(errors) == 1
@@ -433,7 +434,7 @@ def test_validate_edit_fails_if_find_and_replace_identical(fs):
         ],
     )
 
-    validator = PlanValidator(LocalFileSystemAdapter())
+    validator = PlanValidator(LocalFileSystemAdapter(edit_simulator=EditSimulator()))
     errors = validator.validate(plan)
 
     assert len(errors) == 1

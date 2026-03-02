@@ -1,4 +1,5 @@
 import punq
+from teddy_executor.core.ports.inbound.edit_simulator import IEditSimulator
 from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
 from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
 from teddy_executor.core.ports.outbound import (
@@ -7,6 +8,7 @@ from teddy_executor.core.ports.outbound import (
     IMarkdownReportFormatter,
     IRepoTreeGenerator,
     IShellExecutor,
+    ISystemEnvironment,
     IUserInteractor,
     IWebScraper,
     IWebSearcher,
@@ -17,6 +19,8 @@ from teddy_executor.core.services.action_dispatcher import (
 )
 from teddy_executor.core.services.action_factory import ActionFactory
 from teddy_executor.core.services.context_service import ContextService
+from teddy_executor.core.services.edit_simulator import EditSimulator
+from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
 from teddy_executor.core.services.markdown_report_formatter import (
     MarkdownReportFormatter,
 )
@@ -33,6 +37,9 @@ from teddy_executor.adapters.outbound.local_repo_tree_generator import (
     LocalRepoTreeGenerator,
 )
 from teddy_executor.adapters.outbound.shell_adapter import ShellAdapter
+from teddy_executor.adapters.outbound.system_environment_adapter import (
+    SystemEnvironmentAdapter,
+)
 from teddy_executor.adapters.outbound.system_environment_inspector import (
     SystemEnvironmentInspector,
 )
@@ -43,17 +50,20 @@ from teddy_executor.adapters.outbound.web_searcher_adapter import WebSearcherAda
 def create_container() -> punq.Container:
     """
     Creates and configures the dependency injection container.
-    Note: The RunPlanUseCase/ExecutionOrchestrator is not registered here
-    because its PlanParser dependency is determined at runtime.
     """
     container = punq.Container()
+    # Register core OS abstractions first
+    container.register(ISystemEnvironment, SystemEnvironmentAdapter)
+    container.register(IEnvironmentInspector, SystemEnvironmentInspector)
+
+    # Register ports and adapters
     container.register(IShellExecutor, ShellAdapter)
+    container.register(IEditSimulator, EditSimulator)
     container.register(IFileSystemManager, LocalFileSystemAdapter)
     container.register(IWebScraper, WebScraperAdapter)
     container.register(IUserInteractor, ConsoleInteractorAdapter)
     container.register(IWebSearcher, WebSearcherAdapter)
     container.register(IRepoTreeGenerator, LocalRepoTreeGenerator)
-    container.register(IEnvironmentInspector, SystemEnvironmentInspector)
     container.register(IActionFactory, ActionFactory)
     container.register(ActionDispatcher)
     container.register(CreateActionValidator)
@@ -71,7 +81,6 @@ def create_container() -> punq.Container:
         ],
     )
     container.register(IMarkdownReportFormatter, MarkdownReportFormatter)
-    # PlanParser is now created by the factory
-    # RunPlanUseCase is instantiated manually in the `execute` command
+    container.register(ExecutionOrchestrator)
     container.register(IGetContextUseCase, ContextService)
     return container

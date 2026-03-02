@@ -1,3 +1,4 @@
+import pytest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 from typer.testing import CliRunner
@@ -11,12 +12,20 @@ from teddy_executor.core.domain.models import (
 )
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
 from teddy_executor.__main__ import app
+from teddy_executor.container import create_container
 
 runner = CliRunner()
 
 
-@patch("teddy_executor.__main__.ExecutionOrchestrator")
-def test_cli_invokes_orchestrator_with_plan_file(mock_ExecutionOrchestrator: MagicMock):
+@pytest.fixture
+def fresh_container():
+    """Provides a fresh container for each test and patches the global one in __main__."""
+    c = create_container()
+    with patch("teddy_executor.__main__.container", c):
+        yield c
+
+
+def test_cli_invokes_orchestrator_with_plan_file(fresh_container):
     """
     Tests that the CLI correctly calls the orchestrator with the plan path.
     """
@@ -32,7 +41,9 @@ def test_cli_invokes_orchestrator_with_plan_file(mock_ExecutionOrchestrator: Mag
     mock_orchestrator_instance.execute.return_value = ExecutionReport(
         run_summary=mock_summary, action_logs=[]
     )
-    mock_ExecutionOrchestrator.return_value = mock_orchestrator_instance
+
+    # Register the mock instance in the container
+    fresh_container.register(ExecutionOrchestrator, instance=mock_orchestrator_instance)
 
     builder = MarkdownPlanBuilder("Test Plan")
     builder.add_action("READ", params={"Resource": "[a](/a)"})
@@ -56,8 +67,7 @@ def test_cli_invokes_orchestrator_with_plan_file(mock_ExecutionOrchestrator: Mag
     )
 
 
-@patch("teddy_executor.__main__.ExecutionOrchestrator")
-def test_cli_exits_with_error_code_on_failure(mock_ExecutionOrchestrator: MagicMock):
+def test_cli_exits_with_error_code_on_failure(fresh_container):
     """
     Tests that the CLI exits with a non-zero code if the
     execution report indicates a failure.
@@ -74,7 +84,8 @@ def test_cli_exits_with_error_code_on_failure(mock_ExecutionOrchestrator: MagicM
     mock_orchestrator_instance.execute.return_value = ExecutionReport(
         run_summary=mock_summary, action_logs=[]
     )
-    mock_ExecutionOrchestrator.return_value = mock_orchestrator_instance
+
+    fresh_container.register(ExecutionOrchestrator, instance=mock_orchestrator_instance)
 
     builder = MarkdownPlanBuilder("Test Plan")
     builder.add_action("READ", params={"Resource": "[a](/a)"})
@@ -95,8 +106,7 @@ def test_cli_exits_with_error_code_on_failure(mock_ExecutionOrchestrator: MagicM
     )
 
 
-@patch("teddy_executor.__main__.ExecutionOrchestrator")
-def test_cli_handles_interactive_mode_flag(mock_ExecutionOrchestrator: MagicMock):
+def test_cli_handles_interactive_mode_flag(fresh_container):
     """
     Tests that the CLI correctly sets the interactive flag (default is True).
     """
@@ -112,7 +122,8 @@ def test_cli_handles_interactive_mode_flag(mock_ExecutionOrchestrator: MagicMock
     mock_orchestrator_instance.execute.return_value = ExecutionReport(
         run_summary=mock_summary, action_logs=[]
     )
-    mock_ExecutionOrchestrator.return_value = mock_orchestrator_instance
+
+    fresh_container.register(ExecutionOrchestrator, instance=mock_orchestrator_instance)
 
     builder = MarkdownPlanBuilder("Test Plan")
     builder.add_action("READ", params={"Resource": "[a](/a)"})

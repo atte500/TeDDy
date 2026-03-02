@@ -2,14 +2,17 @@ from datetime import datetime
 
 from typing import Sequence
 
+from pathlib import Path
 from teddy_executor.core.domain.models import (
     ActionLog,
+    ChangeSet,
     ExecutionReport,
     Plan,
     RunSummary,
     RunStatus,
     ActionStatus,
 )
+from teddy_executor.core.ports.inbound.edit_simulator import IEditSimulator
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
 from teddy_executor.core.ports.inbound.run_plan_use_case import RunPlanUseCase
 from teddy_executor.core.ports.outbound import IFileSystemManager, IUserInteractor
@@ -23,11 +26,13 @@ class ExecutionOrchestrator(RunPlanUseCase):
         action_dispatcher: ActionDispatcher,
         user_interactor: IUserInteractor,
         file_system_manager: IFileSystemManager,
+        edit_simulator: IEditSimulator,
     ):
         self._plan_parser = plan_parser
         self._action_dispatcher = action_dispatcher
         self._user_interactor = user_interactor
         self._file_system_manager = file_system_manager
+        self._edit_simulator = edit_simulator
 
     def _determine_overall_status(self, action_logs: Sequence[ActionLog]) -> RunStatus:
         """Determines the final run status based on the hierarchy of action outcomes."""
@@ -100,8 +105,33 @@ class ExecutionOrchestrator(RunPlanUseCase):
                 prompt_parts.extend(["Parameters:", param_str])
             prompt_parts.append("---")
             prompt = "\n".join(filter(None, prompt_parts))
+
+            change_set = None
+            if action.type.upper() in ("CREATE", "EDIT"):
+                path_str = action.params.get("path") or action.params.get("File Path")
+                if path_str:
+                    path = Path(path_str)
+                    before_content = (
+                        self._file_system_manager.read_file(path_str)
+                        if path.exists()
+                        else ""
+                    )
+                    if action.type.upper() == "EDIT":
+                        after_content = self._edit_simulator.simulate_edits(
+                            before_content, action.params.get("edits", [])
+                        )
+                    else:  # CREATE
+                        after_content = action.params.get("content", "")
+
+                    change_set = ChangeSet(
+                        path=path,
+                        before_content=before_content,
+                        after_content=after_content,
+                        action_type=action.type.upper(),
+                    )
+
             should_dispatch, reason = self._user_interactor.confirm_action(
-                action=action, action_prompt=prompt
+                action=action, action_prompt=prompt, change_set=change_set
             )
 
         if not should_dispatch:

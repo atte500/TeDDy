@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from teddy_executor.core.domain.models.plan import ActionData
+    from teddy_executor.core.domain.models import ActionData, ChangeSet
 
 
 class IUserInteractor(ABC):
@@ -21,7 +21,10 @@ class IUserInteractor(ABC):
 
     @abstractmethod
     def confirm_action(
-        self, action: "ActionData", action_prompt: str
+        self,
+        action: "ActionData",
+        action_prompt: str,
+        change_set: Optional["ChangeSet"] = None,
     ) -> tuple[bool, str]:
         """
         Displays a prompt describing an action and asks the user for y/n confirmation.
@@ -30,6 +33,7 @@ class IUserInteractor(ABC):
         Args:
             action: The Action object to be confirmed.
             action_prompt: A non-empty string describing the action to be confirmed.
+            change_set: An optional ChangeSet representing the proposed changes for preview.
 
         Returns:
             A tuple containing:

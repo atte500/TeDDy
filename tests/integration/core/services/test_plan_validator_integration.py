@@ -4,6 +4,7 @@ from pathlib import Path
 from teddy_executor.adapters.outbound.local_file_system_adapter import (
     LocalFileSystemAdapter,
 )
+from teddy_executor.core.services.edit_simulator import EditSimulator
 from teddy_executor.core.services.markdown_plan_parser import MarkdownPlanParser
 from teddy_executor.core.services.plan_validator import PlanValidator
 
@@ -41,7 +42,9 @@ new content
     parser = MarkdownPlanParser()
     plan = parser.parse(plan_content)
 
-    fs_adapter = LocalFileSystemAdapter(root_dir=str(tmp_path))
+    fs_adapter = LocalFileSystemAdapter(
+        edit_simulator=EditSimulator(), root_dir=str(tmp_path)
+    )
     validator = PlanValidator(fs_adapter)
 
     # Act & Assert
@@ -74,7 +77,9 @@ def test_read_fails_if_file_missing(tmp_path: Path):
     parser = MarkdownPlanParser()
     plan = parser.parse(plan_content)
 
-    fs_adapter = LocalFileSystemAdapter(root_dir=str(tmp_path))
+    fs_adapter = LocalFileSystemAdapter(
+        edit_simulator=EditSimulator(), root_dir=str(tmp_path)
+    )
     validator = PlanValidator(fs_adapter)
 
     # Act
@@ -116,7 +121,9 @@ new
     parser = MarkdownPlanParser()
     plan = parser.parse(plan_content)
 
-    fs_adapter = LocalFileSystemAdapter(root_dir=str(tmp_path))
+    fs_adapter = LocalFileSystemAdapter(
+        edit_simulator=EditSimulator(), root_dir=str(tmp_path)
+    )
     validator = PlanValidator(fs_adapter)
 
     # Act

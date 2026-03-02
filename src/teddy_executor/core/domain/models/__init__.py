@@ -21,9 +21,11 @@ from ._legacy_models import (
 from .web_search_results import QueryResult
 from .web_search_results import SearchResult
 from .web_search_results import WebSearchResults
+from .change_set import ChangeSet
 from .project_context import ProjectContext
 
 __all__ = [
+    "ChangeSet",
     "ProjectContext",
     "Plan",
     "ActionData",

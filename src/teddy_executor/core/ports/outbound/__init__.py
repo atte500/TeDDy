@@ -3,6 +3,7 @@ from .file_system_manager import FileSystemManager as IFileSystemManager
 from .markdown_report_formatter import IMarkdownReportFormatter
 from .repo_tree_generator import IRepoTreeGenerator
 from .shell_executor import IShellExecutor
+from .system_environment import ISystemEnvironment
 from .user_interactor import IUserInteractor
 from .web_scraper import WebScraper as IWebScraper
 from .web_searcher import IWebSearcher
@@ -13,6 +14,7 @@ __all__ = [
     "IMarkdownReportFormatter",
     "IRepoTreeGenerator",
     "IShellExecutor",
+    "ISystemEnvironment",
     "IUserInteractor",
     "IWebScraper",
     "IWebSearcher",

@@ -17,11 +17,8 @@ from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUs
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser, InvalidPlanError
 from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
 from teddy_executor.core.ports.outbound import (
-    IFileSystemManager,
     IMarkdownReportFormatter,
-    IUserInteractor,
 )
-from teddy_executor.core.services.action_dispatcher import ActionDispatcher
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
 from teddy_executor.core.services.markdown_plan_parser import MarkdownPlanParser
 from teddy_executor.core.services.plan_validator import ValidationError
@@ -173,15 +170,7 @@ def _execute_valid_plan(
     plan: Plan, interactive_mode: bool, parser: IPlanParser
 ) -> ExecutionReport:
     """Executes a plan that has already been parsed and validated."""
-    action_dispatcher = container.resolve(ActionDispatcher)
-    user_interactor = container.resolve(IUserInteractor)
-    file_system_manager = container.resolve(IFileSystemManager)
-    orchestrator = ExecutionOrchestrator(
-        plan_parser=parser,  # Re-uses the parser
-        action_dispatcher=action_dispatcher,
-        user_interactor=user_interactor,
-        file_system_manager=file_system_manager,
-    )
+    orchestrator = container.resolve(ExecutionOrchestrator, plan_parser=parser)
     execution_report = orchestrator.execute(plan=plan, interactive=interactive_mode)
     # Inject the plan title into the report
     return ExecutionReport(
