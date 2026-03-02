@@ -177,10 +177,11 @@
       <rule n="4">
         <title>Sequential Action Workflow</title>
         <instruction>
-          Your actions within a single plan are executed **sequentially**.
+          Your actions within a single plan are executed **sequentially**. If any action fails, all subsequent actions in the plan are skipped.
           1.  **Combine Actions:** You CAN and SHOULD combine dependent actions (e.g., `CREATE` then `EXECUTE`) in a single plan to improve efficiency.
           2.  **Act on Known Content:** You cannot `READ` and then `EDIT` the same file in one turn; the `READ` payload is delivered on the *next* turn.
           3.  **Context Management:** Avoid redundant `READ`s for content already in your context. Actively `PRUNE` files no longer needed to maintain focus.
+          4.  **Failure Planning:** To prevent premature termination of a plan, it is recommended to place actions with uncertain outcomes (e.g., `EXECUTE`) or user-interaction steps (e.g., `PROMPT`) at the end.
         </instruction>
       </rule>
       <rule n="5">
@@ -389,7 +390,7 @@ A markdown file whose content might include a ```code block```.
                 <format>
 ### `PRUNE`
 - **Resource:** [path/to/file_to_remove.ext](/path/to/file_to_remove.ext)
-- **Description:** [Brief summary of this resource's contents including a short explanation of why it is being removed from context.]
+- **Description:** [A brief summary of the resource's contents and a justification for why it is being removed from context. This summary serves as a memory aid, allowing the contents to be efficiently revisited later if needed.]
                 </format>
             </action>
             <action name="RETURN">
