@@ -67,5 +67,5 @@ Execute a safe "Create, Migrate, Delete" sequence for each legacy model:
 - [x] **Refactor Slice: Enhance CLI User Experience** (Implement multiline chat input and orchestrator console warnings).
 - [x] **Slice 8: Audit and Invert Test Pyramid** (Migrate acceptance tests to unit/integration).
 - [x] **Refactor Slice: Standardize Validation Infrastructure** (Implement consistent DI for validation rules).
-- [ ] **Slice 9: Refine CLI Help Descriptions** (Update Typer command docstrings/help parameters in `main.py`).
-- [ ] **Slice 10: Implement CLI UX Improvements** (Consolidate EDIT diffs and simplify CREATE previews).
+- [x] **Slice 9: Refine CLI Help Descriptions** (Update Typer command docstrings/help parameters in `main.py`).
+- [x] **Slice 10: Implement CLI UX Improvements** (Consolidate EDIT diffs and simplify CREATE previews).

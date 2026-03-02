@@ -11,8 +11,9 @@ The `ExecutionOrchestrator` is the primary application service in the hexagonal 
 
 ## 2. Dependencies
 
--   **Application Services:**
+-   **Inbound Ports & Services:**
     -   `ActionDispatcher`: To execute each action in the plan.
+    -   `IEditSimulator`: To generate preview content for `EDIT` actions.
 -   **Outbound Ports:**
     -   `IUserInteractor`: To prompt the user for step-by-step approval during interactive execution.
     -   `IFileSystemManager`: For contextual file reading.
@@ -48,7 +49,7 @@ class ExecutionOrchestrator:
 
         1.  Loops through each action in the plan.
         2.  Checks for previous failures. If any action has failed (triggering the `halt_execution` flag), subsequent actions are automatically skipped to prevent cascading failures, and `IUserInteractor.notify_skipped_action` is called to warn the user.
-        3.  If in interactive mode, calls the `IUserInteractor.confirm_action` method, passing the full `ActionData` object and a descriptive prompt string to get the user's approval.
+        3.  If in interactive mode, coordinates a `ChangeSet` (using `IEditSimulator` for `EDIT` actions) and calls the `IUserInteractor.confirm_action` method, passing the full `ActionData` object, a descriptive prompt string, and the optional `ChangeSet`.
             - **Special Case:** The approval prompt is automatically skipped for `prompt` actions to provide a more fluid user experience.
         4.  If approved (or not in interactive mode), calls the ActionDispatcher.
         5.  Collects the ActionLog from the dispatcher.

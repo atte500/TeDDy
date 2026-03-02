@@ -12,10 +12,9 @@ The `ConsoleInteractorAdapter` is a concrete implementation of the `IUserInterac
 
 ## 3. Implementation Notes
 
-The core of this adapter is the logic to read multi-line input from `sys.stdin`. A technical spike was performed to verify the most robust and idiomatic Python pattern for this task.
+The `ConsoleInteractorAdapter` depends on the `ISystemEnvironment` outbound port to interact with the host OS, ensuring it remains isolated and testable.
 
-*   **Spike:** `spikes/technical/10-multiline-input/` (now deleted)
-*   **Finding:** The proven approach is to read from `sys.stdin` in a `while` loop, appending lines to a buffer until a blank line (`\n`) or end-of-stream (empty string `''`) is detected.
+### Implementation Details
 
 ### Implementation Details
 
@@ -28,22 +27,15 @@ The `ask_question` method logic supports both standard input and external editor
 #### `notify_skipped_action(action: ActionData, reason: str) -> None`
 This method prints a formatted, colorized warning to `sys.stderr` when an action is skipped by the orchestrator (e.g., due to a previous failure), ensuring the user is immediately aware of halted execution without needing to inspect the final markdown report.
 
-#### `confirm_action(action: ActionData, action_prompt: str) -> tuple[bool, str]`
-The `confirm_action` method is responsible for presenting a proposed action to the user and capturing their approval or denial. For `create_file` and `edit` actions, it first presents a visual diff before prompting.
+#### `confirm_action(action: ActionData, action_prompt: str, change_set: Optional[ChangeSet] = None) -> tuple[bool, str]`
+The `confirm_action` method is responsible for presenting a proposed action to the user and capturing their approval or denial. For `CREATE` and `EDIT` actions, it uses a `ChangeSet` to present a visual preview.
 
 ##### Change Preview Logic
-Before asking for confirmation on `create_file` or `edit` actions, the adapter will attempt to show a visual diff of the proposed changes. This logic is skipped if the plan is run with auto-approval (`-y`).
-
-1.  **Tool Detection Strategy:** The adapter searches for a diff tool in the following order of precedence:
-    1.  A custom tool specified in the `TEDDY_DIFF_TOOL` environment variable. The string is parsed with `shlex` to support commands with arguments (e.g., `"nvim -d"`). If this variable is set but the command is not found in the `PATH`, a warning is printed, and the system falls back directly to the in-terminal diff.
-    2.  The Visual Studio Code CLI (`code`) if it's available in the system `PATH`.
-    3.  A fallback in-terminal diff rendered using Python's `difflib` module.
-
-2.  **Temporary File Management:**
-    *   If an external tool is found, two temporary files are created to hold the "before" and "after" content.
-    *   The `confirm_action` method manages the lifecycle of these files, ensuring they are deleted in a `finally` block *after* the user has responded to the confirmation prompt. This prevents "file not found" errors in the diff viewer.
-
-3.  **Invocation:** The chosen external tool is invoked as a **non-blocking** subprocess. The confirmation prompt `(y/n)` is displayed in the terminal immediately, allowing the user to approve or deny the action while the diff is still visible.
+1.  **Tool Detection:** Precedence: `TEDDY_DIFF_TOOL` env var -> `code` (VS Code) CLI -> In-terminal diff.
+2.  **CREATE Actions:** If an external editor is detected, the file is opened as a single-file preview (stripping `--diff` flags). Otherwise, it shows a "New File Preview" in the terminal.
+3.  **EDIT Actions:** If an external tool is detected, it shows a split-pane diff. Otherwise, it shows a unified terminal diff.
+4.  **Syntax Highlighting:** Temporary files are created preserving the original file's extension (e.g., `.before.py`, `.preview.md`) to enable editor syntax highlighting.
+5.  **Lifecycle:** Temporary files are deleted in a `finally` block after user confirmation.
 
 ##### Standard Confirmation Logic
 1.  **Print Action Prompt:** Display the action description to `sys.stderr` followed by a `(y/n)` query.
