@@ -9,11 +9,11 @@ To implement the `IPlanValidator` inbound port. This service orchestrates the pr
 -   **Uses (Outbound):** `IFileSystemManager` (via its validator strategies).
 
 ## 3. Implementation Details
-This service is implemented using the **Strategy Pattern**, as decided in the architectural exploration phase.
+This service is implemented using a **Standardized Strategy Pattern** with constructor-based dependency injection.
 
-1.  **Validator Strategies:** A set of validator functions is provided (e.g., `validate_create_action`, `validate_edit_action`), each responsible for validating a single action type. These functions are encapsulated in the `teddy_executor.core.services.validation_rules` module.
-2.  **Strategy Dispatcher:** The `PlanValidator` service uses a manual dispatching mechanism in its `validate` method to route actions to their corresponding validation function.
-3.  **Orchestration & Accumulation:** The `validate` method iterates through the actions in the plan. For each action, it retrieves the appropriate validator strategy, executes it, and accumulates a complete list of `ValidationError` objects rather than halting on the first error.
+1.  **Validator Strategies:** A set of validator classes (e.g., `CreateActionValidator`, `EditActionValidator`) implement a common `IActionValidator` protocol. These classes are encapsulated in the `teddy_executor.core.services.validation_rules` module and receive their required dependencies (like `IFileSystemManager`) via their constructors.
+2.  **Strategy Dispatcher:** The `PlanValidator` service maintains a list of these injected validators. Its `validate` method iterates through the validators to find one that can handle the current action type.
+3.  **Orchestration & Accumulation:** The `validate` method iterates through the actions in the plan. For each action, it delegates to the appropriate validator strategy and accumulates a complete list of `ValidationError` objects.
 4.  **Rich Feedback:** When `FIND` blocks do not match, the validator uses a sliding window and `difflib` to locate the closest match and append a diff to the error report, drastically improving the AI's ability to self-correct.
 5.  **`EXECUTE` Action Safety:** A key validation rule ensures that each `EXECUTE` action contains exactly one command and forbids command chaining with `&&`. This improves user control and fault isolation.
 

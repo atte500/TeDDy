@@ -24,8 +24,19 @@ This slice addresses technical debt identified during the test pyramid inversion
 - **Dependency Management:** The `PlanValidator` constructor will continue to receive `IFileSystemManager`, which it will then inject into the individual rule objects.
 
 ## 4. Scope of Work
-- [ ] Create `IActionValidator` protocol or base class.
-- [ ] Refactor `create.py`, `edit.py`, `execute.py`, and `read.py` rules into classes implementing `IActionValidator`.
-- [ ] Update `PlanValidator` to maintain a registry/list of these validator objects.
-- [ ] Update `PlanValidator.validate` to iterate through the registry and delegate validation.
-- [ ] Verify that all unit and integration tests for validation pass.
+- [x] Create `IActionValidator` protocol or base class.
+- [x] Refactor `create.py`, `edit.py`, `execute.py`, and `read.py` rules into classes implementing `IActionValidator`.
+- [x] Update `PlanValidator` to maintain a registry/list of these validator objects.
+- [x] Update `PlanValidator.validate` to iterate through the registry and delegate validation.
+- [x] Verify that all unit and integration tests for validation pass.
+
+## Implementation Notes
+
+This slice standardized the validation logic by migrating from functional validation rules to a class-based strategy pattern.
+
+### Key Changes
+-   **Protocol Definition:** Introduced `IActionValidator` in `helpers.py` to define a clear contract for all validation rules.
+-   **Class-Based Validators:** Refactored `CREATE`, `EDIT`, `READ`, and `EXECUTE` rules into classes that implement the protocol and receive their dependencies (like `IFileSystemManager`) via constructors.
+-   **Dependency Injection:** Updated the `punq` container in `container.py` to manage and inject the validators into `PlanValidator`.
+-   **Backward Compatibility:** `PlanValidator` maintains a default set of validators in its constructor to ensure existing unit tests continue to pass without explicit configuration changes.
+-   **Code Quality:** Eliminated legacy functional rules and ensured all tests (existing and new) pass with 90%+ coverage.
