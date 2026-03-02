@@ -51,14 +51,6 @@ This work involves migrating specific test cases from `tests/acceptance/` to the
 
 #### 1.1. `MarkdownPlanParser` Unit Tests
 -   **Target File:** `tests/unit/core/services/test_markdown_plan_parser.py`
--   **Source Files & Tests to Migrate:**
-    -   From `test_parser_robustness.py`:
-        -   [x] `test_plan_with_preamble_is_parsed_successfully`
-        -   [x] `test_plan_without_title_fails_validation`
-    -   From `test_cross_platform_paths.py`:
-        -   [x] `test_execute_plan_with_windows_style_paths` (focus on path normalization logic)
-    -   From `test_structured_execute_action.py`:
-        -   [x] All tests (`...with_custom_cwd`, `...with_env_variables`, `...with_both_cwd_and_env`) should be migrated to test the parser's extraction of `cd` and `export` directives.
 -   **Cleanup:**
     -   [x] Delete `tests/acceptance/test_parser_robustness.py`
     -   [x] Delete `tests/acceptance/test_cross_platform_paths.py`
@@ -67,43 +59,24 @@ This work involves migrating specific test cases from `tests/acceptance/` to the
 #### 1.2. `PlanValidator` Unit & Integration Tests
 -   **Target Unit Test File:** `tests/unit/core/services/test_plan_validator.py`
 -   **Target Integration Test File:** `tests/integration/core/services/test_plan_validator_integration.py`
--   **Source Files & Tests to Migrate:**
-    -   From `test_plan_validation_logic.py`:
-        -   [x] To **Unit**: `test_plan_fails_with_unknown_action`, `test_execute_action_with_multiple_commands_fails_validation`, `test_execute_action_with_chained_command_fails_validation`
-        -   [x] To **Integration**: `test_create_fails_if_file_exists`, `test_edit_fails_if_file_missing`
-    -   From `test_comprehensive_validation.py`:
-        -   [x] To **Unit**: `test_edit_action_with_no_match_provides_diff`
-        -   [x] To **Integration**: `test_edit_action_reports_all_find_block_failures` (needs filesystem access)
-    -   From `test_edit_action_safety.py`:
-        -   [x] To **Integration**: `test_edit_action_fails_on_multiple_occurrences`
-    -   From `test_action_failure_behavior.py`:
-        -   [x] To **Integration**: `test_create_file_on_existing_file_fails_and_reports_correctly`
 -   **Cleanup:**
-    -   [x] Delete `tests/acceptance/test_plan_validation_logic.py`
-    -   [x] Delete `tests/acceptance/test_comprehensive_validation.py`
-    -   [x] Delete `tests/acceptance/test_edit_action_safety.py`
-    -   [x] Delete `tests/acceptance/test_action_failure_behavior.py`
+    -   [ ] Delete `tests/acceptance/test_plan_validation_logic.py`
+    -   [ ] Delete `tests/acceptance/test_comprehensive_validation.py`
+    -   [ ] Delete `tests/acceptance/test_edit_action_safety.py`
+    -   [ ] Delete `tests/acceptance/test_action_failure_behavior.py`
 
 ### Category 2: Core Service Logic (Unit Tests)
 
 #### 2.1. `ExecutionOrchestrator` Unit Tests
 -   **Target File:** `tests/unit/core/services/test_execution_orchestrator.py`
--   **Source Files & Tests to Migrate:**
-    -   From `test_auto_skip_on_failure.py`:
-        -   [x] `test_auto_skip_on_execution_failure`
 -   **Cleanup:**
-    -   [x] Delete `tests/acceptance/test_auto_skip_on_failure.py`
+    -   [ ] Delete `tests/acceptance/test_auto_skip_on_failure.py`
 
 #### 2.2. `MarkdownReportFormatter` Unit Tests
 -   **Target File:** `tests/unit/core/services/test_markdown_report_formatter.py`
--   **Source Files & Tests to Migrate:**
-    -   From `test_markdown_report_fixes.py`:
-        -   [x] All tests (`...shows_description`, `...shows_correct_resource_path`, `...reports_file_content`, `...smart_fencing_in_report`).
-    -   From `test_markdown_reports.py`:
-        -   [x] All tests in this file should be broken down and moved to unit tests for the report formatter, verifying specific output structures for different scenarios (validation failure, read success, edit failure, etc.).
 -   **Cleanup:**
-    -   [x] Delete `tests/acceptance/test_markdown_report_fixes.py`
-    -   [x] Delete `tests/acceptance/test_markdown_reports.py`
+    -   [ ] Delete `tests/acceptance/test_markdown_report_fixes.py`
+    -   [ ] Delete `tests/acceptance/test_markdown_reports.py` (Ensure `test_successful_plan_execution_report_format` logic is covered in unit tests before deleting).
 
 ### Category 3: Adapter Logic (Integration Tests)
 
@@ -111,25 +84,21 @@ This work involves migrating specific test cases from `tests/acceptance/` to the
 -   **Target File:** `tests/integration/adapters/outbound/test_shell_adapter.py`
 -   **Source Files & Tests to Migrate:**
     -   From `test_shell_adapter_features.py`:
-        -   [x] All tests (`...handles_wildcards`, `...handles_pipes`, `...handles_env_vars`, `...handles_simple_command`).
+        -   [ ] `test_shell_adapter_handles_wildcards_on_posix`
+        -   [ ] `test_shell_adapter_handles_pipes_on_posix`
+        -   [ ] `test_shell_adapter_handles_env_vars_on_posix`
 -   **Cleanup:**
-    -   [x] Delete `tests/acceptance/test_shell_adapter_features.py`
+    -   [ ] Delete `tests/acceptance/test_shell_adapter_features.py`
 
 #### 3.2. `WebScraperAdapter` Integration Tests
 -   **Target File:** `tests/integration/adapters/outbound/test_web_scraper_adapter.py`
--   **Source Files & Tests to Migrate:**
-    -   From `test_read_action_url.py`:
-        -   [x] `test_read_action_can_read_from_url`
 -   **Cleanup:**
-    -   [x] Delete `tests/acceptance/test_read_action_url.py`
+    -   [ ] Delete `tests/acceptance/test_read_action_url.py`
 
 #### 3.3. `WebSearcherAdapter` Integration Tests
 -   **Target File:** `tests/integration/adapters/outbound/test_web_searcher_adapter.py`
--   **Source Files & Tests to Migrate:**
-    -   From `test_research_action.py`:
-        -   [x] `test_research_action_success_with_new_model`. This test mocks the port, so it could also be a service-level integration test, but placing it with the adapter is also appropriate.
 -   **Cleanup:**
-    -   [x] Delete `tests/acceptance/test_research_action.py`
+    -   [ ] Delete `tests/acceptance/test_research_action.py`
 
 ### Final Verification
 -   [x] Run the entire test suite (`poetry run pytest`) and ensure all tests pass.
