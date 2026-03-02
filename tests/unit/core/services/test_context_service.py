@@ -58,9 +58,7 @@ def test_get_context_creates_default_file_if_not_exists(
     service.get_context()
 
     # Assert
-    mock_file_system_manager.path_exists.assert_called_once_with(
-        ".teddy/project.context"
-    )
+    mock_file_system_manager.path_exists.assert_called_once_with(".teddy/init.context")
     mock_file_system_manager.create_default_context_file.assert_called_once()
 
 
@@ -86,9 +84,7 @@ def test_get_context_does_not_create_default_file_if_exists(
     service.get_context()
 
     # Assert
-    mock_file_system_manager.path_exists.assert_called_once_with(
-        ".teddy/project.context"
-    )
+    mock_file_system_manager.path_exists.assert_called_once_with(".teddy/init.context")
     mock_file_system_manager.create_default_context_file.assert_not_called()
 
 
@@ -104,7 +100,7 @@ def test_get_context_orchestrates_and_returns_correct_dto(
     the ProjectContext DTO with correctly formatted strings.
     """
     # Arrange
-    # Simulate existing project.context file
+    # Simulate existing init.context file
     mock_file_system_manager.path_exists.return_value = True
 
     # Mock data from dependencies
