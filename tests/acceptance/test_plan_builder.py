@@ -128,3 +128,72 @@ def test_plan_builder_create_plan_with_edit_action():
     """
     )
     assert plan_content.strip() == expected_content.strip()
+
+
+def test_plan_builder_formats_execute_action_from_param():
+    """
+    Tests that the builder correctly formats an EXECUTE action when the command
+    is passed via the `params` dictionary, which is a common pattern in older tests.
+    """
+    # Arrange
+    builder = MarkdownPlanBuilder("Test Execute Action from Param")
+    builder.add_action(
+        "EXECUTE",
+        params={
+            "Description": "Run a test command",
+            "command": "echo 'hello from param'",
+        },
+    )
+
+    # Act
+    plan_content = builder.build()
+
+    # Assert
+    assert "### `EXECUTE`" in plan_content
+    assert "- **Description:** Run a test command" in plan_content
+    assert "\n````shell\necho 'hello from param'\n````" in plan_content
+
+
+def test_plan_builder_formats_execute_action_from_content_block_key():
+    """
+    Tests that the builder correctly formats an EXECUTE action when the command
+    is passed via content_blocks with the key "COMMAND".
+    """
+    # Arrange
+    builder = MarkdownPlanBuilder("Test Execute Action from Content Block")
+    builder.add_action(
+        "EXECUTE",
+        params={"Description": "Run a test command"},
+        content_blocks={"COMMAND": ("shell", "echo 'hello from content'")},
+    )
+
+    # Act
+    plan_content = builder.build()
+
+    # Assert
+    assert "### `EXECUTE`" in plan_content
+    assert "- **Description:** Run a test command" in plan_content
+    assert "\n````shell\necho 'hello from content'\n````" in plan_content
+
+
+def test_plan_builder_formats_execute_action_correctly():
+    """
+    Tests that the plan builder correctly formats an EXECUTE action,
+    including its command code block. This was identified as a bug source.
+    """
+    # Arrange
+    builder = MarkdownPlanBuilder("Test Execute Action")
+    builder.add_action(
+        "EXECUTE",
+        params={"Description": "Run a test command"},
+        # The key for EXECUTE content_blocks should be empty ""
+        content_blocks={"": ("shell", "echo 'hello'")},
+    )
+
+    # Act
+    plan_content = builder.build()
+
+    # Assert
+    assert "### `EXECUTE`" in plan_content
+    assert "- **Description:** Run a test command" in plan_content
+    assert "\n````shell\necho 'hello'\n````" in plan_content

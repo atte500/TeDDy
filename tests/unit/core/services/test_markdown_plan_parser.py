@@ -1120,6 +1120,44 @@ echo "hello"
     assert action.params["content"] == expected_content
 
 
+def test_parser_accepts_multiline_execute_for_later_validation(
+    parser: MarkdownPlanParser,
+):
+    """
+    Given an EXECUTE action with multiple commands,
+    When the plan is parsed,
+    Then the command should be passed through unmodified for the validator to handle.
+    """
+    # Arrange
+    plan_content = r"""
+# Execute a multiline command
+- **Goal:** Test parser leniency.
+
+## Rationale
+````text
+Rationale.
+````
+
+## Action Plan
+
+### `EXECUTE`
+- **Description:** Run a multiline command.
+````shell
+echo "hello"
+echo "world"
+````
+"""
+    # Act
+    result_plan = parser.parse(plan_content)
+
+    # Assert
+    assert len(result_plan.actions) == 1
+    action = result_plan.actions[0]
+
+    assert action.type == "EXECUTE"
+    assert action.params["command"] == 'echo "hello"\necho "world"'
+
+
 def test_parser_raises_error_if_no_title_found(parser: MarkdownPlanParser):
     """
     Given a Markdown plan with no H1 heading,

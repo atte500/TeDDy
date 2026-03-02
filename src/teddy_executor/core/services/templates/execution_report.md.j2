@@ -58,23 +58,22 @@
 {% endif %}
 {% endmacro %}
 # Execution Report: {{ report.plan_title | default('Untitled Plan') }}
-
 - **Overall Status:** {{ "Validation Failed" if report.run_summary.status.value == "VALIDATION_FAILED" else report.run_summary.status.value }}
 - **Execution Start Time:** {{ format_datetime(report.run_summary.start_time) }}
 - **Execution End Time:** {{ format_datetime(report.run_summary.end_time) }}
-{% if report.validation_result %}
+{% if report.validation_result -%}
 ## Validation Errors
 {% for error in report.validation_result %}
 - {{ error }}
 {% endfor %}
+{% endif -%}
 {% if report.failed_resources %}
 
 ## Resource Contents
 {% for path, content in report.failed_resources.items() %}
 {{ render_resource(path, content) }}
 {% endfor %}
-{% endif %}
-{% endif -%}
+{%- endif %}
 
 {# Extract logs that should display resource content #}
 {% set ns = namespace(content_logs=[]) %}
@@ -94,7 +93,6 @@
 {{ render_resource(res_path, log.details.content) }}
 {% endfor %}
 {% endif -%}
-
 ## Action Log
 {% for log in report.action_logs %}
 {% set action_type = log.action_type.upper() %}

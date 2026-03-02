@@ -166,6 +166,132 @@ def test_validate_edit_fails_if_find_block_not_unique(fs):
     assert "Found 2 matches" in errors[0].message
 
 
+def test_validate_execute_action_fails_for_multiline_commands():
+    """
+    Given an EXECUTE action with multiple commands,
+    When validated,
+    Then it should return an error.
+    """
+    plan = Plan(
+        title="Test",
+        actions=[
+            ActionData(
+                type="EXECUTE",
+                params={"command": "echo 'hello'\necho 'world'"},
+            )
+        ],
+    )
+
+    validator = PlanValidator()
+    errors = validator.validate(plan)
+
+    assert len(errors) == 1
+    assert "EXECUTE action must contain exactly one command" in errors[0].message
+
+
+def test_validate_execute_action_fails_for_chained_commands():
+    """
+    Given an EXECUTE action with chained commands (&&),
+    When validated,
+    Then it should return an error.
+    """
+    plan = Plan(
+        title="Test",
+        actions=[
+            ActionData(
+                type="EXECUTE",
+                params={"command": "echo 'hello' && echo 'world'"},
+            )
+        ],
+    )
+
+    validator = PlanValidator()
+    errors = validator.validate(plan)
+
+    assert len(errors) == 1
+    assert "Command chaining with '&&' is not allowed" in errors[0].message
+
+
+def test_validate_execute_succeeds_for_single_command_with_line_continuations():
+    """
+    Given an EXECUTE action with a single command spanning multiple lines using '\\',
+    When validated,
+    Then it should not return any errors.
+    """
+    command = (
+        "echo 'this is a very long line' \\\n--and-it 'continues on the next line'"
+    )
+    plan = Plan(
+        title="Test",
+        actions=[ActionData(type="EXECUTE", params={"command": command})],
+    )
+
+    validator = PlanValidator()
+    errors = validator.validate(plan)
+
+    assert len(errors) == 0, (
+        f"Expected no errors for line continuation, but got: {errors}"
+    )
+
+
+def test_validate_execute_succeeds_for_single_command_with_multiline_argument():
+    """
+    Given a single command with a multiline string argument,
+    When validated,
+    Then it should not return an error.
+    """
+    command = "git commit -m 'Subject\n\nThis is the body.'"
+    plan = Plan(
+        title="Test",
+        actions=[ActionData(type="EXECUTE", params={"command": command})],
+    )
+
+    validator = PlanValidator()
+    errors = validator.validate(plan)
+
+    assert len(errors) == 0, (
+        f"Expected no errors for multiline argument, but got: {errors}"
+    )
+
+
+def test_validate_execute_succeeds_with_ampersands_in_quoted_string():
+    """
+    Given an EXECUTE action with '&&' inside a quoted string,
+    When validated,
+    Then it should not return an error.
+    """
+    command = "echo 'hello && world'"
+    plan = Plan(
+        title="Test",
+        actions=[ActionData(type="EXECUTE", params={"command": command})],
+    )
+
+    validator = PlanValidator()
+    errors = validator.validate(plan)
+
+    assert len(errors) == 0, (
+        f"Expected no errors for quoted ampersands, but got: {errors}"
+    )
+
+
+def test_validate_execute_action_succeeds_for_single_command_with_directives():
+    """
+    Given an EXECUTE action with a single command and directives,
+    When validated,
+    Then it should not return any errors.
+    """
+    command = "cd /tmp\nexport FOO=bar\nls -l"
+    plan = Plan(
+        title="Test",
+        actions=[ActionData(type="EXECUTE", params={"command": command})],
+    )
+
+    validator = PlanValidator()
+    errors = validator.validate(plan)
+
+    assert len(errors) == 0, f"Expected no errors, but got: {errors}"
+
+
 def test_validate_edit_fails_if_find_and_replace_identical(fs):
     """
     Given an EDIT action where FIND and REPLACE are identical,

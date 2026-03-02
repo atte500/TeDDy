@@ -50,7 +50,10 @@ class MarkdownPlanBuilder:
         parts = []
         for key, (lang, content) in content_blocks.items():
             key_str = f"#### {key}" if key and action_type == "EDIT" else ""
-            fence = "````" if action_type == "CREATE" else "`````"
+            fence = "`````"
+            if action_type in ["CREATE", "EXECUTE"]:
+                fence = "````"
+
             block = (
                 f"{key_str}\n{fence}{lang}\n{content}\n{fence}"
                 if key_str
@@ -71,10 +74,16 @@ class MarkdownPlanBuilder:
         if action_type == "CHAT_WITH_USER":
             action_str += f"\n\n{params.get('prompt', '')}"
         elif action_type == "EXECUTE":
-            command = (
-                params.get("command")
-                or (content_blocks or {}).get("COMMAND", ("", ""))[1]
-            )
+            # Handle command from params (for older tests) or content_blocks
+            command = params.get("command")
+            if not command and content_blocks:
+                # Handle `content_blocks={"COMMAND": ...}`
+                if "COMMAND" in content_blocks:
+                    command = content_blocks.get("COMMAND", ("", ""))[1]
+                # Handle `content_blocks={"": ...}`
+                else:
+                    command = content_blocks.get("", ("", ""))[1]
+
             if command:
                 action_str += f"\n\n````shell\n{command}\n````"
         elif action_type == "INVOKE":

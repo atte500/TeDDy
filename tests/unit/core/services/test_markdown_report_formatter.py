@@ -418,3 +418,34 @@ def test_formatter_smart_fencing_resource_content():
         "````text" in result or "````python" in result
     )  # Depending on if language detection works
     assert file_content in result
+
+
+def test_formats_validation_failed_report_with_errors():
+    """
+    Given an ExecutionReport with a VALIDATION_FAILED status and error messages,
+    When the report is formatted,
+    Then the output should include a 'Validation Errors' section with the messages.
+    """
+    # Arrange
+    formatter = MarkdownReportFormatter()
+    error_messages = [
+        "EXECUTE action must contain exactly one command.",
+        "Command chaining with '&&' is not allowed.",
+    ]
+    report = ExecutionReport(
+        plan_title="Invalid Plan",
+        run_summary=RunSummary(
+            status=RunStatus.VALIDATION_FAILED,
+            start_time=datetime.now(timezone.utc),
+            end_time=datetime.now(timezone.utc),
+        ),
+        validation_result=error_messages,
+    )
+
+    # Act
+    formatted_report = formatter.format(report)
+
+    # Assert
+    assert "## Validation Errors" in formatted_report
+    assert "- EXECUTE action must contain exactly one command." in formatted_report
+    assert "- Command chaining with '&&' is not allowed." in formatted_report
