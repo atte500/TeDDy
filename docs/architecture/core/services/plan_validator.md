@@ -15,6 +15,7 @@ This service will be implemented using the **Strategy Pattern**, as decided in t
 2.  **Strategy Factory/Dispatcher:** The `PlanValidator` service will use a factory or a simple dictionary to map action types to their corresponding validator strategy instances.
 3.  **Orchestration & Accumulation:** The `validate` method iterates through the actions in the plan. For each action, it retrieves the appropriate validator strategy, executes it, and accumulates a complete list of `ValidationError` objects rather than halting on the first error.
 4.  **Rich Feedback:** When `FIND` blocks do not match, the validator uses a sliding window and `difflib` to locate the closest match and append a diff to the error report, drastically improving the AI's ability to self-correct.
+5.  **`EXECUTE` Action Safety:** A key validation rule ensures that each `EXECUTE` action contains exactly one command and forbids command chaining with `&&`. This improves user control and fault isolation.
 
 This approach adheres to the Open/Closed Principle, allowing new validation rules to be added by creating new strategy classes without modifying the orchestrator.
 

@@ -18,21 +18,12 @@ The `ShellAdapter` is a "driven" adapter that provides the concrete implementati
 *   **Technology:** The adapter will be implemented using Python's built-in `subprocess` module.
 *   **Entry Point:** The class `ShellAdapter` will be located in `src/teddy_executor/adapters/outbound/shell_adapter.py`.
 
-### Sequential Multi-Command Runner
+### Single Command Execution
 
-The `execute` method implements a **Sequential Multi-Command Runner** strategy to ensure consistent "halt-on-error" behavior and context persistence across platforms.
+The `execute` method is responsible for running a single, pre-validated shell command. The responsibility for parsing directives (`cd`, `export`) and rejecting multi-command scripts lies with the `MarkdownPlanParser` and `PlanValidator`, respectively.
 
-1.  **CWD Validation:** It first validates the `cwd` parameter to ensure it resolves to a path within the project directory, preventing directory traversal.
-2.  **Command Decomposition:** Multi-line scripts and `&&` chains are decomposed into atomic commands using a robust regex that respects quoted strings. This prevents breaking complex commands (e.g., Python one-liners with newlines).
-3.  **Context Persistence:** The adapter intercepts directives that alter the execution environment (`cd`, `export`, `set`) and applies them to the persistent Python-managed context for subsequent atomic steps.
-4.  **Platform-Specific Execution:**
-    *   **On POSIX (Linux/macOS):** Each atomic command uses `shell=True`. This enables full, standard shell functionality (globbing, pipes, etc.) while allowing Python to manage the execution flow.
-    *   **On Windows:** Each atomic command uses the "Smart Router" strategy (switching between `shell=True/False` based on `shutil.which`).
-5.  **Halt on Error:** If any atomic command returns a non-zero exit code, execution stops immediately. The adapter returns the accumulated `stdout` and `stderr` and the failure code.
-6.  **Result Mapping:** The adapter captures results and maps them to a `ShellOutput` domain object.
-7.  **Debug Mode:** If `TEDDY_DEBUG` is set, detailed logs are printed to `stderr`.
-
-### Private Helpers
-
-- `_decompose_command(command: str) -> List[str]`: Splits the input string into atomic commands while respecting quotes.
-- `_handle_directives(cmd: str, current_cwd: str, current_env: Dict[str, str]) -> str`: Intercepts context-altering commands and updates the execution context.
+1.  **CWD Validation:** It first validates that the `cwd` parameter resolves to a path within the project directory, preventing any directory traversal exploits.
+2.  **Platform-Specific Execution:** It determines whether to use `shell=True` based on the platform to ensure consistent behavior. On POSIX systems, `shell=True` is always used to support features like pipes and globbing. On Windows, it uses a "Smart Router" strategy, running commands directly if they are executable files and using the shell for built-ins.
+3.  **Subprocess Execution:** The adapter uses Python's `subprocess.run` to execute the command, capturing `stdout`, `stderr`, and the `return_code`.
+4.  **Result Mapping:** It maps the raw results to a `ShellOutput` domain object.
+5.  **Debug Mode:** If the `TEDDY_DEBUG` environment variable is set, detailed pre-execution and post-execution logs are printed to `stderr` to aid in diagnostics.
