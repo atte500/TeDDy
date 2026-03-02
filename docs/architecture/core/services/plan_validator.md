@@ -9,10 +9,10 @@ To implement the `IPlanValidator` inbound port. This service orchestrates the pr
 -   **Uses (Outbound):** `IFileSystemManager` (via its validator strategies).
 
 ## 3. Implementation Details
-This service will be implemented using the **Strategy Pattern**, as decided in the architectural exploration phase.
+This service is implemented using the **Strategy Pattern**, as decided in the architectural exploration phase.
 
-1.  **Validator Strategies:** A set of validator classes will be created, each responsible for validating a single action type (e.g., `CreateActionValidator`, `EditActionValidator`). Each of these classes will implement a common `IActionValidator` interface.
-2.  **Strategy Factory/Dispatcher:** The `PlanValidator` service will use a factory or a simple dictionary to map action types to their corresponding validator strategy instances.
+1.  **Validator Strategies:** A set of validator functions is provided (e.g., `validate_create_action`, `validate_edit_action`), each responsible for validating a single action type. These functions are encapsulated in the `teddy_executor.core.services.validation_rules` module.
+2.  **Strategy Dispatcher:** The `PlanValidator` service uses a manual dispatching mechanism in its `validate` method to route actions to their corresponding validation function.
 3.  **Orchestration & Accumulation:** The `validate` method iterates through the actions in the plan. For each action, it retrieves the appropriate validator strategy, executes it, and accumulates a complete list of `ValidationError` objects rather than halting on the first error.
 4.  **Rich Feedback:** When `FIND` blocks do not match, the validator uses a sliding window and `difflib` to locate the closest match and append a diff to the error report, drastically improving the AI's ability to self-correct.
 5.  **`EXECUTE` Action Safety:** A key validation rule ensures that each `EXECUTE` action contains exactly one command and forbids command chaining with `&&`. This improves user control and fault isolation.

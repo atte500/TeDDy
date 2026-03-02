@@ -53,36 +53,36 @@ This work involves migrating specific test cases from `tests/acceptance/` to the
 -   **Target File:** `tests/unit/core/services/test_markdown_plan_parser.py`
 -   **Source Files & Tests to Migrate:**
     -   From `test_parser_robustness.py`:
-        -   [ ] `test_plan_with_preamble_is_parsed_successfully`
-        -   [ ] `test_plan_without_title_fails_validation`
+        -   [x] `test_plan_with_preamble_is_parsed_successfully`
+        -   [x] `test_plan_without_title_fails_validation`
     -   From `test_cross_platform_paths.py`:
-        -   [ ] `test_execute_plan_with_windows_style_paths` (focus on path normalization logic)
+        -   [x] `test_execute_plan_with_windows_style_paths` (focus on path normalization logic)
     -   From `test_structured_execute_action.py`:
-        -   [ ] All tests (`...with_custom_cwd`, `...with_env_variables`, `...with_both_cwd_and_env`) should be migrated to test the parser's extraction of `cd` and `export` directives.
+        -   [x] All tests (`...with_custom_cwd`, `...with_env_variables`, `...with_both_cwd_and_env`) should be migrated to test the parser's extraction of `cd` and `export` directives.
 -   **Cleanup:**
-    -   [ ] Delete `tests/acceptance/test_parser_robustness.py`
-    -   [ ] Delete `tests/acceptance/test_cross_platform_paths.py`
-    -   [ ] Delete `tests/acceptance/test_structured_execute_action.py`
+    -   [x] Delete `tests/acceptance/test_parser_robustness.py`
+    -   [x] Delete `tests/acceptance/test_cross_platform_paths.py`
+    -   [x] Delete `tests/acceptance/test_structured_execute_action.py`
 
 #### 1.2. `PlanValidator` Unit & Integration Tests
 -   **Target Unit Test File:** `tests/unit/core/services/test_plan_validator.py`
 -   **Target Integration Test File:** `tests/integration/core/services/test_plan_validator_integration.py`
 -   **Source Files & Tests to Migrate:**
     -   From `test_plan_validation_logic.py`:
-        -   [ ] To **Unit**: `test_plan_fails_with_unknown_action`, `test_execute_action_with_multiple_commands_fails_validation`, `test_execute_action_with_chained_command_fails_validation`
-        -   [ ] To **Integration**: `test_create_fails_if_file_exists`, `test_edit_fails_if_file_missing`
+        -   [x] To **Unit**: `test_plan_fails_with_unknown_action`, `test_execute_action_with_multiple_commands_fails_validation`, `test_execute_action_with_chained_command_fails_validation`
+        -   [x] To **Integration**: `test_create_fails_if_file_exists`, `test_edit_fails_if_file_missing`
     -   From `test_comprehensive_validation.py`:
-        -   [ ] To **Unit**: `test_edit_action_with_no_match_provides_diff`
-        -   [ ] To **Integration**: `test_edit_action_reports_all_find_block_failures` (needs filesystem access)
+        -   [x] To **Unit**: `test_edit_action_with_no_match_provides_diff`
+        -   [x] To **Integration**: `test_edit_action_reports_all_find_block_failures` (needs filesystem access)
     -   From `test_edit_action_safety.py`:
-        -   [ ] To **Integration**: `test_edit_action_fails_on_multiple_occurrences`
+        -   [x] To **Integration**: `test_edit_action_fails_on_multiple_occurrences`
     -   From `test_action_failure_behavior.py`:
-        -   [ ] To **Integration**: `test_create_file_on_existing_file_fails_and_reports_correctly`
+        -   [x] To **Integration**: `test_create_file_on_existing_file_fails_and_reports_correctly`
 -   **Cleanup:**
-    -   [ ] Delete `tests/acceptance/test_plan_validation_logic.py`
-    -   [ ] Delete `tests/acceptance/test_comprehensive_validation.py`
-    -   [ ] Delete `tests/acceptance/test_edit_action_safety.py`
-    -   [ ] Delete `tests/acceptance/test_action_failure_behavior.py`
+    -   [x] Delete `tests/acceptance/test_plan_validation_logic.py`
+    -   [x] Delete `tests/acceptance/test_comprehensive_validation.py`
+    -   [x] Delete `tests/acceptance/test_edit_action_safety.py`
+    -   [x] Delete `tests/acceptance/test_action_failure_behavior.py`
 
 ### Category 2: Core Service Logic (Unit Tests)
 
@@ -90,20 +90,20 @@ This work involves migrating specific test cases from `tests/acceptance/` to the
 -   **Target File:** `tests/unit/core/services/test_execution_orchestrator.py`
 -   **Source Files & Tests to Migrate:**
     -   From `test_auto_skip_on_failure.py`:
-        -   [ ] `test_auto_skip_on_execution_failure`
+        -   [x] `test_auto_skip_on_execution_failure`
 -   **Cleanup:**
-    -   [ ] Delete `tests/acceptance/test_auto_skip_on_failure.py`
+    -   [x] Delete `tests/acceptance/test_auto_skip_on_failure.py`
 
 #### 2.2. `MarkdownReportFormatter` Unit Tests
 -   **Target File:** `tests/unit/core/services/test_markdown_report_formatter.py`
 -   **Source Files & Tests to Migrate:**
     -   From `test_markdown_report_fixes.py`:
-        -   [ ] All tests (`...shows_description`, `...shows_correct_resource_path`, `...reports_file_content`, `...smart_fencing_in_report`).
+        -   [x] All tests (`...shows_description`, `...shows_correct_resource_path`, `...reports_file_content`, `...smart_fencing_in_report`).
     -   From `test_markdown_reports.py`:
-        -   [ ] All tests in this file should be broken down and moved to unit tests for the report formatter, verifying specific output structures for different scenarios (validation failure, read success, edit failure, etc.).
+        -   [x] All tests in this file should be broken down and moved to unit tests for the report formatter, verifying specific output structures for different scenarios (validation failure, read success, edit failure, etc.).
 -   **Cleanup:**
-    -   [ ] Delete `tests/acceptance/test_markdown_report_fixes.py`
-    -   [ ] Delete `tests/acceptance/test_markdown_reports.py`
+    -   [x] Delete `tests/acceptance/test_markdown_report_fixes.py`
+    -   [x] Delete `tests/acceptance/test_markdown_reports.py`
 
 ### Category 3: Adapter Logic (Integration Tests)
 
@@ -111,26 +111,33 @@ This work involves migrating specific test cases from `tests/acceptance/` to the
 -   **Target File:** `tests/integration/adapters/outbound/test_shell_adapter.py`
 -   **Source Files & Tests to Migrate:**
     -   From `test_shell_adapter_features.py`:
-        -   [ ] All tests (`...handles_wildcards`, `...handles_pipes`, `...handles_env_vars`, `...handles_simple_command`).
+        -   [x] All tests (`...handles_wildcards`, `...handles_pipes`, `...handles_env_vars`, `...handles_simple_command`).
 -   **Cleanup:**
-    -   [ ] Delete `tests/acceptance/test_shell_adapter_features.py`
+    -   [x] Delete `tests/acceptance/test_shell_adapter_features.py`
 
 #### 3.2. `WebScraperAdapter` Integration Tests
 -   **Target File:** `tests/integration/adapters/outbound/test_web_scraper_adapter.py`
 -   **Source Files & Tests to Migrate:**
     -   From `test_read_action_url.py`:
-        -   [ ] `test_read_action_can_read_from_url`
+        -   [x] `test_read_action_can_read_from_url`
 -   **Cleanup:**
-    -   [ ] Delete `tests/acceptance/test_read_action_url.py`
+    -   [x] Delete `tests/acceptance/test_read_action_url.py`
 
 #### 3.3. `WebSearcherAdapter` Integration Tests
 -   **Target File:** `tests/integration/adapters/outbound/test_web_searcher_adapter.py`
 -   **Source Files & Tests to Migrate:**
     -   From `test_research_action.py`:
-        -   [ ] `test_research_action_success_with_new_model`. This test mocks the port, so it could also be a service-level integration test, but placing it with the adapter is also appropriate.
+        -   [x] `test_research_action_success_with_new_model`. This test mocks the port, so it could also be a service-level integration test, but placing it with the adapter is also appropriate.
 -   **Cleanup:**
-    -   [ ] Delete `tests/acceptance/test_research_action.py`
+    -   [x] Delete `tests/acceptance/test_research_action.py`
 
 ### Final Verification
--   [ ] Run the entire test suite (`poetry run pytest`) and ensure all tests pass.
--   [ ] Run the coverage report (`poetry run pytest --cov=src`) and confirm coverage is still >= 90%.
+-   [x] Run the entire test suite (`poetry run pytest`) and ensure all tests pass.
+-   [x] Run the coverage report (`poetry run pytest --cov=src`) and confirm coverage is still >= 90%.
+
+## Implementation Notes
+This slice successfully refactored the test suite, migrating significant logic from the acceptance layer to unit and integration layers. The `PlanValidator` was refactored to use the `IFileSystemManager` outbound port, improving the isolation of the core service layer and enabling more robust testing of pre-flight validation rules without coupling to the real filesystem.
+
+### New Opportunities
+- **Consistent DI in Validation Rules:** Currently, dependencies (like `IFileSystemManager`) are passed manually into validation functions. A more formal dependency injection strategy for validation strategies could further decouple the `PlanValidator` and simplify the addition of new rules.
+- **Unified Validation Error Format:** While character-level diffs were added for `EDIT` actions, other action types could benefit from similarly rich feedback patterns during validation failures.

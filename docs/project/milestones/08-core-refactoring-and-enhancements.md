@@ -63,6 +63,6 @@ Execute a safe "Create, Migrate, Delete" sequence for each legacy model:
 - [x] **Slice 6: Refactor `ContextResult` to `ProjectContext`** (Create, migrate, delete).
 - [x] **Slice 7: Configure CI Quality Gates** (Add `pytest-cov`, set strict targets for Cyclomatic Complexity and SLOC via `ruff`, update `ci.yml`).
 - [x] **Refactor Slice: Enhance CLI User Experience** (Implement multiline chat input and orchestrator console warnings).
-- [ ] **Slice 8: Audit and Invert Test Pyramid** (Migrate acceptance tests to unit/integration).
+- [x] **Slice 8: Audit and Invert Test Pyramid** (Migrate acceptance tests to unit/integration).
 - [ ] **Slice 9: Refine CLI Help Descriptions** (Update Typer command docstrings/help parameters in `main.py`).
 - [ ] **Slice 10: Implement CLI UX Improvements** (Consolidate EDIT diffs and simplify CREATE previews).
