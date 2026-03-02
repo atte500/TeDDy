@@ -153,7 +153,7 @@ This section captures significant, long-standing architectural decisions and pat
 -   **Dependency Versioning:** Dependency updates, even minor ones, can introduce breaking API changes (e.g., `typer.testing.CliRunner` API change in a `typer` update). While flexible version specifiers (`^X.Y.Z`) are convenient, production dependencies should be reviewed and potentially pinned to specific versions to improve stability and prevent unexpected CI failures.
 -   **Simplified Shell Execution (Single Command):** To enhance user control, fault isolation, and architectural simplicity, the TeDDy workflow mandates that each `EXECUTE` action contains only a single shell command.
     -   **Behavior:** The `PlanValidator` enforces a "one command per action" rule, rejecting plans that attempt to chain commands with `&&` or newlines.
-    -   **Directives:** The `ShellAdapter` pre-processes the command for `cd <path>` and `export KEY=VALUE` directives to configure the execution environment for that specific action.
+    -   **Directives:** The `MarkdownPlanParser` pre-processes the command for `cd <path>` and `export KEY=VALUE` directives, extracting them from the script and passing them as parameters to the `ShellAdapter`.
     -   **Isolated Environment:** Each `EXECUTE` action runs in a stateless, isolated environment. The `cwd` and `env` are reset for each action and do not persist.
     -   **Pipes & Redirects:** Standard shell operators like `|`, `>`, and `<` are fully supported within the single command line.
     -   **Rationale:** This approach makes the plan more explicit and transparent, gives the user granular step-by-step control, and dramatically simplifies the `ShellAdapter`'s logic.
