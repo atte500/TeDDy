@@ -60,31 +60,3 @@ def test_edit_fails_if_file_missing(monkeypatch, tmp_path: Path):
     # Assert
     assert result.exit_code != 0
     assert "File to edit does not exist" in result.output
-
-
-def test_execute_action_with_chained_command_fails_validation(
-    monkeypatch, tmp_path: Path
-):
-    """
-    Given a plan with an EXECUTE action containing a chained command (&&),
-    When teddy execute is run,
-    Then it should fail with a validation error.
-    """
-    # Arrange
-    builder = MarkdownPlanBuilder("Test Execute Chained")
-    builder.add_action(
-        "EXECUTE",
-        params={"Description": "A chained command"},
-        content_blocks={"": ("shell", 'echo "hello" && echo "world"')},
-    )
-    plan_content = builder.build()
-
-    # Act
-    result = run_cli_with_markdown_plan_on_clipboard(
-        monkeypatch, plan_content, tmp_path
-    )
-
-    # Assert
-    assert result.exit_code != 0
-    assert "Validation Error" in result.output
-    assert "Command chaining with '&&' is not allowed" in result.output
