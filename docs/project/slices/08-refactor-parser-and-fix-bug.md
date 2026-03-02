@@ -51,7 +51,7 @@ Start of new section.
 *Note: While `mistletoe` handles this correctly in isolation, the refactored parser must ensure this capability is preserved.*
 
 ### Scenario 3: Regression Testing Standard Plans
-**Given** a standard plan with multiple actions (`CREATE`, `EXECUTE`, `CHAT_WITH_USER`)
+**Given** a standard plan with multiple actions (`CREATE`, `EXECUTE`, `PROMPT`)
 **When** the plan is parsed
 **Then** all actions are correctly identified
 **And** all arguments are correctly extracted.

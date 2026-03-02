@@ -1,11 +1,11 @@
 # Slice: Enhance CLI User Experience
 
 ## 1. Business Goal
-To improve the ergonomics and transparency of the TeDDy CLI by providing a robust multiline input mechanism for the `CHAT_WITH_USER` action and ensuring skipped actions clearly communicate their status to the console.
+To improve the ergonomics and transparency of the TeDDy CLI by providing a robust multiline input mechanism for the `PROMPT` action and ensuring skipped actions clearly communicate their status to the console.
 
 ## 2. Acceptance Criteria
 *   **Scenario: Multiline Chat Input**
-    *   **Given** a plan with a `CHAT_WITH_USER` action is executed interactively.
+    *   **Given** a plan with a `PROMPT` action is executed interactively.
     *   **When** the CLI prompts for input.
     *   **Then** the user is presented with an option: `Press [Enter] to submit single-line response, or type 'e' + [Enter] to open in Editor:`
     *   **If** the user types `e`, the CLI opens a temporary markdown file in the editor specified by `$VISUAL`, `$EDITOR`, or falls back to VS Code/nano/vim.
@@ -13,14 +13,14 @@ To improve the ergonomics and transparency of the TeDDy CLI by providing a robus
 *   **Scenario: Orchestrator Console Warnings**
     *   **Given** an executing plan where an action fails.
     *   **When** the `ExecutionOrchestrator` skips the subsequent actions.
-    *   **Then** the `ConsoleInteractor` must print a clear, colorized warning to `stderr` for each skipped action (e.g., `[SKIPPED] CHAT_WITH_USER: Skipped because a previous action failed.`).
+    *   **Then** the `ConsoleInteractor` must print a clear, colorized warning to `stderr` for each skipped action (e.g., `[SKIPPED] PROMPT: Skipped because a previous action failed.`).
 
 ## 3. User Showcase
-1.  Run a plan containing a `CHAT_WITH_USER` action.
+1.  Run a plan containing a `PROMPT` action.
 2.  When prompted, type `e` and press enter.
 3.  Your default text editor should open a temporary file. Type a multi-line response, save, and exit.
 4.  Verify the CLI correctly captured the multi-line input and continued execution.
-5.  Create a plan with a failing `EXECUTE` action followed by a `CHAT_WITH_USER` action. Execute it. Verify the console prints a yellow warning indicating the chat action was skipped.
+5.  Create a plan with a failing `EXECUTE` action followed by a `PROMPT` action. Execute it. Verify the console prints a yellow warning indicating the chat action was skipped.
 
 ## 4. Architectural Changes
 *   **`ConsoleInteractorAdapter`:** Update `ask_question` to implement the external editor logic, utilizing `tempfile` and `subprocess`. Add a new method `notify_skipped_action(action: ActionData, reason: str)` to handle printing skip warnings.

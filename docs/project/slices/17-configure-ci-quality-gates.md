@@ -100,7 +100,7 @@ Successfully integrated and codified CI quality gates to enforce project standar
     - `parser_infrastructure.py`: Low-level AST utilities and stream processing.
 
 ### Refactoring Opportunities:
-- **T3 (Consolidate Content Rendering):** Both `RESEARCH` and `CHAT_WITH_USER` actions perform similar Markdown rendering of content nodes. This could be extracted into a shared helper in `parser_metadata.py`.
+- **T3 (Consolidate Content Rendering):** Both `RESEARCH` and `PROMPT` actions perform similar Markdown rendering of content nodes. This could be extracted into a shared helper in `parser_metadata.py`.
 - **T3 (Type Safety in Strategies):** While `mypy` passes, some of the extracted strategy functions use `Any` for node children due to `mistletoe`'s loose typing. Strengthening these types with explicit checks could further improve robustness.
 
 ## Implementation Summary

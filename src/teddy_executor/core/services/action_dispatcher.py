@@ -79,7 +79,7 @@ class ActionDispatcher:
         if isinstance(result, str):
             if action_type.lower() == "read":
                 result = {"content": result}
-            elif action_type.lower() == "chat_with_user":
+            elif action_type.lower() == "prompt":
                 result = {"response": result}
 
         status = ActionStatus.SUCCESS

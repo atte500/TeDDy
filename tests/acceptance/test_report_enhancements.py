@@ -51,7 +51,7 @@ def new_hello():
     assert "````\ndef old_hello():" in result.stdout
 
 
-def test_chat_with_user_report_omits_prompt(monkeypatch):
+def test_prompt_report_omits_prompt(monkeypatch):
     runner = CliRunner()
 
     plan_content = """# Test Plan
@@ -64,10 +64,10 @@ Rationale.
 ````
 
 ## Action Plan
-### `CHAT_WITH_USER`
+### `PROMPT`
 The AI prompt string here.
 """
-    # Mock user input for the chat action. Note: CHAT_WITH_USER auto-approves.
+    # Mock user input for the chat action. Note: PROMPT auto-approves.
     result = runner.invoke(
         app,
         ["execute", "--plan-content", plan_content],

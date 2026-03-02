@@ -61,23 +61,23 @@ def test_interactive_prompt_shows_description(tmp_path: Path):
     assert "Create a test file for the QoL feature." in prompt_message
 
 
-def test_chat_with_user_skips_approval_prompt(tmp_path: Path):
+def test_prompt_skips_approval_prompt(tmp_path: Path):
     """
-    Given a plan with a 'chat_with_user' action,
+    Given a plan with a 'prompt' action,
     When the plan is run in interactive mode,
     Then the approval prompt should be skipped and the action dispatched directly.
     """
     # Arrange
     plan_content = (
         MarkdownPlanBuilder("QoL Test Plan: Chat")
-        .add_action("chat_with_user", params={"prompt": "Hello?"})
+        .add_action("prompt", params={"prompt": "Hello?"})
         .build()
     )
 
     mock_interactor = MagicMock(spec=IUserInteractor)
     # Configure confirm_action to prevent a ValueError if it's called.
     mock_interactor.confirm_action.return_value = (True, "")
-    # The action handler for chat_with_user is the interactor's `ask_question`
+    # The action handler for prompt is the interactor's `ask_question`
     mock_interactor.ask_question.return_value = "World"
 
     # We also mock the dispatcher to prevent it from trying to create a real
@@ -85,7 +85,7 @@ def test_chat_with_user_skips_approval_prompt(tmp_path: Path):
     # that the orchestrator calls it.
     mock_dispatcher = MagicMock(spec=ActionDispatcher)
     mock_dispatcher.dispatch_and_execute.return_value = ActionLog(
-        action_type="CHAT_WITH_USER",
+        action_type="PROMPT",
         status=ActionStatus.SUCCESS,
         params={"prompt": "Hello?"},
     )

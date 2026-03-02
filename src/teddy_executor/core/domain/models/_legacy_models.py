@@ -84,10 +84,10 @@ class EditAction(Action):
 
 @dataclass(frozen=True)
 class ChatWithUserAction(Action):
-    """Represents a 'chat_with_user' action."""
+    """Represents a 'prompt' action."""
 
     prompt: str
-    action_type: str = field(default="chat_with_user", init=False)
+    action_type: str = field(default="prompt", init=False)
 
     def __post_init__(self):
         if not isinstance(self.prompt, str):

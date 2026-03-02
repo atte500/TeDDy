@@ -200,12 +200,10 @@ def parse_research_action(
     )
 
 
-def parse_chat_with_user_action(
-    stream: _PeekableStream, valid_actions: set[str]
-) -> ActionData:
+def parse_prompt_action(stream: _PeekableStream, valid_actions: set[str]) -> ActionData:
     content_nodes = consume_content_until_next_action(stream, valid_actions)
     if not content_nodes:
-        raise InvalidPlanError("CHAT_WITH_USER action is missing prompt content.")
+        raise InvalidPlanError("PROMPT action is missing prompt content.")
     rendered_parts = []
     with MarkdownRenderer() as renderer:
         for node in content_nodes:
@@ -214,7 +212,5 @@ def parse_chat_with_user_action(
             rendered_parts.append(renderer.render(temp_doc).strip())
     prompt = "\n\n".join(rendered_parts)
     if not prompt:
-        raise InvalidPlanError("CHAT_WITH_USER action is missing prompt content.")
-    return ActionData(
-        type="CHAT_WITH_USER", description=None, params={"prompt": prompt}
-    )
+        raise InvalidPlanError("PROMPT action is missing prompt content.")
+    return ActionData(type="PROMPT", description=None, params={"prompt": prompt})

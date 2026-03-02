@@ -30,7 +30,7 @@
           **Goal:** To explore all viable architectural patterns for implementing the slice and gain initial alignment.
           **Process:**
           1.  **Options Analysis:** Identify key decision points and `CREATE` a temporary `spikes/architecture-options.md` artifact. Present the distinct patterns and outline the pros and cons (testability, coupling, complexity, performance).
-          2.  **Alignment Check:** Present the options to the user via `CHAT_WITH_USER` to discuss trade-offs and select the preferred option(s) to de-risk.
+          2.  **Alignment Check:** Present the options to the user via `PROMPT` to discuss trade-offs and select the preferred option(s) to de-risk.
         </action>
       </phase>
       <phase n="4" name="Architectural Validation (Converge & De-risk)">
@@ -366,10 +366,10 @@ A markdown file whose content might include a ```code block```.
 ````
                 </format>
             </action>
-            <action name="CHAT_WITH_USER">
+            <action name="PROMPT">
                 <description>Asks the user for required information or decisions. Do NOT use this action for "FYI" messages, status updates, or explaining what you are about to do.</description>
                 <format>
-### `CHAT_WITH_USER`
+### `PROMPT`
 [Message text. CRITICAL: NO Markdown headings (#) or fenced code blocks (```). Include any referrenced file's paths explicitly.]
                 </format>
             </action>

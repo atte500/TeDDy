@@ -24,7 +24,7 @@ This is a test rationale.
 
 ## Action Plan
 
-### `CHAT_WITH_USER`
+### `PROMPT`
 Hello from the test plan!
 """
     result = runner.invoke(
@@ -35,7 +35,7 @@ Hello from the test plan!
     assert result.exit_code == 0
     assert "Execution Report" in result.stdout
     assert "Test Plan with Preamble" in result.stdout
-    assert "CHAT_WITH_USER" in result.stdout
+    assert "PROMPT" in result.stdout
     assert "SUCCESS" in result.stdout
 
 
@@ -55,7 +55,7 @@ This is a test rationale.
 
 ## Action Plan
 
-### `CHAT_WITH_USER`
+### `PROMPT`
 Hello from the standard plan!
 """
     result = runner.invoke(
@@ -84,7 +84,7 @@ This is a test rationale.
 
 ## Action Plan
 
-### `CHAT_WITH_USER`
+### `PROMPT`
 This should not be executed.
 """
     result = runner.invoke(

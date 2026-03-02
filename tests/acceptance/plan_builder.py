@@ -71,7 +71,7 @@ class MarkdownPlanBuilder:
         action_str = f"\n### `{action_type}`"
         action_str += self._render_params(params)
 
-        if action_type == "CHAT_WITH_USER":
+        if action_type == "PROMPT":
             action_str += f"\n\n{params.get('prompt', '')}"
         elif action_type == "EXECUTE":
             # Handle command from params (for older tests) or content_blocks

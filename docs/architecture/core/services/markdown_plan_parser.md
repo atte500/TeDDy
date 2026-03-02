@@ -21,7 +21,7 @@ The parser supports the following actions, each with its own parsing strategy:
 - `READ`, `PRUNE`: Extracts resource path or URL.
 - `EXECUTE`: Extracts command string, environment variables, and expected outcome. It applies a POSIX Pre-Processor to extract `cwd` and `env` from shell directives (`cd`, `export`).
 - `RESEARCH`: Extracts multiple web search queries.
-- `CHAT_WITH_USER`: Extracts the markdown message to the user.
+- `PROMPT`: Extracts the markdown message to the user.
 - `INVOKE`: Extracts the target agent, message, and optional handoff resources.
 - `RETURN`: Extracts the completion message and optional handoff resources.
 

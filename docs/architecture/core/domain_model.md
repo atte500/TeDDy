@@ -20,7 +20,7 @@ This document defines the core entities for the `teddy` executor application. Th
 
 Enumerates the supported action types in the system.
 
-*   `CREATE`, `READ`, `EDIT`, `EXECUTE`, `RESEARCH`, `CHAT_WITH_USER`, `PRUNE`, `INVOKE`, `RETURN`
+*   `CREATE`, `READ`, `EDIT`, `EXECUTE`, `RESEARCH`, `PROMPT`, `PRUNE`, `INVOKE`, `RETURN`
 
 ---
 
@@ -128,7 +128,7 @@ An action that finds and replaces content within an existing file.
 
 ### `ChatWithUserAction` (Entity)
 **Status:** Implemented
-**Introduced in:** [Slice 10: Implement `chat_with_user` Action](../slices/10-chat-with-user-action.md)
+**Introduced in:** [Slice 10: Implement `prompt` Action](../slices/10-chat-with-user-action.md)
 
 An action that prompts the user with a question and captures their free-text response.
 

@@ -89,7 +89,7 @@ def _parse_details(chunk: str) -> Dict[str, Any]:
     # 2. Structured EXECUTE
     _parse_execute_details(chunk, details)
 
-    # 3. CHAT_WITH_USER response
+    # 3. PROMPT response
     _parse_chat_details(chunk, details)
 
     # 4. Generic error fallback

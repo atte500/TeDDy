@@ -69,7 +69,7 @@ Each action is rendered as a block, starting with a Level 3 (`###`) header.
 The header format depends on the action type:
 -   **For `EXECUTE` / `RESEARCH`:** `### \`ACTION_TYPE\`: "[Description]"`
 -   **For `CREATE` / `EDIT` / `READ`:** `### \`ACTION_TYPE\`: [filename.ext](/path/to/filename.ext)`
--   **For `CHAT_WITH_USER` and others:** `### \`ACTION_TYPE\``
+-   **For `PROMPT` and others:** `### \`ACTION_TYPE\``
 
 ##### **Core Metadata**
 
@@ -102,7 +102,7 @@ Parameters are rendered as a flattened list of key-value pairs. Large, verbatim 
     - **Return Code:** `[exit code]`
     - **`stdout` / `stderr`:** Rendered in their own `####` sections with fenced code blocks.
     ```
--   **For `CHAT_WITH_USER`:** The AI's prompt is rendered directly, without a key. The user's response appears in a separate block.
+-   **For `PROMPT`:** The AI's prompt is rendered directly, without a key. The user's response appears in a separate block.
     ```markdown
     [The AI's message to the user...]
 

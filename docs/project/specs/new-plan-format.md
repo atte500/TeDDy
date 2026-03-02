@@ -208,17 +208,17 @@ All actions are located under the `## Action Plan` heading. Each action is defin
     1.  Extract `Description`.
     2.  The parser should treat every fenced code block as a separate query.
 
-### 5.6. `CHAT_WITH_USER`
+### 5.6. `PROMPT`
 
 -   **Purpose:** Communicates with the user.
 -   **Format:**
     ```markdown
-    ### `CHAT_WITH_USER`
+    ### `PROMPT`
     I have created a new milestone at `docs/project/milestones/01-finisher-agent.md` and will now begin my research.
 
     This is a standard checkpoint to ensure we are aligned before I proceed with the research phase. Does this initial direction meet with your approval?
     ```
--   **Parsing Rules:** The content for the chat message is all the free-form markdown content under the `### CHAT_WITH_USER` heading.
+-   **Parsing Rules:** The content for the chat message is all the free-form markdown content under the `### PROMPT` heading.
 
 ### 5.7. `INVOKE`
 
@@ -285,7 +285,7 @@ The user has requested a new "Finisher" agent role, but the exact responsibiliti
 This plan adheres to the Pathfinder "Why -> What -> How" workflow. The problem is understood ("Why"), but the solution is not. Therefore, the next logical step is to explore the Solution Space ("What") by gathering external information to inform a proposal.
 
 ### 3. Expected Outcome
-The research is expected to yield patterns for release management roles, allowing me to draft a brief. The next plan will be a `Synthesis` plan. If the research yields no clear patterns, the next plan will be a `CHAT_WITH_USER` plan to propose a brainstorming session with the user.
+The research is expected to yield patterns for release management roles, allowing me to draft a brief. The next plan will be a `Synthesis` plan. If the research yields no clear patterns, the next plan will be a `PROMPT` plan to propose a brainstorming session with the user.
 
 ### 4. State Dashboard
 - **Overall Goal:** Define and get approval for a new "Finisher" agent.
@@ -351,7 +351,7 @@ To streamline the end-of-task workflow by automating final code/documentation cl
 
 ---
 
-### `CHAT_WITH_USER`
+### `PROMPT`
 I have created a draft milestone at `docs/project/milestones/01-finisher-agent.md` and will now begin my research. I will report back with my findings and a more detailed proposal for the milestone.
 
 Does this initial direction meet with your approval?

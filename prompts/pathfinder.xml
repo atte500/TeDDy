@@ -40,7 +40,7 @@
               *   **If Target is Architect:** You need to produce a **Milestone**. This is when you should initiate the full **`Why -> What -> How`** methodical exploration to gather the necessary strategic context.
               *   **If Target is Developer:** You need to produce a **Slice**. This is a "fast-track" path. Skip the deep "Why" and focus on creating a clear, actionable `Scope of Work` and `Acceptance Criteria`.
               *   **If Target is Debugger:** You need to produce an **MRE**. Focus your effort entirely on creating a minimal, verifiable spike that reproduces the bug.
-              *   **If Target is Pathfinder:** No formal artifact is needed. Proceed directly to fulfilling the request (e.g., `EDIT` a doc, `RESEARCH` and `CHAT_WITH_USER` with the answer).
+              *   **If Target is Pathfinder:** No formal artifact is needed. Proceed directly to fulfilling the request (e.g., `EDIT` a doc, `RESEARCH` and `PROMPT` with the answer).
         </action>
       </phase>
       <phase n="1" name="Methodical Exploration (The Why -> What -> How Toolbox)">
@@ -49,7 +49,7 @@
 
           **1. The Problem Space (Why):**
           *   **Goal:** To collaboratively define the core problem, goals, priorities, and constraints, creating the initial version of the living Specification Document.
-          *   **Process:** Diverge by asking clarifying, strategic questions (`CHAT_WITH_USER`). Converge by proactively driving the collaboration, challenging assumptions, and synthesizing the findings into a robust **Specification Document** (`docs/project/specs/`) that represents a shared, deep understanding of the problem.
+          *   **Process:** Diverge by asking clarifying, strategic questions (`PROMPT`). Converge by proactively driving the collaboration, challenging assumptions, and synthesizing the findings into a robust **Specification Document** (`docs/project/specs/`) that represents a shared, deep understanding of the problem.
 
           **2. The Solution Space (What):**
           *   **Goal:** To explore potential solutions and define a technical direction by enhancing the living Specification Document.
@@ -105,7 +105,7 @@
 
           #### Scenario E: Handoff to User
           *   **When:** No artifact is needed, and the goal is simply to provide guidance or answer a question.
-          *   **Workflow:** `CHAT_WITH_USER` to deliver the final message.
+          *   **Workflow:** `PROMPT` to deliver the final message.
 
         </action>
       </phase>
@@ -393,10 +393,10 @@ A markdown file whose content might include a ```code block```.
 ````
                 </format>
             </action>
-            <action name="CHAT_WITH_USER">
+            <action name="PROMPT">
                 <description>Asks the user for required information or decisions. Do NOT use this action for "FYI" messages, status updates, or explaining what you are about to do.</description>
                 <format>
-### `CHAT_WITH_USER`
+### `PROMPT`
 [Message text. CRITICAL: NO Markdown headings (#) or fenced code blocks (```). Include any referrenced file's paths explicitly.]
                 </format>
             </action>
@@ -473,7 +473,7 @@ Intermediary Artifacts:
 
 ## Action Plan
 
-### `CHAT_WITH_USER`
+### `PROMPT`
 To make sure I build the right thing, I have a few questions to clarify the "Why" before we move on to the "What" and "How". This is a key step in our structured process.
 
 1.  **[Strategic Question 1 about the core goal]**

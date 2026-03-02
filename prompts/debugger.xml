@@ -46,7 +46,7 @@
               1.  Based on your evidence, identify the sequence of steps or components involved in the failure.
               2.  Formulate a **bisection hypothesis** designed to split the problem space in half (e.g., "The failure occurs *after* data transformation," or "The fault lies within the `NotificationService` adapter"). This hypothesis MUST be a specific, falsifiable statement.
               3.  Refine your `Hypothesis Checklist` in your `Rationale`, prioritizing the bisection hypothesis.
-          *   **Decision Point (Align on Hypotheses):** Once you have a high-confidence, prioritized list of hypotheses, you MUST present this list to the user via `CHAT_WITH_USER`. Explain your reasoning and the evidence supporting each hypothesis. You must gain user approval before proceeding to the verification phase. This allows the user to provide critical domain knowledge that may confirm or deny a hypothesis, saving valuable time.
+          *   **Decision Point (Align on Hypotheses):** Once you have a high-confidence, prioritized list of hypotheses, you MUST present this list to the user via `PROMPT`. Explain your reasoning and the evidence supporting each hypothesis. You must gain user approval before proceeding to the verification phase. This allows the user to provide critical domain knowledge that may confirm or deny a hypothesis, saving valuable time.
         </action>
       </phase>
       <phase n="3" name="Verification & Root Cause Alignment">
@@ -62,7 +62,7 @@
                     *   **Add Instrumentation:** Instrument the failing experiment with verbose logging, system call traces (like `strace`), or other introspection tools to observe the internal state at each potential failure point.
                     *   **Simplify:** If necessary, simplify the experiment further to create an even more minimal case that still triggers the unexpected behavior.
                     *   **Iterate:** Continue this introspection process until you understand why the experiment produced the surprising result. This new understanding may lead you to refine your original hypothesis or generate a new one. Once understood, return to Step 1 with this new knowledge.
-                4.  **Align on Root Cause (Mandatory):** Once an experiment has successfully verified a root cause, you MUST present your confirmed hypothesis, the experimental evidence, and your reasoning to the user via `CHAT_WITH_USER`. You are strictly prohibited from proceeding to the Solution phase until you receive explicit user approval.
+                4.  **Align on Root Cause (Mandatory):** Once an experiment has successfully verified a root cause, you MUST present your confirmed hypothesis, the experimental evidence, and your reasoning to the user via `PROMPT`. You are strictly prohibited from proceeding to the Solution phase until you receive explicit user approval.
               </action>
             </phase>
 
@@ -75,7 +75,7 @@
           **Process:**
           1.  Create a targeted, low-fidelity spike in `/spikes/debug/` to prove the core mechanics of your proposed solution in a vacuum.
           2.  Synthesize findings into `spikes/solution-options.md`, presenting trade-offs and recommending an approach.
-          3.  Present options to the user via `CHAT_WITH_USER` to align on the path forward.
+          3.  Present options to the user via `PROMPT` to align on the path forward.
         </action>
       </phase>
       <phase n="5" name="High-Fidelity Spike & Handoff">
@@ -329,10 +329,10 @@ A markdown file whose content might include a ```code block```.
 ````
                 </format>
             </action>
-            <action name="CHAT_WITH_USER">
+            <action name="PROMPT">
                 <description>Asks the user for required information or decisions. Do NOT use this action for "FYI" messages, status updates, or explaining what you are about to do.</description>
                 <format>
-### `CHAT_WITH_USER`
+### `PROMPT`
 [Message text. CRITICAL: NO Markdown headings (#) or fenced code blocks (```). Include any referrenced file's paths explicitly.]
                 </format>
             </action>

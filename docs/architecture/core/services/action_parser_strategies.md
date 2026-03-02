@@ -12,7 +12,7 @@ Each function follows a consistent signature, taking a `_PeekableStream` and ret
 - `parse_edit_action(stream, valid_actions)`
 - `parse_execute_action(stream)`
 - `parse_research_action(stream, valid_actions)`
-- `parse_chat_with_user_action(stream, valid_actions)`
+- `parse_prompt_action(stream, valid_actions)`
 - `parse_prune_action(stream)`
 - `parse_invoke_action(stream, valid_actions)`
 - `parse_return_action(stream, valid_actions)`

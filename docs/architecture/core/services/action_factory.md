@@ -42,7 +42,7 @@ The factory maintains a mapping between the Markdown verbs used in plans and the
 | `READ` (local)   | `read_file`      | `IFileSystemManager`    | `read_file`    |
 | `READ` (remote)  | `read_file`      | `IWebScraper`           | `get_content`  |
 | `EXECUTE`        | `execute`        | `IShellExecutor`        | `execute`      |
-| `CHAT_WITH_USER` | `chat_with_user` | `IUserInteractor`       | `ask_question` |
+| `PROMPT` | `prompt` | `IUserInteractor`       | `ask_question` |
 | `RESEARCH`       | `research`       | `IWebSearcher`          | `search`       |
 | `INVOKE`         | `invoke`         | Internal `InvokeAction` | `execute`      |
 | `PRUNE`          | `prune`          | Internal `PruneAction`  | `execute`      |

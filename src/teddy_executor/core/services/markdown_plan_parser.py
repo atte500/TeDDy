@@ -27,7 +27,7 @@ from teddy_executor.core.services.action_parser_strategies import (
     parse_edit_action,
     parse_execute_action,
     parse_research_action,
-    parse_chat_with_user_action,
+    parse_prompt_action,
     parse_prune_action,
     parse_invoke_action,
     parse_return_action,
@@ -49,9 +49,7 @@ class MarkdownPlanParser(IPlanParser):
             "EDIT": lambda s: parse_edit_action(s, self._valid_actions),
             "EXECUTE": parse_execute_action,
             "RESEARCH": lambda s: parse_research_action(s, self._valid_actions),
-            "CHAT_WITH_USER": lambda s: parse_chat_with_user_action(
-                s, self._valid_actions
-            ),
+            "PROMPT": lambda s: parse_prompt_action(s, self._valid_actions),
             "PRUNE": parse_prune_action,
             "INVOKE": lambda s: parse_invoke_action(s, self._valid_actions),
             "RETURN": lambda s: parse_return_action(s, self._valid_actions),

@@ -44,9 +44,9 @@ def test_formatter_crashes_when_details_is_string():
     assert "This is a string detail" in output
 
 
-def test_repro_chat_with_user_headers_bug():
+def test_repro_prompt_headers_bug():
     """
-    Reproduces a bug where H3 headers inside a CHAT_WITH_USER action
+    Reproduces a bug where H3 headers inside a PROMPT action
     are misidentified as new actions.
     """
     from teddy_executor.core.services.markdown_plan_parser import MarkdownPlanParser
@@ -64,7 +64,7 @@ Rationale content
 
 ## Action Plan
 
-### `CHAT_WITH_USER`
+### `PROMPT`
 Based on current developer sentiment...
 
 ### 1. The Best All-Rounder: **Godot Engine**
@@ -74,13 +74,13 @@ Based on current developer sentiment...
 *   **Best For:** Rust developers...
 """
 
-    # This should parse as ONE action (CHAT_WITH_USER), containing the rest as content.
+    # This should parse as ONE action (PROMPT), containing the rest as content.
     # Currently it likely fails or parses "1. The Best All-Rounder..." as an unknown action.
     plan = parser.parse(plan_content)
 
     assert len(plan.actions) == 1
-    assert plan.actions[0].type == "CHAT_WITH_USER"
+    assert plan.actions[0].type == "PROMPT"
     # The content is usually stripped of the header, so check for subsequent content
-    # Note: CHAT_WITH_USER content handling might vary, but it should capture the markdown body
+    # Note: PROMPT content handling might vary, but it should capture the markdown body
     # If the parser treats `### 1...` as a new action, `len(plan.actions)` will be > 1
     # or it will raise an InvalidPlanError for unknown action type.

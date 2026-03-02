@@ -203,7 +203,7 @@ class TestChatWithUserAction:
         """Tests happy path instantiation for ChatWithUserAction."""
         action = ChatWithUserAction(prompt="What is your name?")
         assert action.prompt == "What is your name?"
-        assert action.action_type == "chat_with_user"
+        assert action.action_type == "prompt"
 
     def test_empty_prompt_raises_error(self):
         """Tests that an empty prompt raises a ValueError."""

@@ -352,9 +352,9 @@ best python markdown parser
     ]
 
 
-def test_parse_chat_with_user_action(parser: MarkdownPlanParser):
+def test_parse_prompt_action(parser: MarkdownPlanParser):
     """
-    Given a valid Markdown plan with a CHAT_WITH_USER action,
+    Given a valid Markdown plan with a PROMPT action,
     When the plan is parsed,
     Then a valid Plan domain object is returned with correct action data.
     """
@@ -370,7 +370,7 @@ Rationale.
 
 ## Action Plan
 
-### `CHAT_WITH_USER`
+### `PROMPT`
 This is the first paragraph of the prompt.
 
 This is the second paragraph, with some `inline_code`.
@@ -388,7 +388,7 @@ This is the second paragraph, with some `inline_code`.
         "This is the second paragraph, with some `inline_code`."
     )
 
-    assert action.type == "CHAT_WITH_USER"
+    assert action.type == "PROMPT"
     assert action.description is None  # No description metadata for this action
     assert action.params["prompt"] == expected_prompt
 

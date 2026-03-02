@@ -32,7 +32,7 @@ This document outlines the technical standards, conventions, and setup process f
 - **Correct Pattern:**
   ```bash
   # Correctly provides a path relative to the project root
-  poetry run pytest tests/acceptance/test_chat_with_user_action.py
+  poetry run pytest tests/acceptance/test_prompt_action.py
   ```
 - **Incorrect Pattern:**
   ```bash
@@ -48,8 +48,8 @@ This document outlines the technical standards, conventions, and setup process f
     - `tests/unit/`: Tests for individual functions or classes in isolation.
 - **Execution:** Tests are run from the **project root** using `poetry run pytest`.
     - **Run all tests:** `poetry run pytest`
-    - **Run tests in a specific file:** `poetry run pytest tests/acceptance/test_chat_with_user_action.py`
-    - **Run a specific test by name:** `poetry run pytest -k "test_chat_with_user_gets_response"`
+    - **Run tests in a specific file:** `poetry run pytest tests/acceptance/test_prompt_action.py`
+    - **Run a specific test by name:** `poetry run pytest -k "test_prompt_gets_response"`
 - **Test Coverage:** The CI pipeline **must** perform test coverage analysis using `pytest-cov`. It **must** be configured to fail if test coverage drops below a project-defined threshold of **90%**.
 
 ### Pre-commit Hooks & CI Quality Gates
@@ -146,7 +146,7 @@ This section captures significant, long-standing architectural decisions and pat
 -   **"White-Box" Acceptance Testing:** All acceptance tests use `typer.testing.CliRunner` to run the CLI application in-process. This is the required pattern as it ensures mocks are respected and is faster and more reliable than testing via `subprocess`.
 -   **Static vs. Runtime Type Checking:** The test suite, using `pytest`, does not enforce type hint contracts at runtime (e.g., it will not fail if a function returns a `dict` when an `object` is expected). Type safety and contract adherence between components (such as an adapter correctly implementing a port's interface) are enforced statically by `mypy` as part of the mandatory `pre-commit` checks.
 -   **Structured Output Parsing in Tests:** Acceptance tests that verify structured output (e.g., YAML) MUST parse the output into a data structure before making assertions. This makes tests resilient to formatting changes.
--   **Separation of I/O Concerns:** The `[PLAN_FILE]` positional argument is the canonical way to provide a plan from a file, while omitting it defaults to reading from the clipboard. This reserves `stdin` exclusively for interactive prompts (like `y/n` or `chat_with_user`).
+-   **Separation of I/O Concerns:** The `[PLAN_FILE]` positional argument is the canonical way to provide a plan from a file, while omitting it defaults to reading from the clipboard. This reserves `stdin` exclusively for interactive prompts (like `y/n` or `prompt`).
 -   **Test Plan Injection:** The `execute` subcommand includes a `--plan-content` option. This is the canonical way to provide a plan as a string directly from within a test, making acceptance tests more robust and self-contained by avoiding file I/O or clipboard dependencies.
 -   **Context Configuration:** The `context` command's behavior is explicitly driven by the contents of `.teddy/*.context` files, providing a clear, user-configurable contract.
 -   **Interactive Diff Previews:** During interactive execution, `create` and `edit` actions provide a visual diff. This feature is configured via a prioritized strategy: the `TEDDY_DIFF_TOOL` environment variable, a fallback to the `code` (VS Code) CLI if present, and a final fallback to an in-terminal view. This provides a better user experience while remaining environment-agnostic.

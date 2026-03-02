@@ -85,7 +85,7 @@ class ExecutionOrchestrator(RunPlanUseCase):
     def _confirm_and_dispatch_action(self, action, interactive: bool) -> ActionLog:
         """Handles user confirmation and dispatches a single action."""
         should_dispatch, reason = True, ""
-        if interactive and action.type.lower() != "chat_with_user":
+        if interactive and action.type.lower() != "prompt":
             prompt_parts = [
                 "---",
                 f"Action: {action.type}",

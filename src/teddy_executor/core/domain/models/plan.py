@@ -9,7 +9,7 @@ class ActionType(str, Enum):
     EDIT = "EDIT"
     EXECUTE = "EXECUTE"
     RESEARCH = "RESEARCH"
-    CHAT_WITH_USER = "CHAT_WITH_USER"
+    PROMPT = "PROMPT"
     PRUNE = "PRUNE"
     INVOKE = "INVOKE"
     RETURN = "RETURN"

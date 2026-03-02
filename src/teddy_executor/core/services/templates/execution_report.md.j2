@@ -104,7 +104,7 @@
   {% set target = '"' ~ (params.get('description') or params.get('Description') or 'Execute Command') ~ '"' %}
 {% elif action_type == 'RESEARCH' %}
   {% set target = params.get('description') or params.get('Description') or 'Research' %}
-{% elif action_type == 'CHAT_WITH_USER' %}
+{% elif action_type == 'PROMPT' %}
   {% set target = '' %}
 {% else %}
   {# Use Markdown Link for CREATE/EDIT/READ #}
@@ -162,8 +162,8 @@
     {% if action_type in ['RETURN', 'INVOKE'] %}
         {% set ignored_keys = ignored_keys + ['message', 'handoff_resources', 'handoff resources'] %}
     {% endif %}
-    {# For CHAT_WITH_USER, hide the AI prompt #}
-    {% if action_type == 'CHAT_WITH_USER' %}
+    {# For PROMPT, hide the AI prompt #}
+    {% if action_type == 'PROMPT' %}
         {% set ignored_keys = ignored_keys + ['prompt'] %}
     {% endif %}
     {% if k_lower not in ignored_keys %}
@@ -191,7 +191,7 @@
 {% endfor %}
 {% endif %}
 
-{% if action_type == 'CHAT_WITH_USER' %}
+{% if action_type == 'PROMPT' %}
 {% if log.details and log.details is mapping and log.details.get('response') %}
 
 #### User Response

@@ -1,6 +1,6 @@
 # Outbound Port: User Interactor
 
-**Motivating Slice:** [Slice 10: Implement `chat_with_user` Action](../../slices/10-chat-with-user-action.md)
+**Motivating Slice:** [Slice 10: Implement `prompt` Action](../../slices/10-chat-with-user-action.md)
 
 This port defines the contract for components that can interact with the user by asking questions and capturing their input. It abstracts the specific mechanism of interaction (e.g., console, GUI) from the core application logic.
 

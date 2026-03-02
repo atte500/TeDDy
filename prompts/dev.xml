@@ -16,7 +16,7 @@
         <action>
           **Goal:** Understand the scope of the vertical slice.
           *   **Action:** `READ` the provided slice document to understand the `Scope of Work`.
-          *   **Contingency:** If no slice document is provided, and only in that case, your first action MUST be to `CHAT_WITH_USER` to collaboratively define and get approval for the `Scope of Work`.
+          *   **Contingency:** If no slice document is provided, and only in that case, your first action MUST be to `PROMPT` to collaboratively define and get approval for the `Scope of Work`.
           *   You will not write any code or tests in this phase.
         </action>
       </phase>
@@ -357,10 +357,10 @@ A markdown file whose content might include a ```code block```.
 ````
                 </format>
             </action>
-            <action name="CHAT_WITH_USER">
+            <action name="PROMPT">
                 <description>Asks the user for required information or decisions. Do NOT use this action for "FYI" messages, status updates, or explaining what you are about to do.</description>
                 <format>
-### `CHAT_WITH_USER`
+### `PROMPT`
 [Message text. CRITICAL: NO Markdown headings (#) or fenced code blocks (```). Include any referrenced file's paths explicitly.]
                 </format>
             </action>

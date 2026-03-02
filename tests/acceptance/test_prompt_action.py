@@ -8,9 +8,9 @@ from .helpers import parse_markdown_report
 from .plan_builder import MarkdownPlanBuilder
 
 
-def test_chat_with_user_action_successful(tmp_path: Path, monkeypatch):
+def test_prompt_action_successful(tmp_path: Path, monkeypatch):
     """
-    Given a plan containing a 'chat_with_user' action,
+    Given a plan containing a 'prompt' action,
     When the plan is executed and the user provides input,
     Then the action should succeed and capture the response.
     """
@@ -23,7 +23,7 @@ def test_chat_with_user_action_successful(tmp_path: Path, monkeypatch):
     builder = MarkdownPlanBuilder("Test Chat Action")
     # Refactored to use MarkdownPlanBuilder instead of yaml.dump
     builder.add_action(
-        "CHAT_WITH_USER",
+        "PROMPT",
         params={"prompt": "What is your favorite color?"},
     )
     plan_content = builder.build()
@@ -53,9 +53,9 @@ def test_chat_with_user_action_successful(tmp_path: Path, monkeypatch):
     assert details_dict["response"] == user_response
 
 
-def test_chat_with_user_action_multiline_editor(tmp_path: Path, monkeypatch):
+def test_prompt_action_multiline_editor(tmp_path: Path, monkeypatch):
     """
-    Given a plan containing a 'chat_with_user' action,
+    Given a plan containing a 'prompt' action,
     When the plan is executed and the user chooses to use the external editor ('e'),
     Then the action should succeed and capture the multiline response from the temp file,
     ignoring the instructional comments.
@@ -69,7 +69,7 @@ def test_chat_with_user_action_multiline_editor(tmp_path: Path, monkeypatch):
 
     builder = MarkdownPlanBuilder("Test Chat Action Multiline")
     builder.add_action(
-        "CHAT_WITH_USER",
+        "PROMPT",
         params={"prompt": "Write a poem:"},
     )
     plan_content = builder.build()
