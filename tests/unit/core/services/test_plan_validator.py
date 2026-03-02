@@ -292,6 +292,51 @@ def test_validate_execute_action_succeeds_for_single_command_with_directives():
     assert len(errors) == 0, f"Expected no errors, but got: {errors}"
 
 
+def test_validate_execute_fails_with_unsafe_cwd_traversal(fs):
+    """
+    Given an EXECUTE action where `cwd` attempts to traverse outside the project root,
+    When validated,
+    Then it should return an error.
+    """
+    plan = Plan(
+        title="Test",
+        actions=[
+            ActionData(
+                type="EXECUTE",
+                params={"command": "echo 'test'", "cwd": "../unsafe"},
+            )
+        ],
+    )
+    validator = PlanValidator()
+    errors = validator.validate(plan)
+
+    assert len(errors) == 1
+    assert "is outside the project directory" in errors[0].message
+    assert errors[0].file_path is None  # Not file-specific error
+
+
+def test_validate_execute_fails_with_absolute_cwd(fs):
+    """
+    Given an EXECUTE action where `cwd` is an absolute path,
+    When validated,
+    Then it should return an error.
+    """
+    plan = Plan(
+        title="Test",
+        actions=[
+            ActionData(
+                type="EXECUTE",
+                params={"command": "echo 'test'", "cwd": "/etc/passwd"},
+            )
+        ],
+    )
+    validator = PlanValidator()
+    errors = validator.validate(plan)
+
+    assert len(errors) == 1
+    assert "is an absolute path and is not allowed" in errors[0].message
+
+
 def test_validate_edit_fails_if_find_and_replace_identical(fs):
     """
     Given an EDIT action where FIND and REPLACE are identical,
