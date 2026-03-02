@@ -54,7 +54,7 @@ Execute a safe "Create, Migrate, Delete" sequence for each legacy model:
 ## 4. Vertical Slices
 
 - [x] **Slice 1: Refactor Parser and Fix Bug** (Implement the single-pass AST strategy and verify against bug repro).
-- [x] **Slice 2: Simplify EXECUTE Action Syntax** (Implement the POSIX Shell Pre-Processor in the parser).
+- [x] **Slice 2: Simplify EXECUTE Action Syntax** (Verify pre-existing single-command validation).
 - [x] **Refactor Slice: Fix Parser Nesting Bug** (Implement strict structural AST validation to prevent nesting crashes).
 - [x] **Slice 3: Implement `trafilatura`** (Dependency swap and adapter update).
 - [x] **Refactor Slice: Enhance Web Scraper to Bypass Anti-Scraping Measures** (Implement fallback for 403 errors).

@@ -61,3 +61,11 @@ To simplify the `EXECUTE` action by enforcing a "one command per action" rule. T
         -   `test_execute_halts_on_multiline_failure`
         -   `test_execute_halts_on_ampersand_chain_failure`
     -   Verify that all remaining tests still pass, as they correctly cover the behavior of executing a single command.
+
+## Implementation Notes
+Upon investigation, it was determined that the core requirements of this slice were already implemented in the existing codebase:
+- The `PlanValidator` already enforces a "one command per action" rule for `EXECUTE` actions, correctly rejecting plans with multi-line scripts or `&&` chaining.
+- The `ShellAdapter` is already simplified and correctly handles the execution of single commands.
+- The validation logic is already covered by unit tests in `tests/unit/core/services/test_plan_validator.py`.
+
+The work in this slice was therefore limited to adding acceptance tests to verify and document this pre-existing behavior. No changes to the source code were necessary.
