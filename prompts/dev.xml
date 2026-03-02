@@ -40,9 +40,7 @@
               Write the *absolute minimal* code required to make the test pass. You MUST strictly avoid over-engineering. Use hardcoded return values if they satisfy the current test suite. This forces you to write more RED tests to drive out the actual algorithmic complexity. The `Synthesis` for this plan MUST quote the specific test failure message from the RED phase and explain how the proposed code will resolve it.
             </tdd_phase>
             <tdd_phase n="3" name="REFACTOR">
-              This phase is **mandatory**. You must clean up the implementation and test code without changing behavior. This includes applying the Single Responsibility Principle (SRP) to break down components that are doing too much. You must also ensure the code is highly semantic and self-documenting. Explicitly review all comments in the modified code: remove stale comments, ensure remaining comments explain the "why" and not the "how", and rename variables/methods to eliminate the need for comments where possible.
-              **Update Progress:** Adhere to the **Granular Progress Tracking** rule to update the slice's `Scope of Work`.
-              After refactoring and documentation updates, run the entire test suite to ensure no regressions were introduced.
+              This phase is **mandatory**. You must clean up the implementation and test code without changing behavior. This includes applying the Single Responsibility Principle (SRP) to break down components that are doing too much. You must also ensure the code is highly semantic and self-documenting. Explicitly review all comments in the modified code: remove stale comments, ensure remaining comments explain the "why" and not the "how", and rename variables/methods to eliminate the need for comments where possible. After refactoring, run the entire test suite to ensure no regressions were introduced.
               <interrupt_check>If tests fail unexpectedly or if the user provides a new requirement mid-stream, you MUST handle them according to the **Handling Mid-stream Requests and Regressions** rule using a dedicated sub-TDD loop.</interrupt_check>
               <loop_evaluation>Evaluate your code: Does it rely on hardcoded values or "faked" shortcuts?
                 - **If YES:** You MUST loop back to the `RED` phase and write a new test specifically designed to break that fake.
@@ -55,9 +53,8 @@
 
         <step n="3" name="POLISH SCENARIO (Outer REFACTOR)">
           *   With the inner TDD loops complete, the guiding acceptance test should now pass. This is a **mandatory** refactoring phase.
-          *   **Verify & Push Logic Down (Ice Cream Cone Prevention):** Run the acceptance test to confirm it now passes. **Crucially**, ensure the acceptance layer remains lean by testing only the high-level happy path and cross-system wiring. This is also when you must address any **`Slice-Refactor` notes** logged during implementation regarding fragile tests or refactoring.
-          *   **Refactor:** Refactor the implementation code to improve structure and clarity. This is also the designated time to address any **`Slice-Refactor` architectural notes** that were logged for this scenario.
-          *   After refactoring and documentation updates, ensure all tests still pass.
+          *   **Verify & Push Logic Down (Ice Cream Cone Prevention):** Run the acceptance test to confirm it now passes. **Crucially**, ensure the acceptance layer remains lean by testing only the high-level happy path and cross-system wiring. Move any detailed business logic validation to unit/integration tests. This is also when you must address any **`Slice-Refactor` notes** logged during implementation regarding fragile tests or refactoring.
+          *   **Refactor:** Refactor the implementation code to improve structure and clarity. This is also the designated time to address any **`Slice-Refactor` architectural notes** that were logged for this scenario. After refactoring, ensure all tests still pass.
         </step>
 
         <step n="4" name="COMMIT SCENARIO">
@@ -247,18 +244,6 @@
               2.  **Focus:** Update your State Dashboard's `Current Focus` to clearly state you are fixing the specific regression or handling the new request.
               3.  **Sub-TDD Loop:** Execute the standard `RED` -> `GREEN` -> `REFACTOR` cycle to isolate and resolve the interruption.
               4.  **Resume:** Once the interruption is fully resolved (tests are green and refactored), pop your stashed goal from the notes, update your `Current Focus` back to the main scenario, and resume normal execution. Do not commit.
-        </instruction>
-      </rule>
-      <rule n="16">
-        <title>The Acceptance Layer Boundary</title>
-        <instruction>
-          Acceptance tests MUST validate the business scenario from an end-to-end perspective. You are strictly prohibited from testing internal component logic at this layer (e.g., specific class methods, internal state); that logic MUST be validated via unit and integration tests. This rule applies during initial test creation (Phase 2, Step 1) and throughout all refactoring phases (Inner Loop Step 3, Phase 2 Step 3, and Phase 3).
-        </instruction>
-      </rule>
-      <rule n="17">
-        <title>Granular Progress Tracking</title>
-        <instruction>
-          To ensure the project's status remains accurate, you MUST update the `Scope of Work` checklist in the source Vertical Slice document frequently. The mandatory trigger for this update is the completion of the `REFACTOR` phase in the Inner TDD Loop. You must mark only the specific technical items that were completed in that cycle.
         </instruction>
       </rule>
     </general_rules>
