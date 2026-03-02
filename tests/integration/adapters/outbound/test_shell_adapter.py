@@ -1,6 +1,8 @@
 import os
 import shutil
 import sys
+from pathlib import Path
+
 import pytest
 from teddy_executor.adapters.outbound.shell_adapter import ShellAdapter
 
@@ -120,3 +122,39 @@ def test_shell_adapter_handles_multiline_command_safely():
 
     assert result["return_code"] == 0
     assert result["stdout"].strip() == multiline_string.strip()
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX specific shell features")
+def test_shell_adapter_handles_wildcards_on_posix():
+    """Verify that the shell adapter can execute commands with wildcards."""
+    adapter = ShellAdapter()
+    # Create a temporary directory *inside* the project root to comply with security validation
+    temp_dir_name = "temp_test_dir_wildcard"
+    temp_dir_path = os.path.join(os.getcwd(), temp_dir_name)
+    os.makedirs(temp_dir_path, exist_ok=True)
+
+    try:
+        Path(os.path.join(temp_dir_path, "test1.py")).touch()
+        Path(os.path.join(temp_dir_path, "test2.py")).touch()
+        Path(os.path.join(temp_dir_path, "other.txt")).touch()
+
+        result = adapter.execute("ls *.py", cwd=temp_dir_name)
+
+        assert result["return_code"] == 0
+        assert "test1.py" in result["stdout"]
+        assert "test2.py" in result["stdout"]
+        assert "other.txt" not in result["stdout"]
+    finally:
+        shutil.rmtree(temp_dir_path)
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX specific shell features")
+def test_shell_adapter_handles_pipes_on_posix():
+    """Verify that the shell adapter can execute commands with pipes."""
+    adapter = ShellAdapter()
+    command = 'echo "hello world" | grep "world"'
+
+    result = adapter.execute(command)
+
+    assert result["return_code"] == 0
+    assert "hello world" in result["stdout"]

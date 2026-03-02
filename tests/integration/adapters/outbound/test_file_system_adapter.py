@@ -117,6 +117,46 @@ def test_edit_file_successfully_replaces_content(tmp_path: Path):
     assert final_content == "Hello TeDDy, this is a test."
 
 
+def test_edit_file_handles_multiline_replacement(tmp_path: Path):
+    """
+    Verifies that edit_file handles multiline find and replace blocks verbatim.
+    """
+    # Arrange
+    adapter = LocalFileSystemAdapter()
+    test_file = tmp_path / "code.py"
+    initial_content = "def foo():\n    return 42\n"
+    test_file.write_text(initial_content, encoding="utf-8")
+
+    find_block = "def foo():\n    return 42"
+    replace_block = "def bar(x):\n    return x * 2"
+
+    # Act
+    adapter.edit_file(
+        path=str(test_file), edits=[{"find": find_block, "replace": replace_block}]
+    )
+
+    # Assert
+    assert test_file.read_text() == "def bar(x):\n    return x * 2\n"
+
+
+def test_edit_file_removes_newline_on_empty_replacement(tmp_path: Path):
+    """
+    Verifies that an empty REPLACE block removes the associated newline
+    to prevent orphaned empty lines.
+    """
+    # Arrange
+    adapter = LocalFileSystemAdapter()
+    test_file = tmp_path / "lines.txt"
+    initial_content = "Line 1\nLine 2\nLine 3\n"
+    test_file.write_text(initial_content, encoding="utf-8")
+
+    # Act: Remove middle line
+    adapter.edit_file(path=str(test_file), edits=[{"find": "Line 2", "replace": ""}])
+
+    # Assert: Should not have double \n
+    assert test_file.read_text() == "Line 1\nLine 3\n"
+
+
 def test_edit_file_raises_error_if_find_text_not_found(tmp_path: Path):
     """
     Tests that edit_file raises a specific error if the search text is not found.
