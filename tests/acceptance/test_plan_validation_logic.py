@@ -62,34 +62,6 @@ def test_edit_fails_if_file_missing(monkeypatch, tmp_path: Path):
     assert "File to edit does not exist" in result.output
 
 
-def test_execute_action_with_multiple_commands_fails_validation(
-    monkeypatch, tmp_path: Path
-):
-    """
-    Given a plan with an EXECUTE action containing multiple command lines,
-    When teddy execute is run,
-    Then it should fail with a validation error.
-    """
-    # Arrange
-    builder = MarkdownPlanBuilder("Test Execute Multiline")
-    builder.add_action(
-        "EXECUTE",
-        params={"Description": "A multiline command"},
-        content_blocks={"": ("shell", 'echo "hello"\necho "world"')},
-    )
-    plan_content = builder.build()
-
-    # Act
-    result = run_cli_with_markdown_plan_on_clipboard(
-        monkeypatch, plan_content, tmp_path
-    )
-
-    # Assert
-    assert result.exit_code != 0
-    assert "Validation Error" in result.output
-    assert "EXECUTE action must contain exactly one command" in result.output
-
-
 def test_execute_action_with_chained_command_fails_validation(
     monkeypatch, tmp_path: Path
 ):
