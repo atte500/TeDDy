@@ -41,6 +41,22 @@ class PlanValidator(IPlanValidator):
                 action_errors = validate_execute_action(action)
             elif action_type_lower == "read":
                 action_errors = validate_read_action(action)
+            elif action_type_lower in [
+                "research",
+                "prompt",
+                "invoke",
+                "return",
+                "prune",
+            ]:
+                # These actions have no validation rules currently
+                pass
+            else:
+                errors.append(
+                    ValidationError(
+                        message=f"Unknown action type: {action.type}",
+                        file_path=action.params.get("path"),
+                    )
+                )
 
             if action_errors:
                 errors.extend(action_errors)

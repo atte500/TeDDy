@@ -364,3 +364,24 @@ def test_validate_edit_fails_if_find_and_replace_identical(fs):
 
     assert len(errors) == 1
     assert "FIND and REPLACE blocks are identical" in errors[0].message
+
+
+def test_validate_fails_for_unknown_action_type():
+    """
+    Given a plan with an unknown action type,
+    When validated,
+    Then it should return an error.
+    """
+    plan = Plan(
+        title="Test",
+        actions=[
+            ActionData(type="EXECUTE", params={"command": "echo 'valid'"}),
+            ActionData(type="UNKNOWN_ACTION", params={}),
+        ],
+    )
+
+    validator = PlanValidator()
+    errors = validator.validate(plan)
+
+    assert len(errors) == 1
+    assert "Unknown action type: UNKNOWN_ACTION" in errors[0].message
