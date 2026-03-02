@@ -370,7 +370,7 @@ A markdown file whose content might include a ```code block```.
                 </format>
             </action>
             <action name="EXECUTE">
-                <description>Executes a shell command. The execution environment can be configured by placing `cd <path>` and `export KEY=value` directives at the top of the script; these will be automatically parsed and applied. You are strictly prohibited from chaining commands with `&&`; instead, use separate `EXECUTE` actions.</description>
+                <description>Executes a single, isolated shell command. Environment directives (`cd`, `export`) are allowed but do not persist. Chaining commands with `&&` or newlines is forbidden; use separate `EXECUTE` actions.</description>
                 <format>
 ### `EXECUTE`
 - **Description:** [Descriptive title of what the command will do.]
