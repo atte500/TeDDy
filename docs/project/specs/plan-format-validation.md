@@ -67,6 +67,9 @@ These checks validate the *content* of an action against the current state of th
 -   **[✓] `Resource` must be specified:** The metadata block must contain a `Resource`.
 -   **[✓] Local file must exist:** If the resource is a local file path (e.g., `[path/to/file.md](/path/to/file.md)`), that file must exist on the file system. (Note: URLs are not validated at this stage).
 
+#### `EXECUTE`
+-   **[✓] Must contain a single command:** After stripping `cd` and `export` directives, the command block must contain exactly one executable line. Chaining commands with `&&` or newlines is forbidden.
+
 #### `PRUNE`
 -   **[✓] `Resource` must be specified:** The metadata block must contain a `Resource`.
 -   **[✓] Target must be in context:** The specified file must be listed in the current turn's context (`turn.context`).

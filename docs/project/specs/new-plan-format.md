@@ -181,11 +181,11 @@ All actions are located under the `## Action Plan` heading. Each action is defin
     ls -l
     ````
     `````
--   **Parsing Rules:**
-    1.  Extract `Description` and `Expected Outcome`.
-    2.  The system uses a POSIX Pre-Processor on the code block. It scans the *top* of the script (the "Header Block") for `cd <path>` and `export KEY=value` directives. These are extracted to configure the execution environment (`cwd` and `env` parameters) and are removed from the command sent to the OS.
-    3.  Extraction stops immediately when the first non-directive line (e.g., `ls -l` above) is encountered.
-    4.  *(Legacy Support)*: If `- **cwd:**` or `- **env:**` are provided in the metadata list, they are merged with the shell directives, with shell directives taking precedence.
+-   **Parsing Rules & Behavior:**
+    1.  **Single Command Mandate:** The code block **must** contain only one executable command. Chaining commands (e.g., with `&&` or newlines) is forbidden and will be rejected by the `PlanValidator`.
+    2.  **Directive Pre-Processing:** The system scans the top of the script for `cd <path>` and `export KEY=value` directives. These are extracted to configure the execution environment for the command.
+    3.  **Stateless Execution:** Each `EXECUTE` action runs in an isolated environment. `cwd` and `env` changes do not persist between actions.
+    4.  **Parameter Extraction:** The parser extracts `Description` and `Expected Outcome` from the metadata list.
 
 ### 5.5. `RESEARCH`
 
