@@ -154,9 +154,35 @@ class ConsoleInteractorAdapter(IUserInteractor):
         temp_files = []
         try:
             if change_set:
-                if diff_command := self._get_diff_viewer_command():
-                    before_path = self._system_env.create_temp_file(suffix=".before")
-                    after_path = self._system_env.create_temp_file(suffix=".after")
+                diff_command = self._get_diff_viewer_command()
+                if not diff_command:
+                    self._show_in_terminal_diff(change_set)
+                elif change_set.action_type == "CREATE":
+                    # Show a single-file preview in the editor
+                    ext = "".join(change_set.path.suffixes)
+                    preview_path = self._system_env.create_temp_file(
+                        suffix=f".preview{ext}"
+                    )
+                    temp_files.append(preview_path)
+                    with open(preview_path, "w", encoding="utf-8") as f:
+                        f.write(change_set.after_content)
+
+                    # Strip diff flags to open as a regular file
+                    editor_cmd = [
+                        arg
+                        for arg in diff_command
+                        if arg.lower() not in ("--diff", "-d")
+                    ]
+                    self._system_env.run_command(editor_cmd + [preview_path])
+                else:
+                    # Show a split-pane diff in the editor
+                    ext = "".join(change_set.path.suffixes)
+                    before_path = self._system_env.create_temp_file(
+                        suffix=f".before{ext}"
+                    )
+                    after_path = self._system_env.create_temp_file(
+                        suffix=f".after{ext}"
+                    )
                     temp_files.extend([before_path, after_path])
 
                     with open(before_path, "w", encoding="utf-8") as f:
@@ -165,8 +191,6 @@ class ConsoleInteractorAdapter(IUserInteractor):
                         f.write(change_set.after_content)
 
                     self._show_external_diff(diff_command, before_path, after_path)
-                else:
-                    self._show_in_terminal_diff(change_set)
 
             prompt = f"{action_prompt}\nApprove? (y/n): "
             # Use typer.prompt which handles echoing to stderr correctly

@@ -25,7 +25,14 @@ This final slice of Milestone 08 focuses on the "Professional Grade" polish of t
 - **Given** a plan with a `CREATE` action
 - **When** the plan is executed interactively
 - **Then** the CLI displays a "New File Preview" with the full content of the file.
+- **And** it uses the external editor for the preview if one is configured.
 - **And** it does not attempt to show a diff against an empty/null source.
+
+### Scenario: External diff previews preserve file extensions
+- **Given** a plan with an `EDIT` action for a file with a specific extension (e.g., .py)
+- **And** an external diff tool is configured
+- **When** the plan is executed interactively
+- **Then** the temporary files created for the diff tool must preserve the original file extension.
 
 ## 3. User Showcase
 1. Run `teddy execute --help` to verify improved documentation.
@@ -64,10 +71,11 @@ This final slice of Milestone 08 focuses on the "Professional Grade" polish of t
 - [ ] Verify existing `EDIT` tests pass.
 
 ### Phase 3: CLI UX Improvements
-- [ ] Update `src/teddy_executor/adapters/outbound/console_interactor.py`:
-    - [ ] Inject `IEditSimulator` into the constructor.
-    - [ ] Update `_get_diff_content` to apply all edits using the simulator.
-    - [ ] Refactor `_show_in_terminal_diff` to provide a "New File Preview" for `CREATE` actions.
+- [▶️] Update `src/teddy_executor/adapters/outbound/console_interactor.py`:
+    - [x] Inject `IEditSimulator` into the constructor. (Actually already injected SystemEnvironment, logic for unified diff is handled via ChangeSet from Orchestrator)
+    - [x] Update `_get_diff_content` to apply all edits using the simulator. (Handled in Orchestrator)
+    - [x] Refactor `confirm_action` to provide a "New File Preview" for `CREATE` actions, even when external diff tool is available.
+    - [x] Ensure temporary files for external diffs preserve the original file extension.
 - [x] Update `src/teddy_executor/__main__.py`:
     - [x] Refine help strings for all commands and options.
-- [ ] Add acceptance tests in `tests/acceptance/test_cli_polish.py` to verify unified diffs and new file previews.
+- [✅] Add/Fix acceptance tests in `tests/acceptance/test_cli_polish.py` to verify unified diffs and new file previews.

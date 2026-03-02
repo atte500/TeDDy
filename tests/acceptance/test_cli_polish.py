@@ -1,8 +1,10 @@
 import pytest
 from pathlib import Path
+from unittest.mock import MagicMock
 from typer.testing import CliRunner
-from teddy_executor.__main__ import app
+from teddy_executor.__main__ import app, container
 from tests.acceptance.plan_builder import MarkdownPlanBuilder
+from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
 
 
 @pytest.fixture
@@ -143,3 +145,110 @@ def test_create_action_shows_simple_preview(runner, tmp_path):
         assert "Path: new_file.txt" in result.output
         assert new_content in result.output
         assert "--- Diff ---" not in result.output
+
+
+def test_create_action_uses_external_editor_for_preview(runner, tmp_path):
+    """
+    Scenario: CREATE actions show a simple preview in the editor if found.
+    """
+    # 1. Setup Mock System Environment that claims 'code' exists
+    mock_env = MagicMock(spec=ISystemEnvironment)
+    mock_env.which.side_effect = lambda cmd: (
+        "/usr/local/bin/code" if cmd == "code" else None
+    )
+    mock_env.get_env.return_value = None
+    mock_env.create_temp_file.side_effect = lambda suffix: str(
+        tmp_path / f"temp{suffix}"
+    )
+
+    # Inject the mock into the container
+    container.register(ISystemEnvironment, lambda: mock_env)
+
+    # 2. Define a plan with a CREATE action
+    new_content = "File content."
+    builder = MarkdownPlanBuilder("Test Plan")
+    builder.add_action(
+        "CREATE",
+        params={
+            "File Path": "[new_file.txt](new_file.txt)",
+            "Description": "Create a new file.",
+        },
+        content_blocks={"": ("text", new_content)},
+    )
+    plan_content = builder.build()
+
+    # 3. Run execute
+    with runner.isolated_filesystem(temp_dir=tmp_path):
+        result = runner.invoke(
+            app, ["execute", "--plan-content", plan_content], input="y\n"
+        )
+
+        # 4. Assertions
+        # It should HAVE called the external tool to show the preview
+        run_calls = [call[0][0] for call in mock_env.run_command.call_args_list]
+        assert any("/usr/local/bin/code" in cmd for cmd in run_calls), (
+            f"External editor was NOT called: {run_calls}"
+        )
+
+        # But it should NOT have used the --diff flag
+        for cmd in run_calls:
+            assert "--diff" not in cmd, (
+                f"External diff tool was incorrectly called with --diff: {cmd}"
+            )
+
+    assert result.exit_code == 0
+
+
+def test_edit_action_preserves_extension_for_external_diff(runner, tmp_path):
+    """
+    Scenario: External diff previews preserve file extensions for syntax highlighting.
+    """
+    # 1. Setup Mock System Environment
+    mock_env = MagicMock(spec=ISystemEnvironment)
+    mock_env.which.side_effect = lambda cmd: (
+        "/usr/local/bin/code" if cmd == "code" else None
+    )
+    mock_env.get_env.return_value = None
+
+    # Track the suffix used for temp files
+    created_suffixes = []
+
+    def mock_create_temp(suffix):
+        created_suffixes.append(suffix)
+        return str(tmp_path / f"temp{len(created_suffixes)}{suffix}")
+
+    mock_env.create_temp_file.side_effect = mock_create_temp
+
+    # Inject the mock into the container
+    container.register(ISystemEnvironment, lambda: mock_env)
+
+    # 2. Define a plan with an EDIT action for a .py file
+    builder = MarkdownPlanBuilder("Test Plan")
+    builder.add_action(
+        "EDIT",
+        params={
+            "File Path": "[script.py](script.py)",
+            "Description": "Edit python script.",
+        },
+        content_blocks={
+            "FIND:": ("python", "old_code"),
+            "REPLACE:": ("python", "new_code"),
+        },
+    )
+    plan_content = builder.build()
+
+    # 3. Run execute
+    with runner.isolated_filesystem(temp_dir=tmp_path):
+        # Setup the file
+        (Path.cwd() / "script.py").write_text("old_code", encoding="utf-8")
+
+        runner.invoke(app, ["execute", "--plan-content", plan_content], input="y\n")
+
+        # 4. Assertions
+        # We expect suffixes like ".before.py" and ".after.py"
+        assert any(".before.py" in s for s in created_suffixes), (
+            f"Expected .before.py in {created_suffixes}"
+        )
+        assert any(".after.py" in s for s in created_suffixes), (
+            f"Expected .after.py in {created_suffixes}"
+        )
