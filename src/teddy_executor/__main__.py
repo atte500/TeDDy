@@ -67,6 +67,11 @@ def context(
         help="Do not copy the output to the clipboard.",
     ),
 ):
+    """
+    Gathers and displays project context (file tree + file contents).
+
+    All operations respect the project's root-relative path conventions.
+    """
     context_service: IGetContextUseCase = container.resolve(IGetContextUseCase)
     context_result = context_service.get_context()
     formatted_context = format_project_context(context_result)
@@ -83,7 +88,7 @@ def get_prompt(
     """
     Retrieves and displays the content of a specified prompt.
 
-    Searches for a local override in ./.teddy/prompts/ first.
+    Searches for root-relative overrides in ./.teddy/prompts/ before falling back to defaults.
     """
     prompt_content = find_prompt_content(prompt_name)
 
@@ -191,7 +196,7 @@ def _execute_valid_plan(
 def execute(
     plan_file: Optional[Path] = typer.Argument(
         None,
-        help="Path to the plan file (.md). If omitted, reads from clipboard.",
+        help="Root-relative path to the plan file (.md). If omitted, reads from clipboard.",
         show_default=False,
     ),
     yes: bool = typer.Option(

@@ -68,6 +68,6 @@ This final slice of Milestone 08 focuses on the "Professional Grade" polish of t
     - [ ] Inject `IEditSimulator` into the constructor.
     - [ ] Update `_get_diff_content` to apply all edits using the simulator.
     - [ ] Refactor `_show_in_terminal_diff` to provide a "New File Preview" for `CREATE` actions.
-- [ ] Update `src/teddy_executor/__main__.py`:
-    - [ ] Refine help strings for all commands and options.
+- [x] Update `src/teddy_executor/__main__.py`:
+    - [x] Refine help strings for all commands and options.
 - [ ] Add acceptance tests in `tests/acceptance/test_cli_polish.py` to verify unified diffs and new file previews.
