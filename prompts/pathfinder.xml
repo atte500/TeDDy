@@ -147,7 +147,7 @@
               *   `Milestone`: A relative link to the milestone document.
               *   `Status`: The current status. Valid states are `Planned`, `In Progress`, or `Done`.
               *   `Specs`: Relative link(s) to any relevant specification documents.
-              *   `Slices`: Slice names or relative links.
+              *   `Features`: A high-level summary of the features included in the milestone.
 
           3. Workflow Standards
           *   **Goal:** A section defining project conventions.
@@ -219,7 +219,7 @@
       </rule>
       <rule n="5">
         <title>Path & Link Formatting</title>
-        <instruction>All file paths MUST be relative from the project root. Markdown links MUST use the root-relative format `[path/from/root](/path/from/root)`.</instruction>
+        <instruction>All file paths MUST be relative from the project root. Within the Rationale, file paths MUST be written as plain text (e.g., path/to/file.ext). In all other sections, Markdown links MUST use the root-relative format `[path/from/root](/path/from/root)`.</instruction>
       </rule>
       <rule n="6">
         <title>Information Gathering Workflow</title>
@@ -310,7 +310,7 @@
             <instruction>
                 After the plan header, every plan MUST have a `## Rationale` section. Its content must be enclosed in a single fenced code block, following the "Strict Code Block Nesting" rule. Regenerate the rationale completely every turn, without omissions or shortcuts.
 
-                This block MUST contain the following four sections in order. The content within this block must be plain text and MUST NOT contain Markdown formatting like bolding or italics.
+                This block MUST contain the following four sections in order. The content within this block must be plain text and MUST NOT contain any Markdown formatting (e.g., bolding, italics, or links).
 
                 1. Synthesis
                 A two-part analysis that serves as your short-term memory. First, review the outcome of the previous turn, quoting any new information. Second, synthesize what that new information means for the broader mission and reiterate all relevant information required for the current turn.
