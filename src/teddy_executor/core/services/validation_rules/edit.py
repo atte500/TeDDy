@@ -4,10 +4,10 @@ Validation rules for the 'EDIT' action.
 
 import difflib
 import os
-from pathlib import Path
 from typing import List
 
 from teddy_executor.core.domain.models.plan import ActionData
+from teddy_executor.core.ports.outbound import IFileSystemManager
 from teddy_executor.core.services.validation_rules.helpers import (
     PlanValidationError,
     ValidationError,
@@ -53,7 +53,7 @@ def _find_best_match_and_diff(file_content: str, find_block: str) -> str:
 
 
 def _validate_single_edit(
-    edit: dict, content: str, file_path: Path
+    edit: dict, content: str, file_path: str
 ) -> List[ValidationError]:
     """Validates a single edit dictionary."""
     errors: List[ValidationError] = []
@@ -120,11 +120,12 @@ def _validate_single_edit(
     return errors
 
 
-def validate_edit_action(action: ActionData) -> List[ValidationError]:
+def validate_edit_action(
+    action: ActionData, file_system_manager: IFileSystemManager
+) -> List[ValidationError]:
     """
     Validates an 'edit' action.
     """
-    # Check for keys in various casings to handle different parser outputs
     path_str = (
         action.params.get("path")
         or action.params.get("file_path")
@@ -137,21 +138,26 @@ def validate_edit_action(action: ActionData) -> List[ValidationError]:
     try:
         validate_path_is_safe(path_str, "EDIT")
 
-        file_path = Path(path_str)
-        if not file_path.exists():
+        if not file_system_manager.path_exists(path_str):
             raise PlanValidationError(
-                f"File to edit does not exist: {file_path}",
-                file_path=str(file_path),
+                f"File to edit does not exist: {path_str}",
+                file_path=path_str,
             )
-    except PlanValidationError as e:
-        return [ValidationError(message=e.message, file_path=e.file_path)]
+    except (PlanValidationError, FileNotFoundError) as e:
+        # Catch FileNotFoundError in case path_exists is mocked to return True
+        # but read_file fails, which can happen in some test scenarios.
+        return [
+            ValidationError(
+                message=getattr(e, "message", str(e)),
+                file_path=getattr(e, "file_path", path_str),
+            )
+        ]
 
     action_errors: List[ValidationError] = []
-    content = file_path.read_text(encoding="utf-8")
+    content = file_system_manager.read_file(path_str)
 
-    # Handle 'edits' list (from Markdown parser)
     edits = action.params.get("edits")
     if isinstance(edits, list):
         for edit in edits:
-            action_errors.extend(_validate_single_edit(edit, content, file_path))
+            action_errors.extend(_validate_single_edit(edit, content, path_str))
     return action_errors

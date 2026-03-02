@@ -38,24 +38,29 @@ def test_progress_logging_failure(caplog, tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     caplog.set_level(logging.INFO)
 
-    plan_content = """
+    plan_content = (
+        """
 # Test Plan
 - **Status:** Green 🟢
 - **Agent:** Developer
 
 ## Rationale
-````text
-Rationale.
-````
+"""
+        + "````text\nRationale.\n````"
+        + """
 
 ## Action Plan
-### `READ`
-- **Resource:** [does_not_exist.txt](/does_not_exist.txt)
-- **Description:** Read a missing file
+### `EXECUTE`
+- **Description:** Fails
+- **Expected Outcome:** Fails
+````shell
+exit 1
+````
 """
+    )
     runner.invoke(app, ["execute", "--plan-content", plan_content, "-y"])
 
-    assert "READ - Read a missing file" in caplog.text
+    assert "EXECUTE - Fails" in caplog.text
     assert "FAILURE" in caplog.text
 
 

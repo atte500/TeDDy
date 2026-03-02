@@ -15,10 +15,16 @@ from teddy_executor.core.services.validation_rules.helpers import ValidationErro
 from teddy_executor.core.services.validation_rules.read import validate_read_action
 
 
+from teddy_executor.core.ports.outbound import IFileSystemManager
+
+
 class PlanValidator(IPlanValidator):
     """
     Implements IPlanValidator using a strategy pattern to run pre-flight checks.
     """
+
+    def __init__(self, file_system_manager: IFileSystemManager):
+        self._file_system_manager = file_system_manager
 
     def validate(self, plan: Plan) -> List[ValidationError]:
         """
@@ -34,13 +40,15 @@ class PlanValidator(IPlanValidator):
             action_errors: Optional[List[ValidationError]] = None
 
             if action_type_lower == "create":
-                action_errors = validate_create_action(action)
+                action_errors = validate_create_action(
+                    action, self._file_system_manager
+                )
             elif action_type_lower == "edit":
-                action_errors = validate_edit_action(action)
+                action_errors = validate_edit_action(action, self._file_system_manager)
             elif action_type_lower == "execute":
                 action_errors = validate_execute_action(action)
             elif action_type_lower == "read":
-                action_errors = validate_read_action(action)
+                action_errors = validate_read_action(action, self._file_system_manager)
             elif action_type_lower in [
                 "research",
                 "prompt",

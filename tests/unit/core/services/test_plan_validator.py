@@ -1,9 +1,12 @@
 from pathlib import Path
+from unittest.mock import MagicMock
 
-from teddy_executor.core.domain.models.plan import Plan, ActionData
-from teddy_executor.core.services.plan_validator import (
-    PlanValidator,
+from teddy_executor.adapters.outbound.local_file_system_adapter import (
+    LocalFileSystemAdapter,
 )
+from teddy_executor.core.domain.models.plan import ActionData, Plan
+from teddy_executor.core.ports.outbound import IFileSystemManager
+from teddy_executor.core.services.plan_validator import PlanValidator
 
 
 def test_validate_edit_action_with_nonexistent_find_block(fs):
@@ -34,7 +37,7 @@ def test_validate_edit_action_with_nonexistent_find_block(fs):
         ],
     )
 
-    validator = PlanValidator()
+    validator = PlanValidator(LocalFileSystemAdapter())
 
     # Act
     errors = validator.validate(plan)
@@ -60,15 +63,14 @@ def test_validate_edit_action_with_nonexistent_file(fs):
                 type="edit",
                 params={
                     "path": str(file_path),
-                    "find": "anything",
-                    "replace": "doesn't matter",
+                    "edits": [{"find": "anything", "replace": "doesn't matter"}],
                 },
                 description="Test edit on non-existent file",
             )
         ],
     )
 
-    validator = PlanValidator()
+    validator = PlanValidator(LocalFileSystemAdapter())
 
     # Act
     errors = validator.validate(plan)
@@ -96,15 +98,14 @@ def test_validate_edit_action_with_valid_find_block(fs):
                 type="edit",
                 params={
                     "path": str(file_path),
-                    "find": "Hello world",
-                    "replace": "Hello pytest",
+                    "edits": [{"find": "Hello world", "replace": "Hello pytest"}],
                 },
                 description="Test edit action validation",
             )
         ],
     )
 
-    validator = PlanValidator()
+    validator = PlanValidator(LocalFileSystemAdapter())
 
     # Act
     errors = validator.validate(plan)
@@ -128,7 +129,7 @@ def test_validate_create_fails_if_file_exists(fs):
         ],
     )
 
-    validator = PlanValidator()
+    validator = PlanValidator(LocalFileSystemAdapter())
     errors = validator.validate(plan)
 
     assert len(errors) == 1
@@ -159,7 +160,7 @@ def test_validate_edit_fails_if_find_block_not_unique(fs):
         ],
     )
 
-    validator = PlanValidator()
+    validator = PlanValidator(LocalFileSystemAdapter())
     errors = validator.validate(plan)
 
     assert len(errors) == 1
@@ -182,7 +183,7 @@ def test_validate_execute_action_fails_for_multiline_commands():
         ],
     )
 
-    validator = PlanValidator()
+    validator = PlanValidator(MagicMock(spec=IFileSystemManager))
     errors = validator.validate(plan)
 
     assert len(errors) == 1
@@ -205,7 +206,7 @@ def test_validate_execute_action_fails_for_chained_commands():
         ],
     )
 
-    validator = PlanValidator()
+    validator = PlanValidator(MagicMock(spec=IFileSystemManager))
     errors = validator.validate(plan)
 
     assert len(errors) == 1
@@ -226,7 +227,7 @@ def test_validate_execute_succeeds_for_single_command_with_line_continuations():
         actions=[ActionData(type="EXECUTE", params={"command": command})],
     )
 
-    validator = PlanValidator()
+    validator = PlanValidator(MagicMock(spec=IFileSystemManager))
     errors = validator.validate(plan)
 
     assert len(errors) == 0, (
@@ -246,7 +247,7 @@ def test_validate_execute_succeeds_for_single_command_with_multiline_argument():
         actions=[ActionData(type="EXECUTE", params={"command": command})],
     )
 
-    validator = PlanValidator()
+    validator = PlanValidator(MagicMock(spec=IFileSystemManager))
     errors = validator.validate(plan)
 
     assert len(errors) == 0, (
@@ -266,7 +267,7 @@ def test_validate_execute_succeeds_with_ampersands_in_quoted_string():
         actions=[ActionData(type="EXECUTE", params={"command": command})],
     )
 
-    validator = PlanValidator()
+    validator = PlanValidator(MagicMock(spec=IFileSystemManager))
     errors = validator.validate(plan)
 
     assert len(errors) == 0, (
@@ -286,7 +287,7 @@ def test_validate_execute_action_succeeds_for_single_command_with_directives():
         actions=[ActionData(type="EXECUTE", params={"command": command})],
     )
 
-    validator = PlanValidator()
+    validator = PlanValidator(MagicMock(spec=IFileSystemManager))
     errors = validator.validate(plan)
 
     assert len(errors) == 0, f"Expected no errors, but got: {errors}"
@@ -307,7 +308,7 @@ def test_validate_execute_fails_with_unsafe_cwd_traversal(fs):
             )
         ],
     )
-    validator = PlanValidator()
+    validator = PlanValidator(LocalFileSystemAdapter())
     errors = validator.validate(plan)
 
     assert len(errors) == 1
@@ -336,7 +337,7 @@ def test_validate_execute_fails_with_absolute_cwd(fs):
             )
         ],
     )
-    validator = PlanValidator()
+    validator = PlanValidator(LocalFileSystemAdapter())
     errors = validator.validate(plan)
 
     assert len(errors) == 1
@@ -365,7 +366,7 @@ def test_validate_edit_fails_if_find_and_replace_identical(fs):
         ],
     )
 
-    validator = PlanValidator()
+    validator = PlanValidator(LocalFileSystemAdapter())
     errors = validator.validate(plan)
 
     assert len(errors) == 1
@@ -386,7 +387,7 @@ def test_validate_fails_for_unknown_action_type():
         ],
     )
 
-    validator = PlanValidator()
+    validator = PlanValidator(MagicMock(spec=IFileSystemManager))
     errors = validator.validate(plan)
 
     assert len(errors) == 1

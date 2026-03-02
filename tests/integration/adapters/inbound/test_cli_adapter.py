@@ -40,6 +40,9 @@ def test_cli_invokes_orchestrator_with_plan_file(mock_ExecutionOrchestrator: Mag
 
     # ACT
     with runner.isolated_filesystem() as temp_dir:
+        # Create the file referenced in the plan so validation passes
+        (Path(temp_dir) / "a").write_text("content", encoding="utf-8")
+
         p = Path(temp_dir) / "plan.md"
         p.write_text(valid_plan, encoding="utf-8")
         result = runner.invoke(app, ["execute", str(p), "--yes"])
@@ -79,6 +82,9 @@ def test_cli_exits_with_error_code_on_failure(mock_ExecutionOrchestrator: MagicM
 
     # ACT
     with runner.isolated_filesystem() as temp_dir:
+        # Create the file referenced in the plan so validation passes
+        (Path(temp_dir) / "a").write_text("content", encoding="utf-8")
+
         p = Path(temp_dir) / "plan.md"
         p.write_text(valid_plan, encoding="utf-8")
         result = runner.invoke(app, ["execute", str(p), "--yes"])
@@ -114,6 +120,9 @@ def test_cli_handles_interactive_mode_flag(mock_ExecutionOrchestrator: MagicMock
 
     # ACT
     with runner.isolated_filesystem() as temp_dir:
+        # Create the file referenced in the plan so validation passes
+        (Path(temp_dir) / "a").write_text("content", encoding="utf-8")
+
         p = Path(temp_dir) / "plan.md"
         p.write_text(valid_plan, encoding="utf-8")
         # Note: No --yes flag
