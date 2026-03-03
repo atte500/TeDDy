@@ -1,6 +1,5 @@
-import pytest
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from typer.testing import CliRunner
 
 from tests.acceptance.plan_builder import MarkdownPlanBuilder
@@ -12,20 +11,11 @@ from teddy_executor.core.domain.models import (
 )
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
 from teddy_executor.__main__ import app
-from teddy_executor.container import create_container
 
 runner = CliRunner()
 
 
-@pytest.fixture
-def fresh_container():
-    """Provides a fresh container for each test and patches the global one in __main__."""
-    c = create_container()
-    with patch("teddy_executor.__main__.container", c):
-        yield c
-
-
-def test_cli_invokes_orchestrator_with_plan_file(fresh_container):
+def test_cli_invokes_orchestrator_with_plan_file(container):
     """
     Tests that the CLI correctly calls the orchestrator with the plan path.
     """
@@ -43,7 +33,7 @@ def test_cli_invokes_orchestrator_with_plan_file(fresh_container):
     )
 
     # Register the mock instance in the container
-    fresh_container.register(ExecutionOrchestrator, instance=mock_orchestrator_instance)
+    container.register(ExecutionOrchestrator, instance=mock_orchestrator_instance)
 
     builder = MarkdownPlanBuilder("Test Plan")
     builder.add_action("READ", params={"Resource": "[a](/a)"})
@@ -67,7 +57,7 @@ def test_cli_invokes_orchestrator_with_plan_file(fresh_container):
     )
 
 
-def test_cli_exits_with_error_code_on_failure(fresh_container):
+def test_cli_exits_with_error_code_on_failure(container):
     """
     Tests that the CLI exits with a non-zero code if the
     execution report indicates a failure.
@@ -85,7 +75,7 @@ def test_cli_exits_with_error_code_on_failure(fresh_container):
         run_summary=mock_summary, action_logs=[]
     )
 
-    fresh_container.register(ExecutionOrchestrator, instance=mock_orchestrator_instance)
+    container.register(ExecutionOrchestrator, instance=mock_orchestrator_instance)
 
     builder = MarkdownPlanBuilder("Test Plan")
     builder.add_action("READ", params={"Resource": "[a](/a)"})
@@ -106,7 +96,7 @@ def test_cli_exits_with_error_code_on_failure(fresh_container):
     )
 
 
-def test_cli_handles_interactive_mode_flag(fresh_container):
+def test_cli_handles_interactive_mode_flag(container):
     """
     Tests that the CLI correctly sets the interactive flag (default is True).
     """
@@ -123,7 +113,7 @@ def test_cli_handles_interactive_mode_flag(fresh_container):
         run_summary=mock_summary, action_logs=[]
     )
 
-    fresh_container.register(ExecutionOrchestrator, instance=mock_orchestrator_instance)
+    container.register(ExecutionOrchestrator, instance=mock_orchestrator_instance)
 
     builder = MarkdownPlanBuilder("Test Plan")
     builder.add_action("READ", params={"Resource": "[a](/a)"})

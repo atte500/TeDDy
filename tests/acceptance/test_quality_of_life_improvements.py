@@ -1,9 +1,9 @@
 import os
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from typer.testing import CliRunner
 
-from teddy_executor.__main__ import app, create_container
+from teddy_executor.__main__ import app
 from teddy_executor.core.ports.outbound import IUserInteractor
 from teddy_executor.core.services.action_dispatcher import ActionDispatcher
 from teddy_executor.core.domain.models import ActionLog, ActionStatus
@@ -12,7 +12,7 @@ from tests.acceptance.plan_builder import MarkdownPlanBuilder
 runner = CliRunner()
 
 
-def test_interactive_prompt_shows_description(tmp_path: Path):
+def test_interactive_prompt_shows_description(tmp_path: Path, container):
     """
     Given a plan with an action that has a 'description' field,
     When the user runs `execute` interactively,
@@ -37,16 +37,14 @@ def test_interactive_prompt_shows_description(tmp_path: Path):
     mock_interactor = MagicMock(spec=IUserInteractor)
     mock_interactor.confirm_action.return_value = (True, "")
 
-    test_container = create_container()
-    test_container.register(IUserInteractor, instance=mock_interactor)
+    container.register(IUserInteractor, instance=mock_interactor)
 
     # Act
     # Change CWD to the temp path so file operations in the plan are contained
     original_cwd = os.getcwd()
     os.chdir(tmp_path)
     try:
-        with patch("teddy_executor.__main__.container", test_container):
-            result = runner.invoke(app, ["execute", "--plan-content", plan_content])
+        result = runner.invoke(app, ["execute", "--plan-content", plan_content])
     finally:
         os.chdir(original_cwd)
 
@@ -61,7 +59,7 @@ def test_interactive_prompt_shows_description(tmp_path: Path):
     assert "Create a test file for the QoL feature." in prompt_message
 
 
-def test_prompt_skips_approval_prompt(tmp_path: Path):
+def test_prompt_skips_approval_prompt(tmp_path: Path, container):
     """
     Given a plan with a 'prompt' action,
     When the plan is run in interactive mode,
@@ -90,14 +88,12 @@ def test_prompt_skips_approval_prompt(tmp_path: Path):
         params={"prompt": "Hello?"},
     )
 
-    test_container = create_container()
-    test_container.register(IUserInteractor, instance=mock_interactor)
-    test_container.register(ActionDispatcher, instance=mock_dispatcher)
+    container.register(IUserInteractor, instance=mock_interactor)
+    container.register(ActionDispatcher, instance=mock_dispatcher)
 
     # Act
-    with patch("teddy_executor.__main__.container", test_container):
-        # Run in interactive mode (no --yes flag)
-        result = runner.invoke(app, ["execute", "--plan-content", plan_content])
+    # Run in interactive mode (no --yes flag)
+    result = runner.invoke(app, ["execute", "--plan-content", plan_content])
 
     # Assert
     assert result.exit_code == 0
@@ -107,7 +103,9 @@ def test_prompt_skips_approval_prompt(tmp_path: Path):
     mock_dispatcher.dispatch_and_execute.assert_called_once()
 
 
-def test_read_action_report_formats_multiline_content_correctly(tmp_path: Path):
+def test_read_action_report_formats_multiline_content_correctly(
+    tmp_path: Path, container
+):
     """
     Verifies that the Markdown report for a `read` action correctly formats
     multi-line file content. (Regression Test)
@@ -125,17 +123,14 @@ def test_read_action_report_formats_multiline_content_correctly(tmp_path: Path):
         .build()
     )
 
-    real_container = create_container()
-
     # WHEN the plan is executed
     # Change CWD to the temp path so file operations in the plan are contained
     original_cwd = os.getcwd()
     os.chdir(tmp_path)
     try:
-        with patch("teddy_executor.__main__.container", real_container):
-            result = runner.invoke(
-                app, ["execute", "--plan-content", plan_content, "--yes"]
-            )
+        result = runner.invoke(
+            app, ["execute", "--plan-content", plan_content, "--yes"]
+        )
     finally:
         os.chdir(original_cwd)
 
@@ -147,7 +142,7 @@ def test_read_action_report_formats_multiline_content_correctly(tmp_path: Path):
     assert "line two" in result.stdout
 
 
-def test_read_action_is_formatted_as_literal_block(tmp_path: Path):
+def test_read_action_is_formatted_as_literal_block(tmp_path: Path, container):
     """
     Given a read action on a multi-line file containing markdown,
     When the execution report is generated,
@@ -178,18 +173,14 @@ def hello():
         .build()
     )
 
-    # Use the real container to test the full formatting pipeline
-    real_container = create_container()
-
     # Act
     # Change CWD to the temp path so file operations in the plan are contained
     original_cwd = os.getcwd()
     os.chdir(tmp_path)
     try:
-        with patch("teddy_executor.__main__.container", real_container):
-            result = runner.invoke(
-                app, ["execute", "--plan-content", plan_content, "--yes"]
-            )
+        result = runner.invoke(
+            app, ["execute", "--plan-content", plan_content, "--yes"]
+        )
     finally:
         os.chdir(original_cwd)
 
