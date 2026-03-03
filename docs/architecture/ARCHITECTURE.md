@@ -92,53 +92,72 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 
 #### Hexagonal Core
 
-| Component                    | Description                                                                                             | Contract                                                                            |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| **Domain Model**             | Defines the core entities, value objects, and ubiquitous language of the application.                   | [Domain Model & Ubiquous Language](./core/domain_model.md)                   |
-| **ExecutionReport**          | A strongly-typed, immutable data structure representing the outcome of a plan execution.                | [ExecutionReport](./core/domain/execution_report.md)                           |
-| **ShellOutput**              | A strictly-typed DTO representing the result of a shell command execution.                              | [ShellOutput](./core/domain/shell_output.md)                                   |
-| **WebSearchResults**         | A strictly-typed DTO representing the aggregated results from a web search.                             | [WebSearchResults](./core/domain/web_search_results.md)                        |
-| **ProjectContext**           | A strictly-typed DTO representing the aggregated project context for display.                           | [ProjectContext](./core/domain/project_context.md)                             |
-| **IGetContextUseCase**       | Defines the inbound port for orchestrating the collection of project context.                           | [IGetContextUseCase](./core/ports/inbound/get_context_use_case.md)             |
-| **IRunPlanUseCase**          | Defines the primary inbound port for executing a plan from a raw YAML string.                           | [IRunPlanUseCase](./core/ports/inbound/run_plan_use_case.md)                   |
-| **IPlanParser**              | Defines the inbound port for parsing a plan from a raw string into a `Plan` object.                     | [IPlanParser](./core/ports/inbound/plan_parser.md)                             |
-| **IPlanValidator**           | Defines the inbound port for performing pre-flight validation of a `Plan` object.                       | [IPlanValidator](./core/ports/inbound/plan_validator.md)                       |
-| **IEnvironmentInspector**    | Defines the outbound port for gathering information about the host operating environment.               | [IEnvironmentInspector](./core/ports/outbound/environment_inspector.md)        |
-| **IFileSystemManager**       | Defines a technology-agnostic outbound port for all file system operations (create, read, edit).        | [IFileSystemManager](./core/ports/outbound/file_system_manager.md)             |
-| **IMarkdownReportFormatter** | Defines the outbound port for formatting an `ExecutionReport` into a Markdown string.                   | [IMarkdownReportFormatter](./core/ports/outbound/markdown_report_formatter.md) |
-| **IRepoTreeGenerator**       | Defines the outbound port for generating a file tree, respecting `.gitignore` and `.teddyignore` files. | [IRepoTreeGenerator](./core/ports/outbound/repo_tree_generator.md)             |
-| **IShellExecutor**           | Defines the outbound port for executing shell commands and returning a `ShellOutput` DTO.               | [IShellExecutor](./core/ports/outbound/shell_executor.md)                      |
-| **IUserInteractor**          | Defines the outbound port for prompting the user for confirmation and free-text input.                  | [IUserInteractor](./core/ports/outbound/user_interactor.md)                    |
-| **IWebScraper**              | Defines the outbound port for fetching and converting remote web page content to Markdown.              | [IWebScraper](./core/ports/outbound/web_scraper.md)                            |
-| **IWebSearcher**             | Defines the outbound port for performing web searches and returning structured results.                 | [IWebSearcher](./core/ports/outbound/web_searcher.md)                          |
-| **ActionDispatcher**         | A service that resolves and executes a single action, delegating to the `ActionFactory`.                | [ActionDispatcher](./core/services/action_dispatcher.md)                       |
-| **ActionFactory**            | A factory service that creates validated `Action` domain objects from raw plan data.                    | [ActionFactory](./core/services/action_factory.md)                             |
-| **EditSimulator**            | A pure service for applying a sequence of FIND/REPLACE edits to a string in memory.                       | [EditSimulator](./core/services/edit_simulator.md)                             |
+| Component                    | Description                                                                                                            | Contract                                                                       |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| **Domain Model**             | Defines the core entities, value objects, and ubiquitous language of the application.                                  | [Domain Model & Ubiquous Language](./core/domain_model.md)                     |
+| **ExecutionReport**          | A strongly-typed, immutable data structure representing the outcome of a plan execution.                               | [ExecutionReport](./core/domain/execution_report.md)                           |
+| **ShellOutput**              | A strictly-typed DTO representing the result of a shell command execution.                                             | [ShellOutput](./core/domain/shell_output.md)                                   |
+| **WebSearchResults**         | A strictly-typed DTO representing the aggregated results from a web search.                                            | [WebSearchResults](./core/domain/web_search_results.md)                        |
+| **ProjectContext**           | A strictly-typed DTO representing the aggregated project context for display.                                          | [ProjectContext](./core/domain/project_context.md)                             |
+| **IGetContextUseCase**       | Defines the inbound port for orchestrating the collection of project context.                                          | [IGetContextUseCase](./core/ports/inbound/get_context_use_case.md)             |
+| **IRunPlanUseCase**          | Defines the primary inbound port for executing a plan from a raw YAML string.                                          | [IRunPlanUseCase](./core/ports/inbound/run_plan_use_case.md)                   |
+| **IPlanParser**              | Defines the inbound port for parsing a plan from a raw string into a `Plan` object.                                    | [IPlanParser](./core/ports/inbound/plan_parser.md)                             |
+| **IPlanValidator**           | Defines the inbound port for performing pre-flight validation of a `Plan` object.                                      | [IPlanValidator](./core/ports/inbound/plan_validator.md)                       |
+| **IEnvironmentInspector**    | Defines the outbound port for gathering information about the host operating environment.                              | [IEnvironmentInspector](./core/ports/outbound/environment_inspector.md)        |
+| **IFileSystemManager**       | Defines a technology-agnostic outbound port for all file system operations (create, read, edit).                       | [IFileSystemManager](./core/ports/outbound/file_system_manager.md)             |
+| **IMarkdownReportFormatter** | Defines the outbound port for formatting an `ExecutionReport` into a Markdown string.                                  | [IMarkdownReportFormatter](./core/ports/outbound/markdown_report_formatter.md) |
+| **IRepoTreeGenerator**       | Defines the outbound port for generating a file tree, respecting `.gitignore` and `.teddyignore` files.                | [IRepoTreeGenerator](./core/ports/outbound/repo_tree_generator.md)             |
+| **IShellExecutor**           | Defines the outbound port for executing shell commands and returning a `ShellOutput` DTO.                              | [IShellExecutor](./core/ports/outbound/shell_executor.md)                      |
+| **IUserInteractor**          | Defines the outbound port for prompting the user for confirmation and free-text input.                                 | [IUserInteractor](./core/ports/outbound/user_interactor.md)                    |
+| **IWebScraper**              | Defines the outbound port for fetching and converting remote web page content to Markdown.                             | [IWebScraper](./core/ports/outbound/web_scraper.md)                            |
+| **IWebSearcher**             | Defines the outbound port for performing web searches and returning structured results.                                | [IWebSearcher](./core/ports/outbound/web_searcher.md)                          |
+| **ActionDispatcher**         | A service that resolves and executes a single action, delegating to the `ActionFactory`.                               | [ActionDispatcher](./core/services/action_dispatcher.md)                       |
+| **ActionFactory**            | A factory service that creates validated `Action` domain objects from raw plan data.                                   | [ActionFactory](./core/services/action_factory.md)                             |
+| **EditSimulator**            | A pure service for applying a sequence of FIND/REPLACE edits to a string in memory.                                    | [EditSimulator](./core/services/edit_simulator.md)                             |
 | **ContextService**           | The service that implements `IGetContextUseCase` by orchestrating outbound ports to gather and format project context. | [ContextService](./core/services/context_service.md)                           |
-| **ExecutionOrchestrator**    | The primary service that implements `IRunPlanUseCase`, managing the step-by-step execution of a parsed `Plan` object. | [ExecutionOrchestrator](./core/services/execution_orchestrator.md)             |
-| **MarkdownPlanParser**       | A service that parses a Markdown plan string into a `Plan` domain object using a strict, single-pass AST traversal. | [MarkdownPlanParser](./core/services/markdown_plan_parser.md)                  |
-| **Action Parser Strategies** | A set of strategy functions for parsing specific action types within a plan.                             | [ActionParserStrategies](./core/services/action_parser_strategies.md)          |
-| **Parser Metadata**          | Specialized logic for extracting parameters from metadata lists and messages during plan parsing.         | [ParserMetadata](./core/services/parser_metadata.md)                          |
-| **Parser Infrastructure**    | Low-level utilities for AST traversal, stream management, and path normalization used during plan parsing.    | [ParserInfrastructure](./core/services/parser_infrastructure.md)              |
-| **MarkdownReportFormatter**  | Implements `IMarkdownReportFormatter` using the Jinja2 template engine to generate CLI reports.         | [MarkdownReportFormatter](./core/services/markdown_report_formatter.md)        |
-| **PlanValidator**            | Implements `IPlanValidator` using a strategy pattern to run pre-flight checks on a plan's actions.      | [PlanValidator](./core/services/plan_validator.md)                             |
+| **ExecutionOrchestrator**    | The primary service that implements `IRunPlanUseCase`, managing the step-by-step execution of a parsed `Plan` object.  | [ExecutionOrchestrator](./core/services/execution_orchestrator.md)             |
+| **MarkdownPlanParser**       | A service that parses a Markdown plan string into a `Plan` domain object using a strict, single-pass AST traversal.    | [MarkdownPlanParser](./core/services/markdown_plan_parser.md)                  |
+| **Action Parser Strategies** | A set of strategy functions for parsing specific action types within a plan.                                           | [ActionParserStrategies](./core/services/action_parser_strategies.md)          |
+| **Parser Metadata**          | Specialized logic for extracting parameters from metadata lists and messages during plan parsing.                      | [ParserMetadata](./core/services/parser_metadata.md)                           |
+| **Parser Infrastructure**    | Low-level utilities for AST traversal, stream management, and path normalization used during plan parsing.             | [ParserInfrastructure](./core/services/parser_infrastructure.md)               |
+| **MarkdownReportFormatter**  | Implements `IMarkdownReportFormatter` using the Jinja2 template engine to generate CLI reports.                        | [MarkdownReportFormatter](./core/services/markdown_report_formatter.md)        |
+| **PlanValidator**            | Implements `IPlanValidator` using a strategy pattern to run pre-flight checks on a plan's actions.                     | [PlanValidator](./core/services/plan_validator.md)                             |
 
 #### Primary Adapters
 
-| Component                      | Description                                                                                | Contract                                                                                        |
-| ------------------------------ | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| **CLI Adapter**                | The primary inbound adapter that drives the application via the `Typer` CLI framework.     | [CLI Adapter](./adapters/inbound/cli.md)                                          |
-| **ConsoleInteractor**          | Implements `IUserInteractor` for the console, providing diff previews for file operations. | [ConsoleInteractorAdapter](./adapters/outbound/console_interactor.md)             |
-| **LocalFileSystemAdapter**     | Implements `IFileSystemManager` for the local disk using Python's `pathlib`.               | [LocalFileSystemAdapter](./adapters/outbound/local_file_system_adapter.md)        |
-| **LocalRepoTreeGenerator**     | Implements `IRepoTreeGenerator` using the `pathspec` library to handle ignore files.       | [LocalRepoTreeGenerator](./adapters/outbound/local_repo_tree_generator.md)        |
-| **ShellAdapter**               | Implements `IShellExecutor` using Python's `subprocess` module.                            | [ShellAdapter](./adapters/outbound/shell_adapter.md)                              |
-| **SystemEnvironmentInspector** | Implements `IEnvironmentInspector` using Python's `os`, `platform`, and `sys` modules.     | [SystemEnvironmentInspector](./adapters/outbound/system_environment_inspector.md) |
+| Component                      | Description                                                                                             | Contract                                                                          |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| **CLI Adapter**                | The primary inbound adapter that drives the application via the `Typer` CLI framework.                  | [CLI Adapter](./adapters/inbound/cli.md)                                          |
+| **ConsoleInteractor**          | Implements `IUserInteractor` for the console, providing diff previews for file operations.              | [ConsoleInteractorAdapter](./adapters/outbound/console_interactor.md)             |
+| **LocalFileSystemAdapter**     | Implements `IFileSystemManager` for the local disk using Python's `pathlib`.                            | [LocalFileSystemAdapter](./adapters/outbound/local_file_system_adapter.md)        |
+| **LocalRepoTreeGenerator**     | Implements `IRepoTreeGenerator` using the `pathspec` library to handle ignore files.                    | [LocalRepoTreeGenerator](./adapters/outbound/local_repo_tree_generator.md)        |
+| **ShellAdapter**               | Implements `IShellExecutor` using Python's `subprocess` module.                                         | [ShellAdapter](./adapters/outbound/shell_adapter.md)                              |
+| **SystemEnvironmentInspector** | Implements `IEnvironmentInspector` using Python's `os`, `platform`, and `sys` modules.                  | [SystemEnvironmentInspector](./adapters/outbound/system_environment_inspector.md) |
 | **WebScraperAdapter**          | Implements `IWebScraper` using `trafilatura` for content extraction and a direct-fetch for GitHub URLs. | [WebScraperAdapter](./adapters/outbound/web_scraper_adapter.md)                   |
-| **WebSearcherAdapter**         | Implements `IWebSearcher` using the `ddgs` library for keyless DuckDuckGo searches.        | [WebSearcherAdapter](./adapters/outbound/web_searcher_adapter.md)                 |
+| **WebSearcherAdapter**         | Implements `IWebSearcher` using the `ddgs` library for keyless DuckDuckGo searches.                     | [WebSearcherAdapter](./adapters/outbound/web_searcher_adapter.md)                 |
 
 ---
 
-## 3. Key Architectural Decisions
+---
+
+## 3. Self-Enforcing Architecture (Static Analysis Rules)
+
+-   **Goal:** To prevent architectural drift by codifying key conventions into automated static analysis rules using `semgrep`. These rules are enforced via pre-commit hooks and the CI pipeline.
+
+| Priority | Rule ID                         | Description                                                                                               | Status    |
+| :------- | :------------------------------ | :-------------------------------------------------------------------------------------------------------- | :-------- |
+| 1        | `arch-integrity-no-manual-di`   | Prohibits direct instantiation of services/adapters in tests, forcing the use of the `container` fixture. | `Planned` |
+| 1        | `arch-integrity-hex-boundaries` | Prevents core services from directly importing concrete adapters; they must use Port abstractions.        | `Planned` |
+| 2        | `test-pyramid-no-mock-asserts`  | Prohibits `mock.assert_called()` in acceptance tests (`tests/acceptance/`).                               | `Planned` |
+| 2        | `test-pyramid-no-direct-io`     | Flags direct imports of `os`, `pathlib`, `shutil`, `subprocess` in tests outside the integration layer.   | `Planned` |
+
+---
+#### Rejected Rules
+- **Ban `subprocess.run(shell=True)`:** Rejected because the `ShellAdapter` intentionally uses `shell=True` on POSIX systems for core features like pipes and globbing. This is a documented, deliberate design decision.
+
+---
+
+## 4. Key Architectural Decisions
 
 This section captures significant, long-standing architectural decisions and patterns that define the system's design.
 
@@ -173,7 +192,7 @@ This section captures significant, long-standing architectural decisions and pat
 
 ---
 
-## 4. Debug Mode
+## 5. Debug Mode
 
 To aid in fault isolation, the `teddy` executor includes a debug mode that can be activated via an environment variable.
 

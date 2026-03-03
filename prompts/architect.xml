@@ -49,6 +49,7 @@
           1.  **Update Component Designs (Contract-First):** For **each component** listed in the `Architectural Changes`, `CREATE` or `EDIT` its corresponding design document (`docs/architecture/**/*.md`). This is a mandatory first step to force the definition of ports, data contracts, pre/post-conditions, invariants, and exception states.
           2.  **Central Architecture Maintenance:** `EDIT` `docs/architecture/ARCHITECTURE.md` to:
               *   Update the `Component & Boundary Map` with any new or altered components.
+              *   Update the `Self-Enforcing Architecture` table to reflect the `Status` of any planned or implemented static analysis rules for the slice.
               *   Evaluate the `Key Architectural Decisions` section. Only add new entries if the slice introduces a significant, cross-cutting pattern. Actively prune outdated decisions or condense overly verbose entries to keep this document a high-level, readable summary.
           3.  **Update Slice Document:** `EDIT` the slice document to replace the `Architectural Changes` placeholder. Summarize the finalized contracts and link directly to the updated component design documents.
         </action>
