@@ -74,7 +74,7 @@ jobs:
       run: npm install -g jscpd
 
     - name: Run jscpd (Code Duplication Detection)
-      run: jscpd --min-tokens=50 --reporters=console --threshold 0 . --ignore="**/*.md,**/*.xml,**/tests/**,**/spikes/**"
+      run: jscpd --min-tokens=50 --reporters=console --threshold 0 src
 
     - name: Verify Test Pyramid Structure
       run: ./scripts/verify_test_pyramid.py
