@@ -1,45 +1,50 @@
 import pytest
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock
 
 from teddy_executor.core.domain.models import ProjectContext
+from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
+from teddy_executor.core.ports.outbound.environment_inspector import (
+    IEnvironmentInspector,
+)
+from teddy_executor.core.ports.outbound.file_system_manager import FileSystemManager
+from teddy_executor.core.ports.outbound.repo_tree_generator import IRepoTreeGenerator
 from teddy_executor.core.services.context_service import ContextService
 
 
 @pytest.fixture
-def mock_file_system_manager() -> Mock:
-    return MagicMock()
+def mocks(container):
+    """
+    Registers mocks in the container and returns them for easy access in tests.
+    """
+    mock_file_system_manager = MagicMock(spec=FileSystemManager)
+    mock_repo_tree_generator = MagicMock(spec=IRepoTreeGenerator)
+    mock_environment_inspector = MagicMock(spec=IEnvironmentInspector)
+
+    container.register(FileSystemManager, instance=mock_file_system_manager)
+    container.register(IRepoTreeGenerator, instance=mock_repo_tree_generator)
+    container.register(IEnvironmentInspector, instance=mock_environment_inspector)
+    container.register(IGetContextUseCase, ContextService)
+
+    return {
+        "file_system_manager": mock_file_system_manager,
+        "repo_tree_generator": mock_repo_tree_generator,
+        "environment_inspector": mock_environment_inspector,
+    }
 
 
 @pytest.fixture
-def mock_repo_tree_generator() -> Mock:
-    return MagicMock()
-
-
-@pytest.fixture
-def mock_environment_inspector() -> Mock:
-    return MagicMock()
-
-
-@pytest.fixture
-def service(
-    mock_file_system_manager: Mock,
-    mock_repo_tree_generator: Mock,
-    mock_environment_inspector: Mock,
-) -> ContextService:
-    """Provides a ContextService instance with mocked dependencies."""
-    return ContextService(
-        file_system_manager=mock_file_system_manager,
-        repo_tree_generator=mock_repo_tree_generator,
-        environment_inspector=mock_environment_inspector,
-    )
+def service(container, mocks) -> IGetContextUseCase:
+    """Provides a ContextService instance resolved from the container."""
+    return container.resolve(IGetContextUseCase)
 
 
 def test_get_context_creates_default_file_if_not_exists(
-    service: ContextService,
-    mock_file_system_manager: Mock,
-    mock_repo_tree_generator: Mock,
-    mock_environment_inspector: Mock,
+    service: IGetContextUseCase,
+    mocks: dict,
 ):
+    mock_file_system_manager = mocks["file_system_manager"]
+    mock_repo_tree_generator = mocks["repo_tree_generator"]
+    mock_environment_inspector = mocks["environment_inspector"]
     """
     Scenario: Simplified Default Configuration (Service Level)
     Tests that get_context calls the file system manager to create the
@@ -63,11 +68,12 @@ def test_get_context_creates_default_file_if_not_exists(
 
 
 def test_get_context_does_not_create_default_file_if_exists(
-    service: ContextService,
-    mock_file_system_manager: Mock,
-    mock_repo_tree_generator: Mock,
-    mock_environment_inspector: Mock,
+    service: IGetContextUseCase,
+    mocks: dict,
 ):
+    mock_file_system_manager = mocks["file_system_manager"]
+    mock_repo_tree_generator = mocks["repo_tree_generator"]
+    mock_environment_inspector = mocks["environment_inspector"]
     """
     Tests that get_context does NOT try to create the default context file
     if the permanent context file already exists.
@@ -89,11 +95,12 @@ def test_get_context_does_not_create_default_file_if_exists(
 
 
 def test_get_context_orchestrates_and_returns_correct_dto(
-    service: ContextService,
-    mock_file_system_manager: Mock,
-    mock_repo_tree_generator: Mock,
-    mock_environment_inspector: Mock,
+    service: IGetContextUseCase,
+    mocks: dict,
 ):
+    mock_file_system_manager = mocks["file_system_manager"]
+    mock_repo_tree_generator = mocks["repo_tree_generator"]
+    mock_environment_inspector = mocks["environment_inspector"]
     """
     Scenario: Standardized Output Format (Service Level)
     Tests that get_context calls all its dependencies correctly and assembles

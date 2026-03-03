@@ -20,7 +20,6 @@ from teddy_executor.core.ports.outbound import (
     IMarkdownReportFormatter,
 )
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
-from teddy_executor.core.services.markdown_plan_parser import MarkdownPlanParser
 from teddy_executor.core.services.plan_validator import ValidationError
 from teddy_executor.adapters.inbound.cli_formatter import format_project_context
 from teddy_executor.container import create_container
@@ -135,7 +134,7 @@ def create_parser_for_plan(plan_file: Optional[Path], plan_content: str) -> IPla
     Factory function to determine which plan parser to use.
     """
     # Legacy YAML plans are deprecated. Only Markdown is supported.
-    return MarkdownPlanParser()
+    return container.resolve(IPlanParser)
 
 
 def _handle_validation_failure(

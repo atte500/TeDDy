@@ -1,40 +1,49 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, Mock
 
 import pytest
-from teddy_executor.core.domain.models import RunStatus
+from teddy_executor.core.domain.models import ActionLog, ActionStatus, RunStatus
+from teddy_executor.core.ports.inbound.edit_simulator import IEditSimulator
+from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
+from teddy_executor.core.ports.inbound.run_plan_use_case import RunPlanUseCase
+from teddy_executor.core.ports.outbound import IFileSystemManager, IUserInteractor
+from teddy_executor.core.services.action_dispatcher import ActionDispatcher
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
-from teddy_executor.core.services.markdown_plan_parser import MarkdownPlanParser
 
 
 @pytest.fixture
-def mock_dispatcher():
-    return MagicMock()
+def mocks(container):
+    mock_dispatcher = MagicMock(spec=ActionDispatcher)
+    mock_interactor = MagicMock(spec=IUserInteractor)
+    mock_file_system_manager = MagicMock(spec=IFileSystemManager)
+    mock_edit_simulator = Mock(spec=IEditSimulator)
+
+    from teddy_executor.core.services.markdown_plan_parser import MarkdownPlanParser
+
+    container.register(IPlanParser, MarkdownPlanParser)
+    container.register(ActionDispatcher, instance=mock_dispatcher)
+    container.register(IUserInteractor, instance=mock_interactor)
+    container.register(IFileSystemManager, instance=mock_file_system_manager)
+    container.register(IEditSimulator, instance=mock_edit_simulator)
+    container.register(RunPlanUseCase, ExecutionOrchestrator)
+
+    return {
+        "dispatcher": mock_dispatcher,
+        "interactor": mock_interactor,
+        "file_system_manager": mock_file_system_manager,
+    }
 
 
-@pytest.fixture
-def mock_interactor():
-    return MagicMock()
-
-
-@pytest.fixture
-def mock_file_system_manager():
-    return MagicMock()
-
-
-def test_execute_handles_invalid_plan_error_gracefully(
-    mock_dispatcher, mock_interactor, mock_file_system_manager
-):
+def test_execute_handles_valid_plan_successfully(container, mocks):
     """
-    Given an invalid plan string that causes the parser to raise InvalidPlanError,
+    Given a valid plan,
     When the ExecutionOrchestrator is invoked,
-    Then it should return a VALIDATION_FAILED report.
-    This test is being repurposed to test the orchestrator's response to an already-parsed-but-invalid plan,
-    though this scenario is less likely now that parsing is done upstream.
-    The primary goal of this refactoring is changing the 'execute' signature.
+    Then it should return a SUCCESS report.
     """
     # Arrange
-    # The orchestrator should no longer parse. We create a plan and expect it to run.
-    # A valid plan is needed now.
+    plan_parser = container.resolve(IPlanParser)
+    orchestrator = container.resolve(RunPlanUseCase)
+    mock_dispatcher = mocks["dispatcher"]
+
     plan_content = """
 # Valid Plan
 - **Status:** Green 🟢
@@ -53,25 +62,11 @@ Rationale.
 content1
 ````
 """
-    plan_parser = MarkdownPlanParser()
     valid_plan = plan_parser.parse(plan_content)
 
     # Mock the dispatcher to return a success log
-    from teddy_executor.core.domain.models import ActionLog, ActionStatus
-
     mock_dispatcher.dispatch_and_execute.return_value = ActionLog(
         status=ActionStatus.SUCCESS, action_type="CREATE", params={}
-    )
-
-    from unittest.mock import Mock
-    from teddy_executor.core.ports.inbound.edit_simulator import IEditSimulator
-
-    orchestrator = ExecutionOrchestrator(
-        plan_parser=plan_parser,
-        action_dispatcher=mock_dispatcher,
-        user_interactor=mock_interactor,
-        file_system_manager=mock_file_system_manager,
-        edit_simulator=Mock(spec=IEditSimulator),
     )
 
     # Act

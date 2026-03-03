@@ -1,6 +1,5 @@
 from unittest.mock import MagicMock
 import pytest
-import punq
 
 from teddy_executor.core.domain.models.plan import ActionData, Plan
 from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
@@ -22,7 +21,7 @@ def mock_fs() -> MagicMock:
 
 
 @pytest.fixture
-def validator(container: punq.Container, mock_fs: MagicMock) -> IPlanValidator:
+def validator(container, mock_fs: MagicMock) -> IPlanValidator:
     # Override IFileSystemManager with the mock
     container.register(IFileSystemManager, instance=mock_fs)
 
@@ -200,7 +199,7 @@ def test_validate_edit_fails_if_find_block_not_unique(validator, mock_fs):
     assert "Found 2 matches" in errors[0].message
 
 
-def test_validate_execute_action_fails_for_multiline_commands():
+def test_validate_execute_action_fails_for_multiline_commands(validator):
     """
     Given an EXECUTE action with multiple commands,
     When validated,
@@ -216,14 +215,13 @@ def test_validate_execute_action_fails_for_multiline_commands():
         ],
     )
 
-    validator = PlanValidator(MagicMock(spec=IFileSystemManager))
     errors = validator.validate(plan)
 
     assert len(errors) == 1
     assert "EXECUTE action must contain exactly one command" in errors[0].message
 
 
-def test_validate_execute_action_fails_for_chained_commands():
+def test_validate_execute_action_fails_for_chained_commands(validator):
     """
     Given an EXECUTE action with chained commands (&&),
     When validated,
@@ -239,14 +237,15 @@ def test_validate_execute_action_fails_for_chained_commands():
         ],
     )
 
-    validator = PlanValidator(MagicMock(spec=IFileSystemManager))
     errors = validator.validate(plan)
 
     assert len(errors) == 1
     assert "Command chaining with '&&' is not allowed" in errors[0].message
 
 
-def test_validate_execute_succeeds_for_single_command_with_line_continuations():
+def test_validate_execute_succeeds_for_single_command_with_line_continuations(
+    validator,
+):
     """
     Given an EXECUTE action with a single command spanning multiple lines using '\\',
     When validated,
@@ -260,7 +259,6 @@ def test_validate_execute_succeeds_for_single_command_with_line_continuations():
         actions=[ActionData(type="EXECUTE", params={"command": command})],
     )
 
-    validator = PlanValidator(MagicMock(spec=IFileSystemManager))
     errors = validator.validate(plan)
 
     assert len(errors) == 0, (
@@ -268,7 +266,9 @@ def test_validate_execute_succeeds_for_single_command_with_line_continuations():
     )
 
 
-def test_validate_execute_succeeds_for_single_command_with_multiline_argument():
+def test_validate_execute_succeeds_for_single_command_with_multiline_argument(
+    validator,
+):
     """
     Given a single command with a multiline string argument,
     When validated,
@@ -280,7 +280,6 @@ def test_validate_execute_succeeds_for_single_command_with_multiline_argument():
         actions=[ActionData(type="EXECUTE", params={"command": command})],
     )
 
-    validator = PlanValidator(MagicMock(spec=IFileSystemManager))
     errors = validator.validate(plan)
 
     assert len(errors) == 0, (
@@ -288,7 +287,7 @@ def test_validate_execute_succeeds_for_single_command_with_multiline_argument():
     )
 
 
-def test_validate_execute_succeeds_with_ampersands_in_quoted_string():
+def test_validate_execute_succeeds_with_ampersands_in_quoted_string(validator):
     """
     Given an EXECUTE action with '&&' inside a quoted string,
     When validated,
@@ -300,7 +299,6 @@ def test_validate_execute_succeeds_with_ampersands_in_quoted_string():
         actions=[ActionData(type="EXECUTE", params={"command": command})],
     )
 
-    validator = PlanValidator(MagicMock(spec=IFileSystemManager))
     errors = validator.validate(plan)
 
     assert len(errors) == 0, (
@@ -308,7 +306,7 @@ def test_validate_execute_succeeds_with_ampersands_in_quoted_string():
     )
 
 
-def test_validate_execute_action_succeeds_for_single_command_with_directives():
+def test_validate_execute_action_succeeds_for_single_command_with_directives(validator):
     """
     Given an EXECUTE action with a single command and directives,
     When validated,
@@ -320,7 +318,6 @@ def test_validate_execute_action_succeeds_for_single_command_with_directives():
         actions=[ActionData(type="EXECUTE", params={"command": command})],
     )
 
-    validator = PlanValidator(MagicMock(spec=IFileSystemManager))
     errors = validator.validate(plan)
 
     assert len(errors) == 0, f"Expected no errors, but got: {errors}"
@@ -508,7 +505,7 @@ def test_read_action_validator_reports_error_if_file_missing(validator, mock_fs)
     assert errors[0].file_path == "nonexistent.txt"
 
 
-def test_validate_fails_for_unknown_action_type():
+def test_validate_fails_for_unknown_action_type(validator):
     """
     Given a plan with an unknown action type,
     When validated,
@@ -522,7 +519,6 @@ def test_validate_fails_for_unknown_action_type():
         ],
     )
 
-    validator = PlanValidator(MagicMock(spec=IFileSystemManager))
     errors = validator.validate(plan)
 
     assert len(errors) == 1
