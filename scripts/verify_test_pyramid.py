@@ -49,10 +49,10 @@ def main():
     )
 
     if pyramid_is_healthy:
-        print("\n✅ Test pyramid structure is healthy.")
+        print("\n[OK] Test pyramid structure is healthy.")
         sys.exit(0)
     else:
-        print("\n❌ ERROR: Test pyramid structure is violated!", file=sys.stderr)
+        print("\n[ERROR] Test pyramid structure is violated!", file=sys.stderr)
         print("The rule is: Acceptance < Integration < Unit", file=sys.stderr)
         sys.exit(1)
 
