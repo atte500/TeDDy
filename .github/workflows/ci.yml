@@ -63,4 +63,4 @@ jobs:
       run: poetry run vulture src --min-confidence 80
 
     - name: Run tests (with coverage)
-      run: poetry run pytest
+      run: poetry run pytest --cov-fail-under=90
