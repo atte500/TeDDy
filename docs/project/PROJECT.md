@@ -12,7 +12,6 @@ This table tracks the status of active Milestones and provides a high-level summ
 
 | Milestone                                                                                    | Status        | Specs                                                                                                                                                               | Features                                                                                                                           |
 | :------------------------------------------------------------------------------------------- | :------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :--------------------------------------------------------------------------------------------------------------------------------- |
-| [08-core-refactoring-and-enhancements](./milestones/08-core-refactoring-and-enhancements.md) | `In Progress` | [New Plan Format](./specs/new-plan-format.md)<br>[Test Standards](./specs/test-infrastructure-standards.md)                                                         | Robust Parser, POSIX Shell Pre-processor, DTO Modernization, CI Quality Gates, Standardized Mocking & DI, and CLI UX Polish.      |
 | [09-interactive-session-and-config](./milestones/09-interactive-session-and-config.md)       | `Planned`     | [Interactive Session](./specs/interactive-session-workflow.md)<br>[Context Payload](./specs/context-payload-format.md)<br>[Report Format](./specs/report-format.md) | Stateful Session Management, Security Scanning (Secrets/Bandit), LLM Integration (LiteLLM), TUI Workflow, and Agent Collaboration. |
 
 ## Workflow Standards
@@ -22,4 +21,4 @@ This section defines the conventions for our project management artifacts.
 - **Artifact Lifecycle:** Work flows from `Spec` -> `Milestone` -> `Slice`.
 - **Numbering:** Milestones and Slices are numbered sequentially.
 - **Dashboard Policy:** The **Roadmap** table above tracks the status of high-level Milestones.
-- **Archiving Policy:** Once a Milestone is completed, its entry is removed from the Roadmap table, and its corresponding `.md` file (along with its slices) is moved into an `archive/` subdirectory.
+- **Archiving Policy:** Once a Milestone is completed, its entry is removed from the Roadmap. The corresponding milestone and slice files are deleted. Git history serves as the official archive.

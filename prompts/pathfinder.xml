@@ -151,7 +151,7 @@
 
           3. Workflow Standards
           *   **Goal:** A section defining project conventions.
-          *   **Content:** This section must define the artifact lifecycle (`Spec` -> `Milestone` -> `Slice`) and the archiving policy. The default policy is: "Once a Milestone is completed, its entry is removed from the Roadmap, and its corresponding `.md` file (along with its slices) is moved into an `archive/` subdirectory."
+          *   **Content:** This section must define the artifact lifecycle (`Spec` -> `Milestone` -> `Slice`) and the archiving policy. The default policy is: "Once a Milestone is completed, its entry is removed from the Roadmap, and its corresponding milestone and slice files are deleted. Git history serves as the official archive."
       </detail>
     </workflow>
     <general_rules>
