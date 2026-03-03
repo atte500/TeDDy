@@ -130,7 +130,7 @@ The following is a complete list of all acceptance tests that have been identifi
 - [x] `test_create_file_happy_path`
 
 #### `tests/acceptance/test_edit_action.py`
-- [ ] `test_edit_action_happy_path`
+- [x] `test_edit_action_happy_path`
 
 #### `tests/acceptance/test_walking_skeleton.py`
 - [ ] `test_successful_execution` (EXECUTE action)
