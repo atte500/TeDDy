@@ -37,11 +37,21 @@ class ConsoleInteractorAdapter(IUserInteractor):
         if first_input:
             return first_input
 
-        # If they just pressed Enter, read exactly one more line for their actual response.
+        # If they just pressed Enter, ask for confirmation.
+        typer.echo(
+            "Are you sure you want to submit an empty response? "
+            "Press [Enter] again to confirm, type a response, or type 'e' to open in Editor:",
+            err=True,
+        )
         try:
-            return input()
+            second_input = input().strip()
         except EOFError:
             return ""
+
+        if second_input.lower() == "e":
+            return self._get_input_from_editor(prompt)
+
+        return second_input
 
     def _get_input_from_editor(self, prompt: str) -> str:
         """Opens a temporary file in an external editor and reads the response."""
