@@ -11,25 +11,22 @@ UNIT_DIR = ROOT_DIR / "tests" / "unit"
 # ---
 
 def count_tests_in_dir(directory: Path) -> int:
-    """Counts 'def test_' occurrences in a given directory using git grep."""
+    """Counts 'def test_' occurrences by walking python files."""
     if not directory.is_dir():
         print(f"Error: Directory not found at '{directory}'", file=sys.stderr)
         return 0
 
-    cmd = f"git grep --count 'def test_' {directory}"
-    try:
-        result = subprocess.run(
-            cmd,
-            shell=True,
-            capture_output=True,
-            text=True,
-            check=True,
-            cwd=ROOT_DIR,
-        )
-        return int(result.stdout.strip())
-    except (subprocess.CalledProcessError, ValueError) as e:
-        print(f"Error counting tests in '{directory}': {e}", file=sys.stderr)
-        return 0
+    total_count = 0
+    for py_file in directory.rglob("test_*.py"):
+        try:
+            with open(py_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    # Check for start of a test function definition
+                    if line.strip().startswith("def test_"):
+                        total_count += 1
+        except Exception as e:
+            print(f"Error reading file {py_file}: {e}", file=sys.stderr)
+    return total_count
 
 def main():
     """
