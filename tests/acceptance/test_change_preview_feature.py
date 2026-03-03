@@ -1,6 +1,4 @@
-import shutil
 from pathlib import Path
-from unittest.mock import patch
 
 from typer.testing import CliRunner
 
@@ -11,9 +9,7 @@ from .plan_builder import MarkdownPlanBuilder
 runner = CliRunner()
 
 
-def test_in_terminal_diff_is_shown_for_create_file(
-    tmp_path: Path, monkeypatch, container
-):
+def test_in_terminal_diff_is_shown_for_create_file(tmp_path: Path, mock_env):
     """
     Given no external diff tool is configured or found,
     When a `create_file` action is run interactively,
@@ -34,17 +30,22 @@ def test_in_terminal_diff_is_shown_for_create_file(
     plan_content = builder.build()
 
     # GIVEN: No diff tool is configured or found
-    monkeypatch.setenv("TEDDY_DIFF_TOOL", "")
-    monkeypatch.setattr(shutil, "which", lambda cmd: None)
+    mock_env.get_env.return_value = ""
+    mock_env.which.return_value = None
 
     # WHEN: The plan is executed with interactive approval
-    with monkeypatch.context() as m:
-        m.chdir(tmp_path)
+    import os
+
+    original_cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
         result = runner.invoke(
             app,
             ["execute", "--no-copy", "--plan-content", plan_content],
             input="y\n",  # Approve the action
         )
+    finally:
+        os.chdir(original_cwd)
 
     # THEN: The command should succeed and the file should be created
     assert result.exit_code == 0
@@ -63,7 +64,7 @@ def test_in_terminal_diff_is_shown_for_create_file(
     assert "Approve? (y/n):" in result.stderr
 
 
-def test_in_terminal_diff_is_shown_as_fallback(tmp_path: Path, monkeypatch, container):
+def test_in_terminal_diff_is_shown_as_fallback(tmp_path: Path, mock_env):
     """
     Given no external diff tool is configured or found,
     When an `edit` action is run interactively,
@@ -88,17 +89,22 @@ def test_in_terminal_diff_is_shown_as_fallback(tmp_path: Path, monkeypatch, cont
     plan_content = builder.build()
 
     # GIVEN: No diff tool is configured or found
-    monkeypatch.setenv("TEDDY_DIFF_TOOL", "")
-    monkeypatch.setattr(shutil, "which", lambda cmd: None)
+    mock_env.get_env.return_value = ""
+    mock_env.which.return_value = None
 
     # WHEN: The plan is executed with interactive approval
-    with monkeypatch.context() as m:
-        m.chdir(tmp_path)
+    import os
+
+    original_cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
         result = runner.invoke(
             app,
             ["execute", "--no-copy", "--plan-content", plan_content],
             input="y\n",  # Approve the action
         )
+    finally:
+        os.chdir(original_cwd)
 
     # THEN: The command should succeed and the file should be changed
     assert result.exit_code == 0
@@ -119,7 +125,7 @@ def test_in_terminal_diff_is_shown_as_fallback(tmp_path: Path, monkeypatch, cont
     assert "Approve? (y/n):" in result.stderr
 
 
-def test_vscode_is_used_as_fallback(tmp_path: Path, monkeypatch, container):
+def test_vscode_is_used_as_fallback(tmp_path: Path, mock_env):
     """
     Given VS Code is available and no custom tool is set,
     When an action is run interactively,
@@ -144,30 +150,34 @@ def test_vscode_is_used_as_fallback(tmp_path: Path, monkeypatch, container):
     plan_content = builder.build()
 
     # GIVEN: No custom diff tool is set, but 'code' is available
-    monkeypatch.setenv("TEDDY_DIFF_TOOL", "")
-    monkeypatch.setattr(
-        shutil, "which", lambda cmd: "/usr/bin/code" if cmd == "code" else None
+    mock_env.get_env.return_value = ""
+    mock_env.which.side_effect = lambda cmd: "/usr/bin/code" if cmd == "code" else None
+    mock_env.create_temp_file.side_effect = lambda suffix: str(
+        tmp_path / f"temp{suffix}"
     )
 
-    # WHEN: The plan is executed, mocking subprocess.run
-    with monkeypatch.context() as m:
-        m.chdir(tmp_path)
-        with patch("subprocess.run") as mock_run:
-            result = runner.invoke(
-                app,
-                ["execute", "--no-copy", "--plan-content", plan_content],
-                input="y\n",
-            )
+    # WHEN: The plan is executed
+    import os
+
+    original_cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        result = runner.invoke(
+            app,
+            ["execute", "--no-copy", "--plan-content", plan_content],
+            input="y\n",
+        )
+    finally:
+        os.chdir(original_cwd)
 
     # THEN: The command should succeed
     assert result.exit_code == 0
     report = parse_markdown_report(result.stdout)
     assert report["run_summary"]["Overall Status"] == "SUCCESS"
 
-    # AND THEN: subprocess.run should have been called with the correct args
-    mock_run.assert_called_once()
-    args, _ = mock_run.call_args
-    command_list = args[0]
+    # AND THEN: mock_env.run_command should have been called with the correct args
+    mock_env.run_command.assert_called_once()
+    command_list = mock_env.run_command.call_args[0][0]
     assert command_list[0] == "/usr/bin/code"
     assert command_list[1] == "-r"
     assert command_list[2] == "--diff"
@@ -176,7 +186,7 @@ def test_vscode_is_used_as_fallback(tmp_path: Path, monkeypatch, container):
     assert "--- a/hello.txt" not in result.stdout
 
 
-def test_custom_diff_tool_is_used_from_env(tmp_path: Path, monkeypatch, container):
+def test_custom_diff_tool_is_used_from_env(tmp_path: Path, mock_env):
     """
     Given the TEDDY_DIFF_TOOL environment variable is set with arguments,
     When an action is run interactively,
@@ -201,26 +211,30 @@ def test_custom_diff_tool_is_used_from_env(tmp_path: Path, monkeypatch, containe
     plan_content = builder.build()
 
     # GIVEN: A custom diff tool with arguments is set
-    monkeypatch.setenv("TEDDY_DIFF_TOOL", "nvim -d")
-    # Mock shutil.which to ensure 'nvim' is "found"
-    monkeypatch.setattr(
-        shutil, "which", lambda cmd: "/usr/bin/nvim" if cmd == "nvim" else None
+    mock_env.get_env.return_value = "nvim -d"
+    # Mock which to ensure 'nvim' is "found"
+    mock_env.which.side_effect = lambda cmd: "/usr/bin/nvim" if cmd == "nvim" else None
+    mock_env.create_temp_file.side_effect = lambda suffix: str(
+        tmp_path / f"temp{suffix}"
     )
 
-    # WHEN: The plan is executed, mocking subprocess.run
-    with monkeypatch.context() as m:
-        m.chdir(tmp_path)
-        with patch("subprocess.run") as mock_run:
-            runner.invoke(
-                app,
-                ["execute", "--no-copy", "--plan-content", plan_content],
-                input="y\n",
-            )
+    # WHEN: The plan is executed
+    import os
 
-    # THEN: subprocess.run should have been called with the parsed command
-    mock_run.assert_called_once()
-    args, _ = mock_run.call_args
-    command_list = args[0]
+    original_cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        runner.invoke(
+            app,
+            ["execute", "--no-copy", "--plan-content", plan_content],
+            input="y\n",
+        )
+    finally:
+        os.chdir(original_cwd)
+
+    # THEN: mock_env.run_command should have been called with the parsed command
+    mock_env.run_command.assert_called_once()
+    command_list = mock_env.run_command.call_args[0][0]
     assert command_list[0] == "/usr/bin/nvim"
     assert command_list[1] == "-d"
     # Ensure no vscode-specific flags were added
@@ -228,9 +242,7 @@ def test_custom_diff_tool_is_used_from_env(tmp_path: Path, monkeypatch, containe
     assert "--diff" not in command_list
 
 
-def test_invalid_custom_tool_falls_back_to_terminal(
-    tmp_path: Path, monkeypatch, container
-):
+def test_invalid_custom_tool_falls_back_to_terminal(tmp_path: Path, mock_env):
     """
     Given TEDDY_DIFF_TOOL is set to an invalid command,
     And VS Code is available,
@@ -255,20 +267,22 @@ def test_invalid_custom_tool_falls_back_to_terminal(
     plan_content = builder.build()
 
     # GIVEN: An invalid custom tool is set AND vscode is available
-    monkeypatch.setenv("TEDDY_DIFF_TOOL", "nonexistent-tool")
-    monkeypatch.setattr(
-        shutil, "which", lambda cmd: "/usr/bin/code" if cmd == "code" else None
-    )
+    mock_env.get_env.return_value = "nonexistent-tool"
+    mock_env.which.side_effect = lambda cmd: "/usr/bin/code" if cmd == "code" else None
 
-    # WHEN: The plan is executed, spying on subprocess.run
-    with monkeypatch.context() as m:
-        m.chdir(tmp_path)
-        with patch("subprocess.run") as mock_run:
-            result = runner.invoke(
-                app,
-                ["execute", "--no-copy", "--plan-content", plan_content],
-                input="y\n",
-            )
+    # WHEN: The plan is executed
+    import os
+
+    original_cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        result = runner.invoke(
+            app,
+            ["execute", "--no-copy", "--plan-content", plan_content],
+            input="y\n",
+        )
+    finally:
+        os.chdir(original_cwd)
 
     # THEN: The command should succeed
     assert result.exit_code == 0
@@ -283,7 +297,7 @@ def test_invalid_custom_tool_falls_back_to_terminal(
     )
 
     # AND THEN: The external tool should NOT have been called
-    mock_run.assert_not_called()
+    mock_env.run_command.assert_not_called()
 
 
 def test_no_diff_is_shown_for_auto_approved_plans(

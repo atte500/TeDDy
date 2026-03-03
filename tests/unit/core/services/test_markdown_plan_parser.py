@@ -187,6 +187,36 @@ poetry run pytest
     assert action.params["env"] == {"API_KEY": "secret", "DEBUG": "1"}
 
 
+def test_parse_execute_action_with_colon(parser: MarkdownPlanParser):
+    """
+    Verify that a command with a colon is parsed correctly.
+    (Migrated from acceptance tests)
+    """
+    # Arrange
+    plan_content = """
+# Test Execute Action
+- **Goal:** Test colon.
+
+## Rationale
+````text
+Rationale.
+````
+
+## Action Plan
+
+### `EXECUTE`
+- **Description:** Run a command with a colon.
+````shell
+echo hello:world
+````
+"""
+    # Act
+    result_plan = parser.parse(plan_content)
+
+    # Assert
+    assert result_plan.actions[0].params["command"] == "echo hello:world"
+
+
 def test_parse_execute_action_with_cd_directive(parser: MarkdownPlanParser):
     """
     Given an EXECUTE action with a `cd` directive in the shell block,

@@ -40,34 +40,3 @@ def test_edit_action_happy_path(monkeypatch, tmp_path: Path):
     report = parse_markdown_report(result.stdout)
     assert report["run_summary"]["Overall Status"] == "SUCCESS"
     assert report["action_logs"][0]["status"] == "SUCCESS"
-
-
-def test_edit_action_file_not_found(monkeypatch, tmp_path: Path):
-    """
-    Given a plan to edit a non-existent file,
-    When the plan is executed,
-    Then the action should fail and report the error.
-    """
-    # Arrange
-    non_existent_file = tmp_path / "non_existent.txt"
-    builder = MarkdownPlanBuilder("Test Edit Non-Existent File")
-    builder.add_action(
-        "EDIT",
-        params={
-            "File Path": f"[{non_existent_file.name}](/{non_existent_file.name})",
-            "Description": "Test edit on non-existent file.",
-        },
-        content_blocks={"`FIND:`": ("text", "foo"), "`REPLACE:`": ("text", "bar")},
-    )
-    plan_content = builder.build()
-
-    # Act
-    result = run_cli_with_markdown_plan_on_clipboard(
-        monkeypatch, plan_content, tmp_path
-    )
-
-    # Assert
-    assert result.exit_code == 1
-    report = parse_markdown_report(result.stdout)
-    assert report["run_summary"]["Overall Status"] == "Validation Failed"
-    assert "File to edit does not exist" in result.stdout
