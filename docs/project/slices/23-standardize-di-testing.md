@@ -4,11 +4,25 @@
 Reduce test maintenance overhead and boilerplate by centralizing Dependency Injection management.
 
 ## Acceptance Criteria
-- [ ] A `container` fixture exists in `tests/conftest.py`.
-- [ ] The fixture automatically patches `teddy_executor.__main__.container` using `monkeypatch`.
-- [ ] `tests/integration/adapters/inbound/test_cli_adapter.py` is refactored to use the fixture, removing `fresh_container` and manual patching.
-- [ ] `tests/acceptance/test_quality_of_life_improvements.py` is refactored to use the fixture.
-- [ ] All existing tests pass.
+- [x] A `container` fixture exists in `tests/conftest.py`.
+- [x] The fixture automatically patches `teddy_executor.__main__.container` using `monkeypatch`.
+- [x] `tests/integration/adapters/inbound/test_cli_adapter.py` is refactored to use the fixture, removing `fresh_container` and manual patching.
+- [x] `tests/acceptance/test_quality_of_life_improvements.py` is refactored to use the fixture.
+- [x] All existing tests pass.
+
+## Implementation Summary
+The DI testing infrastructure has been standardized across the project.
+
+### Key Changes:
+- **tests/conftest.py**: Introduced a centralized `container` fixture that automatically creates a fresh `punq.Container` and patches `teddy_executor.__main__.container` using `monkeypatch`.
+- **tests/unit/test_di_fixture_smoke.py**: Added a permanent smoke test to verify the infrastructure.
+- **tests/integration/adapters/inbound/test_cli_adapter.py**: Refactored to use the new fixture, removing redundant local `fresh_container` logic.
+- **tests/acceptance/test_quality_of_life_improvements.py**: Refactored to use the new fixture, eliminating manual `with patch(...)` blocks and reducing test complexity.
+
+### Benefits:
+- **Reduced Boilerplate**: Standardizes how DI is handled in tests, making them cleaner and easier to read.
+- **Improved Maintainability**: Changes to container creation now only need to be handled in one place.
+- **Consistent State**: Ensures every test starts with a truly fresh container and proper monkeypatching, preventing cross-test state pollution.
 
 ## Architectural Changes
 - **tests/conftest.py**: New `pytest` fixture.
