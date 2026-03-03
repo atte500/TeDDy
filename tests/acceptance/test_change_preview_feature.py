@@ -1,10 +1,9 @@
 import shutil
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from typer.testing import CliRunner
 
-from teddy_executor.core.ports.outbound import IUserInteractor
 from teddy_executor.__main__ import app
 from .helpers import parse_markdown_report
 from .plan_builder import MarkdownPlanBuilder
@@ -288,7 +287,7 @@ def test_invalid_custom_tool_falls_back_to_terminal(
 
 
 def test_no_diff_is_shown_for_auto_approved_plans(
-    tmp_path: Path, monkeypatch, container
+    tmp_path: Path, monkeypatch, mock_user_interactor
 ):
     """
     Given any diff tool configuration,
@@ -312,10 +311,6 @@ def test_no_diff_is_shown_for_auto_approved_plans(
     )
     plan_content = builder.build()
 
-    # GIVEN: A mock interactor to spy on
-    mock_interactor = MagicMock(spec=IUserInteractor)
-    container.register(IUserInteractor, instance=mock_interactor)
-
     # WHEN: The plan is executed with the --yes flag
     with monkeypatch.context() as m:
         m.chdir(tmp_path)
@@ -328,6 +323,6 @@ def test_no_diff_is_shown_for_auto_approved_plans(
     assert hello_path.read_text() == "Hello, TeDDy!"
 
     # AND THEN: The interactor's confirm_action method should never be called
-    mock_interactor.confirm_action.assert_not_called()
+    mock_user_interactor.assert_not_called()
     # And no diff should be in the output
     assert "--- Diff ---" not in result.stdout

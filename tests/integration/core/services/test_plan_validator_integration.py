@@ -22,14 +22,13 @@ def setup_container(container, tmp_path):
     # Register missing parser
     container.register(IPlanParser, MarkdownPlanParser)
 
-    # Create FS adapter with real simulator and test-specific root
-    edit_simulator = container.resolve(IEditSimulator)
+    # Overwrite the shared mock_fs with a real LocalFileSystemAdapter for integration testing
     fs_adapter = LocalFileSystemAdapter(
-        edit_simulator=edit_simulator, root_dir=str(tmp_path)
+        edit_simulator=container.resolve(IEditSimulator), root_dir=str(tmp_path)
     )
     container.register(IFileSystemManager, instance=fs_adapter)
 
-    # Re-register validator graph to ensure they use the test FS adapter
+    # Re-register validator graph to ensure they use the real FS adapter
     container.register(CreateActionValidator)
     container.register(EditActionValidator)
     container.register(ExecuteActionValidator)

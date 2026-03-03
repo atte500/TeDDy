@@ -1,12 +1,6 @@
-from unittest.mock import Mock
 import pytest
 import punq
 
-from teddy_executor.core.ports.outbound import (
-    IShellExecutor,
-    IFileSystemManager,
-    IWebScraper,
-)
 from teddy_executor.core.services.action_factory import ActionFactory
 
 # --- Fixtures ---
@@ -22,7 +16,7 @@ def factory(container: punq.Container) -> ActionFactory:
 
 
 def test_create_action_successfully_resolves_handler(
-    container: punq.Container, factory: ActionFactory
+    mock_shell, factory: ActionFactory
 ):
     """
     Given a known action type ('execute'),
@@ -30,15 +24,13 @@ def test_create_action_successfully_resolves_handler(
     Then it should resolve and return the correct handler from the container.
     """
     # Arrange
-    mock_shell_executor = Mock(spec=IShellExecutor)
-    container.register(IShellExecutor, instance=mock_shell_executor)
     action_type = "execute"
 
     # Act
     action_handler = factory.create_action(action_type)
 
     # Assert
-    assert action_handler is mock_shell_executor
+    assert action_handler is mock_shell
 
 
 def test_create_action_raises_error_for_unknown_type(factory: ActionFactory):
@@ -74,17 +66,13 @@ def test_create_action_for_return_returns_handler(factory: ActionFactory):
 
 
 def test_read_action_with_url_resolves_web_scraper(
-    container: punq.Container, factory: ActionFactory
+    mock_scraper, factory: ActionFactory
 ):
     """
     Given an ActionFactory with a WebScraper registered,
     When create_action is called for a 'read' action with a URL parameter,
     Then it should return the WebScraper adapter.
     """
-    # Arrange
-    mock_scraper = Mock(spec=IWebScraper)
-    container.register(IWebScraper, instance=mock_scraper)
-
     # Act
     action_handler = factory.create_action("read", {"resource": "http://example.com"})
 
@@ -93,17 +81,13 @@ def test_read_action_with_url_resolves_web_scraper(
 
 
 def test_read_action_with_path_resolves_file_system_manager(
-    container: punq.Container, factory: ActionFactory
+    mock_fs, factory: ActionFactory
 ):
     """
     Given an ActionFactory with a FileSystemManager registered,
     When create_action is called for a 'read' action with a file path parameter,
     Then it should return the FileSystemManager adapter.
     """
-    # Arrange
-    mock_fs = Mock(spec=IFileSystemManager)
-    container.register(IFileSystemManager, instance=mock_fs)
-
     # Act
     action_handler = factory.create_action("read", {"resource": "path/to/file.txt"})
 

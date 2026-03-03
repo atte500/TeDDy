@@ -1,5 +1,4 @@
 from pathlib import Path
-from unittest.mock import MagicMock
 from typer.testing import CliRunner
 
 from tests.acceptance.plan_builder import MarkdownPlanBuilder
@@ -9,31 +8,26 @@ from teddy_executor.core.domain.models import (
     RunSummary,
     RunStatus,
 )
-from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
 from teddy_executor.__main__ import app
 
 runner = CliRunner()
 
 
-def test_cli_invokes_orchestrator_with_plan_file(container):
+def test_cli_invokes_orchestrator_with_plan_file(mock_run_plan):
     """
     Tests that the CLI correctly calls the orchestrator with the plan path.
     """
     # ARRANGE
     from datetime import datetime
 
-    mock_orchestrator_instance = MagicMock(spec=ExecutionOrchestrator)
     mock_summary = RunSummary(
         status=RunStatus.SUCCESS,
         start_time=datetime.now(),
         end_time=datetime.now(),
     )
-    mock_orchestrator_instance.execute.return_value = ExecutionReport(
+    mock_run_plan.execute.return_value = ExecutionReport(
         run_summary=mock_summary, action_logs=[]
     )
-
-    # Register the mock instance in the container
-    container.register(ExecutionOrchestrator, instance=mock_orchestrator_instance)
 
     builder = MarkdownPlanBuilder("Test Plan")
     builder.add_action("READ", params={"Resource": "[a](/a)"})
@@ -52,12 +46,10 @@ def test_cli_invokes_orchestrator_with_plan_file(container):
     from unittest.mock import ANY
 
     assert result.exit_code == 0, f"CLI exited with error: {result.stderr}"
-    mock_orchestrator_instance.execute.assert_called_once_with(
-        plan=ANY, interactive=False
-    )
+    mock_run_plan.execute.assert_called_once_with(plan=ANY, interactive=False)
 
 
-def test_cli_exits_with_error_code_on_failure(container):
+def test_cli_exits_with_error_code_on_failure(mock_run_plan):
     """
     Tests that the CLI exits with a non-zero code if the
     execution report indicates a failure.
@@ -65,17 +57,14 @@ def test_cli_exits_with_error_code_on_failure(container):
     # ARRANGE
     from datetime import datetime
 
-    mock_orchestrator_instance = MagicMock(spec=ExecutionOrchestrator)
     mock_summary = RunSummary(
         status=RunStatus.FAILURE,
         start_time=datetime.now(),
         end_time=datetime.now(),
     )
-    mock_orchestrator_instance.execute.return_value = ExecutionReport(
+    mock_run_plan.execute.return_value = ExecutionReport(
         run_summary=mock_summary, action_logs=[]
     )
-
-    container.register(ExecutionOrchestrator, instance=mock_orchestrator_instance)
 
     builder = MarkdownPlanBuilder("Test Plan")
     builder.add_action("READ", params={"Resource": "[a](/a)"})
@@ -96,24 +85,21 @@ def test_cli_exits_with_error_code_on_failure(container):
     )
 
 
-def test_cli_handles_interactive_mode_flag(container):
+def test_cli_handles_interactive_mode_flag(mock_run_plan):
     """
     Tests that the CLI correctly sets the interactive flag (default is True).
     """
     # ARRANGE
     from datetime import datetime
 
-    mock_orchestrator_instance = MagicMock(spec=ExecutionOrchestrator)
     mock_summary = RunSummary(
         status=RunStatus.SUCCESS,
         start_time=datetime.now(),
         end_time=datetime.now(),
     )
-    mock_orchestrator_instance.execute.return_value = ExecutionReport(
+    mock_run_plan.execute.return_value = ExecutionReport(
         run_summary=mock_summary, action_logs=[]
     )
-
-    container.register(ExecutionOrchestrator, instance=mock_orchestrator_instance)
 
     builder = MarkdownPlanBuilder("Test Plan")
     builder.add_action("READ", params={"Resource": "[a](/a)"})
@@ -132,6 +118,4 @@ def test_cli_handles_interactive_mode_flag(container):
     # ASSERT
     from unittest.mock import ANY
 
-    mock_orchestrator_instance.execute.assert_called_once_with(
-        plan=ANY, interactive=True
-    )
+    mock_run_plan.execute.assert_called_once_with(plan=ANY, interactive=True)

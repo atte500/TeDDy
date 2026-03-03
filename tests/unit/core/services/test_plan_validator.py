@@ -3,7 +3,6 @@ import pytest
 
 from teddy_executor.core.domain.models.plan import ActionData, Plan
 from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
-from teddy_executor.core.ports.outbound import IFileSystemManager
 from teddy_executor.core.services.plan_validator import PlanValidator
 from teddy_executor.core.services.validation_rules.helpers import (
     IActionValidator,
@@ -16,16 +15,10 @@ from teddy_executor.core.services.validation_rules.read import ReadActionValidat
 
 
 @pytest.fixture
-def mock_fs() -> MagicMock:
-    return MagicMock(spec=IFileSystemManager)
+def validator(container, mock_fs) -> IPlanValidator:
+    # IFileSystemManager is already registered via mock_fs fixture in conftest.py
 
-
-@pytest.fixture
-def validator(container, mock_fs: MagicMock) -> IPlanValidator:
-    # Override IFileSystemManager with the mock
-    container.register(IFileSystemManager, instance=mock_fs)
-
-    # Re-register sub-validators so they are resolved with the new mock_fs
+    # Re-register sub-validators so they are resolved with the mock_fs
     container.register(CreateActionValidator)
     container.register(EditActionValidator)
     container.register(ExecuteActionValidator)

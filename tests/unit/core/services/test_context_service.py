@@ -6,101 +6,83 @@ from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUs
 from teddy_executor.core.ports.outbound.environment_inspector import (
     IEnvironmentInspector,
 )
-from teddy_executor.core.ports.outbound.file_system_manager import FileSystemManager
-from teddy_executor.core.ports.outbound.repo_tree_generator import IRepoTreeGenerator
 from teddy_executor.core.services.context_service import ContextService
 
 
 @pytest.fixture
-def mocks(container):
-    """
-    Registers mocks in the container and returns them for easy access in tests.
-    """
-    mock_file_system_manager = MagicMock(spec=FileSystemManager)
-    mock_repo_tree_generator = MagicMock(spec=IRepoTreeGenerator)
-    mock_environment_inspector = MagicMock(spec=IEnvironmentInspector)
-
-    container.register(FileSystemManager, instance=mock_file_system_manager)
-    container.register(IRepoTreeGenerator, instance=mock_repo_tree_generator)
-    container.register(IEnvironmentInspector, instance=mock_environment_inspector)
-    container.register(IGetContextUseCase, ContextService)
-
-    return {
-        "file_system_manager": mock_file_system_manager,
-        "repo_tree_generator": mock_repo_tree_generator,
-        "environment_inspector": mock_environment_inspector,
-    }
+def mock_inspector(container):
+    mock = MagicMock(spec=IEnvironmentInspector)
+    container.register(IEnvironmentInspector, instance=mock)
+    return mock
 
 
 @pytest.fixture
-def service(container, mocks) -> IGetContextUseCase:
+def service(container, mock_fs, mock_tree_gen, mock_inspector) -> IGetContextUseCase:
     """Provides a ContextService instance resolved from the container."""
+    container.register(IGetContextUseCase, ContextService)
     return container.resolve(IGetContextUseCase)
 
 
 def test_get_context_creates_default_file_if_not_exists(
     service: IGetContextUseCase,
-    mocks: dict,
+    mock_fs,
+    mock_tree_gen,
+    mock_inspector,
 ):
-    mock_file_system_manager = mocks["file_system_manager"]
-    mock_repo_tree_generator = mocks["repo_tree_generator"]
-    mock_environment_inspector = mocks["environment_inspector"]
     """
     Scenario: Simplified Default Configuration (Service Level)
     Tests that get_context calls the file system manager to create the
     default context file if the permanent context file does not exist.
     """
     # Arrange
-    mock_file_system_manager.path_exists.return_value = False
+    mock_fs.path_exists.return_value = False
 
     # Mock return values for the rest of the function to avoid subsequent errors
-    mock_repo_tree_generator.generate_tree.return_value = ""
-    mock_environment_inspector.get_environment_info.return_value = {}
-    mock_file_system_manager.get_context_paths.return_value = []
-    mock_file_system_manager.read_files_in_vault.return_value = {}
+    mock_tree_gen.generate_tree.return_value = ""
+    mock_inspector.get_environment_info.return_value = {}
+    mock_fs.get_context_paths.return_value = []
+    mock_fs.read_files_in_vault.return_value = {}
 
     # Act
     service.get_context()
 
     # Assert
-    mock_file_system_manager.path_exists.assert_called_once_with(".teddy/init.context")
-    mock_file_system_manager.create_default_context_file.assert_called_once()
+    mock_fs.path_exists.assert_called_once_with(".teddy/init.context")
+    mock_fs.create_default_context_file.assert_called_once()
 
 
 def test_get_context_does_not_create_default_file_if_exists(
     service: IGetContextUseCase,
-    mocks: dict,
+    mock_fs,
+    mock_tree_gen,
+    mock_inspector,
 ):
-    mock_file_system_manager = mocks["file_system_manager"]
-    mock_repo_tree_generator = mocks["repo_tree_generator"]
-    mock_environment_inspector = mocks["environment_inspector"]
     """
     Tests that get_context does NOT try to create the default context file
     if the permanent context file already exists.
     """
     # Arrange
-    mock_file_system_manager.path_exists.return_value = True
+    mock_fs.path_exists.return_value = True
     # Mock other calls to prevent errors
-    mock_repo_tree_generator.generate_tree.return_value = ""
-    mock_environment_inspector.get_environment_info.return_value = {}
-    mock_file_system_manager.get_context_paths.return_value = []
-    mock_file_system_manager.read_files_in_vault.return_value = {}
+    mock_tree_gen.generate_tree.return_value = ""
+    mock_inspector.get_environment_info.return_value = {}
+    mock_fs.get_context_paths.return_value = []
+    mock_fs.read_files_in_vault.return_value = {}
 
     # Act
     service.get_context()
 
     # Assert
-    mock_file_system_manager.path_exists.assert_called_once_with(".teddy/init.context")
-    mock_file_system_manager.create_default_context_file.assert_not_called()
+    mock_fs.path_exists.assert_called_once_with(".teddy/init.context")
+    mock_fs.create_default_context_file.assert_not_called()
 
 
 def test_get_context_orchestrates_and_returns_correct_dto(
     service: IGetContextUseCase,
-    mocks: dict,
+    mock_fs,
+    mock_tree_gen,
+    mock_inspector,
 ):
-    mock_file_system_manager = mocks["file_system_manager"]
-    mock_repo_tree_generator = mocks["repo_tree_generator"]
-    mock_environment_inspector = mocks["environment_inspector"]
     """
     Scenario: Standardized Output Format (Service Level)
     Tests that get_context calls all its dependencies correctly and assembles
@@ -108,7 +90,7 @@ def test_get_context_orchestrates_and_returns_correct_dto(
     """
     # Arrange
     # Simulate existing init.context file
-    mock_file_system_manager.path_exists.return_value = True
+    mock_fs.path_exists.return_value = True
 
     # Mock data from dependencies
     mock_sys_info = {
@@ -121,22 +103,20 @@ def test_get_context_orchestrates_and_returns_correct_dto(
     mock_vault_paths = ["file1.txt", "file2.py"]
     mock_file_contents = {"file1.txt": "content1", "file2.py": "print('hello')"}
 
-    mock_environment_inspector.get_environment_info.return_value = mock_sys_info
-    mock_repo_tree_generator.generate_tree.return_value = mock_repo_tree
-    mock_file_system_manager.get_context_paths.return_value = mock_vault_paths
-    mock_file_system_manager.read_files_in_vault.return_value = mock_file_contents
+    mock_inspector.get_environment_info.return_value = mock_sys_info
+    mock_tree_gen.generate_tree.return_value = mock_repo_tree
+    mock_fs.get_context_paths.return_value = mock_vault_paths
+    mock_fs.read_files_in_vault.return_value = mock_file_contents
 
     # Act
     result = service.get_context()
 
     # Assert
     # Check that dependencies were called correctly
-    mock_environment_inspector.get_environment_info.assert_called_once()
-    mock_repo_tree_generator.generate_tree.assert_called_once()
-    mock_file_system_manager.get_context_paths.assert_called_once()
-    mock_file_system_manager.read_files_in_vault.assert_called_once_with(
-        mock_vault_paths
-    )
+    mock_inspector.get_environment_info.assert_called_once()
+    mock_tree_gen.generate_tree.assert_called_once()
+    mock_fs.get_context_paths.assert_called_once()
+    mock_fs.read_files_in_vault.assert_called_once_with(mock_vault_paths)
 
     # Check the type of the returned DTO
     assert isinstance(result, ProjectContext)

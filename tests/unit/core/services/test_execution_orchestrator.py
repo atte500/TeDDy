@@ -12,50 +12,50 @@ from teddy_executor.core.domain.models import (
 from teddy_executor.core.ports.inbound.edit_simulator import IEditSimulator
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
 from teddy_executor.core.ports.inbound.run_plan_use_case import RunPlanUseCase
-from teddy_executor.core.ports.outbound import IFileSystemManager, IUserInteractor
 from teddy_executor.core.services.action_dispatcher import ActionDispatcher
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
 
 
 @pytest.fixture
-def mocks(container):
-    """
-    Registers mocks in the container and returns them for easy access in tests.
-    """
-    mock_plan_parser = Mock(spec=IPlanParser)
-    mock_action_dispatcher = Mock(spec=ActionDispatcher)
-    mock_user_interactor = Mock(spec=IUserInteractor)
-    mock_file_system_manager = Mock(spec=IFileSystemManager)
-    mock_edit_simulator = Mock(spec=IEditSimulator)
-
-    container.register(IPlanParser, instance=mock_plan_parser)
-    container.register(ActionDispatcher, instance=mock_action_dispatcher)
-    container.register(IUserInteractor, instance=mock_user_interactor)
-    container.register(IFileSystemManager, instance=mock_file_system_manager)
-    container.register(IEditSimulator, instance=mock_edit_simulator)
-    container.register(RunPlanUseCase, ExecutionOrchestrator)
-
-    return {
-        "plan_parser": mock_plan_parser,
-        "action_dispatcher": mock_action_dispatcher,
-        "user_interactor": mock_user_interactor,
-        "file_system_manager": mock_file_system_manager,
-        "edit_simulator": mock_edit_simulator,
-    }
+def mock_plan_parser(container):
+    mock = Mock(spec=IPlanParser)
+    container.register(IPlanParser, instance=mock)
+    return mock
 
 
 @pytest.fixture
-def orchestrator(container, mocks) -> ExecutionOrchestrator:
+def mock_action_dispatcher(container):
+    mock = Mock(spec=ActionDispatcher)
+    container.register(ActionDispatcher, instance=mock)
+    return mock
+
+
+@pytest.fixture
+def mock_edit_simulator(container):
+    mock = Mock(spec=IEditSimulator)
+    container.register(IEditSimulator, instance=mock)
+    return mock
+
+
+@pytest.fixture
+def orchestrator(  # noqa: PLR0913
+    container,
+    mock_plan_parser,
+    mock_action_dispatcher,
+    mock_user_interactor,
+    mock_fs,
+    mock_edit_simulator,
+) -> ExecutionOrchestrator:
+    container.register(RunPlanUseCase, ExecutionOrchestrator)
     return container.resolve(RunPlanUseCase)
 
 
 def test_execute_with_failing_action(
     orchestrator: ExecutionOrchestrator,
-    mocks: dict,
+    mock_plan_parser,
+    mock_action_dispatcher,
+    mock_user_interactor,
 ):
-    mock_plan_parser = mocks["plan_parser"]
-    mock_action_dispatcher = mocks["action_dispatcher"]
-    mock_user_interactor = mocks["user_interactor"]
     """
     Given a plan with an action that fails
     When the plan is executed
@@ -86,7 +86,8 @@ def test_execute_with_failing_action(
 
 def test_execute_interactive_and_skipped(
     orchestrator: ExecutionOrchestrator,
-    mocks: dict,
+    mock_user_interactor,
+    mock_action_dispatcher,
 ):
     """
     Given interactive mode is enabled
@@ -94,9 +95,6 @@ def test_execute_interactive_and_skipped(
     Then the orchestrator should prompt the user but not dispatch the action
     And a 'SKIPPED' action log should be recorded
     """
-    mock_user_interactor = mocks["user_interactor"]
-    mock_action_dispatcher = mocks["action_dispatcher"]
-
     # Arrange
     action1 = ActionData(type="action1", params={})
     plan = Plan(title="Test Plan", actions=[action1])
@@ -117,16 +115,14 @@ def test_execute_interactive_and_skipped(
 
 def test_execute_with_mixed_success_and_skipped_is_success(
     orchestrator: ExecutionOrchestrator,
-    mocks: dict,
+    mock_action_dispatcher,
+    mock_user_interactor,
 ):
     """
     Given a plan where one action succeeds and one is skipped
     When the plan is executed
     Then the final report status should be 'SUCCESS'
     """
-    mock_action_dispatcher = mocks["action_dispatcher"]
-    mock_user_interactor = mocks["user_interactor"]
-
     # Arrange
     action1 = ActionData(type="action1", params={})
     action2 = ActionData(type="action2", params={})
@@ -156,16 +152,14 @@ def test_execute_with_mixed_success_and_skipped_is_success(
 
 def test_execute_interactive_and_approved(
     orchestrator: ExecutionOrchestrator,
-    mocks: dict,
+    mock_action_dispatcher,
+    mock_user_interactor,
 ):
     """
     Given interactive mode is enabled
     When the user approves the action
     Then the orchestrator should prompt the user and then dispatch the action
     """
-    mock_action_dispatcher = mocks["action_dispatcher"]
-    mock_user_interactor = mocks["user_interactor"]
-
     # Arrange
     action1_params = {"name": "first action", "details": {}}
     action1 = ActionData(type="action1", params=action1_params)
@@ -191,7 +185,8 @@ def test_execute_interactive_and_approved(
 
 def test_execute_auto_skips_after_failure(
     orchestrator: ExecutionOrchestrator,
-    mocks: dict,
+    mock_action_dispatcher,
+    mock_user_interactor,
 ):
     """
     Given a plan with two actions
@@ -200,9 +195,6 @@ def test_execute_auto_skips_after_failure(
     And the second action's log should indicate it was skipped due to a previous failure
     And the overall status should be FAILURE
     """
-    mock_action_dispatcher = mocks["action_dispatcher"]
-    mock_user_interactor = mocks["user_interactor"]
-
     # Arrange
     action1 = ActionData(type="action1", params={}, description="First Action")
     action2 = ActionData(type="action2", params={}, description="Second Action")
@@ -253,7 +245,9 @@ def test_execute_auto_skips_after_failure(
 
 def test_execute_happy_path_non_interactive(
     orchestrator: ExecutionOrchestrator,
-    mocks: dict,
+    mock_plan_parser,
+    mock_action_dispatcher,
+    mock_user_interactor,
 ):
     """
     Given a valid plan path and non-interactive mode
@@ -261,10 +255,6 @@ def test_execute_happy_path_non_interactive(
     Then it should parse the plan, dispatch all actions, and return a successful report
     And it should not interact with the user
     """
-    mock_plan_parser = mocks["plan_parser"]
-    mock_action_dispatcher = mocks["action_dispatcher"]
-    mock_user_interactor = mocks["user_interactor"]
-
     # Arrange
     action1_params = {"name": "first action", "details": {}}
     action1 = ActionData(type="action1", params=action1_params)

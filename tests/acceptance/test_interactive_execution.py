@@ -1,14 +1,14 @@
 from pathlib import Path
-from unittest.mock import MagicMock
 from typer.testing import CliRunner
 
 from teddy_executor.__main__ import app
-from teddy_executor.core.ports.outbound import IUserInteractor
 from .helpers import parse_markdown_report
 from .plan_builder import MarkdownPlanBuilder
 
 
-def test_interactive_approval_and_execution(tmp_path: Path, monkeypatch, container):
+def test_interactive_approval_and_execution(
+    tmp_path: Path, monkeypatch, mock_user_interactor
+):
     """
     Given a plan from the clipboard,
     When the user runs `execute` interactively and approves,
@@ -31,10 +31,7 @@ def test_interactive_approval_and_execution(tmp_path: Path, monkeypatch, contain
     plan_content = builder.build()
 
     # Mock the UserInteractor to simulate user approval
-    mock_interactor = MagicMock(spec=IUserInteractor)
-    mock_interactor.confirm_action.return_value = (True, "")
-
-    container.register(IUserInteractor, instance=mock_interactor)
+    mock_user_interactor.confirm_action.return_value = (True, "")
 
     # Act
     with monkeypatch.context() as m:
@@ -47,13 +44,15 @@ def test_interactive_approval_and_execution(tmp_path: Path, monkeypatch, contain
     assert result.exit_code == 0
     assert test_file.exists()
     assert test_file.read_text() == file_content
-    mock_interactor.confirm_action.assert_called_once()
+    mock_user_interactor.confirm_action.assert_called_once()
 
     report = parse_markdown_report(result.stdout)
     assert report["run_summary"]["Overall Status"] == "SUCCESS"
 
 
-def test_interactive_skip_with_reason(tmp_path: Path, monkeypatch, container):
+def test_interactive_skip_with_reason(
+    tmp_path: Path, monkeypatch, mock_user_interactor
+):
     """
     Given a plan from the clipboard,
     When the user runs `execute` interactively and denies with a reason,
@@ -75,10 +74,7 @@ def test_interactive_skip_with_reason(tmp_path: Path, monkeypatch, container):
     plan_content = builder.build()
 
     # Mock the UserInteractor to simulate user denial with a reason
-    mock_interactor = MagicMock(spec=IUserInteractor)
-    mock_interactor.confirm_action.return_value = (False, "Manual check needed")
-
-    container.register(IUserInteractor, instance=mock_interactor)
+    mock_user_interactor.confirm_action.return_value = (False, "Manual check needed")
 
     # Act
     with monkeypatch.context() as m:

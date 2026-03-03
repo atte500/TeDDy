@@ -1,10 +1,8 @@
 import pytest
 from pathlib import Path
-from unittest.mock import MagicMock
 from typer.testing import CliRunner
-from teddy_executor.__main__ import app, container
+from teddy_executor.__main__ import app
 from tests.acceptance.plan_builder import MarkdownPlanBuilder
-from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
 
 
 @pytest.fixture
@@ -147,12 +145,11 @@ def test_create_action_shows_simple_preview(runner, tmp_path):
         assert "--- Diff ---" not in result.output
 
 
-def test_create_action_uses_external_editor_for_preview(runner, tmp_path):
+def test_create_action_uses_external_editor_for_preview(runner, tmp_path, mock_env):
     """
     Scenario: CREATE actions show a simple preview in the editor if found.
     """
     # 1. Setup Mock System Environment that claims 'code' exists
-    mock_env = MagicMock(spec=ISystemEnvironment)
     mock_env.which.side_effect = lambda cmd: (
         "/usr/local/bin/code" if cmd == "code" else None
     )
@@ -160,9 +157,6 @@ def test_create_action_uses_external_editor_for_preview(runner, tmp_path):
     mock_env.create_temp_file.side_effect = lambda suffix: str(
         tmp_path / f"temp{suffix}"
     )
-
-    # Inject the mock into the container
-    container.register(ISystemEnvironment, lambda: mock_env)
 
     # 2. Define a plan with a CREATE action
     new_content = "File content."
@@ -199,12 +193,11 @@ def test_create_action_uses_external_editor_for_preview(runner, tmp_path):
     assert result.exit_code == 0
 
 
-def test_edit_action_preserves_extension_for_external_diff(runner, tmp_path):
+def test_edit_action_preserves_extension_for_external_diff(runner, tmp_path, mock_env):
     """
     Scenario: External diff previews preserve file extensions for syntax highlighting.
     """
     # 1. Setup Mock System Environment
-    mock_env = MagicMock(spec=ISystemEnvironment)
     mock_env.which.side_effect = lambda cmd: (
         "/usr/local/bin/code" if cmd == "code" else None
     )
@@ -218,9 +211,6 @@ def test_edit_action_preserves_extension_for_external_diff(runner, tmp_path):
         return str(tmp_path / f"temp{len(created_suffixes)}{suffix}")
 
     mock_env.create_temp_file.side_effect = mock_create_temp
-
-    # Inject the mock into the container
-    container.register(ISystemEnvironment, lambda: mock_env)
 
     # 2. Define a plan with an EDIT action for a .py file
     builder = MarkdownPlanBuilder("Test Plan")

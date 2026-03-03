@@ -54,7 +54,7 @@ def test_context_command_copies_to_clipboard_by_default(mock_pyperclip: MagicMoc
 
 @patch("teddy_executor.__main__.pyperclip", new_callable=MagicMock)
 def test_context_command_suppresses_copy_with_flag(
-    mock_pyperclip: MagicMock, container
+    mock_pyperclip: MagicMock, mock_context_service
 ):
     """
     Scenario 2: Clipboard behavior is suppressed with a flag.
@@ -63,15 +63,10 @@ def test_context_command_suppresses_copy_with_flag(
     """
     # Arrange
     from teddy_executor.core.domain.models import ProjectContext
-    from teddy_executor.core.ports.inbound.get_context_use_case import (
-        IGetContextUseCase,
-    )
 
-    mock_context_service = MagicMock(spec=IGetContextUseCase)
     mock_context_service.get_context.return_value = ProjectContext(
         header="# Mock Header", content="# Mock Content"
     )
-    container.register(IGetContextUseCase, instance=mock_context_service)
 
     confirmation_message = "Output copied to clipboard."
 

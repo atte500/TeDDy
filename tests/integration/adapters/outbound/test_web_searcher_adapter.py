@@ -1,16 +1,23 @@
 from unittest.mock import patch, MagicMock
 from teddy_executor.adapters.outbound.web_searcher_adapter import WebSearcherAdapter
 from teddy_executor.core.domain.models import WebSearchError
+from teddy_executor.core.ports.outbound.web_searcher import IWebSearcher
 import pytest
 
 
-def test_search_success_returns_websearchresults_dict():
+@pytest.fixture
+def adapter(container):
+    # Ensure the container has the real adapter for integration testing
+    container.register(IWebSearcher, WebSearcherAdapter)
+    return container.resolve(IWebSearcher)
+
+
+def test_search_success_returns_websearchresults_dict(adapter):
     """
     Tests that the adapter returns a dictionary conforming to the
     WebSearchResults TypedDict structure.
     """
     # Arrange
-    adapter = WebSearcherAdapter()
     queries = ["python"]
 
     mock_ddgs_result = [
@@ -49,13 +56,12 @@ def test_search_success_returns_websearchresults_dict():
         )
 
 
-def test_search_handles_library_exception():
+def test_search_handles_library_exception(adapter):
     """
     Tests that the adapter catches an exception from the ddgs library
     and raises a WebSearchError.
     """
     # Arrange
-    adapter = WebSearcherAdapter()
     queries = ["test query"]
 
     # Patch DDGS where it's used: in the web_searcher_adapter module

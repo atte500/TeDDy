@@ -1,26 +1,19 @@
-from unittest.mock import Mock
 import pytest
 
 from teddy_executor.adapters.outbound.console_interactor import (
     ConsoleInteractorAdapter,
 )
 from teddy_executor.core.domain.models.plan import ActionData
-from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
 
 
 class TestConsoleInteractorAdapter:
     @pytest.fixture
-    def mock_system_env(self, tmp_path) -> Mock:
-        env = Mock(spec=ISystemEnvironment)
-        # Ensure create_temp_file returns a real string path for open()
-        env.create_temp_file.side_effect = lambda suffix="": str(
+    def adapter(self, mock_env, tmp_path) -> ConsoleInteractorAdapter:
+        # Specialized setup for this adapter's tests
+        mock_env.create_temp_file.side_effect = lambda suffix="": str(
             tmp_path / f"temp_file{suffix}"
         )
-        return env
-
-    @pytest.fixture
-    def adapter(self, mock_system_env) -> ConsoleInteractorAdapter:
-        return ConsoleInteractorAdapter(system_env=mock_system_env)
+        return ConsoleInteractorAdapter(system_env=mock_env)
 
     def test_ask_question_standard_input_single_line(
         self, adapter: ConsoleInteractorAdapter, monkeypatch
@@ -34,7 +27,7 @@ class TestConsoleInteractorAdapter:
         assert response == "My standard response"
 
     def test_ask_question_opens_editor_on_e(
-        self, adapter: ConsoleInteractorAdapter, mock_system_env, monkeypatch
+        self, adapter: ConsoleInteractorAdapter, mock_env, monkeypatch
     ):
         """Test that typing 'e' opens an editor, reads the temp file, and strips comments."""
         from pathlib import Path
@@ -53,18 +46,18 @@ class TestConsoleInteractorAdapter:
                 encoding="utf-8",
             )
 
-        mock_system_env.run_command.side_effect = mock_run_command
-        mock_system_env.get_env.side_effect = lambda key: (
+        mock_env.run_command.side_effect = mock_run_command
+        mock_env.get_env.side_effect = lambda key: (
             "mock_editor" if key == "EDITOR" else None
         )
-        mock_system_env.which.return_value = "/usr/bin/mock_editor"
+        mock_env.which.return_value = "/usr/bin/mock_editor"
 
         prompt_text = "AI says: Write a lot:"
         response = adapter.ask_question(prompt_text)
 
         assert "Hello from editor" == response.strip()
         assert "Don't read this." not in response
-        assert mock_system_env.run_command.called
+        assert mock_env.run_command.called
         # Assert the prompt was written below the marker in the initial file content
         assert (
             file_content_before_editor
@@ -72,27 +65,27 @@ class TestConsoleInteractorAdapter:
         )
 
     def test_ask_question_editor_fallback_when_no_editor_found(
-        self, adapter: ConsoleInteractorAdapter, mock_system_env, monkeypatch
+        self, adapter: ConsoleInteractorAdapter, mock_env, monkeypatch
     ):
         inputs = iter(["e", "Fallback input", ""])
         monkeypatch.setattr("builtins.input", lambda: next(inputs))
 
         # Ensure no editor is found via port
-        mock_system_env.get_env.return_value = None
-        mock_system_env.which.return_value = None
+        mock_env.get_env.return_value = None
+        mock_env.which.return_value = None
 
         response = adapter.ask_question("Prompt:")
         assert response == "Fallback input"
 
     def test_ask_question_editor_fails_returns_empty(
-        self, adapter: ConsoleInteractorAdapter, mock_system_env, monkeypatch
+        self, adapter: ConsoleInteractorAdapter, mock_env, monkeypatch
     ):
         inputs = iter(["e"])
         monkeypatch.setattr("builtins.input", lambda: next(inputs))
-        mock_system_env.get_env.return_value = "mock_editor"
-        mock_system_env.which.return_value = "/usr/bin/mock_editor"
+        mock_env.get_env.return_value = "mock_editor"
+        mock_env.which.return_value = "/usr/bin/mock_editor"
 
-        mock_system_env.run_command.side_effect = Exception("Editor failed")
+        mock_env.run_command.side_effect = Exception("Editor failed")
 
         response = adapter.ask_question("Prompt:")
         assert response == ""

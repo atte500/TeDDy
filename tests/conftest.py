@@ -3,6 +3,10 @@ from pathlib import Path
 from unittest.mock import Mock
 import pytest
 
+from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
+from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
+from teddy_executor.core.ports.inbound.run_plan_use_case import RunPlanUseCase
+from teddy_executor.core.services.context_service import ContextService
 from teddy_executor.core.ports.outbound import (
     IUserInteractor,
     IFileSystemManager,
@@ -12,6 +16,11 @@ from teddy_executor.core.ports.outbound import (
     IWebSearcher,
     IRepoTreeGenerator,
 )
+from teddy_executor.core.services.action_dispatcher import (
+    ActionDispatcher,
+    IActionFactory,
+)
+from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
 
 # Add the project root directory to the Python path.
 # This is necessary to ensure that `pytest` can correctly resolve imports
@@ -82,4 +91,43 @@ def mock_searcher(container):
 def mock_tree_gen(container):
     mock = Mock(spec=IRepoTreeGenerator)
     container.register(IRepoTreeGenerator, instance=mock)
+    return mock
+
+
+@pytest.fixture
+def mock_action_factory(container):
+    mock = Mock(spec=IActionFactory)
+    container.register(IActionFactory, instance=mock)
+    return mock
+
+
+@pytest.fixture
+def mock_plan_parser(container):
+    mock = Mock(spec=IPlanParser)
+    container.register(IPlanParser, instance=mock)
+    return mock
+
+
+@pytest.fixture
+def mock_action_dispatcher(container):
+    mock = Mock(spec=ActionDispatcher)
+    container.register(ActionDispatcher, instance=mock)
+    return mock
+
+
+@pytest.fixture
+def mock_run_plan(container):
+    mock = Mock(spec=RunPlanUseCase)
+    container.register(RunPlanUseCase, instance=mock)
+    # The CLI resolves concrete ExecutionOrchestrator directly
+    container.register(ExecutionOrchestrator, instance=mock)
+    return mock
+
+
+@pytest.fixture
+def mock_context_service(container):
+    mock = Mock(spec=IGetContextUseCase)
+    container.register(IGetContextUseCase, instance=mock)
+    # The CLI resolves concrete ContextService directly in some places
+    container.register(ContextService, instance=mock)
     return mock

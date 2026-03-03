@@ -1,18 +1,15 @@
 import os
 from pathlib import Path
-from unittest.mock import MagicMock
 from typer.testing import CliRunner
 
 from teddy_executor.__main__ import app
-from teddy_executor.core.ports.outbound import IUserInteractor
-from teddy_executor.core.services.action_dispatcher import ActionDispatcher
 from teddy_executor.core.domain.models import ActionLog, ActionStatus
 from tests.acceptance.plan_builder import MarkdownPlanBuilder
 
 runner = CliRunner()
 
 
-def test_interactive_prompt_shows_description(tmp_path: Path, container):
+def test_interactive_prompt_shows_description(tmp_path: Path, mock_user_interactor):
     """
     Given a plan with an action that has a 'description' field,
     When the user runs `execute` interactively,
@@ -34,10 +31,7 @@ def test_interactive_prompt_shows_description(tmp_path: Path, container):
     )
 
     # Mock the UserInteractor to simulate user approval and capture the prompt
-    mock_interactor = MagicMock(spec=IUserInteractor)
-    mock_interactor.confirm_action.return_value = (True, "")
-
-    container.register(IUserInteractor, instance=mock_interactor)
+    mock_user_interactor.confirm_action.return_value = (True, "")
 
     # Act
     # Change CWD to the temp path so file operations in the plan are contained
@@ -53,13 +47,15 @@ def test_interactive_prompt_shows_description(tmp_path: Path, container):
     assert test_file.exists()
 
     # Verify the prompt sent to the user included the description
-    mock_interactor.confirm_action.assert_called_once()
-    _, call_kwargs = mock_interactor.confirm_action.call_args
+    mock_user_interactor.confirm_action.assert_called_once()
+    _, call_kwargs = mock_user_interactor.confirm_action.call_args
     prompt_message = call_kwargs["action_prompt"]
     assert "Create a test file for the QoL feature." in prompt_message
 
 
-def test_prompt_skips_approval_prompt(tmp_path: Path, container):
+def test_prompt_skips_approval_prompt(
+    tmp_path: Path, mock_user_interactor, mock_action_dispatcher
+):
     """
     Given a plan with a 'prompt' action,
     When the plan is run in interactive mode,
@@ -72,24 +68,19 @@ def test_prompt_skips_approval_prompt(tmp_path: Path, container):
         .build()
     )
 
-    mock_interactor = MagicMock(spec=IUserInteractor)
     # Configure confirm_action to prevent a ValueError if it's called.
-    mock_interactor.confirm_action.return_value = (True, "")
+    mock_user_interactor.confirm_action.return_value = (True, "")
     # The action handler for prompt is the interactor's `ask_question`
-    mock_interactor.ask_question.return_value = "World"
+    mock_user_interactor.ask_question.return_value = "World"
 
     # We also mock the dispatcher to prevent it from trying to create a real
     # action handler, which would be complex to set up. We just need to know
     # that the orchestrator calls it.
-    mock_dispatcher = MagicMock(spec=ActionDispatcher)
-    mock_dispatcher.dispatch_and_execute.return_value = ActionLog(
+    mock_action_dispatcher.dispatch_and_execute.return_value = ActionLog(
         action_type="PROMPT",
         status=ActionStatus.SUCCESS,
         params={"prompt": "Hello?"},
     )
-
-    container.register(IUserInteractor, instance=mock_interactor)
-    container.register(ActionDispatcher, instance=mock_dispatcher)
 
     # Act
     # Run in interactive mode (no --yes flag)
@@ -98,9 +89,9 @@ def test_prompt_skips_approval_prompt(tmp_path: Path, container):
     # Assert
     assert result.exit_code == 0
     # The core of the test: `confirm_action` should NOT have been called.
-    mock_interactor.confirm_action.assert_not_called()
+    mock_user_interactor.confirm_action.assert_not_called()
     # But the action dispatcher should have been called.
-    mock_dispatcher.dispatch_and_execute.assert_called_once()
+    mock_action_dispatcher.dispatch_and_execute.assert_called_once()
 
 
 def test_read_action_report_formats_multiline_content_correctly(
