@@ -36,7 +36,7 @@ def run_cli_command(
         return runner.invoke(app, args, input=input)
 
 
-def run_cli_with_markdown_plan_on_clipboard(
+def run_execute_with_plan_content(
     monkeypatch, plan_content: str, cwd: Path, user_input: Optional[str] = None
 ) -> Result:
     """

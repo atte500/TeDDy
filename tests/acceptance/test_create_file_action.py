@@ -1,5 +1,5 @@
 from pathlib import Path
-from .helpers import parse_markdown_report, run_cli_with_markdown_plan_on_clipboard
+from .helpers import parse_markdown_report, run_execute_with_plan_content
 from .plan_builder import MarkdownPlanBuilder
 
 
@@ -26,9 +26,7 @@ def test_create_file_happy_path(monkeypatch, tmp_path: Path):
     plan_content = builder.build()
 
     # Act
-    result = run_cli_with_markdown_plan_on_clipboard(
-        monkeypatch, plan_content, tmp_path
-    )
+    result = run_execute_with_plan_content(monkeypatch, plan_content, tmp_path)
 
     # Assert
     assert result.exit_code == 0, f"Teddy failed with stderr: {result.stderr}"

@@ -1,4 +1,4 @@
-from .helpers import parse_markdown_report, run_cli_with_markdown_plan_on_clipboard
+from .helpers import parse_markdown_report, run_execute_with_plan_content
 from .plan_builder import MarkdownPlanBuilder
 
 
@@ -19,9 +19,7 @@ def test_successful_execution(monkeypatch, tmp_path):
     plan_content = builder.build()
 
     # ACT
-    result = run_cli_with_markdown_plan_on_clipboard(
-        monkeypatch, plan_content, tmp_path
-    )
+    result = run_execute_with_plan_content(monkeypatch, plan_content, tmp_path)
 
     # ASSERT
     assert result.exit_code == 0, (
@@ -53,9 +51,7 @@ def test_failed_execution(monkeypatch, tmp_path):
     plan_content = builder.build()
 
     # ACT
-    result = run_cli_with_markdown_plan_on_clipboard(
-        monkeypatch, plan_content, tmp_path
-    )
+    result = run_execute_with_plan_content(monkeypatch, plan_content, tmp_path)
 
     # ASSERT
     assert result.exit_code == 1, "Teddy should exit with 1 on failure"
