@@ -1,16 +1,52 @@
-from pathlib import Path
 from unittest.mock import MagicMock
+import pytest
+import punq
 
-from teddy_executor.adapters.outbound.local_file_system_adapter import (
-    LocalFileSystemAdapter,
-)
-from teddy_executor.core.services.edit_simulator import EditSimulator
 from teddy_executor.core.domain.models.plan import ActionData, Plan
+from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
 from teddy_executor.core.ports.outbound import IFileSystemManager
 from teddy_executor.core.services.plan_validator import PlanValidator
+from teddy_executor.core.services.validation_rules.helpers import (
+    IActionValidator,
+    ValidationError,
+)
+from teddy_executor.core.services.validation_rules.create import CreateActionValidator
+from teddy_executor.core.services.validation_rules.edit import EditActionValidator
+from teddy_executor.core.services.validation_rules.execute import ExecuteActionValidator
+from teddy_executor.core.services.validation_rules.read import ReadActionValidator
 
 
-def test_validate_edit_action_with_nonexistent_find_block(fs):
+@pytest.fixture
+def mock_fs() -> MagicMock:
+    return MagicMock(spec=IFileSystemManager)
+
+
+@pytest.fixture
+def validator(container: punq.Container, mock_fs: MagicMock) -> IPlanValidator:
+    # Override IFileSystemManager with the mock
+    container.register(IFileSystemManager, instance=mock_fs)
+
+    # Re-register sub-validators so they are resolved with the new mock_fs
+    container.register(CreateActionValidator)
+    container.register(EditActionValidator)
+    container.register(ExecuteActionValidator)
+    container.register(ReadActionValidator)
+
+    # Re-register IPlanValidator to use the newly resolved validator instances
+    container.register(
+        IPlanValidator,
+        PlanValidator,
+        validators=[
+            container.resolve(CreateActionValidator),
+            container.resolve(EditActionValidator),
+            container.resolve(ExecuteActionValidator),
+            container.resolve(ReadActionValidator),
+        ],
+    )
+    return container.resolve(IPlanValidator)
+
+
+def test_validate_edit_action_with_nonexistent_find_block(validator, mock_fs):
     """
     Given a plan with an EDIT action,
     And the target file exists,
@@ -19,8 +55,9 @@ def test_validate_edit_action_with_nonexistent_find_block(fs):
     Then a PlanValidationError should be raised.
     """
     # Arrange
-    file_path = Path("app/test.txt")
-    fs.create_file(file_path, contents="Hello world")
+    file_path = "app/test.txt"
+    mock_fs.path_exists.return_value = True
+    mock_fs.read_file.return_value = "Hello world"
 
     plan = Plan(
         title="Test Plan",
@@ -28,7 +65,7 @@ def test_validate_edit_action_with_nonexistent_find_block(fs):
             ActionData(
                 type="edit",
                 params={
-                    "path": str(file_path),
+                    "path": file_path,
                     "edits": [
                         {"find": "Goodbye world", "replace": "Hello pytest"},
                     ],
@@ -38,8 +75,6 @@ def test_validate_edit_action_with_nonexistent_find_block(fs):
         ],
     )
 
-    validator = PlanValidator(LocalFileSystemAdapter(edit_simulator=EditSimulator()))
-
     # Act
     errors = validator.validate(plan)
 
@@ -48,14 +83,15 @@ def test_validate_edit_action_with_nonexistent_find_block(fs):
     assert "The `FIND` block could not be located in the file" in errors[0].message
 
 
-def test_validate_edit_action_with_nonexistent_file(fs):
+def test_validate_edit_action_with_nonexistent_file(validator, mock_fs):
     """
     Given a plan with an EDIT action targeting a non-existent file,
     When the plan is validated,
     Then a PlanValidationError should be raised.
     """
     # Arrange
-    file_path = Path("app/nonexistent.txt")
+    file_path = "app/nonexistent.txt"
+    mock_fs.path_exists.return_value = False
 
     plan = Plan(
         title="Test Plan",
@@ -63,15 +99,13 @@ def test_validate_edit_action_with_nonexistent_file(fs):
             ActionData(
                 type="edit",
                 params={
-                    "path": str(file_path),
+                    "path": file_path,
                     "edits": [{"find": "anything", "replace": "doesn't matter"}],
                 },
                 description="Test edit on non-existent file",
             )
         ],
     )
-
-    validator = PlanValidator(LocalFileSystemAdapter(edit_simulator=EditSimulator()))
 
     # Act
     errors = validator.validate(plan)
@@ -81,7 +115,7 @@ def test_validate_edit_action_with_nonexistent_file(fs):
     assert "File to edit does not exist" in errors[0].message
 
 
-def test_validate_edit_action_with_valid_find_block(fs):
+def test_validate_edit_action_with_valid_find_block(validator, mock_fs):
     """
     Given a plan with an EDIT action,
     And the FIND block content exists in the file,
@@ -89,8 +123,9 @@ def test_validate_edit_action_with_valid_find_block(fs):
     Then no exception should be raised.
     """
     # Arrange
-    file_path = Path("app/test.txt")
-    fs.create_file(file_path, contents="Hello world")
+    file_path = "app/test.txt"
+    mock_fs.path_exists.return_value = True
+    mock_fs.read_file.return_value = "Hello world"
 
     plan = Plan(
         title="Test Plan",
@@ -98,15 +133,13 @@ def test_validate_edit_action_with_valid_find_block(fs):
             ActionData(
                 type="edit",
                 params={
-                    "path": str(file_path),
+                    "path": file_path,
                     "edits": [{"find": "Hello world", "replace": "Hello pytest"}],
                 },
                 description="Test edit action validation",
             )
         ],
     )
-
-    validator = PlanValidator(LocalFileSystemAdapter(edit_simulator=EditSimulator()))
 
     # Act
     errors = validator.validate(plan)
@@ -115,13 +148,13 @@ def test_validate_edit_action_with_valid_find_block(fs):
     assert len(errors) == 0, f"Expected no errors, but got: {errors}"
 
 
-def test_validate_create_fails_if_file_exists(fs):
+def test_validate_create_fails_if_file_exists(validator, mock_fs):
     """
     Given a CREATE action for a file that exists,
     When validated,
     Then it should return an error.
     """
-    fs.create_file("existing.txt", contents="old content")
+    mock_fs.path_exists.return_value = True
 
     plan = Plan(
         title="Test",
@@ -130,7 +163,6 @@ def test_validate_create_fails_if_file_exists(fs):
         ],
     )
 
-    validator = PlanValidator(LocalFileSystemAdapter(edit_simulator=EditSimulator()))
     errors = validator.validate(plan)
 
     assert len(errors) == 1
@@ -138,14 +170,15 @@ def test_validate_create_fails_if_file_exists(fs):
     assert errors[0].file_path == "existing.txt"
 
 
-def test_validate_edit_fails_if_find_block_not_unique(fs):
+def test_validate_edit_fails_if_find_block_not_unique(validator, mock_fs):
     """
     Given an EDIT action where the FIND block appears multiple times in the file,
     When validated,
     Then it should return an error.
     """
     content = "def foo():\n    pass\n\ndef foo():\n    pass"
-    fs.create_file("source.py", contents=content)
+    mock_fs.path_exists.return_value = True
+    mock_fs.read_file.return_value = content
 
     find_content = "def foo():\n    pass"
     plan = Plan(
@@ -161,7 +194,6 @@ def test_validate_edit_fails_if_find_block_not_unique(fs):
         ],
     )
 
-    validator = PlanValidator(LocalFileSystemAdapter(edit_simulator=EditSimulator()))
     errors = validator.validate(plan)
 
     assert len(errors) == 1
@@ -294,7 +326,7 @@ def test_validate_execute_action_succeeds_for_single_command_with_directives():
     assert len(errors) == 0, f"Expected no errors, but got: {errors}"
 
 
-def test_validate_execute_fails_with_unsafe_cwd_traversal(fs):
+def test_validate_execute_fails_with_unsafe_cwd_traversal(validator):
     """
     Given an EXECUTE action where `cwd` attempts to traverse outside the project root,
     When validated,
@@ -309,7 +341,6 @@ def test_validate_execute_fails_with_unsafe_cwd_traversal(fs):
             )
         ],
     )
-    validator = PlanValidator(LocalFileSystemAdapter(edit_simulator=EditSimulator()))
     errors = validator.validate(plan)
 
     assert len(errors) == 1
@@ -317,17 +348,15 @@ def test_validate_execute_fails_with_unsafe_cwd_traversal(fs):
     assert errors[0].file_path is None  # Not file-specific error
 
 
-def test_validate_execute_fails_with_absolute_cwd(fs):
+def test_validate_execute_fails_with_absolute_cwd(validator):
     """
     Given an EXECUTE action where `cwd` is an absolute path,
     When validated,
     Then it should return an error.
     """
-    # Use a platform-specific absolute path to ensure the test is robust.
-    # On Windows, this will be C:\, on POSIX /
-    abs_path = Path("/").resolve()
-    # Use a common directory to make the test more realistic
-    absolute_cwd = str(abs_path / "etc" / "passwd")
+    import os
+
+    absolute_cwd = "/etc/passwd" if os.name != "nt" else "C:\\Windows"
 
     plan = Plan(
         title="Test",
@@ -338,21 +367,21 @@ def test_validate_execute_fails_with_absolute_cwd(fs):
             )
         ],
     )
-    validator = PlanValidator(LocalFileSystemAdapter(edit_simulator=EditSimulator()))
     errors = validator.validate(plan)
 
     assert len(errors) == 1
     assert "is an absolute path and is not allowed" in errors[0].message
 
 
-def test_validate_edit_reports_multiple_failures(fs):
+def test_validate_edit_reports_multiple_failures(validator, mock_fs):
     """
     Given an EDIT action with multiple FIND blocks that do not match,
     When validated,
     Then all errors should be reported.
     """
-    file_path = Path("test.txt")
-    fs.create_file(file_path, contents="Some content")
+    file_path = "test.txt"
+    mock_fs.path_exists.return_value = True
+    mock_fs.read_file.return_value = "Some content"
 
     plan = Plan(
         title="Test",
@@ -360,7 +389,7 @@ def test_validate_edit_reports_multiple_failures(fs):
             ActionData(
                 type="EDIT",
                 params={
-                    "path": str(file_path),
+                    "path": file_path,
                     "edits": [
                         {"find": "Bad1", "replace": "Good1"},
                         {"find": "Bad2", "replace": "Good2"},
@@ -370,7 +399,6 @@ def test_validate_edit_reports_multiple_failures(fs):
         ],
     )
 
-    validator = PlanValidator(LocalFileSystemAdapter(edit_simulator=EditSimulator()))
     errors = validator.validate(plan)
 
     expected_error_count = 2
@@ -379,14 +407,15 @@ def test_validate_edit_reports_multiple_failures(fs):
     assert "Bad2" in errors[1].message
 
 
-def test_validate_edit_provides_diff_on_mismatch(fs):
+def test_validate_edit_provides_diff_on_mismatch(validator, mock_fs):
     """
     Given an EDIT action with a near-match FIND block,
     When validated,
     Then the error message should contain a diff.
     """
-    file_path = Path("test.txt")
-    fs.create_file(file_path, contents="This is the original content")
+    file_path = "test.txt"
+    mock_fs.path_exists.return_value = True
+    mock_fs.read_file.return_value = "This is the original content"
 
     plan = Plan(
         title="Test",
@@ -394,7 +423,7 @@ def test_validate_edit_provides_diff_on_mismatch(fs):
             ActionData(
                 type="EDIT",
                 params={
-                    "path": str(file_path),
+                    "path": file_path,
                     "edits": [
                         {"find": "This is the orignal content", "replace": "New"},
                     ],
@@ -403,7 +432,6 @@ def test_validate_edit_provides_diff_on_mismatch(fs):
         ],
     )
 
-    validator = PlanValidator(LocalFileSystemAdapter(edit_simulator=EditSimulator()))
     errors = validator.validate(plan)
 
     assert len(errors) == 1
@@ -412,13 +440,13 @@ def test_validate_edit_provides_diff_on_mismatch(fs):
     assert "?" in errors[0].message
 
 
-def test_validate_edit_fails_if_find_and_replace_identical(fs):
+def test_validate_edit_fails_if_find_and_replace_identical(validator, mock_fs):
     """
     Given an EDIT action where FIND and REPLACE are identical,
     When validated,
     Then it should return an error.
     """
-    fs.create_file("source.py", contents="same content")
+    mock_fs.path_exists.return_value = True
 
     content = "same content"
     plan = Plan(
@@ -434,11 +462,50 @@ def test_validate_edit_fails_if_find_and_replace_identical(fs):
         ],
     )
 
-    validator = PlanValidator(LocalFileSystemAdapter(edit_simulator=EditSimulator()))
     errors = validator.validate(plan)
 
     assert len(errors) == 1
     assert "FIND and REPLACE blocks are identical" in errors[0].message
+
+
+def test_plan_validator_uses_injected_validators(validator):
+    # Arrange
+    mock_validator = MagicMock(spec=IActionValidator)
+    mock_validator.can_validate.return_value = True
+    mock_validator.validate.return_value = [ValidationError(message="Mock Error")]
+
+    plan = Plan(title="Test Plan", actions=[ActionData(type="test_action", params={})])
+
+    # Injected via constructor in the fixture setup if we wanted, but we can also
+    # just create a new one here to test the specific behavior.
+    v = PlanValidator(file_system_manager=MagicMock(), validators=[mock_validator])
+
+    # Act
+    errors = v.validate(plan)
+
+    # Assert
+    assert len(errors) == 1
+    assert errors[0].message == "Mock Error"
+    mock_validator.can_validate.assert_called_once_with("test_action")
+    mock_validator.validate.assert_called_once()
+
+
+def test_read_action_validator_reports_error_if_file_missing(validator, mock_fs):
+    # Arrange
+    mock_fs.path_exists.return_value = False
+
+    plan = Plan(
+        title="Test",
+        actions=[ActionData(type="READ", params={"resource": "nonexistent.txt"})],
+    )
+
+    # Act
+    errors = validator.validate(plan)
+
+    # Assert
+    assert len(errors) == 1
+    assert "File to read does not exist" in errors[0].message
+    assert errors[0].file_path == "nonexistent.txt"
 
 
 def test_validate_fails_for_unknown_action_type():

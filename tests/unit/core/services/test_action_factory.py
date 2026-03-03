@@ -2,36 +2,19 @@ from unittest.mock import Mock
 import pytest
 import punq
 
-from teddy_executor.core.ports.outbound import IShellExecutor, IFileSystemManager
+from teddy_executor.core.ports.outbound import (
+    IShellExecutor,
+    IFileSystemManager,
+    IWebScraper,
+)
 from teddy_executor.core.services.action_factory import ActionFactory
 
 # --- Fixtures ---
 
 
 @pytest.fixture
-def mock_shell_executor() -> Mock:
-    return Mock(spec=IShellExecutor)
-
-
-@pytest.fixture
-def mock_file_system_manager() -> Mock:
-    return Mock(spec=IFileSystemManager)
-
-
-@pytest.fixture
-def container(
-    mock_shell_executor: Mock, mock_file_system_manager: Mock
-) -> punq.Container:
-    """A pytest fixture to provide a pre-configured mock DI container."""
-    mock_container = punq.Container()
-    mock_container.register(IShellExecutor, instance=mock_shell_executor)
-    mock_container.register(IFileSystemManager, instance=mock_file_system_manager)
-    return mock_container
-
-
-@pytest.fixture
 def factory(container: punq.Container) -> ActionFactory:
-    """Provides an ActionFactory instance with a mocked container."""
+    """Provides an ActionFactory instance with the centralized container."""
     return ActionFactory(container=container)
 
 
@@ -39,7 +22,7 @@ def factory(container: punq.Container) -> ActionFactory:
 
 
 def test_create_action_successfully_resolves_handler(
-    factory: ActionFactory, mock_shell_executor: Mock
+    container: punq.Container, factory: ActionFactory
 ):
     """
     Given a known action type ('execute'),
@@ -47,6 +30,8 @@ def test_create_action_successfully_resolves_handler(
     Then it should resolve and return the correct handler from the container.
     """
     # Arrange
+    mock_shell_executor = Mock(spec=IShellExecutor)
+    container.register(IShellExecutor, instance=mock_shell_executor)
     action_type = "execute"
 
     # Act
@@ -86,3 +71,41 @@ def test_create_action_for_return_returns_handler(factory: ActionFactory):
 
     # Assert
     assert isinstance(action_handler, ConcludeAction)
+
+
+def test_read_action_with_url_resolves_web_scraper(
+    container: punq.Container, factory: ActionFactory
+):
+    """
+    Given an ActionFactory with a WebScraper registered,
+    When create_action is called for a 'read' action with a URL parameter,
+    Then it should return the WebScraper adapter.
+    """
+    # Arrange
+    mock_scraper = Mock(spec=IWebScraper)
+    container.register(IWebScraper, instance=mock_scraper)
+
+    # Act
+    action_handler = factory.create_action("read", {"resource": "http://example.com"})
+
+    # Assert
+    assert action_handler is mock_scraper
+
+
+def test_read_action_with_path_resolves_file_system_manager(
+    container: punq.Container, factory: ActionFactory
+):
+    """
+    Given an ActionFactory with a FileSystemManager registered,
+    When create_action is called for a 'read' action with a file path parameter,
+    Then it should return the FileSystemManager adapter.
+    """
+    # Arrange
+    mock_fs = Mock(spec=IFileSystemManager)
+    container.register(IFileSystemManager, instance=mock_fs)
+
+    # Act
+    action_handler = factory.create_action("read", {"resource": "path/to/file.txt"})
+
+    # Assert
+    assert action_handler is mock_fs
