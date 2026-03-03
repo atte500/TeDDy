@@ -64,3 +64,6 @@ jobs:
 
     - name: Run tests (with coverage)
       run: poetry run pytest --cov-fail-under=90
+
+    - name: Verify Test Pyramid Structure
+      run: ./scripts/verify_test_pyramid.py
