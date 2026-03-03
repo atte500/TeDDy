@@ -50,7 +50,7 @@ This document outlines the technical standards, conventions, and setup process f
     - **Run all tests:** `poetry run pytest`
     - **Run tests in a specific file:** `poetry run pytest tests/acceptance/test_prompt_action.py`
     - **Run a specific test by name:** `poetry run pytest -k "test_prompt_gets_response"`
-- **Test Coverage:** The CI pipeline **must** perform test coverage analysis using `pytest-cov`. It **must** be configured to fail if test coverage drops below a project-defined threshold of **90%**.
+- **Test Coverage:** The CI pipeline **must** perform test coverage analysis using `pytest-cov`. To ensure developer productivity during partial test runs, local shared configurations MUST NOT include a failure threshold; strict threshold enforcement (at **90%**) MUST be reserved for the CI pipeline.
 
 ### Pre-commit Hooks & CI Quality Gates
 - **Framework:** `pre-commit`.
