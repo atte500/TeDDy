@@ -1,4 +1,4 @@
-from .helpers import parse_markdown_report
+from tests.acceptance.helpers import parse_markdown_report
 
 
 def test_parse_markdown_report_with_params_and_details():
