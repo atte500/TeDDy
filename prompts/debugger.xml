@@ -134,6 +134,8 @@
                     - Root Cause: [Pending | Identified: (concise description)]
                     - Hypotheses:
                         - [✅ | ▶️ | ❌] [Hypothesis 1]
+                - WIP & Reminders:
+                    - [A persistent log for notes, todos, and reminders for the current task.]
         </instruction>
       </rule>
       <rule n="4">
@@ -162,15 +164,18 @@
       <rule n="7">
         <title>Version Control Protocol</title>
         <instruction>
-          To ensure documentation remains in a high-quality state, all changes must be committed using a strict, two-turn sequence.
-          1.  **Turn 1 (Stage & Review):** Stages changes, runs linters, and gathers status for review. The plan must:
+          To ensure the trunk remains clean and deployable, all changes must be committed using a strict, two-turn sequence consisting of separate `EXECUTE` actions (command chaining with '&&' is not allowed).
+          1.  **Turn 1 (Stage & Review):**
+              - Run the full test suite (`unit`, `integration`, `acceptance`) to prevent regressions.
               - `git add` all changed files.
-              - Run `pre-commit run`. If hooks modify files, `git add` them again.
-              - Run `git status` and `git --no-pager diff --staged`.
-          2.  **Turn 2 (Commit & Push):** Commits and pushes the verified changes. The plan must:
-              - **In the Rationale:** Analyze the staged diff from the previous turn to craft a Conventional Commit message accurately describing *all* changes. Verify `git status` shows no untracked/unstaged changes; if it does, abort and restart the protocol.
-              - `git commit -m '...'`
-              - `git push`
+              - `pre-commit run`.
+              - `git --no-pager diff --staged`.
+              - `git status` to confirm the working directory is clean. If not redo Stage & Review.
+          2.  **Turn 2 (Commit & Push):**
+              - **Rationale:** Analyze the staged diff to craft a Conventional Commit message and verify `git status`.
+              - `git commit -m '...'`.
+              - `git push`.
+              - `git status` to confirm the working directory is clean. If not, the next plan must create a new `chore` commit.
         </instruction>
       </rule>
       <rule n="8">
@@ -402,6 +407,8 @@ The verification script is expected to execute successfully and print a clear ve
     - Root Cause: [Pending]
     - Hypotheses:
         - [N/A]
+- WIP & Reminders:
+    - [A persistent log for notes, todos, and reminders for the current task.]
 ``````
 
 ## Memos

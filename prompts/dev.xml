@@ -16,6 +16,7 @@
         <action>
           **Goal:** Understand the scope of the vertical slice.
           *   **Action:** `READ` the provided slice document to understand the `Scope of Work`.
+          *   Populate the `WIP & Reminders` dashboard section with all items from the `Scope of Work` as `[TODO]` items.
           *   **Contingency:** If no slice document is provided, and only in that case, your first action MUST be to `PROMPT` to collaboratively define and get approval for the `Scope of Work`.
           *   You will not write any code or tests in this phase.
         </action>
@@ -45,8 +46,8 @@
               - **Anti-Boilerplate:** Avoid manual Dependency Injection bloat. Where setup is repetitive, favor Factory methods or minimal abstractions to keep tests and code lean.
               - **Structure:** Apply the Single Responsibility Principle (SRP) to break down components. Ensure the code is highly semantic and self-documenting.
               - **Clean Code:** Explicitly review comments; remove stale ones, ensure remaining explain "why" not "how", and rename variables/methods to eliminate the need for comments.
-              **Update Progress:** Update the slice's `Scope of Work`.
-              After refactoring and documentation updates, run the entire test suite to ensure no regressions were introduced.
+              **Update Progress:** Update progress by removing the completed `[TODO]` item from the `WIP & Reminders` list.
+              After refactoring, run the entire test suite to ensure no regressions were introduced.
               <interrupt_check>If tests fail unexpectedly or if the user provides a new requirement mid-stream, you MUST handle them according to the **Handling Mid-stream Requests and Regressions** rule using a dedicated sub-TDD loop.</interrupt_check>
               <loop_evaluation>Evaluate your code: Does it rely on hardcoded values or "faked" shortcuts?
                 - **If YES:** You MUST loop back to the `RED` phase and write a new test specifically designed to break that fake.
@@ -181,16 +182,18 @@
       <rule n="6">
         <title>Version Control Protocol</title>
         <instruction>
-          To ensure the trunk remains clean and deployable, all changes must be committed using a strict, two-turn sequence.
-          1.  **Turn 1 (Stage & Review):** Verifies the changes, runs linters, and gathers status for review. The plan must:
+          To ensure the trunk remains clean and deployable, all changes must be committed using a strict, two-turn sequence consisting of separate `EXECUTE` actions (command chaining with '&&' is not allowed).
+          1.  **Turn 1 (Stage & Review):**
               - Run the full test suite (`unit`, `integration`, `acceptance`) to prevent regressions.
               - `git add` all changed files.
-              - Run `pre-commit run`. If hooks modify files, `git add` them again.
-              - Run `git status` and `git --no-pager diff --staged`.
-          2.  **Turn 2 (Commit & Push):** Commits and pushes the verified changes. The plan must:
-              - **In the Rationale:** Analyze the staged diff from the previous turn to craft a Conventional Commit message accurately describing *all* changes. Additionally, identify any architectural components or modules modified in this diff and log a `Docs Update` Implementation Note for each to ensure they are updated during finalization. Verify `git status` shows no untracked/unstaged changes; if it does, abort and restart the protocol.
-              - `git commit -m '...'`
-              - `git push`
+              - `pre-commit run`.
+              - `git --no-pager diff --staged`.
+              - `git status` to confirm the working directory is clean. If not redo Stage & Review.
+          2.  **Turn 2 (Commit & Push):**
+              - **Rationale:** Analyze the staged diff to craft a Conventional Commit message and verify `git status`.
+              - `EXECUTE git commit -m '...'`.
+              - `EXECUTE git push`.
+              - `git status` to confirm the working directory is clean. If not, the next plan must create a new `chore` commit.
         </instruction>
       </rule>
       <rule n="7">
