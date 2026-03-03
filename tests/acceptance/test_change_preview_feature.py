@@ -9,7 +9,9 @@ from .plan_builder import MarkdownPlanBuilder
 runner = CliRunner()
 
 
-def test_in_terminal_diff_is_shown_for_create_file(tmp_path: Path, mock_env):
+def test_in_terminal_diff_is_shown_for_create_file(
+    tmp_path: Path, mock_env, monkeypatch
+):
     """
     Given no external diff tool is configured or found,
     When a `create_file` action is run interactively,
@@ -34,18 +36,13 @@ def test_in_terminal_diff_is_shown_for_create_file(tmp_path: Path, mock_env):
     mock_env.which.return_value = None
 
     # WHEN: The plan is executed with interactive approval
-    import os
-
-    original_cwd = os.getcwd()
-    os.chdir(tmp_path)
-    try:
+    with monkeypatch.context() as m:
+        m.chdir(tmp_path)
         result = runner.invoke(
             app,
             ["execute", "--no-copy", "--plan-content", plan_content],
             input="y\n",  # Approve the action
         )
-    finally:
-        os.chdir(original_cwd)
 
     # THEN: The command should succeed and the file should be created
     assert result.exit_code == 0
@@ -64,7 +61,7 @@ def test_in_terminal_diff_is_shown_for_create_file(tmp_path: Path, mock_env):
     assert "Approve? (y/n):" in result.stderr
 
 
-def test_in_terminal_diff_is_shown_as_fallback(tmp_path: Path, mock_env):
+def test_in_terminal_diff_is_shown_as_fallback(tmp_path: Path, mock_env, monkeypatch):
     """
     Given no external diff tool is configured or found,
     When an `edit` action is run interactively,
@@ -93,18 +90,13 @@ def test_in_terminal_diff_is_shown_as_fallback(tmp_path: Path, mock_env):
     mock_env.which.return_value = None
 
     # WHEN: The plan is executed with interactive approval
-    import os
-
-    original_cwd = os.getcwd()
-    os.chdir(tmp_path)
-    try:
+    with monkeypatch.context() as m:
+        m.chdir(tmp_path)
         result = runner.invoke(
             app,
             ["execute", "--no-copy", "--plan-content", plan_content],
             input="y\n",  # Approve the action
         )
-    finally:
-        os.chdir(original_cwd)
 
     # THEN: The command should succeed and the file should be changed
     assert result.exit_code == 0
@@ -125,7 +117,7 @@ def test_in_terminal_diff_is_shown_as_fallback(tmp_path: Path, mock_env):
     assert "Approve? (y/n):" in result.stderr
 
 
-def test_vscode_is_used_as_fallback(tmp_path: Path, mock_env):
+def test_vscode_is_used_as_fallback(tmp_path: Path, mock_env, monkeypatch):
     """
     Given VS Code is available and no custom tool is set,
     When an action is run interactively,
@@ -157,18 +149,13 @@ def test_vscode_is_used_as_fallback(tmp_path: Path, mock_env):
     )
 
     # WHEN: The plan is executed
-    import os
-
-    original_cwd = os.getcwd()
-    os.chdir(tmp_path)
-    try:
+    with monkeypatch.context() as m:
+        m.chdir(tmp_path)
         result = runner.invoke(
             app,
             ["execute", "--no-copy", "--plan-content", plan_content],
             input="y\n",
         )
-    finally:
-        os.chdir(original_cwd)
 
     # THEN: The command should succeed
     assert result.exit_code == 0
@@ -186,7 +173,7 @@ def test_vscode_is_used_as_fallback(tmp_path: Path, mock_env):
     assert "--- a/hello.txt" not in result.stdout
 
 
-def test_custom_diff_tool_is_used_from_env(tmp_path: Path, mock_env):
+def test_custom_diff_tool_is_used_from_env(tmp_path: Path, mock_env, monkeypatch):
     """
     Given the TEDDY_DIFF_TOOL environment variable is set with arguments,
     When an action is run interactively,
@@ -219,18 +206,13 @@ def test_custom_diff_tool_is_used_from_env(tmp_path: Path, mock_env):
     )
 
     # WHEN: The plan is executed
-    import os
-
-    original_cwd = os.getcwd()
-    os.chdir(tmp_path)
-    try:
+    with monkeypatch.context() as m:
+        m.chdir(tmp_path)
         runner.invoke(
             app,
             ["execute", "--no-copy", "--plan-content", plan_content],
             input="y\n",
         )
-    finally:
-        os.chdir(original_cwd)
 
     # THEN: mock_env.run_command should have been called with the parsed command
     mock_env.run_command.assert_called_once()
@@ -242,7 +224,9 @@ def test_custom_diff_tool_is_used_from_env(tmp_path: Path, mock_env):
     assert "--diff" not in command_list
 
 
-def test_invalid_custom_tool_falls_back_to_terminal(tmp_path: Path, mock_env):
+def test_invalid_custom_tool_falls_back_to_terminal(
+    tmp_path: Path, mock_env, monkeypatch
+):
     """
     Given TEDDY_DIFF_TOOL is set to an invalid command,
     And VS Code is available,
@@ -271,18 +255,13 @@ def test_invalid_custom_tool_falls_back_to_terminal(tmp_path: Path, mock_env):
     mock_env.which.side_effect = lambda cmd: "/usr/bin/code" if cmd == "code" else None
 
     # WHEN: The plan is executed
-    import os
-
-    original_cwd = os.getcwd()
-    os.chdir(tmp_path)
-    try:
+    with monkeypatch.context() as m:
+        m.chdir(tmp_path)
         result = runner.invoke(
             app,
             ["execute", "--no-copy", "--plan-content", plan_content],
             input="y\n",
         )
-    finally:
-        os.chdir(original_cwd)
 
     # THEN: The command should succeed
     assert result.exit_code == 0

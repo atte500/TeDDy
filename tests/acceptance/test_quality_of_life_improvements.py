@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from typer.testing import CliRunner
 
@@ -9,7 +8,9 @@ from tests.acceptance.plan_builder import MarkdownPlanBuilder
 runner = CliRunner()
 
 
-def test_interactive_prompt_shows_description(tmp_path: Path, mock_user_interactor):
+def test_interactive_prompt_shows_description(
+    tmp_path: Path, mock_user_interactor, monkeypatch
+):
     """
     Given a plan with an action that has a 'description' field,
     When the user runs `execute` interactively,
@@ -35,12 +36,9 @@ def test_interactive_prompt_shows_description(tmp_path: Path, mock_user_interact
 
     # Act
     # Change CWD to the temp path so file operations in the plan are contained
-    original_cwd = os.getcwd()
-    os.chdir(tmp_path)
-    try:
+    with monkeypatch.context() as m:
+        m.chdir(tmp_path)
         result = runner.invoke(app, ["execute", "--plan-content", plan_content])
-    finally:
-        os.chdir(original_cwd)
 
     # Assert
     assert result.exit_code == 0
@@ -95,7 +93,7 @@ def test_prompt_skips_approval_prompt(
 
 
 def test_read_action_report_formats_multiline_content_correctly(
-    tmp_path: Path, container
+    tmp_path: Path, container, monkeypatch
 ):
     """
     Verifies that the Markdown report for a `read` action correctly formats
@@ -116,14 +114,11 @@ def test_read_action_report_formats_multiline_content_correctly(
 
     # WHEN the plan is executed
     # Change CWD to the temp path so file operations in the plan are contained
-    original_cwd = os.getcwd()
-    os.chdir(tmp_path)
-    try:
+    with monkeypatch.context() as m:
+        m.chdir(tmp_path)
         result = runner.invoke(
             app, ["execute", "--plan-content", plan_content, "--yes"]
         )
-    finally:
-        os.chdir(original_cwd)
 
     # THEN the command should succeed
     assert result.exit_code == 0
@@ -133,7 +128,9 @@ def test_read_action_report_formats_multiline_content_correctly(
     assert "line two" in result.stdout
 
 
-def test_read_action_is_formatted_as_literal_block(tmp_path: Path, container):
+def test_read_action_is_formatted_as_literal_block(
+    tmp_path: Path, container, monkeypatch
+):
     """
     Given a read action on a multi-line file containing markdown,
     When the execution report is generated,
@@ -166,14 +163,11 @@ def hello():
 
     # Act
     # Change CWD to the temp path so file operations in the plan are contained
-    original_cwd = os.getcwd()
-    os.chdir(tmp_path)
-    try:
+    with monkeypatch.context() as m:
+        m.chdir(tmp_path)
         result = runner.invoke(
             app, ["execute", "--plan-content", plan_content, "--yes"]
         )
-    finally:
-        os.chdir(original_cwd)
 
     # Assert
     assert result.exit_code == 0
