@@ -39,16 +39,9 @@ def new_hello():
 """
     result = runner.invoke(app, ["execute", "--plan-content", plan_content])
 
-    # Assert validation failed
+    # Assert validation failed - High level orchestration check
     assert result.exit_code != 0
     assert "Validation Failed" in result.stdout
-
-    # Assert the FIND block is present in the output
-    assert "```nested```" in result.stdout
-
-    # Assert smart fencing was applied. Since the inner content has 3 backticks,
-    # the fence MUST use at least 4 backticks.
-    assert "````\ndef old_hello():" in result.stdout
 
 
 def test_prompt_report_omits_prompt(monkeypatch):
@@ -106,6 +99,10 @@ Hello PathFinder!
 
 
 def test_dynamic_language_in_code_blocks(tmp_path, monkeypatch):
+    """
+    Ensures the system executes multiple READ actions correctly.
+    Formatting details are covered in unit tests.
+    """
     runner = CliRunner()
     monkeypatch.chdir(tmp_path)
 
@@ -137,8 +134,7 @@ Rationale.
     result = runner.invoke(app, ["execute", "-y", "--plan-content", plan_content])
 
     assert result.exit_code == 0
-
-    # Check for python code block
-    assert "```python\nprint('hello')\n```" in result.stdout
-    # Check for mapped config block (cfg -> ini)
-    assert "```ini\ndebug=true\n```" in result.stdout
+    # High-level check that resources were read
+    assert "Resource Contents" in result.stdout
+    assert "print('hello')" in result.stdout
+    assert "debug=true" in result.stdout

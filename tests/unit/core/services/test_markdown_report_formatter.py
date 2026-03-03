@@ -449,3 +449,91 @@ def test_formats_validation_failed_report_with_errors():
     assert "## Validation Errors" in formatted_report
     assert "- EXECUTE action must contain exactly one command." in formatted_report
     assert "- Command chaining with '&&' is not allowed." in formatted_report
+
+
+def test_formats_prompt_action_omits_prompt_text():
+    """
+    Given a PROMPT action,
+    When the report is formatted,
+    Then the AI prompt content should be omitted, showing only the interaction.
+    """
+    formatter = MarkdownReportFormatter()
+    report = ExecutionReport(
+        plan_title="Test",
+        run_summary=RunSummary(
+            status=RunStatus.SUCCESS,
+            start_time=datetime.now(timezone.utc),
+            end_time=datetime.now(timezone.utc),
+        ),
+        action_logs=[
+            ActionLog(
+                action_type="PROMPT",
+                status=ActionStatus.SUCCESS,
+                params={"prompt": "AI question here?"},
+                details={"user_input": "User answer here."},
+            )
+        ],
+    )
+
+    output = formatter.format(report)
+
+    assert "User answer here." in output
+    assert "AI question here?" not in output
+
+
+def test_formats_invoke_action_omits_details_block():
+    """
+    Given an INVOKE action,
+    When the report is formatted,
+    Then it should omit the 'Details' section to keep the handoff clean.
+    """
+    formatter = MarkdownReportFormatter()
+    report = ExecutionReport(
+        plan_title="Test",
+        run_summary=RunSummary(
+            status=RunStatus.SUCCESS,
+            start_time=datetime.now(timezone.utc),
+            end_time=datetime.now(timezone.utc),
+        ),
+        action_logs=[
+            ActionLog(
+                action_type="INVOKE",
+                status=ActionStatus.SUCCESS,
+                params={"Agent": "Architect", "message": "Take over."},
+            )
+        ],
+    )
+
+    output = formatter.format(report)
+
+    assert "- **Details:**" not in output
+
+
+def test_read_action_uses_mapped_language_tags():
+    """
+    Given a READ action for a file with an extension that should be mapped (e.g., .cfg -> ini),
+    When the report is formatted,
+    Then the code block should use the mapped language tag.
+    """
+    formatter = MarkdownReportFormatter()
+    report = ExecutionReport(
+        plan_title="Test",
+        run_summary=RunSummary(
+            status=RunStatus.SUCCESS,
+            start_time=datetime.now(timezone.utc),
+            end_time=datetime.now(timezone.utc),
+        ),
+        action_logs=[
+            ActionLog(
+                action_type="read",
+                status=ActionStatus.SUCCESS,
+                params={"Resource": "config.cfg"},
+                details={"content": "debug=true"},
+            )
+        ],
+    )
+
+    output = formatter.format(report)
+
+    # Mapped extension check: .cfg should be rendered as ```ini
+    assert "```ini\ndebug=true\n```" in output
