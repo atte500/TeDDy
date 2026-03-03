@@ -108,11 +108,23 @@ def test_create_action_is_dispatched_to_filesystem(container, mock_fs):
 The following is a complete list of all acceptance tests that have been identified as candidates for migration to Core Logic Integration Tests. Upon successful migration of all tests within a file, the original acceptance test file will be deleted.
 
 #### `tests/acceptance/test_markdown_plans.py`
-- [ ] `test_execute_markdown_plan_happy_path` (CREATE action)
-- [ ] `test_markdown_edit_action` (EDIT action)
-- [ ] `test_markdown_execute_action` (EXECUTE action)
-- [ ] `test_markdown_read_action` (READ action)
-- [ ] `test_markdown_invoke_action` (INVOKE action)
+- [x] `test_execute_markdown_plan_happy_path` (CREATE action)
+- [x] `test_markdown_edit_action` (EDIT action)
+- [x] `test_markdown_execute_action` (EXECUTE action)
+- [x] `test_markdown_read_action` (READ action)
+- [x] `test_markdown_invoke_action` (INVOKE action)
+
+## Implementation Summary
+
+### Work Completed
+- Successfully migrated all test cases from `tests/acceptance/test_markdown_plans.py` to a new integration test suite `tests/integration/core/services/test_action_dispatch_logic.py`.
+- Established a module-level fixture for the `ExecutionOrchestrator` in integration tests, ensuring consistent DI setup.
+- Deleted the redundant `tests/acceptance/test_markdown_plans.py` file.
+- Verified that the rebalanced suite maintains 90% coverage and all tests pass.
+
+### Refactoring & Observations
+- **Mock Wrapping:** Discovered that `ActionFactory` wraps adapter methods in a local function. Integration tests must capture the original mock method (e.g., `original_execute = mock_shell.execute`) *before* the factory is invoked if they wish to perform assertions on it.
+- **Contract Clarity:** Confirmed the exact parameter structure expected by the `ActionDispatcher` for `CREATE` and `EDIT` actions, ensuring the integration tests accurately simulate the system's internal data flow.
 
 #### `tests/acceptance/test_create_file_action.py`
 - [ ] `test_create_file_happy_path`
