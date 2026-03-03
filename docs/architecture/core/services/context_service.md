@@ -30,3 +30,7 @@ When the `get_context` method is called, the `ContextService` performs the follo
 6.  It uses the `IFileSystemManager` again to read the content of each file in `context_vault_paths`.
 7.  It formats the system information into a `header` string and the repository tree and file contents into a `content` string using private helper methods.
 8.  It assembles the final `ProjectContext` DTO with the formatted `header` and `content` and returns it.
+
+## 5. Implementation Notes
+
+-   **Context Configuration:** The `context` command's behavior is explicitly driven by the contents of `.teddy/*.context` files, providing a clear, user-configurable contract.

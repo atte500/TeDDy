@@ -49,8 +49,10 @@
           1.  **Update Component Designs (Contract-First):** For **each component** listed in the `Architectural Changes`, `CREATE` or `EDIT` its corresponding design document (`docs/architecture/**/*.md`). This is a mandatory first step to force the definition of ports, data contracts, pre/post-conditions, invariants, and exception states.
           2.  **Central Architecture Maintenance:** `EDIT` `docs/architecture/ARCHITECTURE.md` to:
               *   Update the `Component & Boundary Map` with any new or altered components.
-              *   Update the `Self-Enforcing Architecture` table to reflect the `Status` of any planned or implemented static analysis rules for the slice.
-              *   Evaluate the `Key Architectural Decisions` section. Only add new entries if the slice introduces a significant, cross-cutting pattern. Actively prune outdated decisions or condense overly verbose entries to keep this document a high-level, readable summary.
+              *   **Evaluate and Refactor `Key Architectural Decisions`:** You MUST critically evaluate this section to maintain it as a high-level summary of *cross-cutting* concerns.
+            *   **ADD:** Only add a new decision if it introduces a significant, project-wide pattern or constraint.
+            *   **RELOCATE:** If a decision's scope is limited to a single component, you MUST move its rationale into the `Implementation Notes` section of that component's specific design document (`docs/architecture/**/*.md`).
+            *   **PRUNE:** Actively prune outdated decisions or condense overly verbose entries.
           3.  **Update Slice Document:** `EDIT` the slice document to replace the `Architectural Changes` placeholder. Summarize the finalized contracts and link directly to the updated component design documents.
         </action>
       </phase>
@@ -59,8 +61,8 @@
           **Goal:** To ensure the development environment is properly configured and to create the final, actionable checklist for the developer.
           **Process:**
           1.  **Environment Audit:** Explicitly check the current state of the environment by `READ`ing relevant configuration files (e.g., `pyproject.toml`, `.pre-commit-config.yaml`, CI configs like `.github/workflows/ci.yml`, and `.gitignore`).
-          2.  **Tooling Configuration (Self-Enforcing Architecture):** The Architect **must** directly `EDIT` tooling configs (`.pre-commit-config.yaml`, CI files). To enforce key architectural decisions, they **must** codify them as custom static analysis checks (e.g., `semgrep` rules) and enable them in `pre-commit`.
-          3.  **Finalize Scope of Work:** `EDIT` the slice document to replace the placeholder text in the `## Scope of Work` section with the final, ordered checklist for the developer. If new application dependencies are required, their setup commands (e.g., `poetry add <package>`) **must** be the very first items in this checklist. The `Scope of Work` **must** be structured by test layer, delineating tasks for `unit`, `integration`, and `acceptance` testing. Acceptance tests must only validate end-to-end happy paths.
+          2.  **Tooling Configuration:** If the new architecture requires changes to foundational tooling like pre-commit hooks or CI workflows, the Architect **must** directly `EDIT` the relevant configuration files (e.g., `.pre-commit-config.yaml`, `.github/workflows/ci.yml`).
+          3.  **Finalize Scope of Work:** `EDIT` the slice document to replace the placeholder text in the `## Scope of Work` section with the final, ordered checklist for the developer. If new application dependencies are required, their setup commands (e.g., `poetry add <package>`) **must** be the very first items in this checklist.
         </action>
       </phase>
       <phase n="7" name="Version Control & Handoff">

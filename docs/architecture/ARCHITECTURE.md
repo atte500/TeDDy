@@ -138,26 +138,7 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 
 ---
 
----
-
-## 3. Self-Enforcing Architecture (Static Analysis Rules)
-
--   **Goal:** To prevent architectural drift by codifying key conventions into automated static analysis rules using `semgrep`. These rules are enforced via pre-commit hooks and the CI pipeline.
-
-| Priority | Rule ID                         | Description                                                                                               | Status    |
-| :------- | :------------------------------ | :-------------------------------------------------------------------------------------------------------- | :-------- |
-| 1        | `arch-integrity-no-manual-di`   | Prohibits direct instantiation of services/adapters in tests, forcing the use of the `container` fixture. | `Planned` |
-| 1        | `arch-integrity-hex-boundaries` | Prevents core services from directly importing concrete adapters; they must use Port abstractions.        | `Planned` |
-| 2        | `test-pyramid-no-mock-asserts`  | Prohibits `mock.assert_called()` in acceptance tests (`tests/acceptance/`).                               | `Planned` |
-| 2        | `test-pyramid-no-direct-io`     | Flags direct imports of `os`, `pathlib`, `shutil`, `subprocess` in tests outside the integration layer.   | `Planned` |
-
----
-#### Rejected Rules
-- **Ban `subprocess.run(shell=True)`:** Rejected because the `ShellAdapter` intentionally uses `shell=True` on POSIX systems for core features like pipes and globbing. This is a documented, deliberate design decision.
-
----
-
-## 4. Key Architectural Decisions
+## 3. Key Architectural Decisions
 
 This section captures significant, long-standing architectural decisions and patterns that define the system's design.
 
@@ -169,30 +150,18 @@ This section captures significant, long-standing architectural decisions and pat
 -   **Structured Output Parsing in Tests:** Acceptance tests that verify structured output (e.g., YAML) MUST parse the output into a data structure before making assertions. This makes tests resilient to formatting changes.
 -   **Separation of I/O Concerns:** The `[PLAN_FILE]` positional argument is the canonical way to provide a plan from a file, while omitting it defaults to reading from the clipboard. This reserves `stdin` exclusively for interactive prompts (like `y/n` or `prompt`).
 -   **Test Plan Injection:** The `execute` subcommand includes a `--plan-content` option. This is the canonical way to provide a plan as a string directly from within a test, making acceptance tests more robust and self-contained by avoiding file I/O or clipboard dependencies.
--   **Context Configuration:** The `context` command's behavior is explicitly driven by the contents of `.teddy/*.context` files, providing a clear, user-configurable contract.
--   **Interactive Diff Previews:** During interactive execution, `create` and `edit` actions provide a visual diff. This feature is configured via a prioritized strategy: the `TEDDY_DIFF_TOOL` environment variable, a fallback to the `code` (VS Code) CLI if present, and a final fallback to an in-terminal view. This provides a better user experience while remaining environment-agnostic.
--   **Dependency Versioning:** Dependency updates, even minor ones, can introduce breaking API changes (e.g., `typer.testing.CliRunner` API change in a `typer` update). While flexible version specifiers (`^X.Y.Z`) are convenient, production dependencies should be reviewed and potentially pinned to specific versions to improve stability and prevent unexpected CI failures.
 -   **Simplified Shell Execution (Single Command):** To enhance user control, fault isolation, and architectural simplicity, the TeDDy workflow mandates that each `EXECUTE` action contains only a single shell command.
     -   **Behavior:** The `PlanValidator` enforces a "one command per action" rule, rejecting plans that attempt to chain commands with `&&` or newlines.
     -   **Directives:** The `MarkdownPlanParser` pre-processes the command for `cd <path>` and `export KEY=VALUE` directives, extracting them from the script and passing them as parameters to the `ShellAdapter`.
     -   **Isolated Environment:** Each `EXECUTE` action runs in a stateless, isolated environment. The `cwd` and `env` are reset for each action and do not persist.
     -   **Pipes & Redirects:** Standard shell operators like `|`, `>`, and `<` are fully supported within the single command line.
     -   **Rationale:** This approach makes the plan more explicit and transparent, gives the user granular step-by-step control, and dramatically simplifies the `ShellAdapter`'s logic.
--   **Defensive Type Handling for `mistletoe`:** The `mistletoe` Markdown parsing library exhibits a discrepancy between its runtime behavior and its static type hints. Specifically, attributes like `Token.children` are typed as a nullable `Iterable` but are consistently `list` instances at runtime.
-    -   **Required Pattern:** To satisfy `mypy` and prevent runtime errors, any access to these attributes MUST be defensively converted to a concrete, non-nullable list first. Example: `children_list = list(token.children) if token.children else []`. This pattern ensures type safety and makes the code resilient to the library's loose type definitions.
--   **Single-Pass AST Parsing:** To ensure robustness against Markdown quirks (like `ThematicBreak` separators) and to simplify the parsing logic, the `MarkdownPlanParser` MUST use a "Single-Pass" strategy. It iterates through the AST nodes as a stream, dispatching to specific action parsers when an Action Heading is encountered and safely ignoring all interstitial content. This replaces the fragile "whitelist validation" approach.
 -   **Cross-Platform File I/O:** All operations that read from or write to text files MUST explicitly specify `encoding="utf-8"`. This applies to both application code (`src/`) and test code (`tests/`).
     -   **Rationale:** The default file encoding is platform-dependent (e.g., UTF-8 on macOS/Linux, but often `cp1252` on Windows). Failing to specify the encoding can lead to `UnicodeEncodeError` or `UnicodeDecodeError` when handling files with non-ASCII characters on different operating systems. This convention ensures predictable, platform-agnostic behavior.
--   **Cross-Platform Path Normalization:** To distinguish project-relative paths (e.g., `[/docs/spec.md]`) from true absolute paths, the `MarkdownPlanParser` uses an OS-aware heuristic.
-    -   **Rule:** A path is considered a "true" absolute path only if it starts with a common system directory on POSIX (e.g., `/tmp`, `/etc`) or a drive letter on Windows. Other paths starting with `/` are treated as project-relative.
-    -   **Rationale:** This allows the parser to normalize project-relative paths (by stripping the leading slash) while preserving true absolute paths to be rejected by the `PlanValidator`, ensuring consistent security and behavior across platforms.
--   **Strict Parser Validation:** The `MarkdownPlanParser` must enforce a strict structure within a plan's `## Action Plan` section.
-    -   **Rule:** Any content found between valid action blocks (e.g., a `ThematicBreak` (`---`) or stray paragraphs) must be treated as a validation error. The parser should not attempt to ignore or "auto-correct" malformed plan structures.
-    -   **Rationale:** This decision was the result of a pivot from an initial "robustness-first" approach. A strict, fail-fast parser is simpler, more predictable, and forces the upstream AI agent to produce well-formed plans, which is a core principle of the TeDDy workflow.
 
 ---
 
-## 5. Debug Mode
+## 4. Debug Mode
 
 To aid in fault isolation, the `teddy` executor includes a debug mode that can be activated via an environment variable.
 

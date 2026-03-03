@@ -14,6 +14,8 @@ The `ConsoleInteractorAdapter` is a concrete implementation of the `IUserInterac
 
 The `ConsoleInteractorAdapter` depends on the `ISystemEnvironment` outbound port to interact with the host OS, ensuring it remains isolated and testable.
 
+-   **Interactive Diff Previews:** During interactive execution, `create` and `edit` actions provide a visual diff. This feature is configured via a prioritized strategy: the `TEDDY_DIFF_TOOL` environment variable, a fallback to the `code` (VS Code) CLI if present, and a final fallback to an in-terminal view. This provides a better user experience while remaining environment-agnostic.
+
 ### Implementation Details
 
 ### Implementation Details
