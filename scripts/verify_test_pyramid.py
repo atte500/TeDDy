@@ -16,7 +16,7 @@ def count_tests_in_dir(directory: Path) -> int:
         print(f"Error: Directory not found at '{directory}'", file=sys.stderr)
         return 0
 
-    cmd = f"git grep 'def test_' {directory} | wc -l"
+    cmd = f"git grep --count 'def test_' {directory}"
     try:
         result = subprocess.run(
             cmd,
