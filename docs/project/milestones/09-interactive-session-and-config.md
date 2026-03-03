@@ -37,20 +37,21 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 
 ## 4. Vertical Slices
 
-- [ ] **Slice 1: Security Baselines, Config Service and LLM Client**
-    - Configure comprehensive security gates (secret scanning with `detect-secrets`, code scanning with `bandit`, and dependency auditing with `pip-audit`). Add `litellm` dependency, implement `ConfigService` and `LiteLLMAdapter`, and wire them in `main.py`.
+- [ ] **Slice 1: Foundation (Security, Config, LLM Client)**
+    - Configure comprehensive security gates (`detect-secrets`, `bandit`, `pip-audit`). Add `litellm` dependency, implement `ConfigService` and `LiteLLMAdapter`, and wire them in `main.py`.
     - **Configurable Web Scraper:** Extend `WebScraperAdapter` to respect settings for precision, comments, and tables via the `ConfigService`.
-- [ ] **Slice 2: Session Scaffolding & Core Commands**
+- [ ] **Slice 2: Refactor Execution Report Template**
+    - Modify the `execution_report.md.j2` template to correctly generate "Session Report" and "CLI Report" formats based on an `is_concise` flag.
+- [ ] **Slice 3: Core Session & Context Engine**
+    - Implement the backbone of the interactive session workflow.
     - Implement `SessionManager` and the basic `new`, `plan`, and `execute` commands.
-- [ ] **Slice 3: Context-Centric Workflow**
     - Implement `ContextService` to build the `input.md` payload implicitly for the planning phase.
-- [ ] **Slice 4: Core Workflow & Enhanced Interactivity**
-    - Implement the smart `resume` loop and the `textual`-based TUI with in-terminal/non-blocking editors.
-- [ ] **Slice 5: Plan Validation & Automated Re-planning**
-    - Implement the `PlanValidator` and the automatic feedback loop upon validation failure.
-- [ ] **Slice 6: Action Side-Effects & Reporting**
-    - Implement action timings, forward-looking side-effects (e.g., for `READ`), and rich markdown reporting.
-- [ ] **Slice 7: Agent Collaboration Model**
+    - Implement stateful action side-effects for `execute` (e.g., updating `T_next/turn.context` for `READ`/`PRUNE` and processing MEMOs).
+- [ ] **Slice 4: Plan Validation & Self-Correction**
+    - Integrate existing `PlanValidator` for the automatic feedback loop to enhance the core `execute` command with pre-flight checks.
+- [ ] **Slice 5: Interactive TUI & `resume` Workflow**
+    - Implement the smart `resume` command and the `textual`-based TUI for interactive plan approval and editing.
+- [ ] **Slice 6: Agent Collaboration Model**
     - Implement `meta.yaml` ledgers, turn transition algorithms, and `INVOKE`/`RETURN` capabilities.
-- [ ] **Slice 8: Automatic Session Log Generation**
-    - Implement the `SessionLogGenerator` to compile session histories into a human-readable `session-log.md`.
+- [ ] **Slice 7: Automatic Session Log Generation**
+    - Implement the `SessionLogGenerator` to compile session histories into a human-readable `session-log.md`, excluding turns that fail validation.

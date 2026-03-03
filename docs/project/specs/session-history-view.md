@@ -16,7 +16,8 @@ The current session structure, with each turn in a separate directory, is optimi
 
 1.  **File Name:** `session-log.md`
 2.  **Location:** The file will be created at the root of the session directory (e.g., `.teddy/sessions/<session_name>/session-log.md`).
-3.  **Generation:** This file is automatically created and appended to by the `teddy execute` command upon the successful completion of each turn. It is a living document that grows with the session.
+3.  **Generation:** This file is automatically created and appended to by the `teddy execute` command upon the successful completion of each turn's execution. It is a living document that grows with the session.
+    -   **Exclusion Rule:** Turns that fail the pre-flight validation step are **not** considered "completed" and will be excluded from the `session-log.md`. Only turns that are successfully validated and executed will be logged.
 
 ### 3.2. History Reconstruction Logic
 
@@ -37,31 +38,7 @@ To ensure a clean, readable document, each turn will be appended using the follo
 
 2.  **Plan Details:** The full content of the `plan.md` file, **excluding** its top-level H1 header, will be included. This preserves the plan's metadata, rationale, and action plan while fitting correctly into the document's structure.
 
-3.  **Execution Outcome (H3):** A Level 3 header, `### Execution Outcome`, will be added.
-    -   Beneath this header, the `Action Log` section (including its `### Action Log` header) will be extracted verbatim from the corresponding `report.md`. If a turn has not been executed, this entire section will be omitted.
-
-#### Example Turn Entry:
-````````markdown
----
-## Turn: 01-initial-research - Research and Propose a New Agent
-
-- **Status:** Green 🟢
-- **Plan Type:** Exploration
-- **Agent:** Pathfinder
-
-## Rationale
-...
-
-## Action Plan
-...
-
-### Execution Outcome
-
-### Action Log
-#### `CREATE`: ...
-- **Status:** SUCCESS
-...
-````````
+3.  **Action Log (H3):** Extracted verbatim from the corresponding `report.md`.
 
 ## 4. Implementation Guide
 
