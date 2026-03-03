@@ -96,7 +96,7 @@
               2.  **Component Tables:** A series of tables, grouped by layer (e.g., "Hexagonal Core," "Primary Adapters"). Each table **must** contain three columns: `Component` (name), `Description` (a concise one-sentence explanation), and `Contract` (a relative link to its detailed design document).
 
           **3. Key Architectural Decisions**
-          *   **Goal:** To create a living document that captures the *rationale* behind significant, non-obvious architectural choices.
+          *   **Goal:** To create a living document that captures the *rationale* behind significant, non-obvious architectural choices. This section serves as a **prescriptive standard** for all development work.
           *   **Structure:** A bulleted list. Each item represents a major decision. The description for each item should explain the choice and its implications.
 
           **4. Debug Mode**

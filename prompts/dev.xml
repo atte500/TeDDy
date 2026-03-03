@@ -59,8 +59,9 @@
 
         <step n="3" name="POLISH SCENARIO (Outer REFACTOR)">
           *   With the inner TDD loops complete, the guiding acceptance test should now pass. This is a **mandatory** refactoring phase.
-          *   **Verify & Push Logic Down (Ice Cream Cone Prevention):** Run the acceptance test to confirm it now passes. **Crucially**, ensure the acceptance layer remains lean by testing only the high-level happy path and cross-system wiring. Move any detailed business logic validation to unit/integration tests. This is also when you must address any **`[DEBT]` reminders** logged during implementation regarding fragile tests or refactoring.
-          *   **Refactor:** Refactor the implementation code to improve structure and clarity. This is also the designated time to address any **`[DEBT]` structural reminders** that were logged for this scenario. After refactoring, ensure all tests still pass.
+          *   **Architectural Compliance Check:** You MUST now cross-reference your implementation against the `Key Architectural Decisions` section in `docs/architecture/ARCHITECTURE.md`.
+          *   **Verify & Push Logic Down (Ice Cream Cone Prevention):** Run the acceptance test to confirm it now passes. **Crucially**, ensure the acceptance layer remains lean by testing only the high-level happy path and cross-system wiring. Move any detailed business logic validation to unit/integration tests.
+          *   **Refactor:** Refactor the implementation code to improve structure and clarity. You MUST resolve all `[DEBT]` reminders logged for this scenario before proceeding. After refactoring, ensure all tests still pass.
         </step>
 
         <step n="4" name="COMMIT SCENARIO">
@@ -146,7 +147,7 @@
             WIP & Reminders:
             - [This is a persistent log. You MUST carry all unresolved notes forward into every turn.]
             - [TODO]: Trivial improvement, "fake it" shortcut, or DRY violation to be fixed/driven out in the current or next inner TDD cycle.
-            - [DEBT]: Contained debt to be fixed within the **`POLISH SCENARIO`** phase. This includes structural improvements, anti-patterns (like DI bloat), or fragile tests.
+            - [DEBT]: Contained debt to be fixed within the **`POLISH SCENARIO`** phase. This includes structural improvements, fragile tests, or violations of a `Key Architectural Decision`.
             - [OBS]: An observation about a pre-existing condition, undocumented architectural decision, or pattern.
             - [NEW]: Development friction or out-of-scope opportunities discovered during implementation. Log these in the final Implementation Summary.
             - [BLOCK]: A True Blocker. Halt, generate `spikes/mre/[blocker].md`, and escalate to the Debugger.
