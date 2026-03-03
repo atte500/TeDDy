@@ -11,14 +11,14 @@ Eradicate repetitive DI registration boilerplate and rebalance the test pyramid 
 ## Scope of Work
 
 ### 1. Centralize fixtures in `tests/conftest.py`
-Implement the following fixtures to handle automatic container registration:
-- `mock_user_interactor` (spec=`IUserInteractor`)
-- `mock_fs` (spec=`IFileSystemManager`)
-- `mock_env` (spec=`ISystemEnvironment`)
-- `mock_shell` (spec=`IShellExecutor`)
-- `mock_scraper` (spec=`IWebScraper`)
-- `mock_searcher` (spec=`IWebSearcher`)
-- `mock_tree_gen` (spec=`IRepoTreeGenerator`)
+- [x] Implement the following fixtures to handle automatic container registration:
+    - `mock_user_interactor` (spec=`IUserInteractor`)
+    - `mock_fs` (spec=`IFileSystemManager`)
+    - `mock_env` (spec=`ISystemEnvironment`)
+    - `mock_shell` (spec=`IShellExecutor`)
+    - `mock_scraper` (spec=`IWebScraper`)
+    - `mock_searcher` (spec=`IWebSearcher`)
+    - `mock_tree_gen` (spec=`IRepoTreeGenerator`)
 
 ### 2. Refactor Unit & Integration Layer
 Remove manual registration and local mock fixtures in the 10 files identified in [Test Infrastructure Standards](../specs/test-infrastructure-standards.md).

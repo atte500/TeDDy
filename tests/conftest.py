@@ -1,6 +1,17 @@
 import sys
 from pathlib import Path
+from unittest.mock import Mock
 import pytest
+
+from teddy_executor.core.ports.outbound import (
+    IUserInteractor,
+    IFileSystemManager,
+    ISystemEnvironment,
+    IShellExecutor,
+    IWebScraper,
+    IWebSearcher,
+    IRepoTreeGenerator,
+)
 
 # Add the project root directory to the Python path.
 # This is necessary to ensure that `pytest` can correctly resolve imports
@@ -23,3 +34,52 @@ def container(monkeypatch):
     c = create_container()
     monkeypatch.setattr(teddy_executor.__main__, "container", c)
     return c
+
+
+@pytest.fixture
+def mock_user_interactor(container):
+    mock = Mock(spec=IUserInteractor)
+    container.register(IUserInteractor, instance=mock)
+    return mock
+
+
+@pytest.fixture
+def mock_fs(container):
+    mock = Mock(spec=IFileSystemManager)
+    container.register(IFileSystemManager, instance=mock)
+    return mock
+
+
+@pytest.fixture
+def mock_env(container):
+    mock = Mock(spec=ISystemEnvironment)
+    container.register(ISystemEnvironment, instance=mock)
+    return mock
+
+
+@pytest.fixture
+def mock_shell(container):
+    mock = Mock(spec=IShellExecutor)
+    container.register(IShellExecutor, instance=mock)
+    return mock
+
+
+@pytest.fixture
+def mock_scraper(container):
+    mock = Mock(spec=IWebScraper)
+    container.register(IWebScraper, instance=mock)
+    return mock
+
+
+@pytest.fixture
+def mock_searcher(container):
+    mock = Mock(spec=IWebSearcher)
+    container.register(IWebSearcher, instance=mock)
+    return mock
+
+
+@pytest.fixture
+def mock_tree_gen(container):
+    mock = Mock(spec=IRepoTreeGenerator)
+    container.register(IRepoTreeGenerator, instance=mock)
+    return mock
