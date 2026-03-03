@@ -1,5 +1,3 @@
-from unittest.mock import Mock
-
 import pytest
 
 from teddy_executor.core.domain.models import (
@@ -9,32 +7,8 @@ from teddy_executor.core.domain.models import (
     Plan,
     RunStatus,
 )
-from teddy_executor.core.ports.inbound.edit_simulator import IEditSimulator
-from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
 from teddy_executor.core.ports.inbound.run_plan_use_case import RunPlanUseCase
-from teddy_executor.core.services.action_dispatcher import ActionDispatcher
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
-
-
-@pytest.fixture
-def mock_plan_parser(container):
-    mock = Mock(spec=IPlanParser)
-    container.register(IPlanParser, instance=mock)
-    return mock
-
-
-@pytest.fixture
-def mock_action_dispatcher(container):
-    mock = Mock(spec=ActionDispatcher)
-    container.register(ActionDispatcher, instance=mock)
-    return mock
-
-
-@pytest.fixture
-def mock_edit_simulator(container):
-    mock = Mock(spec=IEditSimulator)
-    container.register(IEditSimulator, instance=mock)
-    return mock
 
 
 @pytest.fixture
@@ -46,6 +20,7 @@ def orchestrator(  # noqa: PLR0913
     mock_fs,
     mock_edit_simulator,
 ) -> ExecutionOrchestrator:
+    """Resolves ExecutionOrchestrator with all mocked dependencies."""
     container.register(RunPlanUseCase, ExecutionOrchestrator)
     return container.resolve(RunPlanUseCase)
 

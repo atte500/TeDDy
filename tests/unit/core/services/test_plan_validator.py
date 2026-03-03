@@ -16,15 +16,14 @@ from teddy_executor.core.services.validation_rules.read import ReadActionValidat
 
 @pytest.fixture
 def validator(container, mock_fs) -> IPlanValidator:
-    # IFileSystemManager is already registered via mock_fs fixture in conftest.py
-
-    # Re-register sub-validators so they are resolved with the mock_fs
+    """Resolves the PlanValidator from the container with all rules."""
+    # Register individual rules; container will inject mock_fs automatically
     container.register(CreateActionValidator)
     container.register(EditActionValidator)
     container.register(ExecuteActionValidator)
     container.register(ReadActionValidator)
 
-    # Re-register IPlanValidator to use the newly resolved validator instances
+    # Register IPlanValidator implementation and its dependencies in one go
     container.register(
         IPlanValidator,
         PlanValidator,

@@ -3,15 +3,16 @@ import os
 import pytest
 
 from teddy_executor.core.domain.models import Plan
-from teddy_executor.core.services.markdown_plan_parser import MarkdownPlanParser
+from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
 
 
 @pytest.fixture
-def parser() -> MarkdownPlanParser:
-    return MarkdownPlanParser()
+def parser(container) -> IPlanParser:
+    """Resolves the MarkdownPlanParser from the container."""
+    return container.resolve(IPlanParser)
 
 
-def test_parse_create_action(parser: MarkdownPlanParser):
+def test_parse_create_action(parser: IPlanParser):
     """
     Given a valid Markdown plan with a CREATE action,
     When the plan is parsed,
@@ -52,7 +53,7 @@ Hello, world!
     }
 
 
-def test_parse_read_action(parser: MarkdownPlanParser):
+def test_parse_read_action(parser: IPlanParser):
     """
     Given a valid Markdown plan with a READ action,
     When the plan is parsed,
@@ -88,7 +89,7 @@ Rationale.
     assert action.params["resource"] == "docs/ARCHITECTURE.md"
 
 
-def test_parse_edit_action(parser: MarkdownPlanParser):
+def test_parse_edit_action(parser: IPlanParser):
     """
     Given a valid Markdown plan with a multi-block EDIT action,
     When the plan is parsed,
@@ -141,7 +142,7 @@ class MyClass:
     )
 
 
-def test_parse_execute_action(parser: MarkdownPlanParser):
+def test_parse_execute_action(parser: IPlanParser):
     """
     Given a valid Markdown plan with an EXECUTE action,
     When the plan is parsed,
@@ -187,7 +188,7 @@ poetry run pytest
     assert action.params["env"] == {"API_KEY": "secret", "DEBUG": "1"}
 
 
-def test_parse_execute_action_with_colon(parser: MarkdownPlanParser):
+def test_parse_execute_action_with_colon(parser: IPlanParser):
     """
     Verify that a command with a colon is parsed correctly.
     (Migrated from acceptance tests)
@@ -217,7 +218,7 @@ echo hello:world
     assert result_plan.actions[0].params["command"] == "echo hello:world"
 
 
-def test_parse_execute_action_with_cd_directive(parser: MarkdownPlanParser):
+def test_parse_execute_action_with_cd_directive(parser: IPlanParser):
     """
     Given an EXECUTE action with a `cd` directive in the shell block,
     When the plan is parsed,
@@ -256,7 +257,7 @@ poetry run pytest
     assert action.params.get("env") is None
 
 
-def test_parse_execute_action_with_export_directive(parser: MarkdownPlanParser):
+def test_parse_execute_action_with_export_directive(parser: IPlanParser):
     """
     Given an EXECUTE action with `export` directives in the shell block,
     When the plan is parsed,
@@ -298,7 +299,7 @@ my_command --do-something
     assert action.params.get("cwd") is None
 
 
-def test_parse_execute_action_with_mixed_directives(parser: MarkdownPlanParser):
+def test_parse_execute_action_with_mixed_directives(parser: IPlanParser):
     """
     Given an EXECUTE action with both `cd` and `export` directives,
     When the plan is parsed,
@@ -339,7 +340,7 @@ pytest -k "my_test"
     assert action.params["command"] == 'pytest -k "my_test"'
 
 
-def test_parse_research_action(parser: MarkdownPlanParser):
+def test_parse_research_action(parser: IPlanParser):
     """
     Given a valid Markdown plan with a RESEARCH action with multiple queries,
     When the plan is parsed,
@@ -382,7 +383,7 @@ best python markdown parser
     ]
 
 
-def test_parse_prompt_action(parser: MarkdownPlanParser):
+def test_parse_prompt_action(parser: IPlanParser):
     """
     Given a valid Markdown plan with a PROMPT action,
     When the plan is parsed,
@@ -423,7 +424,7 @@ This is the second paragraph, with some `inline_code`.
     assert action.params["prompt"] == expected_prompt
 
 
-def test_parse_prune_action(parser: MarkdownPlanParser):
+def test_parse_prune_action(parser: IPlanParser):
     """
     Given a valid Markdown plan with a PRUNE action,
     When the plan is parsed,
@@ -459,7 +460,7 @@ Rationale.
     assert action.params["resource"] == "docs/project/specs/old-spec.md"
 
 
-def test_parse_invoke_action(parser: MarkdownPlanParser):
+def test_parse_invoke_action(parser: IPlanParser):
     """
     Given a valid Markdown plan with an INVOKE action,
     When the plan is parsed,
@@ -505,7 +506,7 @@ The brief is complete.
 
 
 def test_parse_edit_action_preserves_indentation_in_find_and_replace(
-    parser: MarkdownPlanParser,
+    parser: IPlanParser,
 ):
     """
     Given a Markdown plan with an EDIT action,
@@ -570,7 +571,7 @@ Rationale.
     assert edit_block["replace"] == indented_replace_block.rstrip("\n")
 
 
-def test_parse_edit_action_ignores_find_in_codeblock(parser: MarkdownPlanParser):
+def test_parse_edit_action_ignores_find_in_codeblock(parser: IPlanParser):
     """
     Given a valid Markdown plan with an EDIT action,
     When the FIND block contains text that looks like another FIND/REPLACE block,
@@ -628,7 +629,7 @@ This too."""
     assert action.params["edits"][0]["replace"] == "New documentation."
 
 
-def test_parse_return_action(parser: MarkdownPlanParser):
+def test_parse_return_action(parser: IPlanParser):
     """
     Given a valid Markdown plan with a RETURN action,
     When the plan is parsed,
@@ -675,7 +676,7 @@ My analysis is complete. The root cause and a verified fix are attached.
     ]
 
 
-def test_parser_normalizes_windows_style_paths(parser: MarkdownPlanParser):
+def test_parser_normalizes_windows_style_paths(parser: IPlanParser):
     """
     Given a Markdown plan with Windows-style paths (backslashes) in action metadata,
     When the plan is parsed,
@@ -765,7 +766,7 @@ Rationale.
     assert action.params["resource"] == expected_path
 
 
-def test_parse_succeeds_with_preamble_before_title(parser: MarkdownPlanParser):
+def test_parse_succeeds_with_preamble_before_title(parser: IPlanParser):
     """
     Given a Markdown plan with text before the H1 title,
     When the parser parses it,
@@ -799,7 +800,7 @@ echo 1
     assert plan.actions[0].type == "EXECUTE"
 
 
-def test_parser_raises_error_on_unknown_action(parser: MarkdownPlanParser):
+def test_parser_raises_error_on_unknown_action(parser: IPlanParser):
     """
     Given a Markdown plan with an unknown action header,
     When the parser parses it,
@@ -831,7 +832,7 @@ Rationale.
 
 
 def test_parser_raises_error_on_thematic_break_between_actions(
-    parser: MarkdownPlanParser,
+    parser: IPlanParser,
 ):
     """
     Given a Markdown plan with a thematic break (---) between two actions,
@@ -876,7 +877,7 @@ content2
 
 
 def test_parser_raises_error_on_malformed_structure_between_actions(
-    parser: MarkdownPlanParser,
+    parser: IPlanParser,
 ):
     """
     Given a Markdown plan with free text between action blocks,
@@ -927,7 +928,7 @@ echo 2
     assert 'Paragraph: "This is some free text that sh..."  <-- MISMATCH' in error_msg
 
 
-def test_parser_succeeds_on_builder_generated_create_action(parser: MarkdownPlanParser):
+def test_parser_succeeds_on_builder_generated_create_action(parser: IPlanParser):
     """
     This test verifies that the MarkdownPlanBuilder generates a valid CREATE
     action that the refactored stream-based parser can successfully parse.
@@ -960,7 +961,7 @@ def test_parser_succeeds_on_builder_generated_create_action(parser: MarkdownPlan
     assert action.description == "Create a new file."
 
 
-def test_parser_rejects_improperly_nested_code_fences(parser: MarkdownPlanParser):
+def test_parser_rejects_improperly_nested_code_fences(parser: IPlanParser):
     """
     Given a markdown plan with an improperly nested code block,
     When the plan is parsed,
@@ -1005,7 +1006,7 @@ echo "hello"
 
 
 def test_parser_rejects_user_provided_invalidly_nested_edit_plan(
-    parser: MarkdownPlanParser,
+    parser: IPlanParser,
 ):
     """
     This test uses a real-world example provided by the user that should fail
@@ -1033,7 +1034,7 @@ Rationale.
 
 #### `FIND:`
 ````python
-def test_parse_execute_action(parser: MarkdownPlanParser):
+def test_parse_execute_action(parser: IPlanParser):
     """
     Given a valid Markdown plan with an EXECUTE action,
     When the plan is parsed,
@@ -1042,7 +1043,7 @@ def test_parse_execute_action(parser: MarkdownPlanParser):
 ````
 #### `REPLACE:`
 ````python
-def test_parse_execute_action_with_cd_directive(parser: MarkdownPlanParser):
+def test_parse_execute_action_with_cd_directive(parser: IPlanParser):
     """
     Given an EXECUTE action with a `cd` directive in the shell block,
     When the plan is parsed,
@@ -1081,7 +1082,7 @@ poetry run pytest
     assert action.params.get("env") is None
 
 
-def test_parse_execute_action(parser: MarkdownPlanParser):
+def test_parse_execute_action(parser: IPlanParser):
     """
     Given a valid Markdown plan with an EXECUTE action,
     When the plan is parsed,
@@ -1100,7 +1101,7 @@ def test_parse_execute_action(parser: MarkdownPlanParser):
     assert "<-- MISMATCH" in error_msg
 
 
-def test_parser_accepts_properly_nested_code_fences(parser: MarkdownPlanParser):
+def test_parser_accepts_properly_nested_code_fences(parser: IPlanParser):
     """
     Given a markdown plan with a properly nested code block,
     When the plan is parsed,
@@ -1151,7 +1152,7 @@ echo "hello"
 
 
 def test_parser_accepts_multiline_execute_for_later_validation(
-    parser: MarkdownPlanParser,
+    parser: IPlanParser,
 ):
     """
     Given an EXECUTE action with multiple commands,
@@ -1188,7 +1189,7 @@ echo "world"
     assert action.params["command"] == 'echo "hello"\necho "world"'
 
 
-def test_parser_raises_error_if_no_title_found(parser: MarkdownPlanParser):
+def test_parser_raises_error_if_no_title_found(parser: IPlanParser):
     """
     Given a Markdown plan with no H1 heading,
     When the parser parses it,

@@ -1,19 +1,8 @@
 import pytest
-from unittest.mock import MagicMock
 
 from teddy_executor.core.domain.models import ProjectContext
 from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
-from teddy_executor.core.ports.outbound.environment_inspector import (
-    IEnvironmentInspector,
-)
 from teddy_executor.core.services.context_service import ContextService
-
-
-@pytest.fixture
-def mock_inspector(container):
-    mock = MagicMock(spec=IEnvironmentInspector)
-    container.register(IEnvironmentInspector, instance=mock)
-    return mock
 
 
 @pytest.fixture
