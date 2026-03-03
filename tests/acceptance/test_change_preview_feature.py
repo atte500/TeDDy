@@ -5,14 +5,16 @@ from unittest.mock import MagicMock, patch
 from typer.testing import CliRunner
 
 from teddy_executor.core.ports.outbound import IUserInteractor
-from teddy_executor.__main__ import app, create_container
+from teddy_executor.__main__ import app
 from .helpers import parse_markdown_report
 from .plan_builder import MarkdownPlanBuilder
 
 runner = CliRunner()
 
 
-def test_in_terminal_diff_is_shown_for_create_file(tmp_path: Path, monkeypatch):
+def test_in_terminal_diff_is_shown_for_create_file(
+    tmp_path: Path, monkeypatch, container
+):
     """
     Given no external diff tool is configured or found,
     When a `create_file` action is run interactively,
@@ -62,7 +64,7 @@ def test_in_terminal_diff_is_shown_for_create_file(tmp_path: Path, monkeypatch):
     assert "Approve? (y/n):" in result.stderr
 
 
-def test_in_terminal_diff_is_shown_as_fallback(tmp_path: Path, monkeypatch):
+def test_in_terminal_diff_is_shown_as_fallback(tmp_path: Path, monkeypatch, container):
     """
     Given no external diff tool is configured or found,
     When an `edit` action is run interactively,
@@ -118,7 +120,7 @@ def test_in_terminal_diff_is_shown_as_fallback(tmp_path: Path, monkeypatch):
     assert "Approve? (y/n):" in result.stderr
 
 
-def test_vscode_is_used_as_fallback(tmp_path: Path, monkeypatch):
+def test_vscode_is_used_as_fallback(tmp_path: Path, monkeypatch, container):
     """
     Given VS Code is available and no custom tool is set,
     When an action is run interactively,
@@ -175,7 +177,7 @@ def test_vscode_is_used_as_fallback(tmp_path: Path, monkeypatch):
     assert "--- a/hello.txt" not in result.stdout
 
 
-def test_custom_diff_tool_is_used_from_env(tmp_path: Path, monkeypatch):
+def test_custom_diff_tool_is_used_from_env(tmp_path: Path, monkeypatch, container):
     """
     Given the TEDDY_DIFF_TOOL environment variable is set with arguments,
     When an action is run interactively,
@@ -227,7 +229,9 @@ def test_custom_diff_tool_is_used_from_env(tmp_path: Path, monkeypatch):
     assert "--diff" not in command_list
 
 
-def test_invalid_custom_tool_falls_back_to_terminal(tmp_path: Path, monkeypatch):
+def test_invalid_custom_tool_falls_back_to_terminal(
+    tmp_path: Path, monkeypatch, container
+):
     """
     Given TEDDY_DIFF_TOOL is set to an invalid command,
     And VS Code is available,
@@ -283,7 +287,9 @@ def test_invalid_custom_tool_falls_back_to_terminal(tmp_path: Path, monkeypatch)
     mock_run.assert_not_called()
 
 
-def test_no_diff_is_shown_for_auto_approved_plans(tmp_path: Path, monkeypatch):
+def test_no_diff_is_shown_for_auto_approved_plans(
+    tmp_path: Path, monkeypatch, container
+):
     """
     Given any diff tool configuration,
     When a plan is run with the --yes flag,
@@ -308,16 +314,14 @@ def test_no_diff_is_shown_for_auto_approved_plans(tmp_path: Path, monkeypatch):
 
     # GIVEN: A mock interactor to spy on
     mock_interactor = MagicMock(spec=IUserInteractor)
-    test_container = create_container()
-    test_container.register(IUserInteractor, instance=mock_interactor)
+    container.register(IUserInteractor, instance=mock_interactor)
 
     # WHEN: The plan is executed with the --yes flag
     with monkeypatch.context() as m:
         m.chdir(tmp_path)
-        with patch("teddy_executor.__main__.container", test_container):
-            result = runner.invoke(
-                app, ["execute", "--yes", "--no-copy", "--plan-content", plan_content]
-            )
+        result = runner.invoke(
+            app, ["execute", "--yes", "--no-copy", "--plan-content", plan_content]
+        )
 
     # THEN: The command should succeed
     assert result.exit_code == 0

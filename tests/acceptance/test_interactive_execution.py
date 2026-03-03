@@ -1,14 +1,14 @@
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from typer.testing import CliRunner
 
-from teddy_executor.__main__ import app, create_container
+from teddy_executor.__main__ import app
 from teddy_executor.core.ports.outbound import IUserInteractor
 from .helpers import parse_markdown_report
 from .plan_builder import MarkdownPlanBuilder
 
 
-def test_interactive_approval_and_execution(tmp_path: Path, monkeypatch):
+def test_interactive_approval_and_execution(tmp_path: Path, monkeypatch, container):
     """
     Given a plan from the clipboard,
     When the user runs `execute` interactively and approves,
@@ -34,16 +34,14 @@ def test_interactive_approval_and_execution(tmp_path: Path, monkeypatch):
     mock_interactor = MagicMock(spec=IUserInteractor)
     mock_interactor.confirm_action.return_value = (True, "")
 
-    test_container = create_container()
-    test_container.register(IUserInteractor, instance=mock_interactor)
+    container.register(IUserInteractor, instance=mock_interactor)
 
     # Act
     with monkeypatch.context() as m:
         m.chdir(tmp_path)
-        with patch("teddy_executor.__main__.container", test_container):
-            result = runner.invoke(
-                app, ["execute", "--no-copy", "--plan-content", plan_content]
-            )  # No --yes flag for interactive
+        result = runner.invoke(
+            app, ["execute", "--no-copy", "--plan-content", plan_content]
+        )  # No --yes flag for interactive
 
     # Assert
     assert result.exit_code == 0
@@ -55,7 +53,7 @@ def test_interactive_approval_and_execution(tmp_path: Path, monkeypatch):
     assert report["run_summary"]["Overall Status"] == "SUCCESS"
 
 
-def test_interactive_skip_with_reason(tmp_path: Path, monkeypatch):
+def test_interactive_skip_with_reason(tmp_path: Path, monkeypatch, container):
     """
     Given a plan from the clipboard,
     When the user runs `execute` interactively and denies with a reason,
@@ -80,23 +78,21 @@ def test_interactive_skip_with_reason(tmp_path: Path, monkeypatch):
     mock_interactor = MagicMock(spec=IUserInteractor)
     mock_interactor.confirm_action.return_value = (False, "Manual check needed")
 
-    test_container = create_container()
-    test_container.register(IUserInteractor, instance=mock_interactor)
+    container.register(IUserInteractor, instance=mock_interactor)
 
     # Act
     with monkeypatch.context() as m:
         m.chdir(tmp_path)
-        with patch("teddy_executor.__main__.container", test_container):
-            # We must provide some input to stdin to satisfy the `input()`
-            # call inside the mocked `confirm_action` if it were real.
-            # Even with a mock, Typer's runner may expect it.
-            result = runner.invoke(
-                app,
-                ["execute", "--no-copy", "--plan-content", plan_content],
-                input="""n
+        # We must provide some input to stdin to satisfy the `input()`
+        # call inside the mocked `confirm_action` if it were real.
+        # Even with a mock, Typer's runner may expect it.
+        result = runner.invoke(
+            app,
+            ["execute", "--no-copy", "--plan-content", plan_content],
+            input="""n
 Manual check needed
 """,
-            )
+        )
 
     # Assert
     # A skipped plan is not a system failure, so the exit code should be 0.

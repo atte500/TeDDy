@@ -1,14 +1,13 @@
 from pathlib import Path
-from unittest.mock import patch
 
 from typer.testing import CliRunner
 
-from teddy_executor.__main__ import app, create_container
+from teddy_executor.__main__ import app
 from .helpers import parse_markdown_report
 from .plan_builder import MarkdownPlanBuilder
 
 
-def test_prompt_action_successful(tmp_path: Path, monkeypatch):
+def test_prompt_action_successful(tmp_path: Path, monkeypatch, container):
     """
     Given a plan containing a 'prompt' action,
     When the plan is executed and the user provides input,
@@ -28,18 +27,15 @@ def test_prompt_action_successful(tmp_path: Path, monkeypatch):
     )
     plan_content = builder.build()
 
-    real_container = create_container()
-
     # Act
     # Refactored to use --plan-content and run from a temp dir
     with monkeypatch.context() as m:
         m.chdir(tmp_path)
-        with patch("teddy_executor.__main__.container", real_container):
-            result = runner.invoke(
-                app,
-                ["execute", "--yes", "--no-copy", "--plan-content", plan_content],
-                input=cli_input,
-            )
+        result = runner.invoke(
+            app,
+            ["execute", "--yes", "--no-copy", "--plan-content", plan_content],
+            input=cli_input,
+        )
 
     # Assert
     assert result.exit_code == 0, f"CLI failed: {result.stdout}"
@@ -53,7 +49,7 @@ def test_prompt_action_successful(tmp_path: Path, monkeypatch):
     assert details_dict["response"] == user_response
 
 
-def test_prompt_action_multiline_editor(tmp_path: Path, monkeypatch):
+def test_prompt_action_multiline_editor(tmp_path: Path, monkeypatch, container):
     """
     Given a plan containing a 'prompt' action,
     When the plan is executed and the user chooses to use the external editor ('e'),
@@ -73,7 +69,6 @@ def test_prompt_action_multiline_editor(tmp_path: Path, monkeypatch):
         params={"prompt": "Write a poem:"},
     )
     plan_content = builder.build()
-    real_container = create_container()
 
     # Mock subprocess.run to simulate an editor saving content to the temporary file
     def mock_run_editor(cmd, *args, **kwargs):
@@ -97,12 +92,11 @@ def test_prompt_action_multiline_editor(tmp_path: Path, monkeypatch):
         # Force a specific editor so the fallback logic doesn't try to find 'code' or 'nano'
         m.setenv("EDITOR", "mock_editor")
 
-        with patch("teddy_executor.__main__.container", real_container):
-            result = runner.invoke(
-                app,
-                ["execute", "--yes", "--no-copy", "--plan-content", plan_content],
-                input=cli_input,
-            )
+        result = runner.invoke(
+            app,
+            ["execute", "--yes", "--no-copy", "--plan-content", plan_content],
+            input=cli_input,
+        )
 
     # Assert
     assert result.exit_code == 0, f"CLI failed: {result.stdout}"
