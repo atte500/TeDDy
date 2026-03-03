@@ -110,3 +110,14 @@ This slice successfully refactored the test suite, migrating significant logic f
 ### New Opportunities
 - **Consistent DI in Validation Rules:** Currently, dependencies (like `IFileSystemManager`) are passed manually into validation functions. A more formal dependency injection strategy for validation strategies could further decouple the `PlanValidator` and simplify the addition of new rules.
 - **Unified Validation Error Format:** While character-level diffs were added for `EDIT` actions, other action types could benefit from similarly rich feedback patterns during validation failures.
+
+## Implementation Summary (Phase 1 Continued)
+
+### Work Completed
+- **Scenario 2:** Migrated 'tests/acceptance/test_create_file_action.py'. Core logic is covered by integration tests in 'test_file_system_adapter.py' and 'test_action_dispatch_logic.py'. CLI preview behavior is verified in 'test_change_preview_feature.py'.
+- **Scenario 3:** Migrated 'tests/acceptance/test_edit_action.py'. Core logic is covered by 'test_file_system_adapter.py' and 'test_action_dispatch_logic.py'. CLI diff preview behavior is verified in 'test_change_preview_feature.py'.
+- Deleted redundant acceptance tests and updated 'docs/project/specs/test-suite-rebalancing.md'.
+- Confirmed full test suite pass and 90% coverage.
+
+### Refactoring & Observations
+- **Coverage Strategy:** Confirmed that end-to-end acceptance tests like 'test_change_preview_feature.py' are the correct home for CLI output verification (previews/diffs), allowing simple "happy path" action tests to be safely pushed down to integration and unit levels.
