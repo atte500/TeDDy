@@ -15,7 +15,10 @@ from teddy_executor.core.ports.outbound import (
     IWebScraper,
     IWebSearcher,
     IRepoTreeGenerator,
+    IEnvironmentInspector,
+    IMarkdownReportFormatter,
 )
+from teddy_executor.core.services.edit_simulator import EditSimulator
 from teddy_executor.core.services.action_dispatcher import (
     ActionDispatcher,
     IActionFactory,
@@ -130,4 +133,25 @@ def mock_context_service(container):
     container.register(IGetContextUseCase, instance=mock)
     # The CLI resolves concrete ContextService directly in some places
     container.register(ContextService, instance=mock)
+    return mock
+
+
+@pytest.fixture
+def mock_edit_simulator(container):
+    mock = Mock(spec=EditSimulator)
+    container.register(EditSimulator, instance=mock)
+    return mock
+
+
+@pytest.fixture
+def mock_inspector(container):
+    mock = Mock(spec=IEnvironmentInspector)
+    container.register(IEnvironmentInspector, instance=mock)
+    return mock
+
+
+@pytest.fixture
+def mock_report_formatter(container):
+    mock = Mock(spec=IMarkdownReportFormatter)
+    container.register(IMarkdownReportFormatter, instance=mock)
     return mock
