@@ -65,5 +65,16 @@ jobs:
     - name: Run tests (with coverage)
       run: poetry run pytest --cov-fail-under=90
 
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install jscpd
+      run: npm install -g jscpd
+
+    - name: Run jscpd (Code Duplication Detection)
+      run: jscpd --min-tokens=50 --reporters=console --exit-level=error . --ignore="**/*.md,**/*.xml,**/tests/**,**/spikes/**"
+
     - name: Verify Test Pyramid Structure
       run: ./scripts/verify_test_pyramid.py

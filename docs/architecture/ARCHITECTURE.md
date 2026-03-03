@@ -50,23 +50,30 @@ This document outlines the technical standards, conventions, and setup process f
     - **Run all tests:** `poetry run pytest`
     - **Run tests in a specific file:** `poetry run pytest tests/acceptance/test_prompt_action.py`
     - **Run a specific test by name:** `poetry run pytest -k "test_prompt_gets_response"`
-- **Test Coverage:** The CI pipeline **must** perform test coverage analysis using `pytest-cov`. To ensure developer productivity during partial test runs, local shared configurations MUST NOT include a failure threshold; strict threshold enforcement (at **90%**) MUST be reserved for the CI pipeline.
+- **Test Coverage:** Test coverage standards are enforced as part of the CI Quality Gates.
 
-### Pre-commit Hooks & CI Quality Gates
-- **Framework:** `pre-commit`.
-- **Configuration:** Stored in `.pre-commit-config.yaml` at the repository root.
-- **Principle:** The CI pipeline **must** execute the exact same suite of checks as the pre-commit hooks to guarantee the trunk remains clean. All hooks **must** be fast.
-- **Included Hooks:**
+### Pre-commit Hooks
+- **Goal:** To provide a fast, local feedback loop for developers.
+- **Framework:** `pre-commit`, configured in `.pre-commit-config.yaml`.
+- **Principle:** All hooks configured here **must** be fast to run.
+- **Included Checks:**
     - **Style & Formatting:**
         - `ruff`: For linting and formatting. **Note:** `E501` (Line too long) is explicitly ignored to favor readability of long URLs and comments.
     - **Correctness:**
         - `mypy`: For static type checking.
+    - **Sanity & Consistency:**
+        - `check-yaml`, `check-toml`, and other basic file checks.
+
+### CI Quality Gates
+- **Goal:** To provide a comprehensive, automated quality gate that protects the main branch.
+- **Principle:** The CI pipeline **must** run all checks from the `pre-commit` suite. It **may** also include additional, slower-running checks.
+- **CI-Only Checks:**
+    - **Test Coverage:** The CI pipeline **must** perform test coverage analysis using `pytest-cov` and enforce a strict failure threshold of **90%**.
+    - **Code Duplication:** Checked via `jscpd` with a minimum token count of **50**.
     - **Complexity & Dead Code:**
         - `ruff`: Configured to enforce a **precise Cyclomatic Complexity** limit of **9** per function (Rule `C901`) and a **precise Statement Limit** of **40** per function (Rule `PLR0915`).
         - `vulture`: For detecting dead (unreachable) code. Must be configured with a minimum confidence of **80%**.
         - **File Length (SLOC):** A custom check enforces a maximum of **300 lines** per Python file (excluding tests and spikes). This ensures components remain focused and modular.
-    - **Sanity & Consistency:**
-        - `check-yaml`, `check-toml`: For syntax validation.
 
 ### Spike Directory Exclusion
 The `spikes/` directory is intentionally excluded from `ruff` and `mypy` checks in `.pre-commit-config.yaml`.

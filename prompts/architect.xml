@@ -80,14 +80,18 @@
           *   **Goal:** To establish the foundational engineering practices for the project.
           *   **Structure:** This section will contain a list of key-value definitions or short paragraphs. It **must** establish the project's strategy for the following, using these as strong defaults, and may be extended with other project-specific conventions:
               *   **Version Control Strategy:** Default to **Trunk-Based Development** on the `main` branch.
-              *   **Testing Strategy:** The project should enforce a healthy test pyramid structure via a mandatory CI check (`Unit > Integration > Acceptance`). The full test suite must be run in CI. Coverage analysis must be performed, but the failure threshold MUST be enforced exclusively in CI (never in local config) to protect developer productivity.
-              *   **Pre-commit Hooks:** Specify the tool (e.g., `pre-commit`) and the mandatory categories of checks. You **must** explicitly state that the CI pipeline MUST execute this exact same suite to guarantee the trunk remains clean. All hooks **must** be fast. The suite **must** cover:
-                  *   **Security:** A secret scanner to prevent accidental credential commits.
+              *   **Testing Strategy:** The project's testing strategy, including the primary framework and structural rules like the test pyramid (Unit > Integration > Acceptance).
+              *   **Pre-commit Hooks (Local):** The Architect MUST ensure fast, local checks are in place for:
+                  *   **Security:** A secret scanner.
                   *   **Correctness:** A static type checker.
-                  *   **Style & Formatting:** A linter and formatter. Note: Column-based line length checks (e.g., E501) MUST be disabled; we rely on the formatter for wrapping and prioritize readability for URLs and comments.
-                  *   **Complexity:** A static complexity analysis tool. You MUST define and document the **precise numerical thresholds** (e.g., exactly how many statements or decision points) for **Cyclomatic Complexity** per function and **Source Lines of Code (SLOC)** per file.
-                  *   **Dead Code:** A tool to identify unused or unreachable code (e.g., `vulture`). You MUST define and document the minimum confidence threshold for detection.
-                  *   **Sanity & Consistency:** Checks for valid file formats, no merge-conflict markers, etc.
+                  *   **Style & Formatting:** A linter and formatter.
+                  *   **Sanity & Consistency:** Basic file format and consistency checks.
+              *   **CI Quality Gates (Pipeline):** The Architect MUST ensure the CI pipeline runs all pre-commit checks AND may add slower, more comprehensive checks for:
+                  *   **Test Coverage:** A mandatory threshold for test coverage.
+                  *   **Code Duplication:** A copy-paste detector (CPD).
+                  *   **Complexity:** Static complexity analysis for **Cyclomatic Complexity** per function and **Source Lines of Code (SLOC)** per file.
+                  *   **Dead Code:** Unused code detection.
+                  * **Verifying Test Pyramid Structure:** A custom script to verify Unit > Integration > Acceptance.
 
           **2. Component & Boundary Map**
           *   **Goal:** To provide a single source of truth for the system's structure.
