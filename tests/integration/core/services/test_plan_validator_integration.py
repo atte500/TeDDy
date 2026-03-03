@@ -4,11 +4,12 @@ import pytest
 from teddy_executor.adapters.outbound.local_file_system_adapter import (
     LocalFileSystemAdapter,
 )
-from teddy_executor.core.ports.inbound.edit_simulator import IEditSimulator
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
 from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
 from teddy_executor.core.ports.outbound import IFileSystemManager
-from teddy_executor.core.services.markdown_plan_parser import MarkdownPlanParser
+
+
+from teddy_executor.core.ports.inbound.edit_simulator import IEditSimulator
 from teddy_executor.core.services.plan_validator import PlanValidator
 from teddy_executor.core.services.validation_rules.create import CreateActionValidator
 from teddy_executor.core.services.validation_rules.edit import EditActionValidator
@@ -17,23 +18,15 @@ from teddy_executor.core.services.validation_rules.read import ReadActionValidat
 
 
 @pytest.fixture
-def setup_container(container, tmp_path):
+def integration_container(container, tmp_path):
     """Configures the container for integration testing with a real temporary FS."""
-    # Register missing parser
-    container.register(IPlanParser, MarkdownPlanParser)
-
-    # Overwrite the shared mock_fs with a real LocalFileSystemAdapter for integration testing
+    # Overwrite IFileSystemManager with a real LocalFileSystemAdapter for integration testing
     fs_adapter = LocalFileSystemAdapter(
         edit_simulator=container.resolve(IEditSimulator), root_dir=str(tmp_path)
     )
     container.register(IFileSystemManager, instance=fs_adapter)
 
-    # Re-register validator graph to ensure they use the real FS adapter
-    container.register(CreateActionValidator)
-    container.register(EditActionValidator)
-    container.register(ExecuteActionValidator)
-    container.register(ReadActionValidator)
-
+    # Re-register the validator stack to ensure they use the new FS adapter
     container.register(
         IPlanValidator,
         PlanValidator,
@@ -47,7 +40,7 @@ def setup_container(container, tmp_path):
     return container
 
 
-def test_create_fails_if_file_exists(setup_container, tmp_path: Path):
+def test_create_fails_if_file_exists(integration_container, tmp_path: Path):
     """
     Given a plan to CREATE a file that already exists,
     When the plan is validated,
@@ -55,7 +48,7 @@ def test_create_fails_if_file_exists(setup_container, tmp_path: Path):
     """
     # Arrange
     existing_file = tmp_path / "existing.txt"
-    existing_file.write_text("content")
+    existing_file.write_text("content", encoding="utf-8")
 
     plan_content = f"""
 # Test Create Existing
@@ -77,9 +70,9 @@ Dummy rationale for test.
 new content
 ````
 """
-    parser = setup_container.resolve(IPlanParser)
+    parser = integration_container.resolve(IPlanParser)
     plan = parser.parse(plan_content)
-    validator = setup_container.resolve(IPlanValidator)
+    validator = integration_container.resolve(IPlanValidator)
 
     # Act & Assert
     errors = validator.validate(plan)
@@ -87,30 +80,28 @@ new content
     assert "File already exists" in errors[0].message
 
 
-def test_read_fails_if_file_missing(setup_container, tmp_path: Path):
+def test_read_fails_if_file_missing(integration_container, tmp_path: Path):
     """READ action fails if the local file does not exist."""
     # Arrange
-    plan_content = (
-        """
+    plan_content = """
 # Test
 - **Status:** Green 🟢
 - **Plan Type:** Test
 - **Agent:** Test Agent
 
 ## Rationale
-"""
-        + "````text\nRationale.\n````"
-        + """
+````text
+Rationale.
+````
 
 ## Action Plan
 ### `READ`
 - **Resource:** [/missing.txt]
 - **Description:** Read it
 """
-    )
-    parser = setup_container.resolve(IPlanParser)
+    parser = integration_container.resolve(IPlanParser)
     plan = parser.parse(plan_content)
-    validator = setup_container.resolve(IPlanValidator)
+    validator = integration_container.resolve(IPlanValidator)
 
     # Act
     errors = validator.validate(plan)
@@ -120,7 +111,7 @@ def test_read_fails_if_file_missing(setup_container, tmp_path: Path):
     assert "File to read does not exist" in errors[0].message
 
 
-def test_edit_fails_if_file_missing(setup_container, tmp_path: Path):
+def test_edit_fails_if_file_missing(integration_container, tmp_path: Path):
     """EDIT action fails if the target file does not exist."""
     # Arrange
     plan_content = """
@@ -148,9 +139,9 @@ old
 new
 `````
 """
-    parser = setup_container.resolve(IPlanParser)
+    parser = integration_container.resolve(IPlanParser)
     plan = parser.parse(plan_content)
-    validator = setup_container.resolve(IPlanValidator)
+    validator = integration_container.resolve(IPlanValidator)
 
     # Act
     errors = validator.validate(plan)

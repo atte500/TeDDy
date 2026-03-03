@@ -1,5 +1,4 @@
 from unittest.mock import patch, MagicMock
-from teddy_executor.adapters.outbound.web_searcher_adapter import WebSearcherAdapter
 from teddy_executor.core.domain.models import WebSearchError
 from teddy_executor.core.ports.outbound.web_searcher import IWebSearcher
 import pytest
@@ -7,8 +6,6 @@ import pytest
 
 @pytest.fixture
 def adapter(container):
-    # Ensure the container has the real adapter for integration testing
-    container.register(IWebSearcher, WebSearcherAdapter)
     return container.resolve(IWebSearcher)
 
 
