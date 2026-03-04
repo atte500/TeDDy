@@ -59,6 +59,9 @@ jobs:
     - name: Run pre-commit checks (Lint, Format, Types)
       run: poetry run pre-commit run --all-files
 
+    - name: Run Pip-Audit (Dependency Vulnerability Scan)
+      run: poetry run pip-audit
+
     - name: Run Vulture (Dead Code Detection)
       run: poetry run vulture src --min-confidence 80
 

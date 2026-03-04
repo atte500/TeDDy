@@ -110,8 +110,10 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 | **IRunPlanUseCase**          | Defines the primary inbound port for executing a plan from a raw YAML string.                                          | [IRunPlanUseCase](./core/ports/inbound/run_plan_use_case.md)                   |
 | **IPlanParser**              | Defines the inbound port for parsing a plan from a raw string into a `Plan` object.                                    | [IPlanParser](./core/ports/inbound/plan_parser.md)                             |
 | **IPlanValidator**           | Defines the inbound port for performing pre-flight validation of a `Plan` object.                                      | [IPlanValidator](./core/ports/inbound/plan_validator.md)                       |
+| **IConfigService**           | Defines the outbound port for retrieving application configuration and secrets.                                        | [IConfigService](./core/ports/outbound/config_service.md)                      |
 | **IEnvironmentInspector**    | Defines the outbound port for gathering information about the host operating environment.                              | [IEnvironmentInspector](./core/ports/outbound/environment_inspector.md)        |
 | **IFileSystemManager**       | Defines a technology-agnostic outbound port for all file system operations (create, read, edit).                       | [IFileSystemManager](./core/ports/outbound/file_system_manager.md)             |
+| **ILlmClient**               | Defines the outbound port for communicating with a Large Language Model.                                               | [ILlmClient](./core/ports/outbound/llm_client.md)                              |
 | **IMarkdownReportFormatter** | Defines the outbound port for formatting an `ExecutionReport` into a Markdown string.                                  | [IMarkdownReportFormatter](./core/ports/outbound/markdown_report_formatter.md) |
 | **IRepoTreeGenerator**       | Defines the outbound port for generating a file tree, respecting `.gitignore` and `.teddyignore` files.                | [IRepoTreeGenerator](./core/ports/outbound/repo_tree_generator.md)             |
 | **IShellExecutor**           | Defines the outbound port for executing shell commands and returning a `ShellOutput` DTO.                              | [IShellExecutor](./core/ports/outbound/shell_executor.md)                      |
@@ -136,12 +138,14 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 | ------------------------------ | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
 | **CLI Adapter**                | The primary inbound adapter that drives the application via the `Typer` CLI framework.                  | [CLI Adapter](./adapters/inbound/cli.md)                                          |
 | **ConsoleInteractor**          | Implements `IUserInteractor` for the console, providing diff previews for file operations.              | [ConsoleInteractorAdapter](./adapters/outbound/console_interactor.md)             |
+| **LiteLLMAdapter**             | Implements `ILlmClient` using the `litellm` library for multi-provider LLM communication.               | [LiteLLMAdapter](./adapters/outbound/litellm_adapter.md)                          |
 | **LocalFileSystemAdapter**     | Implements `IFileSystemManager` for the local disk using Python's `pathlib`.                            | [LocalFileSystemAdapter](./adapters/outbound/local_file_system_adapter.md)        |
 | **LocalRepoTreeGenerator**     | Implements `IRepoTreeGenerator` using the `pathspec` library to handle ignore files.                    | [LocalRepoTreeGenerator](./adapters/outbound/local_repo_tree_generator.md)        |
 | **ShellAdapter**               | Implements `IShellExecutor` using Python's `subprocess` module.                                         | [ShellAdapter](./adapters/outbound/shell_adapter.md)                              |
 | **SystemEnvironmentInspector** | Implements `IEnvironmentInspector` using Python's `os`, `platform`, and `sys` modules.                  | [SystemEnvironmentInspector](./adapters/outbound/system_environment_inspector.md) |
 | **WebScraperAdapter**          | Implements `IWebScraper` using `trafilatura` for content extraction and a direct-fetch for GitHub URLs. | [WebScraperAdapter](./adapters/outbound/web_scraper_adapter.md)                   |
 | **WebSearcherAdapter**         | Implements `IWebSearcher` using the `ddgs` library for keyless DuckDuckGo searches.                     | [WebSearcherAdapter](./adapters/outbound/web_searcher_adapter.md)                 |
+| **YamlConfigAdapter**          | Implements `IConfigService` by reading configuration from a `.teddy/config.yaml` file.                  | [YamlConfigAdapter](./adapters/outbound/yaml_config_adapter.md)                   |
 
 ---
 
