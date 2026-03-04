@@ -29,9 +29,6 @@ A plan is a single Markdown file with the following top-level structure:
 ## Rationale
 ...
 
-## Memos
-... (Optional: Contains a list of memory changes)
-
 ## Action Plan
 ... (Contains one or more action blocks)
 ```
@@ -82,21 +79,6 @@ To ensure links work correctly in local previews (like VSCode) while referencing
     ````
     `````
 -   **Parsing Rules:** The content is the raw text within the fenced code block and is primarily for human consumption and agent self-correction. The outer fence for the `Rationale` block must follow the **Code Block Nesting** rule.
-
-### 4.3. Memos (Optional)
-
--   **Purpose:** Lists the proposed changes (creations and deletions) to the agent's long-term memory.
--   **Format:**
-    `````markdown
-    ## Memos
-    ````
-    [+] A new fact to remember. # A new global convention was established.
-    [-] An old fact that is no longer true. # This rule was superseded.
-    ````
-    `````
--   **Parsing Rules:** The parser should treat the content of the code block as a list of change requests.
-    -   Each line must start with either `[+]` for creation or `[-]` for deletion. The text following the marker is the content of the memo.
-    -   Any text following a `#` character on a line is considered a comment and should be ignored by the parser, but may be used by the presentation layer.
 
 ## 5. Action Blocks
 
@@ -293,12 +275,6 @@ The research is expected to yield patterns for release management roles, allowin
 - **Phase B: Solution Space (What):** In Progress
 - **Phase C: Implementation Space (How):** Not Started
 - **Phase D: Handoff (Who):** Not Started
-````
-
-## Memos
-````
-[+] A new 'Finisher' agent role is being explored.
-[-] The 'Architect' agent is responsible for all handoffs.
 ````
 
 ## Action Plan

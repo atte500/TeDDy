@@ -28,13 +28,10 @@ The payload is a single Markdown document with the following top-level sections.
 ## 2. Project Structure
 ...
 
-## 3. Memos
+## 3. Context Summary
 ...
 
-## 4. Context Summary
-...
-
-## 5. Resource Contents
+## 4. Resource Contents
 ...
 ```
 
@@ -76,26 +73,13 @@ A textual representation of the repository's file tree, using simple indentation
     ````
     `````
 
-### 3.3. Memos
-
-The verbatim content of the `.teddy/memos.yaml` file. This section is omitted if the file does not exist.
-
--   **Example:**
-    `````markdown
-    ## 3. Memos
-    ````
-    - All API endpoints must be documented in OpenAPI spec.
-    - Use 'pnpm' for all package management.
-    ````
-    `````
-
-### 3.4. Context Summary
+### 3.3. Context Summary
 
 This section provides a scannable summary of all file paths and URLs that make up the AI's context for the turn, broken down by their scope of origin. It must include a brief instruction block explaining how the AI can manage its working context.
 
 -   **Example:**
     `````markdown
-    ## 4. Context Summary
+    ## 3. Context Summary
 
     > **Context Management:** Use the `READ` action to add files to the **Turn** context, and the `PRUNE` action to remove them. The **Session** context is managed by the user and cannot be modified by the AI.
 
@@ -112,7 +96,7 @@ This section provides a scannable summary of all file paths and URLs that make u
     ````
     `````
 
-### 3.5. Resource Contents
+### 3.4. Resource Contents
 
 The full, verbatim content of every resource (file or URL) listed in the `Context Summary`.
 
@@ -120,7 +104,7 @@ The full, verbatim content of every resource (file or URL) listed in the `Contex
 -   **Format:** Each resource's content is preceded by a horizontal rule and a header line identifying it.
 -   **Example:**
     `````markdown
-    ## 5. Resource Contents
+    ## 4. Resource Contents
 
     ---
     ### [https://example.com/docs](https://example.com/docs)

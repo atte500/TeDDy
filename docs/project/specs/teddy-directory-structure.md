@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-This document defines the official directory and file structure for the `.teddy/` directory, which serves as the central repository for all TeDDy-related data, including sessions, configuration, and long-term memory.
+This document defines the official directory and file structure for the `.teddy/` directory, which serves as the central repository for all TeDDy-related data, including sessions and configuration.
 
 ## 2. Top-Level Structure
 
@@ -12,14 +12,12 @@ The `.teddy/` directory is located at the root of the project.
 .teddy/
 ├── config.yaml
 ├── init.context
-├── memos.yaml
 └── sessions/
     └── <session_name>/
 ```
 
 -   **`config.yaml`**: (Optional) User-specific configuration for the `teddy` CLI tool.
 -   **`init.context`**: (Optional) A file containing newline-separated paths to be included in the context of every *new* session.
--   **`memos.yaml`**: A YAML file for the AI's global, long-term memory.
 -   **`sessions/`**: Contains all individual session directories.
 
 ## 3. Session Directory Structure

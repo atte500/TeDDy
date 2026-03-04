@@ -220,26 +220,7 @@ class MarkdownPlanParser(IPlanParser):
         )
         actual_idx += 1
 
-        # 4/5: Optional H2 Memos -> BlockCode
-        node = stream.peek()
-        if (
-            node
-            and isinstance(node, Heading)
-            and node.level == H2_LEVEL
-            and "Memos" in get_child_text(node)
-        ):
-            stream.next()
-            actual_idx += 1
-            self._consume_mandatory_node(
-                stream,
-                doc,
-                actual_idx,
-                "a CodeFence or BlockCode containing the memos content",
-                lambda n: isinstance(n, (CodeFence, BlockCode)),
-            )
-            actual_idx += 1
-
-        # 6: H2 Action Plan
+        # 4: H2 Action Plan
         self._consume_mandatory_node(
             stream,
             doc,

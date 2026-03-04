@@ -46,7 +46,7 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
     - Implement the backbone of the interactive session workflow.
     - Implement `SessionManager` and the basic `new`, `plan`, and `execute` commands.
     - Implement `ContextService` to build the `input.md` payload implicitly for the planning phase.
-    - Implement stateful action side-effects for `execute` (e.g., updating `T_next/turn.context` for `READ`/`PRUNE` and processing MEMOs).
+    - Implement stateful action side-effects for `execute` (e.g., updating `T_next/turn.context` for `READ`/`PRUNE`).
 - [ ] **Slice 4: Plan Validation & Self-Correction**
     - Integrate existing `PlanValidator` for the automatic feedback loop to enhance the core `execute` command with pre-flight checks.
 - [ ] **Slice 5: Interactive TUI & `resume` Workflow**
