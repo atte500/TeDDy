@@ -392,15 +392,15 @@ def test_validate_edit_reports_multiple_failures(validator, mock_fs):
 
     expected_error_count = 2
     assert len(errors) == expected_error_count
-    assert "Bad1" in errors[0].message
-    assert "Bad2" in errors[1].message
+    assert "Edit Pair 1 of 2" in errors[0].message
+    assert "Edit Pair 2 of 2" in errors[1].message
 
 
-def test_validate_edit_provides_diff_on_mismatch(validator, mock_fs):
+def test_validate_edit_provides_closest_match(validator, mock_fs):
     """
     Given an EDIT action with a near-match FIND block,
     When validated,
-    Then the error message should contain a diff.
+    Then the error message should contain the closest matching block.
     """
     file_path = "test.txt"
     mock_fs.path_exists.return_value = True
@@ -424,9 +424,8 @@ def test_validate_edit_provides_diff_on_mismatch(validator, mock_fs):
     errors = validator.validate(plan)
 
     assert len(errors) == 1
-    assert "- This is the orignal content" in errors[0].message
-    assert "+ This is the original content" in errors[0].message
-    assert "?" in errors[0].message
+    assert "Closest Match in File:" in errors[0].message
+    assert "This is the original content" in errors[0].message
 
 
 def test_validate_edit_fails_if_find_and_replace_identical(validator, mock_fs):
