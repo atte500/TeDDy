@@ -121,19 +121,22 @@ When an action fails, the report must provide a complete, self-contained "error 
     ...
     `````
 
-### 5.3. Handling Unsupported Actions (`INVOKE`, `RETURN`)
-The `INVOKE` and `RETURN` actions are specific to stateful, automated workflows and have no equivalent in the manual mode.
+### 5.3. Handling Control-Flow Actions (`PRUNE`, `INVOKE`, `RETURN`)
+Actions like `PRUNE`, `INVOKE`, and `RETURN` are designed for a stateful session to manage context and agent flow between turns. In the stateless manual CLI workflow, they are handled as follows:
 
--   **Requirement:** If a plan contains an `INVOKE` or `RETURN` action, the executor should treat it as a no-op. The action will be logged in the report with a status indicating it was recognized but skipped because it is unsupported in this mode.
+-   **`PRUNE`**: This action is automatically skipped, as there is no persistent context to manage between manual `execute` calls. The report will show the action as `SKIPPED` with a note.
 
--   **Example Report Snippet:**
-    ````markdown
-    #### `INVOKE`
-    - **Status:** Skipped 🟡
-    - **Execution:** Not Supported
-    - **Agent:** Architect
-    - **Details:** This action is not supported in non-interactive/manual execution mode.
-    ````
+-   **`INVOKE` & `RETURN`**: These actions are treated as a signal for a manual handoff.
+    -   **Requirement:** The executor will not prompt for approval. Instead, it will print a formatted instruction block to the console (stderr) and mark the action as `COMPLETED` in the report.
+    -   **Example Console Output:**
+      ```text
+      MANUAL HANDOFF REQUIRED:
+      Action: INVOKE
+      Target Agent: Architect
+      Resources: ['docs/spec.md']
+      Message: Handoff to the Architect.
+      ```
+    -   **Report Output:** The report will show the action as `COMPLETED` but will **not** include the message body to reduce noise, as per the "noise reduction" principle for handoffs.
 
 ## 6. Pre-flight Validation
 To ensure robustness and provide fast feedback, a comprehensive validation phase must be executed *before* any action is performed, regardless of the workflow mode (interactive or manual).

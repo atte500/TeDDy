@@ -54,14 +54,18 @@ class IUserInteractor(ABC):
         pass
 
     @abstractmethod
-    def display_manual_handoff(
+    def confirm_manual_handoff(
         self,
         action_type: str,
         target_agent: str | None,
         resources: list[str],
         message: str,
-    ) -> None:
+    ) -> tuple[bool, str]:
         """
-        Displays a formatted instruction block for manual handoffs.
+        Displays a handoff request and asks for confirmation.
+        An empty response means approval. Any text is a rejection reason.
+
+        Returns:
+            A tuple of (approved: bool, rejection_reason: str)
         """
         pass

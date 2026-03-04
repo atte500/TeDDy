@@ -93,31 +93,48 @@ class ExecutionOrchestrator(RunPlanUseCase):
         except Exception:
             return action_log
 
-    def _intercept_non_interactive_action(self, action) -> ActionLog | None:
-        """Intercepts specific actions in non-interactive mode."""
+    def _intercept_control_flow_action(
+        self, action, interactive: bool
+    ) -> ActionLog | None:
+        """Intercepts control flow actions in the manual CLI workflow."""
         action_type = action.type.upper()
 
         # Scenario 1: PRUNE in Non-Interactive Mode
         if action_type == "PRUNE":
             return self._handle_skipped_action(
                 action,
-                "Skipped: PRUNE is not supported in non-interactive/manual mode.",
+                "Skipped: PRUNE is not supported in manual execution mode.",
             )
 
         # Scenario 2: INVOKE/RETURN in Non-Interactive Mode
         if action_type in ("INVOKE", "RETURN"):
-            params = action.params
-            self._user_interactor.display_manual_handoff(
-                action_type=action_type,
-                target_agent=params.get("Agent") or params.get("agent"),
-                resources=params.get("Handoff Resources")
-                or params.get("handoff_resources")
-                or [],
-                message=params.get("message") or params.get("Message") or "",
+            # If not interactive (--yes), auto-approve. Otherwise, prompt user.
+            approved, reason = (
+                (True, "")
+                if not interactive
+                else self._user_interactor.confirm_manual_handoff(
+                    action_type=action_type,
+                    target_agent=action.params.get("Agent")
+                    or action.params.get("agent"),
+                    resources=action.params.get("Handoff Resources")
+                    or action.params.get("handoff_resources")
+                    or [],
+                    message=action.params.get("message")
+                    or action.params.get("Message")
+                    or "",
+                )
             )
-            return self._create_intercepted_log(
-                action, ActionStatus.COMPLETED, "Manual handoff instruction delivered."
-            )
+
+            if approved:
+                return self._create_intercepted_log(
+                    action, ActionStatus.SUCCESS, "Manual handoff approved by user."
+                )
+            else:
+                return self._create_intercepted_log(
+                    action,
+                    ActionStatus.FAILURE,
+                    f"Manual handoff rejected by user: {reason}",
+                )
 
         return None
 
@@ -174,9 +191,10 @@ class ExecutionOrchestrator(RunPlanUseCase):
 
     def _confirm_and_dispatch_action(self, action, interactive: bool) -> ActionLog:
         """Handles user confirmation and dispatches a single action."""
-        if not interactive:
-            if intercepted_log := self._intercept_non_interactive_action(action):
-                return intercepted_log
+        # For the stateless, manual CLI workflow, always intercept these actions.
+        # The future stateful session runner will use a different orchestrator or flag.
+        if intercepted_log := self._intercept_control_flow_action(action, interactive):
+            return intercepted_log
 
         should_dispatch, reason = True, ""
         if interactive and action.type.lower() != "prompt":

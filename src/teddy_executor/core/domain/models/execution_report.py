@@ -20,7 +20,6 @@ class ActionStatus(str, Enum):
     FAILURE = "FAILURE"
     SKIPPED = "SKIPPED"
     PENDING = "PENDING"
-    COMPLETED = "COMPLETED"
 
 
 @dataclass(frozen=True)

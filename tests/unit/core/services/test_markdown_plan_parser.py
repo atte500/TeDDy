@@ -460,6 +460,50 @@ Rationale.
     assert action.params["resource"] == "docs/project/specs/old-spec.md"
 
 
+def test_parse_invoke_action_without_blank_line_before_message(parser: IPlanParser):
+    """
+    Given an INVOKE action where the message immediately follows the metadata list,
+    When the plan is parsed,
+    Then it should correctly identify the message.
+    """
+    # Arrange
+    plan_content = r"""
+# Invoke another agent
+- **Goal:** Handoff to the Architect.
+
+## Rationale
+````text
+Rationale.
+````
+
+## Action Plan
+
+### `INVOKE`
+- **Agent:** Architect
+- **Handoff Resources:**
+  - [docs/briefs/new-feature.md](/docs/briefs/new-feature.md)
+Handoff to the Architect.
+The brief is complete.
+"""
+    # Act
+    result_plan = parser.parse(plan_content)
+
+    # Assert
+    assert isinstance(result_plan, Plan)
+    assert len(result_plan.actions) == 1
+    action = result_plan.actions[0]
+
+    # Mistletoe will parse the two message lines as separate list items,
+    # and the renderer will join them with a double newline.
+    expected_message = "Handoff to the Architect.\n\nThe brief is complete."
+
+    assert action.type == "INVOKE"
+    assert action.params["agent"] == "Architect"
+    assert "handoff_resources" in action.params
+    assert action.params["handoff_resources"] == ["docs/briefs/new-feature.md"]
+    assert action.params["message"] == expected_message
+
+
 def test_parse_invoke_action(parser: IPlanParser):
     """
     Given a valid Markdown plan with an INVOKE action,

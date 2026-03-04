@@ -48,9 +48,7 @@ Rationale.
 
 Hello PathFinder!
 """
-    result = runner.invoke(
-        app, ["execute", "--plan-content", plan_content], input="y\n"
-    )
+    result = runner.invoke(app, ["execute", "--plan-content", plan_content], input="\n")
 
     assert result.exit_code == 0
     assert "- **Details:**" not in result.stdout

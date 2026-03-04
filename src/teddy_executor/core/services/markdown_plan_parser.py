@@ -87,7 +87,7 @@ class MarkdownPlanParser(IPlanParser):
             debug_info = (
                 "\n\n--- AST Summary (Trace of top-level nodes) ---\n"
                 + "\n".join(ast_summary)
-                + "\n\n**Hint:** Code blocks must be strictly nested and have fences on their own lines."
+                + "\n\n**Hint:** Parsing often fails due to improper Code Block Formatting. Try to double the number of backticks in your outer code blocks and make sure fences are each on a new line."
             )
             raise InvalidPlanError(f"{str(e)}{debug_info}") from e
 
@@ -157,7 +157,7 @@ class MarkdownPlanParser(IPlanParser):
                 f"[{i:03d}] {n_name}{'  <-- MISMATCH' if i == mismatch_idx else ''}\n"
             )
 
-        msg += "\n**Hint:** Code blocks must be strictly nested and have fences on their own lines.\n"
+        msg += "\n**Hint:** Parsing often fails due to improper Code Block Formatting. Try to double the number of backticks in your outer code blocks and make sure fences are each on a new line.\n"
         return msg
 
     def _consume_mandatory_node(

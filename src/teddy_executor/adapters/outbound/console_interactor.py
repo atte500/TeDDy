@@ -228,17 +228,51 @@ class ConsoleInteractorAdapter(IUserInteractor):
         message = f"[SKIPPED] {action.type}: {reason}"
         typer.secho(message, fg=typer.colors.YELLOW, err=True)
 
-    def display_manual_handoff(
+    def confirm_manual_handoff(
         self,
         action_type: str,
         target_agent: str | None,
         resources: list[str],
         message: str,
-    ) -> None:
-        """Displays a formatted instruction block for manual handoffs."""
-        typer.echo("MANUAL HANDOFF REQUIRED:", err=True)
-        typer.echo(f"Action: {action_type}", err=True)
-        if target_agent:
-            typer.echo(f"Target Agent: {target_agent}", err=True)
-        typer.echo(f"Resources: {resources}", err=True)
-        typer.echo(f"Message: {message}", err=True)
+    ) -> tuple[bool, str]:
+        """Displays a handoff request and asks for confirmation."""
+        if action_type == "INVOKE":
+            typer.secho(
+                "--- HANDOFF REQUEST: INVOKE ---", fg=typer.colors.CYAN, err=True
+            )
+            typer.echo(
+                "The current agent is requesting a handoff to the agent below.\n",
+                err=True,
+            )
+            if target_agent:
+                typer.echo(f"▶ Target Agent: {target_agent}", err=True)
+            typer.echo(f"▶ Handoff Message:\n{message}\n", err=True)
+        else:  # RETURN
+            typer.secho(
+                "--- HANDOFF NOTIFICATION: RETURN ---", fg=typer.colors.CYAN, err=True
+            )
+            typer.echo(
+                "The current agent has completed its task and is returning control.\n",
+                err=True,
+            )
+            typer.echo(f"▶ Return Message:\n{message}\n", err=True)
+
+        if resources:
+            typer.echo("▶ Handoff Resources:", err=True)
+            typer.echo("\n".join(resources), err=True)
+
+        typer.echo("", err=True)  # Spacer
+        try:
+            response = typer.prompt(
+                "Press [Enter] to approve, or type a reason for rejection",
+                default="",
+                show_default=False,
+                err=True,
+            )
+
+            if response:
+                return False, response  # Rejected
+            return True, ""  # Approved
+        except (EOFError, typer.Abort):
+            typer.echo("\nAborted.", err=True)
+            return False, "Skipped due to non-interactive session."

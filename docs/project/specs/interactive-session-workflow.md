@@ -193,7 +193,7 @@ The primary "continue" command for a session. It intelligently determines the ne
     1.  Identifies the latest turn directory in the current session.
     2.  **State Check:**
         -   If the turn has a `plan.md` but no `report.md`, it behaves like `teddy execute`.
-        -   If the turn is complete (has a `report.md`), it prompts the user for a new message. To ensure the AI doesn't blindly continue previous execution without addressing the new input, it appends `\n\n*(Stop to reply to this user request)*` to the user's message. It then behaves like `teddy plan` for the *next* turn (which includes implicitly generating a new `input.md`).
+        -   If the turn is complete (has a `report.md`), it prompts the user for a new message. To ensure the AI doesn't blindly continue previous execution without addressing the new input, it appends `\n\n*(Stop to reply to this user request and ensure alignment before proceeding)*` to the user's message. It then behaves like `teddy plan` for the *next* turn (which includes implicitly generating a new `input.md`).
 
 ---
 

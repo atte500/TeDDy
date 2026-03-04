@@ -9,7 +9,7 @@ Streamline the non-interactive CLI experience by automatically handling context-
 **Given** a plan containing a `PRUNE` action
 **When** the plan is executed with `teddy execute --yes` (non-interactive)
 **Then** the `PRUNE` action must be automatically marked as `SKIPPED`
-**And** the skip reason in the report must be: "Skipped: PRUNE is not supported in non-interactive/manual mode."
+**And** the skip reason in the report must be: "Skipped: PRUNE is not supported in manual execution mode."
 
 ### Scenario 2: INVOKE/RETURN in Non-Interactive Mode
 **Given** a plan containing an `INVOKE` or `RETURN` action
