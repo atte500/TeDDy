@@ -25,9 +25,7 @@ def test_search_success_returns_websearchresults_dict(adapter):
         }
     ]
 
-    with patch(
-        "teddy_executor.adapters.outbound.web_searcher_adapter.DDGS"
-    ) as mock_ddgs_class:
+    with patch("ddgs.DDGS") as mock_ddgs_class:
         mock_ddgs_instance = MagicMock()
         mock_ddgs_instance.text.return_value = mock_ddgs_result
         mock_ddgs_class.return_value.__enter__.return_value = mock_ddgs_instance
@@ -61,10 +59,8 @@ def test_search_handles_library_exception(adapter):
     # Arrange
     queries = ["test query"]
 
-    # Patch DDGS where it's used: in the web_searcher_adapter module
-    with patch(
-        "teddy_executor.adapters.outbound.web_searcher_adapter.DDGS"
-    ) as mock_ddgs_class:
+    # Patch DDGS where it's defined to intercept the lazy import
+    with patch("ddgs.DDGS") as mock_ddgs_class:
         mock_ddgs_instance = MagicMock()
         mock_ddgs_instance.text.side_effect = ConnectionError("Network failed")
         mock_ddgs_class.return_value.__enter__.return_value = mock_ddgs_instance

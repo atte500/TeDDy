@@ -1,7 +1,6 @@
 from http import HTTPStatus
 
 import requests
-import trafilatura
 
 from teddy_executor.core.ports.outbound.web_scraper import WebScraper
 
@@ -40,6 +39,8 @@ class WebScraperAdapter(WebScraper):
             response = requests.get(raw_url, headers=headers, timeout=30)
             response.raise_for_status()
             return response.text
+
+        import trafilatura
 
         html_content = None
         try:

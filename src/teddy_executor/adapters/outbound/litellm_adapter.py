@@ -1,5 +1,4 @@
 from typing import Any, Dict, List
-import litellm
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient, LlmApiError
 
 
@@ -14,6 +13,8 @@ class LiteLLMAdapter(ILlmClient):
         """
         Sends a request to an LLM via litellm and returns the text response.
         """
+        import litellm
+
         try:
             response = litellm.completion(model=model, messages=messages, **kwargs)
             # litellm returns a response object with choices

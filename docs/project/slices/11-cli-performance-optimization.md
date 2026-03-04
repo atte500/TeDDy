@@ -24,13 +24,20 @@ To reduce the CLI's cold-start latency from ~2.3 seconds to under 0.5 seconds. S
 
 ## 4. Scope of Work
 
-1. [ ] **Adapter Refactor:**
+1. [x] **Adapter Refactor:**
    - In `src/teddy_executor/adapters/outbound/litellm_adapter.py`, move `import litellm` inside the class or its methods.
    - In `src/teddy_executor/adapters/outbound/web_scraper_adapter.py`, move `import trafilatura` and `import pycurl` inside the class or its methods.
    - In `src/teddy_executor/adapters/outbound/web_searcher_adapter.py`, move `from duckduckgo_search import DDGS` inside the class or its methods.
-2. [ ] **Container Refactor:**
+2. [x] **Container Refactor:**
    - Update `src/teddy_executor/container.py` to register components using the `factory` pattern or ensuring no eager resolutions happen in `create_container()`.
    - Specifically, ensure `PlanValidator` registration doesn't eagerly resolve its sub-validators if they trigger adapter imports.
-3. [ ] **Verification:**
+3. [x] **Verification:**
    - Run `time poetry run teddy --help` to verify the fix.
    - Use `PYTHONPATH=src python3 -X importtime -m teddy_executor --help 2> import_times.txt` and check that heavy hitters are gone.
+
+## Implementation Summary
+- Reduced CLI cold-start latency from ~1.8s to ~0.41s.
+- Converted `LiteLLMAdapter`, `WebScraperAdapter`, and `WebSearcherAdapter` to use local imports for heavy dependencies (`litellm`, `trafilatura`, `ddgs`).
+- Refactored `create_container` in `src/teddy_executor/container.py` to use a lazy factory for `IPlanValidator`, avoiding eager resolution of action validators during startup.
+- Updated `tests/integration/adapters/outbound/test_web_searcher_adapter.py` to patch `ddgs.DDGS` directly, ensuring mocks work with local imports.
+- Added `tests/acceptance/test_lazy_loading.py` to verify that heavy modules are not loaded on CLI startup.

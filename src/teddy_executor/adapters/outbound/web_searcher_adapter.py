@@ -1,6 +1,5 @@
 import logging
 from typing import List
-from ddgs import DDGS
 from teddy_executor.core.domain.models import (
     QueryResult,
     SearchResult,
@@ -19,6 +18,8 @@ class WebSearcherAdapter(IWebSearcher):
         """
         Performs a web search for each query and maps the results.
         """
+        from ddgs import DDGS
+
         all_query_results: List[QueryResult] = []
         try:
             # Globally disable logging (CRITICAL and below) to silence noisy

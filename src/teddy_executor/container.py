@@ -79,15 +79,20 @@ def create_container() -> punq.Container:
     container.register(EditActionValidator)
     container.register(ExecuteActionValidator)
     container.register(ReadActionValidator)
+
+    # Use a factory lambda to ensure IPlanValidator and its sub-validators
+    # are resolved lazily only when IPlanValidator is first requested.
     container.register(
         IPlanValidator,
-        PlanValidator,
-        validators=[
-            container.resolve(CreateActionValidator),
-            container.resolve(EditActionValidator),
-            container.resolve(ExecuteActionValidator),
-            container.resolve(ReadActionValidator),
-        ],
+        factory=lambda: PlanValidator(
+            container.resolve(IFileSystemManager),
+            validators=[
+                container.resolve(CreateActionValidator),
+                container.resolve(EditActionValidator),
+                container.resolve(ExecuteActionValidator),
+                container.resolve(ReadActionValidator),
+            ],
+        ),
     )
     container.register(IMarkdownReportFormatter, MarkdownReportFormatter)
     container.register(ExecutionOrchestrator)
