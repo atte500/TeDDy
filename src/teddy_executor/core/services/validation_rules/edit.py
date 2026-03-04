@@ -60,17 +60,14 @@ class EditActionValidator(IActionValidator):
 
         edits = action.params.get("edits")
         if isinstance(edits, list):
-            total_edits = len(edits)
-            for i, edit in enumerate(edits, 1):
-                action_errors.extend(
-                    _validate_single_edit(edit, content, path_str, i, total_edits)
-                )
+            for edit in edits:
+                action_errors.extend(_validate_single_edit(edit, content, path_str))
         return action_errors
 
 
-def _find_best_match(file_content: str, find_block: str) -> str:
+def _find_best_match_and_diff(file_content: str, find_block: str) -> str:
     """
-    Finds the most similar block of text in the file content.
+    Finds the most similar block of text in the file content and generates a diff.
     """
     file_lines = file_content.splitlines(keepends=True)
     find_lines = find_block.splitlines(keepends=True)
@@ -98,13 +95,14 @@ def _find_best_match(file_content: str, find_block: str) -> str:
         best_match_lines = file_lines
 
     if best_match_lines:
-        return "".join(best_match_lines)
+        diff = difflib.ndiff(find_lines, best_match_lines)
+        return "".join(diff)
 
     return ""
 
 
 def _validate_single_edit(
-    edit: dict, content: str, file_path: str, edit_index: int, total_edits: int
+    edit: dict, content: str, file_path: str
 ) -> List[ValidationError]:
     """Validates a single edit dictionary."""
     errors: List[ValidationError] = []
@@ -125,7 +123,7 @@ def _validate_single_edit(
                 ValidationError(
                     message=(
                         f"FIND and REPLACE blocks are identical in: "
-                        f"{file_path} (Edit Pair {edit_index} of {total_edits})\n"
+                        f"{file_path}\n"
                         f"**Block Content:**\n"
                         f"{fence}\n{find_block}\n{fence}"
                     ),
@@ -136,20 +134,23 @@ def _validate_single_edit(
 
         matches = content.count(find_block)
         if matches == 0:
-            best_match_text = _find_best_match(content, find_block)
+            diff_text = _find_best_match_and_diff(content, find_block)
+            fence = get_fence_for_content(find_block)
             error_msg = (
                 f"The `FIND` block could not be located in the file: "
-                f"{file_path} (Edit Pair {edit_index} of {total_edits})\n"
+                f"{file_path}\n"
+                f"**FIND Block:**\n"
+                f"{fence}\n{find_block}\n{fence}\n"
             )
-            if best_match_text:
-                best_fence = get_fence_for_content(best_match_text)
+            if diff_text:
+                diff_fence = get_fence_for_content(diff_text)
                 error_msg += (
-                    f"**Closest Match in File:**\n"
-                    f"{best_fence}\n{best_match_text}\n{best_fence}\n"
+                    f"**Closest Match Diff:**\n{diff_fence}diff\n"
+                    f"{diff_text}\n{diff_fence}\n"
                 )
             error_msg += (
-                '**Hint:** Review the "Closest Match" to see the exact indentation and whitespace used in the file. '
-                "Use this exact text in your next FIND block."
+                "**Hint:** Review the provided diff and make sure to match the target content "
+                "exactly, including any whitespace and indentations."
             )
             errors.append(ValidationError(message=error_msg, file_path=str(file_path)))
         elif matches > 1:
@@ -157,8 +158,8 @@ def _validate_single_edit(
             errors.append(
                 ValidationError(
                     message=(
-                        f"The `FIND` block is ambiguous (Edit Pair {edit_index} of {total_edits}). "
-                        f"Found {matches} matches in: {file_path}\n"
+                        f"The `FIND` block is ambiguous. Found {matches} "
+                        f"matches in: {file_path}\n"
                         f"**FIND Block:**\n"
                         f"{fence}\n{find_block}\n{fence}"
                     ),
