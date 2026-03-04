@@ -538,3 +538,33 @@ def test_read_action_uses_mapped_language_tags():
 
     # Mapped extension check: .cfg should be rendered as ```ini
     assert "```ini\ndebug=true\n```" in output
+
+
+def test_formats_handoff_includes_details_when_skipped():
+    """
+    Given an INVOKE action that is SKIPPED,
+    When formatted,
+    Then the report SHOULD include the 'Details' section (e.g., for auto-skip reasons).
+    """
+    formatter = MarkdownReportFormatter()
+    report = ExecutionReport(
+        plan_title="Test",
+        run_summary=RunSummary(
+            status=RunStatus.SUCCESS,
+            start_time=datetime.now(timezone.utc),
+            end_time=datetime.now(timezone.utc),
+        ),
+        action_logs=[
+            ActionLog(
+                action_type="INVOKE",
+                status=ActionStatus.SKIPPED,
+                params={"Agent": "Architect", "message": "Ignored."},
+                details="Skipped because a previous action failed.",
+            )
+        ],
+    )
+
+    output = formatter.format(report)
+
+    assert "- **Status:** SKIPPED" in output
+    assert "- **Details:** `Skipped because a previous action failed.`" in output

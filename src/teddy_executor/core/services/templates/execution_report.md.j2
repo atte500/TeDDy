@@ -46,12 +46,12 @@
 {% endif -%}
 {# Render generic details if no specific fields matched, but avoid rendering if it's just content #}
 {% if not log.details.get("error") and not log.details.get("return_code") and not log.details.get("stdout") and not log.details.get("stderr") and not log.details.get("content") %}
-{% if log.status.value == 'FAILURE' or log.action_type | upper not in ['INVOKE', 'RETURN'] %}
+{% if log.status.value in ['FAILURE', 'SKIPPED'] or log.action_type | upper not in ['INVOKE', 'RETURN'] %}
 - **Details:** `{{ log.details }}`
 {% endif -%}
 {% endif -%}
 {% else -%}
-{% if log.status.value == 'FAILURE' or log.action_type | upper not in ['INVOKE', 'RETURN'] %}
+{% if log.status.value in ['FAILURE', 'SKIPPED'] or log.action_type | upper not in ['INVOKE', 'RETURN'] %}
 - **Details:** `{{ log.details }}`
 {% endif -%}
 {% endif -%}
@@ -106,11 +106,6 @@
   {% set target = params.get('description') or params.get('Description') or 'Research' %}
 {% elif action_type == 'PROMPT' %}
   {% set target = '' %}
-{% elif action_type == 'INVOKE' %}
-  {% set agent_name = params.get('Agent') or params.get('agent') or 'Unknown Agent' %}
-  {% set target = '[' ~ agent_name ~ '](' ~ agent_name ~ ')' %}
-{% elif action_type == 'RETURN' %}
-  {% set target = 'Calling Agent' %}
 {% else %}
   {# Use Markdown Link for CREATE/EDIT/READ #}
   {% set full_path = params.get('File Path') or params.get('file_path') or params.get('Resource') or params.get('resource') or params.get('path') or '' %}
