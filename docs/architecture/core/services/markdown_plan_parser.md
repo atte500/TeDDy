@@ -8,7 +8,7 @@ The `MarkdownPlanParser` service is responsible for parsing a plan written in th
 
 ## 2. Core Responsibilities
 - **AST Parsing:** Uses the `mistletoe` library to parse Markdown into an Abstract Syntax Tree (AST).
-- **Structural Validation:** Enforces a strict, top-level document structure (H1 Title -> Metadata List -> Rationale -> Action Plan) using a single-pass traversal strategy.
+- **Structural Validation:** Enforces a strict, top-level document structure (H1 Title -> Metadata List -> Rationale -> Action Plan) using a single-pass traversal strategy. The content of the **Rationale** section is extracted and stored in the `Plan` object.
 - **Action Dispatching:** Iterates through the `## Action Plan` section and dispatches parsing control to specialized strategy functions based on the detected action type.
 - **Path Normalization:** Performs centralized normalization of project-relative paths, ensuring cross-platform compatibility.
 - **Error Reporting:** Generates high-fidelity error reports, including AST summaries and structural diffs, to provide actionable feedback when a plan deviates from the specification.

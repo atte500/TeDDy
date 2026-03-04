@@ -94,6 +94,8 @@ class ExecutionReport:
     """The comprehensive report of a plan execution."""
     run_summary: RunSummary
     plan_title: str | None = None
+    rationale: str | None = None
+    original_actions: Sequence[Any] = field(default_factory=list) # Sequence[ActionData]
     action_logs: Sequence[ActionLog] = field(default_factory=list)
     validation_result: Sequence[str] | None = None
     failed_resources: dict[str, str] | None = None

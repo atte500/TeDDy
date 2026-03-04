@@ -157,12 +157,14 @@ An action that performs a web search for a list of queries.
 ## 2. Plan (Aggregate Root)
 **Status:** Implemented
 
-Represents a full plan to be executed. It is the aggregate root for a collection of `Action` entities.
+Represents a full plan to be executed. It is the aggregate root for a collection of `ActionData` objects.
 
 *   **Attributes:**
-    *   `actions` (list[Action]): A list of `Action` objects.
+    *   `title` (str): The plan's title.
+    *   `rationale` (str): The AI's explanation for the plan.
+    *   `actions` (list[ActionData]): A list of `ActionData` objects.
 *   **Invariants:**
-    *   `actions` must be a list containing at least one `Action`.
+    *   `actions` must be a list containing at least one action.
 
 ---
 

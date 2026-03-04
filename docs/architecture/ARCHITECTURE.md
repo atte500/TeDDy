@@ -161,6 +161,7 @@ This section serves as the "System Law" (Poka-Yoke) for TeDDy. It defines the pr
 -   **Rule:** Acceptance tests verifying structured output (e.g., YAML) MUST parse the output into a data structure before assertion. **Rationale:** To make tests resilient to minor formatting changes that don't affect the data payload.
 -   **Rule:** Use positional arguments for file I/O and reserve `stdin` exclusively for interactive user prompts. **Rationale:** To prevent conflicts between reading plan data and receiving user confirmation or free-text input.
 -   **Rule:** Use the `--plan-content` option in the `execute` command for providing plans within acceptance tests. **Rationale:** To make tests more robust and self-contained by avoiding dependencies on the system clipboard or external files.
+-   **Rule:** Use Jinja2 Macros for modular reporting. **Rationale:** To ensure consistency across different report formats (Concise CLI vs. Session) and facilitate robust extraction of specific sections (e.g., Action Log) for aggregated views.
 -   **Rule:** Explicitly specify `encoding="utf-8"` for all operations that read from or write to text files. **Rationale:** To ensure predictable, platform-agnostic behavior across different operating systems and avoid encoding errors when handling non-ASCII characters.
 
 ---

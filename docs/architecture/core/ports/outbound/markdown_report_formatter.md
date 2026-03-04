@@ -12,8 +12,11 @@ This port is expected to be implemented by a `MarkdownReportFormatter` service.
 
 ## 4. Data Contracts / Methods
 
-### `format(self, report: ExecutionReport) -> str`
+### `format(self, report: ExecutionReport, is_concise: bool = True) -> str`
 -   **Description:** The primary method to execute the formatting process.
+-   **Parameters:**
+    -   `report`: The `ExecutionReport` object.
+    -   `is_concise`: If `True`, generates a concise CLI report. If `False`, generates a comprehensive Session report.
 -   **Preconditions:**
     -   `report` must be a valid `ExecutionReport` domain object.
 -   **Postconditions:**
