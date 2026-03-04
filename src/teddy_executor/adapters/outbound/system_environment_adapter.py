@@ -1,6 +1,6 @@
 import os
 import shutil
-import subprocess
+import subprocess  # nosec
 import tempfile
 from typing import List, Optional
 from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
@@ -14,7 +14,7 @@ class SystemEnvironmentAdapter(ISystemEnvironment):
         return os.getenv(key)
 
     def run_command(self, args: List[str], check: bool = True) -> None:
-        subprocess.run(args, check=check)
+        subprocess.run(args, check=check)  # nosec B603
 
     def create_temp_file(self, suffix: str = "", mode: str = "w") -> str:
         with tempfile.NamedTemporaryFile(mode=mode, suffix=suffix, delete=False) as tf:

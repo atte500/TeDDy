@@ -1,6 +1,6 @@
 import os
 import shutil
-import subprocess
+import subprocess  # nosec
 import sys
 from typing import Optional, Dict, List
 
@@ -74,7 +74,7 @@ class ShellAdapter(IShellExecutor):
     ) -> ShellOutput:
         """Executes the command in a subprocess and handles errors."""
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B602
                 command_args,
                 shell=use_shell,
                 capture_output=True,

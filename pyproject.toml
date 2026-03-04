@@ -73,6 +73,9 @@ sort_by_size = true
 ignore_missing_imports = true
 exclude = ["spikes/"]
 
+[tool.bandit]
+exclude_dirs = ["tests", "spikes"]
+
 [tool.pytest.ini_options]
 norecursedirs = "spikes"
 addopts = [

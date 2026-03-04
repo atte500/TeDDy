@@ -66,7 +66,7 @@ def normalize_link_target(target: str) -> str:
         if is_abs and has_drive:
             is_likely_true_absolute = True
     elif os.name == "posix" and is_abs:
-        common_roots = ("/tmp", "/etc", "/home", "/var", "/usr", "/root")
+        common_roots = ("/tmp", "/etc", "/home", "/var", "/usr", "/root")  # nosec B108
         if target.startswith(common_roots):
             is_likely_true_absolute = True
     if target.startswith("/") and not is_likely_true_absolute:

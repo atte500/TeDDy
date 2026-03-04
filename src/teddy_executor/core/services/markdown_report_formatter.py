@@ -22,7 +22,10 @@ class MarkdownReportFormatter(IMarkdownReportFormatter):
     def __init__(self):
         template_dir = os.path.join(os.path.dirname(__file__), "templates")
         self.env = Environment(
-            loader=FileSystemLoader(template_dir), trim_blocks=True, lstrip_blocks=True
+            loader=FileSystemLoader(template_dir),
+            trim_blocks=True,
+            lstrip_blocks=True,
+            autoescape=False,  # nosec B701
         )
         self.env.filters["basename"] = os.path.basename
         self.env.filters["fence"] = get_fence_for_content

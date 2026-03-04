@@ -37,13 +37,13 @@ class WebScraperAdapter(WebScraper):
             raw_url = url.replace("github.com", "raw.githubusercontent.com").replace(
                 "/blob/", "/"
             )
-            response = requests.get(raw_url, headers=headers)
+            response = requests.get(raw_url, headers=headers, timeout=30)
             response.raise_for_status()
             return response.text
 
         html_content = None
         try:
-            response = requests.get(url, headers=headers)
+            response = requests.get(url, headers=headers, timeout=30)
             response.raise_for_status()
             html_content = response.text
         except requests.exceptions.HTTPError as e:
