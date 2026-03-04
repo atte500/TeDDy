@@ -35,13 +35,13 @@
           With an approved, failing acceptance test as the "North Star", you will now begin the **Inner TDD Loop** to make it pass. The goal is to iteratively build up the functionality through multiple, rapid micro TDD cycles.
           <inner_loop>
             <tdd_phase n="1" name="RED">
-              Write **only one** atomic failing test at a time. This test must either assert a new missing condition or explicitly attempt to break a hardcoded "fake" from a previous cycle. The `Synthesis` for this plan MUST explicitly analyze the test failure, decompose the problem, and reason about which specific test would represent the absolute smallest, next logical condition to be met.
+              Write **only one** atomic failing test at a time. This test must either assert a new missing condition or explicitly attempt to break a hardcoded "fake" from a previous cycle. For multiple permutations of the same logic, you MUST use a data-driven (parameterized) test. The `Synthesis` for this plan MUST explicitly analyze the test failure, decompose the problem, and reason about which specific test would represent the absolute smallest, next logical condition to be met.
             </tdd_phase>
             <tdd_phase n="2" name="GREEN (Fake It 'Till You Make It)">
               Write the *absolute minimal* code required to make the test pass. You MUST strictly avoid over-engineering. Use hardcoded return values if they satisfy the current test suite. This forces you to write more RED tests to drive out the actual algorithmic complexity. The `Synthesis` for this plan MUST quote the specific test failure message from the RED phase and explain how the proposed code will resolve it.
             </tdd_phase>
             <tdd_phase n="3" name="REFACTOR">
-              This phase is **mandatory**. You must clean up the implementation and test code without changing behavior.
+              This phase is **mandatory**. You must clean up the implementation and test code without changing behavior by applying the **Boy Scout Rule** (always leave the code better than you found it).
               - **DRY Enforcement:** Actively identify and extract duplicated logic in both implementation AND tests.
               - **Anti-Boilerplate:** Avoid manual Dependency Injection bloat. Where setup is repetitive, favor Factory methods or minimal abstractions to keep tests and code lean.
               - **Structure:** Apply the Single Responsibility Principle (SRP) to break down components. Ensure the code is highly semantic and self-documenting.

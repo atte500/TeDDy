@@ -116,7 +116,7 @@
         </description>
         <agent_role name="Architect">
           <consumes>A **Milestone (`docs/project/milestones/*.md`)**.</consumes>
-          <purpose>Takes a high-level, validated feature concept and produces a detailed architectural plan, including scaffolding and failing acceptance tests.</purpose>
+          <purpose>Takes a high-level, validated feature concept and produces a detailed architectural plan, defining explicit contracts, DTOs, and Acceptance Criteria.</purpose>
           <trigger>Use when a complex feature requires strategic design and planning.</trigger>
         </agent_role>
         <agent_role name="Developer">

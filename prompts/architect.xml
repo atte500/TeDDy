@@ -107,7 +107,7 @@
           *   **Goal:** To document any built-in diagnostic capabilities, making the system easier to troubleshoot.
           *   **Structure:** A simple section explaining how to activate the debug mode and what specific information it exposes.
         </detail>
-        <detail name="`Component Design Document & Scaffolding` Blueprint">
+        <detail name="`Component Design Document & File Structure` Blueprint">
             **1. Component Design Document Blueprint**
             All component design documents (`docs/architecture/**/*.md`) **must** follow this structure.
             *   **Header Metadata (Mandatory):**
@@ -119,7 +119,7 @@
                 3.  **`## 3. Implementation Details / Logic`**: Explain *how* the component fulfills its responsibility.
                 4.  **`## 4. Data Contracts / Methods`**: Formally define the component's public interface (method signatures, DTOs, Pre/Post-conditions, and explicit Exception/Error states).
 
-            **2. Standard Scaffolding Rules**
+            **2. Directory & File Structure Conventions**
             The location of a design document dictates the location of the source and test files.
             *   **Generic Path Structure:**
                 *   **Documentation:** `docs/architecture/BOUNDARY/LAYER/COMPONENT_TYPE/component_name.md`
