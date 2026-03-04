@@ -4,8 +4,10 @@ from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUs
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
 from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
 from teddy_executor.core.ports.outbound import (
+    IConfigService,
     IEnvironmentInspector,
     IFileSystemManager,
+    ILlmClient,
     IMarkdownReportFormatter,
     IRepoTreeGenerator,
     IShellExecutor,
@@ -32,6 +34,7 @@ from teddy_executor.core.services.validation_rules.edit import EditActionValidat
 from teddy_executor.core.services.validation_rules.execute import ExecuteActionValidator
 from teddy_executor.core.services.validation_rules.read import ReadActionValidator
 from teddy_executor.adapters.outbound.console_interactor import ConsoleInteractorAdapter
+from teddy_executor.adapters.outbound.litellm_adapter import LiteLLMAdapter
 from teddy_executor.adapters.outbound.local_file_system_adapter import (
     LocalFileSystemAdapter,
 )
@@ -47,6 +50,7 @@ from teddy_executor.adapters.outbound.system_environment_inspector import (
 )
 from teddy_executor.adapters.outbound.web_scraper_adapter import WebScraperAdapter
 from teddy_executor.adapters.outbound.web_searcher_adapter import WebSearcherAdapter
+from teddy_executor.adapters.outbound.yaml_config_adapter import YamlConfigAdapter
 
 
 def create_container() -> punq.Container:
@@ -65,6 +69,8 @@ def create_container() -> punq.Container:
     container.register(IWebScraper, WebScraperAdapter)
     container.register(IUserInteractor, ConsoleInteractorAdapter)
     container.register(IWebSearcher, WebSearcherAdapter)
+    container.register(IConfigService, YamlConfigAdapter)
+    container.register(ILlmClient, LiteLLMAdapter)
     container.register(IRepoTreeGenerator, LocalRepoTreeGenerator)
     container.register(IPlanParser, MarkdownPlanParser)
     container.register(IActionFactory, ActionFactory)
