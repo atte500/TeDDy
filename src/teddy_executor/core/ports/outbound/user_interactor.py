@@ -52,3 +52,16 @@ class IUserInteractor(ABC):
             reason: The reason the action was skipped.
         """
         pass
+
+    @abstractmethod
+    def display_manual_handoff(
+        self,
+        action_type: str,
+        target_agent: str | None,
+        resources: list[str],
+        message: str,
+    ) -> None:
+        """
+        Displays a formatted instruction block for manual handoffs.
+        """
+        pass

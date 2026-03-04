@@ -242,8 +242,9 @@ def test_formats_return_action_correctly():
     assert "```text\ndocs/A.md\ndocs/B.md\n```" in output
 
     # Check Message formatting
-    # Should be free text (not bulleted param)
-    assert "\nTask complete.\n\nSummary here." in output
+    # Scenario 3: Message should NOT be in the report output for handoffs
+    assert "Task complete." not in output
+    assert "Summary here." not in output
     # Ensure it's not rendered as "- **Message:** ..."
     assert "- **Message:**" not in output
 

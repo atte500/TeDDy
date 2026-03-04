@@ -227,3 +227,18 @@ class ConsoleInteractorAdapter(IUserInteractor):
         """Prints a colorized warning that an action was skipped."""
         message = f"[SKIPPED] {action.type}: {reason}"
         typer.secho(message, fg=typer.colors.YELLOW, err=True)
+
+    def display_manual_handoff(
+        self,
+        action_type: str,
+        target_agent: str | None,
+        resources: list[str],
+        message: str,
+    ) -> None:
+        """Displays a formatted instruction block for manual handoffs."""
+        typer.echo("MANUAL HANDOFF REQUIRED:", err=True)
+        typer.echo(f"Action: {action_type}", err=True)
+        if target_agent:
+            typer.echo(f"Target Agent: {target_agent}", err=True)
+        typer.echo(f"Resources: {resources}", err=True)
+        typer.echo(f"Message: {message}", err=True)

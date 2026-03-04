@@ -49,17 +49,23 @@ class ExecutionOrchestrator(RunPlanUseCase):
             return RunStatus.SKIPPED
         return RunStatus.SUCCESS
 
-    def _handle_skipped_action(self, action, reason: str) -> ActionLog:
-        """Creates an ActionLog for a skipped action."""
+    def _create_intercepted_log(
+        self, action, status: ActionStatus, details: str
+    ) -> ActionLog:
+        """Creates an ActionLog for an intercepted action (skip or handoff)."""
         log_params = action.params.copy()
         if action.description:
             log_params["Description"] = action.description
         return ActionLog(
-            status=ActionStatus.SKIPPED,
+            status=status,
             action_type=action.type,
             params=log_params,
-            details=reason,
+            details=details,
         )
+
+    def _handle_skipped_action(self, action, reason: str) -> ActionLog:
+        """Creates an ActionLog for a skipped action."""
+        return self._create_intercepted_log(action, ActionStatus.SKIPPED, reason)
 
     def _enrich_failed_log(self, action, action_log: ActionLog) -> ActionLog:
         """If a CREATE or EDIT action failed, enrich the log with file content."""
@@ -87,52 +93,94 @@ class ExecutionOrchestrator(RunPlanUseCase):
         except Exception:
             return action_log
 
+    def _intercept_non_interactive_action(self, action) -> ActionLog | None:
+        """Intercepts specific actions in non-interactive mode."""
+        action_type = action.type.upper()
+
+        # Scenario 1: PRUNE in Non-Interactive Mode
+        if action_type == "PRUNE":
+            return self._handle_skipped_action(
+                action,
+                "Skipped: PRUNE is not supported in non-interactive/manual mode.",
+            )
+
+        # Scenario 2: INVOKE/RETURN in Non-Interactive Mode
+        if action_type in ("INVOKE", "RETURN"):
+            params = action.params
+            self._user_interactor.display_manual_handoff(
+                action_type=action_type,
+                target_agent=params.get("Agent") or params.get("agent"),
+                resources=params.get("Handoff Resources")
+                or params.get("handoff_resources")
+                or [],
+                message=params.get("message") or params.get("Message") or "",
+            )
+            return self._create_intercepted_log(
+                action, ActionStatus.COMPLETED, "Manual handoff instruction delivered."
+            )
+
+        return None
+
+    def _create_change_set(self, action) -> ChangeSet | None:
+        """Creates a ChangeSet for file operations."""
+        if action.type.upper() not in ("CREATE", "EDIT"):
+            return None
+
+        path_str = action.params.get("path") or action.params.get("File Path")
+        if not path_str:
+            return None
+
+        path = Path(path_str)
+        before_content = (
+            self._file_system_manager.read_file(path_str) if path.exists() else ""
+        )
+
+        if action.type.upper() == "EDIT":
+            after_content = self._edit_simulator.simulate_edits(
+                before_content, action.params.get("edits", [])
+            )
+        else:  # CREATE
+            after_content = action.params.get("content", "")
+
+        return ChangeSet(
+            path=path,
+            before_content=before_content,
+            after_content=after_content,
+            action_type=action.type.upper(),
+        )
+
+    def _get_interactive_confirmation(self, action) -> tuple[bool, str]:
+        """Prompts the user for confirmation of an action."""
+        prompt_parts = [
+            "---",
+            f"Action: {action.type}",
+            f"Description: {action.description}" if action.description else "",
+        ]
+        param_str = "\n".join(
+            f"  - {k}: {v}"
+            for k, v in action.params.items()
+            if k.lower() not in ("edits", "content")
+        )
+        if param_str:
+            prompt_parts.extend(["Parameters:", param_str])
+        prompt_parts.append("---")
+        prompt = "\n".join(filter(None, prompt_parts))
+
+        change_set = self._create_change_set(action)
+
+        return self._user_interactor.confirm_action(
+            action=action, action_prompt=prompt, change_set=change_set
+        )
+
     def _confirm_and_dispatch_action(self, action, interactive: bool) -> ActionLog:
         """Handles user confirmation and dispatches a single action."""
+        if not interactive:
+            if intercepted_log := self._intercept_non_interactive_action(action):
+                return intercepted_log
+
         should_dispatch, reason = True, ""
         if interactive and action.type.lower() != "prompt":
-            prompt_parts = [
-                "---",
-                f"Action: {action.type}",
-                f"Description: {action.description}" if action.description else "",
-            ]
-            param_str = "\n".join(
-                f"  - {k}: {v}"
-                for k, v in action.params.items()
-                if k.lower() not in ("edits", "content")
-            )
-            if param_str:
-                prompt_parts.extend(["Parameters:", param_str])
-            prompt_parts.append("---")
-            prompt = "\n".join(filter(None, prompt_parts))
-
-            change_set = None
-            if action.type.upper() in ("CREATE", "EDIT"):
-                path_str = action.params.get("path") or action.params.get("File Path")
-                if path_str:
-                    path = Path(path_str)
-                    before_content = (
-                        self._file_system_manager.read_file(path_str)
-                        if path.exists()
-                        else ""
-                    )
-                    if action.type.upper() == "EDIT":
-                        after_content = self._edit_simulator.simulate_edits(
-                            before_content, action.params.get("edits", [])
-                        )
-                    else:  # CREATE
-                        after_content = action.params.get("content", "")
-
-                    change_set = ChangeSet(
-                        path=path,
-                        before_content=before_content,
-                        after_content=after_content,
-                        action_type=action.type.upper(),
-                    )
-
-            should_dispatch, reason = self._user_interactor.confirm_action(
-                action=action, action_prompt=prompt, change_set=change_set
-            )
+            should_dispatch, reason = self._get_interactive_confirmation(action)
 
         if not should_dispatch:
             return self._handle_skipped_action(
