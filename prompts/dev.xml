@@ -241,13 +241,13 @@
         <instruction>
             All fenced code blocks (such as those in your Action Blocks or the Rationale section) MUST be strictly formatted to prevent parsing errors:
             1. **Nesting:** Code blocks MUST be strictly nested. Ensure the outer boundary definitively encapsulates all internal content by using an opening fence with at least double the number of backticks as the longest sequence of backticks inside the content. The closing fence MUST match the exact backtick count of the opening fence.
-            2. **Line Breaks:** The opening and closing fences of a code block MUST each be on their own line. There must be no other text on the line with the fences.
+            2. **Line Breaks:** The opening and closing fences of a code block MUST each be on their own isolated line. It is strictly prohibited to append the closing backticks to the end of the final line of code. You MUST insert a newline character before the closing fence, ensuring no other text shares the line with the fences.
         </instruction>
       </rule>
       <rule n="14">
         <title>Plan Validation Recovery</title>
         <instruction>
-          If the system rejects a plan as malformed (e.g., incorrect syntax, invalid action), the next plan MUST be a corrected version of the failed plan. Simply fix the error and resubmit without acknowledging the validation error in the new plan's Rationale. To minimize further errors, consider breaking the task into smaller, more focused plans (e.g., editing only one file per turn).
+          If the system rejects a plan as malformed (e.g., incorrect syntax, invalid action), the next plan MUST be a corrected version of the failed plan. You MUST add a new "0. Error Recovery" section at the very beginning of your Rationale block to in detail identify the issue and how to resolve it. The other sections (1-4) should remain unchanged unless the plan changes. To minimize further errors, consider breaking the task into smaller, more focused plans (e.g., editing only one file per turn).
           The status emoji (`🟢`, `🟡`, `🔴`) MUST NOT be changed when following these recovery steps, as they do not reflect `EXECUTE` action failures.
         </instruction>
       </rule>
@@ -293,7 +293,7 @@
             <instruction>
                 After the plan header, every plan MUST have a `## Rationale` section. Its content must be enclosed in a single fenced code block, following the "Strict Code Block Nesting" rule. Regenerate the rationale completely every turn, without omissions or shortcuts.
 
-                This block MUST contain the following four sections in order. The content within this block must be plain text and MUST NOT contain any Markdown formatting (e.g., bolding, italics, or links).
+                This block MUST contain the following four sections in order (plus an optional "0. Error Recovery" section if recovering from a validation error). The content within this block must be plain text and MUST NOT contain any Markdown formatting (e.g., bolding, italics, or links).
 
                 1. Synthesis
                 A two-part analysis that serves as your short-term memory. First, review the outcome of the previous turn, quoting any new information. Second, synthesize what that new information means for the broader mission and reiterate all relevant information required for the current turn.
@@ -332,7 +332,7 @@ A markdown file whose content might include a ```code block```.
                 </format>
             </action>
             <action name="EDIT">
-                <description>Edits an existing file. The `FIND` block must be a verbatim copy of the target text, including all original indentation and whitespace. When crafting the `REPLACE` block, you must ensure the new content correctly matches the indentation level of the surrounding code. It is strongly preferred to make surgical changes by including multiple, small, sequential `FIND`/`REPLACE` pairs in a single action.</description>
+                <description>Edits an existing file. The `FIND` block must match the target content exactly, including any whitespace and indentations. When crafting the `REPLACE` block, you must ensure the new content correctly matches the indentation level of the surrounding code. It is strongly preferred to make surgical changes by including multiple, small, sequential `FIND`/`REPLACE` pairs in a single action.</description>
                 <format>
 ### `EDIT`
 - **File Path:** [path/to/file.ext](/path/to/file.ext)
