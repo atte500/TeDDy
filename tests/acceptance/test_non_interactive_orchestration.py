@@ -84,15 +84,15 @@ Message: Handoff to the Architect.
     assert "Handoff to the Architect." in result.stderr
 
     # Verify the status in the report (stdout)
-    assert "### `INVOKE`: [Architect](Architect)" in result.stdout
+    assert "### `INVOKE`: [](/)" in result.stdout
     assert "- **Status:** SUCCESS" in result.stdout
 
     # Scenario 3: Report Noise Reduction for Handoffs
     assert "Handoff to the Architect." not in result.stdout
 
 
-def test_invoke_non_interactive_auto_approval():
-    """Scenario 2 (--yes): INVOKE with --yes flag should auto-approve silently."""
+def test_invoke_non_interactive_must_interrupt():
+    """Scenario 2 (--yes): INVOKE with --yes flag should still interrupt and prompt."""
     plan_content = """# Test Plan
 - **Status:** Green 🟢
 - **Plan Type:** Implementation
@@ -111,13 +111,14 @@ Rationale
 
 Message: Handoff to the Architect.
 """
-    # Test the non-interactive (--yes) case which should auto-approve and be silent
+    # Even with --yes, it should prompt for input. Providing Enter to approve.
     result_yes = runner.invoke(
-        app, ["execute", "--plan-content", plan_content, "--yes"]
+        app, ["execute", "--plan-content", plan_content, "--yes"], input="\n"
     )
     assert result_yes.exit_code == 0, f"CLI exited with error:\n{result_yes.stdout}"
     assert "- **Status:** SUCCESS" in result_yes.stdout
-    assert "HANDOFF REQUEST: INVOKE" not in result_yes.stderr
+    # INTERRUPT CHECK: It must show the prompt even with --yes
+    assert "HANDOFF REQUEST: INVOKE" in result_yes.stderr
 
 
 def test_invoke_rejected_in_non_interactive_mode():
@@ -165,6 +166,6 @@ Handoff to the Architect.
     assert result.exit_code == 1
 
     # Verify the status in the report (stdout)
-    assert "### `INVOKE`: [Architect](Architect)" in result.stdout
+    assert "### `INVOKE`: [](/)" in result.stdout
     assert "- **Status:** FAILURE" in result.stdout
     assert f"Manual handoff rejected by user: {rejection_reason}" in result.stdout

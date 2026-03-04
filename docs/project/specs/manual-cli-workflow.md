@@ -126,17 +126,9 @@ Actions like `PRUNE`, `INVOKE`, and `RETURN` are designed for a stateful session
 
 -   **`PRUNE`**: This action is automatically skipped, as there is no persistent context to manage between manual `execute` calls. The report will show the action as `SKIPPED` with a note.
 
--   **`INVOKE` & `RETURN`**: These actions are treated as a signal for a manual handoff.
-    -   **Requirement:** The executor will not prompt for approval. Instead, it will print a formatted instruction block to the console (stderr) and mark the action as `COMPLETED` in the report.
-    -   **Example Console Output:**
-      ```text
-      MANUAL HANDOFF REQUIRED:
-      Action: INVOKE
-      Target Agent: Architect
-      Resources: ['docs/spec.md']
-      Message: Handoff to the Architect.
-      ```
-    -   **Report Output:** The report will show the action as `COMPLETED` but will **not** include the message body to reduce noise, as per the "noise reduction" principle for handoffs.
+-   **`INVOKE` & `RETURN`**: These actions are treated as a signal for a manual handoff and **always** require user confirmation, even when the `--yes` flag is used.
+    -   **Requirement:** The executor will display a formatted handoff request and prompt the user to approve (Enter) or provide a reason for rejection. This ensures that critical control-flow transitions are never executed silently.
+    -   **Report Output:** Upon approval, the action status is marked as `SUCCESS`. If rejected, it is marked as `FAILURE` with the reason provided. To reduce noise, the report will **not** include the message body.
 
 ## 6. Pre-flight Validation
 To ensure robustness and provide fast feedback, a comprehensive validation phase must be executed *before* any action is performed, regardless of the workflow mode (interactive or manual).

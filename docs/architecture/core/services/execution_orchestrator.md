@@ -49,9 +49,12 @@ class ExecutionOrchestrator:
 
         1.  Loops through each action in the plan.
         2.  Checks for previous failures. If any action has failed (triggering the `halt_execution` flag), subsequent actions are automatically skipped to prevent cascading failures, and `IUserInteractor.notify_skipped_action` is called to warn the user.
-        3.  If in interactive mode, coordinates a `ChangeSet` (using `IEditSimulator` for `EDIT` actions) and calls the `IUserInteractor.confirm_action` method, passing the full `ActionData` object, a descriptive prompt string, and the optional `ChangeSet`.
-            - **Special Case:** The approval prompt is automatically skipped for `prompt` actions to provide a more fluid user experience.
-        4.  If approved (or not in interactive mode), calls the ActionDispatcher.
+        3.  **Control Flow Interception:** Intercepts `PRUNE`, `INVOKE`, and `RETURN` actions.
+            - `PRUNE`: Automatically skipped in manual mode (context is not persistent).
+            - `INVOKE`/`RETURN`: Always interrupts the flow to request manual confirmation from the user via `IUserInteractor.confirm_manual_handoff`, even in non-interactive mode.
+        4.  **Action Confirmation:** If not intercepted and in interactive mode, coordinates a `ChangeSet` and calls `IUserInteractor.confirm_action`.
+            - **Special Case:** The approval prompt is automatically skipped for `PROMPT` actions.
+        5.  **Dispatch:** If approved (or not in interactive mode), calls the ActionDispatcher.
         5.  Collects the ActionLog from the dispatcher.
         6.  Builds and returns the final ExecutionReport.
 

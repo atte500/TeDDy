@@ -39,3 +39,20 @@ This port defines the contract for components that can interact with the user by
     *   `tuple[bool, str]`: A tuple containing:
         *   `bool`: `True` if the user approved, `False` otherwise.
         *   `str`: The user's reason for denial, or an empty string if approved or no reason was given.
+
+---
+
+### `confirm_manual_handoff(action_type: str, target_agent: str | None, resources: list[str], message: str) -> tuple[bool, str]`
+
+**Status:** Implemented
+**Motivating Slice:** [Slice 10: CLI Orchestration Polish](../../../slices/10-cli-orchestration-polish.md)
+
+*   **Description:**
+    Displays a specialized instruction block for a manual handoff (`INVOKE` or `RETURN`) and captures user confirmation.
+*   **Parameters:**
+    *   `action_type`: The type of handoff ("INVOKE" or "RETURN").
+    *   `target_agent`: The name of the agent being invoked (optional).
+    *   `resources`: A list of file paths provided as handoff context.
+    *   `message`: The verbatim handoff message.
+*   **Returns:**
+    *   `tuple[bool, str]`: `(True, "")` on approval (Enter), or `(False, reason)` if the user provides a rejection reason.

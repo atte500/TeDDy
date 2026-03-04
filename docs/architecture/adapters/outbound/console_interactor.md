@@ -45,6 +45,11 @@ The `confirm_action` method is responsible for presenting a proposed action to t
 3.  **Prompt for Reason (on denial):** If the action is denied, prompt the user for an optional reason for skipping.
 4.  **Return Value:** Return a tuple containing the approval status (`True`/`False`) and the reason string (or an empty string).
 
+#### `confirm_manual_handoff(...) -> tuple[bool, str]`
+This method handles the mandatory interruption for `INVOKE` and `RETURN` actions.
+1.  **Print Request to Stderr:** Displays a cyan header and a summary of the handoff (target agent, message, and resources).
+2.  **Prompt for Approval:** Uses `typer.prompt` to wait for a user response. An empty response (Enter) is an approval. Any non-empty response is treated as a rejection reason.
+
 ## 4. External Documentation
 
 *   [Python `sys.stdin` documentation](https://docs.python.org/3/library/sys.html#sys.stdin)

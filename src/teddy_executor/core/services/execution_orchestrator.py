@@ -106,23 +106,17 @@ class ExecutionOrchestrator(RunPlanUseCase):
                 "Skipped: PRUNE is not supported in manual execution mode.",
             )
 
-        # Scenario 2: INVOKE/RETURN in Non-Interactive Mode
+        # Scenario 2: INVOKE/RETURN - Always interrupt and prompt for manual handoff
         if action_type in ("INVOKE", "RETURN"):
-            # If not interactive (--yes), auto-approve. Otherwise, prompt user.
-            approved, reason = (
-                (True, "")
-                if not interactive
-                else self._user_interactor.confirm_manual_handoff(
-                    action_type=action_type,
-                    target_agent=action.params.get("Agent")
-                    or action.params.get("agent"),
-                    resources=action.params.get("Handoff Resources")
-                    or action.params.get("handoff_resources")
-                    or [],
-                    message=action.params.get("message")
-                    or action.params.get("Message")
-                    or "",
-                )
+            approved, reason = self._user_interactor.confirm_manual_handoff(
+                action_type=action_type,
+                target_agent=action.params.get("Agent") or action.params.get("agent"),
+                resources=action.params.get("Handoff Resources")
+                or action.params.get("handoff_resources")
+                or [],
+                message=action.params.get("message")
+                or action.params.get("Message")
+                or "",
             )
 
             if approved:

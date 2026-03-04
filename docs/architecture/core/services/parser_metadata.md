@@ -13,10 +13,11 @@ A generalized utility for extracting parameters from the bulleted list that foll
 ### `parse_env_from_metadata(metadata_list)`
 Specifically parses a nested environment variable list (e.g., an `env:` item containing sub-items like `KEY: VALUE`).
 
-### `parse_message_and_optional_resources(stream, valid_actions)`
-A complex parser that consumes the stream after an action's metadata list to extract:
-1.  An optional list of **Handoff Resources**.
-2.  All subsequent Markdown content (paragraphs, blocks) until the next action heading or structural boundary is reached.
+### `parse_handoff_body(stream, valid_actions)`
+A robust parser that renders all content after a handoff action heading (`INVOKE` or `RETURN`) to extract:
+1.  Target agent (for `INVOKE`).
+2.  Optional list of **Handoff Resources**.
+3.  Verification that a message exists and normalization of the message content (stripping list artifacts and standardizing paragraph breaks).
 
 ## 3. Design Principles
 - **DRY (Don't Repeat Yourself):** Centralizes metadata logic used by multiple action strategies (`INVOKE`, `RETURN`, `EXECUTE`, etc.).

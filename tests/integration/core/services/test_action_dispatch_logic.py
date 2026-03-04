@@ -119,7 +119,7 @@ def test_read_action_is_dispatched_to_filesystem(orchestrator, mock_fs):
     mock_fs.read_file.assert_called_once_with(path="hello.txt")
 
 
-def test_invoke_action_returns_success(orchestrator):
+def test_invoke_action_returns_success(mock_user_interactor, orchestrator):
     """
     Given a Plan with an INVOKE action,
     When the plan is executed,
@@ -135,6 +135,8 @@ def test_invoke_action_returns_success(orchestrator):
             )
         ],
     )
+    # Mock the interactor to approve the handoff
+    mock_user_interactor.confirm_manual_handoff.return_value = (True, "")
 
     # Act
     report = orchestrator.execute(plan=plan, interactive=False)
