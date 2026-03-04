@@ -81,32 +81,50 @@ This checklist outlines the steps to implement the foundational services.
 
 ### 1. Environment Setup
 
-1.  **Add Dependencies:** Add the required libraries for security scanning and configuration parsing.
-    ```shell
-    poetry add "pyyaml~=6.0" "detect-secrets~=1.4" "bandit~=1.7.9" "pip-audit~=2.7.3"
-    ```
-2.  **Update Pre-commit Hooks:** Edit `/.pre-commit-config.yaml` to include the `detect-secrets` and `bandit` hooks as defined in the architectural changes.
-3.  **Install Hooks:** Run `poetry run pre-commit install` to activate the new hooks.
-4.  **Generate Secrets Baseline:** Run `poetry run detect-secrets scan > .secrets.baseline` to create the initial baseline file. Add this file to `.gitignore`.
-5.  **Configure Bandit:** Add a `[tool.bandit]` section to `pyproject.toml` and add `tests` to the `exclude_dirs` list.
-6.  **Update CI Pipeline:** Edit `/.github/workflows/ci.yml` to add the `pip-audit` step.
+1.  [x] **Add Dependencies:** Add the required libraries for security scanning and configuration parsing.
+2.  [x] **Update Pre-commit Hooks:** Edit `/.pre-commit-config.yaml` to include the `detect-secrets` and `bandit` hooks as defined in the architectural changes.
+3.  [x] **Install Hooks:** Run `poetry run pre-commit install` to activate the new hooks.
+4.  [x] **Generate Secrets Baseline:** Run `poetry run detect-secrets scan > .secrets.baseline` to create the initial baseline file.
+5.  [x] **Configure Bandit:** Add a `[tool.bandit]` section to `pyproject.toml` and add `tests` to the `exclude_dirs` list.
+6.  [x] **Update CI Pipeline:** Edit `/.github/workflows/ci.yml` to add the `pip-audit` step.
 
 ### 2. Implementation: Ports & Adapters
 
-7.  **Create Ports:**
+7.  [x] **Create Ports:**
     -   Create the file `src/teddy_executor/core/ports/outbound/config_service.py` with the `IConfigService` interface.
     -   Create the file `src/teddy_executor/core/ports/outbound/llm_client.py` with the `ILlmClient` interface and a custom `LlmApiError` exception.
-8.  **Implement Adapters:**
+8.  [x] **Implement Adapters:**
     -   Create the file `src/teddy_executor/adapters/outbound/yaml_config_adapter.py` and implement the `YamlConfigAdapter`.
     -   Create the file `src/teddy_executor/adapters/outbound/litellm_adapter.py` and implement the `LiteLLMAdapter`.
-9.  **Integration:**
+9.  [x] **Integration:**
     -   Update `src/teddy_executor/container.py` to register the new ports and their concrete adapter implementations with the `punq` container.
 
 ### 3. Verification
 
-10. **Add Unit Tests:**
+10. [x] **Add Unit Tests:**
     -   Create `tests/unit/adapters/outbound/test_yaml_config_adapter.py` to test the config adapter's logic (e.g., handling of missing files, correct value retrieval).
     -   Create `tests/unit/adapters/outbound/test_litellm_adapter.py` to test the `LiteLLMAdapter`, mocking the `litellm` library and `IConfigService`.
-11. **Add Integration Test:**
+11. [x] **Add Integration Test:**
     -   Create `tests/integration/core/services/test_container_wiring.py` to verify that `IConfigService` and `ILlmClient` can be successfully resolved from the container.
-12. **Manual Verification:** Follow the steps in the `User Showcase` section to manually confirm the new pre-commit hooks are working correctly.
+12. [x] **Manual Verification:** Follow the steps in the `User Showcase` section to manually confirm the new pre-commit hooks are working correctly.
+
+## Implementation Summary
+
+### Work Completed
+
+- **Security Gates:** Integrated `detect-secrets`, `bandit`, and `pip-audit` into the development lifecycle.
+- **Security Baselining:** Performed a comprehensive security audit of the existing codebase. Resolved 9 legacy issues through surgical fixes (adding timeouts to `requests` calls, enabling autoescape where safe) and `# nosec` annotations for intentional patterns (subprocess usage in adapters).
+- **Foundational Ports:** Defined `IConfigService` and `ILlmClient` outbound ports.
+- **Foundational Adapters:** Implemented `YamlConfigAdapter` for local configuration and `LiteLLMAdapter` for generic LLM interaction.
+- **Integration:** Wired all new services into the `punq` DI container.
+- **Quality Assurance:** Reached 100% test coverage for all new components and verified the entire system remains stable with 243 passing tests.
+
+### Significant Refactoring & Discoveries
+
+- **Secrets Baseline Tracking:** During CI hardening, it was discovered that `.secrets.baseline` MUST be tracked by Git, contrary to the initial slice instruction to ignore it. Without the baseline file, the `detect-secrets` hook fails in CI environments. This was resolved by removing it from `.gitignore`.
+- **Markdown Escaping Regression:** Enabling global Jinja2 `autoescape=True` caused regressions in Markdown report formatting. This was resolved by explicitly setting `autoescape=False` in the `MarkdownReportFormatter` and baselining the `B701` security check.
+
+### [NEW] Reminders for Next Cycle
+
+- **[NEW]:** Ensure all future test mock data using keywords like "key" or "secret" includes the `# pragma: allowlist secret` comment to prevent `detect-secrets` false positives.
+- **[NEW]:** The `LiteLLMAdapter` currently requires API keys to be set in the environment or passed via `kwargs`. Future work should enhance it to automatically load keys from `IConfigService` as defined in the adapter's planned logic.

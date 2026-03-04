@@ -37,7 +37,7 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 
 ## 4. Vertical Slices
 
-- [ ] **Slice 1: Foundation (Security, Config, LLM Client)**
+- [x] **Slice 1: Foundation (Security, Config, LLM Client)**
     - Configure comprehensive security gates (`detect-secrets`, `bandit`, `pip-audit`). Add `litellm` dependency, implement `ConfigService` and `LiteLLMAdapter`, and wire them in `main.py`.
     - **Configurable Web Scraper:** Extend `WebScraperAdapter` to respect settings for precision, comments, and tables via the `ConfigService`.
 - [ ] **Slice 2: Refactor Execution Report Template**
