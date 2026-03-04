@@ -21,13 +21,21 @@ Reduce `teddy context` execution time from ~2 seconds to under 200ms for standar
 - **Change:** Replace the use of `Path.rglob("**/*")` in `_get_included_paths` with a manual recursive walk (using `Path.iterdir()`) that prunes directories as soon as they match an ignore pattern.
 
 ## Scope of Work
-- [ ] Refactor `LocalRepoTreeGenerator._get_included_paths` to use a recursive helper function (e.g., `_walk(current_dir)`).
-- [ ] For each entry in a directory:
+- [x] Refactor `LocalRepoTreeGenerator._get_included_paths` to use a recursive helper function (e.g., `_walk(current_dir)`).
+- [x] For each entry in a directory:
   - Construct the relative path string (adding a trailing `/` if it is a directory).
   - Check the entry against `self.ignore_spec.match_file(match_path)`.
   - If it is ignored, **skip it and do not recurse** (pruning).
   - If it is not ignored:
     - Add the path to the `included_paths` set.
     - If it is a directory, recurse into it.
-- [ ] Ensure that for every included file, all its parent directories (up to `root_dir`) are also added to the `included_paths` set to maintain tree connectivity.
-- [ ] Run the `time` command to verify the performance fix on the current TeDDy repo.
+- [x] Ensure that for every included file, all its parent directories (up to `root_dir`) are also added to the `included_paths` set to maintain tree connectivity.
+- [x] Run the `time` command to verify the performance fix on the current TeDDy repo.
+
+## Implementation Summary
+- **Performance Optimization:** Replaced the inefficient `Path.rglob("**/*")` with a manual, pruning-aware recursive walk. The new implementation explicitly skips recursing into directories that match ignore patterns (e.g., `.venv`, `node_modules`), preventing unnecessary disk I/O and CPU cycles.
+- **Tree Integrity:** Integrated parent directory inclusion directly into the recursive walk. This ensures that any un-ignored file (e.g., via a `!pattern` in `.gitignore`) correctly includes its entire parent path in the generated tree, maintaining structural connectivity.
+- **Verification:**
+  - Added a new performance-focused integration test `tests/integration/adapters/outbound/test_tree_generator_performance.py` that validates pruning behavior with 5,000 files in an ignored directory.
+  - Confirmed that the `teddy context` command completes instantly on the current repository.
+  - Verified that all existing tree generation integration tests pass.
