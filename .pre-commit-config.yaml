@@ -61,3 +61,10 @@ repos:
         language: system
         types: [python]
         exclude: ^tests/|^spikes/
+
+    -   id: delete-spikes
+        name: Delete Spikes Folder
+        entry: rm -rf spikes
+        language: system
+        always_run: true
+        pass_filenames: false
