@@ -250,8 +250,12 @@
         </instruction>
       </rule>
       <rule n="11">
-        <title>Strict Code Block Nesting</title>
-        <instruction>All fenced code blocks (such as those in your Action Blocks or the Rationale section) MUST be strictly nested. To prevent AST parser breakage, you MUST ensure the outer boundary definitively encapsulates all internal content. You do this by using an opening fence with DOUBLE (x2) the number of backticks as the longest sequence of backticks inside the content (e.g., to fence content containing ` ``` `, you must use ` `````` ` for the outer fences). The closing fence MUST match the exact backtick count of the opening fence.</instruction>
+        <title>Code Block Formatting</title>
+        <instruction>
+            All fenced code blocks (such as those in your Action Blocks or the Rationale section) MUST be strictly formatted to prevent parsing errors:
+            1. **Nesting:** Code blocks MUST be strictly nested. Ensure the outer boundary definitively encapsulates all internal content by using an opening fence with at least double the number of backticks as the longest sequence of backticks inside the content. The closing fence MUST match the exact backtick count of the opening fence.
+            2. **Line Breaks:** The opening and closing fences of a code block MUST each be on their own line. There must be no other text on the line with the fences.
+        </instruction>
       </rule>
       <rule n="12">
         <title>Plan Validation Recovery</title>
