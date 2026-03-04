@@ -67,27 +67,36 @@ class LocalRepoTreeGenerator(IRepoTreeGenerator):
         Walks the directory and returns a set of all files and parent directories
         that are not excluded by the ignore spec.
         """
-        all_paths = self.root_dir.rglob("**/*")
-        included_paths = set()
-
-        for path in all_paths:
-            relative_path_str = str(path.relative_to(self.root_dir))
-            # For directories, add a trailing slash to match gitignore behavior
-            match_path = relative_path_str + "/" if path.is_dir() else relative_path_str
-
-            if not self.ignore_spec.match_file(match_path):
-                # CRITICAL: If a file or directory is not ignored, we must explicitly
-                # add it and all of its parent directories to the `included_paths` set.
-                # This ensures that if a file like `dist/app/index.html` is un-ignored,
-                # the `dist/` and `dist/app/` directories are also present in the
-                # final tree, even if they were originally matched by an ignore pattern.
-                included_paths.add(path)
-                for parent in path.parents:
-                    if parent == self.root_dir:
-                        break
-                    included_paths.add(parent)
-
+        included_paths: set[Path] = set()
+        self._walk(self.root_dir, included_paths)
         return included_paths
+
+    def _walk(self, current_dir: Path, included_paths: set[Path]):
+        """
+        Recursively walks the directory tree, pruning ignored directories.
+        """
+        for entry in current_dir.iterdir():
+            relative_path_str = str(entry.relative_to(self.root_dir))
+            # For directories, add a trailing slash to match gitignore behavior
+            match_path = (
+                relative_path_str + "/" if entry.is_dir() else relative_path_str
+            )
+
+            if self.ignore_spec.match_file(match_path):
+                continue
+
+            # If not ignored, add to set
+            included_paths.add(entry)
+
+            # Ensure parent connectivity
+            for parent in entry.parents:
+                if parent == self.root_dir:
+                    break
+                included_paths.add(parent)
+
+            # Recurse if it's a directory
+            if entry.is_dir():
+                self._walk(entry, included_paths)
 
     def generate_tree(self) -> str:
         """
