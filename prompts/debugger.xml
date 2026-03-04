@@ -142,10 +142,9 @@
         <title>Sequential Action Workflow</title>
         <instruction>
           Your actions within a single plan are executed **sequentially**. If any action fails, all subsequent actions in the plan are skipped.
-          1.  **Combine Actions:** You CAN and SHOULD combine dependent actions (e.g., `CREATE` then `EXECUTE`) in a single plan to improve efficiency.
-          2.  **Act on Known Content:** You cannot `READ` and then `EDIT` the same file in one turn; the `READ` payload is delivered on the *next* turn.
-          3.  **Context Management:** Avoid redundant `READ`s for content already in your context. Actively `PRUNE` files no longer needed to maintain focus.
-          4.  **Failure Planning:** To prevent premature termination of a plan, it is recommended to place actions with uncertain outcomes (e.g., `EXECUTE`) or user-interaction steps (e.g., `PROMPT`) at the end.
+          1.  **Act on Known Content:** You cannot `READ` and then `EDIT` the same file in one turn; the `READ` payload is delivered on the *next* turn.
+          2.  **Context Management:** Avoid redundant `READ`s for content already in your context. Actively `PRUNE` files no longer needed to maintain focus.
+          3.  **Failure Planning:** To prevent premature termination of a plan, it is recommended to place actions with uncertain outcomes (e.g., `EXECUTE`) or user-interaction steps (e.g., `PROMPT`) at the end.
         </instruction>
       </rule>
       <rule n="5">
@@ -196,7 +195,9 @@
       <rule n="10">
         <title>Standardized Plan Types</title>
         <instruction>
-          The `- **Plan Type:**` in the plan header must use one of the following core values: `Information Gathering`, `Spike`, `Instrumentation`.
+            Each turn MUST have a single, clear responsibility, reflected by its `Plan Type`. These types act as strict phase boundaries in the workflow. For example, `Implementation` actions (like `EDIT` or `CREATE`) MUST NOT be combined with `Version Control` actions (like `git add`) in the same plan.
+
+            The `- **Plan Type:**` in the plan header must use one of the following core values: `Information Gathering`, `Spike`, `Instrumentation`.
         </instruction>
       </rule>
        <rule n="11">
