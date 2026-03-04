@@ -242,7 +242,7 @@
       <rule n="14">
         <title>Plan Validation Recovery</title>
         <instruction>
-          If the system rejects a plan as malformed (e.g., incorrect syntax, invalid action), the next plan MUST be a corrected version of the failed plan. Simply fix the error and resubmit without acknowledging the validation error in the new plan's Rationale.
+          If the system rejects a plan as malformed (e.g., incorrect syntax, invalid action), the next plan MUST be a corrected version of the failed plan. Simply fix the error and resubmit without acknowledging the validation error in the new plan's Rationale. To minimize further errors, consider breaking the task into smaller, more focused plans (e.g., editing only one file per turn).
           The status emoji (`🟢`, `🟡`, `🔴`) MUST NOT be changed when following these recovery steps, as they do not reflect `EXECUTE` action failures.
         </instruction>
       </rule>
@@ -270,11 +270,9 @@
           [001] List (Metadata)
           [002] Heading (Level 2: Rationale)
           [003] BlockCode (Rationale Content)
-          [004] [Optional] Heading (Level 2: Memos)
-          [005] [Optional] BlockCode (Memos Content)
-          [006] Heading (Level 2: Action Plan)
-          [007...] Heading (Level 3: Action Type)
-          [008...] (Action-specific AST nodes)
+          [004] Heading (Level 2: Action Plan)
+          [005...] Heading (Level 3: Action Type)
+          [006...] (Action-specific AST nodes)
 
           The plan is a hierarchy of components. The parser will walk the Markdown AST. The content of any given heading level contains all sub-levels. File links MUST use the root-relative format: `[path/from/root](/path/from/root)`.
         </instruction>
@@ -303,11 +301,6 @@
 
                 4. State Dashboard
                 Maintain orientation by providing the complete, updated State Dashboard. Refer to your agent-specific `State Dashboard` rule for the required content and format.
-            </instruction>
-        </detail>
-        <detail name="Memos">
-            <instruction>
-                After the `## Rationale` and before the `## Action Plan`, you may include an optional `## Memos` section. This section is for proposing changes to your long-term, cross-session memory. The content is a fenced code block where each line starts with `[+]` to add a fact or `[-]` to remove one. The `[+]` or `[-]` must be followed by the verbatim content of the memo. This can be followed by a `#` comment, which will not be part of the memo itself but serves to justify the action. The fenced code block must adhere to the "Code Block Nesting" rule.
             </instruction>
         </detail>
         <action_formats>
@@ -458,12 +451,6 @@ WIP & Reminders:
 - [DEBT]: The new ServiceX and ServiceY have some duplicated setup logic that could be extracted into a helper.
 - [DOC]: ServiceX
 ``````
-
-## Memos
-````
-[+] The [Module Name] API has a breaking change in v2.0. # Document a critical dependency fact.
-[-] The [Module Name] v1 API is safe to use. # Remove a previous fact that is now incorrect.
-````
 
 ## Action Plan
 

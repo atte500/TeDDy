@@ -122,11 +122,9 @@ class MarkdownPlanParser(IPlanParser):
         msg += "[001] List (Metadata)\n"
         msg += "[002] Heading (Level 2: Rationale)\n"
         msg += "[003] BlockCode (Rationale Content)\n"
-        msg += "[004] [Optional] Heading (Level 2: Memos)\n"
-        msg += "[005] [Optional] BlockCode (Memos Content)\n"
-        msg += "[006] Heading (Level 2: Action Plan)\n"
-        msg += "[007...] Heading (Level 3: Action Type)\n"
-        msg += "[008...] (Action-specific AST nodes)\n"
+        msg += "[004] Heading (Level 2: Action Plan)\n"
+        msg += "[005...] Heading (Level 3: Action Type)\n"
+        msg += "[006...] (Action-specific AST nodes)\n"
 
         msg += "\n--- Actual Document Structure ---\n"
         children = list(doc.children) if doc.children else []

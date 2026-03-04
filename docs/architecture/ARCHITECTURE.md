@@ -147,24 +147,17 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 
 ## 3. Key Architectural Decisions
 
-This section captures significant, long-standing architectural decisions and patterns that define the system's design.
+This section serves as the "System Law" (Poka-Yoke) for TeDDy. It defines the prescriptive standards that all development work MUST follow.
 
--   **Hexagonal Architecture:** The core business logic is isolated from external frameworks and I/O, enabling independent testing and technology swapping.
--   **Dependency Injection (DI):** The composition root in `main.py` uses the `punq` library to manage and inject dependencies, decoupling services from concrete implementations.
--   **Standardized DI Testing Infrastructure:** To reduce boilerplate and ensure test isolation, all tests requiring a DI container MUST use the centralized `container` fixture provided in `tests/conftest.py`. This fixture automatically handles the creation of a fresh container and patches the global `teddy_executor.__main__.container` attribute, ensuring that any component resolving dependencies via the global container (such as the CLI) interacts with the test-specific instance.
--   **"White-Box" Acceptance Testing:** All acceptance tests use `typer.testing.CliRunner` to run the CLI application in-process. This is the required pattern as it ensures mocks are respected and is faster and more reliable than testing via `subprocess`.
--   **Static vs. Runtime Type Checking:** The test suite, using `pytest`, does not enforce type hint contracts at runtime (e.g., it will not fail if a function returns a `dict` when an `object` is expected). Type safety and contract adherence between components (such as an adapter correctly implementing a port's interface) are enforced statically by `mypy` as part of the mandatory `pre-commit` checks.
--   **Structured Output Parsing in Tests:** Acceptance tests that verify structured output (e.g., YAML) MUST parse the output into a data structure before making assertions. This makes tests resilient to formatting changes.
--   **Separation of I/O Concerns:** The `[PLAN_FILE]` positional argument is the canonical way to provide a plan from a file, while omitting it defaults to reading from the clipboard. This reserves `stdin` exclusively for interactive prompts (like `y/n` or `prompt`).
--   **Test Plan Injection:** The `execute` subcommand includes a `--plan-content` option. This is the canonical way to provide a plan as a string directly from within a test, making acceptance tests more robust and self-contained by avoiding file I/O or clipboard dependencies.
--   **Simplified Shell Execution (Single Command):** To enhance user control, fault isolation, and architectural simplicity, the TeDDy workflow mandates that each `EXECUTE` action contains only a single shell command.
-    -   **Behavior:** The `PlanValidator` enforces a "one command per action" rule, rejecting plans that attempt to chain commands with `&&` or newlines.
-    -   **Directives:** The `MarkdownPlanParser` pre-processes the command for `cd <path>` and `export KEY=VALUE` directives, extracting them from the script and passing them as parameters to the `ShellAdapter`.
-    -   **Isolated Environment:** Each `EXECUTE` action runs in a stateless, isolated environment. The `cwd` and `env` are reset for each action and do not persist.
-    -   **Pipes & Redirects:** Standard shell operators like `|`, `>`, and `<` are fully supported within the single command line.
-    -   **Rationale:** This approach makes the plan more explicit and transparent, gives the user granular step-by-step control, and dramatically simplifies the `ShellAdapter`'s logic.
--   **Cross-Platform File I/O:** All operations that read from or write to text files MUST explicitly specify `encoding="utf-8"`. This applies to both application code (`src/`) and test code (`tests/`).
-    -   **Rationale:** The default file encoding is platform-dependent (e.g., UTF-8 on macOS/Linux, but often `cp1252` on Windows). Failing to specify the encoding can lead to `UnicodeEncodeError` or `UnicodeDecodeError` when handling files with non-ASCII characters on different operating systems. This convention ensures predictable, platform-agnostic behavior.
+-   **Rule:** Use Hexagonal Architecture (Ports & Adapters) to isolate core business logic from external frameworks and I/O. **Rationale:** To enable independent testing and allow for easy swapping of infrastructure technologies.
+-   **Rule:** Use the `punq` library for Dependency Injection in the `main.py` composition root. **Rationale:** To decouple services from concrete implementations, facilitating testability and modularity.
+-   **Rule:** All tests requiring a Dependency Injection container MUST use the centralized `container` fixture in `tests/conftest.py`. **Rationale:** To ensure test isolation, reduce setup boilerplate, and correctly patch the global container used by the CLI.
+-   **Rule:** Use `typer.testing.CliRunner` to execute acceptance tests in-process. **Rationale:** This pattern is faster than `subprocess`, more reliable, and ensures that mocks are correctly respected during test execution.
+-   **Rule:** Rely on static type checking via `mypy` for contract enforcement; do not enforce type hints at runtime. **Rationale:** Static analysis as a mandatory pre-commit hook provides sufficient safety without the overhead and complexity of runtime validation.
+-   **Rule:** Acceptance tests verifying structured output (e.g., YAML) MUST parse the output into a data structure before assertion. **Rationale:** To make tests resilient to minor formatting changes that don't affect the data payload.
+-   **Rule:** Use positional arguments for file I/O and reserve `stdin` exclusively for interactive user prompts. **Rationale:** To prevent conflicts between reading plan data and receiving user confirmation or free-text input.
+-   **Rule:** Use the `--plan-content` option in the `execute` command for providing plans within acceptance tests. **Rationale:** To make tests more robust and self-contained by avoiding dependencies on the system clipboard or external files.
+-   **Rule:** Explicitly specify `encoding="utf-8"` for all operations that read from or write to text files. **Rationale:** To ensure predictable, platform-agnostic behavior across different operating systems and avoid encoding errors when handling non-ASCII characters.
 
 ---
 
