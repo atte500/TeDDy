@@ -1,4 +1,5 @@
-# Slice 3: Refactor Execution Report Template
+# Slice 09-03: Refactor Execution Report Template
+- **Status:** [✅] Complete
 
 ## 1. Business Goal
 
@@ -99,21 +100,13 @@ This checklist outlines the components required to support multi-modal reporting
 9.  [x] **Verified report consistency** through manual CLI showcase verification.
 
 ## Implementation Summary
+The execution report system was refactored to support distinct concise (CLI) and comprehensive (Session) formats. Core domain models (`Plan`, `ExecutionReport`) were enhanced to store plan-level metadata (Status, Agent, Plan Type). The `MarkdownPlanParser` was updated to extract these headers into a metadata dictionary. The `execution_report.md.j2` template now features a segregated `### Original Plan Metadata` section and a more descriptive `### Original Action Plan` layout.
 
-This slice successfully implemented a multi-modal reporting system for TeDDy, distinguishing between concise CLI reports and comprehensive session reports.
-
-### Key Changes
-
-1.  **Domain & Persistence:** Updated `Plan` and `ExecutionReport` models to preserve the plan's `rationale` and `original_actions`.
-2.  **Rationale Extraction:** Enhanced `MarkdownPlanParser` to extract content between the H1 title and the `## Rationale` or `## Action Plan` headers as the plan's rationale.
-3.  **Modular Templating:** Refactored `execution_report.md.j2` to use modular Jinja2 macros. This enables clean branching logic between "Concise" (CLI) and "Comprehensive" (Session) modes.
-4.  **Data Flow Preservation:** Updated `ExecutionOrchestrator` and `__main__.py` to ensure rationale and action data are correctly passed from the parsed plan to the final formatted report.
-5.  **Robust Regression Fix:** Updated the entire test suite (unit and integration) to satisfy the new `Plan` constructor signature and adjusted fragile line-count assertions in report tests to accommodate the new sections.
+Structural integrity was fortified by moving the `verify_test_pyramid.py` check from CI into the `pre-commit` workflow, ensuring that the test pyramid (Acceptance < Integration < Unit) is validated locally. Acceptance tests were re-balanced to the integration layer to restore the correct ratio.
 
 ### Significant Refactoring
-
--   **Macro-based Reporting:** The move to Jinja2 macros provides a strong foundation for future report enhancements (e.g., HTML or TUI reports) by centralizing rendering logic for core components.
--   **Cleaner Orchestrator Wiring:** Refactored `_execute_valid_plan` in the CLI adapter to rely on the orchestrator's report generation rather than manually recreating reports, reducing duplication.
+- **Macro-based Reporting:** The move to Jinja2 macros provides a strong foundation for future report enhancements by centralizing rendering logic for core components.
+- **Metadata Provenance:** Segregating original plan metadata ensures that the execution summary remains focused on results while preserving the original instruction context.
 
 ### [NEW] Reminders
 - [NEW]: The rationale extraction in `MarkdownPlanParser` is currently based on header titles. Consider a more robust AST-based approach if the plan format becomes more flexible.
