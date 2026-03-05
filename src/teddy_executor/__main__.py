@@ -14,6 +14,7 @@ from teddy_executor.core.domain.models import (
 )
 from teddy_executor.core.domain.models.plan import Plan
 from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
+from teddy_executor.core.ports.inbound.init import IInitUseCase
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser, InvalidPlanError
 from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
 from teddy_executor.core.ports.outbound import (
@@ -37,6 +38,15 @@ logging.basicConfig(
     handlers=[logging.StreamHandler(sys.stderr)],
     force=True,
 )
+
+
+@app.callback()
+def bootstrap():
+    """
+    Ensures the project is initialized before any command runs.
+    """
+    init_service: IInitUseCase = container.resolve(IInitUseCase)
+    init_service.ensure_initialized()
 
 
 def _echo_and_copy(

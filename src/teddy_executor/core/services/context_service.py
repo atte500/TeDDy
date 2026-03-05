@@ -27,10 +27,6 @@ class ContextService(IGetContextUseCase):
         """
         Gathers all project context information by orchestrating its dependencies.
         """
-        # Scenario 2: Simplified Default Configuration
-        if not self._file_system_manager.path_exists(".teddy/init.context"):
-            self._file_system_manager.create_default_context_file()
-
         # Gather all information from outbound ports
         system_info = self._environment_inspector.get_environment_info()
         repo_tree = self._repo_tree_generator.generate_tree()

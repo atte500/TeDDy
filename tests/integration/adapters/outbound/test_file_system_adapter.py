@@ -332,23 +332,3 @@ def test_edit_file_handles_leading_newline_in_find_block(adapter, tmp_path: Path
     # Assert
     actual_content = test_file.read_text()
     assert actual_content == expected_content
-
-
-def test_create_default_context_file(edit_simulator, tmp_path: Path):
-    """
-    Tests that create_default_context_file creates the .teddy/init.context
-    file with the correct, simplified default content.
-    """
-    # Arrange
-    adapter = LocalFileSystemAdapter(
-        edit_simulator=edit_simulator, root_dir=str(tmp_path)
-    )
-    expected_file = tmp_path / ".teddy" / "init.context"
-    expected_content = "README.md\ndocs/ARCHITECTURE.md\n"
-
-    # Act
-    adapter.create_default_context_file()
-
-    # Assert
-    assert expected_file.exists()
-    assert expected_file.read_text() == expected_content

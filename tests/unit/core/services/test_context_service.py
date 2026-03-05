@@ -12,60 +12,6 @@ def service(container, mock_fs, mock_tree_gen, mock_inspector) -> IGetContextUse
     return container.resolve(IGetContextUseCase)
 
 
-def test_get_context_creates_default_file_if_not_exists(
-    service: IGetContextUseCase,
-    mock_fs,
-    mock_tree_gen,
-    mock_inspector,
-):
-    """
-    Scenario: Simplified Default Configuration (Service Level)
-    Tests that get_context calls the file system manager to create the
-    default context file if the permanent context file does not exist.
-    """
-    # Arrange
-    mock_fs.path_exists.return_value = False
-
-    # Mock return values for the rest of the function to avoid subsequent errors
-    mock_tree_gen.generate_tree.return_value = ""
-    mock_inspector.get_environment_info.return_value = {}
-    mock_fs.get_context_paths.return_value = []
-    mock_fs.read_files_in_vault.return_value = {}
-
-    # Act
-    service.get_context()
-
-    # Assert
-    mock_fs.path_exists.assert_called_once_with(".teddy/init.context")
-    mock_fs.create_default_context_file.assert_called_once()
-
-
-def test_get_context_does_not_create_default_file_if_exists(
-    service: IGetContextUseCase,
-    mock_fs,
-    mock_tree_gen,
-    mock_inspector,
-):
-    """
-    Tests that get_context does NOT try to create the default context file
-    if the permanent context file already exists.
-    """
-    # Arrange
-    mock_fs.path_exists.return_value = True
-    # Mock other calls to prevent errors
-    mock_tree_gen.generate_tree.return_value = ""
-    mock_inspector.get_environment_info.return_value = {}
-    mock_fs.get_context_paths.return_value = []
-    mock_fs.read_files_in_vault.return_value = {}
-
-    # Act
-    service.get_context()
-
-    # Assert
-    mock_fs.path_exists.assert_called_once_with(".teddy/init.context")
-    mock_fs.create_default_context_file.assert_not_called()
-
-
 def test_get_context_orchestrates_and_returns_correct_dto(
     service: IGetContextUseCase,
     mock_fs,

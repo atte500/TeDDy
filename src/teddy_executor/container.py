@@ -1,6 +1,7 @@
 import punq
 from teddy_executor.core.ports.inbound.edit_simulator import IEditSimulator
 from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
+from teddy_executor.core.ports.inbound.init import IInitUseCase
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
 from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
 from teddy_executor.core.ports.outbound import (
@@ -24,6 +25,7 @@ from teddy_executor.core.services.action_factory import ActionFactory
 from teddy_executor.core.services.context_service import ContextService
 from teddy_executor.core.services.edit_simulator import EditSimulator
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
+from teddy_executor.core.services.init_service import InitService
 from teddy_executor.core.services.markdown_plan_parser import MarkdownPlanParser
 from teddy_executor.core.services.markdown_report_formatter import (
     MarkdownReportFormatter,
@@ -97,4 +99,5 @@ def create_container() -> punq.Container:
     container.register(IMarkdownReportFormatter, MarkdownReportFormatter)
     container.register(ExecutionOrchestrator)
     container.register(IGetContextUseCase, ContextService)
+    container.register(IInitUseCase, InitService)
     return container

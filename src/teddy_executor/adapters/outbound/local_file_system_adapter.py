@@ -59,23 +59,6 @@ class LocalFileSystemAdapter(FileSystemManager):
         logger.debug("----------------------")
         return final_path
 
-    def create_default_context_file(self) -> None:
-        """
-        Creates a default .teddy/init.context file with simplified content
-        and a .gitignore to ignore the directory's contents.
-        """
-        teddy_dir = self.root_dir / ".teddy"
-        teddy_dir.mkdir(exist_ok=True)
-
-        # Create .gitignore
-        gitignore_file = teddy_dir / ".gitignore"
-        gitignore_file.write_text("*", encoding="utf-8")
-
-        # Create init.context
-        perm_context_file = teddy_dir / "init.context"
-        default_content = "README.md\ndocs/ARCHITECTURE.md\n"
-        perm_context_file.write_text(default_content, encoding="utf-8")
-
     def get_context_paths(self) -> list[str]:
         """
         Reads all .teddy/*.context files and returns a deduplicated list of paths.

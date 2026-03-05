@@ -52,12 +52,6 @@ class FileSystemManager(Protocol):
         """
         ...
 
-    def create_default_context_file(self) -> None:
-        """
-        Creates a default .teddy/init.context file with simplified content.
-        """
-        ...
-
     def get_context_paths(self) -> list[str]:
         """
         Reads all .teddy/*.context files and returns a deduplicated list of paths.
