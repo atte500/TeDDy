@@ -83,8 +83,9 @@ Rationale
     assert "Handoff to the Architect." in result.stderr
 
     # Verify the status in the report (stdout)
-    assert "### `INVOKE`: Architect: Handoff to the Architect." in result.stdout
+    assert "### `INVOKE`: Architect" in result.stdout
     assert "- **Status:** SUCCESS" in result.stdout
+    assert "- **Description:** Handoff to the Architect." in result.stdout
 
     # Handoff resources should be links, not in a code block
     assert "[docs/spec.md](/docs/spec.md)" in result.stdout
@@ -163,6 +164,7 @@ Handoff rejection.
     assert result.exit_code == 1
 
     # Verify the status in the report (stdout)
-    assert "### `INVOKE`: Architect: Handoff to the Architect." in result.stdout
+    assert "### `INVOKE`: Architect" in result.stdout
     assert "- **Status:** FAILURE" in result.stdout
+    assert "- **Description:** Handoff to the Architect." in result.stdout
     assert f"Manual handoff rejected by user: {rejection_reason}" in result.stdout

@@ -105,11 +105,9 @@
 {% elif action_type == 'RESEARCH' %}
   {% set target = params.get('description') or params.get('Description') or 'Research' %}
 {% elif action_type == 'INVOKE' %}
-  {% set agent = params.get('agent') or params.get('Agent') %}
-  {% set desc = params.get('description') or params.get('Description') %}
-  {% set target = (agent if agent else '') + (': ' if agent and desc else '') + (desc if desc else ('Handoff' if not agent else '')) %}
+  {% set target = params.get('agent') or params.get('Agent') or '' %}
 {% elif action_type == 'RETURN' %}
-  {% set target = params.get('description') or params.get('Description') or 'Task Complete' %}
+  {% set target = '' %}
 {% elif action_type == 'PROMPT' %}
   {% set target = '' %}
 {% else %}
@@ -159,8 +157,12 @@
   {% for key, value in params.items() %}
     {% set k_lower = key.lower() %}
     {# Filter out fields handled in headers or special blocks #}
-    {% set ignored_keys = ['content', 'find', 'replace', 'edits', 'description', 'Description'] %}
-    {# For INVOKE, also hide Agent #}
+    {% set ignored_keys = ['content', 'find', 'replace', 'edits'] %}
+    {# Only ignore description if it's used in the header (EXECUTE, RESEARCH) #}
+    {% if action_type in ['EXECUTE', 'RESEARCH'] %}
+        {% set ignored_keys = ignored_keys + ['description', 'Description'] %}
+    {% endif %}
+    {# For INVOKE, hide Agent (in header) #}
     {% if action_type == 'INVOKE' %}
         {% set ignored_keys = ignored_keys + ['agent', 'Agent'] %}
     {% endif %}

@@ -213,7 +213,7 @@ def test_formats_return_action_correctly():
     """
     Given a RETURN action with resources and description,
     When formatted,
-    Then resources should be links and description should be in the header.
+    Then resources should be links and description should be in the body.
     """
     formatter = MarkdownReportFormatter()
     report = ExecutionReport(
@@ -241,12 +241,13 @@ def test_formats_return_action_correctly():
     assert "[docs/A.md](/docs/A.md)" in output
     assert "[docs/B.md](/docs/B.md)" in output
 
-    # Check Message formatting
-    # The description should now be in the action header
-    assert "### `RETURN`: Task complete." in output
-    # Ensure the old 'Message' or 'Description' keys are not present in the body
+    # Check formatting
+    # The header should be just the action type
+    assert "### `RETURN`" in output
+    # The description should be in the body
+    assert "- **Description:** Task complete." in output
+    # Ensure 'Message' is not present
     assert "- **Message:**" not in output
-    assert "- **Description:**" not in output
 
 
 def test_formats_failed_execute_action_details_human_readably():
@@ -486,7 +487,8 @@ def test_formats_invoke_action_omits_details_block():
     """
     Given an INVOKE action,
     When the report is formatted,
-    Then it should omit the 'Details' section to keep the handoff clean.
+    Then it should omit the 'Details' section to keep the handoff clean,
+    And Agent should be in the header.
     """
     formatter = MarkdownReportFormatter()
     report = ExecutionReport(
@@ -500,13 +502,19 @@ def test_formats_invoke_action_omits_details_block():
             ActionLog(
                 action_type="INVOKE",
                 status=ActionStatus.SUCCESS,
-                params={"Agent": "Architect", "message": "Take over."},
+                params={
+                    "Agent": "Architect",
+                    "description": "Handoff to architect.",
+                    "message": "Take over.",
+                },
             )
         ],
     )
 
     output = formatter.format(report)
 
+    assert "### `INVOKE`: Architect" in output
+    assert "- **Description:** Handoff to architect." in output
     assert "- **Details:**" not in output
 
 
