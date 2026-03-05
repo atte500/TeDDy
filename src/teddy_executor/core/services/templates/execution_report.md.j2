@@ -104,8 +104,12 @@
   {% set target = '"' ~ (params.get('description') or params.get('Description') or 'Execute Command') ~ '"' %}
 {% elif action_type == 'RESEARCH' %}
   {% set target = params.get('description') or params.get('Description') or 'Research' %}
-{% elif action_type in ['INVOKE', 'RETURN'] %}
-  {% set target = params.get('description') or params.get('Description') or ('Handoff' if action_type == 'INVOKE' else 'Task Complete') %}
+{% elif action_type == 'INVOKE' %}
+  {% set agent = params.get('agent') or params.get('Agent') %}
+  {% set desc = params.get('description') or params.get('Description') %}
+  {% set target = (agent if agent else '') + (': ' if agent and desc else '') + (desc if desc else ('Handoff' if not agent else '')) %}
+{% elif action_type == 'RETURN' %}
+  {% set target = params.get('description') or params.get('Description') or 'Task Complete' %}
 {% elif action_type == 'PROMPT' %}
   {% set target = '' %}
 {% else %}
@@ -154,15 +158,19 @@
 {% if params %}
   {% for key, value in params.items() %}
     {% set k_lower = key.lower() %}
-    {# Filter out standard huge fields #}
-    {% set ignored_keys = ['content', 'find', 'replace', 'edits'] %}
-    {# For RESEARCH, hide description (in header) and queries (in body) #}
+    {# Filter out fields handled in headers or special blocks #}
+    {% set ignored_keys = ['content', 'find', 'replace', 'edits', 'description', 'Description'] %}
+    {# For INVOKE, also hide Agent #}
+    {% if action_type == 'INVOKE' %}
+        {% set ignored_keys = ignored_keys + ['agent', 'Agent'] %}
+    {% endif %}
+    {# For RESEARCH, hide queries (in body) #}
     {% if action_type == 'RESEARCH' %}
-        {% set ignored_keys = ignored_keys + ['description', 'queries'] %}
+        {% set ignored_keys = ignored_keys + ['queries'] %}
     {% endif %}
     {# For RETURN/INVOKE, hide message and resources (handled separately) #}
     {% if action_type in ['RETURN', 'INVOKE'] %}
-        {% set ignored_keys = ignored_keys + ['description', 'message', 'handoff_resources', 'handoff resources'] %}
+        {% set ignored_keys = ignored_keys + ['message', 'handoff_resources', 'handoff resources'] %}
     {% endif %}
     {# For PROMPT, hide the AI prompt #}
     {% if action_type == 'PROMPT' %}

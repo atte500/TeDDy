@@ -39,4 +39,4 @@ def test_first_time_initialization_creates_teddy_directory_and_files(tmp_path):
     # Verify default content of init.context
     init_content = init_context_file.read_text(encoding="utf-8")
     assert "README.md" in init_content
-    assert "docs/ARCHITECTURE.md" in init_content
+    assert "docs/architecture/ARCHITECTURE.md" in init_content
