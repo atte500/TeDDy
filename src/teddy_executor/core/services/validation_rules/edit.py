@@ -150,7 +150,7 @@ def _validate_single_edit(
                 )
             error_msg += (
                 "**Hint:** Review the provided diff and make sure to match the target content "
-                "exactly, including any whitespace and indentations."
+                "exactly, including whitespace and indentations."
             )
             errors.append(ValidationError(message=error_msg, file_path=str(file_path)))
         elif matches > 1:
