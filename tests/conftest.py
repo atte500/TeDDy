@@ -17,6 +17,7 @@ from teddy_executor.core.ports.outbound import (
     IRepoTreeGenerator,
     IEnvironmentInspector,
     IMarkdownReportFormatter,
+    ILlmClient,
 )
 from teddy_executor.core.services.edit_simulator import EditSimulator
 from teddy_executor.core.services.action_dispatcher import (
@@ -154,4 +155,11 @@ def mock_inspector(container):
 def mock_report_formatter(container):
     mock = Mock(spec=IMarkdownReportFormatter)
     container.register(IMarkdownReportFormatter, instance=mock)
+    return mock
+
+
+@pytest.fixture
+def mock_llm_client(container):
+    mock = Mock(spec=ILlmClient)
+    container.register(ILlmClient, instance=mock)
     return mock
