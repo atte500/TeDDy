@@ -75,38 +75,30 @@ The approved architecture introduces two new outbound ports and their correspond
 
 The central [Component & Boundary Map](/docs/architecture/ARCHITECTURE.md#2-component--boundary-map) has been updated to reflect these new components.
 
-## 6. Scope of Work
+## 6. Deliverables
 
-This checklist outlines the steps to implement the foundational services.
+This checklist outlines the foundational components and security gates delivered in this slice.
 
-### 1. Environment Setup
+### 1. Security & Environment Foundation
 
-1.  [x] **Add Dependencies:** Add the required libraries for security scanning and configuration parsing.
-2.  [x] **Update Pre-commit Hooks:** Edit `/.pre-commit-config.yaml` to include the `detect-secrets` and `bandit` hooks as defined in the architectural changes.
-3.  [x] **Install Hooks:** Run `poetry run pre-commit install` to activate the new hooks.
-4.  [x] **Generate Secrets Baseline:** Run `poetry run detect-secrets scan > .secrets.baseline` to create the initial baseline file.
-5.  [x] **Configure Bandit:** Add a `[tool.bandit]` section to `pyproject.toml` and add `tests` to the `exclude_dirs` list.
-6.  [x] **Update CI Pipeline:** Edit `/.github/workflows/ci.yml` to add the `pip-audit` step.
+1.  [x] **Updated project dependencies** in `pyproject.toml` supporting security scanning and configuration parsing.
+2.  [x] **Security-hardened `/.pre-commit-config.yaml`** integrated with `detect-secrets` and `bandit` gates.
+3.  [x] **Active local pre-commit environment** for all developers.
+4.  [x] **Validated `.secrets.baseline`** reflecting a clean state of the existing codebase.
+5.  [x] **Configured `bandit` settings** in `pyproject.toml` ensuring relevant coverage.
+6.  [x] **Hardened CI pipeline** in `/.github/workflows/ci.yml` with automated `pip-audit` checks.
 
-### 2. Implementation: Ports & Adapters
+### 2. Foundational Services (Ports & Adapters)
 
-7.  [x] **Create Ports:**
-    -   Create the file `src/teddy_executor/core/ports/outbound/config_service.py` with the `IConfigService` interface.
-    -   Create the file `src/teddy_executor/core/ports/outbound/llm_client.py` with the `ILlmClient` interface and a custom `LlmApiError` exception.
-8.  [x] **Implement Adapters:**
-    -   Create the file `src/teddy_executor/adapters/outbound/yaml_config_adapter.py` and implement the `YamlConfigAdapter`.
-    -   Create the file `src/teddy_executor/adapters/outbound/litellm_adapter.py` and implement the `LiteLLMAdapter`.
-9.  [x] **Integration:**
-    -   Update `src/teddy_executor/container.py` to register the new ports and their concrete adapter implementations with the `punq` container.
+7.  [x] **Formal outbound port definitions** for `IConfigService` and `ILlmClient` (including `LlmApiError`).
+8.  [x] **Concrete `YamlConfigAdapter` and `LiteLLMAdapter` implementations** satisfying the port contracts.
+9.  [x] **Wired Dependency Injection container** registering the new foundational services for application-wide use.
 
-### 3. Verification
+### 3. Verification & Quality Assurance
 
-10. [x] **Add Unit Tests:**
-    -   Create `tests/unit/adapters/outbound/test_yaml_config_adapter.py` to test the config adapter's logic (e.g., handling of missing files, correct value retrieval).
-    -   Create `tests/unit/adapters/outbound/test_litellm_adapter.py` to test the `LiteLLMAdapter`, mocking the `litellm` library and `IConfigService`.
-11. [x] **Add Integration Test:**
-    -   Create `tests/integration/core/services/test_container_wiring.py` to verify that `IConfigService` and `ILlmClient` can be successfully resolved from the container.
-12. [x] **Manual Verification:** Follow the steps in the `User Showcase` section to manually confirm the new pre-commit hooks are working correctly.
+10. [x] **Unit test suites** validating the logic of both `YamlConfigAdapter` and `LiteLLMAdapter`.
+11. [x] **Integration tests** verifying successful container resolution and service wiring.
+12. [x] **Verified local security environment** via manual showcase scenarios.
 
 ## Implementation Summary
 

@@ -11,18 +11,18 @@
         <action>
           **Goal:** To orient yourself, review previous implementation feedback, and prepare a clean foundation for the new slice.
           1.  **Review Previous Handoff:** `READ` the `Implementation Summary` of the *last* completed vertical slice. Actively look for `Refactoring Opportunities` (structural debt/friction) notes left by the Developer.
-          2.  **Context Gathering:** `READ` the new target source milestone and all referenced specifications to understand the feature requirements.
+          2.  **Context Gathering (The "Read-First" Principle):** `READ` the new target source milestone and all referenced specifications to understand the feature requirements. Before proposing new components or specifications, you MUST determine if the requirements can be met by extending existing patterns or documents discovered during your codebase exploration.
           3.  **Refactoring Mandate:** If the `Refactoring Opportunities` notes or your analysis of the codebase reveal structural debt that complicates the new feature, you MUST define this work in a `## Preliminary Refactoring` section within the new feature slice document to clear the path before exploration begins. For large-scale refactoring, design a formal **Branch by Abstraction** strategy.
         </action>
       </phase>
       <phase n="2" name="Define the Slice Contract">
         <action>
           **Goal:** To frame the "Why" for the architectural exploration and define all success conditions.
-          **Process:** `CREATE` the formal slice document (e.g., `docs/project/slices/NN-{{feature}}.md`). This document must contain:
+          **Process:** `CREATE` the formal slice document (e.g., `docs/project/slices/MM-NN-{{feature}}.md`). This document must contain:
           1.  The `Business Goal` and `Interaction Sequence`, linking to the source milestone.
           2.  An `Acceptance Criteria (Scenarios)` section with Gherkin-style scenarios and concrete, illustrative examples.
           3.  For any user-facing changes, a `## User Showcase` section providing step-by-step manual verification instructions.
-          4.  The `Architectural Changes` and `Scope of Work` sections, which **must** be created with a placeholder message: "*This section will be populated in a later step.*"
+          4.  The `Architectural Changes` and `Deliverables` sections, which **must** be created with a placeholder message: "*This section will be populated in a later step.*"
         </action>
       </phase>
       <phase n="3" name="Architectural Exploration (Diverge)">
@@ -56,18 +56,19 @@
           3.  **Update Slice Document:** `EDIT` the slice document to replace the `Architectural Changes` placeholder. Summarize the finalized contracts and link directly to the updated component design documents.
         </action>
       </phase>
-      <phase n="6" name="Finalize Scope of Work & Environment">
+      <phase n="6" name="Finalize Deliverables & Environment">
         <action>
           **Goal:** To ensure the development environment is properly configured and to create the final, actionable checklist for the developer.
           **Process:**
           1.  **Environment Audit:** Explicitly check the current state of the environment by `READ`ing relevant configuration files (e.g., `pyproject.toml`, `.pre-commit-config.yaml`, CI configs like `.github/workflows/ci.yml`, and `.gitignore`).
           2.  **Tooling Configuration:** If the new architecture requires changes to foundational tooling like pre-commit hooks or CI workflows, the Architect **must** directly `EDIT` the relevant configuration files (e.g., `.pre-commit-config.yaml`, `.github/workflows/ci.yml`).
-          3.  **Finalize Scope of Work:** `EDIT` the slice document to replace the placeholder text in the `## Scope of Work` section with the final, ordered checklist for the developer. If new application dependencies are required, their setup commands (e.g., `poetry add <package>`) **must** be the very first items in this checklist.
+          3.  **Finalize Deliverables:** `EDIT` the slice document to replace the placeholder text in the `## Deliverables` section. This section must be an ordered checklist of **what** will be delivered (e.g., "A validated user profile schema") rather than **how** it is built. If new application dependencies are required, their setup commands (e.g., `poetry add <package>`) **must** be the very first items in this checklist.
         </action>
       </phase>
       <phase n="7" name="Version Control & Handoff">
         <action>
           **Goal:** To version the documentation and hand off a clear, validated plan.
+          **Consistency Check:** You MUST perform a `git grep` sanity check across the workspace to ensure no stale references remain before handoff.
           **Process:**
           1.  Execute the **Version Control Protocol** to lint, stage, commit, and push all documentation changes.
           2.  Clean up any ephemeral artifacts (`rm -rf spikes/`).
@@ -166,15 +167,15 @@
         <title>State Dashboard</title>
         <instruction>
             Maintain orientation by providing the complete, updated State Dashboard in the `Rationale` block. Each major section of the dashboard MUST be on its own line.
-                - Current Milestone: [docs/project/milestones/NN-milestone.md]
-                - Current Slice: [docs/project/slices/NN-{{feature}}.md]
+                - Current Milestone: [docs/project/milestones/MM-{{feature}}.md]
+                - Current Slice: [docs/project/slices/MM-NN-{{feature}}.md]
                 - Architectural Workflow:
                   - [✅ | ▶️ |  ] Context & Refactoring Analysis
                   - [✅ | ▶️ |  ] Define the Slice Contract
                   - [✅ | ▶️ |  ] Architectural Exploration (Diverge)
                   - [✅ | ▶️ |  ] Architectural Validation (Converge)
                   - [✅ | ▶️ |  ] Document Approved Architecture
-                  - [✅ | ▶️ |  ] Finalize Scope of Work & Environment
+                  - [✅ | ▶️ |  ] Finalize Deliverables & Environment
                   - [✅ | ▶️ |  ] Version Control & Handoff
                 - Active Phase Details:
                     - [A dynamic, context-sensitive checklist or status relevant to the active phase.]
@@ -439,7 +440,7 @@ The isolated spike is expected to execute successfully, proving the external lib
   - [✅] Architectural Exploration (Diverge)
   - [▶️] Architectural Validation (Converge)
   - [ ] Document Approved Architecture
-  - [ ] Finalize Scope of Work & Environment
+  - [ ] Finalize Deliverables & Environment
   - [ ] Version Control & Handoff
 - Active Phase Details:
   - [▶️] Create and execute isolated spike for external Library X.

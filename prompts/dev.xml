@@ -15,9 +15,9 @@
       <phase n="1" name="Orientation">
         <action>
           **Goal:** Understand the scope of the vertical slice.
-          *   **Action:** `READ` the provided slice document to understand the `Scope of Work`.
-          *   Populate the `WIP & Reminders` dashboard section with all items from the `Scope of Work` as `[TODO]` items.
-          *   **Contingency:** If no slice document is provided, and only in that case, your first action MUST be to `PROMPT` to collaboratively define and get approval for the `Scope of Work`.
+          *   **Action:** `READ` the provided slice document to understand the `Deliverables`.
+          *   Populate the `WIP & Reminders` dashboard section with all items from the `Deliverables` section as `[TODO]` items.
+          *   **Contingency:** If no slice document is provided, and only in that case, your first action MUST be to `PROMPT` to collaboratively define and get approval for the `Deliverables`.
           *   You will not write any code or tests in this phase.
         </action>
       </phase>
@@ -74,6 +74,7 @@
       <phase n="3" name="Finalization & Handoff">
         <action>
           Once all scenarios are complete and committed, you must finalize the slice. This is your "Definition of Done".
+          **Consistency Check:** You MUST perform a `git grep` sanity check across the workspace to ensure no stale references remain before handoff.
           1.  **Update Documentation:** Audit and align documentation with the as-built code based on the reminders accumulated during implementation.
               *   **As-Built Component Docs:** You must methodically process all `[DOC]` reminders logged. For **each** reminder:
                   1.  You **must** first `READ` the corresponding component design document and as-built code files.
@@ -121,7 +122,7 @@
         <title>State Dashboard</title>
         <instruction>
             Maintain orientation by providing the complete, updated State Dashboard in the `Rationale` block. Each major section of the dashboard MUST be on its own line.
-            Vertical Slice: [docs/project/slices/path-to-slice.md]
+            Vertical Slice: [docs/project/slices/MM-NN-{{feature}}.md]
             Development Workflow:
             - [✅ | ▶️ |  ] Orientation
             - [✅ | ▶️ |  ] Implement Vertical Slice
@@ -428,7 +429,7 @@ This plan follows the "Inner Loop" of the TDD workflow. I have a clear target fr
 The test is expected to fail with a `NotImplementedError`, confirming the RED state. If it passes or fails with a different error, the next plan will be `Information Gathering` to diagnose the unexpected state before proceeding.
 
 4. State Dashboard
-Vertical Slice: `docs/project/slices/path-to-slice.md`
+Vertical Slice: `docs/project/slices/MM-NN-{{feature}}.md`
 Development Workflow:
 - [✅] Orientation
 - [▶️] Implement Vertical Slice

@@ -73,34 +73,27 @@ The approved architecture introduces a modular, macro-based reporting system to 
     -   [MarkdownPlanParser](/docs/architecture/core/services/markdown_plan_parser.md): Updated to capture the rationale content.
     -   **MarkdownReportFormatter:** Refactored to use Jinja2 macros for modular layout.
 
-## 7. Scope of Work
+## 7. Deliverables
 
-### 1. Preliminary Refactoring: Domain & Parser
+This checklist outlines the components required to support multi-modal reporting.
 
-1.  [ ] **Update `Plan` Model:** Add the `rationale: str` field to `src/teddy_executor/core/domain/models/plan.py`.
-2.  [ ] **Update `ExecutionReport` Model:** Add `rationale: str | None` and `original_actions: Sequence[ActionData]` to `src/teddy_executor/core/domain/models/execution_report.py`.
-3.  [ ] **Update `MarkdownPlanParser`:** Modify `_parse_strict_top_level` in `src/teddy_executor/core/services/markdown_plan_parser.py` to extract the content of the Rationale block and pass it to the `Plan` constructor.
-4.  [ ] **Update Port:** Update `IMarkdownReportFormatter.format()` in `src/teddy_executor/core/ports/outbound/markdown_report_formatter.py` to accept `is_concise: bool = True`.
+### 1. Enhanced Domain & Ports
 
-### 2. Orchestration
+1.  [ ] **Enhanced `Plan` and `ExecutionReport` domain models** capable of persisting rationale and original action data.
+2.  [ ] **Updated `MarkdownPlanParser`** supporting the extraction of plan rationale.
+3.  [ ] **Updated `IMarkdownReportFormatter` port contract** supporting the new `is_concise` toggle.
 
-5.  [ ] **Update `ExecutionOrchestrator`:** Modify `execute()` in `src/teddy_executor/core/services/execution_orchestrator.py` to:
-    -   Pass the plan's `rationale` and `actions` to the `ExecutionReport` constructor.
-    -   *Note: For now, the call to `report_formatter.format()` can continue to use the default `is_concise=True`.*
+### 2. Orchestration & Flow
 
-### 3. Template Refactoring (Modular Macros)
+4.  [ ] **Updated `ExecutionOrchestrator`** ensuring complete data flow (rationale, actions) from Plan to ExecutionReport.
 
-6.  [ ] **Refactor `execution_report.md.j2`:**
-    -   Extract the header logic into a `render_header` macro.
-    -   Create a `render_rationale` macro (conditional on `not is_concise`).
-    -   Create a `render_original_plan` macro (conditional on `not is_concise`).
-    -   Isolate the `Action Log` rendering into a dedicated, robustly delimited section.
-    -   Update `render_resource` logic to embed successful `READ` content only when `is_concise=True`.
+### 3. Modular Reporting System (Template)
 
-### 4. Verification
+5.  [ ] **Refactored `execution_report.md.j2` template** utilizing modular macros (`render_header`, `render_rationale`, `render_original_plan`, `render_resource`).
+6.  [ ] **Multi-modal reporting logic** within the template to branch between CLI (concise) and Session (comprehensive) outputs.
 
-7.  [ ] **Update Service:** Update `MarkdownReportFormatter.format()` in `src/teddy_executor/core/services/markdown_report_formatter.py` to implement the new signature and pass `is_concise` to the template.
-8.  [ ] **Unit Tests:**
-    -   Update `tests/unit/core/services/test_markdown_plan_parser.py` to verify rationale extraction.
-    -   Update `tests/unit/core/services/test_markdown_report_formatter.py` to verify both CLI and Session output formats.
-9.  [ ] **Manual Verification:** Perform the steps in the **User Showcase** to confirm the CLI output remains concise and functional.
+### 4. Verification & Quality Assurance
+
+7.  [ ] **Implementer logic for `MarkdownReportFormatter`** satisfying the updated port signature and template requirements.
+8.  [ ] **Updated unit test suites** for parser and formatter validating the correct extraction and rendering of all report modes.
+9.  [ ] **Verified report consistency** through manual CLI showcase verification.
