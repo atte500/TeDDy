@@ -40,18 +40,20 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 - [x] **Slice 1: Foundation (Security, Config, LLM Client)**
     - Configure comprehensive security gates (`detect-secrets`, `bandit`, `pip-audit`). Add `litellm` dependency, implement `ConfigService` and `LiteLLMAdapter`, and wire them in `main.py`.
     - **Configurable Web Scraper:** Extend `WebScraperAdapter` to respect settings for precision, comments, and tables via the `ConfigService`.
-- [ ] **Slice 2: Refactor Execution Report Template**
+- [ ] **Slice 2: Auto-Initialization**
+    - Automatically initialize `.teddy/config.yaml` and `.teddy/init.context` with default template content if they do not exist when the CLI is invoked.
+- [ ] **Slice 3: Refactor Execution Report Template**
     - Modify the `execution_report.md.j2` template to correctly generate "Session Report" and "CLI Report" formats based on an `is_concise` flag.
-- [ ] **Slice 3: Core Session & Context Engine**
+- [ ] **Slice 4: Core Session & Context Engine**
     - Implement the backbone of the interactive session workflow.
     - Implement `SessionManager` and the basic `new`, `plan`, and `execute` commands.
     - Implement `ContextService` to build the `input.md` payload implicitly for the planning phase.
     - Implement stateful action side-effects for `execute` (e.g., updating `T_next/turn.context` for `READ`/`PRUNE`).
-- [ ] **Slice 4: Plan Validation & Self-Correction**
+- [ ] **Slice 5: Plan Validation & Self-Correction**
     - Integrate existing `PlanValidator` for the automatic feedback loop to enhance the core `execute` command with pre-flight checks.
-- [ ] **Slice 5: Interactive TUI & `resume` Workflow**
+- [ ] **Slice 6: Interactive TUI & `resume` Workflow**
     - Implement the smart `resume` command and the `textual`-based TUI for interactive plan approval and editing.
-- [ ] **Slice 6: Agent Collaboration Model**
+- [ ] **Slice 7: Agent Collaboration Model**
     - Implement `meta.yaml` ledgers, turn transition algorithms, and `INVOKE`/`RETURN` capabilities.
-- [ ] **Slice 7: Automatic Session Log Generation**
+- [ ] **Slice 8: Automatic Session Log Generation**
     - Implement the `SessionLogGenerator` to compile session histories into a human-readable `session-log.md`, excluding turns that fail validation.
