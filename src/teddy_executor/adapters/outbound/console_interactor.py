@@ -19,6 +19,7 @@ class ConsoleInteractorAdapter(IUserInteractor):
         Presents a prompt to the user on the console and captures their input.
         Allows falling back to an external editor for multi-line text.
         """
+        typer.secho("--- PROMPT MESSAGE ---", fg=typer.colors.CYAN, err=True)
         typer.echo(prompt, err=True)
         typer.echo(
             "Press [Enter] to submit single-line response, or type 'e' + [Enter] to open in Editor:",
