@@ -51,6 +51,7 @@ class ExecutionReport:
     run_summary: RunSummary
     plan_title: str | None = None
     rationale: str | None = None
+    metadata: dict[str, str] = field(default_factory=dict)
     original_actions: Sequence[ActionData] = field(default_factory=list)
     action_logs: Sequence[ActionLog] = field(default_factory=list)
     validation_result: Sequence[str] | None = None

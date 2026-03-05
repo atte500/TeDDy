@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Sequence
 
@@ -31,6 +31,7 @@ class Plan:
     title: str
     rationale: str
     actions: Sequence[ActionData]
+    metadata: dict[str, str] = field(default_factory=dict)
 
     def __post_init__(self):
         if not self.actions:

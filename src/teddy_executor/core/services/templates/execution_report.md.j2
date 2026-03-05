@@ -58,7 +58,7 @@
 {% endif %}
 {% endmacro -%}
 
-{% macro render_header(report) %}
+{% macro render_header(report, show_metadata=False) %}
 # Execution Report: {{ report.plan_title | default('Untitled Plan') }}
 - **Overall Status:** {{ "Validation Failed" if report.run_summary.status.value == "VALIDATION_FAILED" else report.run_summary.status.value }}
 - **Execution Start Time:** {{ format_datetime(report.run_summary.start_time) }}
@@ -74,18 +74,73 @@
 {% endif %}
 {% endmacro %}
 
+{% macro render_metadata(report) %}
+{% if report.metadata -%}
+### Original Plan Metadata
+{% for key, value in report.metadata.items() -%}
+- **{{ key }}:** {{ value }}
+{% endfor %}
+{% endif %}
+{% endmacro %}
+
 {% macro render_original_plan(report) %}
 {% if report.original_actions -%}
 ## Original Action Plan
 {% for action in report.original_actions -%}
-- **{{ action.type }}**: {{ action.description | default(action.params.get('File Path') or action.params.get('Resource') or 'No description provided') }}
+### `{{ action.type }}`
+{% if action.description %}
+- **Description:** {{ action.description }}
+{% endif %}
+{% if action.type == 'CREATE' %}
+- **File Path:** {{ action.params.path }}
+{{ action.params.content | fence }}text
+{{ action.params.content }}
+{{ action.params.content | fence }}
+{% elif action.type == 'EDIT' %}
+- **File Path:** {{ action.params.path }}
+{% for edit in action.params.edits %}
+#### `FIND:`
+{{ edit.find | fence }}text
+{{ edit.find }}
+{{ edit.find | fence }}
+#### `REPLACE:`
+{{ edit.replace | fence }}text
+{{ edit.replace }}
+{{ edit.replace | fence }}
+{% endfor %}
+{% elif action.type == 'EXECUTE' %}
+- **Command:**
+{{ action.params.command | fence }}shell
+{{ action.params.command }}
+{{ action.params.command | fence }}
+{% elif action.type == 'READ' or action.type == 'PRUNE' %}
+- **Resource:** {{ action.params.resource or action.params.path }}
+{% elif action.type == 'PROMPT' %}
+{{ action.params.prompt | fence }}markdown
+{{ action.params.prompt }}
+{{ action.params.prompt | fence }}
+{% elif action.type == 'RESEARCH' %}
+{% for query in action.params.queries %}- **Query:** `{{ query }}`
+{% endfor %}
+{% elif action.type == 'INVOKE' %}
+- **Agent:** {{ action.params.agent }}
+{% if action.params.message %}- **Message:** {{ action.params.message }}{% endif %}
+{% if action.params.handoff_resources %}- **Handoff Resources:** {{ action.params.handoff_resources | join(', ') }}{% endif %}
+{% elif action.type == 'RETURN' %}
+{% if action.params.description %}- **Message:** {{ action.params.description }}{% endif %}
+{% if action.params.handoff_resources %}- **Handoff Resources:** {{ action.params.handoff_resources | join(', ') }}{% endif %}
+{% else %}
+- **Params:** {{ action.params }}
+{% endif %}
+
 {% endfor -%}
 {% endif %}
 {% endmacro -%}
 
-{{ render_header(report) }}
+{{ render_header(report, show_metadata=(not is_concise)) }}
 
 {% if not is_concise -%}
+{{ render_metadata(report) }}
 {{ render_rationale(report) }}
 {{ render_original_plan(report) }}
 {% endif -%}

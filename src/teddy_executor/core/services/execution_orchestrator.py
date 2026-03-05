@@ -235,6 +235,7 @@ class ExecutionOrchestrator(RunPlanUseCase):
             run_summary=summary,
             plan_title=plan.title,
             rationale=plan.rationale,
+            metadata=plan.metadata,
             original_actions=plan.actions,
             action_logs=action_logs,
         )

@@ -71,9 +71,11 @@ class MarkdownPlanParser(IPlanParser):
         stream = _PeekableStream(iter(doc.children or []))
 
         try:
-            title, rationale = self._parse_strict_top_level(stream, doc)
+            title, rationale, metadata = self._parse_strict_top_level(stream, doc)
             actions = self._parse_actions(stream, doc)
-            return Plan(title=title, rationale=rationale, actions=actions)
+            return Plan(
+                title=title, rationale=rationale, actions=actions, metadata=metadata
+            )
         except InvalidPlanError as e:
             if "--- Expected Document Structure ---" in str(e):
                 raise e
@@ -170,7 +172,7 @@ class MarkdownPlanParser(IPlanParser):
 
     def _parse_strict_top_level(
         self, stream: _PeekableStream, doc: Document
-    ) -> tuple[str, str]:
+    ) -> tuple[str, str, dict[str, str]]:
         # 0: Find H1 Title, ignoring preamble
         node = stream.peek()
         actual_idx = 0
@@ -189,13 +191,19 @@ class MarkdownPlanParser(IPlanParser):
         actual_idx += 1
 
         # 1: List Metadata
-        self._consume_mandatory_node(
+        metadata_list_node = self._consume_mandatory_node(
             stream,
             doc,
             actual_idx,
             "a List (Metadata) immediately following the title",
             lambda n: isinstance(n, MdList),
         )
+        metadata = {}
+        for item in metadata_list_node.children:
+            text = get_child_text(item).strip()
+            if ":" in text:
+                key, value = text.split(":", 1)
+                metadata[key.strip("* ")] = value.strip()
         actual_idx += 1
 
         # 2: H2 Rationale
@@ -237,7 +245,7 @@ class MarkdownPlanParser(IPlanParser):
         )
         actual_idx += 1
 
-        return title, rationale
+        return title, rationale, metadata
 
     def _parse_actions(
         self, stream: _PeekableStream, doc: Document
