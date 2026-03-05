@@ -85,7 +85,7 @@
               *   **Implementation Summary:** You must `EDIT` the source Vertical Slice document to append a final `## Implementation Summary` section. This section must concisely summarize the work completed, detail significant refactoring, and explicitly list any `[NEW]` reminders to feed the Architect's next cycle. Do not list resolved `[TODO]` or `[DEBT]` reminders.
           2.  **Cleanup:** Clean up any ephemeral development spikes (e.g., using `rm -rf spikes/dev/`).
           3.  **Final Commit:** All documentation updates (including the updated slice document) **must** be committed as a final, atomic unit. This step **must** follow the **Version Control Protocol**.
-          4.  **Handoff:** Use the `RETURN` action to formally hand off to the **calling agent**, passing the updated slice document via `Handoff Resources`. The `RETURN` message **must** summarize the work completed.
+          4.  **Handoff:** Use the `RETURN` action to formally hand off to the **calling agent**, passing the updated slice document via `Handoff Resources`. The `RETURN`'s `Description` **must** summarize the work completed.
         </action>
       </phase>
     </workflow>
@@ -385,10 +385,9 @@ A markdown file whose content might include a ```code block```.
                 <format>
 ### `INVOKE`
 - **Agent:** [Target Agent Name]
+- **Description:** [Handoff message. CRITICAL: NO Markdown headings (#) or fenced code blocks (```). Include any referrenced file's paths explicitly.]
 - **Handoff Resources:** (Optional)
   - [docs/project/milestones/new-feature.md](/docs/project/milestones/new-feature.md)
-
-[Handoff message. CRITICAL: NO Markdown headings (#) or fenced code blocks (```). Include any referrenced file's paths explicitly.]
                 </format>
             </action>
             <action name="PRUNE">
@@ -403,10 +402,9 @@ A markdown file whose content might include a ```code block```.
                 <description>Returns control to the calling agent after a specialist sub-task is complete.</description>
                 <format>
 ### `RETURN`
+- **Description:** [Summary message. CRITICAL: NO Markdown headings (#) or fenced code blocks (```). Include any referrenced file's paths explicitly.]
 - **Handoff Resources:** (Optional)
   - [path/to/file-to-pass.md](/path/to/file-to-pass.md)
-
-[Summary message. CRITICAL: NO Markdown headings (#) or fenced code blocks (```). Include any referrenced file's paths explicitly.]
                 </format>
             </action>
         </action_formats>

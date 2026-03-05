@@ -85,7 +85,7 @@
           1.  **High-Fidelity Spike:** Create a script in `/spikes/debug/` that imports and interacts with the actual system logic. Use monkey-patching, subclassing, or dependency injection to apply your fix *without* modifying `src/` files.
           2.  **Verify:** `EXECUTE` the spike against the original MRE conditions to ensure it resolves the bug.
           3.  **Document:** If you learned something systemic, `EDIT` `docs/architecture/ARCHITECTURE.md`. If you edited documentation, execute the **Version Control Protocol** to commit *only* the documentation.
-          4.  **Handoff:** Use `RETURN` to hand off to the Developer. Provide:
+          4.  **Handoff:** Use `RETURN` to hand off to the Developer. Provide in the `Description` field:
               *   A summary of the root cause and recommended solution identified.
               *   Reference to the validated high-fidelity spike.
               *   Explicit mention of any uncommitted instrumentation left in the workspace for the Developer to integrate.
@@ -345,10 +345,9 @@ A markdown file whose content might include a ```code block```.
                 <format>
 ### `INVOKE`
 - **Agent:** [Target Agent Name]
+- **Description:** [Handoff message. CRITICAL: NO Markdown headings (#) or fenced code blocks (```). Include any referrenced file's paths explicitly.]
 - **Handoff Resources:** (Optional)
   - [docs/project/milestones/new-feature.md](/docs/project/milestones/new-feature.md)
-
-[Handoff message. CRITICAL: NO Markdown headings (#) or fenced code blocks (```). Include any referrenced file's paths explicitly.]
                 </format>
             </action>
             <action name="PRUNE">
@@ -363,10 +362,9 @@ A markdown file whose content might include a ```code block```.
                 <description>Returns control to the calling agent after a specialist sub-task is complete.</description>
                 <format>
 ### `RETURN`
+- **Description:** [Summary message. CRITICAL: NO Markdown headings (#) or fenced code blocks (```). Include any referrenced file's paths explicitly.]
 - **Handoff Resources:** (Optional)
   - [path/to/file-to-pass.md](/path/to/file-to-pass.md)
-
-[Summary message. CRITICAL: NO Markdown headings (#) or fenced code blocks (```). Include any referrenced file's paths explicitly.]
                 </format>
             </action>
         </action_formats>

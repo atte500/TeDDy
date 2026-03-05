@@ -209,15 +209,14 @@ All actions are located under the `## Action Plan` heading. Each action is defin
     ```markdown
     ### `INVOKE`
     - **Agent:** Architect
+    - **Description:** Handoff to the Architect. The milestone is complete.
     - **Handoff Resources:** (Optional)
       - [docs/project/milestones/new-feature.md](/docs/project/milestones/new-feature.md)
-
-    Handoff to the Architect. The milestone is complete.
     ```
 -   **Parsing Rules:**
-    1. Extract the target `Agent` from the metadata list.
-    2. Extract the optional list of `Handoff Resources`.
-    3. The content for the invocation message is all the free-form markdown content that follows the metadata list.
+    1.  Extract the target `Agent` and the `Description` from the metadata list.
+    2.  Extract the optional list of `Handoff Resources`.
+    3.  The `Description` serves as the handoff message. Free-form text following the metadata list is forbidden.
 
 ### 5.8. `RETURN`
 
@@ -225,15 +224,15 @@ All actions are located under the `## Action Plan` heading. Each action is defin
 -   **Format:**
     ```markdown
     ### `RETURN`
+    - **Description:** My analysis is complete. The root cause and a verified fix are attached.
     - **Handoff Resources:** (Optional)
       - [docs/architecture/rca/the-bug.md](/docs/architecture/rca/the-bug.md)
       - [spikes/fix-script.sh](/spikes/fix-script.sh)
-
-    My analysis is complete. The root cause and a verified fix are attached.
     ```
 -   **Parsing Rules:**
-    1. Extract the optional list of `Handoff Resources`.
-    2. The content for the message is all the free-form markdown content that follows the metadata list.
+    1.  Extract the `Description` from the metadata list.
+    2.  Extract the optional list of `Handoff Resources`.
+    3.  The `Description` serves as the message. Free-form text following the metadata list is forbidden.
 
 ### 5.9. `PRUNE`
 
@@ -336,6 +335,5 @@ Does this initial direction meet with your approval?
 
 ### `INVOKE`
 - **Agent:** Architect
-
-Handoff to Architect to begin implementation of the approved milestone.
+- **Description:** Handoff to Architect to begin implementation of the approved milestone.
 `````
