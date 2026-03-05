@@ -17,6 +17,10 @@ This service will be implemented using the **Jinja2 Template Engine**, as valida
 This approach provides a clean separation of concerns between data preparation (Python) and presentation (the template file).
 
 ## 5. Responsibilities
+-   **Multi-Modal Reporting:** Supports two primary output modes:
+    -   **Concise (CLI):** Focuses on immediate outcomes and resource contents. Omits rationale and original action plan to save space and reduce noise in manual workflows.
+    -   **Comprehensive (Session):** Provides a full audit trail including rationale and the original action plan. Omits verbatim content of successful `READ` actions (as these are managed by the session's context system).
+-   **Modular Rendering:** Uses Jinja2 macros to encapsulate rendering logic for headers, rationales, and action logs, ensuring consistency across modes.
 -   **Execution Reporting:** Formats the results of successful or failed actions.
 -   **Validation Reporting:** Renders `validation_result` errors and `failed_resources` (content of files that failed validation) to aid in debugging.
 -   **Smart Fencing:** Uses a custom Jinja2 filter (`| fence`) to ensure that code blocks nested within the report (e.g., file content containing backticks) are wrapped in fences with a sufficient number of backticks to remain valid Markdown.

@@ -190,11 +190,13 @@ Represents the outcome of a single action's execution.
 A comprehensive report detailing the execution of an entire `Plan`.
 
 *   **Attributes:**
-    *   `run_summary` (dict): Top-level summary info (e.g., `status`, `start_time`, `duration`).
-    *   `environment` (dict): Environment info (`os`, `cwd`).
-    *   `action_logs` (list[ActionResult]): A list of results for each action executed.
-*   **Invariants:**
-    *   `action_logs` must be a list.
+    *   `run_summary` (RunSummary): Top-level summary info (e.g., `status`, `start_time`, `duration`).
+    *   `plan_title` (str | None): The title of the plan.
+    *   `rationale` (str | None): The rationale from the plan.
+    *   `original_actions` (list[ActionData]): A copy of the actions as proposed in the plan.
+    *   `action_logs` (list[ActionLog]): A list of results for each action executed.
+    *   `validation_result` (list[str] | None): A list of error messages if validation failed.
+    *   `failed_resources` (dict[str, str] | None): Content of relevant files if execution or validation failed.
 
 ---
 
