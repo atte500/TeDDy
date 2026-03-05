@@ -1,17 +1,13 @@
 from typing import Any, List, Optional
 from mistletoe.block_token import (
-    Document,
     List as MdList,
     ListItem as MdListItem,
 )
-from mistletoe.markdown_renderer import MarkdownRenderer
 from mistletoe.span_token import Link
 
 from teddy_executor.core.services.parser_infrastructure import (
     EXPECTED_KV_PARTS,
-    _PeekableStream,
     get_child_text,
-    consume_content_until_next_action,
     normalize_path,
     normalize_link_target,
     find_node_in_tree,
@@ -112,84 +108,3 @@ def parse_handoff_resources_from_list(metadata_list: MdList) -> List[str] | None
                         target = normalize_link_target(link.target)
                         resources.append(normalize_path(target))
     return resources if resources else None
-
-
-def parse_handoff_body(
-    stream: _PeekableStream, valid_actions: set[str]
-) -> dict[str, Any]:
-    """
-    Parses all parameters for a handoff action (INVOKE/RETURN) by rendering
-    its content to a string and then surgically extracting metadata.
-    """
-    params: dict[str, Any] = {}
-    content_nodes = consume_content_until_next_action(stream, valid_actions)
-    if not content_nodes:
-        return params
-
-    # Parse metadata from the first list node, if it exists
-    if isinstance(content_nodes[0], MdList):
-        metadata_list = content_nodes[0]
-        _, text_params = parse_action_metadata(
-            metadata_list, text_key_map={"Agent": "agent"}
-        )
-        params.update(text_params)
-        resources = parse_handoff_resources_from_list(metadata_list)
-        if resources:
-            params["handoff_resources"] = resources
-
-    # Render all nodes to a string to reliably extract the message
-    with MarkdownRenderer() as renderer:
-        temp_doc = Document("")
-        temp_doc.children = content_nodes
-        full_content_str = renderer.render(temp_doc).strip()
-
-    message_lines = full_content_str.splitlines()
-    final_message_lines = []
-    in_resource_list = False
-
-    for line in message_lines:
-        stripped_line = line.strip()
-        # Skip known metadata lines
-        if stripped_line.startswith("- **Agent:**"):
-            continue
-        if stripped_line.startswith("- **Handoff Resources:**"):
-            in_resource_list = True
-            continue
-        # Skip list items that are part of the resource list
-        if in_resource_list and stripped_line.startswith("- ["):
-            continue
-        # Any other line signals the end of the resource list
-        in_resource_list = False
-        final_message_lines.append(line)
-
-    # Join the lines, then clean up artifacts from Markdown rendering
-    raw_message = "\n".join(final_message_lines).strip()
-    message = _clean_handoff_message(raw_message)
-
-    if message:
-        params["message"] = message
-
-    return params
-
-
-def _clean_handoff_message(raw_message: str) -> str:
-    """
-    Cleans artifacts from a mistletoe-rendered string, yielding a normalized
-    message with proper paragraph breaks.
-    """
-
-    def _generate_clean_lines(text: str):
-        """
-        Yields only meaningful content lines from a raw rendered string.
-        """
-        for line in text.split("\n"):
-            stripped = line.strip()
-            if not stripped or stripped == "-":
-                continue  # Skip all empty or meaningless lines
-            if stripped.startswith("- "):
-                yield stripped[2:]
-            else:
-                yield stripped
-
-    meaningful_lines = list(_generate_clean_lines(raw_message))
-    return "\n\n".join(meaningful_lines)

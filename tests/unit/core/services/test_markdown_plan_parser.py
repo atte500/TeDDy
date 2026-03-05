@@ -480,10 +480,9 @@ Rationale.
 
 ### `INVOKE`
 - **Agent:** Architect
+- **Description:** Handoff to the Architect. The brief is complete.
 - **Handoff Resources:**
   - [docs/briefs/new-feature.md](/docs/briefs/new-feature.md)
-Handoff to the Architect.
-The brief is complete.
 """
     # Act
     result_plan = parser.parse(plan_content)
@@ -493,9 +492,7 @@ The brief is complete.
     assert len(result_plan.actions) == 1
     action = result_plan.actions[0]
 
-    # Mistletoe will parse the two message lines as separate list items,
-    # and the renderer will join them with a double newline.
-    expected_message = "Handoff to the Architect.\n\nThe brief is complete."
+    expected_message = "Handoff to the Architect. The brief is complete."
 
     assert action.type == "INVOKE"
     assert action.params["agent"] == "Architect"
@@ -524,12 +521,9 @@ Rationale.
 
 ### `INVOKE`
 - **Agent:** Architect
+- **Description:** Handoff to the Architect.
 - **Handoff Resources:**
   - [docs/briefs/new-feature.md](/docs/briefs/new-feature.md)
-
-Handoff to the Architect.
-
-The brief is complete.
 """
     # Act
     result_plan = parser.parse(plan_content)
@@ -539,10 +533,10 @@ The brief is complete.
     assert len(result_plan.actions) == 1
     action = result_plan.actions[0]
 
-    expected_message = "Handoff to the Architect.\n\nThe brief is complete."
+    expected_message = "Handoff to the Architect."
 
     assert action.type == "INVOKE"
-    assert action.description is None
+    assert action.description == expected_message
     assert action.params["agent"] == "Architect"
     assert action.params["message"] == expected_message
     assert "handoff_resources" in action.params
@@ -692,11 +686,10 @@ Rationale.
 ## Action Plan
 
 ### `RETURN`
+- **Description:** My analysis is complete.
 - **Handoff Resources:**
   - [docs/rca/the-bug.md](/docs/rca/the-bug.md)
   - [spikes/fix-script.sh](/spikes/fix-script.sh)
-
-My analysis is complete. The root cause and a verified fix are attached.
 """
     # Act
     result_plan = parser.parse(plan_content)
@@ -706,12 +699,10 @@ My analysis is complete. The root cause and a verified fix are attached.
     assert len(result_plan.actions) == 1
     action = result_plan.actions[0]
 
-    expected_message = (
-        "My analysis is complete. The root cause and a verified fix are attached."
-    )
+    expected_message = "My analysis is complete."
 
     assert action.type == "RETURN"
-    assert action.description is None
+    assert action.description == expected_message
     assert action.params["message"] == expected_message
     assert "handoff_resources" in action.params
     assert action.params["handoff_resources"] == [
@@ -750,10 +741,9 @@ World
 ````
 ### `INVOKE`
 - **Agent:** Architect
+- **Description:** Handoff message.
 - **Handoff Resources:**
   - [mixed\\path/file.md](/mixed\\path/file.md)
-
-Handoff message.
 """
     # Act
     plan = parser.parse(plan_content)
@@ -768,6 +758,7 @@ Handoff message.
 
     invoke_action = plan.actions[1]
     assert invoke_action.type == "INVOKE"
+    assert invoke_action.params["message"] == "Handoff message."
     assert invoke_action.params["handoff_resources"] == ["mixed/path/file.md"]
 
 

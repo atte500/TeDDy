@@ -104,6 +104,8 @@
   {% set target = '"' ~ (params.get('description') or params.get('Description') or 'Execute Command') ~ '"' %}
 {% elif action_type == 'RESEARCH' %}
   {% set target = params.get('description') or params.get('Description') or 'Research' %}
+{% elif action_type in ['INVOKE', 'RETURN'] %}
+  {% set target = params.get('description') or params.get('Description') or ('Handoff' if action_type == 'INVOKE' else 'Task Complete') %}
 {% elif action_type == 'PROMPT' %}
   {% set target = '' %}
 {% else %}
@@ -160,7 +162,7 @@
     {% endif %}
     {# For RETURN/INVOKE, hide message and resources (handled separately) #}
     {% if action_type in ['RETURN', 'INVOKE'] %}
-        {% set ignored_keys = ignored_keys + ['message', 'handoff_resources', 'handoff resources'] %}
+        {% set ignored_keys = ignored_keys + ['description', 'message', 'handoff_resources', 'handoff resources'] %}
     {% endif %}
     {# For PROMPT, hide the AI prompt #}
     {% if action_type == 'PROMPT' %}
@@ -208,14 +210,6 @@
 {{ resources | join('\n') | fence }}text
 {{ resources | join('\n') }}
 {{ resources | join('\n') | fence }}
-  {% endif %}
-  {% set msg = params.get('message') or params.get('Message') %}
-  {% if msg %}
-    {# Scenario 3: Hide message content for handoffs in report #}
-    {% if action_type not in ['INVOKE', 'RETURN'] %}
-
-{{ msg }}
-    {% endif %}
   {% endif %}
   {{ render_action_details(log) }}
 {% elif action_type != 'RESEARCH' %}

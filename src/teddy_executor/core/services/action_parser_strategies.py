@@ -20,7 +20,7 @@ from teddy_executor.core.services.parser_infrastructure import (
 from teddy_executor.core.services.parser_metadata import (
     parse_action_metadata,
     parse_env_from_metadata,
-    parse_handoff_body,
+    parse_handoff_resources_from_list,
 )
 
 
@@ -124,19 +124,45 @@ def parse_edit_action(stream: _PeekableStream, valid_actions: set[str]) -> Actio
 
 
 def parse_return_action(stream: _PeekableStream, valid_actions: set[str]) -> ActionData:
-    params = parse_handoff_body(stream, valid_actions)
-    if "message" not in params or not params["message"]:
-        raise InvalidPlanError("RETURN action is missing message content.")
-    return ActionData(type="RETURN", description=None, params=params)
+    metadata_list = stream.next()
+    if not isinstance(metadata_list, MdList):
+        raise InvalidPlanError("RETURN action is missing metadata list.")
+
+    description, params = parse_action_metadata(metadata_list)
+    resources = parse_handoff_resources_from_list(metadata_list)
+    if resources:
+        params["handoff_resources"] = resources
+
+    if not description:
+        raise InvalidPlanError(
+            "RETURN action is missing 'Description' (message content)."
+        )
+
+    params["message"] = description
+    return ActionData(type="RETURN", description=description, params=params)
 
 
 def parse_invoke_action(stream: _PeekableStream, valid_actions: set[str]) -> ActionData:
-    params = parse_handoff_body(stream, valid_actions)
+    metadata_list = stream.next()
+    if not isinstance(metadata_list, MdList):
+        raise InvalidPlanError("INVOKE action is missing metadata list.")
+
+    description, params = parse_action_metadata(
+        metadata_list, text_key_map={"Agent": "agent"}
+    )
+    resources = parse_handoff_resources_from_list(metadata_list)
+    if resources:
+        params["handoff_resources"] = resources
+
     if "agent" not in params:
         raise InvalidPlanError("INVOKE action is missing 'Agent' parameter.")
-    if "message" not in params or not params["message"]:
-        raise InvalidPlanError("INVOKE action is missing message content.")
-    return ActionData(type="INVOKE", description=None, params=params)
+    if not description:
+        raise InvalidPlanError(
+            "INVOKE action is missing 'Description' (message content)."
+        )
+
+    params["message"] = description
+    return ActionData(type="INVOKE", description=description, params=params)
 
 
 def parse_execute_action(stream: _PeekableStream) -> ActionData:
