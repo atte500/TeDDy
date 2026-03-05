@@ -1,4 +1,4 @@
-# Slice 11: Refactor Execution Report Template
+# Slice 2: Refactor Execution Report Template
 
 ## 1. Business Goal
 

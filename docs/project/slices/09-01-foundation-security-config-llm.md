@@ -1,4 +1,4 @@
-# Slice 10: Foundation (Security, Config, LLM Client)
+# Slice 1: Foundation (Security, Config, LLM Client)
 
 ## 1. Business Goal
 
@@ -14,7 +14,7 @@ This is a foundational slice with no direct user-facing interaction sequence. Th
 
 ### Scenario: Secret scanning prevents leaks
 
--   **Given** a file is created with content containing a mock AWS key like `AKIAIOSFODNN7EXAMPLE`.
+-   **Given** a file is created with content containing a mock AWS key.
 -   **When** a developer attempts to commit this file.
 -   **Then** the `detect-secrets` pre-commit hook MUST fail the commit.
 -   **And** an error message indicating a secret was found MUST be displayed.
@@ -45,7 +45,7 @@ This section provides manual steps to verify the foundational changes.
 
 ### Verify Secret Scanning (detect-secrets)
 
-1.  Create a temporary file: `echo "my_secret = 'AKIAIOSFODNN7EXAMPLE'" > temp_secret_file.py`
+1.  Create a temporary file.
 2.  Add it to git: `git add temp_secret_file.py`
 3.  Attempt to commit: `git commit -m 'test: add secret'`
 4.  **Expected Result:** The commit should fail with an error from `detect-secrets`.

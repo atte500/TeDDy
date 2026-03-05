@@ -1,6 +1,6 @@
-# TeDDy: A file-based AI coding workflow that puts you in control
+# TeDDy CLI: A file-based AI coding workflow that puts you in control
 
-The **TeDDy CLI** applies the **[UNIX philosophy](https://en.wikipedia.org/wiki/Unix_philosophy)** to AI development and uses a **[Git-like workflow](https://git-scm.com/)** to embed the entire collaboration process directly into your file system. Inspired by **[Obsidian](https://obsidian.md/)**, your entire AI collaboration lives exclusively in plain Markdown files in your local directory.
+TeDDy's goal is to apply the **[UNIX philosophy](https://en.wikipedia.org/wiki/Unix_philosophy)** to AI development and create a **[Git-like workflow](https://git-scm.com/)** to embed the entire collaboration process directly into the file system. Inspired by **[Obsidian](https://obsidian.md/)**, the entire AI collaboration lives exclusively in plain Markdown files in your local directory.
 
 [![My Plan to Fix AI Coding](https://img.youtube.com/vi/By6wGuT-4sA/0.jpg)](https://www.youtube.com/watch?v=By6wGuT-4sA)
 
