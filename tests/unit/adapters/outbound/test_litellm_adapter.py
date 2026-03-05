@@ -8,11 +8,15 @@ def test_get_completion_calls_litellm_correctly():
     # Arrange
     # Mock the response structure of litellm
     mock_response = MagicMock()
-    mock_response.choices = [MagicMock()]
-    mock_response.choices[0].message.content = "AI response text"
+    mock_choice = MagicMock()
+    mock_choice.message.content = "AI response text"
+    mock_response.choices = [mock_choice]
+
+    mock_config = MagicMock()
+    mock_config.get_setting.return_value = {}
 
     with patch("litellm.completion", return_value=mock_response) as mock_completion:
-        adapter = LiteLLMAdapter()
+        adapter = LiteLLMAdapter(mock_config)
         messages = [{"role": "user", "content": "Hello"}]
         model = "gpt-4"
 
@@ -28,8 +32,11 @@ def test_get_completion_calls_litellm_correctly():
 
 def test_get_completion_wraps_errors_in_llm_api_error():
     # Arrange
+    mock_config = MagicMock()
+    mock_config.get_setting.return_value = {}
+
     with patch("litellm.completion", side_effect=RuntimeError("API Failure")):
-        adapter = LiteLLMAdapter()
+        adapter = LiteLLMAdapter(mock_config)
 
         # Act & Assert
         with pytest.raises(LlmApiError) as excinfo:
@@ -43,8 +50,11 @@ def test_get_completion_returns_empty_string_for_empty_choices():
     mock_response = MagicMock()
     mock_response.choices = []
 
+    mock_config = MagicMock()
+    mock_config.get_setting.return_value = {}
+
     with patch("litellm.completion", return_value=mock_response):
-        adapter = LiteLLMAdapter()
+        adapter = LiteLLMAdapter(mock_config)
 
         # Act
         result = adapter.get_completion(model="gpt-4", messages=[])

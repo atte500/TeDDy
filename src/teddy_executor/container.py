@@ -72,7 +72,10 @@ def create_container() -> punq.Container:
     container.register(IUserInteractor, ConsoleInteractorAdapter)
     container.register(IWebSearcher, WebSearcherAdapter)
     container.register(IConfigService, YamlConfigAdapter)
-    container.register(ILlmClient, LiteLLMAdapter)
+    container.register(
+        ILlmClient,
+        factory=lambda: LiteLLMAdapter(container.resolve(IConfigService)),
+    )
     container.register(IRepoTreeGenerator, LocalRepoTreeGenerator)
     container.register(IPlanParser, MarkdownPlanParser)
     container.register(IActionFactory, ActionFactory)
