@@ -9,6 +9,9 @@ This module defines the outbound port for markdown report formatting.
 from abc import ABC, abstractmethod
 
 
+from teddy_executor.core.domain.models.execution_report import ExecutionReport
+
+
 class IMarkdownReportFormatter(ABC):
     """
     Defines the contract for any service that can format an ExecutionReport
@@ -16,7 +19,7 @@ class IMarkdownReportFormatter(ABC):
     """
 
     @abstractmethod
-    def format(self, report) -> str:
+    def format(self, report: ExecutionReport, is_concise: bool = True) -> str:
         """
         Formats the report into a Markdown string.
         """

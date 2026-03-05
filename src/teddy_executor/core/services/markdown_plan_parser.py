@@ -71,9 +71,9 @@ class MarkdownPlanParser(IPlanParser):
         stream = _PeekableStream(iter(doc.children or []))
 
         try:
-            title = self._parse_strict_top_level(stream, doc)
+            title, rationale = self._parse_strict_top_level(stream, doc)
             actions = self._parse_actions(stream, doc)
-            return Plan(title=title, actions=actions)
+            return Plan(title=title, rationale=rationale, actions=actions)
         except InvalidPlanError as e:
             if "--- Expected Document Structure ---" in str(e):
                 raise e
@@ -168,7 +168,9 @@ class MarkdownPlanParser(IPlanParser):
             self._raise_structural_error(doc, expected, idx, node)
         return stream.next()
 
-    def _parse_strict_top_level(self, stream: _PeekableStream, doc: Document) -> str:
+    def _parse_strict_top_level(
+        self, stream: _PeekableStream, doc: Document
+    ) -> tuple[str, str]:
         # 0: Find H1 Title, ignoring preamble
         node = stream.peek()
         actual_idx = 0
@@ -211,13 +213,14 @@ class MarkdownPlanParser(IPlanParser):
         actual_idx += 1
 
         # 3: BlockCode Rationale
-        self._consume_mandatory_node(
+        rationale_node = self._consume_mandatory_node(
             stream,
             doc,
             actual_idx,
             "a CodeFence or BlockCode containing the rationale content",
             lambda n: isinstance(n, (CodeFence, BlockCode)),
         )
+        rationale = get_child_text(rationale_node).strip()
         actual_idx += 1
 
         # 4: H2 Action Plan
@@ -234,7 +237,7 @@ class MarkdownPlanParser(IPlanParser):
         )
         actual_idx += 1
 
-        return title
+        return title, rationale
 
     def _parse_actions(
         self, stream: _PeekableStream, doc: Document

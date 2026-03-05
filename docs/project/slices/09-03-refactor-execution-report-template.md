@@ -79,21 +79,41 @@ This checklist outlines the components required to support multi-modal reporting
 
 ### 1. Enhanced Domain & Ports
 
-1.  [ ] **Enhanced `Plan` and `ExecutionReport` domain models** capable of persisting rationale and original action data.
-2.  [ ] **Updated `MarkdownPlanParser`** supporting the extraction of plan rationale.
-3.  [ ] **Updated `IMarkdownReportFormatter` port contract** supporting the new `is_concise` toggle.
+1.  [x] **Enhanced `Plan` and `ExecutionReport` domain models** capable of persisting rationale and original action data.
+2.  [x] **Updated `MarkdownPlanParser`** supporting the extraction of plan rationale.
+3.  [x] **Updated `IMarkdownReportFormatter` port contract** supporting the new `is_concise` toggle.
 
 ### 2. Orchestration & Flow
 
-4.  [ ] **Updated `ExecutionOrchestrator`** ensuring complete data flow (rationale, actions) from Plan to ExecutionReport.
+4.  [x] **Updated `ExecutionOrchestrator`** ensuring complete data flow (rationale, actions) from Plan to ExecutionReport.
 
 ### 3. Modular Reporting System (Template)
 
-5.  [ ] **Refactored `execution_report.md.j2` template** utilizing modular macros (`render_header`, `render_rationale`, `render_original_plan`, `render_resource`).
-6.  [ ] **Multi-modal reporting logic** within the template to branch between CLI (concise) and Session (comprehensive) outputs.
+5.  [x] **Refactored `execution_report.md.j2` template** utilizing modular macros (`render_header`, `render_rationale`, `render_original_plan`, `render_resource`).
+6.  [x] **Multi-modal reporting logic** within the template to branch between CLI (concise) and Session (comprehensive) outputs.
 
 ### 4. Verification & Quality Assurance
 
-7.  [ ] **Implementer logic for `MarkdownReportFormatter`** satisfying the updated port signature and template requirements.
-8.  [ ] **Updated unit test suites** for parser and formatter validating the correct extraction and rendering of all report modes.
-9.  [ ] **Verified report consistency** through manual CLI showcase verification.
+7.  [x] **Implementer logic for `MarkdownReportFormatter`** satisfying the updated port signature and template requirements.
+8.  [x] **Updated unit test suites** for parser and formatter validating the correct extraction and rendering of all report modes.
+9.  [x] **Verified report consistency** through manual CLI showcase verification.
+
+## Implementation Summary
+
+This slice successfully implemented a multi-modal reporting system for TeDDy, distinguishing between concise CLI reports and comprehensive session reports.
+
+### Key Changes
+
+1.  **Domain & Persistence:** Updated `Plan` and `ExecutionReport` models to preserve the plan's `rationale` and `original_actions`.
+2.  **Rationale Extraction:** Enhanced `MarkdownPlanParser` to extract content between the H1 title and the `## Rationale` or `## Action Plan` headers as the plan's rationale.
+3.  **Modular Templating:** Refactored `execution_report.md.j2` to use modular Jinja2 macros. This enables clean branching logic between "Concise" (CLI) and "Comprehensive" (Session) modes.
+4.  **Data Flow Preservation:** Updated `ExecutionOrchestrator` and `__main__.py` to ensure rationale and action data are correctly passed from the parsed plan to the final formatted report.
+5.  **Robust Regression Fix:** Updated the entire test suite (unit and integration) to satisfy the new `Plan` constructor signature and adjusted fragile line-count assertions in report tests to accommodate the new sections.
+
+### Significant Refactoring
+
+-   **Macro-based Reporting:** The move to Jinja2 macros provides a strong foundation for future report enhancements (e.g., HTML or TUI reports) by centralizing rendering logic for core components.
+-   **Cleaner Orchestrator Wiring:** Refactored `_execute_valid_plan` in the CLI adapter to rely on the orchestrator's report generation rather than manually recreating reports, reducing duplication.
+
+### [NEW] Reminders
+- [NEW]: The rationale extraction in `MarkdownPlanParser` is currently based on header titles. Consider a more robust AST-based approach if the plan format becomes more flexible.

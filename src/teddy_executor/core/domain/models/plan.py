@@ -29,6 +29,7 @@ class Plan:
     """Represents a parsed and validated execution plan."""
 
     title: str
+    rationale: str
     actions: Sequence[ActionData]
 
     def __post_init__(self):

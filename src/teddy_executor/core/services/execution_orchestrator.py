@@ -231,4 +231,10 @@ class ExecutionOrchestrator(RunPlanUseCase):
             end_time=end_time,
         )
 
-        return ExecutionReport(run_summary=summary, action_logs=action_logs)
+        return ExecutionReport(
+            run_summary=summary,
+            plan_title=plan.title,
+            rationale=plan.rationale,
+            original_actions=plan.actions,
+            action_logs=action_logs,
+        )

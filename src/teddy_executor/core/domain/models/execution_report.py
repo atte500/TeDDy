@@ -3,6 +3,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Sequence
 
+from teddy_executor.core.domain.models.plan import ActionData
+
 
 class RunStatus(str, Enum):
     """Overall status for an entire plan execution."""
@@ -48,6 +50,8 @@ class ExecutionReport:
 
     run_summary: RunSummary
     plan_title: str | None = None
+    rationale: str | None = None
+    original_actions: Sequence[ActionData] = field(default_factory=list)
     action_logs: Sequence[ActionLog] = field(default_factory=list)
     validation_result: Sequence[str] | None = None
     failed_resources: dict[str, str] | None = None

@@ -21,6 +21,7 @@ def test_create_action_is_dispatched_to_filesystem(orchestrator, mock_fs):
     # Arrange
     plan = Plan(
         title="Test Plan",
+        rationale="Test Rationale",
         actions=[
             ActionData(
                 type="CREATE",
@@ -48,6 +49,7 @@ def test_edit_action_is_dispatched_to_filesystem(orchestrator, mock_fs):
     # Arrange
     plan = Plan(
         title="Test Edit",
+        rationale="Test Rationale",
         actions=[
             ActionData(
                 type="EDIT",
@@ -73,6 +75,7 @@ def test_execute_action_is_dispatched_to_shell(container, orchestrator, mock_she
     # Arrange
     plan = Plan(
         title="Test Execute",
+        rationale="Test Rationale",
         actions=[
             ActionData(
                 type="EXECUTE",
@@ -102,6 +105,7 @@ def test_read_action_is_dispatched_to_filesystem(orchestrator, mock_fs):
     # Arrange
     plan = Plan(
         title="Test Read",
+        rationale="Test Rationale",
         actions=[
             ActionData(
                 type="READ",
@@ -128,6 +132,7 @@ def test_invoke_action_returns_success(mock_user_interactor, orchestrator):
     # Arrange
     plan = Plan(
         title="Test Invoke",
+        rationale="Test Rationale",
         actions=[
             ActionData(
                 type="INVOKE",

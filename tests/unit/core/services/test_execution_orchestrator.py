@@ -39,7 +39,7 @@ def test_execute_with_failing_action(
     # Arrange
     action1_params = {"name": "failing action", "details": {}}
     action1 = ActionData(type="action1", params=action1_params)
-    plan = Plan(title="Test Plan", actions=[action1])
+    plan = Plan(title="Test Plan", rationale="Test", actions=[action1])
     failing_log = ActionLog(
         status=ActionStatus.FAILURE,
         action_type="action1",
@@ -72,7 +72,7 @@ def test_execute_interactive_and_skipped(
     """
     # Arrange
     action1 = ActionData(type="action1", params={})
-    plan = Plan(title="Test Plan", actions=[action1])
+    plan = Plan(title="Test Plan", rationale="Test", actions=[action1])
 
     mock_user_interactor.confirm_action.return_value = (False, "Just because")
 
@@ -101,7 +101,7 @@ def test_execute_with_mixed_success_and_skipped_is_success(
     # Arrange
     action1 = ActionData(type="action1", params={})
     action2 = ActionData(type="action2", params={})
-    plan = Plan(title="Test Plan", actions=[action1, action2])
+    plan = Plan(title="Test Plan", rationale="Test", actions=[action1, action2])
     success_log = ActionLog(
         status=ActionStatus.SUCCESS,
         action_type="action1",
@@ -138,7 +138,7 @@ def test_execute_interactive_and_approved(
     # Arrange
     action1_params = {"name": "first action", "details": {}}
     action1 = ActionData(type="action1", params=action1_params)
-    plan = Plan(title="Test Plan", actions=[action1])
+    plan = Plan(title="Test Plan", rationale="Test", actions=[action1])
     action_log1 = ActionLog(
         status=ActionStatus.SUCCESS,
         action_type="action1",
@@ -173,7 +173,7 @@ def test_execute_auto_skips_after_failure(
     # Arrange
     action1 = ActionData(type="action1", params={}, description="First Action")
     action2 = ActionData(type="action2", params={}, description="Second Action")
-    plan = Plan(title="Test Plan", actions=[action1, action2])
+    plan = Plan(title="Test Plan", rationale="Test", actions=[action1, action2])
 
     failing_log = ActionLog(
         status=ActionStatus.FAILURE,
@@ -233,7 +233,7 @@ def test_execute_happy_path_non_interactive(
     # Arrange
     action1_params = {"name": "first action", "details": {}}
     action1 = ActionData(type="action1", params=action1_params)
-    plan = Plan(title="Test Plan", actions=[action1])
+    plan = Plan(title="Test Plan", rationale="Test", actions=[action1])
     action_log1 = ActionLog(
         status=ActionStatus.SUCCESS,
         action_type="action1",

@@ -52,6 +52,7 @@ def test_validate_edit_action_with_nonexistent_find_block(validator, mock_fs):
 
     plan = Plan(
         title="Test Plan",
+        rationale="Test",
         actions=[
             ActionData(
                 type="edit",
@@ -86,6 +87,7 @@ def test_validate_edit_action_with_nonexistent_file(validator, mock_fs):
 
     plan = Plan(
         title="Test Plan",
+        rationale="Test",
         actions=[
             ActionData(
                 type="edit",
@@ -120,6 +122,7 @@ def test_validate_edit_action_with_valid_find_block(validator, mock_fs):
 
     plan = Plan(
         title="Test Plan",
+        rationale="Test",
         actions=[
             ActionData(
                 type="edit",
@@ -149,6 +152,7 @@ def test_validate_create_fails_if_file_exists(validator, mock_fs):
 
     plan = Plan(
         title="Test",
+        rationale="Test",
         actions=[
             ActionData(type="CREATE", params={"path": "existing.txt", "content": "foo"})
         ],
@@ -174,6 +178,7 @@ def test_validate_edit_fails_if_find_block_not_unique(validator, mock_fs):
     find_content = "def foo():\n    pass"
     plan = Plan(
         title="Test",
+        rationale="Test",
         actions=[
             ActionData(
                 type="EDIT",
@@ -199,6 +204,7 @@ def test_validate_execute_action_fails_for_multiline_commands(validator):
     """
     plan = Plan(
         title="Test",
+        rationale="Test",
         actions=[
             ActionData(
                 type="EXECUTE",
@@ -221,6 +227,7 @@ def test_validate_execute_action_fails_for_chained_commands(validator):
     """
     plan = Plan(
         title="Test",
+        rationale="Test",
         actions=[
             ActionData(
                 type="EXECUTE",
@@ -248,6 +255,7 @@ def test_validate_execute_succeeds_for_single_command_with_line_continuations(
     )
     plan = Plan(
         title="Test",
+        rationale="Test",
         actions=[ActionData(type="EXECUTE", params={"command": command})],
     )
 
@@ -269,6 +277,7 @@ def test_validate_execute_succeeds_for_single_command_with_multiline_argument(
     command = "git commit -m 'Subject\n\nThis is the body.'"
     plan = Plan(
         title="Test",
+        rationale="Test",
         actions=[ActionData(type="EXECUTE", params={"command": command})],
     )
 
@@ -288,6 +297,7 @@ def test_validate_execute_succeeds_with_ampersands_in_quoted_string(validator):
     command = "echo 'hello && world'"
     plan = Plan(
         title="Test",
+        rationale="Test",
         actions=[ActionData(type="EXECUTE", params={"command": command})],
     )
 
@@ -307,6 +317,7 @@ def test_validate_execute_action_succeeds_for_single_command_with_directives(val
     command = "cd /tmp\nexport FOO=bar\nls -l"
     plan = Plan(
         title="Test",
+        rationale="Test",
         actions=[ActionData(type="EXECUTE", params={"command": command})],
     )
 
@@ -323,6 +334,7 @@ def test_validate_execute_fails_with_unsafe_cwd_traversal(validator):
     """
     plan = Plan(
         title="Test",
+        rationale="Test",
         actions=[
             ActionData(
                 type="EXECUTE",
@@ -349,6 +361,7 @@ def test_validate_execute_fails_with_absolute_cwd(validator):
 
     plan = Plan(
         title="Test",
+        rationale="Test",
         actions=[
             ActionData(
                 type="EXECUTE",
@@ -374,6 +387,7 @@ def test_validate_edit_reports_multiple_failures(validator, mock_fs):
 
     plan = Plan(
         title="Test",
+        rationale="Test",
         actions=[
             ActionData(
                 type="EDIT",
@@ -408,6 +422,7 @@ def test_validate_edit_provides_diff_on_mismatch(validator, mock_fs):
 
     plan = Plan(
         title="Test",
+        rationale="Test",
         actions=[
             ActionData(
                 type="EDIT",
@@ -440,6 +455,7 @@ def test_validate_edit_fails_if_find_and_replace_identical(validator, mock_fs):
     content = "same content"
     plan = Plan(
         title="Test",
+        rationale="Test",
         actions=[
             ActionData(
                 type="EDIT",
@@ -463,7 +479,11 @@ def test_plan_validator_uses_injected_validators(validator):
     mock_validator.can_validate.return_value = True
     mock_validator.validate.return_value = [ValidationError(message="Mock Error")]
 
-    plan = Plan(title="Test Plan", actions=[ActionData(type="test_action", params={})])
+    plan = Plan(
+        title="Test Plan",
+        rationale="Test",
+        actions=[ActionData(type="test_action", params={})],
+    )
 
     # Injected via constructor in the fixture setup if we wanted, but we can also
     # just create a new one here to test the specific behavior.
@@ -485,6 +505,7 @@ def test_read_action_validator_reports_error_if_file_missing(validator, mock_fs)
 
     plan = Plan(
         title="Test",
+        rationale="Test",
         actions=[ActionData(type="READ", params={"resource": "nonexistent.txt"})],
     )
 
@@ -505,6 +526,7 @@ def test_validate_fails_for_unknown_action_type(validator):
     """
     plan = Plan(
         title="Test",
+        rationale="Test",
         actions=[
             ActionData(type="EXECUTE", params={"command": "echo 'valid'"}),
             ActionData(type="UNKNOWN_ACTION", params={}),

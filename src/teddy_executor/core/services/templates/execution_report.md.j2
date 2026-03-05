@@ -56,11 +56,40 @@
 {% endif -%}
 {% endif -%}
 {% endif %}
-{% endmacro %}
+{% endmacro -%}
+
+{% macro render_header(report) %}
 # Execution Report: {{ report.plan_title | default('Untitled Plan') }}
 - **Overall Status:** {{ "Validation Failed" if report.run_summary.status.value == "VALIDATION_FAILED" else report.run_summary.status.value }}
 - **Execution Start Time:** {{ format_datetime(report.run_summary.start_time) }}
 - **Execution End Time:** {{ format_datetime(report.run_summary.end_time) }}
+{% endmacro %}
+
+{% macro render_rationale(report) %}
+{% if report.rationale -%}
+## Rationale
+{{ report.rationale | fence }}text
+{{ report.rationale }}
+{{ report.rationale | fence }}
+{% endif %}
+{% endmacro %}
+
+{% macro render_original_plan(report) %}
+{% if report.original_actions -%}
+## Original Action Plan
+{% for action in report.original_actions -%}
+- **{{ action.type }}**: {{ action.description | default(action.params.get('File Path') or action.params.get('Resource') or 'No description provided') }}
+{% endfor -%}
+{% endif %}
+{% endmacro -%}
+
+{{ render_header(report) }}
+
+{% if not is_concise -%}
+{{ render_rationale(report) }}
+{{ render_original_plan(report) }}
+{% endif -%}
+
 {% if report.validation_result -%}
 ## Validation Errors
 {% for error in report.validation_result %}
@@ -79,8 +108,12 @@
 {% set ns = namespace(content_logs=[]) %}
 {% for log in report.action_logs %}
   {% if log.details and log.details is mapping and log.details.get('content') %}
-    {# Include if it's a successful READ OR if it's a failed EDIT/CREATE #}
-    {% if (log.action_type.lower() == 'read' and log.status.value == 'SUCCESS') or (log.status.value == 'FAILURE') %}
+    {# In concise mode, include READ content. In non-concise mode, omit successful READ content. #}
+    {% set is_read = log.action_type.lower() == 'read' %}
+    {% set is_success = log.status.value == 'SUCCESS' %}
+    {% set is_failure = log.status.value == 'FAILURE' %}
+
+    {% if is_failure or (is_read and is_success and is_concise) %}
       {% set ns.content_logs = ns.content_logs + [log] %}
     {% endif %}
   {% endif %}

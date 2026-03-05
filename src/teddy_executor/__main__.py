@@ -165,6 +165,8 @@ def _handle_validation_failure(
 
     return ExecutionReport(
         plan_title=plan.title,
+        rationale=plan.rationale,
+        original_actions=plan.actions,
         run_summary=RunSummary(
             status=RunStatus.VALIDATION_FAILED,
             start_time=start_time,
@@ -181,13 +183,9 @@ def _execute_valid_plan(
     """Executes a plan that has already been parsed and validated."""
     orchestrator = container.resolve(ExecutionOrchestrator, plan_parser=parser)
     execution_report = orchestrator.execute(plan=plan, interactive=interactive_mode)
-    # Inject the plan title into the report
-    return ExecutionReport(
-        plan_title=plan.title,
-        run_summary=execution_report.run_summary,
-        action_logs=execution_report.action_logs,
-        validation_result=execution_report.validation_result,
-    )
+    # The orchestrator already returns a full report with metadata,
+    # but we ensure the plan's title and metadata are explicitly preserved if needed.
+    return execution_report
 
 
 @app.command()

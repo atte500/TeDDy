@@ -32,7 +32,9 @@ class MarkdownReportFormatter(IMarkdownReportFormatter):
         self.env.filters["language_from_path"] = get_language_from_path
         self.template = self.env.get_template("execution_report.md.j2")
 
-    def _prepare_context(self, report: ExecutionReport) -> dict[str, Any]:
+    def _prepare_context(
+        self, report: ExecutionReport, is_concise: bool
+    ) -> dict[str, Any]:
         """Prepares the report data for rendering."""
 
         def format_datetime(dt):
@@ -42,11 +44,12 @@ class MarkdownReportFormatter(IMarkdownReportFormatter):
 
         return {
             "report": report,
+            "is_concise": is_concise,
             "plan_title": report.plan_title,
             "format_datetime": format_datetime,
         }
 
-    def format(self, report: ExecutionReport) -> str:
+    def format(self, report: ExecutionReport, is_concise: bool = True) -> str:
         """Renders the execution report to a Markdown string."""
-        context = self._prepare_context(report)
+        context = self._prepare_context(report, is_concise)
         return self.template.render(context)
