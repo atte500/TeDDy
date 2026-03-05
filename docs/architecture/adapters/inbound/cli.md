@@ -135,6 +135,11 @@ This command provides a convenient way for users to access and override system p
     3.  If found, the content of the prompt is printed to `stdout` and copied to the clipboard, following the standard output handling rules.
     4.  If the prompt is not found in either location, an error is printed to `stderr` and the command exits with a non-zero status code.
 
+### Auto-Initialization Callback
+**(Introduced in: [Slice 09-02: Auto-Initialization](../../../project/slices/09-02-auto-initialization.md))**
+
+The CLI includes a global `bootstrap` callback registered using `app.callback()`. This function is executed by `Typer` before any specific command. Its responsibility is to resolve the `IInitUseCase` from the DI container and invoke `ensure_initialized()`, ensuring that the TeDDy environment is ready for use even on the first run.
+
 ### Standard Output Handling
 **Updated in:** [Slice 22: Generalized Clipboard Output](../../../project/slices/22-generalized-clipboard-output.md)
 

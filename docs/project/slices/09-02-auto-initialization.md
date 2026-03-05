@@ -66,7 +66,17 @@ in your AI planning sessions.
 
 ## 5. Deliverables
 
-1. [ ] Logic in `__main__.py` to trigger initialization.
-2. [ ] A service or utility to handle the creation of the `.teddy/` structure and templates.
-3. [ ] Unit tests for the initialization logic.
-4. [ ] Integration test verifying the CLI auto-initializes in a fresh directory.
+1. [x] Logic in `__main__.py` to trigger initialization.
+2. [x] A service or utility to handle the creation of the `.teddy/` structure and templates.
+3. [x] Unit tests for the initialization logic.
+4. [x] Integration test verifying the CLI auto-initializes in a fresh directory.
+
+## Implementation Summary
+
+The project auto-initialization feature was implemented by centralizing all initialization logic into a new `InitService`. This service is invoked via a global `Typer` callback (`bootstrap`) in `__main__.py`, ensuring it runs before any project-specific command.
+
+### Key Changes
+- **New Service:** `InitService` implements the `IInitUseCase` port. It handles the idempotent creation of `.teddy/`, `.teddy/.gitignore`, `.teddy/config.yaml`, and `.teddy/init.context`.
+- **Refactoring:** Existing ad-hoc initialization logic was removed from `ContextService` and `LocalFileSystemAdapter`, simplifying those components and ensuring a single source of truth for project setup.
+- **Port Updates:** The `FileSystemManager` port was simplified by removing the `create_default_context_file` method, as its responsibility was moved to the service layer.
+- **Testing:** Comprehensive unit and acceptance tests were added to verify first-time setup, partial initialization, and preservation of existing user configurations.

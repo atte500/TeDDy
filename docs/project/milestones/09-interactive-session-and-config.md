@@ -40,7 +40,7 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 - [x] **Slice 1: Foundation (Security, Config, LLM Client)**
     - Configure comprehensive security gates (`detect-secrets`, `bandit`, `pip-audit`). Add `litellm` dependency, implement `ConfigService` and `LiteLLMAdapter`, and wire them in `main.py`.
     - **Configurable Web Scraper:** Extend `WebScraperAdapter` to respect settings for precision, comments, and tables via the `ConfigService`.
-- [ ] **Slice 2: Auto-Initialization**
+- [x] **Slice 2: Auto-Initialization**
     - Automatically initialize `.teddy/config.yaml` and `.teddy/init.context` with default template content if they do not exist when the CLI is invoked.
 - [ ] **Slice 3: Refactor Execution Report Template**
     - Modify the `execution_report.md.j2` template to correctly generate "Session Report" and "CLI Report" formats based on an `is_concise` flag.

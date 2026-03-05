@@ -11,7 +11,7 @@ The `ContextService` is the application service responsible for orchestrating th
 
 ## 2. Used Outbound Ports
 
-*   [`IFileSystemManager`](../ports/outbound/file_system_manager.md): To read `.gitignore`, `.teddyignore` and other context files, and to create the default `.teddy/init.context` if it's missing.
+*   [`IFileSystemManager`](../ports/outbound/file_system_manager.md): To read `.gitignore`, `.teddyignore` and other context files.
 *   [`IRepoTreeGenerator`](../ports/outbound/repo_tree_generator.md): To generate the repository's file tree as a string.
 *   [`IEnvironmentInspector`](../ports/outbound/environment_inspector.md): To gather information about the operating system and environment, including the user's shell.
 
@@ -22,14 +22,13 @@ The `ContextService` is the application service responsible for orchestrating th
 ## 4. Orchestration Logic
 
 When the `get_context` method is called, the `ContextService` performs the following steps in order:
-1.  It checks for the existence of `.teddy/init.context` using the `IFileSystemManager`.
-2.  If the file does not exist, it instructs the `IFileSystemManager` to create it with the simplified default content (`README.md`, `docs/ARCHITECTURE.md`).
-3.  It invokes the `IEnvironmentInspector` to get system information, ensuring the user's `shell` is included.
-4.  It invokes the `IRepoTreeGenerator` to get the repository tree as a single string. The generator is responsible for respecting `.gitignore` and `.teddyignore` rules.
-5.  It uses the `IFileSystemManager` to read the file paths from all `.teddy/*.context` files. These paths form the `context_vault_paths`.
-6.  It uses the `IFileSystemManager` again to read the content of each file in `context_vault_paths`.
-7.  It formats the system information into a `header` string and the repository tree and file contents into a `content` string using private helper methods.
-8.  It assembles the final `ProjectContext` DTO with the formatted `header` and `content` and returns it.
+
+1.  It invokes the `IEnvironmentInspector` to get system information, ensuring the user's `shell` is included.
+2.  It invokes the `IRepoTreeGenerator` to get the repository tree as a single string. The generator is responsible for respecting `.gitignore` and `.teddyignore` rules.
+3.  It uses the `IFileSystemManager` to read the file paths from all `.teddy/*.context` files. These paths form the `context_vault_paths`.
+4.  It uses the `IFileSystemManager` again to read the content of each file in `context_vault_paths`.
+5.  It formats the system information into a `header` string and the repository tree and file contents into a `content` string using private helper methods.
+6.  It assembles the final `ProjectContext` DTO with the formatted `header` and `content` and returns it.
 
 ## 5. Implementation Notes
 

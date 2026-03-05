@@ -54,17 +54,16 @@ The `FileSystemManager` port defines a technology-agnostic interface for interac
 **Status:** Implemented
 **Introduced in:** [Slice 06: Implement `edit` Action](../../slices/06-edit-action.md)
 
-*   **Description:** Finds and replaces the first occurrence of a specific string within a file.
-*   **Signature:** `edit_file(path: str, find: str, replace: str) -> None`
+*   **Description:** Modifies an existing file by applying a list of find-and-replace blocks. **(Updated in: [Slice 09-02: Auto-Initialization](../../slices/09-02-auto-initialization.md))**
+*   **Signature:** `edit_file(path: str, edits: list[dict[str, str]]) -> None`
 *   **Preconditions:**
     *   `path` must be a valid, non-empty string representing a file path.
     *   A file must exist at the specified `path`.
-    *   `find` must be a non-empty string.
 *   **Postconditions:**
-    *   On success, the file at `path` is updated with the `replace` string substituted for the single occurrence of the `find` string.
+    *   On success, the file at `path` is updated with the `replace` string substituted for the single occurrence of each `find` string.
     *   If no file exists at `path`, a `FileNotFoundError` must be raised.
-    *   If the `find` string is not found in the file, a `SearchTextNotFoundError` must be raised. **(Updated in: [Slice 07: Update Action Failure Behavior](../../slices/07-update-action-failure-behavior.md))**
-    *   If the `find` string is found more than once in the file, a `MultipleMatchesFoundError` must be raised. **(Introduced in: [Slice 09: Enhance `edit` Action Safety](../../slices/09-enhance-edit-action-safety.md))**
+    *   If any `find` string is not found in the file, a `SearchTextNotFoundError` must be raised.
+    *   If any `find` string is found more than once in the file, a `MultipleMatchesFoundError` must be raised.
 
 ---
 
@@ -89,7 +88,5 @@ The `FileSystemManager` port defines a technology-agnostic interface for interac
     *   `path` must be a valid path for a directory.
 *   **Postconditions:**
     *   A directory exists at the specified `path`.
-
-## 3. Related Spikes
 
 *   N/A
