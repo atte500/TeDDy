@@ -107,6 +107,3 @@ Structural integrity was fortified by moving the `verify_test_pyramid.py` check 
 ### Significant Refactoring
 - **Macro-based Reporting:** The move to Jinja2 macros provides a strong foundation for future report enhancements by centralizing rendering logic for core components.
 - **Metadata Provenance:** Segregating original plan metadata ensures that the execution summary remains focused on results while preserving the original instruction context.
-
-### [NEW] Reminders
-- [NEW]: The rationale extraction in `MarkdownPlanParser` is currently based on header titles. Consider a more robust AST-based approach if the plan format becomes more flexible.
