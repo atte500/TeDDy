@@ -387,7 +387,7 @@ A markdown file whose content might include a ```code block```.
 - **Agent:** [Target Agent Name]
 - **Description:** [Short explanation of the handoff.]
 - **Handoff Resources:** (Optional)
-  - [docs/project/milestones/new-feature.md](/docs/project/milestones/new-feature.md)
+  [docs/project/milestones/new-feature.md](/docs/project/milestones/new-feature.md)
                 </format>
             </action>
             <action name="PRUNE">
@@ -404,7 +404,7 @@ A markdown file whose content might include a ```code block```.
 ### `RETURN`
 - **Description:** [Short explanation of the task completion.]
 - **Handoff Resources:** (Optional)
-  - [path/to/file-to-pass.md](/path/to/file-to-pass.md)
+  [path/to/file-to-pass.md](/path/to/file-to-pass.md)
                 </format>
             </action>
         </action_formats>
