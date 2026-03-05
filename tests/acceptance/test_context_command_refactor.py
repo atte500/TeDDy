@@ -26,13 +26,19 @@ def test_context_creates_default_perm_context_file(tmp_path: Path, monkeypatch):
     # Check init.context
     perm_context_file = teddy_dir / "init.context"
     assert perm_context_file.exists()
-    expected_content = "README.md\ndocs/ARCHITECTURE.md\n"
-    assert perm_context_file.read_text() == expected_content
+    # Robust check: should match the source file in the project's config directory
+    source_context = (Path(__file__).parents[2] / "config" / "init.context").read_text(
+        encoding="utf-8"
+    )
+    assert perm_context_file.read_text() == source_context
 
     # Check .gitignore
     gitignore_file = teddy_dir / ".gitignore"
     assert gitignore_file.exists()
-    assert gitignore_file.read_text() == "*"
+    source_gitignore = (Path(__file__).parents[2] / "config" / ".gitignore").read_text(
+        encoding="utf-8"
+    )
+    assert gitignore_file.read_text() == source_gitignore
 
 
 def test_context_generates_standard_output_and_is_clean(tmp_path: Path, monkeypatch):

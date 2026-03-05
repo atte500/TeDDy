@@ -80,7 +80,8 @@ The `spikes/` directory is intentionally excluded from `ruff` and `mypy` checks 
 - **Rationale:** Spikes are for rapid, isolated experimentation. The code within them is temporary and not expected to meet production quality standards. Enforcing linting would hinder their exploratory purpose.
 
 ### Handling of Secrets
-- **Strategy:** Not applicable for this tool. If third-party API keys are needed in the future, they will be managed through environment variables.
+- **Scanning:** Managed via `detect-secrets`.
+- **False Positives:** MUST be handled by updating `.secrets.baseline`. **Do not use inline pragmas.**
 
 ### Third-Party Dependency Vetting
 - **Strategy:** Mandate a "Verify, Then Document" Spike for new dependencies.
