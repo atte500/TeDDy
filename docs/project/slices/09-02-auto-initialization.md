@@ -53,7 +53,7 @@ To eliminate manual setup friction for new projects or users by ensuring the `.t
 # LLM Settings
 # llm:
 #   model: "gemini/gemini-1.5-flash"
-#   api_key: "your-api-key-here" # pragma: allowlist secret
+#   api_key: "your-api-key-here"
 #   api_base: "https://generativelanguage.googleapis.com"
 ```
 
