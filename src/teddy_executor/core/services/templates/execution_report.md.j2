@@ -204,14 +204,14 @@
 {{ render_action_details(log) }}
 {% endif %}
 {% elif action_type in ['RETURN', 'INVOKE'] %}
-  {% set resources = params.get('handoff_resources') or params.get('Handoff Resources') %}
-  {% if resources %}
+{% set resources = params.get('handoff_resources') or params.get('Handoff Resources') -%}
+{% if resources -%}
 - **Handoff Resources:**
-{% for res in resources %}
+{% for res in resources -%}
 [{{ res }}]({% if not res.startswith('/') %}/{% endif %}{{ res }})
-{% endfor %}
-  {% endif %}
-  {{ render_action_details(log) }}
+{% endfor -%}
+{% endif -%}
+{{ render_action_details(log) }}
 {% elif action_type != 'RESEARCH' %}
 {{ render_action_details(log) }}
 {% endif %}
