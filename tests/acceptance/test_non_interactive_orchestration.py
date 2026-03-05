@@ -67,10 +67,9 @@ Rationale
 ## Action Plan
 ### `INVOKE`
 - **Agent:** Architect
+- **Description:** Handoff to the Architect.
 - **Handoff Resources:**
-  - [docs/spec.md](/docs/spec.md)
-
-Message: Handoff to the Architect.
+[docs/spec.md](/docs/spec.md)
 """
     # Test interactive mode: user approves by pressing Enter
     result = runner.invoke(app, ["execute", "--plan-content", plan_content], input="\n")
@@ -84,11 +83,11 @@ Message: Handoff to the Architect.
     assert "Handoff to the Architect." in result.stderr
 
     # Verify the status in the report (stdout)
-    assert "### `INVOKE`: [](/)" in result.stdout
+    assert "### `INVOKE`: Handoff to the Architect." in result.stdout
     assert "- **Status:** SUCCESS" in result.stdout
 
-    # Scenario 3: Report Noise Reduction for Handoffs
-    assert "Handoff to the Architect." not in result.stdout
+    # Handoff resources should be links, not in a code block
+    assert "[docs/spec.md](/docs/spec.md)" in result.stdout
 
 
 def test_invoke_non_interactive_must_interrupt():
@@ -106,10 +105,9 @@ Rationale
 ## Action Plan
 ### `INVOKE`
 - **Agent:** Architect
+- **Description:** Handoff to the Architect.
 - **Handoff Resources:**
-  - [docs/spec.md](/docs/spec.md)
-
-Message: Handoff to the Architect.
+[docs/spec.md](/docs/spec.md)
 """
     # Even with --yes, it should prompt for input. Providing Enter to approve.
     result_yes = runner.invoke(
@@ -151,10 +149,9 @@ Handoff rejection.
 
 ### `INVOKE`
 - Agent: Architect
+- Description: Handoff to the Architect.
 - Handoff Resources:
-  - [docs/spec.md](/docs/spec.md)
-
-Handoff to the Architect.
+[docs/spec.md](/docs/spec.md)
 """
 
     rejection_reason = "Not ready for architect yet."
@@ -166,6 +163,6 @@ Handoff to the Architect.
     assert result.exit_code == 1
 
     # Verify the status in the report (stdout)
-    assert "### `INVOKE`: [](/)" in result.stdout
+    assert "### `INVOKE`: Handoff to the Architect." in result.stdout
     assert "- **Status:** FAILURE" in result.stdout
     assert f"Manual handoff rejected by user: {rejection_reason}" in result.stdout

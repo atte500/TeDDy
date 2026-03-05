@@ -388,7 +388,7 @@ A markdown file whose content might include a ```code block```.
                 <format>
 ### `INVOKE`
 - **Agent:** [Target Agent Name]
-- **Description:** [Handoff message. CRITICAL: NO Markdown headings (#) or fenced code blocks (```). Include any referrenced file's paths explicitly.]
+- **Description:** [Short explanation of the handoff.]
 - **Handoff Resources:** (Optional)
   - [docs/project/milestones/new-feature.md](/docs/project/milestones/new-feature.md)
                 </format>
@@ -398,14 +398,14 @@ A markdown file whose content might include a ```code block```.
                 <format>
 ### `PRUNE`
 - **Resource:** [path/to/file_to_remove.ext](/path/to/file_to_remove.ext)
-- **Description:** [A brief summary of the resource's contents and a justification for why it is being removed from context. This summary serves as a memory aid, allowing the contents to be efficiently revisited later if needed.]
+- **Description:** [Short explanation of why the resource is being removed.]
                 </format>
             </action>
             <action name="RETURN">
                 <description>Returns control to the calling agent after a specialist sub-task is complete.</description>
                 <format>
 ### `RETURN`
-- **Description:** [Summary message. CRITICAL: NO Markdown headings (#) or fenced code blocks (```). Include any referrenced file's paths explicitly.]
+- **Description:** [Short explanation of the task completion.]
 - **Handoff Resources:** (Optional)
   - [path/to/file-to-pass.md](/path/to/file-to-pass.md)
                 </format>

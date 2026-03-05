@@ -211,9 +211,9 @@ def test_formats_multiline_execute_command_correctly():
 
 def test_formats_return_action_correctly():
     """
-    Given a RETURN action with resources and message,
+    Given a RETURN action with resources and description,
     When formatted,
-    Then resources should be in a code block and message should be free-form.
+    Then resources should be links and description should be in the header.
     """
     formatter = MarkdownReportFormatter()
     report = ExecutionReport(
@@ -229,7 +229,7 @@ def test_formats_return_action_correctly():
                 status=ActionStatus.SUCCESS,
                 params={
                     "handoff_resources": ["docs/A.md", "docs/B.md"],
-                    "message": "Task complete.\n\nSummary here.",
+                    "description": "Task complete.",
                 },
             )
         ],
@@ -237,16 +237,16 @@ def test_formats_return_action_correctly():
 
     output = formatter.format(report)
 
-    # Check Handoff Resources formatting
-    # Should be in a code block
-    assert "```text\ndocs/A.md\ndocs/B.md\n```" in output
+    # Check Handoff Resources formatting (Example B: multi-line links)
+    assert "[docs/A.md](/docs/A.md)" in output
+    assert "[docs/B.md](/docs/B.md)" in output
 
     # Check Message formatting
-    # Scenario 3: Message should NOT be in the report output for handoffs
-    assert "Task complete." not in output
-    assert "Summary here." not in output
-    # Ensure it's not rendered as "- **Message:** ..."
+    # The description should now be in the action header
+    assert "### `RETURN`: Task complete." in output
+    # Ensure the old 'Message' or 'Description' keys are not present in the body
     assert "- **Message:**" not in output
+    assert "- **Description:**" not in output
 
 
 def test_formats_failed_execute_action_details_human_readably():

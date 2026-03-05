@@ -209,14 +209,14 @@ All actions are located under the `## Action Plan` heading. Each action is defin
     ```markdown
     ### `INVOKE`
     - **Agent:** Architect
-    - **Description:** Handoff to the Architect. The milestone is complete.
+    - **Description:** The feature discovery is complete and the problem is validated.
     - **Handoff Resources:** (Optional)
-      - [docs/project/milestones/new-feature.md](/docs/project/milestones/new-feature.md)
+    [docs/project/milestones/new-feature.md](/docs/project/milestones/new-feature.md)
     ```
 -   **Parsing Rules:**
     1.  Extract the target `Agent` and the `Description` from the metadata list.
-    2.  Extract the optional list of `Handoff Resources`.
-    3.  The `Description` serves as the handoff message. Free-form text following the metadata list is forbidden.
+    2.  Extract the optional list of `Handoff Resources`. These should be formatted as a multi-line list of root-relative links without leading bullets. The link text should be the full path from the project root.
+    3.  The `Description` serves as the short explanation of the handoff. Free-form text following the metadata list is forbidden.
 
 ### 5.8. `RETURN`
 
@@ -224,15 +224,15 @@ All actions are located under the `## Action Plan` heading. Each action is defin
 -   **Format:**
     ```markdown
     ### `RETURN`
-    - **Description:** My analysis is complete. The root cause and a verified fix are attached.
+    - **Description:** The implementation and testing of the vertical slice are complete.
     - **Handoff Resources:** (Optional)
-      - [docs/architecture/rca/the-bug.md](/docs/architecture/rca/the-bug.md)
-      - [spikes/fix-script.sh](/spikes/fix-script.sh)
+    [docs/architecture/rca/the-bug.md](/docs/architecture/rca/the-bug.md)
+    [spikes/fix-script.sh](/spikes/fix-script.sh)
     ```
 -   **Parsing Rules:**
     1.  Extract the `Description` from the metadata list.
-    2.  Extract the optional list of `Handoff Resources`.
-    3.  The `Description` serves as the message. Free-form text following the metadata list is forbidden.
+    2.  Extract the optional list of `Handoff Resources`. These should be formatted as a multi-line list of root-relative links without leading bullets. The link text should be the full path from the project root.
+    3.  The `Description` serves as the short explanation of the task completion. Free-form text following the metadata list is forbidden.
 
 ### 5.9. `PRUNE`
 

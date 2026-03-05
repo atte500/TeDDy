@@ -91,8 +91,22 @@ def parse_env_from_metadata(metadata_list: MdList) -> Optional[dict[str, str]]:
     return env_dict if env_dict else None
 
 
+def _find_all_links(node) -> List[Link]:
+    """Recursively finds all Link tokens in a node tree."""
+    links = []
+    if isinstance(node, Link):
+        links.append(node)
+    if hasattr(node, "children") and node.children:
+        for child in node.children:
+            links.extend(_find_all_links(child))
+    return links
+
+
 def parse_handoff_resources_from_list(metadata_list: MdList) -> List[str] | None:
-    """Parses handoff resources from a nested metadata list."""
+    """
+    Parses handoff resources from a metadata list item.
+    Supports both nested lists and simple multi-line links within the item.
+    """
     resources = []
     if not (metadata_list and metadata_list.children):
         return None
@@ -100,11 +114,10 @@ def parse_handoff_resources_from_list(metadata_list: MdList) -> List[str] | None
     for item in metadata_list.children:
         item_text = get_child_text(item).strip()
         if item_text.startswith("Handoff Resources:"):
-            resource_list = find_node_in_tree(item, MdList)
-            if resource_list and resource_list.children:
-                for res_item in resource_list.children:
-                    link = find_node_in_tree(res_item, Link)
-                    if link:
-                        target = normalize_link_target(link.target)
-                        resources.append(normalize_path(target))
+            # Find all links within this list item's entire sub-tree
+            links = _find_all_links(item)
+            for link in links:
+                target = normalize_link_target(link.target)
+                resources.append(normalize_path(target))
+
     return resources if resources else None

@@ -45,8 +45,7 @@ Rationale.
 ## Action Plan
 ### `INVOKE`
 - **Agent:** PathFinder
-
-Hello PathFinder!
+- **Description:** Hello PathFinder!
 """
     result = runner.invoke(app, ["execute", "--plan-content", plan_content], input="\n")
 

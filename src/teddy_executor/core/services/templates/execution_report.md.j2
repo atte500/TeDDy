@@ -207,9 +207,9 @@
   {% set resources = params.get('handoff_resources') or params.get('Handoff Resources') %}
   {% if resources %}
 - **Handoff Resources:**
-{{ resources | join('\n') | fence }}text
-{{ resources | join('\n') }}
-{{ resources | join('\n') | fence }}
+{% for res in resources %}
+[{{ res }}]({% if not res.startswith('/') %}/{% endif %}{{ res }})
+{% endfor %}
   {% endif %}
   {{ render_action_details(log) }}
 {% elif action_type != 'RESEARCH' %}
