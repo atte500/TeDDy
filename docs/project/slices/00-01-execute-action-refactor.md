@@ -47,7 +47,14 @@ To make the `EXECUTE` action more robust and less prone to parsing errors by exp
     - If a failure occurs but `allow_failure` is true, do not set `halt_execution = True`.
 
 ## 5. Deliverables
-- [ ] Updated `MarkdownPlanParser` for new `EXECUTE` metadata.
-- [ ] Simplified `ExecuteActionValidator` with stricter core command rules.
-- [ ] Updated `ExecutionOrchestrator` flow control.
-- [ ] Passing unit and acceptance tests for the new format.
+- [x] Updated `MarkdownPlanParser` for new `EXECUTE` metadata.
+- [x] Simplified `ExecuteActionValidator` with stricter core command rules.
+- [x] Updated `ExecutionOrchestrator` flow control.
+- [x] Passing unit and acceptance tests for the new format.
+
+## Implementation Summary
+The `EXECUTE` action has been refactored to explicitly separate environment setup from the primary command.
+- **Parser:** `MarkdownPlanParser` now extracts `Setup` (string) and `Allow Failure` (boolean) from the action's metadata list.
+- **Validator:** `ExecuteActionValidator` now enforces strict rules on the command block: no shell chaining operators (`&&`, `||`, `;`, `|`, `&`), no `cd`/`export` directives, and no empty commands.
+- **Orchestrator:** `ExecutionOrchestrator` now respects the `allow_failure` parameter and utilizes the `Setup` string for environment preparation.
+- **Testing:** Comprehensive unit and acceptance tests verify the new behavior. Acceptance tests were consolidated to maintain the project's Test Pyramid standards.

@@ -21,38 +21,61 @@ class ExecuteActionValidator(IActionValidator):
     def validate(self, action: ActionData) -> List[ValidationError]:
         """Validates an 'execute' action."""
         errors: List[ValidationError] = []
-        command = action.params.get("command", "")
+        command = action.params.get("command", "").strip()
         cwd = action.params.get("cwd")
 
         if cwd:
             if error := _check_cwd_safety(cwd):
                 errors.append(error)
 
-        if command:
-            if error := _check_for_disallowed_chaining(command):
-                errors.append(error)
+        if not command:
+            errors.append(
+                ValidationError(message="EXECUTE action must contain a command")
+            )
+            return errors
 
-            if error := _check_for_multiple_commands(command):
-                errors.append(error)
+        if error := _check_for_disallowed_chaining(command):
+            errors.append(error)
+
+        if error := _check_for_directives(command):
+            errors.append(error)
+
+        if error := _check_for_multiple_commands(command):
+            errors.append(error)
 
         return errors
 
 
 def _check_for_disallowed_chaining(command: str) -> Optional[ValidationError]:
-    """Checks for '&&' outside of quotes."""
+    """Checks for chaining operators outside of quotes."""
     in_single_quotes = False
     in_double_quotes = False
+    operators = {"&", "|", ";"}
+
     for i, char in enumerate(command):
         if char == "'" and not in_double_quotes:
             in_single_quotes = not in_single_quotes
+            continue
         elif char == '"' and not in_single_quotes:
             in_double_quotes = not in_double_quotes
+            continue
 
         if not in_single_quotes and not in_double_quotes:
-            if char == "&" and i + 1 < len(command) and command[i + 1] == "&":
-                return ValidationError(
-                    message="Command chaining with '&&' is not allowed"
-                )
+            if char in operators:
+                return ValidationError(message="Command chaining is not allowed")
+
+    return None
+
+
+def _check_for_directives(command: str) -> Optional[ValidationError]:
+    """Checks for 'cd' or 'export' at the start of any line."""
+    lines = command.split("\n")
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("cd ") or stripped.startswith("export "):
+            return ValidationError(
+                message="Move 'cd' and 'export' commands to the 'Setup:' parameter"
+            )
     return None
 
 
@@ -98,13 +121,7 @@ def _check_for_multiple_commands(command: str) -> Optional[ValidationError]:
     processed_command = "".join(processed_chars)
     lines = processed_command.split("\n")
 
-    command_lines = [
-        line.strip()
-        for line in lines
-        if line.strip()
-        and not line.strip().startswith("cd ")
-        and not line.strip().startswith("export ")
-    ]
+    command_lines = [line.strip() for line in lines if line.strip()]
 
     if len(command_lines) > 1:
         return ValidationError(

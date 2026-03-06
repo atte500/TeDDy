@@ -221,25 +221,26 @@ def test_validate_execute_action_fails_for_multiline_commands(validator):
 
 def test_validate_execute_action_fails_for_chained_commands(validator):
     """
-    Given an EXECUTE action with chained commands (&&),
+    Given an EXECUTE action with any chaining operator (&&, ||, ;, |, &),
     When validated,
-    Then it should return an error.
+    Then it should return an error "Command chaining is not allowed".
     """
-    plan = Plan(
-        title="Test",
-        rationale="Test",
-        actions=[
-            ActionData(
-                type="EXECUTE",
-                params={"command": "echo 'hello' && echo 'world'"},
-            )
-        ],
-    )
+    for op in ["&&", "||", ";", "|", "&"]:
+        plan = Plan(
+            title="Test",
+            rationale="Test",
+            actions=[
+                ActionData(
+                    type="EXECUTE",
+                    params={"command": f"echo 'hello' {op} echo 'world'"},
+                )
+            ],
+        )
 
-    errors = validator.validate(plan)
+        errors = validator.validate(plan)
 
-    assert len(errors) == 1
-    assert "Command chaining with '&&' is not allowed" in errors[0].message
+        assert len(errors) == 1, f"Failed for operator {op}"
+        assert "Command chaining is not allowed" in errors[0].message
 
 
 def test_validate_execute_succeeds_for_single_command_with_line_continuations(
@@ -308,22 +309,30 @@ def test_validate_execute_succeeds_with_ampersands_in_quoted_string(validator):
     )
 
 
-def test_validate_execute_action_succeeds_for_single_command_with_directives(validator):
+def test_validate_execute_action_fails_for_directives(validator):
     """
-    Given an EXECUTE action with a single command and directives,
+    Given an EXECUTE action with 'cd' or 'export' in the command block,
     When validated,
-    Then it should not return any errors.
+    Then it should return an error instructing to move them to Setup.
     """
-    command = "cd /tmp\nexport FOO=bar\nls -l"
-    plan = Plan(
-        title="Test",
-        rationale="Test",
-        actions=[ActionData(type="EXECUTE", params={"command": command})],
-    )
+    for directive in ["cd /tmp", "export FOO=bar"]:
+        plan = Plan(
+            title="Test",
+            rationale="Test",
+            actions=[
+                ActionData(
+                    type="EXECUTE",
+                    params={"command": f"{directive}\nls -l"},
+                )
+            ],
+        )
 
-    errors = validator.validate(plan)
+        errors = validator.validate(plan)
 
-    assert len(errors) == 0, f"Expected no errors, but got: {errors}"
+        assert any(
+            "Move 'cd' and 'export' commands to the 'Setup:' parameter" in e.message
+            for e in errors
+        ), f"Expected directive error for {directive}, but got: {errors}"
 
 
 def test_validate_execute_fails_with_unsafe_cwd_traversal(validator):
