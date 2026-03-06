@@ -30,6 +30,15 @@ When the `get_context` method is called, the `ContextService` performs the follo
 5.  It formats the system information into a `header` string and the repository tree and file contents into a `content` string using private helper methods.
 6.  It assembles the final `ProjectContext` DTO with the formatted `header` and `content` and returns it.
 
-## 5. Implementation Notes
+## 5. Data Contracts / Methods
+
+### `get_context(context_files: Optional[Sequence[str]] = None) -> ProjectContext`
+
+-   **Description:** Gathers project context information.
+-   **Arguments:**
+    -   `context_files`: (Optional) A list of specific `.context` files to read paths from. If `None`, the service defaults to reading all `.context` files in the `.teddy/` root (Standard/Manual mode).
+-   **Returns:** A `ProjectContext` DTO containing the system info, repo tree, and resolved file contents.
+
+## 6. Implementation Notes
 
 -   **Context Configuration:** The `context` command's behavior is explicitly driven by the contents of `.teddy/*.context` files, providing a clear, user-configurable contract.

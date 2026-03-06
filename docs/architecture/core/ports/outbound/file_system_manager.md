@@ -89,4 +89,15 @@ The `FileSystemManager` port defines a technology-agnostic interface for interac
 *   **Postconditions:**
     *   A directory exists at the specified `path`.
 
-*   N/A
+---
+
+### `resolve_paths_from_files`
+**Status:** Planned
+**Introduced in:** [Slice 09-04](../../slices/09-04-core-session-context-engine.md)
+
+*   **Description:** Reads a list of `.context` files and returns a deduplicated list of the paths they contain.
+*   **Signature:** `resolve_paths_from_files(file_paths: Sequence[str]) -> List[str]`
+*   **Preconditions:**
+    -   Each path in `file_paths` must exist.
+*   **Postconditions:**
+    -   Returns a sorted, unique list of all non-commented file paths found within the specified context files.
