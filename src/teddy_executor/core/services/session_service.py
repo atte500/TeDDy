@@ -92,8 +92,8 @@ class SessionService(ISessionManager):
         Calculates and creates the next turn directory based on the current turn
         and the outcome of its plan.
         """
-        current_turn_dir = str(Path(plan_path).parent)
-        session_dir = str(Path(current_turn_dir).parent)
+        current_turn_dir = Path(plan_path).parent.as_posix()
+        session_dir = Path(current_turn_dir).parent.as_posix()
 
         # 1. Read current metadata and context
         meta_content = self._file_system_manager.read_file(

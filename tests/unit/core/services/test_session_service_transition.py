@@ -10,6 +10,8 @@ def test_transition_to_next_turn_creates_directory_and_linkage():
     and seed it with metadata linked to the current turn (T_current).
     """
     # Arrange
+    from pathlib import Path
+
     fs = MagicMock()
     service = SessionService(file_system_manager=fs)
 
@@ -24,7 +26,7 @@ def test_transition_to_next_turn_creates_directory_and_linkage():
         ".teddy/sessions/feat-x/01/meta.yaml": current_meta,
         ".teddy/sessions/feat-x/01/system_prompt.xml": current_prompt,
         ".teddy/sessions/feat-x/01/turn.context": current_context,
-    }.get(path, "")
+    }.get(Path(path).as_posix(), "")
 
     # Mock directory existence check for T_next
     fs.create_directory.return_value = None
@@ -68,6 +70,8 @@ def test_transition_to_next_turn_applies_read_and_prune_side_effects():
     resources from the next turn's context.
     """
     # Arrange
+    from pathlib import Path
+
     fs = MagicMock()
     service = SessionService(file_system_manager=fs)
 
@@ -80,7 +84,7 @@ def test_transition_to_next_turn_applies_read_and_prune_side_effects():
         ".teddy/sessions/feat-x/01/meta.yaml": current_meta,
         ".teddy/sessions/feat-x/01/system_prompt.xml": current_prompt,
         ".teddy/sessions/feat-x/01/turn.context": current_context,
-    }.get(path, "")
+    }.get(Path(path).as_posix(), "")
 
     # Mock Report with READ (new_file.py) and PRUNE (file_b.py)
     report = MagicMock(spec=ExecutionReport)
