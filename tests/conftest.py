@@ -5,7 +5,7 @@ import pytest
 
 from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
-from teddy_executor.core.ports.inbound.run_plan_use_case import RunPlanUseCase
+from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.services.context_service import ContextService
 from teddy_executor.core.ports.outbound import (
     IUserInteractor,
@@ -121,8 +121,8 @@ def mock_action_dispatcher(container):
 
 @pytest.fixture
 def mock_run_plan(container):
-    mock = Mock(spec=RunPlanUseCase)
-    container.register(RunPlanUseCase, instance=mock)
+    mock = Mock(spec=IRunPlanUseCase)
+    container.register(IRunPlanUseCase, instance=mock)
     # The CLI resolves concrete ExecutionOrchestrator directly
     container.register(ExecutionOrchestrator, instance=mock)
     return mock

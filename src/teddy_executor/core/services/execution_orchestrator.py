@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from typing import Sequence
+from typing import Optional, Sequence
 
 from pathlib import Path
 from teddy_executor.core.domain.models import (
@@ -14,12 +14,12 @@ from teddy_executor.core.domain.models import (
 )
 from teddy_executor.core.ports.inbound.edit_simulator import IEditSimulator
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
-from teddy_executor.core.ports.inbound.run_plan_use_case import RunPlanUseCase
+from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound import IFileSystemManager, IUserInteractor
 from teddy_executor.core.services.action_dispatcher import ActionDispatcher
 
 
-class ExecutionOrchestrator(RunPlanUseCase):
+class ExecutionOrchestrator(IRunPlanUseCase):
     def __init__(
         self,
         plan_parser: IPlanParser,
@@ -206,7 +206,22 @@ class ExecutionOrchestrator(RunPlanUseCase):
 
         return action_log
 
-    def execute(self, plan: Plan, interactive: bool) -> ExecutionReport:
+    def execute(
+        self,
+        plan: Optional[Plan] = None,
+        plan_content: Optional[str] = None,
+        plan_path: Optional[str] = None,
+        interactive: bool = True,
+    ) -> ExecutionReport:
+        if plan is None:
+            if plan_content is not None:
+                plan = self._plan_parser.parse(plan_content)
+            elif plan_path is not None:
+                content = self._file_system_manager.read_file(plan_path)
+                plan = self._plan_parser.parse(content)
+            else:
+                raise ValueError("Must provide either plan, plan_content, or plan_path")
+
         start_time = datetime.now()
         action_logs = []
         halt_execution = False

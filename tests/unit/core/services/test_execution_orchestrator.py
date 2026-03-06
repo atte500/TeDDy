@@ -7,7 +7,7 @@ from teddy_executor.core.domain.models import (
     Plan,
     RunStatus,
 )
-from teddy_executor.core.ports.inbound.run_plan_use_case import RunPlanUseCase
+from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
 
 
@@ -21,8 +21,8 @@ def orchestrator(  # noqa: PLR0913
     mock_edit_simulator,
 ) -> ExecutionOrchestrator:
     """Resolves ExecutionOrchestrator with all mocked dependencies."""
-    container.register(RunPlanUseCase, ExecutionOrchestrator)
-    return container.resolve(RunPlanUseCase)
+    container.register(IRunPlanUseCase, ExecutionOrchestrator)
+    return container.resolve(IRunPlanUseCase)
 
 
 def test_execute_with_failing_action(

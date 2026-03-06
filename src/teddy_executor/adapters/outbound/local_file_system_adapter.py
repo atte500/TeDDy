@@ -30,34 +30,16 @@ class LocalFileSystemAdapter(FileSystemManager):
     def _resolve_path(self, path: str) -> Path:
         """
         Resolves a path relative to the root_dir.
-        Handles project-root-relative paths (e.g., '/file.txt') by stripping the
-        leading slash before joining with the root directory.
         """
-        logger.debug("--- Resolving Path ---")
-        logger.debug(f"Input path: '{path}'")
-        logger.debug(f"Adapter root_dir: '{self.root_dir}'")
-
         path_obj = Path(path)
-
-        # First, check if the original path is absolute. If so, use it directly.
-        # This correctly handles paths from pytest's tmp_path fixture on Unix.
         if path_obj.is_absolute():
-            logger.debug(f"Path is absolute, returning directly: '{path_obj}'")
             return path_obj
 
-        # Handle the project-root-relative convention (e.g., '/file.txt').
-        # This is now safe because we've already handled true absolute paths.
+        # Handle project-root-relative convention (e.g., '/file.txt')
         if path.startswith("/"):
             path = path[1:]
-            logger.debug(f"Path after stripping '/': '{path}'")
 
-        resolved_root = self.root_dir.resolve()
-        logger.debug(f"Resolved adapter root_dir: '{resolved_root}'")
-
-        final_path = resolved_root / path
-        logger.debug(f"Final resolved path: '{final_path}'")
-        logger.debug("----------------------")
-        return final_path
+        return (self.root_dir.resolve() / path).resolve()
 
     def get_context_paths(self) -> list[str]:
         """

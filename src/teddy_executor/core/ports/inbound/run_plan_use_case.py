@@ -1,22 +1,28 @@
 from abc import ABC, abstractmethod
-from teddy_executor.core.domain.models import ExecutionReport
+from typing import Optional
+from teddy_executor.core.domain.models import ExecutionReport, Plan
 
 
-from teddy_executor.core.domain.models import Plan
-
-
-class RunPlanUseCase(ABC):
+class IRunPlanUseCase(ABC):
     """
     Defines the contract for running a teddy execution plan.
     """
 
     @abstractmethod
-    def execute(self, plan: Plan, interactive: bool) -> ExecutionReport:
+    def execute(
+        self,
+        plan: Optional[Plan] = None,
+        plan_content: Optional[str] = None,
+        plan_path: Optional[str] = None,
+        interactive: bool = True,
+    ) -> ExecutionReport:
         """
-        Takes a parsed Plan object, executes it, and returns a report.
+        Executes a plan and returns a report.
 
         Args:
-            plan: The parsed Plan object to execute.
+            plan: An already parsed Plan object.
+            plan_content: Raw Markdown content of a plan.
+            plan_path: Path to a plan file on disk.
             interactive: A flag to enable/disable step-by-step user approval.
         """
         pass

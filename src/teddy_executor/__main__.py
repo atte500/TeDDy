@@ -205,7 +205,16 @@ def execute(
             if validation_errors:
                 report = handle_validation_failure(plan, validation_errors, start_time)
             else:
-                report = execute_valid_plan(container, plan, interactive_mode, parser)
+                report = execute_valid_plan(
+                    container,
+                    plan,
+                    interactive_mode,
+                    parser,
+                    plan_meta={
+                        "plan_path": str(plan_file) if plan_file else None,
+                        "plan_content": plan_content,
+                    },
+                )
 
         except InvalidPlanError as e:
             report = ExecutionReport(

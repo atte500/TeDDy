@@ -25,8 +25,10 @@ from teddy_executor.core.services.action_dispatcher import (
 from teddy_executor.core.services.action_factory import ActionFactory
 from teddy_executor.core.services.context_service import ContextService
 from teddy_executor.core.services.edit_simulator import EditSimulator
+from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
 from teddy_executor.core.services.init_service import InitService
+from teddy_executor.core.services.session_orchestrator import SessionOrchestrator
 from teddy_executor.core.services.session_service import SessionService
 from teddy_executor.core.services.markdown_plan_parser import MarkdownPlanParser
 from teddy_executor.core.services.markdown_report_formatter import (
@@ -103,6 +105,15 @@ def create_container() -> punq.Container:
     )
     container.register(IMarkdownReportFormatter, MarkdownReportFormatter)
     container.register(ExecutionOrchestrator)
+    container.register(
+        IRunPlanUseCase,
+        factory=lambda: SessionOrchestrator(
+            execution_orchestrator=container.resolve(ExecutionOrchestrator),
+            session_service=container.resolve(ISessionManager),
+            file_system_manager=container.resolve(IFileSystemManager),
+            report_formatter=container.resolve(IMarkdownReportFormatter),
+        ),
+    )
     container.register(IGetContextUseCase, ContextService)
     container.register(IInitUseCase, InitService)
     container.register(ISessionManager, SessionService)

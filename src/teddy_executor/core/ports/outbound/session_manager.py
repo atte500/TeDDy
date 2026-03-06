@@ -1,4 +1,5 @@
 from typing import Protocol
+from teddy_executor.core.domain.models import ExecutionReport
 
 
 class ISessionManager(Protocol):
@@ -16,5 +17,14 @@ class ISessionManager(Protocol):
     def get_latest_turn(self, _session_name: str) -> str:
         """
         Identifies and returns the latest turn directory in the specified session.
+        """
+        ...
+
+    def transition_to_next_turn(
+        self, plan_path: str, execution_report: ExecutionReport
+    ) -> str:
+        """
+        Calculates and creates the next turn directory based on the current turn
+        and the outcome of its plan.
         """
         ...

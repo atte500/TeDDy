@@ -1,7 +1,7 @@
 import pytest
 from teddy_executor.core.domain.models import ActionLog, ActionStatus, RunStatus
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
-from teddy_executor.core.ports.inbound.run_plan_use_case import RunPlanUseCase
+from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
 
 
@@ -15,8 +15,8 @@ def orchestrator(
     from teddy_executor.core.services.markdown_plan_parser import MarkdownPlanParser
 
     container.register(IPlanParser, MarkdownPlanParser)
-    container.register(RunPlanUseCase, ExecutionOrchestrator)
-    return container.resolve(RunPlanUseCase)
+    container.register(IRunPlanUseCase, ExecutionOrchestrator)
+    return container.resolve(IRunPlanUseCase)
 
 
 def test_execute_handles_valid_plan_successfully(

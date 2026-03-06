@@ -13,7 +13,7 @@ from teddy_executor.core.domain.models import (
 )
 from teddy_executor.core.domain.models.plan import Plan
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
-from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
+from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.services.plan_validator import ValidationError
 
 
@@ -107,9 +107,19 @@ def handle_validation_failure(
 
 
 def execute_valid_plan(
-    container: Container, plan: Plan, interactive_mode: bool, parser: IPlanParser
+    container: Container,
+    plan: Plan,
+    interactive_mode: bool,
+    parser: IPlanParser,
+    plan_meta: Optional[dict] = None,
 ) -> ExecutionReport:
     """Executes a plan that has already been parsed and validated."""
-    orchestrator = container.resolve(ExecutionOrchestrator, plan_parser=parser)
-    execution_report = orchestrator.execute(plan=plan, interactive=interactive_mode)
+    orchestrator = container.resolve(IRunPlanUseCase)
+    meta = plan_meta or {}
+    execution_report = orchestrator.execute(
+        plan=plan,
+        interactive=interactive_mode,
+        plan_path=meta.get("plan_path"),
+        plan_content=meta.get("plan_content"),
+    )
     return execution_report

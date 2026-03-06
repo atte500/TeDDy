@@ -1,15 +1,15 @@
 import pytest
 from teddy_executor.core.domain.models.execution_report import RunStatus
 from teddy_executor.core.domain.models.plan import ActionData, Plan
-from teddy_executor.core.ports.inbound.run_plan_use_case import RunPlanUseCase
+from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
 
 
 @pytest.fixture
 def orchestrator(container):
     """Provides a real ExecutionOrchestrator for integration testing."""
-    container.register(RunPlanUseCase, ExecutionOrchestrator)
-    return container.resolve(RunPlanUseCase)
+    container.register(IRunPlanUseCase, ExecutionOrchestrator)
+    return container.resolve(IRunPlanUseCase)
 
 
 def test_create_action_is_dispatched_to_filesystem(orchestrator, mock_fs):

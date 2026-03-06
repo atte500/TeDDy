@@ -112,3 +112,71 @@ def test_teddy_context_aggregates_cascading_context(tmp_path, monkeypatch):
     assert "file_b.py" in result.stdout
     assert "### Session" in result.stdout
     assert "file_a.py" in result.stdout
+
+
+def test_teddy_execute_triggers_turn_transition(tmp_path, monkeypatch):
+    """
+    Scenario: teddy execute triggers turn transition
+    Given a plan in 01/plan.md containing a READ action for "new_file.py".
+    When I run teddy execute 01/plan.md.
+    Then a directory 02/ MUST be created.
+    And 02/turn.context MUST contain "new_file.py" and "01/report.md".
+    And 02/meta.yaml MUST have parent_turn_id pointing to the ID of turn 01.
+    """
+    # Arrange
+    monkeypatch.chdir(tmp_path)
+
+    # 1. Setup session directory structure
+    session_dir = tmp_path / ".teddy" / "sessions" / "feat-x"
+    turn_dir = session_dir / "01"
+    turn_dir.mkdir(parents=True)
+
+    # 2. Setup turn context and metadata
+    (turn_dir / "turn.context").write_text("", encoding="utf-8")
+    (turn_dir / "system_prompt.xml").write_text("prompt_content", encoding="utf-8")
+    (turn_dir / "meta.yaml").write_text("turn_id: 'abc'\n", encoding="utf-8")
+
+    # 2b. Create the file to be READ
+    (tmp_path / "new_file.py").write_text("print('hello')", encoding="utf-8")
+
+    # 3. Create a plan with a READ action
+    plan_content = """# Plan: Read a file
+- Status: Green 🟢
+- Plan Type: Testing
+- Agent: Developer
+
+## Rationale
+```
+Testing turn transition.
+```
+
+## Action Plan
+### `READ`
+- **Resource:** [new_file.py](/new_file.py)
+"""
+    plan_file = turn_dir / "plan.md"
+    plan_file.write_text(plan_content, encoding="utf-8")
+
+    # Act
+    # Execute the plan from the project root
+    result = runner.invoke(
+        app, ["execute", str(plan_file.relative_to(tmp_path)), "-y", "--no-copy"]
+    )
+
+    # Assert
+    assert result.exit_code == 0
+
+    # Verify turn 02 creation
+    next_turn_dir = session_dir / "02"
+    assert next_turn_dir.is_dir()
+
+    # Verify 02/turn.context side effects
+    turn_context_content = (next_turn_dir / "turn.context").read_text(encoding="utf-8")
+    assert "new_file.py" in turn_context_content
+    assert "01/report.md" in turn_context_content
+
+    # Verify 02/meta.yaml linkage
+    with open(next_turn_dir / "meta.yaml", "r", encoding="utf-8") as f:
+        meta_data = yaml.safe_load(f)
+        assert meta_data["parent_turn_id"] == "abc"
+        assert meta_data["turn_id"] == "02"
