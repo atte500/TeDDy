@@ -1,9 +1,10 @@
 # Application Service: ExecutionOrchestrator
 
-The `ExecutionOrchestrator` is the primary application service in the hexagonal core for running a plan. It acts as the use case controller, coordinating other services and ports to execute a plan from start to finish and generate a comprehensive report.
+The `ExecutionOrchestrator` is the stateless core service responsible for the atomic execution of a plan. While it implements the `IRunPlanUseCase`, in the context of the interactive session workflow, it is typically wrapped by the `SessionOrchestrator`, which handles the stateful side-effects like turn transitions.
 
 ## 1. Design Principles
 
+-   **Stateless Execution:** This service is designed to be purely execution-focused, with no knowledge of session history or future turns.
 -   **Use Case Controller:** This service directly implements the `run_plan` use case.
 -   **Coordination, Not Creation:** Its role is to orchestrate calls to other single-responsibility services (`PlanParser`, `ActionDispatcher`). It does not contain complex business logic itself.
 -   **State Management:** It manages the state of the execution run, collecting `ActionLog` objects and building the final `ExecutionReport`.

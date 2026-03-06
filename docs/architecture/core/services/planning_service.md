@@ -1,5 +1,5 @@
 # Component: PlanningService
-- **Status:** Planned
+- **Status:** Implemented
 - **Introduced in:** [Slice 09-04](/docs/project/slices/09-04-core-session-context-engine.md)
 
 ## 1. Purpose / Responsibility
@@ -18,12 +18,13 @@ The `PlanningService` is responsible for generating an AI plan based on a user m
 
 1.  **Gather Context:** Calls `IGetContextUseCase.get_context()` (with session/turn files if applicable).
 2.  **Fetch System Prompt:** Reads the local `system_prompt.xml` from the current turn directory.
-3.  **LLM Call:** Passes the formatted context, system prompt, and user message to `ILlmClient.get_completion()`.
-4.  **Persistence:** Saves the resulting Markdown response to the turn's `plan.md`.
+3.  **Contextual Hints:** If operating in Turn 01, it injects an alignment hint into the user message to encourage the agent to clarify goals.
+4.  **LLM Call:** Passes the formatted context, system prompt, and user message to `ILlmClient.get_completion()`.
+5.  **Persistence:** Saves the resulting Markdown response to the turn's `plan.md`.
 
 ## 4. Data Contracts / Methods
 
-### `generate_plan(user_message: str, turn_dir: str, context_files: Sequence[str]) -> str`
+### `generate_plan(user_message: str, turn_dir: str, context_files: Optional[Dict[str, Sequence[str]]] = None) -> str`
 
 -   **Description:** Generates a new `plan.md` file in the specified directory.
 -   **Preconditions:**

@@ -1,5 +1,5 @@
 # Slice 09-04: Core Session & Context Engine
-- **Status:** [▶️] In Progress
+- **Status:** [✅] Completed
 
 ## 1. Business Goal
 
@@ -70,18 +70,33 @@ The core of the interactive workflow is managed by three new services and a spec
 ## 5. Deliverables
 
 ### 1. Infrastructure Refactoring
-- [ ] **Refactored `FileSystemManager`**: Generalized context path resolution.
-- [ ] **Refactored `ContextService`**: Parameterized to support session-specific context files.
+- [x] **Refactored `FileSystemManager`**: Generalized context path resolution.
+- [x] **Refactored `ContextService`**: Parameterized to support session-specific context files.
 
 ### 2. Session Management
-- [ ] **`SessionService`**: Implementation of directory creation, `meta.yaml` management, and turn-id generation.
-- [ ] **`SessionOrchestrator`**: Implementation of the Turn Transition Algorithm (T_current -> T_next).
+- [x] **`SessionService`**: Implementation of directory creation, `meta.yaml` management, and turn-id generation.
+- [x] **`SessionOrchestrator`**: Implementation of the Turn Transition Algorithm (T_current -> T_next).
 
 ### 3. Planning & LLM Integration
-- [ ] **`PlanningService`**: Implementation of the plan generation loop (Context -> LLM -> plan.md).
-- [ ] **CLI Implementation**: Update the `typer` app in `__main__.py` to include `new`, `plan`, and `resume` (which utilizes the `SessionOrchestrator`).
-- [ ] **Context Hint Injection**: Implement logic to append "Session Start" and "Alignment" hints to user messages during planning as per specification.
+- [x] **`PlanningService`**: Implementation of the plan generation loop (Context -> LLM -> plan.md).
+- [x] **CLI Implementation**: Update the `typer` app in `__main__.py` to include `new`, `plan`, and `resume` (which utilizes the `SessionOrchestrator`).
+- [x] **Context Hint Injection**: Implement logic to append "Session Start" and "Alignment" hints to user messages during planning as per specification.
 
 ### 4. Verification
-- [ ] **Integration Tests**: Verifying cascading context (init -> session -> turn).
-- [ ] **Acceptance Tests**: Verifying full turn-to-turn transitions including `READ` action side-effects.
+- [x] **Integration Tests**: Verifying cascading context (init -> session -> turn).
+- [x] **Acceptance Tests**: Verifying full turn-to-turn transitions including `READ` action side-effects.
+
+## Implementation Summary
+
+I have transformed TeDDy from a stateless CLI tool into a stateful, local-first session manager.
+
+### Key Changes
+- **Session Architecture:** Introduced `SessionService` and `SessionOrchestrator` to manage the lifecycle of session directories and automate turn transitions.
+- **Context Engine:** Generalised `FileSystemManager` and `ContextService` to support arbitrary context sources, enabling the cascading context model (`init` -> `session` -> `turn`).
+- **LLM Integration:** Implemented `PlanningService` to orchestrate plan generation with implicit context gathering and Turn 1 alignment hints.
+- **CLI Evolution:** Decomposed `__main__.py` into a modular `session_cli_handlers.py` and implemented the new `new`, `context`, `plan`, and state-aware `resume` commands.
+- **Quality Gates:** Rebalanced the Test Pyramid by moving system-wiring tests (Lazy Loading) to the integration layer to ensure compliance with architectural standards.
+
+### [NEW] Reminders for next cycle
+- [NEW]: The `resume` command currently uses a simple `input()` prompt for messages; this should be upgraded to use the `textual`-based TUI in the next slice.
+- [NEW]: `PlanningService` hardcodes `gpt-4o`; this should be moved to the `ConfigService` in the next refinement.
