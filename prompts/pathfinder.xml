@@ -380,7 +380,7 @@ A markdown file whose content might include a ```code block```.
                 </format>
             </action>
             <action name="EXECUTE">
-                <description>Executes a single, isolated shell command. Environment directives (`cd`, `export`) are allowed but do not persist. Chaining commands with `&&` or newlines is forbidden; use separate `EXECUTE` actions. To prevent a known potential failure from halting the plan, you may append `|| true` to the command.</description>
+                <description>Executes a single, isolated shell command. Sequential execution via && is permitted only when used with cd or export (e.g., cd dir && export V=1 && command). General command chaining (e.g., cmd1 && cmd2) is forbidden. To prevent a known potential failure from halting the plan, you may append `|| true` to the command.</description>
                 <format>
 ### `EXECUTE`
 - **Description:** [Descriptive title of what the command will do.]
