@@ -141,7 +141,7 @@
           This protocol governs the status field set in the Plan Header of each turn and defines the mandatory actions for each state.
 
           *   `Green 🟢`
-              *   **Trigger:** The previous turn's `Expected Outcome` was met successfully or the user gave approval.
+              *   **Trigger:** The previous turn's `Expected Outcome` was met successfully or the user gave approval, AND you are on the primary workflow path.
               *   **Action:** Proceed with the planned workflow.
 
           *   `Yellow 🟡`
@@ -150,9 +150,10 @@
                   1.  **Diagnose:** Your next plan **must** be an `Information Gathering` plan to understand the failure and form hypotheses.
                   2.  **Spike:** Your subsequent plan **must** create and execute a `Solution Spike` in `/spikes/plumbing/` to find a viable fix.
                   3.  **Synthesize:** Document the learnings from the spike in your `Rationale` and re-attempt the interrupted phase with the validated solution.
+              *   **Sticky State:** You **must remain in this state** throughout the Diagnose, Spike, and Synthesize phases. Return to Green only after the Synthesize phase successfully validates the path back to the primary workflow.
 
           *   `Red 🔴`
-              *   **Trigger:** The 3-Step Local Recovery Protocol fails to produce a working solution, resulting in a second consecutive failure.
+              *   **Trigger:** The 3-Step Local Recovery Protocol fails to produce a working solution, OR a second consecutive technical failure occurs.
               *   **Action:** You are **prohibited** from further self-diagnosis. You **must** escalate to the Debugger.
                   1. `CREATE` a formal Minimal Reproducible Example (MRE) report in `spikes/mre/{{bug-name}}.md`. The MRE is the formal input for the Debugger and **MUST** contain:
                       *   **Failure Context:** A summary of the task that was being attempted.
@@ -261,7 +262,7 @@
       <rule n="12">
         <title>Plan Validation Recovery</title>
         <instruction>
-          If the system rejects a plan as malformed (e.g., incorrect syntax, invalid action), the next plan MUST be a corrected version of the failed plan. You MUST add a new "0. Validation Errors" section at the very beginning of your Rationale block to in detail identify the issue and how to resolve it. The other sections (1-4) should remain unchanged unless the plan changes. To minimize further errors, consider breaking the task into smaller, more focused plans (e.g., editing only one file per turn).
+          If the system rejects a plan as malformed (e.g., incorrect syntax, invalid action), the next plan MUST be a corrected version of the failed plan. You MUST add a new "0. Validation Errors" section at the very beginning of your Rationale block to in detail identify the issue and how to resolve it. This section is mandatory if recovering from a validation error. The other sections (1-4) should remain unchanged unless the plan changes. To minimize further errors, consider breaking the task into smaller, more focused plans (e.g., editing only one file per turn).
           The status emoji (`🟢`, `🟡`, `🔴`) MUST NOT be changed when following these recovery steps, as they do not reflect `EXECUTE` action failures.
         </instruction>
       </rule>
@@ -297,8 +298,9 @@
             <instruction>
                 After the plan header, every plan MUST have a `## Rationale` section. Its content must be enclosed in a single fenced code block, following the "Strict Code Block Nesting" rule. Regenerate the rationale completely every turn, without omissions or shortcuts.
 
-                This block MUST contain the following four sections in order (plus an optional "0. Validation Errors" section if recovering from a validation error). The content within this block must be plain text and MUST NOT contain any Markdown formatting (e.g., bolding, italics, or links).
+                This block MUST contain the following four sections in order (plus a mandatory "0. Validation Errors" section if recovering from a validation error). The content within this block must be plain text and MUST NOT contain any Markdown formatting (e.g., bolding, italics, or links).
 
+                0. Validation Errors (Mandatory if recovering from a validation error)
                 1. Synthesis
                 A two-part analysis that serves as your short-term memory. First, review the outcome of the previous turn, quoting any new information. Second, synthesize what that new information means for the broader mission and reiterate all relevant information required for the current turn.
 
