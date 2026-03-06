@@ -52,7 +52,7 @@ echo "I am still running"
 ```
 """
     # Note: 'cd non_existent_dir_to_force_failure' in Setup should cause a failure
-    # if the internal redirection logic is working and we validate paths.
+    # if we correctly validate paths in the Setup parameter.
 
     result = runner.invoke(app, ["execute", "--plan-content", plan_content, "--yes"])
 
