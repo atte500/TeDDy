@@ -67,3 +67,32 @@ def test_get_context_orchestrates_and_returns_correct_dto(
     assert "```txt\ncontent1\n```" in result.content
     assert "[file2.py](/file2.py)" in result.content
     assert "```py\nprint('hello')\n```" in result.content
+
+
+def test_get_context_with_specific_files_uses_resolve_paths_from_files(
+    service: IGetContextUseCase,
+    mock_fs,
+    mock_tree_gen,
+    mock_inspector,
+):
+    """
+    Tests that when specific context files are provided, ContextService
+    calls resolve_paths_from_files instead of get_context_paths.
+    """
+    # Arrange
+    specific_files = ["session.context", "turn.context"]
+    mock_vault_paths = ["file_a.txt"]
+    mock_file_contents = {"file_a.txt": "content_a"}
+
+    mock_inspector.get_environment_info.return_value = {}
+    mock_tree_gen.generate_tree.return_value = ""
+    mock_fs.resolve_paths_from_files.return_value = mock_vault_paths
+    mock_fs.read_files_in_vault.return_value = mock_file_contents
+
+    # Act
+    service.get_context(context_files=specific_files)
+
+    # Assert
+    mock_fs.resolve_paths_from_files.assert_called_once_with(specific_files)
+    mock_fs.get_context_paths.assert_not_called()
+    mock_fs.read_files_in_vault.assert_called_once_with(mock_vault_paths)

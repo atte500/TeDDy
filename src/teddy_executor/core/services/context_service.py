@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Sequence
 from teddy_executor.core.domain.models import ProjectContext
 from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
 from teddy_executor.core.ports.outbound.file_system_manager import FileSystemManager
@@ -23,14 +23,23 @@ class ContextService(IGetContextUseCase):
         self._repo_tree_generator = repo_tree_generator
         self._environment_inspector = environment_inspector
 
-    def get_context(self) -> ProjectContext:
+    def get_context(
+        self, context_files: Optional[Sequence[str]] = None
+    ) -> ProjectContext:
         """
         Gathers all project context information by orchestrating its dependencies.
         """
         # Gather all information from outbound ports
         system_info = self._environment_inspector.get_environment_info()
         repo_tree = self._repo_tree_generator.generate_tree()
-        context_vault_paths = self._file_system_manager.get_context_paths()
+
+        if context_files:
+            context_vault_paths = self._file_system_manager.resolve_paths_from_files(
+                context_files
+            )
+        else:
+            context_vault_paths = self._file_system_manager.get_context_paths()
+
         file_contents = self._file_system_manager.read_files_in_vault(
             context_vault_paths
         )
