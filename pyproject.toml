@@ -39,6 +39,7 @@ pyfakefs = "^6.1.1"
 vulture = "^2.14"
 pytest-cov = "^7.0.0"
 types-pyyaml = "^6.0.12.20250915"
+pytest-xdist = "^3.8.0"
 
 [tool.poetry.scripts]
 teddy = "teddy_executor.__main__:app"
