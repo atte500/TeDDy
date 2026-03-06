@@ -142,6 +142,80 @@ class MyClass:
     )
 
 
+def test_parse_execute_action_with_setup_translation(parser: IPlanParser):
+    """
+    Given an EXECUTE action with a Setup string,
+    When the plan is parsed,
+    Then the Setup string is translated into cwd and env parameters.
+    """
+    # Arrange
+    plan_content = """
+# Execute with Setup Translation
+- Status: Green 🟢
+- Agent: Developer
+
+## Rationale
+````text
+Rationale.
+````
+
+## Action Plan
+
+### `EXECUTE`
+- Description: Run with setup.
+- Setup: cd src && export CI=true && export FOO="bar baz"
+````shell
+pytest
+````
+"""
+    # Act
+    result_plan = parser.parse(plan_content)
+
+    # Assert
+    action = result_plan.actions[0]
+    assert action.params["cwd"] == "src"
+    assert action.params["env"]["CI"] == "true"
+    assert action.params["env"]["FOO"] == "bar baz"
+    assert action.params["command"] == "pytest"
+
+
+def test_parse_execute_action_with_setup_and_allow_failure(parser: IPlanParser):
+    """
+    Given an EXECUTE action with Setup and Allow Failure metadata,
+    When the plan is parsed,
+    Then these parameters are correctly extracted.
+    """
+    # Arrange
+    plan_content = """
+# Execute with Setup
+- Status: Green 🟢
+- Agent: Developer
+
+## Rationale
+````text
+Rationale.
+````
+
+## Action Plan
+
+### `EXECUTE`
+- Description: Run with setup.
+- Setup: cd src && export CI=true
+- Allow Failure: true
+````shell
+pytest
+````
+"""
+    # Act
+    result_plan = parser.parse(plan_content)
+
+    # Assert
+    action = result_plan.actions[0]
+    assert action.params["setup"] == "cd src && export CI=true"
+    assert action.params["allow_failure"] is True
+    assert action.params["command"] == "pytest"
+
+
 def test_parse_execute_action(parser: IPlanParser):
     """
     Given a valid Markdown plan with an EXECUTE action,
@@ -222,7 +296,7 @@ def test_parse_execute_action_with_cd_directive(parser: IPlanParser):
     """
     Given an EXECUTE action with a `cd` directive in the shell block,
     When the plan is parsed,
-    Then the `cwd` is extracted and the `cd` line is stripped from the command.
+    Then the `cd` line remains in the command as it is no longer extracted.
     """
     # Arrange
     plan_content = """
@@ -252,16 +326,14 @@ poetry run pytest
     action = result_plan.actions[0]
 
     assert action.type == "EXECUTE"
-    assert action.params["cwd"] == "src/my_dir"
-    assert action.params["command"] == "poetry run pytest"
-    assert action.params.get("env") is None
+    assert action.params["command"] == "cd src/my_dir\npoetry run pytest"
 
 
 def test_parse_execute_action_with_export_directive(parser: IPlanParser):
     """
     Given an EXECUTE action with `export` directives in the shell block,
     When the plan is parsed,
-    Then the `env` dict is populated and the `export` lines are stripped.
+    Then the `export` lines remain in the command as they are no longer extracted.
     """
     # Arrange
     plan_content = r"""
@@ -293,17 +365,15 @@ my_command --do-something
     action = result_plan.actions[0]
 
     assert action.type == "EXECUTE"
-    expected_env = {"FOO": "bar", "BAZ": "qux", "OTHER": "single_quotes"}
-    assert action.params["env"] == expected_env
-    assert action.params["command"] == "my_command --do-something"
-    assert action.params.get("cwd") is None
+    expected_cmd = "export FOO=bar\nexport BAZ=\"qux\"\nexport OTHER='single_quotes'\nmy_command --do-something"
+    assert action.params["command"] == expected_cmd
 
 
 def test_parse_execute_action_with_mixed_directives(parser: IPlanParser):
     """
     Given an EXECUTE action with both `cd` and `export` directives,
     When the plan is parsed,
-    Then both are extracted correctly and stripped from the command.
+    Then they remain in the command.
     """
     # Arrange
     plan_content = r"""
@@ -335,9 +405,7 @@ pytest -k "my_test"
     action = result_plan.actions[0]
 
     assert action.type == "EXECUTE"
-    assert action.params["cwd"] == "tests"
-    assert action.params["env"] == {"CI": "true"}
-    assert action.params["command"] == 'pytest -k "my_test"'
+    assert action.params["command"] == 'cd tests\nexport CI=true\n\npytest -k "my_test"'
 
 
 def test_parse_research_action(parser: IPlanParser):

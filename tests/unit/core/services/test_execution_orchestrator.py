@@ -218,6 +218,52 @@ def test_execute_auto_skips_after_failure(
     )
 
 
+def test_execute_continues_on_failure_if_allow_failure_is_true(
+    orchestrator: ExecutionOrchestrator,
+    mock_action_dispatcher,
+):
+    """
+    Given a plan with an action that has allow_failure=True,
+    When that action fails,
+    Then the subsequent actions should still be executed.
+    """
+    # Arrange
+    action1 = ActionData(
+        type="EXECUTE",
+        description="Action 1",
+        params={"command": "fail", "allow_failure": True},
+    )
+    action2 = ActionData(
+        type="EXECUTE", description="Action 2", params={"command": "echo success"}
+    )
+    plan = Plan(title="Test Plan", rationale="Test", actions=[action1, action2])
+
+    failing_log = ActionLog(
+        status=ActionStatus.FAILURE,
+        action_type="EXECUTE",
+        params={"command": "fail", "allow_failure": True},
+        details="Fail",
+    )
+    success_log = ActionLog(
+        status=ActionStatus.SUCCESS,
+        action_type="EXECUTE",
+        params={"command": "echo success"},
+        details="Success",
+    )
+
+    mock_action_dispatcher.dispatch_and_execute.side_effect = [failing_log, success_log]
+
+    # Act
+    report = orchestrator.execute(plan=plan, interactive=False)
+
+    # Assert
+    expected_action_count = 2
+    assert report.run_summary.status == RunStatus.FAILURE
+    assert len(report.action_logs) == expected_action_count
+    assert report.action_logs[0].status == ActionStatus.FAILURE
+    assert report.action_logs[1].status == ActionStatus.SUCCESS
+
+
 def test_execute_happy_path_non_interactive(
     orchestrator: ExecutionOrchestrator,
     mock_plan_parser,

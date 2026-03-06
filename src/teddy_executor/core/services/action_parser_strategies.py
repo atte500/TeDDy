@@ -14,7 +14,7 @@ from teddy_executor.core.services.parser_infrastructure import (
     _PeekableStream,
     get_child_text,
     get_action_heading,
-    extract_posix_headers,
+    translate_setup_commands,
     consume_content_until_next_action,
 )
 from teddy_executor.core.services.parser_metadata import (
@@ -172,27 +172,35 @@ def parse_execute_action(stream: _PeekableStream) -> ActionData:
 
     description, params = parse_action_metadata(
         metadata_list,
-        text_key_map={"Expected Outcome": "expected_outcome", "cwd": "cwd"},
+        text_key_map={
+            "Expected Outcome": "expected_outcome",
+            "cwd": "cwd",
+            "Setup": "setup",
+            "Allow Failure": "allow_failure",
+        },
     )
+
+    if "allow_failure" in params:
+        params["allow_failure"] = params["allow_failure"].lower() == "true"
 
     env_from_meta = parse_env_from_metadata(metadata_list)
     if env_from_meta:
         params["env"] = env_from_meta
 
+    if "setup" in params:
+        cwd, env = translate_setup_commands(
+            params["setup"], params.get("cwd"), params.get("env")
+        )
+        if cwd:
+            params["cwd"] = cwd
+        if env:
+            params["env"] = env
+
     command_block = stream.next()
     if not isinstance(command_block, CodeFence):
         raise InvalidPlanError("EXECUTE action is missing command code block.")
-    raw_command = get_child_text(command_block).strip()
 
-    final_command, cwd, env = extract_posix_headers(
-        raw_command, params.get("cwd"), params.get("env")
-    )
-
-    params["command"] = final_command
-    if cwd is not None:
-        params["cwd"] = cwd
-    if env is not None:
-        params["env"] = env
+    params["command"] = get_child_text(command_block).strip()
 
     return ActionData(type="EXECUTE", description=description, params=params)
 

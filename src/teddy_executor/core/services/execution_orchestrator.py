@@ -237,7 +237,9 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             action_logs.append(action_log)
 
             if action_log.status == ActionStatus.FAILURE:
-                halt_execution = True
+                allow_failure = action.params.get("allow_failure")
+                if not allow_failure:
+                    halt_execution = True
 
         end_time = datetime.now()
         summary = RunSummary(

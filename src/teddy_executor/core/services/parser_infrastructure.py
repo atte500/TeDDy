@@ -141,41 +141,34 @@ def print_ast(token: Any, indent: int = 0):
             print_ast(child, indent + 1)
 
 
-def extract_posix_headers(
-    command_str: str,
-    initial_cwd: str | None,
-    initial_env: dict[str, str] | None,
-) -> tuple[str, str | None, dict[str, str] | None]:
+def translate_setup_commands(
+    setup_str: str,
+    initial_cwd: Optional[str] = None,
+    initial_env: Optional[dict[str, str]] = None,
+) -> tuple[Optional[str], Optional[dict[str, str]]]:
     """
-    Parses `cd` and `export` directives from the start of a shell command.
+    Translates a chained setup string (e.g. 'cd dir && export FOO=bar')
+    into cwd and env parameters.
     """
     cwd = initial_cwd
     env = initial_env
 
-    lines = command_str.strip().split("\n")
-    command_lines = []
-    header_processed = False
-
-    for line in lines:
-        stripped_line = line.strip()
-        if not header_processed and stripped_line.startswith("cd "):
-            cwd = stripped_line.split(" ", 1)[1].strip()
-            continue
-        elif not header_processed and stripped_line.startswith("export "):
+    parts = [p.strip() for p in setup_str.split("&&")]
+    for part in parts:
+        if part.startswith("cd "):
+            cwd = part[3:].strip()
+        elif part.startswith("export "):
             if env is None:
                 env = {}
-            _, key_value_part = stripped_line.split(" ", 1)
-            if "=" in key_value_part:
-                key, value = key_value_part.split("=", 1)
+            kv_part = part[7:].strip()
+            if "=" in kv_part:
+                key, value = kv_part.split("=", 1)
+                key = key.strip()
+                value = value.strip()
                 if (value.startswith('"') and value.endswith('"')) or (
                     value.startswith("'") and value.endswith("'")
                 ):
                     value = value[1:-1]
                 env[key] = value
-            continue
-        else:
-            header_processed = True
-            command_lines.append(line)
 
-    final_command = "\n".join(command_lines).strip()
-    return final_command, cwd, env
+    return cwd, env
