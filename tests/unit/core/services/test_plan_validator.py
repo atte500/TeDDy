@@ -444,6 +444,61 @@ def test_validate_edit_provides_diff_on_mismatch(validator, mock_fs):
     assert "?" in errors[0].message
 
 
+def test_validate_edit_diff_handling_no_trailing_newline(validator, mock_fs):
+    """
+    Scenario: Diff lines are always separated by newlines
+    Given a FIND block and file content that do NOT end in newlines,
+    And they are near matches,
+    When validated,
+    Then the generated diff must have correct newline separation.
+    """
+    # Arrange: Note the lack of trailing \n
+    file_content = "Line with typo"
+    find_block = "Line with typo extra"
+    file_path = "test.txt"
+    mock_fs.path_exists.return_value = True
+    mock_fs.read_file.return_value = file_content
+
+    plan = Plan(
+        title="Test Newline",
+        rationale="Test",
+        actions=[
+            ActionData(
+                type="EDIT",
+                params={
+                    "path": file_path,
+                    "edits": [{"find": find_block, "replace": "fixed"}],
+                },
+            )
+        ],
+    )
+
+    # Act
+    errors = validator.validate(plan)
+
+    # Assert
+    assert len(errors) == 1
+    error_msg = errors[0].message
+
+    # Find the diff section
+    assert "Closest Match Diff:" in error_msg
+    diff_content = error_msg.split("diff\n")[1].split("\n```")[0]
+
+    # Verify that the diff lines are NOT collapsed.
+    # ndiff output for this should be:
+    # - Line with typo extra
+    # ?                ------
+    # + Line with typo
+    lines = diff_content.splitlines()
+    min_expected_lines = 3
+    assert len(lines) >= min_expected_lines, (
+        f"Expected at least {min_expected_lines} lines in diff, but got: {repr(diff_content)}"
+    )
+    assert lines[0].startswith("-")
+    assert lines[1].startswith("?")
+    assert lines[2].startswith("+")
+
+
 def test_validate_edit_fails_if_find_and_replace_identical(validator, mock_fs):
     """
     Given an EDIT action where FIND and REPLACE are identical,

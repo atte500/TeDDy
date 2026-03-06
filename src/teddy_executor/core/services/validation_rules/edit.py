@@ -96,7 +96,9 @@ def _find_best_match_and_diff(file_content: str, find_block: str) -> str:
 
     if best_match_lines:
         diff = difflib.ndiff(find_lines, best_match_lines)
-        return "".join(diff)
+        # Ensure each diff line is on its own line by stripping existing
+        # newlines and joining with a standard newline.
+        return "\n".join(line.rstrip("\n\r") for line in diff)
 
     return ""
 
