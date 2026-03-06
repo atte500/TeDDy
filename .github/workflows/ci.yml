@@ -66,7 +66,7 @@ jobs:
       run: poetry run vulture src --min-confidence 80
 
     - name: Run tests (with coverage)
-      run: poetry run pytest --cov-fail-under=90
+      run: poetry run pytest --cov=src --cov-report=term-missing --cov-fail-under=90
 
     - name: Setup Node.js
       uses: actions/setup-node@v4

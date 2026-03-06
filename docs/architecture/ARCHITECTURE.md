@@ -48,6 +48,7 @@ This document outlines the technical standards, conventions, and setup process f
     - `tests/unit/`: Tests for individual functions or classes in isolation.
 - **Execution:** Tests are run from the **project root** using `poetry run pytest`.
     - **Run all tests:** `poetry run pytest` (Runs in parallel by default via `-n auto` in `pyproject.toml`)
+    - **Run all tests with coverage:** `poetry run pytest --cov=src --cov-report=term-missing`
     - **Run all tests (Force Sequential):** `poetry run pytest -n 0`
     - **Run tests in a specific file:** `poetry run pytest tests/acceptance/test_prompt_action.py`
     - **Run a specific test by name:** `poetry run pytest -k "test_prompt_gets_response"`
@@ -69,7 +70,7 @@ This document outlines the technical standards, conventions, and setup process f
 - **Goal:** To provide a comprehensive, automated quality gate that protects the main branch.
 - **Principle:** The CI pipeline **must** run all checks from the `pre-commit` suite. It **may** also include additional, slower-running checks.
 - **CI-Only Checks:**
-    - **Test Coverage:** The CI pipeline **must** perform test coverage analysis using `pytest-cov` and enforce a strict failure threshold of **90%**.
+    - **Test Coverage:** The CI pipeline **must** perform test coverage analysis using `pytest-cov` and enforce a strict failure threshold of **90%**. Note: Coverage is disabled by default for local runs to optimize the developer "Inner Loop" speed; it must be explicitly invoked or run via CI.
     - **Code Duplication:** Checked via `jscpd` with a minimum token count of **50**.
     - **Complexity & Dead Code:**
         - `ruff`: Configured to enforce a **precise Cyclomatic Complexity** limit of **9** per function (Rule `C901`) and a **precise Statement Limit** of **40** per function (Rule `PLR0915`).
