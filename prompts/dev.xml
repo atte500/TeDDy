@@ -125,28 +125,28 @@
             Maintain orientation by providing the complete, updated State Dashboard in the `Rationale` block. Each major section of the dashboard MUST be on its own line.
             Vertical Slice: [docs/project/slices/MM-NN-{{feature}}.md]
             Development Workflow:
-            - [✅ | ▶️ |  ] Orientation
-            - [✅ | ▶️ |  ] Implement Vertical Slice
-            - [✅ | ▶️ |  ] Documentation & Handoff
+            - [✓ | ▶ |  ] Orientation
+            - [✓ | ▶ |  ] Implement Vertical Slice
+            - [✓ | ▶ |  ] Documentation & Handoff
             Active Phase Details:
             *   Scenarios:
-                - [✅] [Scenario Name 1]
-                - [▶️] [Scenario Name 2]
+                - [✓] [Scenario Name 1]
+                - [▶] [Scenario Name 2]
                 - [ ] [Scenario Name 3]
             *   Outer Loop (Scenario)
                 *   Guiding Acceptance Test: `tests/acceptance/test_feature.py::test_the_scenario`
                 *   Status:
-                    - [✅ | ▶️ |  ] TEST SCENARIO
-                    - [✅ | ▶️ |  ] IMPLEMENT SCENARIO
-                    - [✅ | ▶️ |  ] POLISH SCENARIO
-                    - [✅ | ▶️ |  ] COMMIT SCENARIO
+                    - [✓ | ▶ |  ] TEST SCENARIO
+                    - [✓ | ▶ |  ] IMPLEMENT SCENARIO
+                    - [✓ | ▶ |  ] POLISH SCENARIO
+                    - [✓ | ▶ |  ] COMMIT SCENARIO
             *   Inner Loop (TDD Cycle)
                 *   Current Focus: [State what you are currently driving out, e.g., 'Main Scenario' or 'Fixing Regression XYZ']
                 *   TDD Target Test: `tests/unit/test_component.py`
                 *   Status:
-                    - [✅ | ▶️ |  ] RED
-                    - [✅ | ▶️ |  ] GREEN
-                    - [✅ | ▶️ |  ] REFACTOR
+                    - [✓ | ▶ |  ] RED
+                    - [✓ | ▶ |  ] GREEN
+                    - [✓ | ▶ |  ] REFACTOR
             WIP & Reminders:
             - [This is a persistent log. You MUST carry all notes forward into every turn.]
             - [ ] [A pending task or next step to be addressed (e.g., [ ] Research library X)]
@@ -436,26 +436,26 @@ The test is expected to fail with a `NotImplementedError`, confirming the RED st
 4. State Dashboard
 Vertical Slice: `docs/project/slices/MM-NN-{{feature}}.md`
 Development Workflow:
-- [✅] Orientation
-- [▶️] Implement Vertical Slice
+- [✓] Orientation
+- [▶] Implement Vertical Slice
 - [ ] Documentation & Handoff
 Active Phase Details:
 *   Scenarios:
-    - [✅] Scenario 1
-    - [▶️] Scenario 2
+    - [✓] Scenario 1
+    - [▶] Scenario 2
     - [ ] Scenario 3]
 *   Outer Loop (Scenario)
     *   Guiding Acceptance Test: `tests/acceptance/test_feature.py::test_the_scenario`
     *   Status:
-        - [✅] TEST SCENARIO
-        - [▶️] IMPLEMENT SCENARIO
+        - [✓] TEST SCENARIO
+        - [▶] IMPLEMENT SCENARIO
         - [ ] POLISH SCENARIO
         - [ ] COMMIT SCENARIO
 *   Inner Loop (TDD Cycle)
     *   Current Focus: Implementing core [Component] contract
     *   TDD Target Test: `tests/unit/test_component.py`
     *   Status:
-        - [▶️] RED
+        - [▶] RED
         - [ ] GREEN
         - [ ] REFACTOR
 WIP & Reminders:

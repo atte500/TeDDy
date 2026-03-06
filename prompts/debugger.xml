@@ -134,19 +134,19 @@
                 - Failure: [Concise description of the original error from the MRE]
                 - Diagnose & Solve Loop:
                     - Part 1: Diagnosis
-                        - [✅ | ▶️ |  ] Context & Instrumentation
-                        - [✅ | ▶️ |  ] Assumption Verification
-                        - [✅ | ▶️ |  ] Hypothesis Generation
-                        - [✅ | ▶️ |  ] Root Cause Verification
+                        - [✓ | ▶ |  ] Context & Instrumentation
+                        - [✓ | ▶ |  ] Assumption Verification
+                        - [✓ | ▶ |  ] Hypothesis Generation
+                        - [✓ | ▶ |  ] Root Cause Verification
                     - Part 2: Solution
-                        - [✅ | ▶️ |  ] Low-Fidelity Solution Spike
-                        - [✅ | ▶️ |  ] High-Fidelity Solution Validation
-                        - [✅ | ▶️ |  ] Bug Fix Slice & Handoff
+                        - [✓ | ▶ |  ] Low-Fidelity Solution Spike
+                        - [✓ | ▶ |  ] High-Fidelity Solution Validation
+                        - [✓ | ▶ |  ] Bug Fix Slice & Handoff
                 - Current Findings:
                     - Assumption Status: [Pending | Flawed | Validated]
                     - Root Cause: [Pending | Identified: (concise description)]
                     - Hypotheses:
-                        - [✅ | ▶️ | ❌] [Hypothesis 1]
+                        - [✓ | ▶ | ✗] [Hypothesis 1]
                 - WIP & Reminders:
                     - [This is a persistent log. You MUST carry all notes forward into every turn.]
                     - [ ] [A pending task or next step to be addressed (e.g., [ ] Research library X)]
@@ -411,8 +411,8 @@ The verification script is expected to execute successfully and print a clear ve
 - Failure: [Concise description of the original error from the MRE]
 - Diagnose & Solve Loop:
     - Part 1: Diagnosis
-        - [✅] Context & Instrumentation
-        - [▶️] Assumption Verification
+        - [✓] Context & Instrumentation
+        - [▶] Assumption Verification
         - [ ] Hypothesis Generation
         - [ ] Root Cause Verification
     - Part 2: Solution

@@ -171,13 +171,13 @@
                 - Current Milestone: [docs/project/milestones/MM-{{feature}}.md]
                 - Current Slice: [docs/project/slices/MM-NN-{{feature}}.md]
                 - Architectural Workflow:
-                  - [✅ | ▶️ |  ] Context & Refactoring Analysis
-                  - [✅ | ▶️ |  ] Define the Slice Contract
-                  - [✅ | ▶️ |  ] Architectural Exploration (Diverge)
-                  - [✅ | ▶️ |  ] Architectural Validation (Converge)
-                  - [✅ | ▶️ |  ] Document Approved Architecture
-                  - [✅ | ▶️ |  ] Finalize Deliverables & Environment
-                  - [✅ | ▶️ |  ] Version Control & Handoff
+                  - [✓ | ▶ |  ] Context & Refactoring Analysis
+                  - [✓ | ▶ |  ] Define the Slice Contract
+                  - [✓ | ▶ |  ] Architectural Exploration (Diverge)
+                  - [✓ | ▶ |  ] Architectural Validation (Converge)
+                  - [✓ | ▶ |  ] Document Approved Architecture
+                  - [✓ | ▶ |  ] Finalize Deliverables & Environment
+                  - [✓ | ▶ |  ] Version Control & Handoff
                 - Active Phase Details:
                     - [A dynamic, context-sensitive checklist or status relevant to the active phase.]
                 - WIP & Reminders:
@@ -441,15 +441,15 @@ The isolated spike is expected to execute successfully, proving the external lib
 - Current Milestone: [docs/project/milestones/NN-milestone-name.md]
 - Current Slice: [docs/project/slices/NN-{{feature}}.md]
 - Architectural Workflow:
-  - [✅] Context & Refactoring Analysis
-  - [✅] Define the Slice Contract
-  - [✅] Architectural Exploration (Diverge)
-  - [▶️] Architectural Validation (Converge)
+  - [✓] Context & Refactoring Analysis
+  - [✓] Define the Slice Contract
+  - [✓] Architectural Exploration (Diverge)
+  - [▶] Architectural Validation (Converge)
   - [ ] Document Approved Architecture
   - [ ] Finalize Deliverables & Environment
   - [ ] Version Control & Handoff
 - Active Phase Details:
-  - [▶️] Create and execute isolated spike for external Library X.
+  - [▶] Create and execute isolated spike for external Library X.
   - [ ] Perform static analysis for internal system integration.
   - [ ] Validate and proceed to documentation.
 - WIP & Reminders:

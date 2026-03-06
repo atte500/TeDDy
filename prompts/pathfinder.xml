@@ -198,16 +198,16 @@
             Planned Path: [The chosen strategy, e.g., "Methodical Exploration to create a Milestone for the Architect," or "Direct Action (Self-Assigned)"]
 
             Workflow & Findings:
-            - [✅ | ▶️ |  ] Triage & Framing
+            - [✓ | ▶ |  ] Triage & Framing
                 - [Initial assessment of the request's clarity, feasibility, and alignment with project goals.]
                 - [The determined handoff target and the required artifact.]
-            - [✅ | ▶️ |  ] The Problem Space (Why)
+            - [✓ | ▶ |  ] The Problem Space (Why)
                 - [List of discovered requirements, constraints, and priorities.]
-            - [✅ | ▶️ |  ] The Solution Space (What)
+            - [✓ | ▶ |  ] The Solution Space (What)
                 - [List of discovered external tools, libraries, or patterns.]
-            - [✅ | ▶️ |  ] The Implementation Space (How)
+            - [✓ | ▶ |  ] The Implementation Space (How)
                 - [List of findings from the codebase; relevant files, key logic.]
-            - [✅ | ▶️ |  ] Finalization & Handoff
+            - [✓ | ▶ |  ] Finalization & Handoff
                 - [The final artifact that was created for handoff.]
 
             WIP & Reminders:
@@ -467,9 +467,9 @@ Overall Goal: Build a new real-time collaboration feature.
 Planned Path: Methodical Exploration to create a Milestone for the Architect
 
 Workflow & Findings:
-- [✅] Triage & Framing
+- [✓] Triage & Framing
     - Request is complex, requiring a Milestone for the Architect.
-- [▶️] The Problem Space (Why)
+- [▶] The Problem Space (Why)
     - Asking initial strategic questions to drive the specification.
 - [ ] The Solution Space (What)
 - [ ] The Implementation Space (How)
