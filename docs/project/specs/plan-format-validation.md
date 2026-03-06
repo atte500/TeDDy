@@ -68,7 +68,10 @@ These checks validate the *content* of an action against the current state of th
 -   **[✓] Local file must exist:** If the resource is a local file path (e.g., `[path/to/file.md](/path/to/file.md)`), that file must exist on the file system. (Note: URLs are not validated at this stage).
 
 #### `EXECUTE`
--   **[✓] Must contain a single command:** After stripping `cd` and `export` directives, the command block must contain exactly one executable line. Chaining commands with `&&` or newlines is forbidden.
+-   **[✓] Must contain a core command:** The command code block must not be empty.
+-   **[✓] No chaining allowed:** The command block must not contain any shell chaining operators (`&&`, `||`, `;`, `|`, `&`).
+-   **[✓] No directives allowed:** The command block must not contain `cd` or `export` commands. These must be moved to the `Setup` parameter.
+-   **[✓] Single logical line:** The command must represent exactly one logical execution line.
 
 #### `PRUNE`
 -   **[✓] `Resource` must be specified:** The metadata block must contain a `Resource`.

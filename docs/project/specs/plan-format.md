@@ -156,18 +156,19 @@ All actions are located under the `## Action Plan` heading. Each action is defin
     `````markdown
     ### `EXECUTE`
     - **Description:** Verify the new file was created.
-    - **Expected Outcome:** The output will list `plan-format.md`. If a test is expected to fail, specify the exact `AssertionError` or error message.
+    - **Setup:** cd docs/project/specs/ && export CI=true
+    - **Allow Failure:** true
+    - **Expected Outcome:** The output will list `plan-format.md`.
     ````shell
-    cd docs/project/specs/
-    export CI=true
     ls -l
     ````
     `````
 -   **Parsing Rules & Behavior:**
-    1.  **Single Command Mandate:** The code block **must** contain only one executable command. Chaining commands (e.g., with `&&` or newlines) is forbidden and will be rejected by the `PlanValidator`.
-    2.  **Directive Pre-Processing:** The system scans the top of the script for `cd <path>` and `export KEY=value` directives. These are extracted to configure the execution environment for the command.
-    3.  **Stateless Execution:** Each `EXECUTE` action runs in an isolated environment. `cwd` and `env` changes do not persist between actions.
-    4.  **Parameter Extraction:** The parser extracts `Description` and `Expected Outcome` from the metadata list.
+    1.  **Strict Command Mandate:** The code block **must** contain exactly one executable command. Any form of shell chaining (`&&`, `||`, `;`, `|`, `&`) is strictly forbidden.
+    2.  **Explicit Setup:** All environment preparation (e.g., `cd`, `export`) must be placed in the optional `Setup` metadata parameter. Chaining with `&&` is allowed within the `Setup` string for convenience.
+    3.  **Failure Control:** The optional `Allow Failure` parameter (boolean `true`/`false`) determines if execution continues after a non-zero exit code. It defaults to `false`.
+    4.  **Stateless Execution:** Each `EXECUTE` action runs in an isolated environment. `Setup` changes do not persist between actions.
+    5.  **Parameter Extraction:** The parser extracts `Description`, `Setup`, `Allow Failure`, and `Expected Outcome` from the metadata list.
 
 ### 5.5. `RESEARCH`
 
