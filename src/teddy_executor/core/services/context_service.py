@@ -24,7 +24,7 @@ class ContextService(IGetContextUseCase):
         self._environment_inspector = environment_inspector
 
     def get_context(
-        self, context_files: Optional[Sequence[str]] = None
+        self, context_files: Optional[Dict[str, Sequence[str]]] = None
     ) -> ProjectContext:
         """
         Gathers all project context information by orchestrating its dependencies.
@@ -33,22 +33,33 @@ class ContextService(IGetContextUseCase):
         system_info = self._environment_inspector.get_environment_info()
         repo_tree = self._repo_tree_generator.generate_tree()
 
+        scoped_paths: Dict[str, List[str]] = {}
+        all_resolved_paths: List[str] = []
+
         if context_files:
-            context_vault_paths = self._file_system_manager.resolve_paths_from_files(
-                context_files
-            )
+            # Backward compatibility: handle list of files by wrapping in 'Default' scope
+            if isinstance(context_files, list):
+                context_files = {"Default": context_files}
+
+            for scope, files in context_files.items():
+                paths = self._file_system_manager.resolve_paths_from_files(files)
+                scoped_paths[scope] = paths
+                for p in paths:
+                    if p not in all_resolved_paths:
+                        all_resolved_paths.append(p)
         else:
-            context_vault_paths = self._file_system_manager.get_context_paths()
+            all_resolved_paths = self._file_system_manager.get_context_paths()
+            scoped_paths["Default"] = all_resolved_paths
 
         file_contents = self._file_system_manager.read_files_in_vault(
-            context_vault_paths
+            all_resolved_paths
         )
 
         header = self._format_header(system_info)
-        content = self._format_content(repo_tree, context_vault_paths, file_contents)
+        content = self._format_content(repo_tree, scoped_paths, file_contents)
 
         # Assemble and return the DTO
-        return ProjectContext(header=header, content=content)
+        return ProjectContext(header=header, content=content, scoped_paths=scoped_paths)
 
     def _format_header(self, system_info: Dict[str, str]) -> str:
         """Formats the header section of the context report."""
@@ -64,19 +75,54 @@ class ContextService(IGetContextUseCase):
     def _format_content(
         self,
         repo_tree: str,
-        context_vault_paths: List[str],
+        scoped_paths: Dict[str, List[str]],
         file_contents: Dict[str, Optional[str]],
     ) -> str:
         """Formats the main content section of the context report."""
         content_parts = ["\n# Repository Tree", repo_tree]
-        if context_vault_paths:
-            content_parts.append("\n# Context Vault")
-            for path in context_vault_paths:
-                content_parts.append(f"## [{path}](/{path})")
-                content = file_contents.get(path)
-                if content is not None:
-                    lang = path.split(".")[-1] if "." in path else ""
-                    content_parts.append(f"```{lang}\n{content}\n```")
-                else:
-                    content_parts.append("```\n--- FILE NOT FOUND ---\n```")
+
+        content_parts.extend(self._format_context_summary(scoped_paths))
+        content_parts.extend(
+            self._format_resource_contents(scoped_paths, file_contents)
+        )
+
         return "\n".join(content_parts)
+
+    def _format_context_summary(self, scoped_paths: Dict[str, List[str]]) -> List[str]:
+        """Formats the Context Summary section."""
+        if not scoped_paths:
+            return []
+
+        parts = ["\n# Context Summary"]
+        for scope, paths in scoped_paths.items():
+            if paths:
+                parts.append(f"### {scope}")
+                for path in paths:
+                    parts.append(f"- [{path}](/{path})")
+        return parts
+
+    def _format_resource_contents(
+        self,
+        scoped_paths: Dict[str, List[str]],
+        file_contents: Dict[str, Optional[str]],
+    ) -> List[str]:
+        """Formats the Resource Contents section."""
+        unique_paths: List[str] = []
+        for paths in scoped_paths.values():
+            for p in paths:
+                if p not in unique_paths:
+                    unique_paths.append(p)
+
+        if not unique_paths:
+            return []
+
+        parts = ["\n# Resource Contents"]
+        for path in unique_paths:
+            parts.append(f"## [{path}](/{path})")
+            content = file_contents.get(path)
+            if content is not None:
+                lang = path.split(".")[-1] if "." in path else ""
+                parts.append(f"```{lang}\n{content}\n```")
+            else:
+                parts.append("```\n--- FILE NOT FOUND ---\n```")
+        return parts

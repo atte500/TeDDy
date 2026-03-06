@@ -2,9 +2,8 @@ import logging
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, Optional, Sequence
 
-import pyperclip
 import typer
 
 from teddy_executor.core.domain.models import (
@@ -12,18 +11,34 @@ from teddy_executor.core.domain.models import (
     RunStatus,
     RunSummary,
 )
-from teddy_executor.core.domain.models.plan import Plan
 from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
 from teddy_executor.core.ports.inbound.init import IInitUseCase
 from teddy_executor.core.ports.outbound.session_manager import ISessionManager
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser, InvalidPlanError
 from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
-from teddy_executor.core.ports.outbound import (
+from teddy_executor.core.ports.outbound.markdown_report_formatter import (
     IMarkdownReportFormatter,
 )
-from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
-from teddy_executor.core.services.plan_validator import ValidationError
+from teddy_executor.core.ports.outbound.file_system_manager import (
+    FileSystemManager,
+)
+from teddy_executor.core.ports.outbound.repo_tree_generator import (
+    IRepoTreeGenerator,
+)
+from teddy_executor.adapters.outbound.local_file_system_adapter import (
+    LocalFileSystemAdapter,
+)
+from teddy_executor.adapters.outbound.local_repo_tree_generator import (
+    LocalRepoTreeGenerator,
+)
 from teddy_executor.adapters.inbound.cli_formatter import format_project_context
+from teddy_executor.adapters.inbound.cli_helpers import (
+    find_project_root,
+    echo_and_copy,
+    get_plan_content,
+    handle_validation_failure,
+    execute_valid_plan,
+)
 from teddy_executor.container import create_container
 from teddy_executor.prompts import find_prompt_content
 
@@ -44,26 +59,25 @@ logging.basicConfig(
 @app.callback()
 def bootstrap():
     """
-    Ensures the project is initialized before any command runs.
+    Ensures the project is anchored to the root and initialized.
     """
+    project_root = find_project_root()
+
+    # Re-register file system components anchored to the project root
+    # This ensures all paths are resolved relative to where the .teddy folder lives.
+    container.register(
+        FileSystemManager,
+        LocalFileSystemAdapter,
+        root_dir=str(project_root),
+    )
+    container.register(
+        IRepoTreeGenerator,
+        LocalRepoTreeGenerator,
+        root_dir=str(project_root),
+    )
+
     init_service: IInitUseCase = container.resolve(IInitUseCase)
     init_service.ensure_initialized()
-
-
-def _echo_and_copy(
-    content: str,
-    no_copy: bool = False,
-    confirmation_message: str = "Output copied to clipboard.",
-):
-    """Prints content to stdout and copies it to the clipboard unless disabled."""
-    typer.echo(content)
-    if not no_copy:
-        try:
-            pyperclip.copy(content)
-            typer.echo(confirmation_message, err=True)
-        except pyperclip.PyperclipException:
-            # Silently fail if clipboard is not available.
-            pass
 
 
 @app.command()
@@ -99,9 +113,24 @@ def context(
     All operations respect the project's root-relative path conventions.
     """
     context_service: IGetContextUseCase = container.resolve(IGetContextUseCase)
-    context_result = context_service.get_context()
+
+    # Detect Session Context
+    # We look for turn.context in CWD and session.context in parent.
+    cwd = Path.cwd()
+    turn_context = cwd / "turn.context"
+    session_context = cwd.parent / "session.context"
+    meta_yaml = cwd / "meta.yaml"
+
+    context_files: Optional[Dict[str, Sequence[str]]] = None
+    if turn_context.exists() and session_context.exists() and meta_yaml.exists():
+        context_files = {
+            "Turn": [str(turn_context)],
+            "Session": [str(session_context)],
+        }
+
+    context_result = context_service.get_context(context_files=context_files)
     formatted_context = format_project_context(context_result)
-    _echo_and_copy(formatted_context, no_copy=no_copy)
+    echo_and_copy(formatted_context, no_copy=no_copy)
 
 
 @app.command(name="get-prompt")
@@ -119,93 +148,19 @@ def get_prompt(
     prompt_content = find_prompt_content(prompt_name)
 
     if prompt_content:
-        _echo_and_copy(prompt_content, no_copy)
+        echo_and_copy(prompt_content, no_copy)
     else:
         # This part will be tested in the next scenario
         typer.echo(f"Error: Prompt '{prompt_name}' not found.", err=True)
         raise typer.Exit(code=1)
 
 
-def _get_plan_content(
-    plan_content_str: Optional[str], plan_file: Optional[Path]
-) -> str:
-    """
-    Retrieves the plan content from one of three sources, in order of priority:
-    1. A direct string via --plan-content.
-    2. A file path.
-    3. The system clipboard.
-    Exits with an error if the final source is invalid or empty.
-    """
-    if plan_content_str:
-        return plan_content_str
-
-    if plan_file:
-        if not plan_file.is_file():
-            typer.echo(f"Error: Plan file not found at '{plan_file}'", err=True)
-            raise typer.Exit(code=1)
-        return plan_file.read_text(encoding="utf-8")
-
-    try:
-        plan_from_clipboard = pyperclip.paste()
-        if not plan_from_clipboard.strip():
-            typer.echo(
-                "Error: No plan provided via file or --plan-content, and clipboard is empty.",
-                err=True,
-            )
-            raise typer.Exit(code=1)
-        return plan_from_clipboard
-    except pyperclip.PyperclipException as e:
-        typer.echo(f"Error accessing clipboard: {e}", err=True)
-        raise typer.Exit(code=1)
-
-
-def create_parser_for_plan(plan_file: Optional[Path], plan_content: str) -> IPlanParser:
+def create_parser_for_plan(plan_content: str) -> IPlanParser:
     """
     Factory function to determine which plan parser to use.
     """
     # Legacy YAML plans are deprecated. Only Markdown is supported.
     return container.resolve(IPlanParser)
-
-
-def _handle_validation_failure(
-    plan: Plan, validation_errors: List[ValidationError], start_time: datetime
-) -> ExecutionReport:
-    """Creates an ExecutionReport for a validation failure."""
-    failed_resources: dict[str, str] = {}
-    error_messages: list[str] = []
-    for error in validation_errors:
-        error_messages.append(error.message)
-        if error.file_path:
-            try:
-                path = Path(error.file_path)
-                if path.exists():
-                    failed_resources[error.file_path] = path.read_text(encoding="utf-8")
-            except OSError:
-                pass  # Ignore if reading fails
-
-    return ExecutionReport(
-        plan_title=plan.title,
-        rationale=plan.rationale,
-        original_actions=plan.actions,
-        run_summary=RunSummary(
-            status=RunStatus.VALIDATION_FAILED,
-            start_time=start_time,
-            end_time=datetime.now(timezone.utc),
-        ),
-        validation_result=error_messages,
-        failed_resources=failed_resources if failed_resources else None,
-    )
-
-
-def _execute_valid_plan(
-    plan: Plan, interactive_mode: bool, parser: IPlanParser
-) -> ExecutionReport:
-    """Executes a plan that has already been parsed and validated."""
-    orchestrator = container.resolve(ExecutionOrchestrator, plan_parser=parser)
-    execution_report = orchestrator.execute(plan=plan, interactive=interactive_mode)
-    # The orchestrator already returns a full report with metadata,
-    # but we ensure the plan's title and metadata are explicitly preserved if needed.
-    return execution_report
 
 
 @app.command()
@@ -239,8 +194,8 @@ def execute(
     start_time = datetime.now(timezone.utc)
 
     try:
-        final_plan_content = _get_plan_content(plan_content, plan_file)
-        parser = create_parser_for_plan(plan_file, final_plan_content)
+        final_plan_content = get_plan_content(plan_content, plan_file)
+        parser = create_parser_for_plan(final_plan_content)
 
         try:
             plan = parser.parse(final_plan_content)
@@ -248,9 +203,9 @@ def execute(
             validation_errors = plan_validator.validate(plan)
 
             if validation_errors:
-                report = _handle_validation_failure(plan, validation_errors, start_time)
+                report = handle_validation_failure(plan, validation_errors, start_time)
             else:
-                report = _execute_valid_plan(plan, interactive_mode, parser)
+                report = execute_valid_plan(container, plan, interactive_mode, parser)
 
         except InvalidPlanError as e:
             report = ExecutionReport(
@@ -264,7 +219,7 @@ def execute(
                 action_logs=[],
             )
 
-    except (pyperclip.PyperclipException, NotImplementedError) as e:
+    except NotImplementedError as e:
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(code=1)
 
@@ -272,7 +227,7 @@ def execute(
         report_formatter = container.resolve(IMarkdownReportFormatter)
         formatted_report = report_formatter.format(report)
 
-        _echo_and_copy(
+        echo_and_copy(
             formatted_report,
             no_copy=no_copy,
             confirmation_message="Execution report copied to clipboard.",

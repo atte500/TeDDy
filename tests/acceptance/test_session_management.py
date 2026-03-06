@@ -63,3 +63,52 @@ def test_teddy_new_bootstraps_session(tmp_path, monkeypatch):
         assert "turn_id" in meta_data
         assert "creation_timestamp" in meta_data
         assert meta_data["turn_id"] == "01"
+
+
+def test_teddy_context_aggregates_cascading_context(tmp_path, monkeypatch):
+    """
+    Scenario: teddy context aggregates cascading context
+    Given a session with "file_a.py" in session.context and "file_b.py" in 01/turn.context.
+    When I run teddy context inside the 01/ directory.
+    Then the generated output MUST contain the contents of both "file_a.py" and "file_b.py".
+    And "file_b.py" MUST be listed under the "Turn" section of the Context Summary.
+    """
+    # Arrange
+    monkeypatch.chdir(tmp_path)
+
+    # 1. Setup project files
+    (tmp_path / "file_a.py").write_text("content_a", encoding="utf-8")
+    (tmp_path / "file_b.py").write_text("content_b", encoding="utf-8")
+
+    # 2. Setup session directory structure
+    session_dir = tmp_path / ".teddy" / "sessions" / "feat-x"
+    turn_dir = session_dir / "01"
+    turn_dir.mkdir(parents=True)
+
+    # 3. Create context files and metadata
+    (session_dir / "session.context").write_text("file_a.py", encoding="utf-8")
+    (turn_dir / "turn.context").write_text("file_b.py", encoding="utf-8")
+    (turn_dir / "meta.yaml").write_text("turn_id: '01'\n", encoding="utf-8")
+
+    # Change CWD to the turn directory to simulate user being 'inside' it
+    monkeypatch.chdir(turn_dir)
+
+    # Act
+    # We use --no-copy to avoid polluting clipboard during tests
+    result = runner.invoke(app, ["context", "--no-copy"])
+
+    # Assert
+    assert result.exit_code == 0
+
+    # Check that both files are present in the output
+    assert "content_a" in result.stdout
+    assert "content_b" in result.stdout
+
+    # Check Context Summary section (Requirement from specification)
+    # The specification says the output format for session/turn should be clear.
+    # Note: Our current ContextService doesn't have 'Turn' vs 'Session' headings yet.
+    # This test will drive that change.
+    assert "### Turn" in result.stdout
+    assert "file_b.py" in result.stdout
+    assert "### Session" in result.stdout
+    assert "file_a.py" in result.stdout

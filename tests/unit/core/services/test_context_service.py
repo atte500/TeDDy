@@ -90,7 +90,7 @@ def test_get_context_with_specific_files_uses_resolve_paths_from_files(
     mock_fs.read_files_in_vault.return_value = mock_file_contents
 
     # Act
-    service.get_context(context_files=specific_files)
+    service.get_context(context_files={"Default": specific_files})
 
     # Assert
     mock_fs.resolve_paths_from_files.assert_called_once_with(specific_files)

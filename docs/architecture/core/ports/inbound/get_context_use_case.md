@@ -15,7 +15,9 @@ The `IGetContextUseCase` port defines the primary entry point into the applicati
 **Status:** Implemented
 
 *   **Description:** Gathers all project context information, including the repository file tree, system environment details, and the content of specified files.
-*   **Signature:** `get_context() -> ProjectContext`
+*   **Signature:** `get_context(context_files: Optional[Dict[str, Sequence[str]]] = None) -> ProjectContext`
+*   **Arguments:**
+    *   `context_files`: (Optional) A mapping of scope names (e.g., 'Turn', 'Session') to lists of paths to `.context` files. If provided, the context is limited to the paths listed in these files, grouped by scope.
 *   **Preconditions:** None.
 *   **Postconditions:**
     *   Returns a `ProjectContext` data transfer object containing the aggregated project context, structured for standardized output.
