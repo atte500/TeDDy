@@ -59,11 +59,23 @@ class SessionService(ISessionManager):
 
         return session_root
 
-    def get_latest_turn(self, _session_name: str) -> str:
+    def get_latest_turn(self, session_name: str) -> str:
         """
         Identifies and returns the latest turn directory in the specified session.
         """
-        raise NotImplementedError()
+        session_root = f".teddy/sessions/{session_name}"
+        try:
+            items = self._file_system_manager.list_directory(session_root)
+        except FileNotFoundError:
+            raise ValueError(f"Session '{session_name}' not found.")
+
+        # Filter for zero-padded numeric directories (e.g., '01', '02')
+        turns = [item for item in items if item.isdigit()]
+        if not turns:
+            raise ValueError(f"No turns found in session '{session_name}'.")
+
+        latest_turn_id = sorted(turns)[-1]
+        return f"{session_root}/{latest_turn_id}"
 
     def _extract_resource_path(self, resource_str: str) -> str:
         """Extracts the path from a Markdown link or returns the string if not a link."""
@@ -87,7 +99,7 @@ class SessionService(ISessionManager):
         meta_content = self._file_system_manager.read_file(
             f"{current_turn_dir}/meta.yaml"
         )
-        current_meta = yaml.safe_load(meta_content)
+        current_meta = yaml.safe_load(meta_content) or {}
         current_turn_id = current_meta.get("turn_id")
 
         context_content = self._file_system_manager.read_file(

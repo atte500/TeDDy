@@ -1,5 +1,8 @@
-from typer.testing import CliRunner
+from unittest.mock import MagicMock
+
 import yaml
+from typer.testing import CliRunner
+
 from teddy_executor.__main__ import app
 
 runner = CliRunner()
@@ -180,3 +183,166 @@ Testing turn transition.
         meta_data = yaml.safe_load(f)
         assert meta_data["parent_turn_id"] == "abc"
         assert meta_data["turn_id"] == "02"
+
+
+def test_teddy_plan_generates_plan_file(tmp_path, monkeypatch, container):
+    """
+    Scenario: teddy plan generates a plan
+    Given a session directory for turn 01.
+    And a mocked LLM client that returns a valid plan.
+    When I run teddy plan -m "Implement feature X".
+    Then a plan.md file MUST be created in the 01/ directory.
+    And its content MUST match the LLM's response.
+    """
+    # Arrange
+    monkeypatch.chdir(tmp_path)
+
+    # 1. Setup session directory structure
+    session_dir = tmp_path / ".teddy" / "sessions" / "feat-x"
+    turn_dir = session_dir / "01"
+    turn_dir.mkdir(parents=True)
+
+    # 2. Setup turn context and metadata (required by context gathering)
+    (turn_dir / "turn.context").write_text("", encoding="utf-8")
+    (session_dir / "session.context").write_text("", encoding="utf-8")
+    (turn_dir / "system_prompt.xml").write_text("system prompt", encoding="utf-8")
+    (turn_dir / "meta.yaml").write_text("turn_id: '01'\n", encoding="utf-8")
+
+    # 3. Mock the LLM client
+    from teddy_executor.core.ports.outbound.llm_client import ILlmClient
+
+    mock_llm = MagicMock(spec=ILlmClient)
+    mock_llm.get_completion.return_value = "# Plan: Generated Plan\n- Status: Green 🟢"
+    container.register(ILlmClient, instance=mock_llm)
+
+    # Act
+    # We must run from the turn directory so the command knows which turn it is
+    monkeypatch.chdir(turn_dir)
+    result = runner.invoke(app, ["plan", "-m", "Implement feature X"])
+
+    # Assert
+    assert result.exit_code == 0
+    plan_file = turn_dir / "plan.md"
+    assert plan_file.exists()
+    assert "# Plan: Generated Plan" in plan_file.read_text(encoding="utf-8")
+
+
+def test_teddy_plan_injects_turn_1_hint(tmp_path, monkeypatch, container):
+    """
+    Scenario: teddy plan injects Turn 1 alignment hint
+    Given a session directory for turn 01.
+    When I run teddy plan -m "Do stuff".
+    Then the user message sent to the LLM MUST contain the Turn 1 alignment hint.
+    """
+    # Arrange
+    monkeypatch.chdir(tmp_path)
+    session_dir = tmp_path / ".teddy" / "sessions" / "hint-test"
+    turn_dir = session_dir / "01"
+    turn_dir.mkdir(parents=True)
+    (turn_dir / "turn.context").write_text("", encoding="utf-8")
+    (session_dir / "session.context").write_text("", encoding="utf-8")
+    (turn_dir / "system_prompt.xml").write_text("system prompt", encoding="utf-8")
+    (turn_dir / "meta.yaml").write_text("turn_id: '01'\n", encoding="utf-8")
+
+    from teddy_executor.core.ports.outbound.llm_client import ILlmClient
+
+    mock_llm = MagicMock(spec=ILlmClient)
+    mock_llm.get_completion.return_value = "# Plan"
+    container.register(ILlmClient, instance=mock_llm)
+
+    # Act
+    monkeypatch.chdir(turn_dir)
+    runner.invoke(app, ["plan", "-m", "Do stuff"])
+
+    # Assert
+    args, kwargs = mock_llm.get_completion.call_args
+    sent_message = kwargs["messages"][1]["content"]
+    assert "Do stuff" in sent_message
+    assert "aligned" in sent_message.lower()
+    assert "intentions" in sent_message.lower()
+
+
+def test_teddy_resume_executes_pending_plan(tmp_path, monkeypatch):
+    """
+    Scenario: teddy resume executes pending plan
+    Given a turn directory with plan.md but no report.md.
+    When I run teddy resume.
+    Then it MUST behave like teddy execute.
+    """
+    # Arrange
+    monkeypatch.chdir(tmp_path)
+    session_dir = tmp_path / ".teddy" / "sessions" / "resume-test"
+    turn_dir = session_dir / "01"
+    turn_dir.mkdir(parents=True)
+
+    # Setup state for execution
+    (turn_dir / "turn.context").write_text("", encoding="utf-8")
+    (turn_dir / "system_prompt.xml").write_text("prompt", encoding="utf-8")
+    (turn_dir / "meta.yaml").write_text("turn_id: '01'\n", encoding="utf-8")
+
+    plan_content = """# Plan
+- Status: Green 🟢
+- Plan Type: Testing
+- Agent: Developer
+
+## Rationale
+```
+Rationale content.
+```
+
+## Action Plan
+### `EXECUTE`
+- **Description:** test
+````shell
+echo hello
+````
+"""
+    (turn_dir / "plan.md").write_text(plan_content, encoding="utf-8")
+
+    # Act
+    monkeypatch.chdir(turn_dir)
+    result = runner.invoke(app, ["resume", "-y", "--no-copy"])
+
+    # Assert
+    assert result.exit_code == 0
+    assert "hello" in result.stdout
+    assert (turn_dir / "report.md").exists()
+    assert (session_dir / "02").exists()  # Verify transition happened
+
+
+def test_teddy_resume_prompts_for_new_plan(monkeypatch, tmp_path, container):
+    """
+    Scenario: teddy resume prompts for new plan when turn is empty.
+    """
+    # Setup
+    session_dir = tmp_path / ".teddy" / "sessions" / "feat-x"
+    turn_dir = session_dir / "02"
+    turn_dir.mkdir(parents=True)
+    (session_dir / "session.context").touch()
+    (turn_dir / "turn.context").touch()
+    (turn_dir / "system_prompt.xml").write_text("<prompt/>")
+    (turn_dir / "meta.yaml").write_text("turn_id: '02'\nparent_turn_id: '01'")
+
+    # Mock LLM to return a valid plan
+    from teddy_executor.core.ports.outbound.llm_client import ILlmClient
+
+    mock_llm = MagicMock(spec=ILlmClient)
+    mock_llm.get_completion.return_value = "# Plan\n## Rationale\nOK\n## Action Plan\n"
+
+    container.register(ILlmClient, instance=mock_llm)
+
+    # Act
+    monkeypatch.chdir(turn_dir)
+    # We provide the user message via input to satisfy typer.prompt
+    result = runner.invoke(app, ["resume"], input="My New Feature\n")
+
+    # Assert
+    assert result.exit_code == 0
+    assert "Plan generated at" in result.stdout
+    assert (turn_dir / "plan.md").exists()
+
+    # Verify hint was injected
+    expected_message = "My New Feature\n\n*(Stop to reply to this user request and ensure alignment before proceeding)*"
+    mock_llm.get_completion.assert_called_once()
+    args, kwargs = mock_llm.get_completion.call_args
+    assert expected_message in kwargs["messages"][1]["content"]

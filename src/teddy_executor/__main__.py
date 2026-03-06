@@ -2,7 +2,7 @@ import logging
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Optional, Sequence
+from typing import Optional
 
 import typer
 
@@ -11,9 +11,7 @@ from teddy_executor.core.domain.models import (
     RunStatus,
     RunSummary,
 )
-from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
 from teddy_executor.core.ports.inbound.init import IInitUseCase
-from teddy_executor.core.ports.outbound.session_manager import ISessionManager
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser, InvalidPlanError
 from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
 from teddy_executor.core.ports.outbound.markdown_report_formatter import (
@@ -31,7 +29,6 @@ from teddy_executor.adapters.outbound.local_file_system_adapter import (
 from teddy_executor.adapters.outbound.local_repo_tree_generator import (
     LocalRepoTreeGenerator,
 )
-from teddy_executor.adapters.inbound.cli_formatter import format_project_context
 from teddy_executor.adapters.inbound.cli_helpers import (
     find_project_root,
     echo_and_copy,
@@ -90,13 +87,25 @@ def new(
     """
     Initializes a new session directory and bootstraps it for Turn 1.
     """
-    session_manager: ISessionManager = container.resolve(ISessionManager)
-    try:
-        session_dir = session_manager.create_session(name=name, agent_name=agent)
-        typer.echo(f"Session created at: {session_dir}")
-    except Exception as e:
-        typer.echo(f"Error: {e}", err=True)
-        raise typer.Exit(code=1)
+    from teddy_executor.adapters.inbound.session_cli_handlers import handle_new_session
+
+    handle_new_session(container, name, agent)
+
+
+@app.command()
+def plan(
+    message: str = typer.Option(
+        ..., "--message", "-m", help="The instructions for the AI."
+    ),
+):
+    """
+    Generates a plan.md within the current turn directory.
+    """
+    from teddy_executor.adapters.inbound.session_cli_handlers import (
+        handle_plan_generation,
+    )
+
+    handle_plan_generation(container, message)
 
 
 @app.command()
@@ -112,25 +121,11 @@ def context(
 
     All operations respect the project's root-relative path conventions.
     """
-    context_service: IGetContextUseCase = container.resolve(IGetContextUseCase)
+    from teddy_executor.adapters.inbound.session_cli_handlers import (
+        handle_context_gathering,
+    )
 
-    # Detect Session Context
-    # We look for turn.context in CWD and session.context in parent.
-    cwd = Path.cwd()
-    turn_context = cwd / "turn.context"
-    session_context = cwd.parent / "session.context"
-    meta_yaml = cwd / "meta.yaml"
-
-    context_files: Optional[Dict[str, Sequence[str]]] = None
-    if turn_context.exists() and session_context.exists() and meta_yaml.exists():
-        context_files = {
-            "Turn": [str(turn_context)],
-            "Session": [str(session_context)],
-        }
-
-    context_result = context_service.get_context(context_files=context_files)
-    formatted_context = format_project_context(context_result)
-    echo_and_copy(formatted_context, no_copy=no_copy)
+    handle_context_gathering(container, no_copy)
 
 
 @app.command(name="get-prompt")
@@ -161,6 +156,30 @@ def create_parser_for_plan(plan_content: str) -> IPlanParser:
     """
     # Legacy YAML plans are deprecated. Only Markdown is supported.
     return container.resolve(IPlanParser)
+
+
+@app.command()
+def resume(
+    yes: bool = typer.Option(
+        False,
+        "--yes",
+        "-y",
+        help="Automatically approve all actions without prompting.",
+    ),
+    no_copy: bool = typer.Option(
+        False,
+        "--no-copy",
+        help="Do not copy the output to the clipboard.",
+    ),
+):
+    """
+    Continues the current session.
+    """
+    from teddy_executor.adapters.inbound.session_cli_handlers import (
+        handle_resume_session,
+    )
+
+    handle_resume_session(container, yes, no_copy)
 
 
 @app.command()

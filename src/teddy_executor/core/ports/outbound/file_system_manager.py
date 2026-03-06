@@ -70,3 +70,9 @@ class FileSystemManager(Protocol):
         and None for files that are not found.
         """
         ...
+
+    def list_directory(self, path: str) -> list[str]:
+        """
+        Lists the names of files and directories in the specified path.
+        """
+        ...

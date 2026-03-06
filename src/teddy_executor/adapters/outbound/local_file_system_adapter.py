@@ -66,6 +66,15 @@ class LocalFileSystemAdapter(FileSystemManager):
 
         return sorted(list(all_paths))
 
+    def list_directory(self, path: str) -> list[str]:
+        """
+        Lists the names of files and directories in the specified path.
+        """
+        dir_path = self._resolve_path(path)
+        if not dir_path.is_dir():
+            raise FileNotFoundError(f"Directory not found: {path}")
+        return [p.name for p in dir_path.iterdir()]
+
     def read_files_in_vault(self, paths: list[str]) -> dict[str, str | None]:
         """
         Reads the content of multiple files specified in a list.
