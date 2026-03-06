@@ -1,7 +1,7 @@
 import logging
 import os
 from pathlib import Path
-from typing import List
+from typing import List, Sequence
 from teddy_executor.core.ports.inbound.edit_simulator import EditPair, IEditSimulator
 from teddy_executor.core.ports.outbound.file_system_manager import FileSystemManager
 
@@ -67,11 +67,16 @@ class LocalFileSystemAdapter(FileSystemManager):
         if not teddy_dir.is_dir():
             return []
 
-        all_paths = set()
-        context_files = list(teddy_dir.glob("*.context"))
+        context_files = [str(p) for p in teddy_dir.glob("*.context")]
+        return self.resolve_paths_from_files(context_files)
 
-        for context_file in context_files:
-            content = context_file.read_text(encoding="utf-8")
+    def resolve_paths_from_files(self, file_paths: Sequence[str]) -> list[str]:
+        """
+        Reads a list of context files and returns a deduplicated list of the paths they contain.
+        """
+        all_paths = set()
+        for path in file_paths:
+            content = self.read_file(path)
             for line in content.splitlines():
                 stripped_line = line.strip()
                 if stripped_line and not stripped_line.startswith("#"):

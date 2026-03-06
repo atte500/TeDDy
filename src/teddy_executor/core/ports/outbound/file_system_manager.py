@@ -1,4 +1,4 @@
-from typing import Protocol
+from typing import Protocol, Sequence
 
 
 class FileSystemManager(Protocol):
@@ -55,6 +55,12 @@ class FileSystemManager(Protocol):
     def get_context_paths(self) -> list[str]:
         """
         Reads all .teddy/*.context files and returns a deduplicated list of paths.
+        """
+        ...
+
+    def resolve_paths_from_files(self, file_paths: Sequence[str]) -> list[str]:
+        """
+        Reads a list of context files and returns a deduplicated list of the paths they contain.
         """
         ...
 

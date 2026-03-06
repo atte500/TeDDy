@@ -283,6 +283,25 @@ def test_read_files_in_vault(edit_simulator, tmp_path: Path):
     assert actual_contents == expected_contents
 
 
+def test_resolve_paths_from_files_returns_sorted_deduplicated_paths(adapter, tmp_path):
+    """
+    Tests that resolve_paths_from_files reads multiple files,
+    strips comments/whitespace, and returns a unique sorted list of paths.
+    """
+    # Arrange
+    file1 = tmp_path / "file1.context"
+    file1.write_text("path/a\n# comment\n  path/b  \n", encoding="utf-8")
+
+    file2 = tmp_path / "file2.context"
+    file2.write_text("path/b\npath/c\n\n", encoding="utf-8")
+
+    # Act
+    result = adapter.resolve_paths_from_files([str(file1), str(file2)])
+
+    # Assert
+    assert result == ["path/a", "path/b", "path/c"]
+
+
 def test_get_context_paths(edit_simulator, tmp_path: Path):
     """
     Tests that get_context_paths finds all .context files, reads them,
