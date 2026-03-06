@@ -47,8 +47,8 @@ This document outlines the technical standards, conventions, and setup process f
     - `tests/integration/`: Tests for components that interact with external systems.
     - `tests/unit/`: Tests for individual functions or classes in isolation.
 - **Execution:** Tests are run from the **project root** using `poetry run pytest`.
-    - **Run all tests (Fast/Parallel):** `poetry run pytest -n auto`
-    - **Run all tests (Sequential):** `poetry run pytest`
+    - **Run all tests:** `poetry run pytest` (Runs in parallel by default via `-n auto` in `pyproject.toml`)
+    - **Run all tests (Force Sequential):** `poetry run pytest -n 0`
     - **Run tests in a specific file:** `poetry run pytest tests/acceptance/test_prompt_action.py`
     - **Run a specific test by name:** `poetry run pytest -k "test_prompt_gets_response"`
 - **Test Coverage:** Test coverage standards are enforced as part of the CI Quality Gates.
