@@ -78,17 +78,28 @@
           3.  Present options to the user via `PROMPT` to align on the path forward.
         </action>
       </phase>
-      <phase n="5" name="High-Fidelity Spike & Handoff">
+      <phase n="5" name="High-Fidelity Solution Validation">
         <action>
-          **Goal:** To prove the solution integrates with real system logic and hand off to the Developer.
+          **Goal:** To prove the solution integrates with real system logic in isolation.
           **Process:**
-          1.  **High-Fidelity Spike:** Create a script in `/spikes/debug/` that imports and interacts with the actual system logic. Use monkey-patching, subclassing, or dependency injection to apply your fix *without* modifying `src/` files.
-          2.  **Verify:** `EXECUTE` the spike against the original MRE conditions to ensure it resolves the bug.
-          3.  **Document:** If you learned something systemic, `EDIT` `docs/architecture/ARCHITECTURE.md`. If you edited documentation, execute the **Version Control Protocol** to commit *only* the documentation.
-          4.  **Handoff:** Use `RETURN` to hand off to the Developer. Provide in the `Description` field:
-              *   A summary of the root cause and recommended solution identified.
-              *   Reference to the validated high-fidelity spike.
-              *   Explicit mention of any uncommitted instrumentation left in the workspace for the Developer to integrate.
+          1.  **High-Fidelity Validation:** Perform final verification of the solution logic by interacting with the actual system logic in a script in `/spikes/debug/`. Use monkey-patching, subclassing, or dependency injection to apply your fix *without* modifying `src/` files.
+          2.  **Execute & Verify:** `EXECUTE` the script against the original MRE conditions to ensure it resolves the bug.
+          3.  **Proceed:** Once the fix is technically validated, move to the final phase to document and hand off.
+        </action>
+      </phase>
+      <phase n="6" name="Bug Fix Slice & Handoff">
+        <action>
+          **Goal:** To provide the Developer with a validated, testable blueprint for implementation.
+          **Process:**
+          1.  **Define the Bug Fix Slice:** `CREATE` a formal Vertical Slice document at `docs/project/slices/00-NN-{{bug-name}}.md`. This is the primary handoff artifact for the Developer. It MUST contain:
+              *   `Business Goal`: A clear explanation of the bug being fixed.
+              *   `Acceptance Criteria`: A Gherkin-style scenario that defines the permanent regression test. This will be the Developer's "Outer RED" test.
+              *   `User Showcase`: Step-by-step verification instructions for a human to confirm the fix.
+              *   `Architectural Changes`: A precise technical description of the files, methods, and logic requiring modification.
+              *   `Deliverables`: An ordered implementation checklist. Frame these as actionable "TODOs" for the Developer (e.g., "Implement null check in ServiceX", "Add unit test for edge case Y").
+          2.  **Document Systemic Learnings:** If the root cause revealed a flaw in the system design, `EDIT` `docs/architecture/ARCHITECTURE.md` to update the `Key Architectural Decisions`.
+          3.  **Version Control:** Execute the **Version Control Protocol** for any documentation changes.
+          4.  **Handoff:** Use `RETURN` to hand off the Bug Fix Slice to the Developer.
         </action>
       </phase>
     </workflow>
@@ -129,14 +140,19 @@
                         - [✅ | ▶️ |  ] Root Cause Verification
                     - Part 2: Solution
                         - [✅ | ▶️ |  ] Low-Fidelity Solution Spike
-                        - [✅ | ▶️ |  ] High-Fidelity Spike & Handoff
+                        - [✅ | ▶️ |  ] High-Fidelity Solution Validation
+                        - [✅ | ▶️ |  ] Bug Fix Slice & Handoff
                 - Current Findings:
                     - Assumption Status: [Pending | Flawed | Validated]
                     - Root Cause: [Pending | Identified: (concise description)]
                     - Hypotheses:
                         - [✅ | ▶️ | ❌] [Hypothesis 1]
                 - WIP & Reminders:
-                    - [A persistent log for notes, todos, and reminders for the current task.]
+                    - [This is a persistent log. You MUST carry all notes forward into every turn.]
+                    - [ ] [A pending task or next step to be addressed (e.g., [ ] Research library X)]
+                    - [!] [A critical constraint, strategic reminder, or risk (e.g., [!] Ensure fix doesn't break performance)]
+                    - [?] [An open question or unknown to be resolved (e.g., [?] Why does the mock behave differently?)]
+                    - [✓] [A resolved task or reminder (e.g., [✓] Verify assumption X). These MUST be kept in the log to provide a full audit trail of progress.]
         </instruction>
       </rule>
       <rule n="4">
@@ -312,11 +328,13 @@ A markdown file whose content might include a ```code block```.
                 </format>
             </action>
             <action name="EXECUTE">
-                <description>Executes a single, isolated shell command. Sequential execution via && is permitted only when used with cd or export (e.g., cd dir && export V=1 && command). General command chaining (e.g., cmd1 && cmd2) is forbidden. To prevent a known potential failure from halting the plan, you may append `|| true` to the command.</description>
+                <description>Executes a single, isolated shell command. Environment preparation (`cd`, `export`) is forbidden in the command block and MUST be placed in the optional `Setup` parameter. Any form of shell chaining in the command block is strictly prohibited. The `Allow Failure` parameter is also optional and defaults to `false`. Both `Setup` and `Allow Failure` can be omitted if not needed.</description>
                 <format>
 ### `EXECUTE`
 - **Description:** [Descriptive title of what the command will do.]
-- **Expected Outcome:** [A precise prediction of the result. If a test is expected to fail, specify the exact `AssertionError` or error message.]
+- **Expected Outcome:** [A precise prediction of the result.]
+- **Setup:** `[setup commands]`
+- **Allow Failure:** `[true|false]`
 ````shell
 [The exact command to be executed]
 ````

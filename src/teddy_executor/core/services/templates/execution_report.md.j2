@@ -229,6 +229,16 @@
 - **Expected outcome:** {{ outcome }}
   {% endif %}
 
+  {% set setup = params.get('setup') or params.get('Setup') %}
+  {% if setup %}
+- **Setup:** `{{ setup }}`
+  {% endif %}
+
+  {% set allow_failure = params.get('allow_failure') or params.get('Allow Failure') %}
+  {% if allow_failure is not none %}
+- **Allow Failure:** `{{ allow_failure | lower }}`
+  {% endif %}
+
   {% set cmd = params.get('command') or params.get('cmd') %}
   {% if cmd %}
 

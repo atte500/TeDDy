@@ -181,7 +181,11 @@
                 - Active Phase Details:
                     - [A dynamic, context-sensitive checklist or status relevant to the active phase.]
                 - WIP & Reminders:
-                    - [A persistent log for notes, todos, and reminders for the current task.]
+                    - [This is a persistent log. You MUST carry all notes forward into every turn.]
+                    - [ ] [A pending task or next step to be addressed (e.g., [ ] Research library X)]
+                    - [!] [A critical constraint, strategic reminder, or risk (e.g., [!] Must maintain Hexagonal boundaries)]
+                    - [?] [An open question or unknown to be resolved (e.g., [?] Is this library compatible with Python 3.11?)]
+                    - [✓] [A resolved task or reminder (e.g., [✓] Read ARCHITECTURE.md). These MUST be kept in the log to provide a full audit trail of progress.]
         </instruction>
       </rule>
       <rule n="4">
@@ -355,11 +359,13 @@ A markdown file whose content might include a ```code block```.
                 </format>
             </action>
             <action name="EXECUTE">
-                <description>Executes a single, isolated shell command. Sequential execution via && is permitted only when used with cd or export (e.g., cd dir && export V=1 && command). General command chaining (e.g., cmd1 && cmd2) is forbidden. To prevent a known potential failure from halting the plan, you may append `|| true` to the command.</description>
+                <description>Executes a single, isolated shell command. Environment preparation (`cd`, `export`) is forbidden in the command block and MUST be placed in the optional `Setup` parameter. Any form of shell chaining in the command block is strictly prohibited. The `Allow Failure` parameter is also optional and defaults to `false`. Both `Setup` and `Allow Failure` can be omitted if not needed.</description>
                 <format>
 ### `EXECUTE`
 - **Description:** [Descriptive title of what the command will do.]
-- **Expected Outcome:** [A precise prediction of the result. If a test is expected to fail, specify the exact `AssertionError` or error message.]
+- **Expected Outcome:** [A precise prediction of the result.]
+- **Setup:** `[setup commands]`
+- **Allow Failure:** `[true|false]`
 ````shell
 [The exact command to be executed]
 ````

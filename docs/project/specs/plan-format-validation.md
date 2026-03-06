@@ -70,8 +70,9 @@ These checks validate the *content* of an action against the current state of th
 #### `EXECUTE`
 -   **[✓] Must contain a core command:** The command code block must not be empty.
 -   **[✓] No chaining allowed:** The command block must not contain any shell chaining operators (`&&`, `||`, `;`, `|`, `&`).
--   **[✓] No directives allowed:** The command block must not contain `cd` or `export` commands. These must be moved to the `Setup` parameter.
+-   **[✓] No directives allowed:** The command block must not contain `cd` or `export` commands. These must be moved to the optional `Setup` parameter.
 -   **[✓] Single logical line:** The command must represent exactly one logical execution line.
+-   **[✓] Allow Failure is optional:** Defaults to `false` if omitted. If present, the value MUST be `true` or `false`.
 
 #### `PRUNE`
 -   **[✓] `Resource` must be specified:** The metadata block must contain a `Resource`.
