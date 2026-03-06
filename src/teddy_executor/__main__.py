@@ -15,6 +15,7 @@ from teddy_executor.core.domain.models import (
 from teddy_executor.core.domain.models.plan import Plan
 from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
 from teddy_executor.core.ports.inbound.init import IInitUseCase
+from teddy_executor.core.ports.outbound.session_manager import ISessionManager
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser, InvalidPlanError
 from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
 from teddy_executor.core.ports.outbound import (
@@ -63,6 +64,25 @@ def _echo_and_copy(
         except pyperclip.PyperclipException:
             # Silently fail if clipboard is not available.
             pass
+
+
+@app.command()
+def new(
+    name: str = typer.Argument(..., help="The name of the new session."),
+    agent: str = typer.Option(
+        "pathfinder", "--agent", help="The name of the agent to use for the session."
+    ),
+):
+    """
+    Initializes a new session directory and bootstraps it for Turn 1.
+    """
+    session_manager: ISessionManager = container.resolve(ISessionManager)
+    try:
+        session_dir = session_manager.create_session(name=name, agent_name=agent)
+        typer.echo(f"Session created at: {session_dir}")
+    except Exception as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(code=1)
 
 
 @app.command()

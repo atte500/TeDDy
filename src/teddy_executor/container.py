@@ -11,6 +11,7 @@ from teddy_executor.core.ports.outbound import (
     ILlmClient,
     IMarkdownReportFormatter,
     IRepoTreeGenerator,
+    ISessionManager,
     IShellExecutor,
     ISystemEnvironment,
     IUserInteractor,
@@ -26,6 +27,7 @@ from teddy_executor.core.services.context_service import ContextService
 from teddy_executor.core.services.edit_simulator import EditSimulator
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
 from teddy_executor.core.services.init_service import InitService
+from teddy_executor.core.services.session_service import SessionService
 from teddy_executor.core.services.markdown_plan_parser import MarkdownPlanParser
 from teddy_executor.core.services.markdown_report_formatter import (
     MarkdownReportFormatter,
@@ -103,4 +105,5 @@ def create_container() -> punq.Container:
     container.register(ExecutionOrchestrator)
     container.register(IGetContextUseCase, ContextService)
     container.register(IInitUseCase, InitService)
+    container.register(ISessionManager, SessionService)
     return container
