@@ -93,7 +93,7 @@
           *   **When:** For smaller, well-defined tasks that do not require significant architectural design.
           *   **Workflow:** `CREATE` the slice artifact. For Fast-Track tasks, do NOT update `PROJECT.md` or create a Milestone. For all other tasks, follow the **Principle of Consolidation & Sequencing** to add this slice to an existing or new milestone and update `PROJECT.md`. After this, clean up spikes, follow the **Version Control Protocol**, and then `INVOKE` the Developer.
           *   **Artifact (`docs/project/slices/MM-NN-{{feature}}.md`):**
-              *   *Numbering:* Use `MM` from the milestone; use `00` if it is a standalone Fast-Track slice.
+              *   *Numbering:* Use `MM` from the milestone; use `00-NN` if it is a standalone Fast-Track slice.
               1.  A `Business Goal` section.
               2.  An `Acceptance Criteria` section with Gherkin-style scenarios and concrete examples.
               3.  A `User Showcase` section if the changes are user-facing, with step-by-step verification instructions.
