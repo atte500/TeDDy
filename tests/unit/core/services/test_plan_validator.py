@@ -196,11 +196,11 @@ def test_validate_edit_fails_if_find_block_not_unique(validator, mock_fs):
     assert "Found 2 matches" in errors[0].message
 
 
-def test_validate_execute_action_fails_for_multiline_commands(validator):
+def test_validate_execute_action_allows_multiline_commands(validator):
     """
     Given an EXECUTE action with multiple commands,
     When validated,
-    Then it should return an error.
+    Then it should return no errors.
     """
     plan = Plan(
         title="Test",
@@ -215,15 +215,14 @@ def test_validate_execute_action_fails_for_multiline_commands(validator):
 
     errors = validator.validate(plan)
 
-    assert len(errors) == 1
-    assert "EXECUTE action must contain exactly one command" in errors[0].message
+    assert len(errors) == 0
 
 
-def test_validate_execute_action_fails_for_chained_commands(validator):
+def test_validate_execute_action_allows_chained_commands(validator):
     """
     Given an EXECUTE action with any chaining operator (&&, ||, ;, |, &),
     When validated,
-    Then it should return an error "Command chaining is not allowed".
+    Then it should return no errors.
     """
     for op in ["&&", "||", ";", "|", "&"]:
         plan = Plan(
@@ -239,8 +238,7 @@ def test_validate_execute_action_fails_for_chained_commands(validator):
 
         errors = validator.validate(plan)
 
-        assert len(errors) == 1, f"Failed for operator {op}"
-        assert "Command chaining is not allowed" in errors[0].message
+        assert len(errors) == 0, f"Failed for operator {op}"
 
 
 def test_validate_execute_succeeds_for_single_command_with_line_continuations(
@@ -309,11 +307,11 @@ def test_validate_execute_succeeds_with_ampersands_in_quoted_string(validator):
     )
 
 
-def test_validate_execute_action_fails_for_directives(validator):
+def test_validate_execute_action_allows_directives(validator):
     """
     Given an EXECUTE action with 'cd' or 'export' in the command block,
     When validated,
-    Then it should return an error instructing to move them to Setup.
+    Then it should return no errors.
     """
     for directive in ["cd /tmp", "export FOO=bar"]:
         plan = Plan(
@@ -329,10 +327,7 @@ def test_validate_execute_action_fails_for_directives(validator):
 
         errors = validator.validate(plan)
 
-        assert any(
-            "Move 'cd' and 'export' commands to the 'Setup:' parameter" in e.message
-            for e in errors
-        ), f"Expected directive error for {directive}, but got: {errors}"
+        assert len(errors) == 0
 
 
 def test_validate_execute_fails_with_unsafe_cwd_traversal(validator):

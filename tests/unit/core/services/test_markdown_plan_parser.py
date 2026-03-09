@@ -142,52 +142,15 @@ class MyClass:
     )
 
 
-def test_parse_execute_action_with_setup_translation(parser: IPlanParser):
+def test_parse_execute_action_with_allow_failure(parser: IPlanParser):
     """
-    Given an EXECUTE action with a Setup string,
-    When the plan is parsed,
-    Then the Setup string is translated into cwd and env parameters.
-    """
-    # Arrange
-    plan_content = """
-# Execute with Setup Translation
-- Status: Green 🟢
-- Agent: Developer
-
-## Rationale
-````text
-Rationale.
-````
-
-## Action Plan
-
-### `EXECUTE`
-- Description: Run with setup.
-- Setup: cd src && export CI=true && export FOO="bar baz"
-````shell
-pytest
-````
-"""
-    # Act
-    result_plan = parser.parse(plan_content)
-
-    # Assert
-    action = result_plan.actions[0]
-    assert action.params["cwd"] == "src"
-    assert action.params["env"]["CI"] == "true"
-    assert action.params["env"]["FOO"] == "bar baz"
-    assert action.params["command"] == "pytest"
-
-
-def test_parse_execute_action_with_setup_and_allow_failure(parser: IPlanParser):
-    """
-    Given an EXECUTE action with Setup and Allow Failure metadata,
+    Given an EXECUTE action with Allow Failure metadata,
     When the plan is parsed,
     Then these parameters are correctly extracted.
     """
     # Arrange
     plan_content = """
-# Execute with Setup
+# Execute with Allow Failure
 - Status: Green 🟢
 - Agent: Developer
 
@@ -199,8 +162,7 @@ Rationale.
 ## Action Plan
 
 ### `EXECUTE`
-- Description: Run with setup.
-- Setup: cd src && export CI=true
+- Description: Run.
 - Allow Failure: true
 ````shell
 pytest
@@ -211,8 +173,7 @@ pytest
 
     # Assert
     action = result_plan.actions[0]
-    assert action.params["setup"] == "cd src && export CI=true"
-    assert action.params["allow_failure"] is True
+    assert action.params.get("allow_failure") is True
     assert action.params["command"] == "pytest"
 
 

@@ -159,7 +159,7 @@ All actions are located under the `## Action Plan` heading. Each action is defin
     - **Expected Outcome:** The output will list `plan-format.md`.
     - **Allow Failure:** `true`
     ````shell
-    cd docs/project/specs/ && ls -l
+    mkdir -p temp && cd temp && touch test.txt && ls
     ````
     `````
 -   **Parsing Rules & Behavior:**

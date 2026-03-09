@@ -27,9 +27,18 @@ To simplify the `EXECUTE` action protocol by allowing shell chaining and removin
 - **Validator:** Update `src/teddy_executor/core/services/validation_rules/execute.py` to remove the check for shell chaining operators and the check for `cd`/`export` directives.
 
 ## Deliverables
-- [ ] Modified `MarkdownPlanParser` (via strategies) to remove `Setup` extraction.
-- [ ] Modified `PlanValidator` to allow chaining and directives in `EXECUTE`.
-- [ ] Updated `docs/architecture/ARCHITECTURE.md` (Key Decisions).
-- [ ] Updated `docs/project/specs/plan-format.md`.
-- [ ] Updated `docs/project/specs/plan-format-validation.md`.
-- [ ] New integration test verifying a chained command works as expected.
+- [x] Modified `MarkdownPlanParser` (via strategies) to remove `Setup` extraction.
+- [x] Modified `PlanValidator` to allow chaining and directives in `EXECUTE`.
+- [x] Updated `docs/architecture/ARCHITECTURE.md` (Key Decisions).
+- [x] Updated `docs/project/specs/plan-format.md`.
+- [x] Updated `docs/project/specs/plan-format-validation.md`.
+- [x] New integration test verifying a chained command works as expected.
+
+## Implementation Summary
+- **Relaxed Validation:** Removed `_check_for_disallowed_chaining`, `_check_for_directives`, and `_check_for_multiple_commands` from `ExecuteActionValidator`.
+- **Parser Cleanup:** Removed `Setup` extraction and translation from `parse_execute_action`.
+- **Test Coverage:**
+  - Created `tests/acceptance/test_relax_execute_protocol.py` covering chaining and statelessness.
+  - Added integration tests to `tests/integration/adapters/outbound/test_shell_adapter.py` for chaining and environment preservation.
+  - Removed deprecated `tests/acceptance/test_execute_action_refactor.py`.
+- **Test Pyramid:** Added an additional integration test to maintain the strict `Acceptance < Integration < Unit` constraint after removing a legacy acceptance test and adding a new one.
