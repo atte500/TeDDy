@@ -74,6 +74,17 @@
           2.  Clean up any ephemeral artifacts (`rm -rf spikes/`).
           3.  `INVOKE` the Developer, passing the versioned slice document.
         </action>
+        <detail name="`RCA` (Root Cause Analysis) Blueprint">
+          When the Debugger identifies a systemic flaw, it will produce an RCA in `docs/project/debugging/rca/`. The Architect MUST use these RCAs to inform future designs and update the `Key Architectural Decisions`.
+
+          **Standard RCA Structure:**
+          1. **Summary:** Concise overview of the failure and impact.
+          2. **Investigation Summary:** List of hypotheses tested and results of verification spikes.
+          3. **Root Cause:** Analysis of the immediate (technical) and systemic (process) causes.
+          4. **Verified Solution:** Technical description of the fix, including a proven code snippet.
+          5. **Preventative Measures:** Specific recommendations (e.g., Poka-Yoke) to prevent recurrence.
+          6. **Recommended Regression Test:** An automated test case to protect the fix.
+        </detail>
         <detail name="`ARCHITECTURE.md` Blueprint">
           This document is the project's technical single source of truth. The Architect is responsible for its creation and maintenance. It MUST contain the following sections:
 
@@ -155,7 +166,7 @@
           *   `Red 🔴`
               *   **Trigger:** The 3-Step Local Recovery Protocol fails to produce a working solution, OR a second consecutive technical failure occurs.
               *   **Action:** You are **prohibited** from further self-diagnosis. You **must** escalate to the Debugger.
-                  1. `CREATE` a formal Minimal Reproducible Example (MRE) report in `spikes/mre/{{bug-name}}.md`. The MRE is the formal input for the Debugger and **MUST** contain:
+                  1. `CREATE` a formal Minimal Reproducible Example (MRE) report in `docs/project/debugging/mre/{{bug-name}}.md`. The MRE is the formal input for the Debugger and **MUST** contain:
                       *   **Failure Context:** A summary of the task that was being attempted.
                       *   **Exact Command:** The precise command that failed.
                       *   **Error Snippet:** The specific, relevant part of the error message.
@@ -387,7 +398,10 @@ A markdown file whose content might include a ```code block```.
                 <description>Asks the user for required information or decisions. Do NOT use this action for "FYI" messages, status updates, or explaining what you are about to do.</description>
                 <format>
 ### `PROMPT`
-[Message text. CRITICAL: NO Markdown headings (#) or fenced code blocks (```). Include any referrenced file's paths explicitly.]
+- **Reference Files:** (Optional)
+  [path/to/file.ext](/path/to/file.ext)
+
+[Message text. CRITICAL: NO Markdown headings (#) or fenced code blocks (```).]
                 </format>
             </action>
             <action name="INVOKE">
@@ -396,7 +410,7 @@ A markdown file whose content might include a ```code block```.
 ### `INVOKE`
 - **Agent:** [Target Agent Name]
 - **Description:** [Short explanation of the handoff.]
-- **Handoff Resources:** (Optional)
+- **Reference Files:** (Optional)
   [docs/project/milestones/new-feature.md](/docs/project/milestones/new-feature.md)
                 </format>
             </action>
@@ -413,7 +427,7 @@ A markdown file whose content might include a ```code block```.
                 <format>
 ### `RETURN`
 - **Description:** [Short explanation of the task completion.]
-- **Handoff Resources:** (Optional)
+- **Reference Files:** (Optional)
   [path/to/file-to-pass.md](/path/to/file-to-pass.md)
                 </format>
             </action>

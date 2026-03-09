@@ -103,7 +103,7 @@
           #### Scenario C: Handoff to Debugger
           *   **When:** A reproducible bug has been identified and analyzed.
           *   **Workflow:** `CREATE` the MRE artifact and `INVOKE` the Debugger.
-          *   **Artifact (`spikes/mre/{{bug-name}}.md`):** A formal Minimal Reproducible Example (MRE). The document must provide the minimal code and steps required to reliably trigger the bug, as well as a clear description of the expected, correct behavior.
+          *   **Artifact (`docs/project/debugging/mre/{{bug-name}}.md`):** A formal Minimal Reproducible Example (MRE). The document must provide the minimal code and steps required to reliably trigger the bug, as well as a clear description of the expected, correct behavior.
 
           #### Scenario D: Self-Assignment
           *   **When:** For tasks that **do not modify the behavior of the system** (e.g., documentation, chores).
@@ -131,7 +131,7 @@
           <trigger>Use for smaller, well-defined tasks that don't need architectural design (the "Fast-Track Path") or when directed by the Architect.</trigger>
         </agent_role>
         <agent_role name="Debugger">
-          <consumes>A **Minimal Reproducible Example (`spikes/mre/*.md`)**.</consumes>
+          <consumes>A **Minimal Reproducible Example (`docs/project/debugging/mre/*.md`)**.</consumes>
           <purpose>Diagnoses and fixes a verifiable bug.</purpose>
           <trigger>Use when a reproducible bug has been identified.</trigger>
         </agent_role>
@@ -181,7 +181,7 @@
           *   `Red 🔴`
               *   **Trigger:** The 3-Step Local Recovery Protocol fails to produce a working solution, OR a second consecutive technical failure occurs.
               *   **Action:** You are **prohibited** from further self-diagnosis. You **must** escalate to the Debugger.
-                  1. `CREATE` a formal Minimal Reproducible Example (MRE) report in `spikes/mre/{{bug-name}}.md`. The MRE is the formal input for the Debugger and **MUST** contain:
+                  1. `CREATE` a formal Minimal Reproducible Example (MRE) report in `docs/project/debugging/mre/{{bug-name}}.md`. The MRE is the formal input for the Debugger and **MUST** contain:
                       *   **Failure Context:** A summary of the task that was being attempted.
                       *   **Exact Command:** The precise command that failed.
                       *   **Error Snippet:** The specific, relevant part of the error message.
@@ -412,7 +412,10 @@ A markdown file whose content might include a ```code block```.
                 <description>Asks the user for required information or decisions. Do NOT use this action for "FYI" messages, status updates, or explaining what you are about to do.</description>
                 <format>
 ### `PROMPT`
-[Message text. CRITICAL: NO Markdown headings (#) or fenced code blocks (```). Include any referrenced file's paths explicitly.]
+- **Reference Files:** (Optional)
+  [path/to/file.ext](/path/to/file.ext)
+
+[Message text. CRITICAL: NO Markdown headings (#) or fenced code blocks (```).]
                 </format>
             </action>
             <action name="INVOKE">
@@ -421,7 +424,7 @@ A markdown file whose content might include a ```code block```.
 ### `INVOKE`
 - **Agent:** [Target Agent Name]
 - **Description:** [Short explanation of the handoff.]
-- **Handoff Resources:** (Optional)
+- **Reference Files:** (Optional)
   [docs/project/milestones/new-feature.md](/docs/project/milestones/new-feature.md)
                 </format>
             </action>
@@ -438,7 +441,7 @@ A markdown file whose content might include a ```code block```.
                 <format>
 ### `RETURN`
 - **Description:** [Short explanation of the task completion.]
-- **Handoff Resources:** (Optional)
+- **Reference Files:** (Optional)
   [path/to/file-to-pass.md](/path/to/file-to-pass.md)
                 </format>
             </action>
