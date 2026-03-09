@@ -18,9 +18,9 @@ The `ShellAdapter` is a "driven" adapter that provides the concrete implementati
 *   **Technology:** The adapter will be implemented using Python's built-in `subprocess` module.
 *   **Entry Point:** The class `ShellAdapter` will be located in `src/teddy_executor/adapters/outbound/shell_adapter.py`.
 
-### Single Command Execution
+### Command Execution
 
-The `execute` method is responsible for running a single, pre-validated shell command. The responsibility for parsing directives (`cd`, `export`) and rejecting multi-command scripts lies with the `MarkdownPlanParser` and `PlanValidator`, respectively.
+The `execute` method runs the command string provided by the core. To ensure consistent behavior across platforms while supporting shell features like chaining (`&&`) and directives (`cd`), it utilizes the system shell.
 
 1.  **CWD Validation:** It first validates that the `cwd` parameter resolves to a path within the project directory, preventing any directory traversal exploits.
 2.  **Platform-Specific Execution:** It determines whether to use `shell=True` based on the platform to ensure consistent behavior. On POSIX systems, `shell=True` is always used to support features like pipes and globbing. On Windows, it uses a "Smart Router" strategy, running commands directly if they are executable files and using the shell for built-ins.

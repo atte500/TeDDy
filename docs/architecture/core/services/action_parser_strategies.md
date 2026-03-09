@@ -19,7 +19,6 @@ Each function follows a consistent signature, taking a `_PeekableStream` and ret
 
 ### Helper Functions
 - `parse_action_metadata(...)`: A generalized utility for extracting `Description`, `File Path`, and other parameters from the bulleted list that follows an action heading. It handles both plain text and Markdown links.
-- `extract_posix_headers(...)`: Processes `cd` and `export` directives from the top of an `EXECUTE` action's shell block.
 
 ## 3. Design Principles
 - **Extensibility:** Adding a new action type primarily involves adding a new strategy function to this module and updating the `MarkdownPlanParser`'s dispatch map.

@@ -15,7 +15,7 @@ This service is implemented using a **Standardized Strategy Pattern** with const
 2.  **Strategy Dispatcher:** The `PlanValidator` service maintains a list of these injected validators. Its `validate` method iterates through the validators to find one that can handle the current action type.
 3.  **Orchestration & Accumulation:** The `validate` method iterates through the actions in the plan. For each action, it delegates to the appropriate validator strategy and accumulates a complete list of `ValidationError` objects.
 4.  **Rich Feedback:** When `FIND` blocks do not match, the validator uses a sliding window and `difflib` to locate the closest match and append a diff to the error report, drastically improving the AI's ability to self-correct.
-5.  **`EXECUTE` Action Safety:** Key validation rules ensure that each `EXECUTE` action contains exactly one command, forbids all shell chaining operators (`&&`, `||`, `;`, `|`, `&`), and prohibits environment directives (`cd`, `export`) within the command block (which must be moved to the `Setup` parameter). This improves user control and fault isolation.
+5.  **`EXECUTE` Action Safety:** Validation ensures that each `EXECUTE` action contains a non-empty command block. The protocol allows shell chaining and inline directives (like `cd` or `export`), shifting responsibility for command cleanliness to the agent's prompting.
 
 This approach adheres to the Open/Closed Principle, allowing new validation rules to be added by creating new strategy classes without modifying the orchestrator.
 
