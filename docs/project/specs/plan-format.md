@@ -157,19 +157,17 @@ All actions are located under the `## Action Plan` heading. Each action is defin
     ### `EXECUTE`
     - **Description:** Verify the new file was created.
     - **Expected Outcome:** The output will list `plan-format.md`.
-    - **Setup:** `cd docs/project/specs/ && export CI=true`
     - **Allow Failure:** `true`
     ````shell
-    ls -l
+    cd docs/project/specs/ && ls -l
     ````
     `````
 -   **Parsing Rules & Behavior:**
-    1.  **Strict Command Mandate:** The code block **must** contain exactly one executable command. Any form of shell chaining (`&&`, `||`, `;`, `|`, `&`) is strictly forbidden.
-    2.  **Optional Parameters:** The `Setup` and `Allow Failure` parameters are optional and may be omitted.
-    3.  **Explicit Setup:** All environment preparation (e.g., `cd`, `export`) must be placed in the `Setup` metadata parameter. Chaining with `&&` is allowed within the `Setup` string for convenience.
-    4.  **Failure Control:** The `Allow Failure` parameter (boolean `true`/`false`) determines if execution continues after a non-zero exit code. It defaults to `false`. The value MUST be enclosed in backticks.
-    5.  **Stateless Execution:** Each `EXECUTE` action runs in an isolated environment. `Setup` changes do not persist between actions.
-    6.  **Parameter Extraction:** The parser extracts `Description`, `Expected Outcome`, `Setup` (optional), and `Allow Failure` (optional) from the metadata list.
+    1.  **Chaining Allowed:** The code block may contain multiple commands linked by shell operators (`&&`, `||`, `;`, `|`, `&`).
+    2.  **Directives Allowed:** Environment preparation commands like `cd` or `export` are allowed directly in the command block.
+    3.  **Failure Control:** The `Allow Failure` parameter (boolean `true`/`false`) determines if execution continues after a non-zero exit code. It defaults to `false`. The value MUST be enclosed in backticks.
+    4.  **Stateless Execution:** Each `EXECUTE` action runs in an isolated environment. Directory or environment changes do not persist between separate `EXECUTE` blocks.
+    5.  **Parameter Extraction:** The parser extracts `Description`, `Expected Outcome`, and `Allow Failure` (optional) from the metadata list.
 
 ### 5.5. `RESEARCH`
 
