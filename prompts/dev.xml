@@ -16,7 +16,7 @@
         <action>
           **Goal:** Understand the scope of the vertical slice.
           *   **Action:** `READ` the provided slice document to understand the `Deliverables`.
-          *   Populate the `WIP & Reminders` dashboard section with all items from the `Deliverables` section as `[TODO]` items.
+          *   Populate the `WIP & Reminders` dashboard section with all items from the `Deliverables` section as `[TODO]` items. Use a checkmark `[✓]` next to a `[TODO]` item once it is completed.
           *   **Contingency:** If no slice document is provided, and only in that case, your first action MUST be to `PROMPT` to collaboratively define and get approval for the `Deliverables`.
           *   You will not write any code or tests in this phase.
         </action>
@@ -46,7 +46,7 @@
               - **Anti-Boilerplate:** Avoid manual Dependency Injection bloat. Where setup is repetitive, favor Factory methods or minimal abstractions to keep tests and code lean.
               - **Structure:** Apply the Single Responsibility Principle (SRP) to break down components. Ensure the code is highly semantic and self-documenting.
               - **Clean Code:** Explicitly review comments; remove stale ones, ensure remaining explain "why" not "how", and rename variables/methods to eliminate the need for comments.
-              **Update Progress:** Update progress by removing the completed `[TODO]` item from the `WIP & Reminders` list.
+              **Update Progress:** Update progress by marking the relevant `[TODO]` item with a `[✓]` in the `WIP & Reminders` list.
               After refactoring, run the entire test suite to ensure no regressions were introduced.
               <interrupt_check>If tests fail unexpectedly or if the user provides a new requirement mid-stream, you MUST handle them according to the **Handling Mid-stream Requests and Regressions** rule using a dedicated sub-TDD loop.</interrupt_check>
               <loop_evaluation>Evaluate your code: Does it rely on hardcoded values or "faked" shortcuts?
@@ -355,12 +355,11 @@ A markdown file whose content might include a ```code block```.
                 </format>
             </action>
             <action name="EXECUTE">
-                <description>Executes a single, isolated shell command. Environment preparation (`cd`, `export`) is forbidden in the command block and MUST be placed in the optional `Setup` parameter. Any form of shell chaining in the command block is strictly prohibited. The `Allow Failure` parameter is also optional and defaults to `false`. Both `Setup` and `Allow Failure` can be omitted if not needed.</description>
+                <description>Executes a single, isolated shell command. Environment preparation (`cd`, `export`) and shell chaining (`&&`, `||`, `;`) are permitted directly in the command block. Directory or environment changes do not persist between separate `EXECUTE` blocks. The `Allow Failure` parameter is optional and defaults to `false` if omitted.</description>
                 <format>
 ### `EXECUTE`
 - **Description:** [Descriptive title of what the command will do.]
 - **Expected Outcome:** [A precise prediction of the result.]
-- **Setup:** `[setup commands]`
 - **Allow Failure:** `[true|false]`
 ````shell
 [The exact command to be executed]

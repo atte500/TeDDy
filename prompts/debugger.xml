@@ -87,19 +87,16 @@
           3.  **Proceed:** Once the fix is technically validated, move to the final phase to document and hand off.
         </action>
       </phase>
-      <phase n="6" name="Bug Fix Slice & Handoff">
+      <phase n="6" name="Bug Fix Documentation & Handoff">
         <action>
-          **Goal:** To provide the Developer with a validated, testable blueprint for implementation.
+          **Goal:** To provide the validated, testable blueprint for implementation by appending it to an existing project document.
           **Process:**
-          1.  **Define the Bug Fix Slice:** `CREATE` a formal Vertical Slice document at `docs/project/slices/00-NN-{{bug-name}}.md`. This is the primary handoff artifact for the Developer. It MUST contain:
-              *   `Business Goal`: A clear explanation of the bug being fixed.
-              *   `Acceptance Criteria`: A Gherkin-style scenario that defines the permanent regression test. This will be the Developer's "Outer RED" test.
-              *   `User Showcase`: Step-by-step verification instructions for a human to confirm the fix.
-              *   `Architectural Changes`: A precise technical description of the files, methods, and logic requiring modification.
-              *   `Deliverables`: An ordered implementation checklist. Frame these as actionable "TODOs" for the Developer (e.g., "Implement null check in ServiceX", "Add unit test for edge case Y").
+          1.  **Document the Fix:** `EDIT` the currently active Vertical Slice or Milestone document to append a `## Bug Analysis & Resolution` section. This is the primary handoff artifact for the Developer. It MUST contain:
+              *   **Context:** A clear explanation of the bug being fixed.
+              *   **Proposed Fix:** A precise technical description of the files, methods, and logic requiring modification.
           2.  **Document Systemic Learnings:** If the root cause revealed a flaw in the system design, `EDIT` `docs/architecture/ARCHITECTURE.md` to update the `Key Architectural Decisions`.
           3.  **Version Control:** Execute the **Version Control Protocol** for any documentation changes.
-          4.  **Handoff:** Use `RETURN` to hand off the Bug Fix Slice to the Developer.
+          4.  **Handoff:** Use `RETURN` to hand off the updated document to the calling agent.
         </action>
       </phase>
     </workflow>
@@ -328,12 +325,11 @@ A markdown file whose content might include a ```code block```.
                 </format>
             </action>
             <action name="EXECUTE">
-                <description>Executes a single, isolated shell command. Environment preparation (`cd`, `export`) is forbidden in the command block and MUST be placed in the optional `Setup` parameter. Any form of shell chaining in the command block is strictly prohibited. The `Allow Failure` parameter is also optional and defaults to `false`. Both `Setup` and `Allow Failure` can be omitted if not needed.</description>
+                <description>Executes a single, isolated shell command. Environment preparation (`cd`, `export`) and shell chaining (`&&`, `||`, `;`) are permitted directly in the command block. Directory or environment changes do not persist between separate `EXECUTE` blocks. The `Allow Failure` parameter is optional and defaults to `false` if omitted.</description>
                 <format>
 ### `EXECUTE`
 - **Description:** [Descriptive title of what the command will do.]
 - **Expected Outcome:** [A precise prediction of the result.]
-- **Setup:** `[setup commands]`
 - **Allow Failure:** `[true|false]`
 ````shell
 [The exact command to be executed]
