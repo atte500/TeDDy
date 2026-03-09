@@ -158,3 +158,32 @@ def test_shell_adapter_handles_pipes_on_posix():
 
     assert result["return_code"] == 0
     assert "hello world" in result["stdout"]
+
+
+def test_shell_adapter_handles_command_chaining():
+    """Verify that the shell adapter can execute chained commands (e.g., &&)."""
+    adapter = ShellAdapter()
+    if sys.platform == "win32":
+        command = "echo first && echo second"
+    else:
+        command = 'echo "first" && echo "second"'
+
+    result = adapter.execute(command)
+
+    assert result["return_code"] == 0
+    assert "first" in result["stdout"]
+    assert "second" in result["stdout"]
+
+
+def test_shell_adapter_preserves_env_across_chained_commands():
+    """Verify that env variables are preserved across chained commands."""
+    adapter = ShellAdapter()
+    if sys.platform == "win32":
+        command = "set TEST_VAR=chained && echo %TEST_VAR%"
+    else:
+        command = "export TEST_VAR=chained && echo $TEST_VAR"
+
+    result = adapter.execute(command)
+
+    assert result["return_code"] == 0
+    assert "chained" in result["stdout"].strip()
