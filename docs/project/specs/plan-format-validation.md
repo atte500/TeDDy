@@ -66,6 +66,8 @@ These checks validate the *content* of an action against the current state of th
 #### `READ`
 -   **[✓] `Resource` must be specified:** The metadata block must contain a `Resource`.
 -   **[✓] Local file must exist:** If the resource is a local file path (e.g., `[path/to/file.md](/path/to/file.md)`), that file must exist on the file system. (Note: URLs are not validated at this stage).
+-   **[✓] Target must NOT be in context:** The specified file must NOT be already listed in the session context (`session.context`) or the current turn's context (`turn.context`).
+    -   *Failure Example:* A plan tries to `READ` `README.md` but that file is already in `session.context`.
 
 #### `EXECUTE`
 -   **[✓] Must contain a core command:** The command code block must not be empty.

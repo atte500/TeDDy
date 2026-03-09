@@ -1,8 +1,8 @@
-**Status:** Planned
-**Introduced in:** [Slice 01: Markdown Report Generator](../../slices/01-markdown-report-generator.md)
+**Status:** Refactoring
+**Introduced in:** [Slice 09-05](/docs/project/slices/09-05-plan-validation-self-correction.md)
 
 ## 1. Purpose / Responsibility
-Defines the contract for any service that performs pre-flight validation of a `Plan` domain object. This port ensures that a plan's proposed actions are checked for common issues (e.g., `FIND` block mismatches, creating existing files) before execution begins.
+Defines the contract for performing pre-flight validation of a `Plan` domain object before execution. In session-aware mode, it validates action targets against the current working context.
 
 ## 2. Ports
 This component is an **Inbound Port**. It defines a use case that is driven by primary adapters like the CLI.
@@ -12,13 +12,18 @@ This port is expected to be implemented by a `PlanValidator` service. The implem
 
 ## 4. Data Contracts / Methods
 
-### `validate(self, plan: Plan) -> list[ValidationError]`
+### `validate(self, plan: Plan, context_paths: Dict[str, Sequence[str]] = None) -> list[ValidationError]`
 -   **Description:** The primary method to execute the validation process.
 -   **Preconditions:**
     -   `plan` must be a valid `Plan` domain object.
 -   **Postconditions:**
     -   Returns a list of `ValidationError` objects.
     -   An empty list signifies that the plan has passed all validation checks.
+-   **Context Handling:**
+    -   If `context_paths` is provided, it should contain keys `Session` and `Turn`.
+    -   **EDIT Rule:** File must be in `Session` OR `Turn` context.
+    -   **PRUNE Rule:** File must be in `Turn` context ONLY.
+    -   **READ Rule:** File must NOT be in `Session` OR `Turn` context.
 -   **Invariants:** This method must not cause any side effects or modify the state of the filesystem.
 
 ### `ValidationError` (Data Transfer Object)

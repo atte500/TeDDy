@@ -51,7 +51,11 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
     - Implement stateful action side-effects for `execute` (e.g., updating `T_next/turn.context` for `READ`/`PRUNE`).
 - [ ] **Slice 5: Plan Validation & Self-Correction**
     - Integrate existing `PlanValidator` for the automatic feedback loop to enhance the core `execute` command with pre-flight checks.
-    - Add additional checks for session workflow regarding files in context (cannot EDIT files not in context (instead instruct to first READ), cannot PRUNE files not in turn.context, check that agent to INVOKE exists otherwise return list of available agents)
+    - Add additional checks for session workflow regarding files in context:
+        - `EDIT`: Target file must be in current context.
+        - `PRUNE`: Target file must be in current context.
+        - `READ`: Target file must NOT be already in context (session or turn).
+        - `INVOKE`: Check that agent to INVOKE exists.
 - [ ] **Slice 6: Interactive TUI & `resume` Workflow**
     - Implement the smart `resume` command and the `textual`-based TUI for interactive plan approval and editing.
 - [ ] **Slice 7: Agent Collaboration Model**
