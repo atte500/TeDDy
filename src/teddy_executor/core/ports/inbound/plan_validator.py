@@ -7,6 +7,7 @@ This module defines the inbound port for plan validation.
 # See: docs/core/ports/inbound/plan_validator.md
 
 from abc import ABC, abstractmethod
+from typing import Dict, Optional, Sequence
 
 
 class IPlanValidator(ABC):
@@ -15,7 +16,9 @@ class IPlanValidator(ABC):
     """
 
     @abstractmethod
-    def validate(self, plan) -> list:
+    def validate(
+        self, plan, context_paths: Optional[Dict[str, Sequence[str]]] = None
+    ) -> list:
         """
         Validates the plan and returns a list of validation errors.
         An empty list signifies a successful validation.

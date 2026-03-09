@@ -43,12 +43,11 @@ def test_cli_invokes_orchestrator_with_plan_file(mock_run_plan):
         result = runner.invoke(app, ["execute", str(p), "--yes"])
 
     # ASSERT
-    from unittest.mock import ANY
 
     assert result.exit_code == 0, f"CLI exited with error: {result.stderr}"
     # Use call_args to verify specific parameters while ignoring others (like plan_path)
     args, kwargs = mock_run_plan.execute.call_args
-    assert kwargs["plan"] is ANY or kwargs["plan"] is not None
+    assert kwargs["plan_path"] is not None
     assert kwargs["interactive"] is False
 
 
@@ -119,8 +118,7 @@ def test_cli_handles_interactive_mode_flag(mock_run_plan):
         runner.invoke(app, ["execute", str(p)])
 
     # ASSERT
-    from unittest.mock import ANY
 
     args, kwargs = mock_run_plan.execute.call_args
-    assert kwargs["plan"] is ANY or kwargs["plan"] is not None
+    assert kwargs["plan_path"] is not None
     assert kwargs["interactive"] is True

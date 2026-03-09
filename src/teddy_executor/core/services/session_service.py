@@ -1,6 +1,7 @@
 import re
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Optional
 import yaml
 from teddy_executor.core.domain.models.execution_report import ExecutionReport
 from teddy_executor.core.domain.models.plan import ActionType
@@ -86,7 +87,10 @@ class SessionService(ISessionManager):
         return resource_str.strip()
 
     def transition_to_next_turn(
-        self, plan_path: str, execution_report: ExecutionReport
+        self,
+        plan_path: str,
+        execution_report: Optional[ExecutionReport] = None,
+        is_validation_failure: bool = False,
     ) -> str:
         """
         Calculates and creates the next turn directory based on the current turn
@@ -138,20 +142,24 @@ class SessionService(ISessionManager):
         )
 
         # 6. Apply READ/PRUNE side effects
-        for action in execution_report.original_actions:
-            resource = action.params.get("resource") or action.params.get("Resource")
-            if not resource:
-                continue
+        if execution_report:
+            for action in execution_report.original_actions:
+                resource = action.params.get("resource") or action.params.get(
+                    "Resource"
+                )
+                if not resource:
+                    continue
 
-            extracted_path = self._extract_resource_path(resource)
-            if action.type == ActionType.READ.value:
-                next_context_paths.add(extracted_path)
-            elif action.type == ActionType.PRUNE.value:
-                next_context_paths.discard(extracted_path)
+                extracted_path = self._extract_resource_path(resource)
+                if action.type == ActionType.READ.value:
+                    next_context_paths.add(extracted_path)
+                elif action.type == ActionType.PRUNE.value:
+                    next_context_paths.discard(extracted_path)
 
         # 7. Add current report.md to next context
-        relative_report_path = f"{Path(current_turn_dir).name}/report.md"
-        next_context_paths.add(relative_report_path)
+        if not is_validation_failure:
+            relative_report_path = f"{Path(current_turn_dir).name}/report.md"
+            next_context_paths.add(relative_report_path)
 
         # 8. Write next turn.context
         sorted_paths = sorted(list(next_context_paths))
@@ -160,3 +168,27 @@ class SessionService(ISessionManager):
         )
 
         return next_turn_dir
+
+    def resolve_context_paths(self, plan_path: str) -> dict[str, list[str]]:
+        """
+        Locates session.context and turn.context relative to plan_path
+        and returns their contents.
+        """
+        plan_p = Path(plan_path)
+        turn_dir = plan_p.parent
+        session_dir = turn_dir.parent
+
+        session_context_path = (session_dir / "session.context").as_posix()
+        turn_context_path = (turn_dir / "turn.context").as_posix()
+
+        def _read_and_parse(p):
+            try:
+                content = self._file_system_manager.read_file(p)
+                return [line.strip() for line in content.splitlines() if line.strip()]
+            except (FileNotFoundError, OSError):
+                return []
+
+        return {
+            "Session": _read_and_parse(session_context_path),
+            "Turn": _read_and_parse(turn_context_path),
+        }

@@ -13,7 +13,7 @@ from teddy_executor.core.domain.models import (
 )
 from teddy_executor.core.ports.inbound.init import IInitUseCase
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser, InvalidPlanError
-from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
+from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.markdown_report_formatter import (
     IMarkdownReportFormatter,
 )
@@ -33,8 +33,6 @@ from teddy_executor.adapters.inbound.cli_helpers import (
     find_project_root,
     echo_and_copy,
     get_plan_content,
-    handle_validation_failure,
-    execute_valid_plan,
 )
 from teddy_executor.container import create_container
 from teddy_executor.prompts import find_prompt_content
@@ -214,42 +212,28 @@ def execute(
 
     try:
         final_plan_content = get_plan_content(plan_content, plan_file)
-        parser = create_parser_for_plan(final_plan_content)
+        orchestrator = container.resolve(IRunPlanUseCase)
 
-        try:
-            plan = parser.parse(final_plan_content)
-            plan_validator = container.resolve(IPlanValidator)
-            validation_errors = plan_validator.validate(plan)
+        report = orchestrator.execute(
+            plan_content=final_plan_content,
+            plan_path=str(plan_file) if plan_file else None,
+            interactive=interactive_mode,
+        )
 
-            if validation_errors:
-                report = handle_validation_failure(plan, validation_errors, start_time)
-            else:
-                report = execute_valid_plan(
-                    container,
-                    plan,
-                    interactive_mode,
-                    parser,
-                    plan_meta={
-                        "plan_path": str(plan_file) if plan_file else None,
-                        "plan_content": plan_content,
-                    },
-                )
-
-        except InvalidPlanError as e:
-            report = ExecutionReport(
-                plan_title="Invalid Plan",
-                run_summary=RunSummary(
-                    status=RunStatus.VALIDATION_FAILED,
-                    start_time=start_time,
-                    end_time=datetime.now(timezone.utc),
-                ),
-                validation_result=[str(e)],
-                action_logs=[],
-            )
-
-    except NotImplementedError as e:
-        typer.echo(f"Error: {e}", err=True)
-        raise typer.Exit(code=1)
+    except (InvalidPlanError, NotImplementedError) as e:
+        report = ExecutionReport(
+            plan_title="Execution Error",
+            run_summary=RunSummary(
+                status=RunStatus.FAILURE
+                if isinstance(e, NotImplementedError)
+                else RunStatus.VALIDATION_FAILED,
+                start_time=start_time,
+                end_time=datetime.now(timezone.utc),
+                error=str(e),
+            ),
+            validation_result=[str(e)] if isinstance(e, InvalidPlanError) else None,
+            action_logs=[],
+        )
 
     if report:
         report_formatter = container.resolve(IMarkdownReportFormatter)

@@ -41,6 +41,7 @@ from teddy_executor.core.services.validation_rules.create import CreateActionVal
 from teddy_executor.core.services.validation_rules.edit import EditActionValidator
 from teddy_executor.core.services.validation_rules.execute import ExecuteActionValidator
 from teddy_executor.core.services.validation_rules.read import ReadActionValidator
+from teddy_executor.core.services.validation_rules.prune import PruneActionValidator
 from teddy_executor.adapters.outbound.console_interactor import ConsoleInteractorAdapter
 from teddy_executor.adapters.outbound.litellm_adapter import LiteLLMAdapter
 from teddy_executor.adapters.outbound.local_file_system_adapter import (
@@ -90,6 +91,7 @@ def create_container() -> punq.Container:
     container.register(EditActionValidator)
     container.register(ExecuteActionValidator)
     container.register(ReadActionValidator)
+    container.register(PruneActionValidator)
 
     # Use a factory lambda to ensure IPlanValidator and its sub-validators
     # are resolved lazily only when IPlanValidator is first requested.
@@ -102,6 +104,7 @@ def create_container() -> punq.Container:
                 container.resolve(EditActionValidator),
                 container.resolve(ExecuteActionValidator),
                 container.resolve(ReadActionValidator),
+                container.resolve(PruneActionValidator),
             ],
         ),
     )
@@ -114,6 +117,9 @@ def create_container() -> punq.Container:
             session_service=container.resolve(ISessionManager),
             file_system_manager=container.resolve(IFileSystemManager),
             report_formatter=container.resolve(IMarkdownReportFormatter),
+            plan_validator=container.resolve(IPlanValidator),
+            planning_service=container.resolve(IPlanningUseCase),
+            plan_parser=container.resolve(IPlanParser),
         ),
     )
     container.register(IGetContextUseCase, ContextService)

@@ -4,7 +4,7 @@ Validation rules for the 'EDIT' action.
 
 import difflib
 import os
-from typing import List
+from typing import Dict, List, Optional, Sequence
 
 from teddy_executor.core.domain.models.plan import ActionData
 from teddy_executor.core.ports.outbound import IFileSystemManager
@@ -26,7 +26,11 @@ class EditActionValidator(IActionValidator):
     def can_validate(self, action_type: str) -> bool:
         return action_type.lower() == "edit"
 
-    def validate(self, action: ActionData) -> List[ValidationError]:
+    def validate(
+        self,
+        action: ActionData,
+        context_paths: Optional[Dict[str, Sequence[str]]] = None,
+    ) -> List[ValidationError]:
         """
         Validates an 'edit' action.
         """
@@ -42,11 +46,28 @@ class EditActionValidator(IActionValidator):
         try:
             validate_path_is_safe(path_str, "EDIT")
 
+            # Context Check
+            if context_paths is not None:
+                session_paths = context_paths.get("Session", [])
+                turn_paths = context_paths.get("Turn", [])
+                all_context_paths = list(session_paths) + list(turn_paths)
+
+                # Normalize path for comparison (handling leading slash in plans)
+                normalized_target = path_str.lstrip("/")
+                normalized_context = [p.lstrip("/") for p in all_context_paths]
+
+                if normalized_target not in normalized_context:
+                    raise PlanValidationError(
+                        f"{path_str} is not in the current turn context",
+                        file_path=path_str,
+                    )
+
             if not self._file_system_manager.path_exists(path_str):
                 raise PlanValidationError(
                     f"File to edit does not exist: {path_str}",
                     file_path=path_str,
                 )
+
         except (PlanValidationError, FileNotFoundError) as e:
             return [
                 ValidationError(

@@ -3,7 +3,7 @@ Validation rules for the 'EXECUTE' action.
 """
 
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional, Sequence
 
 from teddy_executor.core.domain.models.plan import ActionData
 from teddy_executor.core.services.validation_rules.helpers import (
@@ -18,7 +18,11 @@ class ExecuteActionValidator(IActionValidator):
     def can_validate(self, action_type: str) -> bool:
         return action_type.lower() == "execute"
 
-    def validate(self, action: ActionData) -> List[ValidationError]:
+    def validate(
+        self,
+        action: ActionData,
+        context_paths: Optional[Dict[str, Sequence[str]]] = None,
+    ) -> List[ValidationError]:
         """Validates an 'execute' action."""
         errors: List[ValidationError] = []
         command = action.params.get("command", "").strip()

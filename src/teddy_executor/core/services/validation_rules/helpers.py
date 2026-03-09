@@ -3,11 +3,13 @@ Shared helper classes and functions for validation rules.
 """
 
 import os
-from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Protocol
 
-from teddy_executor.core.domain.models.plan import ActionData
+from teddy_executor.core.domain.models.plan import ActionData, ValidationError
+
+
+from typing import Dict, Sequence
 
 
 class IActionValidator(Protocol):
@@ -19,17 +21,13 @@ class IActionValidator(Protocol):
         """Returns True if this validator can handle the given action type."""
         ...
 
-    def validate(self, action: ActionData) -> List["ValidationError"]:
+    def validate(
+        self,
+        action: ActionData,
+        context_paths: Optional[Dict[str, Sequence[str]]] = None,
+    ) -> List[ValidationError]:
         """Validates the given action."""
         ...
-
-
-@dataclass
-class ValidationError:
-    """Represents a structured validation error."""
-
-    message: str
-    file_path: Optional[str] = None
 
 
 class PlanValidationError(Exception):

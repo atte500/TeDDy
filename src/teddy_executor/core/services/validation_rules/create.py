@@ -2,7 +2,7 @@
 Validation rules for the 'CREATE' action.
 """
 
-from typing import List
+from typing import Dict, List, Optional, Sequence
 
 from teddy_executor.core.domain.models.plan import ActionData
 from teddy_executor.core.ports.outbound import IFileSystemManager
@@ -23,7 +23,11 @@ class CreateActionValidator(IActionValidator):
     def can_validate(self, action_type: str) -> bool:
         return action_type.lower() == "create"
 
-    def validate(self, action: ActionData) -> List[ValidationError]:
+    def validate(
+        self,
+        action: ActionData,
+        context_paths: Optional[Dict[str, Sequence[str]]] = None,
+    ) -> List[ValidationError]:
         """Validates a 'create' action."""
         try:
             path_str = action.params.get("path")

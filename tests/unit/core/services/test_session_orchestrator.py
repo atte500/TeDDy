@@ -19,10 +19,17 @@ def test_session_orchestrator_triggers_transition_on_success():
         session_service=session_service,
         file_system_manager=MagicMock(),
         report_formatter=MagicMock(),
+        plan_validator=MagicMock(),
+        planning_service=MagicMock(),
+        plan_parser=MagicMock(),
     )
 
     plan_content = "some plan"
     plan_path = "path/to/01/plan.md"
+
+    # Mock parsing and validation to allow execution flow
+    orchestrator._plan_parser.parse.return_value = MagicMock()
+    orchestrator._plan_validator.validate.return_value = []
 
     # Act
     orchestrator.execute(plan_content=plan_content, plan_path=plan_path)
@@ -35,4 +42,5 @@ def test_session_orchestrator_triggers_transition_on_success():
     session_service.transition_to_next_turn.assert_called_once_with(
         plan_path=plan_path,
         execution_report=execution_orchestrator.execute.return_value,
+        is_validation_failure=False,
     )

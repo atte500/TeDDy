@@ -114,7 +114,10 @@ def execute_valid_plan(
     plan_meta: Optional[dict] = None,
 ) -> ExecutionReport:
     """Executes a plan that has already been parsed and validated."""
+    import sys
+
     orchestrator = container.resolve(IRunPlanUseCase)
+    print(f"DEBUG CLI: Resolved orchestrator: {type(orchestrator)}", file=sys.stderr)
     meta = plan_meta or {}
     execution_report = orchestrator.execute(
         plan=plan,

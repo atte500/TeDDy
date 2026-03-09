@@ -2,7 +2,7 @@
 Validation rules for the 'READ' action.
 """
 
-from typing import List
+from typing import Dict, List, Optional, Sequence
 
 from teddy_executor.core.domain.models.plan import ActionData
 from teddy_executor.core.ports.outbound import IFileSystemManager
@@ -23,10 +23,28 @@ class ReadActionValidator(IActionValidator):
     def can_validate(self, action_type: str) -> bool:
         return action_type.lower() == "read"
 
-    def validate(self, action: ActionData) -> List[ValidationError]:
+    def validate(
+        self,
+        action: ActionData,
+        context_paths: Optional[Dict[str, Sequence[str]]] = None,
+    ) -> List[ValidationError]:
         """Validates a 'read' action."""
+        errors: List[ValidationError] = []
         try:
             path_str = action.params.get("resource")
+
+            # Context Check
+            if context_paths and path_str:
+                session_context = context_paths.get("Session", [])
+                turn_context = context_paths.get("Turn", [])
+                if path_str in session_context or path_str in turn_context:
+                    errors.append(
+                        ValidationError(
+                            message=f"{path_str} is already in context",
+                            file_path=path_str,
+                        )
+                    )
+
             if (
                 isinstance(path_str, str)
                 and not path_str.startswith("http://")
@@ -37,9 +55,10 @@ class ReadActionValidator(IActionValidator):
                     raise PlanValidationError(
                         f"File to read does not exist: {path_str}", file_path=path_str
                     )
-            return []
+            return errors
         except PlanValidationError as e:
-            return [ValidationError(message=e.message, file_path=e.file_path)]
+            errors.append(ValidationError(message=e.message, file_path=e.file_path))
+            return errors
 
 
 # Removed legacy functional validation rule in favor of ReadActionValidator class.

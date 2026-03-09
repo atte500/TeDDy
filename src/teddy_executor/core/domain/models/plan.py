@@ -25,6 +25,15 @@ class ActionData:
 
 
 @dataclass(frozen=True)
+class ValidationError:
+    """Represents a structured validation error."""
+
+    message: str
+    action_index: int = 0
+    file_path: str | None = None
+
+
+@dataclass(frozen=True)
 class Plan:
     """Represents a parsed and validated execution plan."""
 
