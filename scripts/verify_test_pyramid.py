@@ -53,6 +53,7 @@ def main():
     else:
         print("\n[ERROR] Test pyramid structure is violated!", file=sys.stderr)
         print("The rule is: Acceptance < Integration < Unit", file=sys.stderr)
+        print("Please refactor", file=sys.stderr)
         sys.exit(1)
 
 if __name__ == "__main__":
