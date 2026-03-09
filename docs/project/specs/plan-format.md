@@ -196,11 +196,16 @@ All actions are located under the `## Action Plan` heading. Each action is defin
 -   **Format:**
     ```markdown
     ### `PROMPT`
+    - **Reference Files:** (Optional)
+      [path/to/file.ext](/path/to/file.ext)
+
     I have created a new milestone at `docs/project/milestones/01-finisher-agent.md` and will now begin my research.
 
     This is a standard checkpoint to ensure we are aligned before I proceed with the research phase. Does this initial direction meet with your approval?
     ```
--   **Parsing Rules:** The content for the chat message is all the free-form markdown content under the `### PROMPT` heading.
+-   **Parsing Rules:**
+    1.  Extract the optional list of `Reference Files` from the metadata list.
+    2.  The content for the chat message is all the free-form markdown content following the metadata list under the `### PROMPT` heading.
 
 ### 5.7. `INVOKE`
 
@@ -210,12 +215,12 @@ All actions are located under the `## Action Plan` heading. Each action is defin
     ### `INVOKE`
     - **Agent:** Architect
     - **Description:** The feature discovery is complete and the problem is validated.
-    - **Handoff Resources:** (Optional)
+    - **Reference Files:** (Optional)
     [docs/project/milestones/new-feature.md](/docs/project/milestones/new-feature.md)
     ```
 -   **Parsing Rules:**
     1.  Extract the target `Agent` and the `Description` from the metadata list.
-    2.  Extract the optional list of `Handoff Resources`. These should be formatted as a multi-line list of root-relative links without leading bullets. The link text should be the full path from the project root.
+    2.  Extract the optional list of `Reference Files`. These should be formatted as a multi-line list of root-relative links without leading bullets. The link text should be the full path from the project root.
     3.  The `Description` serves as the short explanation of the handoff. Free-form text following the metadata list is forbidden.
 
 ### 5.8. `RETURN`
@@ -225,13 +230,13 @@ All actions are located under the `## Action Plan` heading. Each action is defin
     ```markdown
     ### `RETURN`
     - **Description:** The implementation and testing of the vertical slice are complete.
-    - **Handoff Resources:** (Optional)
-    [docs/architecture/rca/the-bug.md](/docs/architecture/rca/the-bug.md)
+    - **Reference Files:** (Optional)
+    [docs/project/debugging/rca/the-bug.md](/docs/project/debugging/rca/the-bug.md)
     [spikes/fix-script.sh](/spikes/fix-script.sh)
     ```
 -   **Parsing Rules:**
     1.  Extract the `Description` from the metadata list.
-    2.  Extract the optional list of `Handoff Resources`. These should be formatted as a multi-line list of root-relative links without leading bullets. The link text should be the full path from the project root.
+    2.  Extract the optional list of `Reference Files`. These should be formatted as a multi-line list of root-relative links without leading bullets. The link text should be the full path from the project root.
     3.  The `Description` serves as the short explanation of the task completion. Free-form text following the metadata list is forbidden.
 
 ### 5.9. `PRUNE`

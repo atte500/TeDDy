@@ -78,3 +78,16 @@ These checks validate the *content* of an action against the current state of th
 -   **[✓] `Resource` must be specified:** The metadata block must contain a `Resource`.
 -   **[✓] Target must be in context:** The specified file must be listed in the current turn's context (`turn.context`).
     -   *Failure Example:* A plan tries to `PRUNE` `docs/OLD_SPEC.md` but that file is not listed in `turn.context`.
+
+#### `PROMPT`
+-   **[✓] Message must be specified:** The action must contain free-form markdown content (the prompt message) following the metadata list.
+-   **[✓] Reference Files must exist:** If the optional `Reference Files` list is provided, all specified local files must exist on the file system.
+
+#### `INVOKE`
+-   **[✓] `Agent` must be specified:** The metadata block must contain a valid target agent name.
+-   **[✓] `Description` must be specified:** The metadata block must contain a short explanation of the handoff.
+-   **[✓] Reference Files must exist:** If the optional `Reference Files` list is provided, all specified local files must exist on the file system.
+
+#### `RETURN`
+-   **[✓] `Description` must be specified:** The metadata block must contain a short explanation of the task completion.
+-   **[✓] Reference Files must exist:** If the optional `Reference Files` list is provided, all specified local files must exist on the file system.
