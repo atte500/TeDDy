@@ -1,5 +1,5 @@
 # Slice 09-05: Plan Validation & Self-Correction
-- **Status:** [▶] Planned
+- **Status:** [✓] Completed
 
 ## 1. Business Goal
 
@@ -73,20 +73,36 @@ To enhance the reliability of the TeDDy workflow by catching common errors befor
 ## 5. Deliverables
 
 ### 1. Plan Validation Enhancements
-- [ ] **Updated `PlanValidator`**: Implement `Session` vs `Turn` context logic.
-- [ ] **Updated `EDIT` Validator**: Verify target is in either context.
-- [ ] **Updated `PRUNE` Validator**: Verify target is ONLY in Turn context.
-- [ ] **Updated `READ` Validator**: Verify target is NOT in any context.
+- [x] **Updated `PlanValidator`**: Implement `Session` vs `Turn` context logic.
+- [x] **Updated `EDIT` Validator**: Verify target is in either context.
+- [x] **Updated `PRUNE` Validator**: Verify target is ONLY in Turn context.
+- [x] **Updated `READ` Validator**: Verify target is NOT in any context.
 
 ### 2. Automated Re-plan Loop
-- [ ] **`SessionOrchestrator` Logic**: Integrate validation check and re-plan trigger.
-- [ ] **`SessionService` Extension**: Add `is_validation_failure` flag to `transition_to_next_turn`.
-- [ ] **Feedback Payload Generator**: A utility to format validation errors for the LLM.
+- [x] **`SessionOrchestrator` Logic**: Integrate validation check and re-plan trigger.
+- [x] **`SessionService` Extension**: Add `is_validation_failure` flag to `transition_to_next_turn`.
+- [x] **Feedback Payload Generator**: A utility to format validation errors for the LLM.
 
 ### 3. Verification
-- [ ] **Unit Tests**: Context-aware validation rules in isolation.
-- [ ] **Integration Tests**: Re-plan loop in `SessionOrchestrator`.
-- [ ] **Acceptance Tests**: Full CLI workflow for faulty plans.
+- [x] **Unit Tests**: Context-aware validation rules in isolation.
+- [x] **Integration Tests**: Re-plan loop in `SessionOrchestrator`.
+- [x] **Acceptance Tests**: Full CLI workflow for faulty plans.
+
+## Implementation Summary
+
+### Work Completed
+- **Context-Aware Validation**: Implemented mandatory context checks for `READ` (must not be in context), `EDIT` (must be in session/turn context), and `PRUNE` (must be in turn context).
+- **Automated Re-plan Loop**: Integrated the `PlanValidator` into `SessionOrchestrator`. On failure, the orchestrator generates a validation report, creates a new turn directory (excluding the failure report from context), and invokes the `PlanningService` with structured feedback to generate a corrected plan.
+- **Rich Feedback Loop**: Validation reports now include the specific error messages and the contents of the files that caused the failure, providing high-clarity char-level diffs for `EDIT` mismatches.
+- **Robust CLI Integration**: Updated the CLI `execute` command to support pre-flight validation in both standalone (manual) and stateful (session) modes.
+
+### Significant Refactorings
+- **Validator Strategy Pattern**: Refactored `PlanValidator` to use a registry of action-specific validators, facilitating easier extension for new action types.
+- **Service Orchestration**: Decoupled validation logic from core execution by implementing it as a decorator-style gate in `SessionOrchestrator`.
+
+### Lessons Learned
+- **Privacy by Design**: Enforced rule ordering in `EDIT` validation to check context *before* existence, preventing potential information leakage about the host filesystem.
+- **Stateless/Stateful Alignment**: Maintained strict separation between manual and session modes, ensuring "secure by default" validation while allowing flexible manual overrides.
 
 ## 6. User Showcase
 

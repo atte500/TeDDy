@@ -49,7 +49,7 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
     - Implement `SessionManager` and the basic `new`, `plan`, and `execute` commands.
     - Implement `ContextService` to build the `input.md` payload implicitly for the planning phase.
     - Implement stateful action side-effects for `execute` (e.g., updating `T_next/turn.context` for `READ`/`PRUNE`).
-- [ ] **Slice 5: Plan Validation & Self-Correction**
+- [x] **Slice 5: Plan Validation & Self-Correction**
     - Integrate existing `PlanValidator` for the automatic feedback loop to enhance the core `execute` command with pre-flight checks.
     - Add additional checks for session workflow regarding files in context:
         - `EDIT`: Target file must be in current context.
