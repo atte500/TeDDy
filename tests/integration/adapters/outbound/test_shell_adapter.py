@@ -178,10 +178,11 @@ def test_shell_adapter_handles_command_chaining():
 def test_shell_adapter_preserves_env_across_chained_commands():
     """Verify that env variables are preserved across chained commands."""
     adapter = ShellAdapter()
+    # Use python to print env to avoid CMD's expansion quirks on Windows
     if sys.platform == "win32":
-        command = "set TEST_VAR=chained && echo %TEST_VAR%"
+        command = f"set TEST_VAR=chained && {sys.executable} -c \"import os; print(os.environ.get('TEST_VAR'))\""
     else:
-        command = "export TEST_VAR=chained && echo $TEST_VAR"
+        command = f"export TEST_VAR=chained && {sys.executable} -c \"import os; print(os.environ.get('TEST_VAR'))\""
 
     result = adapter.execute(command)
 

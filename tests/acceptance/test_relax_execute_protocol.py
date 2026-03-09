@@ -86,5 +86,11 @@ ls inside.txt
     result = runner.invoke(app, ["execute", "--plan-content", plan_content, "--yes"])
 
     # Overall execution should fail because the second command fails (ls inside.txt)
-    assert result.exit_code == 1
-    assert "inside.txt: No such file or directory" in result.stdout
+    # On Windows, ls might fail differently or be mapped to dir, but the core executor handles this.
+    # We use .output to catch both stdout and stderr.
+    assert result.exit_code != 0
+    assert "inside.txt" in result.output
+    assert (
+        "No such file or directory" in result.output
+        or "cannot find" in result.output.lower()
+    )

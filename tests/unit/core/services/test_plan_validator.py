@@ -330,6 +330,52 @@ def test_validate_execute_action_allows_directives(validator):
         assert len(errors) == 0
 
 
+def test_validate_execute_fails_with_posix_absolute_cwd(validator):
+    """
+    Given an EXECUTE action with a POSIX absolute CWD (starting with /),
+    When validated,
+    Then it should return a validation error.
+    """
+    plan = Plan(
+        title="Test",
+        rationale="Test",
+        actions=[
+            ActionData(
+                type="EXECUTE",
+                params={"command": "ls", "cwd": "/etc"},
+            )
+        ],
+    )
+
+    errors = validator.validate(plan)
+
+    assert len(errors) == 1
+    assert "is an absolute path and is not allowed" in errors[0].message
+
+
+def test_validate_execute_fails_with_traversal_cwd(validator):
+    """
+    Given an EXECUTE action with a CWD containing traversal (..),
+    When validated,
+    Then it should return a validation error.
+    """
+    plan = Plan(
+        title="Test",
+        rationale="Test",
+        actions=[
+            ActionData(
+                type="EXECUTE",
+                params={"command": "ls", "cwd": "../secret"},
+            )
+        ],
+    )
+
+    errors = validator.validate(plan)
+
+    assert len(errors) == 1
+    assert "is outside the project directory" in errors[0].message
+
+
 def test_validate_execute_fails_with_unsafe_cwd_traversal(validator):
     """
     Given an EXECUTE action where `cwd` attempts to traverse outside the project root,
