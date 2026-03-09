@@ -7,24 +7,18 @@ import os
 from typing import Dict, List, Optional, Sequence
 
 from teddy_executor.core.domain.models.plan import ActionData
-from teddy_executor.core.ports.outbound import IFileSystemManager
 from teddy_executor.core.services.validation_rules.helpers import (
-    IActionValidator,
+    BaseActionValidator,
     PlanValidationError,
     ValidationError,
+    is_path_in_context,
     validate_path_is_safe,
 )
 from teddy_executor.core.utils.markdown import get_fence_for_content
 
 
-class EditActionValidator(IActionValidator):
+class EditActionValidator(BaseActionValidator):
     """Validator for the 'EDIT' action."""
-
-    def __init__(self, file_system_manager: IFileSystemManager):
-        self._file_system_manager = file_system_manager
-
-    def can_validate(self, action_type: str) -> bool:
-        return action_type.lower() == "edit"
 
     def validate(
         self,
@@ -46,17 +40,9 @@ class EditActionValidator(IActionValidator):
         try:
             validate_path_is_safe(path_str, "EDIT")
 
-            # Context Check
+            # Context Check: EDIT must be in context
             if context_paths is not None:
-                session_paths = context_paths.get("Session", [])
-                turn_paths = context_paths.get("Turn", [])
-                all_context_paths = list(session_paths) + list(turn_paths)
-
-                # Normalize path for comparison (handling leading slash in plans)
-                normalized_target = path_str.lstrip("/")
-                normalized_context = [p.lstrip("/") for p in all_context_paths]
-
-                if normalized_target not in normalized_context:
+                if not is_path_in_context(path_str, context_paths):
                     raise PlanValidationError(
                         f"{path_str} is not in the current turn context",
                         file_path=path_str,

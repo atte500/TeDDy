@@ -5,23 +5,17 @@ Validation rules for the 'READ' action.
 from typing import Dict, List, Optional, Sequence
 
 from teddy_executor.core.domain.models.plan import ActionData
-from teddy_executor.core.ports.outbound import IFileSystemManager
 from teddy_executor.core.services.validation_rules.helpers import (
-    IActionValidator,
+    BaseActionValidator,
     PlanValidationError,
     ValidationError,
+    is_path_in_context,
     validate_path_is_safe,
 )
 
 
-class ReadActionValidator(IActionValidator):
+class ReadActionValidator(BaseActionValidator):
     """Validator for the 'READ' action."""
-
-    def __init__(self, file_system_manager: IFileSystemManager):
-        self._file_system_manager = file_system_manager
-
-    def can_validate(self, action_type: str) -> bool:
-        return action_type.lower() == "read"
 
     def validate(
         self,
@@ -33,17 +27,14 @@ class ReadActionValidator(IActionValidator):
         try:
             path_str = action.params.get("resource")
 
-            # Context Check
-            if context_paths and path_str:
-                session_context = context_paths.get("Session", [])
-                turn_context = context_paths.get("Turn", [])
-                if path_str in session_context or path_str in turn_context:
-                    errors.append(
-                        ValidationError(
-                            message=f"{path_str} is already in context",
-                            file_path=path_str,
-                        )
+            # Context Check: READ must NOT be in context
+            if path_str and is_path_in_context(path_str, context_paths):
+                errors.append(
+                    ValidationError(
+                        message=f"{path_str} is already in context",
+                        file_path=path_str,
                     )
+                )
 
             if (
                 isinstance(path_str, str)

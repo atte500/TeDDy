@@ -98,6 +98,7 @@ To enhance the reliability of the TeDDy workflow by catching common errors befor
 
 ### Significant Refactorings
 - **Validator Strategy Pattern**: Refactored `PlanValidator` to use a registry of action-specific validators, facilitating easier extension for new action types.
+- **BaseActionValidator Hierarchy**: Introduced a `BaseActionValidator` class and a centralized `is_path_in_context` helper. This resolved code duplication across `CREATE`, `EDIT`, `READ`, and `PRUNE` validators while ensuring consistent path normalization and safety checks.
 - **Service Orchestration**: Decoupled validation logic from core execution by implementing it as a decorator-style gate in `SessionOrchestrator`.
 
 ### Lessons Learned

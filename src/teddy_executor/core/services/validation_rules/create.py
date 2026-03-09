@@ -5,23 +5,16 @@ Validation rules for the 'CREATE' action.
 from typing import Dict, List, Optional, Sequence
 
 from teddy_executor.core.domain.models.plan import ActionData
-from teddy_executor.core.ports.outbound import IFileSystemManager
 from teddy_executor.core.services.validation_rules.helpers import (
-    IActionValidator,
+    BaseActionValidator,
     PlanValidationError,
     ValidationError,
     validate_path_is_safe,
 )
 
 
-class CreateActionValidator(IActionValidator):
+class CreateActionValidator(BaseActionValidator):
     """Validator for the 'CREATE' action."""
-
-    def __init__(self, file_system_manager: IFileSystemManager):
-        self._file_system_manager = file_system_manager
-
-    def can_validate(self, action_type: str) -> bool:
-        return action_type.lower() == "create"
 
     def validate(
         self,
