@@ -149,7 +149,7 @@
                     - [✓ | ▶ |  ] REFACTOR
             WIP & Reminders:
             - [This is a persistent log. You MUST carry all notes forward into every turn.]
-            - [ ] [A pending task or next step to be addressed (e.g., [ ] Research library X)]
+            - [TODO] [A pending task or next step to be addressed (e.g., [ ] Research library X)]
             - [!] [A critical constraint, strategic reminder, or risk (e.g., [!] Must maintain Hexagonal boundaries)]
             - [?] [An open question or unknown to be resolved (e.g., [?] Does this library support Python 3.11?)]
             - [✓] [A resolved task or reminder (e.g., [✓] Read ARCHITECTURE.md). These MUST be kept in the log to provide a full audit trail of progress.]
