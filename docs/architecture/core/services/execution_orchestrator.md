@@ -50,7 +50,8 @@ class ExecutionOrchestrator:
 
         1.  Loops through each action in the plan.
         2.  Checks for previous failures. If any action has failed (triggering the `halt_execution` flag), subsequent actions are automatically skipped to prevent cascading failures, and `IUserInteractor.notify_skipped_action` is called to warn the user.
-        3.  **Control Flow Interception:** Intercepts `PRUNE`, `INVOKE`, and `RETURN` actions.
+        3.  **Action Isolation Enforcement:** Verifies terminal actions (`PROMPT`, `INVOKE`, `RETURN`) are executed in isolation. If a terminal action is part of a multi-action plan, it is automatically skipped.
+        4.  **Control Flow Interception:** Intercepts `PRUNE`, `INVOKE`, and `RETURN` actions.
             - `PRUNE`: Automatically skipped in manual mode (context is not persistent).
             - `INVOKE`/`RETURN`: Always interrupts the flow to request manual confirmation from the user via `IUserInteractor.confirm_manual_handoff`, even in non-interactive mode.
         4.  **Action Confirmation:** If not intercepted and in interactive mode, coordinates a `ChangeSet` and calls `IUserInteractor.confirm_action`.

@@ -20,6 +20,8 @@ from teddy_executor.core.services.action_dispatcher import ActionDispatcher
 
 
 class ExecutionOrchestrator(IRunPlanUseCase):
+    TERMINAL_ACTIONS = ("PROMPT", "INVOKE", "RETURN")
+
     def __init__(
         self,
         plan_parser: IPlanParser,
@@ -92,6 +94,15 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             )
         except Exception:
             return action_log
+
+    def _check_action_isolation(self, action, total_actions: int) -> ActionLog | None:
+        """Ensures terminal actions are executed in isolation."""
+        if total_actions > 1 and action.type.upper() in self.TERMINAL_ACTIONS:
+            return self._handle_skipped_action(
+                action,
+                "Action must be executed in isolation to ensure state consistency.",
+            )
+        return None
 
     def _intercept_control_flow_action(
         self, action, interactive: bool
@@ -182,8 +193,13 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             action=action, action_prompt=prompt, change_set=change_set
         )
 
-    def _confirm_and_dispatch_action(self, action, interactive: bool) -> ActionLog:
+    def _confirm_and_dispatch_action(
+        self, action, interactive: bool, total_actions: int
+    ) -> ActionLog:
         """Handles user confirmation and dispatches a single action."""
+        if isolation_log := self._check_action_isolation(action, total_actions):
+            return isolation_log
+
         # For the stateless, manual CLI workflow, always intercept these actions.
         # The future stateful session runner will use a different orchestrator or flag.
         if intercepted_log := self._intercept_control_flow_action(action, interactive):
@@ -232,7 +248,9 @@ class ExecutionOrchestrator(IRunPlanUseCase):
                 action_logs.append(self._handle_skipped_action(action, reason))
                 continue
 
-            action_log = self._confirm_and_dispatch_action(action, interactive)
+            action_log = self._confirm_and_dispatch_action(
+                action, interactive, len(plan.actions)
+            )
             action_logs.append(action_log)
 
             if action_log.status == ActionStatus.FAILURE:
