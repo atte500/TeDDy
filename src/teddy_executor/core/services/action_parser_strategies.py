@@ -15,6 +15,7 @@ from teddy_executor.core.services.parser_infrastructure import (
     get_child_text,
     get_action_heading,
     consume_content_until_next_action,
+    MISMATCH_INDICATOR,
 )
 from teddy_executor.core.services.parser_metadata import (
     parse_action_metadata,
@@ -85,11 +86,15 @@ def parse_find_replace_pair(stream: _PeekableStream) -> Optional[dict[str, str]]
         isinstance(replace_heading, Heading)
         and "REPLACE:" in get_child_text(replace_heading)
     ):
-        raise InvalidPlanError("Missing REPLACE heading after FIND block.")
+        raise InvalidPlanError(
+            f"Missing REPLACE block after FIND block{MISMATCH_INDICATOR}"
+        )
 
     replace_code = stream.next()
     if not isinstance(replace_code, (CodeFence, BlockCode)):
-        raise InvalidPlanError("Missing code block for REPLACE in EDIT action.")
+        raise InvalidPlanError(
+            f"Missing REPLACE block after FIND block{MISMATCH_INDICATOR}"
+        )
     replace_content = get_child_text(replace_code).rstrip("\n")
 
     return {"find": find_content, "replace": replace_content}

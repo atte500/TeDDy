@@ -1006,7 +1006,7 @@ content2
     error_msg = str(excinfo.value)
     assert "Plan structure is invalid. Expected a Level 3 Action Heading" in error_msg
     assert "--- Actual Document Structure ---" in error_msg
-    assert "ThematicBreak  <-- MISMATCH" in error_msg
+    assert "ThematicBreak <-- MISMATCH" in error_msg
 
 
 def test_parser_raises_error_on_malformed_structure_between_actions(
@@ -1058,7 +1058,7 @@ echo 2
     assert "Plan structure is invalid. Expected a Level 3 Action Heading" in error_msg
     assert "Unexpected content found" not in error_msg  # Redundant phrasing removed
     assert "--- Actual Document Structure ---" in error_msg
-    assert 'Paragraph: "This is some free text that sh..."  <-- MISMATCH' in error_msg
+    assert 'Paragraph: "This is some free text that sh..." <-- MISMATCH' in error_msg
 
 
 def test_parser_succeeds_on_builder_generated_create_action(parser: IPlanParser):
@@ -1339,3 +1339,66 @@ This is a document without a title.
         parser.parse(plan_content)
 
     assert "No Level 1 heading found" in str(excinfo.value)
+
+
+def test_parser_raises_error_with_indicator_on_missing_replace_block(
+    parser: IPlanParser,
+):
+    """
+    Scenario 1: Missing REPLACE block in EDIT action
+    Verifies that a plan with an EDIT action missing a REPLACE block
+    triggers an InvalidPlanError containing the shared MISMATCH indicator.
+    """
+    from teddy_executor.core.ports.inbound.plan_parser import InvalidPlanError
+
+    plan_content = """# Malformed Plan
+- Status: Green 🟢
+- Plan Type: test
+- Agent: test
+
+## Rationale
+````
+Test rationale
+````
+
+## Action Plan
+
+### `EDIT`
+- **File Path:** dummy.txt
+- **Description:** Missing replace block
+
+#### `FIND:`
+````text
+find me
+````
+"""
+    with pytest.raises(InvalidPlanError) as excinfo:
+        parser.parse(plan_content)
+
+    assert "Missing REPLACE block after FIND block <-- MISMATCH" in str(excinfo.value)
+
+
+def test_parser_raises_error_with_indicator_on_structural_mismatch(parser: IPlanParser):
+    """
+    Scenario 2: Consistent Top-Level Structural Errors
+    Verifies that a plan with an invalid top-level structure (missing Rationale)
+    triggers an error containing the MISMATCH indicator in the AST summary.
+    """
+    from teddy_executor.core.ports.inbound.plan_parser import InvalidPlanError
+
+    plan_content = """# Missing Rationale Plan
+- Status: Green 🟢
+- Plan Type: test
+- Agent: test
+
+## Action Plan
+### `READ`
+- Resource: README.md
+"""
+    with pytest.raises(InvalidPlanError) as excinfo:
+        parser.parse(plan_content)
+
+    error_msg = str(excinfo.value)
+    assert "Plan structure is invalid" in error_msg
+    # Verify the specific mismatch location in the AST summary
+    assert '[002] Heading (Level 2): "Action Plan..." <-- MISMATCH' in error_msg

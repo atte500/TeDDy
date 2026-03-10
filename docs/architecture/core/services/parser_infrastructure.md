@@ -11,6 +11,9 @@ A wrapper around an iterator that allows the parser to "peek" at the next node i
 ### `_FencePreProcessor`
 Ensures that Markdown code fences (e.g., ` ``` `) are handled consistently before the document is parsed into an AST. It serves as a hook for normalizing LLM-generated Markdown that might use variable fence lengths.
 
+### Constants
+- `MISMATCH_INDICATOR`: A shared visual indicator (` <-- MISMATCH`) used to highlight structural errors in the Plan AST summary for the user.
+
 ### AST Helpers
 - `get_child_text(node)`: Recursively extracts all plain text content from a Markdown node and its children.
 - `get_action_heading(node, valid_actions)`: Identifies if a node is a valid Level 3 Action Heading.

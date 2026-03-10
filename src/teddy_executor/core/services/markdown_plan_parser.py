@@ -20,6 +20,7 @@ from teddy_executor.core.services.parser_infrastructure import (
     get_child_text,
     get_action_heading,
     print_ast,
+    MISMATCH_INDICATOR,
 )
 from teddy_executor.core.services.action_parser_strategies import (
     parse_create_action,
@@ -156,7 +157,7 @@ class MarkdownPlanParser(IPlanParser):
                 n_name += f': "{c_prev}..."'
 
             msg += (
-                f"[{i:03d}] {n_name}{'  <-- MISMATCH' if i == mismatch_idx else ''}\n"
+                f"[{i:03d}] {n_name}{MISMATCH_INDICATOR if i == mismatch_idx else ''}\n"
             )
 
         msg += "\n**Hint:** Parsing often fails due to improper Code Block Formatting. Try to double the number of backticks in your outer code blocks and make sure fences are each on their own isolated line.\n"

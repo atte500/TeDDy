@@ -13,6 +13,9 @@ H3_LEVEL = 3
 # Constant for parsing key-value pairs
 EXPECTED_KV_PARTS = 2
 
+# Visual indicator for structural mismatches in plans
+MISMATCH_INDICATOR = " <-- MISMATCH"
+
 
 class _FencePreProcessor:
     """

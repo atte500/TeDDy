@@ -36,7 +36,7 @@ Then the error message must include the structural summary, and the mismatching 
 - Raise `InvalidPlanError(f"Missing REPLACE block after FIND block{MISMATCH_INDICATOR}")` for both cases.
 
 ## Deliverables
-- [ ] Refactored `parser_infrastructure.py` with shared constant.
-- [ ] Updated `markdown_plan_parser.py` using the shared constant.
-- [ ] Updated `action_parser_strategies.py` with unified, indicator-aware `EDIT` error.
-- [ ] Unit or Integration test verifying the specific error message for missing `REPLACE` blocks.
+- [x] Refactored `parser_infrastructure.py` with shared constant.
+- [x] Updated `markdown_plan_parser.py` using the shared constant.
+- [x] Updated `action_parser_strategies.py` with unified, indicator-aware `EDIT` error.
+- [x] Unit or Integration test verifying the specific error message for missing `REPLACE` blocks.
