@@ -196,16 +196,14 @@ All actions are located under the `## Action Plan` heading. Each action is defin
 -   **Format:**
     ```markdown
     ### `PROMPT`
-    - **Reference Files:** (Optional)
+    - **Reference Files:**
       [path/to/file.ext](/path/to/file.ext)
 
     I have created a new milestone at `docs/project/milestones/01-finisher-agent.md` and will now begin my research.
 
     This is a standard checkpoint to ensure we are aligned before I proceed with the research phase. Does this initial direction meet with your approval?
     ```
--   **Parsing Rules:**
-    1.  Extract the optional list of `Reference Files` from the metadata list.
-    2.  The content for the chat message is all the free-form markdown content following the metadata list under the `### PROMPT` heading.
+-   **Parsing Rules:** The content for the message is all the free-form markdown content under the `### PROMPT` heading. The parser does not explicitly separate metadata from the message; it is treated as a single block of text.
 
 ### 5.7. `INVOKE`
 

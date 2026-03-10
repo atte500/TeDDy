@@ -9,10 +9,10 @@ Align the `teddy` execution engine with the new agent communication standards as
   - WHEN the plan is parsed
   - THEN the resources are correctly extracted into the action's parameters.
 
-- **Scenario 2: Parser supports Reference Files in PROMPT**
-  - GIVEN a plan with a `PROMPT` action containing a metadata list with `- **Reference Files:**`
+- **Scenario 2: Parser treats PROMPT as free-form**
+  - GIVEN a plan with a `PROMPT` action
   - WHEN the plan is parsed
-  - THEN the resources are extracted into the `PROMPT` action's data structure.
+  - THEN the entire content under the heading is captured as a single message string.
 
 - **Scenario 3: CLI and Reports use "Reference Files" naming**
   - GIVEN a successful execution of an action with resources

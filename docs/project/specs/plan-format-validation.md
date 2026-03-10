@@ -80,8 +80,7 @@ These checks validate the *content* of an action against the current state of th
     -   *Failure Example:* A plan tries to `PRUNE` `docs/OLD_SPEC.md` but that file is not listed in `turn.context`.
 
 #### `PROMPT`
--   **[✓] Message must be specified:** The action must contain free-form markdown content (the prompt message) following the metadata list.
--   **[✓] Reference Files must exist:** If the optional `Reference Files` list is provided, all specified local files must exist on the file system.
+-   **[✓] Message must be specified:** The action must contain free-form markdown content under the heading. Because this action is parsed as a single block of text, the system does not perform automated validation of referenced file paths.
 
 #### `INVOKE`
 -   **[✓] `Agent` must be specified:** The metadata block must contain a valid target agent name.
