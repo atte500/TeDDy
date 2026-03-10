@@ -8,7 +8,7 @@ from teddy_executor.core.domain.models.execution_report import (
 )
 from teddy_executor.core.domain.models.plan import Plan
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
-from teddy_executor.core.ports.outbound.file_system_manager import FileSystemManager
+from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.ports.outbound.markdown_report_formatter import (
     IMarkdownReportFormatter,
 )
@@ -25,7 +25,7 @@ class SessionOrchestrator(IRunPlanUseCase):
         self,
         execution_orchestrator,
         session_service,
-        file_system_manager: FileSystemManager,
+        file_system_manager: IFileSystemManager,
         report_formatter: IMarkdownReportFormatter,
         plan_validator,
         planning_service,
@@ -241,7 +241,7 @@ class SessionOrchestrator(IRunPlanUseCase):
             path = getattr(error, "file_path", None)
             if path:
                 try:
-                    # Normalize path for FileSystemManager
+                    # Normalize path for IFileSystemManager
                     clean_path = path.lstrip("/")
                     if self._file_system_manager.path_exists(clean_path):
                         resources[path] = self._file_system_manager.read_file(

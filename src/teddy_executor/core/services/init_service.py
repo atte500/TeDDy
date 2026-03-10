@@ -1,14 +1,14 @@
 import os
 from teddy_executor.core.ports.inbound.init import IInitUseCase
-from teddy_executor.core.ports.outbound.file_system_manager import FileSystemManager
+from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 
 
 class InitService(IInitUseCase):
     """
-    Service responsible for auto-initializing the .teddy directory.
+    Service for initializing projects.
     """
 
-    def __init__(self, file_system: FileSystemManager):
+    def __init__(self, file_system: IFileSystemManager):
         self._file_system = file_system
         # Find the config directory relative to the package root
         self._config_dir = os.path.join(

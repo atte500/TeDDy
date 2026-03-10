@@ -5,7 +5,7 @@ from typing import Optional
 import yaml
 from teddy_executor.core.domain.models.execution_report import ExecutionReport
 from teddy_executor.core.domain.models.plan import ActionType
-from teddy_executor.core.ports.outbound.file_system_manager import FileSystemManager
+from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.ports.outbound.session_manager import (
     ISessionManager,
     SessionState,
@@ -18,7 +18,7 @@ class SessionService(ISessionManager):
     Service for managing session directories and metadata.
     """
 
-    def __init__(self, file_system_manager: FileSystemManager):
+    def __init__(self, file_system_manager: IFileSystemManager):
         self._file_system_manager = file_system_manager
 
     def create_session(self, name: str, agent_name: str) -> str:

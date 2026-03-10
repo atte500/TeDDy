@@ -1,7 +1,7 @@
 from typing import Protocol, Sequence
 
 
-class FileSystemManager(Protocol):
+class IFileSystemManager(Protocol):
     """
     An outbound port for interacting with a file system.
     """

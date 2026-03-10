@@ -15,7 +15,7 @@ from teddy_executor.core.ports.inbound.init import IInitUseCase
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser, InvalidPlanError
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.file_system_manager import (
-    FileSystemManager,
+    IFileSystemManager,
 )
 from teddy_executor.core.ports.outbound.repo_tree_generator import (
     IRepoTreeGenerator,
@@ -59,7 +59,7 @@ def bootstrap():
     # Re-register file system components anchored to the project root
     # This ensures all paths are resolved relative to where the .teddy folder lives.
     container.register(
-        FileSystemManager,
+        IFileSystemManager,
         LocalFileSystemAdapter,
         root_dir=str(project_root),
     )

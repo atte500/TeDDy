@@ -1,7 +1,8 @@
-from typing import Protocol, Optional
+from typing import Protocol, Optional, runtime_checkable
 from teddy_executor.core.domain.models.plan import Plan
 
 
+@runtime_checkable
 class IPlanReviewer(Protocol):
     """
     Inbound port for the interactive review and modification of a Plan.

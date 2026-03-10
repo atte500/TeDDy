@@ -23,6 +23,7 @@ class ActionData:
     params: dict[str, Any]
     description: str | None = None
     selected: bool = True
+    modified: bool = False
 
 
 @dataclass(frozen=True)

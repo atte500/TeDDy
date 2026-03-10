@@ -84,9 +84,9 @@ def test_read_action_with_path_resolves_file_system_manager(
     mock_fs, factory: ActionFactory
 ):
     """
-    Given an ActionFactory with a FileSystemManager registered,
+    Given an ActionFactory with a IFileSystemManager registered,
     When create_action is called for a 'read' action with a file path parameter,
-    Then it should return the FileSystemManager adapter.
+    Then it should return the IFileSystemManager adapter.
     """
     # Act
     action_handler = factory.create_action("read", {"resource": "path/to/file.txt"})

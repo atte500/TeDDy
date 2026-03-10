@@ -6,7 +6,7 @@ from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
 from teddy_executor.adapters.outbound.local_file_system_adapter import (
     LocalFileSystemAdapter,
 )
-from teddy_executor.core.ports.outbound.file_system_manager import FileSystemManager
+from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 
 
 def test_session_orchestrator_validation_failure_read_already_in_context(
@@ -18,7 +18,7 @@ def test_session_orchestrator_validation_failure_read_already_in_context(
     """
     # Arrange
     container.register(
-        FileSystemManager,
+        IFileSystemManager,
         LocalFileSystemAdapter,
         root_dir=str(tmp_path),
     )
@@ -67,7 +67,7 @@ def test_session_orchestrator_validation_failure_edit_not_in_context(
     """
     # Arrange
     container.register(
-        FileSystemManager,
+        IFileSystemManager,
         LocalFileSystemAdapter,
         root_dir=str(tmp_path),
     )
@@ -139,7 +139,7 @@ def test_session_orchestrator_validation_failure_prune_not_in_context(
     """
     # Arrange
     container.register(
-        FileSystemManager,
+        IFileSystemManager,
         LocalFileSystemAdapter,
         root_dir=str(tmp_path),
     )

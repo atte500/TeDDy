@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from typing import List, Sequence
 from teddy_executor.core.ports.inbound.edit_simulator import EditPair, IEditSimulator
-from teddy_executor.core.ports.outbound.file_system_manager import FileSystemManager
+from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 
 # Configure debug logging
 if os.environ.get("TEDDY_DEBUG"):
@@ -18,7 +18,7 @@ from teddy_executor.core.domain.models import (
 logger = logging.getLogger(__name__)
 
 
-class LocalFileSystemAdapter(FileSystemManager):
+class LocalFileSystemAdapter(IFileSystemManager):
     """
     An adapter that implements file system operations on the local machine.
     """

@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional, Sequence
 from teddy_executor.core.domain.models import ProjectContext
 from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
-from teddy_executor.core.ports.outbound.file_system_manager import FileSystemManager
+from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.ports.outbound.repo_tree_generator import IRepoTreeGenerator
 from teddy_executor.core.ports.outbound.environment_inspector import (
     IEnvironmentInspector,
@@ -15,7 +15,7 @@ class ContextService(IGetContextUseCase):
 
     def __init__(
         self,
-        file_system_manager: FileSystemManager,
+        file_system_manager: IFileSystemManager,
         repo_tree_generator: IRepoTreeGenerator,
         environment_inspector: IEnvironmentInspector,
     ):

@@ -2,7 +2,7 @@ import os
 from typing import Dict, Optional, Sequence
 from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
 from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
-from teddy_executor.core.ports.outbound.file_system_manager import FileSystemManager
+from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 
 
@@ -15,7 +15,7 @@ class PlanningService(IPlanningUseCase):
         self,
         context_service: IGetContextUseCase,
         llm_client: ILlmClient,
-        file_system_manager: FileSystemManager,
+        file_system_manager: IFileSystemManager,
     ):
         self._context_service = context_service
         self._llm_client = llm_client

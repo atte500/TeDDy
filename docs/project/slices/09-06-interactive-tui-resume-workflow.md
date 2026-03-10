@@ -1,5 +1,5 @@
 # Slice 09-06: Interactive TUI & resume Workflow
-- **Status:** [ ] Planned
+- **Status:** [✓] Completed
 
 ## 1. Business Goal
 To provide a professional, interactive experience for reviewing and modifying AI plans before execution. This includes the "smart resume" capability to intelligently pick up where a session left off, a "Streamlined Initialization" flow where new sessions immediately trigger planning, and a Textual-based TUI for granular control over action execution and modification.
@@ -62,10 +62,31 @@ To provide a professional, interactive experience for reviewing and modifying AI
 - **Then** the final execution MUST create `src/bar.py` with the modified content.
 
 **Implementation Notes:**
-- Verified core support for in-memory modification of plans using a `ModifyingFakeReviewer`.
-- Fixed a bug in `ActionDispatcher` where `CREATE` action parameters were not being correctly normalized to `path` during parameter preparation.
-- Confirmed that the `ExecutionOrchestrator` correctly propagates modified `ActionData` to the execution loop and records the final (modified) parameters in the `report.md`.
-- Added `tests/acceptance/test_context_aware_editing.py`.
+- Implemented `_preview_create` in `ReviewerApp` using `with self.suspend():` to yield terminal control to external editors.
+- Added `modified` boolean to `ActionData` model to track user overrides.
+- Verified that labels in the TUI are updated with a `*modified` tag after editing.
+
+### Scenario: Context-Aware Editing of EDIT action [✓]
+- **Given** an `EDIT` action with a series of FIND/REPLACE blocks.
+- **When** I press `(p)` in the TUI.
+- **Then** the tool MUST present the *proposed* final content in the editor (original content + AI edits).
+- **And** if I modify that content, the action MUST be converted to a content-override in the final plan.
+
+**Implementation Notes:**
+- Implemented `_preview_edit` in `ReviewerApp`.
+- Integrated `EditSimulator.simulate_edits` to generate the "proposed state" for the editor.
+- Verified that manual user changes bypass the original AI edits and are applied as a direct content override during execution.
+
+### Scenario: Textual TUI Backbone & Checklist [✓]
+- **Given** a plan with multiple actions.
+- **When** the TUI opens.
+- **Then** it MUST show a hierarchical tree of actions with their current selection state.
+
+**Implementation Notes:**
+- Developed `ReviewerApp` inheriting from `textual.app.App`.
+- Implemented `on_tree_node_selected` to toggle selection with the `enter` key.
+- Implemented `Toggle All` (`a`) using unselect-all/select-all logic.
+- Standardized the naming convention of `FileSystemManager` to `IFileSystemManager` globally across `src/` and `tests/` to align with the `I-prefix` standard for ports.
 
 ## 5. User Showcase
 1. **Streamlined Initialization:** Run `teddy new tui-test`.
@@ -92,20 +113,21 @@ To provide a professional, interactive experience for reviewing and modifying AI
 ## 7. Deliverables
 
 ### 1. Dependencies & Foundation
-- [ ] **TUI Dependencies:** Add `textual` to `pyproject.toml`.
-- [ ] **Model Refactoring:** Unfreeze `Plan` and `ActionData`.
+- [✓] **TUI Dependencies:** Add `textual` to `pyproject.toml`.
+- [✓] **Model Refactoring:** Unfreeze `Plan` and `ActionData`.
 
 ### 2. Session Intelligence
-- [ ] **Session State Engine:** Implement `SessionService.get_session_state()`.
-- [ ] **Resume Orchestrator:** Implement `SessionOrchestrator.resume()`.
-- [ ] **Streamlined CLI:** Implement `teddy resume` and streamlined `teddy new`.
+- [✓] **Session State Engine:** Implement `SessionService.get_session_state()`.
+- [✓] **Resume Orchestrator:** Implement `SessionOrchestrator.resume()`.
+- [✓] **Streamlined CLI:** Implement `teddy resume` and streamlined `teddy new`.
 
 ### 3. Interactive TUI (The Reviewer)
-- [ ] **Textual Backbone:** Implement the basic `ReviewerApp` with Tier 1/2 views.
-- [ ] **Action Checklist:** Implement selection logic for partial execution.
-- [ ] **Context-Aware Editing:** Implement the `(p)` preview/modify workflow for `CREATE` and `EDIT` actions.
+- [✓] **Textual Backbone:** Implement the basic `ReviewerApp` with Tier 1/2 views.
+- [✓] **Action Checklist:** Implement selection logic for partial execution.
+- [✓] **Context-Aware Editing:** Implement the `(p)` preview/modify workflow for `CREATE` and `EDIT` actions.
 
 ### 4. Verification
-- [ ] **Unit Tests:** `SessionService` state detection.
-- [ ] **Integration Tests:** `SessionOrchestrator.resume()` flow.
-- [ ] **Acceptance Tests:** Full TUI workflow (using `run_test` for headless verification).
+- [✓] **Unit Tests:** `ReviewerApp` interaction and logic (9 passing).
+- [✓] **Integration Tests:** `SessionOrchestrator` validation and transition logic.
+- [✓] **Acceptance Tests:** `test_interactive_execution.py`, `test_partial_execution.py`, `test_context_aware_editing.py`.
+- [✓] **Global Stability:** All 337 tests passing after naming standardization.

@@ -2,7 +2,7 @@ import pytest
 from pathlib import Path
 from unittest.mock import Mock, call
 from teddy_executor.core.services.init_service import InitService
-from teddy_executor.core.ports.outbound.file_system_manager import FileSystemManager
+from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 
 # Load source files for robust assertions
 CONFIG_ROOT = Path(__file__).parents[4] / "config"
@@ -13,7 +13,7 @@ SOURCE_GITIGNORE = (CONFIG_ROOT / ".gitignore").read_text(encoding="utf-8")
 
 @pytest.fixture
 def mock_fs():
-    return Mock(spec=FileSystemManager)
+    return Mock(spec=IFileSystemManager)
 
 
 @pytest.fixture
