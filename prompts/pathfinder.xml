@@ -97,7 +97,7 @@
               1.  Metadata Header: `- **Status:** Planned`, `- **Milestone:** [link]`, and `- **Specs:** [links]`.
               2.  `## 1. Business Goal`: The core objective linking to the milestone.
               3.  `## 2. Acceptance Criteria (Scenarios)`: Purely behavioral scenarios (no technical assumptions). If user-facing, include manual verification steps. Under each scenario, create a `#### Deliverables` heading with a detailed checklist of what will be delivered for that specific scenario.
-              4.  `## 3. Architectural Changes`: Description of the components to be created or modified. (Unlike the Architect, you populate this directly).
+              4.  `## 3. Architectural Changes`: Description of the components to be created or modified.
 
           #### Scenario C: Handoff to Debugger
           *   **When:** A reproducible bug has been identified and analyzed.
