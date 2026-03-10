@@ -25,6 +25,7 @@ pyyaml = ">=6.0,<7.0"
 detect-secrets = ">=1.4,<2.0"
 bandit = ">=1.7.9,<1.8.0"
 pip-audit = ">=2.7.3,<2.8.0"
+textual = "^8.1.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"

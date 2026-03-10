@@ -15,7 +15,7 @@ class ActionType(str, Enum):
     RETURN = "RETURN"
 
 
-@dataclass(frozen=True)
+@dataclass
 class ActionData:
     """Represents a single action from the plan."""
 
@@ -33,7 +33,7 @@ class ValidationError:
     file_path: str | None = None
 
 
-@dataclass(frozen=True)
+@dataclass
 class Plan:
     """Represents a parsed and validated execution plan."""
 
