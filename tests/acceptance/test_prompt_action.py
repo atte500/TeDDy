@@ -109,3 +109,82 @@ def test_prompt_action_multiline_editor(tmp_path: Path, monkeypatch, container):
     details_dict = action_log["details"]
     # The response should be exactly what we wrote above the comment line
     assert details_dict["response"] == user_response.strip()
+
+
+def test_prompt_with_reference_files_flow(tmp_path):
+    """
+    Scenario: Parser recognizes "Reference Files" in PROMPT and displays them in CLI and Report.
+    """
+    # Arrange
+    runner = CliRunner()
+    ref_file = tmp_path / "important_context.md"
+    ref_file.write_text("Context content", encoding="utf-8")
+
+    plan_content = f"""
+# Test Reference Files
+- Status: Green 🟢
+- Agent: Developer
+
+## Rationale
+````text
+Testing reference files standardization.
+````
+
+## Action Plan
+
+### `PROMPT`
+- **Reference Files:**
+  [{ref_file}](/{ref_file})
+
+Please review this context.
+"""
+
+    # Act
+    # We use --no-interactive to avoid hanging, or we'll need to mock input.
+    # For acceptance tests of UI labels, we check the captured output.
+    result = runner.invoke(
+        app, ["execute", "--plan-content", plan_content], input="\ny\n"
+    )
+
+    # Assert
+    # If the parser doesn't recognize Reference Files in PROMPT, it might treat it as text.
+    # We want it to be recognized as a parameter so it can be formatted specifically.
+    assert result.exit_code == 0
+    # Check CLI output for the new label
+    assert "Reference Files:" in result.stderr
+    assert "important_context.md" in result.stderr
+
+
+def test_invoke_with_reference_files_naming(tmp_path):
+    """
+    Scenario: Parser recognizes "Reference Files" in INVOKE (replacing Handoff Resources).
+    """
+    runner = CliRunner()
+    ref_file = tmp_path / "handoff_data.json"
+    ref_file.write_text("{}", encoding="utf-8")
+
+    plan_content = f"""
+# Test Invoke Reference Files
+- Status: Green 🟢
+- Agent: Developer
+
+## Rationale
+````text
+Rationale.
+````
+
+## Action Plan
+
+### `INVOKE`
+- **Agent:** Architect
+- **Description:** Moving to design phase.
+- **Reference Files:**
+  [{ref_file}](/{ref_file})
+"""
+    # Act
+    result = runner.invoke(app, ["execute", "--plan-content", plan_content], input="\n")
+
+    # Assert
+    assert result.exit_code == 0
+    assert "Reference Files:" in result.stderr
+    assert "handoff_data.json" in result.stderr

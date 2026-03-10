@@ -111,9 +111,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             approved, reason = self._user_interactor.confirm_manual_handoff(
                 action_type=action_type,
                 target_agent=action.params.get("Agent") or action.params.get("agent"),
-                resources=action.params.get("Handoff Resources")
-                or action.params.get("handoff_resources")
-                or [],
+                resources=action.params.get("handoff_resources") or [],
                 message=action.params.get("message")
                 or action.params.get("Message")
                 or "",
@@ -167,8 +165,9 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             f"Action: {action.type}",
             f"Description: {action.description}" if action.description else "",
         ]
+        display_map = {"handoff_resources": "Reference Files"}
         param_str = "\n".join(
-            f"  - {k}: {v}"
+            f"  - {display_map.get(k, k)}: {v}"
             for k, v in action.params.items()
             if k.lower() not in ("edits", "content")
         )

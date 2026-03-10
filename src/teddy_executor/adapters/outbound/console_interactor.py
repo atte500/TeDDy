@@ -14,13 +14,17 @@ class ConsoleInteractorAdapter(IUserInteractor):
     def __init__(self, system_env: ISystemEnvironment):
         self._system_env = system_env
 
-    def ask_question(self, prompt: str) -> str:
+    def ask_question(self, prompt: str, resources: list[str] | None = None) -> str:
         """
         Presents a prompt to the user on the console and captures their input.
         Allows falling back to an external editor for multi-line text.
         """
         typer.secho("--- PROMPT MESSAGE ---", fg=typer.colors.CYAN, err=True)
         typer.echo(prompt, err=True)
+
+        if resources:
+            typer.echo("\n▶ Reference Files:", err=True)
+            typer.echo("\n".join(resources), err=True)
         typer.echo(
             "Press [Enter] to submit single-line response, or type 'e' + [Enter] to open in Editor:",
             err=True,
@@ -259,7 +263,7 @@ class ConsoleInteractorAdapter(IUserInteractor):
             typer.echo(f"▶ Return Message:\n{message}\n", err=True)
 
         if resources:
-            typer.echo("▶ Handoff Resources:", err=True)
+            typer.echo("▶ Reference Files:", err=True)
             typer.echo("\n".join(resources), err=True)
 
         typer.echo("", err=True)  # Spacer

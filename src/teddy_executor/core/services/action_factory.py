@@ -86,6 +86,32 @@ class ActionFactory(IActionFactory):
         # Fall through to the standard file system handler for local files
         return self._create_standard_action("read_file", params)
 
+    def _wrap_method_as_execute(self, handler: Any, method_name: str) -> None:
+        """Binds an adapter method to the 'execute' protocol."""
+        original_method = getattr(handler, method_name)
+
+        def execute_wrapper(**kwargs: Any) -> Any:
+            if "resource" in kwargs and "path" not in kwargs:
+                kwargs["path"] = kwargs.pop("resource")
+            if method_name == "execute":
+                execute_params = {
+                    k: v
+                    for k, v in kwargs.items()
+                    if k in ("command", "cwd", "env") and v is not None
+                }
+                if "command" not in execute_params:
+                    raise ValueError(
+                        "'command' parameter is required for the execute action."
+                    )
+                return original_method(**execute_params)
+            if method_name == "ask_question":
+                return original_method(
+                    kwargs["prompt"], resources=kwargs.get("handoff_resources")
+                )
+            return original_method(**kwargs)
+
+        setattr(handler, "execute", execute_wrapper)
+
     def _create_standard_action(
         self, action_type: str, params: Optional[dict] = None
     ) -> IAction:
@@ -117,26 +143,7 @@ class ActionFactory(IActionFactory):
                 )
             return action_handler
 
-        method_name = method_map[action_type_key]
-        original_method = getattr(action_handler, method_name)
-
-        def execute_wrapper(**kwargs: Any) -> Any:
-            if "resource" in kwargs and "path" not in kwargs:
-                kwargs["path"] = kwargs.pop("resource")
-            if method_name == "execute":
-                execute_params = {
-                    k: v
-                    for k, v in kwargs.items()
-                    if k in ("command", "cwd", "env") and v is not None
-                }
-                if "command" not in execute_params:
-                    raise ValueError(
-                        "'command' parameter is required for the execute action."
-                    )
-                return original_method(**execute_params)
-            return original_method(**kwargs)
-
-        setattr(action_handler, "execute", execute_wrapper)
+        self._wrap_method_as_execute(action_handler, method_map[action_type_key])
         return action_handler
 
     def create_action(self, action_type: str, params: Optional[dict] = None) -> IAction:

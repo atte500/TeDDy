@@ -106,6 +106,7 @@ def parse_handoff_resources_from_list(metadata_list: MdList) -> List[str] | None
     """
     Parses handoff resources from a metadata list item.
     Supports both nested lists and simple multi-line links within the item.
+    Recognizes both legacy "Handoff Resources:" and new "Reference Files:".
     """
     resources = []
     if not (metadata_list and metadata_list.children):
@@ -113,7 +114,9 @@ def parse_handoff_resources_from_list(metadata_list: MdList) -> List[str] | None
 
     for item in metadata_list.children:
         item_text = get_child_text(item).strip()
-        if item_text.startswith("Handoff Resources:"):
+        if item_text.startswith("Handoff Resources:") or item_text.startswith(
+            "Reference Files:"
+        ):
             # Find all links within this list item's entire sub-tree
             links = _find_all_links(item)
             for link in links:

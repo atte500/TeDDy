@@ -453,6 +453,41 @@ This is the second paragraph, with some `inline_code`.
     assert action.params["prompt"] == expected_prompt
 
 
+def test_parse_prompt_action_with_reference_files(parser: IPlanParser):
+    """
+    Given a PROMPT action with a "Reference Files" metadata list,
+    When the plan is parsed,
+    Then the resources should be extracted and the remaining message preserved.
+    """
+    # Arrange
+    plan_content = r"""
+# Chat with the user
+- Status: Green 🟢
+- Agent: Pathfinder
+
+## Rationale
+````text
+Rationale.
+````
+
+## Action Plan
+
+### `PROMPT`
+- **Reference Files:**
+  - [important.txt](/important.txt)
+
+Please look at this file.
+"""
+    # Act
+    result_plan = parser.parse(plan_content)
+
+    # Assert
+    action = result_plan.actions[0]
+    assert "handoff_resources" in action.params
+    assert action.params["handoff_resources"] == ["important.txt"]
+    assert action.params["prompt"] == "Please look at this file."
+
+
 def test_parse_prune_action(parser: IPlanParser):
     """
     Given a valid Markdown plan with a PRUNE action,
@@ -570,6 +605,40 @@ Rationale.
     assert action.params["message"] == expected_message
     assert "handoff_resources" in action.params
     assert action.params["handoff_resources"] == ["docs/briefs/new-feature.md"]
+
+
+def test_parse_invoke_action_with_reference_files(parser: IPlanParser):
+    """
+    Given a valid Markdown plan with an INVOKE action using "Reference Files",
+    When the plan is parsed,
+    Then the resources should be correctly extracted.
+    """
+    # Arrange
+    plan_content = r"""
+# Invoke another agent
+- Status: Green 🟢
+- Agent: Pathfinder
+
+## Rationale
+````text
+Rationale.
+````
+
+## Action Plan
+
+### `INVOKE`
+- **Agent:** Architect
+- **Description:** Handoff message.
+- **Reference Files:**
+  - [docs/ref.md](/docs/ref.md)
+"""
+    # Act
+    result_plan = parser.parse(plan_content)
+
+    # Assert
+    action = result_plan.actions[0]
+    assert "handoff_resources" in action.params
+    assert action.params["handoff_resources"] == ["docs/ref.md"]
 
 
 def test_parse_edit_action_preserves_indentation_in_find_and_replace(

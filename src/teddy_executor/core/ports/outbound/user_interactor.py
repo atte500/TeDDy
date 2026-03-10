@@ -7,12 +7,13 @@ if TYPE_CHECKING:
 
 class IUserInteractor(ABC):
     @abstractmethod
-    def ask_question(self, prompt: str) -> str:
+    def ask_question(self, prompt: str, resources: list[str] | None = None) -> str:
         """
         Asks the user a question and returns their free-text response.
 
         Args:
             prompt: The question to display to the user.
+            resources: Optional list of reference files to display.
 
         Returns:
             The user's response as a string.

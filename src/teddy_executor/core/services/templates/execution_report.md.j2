@@ -125,10 +125,10 @@
 {% elif action.type == 'INVOKE' %}
 - **Agent:** {{ action.params.agent }}
 {% if action.params.message %}- **Message:** {{ action.params.message }}{% endif %}
-{% if action.params.handoff_resources %}- **Handoff Resources:** {{ action.params.handoff_resources | join(', ') }}{% endif %}
+{% if action.params.handoff_resources %}- **Reference Files:** {{ action.params.handoff_resources | join(', ') }}{% endif %}
 {% elif action.type == 'RETURN' %}
 {% if action.params.description %}- **Message:** {{ action.params.description }}{% endif %}
-{% if action.params.handoff_resources %}- **Handoff Resources:** {{ action.params.handoff_resources | join(', ') }}{% endif %}
+{% if action.params.handoff_resources %}- **Reference Files:** {{ action.params.handoff_resources | join(', ') }}{% endif %}
 {% else %}
 - **Params:** {{ action.params }}
 {% endif %}
@@ -311,10 +311,10 @@
 {% else %}
 {{ render_action_details(log) }}
 {% endif %}
-{% elif action_type in ['RETURN', 'INVOKE'] %}
+{% elif action_type in ['RETURN', 'INVOKE', 'PROMPT'] %}
 {% set resources = params.get('handoff_resources') or params.get('Handoff Resources') -%}
 {% if resources -%}
-- **Handoff Resources:**
+- **Reference Files:**
 {% for res in resources -%}
 [{{ res }}]({% if not res.startswith('/') %}/{% endif %}{{ res }})
 {% endfor -%}

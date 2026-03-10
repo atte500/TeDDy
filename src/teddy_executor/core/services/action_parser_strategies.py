@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Optional
 from mistletoe.block_token import (
     BlockCode,
     CodeFence,
@@ -220,13 +220,35 @@ def parse_prompt_action(stream: _PeekableStream, valid_actions: set[str]) -> Act
     content_nodes = consume_content_until_next_action(stream, valid_actions)
     if not content_nodes:
         raise InvalidPlanError("PROMPT action is missing prompt content.")
+
+    params: dict[str, Any] = {}
+    remaining_nodes = list(content_nodes)
+
+    # Check if the first node is a metadata list
+    if remaining_nodes and isinstance(remaining_nodes[0], MdList):
+        metadata_list = remaining_nodes.pop(0)
+        resources = parse_handoff_resources_from_list(metadata_list)
+        if resources:
+            params["handoff_resources"] = resources
+        # Note: If there were other metadata items in the list that aren't
+        # "Reference Files", they are currently ignored and stripped from
+        # the message content. This adheres to the spec where metadata
+        # is distinct from the free-form message.
+
     rendered_parts = []
     with MarkdownRenderer() as renderer:
-        for node in content_nodes:
+        for node in remaining_nodes:
             temp_doc = Document("")
             temp_doc.children = [node]
             rendered_parts.append(renderer.render(temp_doc).strip())
+
     prompt = "\n\n".join(rendered_parts)
     if not prompt:
-        raise InvalidPlanError("PROMPT action is missing prompt content.")
-    return ActionData(type="PROMPT", description=None, params={"prompt": prompt})
+        # If there's no message but we have resources, that might be valid,
+        # but let's stick to the current requirement that prompt content is required.
+        if "handoff_resources" not in params:
+            raise InvalidPlanError("PROMPT action is missing prompt content.")
+        prompt = ""
+
+    params["prompt"] = prompt
+    return ActionData(type="PROMPT", description=None, params=params)
