@@ -13,6 +13,9 @@ from teddy_executor.core.domain.models import (
 )
 from teddy_executor.core.domain.models.plan import Plan
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
+from teddy_executor.core.ports.outbound.markdown_report_formatter import (
+    IMarkdownReportFormatter,
+)
 from teddy_executor.core.services.plan_validator import ValidationError
 
 
@@ -124,3 +127,26 @@ def execute_valid_plan(
         plan_content=meta.get("plan_content"),
     )
     return execution_report
+
+
+def handle_report_output(
+    container: Container,
+    report: Optional[ExecutionReport],
+    no_copy: bool,
+) -> None:
+    """Formats the report, echoes/copies it, and exits with non-zero if failed."""
+    if report:
+        report_formatter = container.resolve(IMarkdownReportFormatter)
+        formatted_report = report_formatter.format(report)
+
+        echo_and_copy(
+            formatted_report,
+            no_copy=no_copy,
+            confirmation_message="Execution report copied to clipboard.",
+        )
+
+        if report.run_summary.status in (
+            RunStatus.FAILURE,
+            RunStatus.VALIDATION_FAILED,
+        ):
+            raise typer.Exit(code=1)

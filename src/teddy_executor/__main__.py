@@ -14,9 +14,6 @@ from teddy_executor.core.domain.models import (
 from teddy_executor.core.ports.inbound.init import IInitUseCase
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser, InvalidPlanError
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
-from teddy_executor.core.ports.outbound.markdown_report_formatter import (
-    IMarkdownReportFormatter,
-)
 from teddy_executor.core.ports.outbound.file_system_manager import (
     FileSystemManager,
 )
@@ -33,6 +30,7 @@ from teddy_executor.adapters.inbound.cli_helpers import (
     find_project_root,
     echo_and_copy,
     get_plan_content,
+    handle_report_output,
 )
 from teddy_executor.container import create_container
 from teddy_executor.prompts import find_prompt_content
@@ -182,22 +180,7 @@ def resume(
 
     orchestrator = container.resolve(IRunPlanUseCase)
     report = orchestrator.resume(session_name=session_name, interactive=interactive)
-
-    if report:
-        report_formatter = container.resolve(IMarkdownReportFormatter)
-        formatted_report = report_formatter.format(report)
-
-        echo_and_copy(
-            formatted_report,
-            no_copy=no_copy,
-            confirmation_message="Execution report copied to clipboard.",
-        )
-
-        if report.run_summary.status in (
-            RunStatus.FAILURE,
-            RunStatus.VALIDATION_FAILED,
-        ):
-            raise typer.Exit(code=1)
+    handle_report_output(container, report, no_copy)
 
 
 @app.command()
@@ -255,21 +238,7 @@ def execute(
             action_logs=[],
         )
 
-    if report:
-        report_formatter = container.resolve(IMarkdownReportFormatter)
-        formatted_report = report_formatter.format(report)
-
-        echo_and_copy(
-            formatted_report,
-            no_copy=no_copy,
-            confirmation_message="Execution report copied to clipboard.",
-        )
-
-        if report.run_summary.status in (
-            RunStatus.FAILURE,
-            RunStatus.VALIDATION_FAILED,
-        ):
-            raise typer.Exit(code=1)
+    handle_report_output(container, report, no_copy)
 
 
 if __name__ == "__main__":
