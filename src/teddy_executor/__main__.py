@@ -174,13 +174,16 @@ def resume(
     """
     Intelligently resumes the last turn of a session or starts a new one.
     """
-    from teddy_executor.adapters.inbound.session_cli_handlers import find_session_name
+    from teddy_executor.adapters.inbound.session_cli_handlers import (
+        handle_resume_session,
+    )
 
-    session_name = session or find_session_name()
-
-    orchestrator = container.resolve(IRunPlanUseCase)
-    report = orchestrator.resume(session_name=session_name, interactive=interactive)
-    handle_report_output(container, report, no_copy)
+    handle_resume_session(
+        container=container,
+        session_name=session,
+        interactive=interactive,
+        no_copy=no_copy,
+    )
 
 
 @app.command()

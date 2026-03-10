@@ -3,14 +3,10 @@ from typing import Dict, Optional, Sequence
 import typer
 from punq import Container
 
-from teddy_executor.core.domain.models import RunStatus
 from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
 from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.session_manager import ISessionManager
-from teddy_executor.core.ports.outbound.markdown_report_formatter import (
-    IMarkdownReportFormatter,
-)
 from teddy_executor.adapters.inbound.cli_formatter import format_project_context
 from teddy_executor.adapters.inbound.cli_helpers import (
     echo_and_copy,
@@ -23,6 +19,11 @@ def handle_new_session(container: Container, name: str, agent: str):
     try:
         session_dir = session_manager.create_session(name=name, agent_name=agent)
         typer.echo(f"Session created at: {session_dir}")
+
+        # Streamlined Initialization: Trigger resume (which triggers planning for EMPTY state)
+        orchestrator = container.resolve(IRunPlanUseCase)
+        orchestrator.resume(session_name=name)
+
     except Exception as e:
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(code=1)
@@ -85,24 +86,23 @@ def find_session_name() -> str:
     raise typer.Exit(code=1)
 
 
-def handle_resume_session(container: Container, yes: bool, no_copy: bool):
+def handle_resume_session(
+    container: Container,
+    session_name: Optional[str] = None,
+    interactive: bool = True,
+    no_copy: bool = False,
+):
     """Logic for the 'resume' command."""
-    session_name = find_session_name()
-    run_plan_use_case: IRunPlanUseCase = container.resolve(IRunPlanUseCase)
+    from teddy_executor.adapters.inbound.cli_helpers import handle_report_output
+
+    if not session_name:
+        session_name = find_session_name()
+
+    orchestrator = container.resolve(IRunPlanUseCase)
 
     try:
-        report = run_plan_use_case.resume(session_name, interactive=not yes)
-
-        if report:
-            report_formatter = container.resolve(IMarkdownReportFormatter)
-            formatted_report = report_formatter.format(report)
-            echo_and_copy(formatted_report, no_copy=no_copy)
-
-            if report.run_summary.status in (
-                RunStatus.FAILURE,
-                RunStatus.VALIDATION_FAILED,
-            ):
-                raise typer.Exit(code=1)
+        report = orchestrator.resume(session_name=session_name, interactive=interactive)
+        handle_report_output(container, report, no_copy)
     except Exception as e:
         typer.echo(f"Error during resume: {e}", err=True)
         raise typer.Exit(code=1)

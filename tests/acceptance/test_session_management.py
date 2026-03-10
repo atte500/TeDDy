@@ -4,11 +4,12 @@ import yaml
 from typer.testing import CliRunner
 
 from teddy_executor.__main__ import app
+from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 
 runner = CliRunner()
 
 
-def test_teddy_new_bootstraps_session(tmp_path, monkeypatch):
+def test_teddy_new_bootstraps_session(tmp_path, monkeypatch, container):
     """
     Scenario: teddy new bootstraps a session
     Given no existing session named "feat-x".
@@ -36,8 +37,13 @@ def test_teddy_new_bootstraps_session(tmp_path, monkeypatch):
         "<prompt>Pathfinder prompt</prompt>", encoding="utf-8"
     )
 
+    # Mock LLM
+    mock_llm = MagicMock(spec=ILlmClient)
+    mock_llm.get_completion.return_value = "# Plan\nStreamlined Init"
+    container.register(ILlmClient, instance=mock_llm)
+
     # Act
-    result = runner.invoke(app, ["new", "feat-x"])
+    result = runner.invoke(app, ["new", "feat-x"], input="initial instructions\n")
 
     # Assert
     assert result.exit_code == 0
