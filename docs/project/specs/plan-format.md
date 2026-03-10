@@ -192,7 +192,7 @@ All actions are located under the `## Action Plan` heading. Each action is defin
 
 ### 5.6. `PROMPT`
 
--   **Purpose:** Communicates with the user.
+-   **Purpose:** Communicates with the user. **CRITICAL RULE:** This action MUST be the ONLY action in the plan. It cannot be combined with any other actions (e.g., CREATE, EDIT, EXECUTE).
 -   **Format:**
     ```markdown
     ### `PROMPT`
@@ -207,7 +207,7 @@ All actions are located under the `## Action Plan` heading. Each action is defin
 
 ### 5.7. `INVOKE`
 
--   **Purpose:** Hands off control to another agent, resetting the context for a new task.
+-   **Purpose:** Hands off control to another agent, resetting the context for a new task. **CRITICAL RULE:** This action MUST be the ONLY action in the plan. It cannot be combined with any other actions.
 -   **Format:**
     ```markdown
     ### `INVOKE`
@@ -223,7 +223,7 @@ All actions are located under the `## Action Plan` heading. Each action is defin
 
 ### 5.8. `RETURN`
 
--   **Purpose:** Returns control to the calling agent after a specialist sub-task is complete.
+-   **Purpose:** Returns control to the calling agent after a specialist sub-task is complete. **CRITICAL RULE:** This action MUST be the ONLY action in the plan. It cannot be combined with any other actions.
 -   **Format:**
     ```markdown
     ### `RETURN`
