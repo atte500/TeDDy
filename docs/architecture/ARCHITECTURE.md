@@ -176,6 +176,7 @@ This section serves as the "System Law" (Poka-Yoke) for TeDDy. It defines the pr
 -   **Rule:** The `EXECUTE` action allows shell chaining and inline directives. **Rationale:** To simplify the protocol and shift responsibility for clean commands to the agent's prompting. This adheres to the "small, sharp tools" philosophy while maintaining statelessness between blocks.
 -   **Rule:** Use Jinja2 Macros for modular reporting. **Rationale:** To ensure consistency across different report formats (Concise CLI vs. Session) and facilitate robust extraction of specific sections (e.g., Action Log) for aggregated views.
 -   **Rule:** Explicitly specify `encoding="utf-8"` for all operations that read from or write to text files. **Rationale:** To ensure predictable, platform-agnostic behavior across different operating systems and avoid encoding errors when handling non-ASCII characters.
+-   **Rule:** The `Plan` and `ActionData` domain models are mutable (unfrozen). **Rationale:** To allow primary adapters (like the TUI Reviewer) to modify plan parameters and selection state in-memory before execution without the overhead of deep copying and re-validation.
 
 ---
 

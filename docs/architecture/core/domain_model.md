@@ -157,7 +157,7 @@ An action that performs a web search for a list of queries.
 ## 2. Plan (Aggregate Root)
 **Status:** Implemented
 
-Represents a full plan to be executed. It is the aggregate root for a collection of `ActionData` objects.
+Represents a full plan to be executed. It is the aggregate root for a collection of `ActionData` objects. Unlike the immutable `ExecutionReport`, the `Plan` and its `ActionData` are **mutable** to allow for interactive modification by the user during the review phase.
 
 *   **Attributes:**
     *   `title` (str): The plan's title.

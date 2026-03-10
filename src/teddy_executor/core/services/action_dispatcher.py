@@ -55,7 +55,11 @@ class ActionDispatcher:
             "edit": {"file_path": "path"},
             "read": {"source": "path", "resource": "path"},
         }
-        mapping = param_map.get(action_data.type.lower(), {})
+        type_key = action_data.type.lower()
+        if type_key == "create":
+            type_key = "create_file"
+
+        mapping = param_map.get(type_key, {})
         for old_key, new_key in mapping.items():
             if old_key in params:
                 params[new_key] = params.pop(old_key)

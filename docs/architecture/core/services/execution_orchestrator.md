@@ -13,6 +13,7 @@ The `ExecutionOrchestrator` is the stateless core service responsible for the at
 ## 2. Dependencies
 
 -   **Inbound Ports & Services:**
+    -   `IPlanReviewer`: (Optional) To allow interactive review and modification of the plan.
     -   `ActionDispatcher`: To execute each action in the plan.
     -   `IEditSimulator`: To generate preview content for `EDIT` actions.
 -   **Outbound Ports:**
@@ -48,7 +49,8 @@ class ExecutionOrchestrator:
         """
         Coordinates the execution of a Plan.
 
-        1.  Loops through each action in the plan.
+        1.  **Plan Review:** If an `IPlanReviewer` is provided, it is invoked to allow the user to modify the plan (deselect actions or edit parameters) before execution begins.
+        2.  Loops through each action in the plan.
         2.  Checks for previous failures. If any action has failed (triggering the `halt_execution` flag), subsequent actions are automatically skipped to prevent cascading failures, and `IUserInteractor.notify_skipped_action` is called to warn the user.
         3.  **Action Isolation Enforcement:** Verifies terminal actions (`PROMPT`, `INVOKE`, `RETURN`) are executed in isolation. If a terminal action is part of a multi-action plan, it is automatically skipped.
         4.  **Control Flow Interception:** Intercepts `PRUNE`, `INVOKE`, and `RETURN` actions.

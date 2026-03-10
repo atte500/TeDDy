@@ -55,11 +55,17 @@ To provide a professional, interactive experience for reviewing and modifying AI
 - Implemented action skipping logic in `ExecutionOrchestrator` for unselected actions.
 - Added `tests/acceptance/test_partial_execution.py` to verify the flow with a `FakeReviewer`.
 
-### Scenario: Context-Aware Editing of CREATE action
+### Scenario: Context-Aware Editing of CREATE action [✓]
 - **Given** a `CREATE` action for `src/foo.py`.
 - **When** I press `(p)` in the TUI.
 - **And** I change the path to `src/bar.py` and modify the content in the external editor.
 - **Then** the final execution MUST create `src/bar.py` with the modified content.
+
+**Implementation Notes:**
+- Verified core support for in-memory modification of plans using a `ModifyingFakeReviewer`.
+- Fixed a bug in `ActionDispatcher` where `CREATE` action parameters were not being correctly normalized to `path` during parameter preparation.
+- Confirmed that the `ExecutionOrchestrator` correctly propagates modified `ActionData` to the execution loop and records the final (modified) parameters in the `report.md`.
+- Added `tests/acceptance/test_context_aware_editing.py`.
 
 ## 5. User Showcase
 1. **Streamlined Initialization:** Run `teddy new tui-test`.
