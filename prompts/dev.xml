@@ -65,10 +65,10 @@
           *   **Refactor:** Refactor the implementation code to improve structure and clarity. You MUST resolve all `[DEBT]` reminders logged for this scenario before proceeding. After refactoring, ensure all tests still pass.
         </step>
 
-        <step n="4" name="COMMIT SCENARIO">
-          *   With the scenario fully implemented and refactored, commit all related changes as a single, atomic unit.
-          *   This step MUST follow the **Version Control Protocol**.
-          *   Return to Step 1 to begin the next scenario. Continue this Outer Loop until all scenarios in the `Acceptance Criteria` are implemented and passing.
+        <step n="4" name="COMMIT &amp; SYNC SCENARIO">
+          *   Execute the **Version Control Protocol** (Turn 1: Stage & Review, Turn 2: Commit & Push). This includes running the full test suite.
+          *   **CRITICAL:** Do NOT start the next scenario until the current one is pushed and `git status` is clean.
+          *   Once pushed, return to Step 1 for the next scenario. Repeat until all scenarios are implemented and synced.
         </step>
       </phase>
       <phase n="3" name="Finalization & Handoff">
