@@ -16,7 +16,7 @@ Specifically parses a nested environment variable list (e.g., an `env:` item con
 ### `parse_handoff_body(stream, valid_actions)`
 A robust parser that renders all content after a handoff action heading (`INVOKE` or `RETURN`) to extract:
 1.  Target agent (for `INVOKE`).
-2.  Optional list of **Handoff Resources**.
+2.  Optional list of **Reference Files**.
 3.  Verification that a message exists and normalization of the message content (stripping list artifacts and standardizing paragraph breaks).
 
 ## 3. Design Principles

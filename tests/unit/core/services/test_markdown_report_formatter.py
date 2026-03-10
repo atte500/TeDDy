@@ -237,7 +237,7 @@ def test_formats_return_action_correctly():
 
     output = formatter.format(report)
 
-    # Check Handoff Resources formatting (Example B: multi-line links)
+    # Check Reference Files formatting (Example B: multi-line links)
     assert "[docs/A.md](/docs/A.md)" in output
     assert "[docs/B.md](/docs/B.md)" in output
 

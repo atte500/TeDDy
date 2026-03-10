@@ -170,12 +170,12 @@ The `teddy execute` command creates the *next* turn (`T_next`) based on the stat
 5.  **Apply Special Action Overrides:**
     -   If `T_current/plan.md` contains an `INVOKE` or `RETURN` action, it overrides the default state.
     -   **If `INVOKE`:**
-        -   **Context:** `T_next/turn.context` is wiped and replaced with files from `Handoff Resources`.
+        -   **Context:** `T_next/turn.context` is wiped and replaced with files from `Reference Files`.
         -   **Agent:** `T_next/system_prompt.xml` is overwritten with the invoked agent's prompt.
         -   **Ledger:** `caller_turn_id` in `T_next/meta.yaml` is set to `T_current`'s ID.
     -   **If `RETURN`:**
         -   Find the original `caller_turn_id` from `T_current/meta.yaml`.
-        -   **Context:** `T_next/turn.context` is replaced with the *caller's* context, then files from `Handoff Resources` are appended.
+        -   **Context:** `T_next/turn.context` is replaced with the *caller's* context, then files from `Reference Files` are appended.
         -   **Agent:** `T_next/system_prompt.xml` is overwritten with the *caller's* prompt.
         -   **Ledger:** `parent_turn_id` in `T_next/meta.yaml` is set to the `caller_turn_id`, and `caller_turn_id` is cleared.
 6.  **Finalize and Report:**

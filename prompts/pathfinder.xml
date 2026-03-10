@@ -187,7 +187,7 @@
                       *   **Error Snippet:** The specific, relevant part of the error message.
                       *   **Expected Behavior:** A clear description of what should have happened instead.
                       *   **Relevant Code:** Links to the specific files and lines being executed.
-                  2. `INVOKE` the Debugger, passing the MRE via `Handoff Resources`.
+                  2. `INVOKE` the Debugger, passing the MRE via `Reference Files`.
         </instruction>
       </rule>
       <rule n="2">

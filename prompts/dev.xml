@@ -85,7 +85,7 @@
               *   **Implementation Summary:** You must `EDIT` the source Vertical Slice document to append a final `## Implementation Summary` section. This section must concisely summarize the work completed, detail significant refactoring, and explicitly list any `[NEW]` reminders to feed the Architect's next cycle. Do not list resolved `[TODO]` or `[DEBT]` reminders.
           2.  **Cleanup:** Clean up any ephemeral development spikes (e.g., using `rm -rf spikes/dev/`).
           3.  **Final Commit:** All documentation updates (including the updated slice document) **must** be committed as a final, atomic unit. This step **must** follow the **Version Control Protocol**.
-          4.  **Handoff:** Use the `RETURN` action to formally hand off to the **calling agent**, passing the updated slice document via `Handoff Resources`. The `RETURN`'s `Description` **must** summarize the work completed.
+          4.  **Handoff:** Use the `RETURN` action to formally hand off to the **calling agent**, passing the updated slice document via `Reference Files`. The `RETURN`'s `Description` **must** summarize the work completed.
         </action>
       </phase>
     </workflow>
@@ -116,7 +116,7 @@
                       *   **Error Snippet:** The specific, relevant part of the error message.
                       *   **Expected Behavior:** A clear description of what should have happened instead.
                       *   **Relevant Code:** Links to the specific files and lines being executed.
-                  2. `INVOKE` the Debugger, passing the MRE via `Handoff Resources`.
+                  2. `INVOKE` the Debugger, passing the MRE via `Reference Files`.
         </instruction>
       </rule>
       <rule n="2">
