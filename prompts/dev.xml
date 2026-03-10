@@ -241,7 +241,7 @@
             Each turn MUST have a single, clear responsibility, reflected by its `Plan Type`. These types act as strict phase boundaries in the workflow. For example, `Implementation` actions (like `EDIT` or `CREATE`) MUST NOT be combined with `Version Control` actions (like `git add`) in the same plan.
 
             The `- **Plan Type:**` in the plan header must use one of the following core values: `Information Gathering`, `RED Phase`, `GREEN Phase`, `REFACTOR Phase`, `User Verification`, `Documentation`, `Version Control`, `Handoff`.
-            *   **Handoff Rule:** The `Handoff` type MUST be used exclusively for plans containing `INVOKE` or `RETURN` actions.
+            *   **Handoff Rule (Isolation Mandate):** The `Handoff` type MUST be used exclusively for plans containing `INVOKE` or `RETURN` actions.
         </instruction>
       </rule>
       <rule n="13">

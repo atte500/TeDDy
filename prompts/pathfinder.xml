@@ -243,7 +243,7 @@
       <rule n="7">
         <title>Version Control Protocol</title>
         <instruction>
-          To ensure the trunk remains clean and deployable, all changes must be committed using a strict, two-turn sequence consisting of separate `EXECUTE` actions (command chaining with '&&' is not allowed).
+          To ensure the trunk remains clean and deployable, all changes must be committed using a strict, multi-turn sequence consisting of separate `EXECUTE` actions (command chaining with '&&' is not allowed).
           1.  **Turn 1 (Stage & Review):**
               - Run the full test suite (`unit`, `integration`, `acceptance`) to prevent regressions.
               - `git add` all changed files.
@@ -255,6 +255,8 @@
               - `git commit -m '...'`.
               - `git push`.
               - `git status` to confirm the working directory is clean. If not, the next plan must create a new `chore` commit.
+          3.  **Turn 3 (Handoff):**
+              - If the task requires a handoff (Scenario A, B, or C), this handoff MUST be performed in its own dedicated Turn 3 using the `INVOKE` action. **Combining `INVOKE` with any Turn 2 command is strictly prohibited.**
         </instruction>
       </rule>
       <rule n="8">
@@ -278,7 +280,7 @@
             Each turn MUST have a single, clear responsibility, reflected by its `Plan Type`. These types act as strict phase boundaries in the workflow. For example, `Implementation` actions (like `EDIT` or `CREATE`) MUST NOT be combined with `Version Control` actions (like `git add`) in the same plan.
 
             The `- **Plan Type:**` in the plan header must use one of the following core values: `Exploration`, `Synthesis`, `Implementation`, `Handoff`, `Diagnosis`, `Spike`, `Version Control`.
-            *   **Handoff Rule:** The `Handoff` type MUST be used exclusively for plans containing `INVOKE` or `RETURN` actions.
+            *   **Handoff Rule (Isolation Mandate):** The `Handoff` type MUST be used exclusively for plans containing `INVOKE` or `RETURN` actions.
         </instruction>
       </rule>
       <rule n="11">
