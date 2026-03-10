@@ -65,26 +65,27 @@
           *   **Refactor:** Refactor the implementation code to improve structure and clarity. You MUST resolve all `[DEBT]` reminders logged for this scenario before proceeding. After refactoring, ensure all tests still pass.
         </step>
 
-        <step n="4" name="COMMIT &amp; SYNC SCENARIO">
-          *   Execute the **Version Control Protocol** (Turn 1: Stage & Review, Turn 2: Commit & Push). This includes running the full test suite.
+        <step n="4" name="DOCUMENT AS-BUILT">
+          *   **Audit and Align:** Before committing the scenario, you MUST process all documentation reminders accumulated during this specific scenario's implementation.
+          *   **As-Built Component Docs:** Process all `[DOC]` reminders. `READ` the corresponding component design documents and `EDIT` them to accurately reflect your as-built changes.
+          *   **Formalize Observations:** Process all `[OBS]` reminders. Determine the best permanent location and `EDIT` the file to add the information.
+          *   **High-Level Docs:** If a component's core responsibility changed, `EDIT` `docs/architecture/ARCHITECTURE.md`'s Component & Boundary Map.
+          *   **Status Docs:** `EDIT` the source Vertical Slice document to mark the current scenario as complete.
+        </step>
+
+        <step n="5" name="COMMIT & SYNC SCENARIO">
+          *   Execute the **Version Control Protocol** (Turn 1: Stage & Review, Turn 2: Commit & Push) to commit the completed code AND its corresponding documentation updates as a single, atomic unit. This includes running the full test suite.
           *   **CRITICAL:** Do NOT start the next scenario until the current one is pushed and `git status` is clean.
           *   Once pushed, return to Step 1 for the next scenario. Repeat until all scenarios are implemented and synced.
         </step>
       </phase>
       <phase n="3" name="Finalization & Handoff">
         <action>
-          Once all scenarios are complete and committed, you must finalize the slice. This is your "Definition of Done".
-          **Consistency Check:** You MUST perform a `git grep` sanity check across the workspace to ensure no stale references remain before handoff.
-          1.  **Update Documentation:** Audit and align documentation with the as-built code based on the reminders accumulated during implementation.
-              *   **As-Built Component Docs:** You must methodically process all `[DOC]` reminders logged. For **each** reminder:
-                  1.  You **must** first `READ` the corresponding component design document and as-built code files.
-                  2.  You **must** then `EDIT` the documentation to accurately reflect the as-built changes.
-              *   **Formalize Observations:** For each `[OBS]` reminder, determine the best permanent location for the information and `EDIT` the file to add it.
-              *   **High-Level Docs:** If a component's core responsibility changed, `EDIT` its description in the `docs/architecture/ARCHITECTURE.md` `Component & Boundary Map`.
-              *   **Status Docs:** `EDIT` the source Milestone and Vertical Slice to mark the checkboxes as complete.
-              *   **Implementation Summary:** You must `EDIT` the source Vertical Slice document to append a final `## Implementation Summary` section. This section must concisely summarize the work completed, detail significant refactoring, and explicitly list any `[NEW]` reminders to feed the Architect's next cycle. Do not list resolved `[TODO]` or `[DEBT]` reminders.
+          Once all scenarios are complete and individually committed, you must finalize the slice for handoff.
+          **Consistency Check:** You MUST perform a `git grep` sanity check across the workspace to ensure no stale references remain.
+          1.  **Implementation Summary:** You must `EDIT` the source Vertical Slice document to append a final `## Implementation Summary` section. This section must concisely summarize the work completed across all scenarios, detail significant refactoring, and explicitly list any `[NEW]` reminders to feed the Architect's next cycle. Do not list resolved `[TODO]` or `[DEBT]` reminders. `EDIT` the source Milestone to mark the slice as complete.
           2.  **Cleanup:** Clean up any ephemeral development spikes (e.g., using `rm -rf spikes/dev/`).
-          3.  **Final Commit:** All documentation updates (including the updated slice document) **must** be committed as a final, atomic unit. This step **must** follow the **Version Control Protocol**.
+          3.  **Final Commit:** If the Implementation Summary or cleanups resulted in changes, commit them following the **Version Control Protocol**.
           4.  **Handoff:** Use the `RETURN` action to formally hand off to the **calling agent**, passing the updated slice document via `Reference Files`. The `RETURN`'s `Description` **must** summarize the work completed.
         </action>
       </phase>
@@ -139,6 +140,7 @@
                     - [✓ | ▶ |  ] TEST SCENARIO
                     - [✓ | ▶ |  ] IMPLEMENT SCENARIO
                     - [✓ | ▶ |  ] POLISH SCENARIO
+                    - [✓ | ▶ |  ] DOCUMENT AS-BUILT
                     - [✓ | ▶ |  ] COMMIT SCENARIO
             *   Inner Loop (TDD Cycle)
                 *   Current Focus: [State what you are currently driving out, e.g., 'Main Scenario' or 'Fixing Regression XYZ']
@@ -452,6 +454,7 @@ Active Phase Details:
         - [✓] TEST SCENARIO
         - [▶] IMPLEMENT SCENARIO
         - [ ] POLISH SCENARIO
+        - [ ] DOCUMENT AS-BUILT
         - [ ] COMMIT SCENARIO
 *   Inner Loop (TDD Cycle)
     *   Current Focus: Implementing core [Component] contract
