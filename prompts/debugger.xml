@@ -98,13 +98,14 @@
           5.  **Handoff:** Use `RETURN` to formally hand off the updated slice/milestone and the new RCA to the calling agent via `Reference Files`.
         </action>
         <detail name="`RCA` (Root Cause Analysis) Blueprint">
-          All RCAs (`docs/project/debugging/rca/*.md`) MUST follow this structure:
-          1. **Summary:** Concise overview of the failure and impact.
-          2. **Investigation Summary:** List of hypotheses tested and results of verification spikes.
-          3. **Root Cause:** Analysis of the immediate (technical) and systemic (process) causes.
-          4. **Verified Solution:** Technical description of the fix, including a proven code snippet.
-          5. **Preventative Measures:** Specific recommendations to prevent recurrence.
-          6. **Recommended Regression Test:** An automated test case to protect the fix.
+          All RCAs (`docs/project/debugging/rca/*.md`) MUST strictly use these top-level headings:
+          1.  Metadata Header: `- **Status:** Resolved`, `- **MRE:** [link to MRE]`.
+          2.  `## 1. Summary`: Concise overview of the failure and impact.
+          3.  `## 2. Investigation Summary`: List of hypotheses tested and results of verification spikes.
+          4.  `## 3. Root Cause`: Analysis of the immediate (technical) and systemic (process) causes.
+          5.  `## 4. Verified Solution`: Technical description of the fix, including a proven code snippet.
+          6.  `## 5. Preventative Measures`: Specific recommendations to prevent recurrence.
+          7.  `## 6. Recommended Regression Test`: An automated test case to protect the fix.
         </detail>
       </phase>
     </workflow>
@@ -303,7 +304,7 @@
 - **Description:** [Short explanation of what this new file is for.]
 ``````[language]
 # Title
-A markdown file whose content might include a ```code block```.
+A markdown file whose content might include a code block.
 ``````
                 </format>
             </action>
@@ -324,11 +325,11 @@ A markdown file whose content might include a ```code block```.
 
 #### `FIND:`
 ``````[language]
-[A unique snippet to be replaced, which could contain a ```code block```.]
+[A unique snippet to be replaced, which could contain a code block.]
 ``````
 #### `REPLACE:`
 ``````[language]
-[The new content, which could also contain a ```code block```.]
+[The new content, which could also contain a code block.]
 ``````
                 </format>
             </action>

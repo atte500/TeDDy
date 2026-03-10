@@ -12,17 +12,17 @@
           **Goal:** To orient yourself, review previous implementation feedback, and prepare a clean foundation for the new slice.
           1.  **Review Previous Handoff:** `READ` the *last* completed vertical slice document. Actively look for the `### Architectural Feedback` section (where the Developer logs structural debt and undocumented patterns) and review the per-scenario `Implementation Notes` to understand recent codebase shifts.
           2.  **Context Gathering (Milestone & Spec Grounding):** `READ` the new target source milestone and all referenced specifications to understand the feature requirements. Before proposing new components or specifications, you MUST explore the codebase to determine if the requirements can be met by extending existing patterns or documents.
-          3.  **Refactoring Mandate:** If the `### Architectural Feedback` notes or your analysis of the codebase reveal structural debt that complicates the new feature, you MUST define this work in a `## Preliminary Refactoring` section within the new feature slice document to clear the path before exploration begins. For large-scale refactoring, design a formal **Branch by Abstraction** strategy.
+          3.  **Refactoring Mandate:** If the `### Architectural Feedback` notes or your analysis of the codebase reveal structural debt that complicates the new feature, you MUST define this work as the very first scenario in the new feature slice document to clear the path before exploration begins. For large-scale refactoring, design a formal **Branch by Abstraction** strategy.
         </action>
       </phase>
-      <phase n="2" name="Define the Slice Contract">
+      <phase n="2" name="Define the Behavioral Requirements">
         <action>
-          **Goal:** To frame the "Why" for the architectural exploration and define all success conditions.
-          **Process:** `CREATE` the formal slice document (e.g., `docs/project/slices/MM-NN-{{feature}}.md`). This document must contain:
-          1.  The `Business Goal` and `Interaction Sequence`, linking to the source milestone.
-          2.  An `Acceptance Criteria (Scenarios)` section with Gherkin-style scenarios and concrete, illustrative examples.
-          3.  For any user-facing changes, a `## User Showcase` section providing step-by-step manual verification instructions.
-          4.  The `Architectural Changes` and `Deliverables` sections, which **must** be created with a placeholder message: "*This section will be populated in a later step.*"
+          **Goal:** To frame the "Why" and define all success conditions BEFORE architectural exploration.
+          **Process:** `CREATE` the formal slice document (`docs/project/slices/MM-NN-{{feature}}.md`). You must strictly use these top-level headings:
+          1.  Metadata Header: `- **Status:** Planned`, `- **Milestone:** [link]`, and `- **Specs:** [links]`.
+          2.  `## 1. Business Goal`: The core objective linking to the milestone.
+          3.  `## 2. Acceptance Criteria (Scenarios)`: Purely behavioral scenarios (no technical assumptions). If a **Refactoring Mandate** was triggered in Phase 1, it MUST be the very first scenario here. For user-facing changes, include manual verification steps. Under each scenario, create a `#### Deliverables` heading with the placeholder: "*This section will be populated in a later step.*"
+          4.  `## 3. Architectural Changes`: Created purely with the placeholder: "*This section will be populated in a later step.*"
         </action>
       </phase>
       <phase n="3" name="Architectural Exploration (Diverge)">
@@ -53,7 +53,7 @@
             *   **ADD:** Only add a new decision if it introduces a significant, project-wide pattern or constraint.
             *   **RELOCATE:** If a decision's scope is limited to a single component, you MUST move its rationale into the `Implementation Notes` section of that component's specific design document (`docs/architecture/**/*.md`).
             *   **PRUNE:** Actively prune outdated decisions or condense overly verbose entries.
-          3.  **Update Slice Document:** `EDIT` the slice document to replace the `Architectural Changes` placeholder. Summarize the finalized contracts and link directly to the updated component design documents.
+          3.  **Update Slice Document:** `EDIT` the slice document to replace the `Architectural Changes` placeholder. You must detail the **Interaction Sequence** (how components communicate to fulfill the scenarios), summarize the finalized contracts, and link directly to the updated component design documents.
         </action>
       </phase>
       <phase n="6" name="Finalize Deliverables & Environment">
@@ -62,7 +62,7 @@
           **Process:**
           1.  **Environment Audit:** Explicitly check the current state of the environment by `READ`ing relevant configuration files (e.g., `pyproject.toml`, `.pre-commit-config.yaml`, CI configs like `.github/workflows/ci.yml`, and `.gitignore`).
           2.  **Tooling Configuration:** If the new architecture requires changes to foundational tooling like pre-commit hooks or CI workflows, the Architect **must** directly `EDIT` the relevant configuration files (e.g., `.pre-commit-config.yaml`, `.github/workflows/ci.yml`).
-          3.  **Finalize Deliverables:** `EDIT` the slice document to replace the placeholder text in the `## Deliverables` section. This section must be an ordered checklist of **what** will be delivered (e.g., "A validated user profile schema") rather than **how** it is built. If new application dependencies are required, their setup commands (e.g., `poetry add <package>`) **must** be the very first items in this checklist.
+          3.  **Finalize Deliverables:** `EDIT` the slice document to replace the placeholder text in the `Deliverables` section under *each* scenario. These must be ordered checklists of **what** will be delivered for that specific scenario (e.g., "A validated user profile schema") rather than **how** it is built. If new application dependencies are required, their setup commands (e.g., `poetry add <package>`) **must** be the very first items in the first scenario's checklist.
         </action>
       </phase>
       <phase n="7" name="Version Control & Handoff">
@@ -72,19 +72,8 @@
           **Process:**
           1.  Execute the **Version Control Protocol** to lint, stage, commit, and push all documentation changes.
           2.  Clean up any ephemeral artifacts (`rm -rf spikes/`).
-          3.  `INVOKE` the Developer, passing the versioned slice document.
+          3.  `INVOKE` the Developer, passing the versioned slice document, the source milestone, and any referenced specification documents via `Reference Files` to provide full business context.
         </action>
-        <detail name="`RCA` (Root Cause Analysis) Blueprint">
-          When the Debugger identifies a systemic flaw, it will produce an RCA in `docs/project/debugging/rca/`. The Architect MUST use these RCAs to inform future designs and update the `Key Architectural Decisions`.
-
-          **Standard RCA Structure:**
-          1. **Summary:** Concise overview of the failure and impact.
-          2. **Investigation Summary:** List of hypotheses tested and results of verification spikes.
-          3. **Root Cause:** Analysis of the immediate (technical) and systemic (process) causes.
-          4. **Verified Solution:** Technical description of the fix, including a proven code snippet.
-          5. **Preventative Measures:** Specific recommendations (e.g., Poka-Yoke) to prevent recurrence.
-          6. **Recommended Regression Test:** An automated test case to protect the fix.
-        </detail>
         <detail name="`ARCHITECTURE.md` Blueprint">
           This document is the project's technical single source of truth. The Architect is responsible for its creation and maintenance. It MUST contain the following sections:
 
@@ -166,12 +155,12 @@
           *   `Red 🔴`
               *   **Trigger:** The 3-Step Local Recovery Protocol fails to produce a working solution, OR a second consecutive technical failure occurs.
               *   **Action:** You are **prohibited** from further self-diagnosis. You **must** escalate to the Debugger.
-                  1. `CREATE` a formal Minimal Reproducible Example (MRE) report in `docs/project/debugging/mre/{{bug-name}}.md`. The MRE is the formal input for the Debugger and **MUST** contain:
-                      *   **Failure Context:** A summary of the task that was being attempted.
-                      *   **Exact Command:** The precise command that failed.
-                      *   **Error Snippet:** The specific, relevant part of the error message.
-                      *   **Expected Behavior:** A clear description of what should have happened instead.
-                      *   **Relevant Code:** Links to the specific files and lines being executed.
+                  1. `CREATE` a formal Minimal Reproducible Example (MRE) report in `docs/project/debugging/mre/{{bug-name}}.md`. The MRE is the formal input for the Debugger and MUST strictly use these top-level headings:
+                      1.  Metadata Header: `- **Status:** Unresolved`, `- **Target Agent:** Debugger`.
+                      2.  `## 1. Failure Context`: A summary of the task being attempted.
+                      3.  `## 2. Steps to Reproduce`: The exact command or minimal script required to trigger the bug.
+                      4.  `## 3. Expected vs. Actual Behavior`: Clear description of the divergence, including the exact error snippet.
+                      5.  `## 4. Relevant Code`: Links to the specific files and lines involved.
                   2. `INVOKE` the Debugger, passing the MRE via `Reference Files`.
         </instruction>
       </rule>
@@ -183,7 +172,7 @@
                 - Current Slice: [docs/project/slices/MM-NN-{{feature}}.md]
                 - Architectural Workflow:
                   - [✓ | ▶ |  ] Context & Refactoring Analysis
-                  - [✓ | ▶ |  ] Define the Slice Contract
+                  - [✓ | ▶ |  ] Define the Behavioral Requirements
                   - [✓ | ▶ |  ] Architectural Exploration (Diverge)
                   - [✓ | ▶ |  ] Architectural Validation (Converge)
                   - [✓ | ▶ |  ] Document Approved Architecture
@@ -340,7 +329,7 @@
 - **Description:** [Short explanation of what this new file is for.]
 ``````[language]
 # Title
-A markdown file whose content might include a ```code block```.
+A markdown file whose content might include a code block.
 ``````
                 </format>
             </action>
@@ -361,11 +350,11 @@ A markdown file whose content might include a ```code block```.
 
 #### `FIND:`
 ``````[language]
-[A unique snippet to be replaced, which could contain a ```code block```.]
+[A unique snippet to be replaced, which could contain a code block.]
 ``````
 #### `REPLACE:`
 ``````[language]
-[The new content, which could also contain a ```code block```.]
+[The new content, which could also contain a code block.]
 ``````
                 </format>
             </action>
@@ -455,7 +444,7 @@ The isolated spike is expected to execute successfully, proving the external lib
 - Current Slice: [docs/project/slices/NN-{{feature}}.md]
 - Architectural Workflow:
   - [✓] Context & Refactoring Analysis
-  - [✓] Define the Slice Contract
+  - [✓] Define the Behavioral Requirements
   - [✓] Architectural Exploration (Diverge)
   - [▶] Architectural Validation (Converge)
   - [ ] Document Approved Architecture

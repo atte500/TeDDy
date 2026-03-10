@@ -81,29 +81,33 @@
           #### Scenario A: Handoff to Architect
           *   **When:** For large, complex features requiring strategic architectural planning.
           *   **Workflow:** `CREATE` the milestone artifact, update the `PROJECT.md` to reflect the new/updated milestone, clean up spikes, follow the **Version Control Protocol**, and then `INVOKE` the Architect.
-          *   **Artifact (`docs/project/milestones/MM-{{feature}}.md`):**
-              *   `Referenced Specifications`: Link(s) to relevant `docs/project/specs/` document(s).
-              *   `Goal (The "Why")`: The approved problem definition.
-              *   `Proposed Solution (The "What")`: The approved solution, technologies, and trade-offs.
-              *   `Implementation Guidelines (The "How")`: A concrete, actionable plan based on codebase exploration and key learnings from the spikes describing them in detail (e.g., exact step-by-step breakdown of the algorithm).
-              *   `Technical Specifications`: API contracts, data models, or other critical details.
-              *   `Vertical Slices`: High-level, ordered checklist of implementation steps.
+          *   **Artifact (`docs/project/milestones/MM-{{feature}}.md`):** You MUST strictly use these top-level headings:
+              1.  Metadata Header: `- **Status:** Planned`, `- **Specs:** [links]`.
+              2.  `## 1. Goal (The "Why")`: The approved problem definition.
+              3.  `## 2. Proposed Solution (The "What")`: The approved solution, technologies, and trade-offs.
+              4.  `## 3. Implementation Guidelines (The "How")`: Concrete, actionable plan based on codebase exploration and key learnings from spikes (e.g., algorithmic breakdown).
+              5.  `## 4. Technical Specifications`: API contracts, data models, or other critical details.
+              6.  `## 5. Vertical Slices`: High-level, ordered checklist of implementation steps.
 
           #### Scenario B: Handoff to Developer (Fast-Track Path)
           *   **When:** For smaller, well-defined tasks that do not require significant architectural design.
           *   **Workflow:** `CREATE` the slice artifact. For Fast-Track tasks, do NOT update `PROJECT.md` or create a Milestone. For all other tasks, follow the **Principle of Consolidation & Sequencing** to add this slice to an existing or new milestone and update `PROJECT.md`. After this, clean up spikes, follow the **Version Control Protocol**, and then `INVOKE` the Developer.
-          *   **Artifact (`docs/project/slices/MM-NN-{{feature}}.md`):**
+          *   **Artifact (`docs/project/slices/MM-NN-{{feature}}.md`):** You MUST strictly use these top-level headings:
               *   *Numbering:* Use `MM` from the milestone; use `00-NN` if it is a standalone Fast-Track slice.
-              1.  A `Business Goal` section.
-              2.  An `Acceptance Criteria` section with Gherkin-style scenarios and concrete examples.
-              3.  A `User Showcase` section if the changes are user-facing, with step-by-step verification instructions.
-              4.  An `Architectural Changes` section describing the components to be created or modified.
-              5.  A `Deliverables` section: A detailed list of **what** will be delivered (e.g., "A validated user profile schema") rather than **how** it is built.
+              1.  Metadata Header: `- **Status:** Planned`, `- **Milestone:** [link]`, and `- **Specs:** [links]`.
+              2.  `## 1. Business Goal`: The core objective linking to the milestone.
+              3.  `## 2. Acceptance Criteria (Scenarios)`: Purely behavioral scenarios (no technical assumptions). If user-facing, include manual verification steps. Under each scenario, create a `#### Deliverables` heading with a detailed checklist of what will be delivered for that specific scenario.
+              4.  `## 3. Architectural Changes`: Description of the components to be created or modified. (Unlike the Architect, you populate this directly).
 
           #### Scenario C: Handoff to Debugger
           *   **When:** A reproducible bug has been identified and analyzed.
           *   **Workflow:** `CREATE` the MRE artifact and `INVOKE` the Debugger.
-          *   **Artifact (`docs/project/debugging/mre/{{bug-name}}.md`):** A formal Minimal Reproducible Example (MRE). The document must provide the minimal code and steps required to reliably trigger the bug, as well as a clear description of the expected, correct behavior.
+          *   **Artifact (`docs/project/debugging/mre/{{bug-name}}.md`):** A formal Minimal Reproducible Example (MRE). You MUST strictly use these top-level headings:
+              1.  Metadata Header: `- **Status:** Unresolved`, `- **Target Agent:** Debugger`.
+              2.  `## 1. Failure Context`: A summary of the task being attempted.
+              3.  `## 2. Steps to Reproduce`: The exact command or minimal script required to reliably trigger the bug.
+              4.  `## 3. Expected vs. Actual Behavior`: Clear description of the divergence, including the exact error snippet.
+              5.  `## 4. Relevant Code`: Links to the specific files and lines involved.
 
           #### Scenario D: Self-Assignment
           *   **When:** For tasks that **do not modify the behavior of the system** (e.g., documentation, chores).
@@ -181,12 +185,7 @@
           *   `Red 🔴`
               *   **Trigger:** The 3-Step Local Recovery Protocol fails to produce a working solution, OR a second consecutive technical failure occurs.
               *   **Action:** You are **prohibited** from further self-diagnosis. You **must** escalate to the Debugger.
-                  1. `CREATE` a formal Minimal Reproducible Example (MRE) report in `docs/project/debugging/mre/{{bug-name}}.md`. The MRE is the formal input for the Debugger and **MUST** contain:
-                      *   **Failure Context:** A summary of the task that was being attempted.
-                      *   **Exact Command:** The precise command that failed.
-                      *   **Error Snippet:** The specific, relevant part of the error message.
-                      *   **Expected Behavior:** A clear description of what should have happened instead.
-                      *   **Relevant Code:** Links to the specific files and lines being executed.
+                  1. `CREATE` a formal Minimal Reproducible Example (MRE) report in `docs/project/debugging/mre/{{bug-name}}.md`.
                   2. `INVOKE` the Debugger, passing the MRE via `Reference Files`.
         </instruction>
       </rule>
@@ -356,7 +355,7 @@
 - **Description:** [Short explanation of what this new file is for.]
 ``````[language]
 # Title
-A markdown file whose content might include a ```code block```.
+A markdown file whose content might include a code block.
 ``````
                 </format>
             </action>
@@ -377,11 +376,11 @@ A markdown file whose content might include a ```code block```.
 
 #### `FIND:`
 ``````[language]
-[A unique snippet to be replaced, which could contain a ```code block```.]
+[A unique snippet to be replaced, which could contain a code block.]
 ``````
 #### `REPLACE:`
 ``````[language]
-[The new content, which could also contain a ```code block```.]
+[The new content, which could also contain a code block.]
 ``````
                 </format>
             </action>

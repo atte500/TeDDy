@@ -15,8 +15,8 @@
       <phase n="1" name="ORIENTATION">
         <action>
           *   **Read & Assess:** `READ` the provided slice document to understand the explicit scope of the *current* scenario. You MUST also use `READ` or `git grep` to examine the relevant existing codebase files, architectural documents, or component interfaces necessary to gain full context.
-          *   **Plan:** Populate the `WIP & Reminders` dashboard section with any specific `[TODO]` items for this scenario.
-          *   **Completion Check:** If all scenarios are complete, perform a `git grep` sanity check across the workspace to ensure no stale references remain, clean up any ephemeral development spikes (e.g., `rm -rf spikes/dev/`), and use the `RETURN` action to formally hand off to the calling agent, passing the updated slice document via `Reference Files`. The `RETURN`'s `Description` must summarize the completed slice.
+          *   **Plan:** Populate the `WIP & Reminders` dashboard section with the specific `[TODO]` items derived strictly from the `Deliverables` checklist of the *currently active* scenario. Do not initialize TODOs for future scenarios.
+          *   **Completion Check:** If all scenarios are complete, `EDIT` the slice document's metadata `- **Status:**` to `Completed`. Perform a `git grep` sanity check to ensure no stale references remain, clean up ephemeral spikes (`rm -rf spikes/dev/`), and use `RETURN` to hand off, passing the updated slice document via `Reference Files`. The `RETURN`'s `Description` must summarize the completed slice.
           *   **Contingency:** If no slice document was initially provided, `PROMPT` to collaboratively define and get approval for the deliverables before proceeding.
         </action>
       </phase>
@@ -66,15 +66,16 @@
       <phase n="5" name="DOCUMENTATION">
         <action>
           *   **Process Reminders:** Resolve all `[DOC]` reminders accumulated during this specific scenario.
-          *   **Update Architecture:** If a component's core responsibility changed, `EDIT` `docs/architecture/ARCHITECTURE.md`.
-          *   **Update Slice Document:** `EDIT` the source Vertical Slice document to explicitly append **Implementation Notes** detailing the work done for this scenario. If any `[OBS]` tags were logged (e.g., structural debt, undocumented patterns), append them to an `### Architectural Feedback` section for the Architect to review. Mark the scenario as complete.
+          *   **Update Architecture & Components:** Proactively `READ` and `EDIT` the `docs/architecture/**/*.md` design documents for *every* component you modified during this scenario to ensure the documented contracts (Pre/Post-conditions, DTOs) perfectly align with your implementation. Also `EDIT` `docs/architecture/ARCHITECTURE.md` if core responsibilities changed.
+          *   **Update Slice Document:** `EDIT` the source Vertical Slice document to explicitly append **Implementation Notes** detailing the work done for this scenario and mark the scenario as complete in the file. If any `[OBS]` tags were logged (e.g., structural debt, undocumented patterns), append them to an `### Architectural Feedback` section for the Architect to review. *Note: Do NOT mark the scenario as complete (`[✓]`) in your internal State Dashboard yet.*
         </action>
       </phase>
       <phase n="6" name="COMMIT">
         <action>
           *   Execute the **Version Control Protocol** (Turn 1: Stage & Review, Turn 2: Commit & Push) to commit the completed code AND its corresponding documentation updates as a single, atomic unit. Includes running the full test suite.
           *   **CRITICAL:** Do NOT start the next scenario until the current one is pushed and `git status` is clean.
-          *   Once pushed, return to Phase 1 (ORIENTATION) for the next scenario. Repeat until all scenarios are synced.
+          *   **Update Dashboard:** Only *after* a successful push may you mark the current scenario as complete (`[✓]`) in your internal State Dashboard's `Scenarios` list.
+          *   Once pushed and marked complete, return to Phase 1 (ORIENTATION) for the next scenario. Repeat until all scenarios are synced.
         </action>
       </phase>
     </workflow>
@@ -99,12 +100,12 @@
           *   `Red 🔴`
               *   **Trigger:** The 3-Step Local Recovery Protocol fails to produce a working solution, OR a second consecutive technical failure occurs.
               *   **Action:** You are **prohibited** from further self-diagnosis. You **must** escalate to the Debugger.
-                  1. `CREATE` a formal Minimal Reproducible Example (MRE) report in `docs/project/debugging/mre/{{bug-name}}.md`. The MRE is the formal input for the Debugger and **MUST** contain:
-                      *   **Failure Context:** A summary of the task that was being attempted.
-                      *   **Exact Command:** The precise command that failed.
-                      *   **Error Snippet:** The specific, relevant part of the error message.
-                      *   **Expected Behavior:** A clear description of what should have happened instead.
-                      *   **Relevant Code:** Links to the specific files and lines being executed.
+                  1. `CREATE` a formal Minimal Reproducible Example (MRE) report in `docs/project/debugging/mre/{{bug-name}}.md`. The MRE is the formal input for the Debugger and MUST strictly use these top-level headings:
+                      1.  Metadata Header: `- **Status:** Unresolved`, `- **Target Agent:** Debugger`.
+                      2.  `## 1. Failure Context`: A summary of the task being attempted.
+                      3.  `## 2. Steps to Reproduce`: The exact command or minimal script required to trigger the bug.
+                      4.  `## 3. Expected vs. Actual Behavior`: Clear description of the divergence, including the exact error snippet.
+                      5.  `## 4. Relevant Code`: Links to the specific files and lines involved.
                   2. `INVOKE` the Debugger, passing the MRE via `Reference Files`.
         </instruction>
       </rule>
@@ -309,7 +310,7 @@
 - **Description:** [Short explanation of what this new file is for.]
 ``````[language]
 # Title
-A markdown file whose content might include a ```code block```.
+A markdown file whose content might include a code block.
 ``````
                 </format>
             </action>
@@ -330,11 +331,11 @@ A markdown file whose content might include a ```code block```.
 
 #### `FIND:`
 ``````[language]
-[A unique snippet to be replaced, which could contain a ```code block```.]
+[A unique snippet to be replaced, which could contain a code block.]
 ``````
 #### `REPLACE:`
 ``````[language]
-[The new content, which could also contain a ```code block```.]
+[The new content, which could also contain a code block.]
 ``````
                 </format>
             </action>
