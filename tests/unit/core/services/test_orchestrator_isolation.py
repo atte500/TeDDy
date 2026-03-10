@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock
 from teddy_executor.core.domain.models import Plan, ActionData, ActionStatus
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
+from teddy_executor.core.services.action_executor import ActionExecutor
 
 
 def test_orchestrator_skips_non_isolated_terminal_action():
@@ -14,12 +15,17 @@ def test_orchestrator_skips_non_isolated_terminal_action():
     file_system_manager = MagicMock()
     edit_simulator = MagicMock()
 
-    orchestrator = ExecutionOrchestrator(
-        plan_parser=plan_parser,
+    action_executor = ActionExecutor(
         action_dispatcher=action_dispatcher,
         user_interactor=user_interactor,
         file_system_manager=file_system_manager,
         edit_simulator=edit_simulator,
+    )
+    orchestrator = ExecutionOrchestrator(
+        plan_parser=plan_parser,
+        action_executor=action_executor,
+        user_interactor=user_interactor,
+        file_system_manager=file_system_manager,
     )
 
     # A multi-action plan: CREATE then PROMPT

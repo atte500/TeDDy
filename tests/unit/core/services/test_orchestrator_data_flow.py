@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock
 from teddy_executor.core.domain.models import Plan, ActionData, ActionLog, ActionStatus
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
+from teddy_executor.core.services.action_executor import ActionExecutor
 
 
 def test_orchestrator_populates_report_metadata():
@@ -11,7 +12,8 @@ def test_orchestrator_populates_report_metadata():
     fs = MagicMock()
     simulator = MagicMock()
 
-    orchestrator = ExecutionOrchestrator(parser, dispatcher, interactor, fs, simulator)
+    action_executor = ActionExecutor(dispatcher, interactor, fs, simulator)
+    orchestrator = ExecutionOrchestrator(parser, action_executor, interactor, fs)
 
     # Setup test data
     action = ActionData(

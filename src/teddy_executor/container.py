@@ -4,6 +4,7 @@ from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUs
 from teddy_executor.core.ports.inbound.init import IInitUseCase
 from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
+from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
 from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
 from teddy_executor.core.ports.outbound import (
     IConfigService,
@@ -23,6 +24,7 @@ from teddy_executor.core.services.action_dispatcher import (
     ActionDispatcher,
     IActionFactory,
 )
+from teddy_executor.core.services.action_executor import ActionExecutor
 from teddy_executor.core.services.action_factory import ActionFactory
 from teddy_executor.core.services.context_service import ContextService
 from teddy_executor.core.services.edit_simulator import EditSimulator
@@ -85,8 +87,10 @@ def create_container() -> punq.Container:
     )
     container.register(IRepoTreeGenerator, LocalRepoTreeGenerator)
     container.register(IPlanParser, MarkdownPlanParser)
+    container.register(IPlanReviewer, instance=None)
     container.register(IActionFactory, ActionFactory)
     container.register(ActionDispatcher)
+    container.register(ActionExecutor)
     container.register(CreateActionValidator)
     container.register(EditActionValidator)
     container.register(ExecuteActionValidator)

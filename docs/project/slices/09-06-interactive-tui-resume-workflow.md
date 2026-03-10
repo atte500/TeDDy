@@ -36,17 +36,24 @@ To provide a professional, interactive experience for reviewing and modifying AI
 - **When** I run `teddy resume`.
 - **Then** it MUST automatically start the execution/approval flow for that plan.
 
-### Scenario: Resume starts new turn after completion
+### Scenario: Resume starts new turn after completion [✓]
 - **Given** a turn directory with a completed `report.md`.
 - **When** I run `teddy resume`.
 - **Then** it MUST prompt me for instructions and trigger a new planning phase for the next turn.
 
-### Scenario: TUI allows partial execution
+### Scenario: TUI allows partial execution [✓]
 - **Given** a plan with 3 actions.
 - **When** I run `teddy execute` and enter the TUI (Modify mode).
 - **And** I uncheck the 2nd action and press `(s)` to submit.
 - **Then** only the 1st and 3rd actions MUST be executed.
 - **And** the `report.md` MUST mark the 2nd action as `SKIPPED` by user.
+
+**Implementation Notes:**
+- Established `IPlanReviewer` inbound port for interactive review.
+- Updated `ActionData` domain model with `selected` boolean field (defaults to `True`).
+- Refactored `ExecutionOrchestrator` to inject `IPlanReviewer` and call it during `execute()`.
+- Implemented action skipping logic in `ExecutionOrchestrator` for unselected actions.
+- Added `tests/acceptance/test_partial_execution.py` to verify the flow with a `FakeReviewer`.
 
 ### Scenario: Context-Aware Editing of CREATE action
 - **Given** a `CREATE` action for `src/foo.py`.
