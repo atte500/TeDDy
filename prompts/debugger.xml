@@ -219,8 +219,7 @@
         <instruction>
             Each turn MUST have a single, clear responsibility, reflected by its `Plan Type`. These types act as strict phase boundaries in the workflow. For example, `Implementation` actions (like `EDIT` or `CREATE`) MUST NOT be combined with `Version Control` actions (like `git add`) in the same plan.
 
-            The `- **Plan Type:**` in the plan header must use one of the following core values: `Information Gathering`, `Spike`, `Instrumentation`, `Handoff`.
-            *   **Handoff Rule (Isolation Mandate):** The `Handoff` type MUST be used exclusively for plans containing `INVOKE` or `RETURN` actions.
+            The `- **Plan Type:**` in the plan header must use one of the following core values: `Information Gathering`, `Synthesis`, `Spike`, `Instrumentation`, `Handoff`.
         </instruction>
       </rule>
        <rule n="11">
@@ -359,7 +358,7 @@ A markdown file whose content might include a ```code block```.
                 </format>
             </action>
             <action name="PROMPT">
-                <description>Asks the user for required information or decisions. Do NOT use this action for "FYI" messages, status updates, or explaining what you are about to do. **CRITICAL RULE:** This action MUST be the ONLY action in your plan. If combined with other actions, it will be automatically skipped.</description>
+                <description>Asks the user for required information or decisions. Do NOT use this action for "FYI" messages, status updates, or explaining what you are about to do. **CRITICAL RULE:** This action MUST be the ONLY action in your plan and MUST use the `Synthesis` Plan Type. If combined with other actions, it will be automatically skipped.</description>
                 <format>
 ### `PROMPT`
 - **Reference Files:** (Optional)
