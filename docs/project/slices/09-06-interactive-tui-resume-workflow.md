@@ -13,7 +13,7 @@ To provide a professional, interactive experience for reviewing and modifying AI
 ## 3. Interaction Sequence
 
 ### The 'resume' Orchestration
-1. **Trigger:** User runs `teddy resume` from within a session or turn directory, or creates a new session with `teddy new --start`.
+1. **Trigger:** User runs `teddy resume` from within a session or turn directory, or creates a new session with `teddy new`.
 2. **Detection:** `SessionService` identifies the latest turn and its state:
    - **Case A: Empty Turn** (No `plan.md`) -> Trigger `teddy plan` (Context -> LLM).
    - **Case B: Pending Plan** (`plan.md` exists, no `report.md`) -> Trigger `teddy execute`.
@@ -74,7 +74,7 @@ To provide a professional, interactive experience for reviewing and modifying AI
 
 ### Adapters
 - **`TextualPlanReviewer` ([Design](/docs/architecture/adapters/inbound/textual_plan_reviewer.md))**: New primary adapter implementing the Textual TUI.
-- **`CLI Adapter`**: Updated to support `resume` and streamlined `new --start`.
+- **`CLI Adapter`**: Updated to support `resume` and streamlined `new`.
 
 ## 7. Deliverables
 
@@ -85,7 +85,7 @@ To provide a professional, interactive experience for reviewing and modifying AI
 ### 2. Session Intelligence
 - [ ] **Session State Engine:** Implement `SessionService.get_session_state()`.
 - [ ] **Resume Orchestrator:** Implement `SessionOrchestrator.resume()`.
-- [ ] **Streamlined CLI:** Implement `teddy resume` and `teddy new --start`.
+- [ ] **Streamlined CLI:** Implement `teddy resume` and streamlined `teddy new`.
 
 ### 3. Interactive TUI (The Reviewer)
 - [ ] **Textual Backbone:** Implement the basic `ReviewerApp` with Tier 1/2 views.

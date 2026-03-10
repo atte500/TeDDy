@@ -121,7 +121,7 @@ Initializes a new session directory and bootstraps it for "Turn 1".
     4.  Uses `teddy get-prompt` to fetch the agent prompt and saves it as `01/system_prompt.xml`.
         -   If the `--agent` option is provided, it fetches the specified agent's prompt. If the agent name is invalid, the command fails with an error.
         -   If the `--agent` option is not provided, it fetches the `pathfinder` agent's prompt by default.
-    5.  The session is now ready. The user's next step is typically to run `teddy context` to generate the initial `input.md`.
+    5.  Automatically triggers the planning phase for the first turn (behaving like `teddy resume` in an `EMPTY` state) by prompting the user for initial instructions.
     6.  Outputs the path to the new session directory.
 
 ---
