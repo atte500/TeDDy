@@ -25,7 +25,7 @@ class ConsoleInteractorAdapter(IUserInteractor):
         if resources:
             typer.echo("\n▶ Reference Files:", err=True)
             typer.echo("\n".join(resources), err=True)
-            typer.echo("", err=True)  # Spacer
+        typer.echo("", err=True)  # Spacer
         typer.echo(
             "Press [Enter] to submit single-line response, or type 'e' + [Enter] to open in Editor:",
             err=True,
