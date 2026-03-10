@@ -6,7 +6,10 @@ import yaml
 from teddy_executor.core.domain.models.execution_report import ExecutionReport
 from teddy_executor.core.domain.models.plan import ActionType
 from teddy_executor.core.ports.outbound.file_system_manager import FileSystemManager
-from teddy_executor.core.ports.outbound.session_manager import ISessionManager
+from teddy_executor.core.ports.outbound.session_manager import (
+    ISessionManager,
+    SessionState,
+)
 from teddy_executor.prompts import find_prompt_content
 
 
@@ -77,6 +80,27 @@ class SessionService(ISessionManager):
 
         latest_turn_id = sorted(turns)[-1]
         return f"{session_root}/{latest_turn_id}"
+
+    def get_session_state(self, session_name: str) -> tuple[SessionState, str]:
+        """
+        Determines the state of the session and returns the state and the path
+        to the latest turn.
+        """
+        latest_turn_path = self.get_latest_turn(session_name)
+
+        plan_exists = self._file_system_manager.path_exists(
+            f"{latest_turn_path}/plan.md"
+        )
+        report_exists = self._file_system_manager.path_exists(
+            f"{latest_turn_path}/report.md"
+        )
+
+        if report_exists:
+            return SessionState.COMPLETE_TURN, latest_turn_path
+        if plan_exists:
+            return SessionState.PENDING_PLAN, latest_turn_path
+
+        return SessionState.EMPTY, latest_turn_path
 
     def _extract_resource_path(self, resource_str: str) -> str:
         """Extracts the path from a Markdown link or returns the string if not a link."""

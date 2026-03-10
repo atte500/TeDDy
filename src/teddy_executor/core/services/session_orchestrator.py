@@ -12,6 +12,7 @@ from teddy_executor.core.ports.outbound.file_system_manager import FileSystemMan
 from teddy_executor.core.ports.outbound.markdown_report_formatter import (
     IMarkdownReportFormatter,
 )
+from teddy_executor.core.ports.outbound.session_manager import SessionState
 
 
 class SessionOrchestrator(IRunPlanUseCase):
@@ -29,6 +30,7 @@ class SessionOrchestrator(IRunPlanUseCase):
         plan_validator,
         planning_service,
         plan_parser,
+        user_interactor,
     ):
         self._execution_orchestrator = execution_orchestrator
         self._session_service = session_service
@@ -37,6 +39,62 @@ class SessionOrchestrator(IRunPlanUseCase):
         self._plan_validator = plan_validator
         self._planning_service = planning_service
         self._plan_parser = plan_parser
+        self._user_interactor = user_interactor
+
+    def resume(self, session_name: str, interactive: bool = True):
+        """
+        Implements the 'resume' state machine.
+        """
+        state, turn_path = self._session_service.get_session_state(session_name)
+
+        if state == SessionState.PENDING_PLAN:
+            plan_path = f"{turn_path}/plan.md"
+            return self.execute(plan_path=plan_path, interactive=interactive)
+
+        if state == SessionState.EMPTY:
+            return self._trigger_new_plan(turn_path)
+
+        if state == SessionState.COMPLETE_TURN:
+            # Case C: Start next turn
+            next_turn_dir = self._session_service.transition_to_next_turn(
+                plan_path=f"{turn_path}/plan.md"
+            )
+            return self._trigger_new_plan(next_turn_dir)
+
+        return None
+
+    def _trigger_new_plan(self, turn_dir: str):
+        """Prompts user and triggers planning."""
+        message = self._user_interactor.prompt("Enter your instructions for the AI")
+        if not message:
+            return None
+
+        # Add helpful hint for alignment
+        hint = "\n\n*(Stop to reply to this user request and ensure alignment before proceeding)*"
+        message += hint
+
+        # Resolve context files
+        # PlanningService expects context_files dict if available
+        context_files = None
+        turn_p = Path(turn_dir)
+        turn_context = turn_p / "turn.context"
+        session_context = turn_p.parent / "session.context"
+        meta_yaml = turn_p / "meta.yaml"
+
+        if (
+            self._file_system_manager.path_exists(str(turn_context))
+            and self._file_system_manager.path_exists(str(session_context))
+            and self._file_system_manager.path_exists(str(meta_yaml))
+        ):
+            context_files = {
+                "Turn": [str(turn_context)],
+                "Session": [str(session_context)],
+            }
+
+        self._planning_service.generate_plan(
+            user_message=message, turn_dir=turn_dir, context_files=context_files
+        )
+        return None
 
     def execute(
         self,

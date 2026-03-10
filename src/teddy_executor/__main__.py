@@ -158,11 +158,14 @@ def create_parser_for_plan(plan_content: str) -> IPlanParser:
 
 @app.command()
 def resume(
-    yes: bool = typer.Option(
-        False,
-        "--yes",
-        "-y",
-        help="Automatically approve all actions without prompting.",
+    session: Optional[str] = typer.Option(
+        None, "--session", "-s", help="The name of the session to resume."
+    ),
+    interactive: bool = typer.Option(
+        True,
+        "--interactive/--no-interactive",
+        "-i/-y",
+        help="Run in interactive mode.",
     ),
     no_copy: bool = typer.Option(
         False,
@@ -171,13 +174,30 @@ def resume(
     ),
 ):
     """
-    Continues the current session.
+    Intelligently resumes the last turn of a session or starts a new one.
     """
-    from teddy_executor.adapters.inbound.session_cli_handlers import (
-        handle_resume_session,
-    )
+    from teddy_executor.adapters.inbound.session_cli_handlers import find_session_name
 
-    handle_resume_session(container, yes, no_copy)
+    session_name = session or find_session_name()
+
+    orchestrator = container.resolve(IRunPlanUseCase)
+    report = orchestrator.resume(session_name=session_name, interactive=interactive)
+
+    if report:
+        report_formatter = container.resolve(IMarkdownReportFormatter)
+        formatted_report = report_formatter.format(report)
+
+        echo_and_copy(
+            formatted_report,
+            no_copy=no_copy,
+            confirmation_message="Execution report copied to clipboard.",
+        )
+
+        if report.run_summary.status in (
+            RunStatus.FAILURE,
+            RunStatus.VALIDATION_FAILED,
+        ):
+            raise typer.Exit(code=1)
 
 
 @app.command()
@@ -222,7 +242,7 @@ def execute(
 
     except (InvalidPlanError, NotImplementedError) as e:
         report = ExecutionReport(
-            plan_title="Execution Error",
+            plan_title="Invalid Plan",
             run_summary=RunSummary(
                 status=RunStatus.FAILURE
                 if isinstance(e, NotImplementedError)

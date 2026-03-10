@@ -26,3 +26,16 @@ class IRunPlanUseCase(ABC):
             interactive: A flag to enable/disable step-by-step user approval.
         """
         pass
+
+    @abstractmethod
+    def resume(
+        self, session_name: str, interactive: bool = True
+    ) -> Optional[ExecutionReport]:
+        """
+        Intelligently resumes the session based on its state.
+
+        Args:
+            session_name: The name of the session to resume.
+            interactive: Whether to run in interactive mode.
+        """
+        pass

@@ -12,7 +12,6 @@ from teddy_executor.core.domain.models import (
     RunSummary,
 )
 from teddy_executor.core.domain.models.plan import Plan
-from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.services.plan_validator import ValidationError
 
@@ -110,7 +109,6 @@ def execute_valid_plan(
     container: Container,
     plan: Plan,
     interactive_mode: bool,
-    parser: IPlanParser,
     plan_meta: Optional[dict] = None,
 ) -> ExecutionReport:
     """Executes a plan that has already been parsed and validated."""

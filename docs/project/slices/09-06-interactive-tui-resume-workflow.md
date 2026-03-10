@@ -31,7 +31,7 @@ To provide a professional, interactive experience for reviewing and modifying AI
 
 ## 4. Acceptance Criteria (Scenarios)
 
-### Scenario: Resume picks up pending execution
+### Scenario: Resume picks up pending execution [✓]
 - **Given** a turn directory with `plan.md` but no `report.md`.
 - **When** I run `teddy resume`.
 - **Then** it MUST automatically start the execution/approval flow for that plan.

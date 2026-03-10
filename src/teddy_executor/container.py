@@ -120,6 +120,7 @@ def create_container() -> punq.Container:
             plan_validator=container.resolve(IPlanValidator),
             planning_service=container.resolve(IPlanningUseCase),
             plan_parser=container.resolve(IPlanParser),
+            user_interactor=container.resolve(IUserInteractor),
         ),
     )
     container.register(IGetContextUseCase, ContextService)

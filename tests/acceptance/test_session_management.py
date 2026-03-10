@@ -338,8 +338,8 @@ def test_teddy_resume_prompts_for_new_plan(monkeypatch, tmp_path, container):
 
     # Assert
     assert result.exit_code == 0
-    assert "Plan generated at" in result.stdout
     assert (turn_dir / "plan.md").exists()
+    assert "# Plan" in (turn_dir / "plan.md").read_text()
 
     # Verify hint was injected
     expected_message = "My New Feature\n\n*(Stop to reply to this user request and ensure alignment before proceeding)*"

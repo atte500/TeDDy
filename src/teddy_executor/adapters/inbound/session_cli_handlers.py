@@ -6,15 +6,14 @@ from punq import Container
 from teddy_executor.core.domain.models import RunStatus
 from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
 from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
+from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.session_manager import ISessionManager
 from teddy_executor.core.ports.outbound.markdown_report_formatter import (
     IMarkdownReportFormatter,
 )
 from teddy_executor.adapters.inbound.cli_formatter import format_project_context
 from teddy_executor.adapters.inbound.cli_helpers import (
-    find_project_root,
     echo_and_copy,
-    execute_valid_plan,
 )
 
 
@@ -89,74 +88,21 @@ def find_session_name() -> str:
 def handle_resume_session(container: Container, yes: bool, no_copy: bool):
     """Logic for the 'resume' command."""
     session_name = find_session_name()
-    session_manager: ISessionManager = container.resolve(ISessionManager)
+    run_plan_use_case: IRunPlanUseCase = container.resolve(IRunPlanUseCase)
 
     try:
-        latest_turn_dir = session_manager.get_latest_turn(session_name)
+        report = run_plan_use_case.resume(session_name, interactive=not yes)
+
+        if report:
+            report_formatter = container.resolve(IMarkdownReportFormatter)
+            formatted_report = report_formatter.format(report)
+            echo_and_copy(formatted_report, no_copy=no_copy)
+
+            if report.run_summary.status in (
+                RunStatus.FAILURE,
+                RunStatus.VALIDATION_FAILED,
+            ):
+                raise typer.Exit(code=1)
     except Exception as e:
-        typer.echo(f"Error identifying latest turn: {e}", err=True)
-        raise typer.Exit(code=1)
-
-    project_root = find_project_root()
-    latest_path = project_root / latest_turn_dir
-    plan_file = latest_path / "plan.md"
-    report_file = latest_path / "report.md"
-
-    if plan_file.exists() and not report_file.exists():
-        _execute_pending_plan(container, plan_file, latest_turn_dir, yes, no_copy)
-    elif report_file.exists():
-        typer.echo(
-            "This turn is complete. To start the next turn, please ensure the Turn Transition Algorithm has run (it runs automatically during 'execute')."
-        )
-    else:
-        _trigger_new_plan_loop(container, latest_path)
-
-
-def _execute_pending_plan(container, plan_file, latest_turn_dir, yes, no_copy):
-    from teddy_executor.__main__ import create_parser_for_plan
-
-    final_plan_content = plan_file.read_text(encoding="utf-8")
-    parser = create_parser_for_plan(final_plan_content)
-    plan = parser.parse(final_plan_content)
-
-    report = execute_valid_plan(
-        container,
-        plan,
-        interactive_mode=not yes,
-        parser=parser,
-        plan_meta={
-            "plan_path": latest_turn_dir + "/plan.md",
-            "plan_content": final_plan_content,
-        },
-    )
-
-    report_formatter = container.resolve(IMarkdownReportFormatter)
-    formatted_report = report_formatter.format(report)
-    echo_and_copy(formatted_report, no_copy=no_copy)
-
-    if report.run_summary.status in (RunStatus.FAILURE, RunStatus.VALIDATION_FAILED):
-        raise typer.Exit(code=1)
-
-
-def _trigger_new_plan_loop(container, latest_path):
-    message = typer.prompt("Enter your instructions for the AI")
-    hint = "\n\n*(Stop to reply to this user request and ensure alignment before proceeding)*"
-    message += hint
-
-    turn_context = latest_path / "turn.context"
-    session_context = latest_path.parent / "session.context"
-    meta_yaml = latest_path / "meta.yaml"
-
-    context_files = None
-    if turn_context.exists() and session_context.exists() and meta_yaml.exists():
-        context_files = {"Turn": [str(turn_context)], "Session": [str(session_context)]}
-
-    planning_service: IPlanningUseCase = container.resolve(IPlanningUseCase)
-    try:
-        plan_path = planning_service.generate_plan(
-            user_message=message, turn_dir=str(latest_path), context_files=context_files
-        )
-        typer.echo(f"Plan generated at: {plan_path}")
-    except Exception as e:
-        typer.echo(f"Error: {e}", err=True)
+        typer.echo(f"Error during resume: {e}", err=True)
         raise typer.Exit(code=1)

@@ -37,5 +37,8 @@ The `SessionService` is responsible for managing the lifecycle of TeDDy sessions
 ### `get_latest_turn(session_name: str) -> str`
 -   **Description:** Returns the directory path of the most recent turn in a session.
 
+### `get_session_state(session_name: str) -> tuple[SessionState, str]`
+-   **Description:** Determines the current state (EMPTY, PENDING_PLAN, COMPLETE_TURN) and latest turn path for a session.
+
 ### `transition_to_next_turn(plan_path: str, execution_report: ExecutionReport) -> str`
 -   **Description:** Executes the Turn Transition Algorithm to prepare the next turn directory.

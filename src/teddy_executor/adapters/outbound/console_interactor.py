@@ -14,6 +14,10 @@ class ConsoleInteractorAdapter(IUserInteractor):
     def __init__(self, system_env: ISystemEnvironment):
         self._system_env = system_env
 
+    def prompt(self, text: str, default: str = "") -> str:
+        """Prompts the user using typer.prompt."""
+        return typer.prompt(text, default=default, show_default=False, err=True)
+
     def ask_question(self, prompt: str, resources: list[str] | None = None) -> str:
         """
         Presents a prompt to the user on the console and captures their input.

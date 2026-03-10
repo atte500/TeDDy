@@ -22,6 +22,7 @@ def test_session_orchestrator_triggers_transition_on_success():
         plan_validator=MagicMock(),
         planning_service=MagicMock(),
         plan_parser=MagicMock(),
+        user_interactor=MagicMock(),
     )
 
     plan_content = "some plan"

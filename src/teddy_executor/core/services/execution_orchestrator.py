@@ -273,3 +273,11 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             original_actions=plan.actions,
             action_logs=action_logs,
         )
+
+    def resume(
+        self, session_name: str, interactive: bool = True
+    ) -> Optional[ExecutionReport]:
+        """Stateless orchestrator does not support session resumption."""
+        raise NotImplementedError(
+            "Session operations are not supported in stateless ExecutionOrchestrator."
+        )

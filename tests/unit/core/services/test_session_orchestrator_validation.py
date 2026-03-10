@@ -16,6 +16,7 @@ def mock_deps():
         "plan_validator": MagicMock(),
         "planning_service": MagicMock(),
         "plan_parser": MagicMock(),
+        "user_interactor": MagicMock(),
     }
 
 
@@ -33,6 +34,7 @@ def test_execute_triggers_replan_on_validation_failure(mock_deps):
         plan_validator=mock_deps["plan_validator"],
         planning_service=mock_deps["planning_service"],
         plan_parser=mock_deps["plan_parser"],
+        user_interactor=mock_deps["user_interactor"],
     )
 
     plan = Plan(
@@ -90,6 +92,7 @@ def test_execute_populates_failed_resources_on_validation_failure(mock_deps):
         plan_validator=mock_deps["plan_validator"],
         planning_service=mock_deps["planning_service"],
         plan_parser=mock_deps["plan_parser"],
+        user_interactor=mock_deps["user_interactor"],
     )
 
     plan = Plan(

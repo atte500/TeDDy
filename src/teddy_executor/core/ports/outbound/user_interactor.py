@@ -7,6 +7,20 @@ if TYPE_CHECKING:
 
 class IUserInteractor(ABC):
     @abstractmethod
+    def prompt(self, text: str, default: str = "") -> str:
+        """
+        Prompts the user for input and returns the response.
+
+        Args:
+            text: The prompt text to display.
+            default: The default value if the user provides no input.
+
+        Returns:
+            The user's response as a string.
+        """
+        pass
+
+    @abstractmethod
     def ask_question(self, prompt: str, resources: list[str] | None = None) -> str:
         """
         Asks the user a question and returns their free-text response.

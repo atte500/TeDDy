@@ -1,5 +1,14 @@
+from enum import Enum
 from typing import Optional, Protocol
 from teddy_executor.core.domain.models import ExecutionReport
+
+
+class SessionState(Enum):
+    """Represents the current state of a session based on its latest turn."""
+
+    EMPTY = "EMPTY"  # No plan.md exists
+    PENDING_PLAN = "PENDING_PLAN"  # plan.md exists, but no report.md
+    COMPLETE_TURN = "COMPLETE_TURN"  # report.md exists
 
 
 class ISessionManager(Protocol):
@@ -17,6 +26,13 @@ class ISessionManager(Protocol):
     def get_latest_turn(self, _session_name: str) -> str:
         """
         Identifies and returns the latest turn directory in the specified session.
+        """
+        ...
+
+    def get_session_state(self, session_name: str) -> tuple[SessionState, str]:
+        """
+        Determines the state of the session and returns the state and the path
+        to the latest turn.
         """
         ...
 
