@@ -93,7 +93,8 @@ def test_execute_action_is_dispatched_to_shell(container, orchestrator, mock_she
 
     # Assert
     assert report.run_summary.status == RunStatus.SUCCESS
-    original_execute.assert_called_once_with(command="echo hello")
+    # We expect the default timeout (30.0) from config/config.yaml
+    original_execute.assert_called_once_with(command="echo hello", timeout=30.0)
 
 
 def test_read_action_is_dispatched_to_filesystem(orchestrator, mock_fs):
