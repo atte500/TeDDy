@@ -159,7 +159,7 @@ All actions are located under the `## Action Plan` heading. Each action is defin
     - **Expected Outcome:** The server starts successfully and returns a PID.
     - **Allow Failure:** `false`
     - **Background:** `true`
-    - **Timeout:** 120
+    - **Timeout:** `120`
     ````shell
     npm start
     ````
@@ -265,22 +265,22 @@ The following is a complete, realistic example of a plan file from start to fini
 - **Agent:** Pathfinder
 
 ## Rationale
-````text
-### 1. Synthesis
+````
+1. Synthesis
 The user has requested a new "Finisher" agent role, but the exact responsibilities are undefined. This requires a discovery process before implementation.
 
-### 2. Justification
+2. Justification
 This plan adheres to the Pathfinder "Why -> What -> How" workflow. The problem is understood ("Why"), but the solution is not. Therefore, the next logical step is to explore the Solution Space ("What") by gathering external information to inform a proposal.
 
-### 3. Expected Outcome
+3. Expected Outcome
 The research is expected to yield patterns for release management roles, allowing me to draft a brief. The next plan will be a `Synthesis` plan. If the research yields no clear patterns, the next plan will be a `PROMPT` plan to propose a brainstorming session with the user.
 
-### 4. State Dashboard
-- **Overall Goal:** Define and get approval for a new "Finisher" agent.
-- **Phase A: Problem Space (Why):** Approved
-- **Phase B: Solution Space (What):** In Progress
-- **Phase C: Implementation Space (How):** Not Started
-- **Phase D: Handoff (Who):** Not Started
+4. State Dashboard
+- Overall Goal: Define and get approval for a new "Finisher" agent.
+- Phase A: Problem Space (Why): Approved
+- Phase B: Solution Space (What): In Progress
+- Phase C: Implementation Space (How): Not Started
+- Phase D: Handoff (Who): Not Started
 ````
 
 ## Action Plan
