@@ -61,20 +61,19 @@
           *   **Architectural Compliance Check:** Cross-reference your implementation against `docs/architecture/ARCHITECTURE.md`.
           *   **Verify & Push Logic Down:** Run the acceptance test to confirm it passes. Ensure the acceptance layer remains lean by testing only the high-level happy path and wiring. Move detailed validation to unit/integration tests.
           *   **Refactor:** Resolve all `[DEBT]` reminders logged for this scenario. Ensure all tests still pass.
+          *   **CRITICAL:** Do NOT yet start the next scenario until the current one is pushed and `git status` is clean.
         </action>
       </phase>
       <phase n="5" name="DOCUMENTATION">
         <action>
-          *   **Process Reminders:** Resolve all `[DOC]` reminders accumulated during this specific scenario.
-          *   **Update Architecture & Components:** Proactively `READ` and `EDIT` the `docs/architecture/**/*.md` design documents for *every* component you modified during this scenario to ensure the documented contracts (Pre/Post-conditions, DTOs) perfectly align with your implementation. Also `EDIT` `docs/architecture/ARCHITECTURE.md` if core responsibilities changed.
-          *   **Update Slice Document:** `EDIT` the source Vertical Slice document to explicitly append **Implementation Notes** detailing the work done for this scenario and mark the scenario as complete in the file. If any `[OBS]` tags were logged (e.g., structural debt, undocumented patterns), append them to an `### Architectural Feedback` section for the Architect to review. *Note: Do NOT mark the scenario as complete (`[✓]`) in your internal State Dashboard yet.*
+          1.   **Update Slice Document:** `EDIT` the source Vertical Slice document to explicitly append **Implementation Notes** detailing the work done for this scenario and mark the scenario as complete in the file. If any `[OBS]` tags were logged (e.g., structural debt, undocumented patterns), append them to an `### Architectural Feedback` section for the Architect to review.
+          2.   **Update Architecture & Components:** Proactively `READ` and `EDIT` the `docs/architecture/**/*.md` design documents for *every* component you modified during this scenario to ensure the documented contracts (Pre/Post-conditions, DTOs) perfectly align with your implementation. Also `EDIT` `docs/architecture/ARCHITECTURE.md` if core responsibilities changed.
+          3.   **Process Reminders:** Resolve all `[DOC]` reminders accumulated during this specific scenario.
         </action>
       </phase>
       <phase n="6" name="COMMIT">
         <action>
           *   Execute the **Version Control Protocol** (Turn 1: Stage & Review, Turn 2: Commit & Push) to commit the completed code AND its corresponding documentation updates as a single, atomic unit. Includes running the full test suite.
-          *   **CRITICAL:** Do NOT start the next scenario until the current one is pushed and `git status` is clean.
-          *   **Update Dashboard:** Only *after* a successful push may you mark the current scenario as complete (`[✓]`) in your internal State Dashboard's `Scenarios` list.
           *   Once pushed and marked complete, return to Phase 1 (ORIENTATION) for the next scenario. Repeat until all scenarios are synced.
         </action>
       </phase>
