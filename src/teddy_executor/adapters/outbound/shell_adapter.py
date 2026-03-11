@@ -9,6 +9,8 @@ from teddy_executor.core.ports.outbound.shell_executor import IShellExecutor
 
 
 class ShellAdapter(IShellExecutor):
+    TIMEOUT_EXIT_CODE = 124
+
     def _validate_cwd(self, cwd: Optional[str]) -> str:
         """Validates and resolves the working directory."""
         project_root = os.path.realpath(os.getcwd())
@@ -90,6 +92,27 @@ class ShellAdapter(IShellExecutor):
                 "stdout": result.stdout,
                 "stderr": result.stderr,
                 "return_code": result.returncode,
+            }
+        except subprocess.TimeoutExpired as e:
+            self._log_debug_error(e)
+            # Decode partial output. While often bytes even with text=True,
+            # we handle both for robustness across Python versions.
+            stdout = (
+                e.stdout.decode("utf-8", errors="replace")
+                if isinstance(e.stdout, bytes)
+                else (e.stdout or "")
+            )
+            stderr = (
+                e.stderr.decode("utf-8", errors="replace")
+                if isinstance(e.stderr, bytes)
+                else (e.stderr or "")
+            )
+
+            warning = f"[ERROR: Command timed out after {e.timeout} seconds]"
+            return {
+                "stdout": f"{warning}\n{stdout}".strip() if stdout else warning,
+                "stderr": stderr,
+                "return_code": self.TIMEOUT_EXIT_CODE,
             }
         except (FileNotFoundError, OSError) as e:
             self._log_debug_error(e)

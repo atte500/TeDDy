@@ -22,15 +22,21 @@ When the `TeDDy` CLI initializes, the `YamlConfigAdapter` should load a default 
 - Updated `IShellExecutor` and `ShellAdapter` to accept an optional `timeout` parameter.
 - Updated `ActionFactory` to inject `IConfigService` and automatically provide the global default timeout to shell actions if not explicitly overridden.
 
-### Scenario 2: Command Timeout with Partial Output
+### Scenario 2: Command Timeout with Partial Output [✓]
 When a shell command exceeds the configured timeout threshold, the process must be killed, and the partial output generated before the termination must be returned to the AI.
 
 #### Deliverables
-- [ ] Update `ShellAdapter`'s `subprocess.run` call to include the `timeout` parameter.
-- [ ] Catch `subprocess.TimeoutExpired`.
-- [ ] Extract `e.stdout` and `e.stderr`. **Critical:** Decode these bytes to strings using `.decode('utf-8', errors='replace')`, as the exception properties contain raw bytes even if `text=True` was passed to `run()`.
-- [ ] Return a `ShellOutput` object with a non-zero exit code (e.g., 124, the standard Linux timeout exit code).
-- [ ] Prepend or append a clear warning to the output text indicating: `[ERROR: Command timed out after X seconds]`.
+- [✓] Update `ShellAdapter`'s `subprocess.run` call to include the `timeout` parameter.
+- [✓] Catch `subprocess.TimeoutExpired`.
+- [✓] Extract `e.stdout` and `e.stderr`. **Critical:** Decode these bytes to strings using `.decode('utf-8', errors='replace')`, as the exception properties contain raw bytes even if `text=True` was passed to `run()`.
+- [✓] Return a `ShellOutput` object with a non-zero exit code (e.g., 124, the standard Linux timeout exit code).
+- [✓] Prepend or append a clear warning to the output text indicating: `[ERROR: Command timed out after X seconds]`.
+
+#### Implementation Notes
+- Updated `ShellAdapter._run_subprocess` to catch `subprocess.TimeoutExpired`.
+- Implemented robust decoding of partial `stdout` and `stderr` from the exception, handling both `bytes` and `str` types (for cross-Python version stability).
+- Mandated return of exit code `124` (standard Linux `timeout` code) when a process is killed due to timeout.
+- Partial output is preserved and prepended with a clear warning message in the `stdout` field of the `ShellOutput`.
 
 ### Scenario 3: Intentional Background Execution
 When the AI specifies that a command should run in the background, the executor should start the process and immediately return success without waiting for it to complete.
