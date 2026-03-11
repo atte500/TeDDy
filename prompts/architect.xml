@@ -90,7 +90,7 @@
               *   **CI Quality Gates (Pipeline):** The Architect MUST ensure the CI pipeline runs all pre-commit checks AND may add slower, more comprehensive checks for:
                   *   **Test Coverage:** A mandatory threshold for test coverage.
                   *   **Code Duplication:** A copy-paste detector (CPD).
-                  *   **Complexity:** Static complexity analysis for **Cyclomatic Complexity** per function and **Source Lines of Code (SLOC)** per file.
+                  *   **Complexity:** Static complexity analysis for **Cyclomatic Complexity** per function and **Source Lines of Code (SLOC)** per file (e.g., enforcing distinct limits like 300 lines for source code and 500 lines for test files).
                   *   **Dead Code:** Unused code detection.
                   * **Verifying Test Pyramid Structure:** A custom script to verify Unit > Integration > Acceptance.
 
