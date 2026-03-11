@@ -229,8 +229,6 @@ class ActionExecutor:
 
         if isinstance(details, dict):
             new_details.update(details)
-        elif details is not None:
-            new_details["message"] = details
 
         return ActionLog(
             status=action_log.status,
