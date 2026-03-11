@@ -89,3 +89,11 @@ addopts = [
 filterwarnings = [
     "ignore:No data was collected:coverage.exceptions.CoverageWarning",
 ]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if sys.platform != .win32.:",
+    "if sys.platform == .win32.:",
+    "if os.getenv(.TEDDY_DEBUG.):",
+]

@@ -44,7 +44,7 @@ class ShellAdapter(IShellExecutor):
     def _log_debug_pre_execution(
         self, command: str, command_args: str | List[str], cwd: str, use_shell: bool
     ):
-        if os.getenv("TEDDY_DEBUG"):
+        if os.getenv("TEDDY_DEBUG"):  # pragma: no cover
             print("--- ShellAdapter Debug ---", file=sys.stderr)
             print(f"Platform: {sys.platform}", file=sys.stderr)
             print(f"Original command: {command!r}", file=sys.stderr)
@@ -54,7 +54,7 @@ class ShellAdapter(IShellExecutor):
             print("--------------------------", file=sys.stderr)
 
     def _log_debug_result(self, result: subprocess.CompletedProcess):
-        if os.getenv("TEDDY_DEBUG"):
+        if os.getenv("TEDDY_DEBUG"):  # pragma: no cover
             print("--- ShellAdapter Result ---", file=sys.stderr)
             print(f"Return Code: {result.returncode}", file=sys.stderr)
             print(f"STDOUT:\n{result.stdout}", file=sys.stderr)
@@ -62,7 +62,7 @@ class ShellAdapter(IShellExecutor):
             print("---------------------------", file=sys.stderr)
 
     def _log_debug_error(self, error: Exception):
-        if os.getenv("TEDDY_DEBUG"):
+        if os.getenv("TEDDY_DEBUG"):  # pragma: no cover
             print("--- ShellAdapter Error ---", file=sys.stderr)
             print(f"Error: {error}", file=sys.stderr)
             print("--------------------------", file=sys.stderr)

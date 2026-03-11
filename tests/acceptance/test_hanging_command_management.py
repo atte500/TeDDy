@@ -20,7 +20,9 @@ def test_global_timeout_enforcement(monkeypatch, tmp_path):
     builder.add_action(
         "EXECUTE",
         params={"Description": "Run a command that hangs."},
-        content_blocks={"COMMAND": ("shell", "sleep 0.5")},
+        content_blocks={
+            "COMMAND": ("shell", 'python -c "import time; time.sleep(0.5)"')
+        },
     )
     plan_content = builder.build()
 
@@ -54,7 +56,7 @@ def test_timeout_captures_partial_output(monkeypatch, tmp_path):
     builder.add_action(
         "EXECUTE",
         params={"Description": "Run a command that prints then hangs."},
-        content_blocks={"COMMAND": ("shell", f'python3 -c "{script}"')},
+        content_blocks={"COMMAND": ("shell", f'python -c "{script}"')},
     )
     plan_content = builder.build()
 
@@ -85,7 +87,7 @@ def test_intentional_background_execution(monkeypatch, tmp_path):
             "Description": "Start a background process.",
             "Background": "true",
         },
-        content_blocks={"COMMAND": ("shell", "sleep 5")},
+        content_blocks={"COMMAND": ("shell", 'python -c "import time; time.sleep(5)"')},
     )
     plan_content = builder.build()
 
@@ -127,7 +129,12 @@ def test_explicit_timeout_override(monkeypatch, tmp_path):
             "Description": "Command that needs more than default time.",
             "Timeout": "5",
         },
-        content_blocks={"COMMAND": ("shell", "sleep 1.0 && echo 'Success'")},
+        content_blocks={
+            "COMMAND": (
+                "shell",
+                "python -c \"import time; time.sleep(1.0); print('Success')\"",
+            )
+        },
     )
     plan_content = builder.build()
 
