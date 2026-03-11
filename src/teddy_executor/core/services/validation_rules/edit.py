@@ -170,7 +170,8 @@ def _validate_single_edit(
                         f"The `FIND` block is ambiguous. Found {matches} "
                         f"matches in: {file_path}\n"
                         f"**FIND Block:**\n"
-                        f"{fence}\n{find_block}\n{fence}"
+                        f"{fence}\n{find_block}\n{fence}\n"
+                        "**Hint:** Consider refactoring the target code or providing a larger FIND block to uniquely identify the section."
                     ),
                     file_path=str(file_path),
                 )

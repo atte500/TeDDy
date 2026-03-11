@@ -3,10 +3,15 @@ from abc import ABC, abstractmethod
 from teddy_executor.core.domain.models import Plan
 
 
+from typing import Any, Optional
+
+
 class InvalidPlanError(Exception):
     """Raised when the plan is malformed."""
 
-    pass
+    def __init__(self, message: str, offending_node: Optional[Any] = None):
+        super().__init__(message)
+        self.offending_node = offending_node
 
 
 class IPlanParser(ABC):

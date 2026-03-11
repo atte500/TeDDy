@@ -81,11 +81,23 @@ class MarkdownPlanParser(IPlanParser):
             if "--- Expected Document Structure ---" in str(e):
                 raise e
 
+            offending_idx = -1
+            if e.offending_node:
+                try:
+                    offending_idx = list(doc.children or []).index(e.offending_node)
+                except ValueError:
+                    pass
+
             ast_summary = []
             for i, child in enumerate(doc.children or []):
+                n_name = self._format_node_name(child)
                 content = get_child_text(child).strip()
-                first_line = content.splitlines()[0][:50] if content else ""
-                ast_summary.append(f"[{i:03d}] {type(child).__name__}: {first_line}")
+                first_line = content.splitlines()[0][:30].strip() if content else ""
+                if first_line:
+                    n_name += f': "{first_line}..."'
+
+                indicator = MISMATCH_INDICATOR if i == offending_idx else ""
+                ast_summary.append(f"[{i:03d}] {n_name}{indicator}")
 
             debug_info = (
                 "\n\n--- AST Summary (Trace of top-level nodes) ---\n"
@@ -107,9 +119,7 @@ class MarkdownPlanParser(IPlanParser):
     def _format_structural_mismatch_msg(
         self, doc: Document, expected: str, mismatch_idx: int, actual_node: Any
     ) -> str:
-        actual_name = type(actual_node).__name__ if actual_node else "EOF"
-        if isinstance(actual_node, Heading):
-            actual_name += f" (Level {actual_node.level})"
+        actual_name = self._format_node_name(actual_node)
 
         def get_preview(n):
             content = get_child_text(n).strip() if n else ""
@@ -139,18 +149,9 @@ class MarkdownPlanParser(IPlanParser):
             except ValueError:
                 pass
 
-        # Print all available children up to mismatch or 20
-        end_idx = (
-            min(len(children), mismatch_idx + 1)
-            if mismatch_idx != -1
-            else min(len(children), 20)
-        )
-
-        for i in range(end_idx):
+        for i, node in enumerate(children):
             node = children[i]
-            n_name = type(node).__name__
-            if isinstance(node, Heading):
-                n_name += f" (Level {node.level})"
+            n_name = self._format_node_name(node)
 
             c_prev = get_preview(node)
             if c_prev:
@@ -277,4 +278,14 @@ class MarkdownPlanParser(IPlanParser):
 
         return actions
 
-    # Action-specific parsing logic moved to action_parser_strategies.py
+    def _format_node_name(self, node: Any) -> str:
+        """Formats the type name of a node with relevant metadata (Scenario C)."""
+        if node is None:
+            return "EOF"
+        name = type(node).__name__
+        if isinstance(node, Heading):
+            name += f" (Level {node.level})"
+        elif isinstance(node, CodeFence):
+            backtick_count = len(getattr(node, "delimiter", "```"))
+            name += f" ({backtick_count} backticks)"
+        return name

@@ -11,7 +11,7 @@ The `MarkdownPlanParser` service is responsible for parsing a plan written in th
 - **Structural Validation:** Enforces a strict, top-level document structure (H1 Title -> Metadata List -> Rationale -> Action Plan) using a single-pass traversal strategy. The content of the **Rationale** section is extracted and stored in the `Plan` object.
 - **Action Dispatching:** Iterates through the `## Action Plan` section and dispatches parsing control to specialized strategy functions based on the detected action type.
 - **Path Normalization:** Performs centralized normalization of project-relative paths, ensuring cross-platform compatibility.
-- **Error Reporting:** Generates high-fidelity error reports, including AST summaries and structural diffs, to provide actionable feedback when a plan deviates from the specification.
+- **Error Reporting:** Generates high-fidelity error reports, including a full AST summary of the document's top-level nodes. This trace identifies node types and highlights the specific `offending_node` (mismatch) to provide precise, actionable feedback.
 - **Pre-processing:** Employs a `FencePreProcessor` to normalize code fence lengths and ensure correct AST generation for nested code blocks.
 
 ## 3. Supported Actions
@@ -42,3 +42,4 @@ To maintain focus and adhere to file complexity limits, the parser delegates to 
 -   **Strict Parser Validation:** The `MarkdownPlanParser` must enforce a strict structure within a plan's `## Action Plan` section.
     -   **Rule:** Any content found between valid action blocks (e.g., a `ThematicBreak` (`---`) or stray paragraphs) must be treated as a validation error. The parser should not attempt to ignore or "auto-correct" malformed plan structures.
     -   **Rationale:** This decision was the result of a pivot from an initial "robustness-first" approach. A strict, fail-fast parser is simpler, more predictable, and forces the upstream AI agent to produce well-formed plans, which is a core principle of the TeDDy workflow.
+-   **Code Block Visibility in Diagnostics:** To facilitate debugging of nesting errors, `CodeFence` nodes in the AST trace include the number of backticks used in their delimiters (e.g., `CodeFence (5 backticks)`).

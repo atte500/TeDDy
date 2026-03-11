@@ -1,6 +1,6 @@
 # Slice: Validation & Diagnostics Polish
 
-- **Status:** Planned
+- **Status:** Completed
 - **Milestone:** N/A (Fast-Track)
 - **Specs:** N/A
 
@@ -18,9 +18,9 @@ Improve the developer experience (DX) and reliability of plan execution by provi
 **And** the AST Summary trace should correctly append the `<-- MISMATCH` indicator to the exact AST node that broke the expected sequence (e.g., the paragraph that appeared instead of the `REPLACE` heading).
 
 #### Deliverables
-- [ ] Remove `MISMATCH_INDICATOR` from the hardcoded error strings in `action_parser_strategies.py`.
-- [ ] Ensure the parsing error correctly passes the `actual_node` to the structural mismatch formatter so the indicator appears on the correct node in the trace.
-- [ ] Acceptance test verifying the exact format of the error message and AST trace for this scenario.
+- [✓] Remove `MISMATCH_INDICATOR` from the hardcoded error strings in `action_parser_strategies.py`.
+- [✓] Ensure the parsing error correctly passes the `actual_node` to the structural mismatch formatter so the indicator appears on the correct node in the trace.
+- [✓] Acceptance test verifying the exact format of the error message and AST trace for this scenario.
 
 ### Scenario B: Helpful Hint for Multiple FIND Matches
 
@@ -29,8 +29,8 @@ Improve the developer experience (DX) and reliability of plan execution by provi
 **Then** the validation error message should not only indicate that multiple matches were found, but also include a clear hint: "Hint: Consider refactoring the target code or providing a larger FIND block to uniquely identify the section."
 
 #### Deliverables
-- [ ] Update the validation logic (likely in `validation_rules/edit.py` or the `edit_simulator.py` exception handling) to append the hint to the multiple matches error message.
-- [ ] Acceptance test verifying the presence of the hint in the validation output.
+- [✓] Update the validation logic (likely in `validation_rules/edit.py` or the `edit_simulator.py` exception handling) to append the hint to the multiple matches error message.
+- [✓] Acceptance test verifying the presence of the hint in the validation output.
 
 ### Scenario C: Backtick Count in AST Summary for Code Fences
 
@@ -39,9 +39,16 @@ Improve the developer experience (DX) and reliability of plan execution by provi
 **Then** the entry in the trace for that code block should explicitly include the number of backticks used in its fence (e.g., `[NNN] CodeFence (5 backticks)`).
 
 #### Deliverables
-- [ ] Modify the node formatting logic in `markdown_plan_parser.py` (or `parser_infrastructure.py`) to inspect `FencedCode` nodes.
-- [ ] Extract the length of the node's `marker` property (which represents the backtick sequence) and append it to the formatted node name.
-- [ ] Acceptance test verifying the correct format of the `CodeFence` entry in the AST trace.
+- [✓] Modify the node formatting logic in `markdown_plan_parser.py` (or `parser_infrastructure.py`) to inspect `FencedCode` nodes.
+- [✓] Extract the length of the node's `delimiter` property (which represents the backtick sequence) and append it to the formatted node name.
+- [✓] Acceptance test verifying the correct format of the `CodeFence` entry in the AST trace.
+
+## 4. Implementation Notes
+
+- **Unified AST Trace:** Both structural and logical validation errors now use a unified formatting logic that provides a full AST trace of the document's top-level nodes.
+- **Improved Error Context:** The `InvalidPlanError` now supports an optional `offending_node` parameter, allowing the trace to highlight exactly which node caused the failure.
+- **Code Block Visibility:** To help debug nested code block issues, the AST trace now explicitly displays the number of backticks used in `CodeFence` delimiters.
+- **Ambiguity Hinting:** Edit validation provides actionable advice when a `FIND` block matches multiple locations in a file.
 
 ## 3. Architectural Changes
 

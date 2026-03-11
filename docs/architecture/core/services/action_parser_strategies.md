@@ -22,4 +22,4 @@ Each function follows a consistent signature, taking a `_PeekableStream` and ret
 
 ## 3. Design Principles
 - **Extensibility:** Adding a new action type primarily involves adding a new strategy function to this module and updating the `MarkdownPlanParser`'s dispatch map.
-- **Fail-Fast Validation:** Strategies raise `InvalidPlanError` immediately upon encountering malformed action-specific structures, providing detailed feedback to the AI agent.
+- **Fail-Fast Validation:** Strategies raise `InvalidPlanError` immediately upon encountering malformed action-specific structures. These errors now include the `offending_node` reference, ensuring the AST trace accurately highlights the location of the structural mismatch.

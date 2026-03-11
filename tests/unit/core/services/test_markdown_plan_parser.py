@@ -1371,11 +1371,19 @@ Test rationale
 ````text
 find me
 ````
+
+This paragraph is NOT a REPLACE heading.
 """
     with pytest.raises(InvalidPlanError) as excinfo:
         parser.parse(plan_content)
 
-    assert "Missing REPLACE block after FIND block <-- MISMATCH" in str(excinfo.value)
+    error_msg = str(excinfo.value)
+    assert "Missing REPLACE block after FIND block" in error_msg
+    assert (
+        "Missing REPLACE block after FIND block <-- MISMATCH"
+        not in error_msg.splitlines()[0]
+    )
+    assert 'Paragraph: "This paragraph is NOT a REPLAC..." <-- MISMATCH' in error_msg
 
 
 def test_parser_raises_error_with_indicator_on_structural_mismatch(parser: IPlanParser):
