@@ -103,3 +103,39 @@ def test_intentional_background_execution(monkeypatch, tmp_path):
     assert result.exit_code == 0
     # The output should contain the PID notification
     assert "SUCCESS: Background process started with PID" in result.stdout
+
+
+def test_explicit_timeout_override(monkeypatch, tmp_path):
+    """
+    Scenario 4: Explicit Timeout Override
+    Verifies that a specific 'Timeout' in the action metadata overrides the global default.
+    """
+    # 1. Setup a local config with a very short timeout (0.5s)
+    teddy_dir = tmp_path / ".teddy"
+    teddy_dir.mkdir()
+    config_file = teddy_dir / "config.yaml"
+    config_file.write_text(
+        "execution:\n  default_timeout_seconds: 0.5\n", encoding="utf-8"
+    )
+
+    # 2. Define a plan with an explicit timeout override (5s)
+    # The command takes 1s, which is > 0.5s but < 5s.
+    builder = MarkdownPlanBuilder("Timeout Override Plan")
+    builder.add_action(
+        "EXECUTE",
+        params={
+            "Description": "Command that needs more than default time.",
+            "Timeout": "5",
+        },
+        content_blocks={"COMMAND": ("shell", "sleep 1.0 && echo 'Success'")},
+    )
+    plan_content = builder.build()
+
+    # 3. Execute the plan.
+    result = run_execute_with_plan_content(monkeypatch, plan_content, tmp_path)
+
+    # 4. Assertions
+    # If the override works, it should succeed.
+    # If it fails (uses 0.5s default), it will timeout.
+    assert "Success" in result.stdout
+    assert result.exit_code == 0

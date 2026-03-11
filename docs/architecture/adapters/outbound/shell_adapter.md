@@ -24,6 +24,8 @@ The `execute` method runs the command string provided by the core. To ensure con
 
 1.  **CWD Validation:** It first validates that the `cwd` parameter resolves to a path within the project directory, preventing any directory traversal exploits.
 2.  **Platform-Specific Execution:** It determines whether to use `shell=True` based on the platform to ensure consistent behavior. On POSIX systems, `shell=True` is always used to support features like pipes and globbing. On Windows, it uses a "Smart Router" strategy, running commands directly if they are executable files and using the shell for built-ins.
-3.  **Subprocess Execution:** The adapter uses Python's `subprocess.run` to execute the command, capturing `stdout`, `stderr`, and the `return_code`.
-4.  **Result Mapping:** It maps the raw results to a `ShellOutput` domain object.
-5.  **Debug Mode:** If the `TEDDY_DEBUG` environment variable is set, detailed pre-execution and post-execution logs are printed to `stderr` to aid in diagnostics.
+3.  **Subprocess Execution (Synchronous):** For standard execution, the adapter uses Python's `subprocess.run` with a `timeout` parameter.
+    - **Timeout Handling:** If the command exceeds the timeout, the adapter catches `subprocess.TimeoutExpired`, kills the process, and captures any partial `stdout`/`stderr` generated before termination. These partial outputs are decoded (UTF-8 with replacement) and returned with a standard exit code of `124`.
+4.  **Background Execution (Asynchronous):** If the `background` flag is set, the adapter uses `subprocess.Popen` with `start_new_session=True` to detach the process. It immediately returns a success response containing the new Process ID (PID).
+5.  **Result Mapping:** It maps the raw results (or partial results from a timeout) to a `ShellOutput` domain object.
+6.  **Debug Mode:** If the `TEDDY_DEBUG` environment variable is set, detailed pre-execution and post-execution logs are printed to `stderr` to aid in diagnostics.

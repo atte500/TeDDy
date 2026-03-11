@@ -182,6 +182,7 @@ def parse_execute_action(stream: _PeekableStream) -> ActionData:
             "cwd": "cwd",
             "Allow Failure": "allow_failure",
             "Background": "background",
+            "Timeout": "timeout",
         },
     )
 
@@ -190,6 +191,13 @@ def parse_execute_action(stream: _PeekableStream) -> ActionData:
 
     if "background" in params:
         params["background"] = params["background"].lower() == "true"
+
+    if "timeout" in params and params["timeout"]:
+        try:
+            params["timeout"] = int(params["timeout"])
+        except ValueError:
+            # Leave as string, ActionFactory or validation will handle it
+            pass
 
     env_from_meta = parse_env_from_metadata(metadata_list)
     if env_from_meta:

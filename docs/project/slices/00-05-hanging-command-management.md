@@ -1,6 +1,6 @@
 # Slice: Hanging Command Management
 
-- **Status:** Planned
+- **Status:** Completed
 - **Milestone:** N/A (Fast-Track)
 - **Specs:** N/A
 
@@ -54,14 +54,19 @@ When the AI specifies that a command should run in the background, the executor 
 - Updated `ShellAdapter` to use `subprocess.Popen` with `start_new_session=True` for background execution, effectively detaching the process from the CLI's lifecycle.
 - Implemented success reporting that includes the PID of the started background process.
 
-### Scenario 4: Explicit Timeout Override
+### Scenario 4: Explicit Timeout Override [✓]
 When the AI knows a command will legitimately take longer than the global default (e.g., a large test suite) but still needs to capture its output synchronously, it can explicitly override the timeout for that specific action.
 
 #### Deliverables
-- [ ] Update the `ExecuteAction` domain model (`src/teddy_executor/core/domain/models/plan.py`) to include a `timeout: Optional[int] = None` field.
-- [ ] Update `MarkdownPlanParser` to extract the `- **Timeout:** [integer]` parameter from the `EXECUTE` block metadata.
-- [ ] Update `ExecutionOrchestrator` to pass this specific timeout (if provided) to the `ShellAdapter`, falling back to the global configuration otherwise.
-- [ ] Update `docs/project/specs/plan-format.md` to document the new `Timeout` parameter.
+- [✓] Update the `ExecuteAction` domain model (`src/teddy_executor/core/domain/models/plan.py`) to include a `timeout: Optional[int] = None` field.
+- [✓] Update `MarkdownPlanParser` to extract the `- **Timeout:** [integer]` parameter from the `EXECUTE` block metadata.
+- [✓] Update `ExecutionOrchestrator` to pass this specific timeout (if provided) to the `ShellAdapter`, falling back to the global configuration otherwise.
+- [✓] Update `docs/project/specs/plan-format.md` to document the new `Timeout` parameter.
+
+#### Implementation Notes
+- Updated `MarkdownPlanParser` to extract and integerize the `Timeout` metadata parameter for `EXECUTE` actions.
+- Verified that `ActionFactory` correctly propagates the `timeout` parameter to the `IShellExecutor` (ShellAdapter), with the global default used as a fallback if no specific timeout is provided.
+- Added acceptance and unit tests to verify the end-to-end timeout override behavior.
 
 ## 3. Architectural Changes
 - **Configuration:** `yaml_config_adapter.py`

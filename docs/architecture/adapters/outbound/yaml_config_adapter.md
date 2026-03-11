@@ -14,6 +14,7 @@ The `YamlConfigAdapter` is responsible for reading application configuration fro
 
 -   The adapter will look for the configuration file at a fixed path: `.teddy/config.yaml` relative to the project root.
 -   It will parse the YAML file upon first access and cache the contents in memory to prevent redundant file I/O operations for the lifetime of the application instance.
+-   **Nested Key Support:** The adapter supports dot-notation for retrieving nested configuration keys (e.g., `execution.default_timeout_seconds`).
 -   If the configuration file does not exist, it will behave as if it were an empty configuration, returning default values or `None` for all requests. It will not raise an error.
 -   It will use the `PyYAML` library for parsing.
 

@@ -26,4 +26,4 @@ class ShellOutput(TypedDict):
 ### Fields
 - **`stdout` (str):** The standard output captured from the command.
 - **`stderr` (str):** The standard error captured from the command.
-- **`return_code` (int):** The integer exit code of the command. A value of `0` typically indicates success.
+- **`return_code` (int):** The integer exit code of the command. A value of `0` typically indicates success. In the event of an execution timeout, the system consistently returns a code of `124`.

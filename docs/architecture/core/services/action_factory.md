@@ -21,7 +21,9 @@ The factory uses the `punq` container to resolve concrete adapters for Outbound 
 1.  It resolves the adapter instance from the container.
 2.  It identifies the specific adapter method required for the action (e.g., `create_file` for a `CREATE` action).
 3.  It wraps this method in a closure that implements the `IAction` protocol's `execute(**kwargs)` method.
-4.  This closure handles parameter normalization (e.g., mapping `resource` or `path` to the adapter's expected argument names).
+4.  This closure handles parameter normalization (e.g., mapping `resource` or `path` to the adapter's expected argument names) and parameter validation.
+5.  **Automated Timeout Injection:** For the `EXECUTE` action, the factory injects the `IConfigService`. If the action parameters do not specify a `timeout`, the factory automatically injects the global default value from `execution.default_timeout_seconds`.
+6.  **Parameter Propagation:** For `EXECUTE`, the factory explicitly propagates and validates the `command`, `cwd`, `env`, `background`, and `timeout` parameters.
 
 ### 3.2. Specialized Routing for `READ`
 The factory handles the polymorphic nature of the `READ` action. It inspects the target resource:

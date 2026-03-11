@@ -246,6 +246,75 @@ ls
     assert action.params.get("background") is False
 
 
+def test_parse_execute_action_with_timeout(parser: IPlanParser):
+    """
+    Given an EXECUTE action with Timeout metadata,
+    When the plan is parsed,
+    Then the timeout parameter is correctly extracted as an integer.
+    """
+    # Arrange
+    expected_timeout = 120
+    plan_content = f"""
+# Execute with Timeout
+- Status: Green 🟢
+- Agent: Developer
+
+## Rationale
+````text
+Rationale.
+````
+
+## Action Plan
+
+### `EXECUTE`
+- Description: Slow command.
+- Timeout: {expected_timeout}
+````shell
+sleep 10
+````
+"""
+    # Act
+    result_plan = parser.parse(plan_content)
+
+    # Assert
+    action = result_plan.actions[0]
+    assert action.params.get("timeout") == expected_timeout
+
+
+def test_parse_execute_action_with_invalid_timeout(parser: IPlanParser):
+    """
+    Given an EXECUTE action with non-integer Timeout metadata,
+    When the plan is parsed,
+    Then the timeout parameter is left as a string (to be caught by validation).
+    """
+    # Arrange
+    plan_content = """
+# Execute with Invalid Timeout
+- Status: Green 🟢
+- Agent: Developer
+
+## Rationale
+````text
+Rationale.
+````
+
+## Action Plan
+
+### `EXECUTE`
+- Description: Invalid timeout.
+- Timeout: abc
+````shell
+ls
+````
+"""
+    # Act
+    result_plan = parser.parse(plan_content)
+
+    # Assert
+    action = result_plan.actions[0]
+    assert action.params.get("timeout") == "abc"
+
+
 def test_parse_execute_action(parser: IPlanParser):
     """
     Given a valid Markdown plan with an EXECUTE action,
