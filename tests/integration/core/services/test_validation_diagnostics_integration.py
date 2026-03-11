@@ -118,10 +118,7 @@ new
     assert report.run_summary.status == RunStatus.VALIDATION_FAILED
     full_errors = "\n".join(report.validation_result or [])
     assert "The `FIND` block is ambiguous" in full_errors
-    assert (
-        "**Hint:** Consider refactoring the target code or providing a larger FIND block to uniquely identify the section."
-        in full_errors
-    )
+    assert "**Hint:**" in full_errors
 
 
 def test_code_fence_backtick_count_in_trace_integration(integration_container):

@@ -171,7 +171,7 @@ def _validate_single_edit(
                         f"matches in: {file_path}\n"
                         f"**FIND Block:**\n"
                         f"{fence}\n{find_block}\n{fence}\n"
-                        "**Hint:** Consider refactoring the target code or providing a larger FIND block to uniquely identify the section."
+                        "**Hint:** Please provide a larger FIND block to uniquely identify the section and consider refactoring the target code to avoid duplication."
                     ),
                     file_path=str(file_path),
                 )
