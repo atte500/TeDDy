@@ -72,6 +72,8 @@ These checks validate the *content* of an action against the current state of th
 #### `EXECUTE`
 -   **[✓] Must contain a core command:** The command code block must not be empty.
 -   **[✓] Allow Failure is optional:** Defaults to `false` if omitted. If present, the value MUST be `true` or `false`.
+-   **[✓] Background is optional:** Defaults to `false` if omitted. If present, the value MUST be `true` or `false`.
+-   **[✓] Timeout is optional:** If present, the value MUST be an integer representing seconds.
 -   **[✓] Supports Chaining & Directives:** Validation no longer blocks shell operators (&&, ||, ;, |) or directives (cd, export) in the command block.
 
 #### `PRUNE`

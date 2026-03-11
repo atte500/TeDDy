@@ -155,11 +155,13 @@ All actions are located under the `## Action Plan` heading. Each action is defin
 -   **Format:**
     `````markdown
     ### `EXECUTE`
-    - **Description:** Verify the new file was created.
-    - **Expected Outcome:** The output will list `plan-format.md`.
-    - **Allow Failure:** `true`
+    - **Description:** Start the dev server in the background.
+    - **Expected Outcome:** The server starts successfully and returns a PID.
+    - **Allow Failure:** `false`
+    - **Background:** `true`
+    - **Timeout:** 120
     ````shell
-    mkdir -p temp && cd temp && touch test.txt && ls
+    npm start
     ````
     `````
 -   **Parsing Rules & Behavior:**
@@ -167,7 +169,9 @@ All actions are located under the `## Action Plan` heading. Each action is defin
     2.  **Directives Allowed:** Environment preparation commands like `cd` or `export` are allowed directly in the command block.
     3.  **Failure Control:** The `Allow Failure` parameter (boolean `true`/`false`) determines if execution continues after a non-zero exit code. It defaults to `false`. The value MUST be enclosed in backticks.
     4.  **Stateless Execution:** Each `EXECUTE` action runs in an isolated environment. Directory or environment changes do not persist between separate `EXECUTE` blocks.
-    5.  **Parameter Extraction:** The parser extracts `Description`, `Expected Outcome`, and `Allow Failure` (optional) from the metadata list.
+    5.  **Background Execution:** The optional `Background` parameter (boolean `true`/`false`) allows a command to run asynchronously. The CLI will immediately return success with the new Process ID (PID) so the AI can manage the lifecycle in later turns. The value MUST be enclosed in backticks.
+    6.  **Timeout Override:** The optional `Timeout` parameter (integer) overrides the global default execution timeout (in seconds) for commands that are intentionally slow but require synchronous output capture.
+    7.  **Parameter Extraction:** The parser extracts `Description`, `Expected Outcome`, `Allow Failure` (optional), `Background` (optional), and `Timeout` (optional) from the metadata list.
 
 ### 5.5. `RESEARCH`
 
