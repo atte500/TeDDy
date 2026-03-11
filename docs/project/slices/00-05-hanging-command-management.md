@@ -9,13 +9,18 @@ To prevent the TeDDy CLI from hanging indefinitely when an AI agent accidentally
 
 ## 2. Acceptance Criteria (Scenarios)
 
-### Scenario 1: Configurable Global Timeout
+### Scenario 1: Configurable Global Timeout [✓]
 When the `TeDDy` CLI initializes, the `YamlConfigAdapter` should load a default execution timeout from the configuration file.
 
 #### Deliverables
-- [ ] Add `execution.default_timeout_seconds` to `.teddy/config.yaml` (default to 30 seconds).
-- [ ] Update `IConfigService` and `YamlConfigAdapter` to expose this property.
-- [ ] Update `ExecutionOrchestrator` or `ShellAdapter` to retrieve and use this timeout during `EXECUTE` actions.
+- [✓] Add `execution.default_timeout_seconds` to `.teddy/config.yaml` (default to 30 seconds).
+- [✓] Update `IConfigService` and `YamlConfigAdapter` to expose this property.
+- [✓] Update `ExecutionOrchestrator` or `ShellAdapter` to retrieve and use this timeout during `EXECUTE` actions.
+
+#### Implementation Notes
+- Enhanced `YamlConfigAdapter` to support dot-notation for nested key lookups (e.g., `execution.default_timeout_seconds`).
+- Updated `IShellExecutor` and `ShellAdapter` to accept an optional `timeout` parameter.
+- Updated `ActionFactory` to inject `IConfigService` and automatically provide the global default timeout to shell actions if not explicitly overridden.
 
 ### Scenario 2: Command Timeout with Partial Output
 When a shell command exceeds the configured timeout threshold, the process must be killed, and the partial output generated before the termination must be returned to the AI.

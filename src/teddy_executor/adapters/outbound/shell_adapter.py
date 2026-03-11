@@ -71,6 +71,7 @@ class ShellAdapter(IShellExecutor):
         use_shell: bool,
         cwd: str,
         env: Dict[str, str],
+        timeout: Optional[float] = None,
     ) -> ShellOutput:
         """Executes the command in a subprocess and handles errors."""
         try:
@@ -82,6 +83,7 @@ class ShellAdapter(IShellExecutor):
                 check=False,
                 cwd=cwd,
                 env=env,
+                timeout=timeout,
             )
             self._log_debug_result(result)
             return {
@@ -102,6 +104,7 @@ class ShellAdapter(IShellExecutor):
         command: str,
         cwd: Optional[str] = None,
         env: Optional[Dict[str, str]] = None,
+        timeout: Optional[float] = None,
     ) -> ShellOutput:
         current_cwd = self._validate_cwd(cwd)
         current_env = os.environ.copy()
@@ -113,6 +116,8 @@ class ShellAdapter(IShellExecutor):
 
         command_args, use_shell = self._prepare_command_for_platform(command)
         self._log_debug_pre_execution(command, command_args, current_cwd, use_shell)
-        result = self._run_subprocess(command_args, use_shell, current_cwd, current_env)
+        result = self._run_subprocess(
+            command_args, use_shell, current_cwd, current_env, timeout=timeout
+        )
 
         return result

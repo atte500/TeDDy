@@ -88,7 +88,12 @@ def create_container() -> punq.Container:
     container.register(IRepoTreeGenerator, LocalRepoTreeGenerator)
     container.register(IPlanParser, MarkdownPlanParser)
     container.register(IPlanReviewer, instance=None)
-    container.register(IActionFactory, ActionFactory)
+    container.register(
+        IActionFactory,
+        factory=lambda: ActionFactory(
+            container=container, config_service=container.resolve(IConfigService)
+        ),
+    )
     container.register(ActionDispatcher)
     container.register(ActionExecutor)
     container.register(CreateActionValidator)

@@ -6,6 +6,7 @@ from teddy_executor.core.ports.outbound import (
     IUserInteractor,
     IWebScraper,
     IWebSearcher,
+    IConfigService,
 )
 from teddy_executor.core.services.action_dispatcher import IAction, IActionFactory
 
@@ -46,8 +47,13 @@ class ActionFactory(IActionFactory):
         "RETURN": "return",
     }
 
-    def __init__(self, container: punq.Container):
+    def __init__(
+        self,
+        container: punq.Container,
+        config_service: Optional[IConfigService] = None,
+    ):
         self._container = container
+        self._config_service = config_service
         self._standalone_actions = {InvokeAction, PruneAction, ConcludeAction}
         self._action_map: Dict[str, Type] = {
             "execute": IShellExecutor,
@@ -103,6 +109,15 @@ class ActionFactory(IActionFactory):
                     raise ValueError(
                         "'command' parameter is required for the execute action."
                     )
+
+                # Inject global timeout if not already specified in kwargs
+                if "timeout" not in execute_params and self._config_service:
+                    default_timeout = self._config_service.get_setting(
+                        "execution.default_timeout_seconds"
+                    )
+                    if default_timeout is not None:
+                        execute_params["timeout"] = float(default_timeout)
+
                 return original_method(**execute_params)
             if method_name == "ask_question":
                 return original_method(

@@ -28,8 +28,17 @@ class YamlConfigAdapter(IConfigService):
     def get_setting(self, key: str, default: Optional[Any] = None) -> Optional[Any]:
         """
         Retrieves a configuration value by its key from the loaded YAML.
+        Supports nested keys using dot notation (e.g., 'outer.inner').
         """
         if not key:
             return default
 
-        return self._config.get(key, default)
+        parts = key.split(".")
+        current = self._config
+        for part in parts:
+            if isinstance(current, dict) and part in current:
+                current = current[part]
+            else:
+                return default
+
+        return current

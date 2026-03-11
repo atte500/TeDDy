@@ -32,6 +32,20 @@ def test_get_setting_returns_default_for_missing_key(fs):
     assert adapter.get_setting("missing") is None
 
 
+def test_get_setting_supports_nested_keys(fs):
+    # Arrange
+    expected_timeout = 30
+    config_path = ".teddy/config.yaml"
+    config_data = {"execution": {"default_timeout_seconds": expected_timeout}}
+    fs.create_dir(".teddy")
+    fs.create_file(config_path, contents=yaml.dump(config_data))
+
+    adapter = YamlConfigAdapter(config_path=config_path)
+
+    # Act & Assert
+    assert adapter.get_setting("execution.default_timeout_seconds") == expected_timeout
+
+
 def test_get_setting_handles_missing_config_file(fs):
     # Arrange
     # No file created
