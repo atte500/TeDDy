@@ -334,7 +334,7 @@ A markdown file whose content might include a code block.
                 </format>
             </action>
             <action name="EXECUTE">
-                <description>Executes a single, isolated shell command. Environment preparation (`cd`, `export`) and shell chaining (`&&`, `||`, `;`) are permitted directly in the command block. Directory or environment changes do not persist between separate `EXECUTE` blocks. The `Allow Failure` parameter is optional and defaults to `false` if omitted.</description>
+                <description>Executes a single, isolated shell command. Environment preparation (`cd`, `export`) and shell chaining (`&&`, `||`, `;`) are permitted directly in the command block. Directory or environment changes do not persist between separate `EXECUTE` blocks. The `Allow Failure`, `Background`, and `Timeout` parameters are optional and default to `false` or global defaults if omitted.</description>
                 <format>
 ### `EXECUTE`
 - **Description:** [Descriptive title of what the command will do.]
