@@ -69,3 +69,37 @@ def test_timeout_captures_partial_output(monkeypatch, tmp_path):
     # The exit code for timeout should be 124
     # Note: result.exit_code is the CLI's exit code, but we check the report content
     assert "124" in result.stdout
+
+
+def test_intentional_background_execution(monkeypatch, tmp_path):
+    """
+    Scenario 3: Intentional Background Execution
+    Verifies that a command can be run in the background, returns a PID,
+    and doesn't block the executor.
+    """
+    # 1. Define a plan with a background command
+    builder = MarkdownPlanBuilder("Background Plan")
+    builder.add_action(
+        "EXECUTE",
+        params={
+            "Description": "Start a background process.",
+            "Background": "true",
+        },
+        content_blocks={"COMMAND": ("shell", "sleep 5")},
+    )
+    plan_content = builder.build()
+
+    # 2. Execute the plan with a timing check
+    import time
+
+    start_time = time.time()
+    result = run_execute_with_plan_content(monkeypatch, plan_content, tmp_path)
+    end_time = time.time()
+
+    # 3. Assertions
+    # It should have finished much faster than the 5-second sleep duration
+    max_background_start_time = 2.0
+    assert end_time - start_time < max_background_start_time
+    assert result.exit_code == 0
+    # The output should contain the PID notification
+    assert "SUCCESS: Background process started with PID" in result.stdout

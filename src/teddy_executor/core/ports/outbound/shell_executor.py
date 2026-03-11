@@ -15,6 +15,7 @@ class IShellExecutor(ABC):
         cwd: Optional[str] = None,
         env: Optional[Dict[str, str]] = None,
         timeout: Optional[float] = None,
+        background: bool = False,
     ) -> ShellOutput:
         """
         Executes a shell command and returns its result.

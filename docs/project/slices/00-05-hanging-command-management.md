@@ -38,15 +38,21 @@ When a shell command exceeds the configured timeout threshold, the process must 
 - Mandated return of exit code `124` (standard Linux `timeout` code) when a process is killed due to timeout.
 - Partial output is preserved and prepended with a clear warning message in the `stdout` field of the `ShellOutput`.
 
-### Scenario 3: Intentional Background Execution
+### Scenario 3: Intentional Background Execution [✓]
 When the AI specifies that a command should run in the background, the executor should start the process and immediately return success without waiting for it to complete.
 
 #### Deliverables
-- [ ] Update the `ExecuteAction` domain model (`src/teddy_executor/core/domain/models/plan.py`) to include a `background: bool = False` field.
-- [ ] Update `MarkdownPlanParser` (`src/teddy_executor/core/services/action_parser_strategies.py`) to extract the `- **Background:** [true|false]` parameter from the `EXECUTE` block metadata.
-- [ ] Update `ShellAdapter` to check the `background` flag. If true, use `subprocess.Popen` directly (without calling `.wait()` or `communicate()`) and immediately return a successful `ShellOutput`.
-- [ ] The `ShellOutput.stdout` must contain a clear, formatted message explicitly stating the Process ID (PID) of the detached process (e.g., `[SUCCESS: Background process started with PID 12345]`). This allows the AI to manage the lifecycle and terminate it in subsequent plans.
-- [ ] Update `docs/project/specs/plan-format.md` to document the new `Background` parameter under the `EXECUTE` action section.
+- [✓] Update the `ExecuteAction` domain model (`src/teddy_executor/core/domain/models/plan.py`) to include a `background: bool = False` field.
+- [✓] Update `MarkdownPlanParser` (`src/teddy_executor/core/services/action_parser_strategies.py`) to extract the `- **Background:** [true|false]` parameter from the `EXECUTE` block metadata.
+- [✓] Update `ShellAdapter` to check the `background` flag. If true, use `subprocess.Popen` directly (without calling `.wait()` or `communicate()`) and immediately return a successful `ShellOutput`.
+- [✓] The `ShellOutput.stdout` must contain a clear, formatted message explicitly stating the Process ID (PID) of the detached process (e.g., `[SUCCESS: Background process started with PID 12345]`). This allows the AI to manage the lifecycle and terminate it in subsequent plans.
+- [✓] Update `docs/project/specs/plan-format.md` to document the new `Background` parameter under the `EXECUTE` action section.
+
+#### Implementation Notes
+- Enhanced `MarkdownPlanParser` to extract and booleanize the `Background` metadata parameter for `EXECUTE` actions.
+- Updated `ActionFactory` to propagate the `background` parameter through the service layer.
+- Updated `ShellAdapter` to use `subprocess.Popen` with `start_new_session=True` for background execution, effectively detaching the process from the CLI's lifecycle.
+- Implemented success reporting that includes the PID of the started background process.
 
 ### Scenario 4: Explicit Timeout Override
 When the AI knows a command will legitimately take longer than the global default (e.g., a large test suite) but still needs to capture its output synchronously, it can explicitly override the timeout for that specific action.

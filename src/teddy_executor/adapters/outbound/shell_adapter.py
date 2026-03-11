@@ -67,16 +67,33 @@ class ShellAdapter(IShellExecutor):
             print(f"Error: {error}", file=sys.stderr)
             print("--------------------------", file=sys.stderr)
 
-    def _run_subprocess(
+    def _run_subprocess(  # noqa: PLR0913
         self,
         command_args: str | List[str],
         use_shell: bool,
         cwd: str,
         env: Dict[str, str],
         timeout: Optional[float] = None,
+        background: bool = False,
     ) -> ShellOutput:
         """Executes the command in a subprocess and handles errors."""
         try:
+            if background:
+                process = subprocess.Popen(  # nosec B602
+                    command_args,
+                    shell=use_shell,
+                    cwd=cwd,
+                    env=env,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    start_new_session=True,
+                )
+                return {
+                    "stdout": f"[SUCCESS: Background process started with PID {process.pid}]",
+                    "stderr": "",
+                    "return_code": 0,
+                }
+
             result = subprocess.run(  # nosec B602
                 command_args,
                 shell=use_shell,
@@ -128,6 +145,7 @@ class ShellAdapter(IShellExecutor):
         cwd: Optional[str] = None,
         env: Optional[Dict[str, str]] = None,
         timeout: Optional[float] = None,
+        background: bool = False,
     ) -> ShellOutput:
         current_cwd = self._validate_cwd(cwd)
         current_env = os.environ.copy()
@@ -140,7 +158,12 @@ class ShellAdapter(IShellExecutor):
         command_args, use_shell = self._prepare_command_for_platform(command)
         self._log_debug_pre_execution(command, command_args, current_cwd, use_shell)
         result = self._run_subprocess(
-            command_args, use_shell, current_cwd, current_env, timeout=timeout
+            command_args,
+            use_shell,
+            current_cwd,
+            current_env,
+            timeout=timeout,
+            background=background,
         )
 
         return result

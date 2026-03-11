@@ -103,7 +103,8 @@ class ActionFactory(IActionFactory):
                 execute_params = {
                     k: v
                     for k, v in kwargs.items()
-                    if k in ("command", "cwd", "env") and v is not None
+                    if k in ("command", "cwd", "env", "background", "timeout")
+                    and v is not None
                 }
                 if "command" not in execute_params:
                     raise ValueError(

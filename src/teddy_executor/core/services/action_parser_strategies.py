@@ -181,11 +181,15 @@ def parse_execute_action(stream: _PeekableStream) -> ActionData:
             "Expected Outcome": "expected_outcome",
             "cwd": "cwd",
             "Allow Failure": "allow_failure",
+            "Background": "background",
         },
     )
 
     if "allow_failure" in params:
         params["allow_failure"] = params["allow_failure"].lower() == "true"
+
+    if "background" in params:
+        params["background"] = params["background"].lower() == "true"
 
     env_from_meta = parse_env_from_metadata(metadata_list)
     if env_from_meta:

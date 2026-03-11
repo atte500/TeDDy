@@ -177,6 +177,75 @@ pytest
     assert action.params["command"] == "pytest"
 
 
+def test_parse_execute_action_with_background(parser: IPlanParser):
+    """
+    Given an EXECUTE action with Background metadata set to true,
+    When the plan is parsed,
+    Then the background parameter is correctly extracted as a boolean.
+    """
+    # Arrange
+    plan_content = """
+# Execute in Background
+- Status: Green 🟢
+- Agent: Developer
+
+## Rationale
+````text
+Rationale.
+````
+
+## Action Plan
+
+### `EXECUTE`
+- Description: Start server.
+- Background: true
+````shell
+python -m http.server
+````
+"""
+    # Act
+    result_plan = parser.parse(plan_content)
+
+    # Assert
+    action = result_plan.actions[0]
+    assert action.params.get("background") is True
+    assert action.params["command"] == "python -m http.server"
+
+
+def test_parse_execute_action_with_background_false(parser: IPlanParser):
+    """
+    Given an EXECUTE action with Background metadata set to false,
+    When the plan is parsed,
+    Then the background parameter is correctly extracted as a boolean.
+    """
+    # Arrange
+    plan_content = """
+# Execute normally
+- Status: Green 🟢
+- Agent: Developer
+
+## Rationale
+````text
+Rationale.
+````
+
+## Action Plan
+
+### `EXECUTE`
+- Description: Sync.
+- Background: false
+````shell
+ls
+````
+"""
+    # Act
+    result_plan = parser.parse(plan_content)
+
+    # Assert
+    action = result_plan.actions[0]
+    assert action.params.get("background") is False
+
+
 def test_parse_execute_action(parser: IPlanParser):
     """
     Given a valid Markdown plan with an EXECUTE action,
