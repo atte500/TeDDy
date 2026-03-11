@@ -147,6 +147,7 @@ class ShellAdapter(IShellExecutor):
         timeout: Optional[float] = None,
         background: bool = False,
     ) -> ShellOutput:
+        # Implementation of IShellExecutor.execute
         current_cwd = self._validate_cwd(cwd)
         current_env = os.environ.copy()
         if env:
