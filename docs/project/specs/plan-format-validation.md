@@ -48,8 +48,8 @@ These checks validate the *content* of an action against the current state of th
 
 #### `CREATE`
 -   **[✓] `File Path` must be specified:** The metadata block must contain a valid `File Path`.
--   **[✓] Target path must not exist:** The file path specified must not already exist on the file system.
-    -   *Failure Example:* A plan tries to `CREATE` `src/main.py` but that file already exists.
+-   **[✓] Target path must not exist (unless Overwrite is true):** By default, the file path specified must not already exist. If `Overwrite: true` is provided, validation passes even if the file exists.
+    -   *Failure Example:* A plan tries to `CREATE` `src/main.py` but that file already exists and `Overwrite` is omitted.
 
 #### `EDIT`
 -   **[✓] `File Path` must be specified:** The metadata block must contain a valid `File Path`.

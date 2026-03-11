@@ -29,6 +29,9 @@
 {% if log.details.get("original_details") -%}
 - **Error:** {{ log.details.original_details }}
 {% endif -%}
+{% if log.details.get("message") -%}
+- **Message:** {{ log.details.message }}
+{% endif -%}
 {% if log.details.get("return_code") is not none -%}
 - **Return Code:** `{{ log.details.return_code }}`
 {% endif -%}
@@ -43,6 +46,12 @@
 {{ log.details.stderr | trim | fence }}text
 {{ log.details.stderr | trim }}
 {{ log.details.stderr | trim | fence }}
+{% endif -%}
+{% if log.details.get("diff") -%}
+#### `diff`
+{{ log.details.diff | trim | fence }}diff
+{{ log.details.diff | trim }}
+{{ log.details.diff | trim | fence }}
 {% endif -%}
 {# Render generic details if no specific fields matched, but avoid rendering if it's just content #}
 {% if not log.details.get("error") and not log.details.get("return_code") and not log.details.get("stdout") and not log.details.get("stderr") and not log.details.get("content") %}

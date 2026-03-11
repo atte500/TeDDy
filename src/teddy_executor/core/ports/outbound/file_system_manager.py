@@ -25,12 +25,15 @@ class IFileSystemManager(Protocol):
         """
         ...
 
-    def create_file(self, path: str, content: str) -> None:
+    def create_file(self, path: str, content: str, overwrite: bool = False) -> None:
         """
         Creates a new file with the given content.
 
+        If overwrite is False (default), raises FileExistsError if the file already exists.
+        If overwrite is True, replaces existing file content.
+
         Raises:
-            FileExistsError: If a file already exists at the specified path.
+            FileExistsError: If a file already exists and overwrite is False.
         """
         ...
 

@@ -91,14 +91,19 @@ All actions are located under the `## Action Plan` heading. Each action is defin
     `````markdown
     ### `CREATE`
     - **File Path:** [docs/project/specs/plan-format.md](/docs/project/specs/plan-format.md)
+    - **Overwrite:** true
     - **Description:** Create the initial specification document.
     ````markdown
     # Specification: The Pure Markdown Plan Format
     ... file content ...
     ````
     `````
+-   **Parameters:**
+    -   `File Path`: The root-relative path to the file.
+    -   `Overwrite` (Optional): If `true`, allows replacing an existing file. Use with extreme caution.
+    -   `Description`: A short summary of the action.
 -   **Parsing Rules:**
-    1.  Extract `File Path` and `Description` from the metadata list.
+    1.  Extract `File Path`, `Overwrite`, and `Description` from the metadata list.
     2.  The content for the new file is the entire content of the first fenced code block.
 
 ### 5.2. `READ`

@@ -297,10 +297,11 @@
             <title>Action Blocks</title>
             <instruction>All actions are located under the `## Action Plan` heading. Each action is defined by its own `###` heading. When creating these blocks, you MUST follow the "Code Block Nesting" rule.</instruction>
             <action name="CREATE">
-                <description>Creates a new file.</description>
+                <description>Creates a new file. Optionally overwrites an existing file if 'Overwrite: true' is provided (use with extreme caution).</description>
                 <format>
 ### `CREATE`
 - **File Path:** [path/to/new_file.ext](/path/to/new_file.ext)
+- **Overwrite:** [true|false] (Optional)
 - **Description:** [Short explanation of what this new file is for.]
 ``````[language]
 # Title
@@ -339,9 +340,9 @@ A markdown file whose content might include a code block.
 ### `EXECUTE`
 - **Description:** [Descriptive title of what the command will do.]
 - **Expected Outcome:** [A precise prediction of the result.]
-- **Allow Failure:** `[true|false]` (optional)
-- **Background:** `[true|false]` (optional)
-- **Timeout:** `[seconds (integer)]` (optional)
+- **Allow Failure:** `[true|false]` (Optional)
+- **Background:** `[true|false]` (Optional)
+- **Timeout:** `[seconds (integer)]` (Optional)
 ````shell
 [The exact command to be executed]
 ````

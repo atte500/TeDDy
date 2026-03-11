@@ -29,8 +29,13 @@ def parse_create_action(stream: _PeekableStream) -> ActionData:
         raise InvalidPlanError("CREATE action is missing metadata list.")
 
     description, params = parse_action_metadata(
-        metadata_list, link_key_map={"File Path": "path"}
+        metadata_list,
+        link_key_map={"File Path": "path"},
+        text_key_map={"Overwrite": "overwrite"},
     )
+
+    if "overwrite" in params:
+        params["overwrite"] = params["overwrite"].lower() == "true"
 
     code_block = stream.next()
     if not isinstance(code_block, CodeFence):

@@ -27,9 +27,12 @@ class CreateActionValidator(BaseActionValidator):
             if isinstance(path_str, str):
                 validate_path_is_safe(path_str, "CREATE")
                 if self._file_system_manager.path_exists(path_str):
-                    raise PlanValidationError(
-                        f"File already exists: {path_str}", file_path=path_str
-                    )
+                    if not action.params.get("overwrite"):
+                        msg = (
+                            f"File already exists: {path_str}. Hint: The 'Overwrite: true' "
+                            "parameter can be used with caution to bypass this."
+                        )
+                        raise PlanValidationError(msg, file_path=path_str)
             return []
         except PlanValidationError as e:
             return [ValidationError(message=e.message, file_path=e.file_path)]

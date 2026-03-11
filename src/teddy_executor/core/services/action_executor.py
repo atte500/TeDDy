@@ -4,6 +4,7 @@ from teddy_executor.core.domain.models import (
     ActionStatus,
     ChangeSet,
 )
+from teddy_executor.core.utils.diff import generate_unified_diff
 from teddy_executor.core.ports.inbound.edit_simulator import IEditSimulator
 from teddy_executor.core.ports.outbound import IFileSystemManager, IUserInteractor
 from teddy_executor.core.services.action_dispatcher import ActionDispatcher
@@ -124,10 +125,12 @@ class ActionExecutor:
         if not path_str:
             return None
 
-        path = Path(path_str)
         before_content = (
-            self._file_system_manager.read_file(path_str) if path.exists() else ""
+            self._file_system_manager.read_file(path_str)
+            if self._file_system_manager.path_exists(path_str)
+            else ""
         )
+        path = Path(path_str)
 
         if action.type.upper() == "EDIT":
             after_content = self._edit_simulator.simulate_edits(
@@ -177,6 +180,9 @@ class ActionExecutor:
         if intercepted_log := self._intercept_control_flow_action(action):
             return intercepted_log
 
+        # Capture the change set BEFORE execution for diff reporting
+        change_set = self._create_change_set(action)
+
         should_dispatch, reason = True, ""
         if interactive and action.type.lower() != "prompt":
             should_dispatch, reason = self._get_interactive_confirmation(action)
@@ -191,7 +197,47 @@ class ActionExecutor:
         if action_log.status == ActionStatus.FAILURE:
             return self._enrich_failed_log(action, action_log)
 
-        return action_log
+        return self._inject_execution_diff(action, action_log, change_set)
+
+    def _inject_execution_diff(self, action, action_log, change_set) -> ActionLog:
+        """Injects a unified diff into the log for CREATE overwrites."""
+        # Scenario 3: If it was a CREATE overwrite, ensure the report includes a diff
+        if action.type.upper() != "CREATE" or action_log.status != ActionStatus.SUCCESS:
+            return action_log
+
+        # Check types to handle Mocks in tests gracefully
+        if (
+            not change_set
+            or not isinstance(change_set.before_content, str)
+            or not isinstance(change_set.after_content, str)
+            or not change_set.before_content
+        ):
+            return action_log
+
+        diff = generate_unified_diff(
+            change_set.before_content,
+            change_set.after_content,
+            change_set.path.name,
+        )
+
+        if not diff:
+            return action_log
+
+        # Inject the diff into details for the reporter
+        details = action_log.details
+        new_details = {"diff": diff}
+
+        if isinstance(details, dict):
+            new_details.update(details)
+        elif details is not None:
+            new_details["message"] = details
+
+        return ActionLog(
+            status=action_log.status,
+            action_type=action_log.action_type,
+            params=action_log.params,
+            details=new_details,
+        )
 
     def handle_skipped_action(self, action, reason: str) -> ActionLog:
         """Public method for skipping actions."""

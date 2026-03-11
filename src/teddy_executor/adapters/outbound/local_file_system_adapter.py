@@ -109,15 +109,16 @@ class LocalFileSystemAdapter(IFileSystemManager):
         """
         self._resolve_path(path).write_text(content, encoding="utf-8")
 
-    def create_file(self, path: str, content: str) -> None:
+    def create_file(self, path: str, content: str, overwrite: bool = False) -> None:
         """
-        Creates a new file with the given content using exclusive creation mode.
+        Creates a new file with the given content.
         """
         try:
             file_path = self._resolve_path(path)
             file_path.parent.mkdir(parents=True, exist_ok=True)
 
-            with open(file_path, "x", encoding="utf-8") as f:
+            mode = "w" if overwrite else "x"
+            with open(file_path, mode, encoding="utf-8") as f:
                 f.write(content)
         except FileExistsError as e:
             # Raise a domain-specific exception to conform to the port's contract.
