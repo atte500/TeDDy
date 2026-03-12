@@ -75,6 +75,13 @@ class LocalFileSystemAdapter(IFileSystemManager):
             raise FileNotFoundError(f"Directory not found: {path}")
         return [p.name for p in dir_path.iterdir()]
 
+    def get_mtime(self, path: str) -> float:
+        """
+        Returns the modification time of a file or directory as a timestamp.
+        """
+        target = self._resolve_path(path)
+        return target.stat().st_mtime
+
     def move_directory(self, old_path: str, new_path: str) -> None:
         """
         Moves or renames a directory.

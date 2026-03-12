@@ -91,6 +91,19 @@ The `FileSystemManager` port defines a technology-agnostic interface for interac
 
 ---
 
+### `get_mtime`
+**Status:** Implemented
+**Introduced in:** [Slice 09-07: UX Polish & Logging](../../slices/09-07-ux-polish-logging.md)
+
+*   **Description:** Returns the modification time of a file or directory as a timestamp.
+*   **Signature:** `get_mtime(path: str) -> float`
+*   **Preconditions:**
+    *   `path` must exist.
+*   **Postconditions:**
+    *   Returns the `st_mtime` from the file system.
+
+---
+
 ### `resolve_paths_from_files`
 **Status:** Planned
 **Introduced in:** [Slice 09-04](../../slices/09-04-core-session-context-engine.md)

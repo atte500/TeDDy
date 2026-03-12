@@ -44,5 +44,17 @@ This port abstracts the logic for creating turn directories, managing the `turn.
 - **Returns:** The new path to the session directory.
 - **Exceptions:** `ValueError` if the new name already exists.
 
+### `get_latest_session_name`
+- **Description:** Identifies and returns the name of the most recently modified session.
+- **Returns:** The session name as a string.
+- **Exceptions:** `ValueError` if no sessions are found.
+
+### `resolve_session_from_path`
+- **Description:** Resolves a session name from a given path (session root, turn dir, or file).
+- **Arguments:**
+    - `path` (str)
+- **Returns:** The session name as a string.
+- **Exceptions:** `ValueError` if the path is not inside a session.
+
 ### `resolve_context_paths(plan_path: str) -> dict[str, list[str]]`
 - **Description:** Locates context files relative to the plan path and returns their contents.

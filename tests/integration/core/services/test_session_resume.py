@@ -45,10 +45,7 @@ hello
     monkeypatch.chdir(tmp_path)
 
     # Act: Run teddy resume
-    # We expect this to fail because 'resume' doesn't exist yet
-    result = runner.invoke(
-        app, ["resume", "--session", session_name, "--no-interactive"]
-    )
+    result = runner.invoke(app, ["resume", session_name, "--no-interactive"])
 
     # Assert
     assert result.exit_code == 0

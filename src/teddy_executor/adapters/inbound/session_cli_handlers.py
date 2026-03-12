@@ -80,38 +80,33 @@ def handle_context_gathering(container: Container, no_copy: bool):
     echo_and_copy(formatted_context, no_copy=no_copy)
 
 
-def find_session_name() -> str:
-    """Climbs parents to find the session name."""
-    cwd = Path.cwd().resolve()
-    # Try to find if we are inside a turn directory
-    if (
-        cwd.parent.parent.name == "sessions"
-        and cwd.parent.parent.parent.name == ".teddy"
-    ):
-        return cwd.parent.name
-    # Or inside a session directory
-    elif cwd.parent.name == "sessions" and cwd.parent.parent.name == ".teddy":
-        return cwd.name
-
-    typer.echo("Error: Not inside a TeDDy session directory.", err=True)
-    raise typer.Exit(code=1)
-
-
 def handle_resume_session(
     container: Container,
-    session_name: Optional[str] = None,
+    path: Optional[str] = None,
     interactive: bool = True,
     no_copy: bool = False,
 ):
     """Logic for the 'resume' command."""
     from teddy_executor.adapters.inbound.cli_helpers import handle_report_output
 
-    if not session_name:
-        session_name = find_session_name()
-
-    orchestrator = container.resolve(IRunPlanUseCase)
+    session_manager = container.resolve(ISessionManager)
 
     try:
+        if path:
+            session_name = session_manager.resolve_session_from_path(path)
+        else:
+            # If no path, first try to resolve from CWD (in case we are inside a session)
+            try:
+                session_name = session_manager.resolve_session_from_path(
+                    str(Path.cwd().resolve())
+                )
+            except ValueError:
+                # If not inside a session, auto-detect the latest session
+                session_name = session_manager.get_latest_session_name()
+
+        typer.echo(f"Resuming session: {session_name}")
+
+        orchestrator = container.resolve(IRunPlanUseCase)
         report = orchestrator.resume(session_name=session_name, interactive=interactive)
         handle_report_output(container, report, no_copy)
     except Exception as e:

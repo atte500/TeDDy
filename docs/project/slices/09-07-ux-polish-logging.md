@@ -42,7 +42,7 @@ To refine the user experience of the interactive session workflow by ensuring ro
 - Updated `SessionOrchestrator` to perform "Auto-Naming": if the session name matches the ISO timestamp pattern (indicating it was created without a name), the orchestrator slugifies the first generated plan's H1 title and renames the session directory.
 - Fixed a bug where `SessionOrchestrator.resume` recursion used a stale session name after a rename.
 
-### Scenario: Robust 'resume' with path detection
+### Scenario: Robust 'resume' with path detection [✓]
 - **Given** several sessions exist in `.teddy/sessions/`.
 - **When** I run `teddy resume` from the project root.
 - **Then** it MUST automatically pick the most recently modified session.
@@ -50,9 +50,15 @@ To refine the user experience of the interactive session workflow by ensuring ro
 - **Then** it MUST resolve the session regardless of whether the path points to the session root or a specific turn.
 
 #### Deliverables
-- [ ] **Auto-Detection:** Implemented latest session detection in `SessionService` (via `mtime` sorting).
-- [ ] **Path Resolver:** Enhanced `find_session_name` in `session_cli_handlers.py` to resolve from files, turns, or session paths.
-- [ ] **Acceptance Test:** New test scenarios for `resume` with various path types.
+- [✓] **Auto-Detection:** Implemented latest session detection in `SessionService` (via `mtime` sorting).
+- [✓] **Path Resolver:** Enhanced `handle_resume_session` in `session_cli_handlers.py` to resolve from files, turns, or session paths using `ISessionManager.resolve_session_from_path`.
+- [✓] **Acceptance Test:** New test scenarios in `tests/acceptance/test_session_resume_robustness.py` verifying `resume` with various path types and auto-detection.
+
+#### Implementation Notes
+- Updated `IFileSystemManager` to include `get_mtime`.
+- Updated `ISessionManager` to include `get_latest_session_name` and `resolve_session_from_path`.
+- Implemented `resolve_session_from_path` using a parent-climbing algorithm looking for the `.teddy/sessions` directory structure.
+- Updated the CLI `resume` command to accept an optional positional `path` argument instead of the `--session` flag, as per specification.
 
 ### Scenario: AI Transparency & Telemetry
 - **Given** a planning phase is triggered.

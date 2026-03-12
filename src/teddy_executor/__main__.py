@@ -161,8 +161,9 @@ def create_parser_for_plan(plan_content: str) -> IPlanParser:
 
 @app.command()
 def resume(
-    session: Optional[str] = typer.Option(
-        None, "--session", "-s", help="The name of the session to resume."
+    path: Optional[str] = typer.Argument(
+        None,
+        help="The path to a session directory, a turn directory, or a file within a session.",
     ),
     interactive: bool = typer.Option(
         True,
@@ -185,7 +186,7 @@ def resume(
 
     handle_resume_session(
         container=container,
-        session_name=session,
+        path=path,
         interactive=interactive,
         no_copy=no_copy,
     )

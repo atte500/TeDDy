@@ -229,3 +229,51 @@ class SessionService(ISessionManager):
             "Session": sorted(list(self._read_context_file(session_context_path))),
             "Turn": sorted(list(self._read_context_file(turn_context_path))),
         }
+
+    def get_latest_session_name(self) -> str:
+        """
+        Identifies and returns the name of the most recently modified session.
+        """
+        sessions_root = ".teddy/sessions"
+        if not self._file_system_manager.path_exists(sessions_root):
+            raise ValueError("No sessions found.")
+
+        sessions = self._file_system_manager.list_directory(sessions_root)
+        if not sessions:
+            raise ValueError("No sessions found.")
+
+        # Sort by mtime descending
+        session_stats = []
+        for name in sessions:
+            path = f"{sessions_root}/{name}"
+            try:
+                mtime = self._file_system_manager.get_mtime(path)
+                session_stats.append((name, mtime))
+            except (FileNotFoundError, OSError):
+                continue
+
+        if not session_stats:
+            raise ValueError("No valid sessions found.")
+
+        session_stats.sort(key=lambda x: x[1], reverse=True)
+        return session_stats[0][0]
+
+    def resolve_session_from_path(self, path: str) -> str:
+        """
+        Resolves a session name from a given path (session root, turn dir, or file).
+        """
+        p = Path(path).resolve()
+        # Climb up parents looking for '.teddy/sessions'
+        for parent in [p] + list(p.parents):
+            if (
+                parent.parent.name == "sessions"
+                and parent.parent.parent.name == ".teddy"
+            ):
+                return parent.name
+
+        # If not found via parents, check if the path itself IS a session name
+        # (Legacy behavior for explicit name passing)
+        if self._file_system_manager.path_exists(f".teddy/sessions/{path}"):
+            return path
+
+        raise ValueError(f"Could not resolve session from path: {path}")

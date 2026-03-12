@@ -60,3 +60,15 @@ class ISessionManager(Protocol):
         Returns the new path to the session directory.
         """
         ...
+
+    def get_latest_session_name(self) -> str:
+        """
+        Identifies and returns the name of the most recently modified session.
+        """
+        ...
+
+    def resolve_session_from_path(self, path: str) -> str:
+        """
+        Resolves a session name from a given path (session root, turn dir, or file).
+        """
+        ...

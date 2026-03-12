@@ -80,6 +80,12 @@ class IFileSystemManager(Protocol):
         """
         ...
 
+    def get_mtime(self, path: str) -> float:
+        """
+        Returns the modification time of a file or directory as a timestamp.
+        """
+        ...
+
     def move_directory(self, old_path: str, new_path: str) -> None:
         """
         Moves or renames a directory.
