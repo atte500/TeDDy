@@ -17,13 +17,19 @@ This is an interface and contains no implementation logic.
 
 ## 4. Data Contracts / Methods
 
-### `get_completion(self, model: str, messages: List[Dict[str, str]], **kwargs) -> str`
+### `get_completion(self, model: str, messages: List[Dict[str, str]], **kwargs) -> Any`
 
--   **Description:** Sends a request to an LLM and returns the completed text response.
+-   **Description:** Sends a request to an LLM and returns the raw response object (e.g., LiteLLM ModelResponse).
 -   **Preconditions:**
-    -   `model` must be a non-empty string identifying the target model.
-    -   `messages` must be a list of dictionaries, each with "role" and "content" keys, conforming to the standard chat completion format.
+    -   `model` must be a non-empty string.
+    -   `messages` must follow the chat completion format.
 -   **Postconditions:**
-    -   Returns the string content of the LLM's response upon success.
+    -   Returns the provider-specific completion object.
 -   **Exception/Error States:**
-    -   `LlmApiError`: Raised for any failures during the API call (e.g., authentication failure, network error, rate limiting). The underlying exception will be wrapped.
+    -   `LlmApiError`: Raised for API or communication failures.
+
+### `get_token_count(self, model: str, messages: List[Dict[str, str]]) -> int`
+- **Description:** Calculates the number of tokens in the payload for a specific model (Pre-flight).
+
+### `get_completion_cost(self, completion_response: Any) -> float`
+- **Description:** Calculates the precise USD cost of a completion response (Post-flight).

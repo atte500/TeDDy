@@ -177,6 +177,8 @@ This section serves as the "System Law" (Poka-Yoke) for TeDDy. It defines the pr
 -   **Rule:** Use Jinja2 Macros for modular reporting. **Rationale:** To ensure consistency across different report formats (Concise CLI vs. Session) and facilitate robust extraction of specific sections (e.g., Action Log) for aggregated views.
 -   **Rule:** Explicitly specify `encoding="utf-8"` for all operations that read from or write to text files. **Rationale:** To ensure predictable, platform-agnostic behavior across different operating systems and avoid encoding errors when handling non-ASCII characters.
 -   **Rule:** The `Plan` and `ActionData` domain models are mutable (unfrozen). **Rationale:** To allow primary adapters (like the TUI Reviewer) to modify plan parameters and selection state in-memory before execution without the overhead of deep copying and re-validation.
+-   **Rule:** Every turn's `meta.yaml` MUST store `turn_cost` and `cumulative_cost`. **Rationale:** To ensure cost transparency and maintain a self-contained, auditable history for every turn without a centralized database.
+-   **Rule:** Sessions created without a name MUST use a temporary timestamped name and be renamed after the first successful plan generation. **Rationale:** To allow the AI to suggest a meaningful name based on the actual content of the initial request.
 
 ---
 
