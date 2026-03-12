@@ -12,7 +12,7 @@ This table tracks the status of active Milestones and provides a high-level summ
 
 | Milestone                                                                                    | Status        | Specs                                                                                                                                                               | Features                                                                                                                           |
 | :------------------------------------------------------------------------------------------- | :------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :--------------------------------------------------------------------------------------------------------------------------------- |
-| [09-interactive-session-and-config](./milestones/09-interactive-session-and-config.md)       | `Planned`     | [Interactive Session](./specs/interactive-session-workflow.md)<br>[Context Payload](./specs/context-payload-format.md)<br>[Report Format](./specs/report-format.md) | Stateful Session Management, Security Scanning (Secrets/Bandit), LLM Integration (LiteLLM), TUI Workflow, and Agent Collaboration. |
+| [09-interactive-session-and-config](./milestones/09-interactive-session-and-config.md)       | `In Progress` | [Interactive Session](./specs/interactive-session-workflow.md)<br>[Context Payload](./specs/context-payload-format.md)<br>[Report Format](./specs/report-format.md) | Stateful Session Management, Security Scanning (Secrets/Bandit), LLM Integration (LiteLLM), TUI Workflow, and Agent Collaboration. |
 
 ## Workflow Standards
 
