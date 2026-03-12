@@ -56,7 +56,7 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
         - `PRUNE`: Target file must be in current context.
         - `READ`: Target file must NOT be already in context (session or turn).
         - `INVOKE`: Check that agent to INVOKE exists.
-- [ ] **Slice 6: Interactive TUI & `resume` Workflow**
+- [x] **Slice 6: Interactive TUI & `resume` Workflow**
     - Implement the smart `resume` command and the `textual`-based TUI for interactive plan approval and editing.
 - [ ] **Slice 7: Agent Collaboration Model**
     - Implement `meta.yaml` ledgers, turn transition algorithms, and `INVOKE`/`RETURN` capabilities.
