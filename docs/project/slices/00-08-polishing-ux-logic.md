@@ -42,6 +42,20 @@ Enhance the TeDDy CLI user experience by improving error visibility during parsi
 - [ ] Update `ConsoleInteractorAdapter._get_input_from_editor` in `src/teddy_executor/adapters/outbound/console_interactor.py` to use `<!-- --- Please enter your response above this line... --- -->` as the marker.
 - [ ] Refactor `ConsoleInteractorAdapter.ask_question` to prompt for terminal input immediately after launching the editor command if the system environment supports non-blocking execution or if a "quick-reply" prompt is desired.
 
+---
+
+### Scenario 4: Dynamic PROMPT UI Header
+**Given** a `PROMPT` action is executed
+**When** the user is presented with the message in the terminal
+**Then** the header must be formatted as `--- MESSAGE FROM [AGENT NAME] ---` in cyan.
+**And** if no agent name is provided (e.g., during initial session prompt), it must default to `--- MESSAGE FROM TeDDy ---`.
+
+#### Deliverables
+- [ ] Update `IUserInteractor.ask_question` in `src/teddy_executor/core/ports/outbound/user_interactor.py` to accept an optional `agent_name: Optional[str] = None`.
+- [ ] Update `ConsoleInteractorAdapter.ask_question` in `src/teddy_executor/adapters/outbound/console_interactor.py` to use the dynamic header with the "TeDDy" fallback.
+- [ ] Update `ActionExecutor` (or the relevant service) to pass the `Agent` from the plan metadata to the interactor.
+
 ## 3. Architectural Changes
-- No changes to core ports or domain models besides the `InvalidPlanError` attribute update.
+- `InvalidPlanError`: Update attribute to `offending_nodes: List[Any]`.
+- `IUserInteractor.ask_question`: Add `agent_name: Optional[str] = None` parameter.
 - Pure logic/template refinements in the service and adapter layers.
