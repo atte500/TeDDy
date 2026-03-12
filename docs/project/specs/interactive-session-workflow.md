@@ -106,23 +106,22 @@ Assembles the complete `input.md` for the current turn. This is the primary way 
 
 ---
 
-### `teddy new <name>`
+### `teddy start [name]`
 
-Initializes a new session directory and bootstraps it for "Turn 1".
+Initializes a new session directory, generates the first plan, and immediately enters the execution loop.
 
 -   **Arguments:**
-    -   `<name>`: A descriptive, kebab-case name for the session (e.g., "implement-auth-flow").
+    -   `[name]`: (Optional) A descriptive name for the session. If omitted, a temporary name is used and automatically renamed based on the title (H1) of the first generated plan.
 -   **Options:**
-    -   `--agent <agent_name>`: (Optional) The name of the agent to use for the session. Defaults to `pathfinder`.
+    -   `--agent <agent_name>`: (Optional) The name of the agent to use. Defaults to `pathfinder`.
+    -   `--model`, `--provider`, `--api-key`: (Optional) Overrides for LLM configuration for this session.
 -   **Behavior:**
-    1.  Creates the session directory inside `.teddy/sessions/` (e.g., `.teddy/sessions/<name>`) and the `01/` turn directory.
+    1.  Creates the session directory inside `.teddy/sessions/`.
     2.  Ensures `.teddy/init.context` exists. If the file is missing, it is created with a default content (`README.md`, `docs/project/PROJECT.md`, and `docs/architecture/ARCHITECTURE.md`). **An existing `init.context` file will not be overwritten.**
     3.  Creates the session-specific context file at `<session>/session.context` and copies the full contents of `.teddy/init.context` into it (with all `#` comments stripped out) to seed the session's default context.
-    4.  Uses `teddy get-prompt` to fetch the agent prompt and saves it as `01/system_prompt.xml`.
-        -   If the `--agent` option is provided, it fetches the specified agent's prompt. If the agent name is invalid, the command fails with an error.
-        -   If the `--agent` option is not provided, it fetches the `pathfinder` agent's prompt by default.
-    5.  Automatically triggers the planning phase for the first turn (behaving like `teddy resume` in an `EMPTY` state) by prompting the user for initial instructions.
-    6.  Outputs the path to the new session directory.
+    4.  Uses `teddy get-prompt` to fetch the agent prompt and saves it using its actual name (e.g., `01/pathfinder.xml`).
+    5.  Automatically triggers the planning phase for the first turn. The exact text sent to the LLM must be saved as `01/input.log`.
+    6.  Once the `plan.md` is generated, the command **must not exit**. It must seamlessly invoke the `execute` logic to prompt the user for approval via the TUI.
 
 ---
 
@@ -182,15 +181,20 @@ The `teddy execute` command creates the *next* turn (`T_next`) based on the stat
     -   **Generate Report:** The factual `T_current/report.md` is generated based on the successful execution of the approved plan.
     -   **Update Session Log:** The system will create or append to the `<session_name>/session-log.md` file. It will append the full content of `T_current/plan.md` and the "Action Log" section from `T_current/report.md`. See the [Automatic Session Log Specification](./session-history-view.md) for details.
     -   **Append Report to Context:** The path to the newly generated `T_current/report.md` is always appended to `T_next/turn.context`.
+7.  **Continuous Loop:**
+    -   Instead of exiting, the command should automatically trigger the `plan` phase for `T_next` (prompting the user for their next instruction), creating a seamless, continuous conversational loop until the user explicitly exits.
 
 ---
 
-### `teddy resume`
+### `teddy resume [path]`
 
 The primary "continue" command for a session. It intelligently determines the next action.
 
+-   **Arguments:**
+    -   `[path]`: (Optional) The path to a session directory, a turn directory, or a file within a session. If omitted, the system attempts to auto-detect the most recently modified session directory from the project root.
 -   **Behavior:**
-    1.  Identifies the latest turn directory in the current session.
+    1.  Resolves the target session based on the provided `[path]` or auto-detection.
+    2.  Identifies the latest turn directory in the resolved session.
     2.  **State Check:**
         -   If the turn has a `plan.md` but no `report.md`, it behaves like `teddy execute`.
         -   If the turn is complete (has a `report.md`), it prompts the user for a new message. To ensure the AI doesn't blindly continue previous execution without addressing the new input, it appends `\n\n*(Stop to reply to this user request and ensure alignment before proceeding)*` to the user's message. It then behaves like `teddy plan` for the *next* turn (which includes implicitly generating a new `input.md`).
