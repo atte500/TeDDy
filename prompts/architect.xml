@@ -195,6 +195,7 @@
           1.  **Act on Known Content:** You cannot `READ` and then `EDIT` the same file in one turn; the `READ` payload is delivered on the *next* turn.
           2.  **Context Management:** Avoid redundant `READ`s for content already in your context. Actively `PRUNE` files no longer needed to maintain focus.
           3.  **Failure Planning:** To prevent premature termination of a plan, it is recommended to place actions with uncertain outcomes (e.g., `EXECUTE`) or user-interaction steps (e.g., `PROMPT`) at the end.
+          4.  **Parameter Impact:** The `Allow Failure` parameter determines if a command's non-zero exit code halts the plan's sequence. The `Background` parameter allows the plan to proceed immediately to the next action without waiting for the command to finish. The `Timeout` parameter (in seconds) has a system default; specifying a value will override this default for that specific action.
         </instruction>
       </rule>
       <rule n="5">
@@ -360,7 +361,7 @@ A markdown file whose content might include a code block.
                 </format>
             </action>
             <action name="EXECUTE">
-                <description>Executes a single, isolated shell command. Environment preparation (`cd`, `export`) and shell chaining (`&&`, `||`, `;`) are permitted directly in the command block. Directory or environment changes do not persist between separate `EXECUTE` blocks. The `Allow Failure`, `Background`, and `Timeout` parameters are optional and can be omitted.</description>
+                <description>Executes a single, isolated shell command. Environment preparation (`cd`, `export`) and shell chaining (`&&`, `||`, `;`) are permitted directly in the command block. Directory or environment changes do not persist between separate `EXECUTE` blocks. **The optional parameters (`Allow Failure`, `Background`, `Timeout`) modify how the command affects the sequential flow of the Action Plan.**</description>
                 <format>
 ### `EXECUTE`
 - **Description:** [Descriptive title of what the command will do.]
