@@ -43,8 +43,8 @@ This document outlines the technical standards, conventions, and setup process f
 ### Testing Strategy
 - **Framework:** `pytest`.
 - **Location of Tests:** Tests are organized as follows:
-    - `tests/acceptance/`: End-to-end tests.
-    - `tests/integration/`: Tests for components that interact with external systems.
+    - `tests/acceptance/`: End-to-end tests validating full user workflows. These should be kept to a minimum to maintain suite execution speed.
+    - `tests/integration/`: Tests for components interacting with external systems AND high-level orchestration/service tests that do not require full end-to-end setup.
     - `tests/unit/`: Tests for individual functions or classes in isolation.
 - **Execution:** Tests are run from the **project root** using `poetry run pytest`.
     - **Run all tests:** `poetry run pytest` (Runs in parallel by default via `-n auto` in `pyproject.toml`)
@@ -176,9 +176,7 @@ This section serves as the "System Law" (Poka-Yoke) for TeDDy. It defines the pr
 -   **Rule:** The `EXECUTE` action allows shell chaining and inline directives. **Rationale:** To simplify the protocol and shift responsibility for clean commands to the agent's prompting. This adheres to the "small, sharp tools" philosophy while maintaining statelessness between blocks.
 -   **Rule:** Use Jinja2 Macros for modular reporting. **Rationale:** To ensure consistency across different report formats (Concise CLI vs. Session) and facilitate robust extraction of specific sections (e.g., Action Log) for aggregated views.
 -   **Rule:** Explicitly specify `encoding="utf-8"` for all operations that read from or write to text files. **Rationale:** To ensure predictable, platform-agnostic behavior across different operating systems and avoid encoding errors when handling non-ASCII characters.
--   **Rule:** The `Plan` and `ActionData` domain models are mutable (unfrozen). **Rationale:** To allow primary adapters (like the TUI Reviewer) to modify plan parameters and selection state in-memory before execution without the overhead of deep copying and re-validation.
--   **Rule:** Every turn's `meta.yaml` MUST store `turn_cost` and `cumulative_cost`. **Rationale:** To ensure cost transparency and maintain a self-contained, auditable history for every turn without a centralized database.
--   **Rule:** Sessions created without a name MUST use a temporary timestamped name and be renamed after the first successful plan generation. **Rationale:** To allow the AI to suggest a meaningful name based on the actual content of the initial request.
+-   **Rule:** Domain boundaries MUST enforce strict primitive validation and casting before serialization operations (e.g., `yaml.dump`). **Rationale:** To prevent dynamic objects (like `MagicMock` in unit tests) from leaking into infrastructure adapters, preventing infinite recursion or silent hangs during serialization.
 -   **Rule:** Heavy third-party libraries (e.g., `litellm`, `trafilatura`) MUST be imported lazily within the methods where they are used. **Rationale:** To ensure the CLI remains responsive and initializes in under 500ms (excluding shell overhead). Module-level imports of heavy libraries significantly degrade the user experience.
 
 ---

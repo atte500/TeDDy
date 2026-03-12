@@ -157,7 +157,10 @@ An action that performs a web search for a list of queries.
 ## 2. Plan (Aggregate Root)
 **Status:** Implemented
 
-Represents a full plan to be executed. It is the aggregate root for a collection of `ActionData` objects. Unlike the immutable `ExecutionReport`, the `Plan` and its `ActionData` are **mutable** to allow for interactive modification by the user during the review phase.
+Represents a full plan to be executed. It is the aggregate root for a collection of `ActionData` objects.
+
+**Implementation Logic:**
+- **Mutability:** Unlike the immutable `ExecutionReport`, the `Plan` and its `ActionData` are **mutable** (unfrozen). This allows primary adapters (like the TUI Reviewer) to modify plan parameters and selection state in-memory before execution without the overhead of deep copying and re-validation.
 
 *   **Attributes:**
     *   `title` (str): The plan's title.

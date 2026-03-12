@@ -23,7 +23,8 @@ The `SessionService` is responsible for managing the lifecycle of TeDDy sessions
     -   Calculates the next turn ID (e.g., `01` -> `02`).
     -   Creates the next turn directory.
     -   Copies the current `[agent_name].xml` prompt file to the next turn.
-    -   Updates `meta.yaml` with `parent_turn_id` links and cumulative cost. Ensures all metadata is cast to primitive types before serialization to prevent hangs.
+    -   **Cost Persistence:** Updates `meta.yaml` with `parent_turn_id` links and cumulative cost. Every turn's `meta.yaml` MUST store `turn_cost` and `cumulative_cost` to ensure cost transparency and maintain a self-contained, auditable history for every turn without a centralized database.
+    -   **Defensive Serialization:** Ensures all metadata is cast to primitive types before serialization to prevent hangs (see `ARCHITECTURE.md` rule on serialization).
     -   **Context Management:**
         -   Seeds the next `turn.context` with the current one. Reading is robust: if `turn.context` is missing or unreadable, it is treated as an empty set of paths.
         -   Parses `READ` and `PRUNE` actions from the `ExecutionReport` to update the next context.
