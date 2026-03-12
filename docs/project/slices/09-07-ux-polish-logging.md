@@ -8,7 +8,7 @@ To refine the user experience of the interactive session workflow by ensuring ro
 
 ## 2. Acceptance Criteria (Scenarios)
 
-### Scenario: Fix Session Service FileNotFoundError (Refactoring)
+### Scenario: Fix Session Service FileNotFoundError (Refactoring) [✓]
 - **Given** a session transition is triggered (e.g., during `execute`).
 - **And** the `turn.context` file is missing in the current turn directory.
 - **When** `SessionService.transition_to_next_turn` is called.
@@ -16,8 +16,12 @@ To refine the user experience of the interactive session workflow by ensuring ro
 - **And** it MUST treat the missing file as an empty context.
 
 #### Deliverables
-- [ ] **Robust Context Reading:** Updated `SessionService` to use a safe file reading pattern for `turn.context`.
-- [ ] **Regression Test:** New integration test in `tests/integration/core/services/test_session_service.py` verifying transition with missing context.
+- [✓] **Robust Context Reading:** Updated `SessionService` to use a safe file reading pattern for `turn.context`.
+- [✓] **Regression Test:** New integration test in `tests/integration/core/services/test_session_service.py` verifying transition with missing context.
+
+#### Implementation Notes
+- Extracted `_read_context_file` helper in `SessionService` to robustly handle reading and parsing context files (treating missing/unreadable files as empty).
+- Updated `transition_to_next_turn` and `resolve_context_paths` to use the new helper.
 
 ### Scenario: Rename 'new' to 'start' and enable dynamic naming
 - **Given** I am in a project directory.

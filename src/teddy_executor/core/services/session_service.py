@@ -110,6 +110,16 @@ class SessionService(ISessionManager):
             return path.lstrip("/")
         return resource_str.strip()
 
+    def _read_context_file(self, path: str) -> set[str]:
+        """Reads a context file robustly and returns a set of non-empty paths."""
+        try:
+            if not self._file_system_manager.path_exists(path):
+                return set()
+            content = self._file_system_manager.read_file(path)
+            return {line.strip() for line in content.splitlines() if line.strip()}
+        except (FileNotFoundError, OSError):
+            return set()
+
     def transition_to_next_turn(
         self,
         plan_path: str,
@@ -130,13 +140,8 @@ class SessionService(ISessionManager):
         current_meta = yaml.safe_load(meta_content) or {}
         current_turn_id = current_meta.get("turn_id")
 
-        context_content = self._file_system_manager.read_file(
-            f"{current_turn_dir}/turn.context"
-        )
-        # Seed next context with current context (minus empty lines)
-        next_context_paths = {
-            line.strip() for line in context_content.splitlines() if line.strip()
-        }
+        # Seed next context with current turn's context
+        next_context_paths = self._read_context_file(f"{current_turn_dir}/turn.context")
 
         # 2. Calculate next turn
         current_turn_num = int(Path(current_turn_dir).name)
@@ -205,14 +210,7 @@ class SessionService(ISessionManager):
         session_context_path = (session_dir / "session.context").as_posix()
         turn_context_path = (turn_dir / "turn.context").as_posix()
 
-        def _read_and_parse(p):
-            try:
-                content = self._file_system_manager.read_file(p)
-                return [line.strip() for line in content.splitlines() if line.strip()]
-            except (FileNotFoundError, OSError):
-                return []
-
         return {
-            "Session": _read_and_parse(session_context_path),
-            "Turn": _read_and_parse(turn_context_path),
+            "Session": sorted(list(self._read_context_file(session_context_path))),
+            "Turn": sorted(list(self._read_context_file(turn_context_path))),
         }

@@ -25,7 +25,7 @@ The `SessionService` is responsible for managing the lifecycle of TeDDy sessions
     -   Copies the current `system_prompt.xml` to the next turn.
     -   Updates `meta.yaml` with `parent_turn_id` links.
     -   **Context Management:**
-        -   Seeds the next `turn.context` with the current one.
+        -   Seeds the next `turn.context` with the current one. Reading is robust: if `turn.context` is missing or unreadable, it is treated as an empty set of paths.
         -   Parses `READ` and `PRUNE` actions from the `ExecutionReport` to update the next context.
         -   Always appends the current `report.md` to the next context to ensure the AI has history.
 
