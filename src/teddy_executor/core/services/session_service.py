@@ -64,16 +64,9 @@ class SessionService(ISessionManager):
             "creation_timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
-        # Defensive Cleanup: Ensure all metadata is a primitive type to prevent yaml.dump hangs
-        serializable_meta = {}
-        for k, v in meta_data.items():
-            if isinstance(v, (str, int, float, bool)) and not hasattr(
-                v, "_mock_return_value"
-            ):
-                serializable_meta[k] = v
-            else:
-                serializable_meta[k] = str(v)
+        from teddy_executor.core.utils.serialization import scrub_dict_for_serialization
 
+        serializable_meta = scrub_dict_for_serialization(meta_data)
         self._file_system_manager.write_file(
             f"{turn_dir}/meta.yaml", yaml.dump(serializable_meta)
         )
@@ -215,15 +208,9 @@ class SessionService(ISessionManager):
             "creation_timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
-        serializable = {}
-        for k, v in meta.items():
-            if isinstance(v, (str, int, float, bool)) and not hasattr(
-                v, "_mock_return_value"
-            ):
-                serializable[k] = v
-            else:
-                serializable[k] = str(v)
+        from teddy_executor.core.utils.serialization import scrub_dict_for_serialization
 
+        serializable = scrub_dict_for_serialization(meta)
         self._file_system_manager.write_file(
             f"{next_dir}/meta.yaml", yaml.dump(serializable)
         )

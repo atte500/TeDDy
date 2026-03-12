@@ -122,17 +122,9 @@ class PlanningService(IPlanningUseCase):
 
         meta["model"] = str(getattr(response, "model", "unknown"))
 
-        # Defensive Cleanup: Ensure all metadata is a primitive type (str, int, float, bool)
-        # to prevent yaml.dump from hanging on MagicMocks during unit tests.
-        serializable_meta = {}
-        for k, v in meta.items():
-            if isinstance(v, (str, int, float, bool)) and not hasattr(
-                v, "_mock_return_value"
-            ):
-                serializable_meta[k] = v
-            else:
-                serializable_meta[k] = str(v)
+        from teddy_executor.core.utils.serialization import scrub_dict_for_serialization
 
+        serializable_meta = scrub_dict_for_serialization(meta)
         self._file_system_manager.write_file(
             meta_file_path, yaml.dump(serializable_meta)
         )
