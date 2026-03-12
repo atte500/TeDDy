@@ -42,3 +42,8 @@ The `SessionService` is responsible for managing the lifecycle of TeDDy sessions
 
 ### `transition_to_next_turn(plan_path: str, execution_report: ExecutionReport) -> str`
 -   **Description:** Executes the Turn Transition Algorithm to prepare the next turn directory.
+
+## 5. Implementation Notes
+
+-   **Dynamic Renaming:** The `rename_session` method is provided to safely move session directories. The `SessionOrchestrator` uses this to rename timestamped sessions to a slugified version of the first plan's title (H1) after generation.
+-   **Robust Context Reading:** Uses `_read_context_file` to handle missing or malformed `turn.context` files gracefully, treating them as empty.

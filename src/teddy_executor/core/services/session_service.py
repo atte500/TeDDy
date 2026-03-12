@@ -198,6 +198,21 @@ class SessionService(ISessionManager):
 
         return next_turn_dir
 
+    def rename_session(self, old_name: str, new_name: str) -> str:
+        """
+        Safely renames a session directory on the filesystem.
+        """
+        old_path = f".teddy/sessions/{old_name}"
+        new_path = f".teddy/sessions/{new_name}"
+
+        if not self._file_system_manager.path_exists(old_path):
+            raise ValueError(f"Session '{old_name}' not found.")
+        if self._file_system_manager.path_exists(new_path):
+            raise ValueError(f"Session '{new_name}' already exists.")
+
+        self._file_system_manager.move_directory(old_path, new_path)
+        return new_path
+
     def resolve_context_paths(self, plan_path: str) -> dict[str, list[str]]:
         """
         Locates session.context and turn.context relative to plan_path

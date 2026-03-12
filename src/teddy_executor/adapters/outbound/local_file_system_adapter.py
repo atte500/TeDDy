@@ -75,6 +75,22 @@ class LocalFileSystemAdapter(IFileSystemManager):
             raise FileNotFoundError(f"Directory not found: {path}")
         return [p.name for p in dir_path.iterdir()]
 
+    def move_directory(self, old_path: str, new_path: str) -> None:
+        """
+        Moves or renames a directory.
+        """
+        import shutil
+
+        source = self._resolve_path(old_path)
+        destination = self._resolve_path(new_path)
+
+        if not source.exists():
+            raise FileNotFoundError(f"Source directory not found: {old_path}")
+        if destination.exists():
+            raise FileExistsError(f"Destination directory already exists: {new_path}")
+
+        shutil.move(str(source), str(destination))
+
     def read_files_in_vault(self, paths: list[str]) -> dict[str, str | None]:
         """
         Reads the content of multiple files specified in a list.

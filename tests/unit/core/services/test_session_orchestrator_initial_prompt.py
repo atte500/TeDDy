@@ -21,10 +21,20 @@ def mocks():
 def test_trigger_new_plan_uses_ask_question(mocks):
     # Arrange
     orchestrator = SessionOrchestrator(**mocks)
-    mocks["session_service"].get_session_state.return_value = (
-        SessionState.EMPTY,
-        "session/path",
-    )
+
+    # Mock valid plan to avoid re-plan loop in execute()
+    from teddy_executor.core.domain.models.plan import Plan
+
+    mock_plan = MagicMock(spec=Plan)
+    mock_plan.title = "Test Plan"
+    mock_plan.rationale = "Test Rationale"
+    mocks["plan_parser"].parse.return_value = mock_plan
+    mocks["plan_validator"].validate.return_value = []
+
+    mocks["session_service"].get_session_state.side_effect = [
+        (SessionState.EMPTY, "session/path"),
+        (SessionState.PENDING_PLAN, "session/path"),
+    ]
     mocks["user_interactor"].ask_question.return_value = "User instructions"
 
     # Act

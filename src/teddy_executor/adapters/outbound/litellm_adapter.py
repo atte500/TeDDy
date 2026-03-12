@@ -40,3 +40,11 @@ class LiteLLMAdapter(ILlmClient):
             return ""
         except Exception as e:
             raise LlmApiError(f"LLM Completion failed: {str(e)}") from e
+
+    def get_token_count(self, model: str, messages: List[Dict[str, str]]) -> int:
+        """Stub for token count calculation."""
+        return 0
+
+    def get_completion_cost(self, _completion_response: Any) -> float:
+        """Stub for completion cost calculation."""
+        return 0.0

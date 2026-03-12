@@ -79,3 +79,9 @@ class IFileSystemManager(Protocol):
         Lists the names of files and directories in the specified path.
         """
         ...
+
+    def move_directory(self, old_path: str, new_path: str) -> None:
+        """
+        Moves or renames a directory.
+        """
+        ...

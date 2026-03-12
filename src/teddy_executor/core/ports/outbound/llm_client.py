@@ -32,3 +32,17 @@ class ILlmClient(ABC):
             LlmApiError: For any failures during the API call.
         """
         pass
+
+    @abstractmethod
+    def get_token_count(self, model: str, messages: List[Dict[str, str]]) -> int:
+        """
+        Calculates the number of tokens in the payload for a specific model.
+        """
+        pass
+
+    @abstractmethod
+    def get_completion_cost(self, _completion_response: Any) -> float:
+        """
+        Calculates the precise USD cost of a completion response.
+        """
+        pass

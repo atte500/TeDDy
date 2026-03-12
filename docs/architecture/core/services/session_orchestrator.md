@@ -36,4 +36,10 @@ The `SessionOrchestrator` is a decorator-style service that wraps the stateless 
 -   **Description:** Implements the `IRunPlanUseCase`. If `plan_path` is present, it layers stateful session side-effects over the core execution.
 
 ### `resume(session_name: str, interactive: bool = True)`
--   **Description:** Implements the session state machine. Detects the state of the latest turn (EMPTY, PENDING_PLAN, COMPLETE_TURN) and triggers the appropriate action (Planning, Execution, or Transitioning).
+-   **Description:** Implements the session state machine. Detects the state of the latest turn (EMPTY, PENDING_PLAN, COMPLETE_TURN) and triggers the appropriate action.
+-   **Algorithm:**
+    1.  Get current session state (EMPTY, PENDING_PLAN, COMPLETE_TURN).
+    2.  **EMPTY**: Prompt for instructions -> Generate Plan -> Resolve actual path via `SessionService` -> Call `execute`.
+    3.  **PENDING_PLAN**: Call `execute(plan_path=...)`.
+    4.  **COMPLETE_TURN**: Transition to next turn -> Prompt for instructions -> Generate Plan -> Resolve actual path via `SessionService` -> Call `execute`.
+-   **Recursion Safety:** To prevent recursion loops and handle dynamic renaming, the state machine resolves the current turn's path from the `SessionService` after planning/renaming and delegates directly to `execute`.

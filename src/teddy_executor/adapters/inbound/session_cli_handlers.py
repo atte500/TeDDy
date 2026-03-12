@@ -13,16 +13,27 @@ from teddy_executor.adapters.inbound.cli_helpers import (
 )
 
 
-def handle_new_session(container: Container, name: str, agent: str):
-    """Logic for the 'new' command."""
+def handle_new_session(
+    container: Container, name: Optional[str], agent: str, no_copy: bool = False
+):
+    """Logic for the 'start' command."""
+    from datetime import datetime
+    from teddy_executor.adapters.inbound.cli_helpers import handle_report_output
+
     session_manager: ISessionManager = container.resolve(ISessionManager)
+
+    # Generate timestamped name if none provided
+    actual_name = name or f"session-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+
     try:
-        session_dir = session_manager.create_session(name=name, agent_name=agent)
+        session_dir = session_manager.create_session(name=actual_name, agent_name=agent)
         typer.echo(f"Session created at: {session_dir}")
 
         # Streamlined Initialization: Trigger resume (which triggers planning for EMPTY state)
         orchestrator = container.resolve(IRunPlanUseCase)
-        orchestrator.resume(session_name=name)
+        report = orchestrator.resume(session_name=actual_name)
+
+        handle_report_output(container, report, no_copy)
 
     except Exception as e:
         typer.echo(f"Error: {e}", err=True)

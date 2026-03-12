@@ -9,11 +9,11 @@ from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 runner = CliRunner()
 
 
-def test_teddy_new_bootstraps_session(tmp_path, monkeypatch, container):
+def test_teddy_start_bootstraps_session(tmp_path, monkeypatch, container):
     """
-    Scenario: teddy new bootstraps a session
+    Scenario: teddy start bootstraps a session
     Given no existing session named "feat-x".
-    When I run teddy new feat-x.
+    When I run teddy start feat-x.
     Then a directory .teddy/sessions/feat-x/01/ MUST be created.
     And .teddy/sessions/feat-x/session.context MUST exist and contain the content of .teddy/init.context.
     And 01/system_prompt.xml MUST be populated with the default agent prompt.
@@ -39,11 +39,27 @@ def test_teddy_new_bootstraps_session(tmp_path, monkeypatch, container):
 
     # Mock LLM
     mock_llm = MagicMock(spec=ILlmClient)
-    mock_llm.get_completion.return_value = "# Plan\nStreamlined Init"
+    mock_llm.get_completion.return_value = """# Plan: Streamlined Init
+- Status: Green
+- Plan Type: feat
+- Agent: Dev
+
+## Rationale
+``````
+OK
+``````
+
+## Action Plan
+### `EXECUTE`
+- Description: dummy
+````shell
+echo 'dummy'
+````
+"""
     container.register(ILlmClient, instance=mock_llm)
 
     # Act
-    result = runner.invoke(app, ["new", "feat-x"], input="initial instructions\n")
+    result = runner.invoke(app, ["start", "feat-x"], input="initial instructions\ny\n")
 
     # Assert
     assert result.exit_code == 0
@@ -333,7 +349,23 @@ def test_teddy_resume_prompts_for_new_plan(monkeypatch, tmp_path, container):
     from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 
     mock_llm = MagicMock(spec=ILlmClient)
-    mock_llm.get_completion.return_value = "# Plan\n## Rationale\nOK\n## Action Plan\n"
+    mock_llm.get_completion.return_value = """# Plan: Resume Plan
+- Status: Green
+- Plan Type: feat
+- Agent: Dev
+
+## Rationale
+``````
+OK
+``````
+
+## Action Plan
+### `EXECUTE`
+- Description: dummy
+````shell
+echo 'dummy'
+````
+"""
 
     container.register(ILlmClient, instance=mock_llm)
 
@@ -352,3 +384,106 @@ def test_teddy_resume_prompts_for_new_plan(monkeypatch, tmp_path, container):
     mock_llm.get_completion.assert_called_once()
     args, kwargs = mock_llm.get_completion.call_args
     assert expected_message in kwargs["messages"][1]["content"]
+
+
+def test_teddy_start_dynamic_renaming_and_flow(tmp_path, monkeypatch, container):
+    """
+    Scenario: Rename 'new' to 'start' and enable dynamic naming
+    """
+    # Arrange
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / ".git").mkdir()
+    teddy_dir = tmp_path / ".teddy"
+    teddy_dir.mkdir()
+    (teddy_dir / "init.context").write_text("README.md", encoding="utf-8")
+
+    prompts_dir = teddy_dir / "prompts"
+    prompts_dir.mkdir()
+    (prompts_dir / "pathfinder.xml").write_text(
+        "<prompt>test</prompt>", encoding="utf-8"
+    )
+
+    # Mock LLM to return a plan with a specific H1
+    mock_llm = MagicMock(spec=ILlmClient)
+    mock_llm.get_completion.return_value = """# Plan: Initialize User Auth
+- Status: Green
+- Plan Type: feat
+- Agent: Dev
+
+## Rationale
+``````
+Testing dynamic rename.
+``````
+
+## Action Plan
+### `EXECUTE`
+- Description: test
+````shell
+echo 'hello from dynamic session'
+````"""
+    mock_llm.get_token_count.return_value = 100
+    mock_llm.get_completion_cost.return_value = 0.01
+    container.register(ILlmClient, instance=mock_llm)
+
+    # Act
+    result = runner.invoke(
+        app, ["start"], input="My prompt\ny\n", catch_exceptions=False
+    )
+
+    # Assert
+    assert result.exit_code == 0
+    sessions_root = teddy_dir / "sessions"
+    assert sessions_root.is_dir()
+    expected_session_name = "initialize-user-auth"
+    session_dir = sessions_root / expected_session_name
+    assert session_dir.is_dir()
+    assert "hello from dynamic session" in result.stdout
+    assert (session_dir / "01" / "report.md").exists()
+
+
+def test_teddy_start_with_explicit_name(tmp_path, monkeypatch, container):
+    """
+    Scenario: teddy start with explicit name does not rename.
+    """
+    # Arrange
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / ".git").mkdir()
+    teddy_dir = tmp_path / ".teddy"
+    teddy_dir.mkdir()
+    (teddy_dir / "init.context").write_text("README.md", encoding="utf-8")
+
+    prompts_dir = teddy_dir / "prompts"
+    prompts_dir.mkdir()
+    (prompts_dir / "pathfinder.xml").write_text(
+        "<prompt>test</prompt>", encoding="utf-8"
+    )
+
+    mock_llm = MagicMock(spec=ILlmClient)
+    mock_llm.get_completion.return_value = """# Plan: Some Other Title
+- Status: Green
+- Plan Type: feat
+- Agent: Dev
+
+## Rationale
+``````
+OK
+``````
+
+## Action Plan
+### `EXECUTE`
+- Description: dummy
+````shell
+echo 'dummy'
+````
+"""
+    container.register(ILlmClient, instance=mock_llm)
+
+    # Act
+    result = runner.invoke(
+        app, ["start", "explicit-name"], input="My prompt\ny\n", catch_exceptions=False
+    )
+
+    # Assert
+    assert result.exit_code == 0
+    assert (teddy_dir / "sessions" / "explicit-name").is_dir()
+    assert not (teddy_dir / "sessions" / "some-other-title").exists()

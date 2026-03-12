@@ -74,10 +74,15 @@ def bootstrap():
 
 
 @app.command()
-def new(
-    name: str = typer.Argument(..., help="The name of the new session."),
+def start(
+    name: Optional[str] = typer.Argument(None, help="The name of the new session."),
     agent: str = typer.Option(
         "pathfinder", "--agent", help="The name of the agent to use for the session."
+    ),
+    no_copy: bool = typer.Option(
+        False,
+        "--no-copy",
+        help="Do not copy the output to the clipboard.",
     ),
 ):
     """
@@ -85,7 +90,7 @@ def new(
     """
     from teddy_executor.adapters.inbound.session_cli_handlers import handle_new_session
 
-    handle_new_session(container, name, agent)
+    handle_new_session(container, name, agent, no_copy)
 
 
 @app.command()

@@ -89,6 +89,19 @@ This adapter is a "driving" adapter that uses inbound ports to interact with the
 *   **Technology:** `Typer`
 *   **Composition Root:** The application's dependency injection and wiring are handled in `src/teddy_executor/main.py` as described in the Dependency Injection section above.
 
+### Session Command: `start`
+**Status:** Implemented
+**Introduced in:** [Slice 09-04: Core Session & Context Engine](../../../project/slices/09-04-core-session-context-engine.md)
+
+Initializes a new session.
+
+*   **Signature:** `teddy start [NAME] [--agent AGENT] [--model MODEL] [--provider PROVIDER] [--api-key KEY]`
+*   **Behavior:**
+    1.  Creates a new session directory in `.teddy/sessions/`.
+    2.  If `NAME` is omitted, it uses a temporary ISO-timestamped name.
+    3.  Automatically Renames: If created with a timestamped name, the session is renamed to a slugified version of the first generated plan's H1 title.
+    4.  Triggers immediate planning and enters the interactive execution loop.
+
 ### Main Command: `execute`
 **Status:** Implemented
 **Updated in:** [Slice 19: Unified `execute` Command & Interactive Approval](../../../project/slices/19-unified-execute-command.md)

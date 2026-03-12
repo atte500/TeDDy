@@ -52,19 +52,34 @@ class SessionOrchestrator(IRunPlanUseCase):
             return self.execute(plan_path=plan_path, interactive=interactive)
 
         if state == SessionState.EMPTY:
-            return self._trigger_new_plan(turn_path)
+            new_name = self._trigger_new_plan(turn_path)
+            if not new_name:
+                return None
+            # After planning, the turn is now PENDING_PLAN.
+            # Resolve path again to account for potential renaming.
+            _, actual_turn_path = self._session_service.get_session_state(new_name)
+            return self.execute(
+                plan_path=f"{actual_turn_path}/plan.md", interactive=interactive
+            )
 
         if state == SessionState.COMPLETE_TURN:
             # Case C: Start next turn
             next_turn_dir = self._session_service.transition_to_next_turn(
                 plan_path=f"{turn_path}/plan.md"
             )
-            return self._trigger_new_plan(next_turn_dir)
+            new_name = self._trigger_new_plan(next_turn_dir)
+            if not new_name:
+                return None
+            # After planning, the next turn is now PENDING_PLAN.
+            _, actual_turn_path = self._session_service.get_session_state(new_name)
+            return self.execute(
+                plan_path=f"{actual_turn_path}/plan.md", interactive=interactive
+            )
 
         return None
 
-    def _trigger_new_plan(self, turn_dir: str):
-        """Prompts user and triggers planning."""
+    def _trigger_new_plan(self, turn_dir: str) -> Optional[str]:
+        """Prompts user and triggers planning. Returns session name on success."""
         message = self._user_interactor.ask_question(
             "Enter your instructions for the AI"
         )
@@ -76,7 +91,6 @@ class SessionOrchestrator(IRunPlanUseCase):
         message += hint
 
         # Resolve context files
-        # PlanningService expects context_files dict if available
         context_files = None
         turn_p = Path(turn_dir)
         turn_context = turn_p / "turn.context"
@@ -93,9 +107,38 @@ class SessionOrchestrator(IRunPlanUseCase):
                 "Session": [str(session_context)],
             }
 
-        self._planning_service.generate_plan(
+        plan_path = self._planning_service.generate_plan(
             user_message=message, turn_dir=turn_dir, context_files=context_files
         )
+
+        # Dynamic Renaming Logic for Turn 1
+        session_name = Path(turn_dir).parent.name
+        if turn_p.name == "01":
+            if session_name.startswith("session-"):
+                renamed = self._handle_dynamic_rename(plan_path)
+                return renamed or session_name
+
+        return session_name
+
+    def _handle_dynamic_rename(self, plan_path: str) -> Optional[str]:
+        """Renames the session based on the plan title."""
+        content = self._file_system_manager.read_file(plan_path)
+        # Extract H1 title (e.g., "# Plan: My Feature")
+        import re
+
+        match = re.search(r"^#\s*(?:Plan:)?\s*(.*)$", content, re.MULTILINE)
+        if match:
+            title = match.group(1).strip()
+            # Slugify
+            new_name = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")
+            if new_name:
+                old_name = Path(plan_path).parent.parent.name
+                try:
+                    self._session_service.rename_session(old_name, new_name)
+                    return new_name
+                except ValueError:
+                    # Rename failed (e.g., target exists), just keep the old name
+                    pass
         return None
 
     def execute(

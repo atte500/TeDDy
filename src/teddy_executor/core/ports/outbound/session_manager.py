@@ -53,3 +53,10 @@ class ISessionManager(Protocol):
         Locates context files relative to the plan path and returns their contents.
         """
         ...
+
+    def rename_session(self, old_name: str, new_name: str) -> str:
+        """
+        Safely renames a session directory on the filesystem.
+        Returns the new path to the session directory.
+        """
+        ...

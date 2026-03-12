@@ -23,7 +23,7 @@ To refine the user experience of the interactive session workflow by ensuring ro
 - Extracted `_read_context_file` helper in `SessionService` to robustly handle reading and parsing context files (treating missing/unreadable files as empty).
 - Updated `transition_to_next_turn` and `resolve_context_paths` to use the new helper.
 
-### Scenario: Rename 'new' to 'start' and enable dynamic naming
+### Scenario: Rename 'new' to 'start' and enable dynamic naming [✓]
 - **Given** I am in a project directory.
 - **When** I run `teddy start` without a name.
 - **Then** it MUST create a session with a temporary timestamped name.
@@ -31,10 +31,16 @@ To refine the user experience of the interactive session workflow by ensuring ro
 - **And** it MUST flow seamlessly from initialization to planning to execution.
 
 #### Deliverables
-- [ ] **CLI Refactoring:** Renamed `teddy new` to `teddy start` in `__main__.py` and `session_cli_handlers.py`.
-- [ ] **Dynamic Renaming Logic:** Implemented `ISessionManager.rename_session` in `SessionService`.
-- [ ] **Orchestration Hook:** Updated `SessionOrchestrator` to trigger renaming after the first plan generation in turn `01`.
-- [ ] **Acceptance Test:** New test in `tests/acceptance/test_session_management.py` verifying the `start` -> `rename` -> `execute` loop.
+- [✓] **CLI Refactoring:** Renamed `teddy new` to `teddy start` in `__main__.py` and `session_cli_handlers.py`.
+- [✓] **Dynamic Renaming Logic:** Implemented `ISessionManager.rename_session` in `SessionService`.
+- [✓] **Orchestration Hook:** Updated `SessionOrchestrator` to trigger renaming after the first plan generation in turn `01`.
+- [✓] **Acceptance Test:** New test in `tests/acceptance/test_session_management.py` verifying the `start` -> `rename` -> `execute` loop.
+
+#### Implementation Notes
+- Renamed `new` command to `start` to better reflect its "entry point" nature.
+- Implemented `rename_session` in `SessionService` with collision checking.
+- Updated `SessionOrchestrator` to perform "Auto-Naming": if the session name matches the ISO timestamp pattern (indicating it was created without a name), the orchestrator slugifies the first generated plan's H1 title and renames the session directory.
+- Fixed a bug where `SessionOrchestrator.resume` recursion used a stale session name after a rename.
 
 ### Scenario: Robust 'resume' with path detection
 - **Given** several sessions exist in `.teddy/sessions/`.
