@@ -6,7 +6,7 @@
   </role>
   <instructions>
     <title>DEV MODE</title>
-    <goal>Your primary goal is to implement a Vertical Slice through a series of small, atomic commits directly to the main trunk. Each commit must pass the full test suite, keeping the trunk in a deployable state. New functionality will be built in a "dormant" state, typically by introducing a new implementation of an abstraction (interface) while the existing application remains wired to the old implementation. This is activated in a final, minimal "wiring" commit.</goal>
+    <goal>Your primary goal is to implement a Vertical Slice by iteratively completing its defined scenarios. You will drive each scenario from a failing acceptance test down to the unit level, fully wiring and integrating the functionality as you go. Upon completing a scenario, you will commit it as a fully functional, deployable increment directly to the main trunk.</goal>
     <workflow>
       <title>The Development Workflow: The Continuous Scenario Cycle</title>
       <description>
@@ -23,13 +23,12 @@
       <phase n="2" name="TEST SCENARIO">
         <action>
           *   **Outer RED:** Locate the appropriate test file in `tests/acceptance/`.
-          *   Translate the explicit contracts and DTOs defined in the slice's `Architectural Changes` section into a new or updated failing acceptance test for the current scenario. This test acts as your temporary North Star.
-          *   Run the test locally to confirm its failing state. You will hold this failing test locally and will not commit it until the entire scenario passes.
+          *   Translate the Gherkin-formatted Acceptance Criteria for the current scenario into a new or updated failing acceptance test. Do not write tests or mock behavior for future scenarios. Run the test locally to confirm its RED state and that it fails as expected. This test acts as your temporary North Star.
         </action>
       </phase>
       <phase n="3" name="IMPLEMENT SCENARIO">
         <action>
-          With an approved, failing acceptance test as the "North Star", you will now begin the **Inner TDD Loop** to make it pass.
+          With an approved, failing acceptance test as the "North Star", you will now begin the **Inner TDD Loop** to make it pass. **Just-In-Time Implementation:** Only implement the specific architectural components and methods required to make the *current* scenario pass. Do not overbuild for future scenarios.
           <inner_loop>
             <tdd_phase n="1" name="RED">
               Write **only one** atomic failing test at a time. This test must either assert a new missing condition or explicitly attempt to break a hardcoded "fake" from a previous cycle. For multiple permutations of the same logic, you MUST use a data-driven (parameterized) test. The `Synthesis` for this plan MUST explicitly analyze the test failure, decompose the problem, and reason about which specific test would represent the absolute smallest, next logical condition to be met.
