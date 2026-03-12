@@ -20,6 +20,8 @@ Ensures that Markdown code fences (e.g., ` ``` `) are handled consistently befor
 - `find_node_in_tree(node, node_type)`: Performs a depth-first search for a specific node type within an AST subtree.
 - `consume_content_until_next_action(stream, valid_actions)`: Streams through nodes until a structural boundary (like the next action or a higher-level heading) is encountered.
 - `extract_posix_headers(command_str, initial_cwd, initial_env)`: Parses and removes `cd` and `export` directives from the beginning of a shell script string.
+- `format_node_name(node)`: Formats the AST node type with metadata (e.g., heading level or code fence backtick count) for reporting.
+- `format_structural_mismatch_msg(doc, expected, mismatch_idx, offending_nodes)`: Constructs the high-fidelity structural error report, including the AST summary and mismatch indicators.
 
 ### Path Normalization
 - `normalize_path(path)`: Ensures all paths use POSIX-style forward slashes for internal consistency.

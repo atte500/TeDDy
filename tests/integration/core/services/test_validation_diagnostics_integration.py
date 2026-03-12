@@ -70,7 +70,10 @@ This paragraph is NOT a REPLACE heading.
         "Missing REPLACE block after FIND block <-- MISMATCH"
         not in error_msg.splitlines()[0]
     )
-    assert 'Paragraph: "This paragraph is NOT a REPLAC..." <-- MISMATCH' in error_msg
+    assert (
+        'Paragraph: "This paragraph is NOT a REPLACE heading." <-- MISMATCH'
+        in error_msg
+    )
 
 
 def test_multiple_find_matches_hint_integration(integration_container, tmp_path: Path):

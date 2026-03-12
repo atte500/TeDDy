@@ -8,14 +8,24 @@ Enhance the TeDDy CLI user experience by improving error visibility during parsi
 
 ## 2. Acceptance Criteria (Scenarios)
 
-### Scenario 1: Multi-Highlight AST Mismatches
+### Scenario 1: Multi-Highlight AST Mismatches [✓]
 **Given** a plan with multiple structural errors (e.g., missing metadata list and wrong heading levels)
 **When** the plan is parsed by `MarkdownPlanParser`
 **Then** the resulting `InvalidPlanError` AST summary must include the `MISMATCH_INDICATOR` (` <--- MISMATCH`) on **every** node that deviated from the expected schema, not just the first one.
 
 #### Deliverables
-- [ ] Update `InvalidPlanError` in `src/teddy_executor/core/ports/inbound/plan_parser.py` to accept `offending_nodes: List[Any]` instead of a single node.
-- [ ] Update `MarkdownPlanParser._format_structural_mismatch_msg` in `src/teddy_executor/core/services/markdown_plan_parser.py` to iterate through the list of offending nodes and apply the indicator to all matching indices in the AST summary.
+- [✓] Update `InvalidPlanError` in `src/teddy_executor/core/ports/inbound/plan_parser.py` to accept `offending_nodes: List[Any]` instead of a single node.
+- [✓] Update `MarkdownPlanParser._format_structural_mismatch_msg` in `src/teddy_executor/core/services/markdown_plan_parser.py` to iterate through the list of offending nodes and apply the indicator to all matching indices in the AST summary.
+
+**Implementation Notes:**
+- Pluralized `InvalidPlanError.offending_nodes` and added backward compatibility via `offending_node` property.
+- Refactored `MarkdownPlanParser._parse_strict_top_level` to scan the first 5 slots for all deviations from the expected schema before data extraction.
+- Updated `_format_structural_mismatch_msg` to highlight all indices corresponding to the nodes in the `offending_nodes` list using robust `id()` matching.
+- **Architectural Polish:**
+    - Moved AST formatting and mismatch message generation logic from `MarkdownPlanParser` to `parser_infrastructure.py` to keep the parser service focused and under the SLOC limit.
+    - Simplified `_parse_strict_top_level` by extracting schema validation into `_validate_top_level_schema` (resolving Ruff C901).
+    - Hardened the parser against Bandit (removed `assert`) and Mypy (added explicit type guards for AST iterations and unpacking).
+    - Updated `MarkdownPlanParser` to maintain a thin internal wrapper `_format_structural_mismatch_msg` for backward compatibility with existing unit tests.
 
 ---
 

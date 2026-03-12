@@ -20,7 +20,7 @@ from teddy_executor.core.services.parser_infrastructure import (
     get_child_text,
     get_action_heading,
     print_ast,
-    MISMATCH_INDICATOR,
+    format_structural_mismatch_msg,
 )
 from teddy_executor.core.services.action_parser_strategies import (
     parse_create_action,
@@ -81,88 +81,39 @@ class MarkdownPlanParser(IPlanParser):
             if "--- Expected Document Structure ---" in str(e):
                 raise e
 
-            offending_idx = -1
-            if e.offending_node:
-                try:
-                    offending_idx = list(doc.children or []).index(e.offending_node)
-                except ValueError:
-                    pass
+            # Fallback for errors that didn't provide a structural summary
+            e_nodes = getattr(e, "offending_nodes", [])
+            offending_nodes: List[Any] = e_nodes if e_nodes is not None else []
 
-            ast_summary = []
-            for i, child in enumerate(doc.children or []):
-                n_name = self._format_node_name(child)
-                content = get_child_text(child).strip()
-                first_line = content.splitlines()[0][:30].strip() if content else ""
-                if first_line:
-                    n_name += f': "{first_line}..."'
-
-                indicator = MISMATCH_INDICATOR if i == offending_idx else ""
-                ast_summary.append(f"[{i:03d}] {n_name}{indicator}")
-
-            debug_info = (
-                "\n\n--- AST Summary (Trace of top-level nodes) ---\n"
-                + "\n".join(ast_summary)
-                + "\n\n**Hint:** Parsing often fails due to improper Code Block Formatting. Try to double the number of backticks in your outer code blocks and make sure fences are each on their own isolated line."
+            # Re-format the error using the shared infrastructure
+            # We use an empty expectation string to focus the message on the actual mismatch
+            rich_msg = format_structural_mismatch_msg(
+                doc, "a valid plan structure", -1, offending_nodes
             )
-            raise InvalidPlanError(f"{str(e)}{debug_info}") from e
+            raise InvalidPlanError(f"{str(e).splitlines()[0]}\n\n{rich_msg}") from e
 
     def _raise_structural_error(
         self, doc: Document, expected_name: str, mismatch_idx: int, actual_node: Any
     ):
         """Constructs and raises a detailed structural validation error."""
+        offending_nodes = [actual_node] if actual_node else []
         raise InvalidPlanError(
             self._format_structural_mismatch_msg(
                 doc, expected_name, mismatch_idx, actual_node
-            )
+            ),
+            offending_nodes=offending_nodes,
         )
 
     def _format_structural_mismatch_msg(
         self, doc: Document, expected: str, mismatch_idx: int, actual_node: Any
     ) -> str:
-        actual_name = self._format_node_name(actual_node)
-
-        def get_preview(n):
-            content = get_child_text(n).strip() if n else ""
-            return content.splitlines()[0][:30].strip() if content else ""
-
-        preview = get_preview(actual_node)
-        if preview:
-            actual_name += f': "{preview}..."'
-
-        msg = f"Plan structure is invalid. Expected {expected}, but found {actual_name}.\n\n"
-        msg += "--- Expected Document Structure ---\n"
-        msg += "[000] Heading (Level 1)\n"
-        msg += "[001] List (Metadata)\n"
-        msg += "[002] Heading (Level 2: Rationale)\n"
-        msg += "[003] BlockCode (Rationale Content)\n"
-        msg += "[004] Heading (Level 2: Action Plan)\n"
-        msg += "[005...] Heading (Level 3: Action Type)\n"
-        msg += "[006...] (Action-specific AST nodes)\n"
-
-        msg += "\n--- Actual Document Structure ---\n"
-        children = list(doc.children) if doc.children else []
-
-        # If mismatch_idx is not provided, try to find the actual_node
-        if mismatch_idx == -1 and actual_node:
-            try:
-                mismatch_idx = children.index(actual_node)
-            except ValueError:
-                pass
-
-        for i, node in enumerate(children):
-            node = children[i]
-            n_name = self._format_node_name(node)
-
-            c_prev = get_preview(node)
-            if c_prev:
-                n_name += f': "{c_prev}..."'
-
-            msg += (
-                f"[{i:03d}] {n_name}{MISMATCH_INDICATOR if i == mismatch_idx else ''}\n"
-            )
-
-        msg += "\n**Hint:** Parsing often fails due to improper Code Block Formatting. Try to double the number of backticks in your outer code blocks and make sure fences are each on their own isolated line.\n"
-        return msg
+        """Wrapper for infrastructure helper to maintain internal API for tests."""
+        offending_nodes = (
+            actual_node if isinstance(actual_node, list) else [actual_node]
+        )
+        return format_structural_mismatch_msg(
+            doc, expected, mismatch_idx, offending_nodes
+        )
 
     def _consume_mandatory_node(
         self, stream: _PeekableStream, doc: Document, idx: int, expected: str, predicate
@@ -177,11 +128,11 @@ class MarkdownPlanParser(IPlanParser):
     ) -> tuple[str, str, dict[str, str]]:
         # 0: Find H1 Title, ignoring preamble
         node = stream.peek()
-        actual_idx = 0
+        start_idx = 0
         while node and not (isinstance(node, Heading) and node.level == H1_LEVEL):
             stream.next()
             node = stream.peek()
-            actual_idx += 1
+            start_idx += 1
 
         if not node:
             raise InvalidPlanError(
@@ -189,65 +140,81 @@ class MarkdownPlanParser(IPlanParser):
             )
 
         title = get_child_text(node).strip()
-        stream.next()
-        actual_idx += 1
 
-        # 1: List Metadata
-        metadata_list_node = self._consume_mandatory_node(
-            stream,
-            doc,
-            actual_idx,
-            "a List (Metadata) immediately following the title",
-            lambda n: isinstance(n, MdList),
-        )
+        self._validate_top_level_schema(doc, start_idx)
+
+        # If we got here, the structure is correct. Consume nodes and extract data.
+        stream.next()  # Title (already used)
+        metadata_list_node = stream.next()
+        if not metadata_list_node:
+            raise InvalidPlanError(
+                "Plan parsing failed: Expected metadata list missing."
+            )
+
         metadata = {}
-        for item in metadata_list_node.children:
+        list_children = getattr(metadata_list_node, "children", [])
+        for item in list_children if list_children is not None else []:
             text = get_child_text(item).strip()
             if ":" in text:
                 key, value = text.split(":", 1)
                 metadata[key.strip("* ")] = value.strip()
-        actual_idx += 1
 
-        # 2: H2 Rationale
-        self._consume_mandatory_node(
-            stream,
-            doc,
-            actual_idx,
-            "a Level 2 Heading containing 'Rationale'",
-            lambda n: (
-                isinstance(n, Heading)
-                and n.level == H2_LEVEL
-                and "Rationale" in get_child_text(n)
-            ),
-        )
-        actual_idx += 1
-
-        # 3: BlockCode Rationale
-        rationale_node = self._consume_mandatory_node(
-            stream,
-            doc,
-            actual_idx,
-            "a CodeFence or BlockCode containing the rationale content",
-            lambda n: isinstance(n, (CodeFence, BlockCode)),
-        )
+        stream.next()  # H2 Rationale
+        rationale_node = stream.next()
         rationale = get_child_text(rationale_node).strip()
-        actual_idx += 1
-
-        # 4: H2 Action Plan
-        self._consume_mandatory_node(
-            stream,
-            doc,
-            actual_idx,
-            "a Level 2 Heading containing 'Action Plan'",
-            lambda n: (
-                isinstance(n, Heading)
-                and n.level == H2_LEVEL
-                and "Action Plan" in get_child_text(n)
-            ),
-        )
-        actual_idx += 1
+        stream.next()  # H2 Action Plan
 
         return title, rationale, metadata
+
+    def _validate_top_level_schema(self, doc: Document, start_idx: int):
+        """Validates the structural schema of the top-level nodes (C901)."""
+        doc_children = doc.children if doc.children is not None else []
+        children = list(doc_children)
+        expected_schema = [
+            (
+                "a List (Metadata) immediately following the title",
+                lambda n: isinstance(n, MdList),
+            ),
+            (
+                "a Level 2 Heading containing 'Rationale'",
+                lambda n: (
+                    isinstance(n, Heading)
+                    and n.level == H2_LEVEL
+                    and "Rationale" in get_child_text(n)
+                ),
+            ),
+            (
+                "a CodeFence or BlockCode containing the rationale content",
+                lambda n: isinstance(n, (CodeFence, BlockCode)),
+            ),
+            (
+                "a Level 2 Heading containing 'Action Plan'",
+                lambda n: (
+                    isinstance(n, Heading)
+                    and n.level == H2_LEVEL
+                    and "Action Plan" in get_child_text(n)
+                ),
+            ),
+        ]
+
+        offending_nodes = []
+        primary_mismatch = None
+
+        for i, (expected_desc, predicate) in enumerate(expected_schema):
+            target_idx = start_idx + 1 + i
+            actual_node = children[target_idx] if target_idx < len(children) else None
+
+            if not actual_node or not predicate(actual_node):
+                offending_nodes.append(actual_node)
+                if primary_mismatch is None:
+                    primary_mismatch = (expected_desc, target_idx, actual_node)
+
+        if offending_nodes and primary_mismatch is not None:
+            expected_desc, target_idx, actual_node = primary_mismatch
+            error_msg = format_structural_mismatch_msg(
+                doc, expected_desc, target_idx, offending_nodes
+            )
+            raise InvalidPlanError(error_msg, offending_nodes=offending_nodes)
 
     def _parse_actions(
         self, stream: _PeekableStream, doc: Document
@@ -255,17 +222,21 @@ class MarkdownPlanParser(IPlanParser):
         actions: List[ActionData] = []
         # 'Action Plan' heading is already consumed by _parse_strict_top_level.
 
+        offending_nodes = []
+        primary_mismatch = None
+
         # Parse all subsequent actions
         while stream.has_next():
             node = stream.peek()
             action_heading = get_action_heading(node, self._valid_actions)
             if not action_heading:
-                self._raise_structural_error(
-                    doc,
-                    "a Level 3 Action Heading",
-                    -1,  # Find the index dynamically
-                    node,
-                )
+                # Accumulate offending node and consume it to find the next potential heading
+                offending_nodes.append(node)
+                if primary_mismatch is None:
+                    # Capture index -1 to trigger dynamic lookup in formatter
+                    primary_mismatch = ("a Level 3 Action Heading", -1, node)
+                stream.next()
+                continue
 
             stream.next()  # Consume action heading
             action_type_str = get_child_text(action_heading).strip().replace("`", "")
@@ -276,16 +247,15 @@ class MarkdownPlanParser(IPlanParser):
             parse_method = self._dispatch_map[action_type_str]
             actions.append(parse_method(stream))
 
+        if offending_nodes and primary_mismatch is not None:
+            expected_desc, mismatch_idx, actual_node = primary_mismatch
+            raise InvalidPlanError(
+                format_structural_mismatch_msg(
+                    doc, expected_desc, mismatch_idx, offending_nodes
+                ),
+                offending_nodes=offending_nodes,
+            )
+
         return actions
 
-    def _format_node_name(self, node: Any) -> str:
-        """Formats the type name of a node with relevant metadata (Scenario C)."""
-        if node is None:
-            return "EOF"
-        name = type(node).__name__
-        if isinstance(node, Heading):
-            name += f" (Level {node.level})"
-        elif isinstance(node, CodeFence):
-            backtick_count = len(getattr(node, "delimiter", "```"))
-            name += f" ({backtick_count} backticks)"
-        return name
+    # Structural formatting logic moved to parser_infrastructure.py

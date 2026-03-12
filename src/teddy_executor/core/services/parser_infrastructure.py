@@ -2,6 +2,8 @@ import os
 from typing import Any, List, Optional, Iterator
 from mistletoe.block_token import (
     Heading,
+    Document,
+    CodeFence,
 )
 from mistletoe.span_token import InlineCode
 
@@ -15,6 +17,9 @@ EXPECTED_KV_PARTS = 2
 
 # Visual indicator for structural mismatches in plans
 MISMATCH_INDICATOR = " <-- MISMATCH"
+
+# Maximum length for AST node previews in error reports
+MAX_PREVIEW_LENGTH = 60
 
 
 class _FencePreProcessor:
@@ -122,6 +127,74 @@ def consume_content_until_next_action(
                 break
         content_nodes.append(stream.next())
     return content_nodes
+
+
+def format_node_name(node: Any) -> str:
+    """Formats the type name of a node with relevant metadata."""
+    if node is None:
+        return "EOF"
+    name = type(node).__name__
+    if isinstance(node, Heading):
+        name += f" (Level {node.level})"
+    elif isinstance(node, CodeFence):
+        backtick_count = len(getattr(node, "delimiter", "```"))
+        name += f" ({backtick_count} backticks)"
+    return name
+
+
+def format_structural_mismatch_msg(
+    doc: Document,
+    expected: str,
+    mismatch_idx: int,
+    offending_nodes: List[Any],
+) -> str:
+    """Constructs a detailed structural validation error message."""
+    primary_node = offending_nodes[0] if offending_nodes else None
+    actual_name = format_node_name(primary_node)
+
+    def get_preview(n):
+        content = get_child_text(n).strip() if n else ""
+        first_line = content.splitlines()[0] if content else ""
+        if len(first_line) > MAX_PREVIEW_LENGTH:
+            return first_line[:MAX_PREVIEW_LENGTH].strip() + "..."
+        return first_line
+
+    preview = get_preview(primary_node)
+    if preview:
+        actual_name += f': "{preview}"'
+
+    msg = (
+        f"Plan structure is invalid. Expected {expected}, but found {actual_name}.\n\n"
+    )
+    msg += "--- Expected Document Structure ---\n"
+    msg += "[000] Heading (Level 1)\n"
+    msg += "[001] List (Metadata)\n"
+    msg += "[002] Heading (Level 2: Rationale)\n"
+    msg += "[003] BlockCode (Rationale Content)\n"
+    msg += "[004] Heading (Level 2: Action Plan)\n"
+    msg += "[005...] Heading (Level 3: Action Type)\n"
+    msg += "[006...] (Action-specific AST nodes)\n"
+
+    msg += "\n--- Actual Document Structure ---\n"
+    children = list(doc.children) if doc.children else []
+
+    offending_ids = {id(node) for node in offending_nodes if node is not None}
+
+    for i, node in enumerate(children):
+        n_name = format_node_name(node)
+
+        c_prev = get_preview(node)
+        if c_prev:
+            n_name += f': "{c_prev}"'
+
+        indicator = ""
+        if i == mismatch_idx or id(node) in offending_ids:
+            indicator = MISMATCH_INDICATOR
+
+        msg += f"[{i:03d}] {n_name}{indicator}\n"
+
+    msg += "\n**Hint:** Parsing often fails due to improper Code Block Formatting. Try to double the number of backticks in your outer code blocks and make sure fences are each on their own isolated line.\n"
+    return msg
 
 
 def print_ast(token: Any, indent: int = 0):

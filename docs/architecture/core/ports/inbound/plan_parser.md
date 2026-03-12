@@ -14,13 +14,28 @@ This is the sole method required by the port. It takes a string containing the e
     -   `plan_content` must be a non-empty string.
 -   **Postconditions:**
     -   Returns a valid `Plan` domain object.
-    -   If the `plan_content` is malformed or invalid according to the parser's specific format rules, a `PlanParsingError` (or a suitable subclass) must be raised.
+    -   If the `plan_content` is malformed or invalid according to the parser's specific format rules, an `InvalidPlanError` must be raised.
 
 **Signature:**
 
 ```python
 from abc import ABC, abstractmethod
+from typing import Any, List, Optional
 from teddy_executor.core.domain.models.plan import Plan
+
+class InvalidPlanError(Exception):
+    """Raised when the plan is malformed."""
+
+    def __init__(
+        self,
+        message: str,
+        offending_node: Optional[Any] = None,
+        offending_nodes: Optional[List[Any]] = None,
+    ):
+        super().__init__(message)
+        self.offending_nodes = offending_nodes or []
+        if offending_node:
+            self.offending_nodes.append(offending_node)
 
 class IPlanParser(ABC):
     """
@@ -39,7 +54,7 @@ class IPlanParser(ABC):
             A Plan domain object.
 
         Raises:
-            PlanParsingError: If the plan content is invalid.
+            InvalidPlanError: If the plan content is invalid.
         """
         raise NotImplementedError
 ```

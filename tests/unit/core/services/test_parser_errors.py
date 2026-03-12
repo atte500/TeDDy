@@ -134,7 +134,10 @@ echo 2
     assert "Plan structure is invalid. Expected a Level 3 Action Heading" in error_msg
     assert "Unexpected content found" not in error_msg  # Redundant phrasing removed
     assert "--- Actual Document Structure ---" in error_msg
-    assert 'Paragraph: "This is some free text that sh..." <-- MISMATCH' in error_msg
+    assert (
+        'Paragraph: "This is some free text that shouldn\'t be here." <-- MISMATCH'
+        in error_msg
+    )
 
 
 def test_parser_rejects_improperly_nested_code_fences(parser: IPlanParser):
@@ -334,11 +337,11 @@ This paragraph is NOT a REPLACE heading.
 
     error_msg = str(excinfo.value)
     assert "Missing REPLACE block after FIND block" in error_msg
+    assert "--- Actual Document Structure ---" in error_msg
     assert (
-        "Missing REPLACE block after FIND block <-- MISMATCH"
-        not in error_msg.splitlines()[0]
+        'Paragraph: "This paragraph is NOT a REPLACE heading." <-- MISMATCH'
+        in error_msg
     )
-    assert 'Paragraph: "This paragraph is NOT a REPLAC..." <-- MISMATCH' in error_msg
 
 
 def test_parser_raises_error_with_indicator_on_structural_mismatch(parser: IPlanParser):
@@ -364,4 +367,5 @@ def test_parser_raises_error_with_indicator_on_structural_mismatch(parser: IPlan
     error_msg = str(excinfo.value)
     assert "Plan structure is invalid" in error_msg
     # Verify the specific mismatch location in the AST summary
-    assert '[002] Heading (Level 2): "Action Plan..." <-- MISMATCH' in error_msg
+    # "Action Plan" is short, so no truncation dots are appended in the new semantic preview logic
+    assert '[002] Heading (Level 2): "Action Plan" <-- MISMATCH' in error_msg
