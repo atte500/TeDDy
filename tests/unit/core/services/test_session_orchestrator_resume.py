@@ -105,7 +105,7 @@ def test_resume_triggers_planning_on_empty_state(
     turn_path = ".teddy/sessions/test-session/01"
 
     session_service.get_session_state.return_value = (SessionState.EMPTY, turn_path)
-    user_interactor.prompt.return_value = "Initial task"
+    user_interactor.ask_question.return_value = "Initial task"
 
     orchestrator.resume(session_name)
 
@@ -128,7 +128,7 @@ def test_resume_transitions_on_complete_turn(
         turn_path,
     )
     session_service.transition_to_next_turn.return_value = next_turn_path
-    user_interactor.prompt.return_value = "Next task"
+    user_interactor.ask_question.return_value = "Next task"
 
     orchestrator.resume(session_name)
 

@@ -2,6 +2,7 @@ import os
 from typing import Dict, Optional, Sequence
 from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
 from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
+from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 
@@ -16,10 +17,12 @@ class PlanningService(IPlanningUseCase):
         context_service: IGetContextUseCase,
         llm_client: ILlmClient,
         file_system_manager: IFileSystemManager,
+        config_service: IConfigService,
     ):
         self._context_service = context_service
         self._llm_client = llm_client
         self._file_system_manager = file_system_manager
+        self._config_service = config_service
 
     def generate_plan(
         self,
@@ -52,8 +55,11 @@ class PlanningService(IPlanningUseCase):
             },
         ]
 
+        # Resolve model from config with fallback
+        model = self._config_service.get_setting("planning_model", "gpt-4o") or "gpt-4o"
+
         plan_content = self._llm_client.get_completion(
-            model="gpt-4o",  # Default model, should eventually come from config
+            model=model,
             messages=messages,
         )
 

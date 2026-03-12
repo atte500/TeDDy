@@ -24,15 +24,14 @@ class LiteLLMAdapter(ILlmClient):
         # Retrieve LLM settings from config
         llm_config = cast(Dict[str, Any], self._config_service.get_setting("llm", {}))
 
-        # Merge all config values into kwargs, prioritizing call-time kwargs
-        # This allows users to set 'api_key', 'api_base', 'custom_llm_provider', etc.
-        for key, value in llm_config.items():
-            if key not in kwargs:
-                kwargs[key] = value
-
-        # The 'model' from the method argument takes precedence over config
-        if "model" not in kwargs or model:
+        # Apply caller-provided model
+        if model:
             kwargs["model"] = model
+
+        # Merge config values into kwargs, prioritizing config values over caller-provided ones
+        # This allows users to globally override 'model', 'api_key', etc. via config.yaml
+        for key, value in llm_config.items():
+            kwargs[key] = value
 
         try:
             response = litellm.completion(messages=messages, **kwargs)

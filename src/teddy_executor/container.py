@@ -133,7 +133,15 @@ def create_container() -> punq.Container:
         ),
     )
     container.register(IGetContextUseCase, ContextService)
-    container.register(IPlanningUseCase, PlanningService)
+    container.register(
+        IPlanningUseCase,
+        factory=lambda: PlanningService(
+            context_service=container.resolve(IGetContextUseCase),
+            llm_client=container.resolve(ILlmClient),
+            file_system_manager=container.resolve(IFileSystemManager),
+            config_service=container.resolve(IConfigService),
+        ),
+    )
     container.register(IInitUseCase, InitService)
     container.register(ISessionManager, SessionService)
     return container

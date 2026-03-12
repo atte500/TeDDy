@@ -65,7 +65,9 @@ class SessionOrchestrator(IRunPlanUseCase):
 
     def _trigger_new_plan(self, turn_dir: str):
         """Prompts user and triggers planning."""
-        message = self._user_interactor.prompt("Enter your instructions for the AI")
+        message = self._user_interactor.ask_question(
+            "Enter your instructions for the AI"
+        )
         if not message:
             return None
 

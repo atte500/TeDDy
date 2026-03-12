@@ -77,3 +77,33 @@ def test_get_completion_returns_empty_string_for_empty_choices():
 
     # Assert
     assert result == ""
+
+
+def test_config_model_overrides_caller_model():
+    # Arrange
+    mock_config = MagicMock()
+    mock_config.get_setting.return_value = {"model": "config-model-name"}
+    adapter = LiteLLMAdapter(mock_config)
+
+    # Act
+    adapter.get_completion(model="caller-suggested-model", messages=[])
+
+    # Assert
+    mock_litellm.completion.assert_called_once()
+    actual_kwargs = mock_litellm.completion.call_args.kwargs
+    assert actual_kwargs["model"] == "config-model-name"
+
+
+def test_config_api_key_overrides_caller_kwargs():
+    # Arrange
+    mock_config = MagicMock()
+    mock_config.get_setting.return_value = {"api_key": "sk-config-key"}
+    adapter = LiteLLMAdapter(mock_config)
+
+    # Act
+    adapter.get_completion(model="gpt-4", messages=[], api_key="sk-caller-key")
+
+    # Assert
+    mock_litellm.completion.assert_called_once()
+    actual_kwargs = mock_litellm.completion.call_args.kwargs
+    assert actual_kwargs["api_key"] == "sk-config-key"

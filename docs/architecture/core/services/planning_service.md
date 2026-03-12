@@ -13,6 +13,7 @@ The `PlanningService` is responsible for generating an AI plan based on a user m
     -   `IGetContextUseCase` (ContextService)
     -   `ILlmClient` (LiteLLMAdapter)
     -   `IFileSystemManager` (to read `system_prompt.xml` and write `plan.md`)
+    -   `IConfigService` (to resolve planning model settings)
 
 ## 3. Implementation Details / Logic
 
