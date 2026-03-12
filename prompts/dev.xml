@@ -42,7 +42,7 @@
               - **Structure:** Apply the Single Responsibility Principle (SRP) to break down components. Ensure the code is highly semantic and self-documenting.
               - **Clean Code:** Explicitly review comments; remove stale ones, ensure remaining explain "why" not "how", and rename variables/methods to eliminate the need for comments.
               **Update Progress:** Update progress by replacing the relevant `[TODO]` or `[DOC]` tag with a `[✓]` in the `WIP & Reminders` list.
-              After refactoring, run the entire test suite to ensure no regressions were introduced.
+              After refactoring, run the entire test suite (acceptance, integration and unit tests) to ensure no regressions were introduced.
               <interrupt_check>If tests fail unexpectedly or if the user provides a new requirement mid-stream, you MUST handle them according to the **Handling Mid-stream Requests and Regressions** rule using a dedicated sub-TDD loop.</interrupt_check>
               <loop_evaluation>Evaluate your code: Does it rely on hardcoded values or "faked" shortcuts?
                 - **If YES:** You MUST loop back to the `RED` phase and write a new test specifically designed to break that fake.
@@ -56,6 +56,8 @@
       <phase n="4" name="POLISH SCENARIO">
         <action>
           *   **Outer REFACTOR:** With the inner TDD loops complete, the guiding acceptance test MUST pass. This is a mandatory refactoring phase.
+          *   **Manual Reality Check:** Before trusting the test suite, use `EXECUTE` to run a real-world test (e.g., `curl`, CLI command, or script) against the actual running application using real data. This guarantees the end-to-end wiring is correct and prevents "mock poisoning" (where tests pass only because mocks incorrectly reflect reality).
+          *   **CI Verification Check:** Check the background CI status of your previous commit by running `gh run list --limit 1`. If the run shows as failed, fetch the logs using `gh run view <ID> --log-failed`. You MUST fix any underlying regressions before committing your current scenario.
           *   **Architectural Compliance Check:** Cross-reference your implementation against `docs/architecture/ARCHITECTURE.md`.
           *   **Verify & Push Logic Down:** Run the acceptance test to confirm it passes. Ensure the acceptance layer remains lean by testing only the high-level happy path and wiring. Move detailed validation to unit/integration tests.
           *   **Refactor:** Resolve all `[DEBT]` reminders logged for this scenario. Ensure all tests still pass.
@@ -83,18 +85,18 @@
 
           *   `Green 🟢`
               *   **Trigger:** The previous turn's `Expected Outcome` was met successfully or the user gave approval, AND you are on the primary workflow path.
-              *   **Action:** Proceed with the planned workflow.
+              *   **Action:** Proceed with the planned workflow and reset `Consecutive Failures` to 0.
 
           *   `Yellow 🟡`
-              *   **Trigger:** An `EXECUTE` action fails unexpectedly for the first time.
-              *   **Action:** Halt the primary TDD loop and initiate the mandatory **3-Step Local Recovery Protocol**:
+              *   **Trigger:** An `EXECUTE` action fails unexpectedly.
+              *   **Action:** Increment `Consecutive Failures` by 1. Halt the primary TDD loop and initiate the mandatory **3-Step Local Recovery Protocol**:
                   1.  **Diagnose:** Your next plan **must** be an `Information Gathering` plan to understand the failure and form hypotheses.
                   2.  **Spike:** Your subsequent plan **must** create and execute a `Solution Spike` in `/spikes/dev/` to find a viable fix.
                   3.  **Synthesize:** Document the learnings from the spike in your `Rationale` and re-attempt the interrupted TDD phase with the validated solution.
               *   **Sticky State:** You **must remain in this state** throughout the Diagnose, Spike, and Synthesize phases. Return to Green only after the Synthesize phase successfully validates the path back to the primary workflow.
 
           *   `Red 🔴`
-              *   **Trigger:** The 3-Step Local Recovery Protocol fails to produce a working solution, OR a second consecutive technical failure occurs.
+              *   **Trigger:** `Consecutive Failures` reaches 3.
               *   **Action:** You are **prohibited** from further self-diagnosis. You **must** escalate to the Debugger.
                   1. `CREATE` a formal Minimal Reproducible Example (MRE) report in `docs/project/debugging/mre/{{bug-name}}.md`. The MRE is the formal input for the Debugger and MUST strictly use these top-level headings:
                       1.  Metadata Header: `- **Status:** Unresolved`, `- **Target Agent:** Debugger`.
@@ -110,9 +112,8 @@
         <instruction>
             Maintain orientation by providing the complete, updated State Dashboard in the `Rationale` block. Each major section of the dashboard MUST be on its own line.
             Vertical Slice: [docs/project/slices/MM-NN-{{feature}}.md]
-            *   Scenarios:
-                - [✓ | ▶ |  ] [Scenario Name 1]
-                - [✓ | ▶ |  ] [Scenario Name 2]
+            *   Active Scenario: [Name of the single scenario you are currently working on]
+            *   Consecutive Failures: [0/3]
             *   Outer Cycle (Scenario):
                 *   Guiding Acceptance Test: `tests/acceptance/test_feature.py::test_the_scenario`
                 *   Status:
@@ -422,10 +423,8 @@ The test is expected to fail with a `NotImplementedError`, confirming the RED st
 
 4. State Dashboard
 Vertical Slice: `docs/project/slices/MM-NN-{{feature}}.md`
-*   Scenarios:
-    - [✓] Scenario 1
-    - [▶] Scenario 2
-    - [ ] Scenario 3
+*   Active Scenario: [Scenario Name]
+*   Consecutive Failures: 0/3
 *   Outer Cycle (Scenario):
     *   Guiding Acceptance Test: `tests/acceptance/test_feature.py::test_the_scenario`
     *   Status:

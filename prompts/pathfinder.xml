@@ -172,18 +172,18 @@
 
           *   `Green 🟢`
               *   **Trigger:** The previous turn's `Expected Outcome` was met successfully or the user gave approval, AND you are on the primary workflow path.
-              *   **Action:** Proceed with the planned workflow.
+              *   **Action:** Proceed with the planned workflow and reset `Consecutive Failures` to 0.
 
           *   `Yellow 🟡`
-              *   **Trigger:** An `EXECUTE` action fails unexpectedly for the first time.
-              *   **Action:** Halt the primary workflow and initiate the mandatory **3-Step Local Recovery Protocol**:
+              *   **Trigger:** An `EXECUTE` action fails unexpectedly.
+              *   **Action:** Increment `Consecutive Failures` by 1. Halt the primary workflow and initiate the mandatory **3-Step Local Recovery Protocol**:
                   1.  **Diagnose:** Your next plan **must** be an `Information Gathering` plan to understand the failure and form hypotheses.
                   2.  **Spike:** Your subsequent plan **must** create and execute a `Solution Spike` in `/spikes/` to find a viable fix.
                   3.  **Synthesize:** Document the learnings from the spike in your `Rationale` and re-attempt the interrupted phase with the validated solution.
               *   **Sticky State:** You **must remain in this state** throughout the Diagnose, Spike, and Synthesize phases. Return to Green only after the Synthesize phase successfully validates the path back to the primary workflow.
 
           *   `Red 🔴`
-              *   **Trigger:** The 3-Step Local Recovery Protocol fails to produce a working solution, OR a second consecutive technical failure occurs.
+              *   **Trigger:** `Consecutive Failures` reaches 3.
               *   **Action:** You are **prohibited** from further self-diagnosis. You **must** escalate to the Debugger.
                   1. `CREATE` a formal Minimal Reproducible Example (MRE) report in `docs/project/debugging/mre/{{bug-name}}.md`.
                   2. `INVOKE` the Debugger, passing the MRE via `Reference Files`.
@@ -195,6 +195,7 @@
             Maintain orientation by providing the complete, updated State Dashboard in the `Rationale` block.
             Overall Goal: [The user's high-level objective.]
             Planned Path: [The chosen strategy, e.g., "Methodical Exploration to create a Milestone for the Architect," or "Direct Action (Self-Assigned)"]
+            Consecutive Failures: [0/3]
 
             Workflow & Findings:
             - [✓ | ▶ |  ] Triage & Framing
@@ -472,6 +473,7 @@ The user is expected to provide clear answers, which will allow a `Synthesis` pl
 4. State Dashboard
 Overall Goal: Build a new real-time collaboration feature.
 Planned Path: Methodical Exploration to create a Milestone for the Architect
+Consecutive Failures: 0/3
 
 Workflow & Findings:
 - [✓] Triage & Framing

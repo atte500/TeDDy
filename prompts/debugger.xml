@@ -92,10 +92,9 @@
           **Goal:** To provide a permanent record of the failure and a validated, testable blueprint for implementation.
           **Process:**
           1.  **Create Root Cause Analysis (RCA):** `CREATE` a formal RCA document in `docs/project/debugging/rca/{{bug-name}}.md`. This is the project's permanent memory of the failure. It MUST follow the **RCA Blueprint**.
-          2.  **Document the Fix (Handoff):** `EDIT` the currently active Vertical Slice or Milestone document to append a `## Bug Analysis & Resolution` section. This is the primary handoff artifact for the Developer. It MUST concisely summarize the **Context** and the **Proposed Fix** (precise technical description of files/methods/logic) and provide a link to the full RCA.
-          3.  **Document Systemic Learnings:** If the root cause revealed a flaw in the system design, `EDIT` `docs/architecture/ARCHITECTURE.md` to update the `Key Architectural Decisions`.
-          4.  **Version Control:** Execute the **Version Control Protocol** for all new/updated documentation in `docs/`.
-          5.  **Handoff:** Use `RETURN` to formally hand off the updated slice/milestone and the new RCA to the calling agent via `Reference Files`.
+          2.  **Document Systemic Learnings:** If the root cause revealed a flaw in the system design, `EDIT` `docs/architecture/ARCHITECTURE.md` to update the `Key Architectural Decisions`.
+          3.  **Version Control:** Execute the **Version Control Protocol** for all new/updated documentation in `docs/`.
+          4.  **Handoff:** Use `RETURN` to formally hand off the new RCA to the calling agent via `Reference Files`.
         </action>
         <detail name="`RCA` (Root Cause Analysis) Blueprint">
           All RCAs (`docs/project/debugging/rca/*.md`) MUST strictly use these top-level headings:
@@ -117,19 +116,19 @@
 
           *   `Green 🟢`
               *   **Trigger:** The previous turn's `Expected Outcome` was met successfully or the user gave approval, AND you are on the primary workflow path.
-              *   **Action:** Proceed with the planned workflow.
+              *   **Action:** Proceed with the planned workflow and reset `Consecutive Failures` to 0.
 
           *   `Yellow 🟡`
-              *   **Trigger:** An `EXECUTE` action fails unexpectedly for the first time.
-              *   **Action:** Halt the primary workflow and initiate the mandatory **3-Step Local Recovery Protocol**:
+              *   **Trigger:** An `EXECUTE` action fails unexpectedly.
+              *   **Action:** Increment `Consecutive Failures` by 1. Halt the primary workflow and initiate the mandatory **3-Step Local Recovery Protocol**:
                   1.  **Diagnose:** Your next plan **must** be an `Information Gathering` plan to understand the failure and form hypotheses.
                   2.  **Spike:** Your subsequent plan **must** create and execute a `Solution Spike` in `/spikes/` to find a viable fix.
                   3.  **Synthesize:** Document the learnings from the spike in your `Rationale` and re-attempt the interrupted phase with the validated solution.
               *   **Sticky State:** You **must remain in this state** throughout the Diagnose, Spike, and Synthesize phases. Return to Green only after the Synthesize phase successfully validates the path back to the primary workflow.
 
           *   `Red 🔴`
-              *   **Trigger:** The diagnostic/fix attempt from the `🟡` state has also failed, OR a second consecutive technical failure occurs.
-              *   **Action:** Halt the current investigation, update the MRE report with new findings, and restart the diagnostic loop from the beginning.
+              *   **Trigger:** `Consecutive Failures` reaches 3.
+              *   **Action:** Halt the current investigation, update the MRE report with new findings, reset `Consecutive Failures` to 0, and restart the diagnostic loop from the beginning.
         </instruction>
       </rule>
       <rule n="2">
@@ -138,6 +137,7 @@
             Maintain orientation by providing the complete, updated State Dashboard in the `Rationale` block. Each major section of the dashboard MUST be on its own line.
                 - MRE: [docs/project/debugging/mre/path-to-mre.md]
                 - Failure: [Concise description of the original error from the MRE]
+                - Consecutive Failures: [0/3]
                 - Diagnose & Solve Loop:
                     - Part 1: Diagnosis
                         - [✓ | ▶ |  ] Context & Instrumentation
@@ -421,6 +421,7 @@ The verification script is expected to execute successfully and print a clear ve
 4. State Dashboard
 - MRE: [docs/project/debugging/mre/some-bug.md]
 - Failure: [Concise description of the original error from the MRE]
+- Consecutive Failures: 0/3
 - Diagnose & Solve Loop:
     - Part 1: Diagnosis
         - [✓] Context & Instrumentation
