@@ -1,7 +1,7 @@
 import re
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
+from typing import Any, Dict, Optional
 import yaml
 from teddy_executor.core.domain.models.execution_report import ExecutionReport
 from teddy_executor.core.domain.models.plan import ActionType
@@ -13,6 +13,9 @@ from teddy_executor.core.ports.outbound.session_manager import (
 from teddy_executor.prompts import find_prompt_content
 
 
+from teddy_executor.core.services.session_repository import SessionRepository
+
+
 class SessionService(ISessionManager):
     """
     Service for managing session directories and metadata.
@@ -20,6 +23,7 @@ class SessionService(ISessionManager):
 
     def __init__(self, file_system_manager: IFileSystemManager):
         self._file_system_manager = file_system_manager
+        self._repository = SessionRepository(file_system_manager)
 
     def create_session(self, name: str, agent_name: str) -> str:
         """
@@ -44,21 +48,34 @@ class SessionService(ISessionManager):
             f"{session_root}/session.context", clean_context
         )
 
-        # 2. Populate system_prompt.xml
+        # 2. Populate specific agent prompt file
         prompt_content = find_prompt_content(agent_name)
         if not prompt_content:
             raise ValueError(f"Agent prompt '{agent_name}' not found.")
         self._file_system_manager.write_file(
-            f"{turn_dir}/system_prompt.xml", prompt_content
+            f"{turn_dir}/{agent_name}.xml", prompt_content
         )
 
         # 3. Create meta.yaml
         meta_data = {
             "turn_id": "01",
+            "agent_name": agent_name,
+            "cumulative_cost": 0.0,
             "creation_timestamp": datetime.now(timezone.utc).isoformat(),
         }
+
+        # Defensive Cleanup: Ensure all metadata is a primitive type to prevent yaml.dump hangs
+        serializable_meta = {}
+        for k, v in meta_data.items():
+            if isinstance(v, (str, int, float, bool)) and not hasattr(
+                v, "_mock_return_value"
+            ):
+                serializable_meta[k] = v
+            else:
+                serializable_meta[k] = str(v)
+
         self._file_system_manager.write_file(
-            f"{turn_dir}/meta.yaml", yaml.dump(meta_data)
+            f"{turn_dir}/meta.yaml", yaml.dump(serializable_meta)
         )
 
         return session_root
@@ -110,93 +127,106 @@ class SessionService(ISessionManager):
             return path.lstrip("/")
         return resource_str.strip()
 
-    def _read_context_file(self, path: str) -> set[str]:
-        """Reads a context file robustly and returns a set of non-empty paths."""
-        try:
-            if not self._file_system_manager.path_exists(path):
-                return set()
-            content = self._file_system_manager.read_file(path)
-            return {line.strip() for line in content.splitlines() if line.strip()}
-        except (FileNotFoundError, OSError):
-            return set()
-
     def transition_to_next_turn(
         self,
         plan_path: str,
         execution_report: Optional[ExecutionReport] = None,
         is_validation_failure: bool = False,
+        turn_cost: float = 0.0,
     ) -> str:
         """
         Calculates and creates the next turn directory based on the current turn
         and the outcome of its plan.
         """
-        current_turn_dir = Path(plan_path).parent.as_posix()
-        session_dir = Path(current_turn_dir).parent.as_posix()
+        cur_dir = Path(plan_path).parent
+        session_dir = cur_dir.parent.as_posix()
 
-        # 1. Read current metadata and context
-        meta_content = self._file_system_manager.read_file(
-            f"{current_turn_dir}/meta.yaml"
-        )
-        current_meta = yaml.safe_load(meta_content) or {}
-        current_turn_id = current_meta.get("turn_id")
+        # 1. Resolve current state
+        meta = self._load_meta(cur_dir.as_posix())
+        next_id = f"{int(cur_dir.name) + 1:02d}"
+        next_dir = f"{session_dir}/{next_id}"
 
-        # Seed next context with current turn's context
-        next_context_paths = self._read_context_file(f"{current_turn_dir}/turn.context")
+        # 2. Setup next directory
+        self._file_system_manager.create_directory(next_dir)
+        self._copy_prompt(cur_dir.as_posix(), next_dir, meta.get("agent_name", "pf"))
 
-        # 2. Calculate next turn
-        current_turn_num = int(Path(current_turn_dir).name)
-        next_turn_num = current_turn_num + 1
-        next_turn_id = f"{next_turn_num:02d}"
-        next_turn_dir = f"{session_dir}/{next_turn_id}"
+        # 3. Persist metadata
+        self._persist_next_meta(next_dir, next_id, meta, turn_cost)
 
-        # 3. Initialize next turn directory
-        self._file_system_manager.create_directory(next_turn_dir)
+        # 4. Handle context
+        paths = self._repository.read_context_file(f"{cur_dir.as_posix()}/turn.context")
+        self._apply_execution_effects(paths, execution_report)
+        if not is_validation_failure:
+            paths.add(f"{cur_dir.name}/report.md")
 
-        # 4. Copy system_prompt.xml
-        prompt_content = self._file_system_manager.read_file(
-            f"{current_turn_dir}/system_prompt.xml"
-        )
         self._file_system_manager.write_file(
-            f"{next_turn_dir}/system_prompt.xml", prompt_content
+            f"{next_dir}/turn.context", "\n".join(sorted(list(paths)))
         )
+        return next_dir
 
-        # 5. Create next meta.yaml
-        next_meta = {
-            "turn_id": next_turn_id,
-            "parent_turn_id": current_turn_id,
+    def _load_meta(self, turn_dir: str) -> Dict[str, Any]:
+        """Loads and parses meta.yaml for a turn."""
+        content = self._file_system_manager.read_file(f"{turn_dir}/meta.yaml")
+        meta = yaml.safe_load(str(content))
+        return meta if isinstance(meta, dict) else {}
+
+    def _copy_prompt(self, src_dir: str, dest_dir: str, agent: str) -> None:
+        """Copies the agent prompt file if it exists."""
+        prompt_path = f"{src_dir}/{agent}.xml"
+        if self._file_system_manager.path_exists(prompt_path):
+            content = self._file_system_manager.read_file(prompt_path)
+            self._file_system_manager.write_file(f"{dest_dir}/{agent}.xml", content)
+
+    def _apply_execution_effects(
+        self, paths: set[str], report: Optional[ExecutionReport]
+    ) -> None:
+        """Applies side effects from READ/PRUNE actions to the context set."""
+        if not report:
+            return
+        for action in report.original_actions:
+            resource = action.params.get("resource") or action.params.get("Resource")
+            if not resource:
+                continue
+            path = self._extract_resource_path(resource)
+            if action.type == ActionType.READ.value:
+                paths.add(path)
+            elif action.type == ActionType.PRUNE.value:
+                paths.discard(path)
+
+    def _persist_next_meta(
+        self,
+        next_dir: str,
+        next_id: str,
+        current_meta: Dict[str, Any],
+        turn_cost: float,
+    ) -> None:
+        """Calculates and persists metadata for the next turn."""
+        prev_cost = current_meta.get("cumulative_cost", 0.0)
+        try:
+            cumulative = float(prev_cost) + float(turn_cost)
+        except (TypeError, ValueError):
+            cumulative = 0.0
+
+        meta = {
+            "turn_id": next_id,
+            "agent_name": current_meta.get("agent_name", "pf"),
+            "cumulative_cost": cumulative,
+            "parent_turn_id": current_meta.get("turn_id", "00"),
             "creation_timestamp": datetime.now(timezone.utc).isoformat(),
         }
+
+        serializable = {}
+        for k, v in meta.items():
+            if isinstance(v, (str, int, float, bool)) and not hasattr(
+                v, "_mock_return_value"
+            ):
+                serializable[k] = v
+            else:
+                serializable[k] = str(v)
+
         self._file_system_manager.write_file(
-            f"{next_turn_dir}/meta.yaml", yaml.dump(next_meta)
+            f"{next_dir}/meta.yaml", yaml.dump(serializable)
         )
-
-        # 6. Apply READ/PRUNE side effects
-        if execution_report:
-            for action in execution_report.original_actions:
-                resource = action.params.get("resource") or action.params.get(
-                    "Resource"
-                )
-                if not resource:
-                    continue
-
-                extracted_path = self._extract_resource_path(resource)
-                if action.type == ActionType.READ.value:
-                    next_context_paths.add(extracted_path)
-                elif action.type == ActionType.PRUNE.value:
-                    next_context_paths.discard(extracted_path)
-
-        # 7. Add current report.md to next context
-        if not is_validation_failure:
-            relative_report_path = f"{Path(current_turn_dir).name}/report.md"
-            next_context_paths.add(relative_report_path)
-
-        # 8. Write next turn.context
-        sorted_paths = sorted(list(next_context_paths))
-        self._file_system_manager.write_file(
-            f"{next_turn_dir}/turn.context", "\n".join(sorted_paths)
-        )
-
-        return next_turn_dir
 
     def rename_session(self, old_name: str, new_name: str) -> str:
         """
@@ -226,54 +256,16 @@ class SessionService(ISessionManager):
         turn_context_path = (turn_dir / "turn.context").as_posix()
 
         return {
-            "Session": sorted(list(self._read_context_file(session_context_path))),
-            "Turn": sorted(list(self._read_context_file(turn_context_path))),
+            "Session": sorted(
+                list(self._repository.read_context_file(session_context_path))
+            ),
+            "Turn": sorted(list(self._repository.read_context_file(turn_context_path))),
         }
 
     def get_latest_session_name(self) -> str:
-        """
-        Identifies and returns the name of the most recently modified session.
-        """
-        sessions_root = ".teddy/sessions"
-        if not self._file_system_manager.path_exists(sessions_root):
-            raise ValueError("No sessions found.")
-
-        sessions = self._file_system_manager.list_directory(sessions_root)
-        if not sessions:
-            raise ValueError("No sessions found.")
-
-        # Sort by mtime descending
-        session_stats = []
-        for name in sessions:
-            path = f"{sessions_root}/{name}"
-            try:
-                mtime = self._file_system_manager.get_mtime(path)
-                session_stats.append((name, mtime))
-            except (FileNotFoundError, OSError):
-                continue
-
-        if not session_stats:
-            raise ValueError("No valid sessions found.")
-
-        session_stats.sort(key=lambda x: x[1], reverse=True)
-        return session_stats[0][0]
+        """Identifies and returns the name of the latest session."""
+        return self._repository.get_latest_session_name()
 
     def resolve_session_from_path(self, path: str) -> str:
-        """
-        Resolves a session name from a given path (session root, turn dir, or file).
-        """
-        p = Path(path).resolve()
-        # Climb up parents looking for '.teddy/sessions'
-        for parent in [p] + list(p.parents):
-            if (
-                parent.parent.name == "sessions"
-                and parent.parent.parent.name == ".teddy"
-            ):
-                return parent.name
-
-        # If not found via parents, check if the path itself IS a session name
-        # (Legacy behavior for explicit name passing)
-        if self._file_system_manager.path_exists(f".teddy/sessions/{path}"):
-            return path
-
-        raise ValueError(f"Could not resolve session from path: {path}")
+        """Resolves a session name from a given path."""
+        return self._repository.resolve_session_from_path(path)

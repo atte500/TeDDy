@@ -9,6 +9,17 @@ from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 runner = CliRunner()
 
 
+def make_mock_response(content, model="gpt-4o"):
+    mock_response = MagicMock()
+    mock_response.model = model
+    mock_message = MagicMock()
+    mock_message.content = content
+    mock_choice = MagicMock()
+    mock_choice.message = mock_message
+    mock_response.choices = [mock_choice]
+    return mock_response
+
+
 def test_teddy_start_bootstraps_session(tmp_path, monkeypatch, container):
     """
     Scenario: teddy start bootstraps a session
@@ -16,7 +27,7 @@ def test_teddy_start_bootstraps_session(tmp_path, monkeypatch, container):
     When I run teddy start feat-x.
     Then a directory .teddy/sessions/feat-x/01/ MUST be created.
     And .teddy/sessions/feat-x/session.context MUST exist and contain the content of .teddy/init.context.
-    And 01/system_prompt.xml MUST be populated with the default agent prompt.
+    And 01/pathfinder.xml MUST be populated with the default agent prompt.
     And 01/meta.yaml MUST contain a valid turn_id and creation_timestamp.
     """
     # Arrange
@@ -39,7 +50,7 @@ def test_teddy_start_bootstraps_session(tmp_path, monkeypatch, container):
 
     # Mock LLM
     mock_llm = MagicMock(spec=ILlmClient)
-    mock_llm.get_completion.return_value = """# Plan: Streamlined Init
+    mock_llm.get_completion.return_value = make_mock_response("""# Plan: Streamlined Init
 - Status: Green
 - Plan Type: feat
 - Agent: Dev
@@ -55,7 +66,9 @@ OK
 ````shell
 echo 'dummy'
 ````
-"""
+""")
+    mock_llm.get_token_count.return_value = 100
+    mock_llm.get_completion_cost.return_value = 0.01
     container.register(ILlmClient, instance=mock_llm)
 
     # Act
@@ -74,9 +87,9 @@ echo 'dummy'
     assert session_context.exists()
     assert session_context.read_text(encoding="utf-8").strip() == init_context_content
 
-    # Check system_prompt.xml
+    # Check pathfinder.xml
     # Note: We assume 'pathfinder' is the default agent as per spec
-    system_prompt = turn_dir / "system_prompt.xml"
+    system_prompt = turn_dir / "pathfinder.xml"
     assert system_prompt.exists()
     assert "Pathfinder" in system_prompt.read_text(encoding="utf-8")
 
@@ -88,165 +101,6 @@ echo 'dummy'
         assert "turn_id" in meta_data
         assert "creation_timestamp" in meta_data
         assert meta_data["turn_id"] == "01"
-
-
-def test_teddy_context_aggregates_cascading_context(tmp_path, monkeypatch):
-    """
-    Scenario: teddy context aggregates cascading context
-    Given a session with "file_a.py" in session.context and "file_b.py" in 01/turn.context.
-    When I run teddy context inside the 01/ directory.
-    Then the generated output MUST contain the contents of both "file_a.py" and "file_b.py".
-    And "file_b.py" MUST be listed under the "Turn" section of the Context Summary.
-    """
-    # Arrange
-    monkeypatch.chdir(tmp_path)
-
-    # 1. Setup project files
-    (tmp_path / "file_a.py").write_text("content_a", encoding="utf-8")
-    (tmp_path / "file_b.py").write_text("content_b", encoding="utf-8")
-
-    # 2. Setup session directory structure
-    session_dir = tmp_path / ".teddy" / "sessions" / "feat-x"
-    turn_dir = session_dir / "01"
-    turn_dir.mkdir(parents=True)
-
-    # 3. Create context files and metadata
-    (session_dir / "session.context").write_text("file_a.py", encoding="utf-8")
-    (turn_dir / "turn.context").write_text("file_b.py", encoding="utf-8")
-    (turn_dir / "meta.yaml").write_text("turn_id: '01'\n", encoding="utf-8")
-
-    # Change CWD to the turn directory to simulate user being 'inside' it
-    monkeypatch.chdir(turn_dir)
-
-    # Act
-    # We use --no-copy to avoid polluting clipboard during tests
-    result = runner.invoke(app, ["context", "--no-copy"])
-
-    # Assert
-    assert result.exit_code == 0
-
-    # Check that both files are present in the output
-    assert "content_a" in result.stdout
-    assert "content_b" in result.stdout
-
-    # Check Context Summary section (Requirement from specification)
-    # The specification says the output format for session/turn should be clear.
-    # Note: Our current ContextService doesn't have 'Turn' vs 'Session' headings yet.
-    # This test will drive that change.
-    assert "### Turn" in result.stdout
-    assert "file_b.py" in result.stdout
-    assert "### Session" in result.stdout
-    assert "file_a.py" in result.stdout
-
-
-def test_teddy_execute_triggers_turn_transition(tmp_path, monkeypatch):
-    """
-    Scenario: teddy execute triggers turn transition
-    Given a plan in 01/plan.md containing a READ action for "new_file.py".
-    When I run teddy execute 01/plan.md.
-    Then a directory 02/ MUST be created.
-    And 02/turn.context MUST contain "new_file.py" and "01/report.md".
-    And 02/meta.yaml MUST have parent_turn_id pointing to the ID of turn 01.
-    """
-    # Arrange
-    monkeypatch.chdir(tmp_path)
-
-    # 1. Setup session directory structure
-    session_dir = tmp_path / ".teddy" / "sessions" / "feat-x"
-    turn_dir = session_dir / "01"
-    turn_dir.mkdir(parents=True)
-
-    # 2. Setup turn context and metadata
-    (turn_dir / "turn.context").write_text("", encoding="utf-8")
-    (turn_dir / "system_prompt.xml").write_text("prompt_content", encoding="utf-8")
-    (turn_dir / "meta.yaml").write_text("turn_id: 'abc'\n", encoding="utf-8")
-
-    # 2b. Create the file to be READ
-    (tmp_path / "new_file.py").write_text("print('hello')", encoding="utf-8")
-
-    # 3. Create a plan with a READ action
-    plan_content = """# Plan: Read a file
-- Status: Green 🟢
-- Plan Type: Testing
-- Agent: Developer
-
-## Rationale
-```
-Testing turn transition.
-```
-
-## Action Plan
-### `READ`
-- **Resource:** [new_file.py](/new_file.py)
-"""
-    plan_file = turn_dir / "plan.md"
-    plan_file.write_text(plan_content, encoding="utf-8")
-
-    # Act
-    # Execute the plan from the project root
-    result = runner.invoke(
-        app, ["execute", str(plan_file.relative_to(tmp_path)), "-y", "--no-copy"]
-    )
-
-    # Assert
-    assert result.exit_code == 0
-
-    # Verify turn 02 creation
-    next_turn_dir = session_dir / "02"
-    assert next_turn_dir.is_dir()
-
-    # Verify 02/turn.context side effects
-    turn_context_content = (next_turn_dir / "turn.context").read_text(encoding="utf-8")
-    assert "new_file.py" in turn_context_content
-    assert "01/report.md" in turn_context_content
-
-    # Verify 02/meta.yaml linkage
-    with open(next_turn_dir / "meta.yaml", "r", encoding="utf-8") as f:
-        meta_data = yaml.safe_load(f)
-        assert meta_data["parent_turn_id"] == "abc"
-        assert meta_data["turn_id"] == "02"
-
-
-def test_teddy_plan_generates_plan_file(tmp_path, monkeypatch, container):
-    """
-    Scenario: teddy plan generates a plan
-    Given a session directory for turn 01.
-    And a mocked LLM client that returns a valid plan.
-    When I run teddy plan -m "Implement feature X".
-    Then a plan.md file MUST be created in the 01/ directory.
-    And its content MUST match the LLM's response.
-    """
-    # Arrange
-    monkeypatch.chdir(tmp_path)
-
-    # 1. Setup session directory structure
-    session_dir = tmp_path / ".teddy" / "sessions" / "feat-x"
-    turn_dir = session_dir / "01"
-    turn_dir.mkdir(parents=True)
-
-    # 2. Setup turn context and metadata (required by context gathering)
-    (turn_dir / "turn.context").write_text("", encoding="utf-8")
-    (session_dir / "session.context").write_text("", encoding="utf-8")
-    (turn_dir / "system_prompt.xml").write_text("system prompt", encoding="utf-8")
-    (turn_dir / "meta.yaml").write_text("turn_id: '01'\n", encoding="utf-8")
-
-    # 3. Mock the LLM client
-    from teddy_executor.core.ports.outbound.llm_client import ILlmClient
-
-    mock_llm = MagicMock(spec=ILlmClient)
-    mock_llm.get_completion.return_value = "# Plan: Generated Plan\n- Status: Green 🟢"
-    container.register(ILlmClient, instance=mock_llm)
-
-    # Act
-    # We must run from the turn directory so the command knows which turn it is
-    monkeypatch.chdir(turn_dir)
-    result = runner.invoke(app, ["plan", "-m", "Implement feature X"])
-
-    # Assert
-    assert result.exit_code == 0
-    plan_file = turn_dir / "plan.md"
-    assert plan_file.exists()
-    assert "# Plan: Generated Plan" in plan_file.read_text(encoding="utf-8")
 
 
 def test_teddy_plan_injects_turn_1_hint(tmp_path, monkeypatch, container):
@@ -263,13 +117,15 @@ def test_teddy_plan_injects_turn_1_hint(tmp_path, monkeypatch, container):
     turn_dir.mkdir(parents=True)
     (turn_dir / "turn.context").write_text("", encoding="utf-8")
     (session_dir / "session.context").write_text("", encoding="utf-8")
-    (turn_dir / "system_prompt.xml").write_text("system prompt", encoding="utf-8")
+    (turn_dir / "pathfinder.xml").write_text("system prompt", encoding="utf-8")
     (turn_dir / "meta.yaml").write_text("turn_id: '01'\n", encoding="utf-8")
 
     from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 
     mock_llm = MagicMock(spec=ILlmClient)
-    mock_llm.get_completion.return_value = "# Plan"
+    mock_llm.get_completion.return_value = make_mock_response("# Plan")
+    mock_llm.get_token_count.return_value = 100
+    mock_llm.get_completion_cost.return_value = 0.01
     container.register(ILlmClient, instance=mock_llm)
 
     # Act
@@ -298,8 +154,9 @@ def test_teddy_resume_executes_pending_plan(tmp_path, monkeypatch):
     turn_dir.mkdir(parents=True)
 
     # Setup state for execution
+    (session_dir / "session.context").write_text("", encoding="utf-8")
     (turn_dir / "turn.context").write_text("", encoding="utf-8")
-    (turn_dir / "system_prompt.xml").write_text("prompt", encoding="utf-8")
+    (turn_dir / "pathfinder.xml").write_text("prompt", encoding="utf-8")
     (turn_dir / "meta.yaml").write_text("turn_id: '01'\n", encoding="utf-8")
 
     plan_content = """# Plan
@@ -342,14 +199,14 @@ def test_teddy_resume_prompts_for_new_plan(monkeypatch, tmp_path, container):
     turn_dir.mkdir(parents=True)
     (session_dir / "session.context").touch()
     (turn_dir / "turn.context").touch()
-    (turn_dir / "system_prompt.xml").write_text("<prompt/>")
+    (turn_dir / "pathfinder.xml").write_text("<prompt/>")
     (turn_dir / "meta.yaml").write_text("turn_id: '02'\nparent_turn_id: '01'")
 
     # Mock LLM to return a valid plan
     from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 
     mock_llm = MagicMock(spec=ILlmClient)
-    mock_llm.get_completion.return_value = """# Plan: Resume Plan
+    mock_llm.get_completion.return_value = make_mock_response("""# Plan: Resume Plan
 - Status: Green
 - Plan Type: feat
 - Agent: Dev
@@ -365,7 +222,9 @@ OK
 ````shell
 echo 'dummy'
 ````
-"""
+""")
+    mock_llm.get_token_count.return_value = 100
+    mock_llm.get_completion_cost.return_value = 0.01
 
     container.register(ILlmClient, instance=mock_llm)
 
@@ -405,7 +264,7 @@ def test_teddy_start_dynamic_renaming_and_flow(tmp_path, monkeypatch, container)
 
     # Mock LLM to return a plan with a specific H1
     mock_llm = MagicMock(spec=ILlmClient)
-    mock_llm.get_completion.return_value = """# Plan: Initialize User Auth
+    mock_llm.get_completion.return_value = make_mock_response("""# Plan: Initialize User Auth
 - Status: Green
 - Plan Type: feat
 - Agent: Dev
@@ -420,7 +279,7 @@ Testing dynamic rename.
 - Description: test
 ````shell
 echo 'hello from dynamic session'
-````"""
+````""")
     mock_llm.get_token_count.return_value = 100
     mock_llm.get_completion_cost.return_value = 0.01
     container.register(ILlmClient, instance=mock_llm)
@@ -459,7 +318,7 @@ def test_teddy_start_with_explicit_name(tmp_path, monkeypatch, container):
     )
 
     mock_llm = MagicMock(spec=ILlmClient)
-    mock_llm.get_completion.return_value = """# Plan: Some Other Title
+    mock_llm.get_completion.return_value = make_mock_response("""# Plan: Some Other Title
 - Status: Green
 - Plan Type: feat
 - Agent: Dev
@@ -475,7 +334,9 @@ OK
 ````shell
 echo 'dummy'
 ````
-"""
+""")
+    mock_llm.get_token_count.return_value = 100
+    mock_llm.get_completion_cost.return_value = 0.01
     container.register(ILlmClient, instance=mock_llm)
 
     # Act

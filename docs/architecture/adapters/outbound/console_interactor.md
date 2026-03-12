@@ -29,6 +29,9 @@ The `ask_question` method logic supports both standard input and external editor
 #### `notify_skipped_action(action: ActionData, reason: str) -> None`
 This method prints a formatted, colorized warning to `sys.stderr` when an action is skipped by the orchestrator (e.g., due to a previous failure), ensuring the user is immediately aware of halted execution without needing to inspect the final markdown report.
 
+#### `display_message(message: str) -> None`
+Prints a message to standard error. The implementation uses formatting (e.g., Rich tags) to ensure important status information is visually distinct.
+
 #### `confirm_action(action: ActionData, action_prompt: str, change_set: Optional[ChangeSet] = None) -> tuple[bool, str]`
 The `confirm_action` method is responsible for presenting a proposed action to the user and capturing their approval or denial. For `CREATE` and `EDIT` actions, it uses a `ChangeSet` to present a visual preview.
 

@@ -10,12 +10,29 @@ class LiteLLMAdapter(ILlmClient):
 
     def __init__(self, config_service: IConfigService):
         self._config_service = config_service
+        self._silence_litellm()
+
+    def _silence_litellm(self) -> None:
+        """
+        Configures LiteLLM to be quiet.
+        Note: This method is now empty to prevent LiteLLM import during initialization.
+        Silencing is handled lazily within the methods that use the library.
+        """
+        pass
+
+    def _ensure_silence(self, litellm_module: Any) -> None:
+        """Internal helper to silence litellm lazily."""
+        import logging
+
+        litellm_module.set_verbose = False
+        litellm_module.suppress_debug_info = True
+        logging.getLogger("LiteLLM").setLevel(logging.WARNING)
 
     def get_completion(
         self, model: str, messages: List[Dict[str, str]], **kwargs: Any
-    ) -> str:
+    ) -> Any:
         """
-        Sends a request to an LLM via litellm and returns the text response.
+        Sends a request to an LLM via litellm and returns the raw response object.
         Values in the 'llm' section of the config are passed directly to LiteLLM.
         """
         import litellm
@@ -33,18 +50,22 @@ class LiteLLMAdapter(ILlmClient):
         for key, value in llm_config.items():
             kwargs[key] = value
 
+        self._ensure_silence(litellm)
         try:
-            response = litellm.completion(messages=messages, **kwargs)
-            if hasattr(response, "choices") and len(response.choices) > 0:
-                return response.choices[0].message.content or ""
-            return ""
+            return litellm.completion(messages=messages, **kwargs)
         except Exception as e:
             raise LlmApiError(f"LLM Completion failed: {str(e)}") from e
 
     def get_token_count(self, model: str, messages: List[Dict[str, str]]) -> int:
-        """Stub for token count calculation."""
-        return 0
+        """Calculates the number of tokens in the payload."""
+        import litellm
 
-    def get_completion_cost(self, _completion_response: Any) -> float:
-        """Stub for completion cost calculation."""
-        return 0.0
+        self._ensure_silence(litellm)
+        return litellm.token_counter(model=model, messages=messages)
+
+    def get_completion_cost(self, completion_response: Any) -> float:
+        """Calculates the precise USD cost of a completion response."""
+        import litellm
+
+        self._ensure_silence(litellm)
+        return float(litellm.completion_cost(completion_response=completion_response))

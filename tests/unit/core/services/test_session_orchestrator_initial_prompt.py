@@ -6,13 +6,24 @@ from teddy_executor.core.ports.outbound.session_manager import SessionState
 
 @pytest.fixture
 def mocks():
+    fs = MagicMock()
+    fs.read_file.return_value = (
+        "agent_name: pathfinder\ncumulative_cost: 0.0\nturn_cost: 0.0"
+    )
+
+    ps = MagicMock()
+    ps.generate_plan.return_value = "path/to/plan.md"
+
+    ss = MagicMock()
+    ss.get_session_state.return_value = (SessionState.EMPTY, "session/01")
+
     return {
         "execution_orchestrator": MagicMock(),
-        "session_service": MagicMock(),
-        "file_system_manager": MagicMock(),
+        "session_service": ss,
+        "file_system_manager": fs,
         "report_formatter": MagicMock(),
         "plan_validator": MagicMock(),
-        "planning_service": MagicMock(),
+        "planning_service": ps,
         "plan_parser": MagicMock(),
         "user_interactor": MagicMock(),
     }

@@ -3,6 +3,7 @@ import shlex
 from typing import Optional
 
 import typer
+from rich.console import Console
 
 from teddy_executor.core.domain.models.change_set import ChangeSet
 from teddy_executor.core.domain.models.plan import ActionData
@@ -13,10 +14,15 @@ from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 class ConsoleInteractorAdapter(IUserInteractor):
     def __init__(self, system_env: ISystemEnvironment):
         self._system_env = system_env
+        self._console = Console(stderr=True)
 
     def prompt(self, text: str, default: str = "") -> str:
         """Prompts the user using typer.prompt."""
         return typer.prompt(text, default=default, show_default=False, err=True)
+
+    def display_message(self, message: str) -> None:
+        """Displays a message using Rich."""
+        self._console.print(message)
 
     def ask_question(self, prompt: str, resources: list[str] | None = None) -> str:
         """

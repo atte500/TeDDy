@@ -46,7 +46,7 @@ def test_session_orchestrator_validation_failure_read_already_in_context(
 
     # Ensure required turn artifacts exist for transition logic
     (turn_01_dir / "meta.yaml").write_text("turn_id: '01'\n", encoding="utf-8")
-    (turn_01_dir / "system_prompt.xml").write_text("<p>S</p>", encoding="utf-8")
+    (turn_01_dir / "pathfinder.xml").write_text("<p>S</p>", encoding="utf-8")
 
     # Act
     report = orchestrator.execute(
@@ -119,7 +119,7 @@ new
     plan_path = turn_01_dir / "plan.md"
     plan_path.write_text(plan_content, encoding="utf-8")
     (turn_01_dir / "meta.yaml").write_text("turn_id: '01'\n", encoding="utf-8")
-    (turn_01_dir / "system_prompt.xml").write_text("<p>S</p>", encoding="utf-8")
+    (turn_01_dir / "pathfinder.xml").write_text("<p>S</p>", encoding="utf-8")
 
     # Act
     report = orchestrator.execute(plan_content=plan_content, plan_path=str(plan_path))
@@ -180,7 +180,7 @@ Test
     plan_path = turn_01_dir / "plan.md"
     plan_path.write_text(plan_content, encoding="utf-8")
     (turn_01_dir / "meta.yaml").write_text("turn_id: '01'\n", encoding="utf-8")
-    (turn_01_dir / "system_prompt.xml").write_text("<p>S</p>", encoding="utf-8")
+    (turn_01_dir / "pathfinder.xml").write_text("<p>S</p>", encoding="utf-8")
 
     # Act
     report = orchestrator.execute(plan_content=plan_content, plan_path=str(plan_path))

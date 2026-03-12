@@ -6,6 +6,17 @@ from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 runner = CliRunner()
 
 
+def make_mock_response(content, model="gpt-4o"):
+    mock_response = MagicMock()
+    mock_response.model = model
+    mock_message = MagicMock()
+    mock_message.content = content
+    mock_choice = MagicMock()
+    mock_choice.message = mock_message
+    mock_response.choices = [mock_choice]
+    return mock_response
+
+
 def test_teddy_start_triggers_planning(tmp_path, monkeypatch, container):
     """
     Scenario: teddy start triggers planning immediately
@@ -29,7 +40,7 @@ def test_teddy_start_triggers_planning(tmp_path, monkeypatch, container):
 
     # Mock LLM
     mock_llm = MagicMock(spec=ILlmClient)
-    mock_llm.get_completion.return_value = """# Plan: Streamlined Init
+    mock_llm.get_completion.return_value = make_mock_response("""# Plan: Streamlined Init
 - Status: Green
 - Plan Type: feat
 - Agent: Dev
@@ -45,7 +56,9 @@ OK
 ````shell
 echo 'dummy'
 ````
-"""
+""")
+    mock_llm.get_token_count.return_value = 100
+    mock_llm.get_completion_cost.return_value = 0.01
     container.register(ILlmClient, instance=mock_llm)
 
     # Act

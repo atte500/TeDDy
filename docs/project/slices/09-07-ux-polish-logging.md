@@ -1,5 +1,5 @@
 # Slice 09-07: UX Polish & Logging (Session Lifecycle)
-- **Status:** Planned
+- **Status:** Completed
 - **Milestone:** [Milestone 09: Interactive Session Workflow & LLM Integration](/docs/project/milestones/09-interactive-session-and-config.md)
 - **Specs:** [Interactive Session Workflow](/docs/project/specs/interactive-session-workflow.md)
 
@@ -60,7 +60,7 @@ To refine the user experience of the interactive session workflow by ensuring ro
 - Implemented `resolve_session_from_path` using a parent-climbing algorithm looking for the `.teddy/sessions` directory structure.
 - Updated the CLI `resume` command to accept an optional positional `path` argument instead of the `--session` flag, as per specification.
 
-### Scenario: AI Transparency & Telemetry
+### Scenario: AI Transparency & Telemetry [✓]
 - **Given** a planning phase is triggered.
 - **When** the LLM is called.
 - **Then** an `input.log` file MUST be created in the turn directory containing the exact raw payload (system + user messages) sent to the LLM.
@@ -71,18 +71,39 @@ To refine the user experience of the interactive session workflow by ensuring ro
     - Cumulative session cost (e.g., "Session Cost: $0.04").
 
 #### Deliverables
-- [ ] **Adapter Extension:** Implemented `get_token_count` and `get_completion_cost` in `LiteLLMAdapter`.
-- [ ] **Cost Persistence:** Updated `SessionService.transition_to_next_turn` to calculate and store `cumulative_cost` in `meta.yaml`.
-- [ ] **Input Logging:** Added `input.log` generation and specific agent prompt saving in `PlanningService`.
-- [ ] **Telemetry Display:** Updated `SessionOrchestrator` and CLI handlers to display model, context usage, and session cost to the user.
+- [✓] **Adapter Extension:** Implemented `get_token_count` and `get_completion_cost` in `LiteLLMAdapter`.
+- [✓] **Cost Persistence:** Updated `SessionService.transition_to_next_turn` to calculate and store `cumulative_cost` in `meta.yaml`.
+- [✓] **Input Logging:** Added `input.log` generation and specific agent prompt saving in `PlanningService`.
+- [✓] **Telemetry Display:** Updated `SessionOrchestrator` and CLI handlers to display model, context usage, and session cost to the user.
 
-### Scenario: Silence the Noise
+#### Implementation Notes
+- Extended `ILlmClient` and `LiteLLMAdapter` with `get_token_count` and `get_completion_cost`.
+- Updated `PlanningService` to log raw messages to `input.log` and save agent prompts with their actual name.
+- Integrated telemetry calculation in `PlanningService` and display in `SessionOrchestrator`.
+- Updated `SessionService` to persist `turn_cost` and update `cumulative_cost` during transitions.
+- Enhanced `IUserInteractor` with `display_message` for non-interactive output.
+- **Service Hardening:** Hardened `PlanningService` to use `pathlib` and robustly handle missing `meta.yaml` files.
+- **Serialization Scrub:** Implemented mandatory primitive-casting layer in `SessionService` and `PlanningService` before `yaml.dump` calls to prevent `MagicMock` induced hangs in tests.
+- **Test Fixes:** Fixed `test_streamlined_init.py` by implementing the `make_mock_response` pattern for LLM completions.
+
+### Scenario: Silence the Noise [✓]
 - **Given** I am running any TeDDy command that uses LiteLLM.
 - **When** the command executes.
 - **Then** verbose LiteLLM logs MUST be suppressed from the standard output.
 
 #### Deliverables
-- [ ] **Logging Suppression:** Explicitly disabled LiteLLM's internal verbose logging and provider list prints in the `LiteLLMAdapter`.
+- [✓] **Logging Suppression:** Explicitly disabled LiteLLM's internal verbose logging and provider list prints in the `LiteLLMAdapter`.
+
+#### Implementation Notes
+- Updated `LiteLLMAdapter` to set `litellm.set_verbose = False`, `litellm.suppress_debug_info = True`, and configured the `LiteLLM` logger to `WARNING` level.
+- **Lazy Loading Implementation:** Moved `import litellm` and logging configuration to lazy-loading methods in `LiteLLMAdapter` and `PlanningService`. This fixed a regression where CLI initialization took ~1.2s due to the heavy library import.
+- **Global Mocking:** Implemented a module-level global mock for `litellm` in `tests/conftest.py` with a "Safe-by-Default" response structure. This ensures the entire test suite remains fast and prevents `TypeError` when integration tests attempt to write plan content to disk without explicitly mocking the LLM.
 
 ## 3. Architectural Changes
-*This section will be populated in a later step.*
+- **Agent-Specific Prompts:** Replaced the generic `system_prompt.xml` with `[agent_name].xml` (e.g., `pathfinder.xml`) to provide better transparency into which persona generated a plan.
+- **Telemetry Display:** Enhanced `SessionOrchestrator` to display model, context usage, and cumulative USD cost to the user in real-time.
+- **Defensive Serialization:** Implemented a mandatory primitive-casting layer in `SessionService` and `PlanningService` before `yaml.dump` calls. This prevents `PyYAML` from entering infinite recursion or hanging when encountering `MagicMock` objects in unit tests.
+
+### Architectural Feedback
+- **[OBS] Mock-Induced Serialization Hangs:** The discovery of `yaml.dump` hanging on `MagicMock` objects highlights a fragility in our unit testing strategy when dealing with dynamic metadata. The implemented primitive-casting scrub in the service layer effectively mitigates this, but suggests that we should prefer `spec=...` and strict primitive validation in our domain models to avoid such "leakage" into infrastructure operations.
+- **[OBS] Test Pyramid Rebalancing:** During this slice, the test pyramid was rebalanced by moving high-level CLI orchestration tests from the acceptance layer to the integration layer. This significantly improved suite performance while maintaining the rule: Acceptance < Integration < Unit.

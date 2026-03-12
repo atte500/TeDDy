@@ -17,18 +17,19 @@ def test_transition_to_next_turn_creates_directory_and_linkage():
 
     # Mock current turn state
     plan_path = ".teddy/sessions/feat-x/01/plan.md"
-    current_meta = "turn_id: 'abc'\n"
+    current_meta = "turn_id: 'abc'\nagent_name: 'pathfinder'\n"
     current_prompt = "system prompt content"
     current_context = "file_a.py"
 
     # Mocking FS reads for T_current
     fs.read_file.side_effect = lambda path: {
         ".teddy/sessions/feat-x/01/meta.yaml": current_meta,
-        ".teddy/sessions/feat-x/01/system_prompt.xml": current_prompt,
+        ".teddy/sessions/feat-x/01/pathfinder.xml": current_prompt,
         ".teddy/sessions/feat-x/01/turn.context": current_context,
     }.get(Path(path).as_posix(), "")
 
-    # Mock directory existence check for T_next
+    # Mock directory existence check
+    fs.path_exists.return_value = True
     fs.create_directory.return_value = None
 
     report = MagicMock(spec=ExecutionReport)
@@ -51,9 +52,9 @@ def test_transition_to_next_turn_creates_directory_and_linkage():
     assert meta_data["parent_turn_id"] == "abc"
     assert meta_data["turn_id"] == "02"
 
-    # Verify system_prompt.xml is copied
+    # Verify pathfinder.xml is copied
     prompt_call = next(
-        c for c in fs.write_file.call_args_list if "02/system_prompt.xml" in c.args[0]
+        c for c in fs.write_file.call_args_list if "02/pathfinder.xml" in c.args[0]
     )
     assert prompt_call.args[1] == "system prompt content"
 
@@ -82,7 +83,7 @@ def test_transition_to_next_turn_applies_read_and_prune_side_effects():
 
     fs.read_file.side_effect = lambda path: {
         ".teddy/sessions/feat-x/01/meta.yaml": current_meta,
-        ".teddy/sessions/feat-x/01/system_prompt.xml": current_prompt,
+        ".teddy/sessions/feat-x/01/pathfinder.xml": current_prompt,
         ".teddy/sessions/feat-x/01/turn.context": current_context,
     }.get(Path(path).as_posix(), "")
 

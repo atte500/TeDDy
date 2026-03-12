@@ -27,8 +27,10 @@ The `SessionOrchestrator` is a decorator-style service that wraps the stateless 
     -   Generates a `report.md` in the current turn containing the validation errors.
     -   Calls `SessionService.transition_to_next_turn` with `is_validation_failure=True`. This ensures the failure report is NOT added to the next turn's context.
     -   Calls `PlanningService.generate_plan` for the new turn, using a structured feedback payload (Errors + Original Plan) as the user message.
-5.  **Report Persistence:** In Session Mode, the `ExecutionReport` is formatted and saved to `report.md` in the turn directory.
-6.  **Stateful Transition:** After saving the report, it calls `SessionService.transition_to_next_turn` to prepare the next stage of the session.
+5.  **Telemetry Display:** After plan generation, retrieves metadata and displays model name, context token usage, and cumulative session cost to the user.
+6.  **Auto-Naming:** For Turn 01, if the session has a default timestamped name, it renames the session directory based on the slugified H1 title of the generated plan.
+7.  **Report Persistence:** In Session Mode, the `ExecutionReport` is formatted and saved to `report.md` in the turn directory.
+8.  **Stateful Transition:** After saving the report, it calls `SessionService.transition_to_next_turn` to prepare the next stage of the session.
 
 ## 4. Data Contracts / Methods
 

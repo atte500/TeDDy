@@ -1,13 +1,32 @@
 import sys
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock, MagicMock
 import pytest
 
-from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
-from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
-from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
-from teddy_executor.core.services.context_service import ContextService
-from teddy_executor.core.ports.outbound import (
+# Globally mock litellm to prevent the expensive 1.2s import in all tests.
+# This ensures that even if LiteLLMAdapter is instantiated, it doesn't
+# trigger the real library import.
+mock_litellm = MagicMock()
+
+# Configure a "Safe-by-Default" response for litellm.completion()
+# to prevent TypeErrors when tests write plan content to disk.
+_default_completion_mock = MagicMock()
+_default_choice = MagicMock()
+_default_choice.message.content = "# Mock Plan\nRationale: Test\n## Action Plan\n### READ\n- Resource: [README.md](/README.md)\n"
+_default_completion_mock.choices = [_default_choice]
+_default_completion_mock.model = "mock-model"
+
+mock_litellm.completion.return_value = _default_completion_mock
+mock_litellm.token_counter.return_value = 100
+mock_litellm.completion_cost.return_value = 0.01
+
+sys.modules["litellm"] = mock_litellm
+
+from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase  # noqa: E402
+from teddy_executor.core.ports.inbound.plan_parser import IPlanParser  # noqa: E402
+from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase  # noqa: E402
+from teddy_executor.core.services.context_service import ContextService  # noqa: E402
+from teddy_executor.core.ports.outbound import (  # noqa: E402
     IUserInteractor,
     IFileSystemManager,
     ISystemEnvironment,
@@ -19,12 +38,12 @@ from teddy_executor.core.ports.outbound import (
     IMarkdownReportFormatter,
     ILlmClient,
 )
-from teddy_executor.core.services.edit_simulator import EditSimulator
-from teddy_executor.core.services.action_dispatcher import (
+from teddy_executor.core.services.edit_simulator import EditSimulator  # noqa: E402
+from teddy_executor.core.services.action_dispatcher import (  # noqa: E402
     ActionDispatcher,
     IActionFactory,
 )
-from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
+from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator  # noqa: E402
 
 # Add the project root directory to the Python path.
 # This is necessary to ensure that `pytest` can correctly resolve imports
@@ -169,5 +188,22 @@ def mock_report_formatter(container):
 @pytest.fixture
 def mock_llm_client(container):
     mock = Mock(spec=ILlmClient)
+
+    # Create a structured ModelResponse mock
+    from unittest.mock import MagicMock
+
+    mock_response = MagicMock()
+    mock_choice = MagicMock()
+
+    # CRITICAL: Ensure the mock content is a real string to prevent
+    # Pathlib TypeError in integration tests that write the plan to disk.
+    mock_choice.message.content = "# Mock Plan\nRationale: Test\n## Action Plan\n### READ\n- Resource: [README.md](/README.md)\n"
+    mock_response.choices = [mock_choice]
+    mock_response.model = "test-model"
+
+    mock.get_completion.return_value = mock_response
+    mock.get_token_count.return_value = 100
+    mock.get_completion_cost.return_value = 0.01
+
     container.register(ILlmClient, instance=mock)
     return mock

@@ -56,3 +56,15 @@ This port defines the contract for components that can interact with the user by
     *   `message`: The verbatim handoff message.
 *   **Returns:**
     *   `tuple[bool, str]`: `(True, "")` on approval (Enter), or `(False, reason)` if the user provides a rejection reason.
+
+---
+
+### `display_message(message: str) -> None`
+
+**Status:** Implemented
+**Motivating Slice:** [Slice 09-07: UX Polish & Logging](/docs/project/slices/09-07-ux-polish-logging.md)
+
+*   **Description:**
+    Displays a non-interactive message to the user. This is intended for status updates, telemetry, or other information that doesn't require a response but should be visible in the user's interface (e.g., printed to the console).
+*   **Parameters:**
+    *   `message`: The message to display.

@@ -179,6 +179,7 @@ This section serves as the "System Law" (Poka-Yoke) for TeDDy. It defines the pr
 -   **Rule:** The `Plan` and `ActionData` domain models are mutable (unfrozen). **Rationale:** To allow primary adapters (like the TUI Reviewer) to modify plan parameters and selection state in-memory before execution without the overhead of deep copying and re-validation.
 -   **Rule:** Every turn's `meta.yaml` MUST store `turn_cost` and `cumulative_cost`. **Rationale:** To ensure cost transparency and maintain a self-contained, auditable history for every turn without a centralized database.
 -   **Rule:** Sessions created without a name MUST use a temporary timestamped name and be renamed after the first successful plan generation. **Rationale:** To allow the AI to suggest a meaningful name based on the actual content of the initial request.
+-   **Rule:** Heavy third-party libraries (e.g., `litellm`, `trafilatura`) MUST be imported lazily within the methods where they are used. **Rationale:** To ensure the CLI remains responsive and initializes in under 500ms (excluding shell overhead). Module-level imports of heavy libraries significantly degrade the user experience.
 
 ---
 

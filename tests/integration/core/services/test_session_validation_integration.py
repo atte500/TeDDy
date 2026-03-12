@@ -18,7 +18,7 @@ def test_automated_replan_triggers_on_structure_error(
 
     (turn_01_dir / "turn.context").write_text("", encoding="utf-8")
     (session_dir / "session.context").write_text("", encoding="utf-8")
-    (turn_01_dir / "system_prompt.xml").write_text("<p>S</p>", encoding="utf-8")
+    (turn_01_dir / "pathfinder.xml").write_text("<p>S</p>", encoding="utf-8")
     (turn_01_dir / "meta.yaml").write_text("turn_id: '01'\n", encoding="utf-8")
 
     # Malformed plan (missing Rationale)
@@ -35,7 +35,16 @@ def test_automated_replan_triggers_on_structure_error(
 """
     plan_path = turn_01_dir / "plan.md"
     plan_path.write_text(plan_content, encoding="utf-8")
-    mock_llm_client.get_completion.return_value = "# Corrected\n..."
+
+    # Mock structured response
+    from unittest.mock import MagicMock
+
+    mock_response = MagicMock()
+    mock_choice = MagicMock()
+    mock_choice.message.content = "# Corrected\nRationale: fixed\n## Action Plan\n### READ\n- Resource: [README.md](/README.md)\n"
+    mock_response.choices = [mock_choice]
+    mock_response.model = "gpt-4o"
+    mock_llm_client.get_completion.return_value = mock_response
 
     result = runner.invoke(app, ["execute", str(plan_path), "-y"])
 
@@ -99,7 +108,7 @@ def test_automated_replan_triggers_on_context_error(
 
     (turn_01_dir / "turn.context").write_text("", encoding="utf-8")
     (session_dir / "session.context").write_text("", encoding="utf-8")
-    (turn_01_dir / "system_prompt.xml").write_text("<p>S</p>", encoding="utf-8")
+    (turn_01_dir / "pathfinder.xml").write_text("<p>S</p>", encoding="utf-8")
     (turn_01_dir / "meta.yaml").write_text("turn_id: '01'\n", encoding="utf-8")
 
     # Plan trying to EDIT a file not in context
@@ -129,7 +138,16 @@ new
 """
     plan_path = turn_01_dir / "plan.md"
     plan_path.write_text(plan_content, encoding="utf-8")
-    mock_llm_client.get_completion.return_value = "# Corrected\n..."
+
+    # Mock structured response
+    from unittest.mock import MagicMock
+
+    mock_response = MagicMock()
+    mock_choice = MagicMock()
+    mock_choice.message.content = "# Corrected\nRationale: fixed\n## Action Plan\n### READ\n- Resource: [README.md](/README.md)\n"
+    mock_response.choices = [mock_choice]
+    mock_response.model = "gpt-4o"
+    mock_llm_client.get_completion.return_value = mock_response
 
     result = runner.invoke(app, ["execute", str(plan_path), "-y"])
 

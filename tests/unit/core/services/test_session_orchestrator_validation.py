@@ -72,7 +72,10 @@ def test_execute_triggers_replan_on_validation_failure(mock_deps):
     from unittest.mock import ANY
 
     mock_deps["session_service"].transition_to_next_turn.assert_called_with(
-        plan_path=plan_path, execution_report=ANY, is_validation_failure=True
+        plan_path=plan_path,
+        execution_report=ANY,
+        is_validation_failure=True,
+        turn_cost=ANY,
     )
 
     # 3. planning_service.generate_plan was called for the next turn

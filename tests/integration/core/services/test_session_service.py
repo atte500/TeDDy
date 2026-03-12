@@ -20,7 +20,7 @@ def test_transition_to_next_turn_handles_missing_turn_context(tmp_path, containe
 
     # Setup required files for transition
     (turn_01_dir / "meta.yaml").write_text("turn_id: '01'")
-    (turn_01_dir / "system_prompt.xml").write_text("<prompt>test</prompt>")
+    (turn_01_dir / "pathfinder.xml").write_text("<prompt>test</prompt>")
 
     # IMPORTANT: turn.context is NOT created here
 

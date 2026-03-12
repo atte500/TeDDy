@@ -12,13 +12,25 @@ def mock_context_service():
 
 @pytest.fixture
 def mock_llm_client():
-    return MagicMock()
+    client = MagicMock()
+    # Mock structured response
+    mock_response = MagicMock()
+    mock_choice = MagicMock()
+    mock_choice.message.content = "Generated Plan Content"
+    mock_response.choices = [mock_choice]
+    mock_response.model = "gpt-4o"
+
+    client.get_completion.return_value = mock_response
+    client.get_token_count.return_value = 100
+    client.get_completion_cost.return_value = 0.001
+    return client
 
 
 @pytest.fixture
 def mock_file_system():
     service = MagicMock()
-    service.read_file.return_value = "system prompt"
+    # Default meta.yaml content
+    service.read_file.return_value = "agent_name: pathfinder\ncumulative_cost: 0.0"
     return service
 
 

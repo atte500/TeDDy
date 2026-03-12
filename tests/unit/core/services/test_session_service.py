@@ -48,9 +48,9 @@ def test_create_session_orchestrates_filesystem_correctly(service, mock_fs):
             ".teddy/sessions/feat-x/session.context", clean_context
         )
 
-        # 3. system_prompt.xml creation
+        # 3. pathfinder.xml creation
         mock_fs.write_file.assert_any_call(
-            ".teddy/sessions/feat-x/01/system_prompt.xml", agent_prompt
+            ".teddy/sessions/feat-x/01/pathfinder.xml", agent_prompt
         )
 
         # 4. meta.yaml creation (just check it was called, parsing checked in acceptance)

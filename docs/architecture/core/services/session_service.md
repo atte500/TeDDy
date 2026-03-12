@@ -17,13 +17,13 @@ The `SessionService` is responsible for managing the lifecycle of TeDDy sessions
 1.  **Session Bootstrapping (`create_session`):**
     -   Creates the session root and Turn 01 directory.
     -   Seeds `session.context` from `.teddy/init.context`, stripping comments.
-    -   Fetches and saves the agent's system prompt to `01/system_prompt.xml`.
+    -   Fetches and saves the agent's system prompt to `01/[agent_name].xml`.
     -   Initializes `01/meta.yaml` with a `turn_id` and `creation_timestamp`.
 2.  **Turn Transition (`transition_to_next_turn`):**
     -   Calculates the next turn ID (e.g., `01` -> `02`).
     -   Creates the next turn directory.
-    -   Copies the current `system_prompt.xml` to the next turn.
-    -   Updates `meta.yaml` with `parent_turn_id` links.
+    -   Copies the current `[agent_name].xml` prompt file to the next turn.
+    -   Updates `meta.yaml` with `parent_turn_id` links and cumulative cost. Ensures all metadata is cast to primitive types before serialization to prevent hangs.
     -   **Context Management:**
         -   Seeds the next `turn.context` with the current one. Reading is robust: if `turn.context` is missing or unreadable, it is treated as an empty set of paths.
         -   Parses `READ` and `PRUNE` actions from the `ExecutionReport` to update the next context.
@@ -42,6 +42,18 @@ The `SessionService` is responsible for managing the lifecycle of TeDDy sessions
 
 ### `transition_to_next_turn(plan_path: str, execution_report: ExecutionReport) -> str`
 -   **Description:** Executes the Turn Transition Algorithm to prepare the next turn directory.
+
+### `rename_session(old_name: str, new_name: str) -> str`
+-   **Description:** Safely renames a session directory on the filesystem.
+-   **Exceptions:** `ValueError` if the new name already exists.
+
+### `get_latest_session_name() -> str`
+-   **Description:** Identifies and returns the name of the most recently modified session.
+-   **Exceptions:** `ValueError` if no sessions are found.
+
+### `resolve_session_from_path(path: str) -> str`
+-   **Description:** Resolves a session name from a given path (session root, turn dir, or file).
+-   **Exceptions:** `ValueError` if the path is not inside a session.
 
 ## 5. Implementation Notes
 

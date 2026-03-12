@@ -35,6 +35,16 @@ class IUserInteractor(ABC):
         pass
 
     @abstractmethod
+    def display_message(self, message: str) -> None:
+        """
+        Displays an informational message to the user.
+
+        Args:
+            message: The message to display.
+        """
+        pass
+
+    @abstractmethod
     def confirm_action(
         self,
         action: "ActionData",

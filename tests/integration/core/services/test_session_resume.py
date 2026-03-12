@@ -39,7 +39,7 @@ hello
     (turn_dir / "meta.yaml").write_text("turn_id: '01'")
     (turn_dir / "turn.context").write_text("foo.txt")
     (session_dir / "session.context").write_text("")
-    (turn_dir / "system_prompt.xml").write_text("<prompt>test</prompt>")
+    (turn_dir / "pathfinder.xml").write_text("<prompt>test</prompt>")
 
     # Mock working directory to be inside the session
     monkeypatch.chdir(tmp_path)

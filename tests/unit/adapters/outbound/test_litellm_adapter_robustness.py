@@ -16,7 +16,7 @@ def adapter(mock_config):
     return LiteLLMAdapter(mock_config)
 
 
-def test_get_completion_success(adapter):
+def test_get_completion_returns_raw_response(adapter):
     # Mock a standard LiteLLM response object
     mock_response = MagicMock()
     mock_choice = MagicMock()
@@ -27,10 +27,12 @@ def test_get_completion_success(adapter):
         result = adapter.get_completion(
             "test-model", [{"role": "user", "content": "hi"}]
         )
-        assert result == "Verified Content"
+        # The adapter must return the raw response object per ILlmClient contract
+        assert result == mock_response
+        assert result.choices[0].message.content == "Verified Content"
 
 
-def test_get_completion_empty_choices(adapter):
+def test_get_completion_passthrough_empty_choices(adapter):
     mock_response = MagicMock()
     mock_response.choices = []
 
@@ -38,10 +40,11 @@ def test_get_completion_empty_choices(adapter):
         result = adapter.get_completion(
             "test-model", [{"role": "user", "content": "hi"}]
         )
-        assert result == ""
+        assert result == mock_response
+        assert len(result.choices) == 0
 
 
-def test_get_completion_none_content(adapter):
+def test_get_completion_passthrough_none_content(adapter):
     mock_response = MagicMock()
     mock_choice = MagicMock()
     mock_choice.message.content = None
@@ -51,7 +54,8 @@ def test_get_completion_none_content(adapter):
         result = adapter.get_completion(
             "test-model", [{"role": "user", "content": "hi"}]
         )
-        assert result == ""
+        assert result == mock_response
+        assert result.choices[0].message.content is None
 
 
 def test_get_completion_error_handling(adapter):

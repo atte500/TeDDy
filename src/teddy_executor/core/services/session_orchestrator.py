@@ -1,10 +1,10 @@
-from datetime import datetime, timezone
+import re
 from pathlib import Path
 from typing import Optional
+
+import yaml
 from teddy_executor.core.domain.models.execution_report import (
     ExecutionReport,
-    RunStatus,
-    RunSummary,
 )
 from teddy_executor.core.domain.models.plan import Plan
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
@@ -13,6 +13,7 @@ from teddy_executor.core.ports.outbound.markdown_report_formatter import (
     IMarkdownReportFormatter,
 )
 from teddy_executor.core.ports.outbound.session_manager import SessionState
+from teddy_executor.core.services.session_replanner import SessionReplanner
 
 
 class SessionOrchestrator(IRunPlanUseCase):
@@ -40,6 +41,7 @@ class SessionOrchestrator(IRunPlanUseCase):
         self._planning_service = planning_service
         self._plan_parser = plan_parser
         self._user_interactor = user_interactor
+        self._replanner = SessionReplanner(file_system_manager, planning_service)
 
     def resume(self, session_name: str, interactive: bool = True):
         """
@@ -111,6 +113,37 @@ class SessionOrchestrator(IRunPlanUseCase):
             user_message=message, turn_dir=turn_dir, context_files=context_files
         )
 
+        # Telemetry Display
+        meta_content = self._file_system_manager.read_file(f"{turn_dir}/meta.yaml")
+
+        # Defensive: cast to str to prevent hangs on Mocks, then ensure it's a dict
+        meta_loaded = yaml.safe_load(str(meta_content))
+        meta = meta_loaded if isinstance(meta_loaded, dict) else {}
+
+        model = meta.get("model", "unknown")
+        token_count = meta.get("token_count", 0)
+
+        try:
+            cumulative_cost = float(meta.get("cumulative_cost", 0.0)) + float(
+                meta.get("turn_cost", 0.0)
+            )
+        except (TypeError, ValueError):
+            cumulative_cost = 0.0
+
+        agent_name = meta.get("agent_name", "pathfinder")
+
+        # Context usage: hardcoded max context for display purposes as per spec example
+        self._user_interactor.display_message(
+            f"\n[bold green]Planning Turn with {agent_name}...[/]"
+        )
+        self._user_interactor.display_message(f"  Model: {model}")
+        self._user_interactor.display_message(
+            f"  Context: {token_count / 1000:.1f}k tokens"
+        )
+        self._user_interactor.display_message(
+            f"  Session Cost: ${cumulative_cost:.4f}\n"
+        )
+
         # Dynamic Renaming Logic for Turn 1
         session_name = Path(turn_dir).parent.name
         if turn_p.name == "01":
@@ -124,7 +157,6 @@ class SessionOrchestrator(IRunPlanUseCase):
         """Renames the session based on the plan title."""
         content = self._file_system_manager.read_file(plan_path)
         # Extract H1 title (e.g., "# Plan: My Feature")
-        import re
 
         match = re.search(r"^#\s*(?:Plan:)?\s*(.*)$", content, re.MULTILINE)
         if match:
@@ -174,7 +206,7 @@ class SessionOrchestrator(IRunPlanUseCase):
         errors = self._plan_validator.validate(plan, context_paths=context_paths)
 
         if errors:
-            failed_resources = self._gather_failed_resources(errors)
+            failed_resources = self._replanner.gather_failed_resources(errors)
             if plan_path:
                 return self._trigger_replan(
                     plan_path=plan_path,
@@ -185,18 +217,10 @@ class SessionOrchestrator(IRunPlanUseCase):
                     failed_resources=failed_resources,
                 )
             # Manual Mode Validation Failure
-            now = datetime.now(timezone.utc)
-            return ExecutionReport(
-                run_summary=RunSummary(
-                    status=RunStatus.VALIDATION_FAILED,
-                    start_time=now,
-                    end_time=now,
-                    error="Plan validation failed.",
-                ),
-                plan_title=plan.title,
+            return self._replanner.build_failure_report(
+                errors=[e.message for e in errors],
+                title=plan.title,
                 rationale=plan.rationale,
-                action_logs=[],
-                validation_result=[e.message for e in errors],
                 failed_resources=failed_resources,
             )
 
@@ -221,9 +245,19 @@ class SessionOrchestrator(IRunPlanUseCase):
         is_validation_failure: bool = False,
     ):
         """Persists the report and transitions to the next turn."""
+        turn_dir = Path(plan_path).parent
+
+        # Read current cost from meta.yaml
+        meta_content = self._file_system_manager.read_file(str(turn_dir / "meta.yaml"))
+        # Defensive: cast content to str to prevent yaml.safe_load hanging on MagicMocks
+        # then ensure we have a dictionary even if safe_load returned a string (Mocks)
+        meta_loaded = yaml.safe_load(str(meta_content))
+        meta = meta_loaded if isinstance(meta_loaded, dict) else {}
+        turn_cost = meta.get("turn_cost", 0.0)
+
         # 1. Persist the report to the current turn directory
         formatted_report = self._report_formatter.format(report)
-        report_file_path = str(Path(plan_path).parent / "report.md")
+        report_file_path = str(turn_dir / "report.md")
         self._file_system_manager.write_file(report_file_path, formatted_report)
 
         # 2. Transition to next turn
@@ -231,6 +265,7 @@ class SessionOrchestrator(IRunPlanUseCase):
             plan_path=plan_path,
             execution_report=report,
             is_validation_failure=is_validation_failure,
+            turn_cost=turn_cost,
         )
 
     def _trigger_replan(  # noqa: PLR0913
@@ -243,55 +278,13 @@ class SessionOrchestrator(IRunPlanUseCase):
         failed_resources: Optional[dict[str, str]] = None,
     ) -> ExecutionReport:
         """Triggers the Automated Re-plan Loop."""
-        # a. Create Validation Failure Report
-        now = datetime.now(timezone.utc)
-        summary = RunSummary(
-            status=RunStatus.VALIDATION_FAILED,
-            start_time=now,
-            end_time=now,
-            error="Plan validation failed.",
+        report = self._replanner.build_failure_report(
+            errors, title, rationale, failed_resources or {}
         )
-        report = ExecutionReport(
-            run_summary=summary,
-            plan_title=title,
-            rationale=rationale,
-            action_logs=[],  # No actions executed
-            validation_result=errors,
-            failed_resources=failed_resources,
-        )
-
-        # b. Persist and Transition
         next_turn_dir = self._finalize_turn(
             plan_path, report, is_validation_failure=True
         )
-
-        # c. Trigger re-plan
-        error_messages = [f"- {e}" for e in errors]
-        feedback = (
-            "The previous plan failed validation. Please review the errors and the original plan, then generate a corrected version.\n\n"
-            "## Validation Errors:\n" + "\n".join(error_messages) + "\n\n"
-            f"## Original Faulty Plan:\n"
-            f"````````````markdown\n{original_plan_content}\n````````````"
+        self._replanner.trigger_replan_turn(
+            next_turn_dir, errors, original_plan_content
         )
-        self._planning_service.generate_plan(
-            user_message=feedback, turn_dir=next_turn_dir
-        )
-
         return report
-
-    def _gather_failed_resources(self, errors: list) -> dict[str, str]:
-        """Collects the contents of files that caused validation errors."""
-        resources = {}
-        for error in errors:
-            path = getattr(error, "file_path", None)
-            if path:
-                try:
-                    # Normalize path for IFileSystemManager
-                    clean_path = path.lstrip("/")
-                    if self._file_system_manager.path_exists(clean_path):
-                        resources[path] = self._file_system_manager.read_file(
-                            clean_path
-                        )
-                except Exception:  # nosec B110
-                    pass
-        return resources
