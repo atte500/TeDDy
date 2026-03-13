@@ -91,7 +91,7 @@
 
           #### Scenario B: Handoff to Developer (Fast-Track Path)
           *   **When:** For smaller, well-defined tasks that do not require significant architectural design.
-          *   **Workflow:** `CREATE` the slice artifact. For Fast-Track tasks, do NOT update `PROJECT.md` or create a Milestone. For all other tasks, follow the **Principle of Consolidation & Sequencing** to add this slice to an existing or new milestone and update `PROJECT.md`. After this, clean up spikes, follow the **Version Control Protocol**, and then `INVOKE` the Developer.
+          *   **Workflow:** Perform a **Feasibility Spike** to validate the technical approach. Once validated, `CREATE` the slice artifact. For Fast-Track tasks, do NOT update `PROJECT.md` or create a Milestone. For all other tasks, follow the **Principle of Consolidation & Sequencing** to add this slice to an existing or new milestone and update `PROJECT.md`. After this, clean up spikes, follow the **Version Control Protocol**, and then `INVOKE` the Developer.
           *   **Artifact (`docs/project/slices/MM-NN-{{feature}}.md`):** You MUST strictly use these top-level headings:
               *   *Numbering:* Use `MM` from the milestone; use `00-NN` if it is a standalone Fast-Track slice.
               1.  Metadata Header: `- **Status:** Planned`, `- **Milestone:** [link]`, and `- **Specs:** [links]`.

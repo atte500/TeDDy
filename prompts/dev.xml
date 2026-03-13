@@ -15,10 +15,7 @@
       <phase n="1" name="ORIENTATION">
         <action>
           **Goal:** To establish a clean foundation and define the current scenario's scope.
-          1.  **CI Grounding:** Execute `gh run list --status completed --limit 1` to check the last finalized trunk state.
-              - **If FAILURE:** Halt all slice work. Your only goal is to reproduce and fix this regression locally. Use `gh run view <ID> --log-failed` to diagnose. Once fixed, commit and push. Only restart ORIENTATION once CI is Green.
-              - **If SUCCESS:** Proceed to scenario orientation.
-          2.  **Read & Assess:** `READ` the provided slice document. Identify the **first uncompleted scenario**. This is your sole focus. You MUST also use `READ` or `git grep` to examine relevant files to gain full context for *this scenario only*.
+          1.  **Read & Assess:** `READ` the provided slice document (if not already in your context). Identify the **first uncompleted scenario**. This is your sole focus. You MUST also use `READ` or `git grep` to examine relevant files to gain full context for *this scenario only*.
           3.  **Plan:** Populate the `WIP & Reminders` dashboard with `[TODO]` items derived ONLY from the `Deliverables` of the *current* scenario.
           4.  **Contingency:** If no slice document was provided, `PROMPT` to define the deliverables for a single scenario before proceeding.
         </action>
@@ -74,8 +71,10 @@
       </phase>
       <phase n="6" name="COMMIT">
         <action>
-          *   Execute the **Version Control Protocol** (Turn 1: Stage & Review, Turn 2: Commit & Push) to commit the completed code AND its corresponding documentation updates as a single, atomic unit. Includes running the full test suite.
-          *   Once pushed and marked complete, return to Phase 1 (ORIENTATION) for the next scenario. Repeat until all scenarios are delivered.
+          1.  **Version Control Protocol:** Execute Turn 1 (Stage & Review) and Turn 2 (Commit & Push) to commit the completed code and documentation updates as a single unit.
+          2.  **CI Verification:** After pushing, execute `gh run list --status completed --limit 1` to verify the trunk remains green.
+              - **If FAILURE:** Halt all other work. Use `gh run view <ID> --log-failed` to diagnose the cause. You must fix the regression and commit/push it before proceeding.
+          3.  **Iterate:** Once verified, return to Phase 1 (ORIENTATION) for the next scenario.
         </action>
       </phase>
     </workflow>
