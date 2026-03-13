@@ -4,13 +4,15 @@ from teddy_executor.__main__ import app
 runner = CliRunner()
 
 
-def test_structural_validation_error_format():
+def test_structural_validation_error_format(container, tmp_path, monkeypatch):
     """
     Scenario 1: Structural Validation Error
     Given a plan with top-level structural errors (missing ## Rationale)
     When the plan is executed
     Then it should fail with a rich diagnostic report.
     """
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "README.md").touch()
     plan_content = """# Plan Missing Rationale
 - **Status:** Green 🟢
 - **Plan Type:** Implementation
@@ -38,12 +40,13 @@ def test_structural_validation_error_format():
     assert "### Actual Document Structure" in output
 
 
-def test_logical_validation_error_format():
+def test_logical_validation_error_format(container, tmp_path, monkeypatch):
     """
     Scenario 2: Logical Validation Error (Missing File)
     Given an EDIT action on a non-existent file
     Then the action heading itself must be marked [✗].
     """
+    monkeypatch.chdir(tmp_path)
     plan_content = """# Plan with Missing File
 - **Status:** Green 🟢
 - **Plan Type:** Implementation
@@ -80,13 +83,17 @@ print("Goodbye")
     )
 
 
-def test_surgical_code_block_highlighting():
+def test_surgical_code_block_highlighting(container, tmp_path, monkeypatch):
     """
     Scenario 3: Surgical Code Block Highlighting
     Given an EDIT action on an existing file but with a non-matching FIND block
     Then the action heading must be [✓]
     And the specific FIND Code Block must be [✗].
     """
+    # Isolate from the real repo
+    (tmp_path / "README.md").write_text("# Test README", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
     plan_content = """# Plan with Mismatched Find
 - **Status:** Green 🟢
 - **Plan Type:** Implementation

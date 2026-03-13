@@ -57,10 +57,6 @@ sys.path.insert(0, str(project_root))
 import teddy_executor.__main__  # noqa: E402
 from teddy_executor.container import create_container  # noqa: E402
 
-# Pre-create a base container once to avoid the overhead of
-# hundreds of registrations during every test.
-_BASE_CONTAINER = create_container()
-
 
 @pytest.fixture
 def container(monkeypatch):
@@ -68,10 +64,8 @@ def container(monkeypatch):
     Provides a fresh DI container for each test and automatically
     patches the global container in teddy_executor.__main__.
     """
-    # We use a child container (or similar) if the DI library supports it,
-    # but for punq, we'll just create a fresh one.
-    # To optimize, we've moved the imports outside the fixture.
     c = create_container()
+    # Force the global container to be this fresh instance
     monkeypatch.setattr(teddy_executor.__main__, "container", c)
     return c
 

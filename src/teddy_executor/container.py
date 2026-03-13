@@ -72,37 +72,48 @@ def create_container() -> punq.Container:
     """
     container = punq.Container()
     # Register core OS abstractions first
-    container.register(ISystemEnvironment, SystemEnvironmentAdapter)
-    container.register(IEnvironmentInspector, SystemEnvironmentInspector)
+    container.register(
+        ISystemEnvironment, SystemEnvironmentAdapter, scope=punq.Scope.transient
+    )
+    container.register(
+        IEnvironmentInspector, SystemEnvironmentInspector, scope=punq.Scope.transient
+    )
 
     # Register ports and adapters
-    container.register(IShellExecutor, ShellAdapter)
-    container.register(IEditSimulator, EditSimulator)
-    container.register(IFileSystemManager, LocalFileSystemAdapter)
-    container.register(IWebScraper, WebScraperAdapter)
-    container.register(IUserInteractor, ConsoleInteractorAdapter)
-    container.register(IWebSearcher, WebSearcherAdapter)
-    container.register(IConfigService, YamlConfigAdapter)
+    container.register(IShellExecutor, ShellAdapter, scope=punq.Scope.transient)
+    container.register(IEditSimulator, EditSimulator, scope=punq.Scope.transient)
+    container.register(
+        IFileSystemManager, LocalFileSystemAdapter, scope=punq.Scope.transient
+    )
+    container.register(IWebScraper, WebScraperAdapter, scope=punq.Scope.transient)
+    container.register(
+        IUserInteractor, ConsoleInteractorAdapter, scope=punq.Scope.transient
+    )
+    container.register(IWebSearcher, WebSearcherAdapter, scope=punq.Scope.transient)
+    container.register(IConfigService, YamlConfigAdapter, scope=punq.Scope.transient)
     container.register(
         ILlmClient,
         factory=lambda: LiteLLMAdapter(container.resolve(IConfigService)),
     )
-    container.register(IRepoTreeGenerator, LocalRepoTreeGenerator)
-    container.register(IPlanParser, MarkdownPlanParser)
+    container.register(
+        IRepoTreeGenerator, LocalRepoTreeGenerator, scope=punq.Scope.transient
+    )
+    container.register(IPlanParser, MarkdownPlanParser, scope=punq.Scope.transient)
     container.register(IPlanReviewer, instance=None)
     container.register(
         IActionFactory,
         factory=lambda: ActionFactory(
             container=container, config_service=container.resolve(IConfigService)
         ),
+        scope=punq.Scope.transient,
     )
-    container.register(ActionDispatcher)
-    container.register(ActionExecutor)
-    container.register(CreateActionValidator)
-    container.register(EditActionValidator)
-    container.register(ExecuteActionValidator)
-    container.register(ReadActionValidator)
-    container.register(PruneActionValidator)
+    container.register(ActionDispatcher, scope=punq.Scope.transient)
+    container.register(ActionExecutor, scope=punq.Scope.transient)
+    container.register(CreateActionValidator, scope=punq.Scope.transient)
+    container.register(EditActionValidator, scope=punq.Scope.transient)
+    container.register(ExecuteActionValidator, scope=punq.Scope.transient)
+    container.register(ReadActionValidator, scope=punq.Scope.transient)
+    container.register(PruneActionValidator, scope=punq.Scope.transient)
 
     # Use a factory lambda to ensure IPlanValidator and its sub-validators
     # are resolved lazily only when IPlanValidator is first requested.
@@ -118,15 +129,19 @@ def create_container() -> punq.Container:
                 container.resolve(PruneActionValidator),
             ],
         ),
+        scope=punq.Scope.transient,
     )
-    container.register(IMarkdownReportFormatter, MarkdownReportFormatter)
-    container.register(ExecutionOrchestrator)
+    container.register(
+        IMarkdownReportFormatter, MarkdownReportFormatter, scope=punq.Scope.transient
+    )
+    container.register(ExecutionOrchestrator, scope=punq.Scope.transient)
     container.register(
         SessionReplanner,
         factory=lambda: SessionReplanner(
             file_system_manager=container.resolve(IFileSystemManager),
             planning_service=container.resolve(IPlanningUseCase),
         ),
+        scope=punq.Scope.transient,
     )
     container.register(
         SessionPlanner,
@@ -136,6 +151,7 @@ def create_container() -> punq.Container:
             user_interactor=container.resolve(IUserInteractor),
             session_service=container.resolve(ISessionManager),
         ),
+        scope=punq.Scope.transient,
     )
     container.register(
         IRunPlanUseCase,
@@ -151,8 +167,9 @@ def create_container() -> punq.Container:
             replanner=container.resolve(SessionReplanner),
             session_planner=container.resolve(SessionPlanner),
         ),
+        scope=punq.Scope.transient,
     )
-    container.register(IGetContextUseCase, ContextService)
+    container.register(IGetContextUseCase, ContextService, scope=punq.Scope.transient)
     container.register(
         IPlanningUseCase,
         factory=lambda: PlanningService(
@@ -161,7 +178,8 @@ def create_container() -> punq.Container:
             file_system_manager=container.resolve(IFileSystemManager),
             config_service=container.resolve(IConfigService),
         ),
+        scope=punq.Scope.transient,
     )
-    container.register(IInitUseCase, InitService)
-    container.register(ISessionManager, SessionService)
+    container.register(IInitUseCase, InitService, scope=punq.Scope.transient)
+    container.register(ISessionManager, SessionService, scope=punq.Scope.transient)
     return container
