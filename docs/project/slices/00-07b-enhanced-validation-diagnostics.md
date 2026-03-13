@@ -31,7 +31,7 @@ To improve the reliability of the AI's automated self-correction loop by providi
 
 ---
 
-### Scenario 2: Logical Validation Error
+### Scenario 2: Logical Validation Error [✓]
 **Given** a plan that is structurally correct but contains a logical error (e.g., an `EDIT` action on a non-existent file)
 **When** the plan is validated by `PlanValidator`
 **Then** the resulting `InvalidPlanError` must contain a detailed summary of the logical error.
@@ -43,11 +43,24 @@ To improve the reliability of the AI's automated self-correction loop by providi
 **And** the output must exactly match the format demonstrated in the reference spike for logical errors.
 
 #### Deliverables
-- [ ] Create a new service/utility responsible for generating the AST visualization for any given plan.
-- [ ] Update the `PlanValidator` service in `src/teddy_executor/core/services/plan_validator.py` to catch specific validation exceptions (e.g., `FileNotFoundError`).
-- [ ] The `PlanValidator` must use the new AST visualization utility to generate the hybrid error report when a logical validation failure occurs.
-- [ ] The `PlanValidator` must raise a new `InvalidPlanError` containing this richly formatted message.
-- [ ] Add new integration tests in `tests/integration/core/services/test_plan_validator_integration.py` to verify the complete output for various logical failures (`EDIT` on non-existent file, `CREATE` with overwrite conflict, etc.).
+- [✓] Create a new service/utility responsible for generating the AST visualization for any given plan.
+- [✓] Update the `PlanValidator` service in `src/teddy_executor/core/services/plan_validator.py` to catch specific validation exceptions (e.g., `FileNotFoundError`).
+- [✓] The `PlanValidator` must use the new AST visualization utility to generate the hybrid error report when a logical validation failure occurs.
+- [✓] The `PlanValidator` must raise a new `InvalidPlanError` containing this richly formatted message.
+- [✓] Add new integration tests in `tests/integration/core/services/test_plan_validator_integration.py` to verify the complete output for various logical failures (`EDIT` on non-existent file, `CREATE` with overwrite conflict, etc.).
+
+#### Implementation Notes
+- Updated `Plan` and `ActionData` domain models to hold references to the source mistletoe AST nodes.
+- Modified `MarkdownPlanParser` and action parsing strategies to populate these AST node references.
+- Implemented `format_hybrid_ast_view` in `parser_infrastructure.py` which provides a surgically precise AST visualization (flat by default, indented for logical children/siblings of failing nodes) and encapsulated it in a code block for better readability.
+- Refactored `EditActionValidator`, `CreateActionValidator`, and `ReadActionValidator` to attach the `offending_node` to `ValidationError` objects.
+- Standardized and improved validation error messages to include specific file paths for better AI actionability.
+- Updated `SessionOrchestrator` to robustly identify action types in logical error summaries and added `is_session` protection to support standalone file execution.
+- Refactored `execution_report.md.j2` and `parser_reporting.py` to remove redundant headers and standardize "Validation Errors:" formatting.
+- Resolved suite-wide regressions in session management acceptance tests by ensuring consistent filesystem state (README.md creation) across all tests.
+- Verified all changes with new acceptance tests in `tests/acceptance/test_enhanced_validation.py` and suite-wide regression testing (399 tests passing).
+- Enforced strict structural validation for the Level 1 Heading (Rule 3.1) and improved diagnostic reporting for malformed document starts.
+- Implemented dynamic code block fencing for all AST visualizations to ensure robustness.
 
 ## 3. Architectural Changes
 - A new, reusable service/utility will be introduced to traverse a parsed plan's AST and generate the formatted, indexed, and recursively decorated string output.

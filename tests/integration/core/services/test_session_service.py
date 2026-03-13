@@ -37,4 +37,4 @@ def test_transition_to_next_turn_handles_missing_turn_context(tmp_path, containe
 
     # The context should only contain the report from turn 01
     context_content = (next_turn_path / "turn.context").read_text()
-    assert context_content.strip() == "01/report.md"
+    assert context_content.strip() == ".teddy/sessions/test-session/01/report.md"

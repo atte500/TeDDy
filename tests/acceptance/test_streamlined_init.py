@@ -33,6 +33,7 @@ def test_teddy_start_triggers_planning(tmp_path, monkeypatch, container):
     teddy_dir = tmp_path / ".teddy"
     teddy_dir.mkdir()
     (teddy_dir / "init.context").write_text("README.md", encoding="utf-8")
+    (tmp_path / "README.md").write_text("# Test Project", encoding="utf-8")
 
     prompts_dir = tmp_path / "prompts"
     prompts_dir.mkdir()
@@ -47,6 +48,13 @@ def test_teddy_start_triggers_planning(tmp_path, monkeypatch, container):
 
 ## Rationale
 ``````
+### 1. Synthesis
+OK
+### 2. Justification
+OK
+### 3. Expected Outcome
+OK
+### 4. State Dashboard
 OK
 ``````
 

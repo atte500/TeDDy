@@ -20,16 +20,18 @@ from teddy_executor.core.services.parser_infrastructure import (
     get_child_text,
     get_action_heading,
     print_ast,
-    format_structural_mismatch_msg,
 )
+from teddy_executor.core.services.parser_reporting import format_structural_mismatch_msg
 from teddy_executor.core.services.action_parser_strategies import (
     parse_create_action,
     parse_read_action,
+    parse_prune_action,
+)
+from teddy_executor.core.services.action_parser_complex import (
     parse_edit_action,
     parse_execute_action,
     parse_research_action,
     parse_prompt_action,
-    parse_prune_action,
     parse_invoke_action,
     parse_return_action,
 )
@@ -47,13 +49,23 @@ class MarkdownPlanParser(IPlanParser):
         self._dispatch_map = {
             "CREATE": parse_create_action,
             "READ": parse_read_action,
-            "EDIT": lambda s: parse_edit_action(s, self._valid_actions),
+            "EDIT": lambda s, node=None: parse_edit_action(
+                s, self._valid_actions, node=node
+            ),
             "EXECUTE": parse_execute_action,
-            "RESEARCH": lambda s: parse_research_action(s, self._valid_actions),
-            "PROMPT": lambda s: parse_prompt_action(s, self._valid_actions),
+            "RESEARCH": lambda s, node=None: parse_research_action(
+                s, self._valid_actions, node=node
+            ),
+            "PROMPT": lambda s, node=None: parse_prompt_action(
+                s, self._valid_actions, node=node
+            ),
             "PRUNE": parse_prune_action,
-            "INVOKE": lambda s: parse_invoke_action(s, self._valid_actions),
-            "RETURN": lambda s: parse_return_action(s, self._valid_actions),
+            "INVOKE": lambda s, node=None: parse_invoke_action(
+                s, self._valid_actions, node=node
+            ),
+            "RETURN": lambda s, node=None: parse_return_action(
+                s, self._valid_actions, node=node
+            ),
         }
 
     def parse(self, plan_content: str) -> Plan:
@@ -75,10 +87,14 @@ class MarkdownPlanParser(IPlanParser):
             title, rationale, metadata = self._parse_strict_top_level(stream, doc)
             actions = self._parse_actions(stream, doc)
             return Plan(
-                title=title, rationale=rationale, actions=actions, metadata=metadata
+                title=title,
+                rationale=rationale,
+                actions=actions,
+                metadata=metadata,
+                source_doc=doc,
             )
         except InvalidPlanError as e:
-            if "--- Expected Document Structure ---" in str(e):
+            if "### Expected Document Structure " in str(e):
                 raise e
 
             # Fallback for errors that didn't provide a structural summary
@@ -126,18 +142,16 @@ class MarkdownPlanParser(IPlanParser):
     def _parse_strict_top_level(
         self, stream: _PeekableStream, doc: Document
     ) -> tuple[str, str, dict[str, str]]:
-        # 0: Find H1 Title, ignoring preamble
+        # 0: Find H1 Title. Must be at index 0 per Rule 3.1.
         node = stream.peek()
         start_idx = 0
-        while node and not (isinstance(node, Heading) and node.level == H1_LEVEL):
-            stream.next()
-            node = stream.peek()
-            start_idx += 1
 
-        if not node:
-            raise InvalidPlanError(
-                "Plan parsing failed: No Level 1 heading found to indicate the plan's title."
+        if not node or not (isinstance(node, Heading) and node.level == H1_LEVEL):
+            offending_nodes = [node] if node else []
+            rich_msg = format_structural_mismatch_msg(
+                doc, "a Level 1 Heading (Title)", 0, offending_nodes
             )
+            raise InvalidPlanError(rich_msg, offending_nodes=offending_nodes)
 
         title = get_child_text(node).strip()
 
@@ -245,7 +259,7 @@ class MarkdownPlanParser(IPlanParser):
                 raise InvalidPlanError(f"Unknown action type: {action_type_str}")
 
             parse_method = self._dispatch_map[action_type_str]
-            actions.append(parse_method(stream))
+            actions.append(parse_method(stream, node=action_heading))
 
         if offending_nodes and primary_mismatch is not None:
             expected_desc, mismatch_idx, actual_node = primary_mismatch

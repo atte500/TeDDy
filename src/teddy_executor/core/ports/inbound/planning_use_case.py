@@ -13,7 +13,7 @@ class IPlanningUseCase(ABC):
         user_message: str,
         turn_dir: str,
         context_files: Optional[Dict[str, Sequence[str]]] = None,
-    ) -> str:
+    ) -> tuple[str, float]:
         """
         Generates a new plan.md file based on context and user message.
 

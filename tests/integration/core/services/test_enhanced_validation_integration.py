@@ -78,6 +78,8 @@ print("Goodbye")
         '[✗] [005] Heading (Level 3): "EDIT" (Error: File to edit does not exist: non_existent_file.py)'
         in output
     )
+    # Siblings are indented but mark as [✓] if they didn't fail
+    assert '  [✓] [006] List: "File Path: non_existent_file.py' in output
 
 
 def test_surgical_code_block_highlighting():
@@ -124,6 +126,8 @@ NEW CONTENT
     # Metadata list is valid
     assert '  [✓] [006] List: "File Path: README.md' in output
     # Surgical Failure: The specific FIND Code Block
+    # The preview matches the first line of the code block.
+    # The error message matches the first line of the mismatch error.
     assert (
         '[✗] [008] Code Block (3 backticks): "THIS CONTENT DEFINITELY DOES NOT EXIST IN README"'
         in output
@@ -132,3 +136,6 @@ NEW CONTENT
         "(Error: The `FIND` block could not be located in the file: README.md)"
         in output
     )
+    # Subsequent blocks remain [✓]
+    assert '  [✓] [009] Heading (Level 4): "REPLACE:"' in output
+    assert '  [✓] [010] Code Block (3 backticks): "NEW CONTENT"' in output

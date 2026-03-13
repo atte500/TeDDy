@@ -61,6 +61,7 @@ def test_ai_telemetry_and_logging(
         "<prompt>Pathfinder Instructions</prompt>", encoding="utf-8"
     )
     (tmp_path / ".teddy" / "init.context").write_text("README.md", encoding="utf-8")
+    (tmp_path / "README.md").write_text("Context file content", encoding="utf-8")
 
     # Mock LLM response for planning
     valid_plan = textwrap.dedent("""\
@@ -127,6 +128,7 @@ def test_telemetry_persistence_across_turns(
         "<prompt>Pathfinder Instructions</prompt>", encoding="utf-8"
     )
     (tmp_path / ".teddy" / "init.context").write_text("README.md", encoding="utf-8")
+    (tmp_path / "README.md").write_text("Context file content", encoding="utf-8")
 
     # Turn 1
     plan_1 = textwrap.dedent("""\
@@ -208,6 +210,7 @@ def test_input_log_during_replan(
         "<prompt>Pathfinder Instructions</prompt>", encoding="utf-8"
     )
     (tmp_path / ".teddy" / "init.context").write_text("README.md", encoding="utf-8")
+    (tmp_path / "README.md").write_text("Context file content", encoding="utf-8")
 
     # 1. Start session with a plan that will fail validation
     bad_plan = textwrap.dedent("""\

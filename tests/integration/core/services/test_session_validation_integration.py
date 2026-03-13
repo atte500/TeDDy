@@ -49,7 +49,9 @@ def test_automated_replan_triggers_on_structure_error(
     result = runner.invoke(app, ["execute", str(plan_path), "-y"])
 
     assert result.exit_code != 0
-    assert "Plan structure is invalid" in result.stdout
+    # Use result.output to check both stdout and stderr for diagnostics
+    assert "[✗]" in result.output
+    assert "Rationale" in result.output
     assert (session_dir / "02" / "plan.md").exists()
 
 

@@ -59,6 +59,7 @@ class EditActionValidator(BaseActionValidator):
                 ValidationError(
                     message=getattr(e, "message", str(e)),
                     file_path=getattr(e, "file_path", path_str),
+                    offending_node=action.node,
                 )
             ]
 
@@ -68,7 +69,17 @@ class EditActionValidator(BaseActionValidator):
         edits = action.params.get("edits")
         if isinstance(edits, list):
             for edit in edits:
-                action_errors.extend(_validate_single_edit(edit, content, path_str))
+                for err in _validate_single_edit(edit, content, path_str):
+                    # Attach specific FIND CodeBlock node for surgical diagnostics
+                    # Fallback to action node if find_node is missing
+                    offending_node = edit.get("find_node") or action.node
+                    action_errors.append(
+                        ValidationError(
+                            message=err.message,
+                            file_path=err.file_path,
+                            offending_node=offending_node,
+                        )
+                    )
         return action_errors
 
 

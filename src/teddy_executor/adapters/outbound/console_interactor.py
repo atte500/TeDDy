@@ -21,8 +21,8 @@ class ConsoleInteractorAdapter(IUserInteractor):
         return typer.prompt(text, default=default, show_default=False, err=True)
 
     def display_message(self, message: str) -> None:
-        """Displays a message using Rich."""
-        self._console.print(message)
+        """Displays a message using Typer echo to ensure visibility and testability."""
+        typer.echo(message, err=True)
 
     def ask_question(self, prompt: str, resources: list[str] | None = None) -> str:
         """

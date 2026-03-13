@@ -40,6 +40,12 @@ def test_teddy_start_bootstraps_session(tmp_path, monkeypatch, container):
     teddy_dir.mkdir()
     (teddy_dir / "init.context").write_text(init_context_content, encoding="utf-8")
 
+    # Create files listed in init.context
+    (tmp_path / "README.md").write_text("README", encoding="utf-8")
+    project_doc_dir = tmp_path / "docs" / "project"
+    project_doc_dir.mkdir(parents=True)
+    (project_doc_dir / "PROJECT.md").write_text("PROJECT", encoding="utf-8")
+
     # Seed default prompt and .git to simulate project root
     (tmp_path / ".git").mkdir()
     prompts_dir = tmp_path / "prompts"
@@ -57,6 +63,13 @@ def test_teddy_start_bootstraps_session(tmp_path, monkeypatch, container):
 
 ## Rationale
 ``````
+### 1. Synthesis
+OK
+### 2. Justification
+OK
+### 3. Expected Outcome
+OK
+### 4. State Dashboard
 OK
 ``````
 
@@ -213,6 +226,13 @@ def test_teddy_resume_prompts_for_new_plan(monkeypatch, tmp_path, container):
 
 ## Rationale
 ``````
+### 1. Synthesis
+OK
+### 2. Justification
+OK
+### 3. Expected Outcome
+OK
+### 4. State Dashboard
 OK
 ``````
 
@@ -255,6 +275,7 @@ def test_teddy_start_dynamic_renaming_and_flow(tmp_path, monkeypatch, container)
     teddy_dir = tmp_path / ".teddy"
     teddy_dir.mkdir()
     (teddy_dir / "init.context").write_text("README.md", encoding="utf-8")
+    (tmp_path / "README.md").write_text("README", encoding="utf-8")
 
     prompts_dir = teddy_dir / "prompts"
     prompts_dir.mkdir()
@@ -271,7 +292,14 @@ def test_teddy_start_dynamic_renaming_and_flow(tmp_path, monkeypatch, container)
 
 ## Rationale
 ``````
-Testing dynamic rename.
+### 1. Synthesis
+OK
+### 2. Justification
+OK
+### 3. Expected Outcome
+OK
+### 4. State Dashboard
+OK
 ``````
 
 ## Action Plan
@@ -310,6 +338,7 @@ def test_teddy_start_with_explicit_name(tmp_path, monkeypatch, container):
     teddy_dir = tmp_path / ".teddy"
     teddy_dir.mkdir()
     (teddy_dir / "init.context").write_text("README.md", encoding="utf-8")
+    (tmp_path / "README.md").write_text("README", encoding="utf-8")
 
     prompts_dir = teddy_dir / "prompts"
     prompts_dir.mkdir()
@@ -325,6 +354,13 @@ def test_teddy_start_with_explicit_name(tmp_path, monkeypatch, container):
 
 ## Rationale
 ``````
+### 1. Synthesis
+OK
+### 2. Justification
+OK
+### 3. Expected Outcome
+OK
+### 4. State Dashboard
 OK
 ``````
 

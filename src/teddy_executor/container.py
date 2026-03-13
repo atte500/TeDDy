@@ -33,6 +33,8 @@ from teddy_executor.core.services.execution_orchestrator import ExecutionOrchest
 from teddy_executor.core.services.init_service import InitService
 from teddy_executor.core.services.planning_service import PlanningService
 from teddy_executor.core.services.session_orchestrator import SessionOrchestrator
+from teddy_executor.core.services.session_planner import SessionPlanner
+from teddy_executor.core.services.session_replanner import SessionReplanner
 from teddy_executor.core.services.session_service import SessionService
 from teddy_executor.core.services.markdown_plan_parser import MarkdownPlanParser
 from teddy_executor.core.services.markdown_report_formatter import (
@@ -120,6 +122,22 @@ def create_container() -> punq.Container:
     container.register(IMarkdownReportFormatter, MarkdownReportFormatter)
     container.register(ExecutionOrchestrator)
     container.register(
+        SessionReplanner,
+        factory=lambda: SessionReplanner(
+            file_system_manager=container.resolve(IFileSystemManager),
+            planning_service=container.resolve(IPlanningUseCase),
+        ),
+    )
+    container.register(
+        SessionPlanner,
+        factory=lambda: SessionPlanner(
+            file_system_manager=container.resolve(IFileSystemManager),
+            planning_service=container.resolve(IPlanningUseCase),
+            user_interactor=container.resolve(IUserInteractor),
+            session_service=container.resolve(ISessionManager),
+        ),
+    )
+    container.register(
         IRunPlanUseCase,
         factory=lambda: SessionOrchestrator(
             execution_orchestrator=container.resolve(ExecutionOrchestrator),
@@ -130,6 +148,8 @@ def create_container() -> punq.Container:
             planning_service=container.resolve(IPlanningUseCase),
             plan_parser=container.resolve(IPlanParser),
             user_interactor=container.resolve(IUserInteractor),
+            replanner=container.resolve(SessionReplanner),
+            session_planner=container.resolve(SessionPlanner),
         ),
     )
     container.register(IGetContextUseCase, ContextService)

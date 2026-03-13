@@ -60,40 +60,6 @@ World
     assert invoke_action.params["handoff_resources"] == ["mixed/path/file.md"]
 
 
-def test_parse_succeeds_with_preamble_before_title(parser: IPlanParser):
-    """
-    Given a Markdown plan with text before the H1 title,
-    When the parser parses it,
-    Then it should successfully parse the plan, ignoring the preamble.
-    """
-    plan_content = """
-This is some preamble text.
-It should be ignored.
-
-# My Real Plan Title
-- **Status:** Green 🟢
-- **Plan Type:** Test
-- **Agent:** Dev
-
-## Rationale
-````text
-Synthesis, etc.
-````
-
-## Action Plan
-### `EXECUTE`
-- **Description:** test
-````shell
-echo 1
-````
-"""
-    plan = parser.parse(plan_content)
-
-    assert plan.title == "My Real Plan Title"
-    assert len(plan.actions) == 1
-    assert plan.actions[0].type == "EXECUTE"
-
-
 def test_parser_accepts_properly_nested_code_fences(parser: IPlanParser):
     """
     Given a markdown plan with a properly nested code block,

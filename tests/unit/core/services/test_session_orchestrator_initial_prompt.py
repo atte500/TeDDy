@@ -1,6 +1,8 @@
 from unittest.mock import MagicMock
 import pytest
 from teddy_executor.core.services.session_orchestrator import SessionOrchestrator
+from teddy_executor.core.services.session_planner import SessionPlanner
+from teddy_executor.core.services.session_replanner import SessionReplanner
 from teddy_executor.core.ports.outbound.session_manager import SessionState
 
 
@@ -12,20 +14,24 @@ def mocks():
     )
 
     ps = MagicMock()
-    ps.generate_plan.return_value = "path/to/plan.md"
+    ps.generate_plan.return_value = ("path/to/plan.md", 0.0)
 
     ss = MagicMock()
     ss.get_session_state.return_value = (SessionState.EMPTY, "session/01")
 
+    planning_service = ps
+    user_interactor = MagicMock()
     return {
         "execution_orchestrator": MagicMock(),
         "session_service": ss,
         "file_system_manager": fs,
         "report_formatter": MagicMock(),
         "plan_validator": MagicMock(),
-        "planning_service": ps,
+        "planning_service": planning_service,
         "plan_parser": MagicMock(),
-        "user_interactor": MagicMock(),
+        "user_interactor": user_interactor,
+        "replanner": SessionReplanner(fs, planning_service),
+        "session_planner": SessionPlanner(fs, planning_service, user_interactor, ss),
     }
 
 

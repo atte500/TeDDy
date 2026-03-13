@@ -33,6 +33,7 @@ class ReadActionValidator(BaseActionValidator):
                     ValidationError(
                         message=f"{path_str} is already in context",
                         file_path=path_str,
+                        offending_node=action.node,
                     )
                 )
 
@@ -48,7 +49,13 @@ class ReadActionValidator(BaseActionValidator):
                     )
             return errors
         except PlanValidationError as e:
-            errors.append(ValidationError(message=e.message, file_path=e.file_path))
+            errors.append(
+                ValidationError(
+                    message=e.message,
+                    file_path=e.file_path,
+                    offending_node=action.node,
+                )
+            )
             return errors
 
 

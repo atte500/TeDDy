@@ -22,6 +22,7 @@ def setup_project_env(tmp_path):
     teddy_dir = tmp_path / ".teddy"
     teddy_dir.mkdir(exist_ok=True)
     (teddy_dir / "init.context").write_text("README.md", encoding="utf-8")
+    (tmp_path / "README.md").write_text("# Test Project", encoding="utf-8")
     prompts_dir = teddy_dir / "prompts"
     prompts_dir.mkdir(exist_ok=True)
     (prompts_dir / "pathfinder.xml").write_text("<prompt/>", encoding="utf-8")
@@ -42,9 +43,16 @@ def test_resume_auto_detects_latest_session(tmp_path, monkeypatch, container):
 - Agent: Pathfinder
 
 ## Rationale
-```
-Testing.
-```
+````
+### 1. Synthesis
+OK
+### 2. Justification
+OK
+### 3. Expected Outcome
+OK
+### 4. State Dashboard
+OK
+````
 
 ## Action Plan
 ### `EXECUTE`
@@ -95,9 +103,16 @@ def test_resume_with_session_path(tmp_path, monkeypatch, container):
 - Agent: Pathfinder
 
 ## Rationale
-```
-Testing.
-```
+````
+### 1. Synthesis
+OK
+### 2. Justification
+OK
+### 3. Expected Outcome
+OK
+### 4. State Dashboard
+OK
+````
 
 ## Action Plan
 ### `EXECUTE`
@@ -141,9 +156,16 @@ def test_resume_with_turn_path(tmp_path, monkeypatch, container):
 - Agent: Pathfinder
 
 ## Rationale
-```
-Testing.
-```
+````
+### 1. Synthesis
+OK
+### 2. Justification
+OK
+### 3. Expected Outcome
+OK
+### 4. State Dashboard
+OK
+````
 
 ## Action Plan
 ### `EXECUTE`
@@ -187,9 +209,16 @@ def test_resume_with_file_path(tmp_path, monkeypatch, container):
 - Agent: Pathfinder
 
 ## Rationale
-```
-Testing.
-```
+````
+### 1. Synthesis
+OK
+### 2. Justification
+OK
+### 3. Expected Outcome
+OK
+### 4. State Dashboard
+OK
+````
 
 ## Action Plan
 ### `EXECUTE`

@@ -61,6 +61,7 @@ class SessionService(ISessionManager):
             "turn_id": "01",
             "agent_name": agent_name,
             "cumulative_cost": 0.0,
+            "turn_cost": 0.0,
             "creation_timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
@@ -150,7 +151,18 @@ class SessionService(ISessionManager):
         paths = self._repository.read_context_file(f"{cur_dir.as_posix()}/turn.context")
         self._apply_execution_effects(paths, execution_report)
         if not is_validation_failure:
-            paths.add(f"{cur_dir.name}/report.md")
+            # Add the report from the turn that just finished to the next turn's context.
+            # We use the full relative path from project root to ensure ContextService
+            # can resolve it.
+            report_path = cur_dir.joinpath("report.md")
+            path_parts = report_path.parts
+            if ".teddy" in path_parts:
+                idx = path_parts.index(".teddy")
+                root_relative_path = "/".join(path_parts[idx:])
+                paths.add(root_relative_path)
+            else:
+                # Fallback for non-standard paths (mostly in isolated tests)
+                paths.add(f"{cur_dir.name}/report.md")
 
         self._file_system_manager.write_file(
             f"{next_dir}/turn.context", "\n".join(sorted(list(paths)))

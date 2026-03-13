@@ -29,7 +29,7 @@ class PlanningService(IPlanningUseCase):
         user_message: str,
         turn_dir: str,
         context_files: Optional[Dict[str, Sequence[str]]] = None,
-    ) -> str:
+    ) -> tuple[str, float]:
         import yaml
         import json
 
@@ -94,7 +94,7 @@ class PlanningService(IPlanningUseCase):
         # 6. Update meta.yaml
         self._update_meta(meta, response, token_count, turn_cost, meta_file_path)
 
-        return plan_path
+        return plan_path, float(turn_cost)
 
     def _extract_plan_content(self, response: Any) -> str:
         """Robustly extracts content from the LLM response object."""

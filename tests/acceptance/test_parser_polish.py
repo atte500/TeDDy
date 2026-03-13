@@ -31,7 +31,7 @@ def test_parser_highlights_multiple_structural_mismatches():
     error_msg = str(excinfo.value)
 
     # Ensure the AST summary is present
-    assert "--- Actual Document Structure ---" in error_msg
+    assert "### Actual Document Structure" in error_msg
 
     # We expect highlights on the paragraph (Node 1) and the H3 heading (Node 2)
     # The current implementation will only highlight one of them (likely the first one it hits)
@@ -41,7 +41,7 @@ def test_parser_highlights_multiple_structural_mismatches():
     # [002] Heading (Level 3) (Mismatch: expected H2 Rationale)
 
     # We assert that the indicator [✗] appears at least twice in the structure section
-    structure_section = error_msg.split("--- Actual Document Structure ---")[-1]
+    structure_section = error_msg.split("### Actual Document Structure")[-1]
     indicator_count = structure_section.count("[✗]")
 
     expected_min_indicators = 2
@@ -94,7 +94,7 @@ def test_parser_highlights_multiple_mismatches_in_action_plan():
         parser.parse(malformed_plan)
 
     error_msg = str(excinfo.value)
-    structure_section = error_msg.split("--- Actual Document Structure ---")[-1]
+    structure_section = error_msg.split("### Actual Document Structure")[-1]
 
     # We expect highlights on both invalid paragraphs
     assert 'Paragraph: "This is an invalid paragraph."' in structure_section
@@ -121,9 +121,7 @@ def test_parser_highlights_multiple_mismatches_in_action_plan():
     with pytest.raises(InvalidPlanError) as excinfo_long:
         parser.parse(malformed_plan_long)
 
-    structure_long = str(excinfo_long.value).split("--- Actual Document Structure ---")[
-        -1
-    ]
+    structure_long = str(excinfo_long.value).split("### Actual Document Structure")[-1]
     assert f'Paragraph: "{truncated_msg}"' in structure_long
     assert "[✗]" in structure_long
 

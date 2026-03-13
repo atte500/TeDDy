@@ -1,10 +1,13 @@
-import re
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import yaml
 from teddy_executor.core.domain.models.execution_report import (
     ExecutionReport,
+)
+from teddy_executor.core.services.parser_reporting import (
+    assemble_logical_error_details,
+    format_hybrid_ast_view,
 )
 from teddy_executor.core.domain.models.plan import Plan
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
@@ -13,6 +16,7 @@ from teddy_executor.core.ports.outbound.markdown_report_formatter import (
     IMarkdownReportFormatter,
 )
 from teddy_executor.core.ports.outbound.session_manager import SessionState
+from teddy_executor.core.services.session_planner import SessionPlanner
 from teddy_executor.core.services.session_replanner import SessionReplanner
 
 
@@ -32,6 +36,8 @@ class SessionOrchestrator(IRunPlanUseCase):
         planning_service,
         plan_parser,
         user_interactor,
+        replanner: SessionReplanner,
+        session_planner: SessionPlanner,
     ):
         self._execution_orchestrator = execution_orchestrator
         self._session_service = session_service
@@ -41,7 +47,8 @@ class SessionOrchestrator(IRunPlanUseCase):
         self._planning_service = planning_service
         self._plan_parser = plan_parser
         self._user_interactor = user_interactor
-        self._replanner = SessionReplanner(file_system_manager, planning_service)
+        self._replanner = replanner
+        self._session_planner = session_planner
 
     def resume(self, session_name: str, interactive: bool = True):
         """
@@ -54,7 +61,7 @@ class SessionOrchestrator(IRunPlanUseCase):
             return self.execute(plan_path=plan_path, interactive=interactive)
 
         if state == SessionState.EMPTY:
-            new_name = self._trigger_new_plan(turn_path)
+            new_name = self._session_planner.trigger_new_plan(turn_path)
             if not new_name:
                 return None
             # After planning, the turn is now PENDING_PLAN.
@@ -69,7 +76,7 @@ class SessionOrchestrator(IRunPlanUseCase):
             next_turn_dir = self._session_service.transition_to_next_turn(
                 plan_path=f"{turn_path}/plan.md"
             )
-            new_name = self._trigger_new_plan(next_turn_dir)
+            new_name = self._session_planner.trigger_new_plan(next_turn_dir)
             if not new_name:
                 return None
             # After planning, the next turn is now PENDING_PLAN.
@@ -80,99 +87,6 @@ class SessionOrchestrator(IRunPlanUseCase):
 
         return None
 
-    def _trigger_new_plan(self, turn_dir: str) -> Optional[str]:
-        """Prompts user and triggers planning. Returns session name on success."""
-        message = self._user_interactor.ask_question(
-            "Enter your instructions for the AI"
-        )
-        if not message:
-            return None
-
-        # Add helpful hint for alignment
-        hint = "\n\n*(Stop to reply to this user request and ensure alignment before proceeding)*"
-        message += hint
-
-        # Resolve context files
-        context_files = None
-        turn_p = Path(turn_dir)
-        turn_context = turn_p / "turn.context"
-        session_context = turn_p.parent / "session.context"
-        meta_yaml = turn_p / "meta.yaml"
-
-        if (
-            self._file_system_manager.path_exists(str(turn_context))
-            and self._file_system_manager.path_exists(str(session_context))
-            and self._file_system_manager.path_exists(str(meta_yaml))
-        ):
-            context_files = {
-                "Turn": [str(turn_context)],
-                "Session": [str(session_context)],
-            }
-
-        plan_path = self._planning_service.generate_plan(
-            user_message=message, turn_dir=turn_dir, context_files=context_files
-        )
-
-        # Telemetry Display
-        meta_content = self._file_system_manager.read_file(f"{turn_dir}/meta.yaml")
-
-        # Defensive: cast to str to prevent hangs on Mocks, then ensure it's a dict
-        meta_loaded = yaml.safe_load(str(meta_content))
-        meta = meta_loaded if isinstance(meta_loaded, dict) else {}
-
-        model = meta.get("model", "unknown")
-        token_count = meta.get("token_count", 0)
-
-        try:
-            cumulative_cost = float(meta.get("cumulative_cost", 0.0)) + float(
-                meta.get("turn_cost", 0.0)
-            )
-        except (TypeError, ValueError):
-            cumulative_cost = 0.0
-
-        agent_name = meta.get("agent_name", "pathfinder")
-
-        # Context usage: hardcoded max context for display purposes as per spec example
-        self._user_interactor.display_message(
-            f"\n[bold green]Planning Turn with {agent_name}...[/]"
-        )
-        self._user_interactor.display_message(f"  Model: {model}")
-        self._user_interactor.display_message(
-            f"  Context: {token_count / 1000:.1f}k tokens"
-        )
-        self._user_interactor.display_message(
-            f"  Session Cost: ${cumulative_cost:.4f}\n"
-        )
-
-        # Dynamic Renaming Logic for Turn 1
-        session_name = Path(turn_dir).parent.name
-        if turn_p.name == "01":
-            if session_name.startswith("session-"):
-                renamed = self._handle_dynamic_rename(plan_path)
-                return renamed or session_name
-
-        return session_name
-
-    def _handle_dynamic_rename(self, plan_path: str) -> Optional[str]:
-        """Renames the session based on the plan title."""
-        content = self._file_system_manager.read_file(plan_path)
-        # Extract H1 title (e.g., "# Plan: My Feature")
-
-        match = re.search(r"^#\s*(?:Plan:)?\s*(.*)$", content, re.MULTILINE)
-        if match:
-            title = match.group(1).strip()
-            # Slugify
-            new_name = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")
-            if new_name:
-                old_name = Path(plan_path).parent.parent.name
-                try:
-                    self._session_service.rename_session(old_name, new_name)
-                    return new_name
-                except ValueError:
-                    # Rename failed (e.g., target exists), just keep the old name
-                    pass
-        return None
-
     def execute(
         self,
         plan: Optional[Plan] = None,
@@ -180,51 +94,31 @@ class SessionOrchestrator(IRunPlanUseCase):
         plan_path: Optional[str] = None,
         interactive: bool = True,
     ) -> ExecutionReport:
-        # 0. Parsing and Validation Gate
-        content = plan_content
-        if not content and plan_path:
-            content = self._file_system_manager.read_file(plan_path)
+        # 0. Detect Session Mode (requires plan_path and meta.yaml)
+        is_session = self._is_session_mode(plan_path)
 
+        # 1. Parsing
+        content = plan_content or (
+            self._file_system_manager.read_file(plan_path) if plan_path else ""
+        )
         if not plan:
-            try:
-                plan = self._plan_parser.parse(content)
-            except Exception as e:
-                if plan_path:
-                    return self._trigger_replan(
-                        plan_path=plan_path,
-                        errors=[f"Structural error: {str(e)}"],
-                        original_plan_content=content or "",
-                    )
-                raise
+            plan = self._parse_and_handle_structural_errors(
+                content, plan_path, is_session
+            )
 
-        # Resolve context and validate
+        # 2. Validation
         context_paths = (
             self._session_service.resolve_context_paths(plan_path)
-            if plan_path
+            if is_session
             else None
         )
         errors = self._plan_validator.validate(plan, context_paths=context_paths)
-
         if errors:
-            failed_resources = self._replanner.gather_failed_resources(errors)
-            if plan_path:
-                return self._trigger_replan(
-                    plan_path=plan_path,
-                    errors=[e.message for e in errors],
-                    original_plan_content=content or "",
-                    title=plan.title,
-                    rationale=plan.rationale,
-                    failed_resources=failed_resources,
-                )
-            # Manual Mode Validation Failure
-            return self._replanner.build_failure_report(
-                errors=[e.message for e in errors],
-                title=plan.title,
-                rationale=plan.rationale,
-                failed_resources=failed_resources,
+            return self._handle_logical_validation_errors(
+                plan, errors, content, plan_path, is_session
             )
 
-        # 1. Delegate core execution to the stateless orchestrator
+        # 3. Execution
         report = self._execution_orchestrator.execute(
             plan=plan,
             plan_content=plan_content,
@@ -232,11 +126,72 @@ class SessionOrchestrator(IRunPlanUseCase):
             interactive=interactive,
         )
 
-        # 2. Trigger stateful turn transition if a plan path is provided (Session Mode)
-        if plan_path:
+        # 4. Turn Transition
+        if is_session and plan_path:
             self._finalize_turn(plan_path, report)
 
         return report
+
+    def _is_session_mode(self, plan_path: Optional[str]) -> bool:
+        """Determines if the orchestrator should operate in Session Mode."""
+        if not plan_path:
+            return False
+        meta_path = Path(plan_path).parent / "meta.yaml"
+        return self._file_system_manager.path_exists(str(meta_path))
+
+    def _parse_and_handle_structural_errors(
+        self, content: str, plan_path: Optional[str], is_session: bool
+    ) -> Plan:
+        """Parses the plan and triggers a replan on structural failure."""
+        try:
+            return self._plan_parser.parse(content)
+        except Exception as e:
+            if is_session and plan_path:
+                # Ensure the rich diagnostic is visible to the user
+                self._user_interactor.display_message(str(e))
+                self._trigger_replan(
+                    plan_path=plan_path,
+                    errors=[f"Structural error: {str(e)}"],
+                    original_plan_content=content,
+                )
+                raise RuntimeError(
+                    "Structural validation failed. Re-plan triggered."
+                ) from e
+            raise
+
+    def _handle_logical_validation_errors(  # noqa: PLR0913
+        self,
+        plan: Plan,
+        errors: list[Any],
+        content: str,
+        plan_path: Optional[str],
+        is_session: bool,
+    ) -> ExecutionReport:
+        """Formats logical errors and handles the failure report/replan."""
+        rich_ast = (
+            format_hybrid_ast_view(plan.source_doc, errors) if plan.source_doc else ""
+        )
+        error_msg = assemble_logical_error_details(plan, errors)
+        full_error_msg = error_msg + rich_ast
+
+        failed_resources = self._replanner.gather_failed_resources(errors)
+
+        if is_session and plan_path:
+            return self._trigger_replan(
+                plan_path=plan_path,
+                errors=[full_error_msg],
+                original_plan_content=content,
+                title=plan.title,
+                rationale=plan.rationale,
+                failed_resources=failed_resources,
+            )
+
+        return self._replanner.build_failure_report(
+            errors=[full_error_msg],
+            title=plan.title,
+            rationale=plan.rationale,
+            failed_resources=failed_resources,
+        )
 
     def _finalize_turn(
         self,
@@ -246,14 +201,16 @@ class SessionOrchestrator(IRunPlanUseCase):
     ):
         """Persists the report and transitions to the next turn."""
         turn_dir = Path(plan_path).parent
+        meta_path = turn_dir / "meta.yaml"
 
         # Read current cost from meta.yaml
-        meta_content = self._file_system_manager.read_file(str(turn_dir / "meta.yaml"))
-        # Defensive: cast content to str to prevent yaml.safe_load hanging on MagicMocks
-        # then ensure we have a dictionary even if safe_load returned a string (Mocks)
-        meta_loaded = yaml.safe_load(str(meta_content))
-        meta = meta_loaded if isinstance(meta_loaded, dict) else {}
-        turn_cost = meta.get("turn_cost", 0.0)
+        turn_cost = 0.0
+        if self._file_system_manager.path_exists(str(meta_path)):
+            meta_content = self._file_system_manager.read_file(str(meta_path))
+            # Defensive: cast content to str to prevent yaml.safe_load hanging on MagicMocks
+            meta_loaded = yaml.safe_load(str(meta_content))
+            meta = meta_loaded if isinstance(meta_loaded, dict) else {}
+            turn_cost = meta.get("turn_cost", 0.0)
 
         # 1. Persist the report to the current turn directory
         formatted_report = self._report_formatter.format(report)

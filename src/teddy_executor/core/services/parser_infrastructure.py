@@ -2,8 +2,6 @@ import os
 from typing import Any, List, Optional, Iterator
 from mistletoe.block_token import (
     Heading,
-    Document,
-    CodeFence,
 )
 from mistletoe.span_token import InlineCode
 
@@ -14,9 +12,6 @@ H3_LEVEL = 3
 
 # Constant for parsing key-value pairs
 EXPECTED_KV_PARTS = 2
-
-# Maximum length for AST node previews in error reports
-MAX_PREVIEW_LENGTH = 60
 
 
 class _FencePreProcessor:
@@ -124,101 +119,6 @@ def consume_content_until_next_action(
                 break
         content_nodes.append(stream.next())
     return content_nodes
-
-
-def _get_node_preview(node: Any) -> str:
-    """Extracts a truncated first-line preview of a node's content."""
-    content = get_child_text(node).strip() if node else ""
-    first_line = content.splitlines()[0] if content else ""
-    if len(first_line) > MAX_PREVIEW_LENGTH:
-        return first_line[:MAX_PREVIEW_LENGTH].strip() + "..."
-    return first_line
-
-
-def _get_failure_cutoff_idx(
-    children: List[Any], mismatch_idx: int, offending_ids: set[int]
-) -> float:
-    """Determines the index after which nodes should be marked as unvalidated."""
-    failure_cutoff_idx = mismatch_idx if mismatch_idx != -1 else float("inf")
-    if offending_ids:
-        for i, node in enumerate(children):
-            if id(node) in offending_ids:
-                failure_cutoff_idx = min(failure_cutoff_idx, i)
-                break
-    return failure_cutoff_idx
-
-
-def _format_expected_structure() -> str:
-    """Returns the formatted 'Expected Document Structure' section."""
-    lines = [
-        "--- Expected Document Structure ---",
-        "[000] Heading (Level 1)",
-        "[001] List (Metadata)",
-        "[002] Heading (Level 2: Rationale)",
-        "[003] Code Block (Rationale Content)",
-        "[004] Heading (Level 2: Action Plan)",
-        "[005...] Heading (Level 3: Action Type)",
-        "[006...] (Action-specific AST nodes)",
-    ]
-    return "\n".join(lines) + "\n"
-
-
-def format_node_name(node: Any) -> str:
-    """Formats the type name of a node with relevant metadata and content preview."""
-    if node is None:
-        return "EOF"
-    name = type(node).__name__
-    if name in ("CodeFence", "BlockCode"):
-        name = "Code Block"
-
-    if isinstance(node, Heading):
-        name += f" (Level {node.level})"
-    elif isinstance(node, CodeFence):
-        backtick_count = len(getattr(node, "delimiter", "```"))
-        name += f" ({backtick_count} backticks)"
-
-    preview = _get_node_preview(node)
-    if preview:
-        name += f': "{preview}"'
-    return name
-
-
-def format_structural_mismatch_msg(
-    doc: Document,
-    expected: str,
-    mismatch_idx: int,
-    offending_nodes: List[Any],
-) -> str:
-    """Constructs a detailed structural validation error message."""
-    primary_node = offending_nodes[0] if offending_nodes else None
-    actual_name = format_node_name(primary_node)
-
-    is_direct = expected.startswith(("a ", "an ", "## ", "### ", "Heading", "List"))
-    error_header = f"Expected {expected}" if is_direct else expected
-
-    msg = f"Plan structure is invalid. {error_header}, but found {actual_name}.\n\n"
-    msg += _format_expected_structure()
-    msg += "\n--- Actual Document Structure ---\n"
-
-    children = list(doc.children) if doc.children else []
-    offending_ids = {id(node) for node in offending_nodes if node is not None}
-    cutoff = _get_failure_cutoff_idx(children, mismatch_idx, offending_ids)
-
-    for i, node in enumerate(children):
-        n_name = format_node_name(node)
-        is_mismatch = i == mismatch_idx or id(node) in offending_ids
-
-        if is_mismatch:
-            status, info = "[✗]", f" (Error: {error_header})"
-        elif i > cutoff:
-            status, info = "[ ]", ""
-        else:
-            status, info = "[✓]", ""
-
-        msg += f"{status} [{i:03d}] {n_name}{info}\n"
-
-    msg += "\n**Hint:** Parsing often fails due to improper Code Block Formatting.\n"
-    return msg
 
 
 def print_ast(token: Any, indent: int = 0):

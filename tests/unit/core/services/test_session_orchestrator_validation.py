@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 
 from teddy_executor.core.domain.models.plan import Plan, ActionData, ValidationError
 from teddy_executor.core.services.session_orchestrator import SessionOrchestrator
+from teddy_executor.core.services.session_replanner import SessionReplanner
 from teddy_executor.core.ports.outbound import IFileSystemManager
 
 
@@ -35,6 +36,10 @@ def test_execute_triggers_replan_on_validation_failure(mock_deps):
         planning_service=mock_deps["planning_service"],
         plan_parser=mock_deps["plan_parser"],
         user_interactor=mock_deps["user_interactor"],
+        replanner=SessionReplanner(
+            mock_deps["file_system_manager"], mock_deps["planning_service"]
+        ),
+        session_planner=MagicMock(),
     )
 
     plan = Plan(
@@ -57,6 +62,7 @@ def test_execute_triggers_replan_on_validation_failure(mock_deps):
         "Session": [],
         "Turn": [],
     }
+    mock_deps["planning_service"].generate_plan.return_value = ("02/plan.md", 0.0)
 
     plan_path = "01/plan.md"
 
@@ -96,6 +102,10 @@ def test_execute_populates_failed_resources_on_validation_failure(mock_deps):
         planning_service=mock_deps["planning_service"],
         plan_parser=mock_deps["plan_parser"],
         user_interactor=mock_deps["user_interactor"],
+        replanner=SessionReplanner(
+            mock_deps["file_system_manager"], mock_deps["planning_service"]
+        ),
+        session_planner=MagicMock(),
     )
 
     plan = Plan(

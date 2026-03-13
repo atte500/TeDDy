@@ -1,6 +1,8 @@
 import pytest
 from unittest.mock import MagicMock
 from teddy_executor.core.services.session_orchestrator import SessionOrchestrator
+from teddy_executor.core.services.session_planner import SessionPlanner
+from teddy_executor.core.services.session_replanner import SessionReplanner
 from teddy_executor.core.ports.outbound.session_manager import SessionState
 
 
@@ -64,6 +66,10 @@ def orchestrator(  # noqa: PLR0913
         planning_service=planning_service,
         plan_parser=plan_parser,
         user_interactor=user_interactor,
+        replanner=SessionReplanner(file_system_manager, planning_service),
+        session_planner=SessionPlanner(
+            file_system_manager, planning_service, user_interactor, session_service
+        ),
     )
 
 
@@ -123,6 +129,7 @@ def test_resume_triggers_planning_on_empty_state(  # noqa: PLR0913
         (SessionState.PENDING_PLAN, turn_path),
     ]
     user_interactor.ask_question.return_value = "Initial task"
+    planning_service.generate_plan.return_value = (f"{turn_path}/plan.md", 0.0)
 
     orchestrator.resume(session_name)
 
@@ -160,6 +167,7 @@ def test_resume_transitions_on_complete_turn(  # noqa: PLR0913
     ]
     session_service.transition_to_next_turn.return_value = next_turn_path
     user_interactor.ask_question.return_value = "Next task"
+    planning_service.generate_plan.return_value = (f"{next_turn_path}/plan.md", 0.0)
 
     orchestrator.resume(session_name)
 

@@ -24,6 +24,7 @@ class ActionData:
     description: str | None = None
     selected: bool = True
     modified: bool = False
+    node: Any = None
 
 
 @dataclass(frozen=True)
@@ -33,6 +34,7 @@ class ValidationError:
     message: str
     action_index: int = 0
     file_path: str | None = None
+    offending_node: Any = None
 
 
 @dataclass
@@ -43,6 +45,7 @@ class Plan:
     rationale: str
     actions: Sequence[ActionData]
     metadata: dict[str, str] = field(default_factory=dict)
+    source_doc: Any = None
 
     def __post_init__(self):
         if not self.actions:

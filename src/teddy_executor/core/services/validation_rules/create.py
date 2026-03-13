@@ -35,7 +35,13 @@ class CreateActionValidator(BaseActionValidator):
                         raise PlanValidationError(msg, file_path=path_str)
             return []
         except PlanValidationError as e:
-            return [ValidationError(message=e.message, file_path=e.file_path)]
+            return [
+                ValidationError(
+                    message=e.message,
+                    file_path=e.file_path,
+                    offending_node=action.node,
+                )
+            ]
 
 
 # Removed legacy functional validation rule in favor of CreateActionValidator class.

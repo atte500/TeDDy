@@ -81,7 +81,7 @@ content2
 
     error_msg = str(excinfo.value)
     assert "Plan structure is invalid. Expected a Level 3 Action Heading" in error_msg
-    assert "--- Actual Document Structure ---" in error_msg
+    assert "### Actual Document Structure" in error_msg
     assert "[✗]" in error_msg
     assert "ThematicBreak (Error: Expected a Level 3 Action Heading)" in error_msg
 
@@ -133,7 +133,7 @@ echo 2
 
     error_msg = str(excinfo.value)
     assert "Plan structure is invalid. Expected a Level 3 Action Heading" in error_msg
-    assert "--- Actual Document Structure ---" in error_msg
+    assert "### Actual Document Structure" in error_msg
     assert (
         "[✗]" in error_msg
         and 'Paragraph: "This is some free text that shouldn\'t be here." (Error: Expected a Level 3 Action Heading)'
@@ -182,7 +182,7 @@ echo "hello"
 
     error_msg = str(excinfo.value)
     assert "Plan structure is invalid. Expected a Level 3 Action Heading" in error_msg
-    assert "--- Actual Document Structure ---" in error_msg
+    assert "### Actual Document Structure" in error_msg
 
 
 def test_parser_rejects_user_provided_invalidly_nested_edit_plan(
@@ -277,7 +277,7 @@ def test_parse_execute_action(parser: IPlanParser):
     # in the stream, which is then caught by the main _parse_actions loop.
     error_msg = str(excinfo.value)
     assert "Plan structure is invalid. Expected a Level 3 Action Heading" in error_msg
-    assert "--- Actual Document Structure ---" in error_msg
+    assert "### Actual Document Structure" in error_msg
     assert "[✗]" in error_msg
 
 
@@ -297,7 +297,7 @@ This is a document without a title.
     with pytest.raises(InvalidPlanError) as excinfo:
         parser.parse(plan_content)
 
-    assert "No Level 1 heading found" in str(excinfo.value)
+    assert "Expected a Level 1 Heading (Title)" in str(excinfo.value)
 
 
 def test_parser_raises_error_with_indicator_on_missing_replace_block(
@@ -338,7 +338,7 @@ This paragraph is NOT a REPLACE heading.
 
     error_msg = str(excinfo.value)
     assert "Missing REPLACE block after FIND block" in error_msg
-    assert "--- Actual Document Structure ---" in error_msg
+    assert "### Actual Document Structure" in error_msg
     assert (
         "[✗]" in error_msg
         and 'Paragraph: "This paragraph is NOT a REPLACE heading."' in error_msg
