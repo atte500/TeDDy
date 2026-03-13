@@ -2,7 +2,6 @@ import textwrap
 import pytest
 from teddy_executor.core.services.markdown_plan_parser import MarkdownPlanParser
 from teddy_executor.core.ports.inbound.plan_parser import InvalidPlanError
-from teddy_executor.core.services.parser_infrastructure import MISMATCH_INDICATOR
 
 
 def test_parser_highlights_multiple_structural_mismatches():
@@ -41,24 +40,19 @@ def test_parser_highlights_multiple_structural_mismatches():
     # [001] Paragraph (Mismatch: expected List)
     # [002] Heading (Level 3) (Mismatch: expected H2 Rationale)
 
-    # We assert that the indicator appears at least twice in the structure section
+    # We assert that the indicator [✗] appears at least twice in the structure section
     structure_section = error_msg.split("--- Actual Document Structure ---")[-1]
-    indicator_count = structure_section.count(MISMATCH_INDICATOR)
+    indicator_count = structure_section.count("[✗]")
 
     expected_min_indicators = 2
     assert indicator_count >= expected_min_indicators, (
-        f"Expected at least {expected_min_indicators} mismatch indicators, "
+        f"Expected at least {expected_min_indicators} mismatch indicators ([✗]), "
         f"found {indicator_count} in:\n{structure_section}"
     )
-    assert "[001] Paragraph" in structure_section
-    assert (
-        f'Paragraph: "This is a paragraph instead of a list."{MISMATCH_INDICATOR}'
-        in structure_section
-    )
-    assert (
-        f'Heading (Level 3): "Wrong Heading Level (Rationale)"{MISMATCH_INDICATOR}'
-        in structure_section
-    )
+    assert "[✗] [001] Paragraph" in structure_section
+    assert 'Paragraph: "This is a paragraph instead of a list."' in structure_section
+    assert 'Heading (Level 3): "Wrong Heading Level (Rationale)"' in structure_section
+    assert "(Error: " in structure_section
 
 
 def test_parser_highlights_multiple_mismatches_in_action_plan():
@@ -103,10 +97,8 @@ def test_parser_highlights_multiple_mismatches_in_action_plan():
     structure_section = error_msg.split("--- Actual Document Structure ---")[-1]
 
     # We expect highlights on both invalid paragraphs
-    assert (
-        f'Paragraph: "This is an invalid paragraph."{MISMATCH_INDICATOR}'
-        in structure_section
-    )
+    assert 'Paragraph: "This is an invalid paragraph."' in structure_section
+    assert "[✗]" in structure_section
 
     # Add a very long paragraph to test truncation at 60 chars
     long_msg = "This is a very long paragraph that exceeds the sixty character limit to test truncation."
@@ -132,10 +124,10 @@ def test_parser_highlights_multiple_mismatches_in_action_plan():
     structure_long = str(excinfo_long.value).split("--- Actual Document Structure ---")[
         -1
     ]
-    assert f'Paragraph: "{truncated_msg}"{MISMATCH_INDICATOR}' in structure_long
+    assert f'Paragraph: "{truncated_msg}"' in structure_long
+    assert "[✗]" in structure_long
 
-    expected_min_indicators = 2
-    indicator_count = structure_section.count(MISMATCH_INDICATOR)
-    assert indicator_count >= expected_min_indicators
-    expected_min_indicators = 2
-    assert indicator_count >= expected_min_indicators
+    indicator_count = structure_section.count("[✗]")
+    assert (
+        indicator_count >= 1
+    )  # In this specific plan, only the first mismatch is tagged

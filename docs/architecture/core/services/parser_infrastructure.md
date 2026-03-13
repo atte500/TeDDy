@@ -12,7 +12,7 @@ A wrapper around an iterator that allows the parser to "peek" at the next node i
 Ensures that Markdown code fences (e.g., ` ``` `) are handled consistently before the document is parsed into an AST. It serves as a hook for normalizing LLM-generated Markdown that might use variable fence lengths.
 
 ### Constants
-- `MISMATCH_INDICATOR`: A shared visual indicator (` <-- MISMATCH`) used to highlight structural errors in the Plan AST summary for the user.
+*(No public constants are currently exported; constants are managed internally.)*
 
 ### AST Helpers
 - `get_child_text(node)`: Recursively extracts all plain text content from a Markdown node and its children.
@@ -21,7 +21,11 @@ Ensures that Markdown code fences (e.g., ` ``` `) are handled consistently befor
 - `consume_content_until_next_action(stream, valid_actions)`: Streams through nodes until a structural boundary (like the next action or a higher-level heading) is encountered.
 - `extract_posix_headers(command_str, initial_cwd, initial_env)`: Parses and removes `cd` and `export` directives from the beginning of a shell script string.
 - `format_node_name(node)`: Formats the AST node type with metadata (e.g., heading level or code fence backtick count) for reporting.
-- `format_structural_mismatch_msg(doc, expected, mismatch_idx, offending_nodes)`: Constructs the high-fidelity structural error report, including the AST summary and mismatch indicators.
+- `format_structural_mismatch_msg(doc, expected, mismatch_idx, offending_nodes)`: Constructs a rich diagnostic report for structural failures.
+    - **Status Icons**: Nodes are marked as `[✓]` (valid), `[✗]` (failing), or `[ ]` (unvalidated context).
+    - **Indices**: Every node is indexed for clear reference.
+    - **Error Context**: Failing nodes include parenthetical error messages detailing the expectation.
+    - **Cutoff Logic**: Structural parsing becomes unreliable after a failure; all nodes following the first detected failure are marked as `[ ]` to avoid false positives.
 
 ### Path Normalization
 - `normalize_path(path)`: Ensures all paths use POSIX-style forward slashes for internal consistency.

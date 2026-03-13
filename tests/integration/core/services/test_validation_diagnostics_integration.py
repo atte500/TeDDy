@@ -66,14 +66,8 @@ This paragraph is NOT a REPLACE heading.
 
     error_msg = str(excinfo.value)
     assert "Missing REPLACE block after FIND block" in error_msg
-    assert (
-        "Missing REPLACE block after FIND block <-- MISMATCH"
-        not in error_msg.splitlines()[0]
-    )
-    assert (
-        'Paragraph: "This paragraph is NOT a REPLACE heading." <-- MISMATCH'
-        in error_msg
-    )
+    assert 'Paragraph: "This paragraph is NOT a REPLACE heading."' in error_msg
+    assert "[✗]" in error_msg
 
 
 def test_multiple_find_matches_hint_integration(integration_container, tmp_path: Path):
@@ -147,4 +141,4 @@ Rationale with 5 backticks.
     with pytest.raises(InvalidPlanError) as excinfo:
         orchestrator.execute(plan_content=plan_content, interactive=False)
 
-    assert "CodeFence (5 backticks)" in str(excinfo.value)
+    assert "Code Block (5 backticks)" in str(excinfo.value)

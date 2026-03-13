@@ -8,17 +8,26 @@ To improve the reliability of the AI's automated self-correction loop by providi
 
 ## 2. Acceptance Criteria (Scenarios)
 
-### Scenario 1: Structural Validation Error
+### Scenario 1: Structural Validation Error [✓]
 **Given** a plan with top-level structural errors (e.g., a missing `## Rationale` section)
 **When** the plan is validated
 **Then** the `InvalidPlanError` message must display a flat list of all top-level AST nodes.
-**And** each node must be prefixed with its validation status (`[✓]` or `[✗]`) and its index (`[000]`).
+**And** each node must be prefixed with its validation status (`[✓]`, `[✗]`, or `[ ]`) and its index (`[000]`).
 **And** each failing node must include a parenthetical `(Error: ...)` explaining the specific reason for the failure.
+**And** trailing nodes after the first failure must be marked as unvalidated (`[ ]`).
 **And** the output must exactly match the format demonstrated in the reference spike for structural errors.
 
 #### Deliverables
-- [ ] Update `format_structural_mismatch_msg` in `src/teddy_executor/core/services/parser_infrastructure.py` to produce the new error format.
-- [ ] Ensure existing unit tests for structural errors are updated to assert against the new, more detailed output format.
+- [✓] Update `format_structural_mismatch_msg` in `src/teddy_executor/core/services/parser_infrastructure.py` to produce the new error format.
+- [✓] Ensure existing unit tests for structural errors are updated to assert against the new, more detailed output format.
+
+#### Implementation Notes
+- Refactored `format_structural_mismatch_msg` to support rich diagnostic formatting (status prefixes, indices, and parenthetical errors).
+- Implemented `failure_cutoff_idx` logic to mark nodes following a failure as unvalidated `[ ]`.
+- Updated `MarkdownPlanParser` and action strategies to propagate `offending_node` context to improve surgical reporting.
+- Simplified `MarkdownPlanParser.parse` catch-all to avoid redundant error messaging.
+- Removed dead code `MISMATCH_INDICATOR` and aligned the entire test suite (unit, integration, acceptance) with the new formatting.
+- Improved `Code Block` naming to include backtick counts for better debuggability.
 
 ---
 

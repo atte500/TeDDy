@@ -26,7 +26,9 @@ from teddy_executor.core.services.parser_metadata import (
 def parse_create_action(stream: _PeekableStream) -> ActionData:
     metadata_list = stream.next()
     if not isinstance(metadata_list, MdList):
-        raise InvalidPlanError("CREATE action is missing metadata list.")
+        raise InvalidPlanError(
+            "CREATE action is missing metadata list.", offending_node=metadata_list
+        )
 
     description, params = parse_action_metadata(
         metadata_list,
@@ -39,7 +41,9 @@ def parse_create_action(stream: _PeekableStream) -> ActionData:
 
     code_block = stream.next()
     if not isinstance(code_block, CodeFence):
-        raise InvalidPlanError("CREATE action is missing a content code block.")
+        raise InvalidPlanError(
+            "CREATE action is missing a content code block.", offending_node=code_block
+        )
 
     params["content"] = ""
     if code_block.children:
@@ -55,7 +59,10 @@ def parse_create_action(stream: _PeekableStream) -> ActionData:
 def parse_resource_action(stream: _PeekableStream, action_type: str) -> ActionData:
     metadata_list = stream.next()
     if not isinstance(metadata_list, MdList):
-        raise InvalidPlanError(f"{action_type} action is missing metadata list.")
+        raise InvalidPlanError(
+            f"{action_type} action is missing metadata list.",
+            offending_node=metadata_list,
+        )
 
     description, params = parse_action_metadata(
         metadata_list, link_key_map={"Resource": "resource"}
@@ -82,7 +89,9 @@ def parse_find_replace_pair(stream: _PeekableStream) -> Optional[dict[str, str]]
     stream.next()
     find_code = stream.next()
     if not isinstance(find_code, (CodeFence, BlockCode)):
-        raise InvalidPlanError("Missing code block for FIND in EDIT action.")
+        raise InvalidPlanError(
+            "Missing code block for FIND in EDIT action.", offending_node=find_code
+        )
     find_content = get_child_text(find_code).rstrip("\n")
 
     replace_heading = stream.next()
@@ -109,7 +118,9 @@ def parse_find_replace_pair(stream: _PeekableStream) -> Optional[dict[str, str]]
 def parse_edit_action(stream: _PeekableStream, valid_actions: set[str]) -> ActionData:
     metadata_list = stream.next()
     if not isinstance(metadata_list, MdList):
-        raise InvalidPlanError("EDIT action is missing metadata list.")
+        raise InvalidPlanError(
+            "EDIT action is missing metadata list.", offending_node=metadata_list
+        )
     description, params = parse_action_metadata(
         metadata_list, link_key_map={"File Path": "path"}
     )
@@ -178,7 +189,9 @@ def parse_invoke_action(stream: _PeekableStream, valid_actions: set[str]) -> Act
 def parse_execute_action(stream: _PeekableStream) -> ActionData:
     metadata_list = stream.next()
     if not isinstance(metadata_list, MdList):
-        raise InvalidPlanError("EXECUTE action is missing metadata list.")
+        raise InvalidPlanError(
+            "EXECUTE action is missing metadata list.", offending_node=metadata_list
+        )
 
     description, params = parse_action_metadata(
         metadata_list,
@@ -210,7 +223,10 @@ def parse_execute_action(stream: _PeekableStream) -> ActionData:
 
     command_block = stream.next()
     if not isinstance(command_block, CodeFence):
-        raise InvalidPlanError("EXECUTE action is missing command code block.")
+        raise InvalidPlanError(
+            "EXECUTE action is missing command code block.",
+            offending_node=command_block,
+        )
 
     params["command"] = get_child_text(command_block).strip()
 

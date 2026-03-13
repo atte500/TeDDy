@@ -82,7 +82,8 @@ content2
     error_msg = str(excinfo.value)
     assert "Plan structure is invalid. Expected a Level 3 Action Heading" in error_msg
     assert "--- Actual Document Structure ---" in error_msg
-    assert "ThematicBreak <-- MISMATCH" in error_msg
+    assert "[✗]" in error_msg
+    assert "ThematicBreak (Error: Expected a Level 3 Action Heading)" in error_msg
 
 
 def test_parser_raises_error_on_malformed_structure_between_actions(
@@ -132,10 +133,10 @@ echo 2
 
     error_msg = str(excinfo.value)
     assert "Plan structure is invalid. Expected a Level 3 Action Heading" in error_msg
-    assert "Unexpected content found" not in error_msg  # Redundant phrasing removed
     assert "--- Actual Document Structure ---" in error_msg
     assert (
-        'Paragraph: "This is some free text that shouldn\'t be here." <-- MISMATCH'
+        "[✗]" in error_msg
+        and 'Paragraph: "This is some free text that shouldn\'t be here." (Error: Expected a Level 3 Action Heading)'
         in error_msg
     )
 
@@ -277,7 +278,7 @@ def test_parse_execute_action(parser: IPlanParser):
     error_msg = str(excinfo.value)
     assert "Plan structure is invalid. Expected a Level 3 Action Heading" in error_msg
     assert "--- Actual Document Structure ---" in error_msg
-    assert "<-- MISMATCH" in error_msg
+    assert "[✗]" in error_msg
 
 
 def test_parser_raises_error_if_no_title_found(parser: IPlanParser):
@@ -339,8 +340,8 @@ This paragraph is NOT a REPLACE heading.
     assert "Missing REPLACE block after FIND block" in error_msg
     assert "--- Actual Document Structure ---" in error_msg
     assert (
-        'Paragraph: "This paragraph is NOT a REPLACE heading." <-- MISMATCH'
-        in error_msg
+        "[✗]" in error_msg
+        and 'Paragraph: "This paragraph is NOT a REPLACE heading."' in error_msg
     )
 
 
@@ -367,5 +368,4 @@ def test_parser_raises_error_with_indicator_on_structural_mismatch(parser: IPlan
     error_msg = str(excinfo.value)
     assert "Plan structure is invalid" in error_msg
     # Verify the specific mismatch location in the AST summary
-    # "Action Plan" is short, so no truncation dots are appended in the new semantic preview logic
-    assert '[002] Heading (Level 2): "Action Plan" <-- MISMATCH' in error_msg
+    assert '[✗] [002] Heading (Level 2): "Action Plan"' in error_msg

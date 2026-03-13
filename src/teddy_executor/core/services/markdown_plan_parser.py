@@ -83,14 +83,14 @@ class MarkdownPlanParser(IPlanParser):
 
             # Fallback for errors that didn't provide a structural summary
             e_nodes = getattr(e, "offending_nodes", [])
-            offending_nodes: List[Any] = e_nodes if e_nodes is not None else []
+            if not e_nodes:
+                raise e
 
             # Re-format the error using the shared infrastructure
-            # We use an empty expectation string to focus the message on the actual mismatch
             rich_msg = format_structural_mismatch_msg(
-                doc, "a valid plan structure", -1, offending_nodes
+                doc, str(e).splitlines()[0], -1, e_nodes
             )
-            raise InvalidPlanError(f"{str(e).splitlines()[0]}\n\n{rich_msg}") from e
+            raise InvalidPlanError(rich_msg) from e
 
     def _raise_structural_error(
         self, doc: Document, expected_name: str, mismatch_idx: int, actual_node: Any
