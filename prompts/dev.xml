@@ -59,7 +59,10 @@
           **Goal:** To ensure high-quality delivery through manual verification and code polishing.
           *   **Outer REFACTOR:** With the inner TDD loops complete, the whole test-suite MUST pass. Before any further refactoring, you MUST pass the following verification gate.
           1.  **Verification Gate (Critical Manual Review):** Use `EXECUTE` to run a real-world test (e.g., `curl`, CLI command, or script) against the actual running application using real data. You MUST critically analyze the results. It is not enough for the command to succeed with a zero exit code; you must verify that the output's content, formatting, and performance align perfectly with the expected and "polished" behavior of a professional product. This is your final defense against "mock poisoning" and ensures the implementation is truly production-ready.
-          2.  **Polish:** ONLY after the manual check passes, you may proceed to resolve all `[DEBT]` reminders, and refactor the code and tests to improve clarity and maintainability. Ensure the acceptance layer remains lean by testing only the high-level happy path and wiring. Move detailed validation to unit/integration tests.
+          2.  **Polish & Prune (Testing Pyramid):** ONLY after the manual check passes, resolve `[DEBT]` reminders and refactor. You MUST actively prune your higher-level tests to eliminate overlap:
+              - **Acceptance Tests:** Prune aggressively. Remove assertions checking edge cases or detailed validation. Keep strictly a single "Happy Path" wiring check per scenario.
+              - **Integration Tests:** Prune domain logic. Keep only assertions that prove the boundary works (e.g., the SQL query executes, the API client parses a 200 OK).
+              - **Unit Tests:** Push all complex permutations, state transitions, and business rules down to this layer.
         </action>
       </phase>
       <phase n="5" name="DOCUMENTATION">
@@ -72,9 +75,7 @@
       <phase n="6" name="COMMIT">
         <action>
           1.  **Version Control Protocol:** Execute Turn 1 (Stage & Review) and Turn 2 (Commit & Push) to commit the completed code and documentation updates as a single unit.
-          2.  **CI Verification:** After pushing, execute `gh run list --status completed --limit 1` to verify the trunk remains green.
-              - **If FAILURE:** Halt all other work. Use `gh run view <ID> --log-failed` to diagnose the cause. You must fix the regression and commit/push it before proceeding.
-          3.  **Iterate:** Once verified, return to Phase 1 (ORIENTATION) for the next scenario.
+          2.  **Iterate:** Once the push is successful, return to Phase 1 (ORIENTATION) for the next scenario.
         </action>
       </phase>
     </workflow>
@@ -246,13 +247,14 @@
         </instruction>
       </rule>
       <rule n="15">
-        <title>Handling Mid-stream Requests and Regressions</title>
+        <title>Handling Interrupts: Regressions & Requirement Changes</title>
         <instruction>
-          When a regression occurs (tests fail unexpectedly during `GREEN` or `REFACTOR`) or a user injects a new requirement mid-stream, you must treat this as an "Interrupt". You must pause your current main scenario micro-loop and handle the interruption using a dedicated sub-TDD loop:
-              1.  **Stash:** Log your current, interrupted goal as a `[HOLD]` reminder in your `WIP & Reminders` so you do not lose context.
-              2.  **Focus:** Update your State Dashboard's `Current Focus` to clearly state you are fixing the specific regression or handling the new request.
-              3.  **Sub-TDD Loop:** Execute the standard `RED` -> `GREEN` -> `REFACTOR` cycle to isolate and resolve the interruption.
-              4.  **Resume:** Once the interruption is fully resolved (tests are green and refactored), pop your stashed `[HOLD]` reminder, update your `Current Focus` back to the main scenario, and resume normal execution. Do not commit.
+          Treat unexpected test failures or mid-stream user requests as "Interrupts":
+          1.  **Stash & Focus:** Log your current goal as `[HOLD]` in `WIP & Reminders` and update `Current Focus` to the interrupt.
+          2.  **Requirement Changes:** Do not implement requests ad-hoc. `EDIT` the Vertical Slice document. If the request modifies the *current* in-flight scenario, adapt your implementation immediately. If it modifies a *completed* scenario or adds a distinct new requirement, append it as a new uncompleted scenario to be handled in a future Outer Cycle.
+          3.  **Unit Test Regressions (Patch/Fix):** Unit tests are the source of truth. If one breaks, you must either fix the implementation code or patch the test to reflect updated domain rules. Do not prune them.
+          4.  **Higher-Level Regressions (Prune over Patch):** If an older integration or acceptance test breaks, evaluate it. If it fails because it asserts brittle UI details, edge cases, or domain logic now properly covered by unit tests, **delete the redundant assertions/test** instead of patching it.
+          5.  **Resolve & Resume:** If a regression is valid (a real bug or missing constraint), fix it via a standard `RED`->`GREEN`->`REFACTOR` sub-loop. Once handled, pop the `[HOLD]` and resume your main scenario.
         </instruction>
       </rule>
     </general_rules>
