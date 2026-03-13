@@ -1,4 +1,5 @@
 import os
+import re
 from datetime import timezone
 from typing import Any
 
@@ -52,4 +53,17 @@ class MarkdownReportFormatter(IMarkdownReportFormatter):
     def format(self, report: ExecutionReport, is_concise: bool = True) -> str:
         """Renders the execution report to a Markdown string."""
         context = self._prepare_context(report, is_concise)
-        return self.template.render(context)
+        rendered = self.template.render(context)
+
+        # Post-process for whitespace sanitization
+        # 1. Strip trailing whitespace from each line
+        lines = [line.rstrip() for line in rendered.splitlines()]
+        sanitized = "\n".join(lines)
+
+        # 2. Strip leading/trailing document noise
+        sanitized = sanitized.strip()
+
+        # 3. Collapse 3+ newlines to exactly 2
+        sanitized = re.sub(r"\n{3,}", "\n\n", sanitized)
+
+        return sanitized

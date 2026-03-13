@@ -76,3 +76,32 @@ def test_formatter_renders_original_actions_only_when_not_concise():
     # Concise mode
     concise_report = formatter.format(report, is_concise=True)
     assert "## Original Action Plan" not in concise_report
+
+
+def test_formatter_sanitizes_whitespace():
+    """
+    Ensures the formatter strips leading/trailing whitespace and collapses
+    3+ newlines into 2.
+    """
+    formatter = MarkdownReportFormatter()
+    # Mock the template to return a string with excessive whitespace and newlines
+    formatter.template.render = MagicMock(
+        return_value="\n\n  # Header\n\n\n\nContent  \n\n\nFooter\n\n  "
+    )
+
+    summary = RunSummary(
+        status=RunStatus.SUCCESS, start_time=datetime.now(), end_time=datetime.now()
+    )
+    report = ExecutionReport(run_summary=summary)
+
+    formatted = formatter.format(report)
+
+    # 1. Stripped leading/trailing
+    assert formatted.startswith("# Header")
+    assert formatted.endswith("Footer")
+
+    # 2. Collapsed newlines
+    assert "\n\n\n" not in formatted
+    # Check intermediate parts
+    assert "# Header\n\nContent" in formatted
+    assert "Content\n\nFooter" in formatted

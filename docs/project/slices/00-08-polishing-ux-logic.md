@@ -29,16 +29,23 @@ Enhance the TeDDy CLI user experience by improving error visibility during parsi
 
 ---
 
-### Scenario 2: Report Whitespace Sanitization
+### Scenario 2: Report Whitespace Sanitization [✓]
 **Given** an execution report generated from a template
 **When** the report is formatted by `MarkdownReportFormatter`
 **Then** the final output must have all leading and trailing whitespace removed.
 **And** all sequences of three or more newlines must be collapsed into exactly two newlines (ensuring a maximum of one "blank line" between any two blocks of content).
 
 #### Deliverables
-- [ ] Update `MarkdownReportFormatter.format` in `src/teddy_executor/core/services/markdown_report_formatter.py` to post-process the rendered string:
+- [✓] Update `MarkdownReportFormatter.format` in `src/teddy_executor/core/services/markdown_report_formatter.py` to post-process the rendered string:
     - Apply `.strip()` to remove leading/trailing noise.
     - Apply a regex substitution: `re.sub(r'\n{3,}', '\n\n', rendered_report)`.
+
+**Implementation Notes:**
+- Updated `MarkdownReportFormatter.format` to include a post-processing pipeline.
+- Implemented per-line `rstrip()` to ensure lines don't have trailing spaces which can interfere with Markdown rendering.
+- Applied `strip()` to remove document-level leading/trailing newlines/whitespace.
+- Used `re.sub(r"\n{3,}", "\n\n", sanitized)` to collapse multiple blank lines into a single one.
+- Verified via unit tests (mocking template output) and acceptance tests (full CLI execution).
 
 ---
 

@@ -168,7 +168,7 @@ def test_formats_multiline_execute_command_correctly():
     # The template renders:
     # - **Command:**
     # ```shell
-    assert "- **Command:** \n```shell\ngit add .\ngit commit\n```" in output
+    assert "- **Command:**\n```shell\ngit add .\ngit commit\n```" in output
 
 
 def test_formats_return_action_correctly():
