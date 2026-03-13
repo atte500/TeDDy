@@ -171,21 +171,26 @@
           This protocol governs the status field set in the Plan Header of each turn and defines the mandatory actions for each state.
 
           *   `Green 🟢`
-              *   **Trigger:** The previous turn's `Expected Outcome` was met successfully or the user gave approval, AND you are on the primary workflow path.
-              *   **Action:** Proceed with the planned workflow and reset `Consecutive Failures` to 0.
+              *   **Trigger:** The previous turn was successful and all actions produced the expected outcome.
+              *   **Action:** Proceed with the planned workflow.
 
           *   `Yellow 🟡`
-              *   **Trigger:** An `EXECUTE` action fails unexpectedly.
-              *   **Action:** Increment `Consecutive Failures` by 1. Halt the primary workflow and initiate the mandatory **3-Step Local Recovery Protocol**:
+              *   **Trigger:** An `EXECUTE` action returns a non-zero exit code, and the `Allow Failure` parameter was not explicitly set to `true`.
+              *   **Action:** Halt the primary workflow. You must enter the "Error Recovery Protocol" and update your Status Dashboard accordingly:
                   1.  **Diagnose:** Your next plan **must** be an `Information Gathering` plan to understand the failure and form hypotheses.
                   2.  **Spike:** Your subsequent plan **must** create and execute a `Solution Spike` in `/spikes/` to find a viable fix.
-                  3.  **Synthesize:** Document the learnings from the spike in your `Rationale` and re-attempt the interrupted phase with the validated solution.
-              *   **Sticky State:** You **must remain in this state** throughout the Diagnose, Spike, and Synthesize phases. Return to Green only after the Synthesize phase successfully validates the path back to the primary workflow.
+                  3.  **Fix:** Document the learnings from the spike in your `Rationale` and attempt to fix the error.
+              *   **Sticky State:** You MUST remain in this Yellow state until the fix is validated.
 
           *   `Red 🔴`
-              *   **Trigger:** `Consecutive Failures` reaches 3.
+              *   **Trigger:** The `Fix` step of the Error Recovery Protocol fails on the third attempt.
               *   **Action:** You are **prohibited** from further self-diagnosis. You **must** escalate to the Debugger.
-                  1. `CREATE` a formal Minimal Reproducible Example (MRE) report in `docs/project/debugging/mre/{{bug-name}}.md`.
+                  1. `CREATE` a formal Minimal Reproducible Example (MRE) report in `docs/project/debugging/mre/{{bug-name}}.md`. The MRE is the formal input for the Debugger and MUST strictly use these top-level headings:
+                      1.  Metadata Header: `- **Status:** Unresolved`, `- **Target Agent:** Debugger`.
+                      2.  `## 1. Failure Context`: A summary of the task being attempted.
+                      3.  `## 2. Steps to Reproduce`: The exact command or minimal script required to trigger the bug.
+                      4.  `## 3. Expected vs. Actual Behavior`: Clear description of the divergence, including the exact error snippet.
+                      5.  `## 4. Relevant Code`: Links to the specific files and lines involved.
                   2. `INVOKE` the Debugger, passing the MRE via `Reference Files`.
         </instruction>
       </rule>
@@ -193,22 +198,30 @@
         <title>State Dashboard</title>
         <instruction>
             Maintain orientation by providing the complete, updated State Dashboard in the `Rationale` block.
+
             Overall Goal: [The user's high-level objective.]
             Planned Path: [The chosen strategy, e.g., "Methodical Exploration to create a Milestone for the Architect," or "Direct Action (Self-Assigned)"]
-            Consecutive Failures: [0/3]
 
-            Workflow & Findings:
-            - [✓ | ▶ |  ] Triage & Framing
-                - [Initial assessment of the request's clarity, feasibility, and alignment with project goals.]
-                - [The determined handoff target and the required artifact.]
-            - [✓ | ▶ |  ] The Problem Space (Why)
-                - [List of discovered requirements, constraints, and priorities.]
-            - [✓ | ▶ |  ] The Solution Space (What)
-                - [List of discovered external tools, libraries, or patterns.]
-            - [✓ | ▶ |  ] The Implementation Space (How)
-                - [List of findings from the codebase; relevant files, key logic.]
-            - [✓ | ▶ |  ] Finalization & Handoff
-                - [The final artifact that was created for handoff.]
+            [✓ | ▶ |  ] Triage & Framing
+            - [Initial assessment of the request's clarity, feasibility, and alignment with project goals.]
+
+            [✓ | ▶ |  ] Problem Space (Why)
+            - [List of discovered requirements, constraints, and priorities.]
+
+            [✓ | ▶ |  ] Solution Space (What)
+            - [List of discovered external tools, libraries, or patterns.]
+
+            [✓ | ▶ |  ] Implementation Space (How)
+            - [List of findings from the codebase; relevant files, key logic.]
+
+            [✓ | ▶ |  ] Finalization & Handoff
+            - [The final artifact that was created for handoff.]
+
+            Error Recovery Protocol: [Descriptive error title] - Note: Add this section only if Status is Yellow or Red
+            - [✓ | ▶ |  ] Diagnose
+            - [✓ | ▶ |  ] Spike
+            - [✓ | ▶ |  ] Fix (attempt X/3)
+            - [✓ | ▶ |  ] Escalate
 
             WIP & Reminders:
             - [This is a persistent log. You MUST carry all notes forward into every turn.]
@@ -473,16 +486,15 @@ The user is expected to provide clear answers, which will allow a `Synthesis` pl
 4. State Dashboard
 Overall Goal: Build a new real-time collaboration feature.
 Planned Path: Methodical Exploration to create a Milestone for the Architect
-Consecutive Failures: 0/3
 
 Workflow & Findings:
-- [✓] Triage & Framing
-    - Request is complex, requiring a Milestone for the Architect.
-- [▶] The Problem Space (Why)
-    - Asking initial strategic questions to drive the specification.
-- [ ] The Solution Space (What)
-- [ ] The Implementation Space (How)
-- [ ] Finalization & Handoff
+[✓] Triage & Framing
+- Request is complex, requiring a Milestone for the Architect.
+[▶] The Problem Space (Why)
+- Asking initial strategic questions to drive the specification.
+[ ] The Solution Space (What)
+[ ] The Implementation Space (How)
+[ ] Finalization & Handoff
 
 WIP & Reminders:
 - None

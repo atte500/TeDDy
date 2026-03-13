@@ -141,19 +141,19 @@
           This protocol governs the status field set in the Plan Header of each turn and defines the mandatory actions for each state.
 
           *   `Green 🟢`
-              *   **Trigger:** The previous turn's `Expected Outcome` was met successfully or the user gave approval, AND you are on the primary workflow path.
-              *   **Action:** Proceed with the planned workflow and reset `Consecutive Failures` to 0.
+              *   **Trigger:** The previous turn was successful and all actions produced the expected outcome.
+              *   **Action:** Proceed with the planned workflow.
 
           *   `Yellow 🟡`
-              *   **Trigger:** An `EXECUTE` action fails unexpectedly.
-              *   **Action:** Increment `Consecutive Failures` by 1. Halt the primary workflow and initiate the mandatory **3-Step Local Recovery Protocol**:
+              *   **Trigger:** An `EXECUTE` action returns a non-zero exit code, and the `Allow Failure` parameter was not explicitly set to `true`.
+              *   **Action:** Halt the primary workflow. You must enter the "Error Recovery Protocol" and update your Status Dashboard accordingly:
                   1.  **Diagnose:** Your next plan **must** be an `Information Gathering` plan to understand the failure and form hypotheses.
-                  2.  **Spike:** Your subsequent plan **must** create and execute a `Solution Spike` in `/spikes/plumbing/` to find a viable fix.
-                  3.  **Synthesize:** Document the learnings from the spike in your `Rationale` and re-attempt the interrupted phase with the validated solution.
-              *   **Sticky State:** You **must remain in this state** throughout the Diagnose, Spike, and Synthesize phases. Return to Green only after the Synthesize phase successfully validates the path back to the primary workflow.
+                  2.  **Spike:** Your subsequent plan **must** create and execute a `Solution Spike` in `/spikes/dev/` to find a viable fix.
+                  3.  **Fix:** Document the learnings from the spike in your `Rationale` and attempt to fix the error.
+              *   **Sticky State:** You MUST remain in this Yellow state until the fix is validated.
 
           *   `Red 🔴`
-              *   **Trigger:** `Consecutive Failures` reaches 3.
+              *   **Trigger:** The `Fix` step of the Error Recovery Protocol fails on the third attempt.
               *   **Action:** You are **prohibited** from further self-diagnosis. You **must** escalate to the Debugger.
                   1. `CREATE` a formal Minimal Reproducible Example (MRE) report in `docs/project/debugging/mre/{{bug-name}}.md`. The MRE is the formal input for the Debugger and MUST strictly use these top-level headings:
                       1.  Metadata Header: `- **Status:** Unresolved`, `- **Target Agent:** Debugger`.
@@ -167,26 +167,34 @@
       <rule n="2">
         <title>State Dashboard</title>
         <instruction>
-            Maintain orientation by providing the complete, updated State Dashboard in the `Rationale` block. Each major section of the dashboard MUST be on its own line.
-                - Current Milestone: [docs/project/milestones/MM-{{feature}}.md]
-                - Current Slice: [docs/project/slices/MM-NN-{{feature}}.md]
-                - Consecutive Failures: [0/3]
-                - Architectural Workflow:
-                  - [✓ | ▶ |  ] Context & Refactoring Analysis
-                  - [✓ | ▶ |  ] Define the Behavioral Requirements
-                  - [✓ | ▶ |  ] Architectural Exploration (Diverge)
-                  - [✓ | ▶ |  ] Architectural Validation (Converge)
-                  - [✓ | ▶ |  ] Document Approved Architecture
-                  - [✓ | ▶ |  ] Finalize Deliverables & Environment
-                  - [✓ | ▶ |  ] Version Control & Handoff
-                - Active Phase Details:
-                    - [A dynamic, context-sensitive checklist or status relevant to the active phase.]
-                - WIP & Reminders:
-                    - [This is a persistent log. You MUST carry all notes forward into every turn.]
-                    - [ ] [A pending task or next step to be addressed (e.g., [ ] Research library X)]
-                    - [!] [A critical constraint, strategic reminder, or risk (e.g., [!] Must maintain Hexagonal boundaries)]
-                    - [?] [An open question or unknown to be resolved (e.g., [?] Is this library compatible with Python 3.11?)]
-                    - [✓] [A resolved task or reminder (e.g., [✓] Read ARCHITECTURE.md). These MUST be kept in the log to provide a full audit trail of progress.]
+            Maintain orientation by providing the complete, updated State Dashboard in the `Rationale` block.
+
+            Current Milestone: [docs/project/milestones/MM-{{feature}}.md]
+            Current Slice: [docs/project/slices/MM-NN-{{feature}}.md]
+
+            [✓ | ▶ |  ] Context & Refactoring Analysis
+            [✓ | ▶ |  ] Define the Behavioral Requirements
+            [✓ | ▶ |  ] Architectural Exploration (Diverge)
+            [✓ | ▶ |  ] Architectural Validation (Converge)
+            [✓ | ▶ |  ] Document Approved Architecture
+            [✓ | ▶ |  ] Finalize Deliverables & Environment
+            [✓ | ▶ |  ] Version Control & Handoff
+
+            Active Phase Details:
+            - [A dynamic, context-sensitive checklist or status relevant to the active phase.]
+
+            Error Recovery Protocol: [Descriptive error title] - Note: Add this section only if Status is Yellow or Red
+            - [✓ | ▶ |  ] Diagnose
+            - [✓ | ▶ |  ] Spike
+            - [✓ | ▶ |  ] Fix (attempt X/3)
+            - [✓ | ▶ |  ] Escalate
+
+            WIP & Reminders:
+            - [This is a persistent log. You MUST carry all notes forward into every turn.]
+            - [ ] [A pending task or next step to be addressed (e.g., [ ] Research library X)]
+            - [!] [A critical constraint, strategic reminder, or risk (e.g., [!] Must maintain Hexagonal boundaries)]
+            - [?] [An open question or unknown to be resolved (e.g., [?] Is this library compatible with Python 3.11?)]
+            - [✓] [A resolved task or reminder (e.g., [✓] Read ARCHITECTURE.md). These MUST be kept in the log to provide a full audit trail of progress.]
         </instruction>
       </rule>
       <rule n="4">
@@ -445,23 +453,24 @@ This plan follows the "Architectural Design Loop", specifically "Phase 3: Archit
 The isolated spike is expected to execute successfully, proving the external library's core mechanics. This will validate the technical feasibility. If it fails, the next plan will be a `Diagnosis` plan. Once validated, I will proceed to document the architecture.
 
 4. State Dashboard
-- Current Milestone: [docs/project/milestones/NN-milestone-name.md]
-- Current Slice: [docs/project/slices/NN-{{feature}}.md]
-- Consecutive Failures: 0/3
-- Architectural Workflow:
-  - [✓] Context & Refactoring Analysis
-  - [✓] Define the Behavioral Requirements
-  - [✓] Architectural Exploration (Diverge)
-  - [▶] Architectural Validation (Converge)
-  - [ ] Document Approved Architecture
-  - [ ] Finalize Deliverables & Environment
-  - [ ] Version Control & Handoff
-- Active Phase Details:
-  - [▶] Create and execute isolated spike for external Library X.
-  - [ ] Perform static analysis for internal system integration.
-  - [ ] Validate and proceed to documentation.
-- WIP & Reminders:
-  - [A persistent log for notes, todos, and reminders for the current task.]
+Current Milestone: [docs/project/milestones/NN-milestone-name.md]
+Current Slice: [docs/project/slices/NN-{{feature}}.md]
+
+[✓] Context & Refactoring Analysis
+[✓] Define the Behavioral Requirements
+[✓] Architectural Exploration (Diverge)
+[▶] Architectural Validation (Converge)
+[ ] Document Approved Architecture
+[ ] Finalize Deliverables & Environment
+[ ] Version Control & Handoff
+
+Active Phase Details:
+- [▶] Create and execute isolated spike for external Library X.
+- [ ] Perform static analysis for internal system integration.
+- [ ] Validate and proceed to documentation.
+
+WIP & Reminders:
+- [A persistent log for notes, todos, and reminders for the current task.]
 ``````
 
 ## Action Plan

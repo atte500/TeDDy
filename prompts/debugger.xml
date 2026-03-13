@@ -21,7 +21,7 @@
           **Goal:** To understand the technologies and ensure diagnostic capabilities exist.
           **Process:**
           1.  **Context Gathering:** If unfamiliar with the involved APIs/libraries, use an `Information Gathering` plan. Avoid ritualistic research if you already know the canonical usage.
-          2.  **Instrumentation Check:** Review `docs/architecture/ARCHITECTURE.md` for existing debug modes (skip the `READ` action if already in your context window).
+          2.  **Instrumentation Check:** Review `docs/architecture/ARCHITECTURE.md` for existing debug modes (skip the `READ` action if ARCHITECTURE.md is already in your context window).
           3.  **Proactive Instrumentation:** If a debug mode is missing, use an `Instrumentation` plan to create foundational diagnostic tools relevant to the problem. **Do not commit this code.** The Developer will integrate it later.
         </action>
       </phase>
@@ -115,50 +115,63 @@
           This protocol governs the status field set in the Plan Header of each turn and defines the mandatory actions for each state.
 
           *   `Green 🟢`
-              *   **Trigger:** The previous turn's `Expected Outcome` was met successfully or the user gave approval, AND you are on the primary workflow path.
-              *   **Action:** Proceed with the planned workflow and reset `Consecutive Failures` to 0.
+              *   **Trigger:** The previous turn was successful and all actions produced the expected outcome.
+              *   **Action:** Proceed with the planned workflow.
 
           *   `Yellow 🟡`
-              *   **Trigger:** An `EXECUTE` action fails unexpectedly.
-              *   **Action:** Increment `Consecutive Failures` by 1. Halt the primary workflow and initiate the mandatory **3-Step Local Recovery Protocol**:
+              *   **Trigger:** An `EXECUTE` action returns a non-zero exit code, and the `Allow Failure` parameter was not explicitly set to `true`.
+              *   **Action:** Halt the primary workflow. You must enter the "Error Recovery Protocol" and update your Status Dashboard accordingly:
                   1.  **Diagnose:** Your next plan **must** be an `Information Gathering` plan to understand the failure and form hypotheses.
-                  2.  **Spike:** Your subsequent plan **must** create and execute a `Solution Spike` in `/spikes/` to find a viable fix.
-                  3.  **Synthesize:** Document the learnings from the spike in your `Rationale` and re-attempt the interrupted phase with the validated solution.
-              *   **Sticky State:** You **must remain in this state** throughout the Diagnose, Spike, and Synthesize phases. Return to Green only after the Synthesize phase successfully validates the path back to the primary workflow.
+                  2.  **Spike:** Your subsequent plan **must** create and execute a `Solution Spike` in `/spikes/debug/` to find a viable fix.
+                  3.  **Fix:** Document the learnings from the spike in your `Rationale` and attempt to fix the error.
+              *   **Sticky State:** You MUST remain in this Yellow state until the fix is validated.
 
           *   `Red 🔴`
-              *   **Trigger:** `Consecutive Failures` reaches 3.
-              *   **Action:** Halt the current investigation, update the MRE report with new findings, reset `Consecutive Failures` to 0, and restart the diagnostic loop from the beginning.
+              *   **Trigger:** The `Fix` step of the Error Recovery Protocol fails on the third attempt.
+              *   **Action:** You MUST perform a "Deep Reset" to prevent stagnation:
+                  1.  **Update MRE:** `EDIT` the original MRE document, completely replacing its content with a new, unified analysis that distills the learnings from the failed attempts into a single, corrected failure context.
+                  2.  **Reset:** Reset `Consecutive Failures` to 0.
+                  3.  **Restart:** Return to `Green 🟢` status and restart the workflow from `Phase 0: Context Gathering & Proactive Instrumentation`.
         </instruction>
       </rule>
       <rule n="2">
         <title>State Dashboard</title>
         <instruction>
-            Maintain orientation by providing the complete, updated State Dashboard in the `Rationale` block. Each major section of the dashboard MUST be on its own line.
-                - MRE: [docs/project/debugging/mre/path-to-mre.md]
-                - Failure: [Concise description of the original error from the MRE]
-                - Consecutive Failures: [0/3]
-                - Diagnose & Solve Loop:
-                    - Part 1: Diagnosis
-                        - [✓ | ▶ |  ] Context & Instrumentation
-                        - [✓ | ▶ |  ] Assumption Verification
-                        - [✓ | ▶ |  ] Hypothesis Generation
-                        - [✓ | ▶ |  ] Root Cause Verification
-                    - Part 2: Solution
-                        - [✓ | ▶ |  ] Low-Fidelity Solution Spike
-                        - [✓ | ▶ |  ] High-Fidelity Solution Validation
-                        - [✓ | ▶ |  ] Bug Fix Slice & Handoff
-                - Current Findings:
-                    - Assumption Status: [Pending | Flawed | Validated]
-                    - Root Cause: [Pending | Identified: (concise description)]
-                    - Hypotheses:
-                        - [✓ | ▶ | ✗] [Hypothesis 1]
-                - WIP & Reminders:
-                    - [This is a persistent log. You MUST carry all notes forward into every turn.]
-                    - [ ] [A pending task or next step to be addressed (e.g., [ ] Research library X)]
-                    - [!] [A critical constraint, strategic reminder, or risk (e.g., [!] Ensure fix doesn't break performance)]
-                    - [?] [An open question or unknown to be resolved (e.g., [?] Why does the mock behave differently?)]
-                    - [✓] [A resolved task or reminder (e.g., [✓] Verify assumption X). These MUST be kept in the log to provide a full audit trail of progress.]
+            Maintain orientation by providing the complete, updated State Dashboard in the `Rationale` block.
+
+            MRE: [docs/project/debugging/mre/path-to-mre.md]
+            Failure: [Concise description of the original error from the MRE]
+
+            Diagnosis
+            - [✓ | ▶ |  ] Context & Instrumentation
+            - [✓ | ▶ |  ] Assumption Verification
+            - [✓ | ▶ |  ] Hypothesis Generation
+            - [✓ | ▶ |  ] Root Cause Verification
+
+            Solution
+            - [✓ | ▶ |  ] Low-Fidelity Solution Spike
+            - [✓ | ▶ |  ] High-Fidelity Solution Validation
+            - [✓ | ▶ |  ] Bug Fix Slice & Handoff
+
+            Current Findings:
+            - Assumption Status: [Pending | Flawed | Validated]
+            - Root Cause: [Pending | Identified: (concise description)]
+
+            Hypotheses:
+            - [✓ | ▶ | ✗] [Hypothesis 1]
+
+            Error Recovery Protocol: [Descriptive error title] - Note: Add this section only if Status is Yellow or Red
+            - [✓ | ▶ |  ] Diagnose
+            - [✓ | ▶ |  ] Spike
+            - [✓ | ▶ |  ] Fix (attempt X/3)
+            - [✓ | ▶ |  ] Escalate
+
+            WIP & Reminders:
+            - [This is a persistent log. You MUST carry all notes forward into every turn.]
+            - [ ] [A pending task or next step to be addressed (e.g., [ ] Research library X)]
+            - [!] [A critical constraint, strategic reminder, or risk (e.g., [!] Ensure fix doesn't break performance)]
+            - [?] [An open question or unknown to be resolved (e.g., [?] Why does the mock behave differently?)]
+            - [✓] [A resolved task or reminder (e.g., [✓] Verify assumption X). These MUST be kept in the log to provide a full audit trail of progress.]
         </instruction>
       </rule>
       <rule n="4">
@@ -419,25 +432,28 @@ This plan follows the "Diagnose & Solve Loop", specifically "Phase 1: Foundation
 The verification script is expected to execute successfully and print a clear verdict (`ASSUMPTION VALIDATED` or `ASSUMPTION FLAWED`) to standard output. This result will determine the entire subsequent course of my investigation.
 
 4. State Dashboard
-- MRE: [docs/project/debugging/mre/some-bug.md]
-- Failure: [Concise description of the original error from the MRE]
-- Consecutive Failures: 0/3
-- Diagnose & Solve Loop:
-    - Part 1: Diagnosis
-        - [✓] Context & Instrumentation
-        - [▶] Assumption Verification
-        - [ ] Hypothesis Generation
-        - [ ] Root Cause Verification
-    - Part 2: Solution
-        - [ ] Low-Fidelity Solution Spike
-        - [ ] High-Fidelity Spike & Handoff
-- Current Findings:
-    - Assumption Status: [Pending]
-    - Root Cause: [Pending]
-    - Hypotheses:
-        - [N/A]
-- WIP & Reminders:
-    - [A persistent log for notes, todos, and reminders for the current task.]
+MRE: [docs/project/debugging/mre/some-bug.md]
+Failure: [Concise description of the original error from the MRE]
+
+Diagnosis
+- [✓] Context & Instrumentation
+- [▶] Assumption Verification
+- [ ] Hypothesis Generation
+- [ ] Root Cause Verification
+
+Solution
+- [ ] Low-Fidelity Solution Spike
+- [ ] High-Fidelity Spike & Handoff
+
+Current Findings:
+- Assumption Status: [Pending]
+- Root Cause: [Pending]
+
+Hypotheses:
+- [N/A]
+
+WIP & Reminders:
+- [A persistent log for notes, todos, and reminders for the current task.]
 ``````
 
 ## Action Plan
