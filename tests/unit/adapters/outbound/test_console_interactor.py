@@ -32,7 +32,8 @@ class TestConsoleInteractorAdapter:
         """Test that typing 'e' opens an editor, reads the temp file, and strips comments."""
         from pathlib import Path
 
-        inputs = iter(["e"])
+        # Input 'e' to launch, then empty Enter to read result
+        inputs = iter(["e", ""])
         monkeypatch.setattr("builtins.input", lambda: next(inputs))
 
         file_content_before_editor = ""
@@ -80,7 +81,8 @@ class TestConsoleInteractorAdapter:
     def test_ask_question_editor_fails_returns_empty(
         self, adapter: ConsoleInteractorAdapter, mock_env, monkeypatch
     ):
-        inputs = iter(["e"])
+        # Input 'e' (fails), then "" (tries to read result but none exists), then "" (confirms empty response)
+        inputs = iter(["e", "", ""])
         monkeypatch.setattr("builtins.input", lambda: next(inputs))
         mock_env.get_env.return_value = "mock_editor"
         mock_env.which.return_value = "/usr/bin/mock_editor"

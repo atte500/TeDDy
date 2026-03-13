@@ -10,6 +10,6 @@ The `ISystemEnvironment` port abstracts all interactions with the host operating
 
 - `which(command: str) -> str | None`: Locates a command in the system PATH.
 - `get_env(key: str, default: str | None = None) -> str | None`: Retrieves an environment variable.
-- `run_command(args: list[str]) -> None`: Executes an external command (e.g., launching an editor).
+- `run_command(args: list[str], check: bool = True, background: bool = False) -> None`: Executes an external command. Supports non-blocking background execution.
 - `create_temp_file(suffix: str | None = None) -> str`: Creates a temporary file and returns its path.
 - `delete_file(path: str) -> None`: Deletes a file from the system.

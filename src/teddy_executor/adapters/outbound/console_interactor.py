@@ -1,5 +1,5 @@
 import shlex
-from typing import Optional
+from typing import List, Optional
 
 import typer
 from rich.console import Console
@@ -13,12 +13,16 @@ from teddy_executor.core.domain.models.change_set import ChangeSet
 from teddy_executor.core.domain.models.plan import ActionData
 from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
+from teddy_executor.adapters.outbound.console_tooling import ConsoleToolingHelper
 
 
 class ConsoleInteractorAdapter(IUserInteractor):
     def __init__(self, system_env: ISystemEnvironment):
         self._system_env = system_env
+        self._tooling = ConsoleToolingHelper(system_env)
         self._console = Console(stderr=True)
+        self._active_editor_path: Optional[str] = None
+        self._active_editor_marker: Optional[str] = None
 
     def prompt(self, text: str, default: str = "") -> str:
         """Prompts the user using typer.prompt."""
@@ -38,6 +42,17 @@ class ConsoleInteractorAdapter(IUserInteractor):
         Presents a prompt to the user on the console and captures their input.
         Allows falling back to an external editor for multi-line text.
         """
+        self._display_ask_header(prompt, resources, agent_name)
+
+        self._active_editor_path = None
+        self._active_editor_marker = None
+
+        return self._run_prompt_loop(prompt)
+
+    def _display_ask_header(
+        self, prompt: str, resources: list[str] | None, agent_name: Optional[str]
+    ) -> None:
+        """Displays the formatted message header and reference files."""
         display_name = agent_name if agent_name else "TeDDy"
         header = f"--- MESSAGE from {display_name} ---"
         typer.secho(header, fg=typer.colors.CYAN, err=True)
@@ -48,42 +63,73 @@ class ConsoleInteractorAdapter(IUserInteractor):
             typer.echo("\n".join(resources), err=True)
         typer.echo("", err=True)  # Spacer
 
-        # Loop until we get a response or an editor is closed
+    def _run_prompt_loop(self, prompt: str) -> str:
+        """Orchestrates the interactive loop for capturing user response."""
         while True:
-            typer.echo(
-                "Response (type 'e' for editor) › ",
-                nl=False,
-                err=True,
-            )
+            prompt_label = "Response (type 'e' for editor) › "
+            if self._active_editor_path:
+                prompt_label = (
+                    "Editor opened. Terminal reply or [Enter] to confirm editor › "
+                )
+
+            typer.echo(prompt_label, nl=False, err=True)
             try:
                 user_input = input().strip()
             except EOFError:
+                self._cleanup_editor()
                 return ""
 
+            # 1. Trigger Editor
             if user_input.lower() == "e":
-                return self._get_input_from_editor(prompt)
+                self._launch_editor_background(prompt)
+                continue
 
+            # 2. Terminal Reply (Non-empty)
             if user_input:
+                self._cleanup_editor()
                 return user_input
 
-            # Confirmation for empty response
-            typer.echo(
-                "Are you sure you want to submit an empty response? (y/n/e) › ",
-                nl=False,
-                err=True,
-            )
-            try:
-                confirm = input().strip().lower()
-            except EOFError:
-                return ""
+            # 3. Empty Input
+            response = self._handle_empty_input(prompt)
+            if response is not None:
+                return response
 
-            if confirm == "y":
-                return ""
-            if confirm == "e":
-                return self._get_input_from_editor(prompt)
+    def _handle_empty_input(self, prompt: str) -> Optional[str]:
+        """Handles logic when Enter is pressed without terminal input."""
+        # If editor was open, [Enter] confirms and reads it.
+        if self._active_editor_path:
+            return self._read_editor_result()
 
-    def _get_input_from_editor(self, prompt: str) -> str:
-        """Opens a temporary file in an external editor and reads the response."""
+        # Otherwise, confirm empty response to prevent accidental submission
+        typer.echo(
+            "Press [Enter] again to confirm empty response › ",
+            nl=False,
+            err=True,
+        )
+        try:
+            confirm = input().strip()
+        except EOFError:
+            return ""
+
+        if not confirm:
+            return ""
+
+        # Recursive-like behavior for 'e' in confirm prompt
+        if confirm.lower() == "e":
+            self._launch_editor_background(prompt)
+            return None
+
+        return confirm
+
+    def _cleanup_editor(self):
+        """Removes the temp file and resets active state."""
+        if self._active_editor_path:
+            self._system_env.delete_file(self._active_editor_path)
+            self._active_editor_path = None
+            self._active_editor_marker = None
+
+    def _launch_editor_background(self, prompt: str) -> None:
+        """Opens a temporary file in a non-blocking external editor."""
         marker = "<!-- Please enter your response above this line. Save and close this file to submit. -->"
         initial_content = f"\n\n{marker}\n\n{prompt}\n"
 
@@ -91,68 +137,65 @@ class ConsoleInteractorAdapter(IUserInteractor):
         with open(temp_path, "w", encoding="utf-8") as f:
             f.write(initial_content)
 
-        editor = self._system_env.get_env("VISUAL") or self._system_env.get_env(
-            "EDITOR"
-        )
+        editor = self._tooling.find_editor()
         if not editor:
-            for fallback in ["code -w", "nano", "vim"]:
-                cmd = fallback.split()[0]
-                if self._system_env.which(cmd):
-                    editor = fallback
-                    break
-
-        if not editor:
-            typer.echo(
-                "Error: No suitable editor found. Falling back to standard input.",
-                err=True,
-            )
+            typer.echo("Error: No suitable editor found.", err=True)
             self._system_env.delete_file(temp_path)
-            return self.ask_question("Please provide your response:")
+            return
 
         try:
-            self._system_env.run_command(shlex.split(editor) + [temp_path])
-            with open(temp_path, "r", encoding="utf-8") as f:
+            cmd = shlex.split(editor) + [temp_path]
+            self._system_env.run_command(cmd, background=True)
+            self._active_editor_path = temp_path
+            self._active_editor_marker = marker
+            typer.echo("Editor opened in background.", err=True)
+        except Exception as e:
+            typer.echo(f"Error: Editor launch failed: {e}", err=True)
+            self._system_env.delete_file(temp_path)
+
+    def _read_editor_result(self) -> str:
+        """Reads the content of the background editor's temp file."""
+        if not self._active_editor_path:
+            return ""
+
+        try:
+            with open(self._active_editor_path, "r", encoding="utf-8") as f:
                 content = f.read()
 
+            marker = self._active_editor_marker or ""
             if marker in content:
                 content = content.split(marker)[0]
 
             return content.strip()
 
         except Exception as e:
-            typer.echo(f"Error: Editor process failed: {e}", err=True)
+            typer.echo(f"Error: Reading editor result failed: {e}", err=True)
             return ""
         finally:
-            self._system_env.delete_file(temp_path)
+            self._cleanup_editor()
 
-    def _show_external_diff(
-        self, tool_cmd: list[str], before_path: str, after_path: str
-    ):
-        """Launches an external diff tool."""
-        self._system_env.run_command(tool_cmd + [before_path, after_path])
-
-    def _get_diff_viewer_command(self) -> Optional[list[str]]:
-        """Determines the command for an external diff viewer, if available."""
-        custom_tool_str = self._system_env.get_env("TEDDY_DIFF_TOOL")
-        if custom_tool_str:
-            custom_tool_parts = shlex.split(custom_tool_str)
-            tool_name = custom_tool_parts[0]
-
-            if tool_path := self._system_env.which(tool_name):
-                custom_tool_parts[0] = tool_path
-                return custom_tool_parts
-
-            typer.echo(
-                f"Warning: Custom diff tool '{tool_name}' not found. "
-                "Falling back to in-terminal diff.",
-                err=True,
-            )
-            return None
-
-        if code_path := self._system_env.which("code"):
-            return [code_path, "-r", "--diff"]
-
-        return None
+    def _handle_external_preview(
+        self, change_set: ChangeSet, diff_command: List[str], temp_files: List[str]
+    ) -> None:
+        """Sets up temp files and launches external diff/editor."""
+        ext = "".join(change_set.path.suffixes)
+        if change_set.action_type == "CREATE":
+            preview_path = self._system_env.create_temp_file(suffix=f".preview{ext}")
+            temp_files.append(preview_path)
+            with open(preview_path, "w", encoding="utf-8") as f:
+                f.write(change_set.after_content)
+            # Strip diff flags to open as a regular file
+            cmd = [c for c in diff_command if c.lower() not in ("--diff", "-d")]
+            self._system_env.run_command(cmd + [preview_path])
+        else:
+            before_path = self._system_env.create_temp_file(suffix=f".before{ext}")
+            after_path = self._system_env.create_temp_file(suffix=f".after{ext}")
+            temp_files.extend([before_path, after_path])
+            with open(before_path, "w", encoding="utf-8") as f:
+                f.write(change_set.before_content)
+            with open(after_path, "w", encoding="utf-8") as f:
+                f.write(change_set.after_content)
+            self._system_env.run_command(diff_command + [before_path, after_path])
 
     def confirm_action(
         self,
@@ -160,46 +203,23 @@ class ConsoleInteractorAdapter(IUserInteractor):
         action_prompt: str,
         change_set: Optional[ChangeSet] = None,
     ) -> tuple[bool, str]:
-        temp_files = []
+        temp_files: List[str] = []
         try:
             if change_set:
-                diff_command = self._get_diff_viewer_command()
+                diff_command = self._tooling.get_diff_viewer_command()
                 if not diff_command:
+                    # Check if failure was due to a missing custom tool
+                    custom_tool = self._system_env.get_env("TEDDY_DIFF_TOOL")
+                    if custom_tool:
+                        tool_name = shlex.split(custom_tool)[0]
+                        typer.echo(
+                            f"Warning: Custom diff tool '{tool_name}' not found. "
+                            "Falling back to in-terminal diff.",
+                            err=True,
+                        )
                     echo_diff_preview(change_set)
-                elif change_set.action_type == "CREATE":
-                    # Show a single-file preview in the editor
-                    ext = "".join(change_set.path.suffixes)
-                    preview_path = self._system_env.create_temp_file(
-                        suffix=f".preview{ext}"
-                    )
-                    temp_files.append(preview_path)
-                    with open(preview_path, "w", encoding="utf-8") as f:
-                        f.write(change_set.after_content)
-
-                    # Strip diff flags to open as a regular file
-                    editor_cmd = [
-                        arg
-                        for arg in diff_command
-                        if arg.lower() not in ("--diff", "-d")
-                    ]
-                    self._system_env.run_command(editor_cmd + [preview_path])
                 else:
-                    # Show a split-pane diff in the editor
-                    ext = "".join(change_set.path.suffixes)
-                    before_path = self._system_env.create_temp_file(
-                        suffix=f".before{ext}"
-                    )
-                    after_path = self._system_env.create_temp_file(
-                        suffix=f".after{ext}"
-                    )
-                    temp_files.extend([before_path, after_path])
-
-                    with open(before_path, "w", encoding="utf-8") as f:
-                        f.write(change_set.before_content)
-                    with open(after_path, "w", encoding="utf-8") as f:
-                        f.write(change_set.after_content)
-
-                    self._show_external_diff(diff_command, before_path, after_path)
+                    self._handle_external_preview(change_set, diff_command, temp_files)
 
             prompt = f"{action_prompt}\nApprove? (y/n): "
             # Use typer.prompt which handles echoing to stderr correctly

@@ -8,16 +8,21 @@ This port defines the contract for components that can interact with the user by
 
 ## Interface Definition
 
-### `ask_question(prompt: str) -> str`
+### `ask_question(prompt: str, resources: list[str] | None = None, agent_name: str | None = None) -> str`
 
-**Status:** Implemented
+**Status:** Refactored
+**Motivating Slice:** [Slice 00-08: Polishing UX & Logic Improvements](/docs/project/slices/00-08-polishing-ux-logic.md)
 
 *   **Description:**
-    Displays a `prompt` string to the user and captures their free-text response. The implementation should expect and handle multi-line input.
+    Displays a `prompt` string to the user and captures their free-text response. The implementation should expect and handle multi-line input (e.g., via a background editor) and allow for terminal quick-replies.
+*   **Parameters:**
+    *   `prompt`: The question to display.
+    *   `resources`: Optional list of file paths provided as context.
+    *   `agent_name`: Optional name of the agent sending the prompt for UI headers.
 *   **Preconditions:**
     *   `prompt` must be a non-empty string.
 *   **Postconditions:**
-    *   Returns a string containing the complete, multi-line response from the user.
+    *   Returns a string containing the user's response.
 *   **Returns:**
     *   `str`: The user's response.
 

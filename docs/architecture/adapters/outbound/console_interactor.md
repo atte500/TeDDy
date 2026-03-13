@@ -20,11 +20,17 @@ The `ConsoleInteractorAdapter` depends on the `ISystemEnvironment` outbound port
 
 ### Implementation Details
 
-#### `ask_question(prompt: str) -> str`
-The `ask_question` method logic supports both standard input and external editor fallbacks:
-1.  **Print Prompt to Stderr:** The prompt is printed to `sys.stderr` to avoid polluting `stdout`. It explicitly offers the user the choice: `Press [Enter] to submit single-line response, or type 'e' + [Enter] to open in Editor:`.
-2.  **External Editor Flow ('e'):** If the user types 'e', a temporary markdown file is created. The AI's original prompt is prepended to this file as markdown comments to provide context, followed by instructional comments. The adapter then attempts to launch the user's preferred editor (`$VISUAL` or `$EDITOR`) or falls back to known defaults (`code -w`, `nano`, `vim`). Upon exit, the file is read, instructional comments and the prompt are stripped, and the multiline response is returned.
-3.  **Single-Line Standard Input:** If the user does not type 'e', they are opted into standard input. If they typed a response immediately on the first prompt, it is returned. If they just pressed Enter, the adapter reads exactly one more line from standard input. This provides a fast, immediate response mechanism without requiring empty terminating lines.
+#### `ask_question(prompt: str, ...)`
+The `ask_question` method implements a non-blocking interaction loop:
+1.  **Dynamic Header:** Prints a cyan header: `--- MESSAGE from [AGENT NAME] ---`. Defaults to "TeDDy" if the agent is unknown.
+2.  **Non-Blocking Interaction Loop:**
+    -   **Trigger Editor ('e'):** Launches the user's preferred editor in the **background** using `ISystemEnvironment.run_command(background=True)`. This immediately returns control to the terminal.
+    -   **Terminal Quick-Reply:** Even while the editor is open, the user can type a response directly in the terminal and press Enter to submit it, bypassing the editor.
+    -   **Confirm Editor:** If the editor was launched, pressing Enter without a terminal reply signals the adapter to read and return the current content of the temporary file.
+3.  **Simplified Empty Confirmation:** If no editor is open and the user presses Enter without typing, the adapter prompts: `Press [Enter] again to confirm empty response`. A second Enter submits an empty string.
+
+#### `notify_skipped_action(action: ActionData, reason: str) -> None`
+Delegates terminal output to `cli_helpers.echo_skipped_action` to maintain SLOC compliance.
 
 #### `notify_skipped_action(action: ActionData, reason: str) -> None`
 This method prints a formatted, colorized warning to `sys.stderr` when an action is skipped by the orchestrator (e.g., due to a previous failure), ensuring the user is immediately aware of halted execution without needing to inspect the final markdown report.

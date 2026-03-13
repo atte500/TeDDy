@@ -10,8 +10,10 @@ class ISystemEnvironment(Protocol):
         """Wraps os.getenv."""
         ...
 
-    def run_command(self, args: List[str], check: bool = True) -> None:
-        """Wraps subprocess.run."""
+    def run_command(
+        self, args: List[str], check: bool = True, background: bool = False
+    ) -> None:
+        """Wraps subprocess.run (synchronous) or subprocess.Popen (background)."""
         ...
 
     def create_temp_file(self, suffix: str = "", mode: str = "w") -> str:

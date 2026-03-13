@@ -13,7 +13,20 @@ class SystemEnvironmentAdapter(ISystemEnvironment):
     def get_env(self, key: str) -> Optional[str]:
         return os.getenv(key)
 
-    def run_command(self, args: List[str], check: bool = True) -> None:
+    def run_command(
+        self, args: List[str], check: bool = True, background: bool = False
+    ) -> None:
+        """Wraps subprocess.run (synchronous) or subprocess.Popen (background)."""
+        if background:
+            # We don't wait for the result
+            subprocess.Popen(  # nosec B603
+                args,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True,
+            )
+            return
+
         subprocess.run(args, check=check)  # nosec B603
 
     def create_temp_file(self, suffix: str = "", mode: str = "w") -> str:

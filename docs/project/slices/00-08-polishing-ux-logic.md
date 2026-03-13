@@ -1,5 +1,5 @@
 # Slice: Polishing UX and Logic Improvements
-- **Status:** Planned
+- **Status:** Completed
 - **Milestone:** [docs/project/milestones/09-interactive-session-and-config.md](/docs/project/milestones/09-interactive-session-and-config.md)
 - **Specs:** [docs/project/specs/plan-format-validation.md](/docs/project/specs/plan-format-validation.md), [docs/project/specs/report-format.md](/docs/project/specs/report-format.md)
 
@@ -49,15 +49,23 @@ Enhance the TeDDy CLI user experience by improving error visibility during parsi
 
 ---
 
-### Scenario 3: Enhanced PROMPT Interactive Flow
+### Scenario 3: Enhanced PROMPT Interactive Flow [✓]
 **Given** a `PROMPT` action is executed in interactive mode
 **When** the user selects `e` to open the editor
 **Then** the marker instruction in the temporary file must be wrapped in an HTML comment (`<!-- ... -->`) so it is hidden in Markdown previewers.
 **And** the terminal must continue to allow a single-line reply even while the editor is open (or immediately after opening it), providing a fallback for quick responses.
 
 #### Deliverables
-- [ ] Update `ConsoleInteractorAdapter._get_input_from_editor` in `src/teddy_executor/adapters/outbound/console_interactor.py` to use `<!-- --- Please enter your response above this line... --- -->` as the marker.
-- [ ] Refactor `ConsoleInteractorAdapter.ask_question` to prompt for terminal input immediately after launching the editor command if the system environment supports non-blocking execution or if a "quick-reply" prompt is desired.
+- [✓] Update `ConsoleInteractorAdapter._get_input_from_editor` in `src/teddy_executor/adapters/outbound/console_interactor.py` to use `<!-- ... -->` as the marker.
+- [✓] Refactor `ConsoleInteractorAdapter.ask_question` to support a non-blocking interaction loop, allowing quick terminal replies or background editor confirmation.
+- [✓] Simplify empty response confirmation to a double-Enter pattern.
+
+**Implementation Notes:**
+- Updated `ISystemEnvironment` and `SystemEnvironmentAdapter` to support background command execution via `subprocess.Popen`.
+- Refactored `ConsoleInteractorAdapter.ask_question` to use a non-blocking loop. Launching the editor ('e') now puts the interactor into an "Editor Opened" state while still accepting terminal input.
+- Terminal replies now explicitly clean up any abandoned background editor files.
+- Simplified empty response confirmation: the interactor now prompts to "Press [Enter] again to confirm" instead of the "y/n/e" loop.
+- Integrated the HTML comment marker (`<!-- ... -->`) into the background editor flow.
 
 ---
 

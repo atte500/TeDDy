@@ -12,6 +12,8 @@ The `SystemEnvironmentAdapter` provides a concrete implementation of the `ISyste
 
 ## 3. Implementation Details
 
-- **Process Execution:** Uses `subprocess.run` to launch external tools.
+- **Process Execution:**
+    -   **Synchronous:** Uses `subprocess.run` for blocking commands.
+    -   **Background:** Uses `subprocess.Popen` with `start_new_session=True` to launch independent background processes (e.g., editors).
 - **Temp Files:** Uses `tempfile.NamedTemporaryFile` with `delete=False` to manage file lifecycles across process boundaries.
 - **PATH Lookup:** Uses `shutil.which`.

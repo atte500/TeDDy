@@ -40,8 +40,9 @@ Please provide feedback.
         SystemEnvironmentAdapter, "which", lambda s, cmd: "/usr/bin/nano"
     )
 
-    # Run command and simulate 'e' input for editor
-    runner.invoke(app, ["execute", "--plan-content", plan_content], input="e\n")
+    # Run command and simulate 'e' then Enter to use editor content
+    # First Enter is to press 'e', second Enter is to confirm editor completion
+    runner.invoke(app, ["execute", "--plan-content", plan_content], input="e\n\n")
 
     # Check that run_command was called with a path
     assert mock_run.called
@@ -58,7 +59,9 @@ Please provide feedback.
     assert "Please enter your response above this line" in content
 
 
-def test_enhanced_prompt_terminal_quick_reply(monkeypatch, tmp_path):
+def test_enhanced_prompt_terminal_quick_reply_after_editor_launch(
+    monkeypatch, tmp_path
+):
     """
     Scenario 3: Enhanced PROMPT Interactive Flow
     And the terminal must continue to allow a single-line reply even while the editor is open.
@@ -79,10 +82,61 @@ Rationale.
 ### `PROMPT`
 Feedback?
 """
+    # Mock system environment to prevent actual editor launch blocking
+    from teddy_executor.adapters.outbound.system_environment_adapter import (
+        SystemEnvironmentAdapter,
+    )
 
+    monkeypatch.setattr(SystemEnvironmentAdapter, "run_command", MagicMock())
+    monkeypatch.setattr(
+        SystemEnvironmentAdapter, "which", lambda s, cmd: "/usr/bin/nano"
+    )
+
+    # Input: 'e' to open editor, then "Terminal Reply" to override it
+    # The 'e' triggers the editor, and the second line provides the quick reply.
+    # We add a trailing newline to ensure the input is processed.
     result = runner.invoke(
-        app, ["execute", "--plan-content", plan_content], input="Terminal Reply\n"
+        app, ["execute", "--plan-content", plan_content], input="e\nTerminal Reply\n"
     )
 
     assert result.exit_code == 0
-    assert "Terminal Reply" in result.stdout
+    # Search in details dict as well if report format is concise
+    assert (
+        "Terminal Reply" in result.stdout
+        or "'response': 'Terminal Reply'" in result.stdout
+    )
+
+
+def test_enhanced_prompt_empty_response_confirmation_ux(monkeypatch, tmp_path):
+    """
+    User Request: Simplify empty response confirmation.
+    Given a PROMPT action
+    When the user presses Enter without typing anything
+    Then the system should prompt to "Press [Enter] again to confirm"
+    """
+    runner = CliRunner()
+    monkeypatch.chdir(tmp_path)
+
+    plan_content = """# Prompt Test
+- **Status:** Green 🟢
+- **Agent:** Developer
+
+## Rationale
+````text
+Test empty response confirmation.
+````
+
+## Action Plan
+### `PROMPT`
+Empty?
+"""
+
+    # Input: Enter (empty), then Enter again (confirm)
+    result = runner.invoke(
+        app, ["execute", "--plan-content", plan_content], input="\n\n"
+    )
+
+    assert result.exit_code == 0
+    assert "Press [Enter] again to confirm" in result.stderr
+    # The block is omitted when empty to keep the report clean
+    assert "User Response" not in result.stdout

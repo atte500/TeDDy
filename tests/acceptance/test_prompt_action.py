@@ -60,8 +60,8 @@ def test_prompt_action_multiline_editor(tmp_path: Path, monkeypatch, container):
     runner = CliRunner()
     user_response = "Line 1\nLine 2\n"
 
-    # User types 'e' to open editor
-    cli_input = "e\n"
+    # User types 'e' to open editor, then Enter to confirm completion
+    cli_input = "e\n\n"
 
     builder = MarkdownPlanBuilder("Test Chat Action Multiline")
     builder.add_action(
@@ -88,6 +88,9 @@ def test_prompt_action_multiline_editor(tmp_path: Path, monkeypatch, container):
         m.chdir(tmp_path)
         import subprocess
 
+        # Implementation now uses background=True (Popen) for editors
+        m.setattr(subprocess, "Popen", mock_run_editor)
+        # Also mock run just in case for other parts of the flow
         m.setattr(subprocess, "run", mock_run_editor)
         # Force a specific editor so the fallback logic doesn't try to find 'code' or 'nano'
         m.setenv("EDITOR", "mock_editor")
