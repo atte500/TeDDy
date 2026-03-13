@@ -58,11 +58,17 @@ class LocalFileSystemAdapter(IFileSystemManager):
         """
         all_paths = set()
         for path in file_paths:
-            content = self.read_file(path)
-            for line in content.splitlines():
-                stripped_line = line.strip()
-                if stripped_line and not stripped_line.startswith("#"):
-                    all_paths.add(stripped_line)
+            try:
+                content = self.read_file(path)
+                for line in content.splitlines():
+                    stripped_line = line.strip()
+                    if stripped_line and not stripped_line.startswith("#"):
+                        # Skip strings with illegal filename characters on Windows/Unix
+                        if any(c in stripped_line for c in '*?"<>|'):
+                            continue
+                        all_paths.add(stripped_line)
+            except (FileNotFoundError, OSError, ValueError):
+                continue
 
         return sorted(list(all_paths))
 

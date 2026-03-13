@@ -60,7 +60,11 @@ class SessionRepository:
         ):
             return False
         # Markdown structural elements often start with '-' or '*' followed by bold markers
-        if path_str.startswith("- **") or path_str.startswith("* **"):
+        if (
+            path_str.startswith("- **")
+            or path_str.startswith("* **")
+            or "Command:" in path_str
+        ):
             return False
         return True
 
