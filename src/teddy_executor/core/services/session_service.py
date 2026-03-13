@@ -194,7 +194,8 @@ class SessionService(ISessionManager):
                 continue
             path = self._extract_resource_path(resource)
             if action.type == ActionType.READ.value:
-                paths.add(path)
+                if self._repository.is_valid_path(path):
+                    paths.add(path)
             elif action.type == ActionType.PRUNE.value:
                 paths.discard(path)
 

@@ -294,8 +294,8 @@
 {% endif %}
 {% endif %}
 
-{% if action_type == 'RESEARCH' and log.details and log.details.get('query_results') %}
-{% for qr in log.details['query_results'] %}
+{% if action_type == 'RESEARCH' and log.details and log.details is mapping and log.details.get('query_results') %}
+{% for qr in log.details.get('query_results', []) %}
 
 **Query:** `{{ qr['query'] }}`
 {% for sr in qr['results'] %}
@@ -311,9 +311,9 @@
 {% if log.details and log.details is mapping and log.details.get('response') %}
 
 #### User Response
-{{ log.details.response | fence }}text
-{{ log.details.response }}
-{{ log.details.response | fence }}
+{{ log.details.get('response') | fence }}text
+{{ log.details.get('response') }}
+{{ log.details.get('response') | fence }}
 {% else %}
 {{ render_action_details(log) }}
 {% endif %}

@@ -50,12 +50,27 @@ class SessionRepository:
 
         raise ValueError(f"Could not resolve session from path: {path}")
 
+    def is_valid_path(self, path_str: str) -> bool:
+        """Heuristic to check if a string is a plausible file path."""
+        if (
+            not path_str
+            or "**" in path_str
+            or ":" in path_str
+            and not path_str.startswith(("http:", "https:"))
+        ):
+            return False
+        # Markdown structural elements often start with '-' or '*' followed by bold markers
+        if path_str.startswith("- **") or path_str.startswith("* **"):
+            return False
+        return True
+
     def read_context_file(self, path: str) -> Set[str]:
         """Reads a context file robustly."""
         try:
             if not self._file_system_manager.path_exists(path):
                 return set()
             content = self._file_system_manager.read_file(path)
-            return {line.strip() for line in content.splitlines() if line.strip()}
+            lines = {line.strip() for line in content.splitlines() if line.strip()}
+            return {line for line in lines if self.is_valid_path(line)}
         except (FileNotFoundError, OSError):
             return set()
