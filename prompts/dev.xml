@@ -58,7 +58,7 @@
         <action>
           **Goal:** To ensure high-quality delivery through manual verification and code polishing.
           *   **Outer REFACTOR:** With the inner TDD loops complete, the whole test-suite MUST pass. Before any further refactoring, you MUST pass the following verification gate.
-          1.  **Verification Gate (Manual Reality Check):** Use `EXECUTE` to run a real-world test (e.g., `curl`, CLI command, or script) against the actual running application using real data. This guarantees end-to-end wiring is correct and prevents "mock poisoning" (where tests pass only because mocks incorrectly reflect reality).
+          1.  **Verification Gate (Critical Manual Review):** Use `EXECUTE` to run a real-world test (e.g., `curl`, CLI command, or script) against the actual running application using real data. You MUST critically analyze the results. It is not enough for the command to succeed with a zero exit code; you must verify that the output's content, formatting, and performance align perfectly with the expected and "polished" behavior of a professional product. This is your final defense against "mock poisoning" and ensures the implementation is truly production-ready.
           2.  **Polish:** ONLY after the manual check passes, you may proceed to resolve all `[DEBT]` reminders, and refactor the code and tests to improve clarity and maintainability. Ensure the acceptance layer remains lean by testing only the high-level happy path and wiring. Move detailed validation to unit/integration tests.
         </action>
       </phase>
