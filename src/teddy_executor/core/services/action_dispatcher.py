@@ -93,7 +93,9 @@ class ActionDispatcher:
                 status = ActionStatus.FAILURE
         return result, status
 
-    def dispatch_and_execute(self, action_data: ActionData) -> ActionLog:
+    def dispatch_and_execute(
+        self, action_data: ActionData, agent_name: Optional[str] = None
+    ) -> ActionLog:
         """
         Takes an ActionData object, finds the corresponding action handler
         via the factory, executes it, and returns the result as an ActionLog.
@@ -113,6 +115,9 @@ class ActionDispatcher:
 
         try:
             execution_params = self._prepare_execution_params(action_data)
+            if agent_name and action_data.type.upper() == "PROMPT":
+                execution_params["agent_name"] = agent_name
+
             details, status = self._execute_and_process_result(
                 action_data.type, execution_params
             )

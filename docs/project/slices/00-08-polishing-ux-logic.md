@@ -61,16 +61,22 @@ Enhance the TeDDy CLI user experience by improving error visibility during parsi
 
 ---
 
-### Scenario 4: Dynamic PROMPT UI Header
+### Scenario 4: Dynamic PROMPT UI Header [✓]
 **Given** a `PROMPT` action is executed
 **When** the user is presented with the message in the terminal
-**Then** the header must be formatted as `--- MESSAGE FROM [AGENT NAME] ---` in cyan.
-**And** if no agent name is provided (e.g., during initial session prompt), it must default to `--- MESSAGE FROM TeDDy ---`.
+**Then** the header must be formatted as `--- MESSAGE from [AGENT NAME] ---` in cyan.
+**And** if no agent name is provided (e.g., during initial session prompt), it must default to `--- MESSAGE from TeDDy ---`.
 
 #### Deliverables
-- [ ] Update `IUserInteractor.ask_question` in `src/teddy_executor/core/ports/outbound/user_interactor.py` to accept an optional `agent_name: Optional[str] = None`.
-- [ ] Update `ConsoleInteractorAdapter.ask_question` in `src/teddy_executor/adapters/outbound/console_interactor.py` to use the dynamic header with the "TeDDy" fallback.
-- [ ] Update `ActionExecutor` (or the relevant service) to pass the `Agent` from the plan metadata to the interactor.
+- [✓] Update `IUserInteractor.ask_question` in `src/teddy_executor/core/ports/outbound/user_interactor.py` to accept an optional `agent_name: Optional[str] = None`.
+- [✓] Update `ConsoleInteractorAdapter.ask_question` in `src/teddy_executor/adapters/outbound/console_interactor.py` to use the dynamic header with the "TeDDy" fallback.
+- [✓] Update `ActionExecutor` (or the relevant service) to pass the `Agent` from the plan metadata to the interactor.
+
+**Implementation Notes:**
+- Propagated `agent_name` from `ExecutionOrchestrator` through `ActionExecutor` and `ActionDispatcher` to the `PROMPT` action.
+- Updated `IUserInteractor.ask_question` signature and `ConsoleInteractorAdapter` implementation.
+- Hardened `ActionDispatcher` to only pass `agent_name` to the `PROMPT` action to prevent `TypeError` on other action types.
+- Updated all existing prompt tests (acceptance, unit, integration) to align with the new signature, stderr output, and HTML comment marker.
 
 ## 3. Architectural Changes
 - `InvalidPlanError`: Update attribute to `offending_nodes: List[Any]`.

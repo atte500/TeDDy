@@ -180,7 +180,12 @@ def format_structural_mismatch_msg(
     is_direct = expected.startswith(("a ", "an ", "## ", "### ", "Heading", "List"))
     error_header = f"Expected {expected}" if is_direct else expected
 
-    msg = f"Plan structure is invalid. {error_header}, but found {actual_name}.\n\n"
+    # If mismatch_idx is -1, this is a content error, not a structural schema mismatch
+    if mismatch_idx == -1:
+        msg = f"Plan content is invalid: {expected}.\n\n"
+    else:
+        msg = f"Plan structure is invalid. {error_header}, but found {actual_name}.\n\n"
+
     msg += _format_expected_structure()
     msg += "\n### Actual Document Structure\n"
 

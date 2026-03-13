@@ -88,7 +88,8 @@ def parse_edit_action(
 
     if not edits:
         raise InvalidPlanError(
-            "EDIT action found no valid FIND/REPLACE blocks. An Action or Rationale code block may be improperly nested."
+            "EDIT action found no valid FIND/REPLACE blocks. An Action or Rationale code block may be improperly nested.",
+            offending_node=node,
         )
     params["edits"] = edits
     return ActionData(type="EDIT", description=description, params=params, node=node)
@@ -99,7 +100,9 @@ def parse_return_action(
 ) -> ActionData:
     metadata_list = stream.next()
     if not isinstance(metadata_list, MdList):
-        raise InvalidPlanError("RETURN action is missing metadata list.")
+        raise InvalidPlanError(
+            "RETURN action is missing metadata list.", offending_node=metadata_list
+        )
 
     description, params = parse_action_metadata(metadata_list)
     resources = parse_handoff_resources_from_list(metadata_list)
@@ -108,7 +111,8 @@ def parse_return_action(
 
     if not description:
         raise InvalidPlanError(
-            "RETURN action is missing 'Description' (message content)."
+            "RETURN action is missing 'Description' (message content).",
+            offending_node=metadata_list,
         )
 
     params["message"] = description
@@ -120,7 +124,9 @@ def parse_invoke_action(
 ) -> ActionData:
     metadata_list = stream.next()
     if not isinstance(metadata_list, MdList):
-        raise InvalidPlanError("INVOKE action is missing metadata list.")
+        raise InvalidPlanError(
+            "INVOKE action is missing metadata list.", offending_node=metadata_list
+        )
 
     description, params = parse_action_metadata(
         metadata_list, text_key_map={"Agent": "agent"}
@@ -130,10 +136,13 @@ def parse_invoke_action(
         params["handoff_resources"] = resources
 
     if "agent" not in params:
-        raise InvalidPlanError("INVOKE action is missing 'Agent' parameter.")
+        raise InvalidPlanError(
+            "INVOKE action is missing 'Agent' parameter.", offending_node=metadata_list
+        )
     if not description:
         raise InvalidPlanError(
-            "INVOKE action is missing 'Description' (message content)."
+            "INVOKE action is missing 'Description' (message content).",
+            offending_node=metadata_list,
         )
 
     params["message"] = description

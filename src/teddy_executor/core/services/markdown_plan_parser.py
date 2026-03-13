@@ -97,16 +97,12 @@ class MarkdownPlanParser(IPlanParser):
             if "### Expected Document Structure " in str(e):
                 raise e
 
-            # Fallback for errors that didn't provide a structural summary
+            # Re-format the error using the shared infrastructure to always include AST
             e_nodes = getattr(e, "offending_nodes", [])
-            if not e_nodes:
-                raise e
-
-            # Re-format the error using the shared infrastructure
             rich_msg = format_structural_mismatch_msg(
                 doc, str(e).splitlines()[0], -1, e_nodes
             )
-            raise InvalidPlanError(rich_msg) from e
+            raise InvalidPlanError(rich_msg, offending_nodes=e_nodes) from e
 
     def _raise_structural_error(
         self, doc: Document, expected_name: str, mismatch_idx: int, actual_node: Any

@@ -77,7 +77,7 @@ Rationale
     assert result.exit_code == 0, f"CLI exited with error:\n{result.stdout}"
 
     # Verify the manual handoff instruction block in stderr (where interactor prints)
-    assert "HANDOFF REQUEST: INVOKE" in result.stderr
+    assert "HANDOFF REQUEST" in result.stderr
     assert "Target Agent: Architect" in result.stderr
     assert "docs/spec.md" in result.stderr
     assert "Handoff to the Architect." in result.stderr
@@ -117,7 +117,7 @@ Rationale
     assert result_yes.exit_code == 0, f"CLI exited with error:\n{result_yes.stdout}"
     assert "- **Status:** SUCCESS" in result_yes.stdout
     # INTERRUPT CHECK: It must show the prompt even with --yes
-    assert "HANDOFF REQUEST: INVOKE" in result_yes.stderr
+    assert "HANDOFF REQUEST" in result_yes.stderr
 
 
 def test_invoke_rejected_in_non_interactive_mode():

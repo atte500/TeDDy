@@ -1,5 +1,4 @@
 import os
-import re
 from datetime import timezone
 from typing import Any
 
@@ -56,14 +55,30 @@ class MarkdownReportFormatter(IMarkdownReportFormatter):
         rendered = self.template.render(context)
 
         # Post-process for whitespace sanitization
-        # 1. Strip trailing whitespace from each line
         lines = [line.rstrip() for line in rendered.splitlines()]
-        sanitized = "\n".join(lines)
 
-        # 2. Strip leading/trailing document noise
-        sanitized = sanitized.strip()
+        sanitized_lines = []
+        in_fence = False
+        consecutive_blanks = 0
 
-        # 3. Collapse 3+ newlines to exactly 2
-        sanitized = re.sub(r"\n{3,}", "\n\n", sanitized)
+        for line in lines:
+            # Track code block state
+            if line.strip().startswith("```"):
+                in_fence = not in_fence
 
+            if in_fence:
+                # Inside code block: preserve all whitespace and newlines
+                sanitized_lines.append(line)
+                consecutive_blanks = 0
+            # Outside code block: apply sanitization rules
+            elif not line:
+                consecutive_blanks += 1
+                # Only allow one consecutive blank line (max 2 newlines)
+                if consecutive_blanks <= 1:
+                    sanitized_lines.append(line)
+            else:
+                consecutive_blanks = 0
+                sanitized_lines.append(line)
+
+        sanitized = "\n".join(sanitized_lines).strip()
         return sanitized

@@ -122,7 +122,9 @@ class ActionFactory(IActionFactory):
                 return original_method(**execute_params)
             if method_name == "ask_question":
                 return original_method(
-                    kwargs["prompt"], resources=kwargs.get("handoff_resources")
+                    kwargs["prompt"],
+                    resources=kwargs.get("handoff_resources"),
+                    agent_name=kwargs.get("agent_name"),
                 )
             return original_method(**kwargs)
 

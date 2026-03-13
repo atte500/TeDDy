@@ -55,7 +55,9 @@ def test_execute_with_failing_action(
     # Assert
     assert report.run_summary.status == "FAILURE"
     mock_plan_parser.parse.assert_not_called()
-    mock_action_dispatcher.dispatch_and_execute.assert_called_once_with(action1)
+    mock_action_dispatcher.dispatch_and_execute.assert_called_once_with(
+        action1, agent_name=None
+    )
     mock_user_interactor.confirm_action.assert_not_called()
 
 
@@ -122,7 +124,9 @@ def test_execute_with_mixed_success_and_skipped_is_success(
     assert len(report.action_logs) == expected_action_count
     assert report.action_logs[0].status == ActionStatus.SUCCESS
     assert report.action_logs[1].status == ActionStatus.SKIPPED
-    mock_action_dispatcher.dispatch_and_execute.assert_called_once_with(action1)
+    mock_action_dispatcher.dispatch_and_execute.assert_called_once_with(
+        action1, agent_name=None
+    )
 
 
 def test_execute_interactive_and_approved(
@@ -155,7 +159,9 @@ def test_execute_interactive_and_approved(
     # Assert
     assert report.run_summary.status == "SUCCESS"
     mock_user_interactor.confirm_action.assert_called_once()
-    mock_action_dispatcher.dispatch_and_execute.assert_called_once_with(action1)
+    mock_action_dispatcher.dispatch_and_execute.assert_called_once_with(
+        action1, agent_name=None
+    )
 
 
 def test_execute_auto_skips_after_failure(
@@ -210,7 +216,9 @@ def test_execute_auto_skips_after_failure(
     )
 
     # Dispatcher should only be called once
-    mock_action_dispatcher.dispatch_and_execute.assert_called_once_with(action1)
+    mock_action_dispatcher.dispatch_and_execute.assert_called_once_with(
+        action1, agent_name=None
+    )
 
     # Interactor should be notified of the skip
     mock_user_interactor.notify_skipped_action.assert_called_once_with(
@@ -297,5 +305,7 @@ def test_execute_happy_path_non_interactive(
     assert len(report.action_logs) == 1
     assert report.action_logs[0] == action_log1
     mock_plan_parser.parse.assert_not_called()
-    mock_action_dispatcher.dispatch_and_execute.assert_called_once_with(action1)
+    mock_action_dispatcher.dispatch_and_execute.assert_called_once_with(
+        action1, agent_name=None
+    )
     mock_user_interactor.confirm_action.assert_not_called()

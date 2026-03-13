@@ -74,8 +74,9 @@ class ExecutionOrchestrator(IRunPlanUseCase):
                 )
                 continue
 
+            agent_name = plan.metadata.get("Agent") or plan.metadata.get("agent")
             action_log = self._action_executor.confirm_and_dispatch(
-                action, interactive, len(plan.actions)
+                action, interactive, len(plan.actions), agent_name=agent_name
             )
             action_logs.append(action_log)
 

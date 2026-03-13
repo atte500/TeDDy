@@ -1,10 +1,14 @@
-import difflib
 import shlex
 from typing import Optional
 
 import typer
 from rich.console import Console
 
+from teddy_executor.adapters.inbound.cli_helpers import (
+    echo_diff_preview,
+    echo_handoff_details,
+    echo_skipped_action,
+)
 from teddy_executor.core.domain.models.change_set import ChangeSet
 from teddy_executor.core.domain.models.plan import ActionData
 from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
@@ -24,54 +28,63 @@ class ConsoleInteractorAdapter(IUserInteractor):
         """Displays a message using Typer echo to ensure visibility and testability."""
         typer.echo(message, err=True)
 
-    def ask_question(self, prompt: str, resources: list[str] | None = None) -> str:
+    def ask_question(
+        self,
+        prompt: str,
+        resources: list[str] | None = None,
+        agent_name: Optional[str] = None,
+    ) -> str:
         """
         Presents a prompt to the user on the console and captures their input.
         Allows falling back to an external editor for multi-line text.
         """
-        typer.secho("--- PROMPT MESSAGE ---", fg=typer.colors.CYAN, err=True)
+        display_name = agent_name if agent_name else "TeDDy"
+        header = f"--- MESSAGE from {display_name} ---"
+        typer.secho(header, fg=typer.colors.CYAN, err=True)
         typer.echo(prompt, err=True)
 
         if resources:
             typer.echo("\n▶ Reference Files:", err=True)
             typer.echo("\n".join(resources), err=True)
         typer.echo("", err=True)  # Spacer
-        typer.echo(
-            "Press [Enter] to submit single-line response, or type 'e' + [Enter] to open in Editor:",
-            err=True,
-        )
 
-        try:
-            first_input = input().strip()
-        except EOFError:
-            return ""
+        # Loop until we get a response or an editor is closed
+        while True:
+            typer.echo(
+                "Response (type 'e' for editor) › ",
+                nl=False,
+                err=True,
+            )
+            try:
+                user_input = input().strip()
+            except EOFError:
+                return ""
 
-        if first_input.lower() == "e":
-            return self._get_input_from_editor(prompt)
+            if user_input.lower() == "e":
+                return self._get_input_from_editor(prompt)
 
-        # If they typed a response immediately, return it.
-        if first_input:
-            return first_input
+            if user_input:
+                return user_input
 
-        # If they just pressed Enter, ask for confirmation.
-        typer.echo(
-            "Are you sure you want to submit an empty response? "
-            "Press [Enter] again to confirm, type a response, or type 'e' to open in Editor:",
-            err=True,
-        )
-        try:
-            second_input = input().strip()
-        except EOFError:
-            return ""
+            # Confirmation for empty response
+            typer.echo(
+                "Are you sure you want to submit an empty response? (y/n/e) › ",
+                nl=False,
+                err=True,
+            )
+            try:
+                confirm = input().strip().lower()
+            except EOFError:
+                return ""
 
-        if second_input.lower() == "e":
-            return self._get_input_from_editor(prompt)
-
-        return second_input
+            if confirm == "y":
+                return ""
+            if confirm == "e":
+                return self._get_input_from_editor(prompt)
 
     def _get_input_from_editor(self, prompt: str) -> str:
         """Opens a temporary file in an external editor and reads the response."""
-        marker = "--- Please enter your response above this line. Save and close this file to submit. ---"
+        marker = "<!-- Please enter your response above this line. Save and close this file to submit. -->"
         initial_content = f"\n\n{marker}\n\n{prompt}\n"
 
         temp_path = self._system_env.create_temp_file(suffix=".md")
@@ -118,36 +131,6 @@ class ConsoleInteractorAdapter(IUserInteractor):
         """Launches an external diff tool."""
         self._system_env.run_command(tool_cmd + [before_path, after_path])
 
-    def _show_new_file_preview(self, change_set: ChangeSet):
-        """Displays a preview of a new file being created."""
-        typer.echo("--- New File Preview ---", err=True)
-        typer.echo(f"Path: {change_set.path}", err=True)
-        typer.echo("Content:", err=True)
-        typer.echo(change_set.after_content, err=True)
-        typer.echo("------------------------", err=True)
-
-    def _show_in_terminal_diff(self, change_set: ChangeSet):
-        if change_set.action_type == "CREATE":
-            self._show_new_file_preview(change_set)
-            return
-
-        diff_generator = difflib.unified_diff(
-            change_set.before_content.splitlines(keepends=True),
-            change_set.after_content.splitlines(keepends=True),
-            fromfile=f"a/{change_set.path.name}",
-            tofile=f"b/{change_set.path.name}",
-        )
-
-        diff_lines = []
-        for line in diff_generator:
-            diff_lines.append(line)
-            if not line.endswith("\n"):
-                diff_lines.append("\n")
-
-        typer.echo("--- Diff ---", err=True)
-        typer.echo("".join(diff_lines).rstrip(), err=True)
-        typer.echo("------------", err=True)
-
     def _get_diff_viewer_command(self) -> Optional[list[str]]:
         """Determines the command for an external diff viewer, if available."""
         custom_tool_str = self._system_env.get_env("TEDDY_DIFF_TOOL")
@@ -182,7 +165,7 @@ class ConsoleInteractorAdapter(IUserInteractor):
             if change_set:
                 diff_command = self._get_diff_viewer_command()
                 if not diff_command:
-                    self._show_in_terminal_diff(change_set)
+                    echo_diff_preview(change_set)
                 elif change_set.action_type == "CREATE":
                     # Show a single-file preview in the editor
                     ext = "".join(change_set.path.suffixes)
@@ -241,8 +224,7 @@ class ConsoleInteractorAdapter(IUserInteractor):
 
     def notify_skipped_action(self, action: ActionData, reason: str) -> None:
         """Prints a colorized warning that an action was skipped."""
-        message = f"[SKIPPED] {action.type}: {reason}"
-        typer.secho(message, fg=typer.colors.YELLOW, err=True)
+        echo_skipped_action(action, reason)
 
     def confirm_manual_handoff(
         self,
@@ -252,32 +234,7 @@ class ConsoleInteractorAdapter(IUserInteractor):
         message: str,
     ) -> tuple[bool, str]:
         """Displays a handoff request and asks for confirmation."""
-        if action_type == "INVOKE":
-            typer.secho(
-                "--- HANDOFF REQUEST: INVOKE ---", fg=typer.colors.CYAN, err=True
-            )
-            typer.echo(
-                "The current agent is requesting a handoff to the agent below.\n",
-                err=True,
-            )
-            if target_agent:
-                typer.echo(f"▶ Target Agent: {target_agent}", err=True)
-            typer.echo(f"▶ Handoff Message:\n{message}\n", err=True)
-        else:  # RETURN
-            typer.secho(
-                "--- HANDOFF NOTIFICATION: RETURN ---", fg=typer.colors.CYAN, err=True
-            )
-            typer.echo(
-                "The current agent has completed its task and is returning control.\n",
-                err=True,
-            )
-            typer.echo(f"▶ Return Message:\n{message}\n", err=True)
-
-        if resources:
-            typer.echo("▶ Reference Files:", err=True)
-            typer.echo("\n".join(resources), err=True)
-
-        typer.echo("", err=True)  # Spacer
+        echo_handoff_details(action_type, target_agent, resources, message)
         try:
             response = typer.prompt(
                 "Press [Enter] to approve, or type a reason for rejection",

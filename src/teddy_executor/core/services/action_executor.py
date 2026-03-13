@@ -1,4 +1,6 @@
 from pathlib import Path
+from typing import Optional
+
 from teddy_executor.core.domain.models import (
     ActionLog,
     ActionStatus,
@@ -171,7 +173,11 @@ class ActionExecutor:
         )
 
     def confirm_and_dispatch(
-        self, action, interactive: bool, total_actions: int
+        self,
+        action,
+        interactive: bool,
+        total_actions: int,
+        agent_name: Optional[str] = None,
     ) -> ActionLog:
         """Handles user confirmation and dispatches a single action."""
         if isolation_log := self._check_action_isolation(action, total_actions):
@@ -192,7 +198,9 @@ class ActionExecutor:
                 action, f"User skipped this action. Reason: {reason}"
             )
 
-        action_log = self._action_dispatcher.dispatch_and_execute(action)
+        action_log = self._action_dispatcher.dispatch_and_execute(
+            action, agent_name=agent_name
+        )
 
         if action_log.status == ActionStatus.FAILURE:
             return self._enrich_failed_log(action, action_log)

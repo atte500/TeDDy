@@ -28,4 +28,6 @@ def test_prompt_action_dispatch_integration(container):
     # Assert
     assert log.status.value == "SUCCESS"
     # Verify that the interactor was called with the correct arguments
-    mock_interactor.ask_question.assert_called_once_with("Hello", resources=["ref.txt"])
+    mock_interactor.ask_question.assert_called_once_with(
+        "Hello", resources=["ref.txt"], agent_name=None
+    )

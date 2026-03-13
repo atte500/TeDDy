@@ -80,7 +80,7 @@ content2
         parser.parse(plan_content)
 
     error_msg = str(excinfo.value)
-    assert "Plan structure is invalid. Expected a Level 3 Action Heading" in error_msg
+    assert "Plan content is invalid: a Level 3 Action Heading" in error_msg
     assert "### Actual Document Structure" in error_msg
     assert "[✗]" in error_msg
     assert "ThematicBreak (Error: Expected a Level 3 Action Heading)" in error_msg
@@ -132,7 +132,7 @@ echo 2
         parser.parse(plan_content)
 
     error_msg = str(excinfo.value)
-    assert "Plan structure is invalid. Expected a Level 3 Action Heading" in error_msg
+    assert "Plan content is invalid: a Level 3 Action Heading" in error_msg
     assert "### Actual Document Structure" in error_msg
     assert (
         "[✗]" in error_msg
@@ -181,7 +181,7 @@ echo "hello"
         parser.parse(plan_content)
 
     error_msg = str(excinfo.value)
-    assert "Plan structure is invalid. Expected a Level 3 Action Heading" in error_msg
+    assert "Plan content is invalid: a Level 3 Action Heading" in error_msg
     assert "### Actual Document Structure" in error_msg
 
 
@@ -276,7 +276,7 @@ def test_parse_execute_action(parser: IPlanParser):
     # The corrected _parse_edit_action leaves the malformed content (a Paragraph)
     # in the stream, which is then caught by the main _parse_actions loop.
     error_msg = str(excinfo.value)
-    assert "Plan structure is invalid. Expected a Level 3 Action Heading" in error_msg
+    assert "Plan content is invalid: a Level 3 Action Heading" in error_msg
     assert "### Actual Document Structure" in error_msg
     assert "[✗]" in error_msg
 

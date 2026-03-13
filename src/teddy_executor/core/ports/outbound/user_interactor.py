@@ -21,13 +21,19 @@ class IUserInteractor(ABC):
         pass
 
     @abstractmethod
-    def ask_question(self, prompt: str, resources: list[str] | None = None) -> str:
+    def ask_question(
+        self,
+        prompt: str,
+        resources: list[str] | None = None,
+        agent_name: Optional[str] = None,
+    ) -> str:
         """
         Asks the user a question and returns their free-text response.
 
         Args:
             prompt: The question to display to the user.
             resources: Optional list of reference files to display.
+            agent_name: Optional name of the agent sending the prompt.
 
         Returns:
             The user's response as a string.
