@@ -83,23 +83,23 @@
       <rule n="1">
         <title>Status & Escalation Protocol</title>
         <instruction>
-          This protocol governs the status field set in the Plan Header of each turn and defines the mandatory actions for each state.
+          This protocol governs the status field set in the Plan Header and defines how to handle unexpected failures.
 
           *   `Green 🟢`
-              *   **Trigger:** The previous turn was successful and all actions produced the expected outcome.
+              *   **Trigger:** The previous turn was successful or produced an expected failure.
               *   **Action:** Proceed with the planned workflow.
 
           *   `Yellow 🟡`
-              *   **Trigger:** An `EXECUTE` action returns a non-zero exit code, and the `Allow Failure` parameter was not explicitly set to `true`.
-              *   **Action:** Halt the primary workflow. You must enter the "Error Recovery Protocol" and update your Status Dashboard accordingly:
-                  1.  **Diagnose:** Your next plan **must** be an `Information Gathering` plan to understand the failure and form hypotheses.
-                  2.  **Spike:** Your subsequent plan **must** create and execute a `Solution Spike` in `/spikes/dev/` to find a viable fix.
-                  3.  **Fix:** Document the learnings from the spike in your `Rationale` and attempt to fix the error.
-              *   **Sticky State:** You MUST remain in this Yellow state until the fix is validated.
+              *   **Trigger:** An `EXECUTE` action returns an *unexpected* non-zero exit code.
+              *   **Action:** Halt the primary workflow. Enter the "Error Recovery Protocol":
+                  1.  **Diagnose:** You MUST actively gather information to understand the failure. Use `RESEARCH` to search online for errors or gather context on external libraries/frameworks, `git grep` to find related code, `READ` to examine files not yet in your context for static analysis, and add temporary debug logging to the code to reveal internal state.
+                  2.  **Spike:** You MUST create an isolated experiment in `/spikes/dev/` to reproduce the specific error and test potential solutions without polluting the main codebase.
+                  3.  **Fix:** Apply the successful learnings from your spike to the actual codebase.
+              *   **Sticky State:** You MUST remain in this Yellow state until the failure is resolved or you identify a **Scope Violation**.
 
           *   `Red 🔴`
-              *   **Trigger:** The `Fix` step of the Error Recovery Protocol fails on the third attempt.
-              *   **Action:** You are **prohibited** from further self-diagnosis. You **must** escalate to the Debugger.
+              *   **Trigger:** **Scope Violation.** You MUST immediately halt fixing and escalate if the root cause of the error traces back to pre-existing code, infrastructure, or external dependencies that are strictly outside the boundaries of your current Vertical Slice.
+              *   **Action:** You are **prohibited** from modifying code outside your current scope. You **must** escalate to the Debugger.
                   1. `CREATE` a formal Minimal Reproducible Example (MRE) report in `docs/project/debugging/mre/{{bug-name}}.md`. The MRE is the formal input for the Debugger and MUST strictly use these top-level headings:
                       1.  Metadata Header: `- **Status:** Unresolved`, `- **Target Agent:** Debugger`.
                       2.  `## 1. Failure Context`: A summary of the task being attempted.
@@ -134,7 +134,7 @@
             Error Recovery Protocol: [Descriptive error title] - Note: Add this section only if Status is Yellow or Red
             - [✓ | ▶ |  ] Diagnose
             - [✓ | ▶ |  ] Spike
-            - [✓ | ▶ |  ] Fix (attempt X/3)
+            - [✓ | ▶ |  ] Fix
             - [✓ | ▶ |  ] Escalate
 
             WIP & Reminders:

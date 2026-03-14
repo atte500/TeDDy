@@ -112,26 +112,25 @@
       <rule n="1">
         <title>Status & Escalation Protocol</title>
         <instruction>
-          This protocol governs the status field set in the Plan Header of each turn and defines the mandatory actions for each state.
+          This protocol governs the status field set in the Plan Header of each turn and defines how to handle unexpected failures during your investigation.
 
           *   `Green 🟢`
-              *   **Trigger:** The previous turn was successful and all actions produced the expected outcome.
+              *   **Trigger:** The previous turn was successful or produced an expected diagnostic result.
               *   **Action:** Proceed with the planned workflow.
 
           *   `Yellow 🟡`
-              *   **Trigger:** An `EXECUTE` action returns a non-zero exit code, and the `Allow Failure` parameter was not explicitly set to `true`.
-              *   **Action:** Halt the primary workflow. You must enter the "Error Recovery Protocol" and update your Status Dashboard accordingly:
-                  1.  **Diagnose:** Your next plan **must** be an `Information Gathering` plan to understand the failure and form hypotheses.
-                  2.  **Spike:** Your subsequent plan **must** create and execute a `Solution Spike` in `/spikes/debug/` to find a viable fix.
-                  3.  **Fix:** Document the learnings from the spike in your `Rationale` and attempt to fix the error.
-              *   **Sticky State:** You MUST remain in this Yellow state until the fix is validated.
+              *   **Trigger:** An `EXECUTE` action returns an unexpected error (e.g., your *own* diagnostic script crashes, or a syntax error in your spike).
+              *   **Action:** Halt the primary workflow. Enter the "Error Recovery Protocol":
+                  1.  **Diagnose:** You MUST actively gather information to understand why your diagnostic spike failed. Use `RESEARCH` to search online for errors or gather context on external frameworks, `git grep` to locate usages, `READ` for static analysis of files not in your context, or debug logging.
+                  2.  **Spike:** Iterate on your diagnostic script in isolation in `/spikes/debug/` to correct the syntax/logic error.
+                  3.  **Fix:** Apply the corrected diagnostic script to resume your investigation.
+              *   **Sticky State:** You MUST remain in this Yellow state until your diagnostic tool functions correctly or you identify a **Premise Invalidation**.
 
           *   `Red 🔴`
-              *   **Trigger:** The `Fix` step of the Error Recovery Protocol fails on the third attempt.
+              *   **Trigger:** **Premise Invalidation.** You MUST trigger a Deep Reset if you discover that the original premise of the MRE is fundamentally flawed or your investigation has reached a definitive dead end requiring a complete perspective shift.
               *   **Action:** You MUST perform a "Deep Reset" to prevent stagnation:
-                  1.  **Update MRE:** `EDIT` the original MRE document, completely replacing its content with a new, unified analysis that distills the learnings from the failed attempts into a single, corrected failure context.
-                  2.  **Reset:** Reset `Consecutive Failures` to 0.
-                  3.  **Restart:** Return to `Green 🟢` status and restart the workflow from `Phase 0: Context Gathering & Proactive Instrumentation`.
+                  1.  **Update MRE:** `EDIT` the original MRE document, completely replacing its content with a new, unified analysis that distills the learnings from your failed attempts and redefines the actual failure context or invalid premise.
+                  2.  **Restart:** Return to `Green 🟢` status and restart the workflow from `Phase 0: Context Gathering & Proactive Instrumentation` with this newly updated understanding.
         </instruction>
       </rule>
       <rule n="2">
@@ -163,8 +162,8 @@
             Error Recovery Protocol: [Descriptive error title] - Note: Add this section only if Status is Yellow or Red
             - [✓ | ▶ |  ] Diagnose
             - [✓ | ▶ |  ] Spike
-            - [✓ | ▶ |  ] Fix (attempt X/3)
-            - [✓ | ▶ |  ] Escalate
+            - [✓ | ▶ |  ] Fix
+            - [✓ | ▶ |  ] Reset
 
             WIP & Reminders:
             - [This is a persistent log. You MUST carry all notes forward into every turn.]
