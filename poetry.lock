@@ -690,24 +690,24 @@ langdetect = ["langdetect (>=1.0.0)"]
 
 [[package]]
 name = "ddgs"
-version = "9.11.1"
+version = "9.11.3"
 description = "Dux Distributed Global Search. A metasearch library that aggregates results from diverse web search services."
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "ddgs-9.11.1-py3-none-any.whl", hash = "sha256:404382a17c6055f28aa752809bd100ca23167611bb77368aa4c7012e254a16b8"},
-    {file = "ddgs-9.11.1.tar.gz", hash = "sha256:f01aec85e59ffe73dbab4517628d24702fb6ce2c345d2f5e6dd4b120526b56c7"},
+    {file = "ddgs-9.11.3-py3-none-any.whl", hash = "sha256:596d656d00219b4748d839de1fa9a9c3eb5dd36db07365331f7526201115f18a"},
+    {file = "ddgs-9.11.3.tar.gz", hash = "sha256:6098c030d6806217260071d85e38d9b94b99fe326a3c40ebf5de25f620528ae2"},
 ]
 
 [package.dependencies]
 click = ">=8.1.8"
 lxml = ">=4.9.4"
-primp = "1.1.2"
+primp = "1.1.3"
 
 [package.extras]
 api = ["fastapi (>=0.135.1)", "mcp (>=1.26.0)", "uvicorn[standard] (>=0.41.0)"]
-dev = ["lxml-stubs", "mypy (>=1.17.1)", "prek", "pytest (>=8.4.1)", "ruff (>=0.13.0)", "types-PyYAML", "types-Pygments", "types-pexpect", "types-ujson", "typing-extensions (>=4.15.0)"]
+dev = ["lxml-stubs", "mypy (>=1.17.1)", "prek", "pytest (>=8.4.1)", "ruff (>=0.13.0)", "types-PyYAML", "types-Pygments", "types-pexpect", "types-ujson"]
 
 [[package]]
 name = "defusedxml"
@@ -2602,43 +2602,43 @@ virtualenv = ">=20.10.0"
 
 [[package]]
 name = "primp"
-version = "1.1.2"
+version = "1.1.3"
 description = "HTTP client that can impersonate web browsers"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "primp-1.1.2-cp310-abi3-macosx_10_12_x86_64.whl", hash = "sha256:181bb9a6d5544e0483592f693f33f5874a60726ea0da1f41685aa2267f084a4d"},
-    {file = "primp-1.1.2-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:f362424ffa83e1de55a7573300a416fa71dc5516829526a9bf77dc0cfa42256b"},
-    {file = "primp-1.1.2-cp310-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:736820326eb1ed19c6b0e971f852316c049c36bdd251a03757056a74182796df"},
-    {file = "primp-1.1.2-cp310-abi3-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:ed37d1bc89fa8cad8b60481c81ea7b3bd42dc757868009ad3bb0b1e74c17fd22"},
-    {file = "primp-1.1.2-cp310-abi3-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:78e78355b1c495bc7e3d92121067760c7e7a1d419519542ed9dd88688ce43aab"},
-    {file = "primp-1.1.2-cp310-abi3-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:4c4c560d018dad4e3a3f17b07f9f5d894941e3acbbb5b566f6b6baf42786012f"},
-    {file = "primp-1.1.2-cp310-abi3-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:2494b52cf3056d3e41c0746a11cbeca7f2f882a92a09d87383646cd75e2f3d8c"},
-    {file = "primp-1.1.2-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c424a46f48ccd8fd309215a15bc098b47198b8f779c43ed8d95b3f53a382ffa8"},
-    {file = "primp-1.1.2-cp310-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:ba51cf19f17fd4bab4567d96b4cd7dcb6a4e0f0d4721819180b46af9794ae310"},
-    {file = "primp-1.1.2-cp310-abi3-musllinux_1_2_armv7l.whl", hash = "sha256:77ebae43c6735328051beb08e7e2360b6cf79d50f6cef77629beba880c99222d"},
-    {file = "primp-1.1.2-cp310-abi3-musllinux_1_2_i686.whl", hash = "sha256:5f3252d47e9d0f4a567990c79cd388be43353fc7c78efea2a6a5734e8a425598"},
-    {file = "primp-1.1.2-cp310-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:9e094417825df9748e179a1104b2df4459c3dbd1eea994f05a136860b847f0e1"},
-    {file = "primp-1.1.2-cp310-abi3-win32.whl", hash = "sha256:bc67112b61a8dc1d40ddcc81ff5c47a1cb7b620954fee01a529e28bebb359e20"},
-    {file = "primp-1.1.2-cp310-abi3-win_amd64.whl", hash = "sha256:4509850301c669c04e124762e953946ed10fe9039f059ec40b818c085697d9a4"},
-    {file = "primp-1.1.2-cp310-abi3-win_arm64.whl", hash = "sha256:de5958dc7ce78ce107dd776056a58f9da7a7164a912e908cb9b66b84f87967f6"},
-    {file = "primp-1.1.2-cp314-cp314t-macosx_10_12_x86_64.whl", hash = "sha256:c3bbece26e8312e3e0df2ec222b954f9ac9f279422ffbbf47a6cad31ef8736cd"},
-    {file = "primp-1.1.2-cp314-cp314t-macosx_11_0_arm64.whl", hash = "sha256:78acdf43b57d984170e986be5fcae0a1537a245fafda970e92056dae42cd9545"},
-    {file = "primp-1.1.2-cp314-cp314t-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:89a2641441732f81e1876db2e18490d3210a8302290e4844b7f04159e02033d4"},
-    {file = "primp-1.1.2-cp314-cp314t-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:a1df66deacb539efbca5730d0fc3dea19cd83c33422fa05445bbddc17aef3f71"},
-    {file = "primp-1.1.2-cp314-cp314t-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:78ea1f56dd3ac52f2d5375a084c7f31ce6ad274811bdb5d17ecaca6b4ddb8b6d"},
-    {file = "primp-1.1.2-cp314-cp314t-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:3c980527bd46c034ab9e06dca75b6237cea8d5b3fe1f5691904a2c35d92d143c"},
-    {file = "primp-1.1.2-cp314-cp314t-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:0c0b4006a9a25c5f89a968f3bf67221fc19183890b8a1304873132d703697816"},
-    {file = "primp-1.1.2-cp314-cp314t-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e2851bedc1598ed72f6a2016e391012744259c523dc5d27f2f02e3ae5ef020d4"},
-    {file = "primp-1.1.2-cp314-cp314t-musllinux_1_2_aarch64.whl", hash = "sha256:f7340e34023dda2660bd02cb92ac8ed441f13a1afdc00487581d8b8b473f890b"},
-    {file = "primp-1.1.2-cp314-cp314t-musllinux_1_2_armv7l.whl", hash = "sha256:618a027bb45ac44e9b6c35d5758547ce5e73607de4fb54b52bb9d0dc896f11fa"},
-    {file = "primp-1.1.2-cp314-cp314t-musllinux_1_2_i686.whl", hash = "sha256:37e30ce1435142dd010f2ee1dd909f1e6e3a8cd3e32c8e22f3bb6703bf618209"},
-    {file = "primp-1.1.2-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:9b5d335d28eae65543b20c75911d71c5f89882a4598efade47abe92389f6da7f"},
-    {file = "primp-1.1.2-cp314-cp314t-win32.whl", hash = "sha256:b938cc2d033ac56be90c617836a60fb468f33ab630d3eacab2b36651b7ce106e"},
-    {file = "primp-1.1.2-cp314-cp314t-win_amd64.whl", hash = "sha256:6378d55bbe8b722e7b39b6c0df1e46a1b767d2e4e8a7c1e60d9f8ec238bf48c4"},
-    {file = "primp-1.1.2-cp314-cp314t-win_arm64.whl", hash = "sha256:2431104658b86e7cf9bedbadabe6d2c4705c1c10b54f17ad0094cc927577adea"},
-    {file = "primp-1.1.2.tar.gz", hash = "sha256:c4707ab374a77c0cbead3d9a65605919fa4997fa910ef06e37b65df42a1d4d04"},
+    {file = "primp-1.1.3-cp310-abi3-macosx_10_12_x86_64.whl", hash = "sha256:24383cfc267f620769be102b7fa4b64c7d47105f86bd21d047f1e07709e83c6e"},
+    {file = "primp-1.1.3-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:61bcb8c53b41e4bac43d04a1374b6ab7d8ded0f3517d32c5cdd5c30562756805"},
+    {file = "primp-1.1.3-cp310-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b0c6b9388578ee9d903f30549a792c5f391fdeb9d36b508da2ffb8e13c764954"},
+    {file = "primp-1.1.3-cp310-abi3-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:09a8bfa870c92c81d76611846ec53b2520845e3ec5f4139f47604986bcf4bc25"},
+    {file = "primp-1.1.3-cp310-abi3-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:ac372cb9959fff690b255fad91c5b3bc948c14065da9fc00ad80d139651515af"},
+    {file = "primp-1.1.3-cp310-abi3-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:3034672a007f04e12b8fe7814c97ea172e8b9c5d45bd7b00cf6e7334fdd4222a"},
+    {file = "primp-1.1.3-cp310-abi3-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:a07d5b7d7278dc63452a59f3bf851dc4d1f8ddc2aada7844cbdb68002256e2f4"},
+    {file = "primp-1.1.3-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:08eec2f58abbcc1060032a2af81dabacec87a580a364a75862039f7422ac82e6"},
+    {file = "primp-1.1.3-cp310-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:9716d4cd36db2c175443fe1bbd54045a944fc9c49d01a385af8ada1fe9c948df"},
+    {file = "primp-1.1.3-cp310-abi3-musllinux_1_2_armv7l.whl", hash = "sha256:e19daca65dc6df369c33e711fa481ad2afe5d26c5bde926c069b3ab067c4fd45"},
+    {file = "primp-1.1.3-cp310-abi3-musllinux_1_2_i686.whl", hash = "sha256:ee357537712aa486364b0194cf403c5f9eaaa1354e23e9ac8322a22003f31e6b"},
+    {file = "primp-1.1.3-cp310-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:06c53e77ebf6ac00633bc09e7e5a6d1a994592729d399ca8f065451a2574b92e"},
+    {file = "primp-1.1.3-cp310-abi3-win32.whl", hash = "sha256:4b1ea3693c118bf04a6e05286f0a73637cf6fe5c9fd77fa1e29a01f190adf512"},
+    {file = "primp-1.1.3-cp310-abi3-win_amd64.whl", hash = "sha256:5ea386a4c8c4d8c1021d17182f4ee24dbb6f17c107c4e9ee5500b6372cf08f32"},
+    {file = "primp-1.1.3-cp310-abi3-win_arm64.whl", hash = "sha256:63c7b1a1ccbcd07213f438375df186f807cdc5214bc2debb055737db9b5078de"},
+    {file = "primp-1.1.3-cp314-cp314t-macosx_10_12_x86_64.whl", hash = "sha256:4b3d52f3233134584ef527e7e52f1b371a964ade1df0461f8187100e41d7fa84"},
+    {file = "primp-1.1.3-cp314-cp314t-macosx_11_0_arm64.whl", hash = "sha256:b3d947e2c1d15147e8f4736d027b9f3bef518d67da859ead1c54e028ff491bbb"},
+    {file = "primp-1.1.3-cp314-cp314t-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:c3ed2fee7d4758f6bb873b19a6759f54e0bc453213dad5ba7e52de7582921079"},
+    {file = "primp-1.1.3-cp314-cp314t-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:b5aa717f256af9e4391fb1c4dc946d99d04652b4c57dad20c3947e839ab26769"},
+    {file = "primp-1.1.3-cp314-cp314t-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:17f37fcacd97540f68b06f2b468b111ca7f2b142c48370db7344b522274fc0d6"},
+    {file = "primp-1.1.3-cp314-cp314t-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:d5f010d0b8ba111dd9a66f814c2cd56332e047c98f45d7714ffbf2b1cec5b073"},
+    {file = "primp-1.1.3-cp314-cp314t-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:2e1e431915e4a7094d589213fc14e955243d93751031d889f4b359fa8ed54298"},
+    {file = "primp-1.1.3-cp314-cp314t-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:aaffa22dae2f193d899d9f68cca109ea5d16cdf4c901c20cec186de89e7d5db4"},
+    {file = "primp-1.1.3-cp314-cp314t-musllinux_1_2_aarch64.whl", hash = "sha256:f93bee50990884621ef482e8434e87f9fbb4eca6f4d47973c44c5d6393c35679"},
+    {file = "primp-1.1.3-cp314-cp314t-musllinux_1_2_armv7l.whl", hash = "sha256:399dfb9ad01c3612c9e510a7034ac925af5524cade0961d8a019dedd90a46474"},
+    {file = "primp-1.1.3-cp314-cp314t-musllinux_1_2_i686.whl", hash = "sha256:78ce595bbb9f339e83975efa9db2a81128842fad1a2fdafb78d72fcdc59590fc"},
+    {file = "primp-1.1.3-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:7d709bdf520aa9401c0592b642730b3477c828629f01d2550977b77135b34e8d"},
+    {file = "primp-1.1.3-cp314-cp314t-win32.whl", hash = "sha256:6fe893eb87156dfb146dd666c7c8754670de82e38af0a27d82a47b7461ec2eea"},
+    {file = "primp-1.1.3-cp314-cp314t-win_amd64.whl", hash = "sha256:ced76ef6669f31dc4af25e81e87914310645bcfc0892036bde084dafd6d00c3c"},
+    {file = "primp-1.1.3-cp314-cp314t-win_arm64.whl", hash = "sha256:efadef0dfd10e733a254a949abf9ed05c668c28a68aa6513d811c0c6acd54cdb"},
+    {file = "primp-1.1.3.tar.gz", hash = "sha256:56adc3b8a5048cbd5f926b21fdff839195f3a9181512ca33f56ddc66f4c95897"},
 ]
 
 [package.extras]
