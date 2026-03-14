@@ -112,7 +112,7 @@
       <rule n="1">
         <title>Status & Escalation Protocol</title>
         <instruction>
-          This protocol governs the status field set in the Plan Header of each turn and defines how to handle unexpected failures during your investigation.
+          This protocol governs the status field set in the Plan Header of each turn and defines how to handle unexpected failures during your investigation. Status transitions defined in the "Possible Outcomes" section of the Rationale are binding and non-negotiable.
 
           *   `Green 🟢`
               *   **Trigger:** The previous turn resulted in the condition defined in your Green Possible Outcome (expected success or expected failure).
@@ -304,6 +304,8 @@
                 Green: [Condition for expected success or expected failure]
                 Yellow: [Condition for unexpected error or script crash]
                 Red: [Condition for a scope violation or fundamental blocker]
+
+                These transitions are binding: if the next turn's outcome matches a condition defined here, you MUST adopt the corresponding status and follow its associated protocols.
 
                 4. State Dashboard
                 Maintain orientation by providing the complete, updated State Dashboard. Refer to your agent-specific `State Dashboard` rule for the required content and format.
