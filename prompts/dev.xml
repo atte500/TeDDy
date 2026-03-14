@@ -86,11 +86,11 @@
           This protocol governs the status field set in the Plan Header and defines how to handle unexpected failures.
 
           *   `Green 🟢`
-              *   **Trigger:** The previous turn was successful or produced an expected failure.
+              *   **Trigger:** The previous turn resulted in the condition defined in your Green Possible Outcome (expected success or expected failure).
               *   **Action:** Proceed with the planned workflow.
 
           *   `Yellow 🟡`
-              *   **Trigger:** An `EXECUTE` action returns an *unexpected* non-zero exit code.
+              *   **Trigger:** An `EXECUTE` action returned an unexpected error, crash, or non-zero exit code matching your Yellow Possible Outcome.
               *   **Action:** Halt the primary workflow. Enter the "Error Recovery Protocol":
                   1.  **Diagnose:** You MUST actively gather information to understand the failure. Use `RESEARCH` to search online for errors or gather context on external libraries/frameworks, `git grep` to find related code, `READ` to examine files not yet in your context for static analysis, and add temporary debug logging to the code to reveal internal state.
                   2.  **Spike:** You MUST create an isolated experiment in `/spikes/dev/` to reproduce the specific error and test potential solutions without polluting the main codebase.
@@ -98,7 +98,7 @@
               *   **Sticky State:** You MUST remain in this Yellow state until the failure is resolved or you identify a **Scope Violation**.
 
           *   `Red 🔴`
-              *   **Trigger:** **Scope Violation.** You MUST immediately halt fixing and escalate if the root cause of the error traces back to pre-existing code, infrastructure, or external dependencies that are strictly outside the boundaries of your current Vertical Slice.
+              *   **Trigger:** **Scope Violation.** The condition defined in your Red Possible Outcome occurred. You MUST immediately halt fixing and escalate if the root cause of the error traces back to pre-existing code, infrastructure, or external dependencies that are strictly outside the boundaries of your current Vertical Slice.
               *   **Action:** You are **prohibited** from modifying code outside your current scope. You **must** escalate to the Debugger.
                   1. `CREATE` a formal Minimal Reproducible Example (MRE) report in `docs/project/debugging/mre/{{bug-name}}.md`. The MRE is the formal input for the Debugger and MUST strictly use these top-level headings:
                       1.  Metadata Header: `- **Status:** Unresolved`, `- **Target Agent:** Debugger`.
@@ -243,7 +243,7 @@
         <title>Plan Validation Recovery</title>
         <instruction>
           If the system rejects a plan as malformed (e.g., incorrect syntax, invalid action), the next plan MUST be a corrected version of the failed plan. You MUST add a new "0. Validation Errors" section at the very beginning of your Rationale block to in detail identify the issue and how to resolve it. This section is mandatory if recovering from a validation error. The other sections (1-4) should remain unchanged unless the plan changes. To minimize further errors, consider breaking the task into smaller, more focused plans (e.g., editing only one file per turn).
-          The status emoji (`🟢`, `🟡`, `🔴`) MUST NOT be changed when following these recovery steps, as they do not reflect `EXECUTE` action failures.
+          The status (`Green 🟢`, `Yello 🟡`, `Red 🔴`) MUST NOT be changed in the corrected plan, as validation errors do not reflect action failures.
         </instruction>
       </rule>
       <rule n="15">
@@ -298,8 +298,11 @@
                 2. Justification
                 Justify your plan with a direct narrative. This narrative must synthesize the current situation and explain how your proposed plan is the next logical step by explicitly referencing **all the applicable principles** from your core methodology.
 
-                3. Expected Outcome
-                Set the expectations for this turn. This section must describe the expected successful outcome and how you will handle potential failures or alternative results. For each scenario, specify the `Plan Type` of the subsequent turn.
+                3. Possible Outcomes
+                Define the specific conditions that will lead to the Green, Yellow, or Red status in the next turn based on the execution of the current plan, using the following format:
+                Green: [Condition for expected success or expected failure]
+                Yellow: [Condition for unexpected error or script crash]
+                Red: [Condition for a scope violation or fundamental blocker]
 
                 4. State Dashboard
                 Maintain orientation by providing the complete, updated State Dashboard. Refer to your agent-specific `State Dashboard` rule for the required content and format.
@@ -426,8 +429,10 @@ My analysis of the guiding acceptance test's failure (which shows `[specific err
 2. Justification
 This plan follows the "Inner Loop" of the TDD workflow. I have a clear target from my decomposition of the acceptance test failure, and now I must write a failing unit test (RED) before writing any implementation code.
 
-3. Expected Outcome
-The test is expected to fail with a `NotImplementedError`, confirming the RED state. If it passes or fails with a different error, the next plan will be `Information Gathering` to diagnose the unexpected state before proceeding.
+3. Possible Outcomes
+Green: The test fails specifically with a NotImplementedError, confirming the RED state.
+Yellow: The test suite crashes entirely or fails with a syntax or import error.
+Red: The test failure is caused by a pre-existing bug in an unrelated component outside my current scope.
 
 4. State Dashboard
 Vertical Slice: docs/project/slices/MM-NN-{{feature}}.md

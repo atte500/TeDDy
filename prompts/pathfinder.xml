@@ -171,11 +171,11 @@
           This protocol governs the status field set in the Plan Header of each turn and defines how to handle unexpected failures.
 
           *   `Green 🟢`
-              *   **Trigger:** The previous turn was successful and all actions produced the expected outcome.
+              *   **Trigger:** The previous turn resulted in the condition defined in your Green Possible Outcome (expected success or expected failure).
               *   **Action:** Proceed with the planned workflow.
 
           *   `Yellow 🟡`
-              *   **Trigger:** An `EXECUTE` action returns an unexpected non-zero exit code (e.g., a failure in your exploration spike, a git error, or a broken build script).
+              *   **Trigger:** An `EXECUTE` action returned an unexpected error, crash, or non-zero exit code matching your Yellow Possible Outcome.
               *   **Action:** Halt the primary workflow. Enter the "Error Recovery Protocol":
                   1.  **Diagnose:** You MUST actively gather information to understand the failure. Use `RESEARCH` to search online for errors or gather context on external libraries/frameworks, `git grep` to locate usages, and `READ` to examine files not yet in your context for static analysis.
                   2.  **Spike:** You MUST create an isolated experiment in `/spikes/` to reproduce the specific error and test potential solutions.
@@ -183,7 +183,7 @@
               *   **Sticky State:** You MUST remain in this Yellow state until the failure is resolved or you identify a **Scope Violation**.
 
           *   `Red 🔴`
-              *   **Trigger:** **Scope Violation.** You MUST immediately halt exploration and escalate if you uncover a reproducible bug in the pre-existing system or infrastructure that actively blocks your ability to explore the codebase or execute basic project commands.
+              *   **Trigger:** **Scope Violation.** The condition defined in your Red Possible Outcome occurred. You MUST immediately halt exploration and escalate if you uncover a reproducible bug in the pre-existing system or infrastructure that actively blocks your ability to explore the codebase or execute basic project commands.
               *   **Action:** You are **prohibited** from attempting to fix deep system bugs yourself. You **must** escalate to the Debugger.
                   1. `CREATE` a formal Minimal Reproducible Example (MRE) report in `docs/project/debugging/mre/{{bug-name}}.md`. The MRE is the formal input for the Debugger and MUST strictly use these top-level headings:
                       1.  Metadata Header: `- **Status:** Unresolved`, `- **Target Agent:** Debugger`.
@@ -308,7 +308,7 @@
         <title>Plan Validation Recovery</title>
         <instruction>
           If the system rejects a plan as malformed (e.g., incorrect syntax, invalid action), the next plan MUST be a corrected version of the failed plan. You MUST add a new "0. Validation Errors" section at the very beginning of your Rationale block to in detail identify the issue and how to resolve it. This section is mandatory if recovering from a validation error. The other sections (1-4) should remain unchanged unless the plan changes. To minimize further errors, consider breaking the task into smaller, more focused plans (e.g., editing only one file per turn).
-          The status emoji (`🟢`, `🟡`, `🔴`) MUST NOT be changed when following these recovery steps, as they do not reflect `EXECUTE` action failures.
+          The status (`Green 🟢`, `Yello 🟡`, `Red 🔴`) MUST NOT be changed in the corrected plan, as validation errors do not reflect action failures.
         </instruction>
       </rule>
     </general_rules>
@@ -352,8 +352,11 @@
                 2. Justification
                 Justify your plan with a direct narrative. This narrative must synthesize the current situation and explain how your proposed plan is the next logical step by explicitly referencing **all the applicable principles** from your core methodology.
 
-                3. Expected Outcome
-                Set the expectations for this turn. This section must describe the expected successful outcome and how you will handle potential failures or alternative results. For each scenario, specify the `Plan Type` of the subsequent turn.
+                3. Possible Outcomes
+                Define the specific conditions that will lead to the Green, Yellow, or Red status in the next turn based on the execution of the current plan, using the following format:
+                Green: [Condition for expected success or expected failure]
+                Yellow: [Condition for unexpected error or script crash]
+                Red: [Condition for a scope violation or fundamental blocker]
 
                 4. State Dashboard
                 Maintain orientation by providing the complete, updated State Dashboard. Refer to your agent-specific `State Dashboard` rule for the required content and format.
@@ -480,8 +483,10 @@ The user wants a real-time collaboration feature. This is complex and requires m
 2. Justification
 This plan starts the "Methodical Exploration" workflow on "The Problem Space (Why)". As an "Active Partner," I will ask strategic questions to define the problem's core goals and constraints. The user's answers will form the basis of the Specification Document.
 
-3. Expected Outcome
-The user is expected to provide clear answers, which will allow a `Synthesis` plan to draft the initial specification. If the answers are ambiguous or incomplete, the next plan will be an `Exploration` to ask for clarification, ensuring we don't proceed with bad information.
+3. Possible Outcomes
+Green: The user provides clear answers or asks for clarification.
+Yellow: N/A for this PROMPT action as it does not execute shell commands.
+Red: The user's response reveals a fundamental pre-existing system bug that blocks the feature entirely.
 
 4. State Dashboard
 Overall Goal: Build a new real-time collaboration feature.
