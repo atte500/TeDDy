@@ -57,12 +57,8 @@
       <phase n="4" name="VERIFY & POLISH SCENARIO">
         <action>
           **Goal:** To ensure high-quality delivery through manual verification and code polishing.
-          *   **Outer REFACTOR:** With the inner TDD loops complete, the whole test-suite MUST pass. Before any further refactoring, you MUST pass the following verification gate.
-          1.  **Verification Gate (Critical Manual Review):** Use `EXECUTE` to run a real-world test (e.g., `curl`, CLI command, or script) against the actual running application using real data. You MUST critically analyze the results. It is not enough for the command to succeed with a zero exit code; you must verify that the output's content, formatting, and performance align perfectly with the expected and "polished" behavior of a professional product. This is your final defense against "mock poisoning" and ensures the implementation is truly production-ready.
-          2.  **Polish & Prune (Testing Pyramid):** ONLY after the manual check passes, resolve `[DEBT]` reminders and refactor. You MUST actively prune your higher-level tests to eliminate overlap:
-              - **Acceptance Tests:** Prune aggressively. Remove assertions checking edge cases or detailed validation. Keep strictly a single "Happy Path" wiring check per scenario.
-              - **Integration Tests:** Prune domain logic. Keep only assertions that prove the boundary works (e.g., the SQL query executes, the API client parses a 200 OK).
-              - **Unit Tests:** Push all complex permutations, state transitions, and business rules down to this layer.
+          1.  **Verification Gate:** Before refactoring, you MUST run a real-world test (e.g., `curl` or CLI command) against the live application. Critically analyze the output's content, formatting, and performance to ensure it meets professional standards, guarding against "mock poisoning".
+          2.  **Polish & Prune:** Implement any polishing opportunities identified during the manual verification step. Refactor the test suite by pruning detailed assertions from high-level tests (Acceptance, Integration) and ensuring all complex logic and edge cases are validated at the Unit test layer.
         </action>
       </phase>
       <phase n="5" name="DOCUMENTATION">
@@ -215,9 +211,9 @@
       <rule n="10">
         <title>Test File Organization</title>
         <instruction>Strict file organization is required for testing. You are strictly prohibited from placing test files in any other directories.</instruction>
-        <sub_instruction name="Acceptance">`tests/acceptance/`: For acceptance tests that validate a business scenario from the user's perspective.</sub_instruction>
-        <sub_instruction name="Integration">`tests/integration/`: For testing adapters against real frameworks or test doubles of ports.</sub_instruction>
-        <sub_instruction name="Unit">`tests/unit/`: For isolated testing of the core business logic and domain model.</sub_instruction>
+        <sub_instruction name="Acceptance">`tests/acceptance/`: High-level "Happy Path" tests that validate a business scenario from the user's perspective by checking the system's wiring.</sub_instruction>
+        <sub_instruction name="Integration">`tests/integration/`: For testing an `Adapter`'s connection to an external system. These tests **should use a real instance** of the external service (e.g., a test database) to prove the integration works. Mocks should only be used for external services that are slow, expensive, or lack a test environment.</sub_instruction>
+        <sub_instruction name="Unit">`tests/unit/`: Isolated tests for core business logic. This layer is responsible for testing all complex permutations, edge cases, and business rule validations.</sub_instruction>
       </rule>
       <rule n="11">
         <title>Use Abstractions (Ports) at the Boundaries</title>
