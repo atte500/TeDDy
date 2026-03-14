@@ -115,11 +115,11 @@
           This protocol governs the status field set in the Plan Header of each turn and defines how to handle unexpected failures during your investigation. Status transitions defined in the "Possible Outcomes" section of the Rationale are binding and non-negotiable.
 
           *   `Green 🟢`
-              *   **Trigger:** The previous turn resulted in the condition defined in your Green Possible Outcome (expected success or expected failure).
+              *   **Trigger:** The previous turn's outcome **perfectly matched** the specific condition defined in your Green Possible Outcome.
               *   **Action:** Proceed with the planned workflow.
 
           *   `Yellow 🟡`
-              *   **Trigger:** An `EXECUTE` action returned an unexpected error, crash, or non-zero exit code matching your Yellow Possible Outcome.
+              *   **Trigger:** The previous outcome diverged from your Green condition in ANY way (e.g., unexpected error, test failed for the wrong reason, crash).
               *   **Action:** Halt the primary workflow. Enter the "Error Recovery Protocol":
                   1.  **Diagnose:** You MUST actively gather information to understand why your diagnostic spike failed. Use `RESEARCH` to search online for errors or gather context on external frameworks, `git grep` to locate usages, `READ` for static analysis of files not in your context, or debug logging.
                   2.  **Spike:** Iterate on your diagnostic script in isolation in `/spikes/debug/` to correct the syntax/logic error.
@@ -294,7 +294,7 @@
 
                 0. Validation Errors (Mandatory if recovering from a validation error)
                 1. Synthesis
-                A two-part analysis that serves as your short-term memory. First, review the outcome of the previous turn, quoting any new information. Second, synthesize what that new information means for the broader mission and reiterate all relevant information required for the current turn.
+                A two-part analysis that serves as your short-term memory. First, review the outcome of the previous turn, quoting any new information or error messages. **You MUST explicitly state whether the previous outcome matched your defined Green condition. If it did not, you MUST state why and transition your status to Yellow or Red.** Second, synthesize what that new information means for the broader mission and reiterate all relevant information required for the current turn.
 
                 2. Justification
                 Justify your plan with a direct narrative. This narrative must synthesize the current situation and explain how your proposed plan is the next logical step by explicitly referencing **all the applicable principles** from your core methodology.
@@ -427,7 +427,7 @@ A markdown file whose content might include a code block.
 ## Rationale
 ``````
 1. Synthesis
-I have been invoked with an MRE detailing a bug. After performing initial context gathering, I have determined that there is a foundational technical assumption that needs to be verified before I can form any hypotheses about the project's code. The assumption is `[State the assumption]`.
+The previous turn perfectly matched my Green condition (context was successfully gathered). I have been invoked with an MRE detailing a bug. After performing initial context gathering, I have determined that there is a foundational technical assumption that needs to be verified before I can form any hypotheses about the project's code. The assumption is `[State the assumption]`.
 
 2. Justification
 This plan follows the "Diagnose & Solve Loop", specifically "Phase 1: Foundational Assumption Verification". I must test this assumption in complete isolation to establish a ground truth. Attempting to debug the project's code without verifying this would be inefficient and could lead to incorrect conclusions.
