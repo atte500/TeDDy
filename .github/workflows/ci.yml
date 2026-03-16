@@ -17,15 +17,21 @@ jobs:
     name: "Debug: Windows Exit Code Behavior"
     runs-on: windows-latest
     steps:
-      - name: Verify Candidate Fix (cmd /c wrapper)
+      - name: Quoting Resilience Tests
         continue-on-error: true
         shell: cmd
         run: |
-          echo --- Test A: exit /b 1 ---
-          (cmd /c "exit /b 1" || cmd /c "echo FAILED_COMMAND: exit /b 1 >&2 & exit 1")
+          echo --- Test Q1: Doubled Quotes ---
+          (cmd /c "python -c ""import sys; sys.exit(1)""" || echo HANDLER_RAN_Q1)
 
-          echo --- Test B: python failure ---
-          (cmd /c "python -c 'import sys; sys.exit(1)'" || cmd /c "echo FAILED_COMMAND: python exit 1 >&2 & exit 1")
+          echo --- Test Q2: No Outer Quotes ---
+          (cmd /c python -c "import sys; sys.exit(1)" || echo HANDLER_RAN_Q2)
+
+          echo --- Test Q3: Caret Escaping ---
+          (cmd /c "python -c ^"import sys; sys.exit(1)^"" || echo HANDLER_RAN_Q3)
+
+          echo --- Test Q4: Escaped Caret and Quotes ---
+          (cmd /c "python -c ^^"import sys; sys.exit(1)^^"" || echo HANDLER_RAN_Q4)
   build-and-test:
     runs-on: ${{ matrix.os }}
     defaults:
