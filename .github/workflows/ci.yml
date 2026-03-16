@@ -17,45 +17,15 @@ jobs:
     name: "Debug: Windows Exit Code Behavior"
     runs-on: windows-latest
     steps:
-      - name: Test 1 - Current Implementation (call)
+      - name: Verify Candidate Fix (cmd /c wrapper)
         continue-on-error: true
         shell: cmd
         run: |
-          echo Testing: (call exit /b 1 ^|^| echo HANDLER_RAN)
-          (call exit /b 1 || echo HANDLER_RAN)
-          echo ERRORLEVEL: %ERRORLEVEL%
+          echo --- Test A: exit /b 1 ---
+          (cmd /c "exit /b 1" || cmd /c "echo FAILED_COMMAND: exit /b 1 >&2 & exit 1")
 
-      - name: Test 2 - Without call
-        continue-on-error: true
-        shell: cmd
-        run: |
-          echo Testing: (exit /b 1 ^|^| echo HANDLER_RAN)
-          (exit /b 1 || echo HANDLER_RAN)
-          echo ERRORLEVEL: %ERRORLEVEL%
-
-      - name: Test 3 - Sub-shell (cmd /c)
-        continue-on-error: true
-        shell: cmd
-        run: |
-          echo Testing: (cmd /c "exit /b 1" ^|^| echo HANDLER_RAN)
-          (cmd /c "exit /b 1" || echo HANDLER_RAN)
-          echo ERRORLEVEL: %ERRORLEVEL%
-
-      - name: Test 4 - Double shell (nested)
-        continue-on-error: true
-        shell: cmd
-        run: |
-          echo Testing: (cmd /c "exit /b 1" ^|^| cmd /c "echo HANDLER_RAN ^& exit 1")
-          (cmd /c "exit /b 1" || cmd /c "echo HANDLER_RAN & exit 1")
-          echo ERRORLEVEL: %ERRORLEVEL%
-
-      - name: Test 5 - Basic exit (no /b)
-        continue-on-error: true
-        shell: cmd
-        run: |
-          echo Testing: (exit 1 ^|^| echo HANDLER_RAN)
-          (exit 1 || echo HANDLER_RAN)
-          echo ERRORLEVEL: %ERRORLEVEL%
+          echo --- Test B: python failure ---
+          (cmd /c "python -c 'import sys; sys.exit(1)'" || cmd /c "echo FAILED_COMMAND: python exit 1 >&2 & exit 1")
   build-and-test:
     runs-on: ${{ matrix.os }}
     defaults:
