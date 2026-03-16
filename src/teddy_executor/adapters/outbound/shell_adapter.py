@@ -66,7 +66,7 @@ class ShellAdapter(IShellExecutor):
                         .replace("<", "^<")
                     )
                     wrapped_parts.append(
-                        f'{line} || cmd /c "echo FAILED_COMMAND: {safe_line} >&2 & exit 1"'
+                        f'({line} || cmd /c "echo FAILED_COMMAND: {safe_line} >&2 & exit 1")'
                     )
                 wrapped = " && ".join(wrapped_parts)
                 return wrapped, True
