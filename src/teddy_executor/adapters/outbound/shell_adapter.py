@@ -35,20 +35,32 @@ class ShellAdapter(IShellExecutor):
         """Determines command arguments and shell usage based on the OS."""
         command = command.strip()
         is_multiline = "\n" in command
-        # Check for shell operators to enable granular reporting for single-line chains
-        has_chaining = any(op in command for op in ["&&", "||", ";", "|"])
+        # Check for shell operators to enable granular reporting for single-line chains.
+        # Note: ';' is not a command separator on Windows cmd.exe.
+        ops = (
+            ["&&", "||", ";", "|"]
+            if sys.platform != "win32"
+            else ["&&", "||", "&", "|"]
+        )
+        has_chaining = any(op in command for op in ops)
         is_complex = is_multiline or has_chaining
 
         if sys.platform == "win32":
-            if is_complex:
+            # For Windows, we only wrap multiline commands to avoid "Quoting Hell"
+            # with nested cmd /c blocks in chained single-line commands.
+            if is_multiline:
                 # Wrap complex commands to fail-fast on Windows.
-                # Use cmd /c with a list to avoid some quoting issues.
+                # We use a string and shell=True for better quote handling by subprocess.
                 lines = [line.strip() for line in command.split("\n") if line.strip()]
-                wrapped = " && ".join(
-                    f"({line} || (echo TEDDY_FAILED_COMMAND: {line} >&2 && exit /b 1))"
-                    for line in lines
-                )
-                return ["cmd", "/c", wrapped], False
+                wrapped_parts = []
+                for line in lines:
+                    # Basic cleanup for Windows echo to avoid breaking the marker.
+                    safe_line = line.replace('"', "'")
+                    wrapped_parts.append(
+                        f"({line} || (echo TEDDY_FAILED_COMMAND: {safe_line} >&2 && exit /b 1))"
+                    )
+                wrapped = " && ".join(wrapped_parts)
+                return wrapped, True
 
             first_word = command.split()[0]
             if shutil.which(first_word):
