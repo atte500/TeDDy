@@ -191,14 +191,13 @@ All actions are located under the `## Action Plan` heading. Each action is defin
     ````
     ````text
     best python markdown to html
-    ````
-    ````text
     prism.js cdn link
     ````
     `````
 -   **Parsing Rules:**
     1.  Extract `Description`.
-    2.  The parser should treat every fenced code block as a separate query.
+    2.  The parser iterates through every fenced code block.
+    3.  Each block is split into individual lines. Each non-empty line (stripped of leading/trailing whitespace) is treated as a separate, individual query.
 
 ### 5.6. `PROMPT`
 

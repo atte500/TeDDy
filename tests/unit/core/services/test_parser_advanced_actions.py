@@ -95,7 +95,8 @@ def test_parse_research_action(parser: IPlanParser):
     # Arrange
     plan_content = """
 # Research a topic
-- **Goal:** Find a library.
+- Status: Green 🟢
+- Agent: Pathfinder
 
 ## Rationale
 ````text
@@ -108,9 +109,10 @@ Rationale.
 - **Description:** Find libraries for parsing Markdown.
 ````text
 python markdown ast library
+  multi-line within block
 ````
 ````text
-best python markdown parser
+another block query
 ````
 """
     # Act
@@ -125,7 +127,8 @@ best python markdown parser
     assert action.description == "Find libraries for parsing Markdown."
     assert action.params["queries"] == [
         "python markdown ast library",
-        "best python markdown parser",
+        "multi-line within block",
+        "another block query",
     ]
 
 

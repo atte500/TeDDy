@@ -210,9 +210,11 @@ def parse_research_action(
     queries = []
     for content_node in content_nodes:
         if isinstance(content_node, CodeFence):
-            query = get_child_text(content_node).strip()
-            if query:
-                queries.append(query)
+            raw_content = get_child_text(content_node)
+            for line in raw_content.splitlines():
+                query = line.strip()
+                if query:
+                    queries.append(query)
     if not queries:
         raise InvalidPlanError("RESEARCH action found no query code blocks.")
     return ActionData(

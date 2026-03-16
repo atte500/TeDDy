@@ -34,8 +34,12 @@ To streamline the AI coding workflow by making the Markdown protocol more flexib
 **Then** the `queries` parameter should contain a list of individual queries, one per line.
 
 #### Deliverables
-- [ ] Updated `parse_research_action` in `action_parser_complex.py` to split by newline.
-- [ ] Integration test verifying multiple queries are generated from a single block.
+- [✓] Updated `parse_research_action` in `action_parser_complex.py` to split by newline.
+- [✓] Integration test verifying multiple queries are generated from a single block.
+
+#### Implementation Notes
+- **Line-based Splitting:** `parse_research_action` now iterates over each line of a code block's content, stripping whitespace and filtering out empty lines.
+- **Backwards Compatibility:** It continues to support multiple code blocks, aggregating all discovered queries into a single list.
 
 ### Scenario 3: Resilient EDIT Matching
 **Given** an `EDIT` action where the `FIND` block has minor whitespace differences from the source file
