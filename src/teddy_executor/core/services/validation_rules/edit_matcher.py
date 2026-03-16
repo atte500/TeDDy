@@ -9,7 +9,7 @@ from collections import defaultdict
 from typing import List, Set
 
 # Performance Heuristic Constants
-FUZZY_RATIO_THRESHOLD = 0.96
+FUZZY_RATIO_THRESHOLD = 0.95
 SMALL_FILE_LINE_LIMIT = 100
 LARGE_BLOCK_LINE_LIMIT = 20
 SUB_SAMPLE_RATIO_THRESHOLD = 0.7

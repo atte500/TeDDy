@@ -135,7 +135,7 @@ def _validate_single_edit(
             content, find_block, **matcher_kwargs
         )
 
-        effective_threshold = threshold if threshold is not None else 0.96
+        effective_threshold = threshold if threshold is not None else 0.95
         fence = get_fence_for_content(find_block)
 
         if is_ambiguous and not replace_all:

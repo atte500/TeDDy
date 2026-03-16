@@ -70,7 +70,7 @@ def test_edit_custom_threshold_fail(tmp_path, monkeypatch):
     target_file = tmp_path / "app.py"
     target_file.write_text("def hello():\n    print('hello world')\n", encoding="utf-8")
 
-    # Threshold set to 0.99, while the match (with extra space) will be around 0.96-0.98
+    # Threshold set to 0.99, while the match (with extra space) will be around 0.95-0.98
     plan = dedent("""\
         # Test Plan
         - Status: Green 🟢

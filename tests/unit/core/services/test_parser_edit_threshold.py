@@ -25,7 +25,7 @@ def test_parse_edit_with_threshold():
         ## Action Plan
         ### `EDIT`
         - File Path: [app.py](/app.py)
-        - Similarity Threshold: 0.96
+        - Similarity Threshold: 0.95
         - Description: Custom threshold.
 
         #### `FIND:`
@@ -41,7 +41,7 @@ def test_parse_edit_with_threshold():
     action = parsed_plan.actions[0]
 
     assert action.type == "EDIT"
-    expected_threshold = 0.96
+    expected_threshold = 0.95
     assert action.params["similarity_threshold"] == expected_threshold
 
 

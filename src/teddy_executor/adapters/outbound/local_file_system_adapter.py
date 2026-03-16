@@ -174,7 +174,7 @@ class LocalFileSystemAdapter(IFileSystemManager):
         self,
         path: str,
         edits: list[dict[str, str]],
-        similarity_threshold: float = 0.96,
+        similarity_threshold: float = 0.95,
         replace_all: bool = False,
     ) -> list[float]:
         """

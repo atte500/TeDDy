@@ -139,7 +139,7 @@ class ActionExecutor:
         path = Path(path_str)
 
         if action.type.upper() == "EDIT":
-            threshold = action.params.get("similarity_threshold", 0.96)
+            threshold = action.params.get("similarity_threshold", 0.95)
             replace_all = action.params.get("replace_all", False)
             after_content, _ = self._edit_simulator.simulate_edits(
                 before_content,

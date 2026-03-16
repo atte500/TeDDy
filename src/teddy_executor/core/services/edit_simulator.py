@@ -18,7 +18,7 @@ class EditSimulator(IEditSimulator):
         content: str,
         find: str,
         replace: str,
-        threshold: float = 0.96,
+        threshold: float = 0.95,
         replace_all: bool = False,
     ) -> tuple[str, float]:
         """
@@ -66,7 +66,7 @@ class EditSimulator(IEditSimulator):
         self,
         content: str,
         edits: List[EditPair],
-        threshold: float = 0.96,
+        threshold: float = 0.95,
         replace_all: bool = False,
     ) -> tuple[str, list[float]]:
         """

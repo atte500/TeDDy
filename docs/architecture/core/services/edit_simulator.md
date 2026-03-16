@@ -20,7 +20,7 @@ The simulator iterates through the provided list of edits and applies them seque
 
 ## 4. Data Contracts / Methods
 
-### `simulate_edits(content: str, edits: list[dict[str, str]], threshold: float = 0.96, replace_all: bool = False) -> tuple[str, list[float]]`
+### `simulate_edits(content: str, edits: list[dict[str, str]], threshold: float = 0.95, replace_all: bool = False) -> tuple[str, list[float]]`
 - **Preconditions:** `content` is a string; `edits` is a list of dictionaries with `find` and `replace` keys.
 - **Postconditions:** Returns a tuple containing the new string and a list of similarity scores for applied edits.
 - **Preconditions:** `content` is a string; `edits` is a list of dictionaries with `find` and `replace` keys.
