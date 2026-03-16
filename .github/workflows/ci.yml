@@ -21,17 +21,14 @@ jobs:
         continue-on-error: true
         shell: cmd
         run: |
-          echo --- Test Q1: Doubled Quotes ---
-          (cmd /c "python -c ""import sys; sys.exit(1)""" || echo HANDLER_RAN_Q1)
+          echo --- Test Q5: Extra Outer Quotes (cmd /c ^" ^"cmd^" ^") ---
+          (cmd /c ^" ^"python -c "import sys; sys.exit(1)"^" ^" || echo HANDLER_RAN_Q5)
 
-          echo --- Test Q2: No Outer Quotes ---
-          (cmd /c python -c "import sys; sys.exit(1)" || echo HANDLER_RAN_Q2)
+          echo --- Test Q6: Extra Outer Quotes (Minimal) ---
+          (cmd /c ""python -c "import sys; sys.exit(1)"" || echo HANDLER_RAN_Q6)
 
-          echo --- Test Q3: Caret Escaping ---
-          (cmd /c "python -c ^"import sys; sys.exit(1)^"" || echo HANDLER_RAN_Q3)
-
-          echo --- Test Q4: Escaped Caret and Quotes ---
-          (cmd /c "python -c ^^"import sys; sys.exit(1)^^"" || echo HANDLER_RAN_Q4)
+          echo --- Test Q7: Exit /b with Extra Outer Quotes ---
+          (cmd /c ""exit /b 1"" || echo HANDLER_RAN_Q7)
   build-and-test:
     runs-on: ${{ matrix.os }}
     defaults:
