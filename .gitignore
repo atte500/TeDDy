@@ -91,10 +91,6 @@ debug_page.html
 debug_screenshot.png
 error_screenshot.png
 
-# User-generated test plans
-*.yml
-*.yaml
-
 # Do not ignore critical project configuration files
 !/.pre-commit-config.yaml
 !/.github/workflows/ci.yml

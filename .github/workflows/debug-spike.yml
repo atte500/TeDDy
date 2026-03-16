@@ -1,0 +1,32 @@
+name: Debug Spike Runner
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-spike:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Poetry
+        # Use PowerShell for multi-line commands on Windows runners
+        shell: pwsh
+        run: |
+          pip install poetry
+
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          poetry install
+
+      - name: Run verification spike
+        shell: pwsh
+        run: |
+          poetry run python spikes/debug/verify_windows_subprocess.py
