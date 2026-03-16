@@ -46,21 +46,31 @@ class ShellAdapter(IShellExecutor):
         is_complex = is_multiline or has_chaining
 
         if sys.platform == "win32":
-            # For Windows, we only wrap multiline commands to avoid "Quoting Hell"
-            # with nested cmd /c blocks in chained single-line commands.
-            if is_multiline:
-                # Wrap complex commands to fail-fast on Windows.
+            # For Windows, we only wrap multiline commands if they don't look like
+            # a single multiline script (e.g., using triple quotes).
+            is_likely_single_script = "'''" in command or '"""' in command
+            if is_multiline and not is_likely_single_script:
+                # Wrap multiline commands to fail-fast on Windows.
                 # We use a string and shell=True for better quote handling by subprocess.
                 lines = [line.strip() for line in command.split("\n") if line.strip()]
                 wrapped_parts = []
                 for line in lines:
-                    # Basic cleanup for Windows echo to avoid breaking the marker.
-                    safe_line = line.replace('"', "'")
+                    # Escape special characters that break cmd.exe parentheses using ^.
+                    # This is critical for Python commands containing ( and ).
+                    safe_line = (
+                        line.replace("(", "^(")
+                        .replace(")", "^)")
+                        .replace("&", "^&")
+                        .replace("|", "^|")
+                    )
                     wrapped_parts.append(
-                        f"({line} || (echo TEDDY_FAILED_COMMAND: {safe_line} >&2 && exit /b 1))"
+                        f"{line} || (echo TEDDY_FAILED_COMMAND: {safe_line} >&2 & exit /b 1)"
                     )
                 wrapped = " && ".join(wrapped_parts)
                 return wrapped, True
+
+            if has_chaining:
+                return command, True
 
             first_word = command.split()[0]
             if shutil.which(first_word):
