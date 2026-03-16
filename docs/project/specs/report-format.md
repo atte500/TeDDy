@@ -46,7 +46,10 @@ Both report types share a common base structure. Sections are rendered condition
 3.  **Resource Contents (Conditional):** Behavior depends on the report type.
 4.  **Action Log:** A detailed, action-by-action log of the execution.
 
-### 3.1. Automated Skipping (Soft Isolation)
+### 3.1. EDIT and CREATE Diffs
+To ensure transparency during fuzzy matching and file overwrites, the system must include a unified diff in the `Action Log` for any `EDIT` action where the `Similarity Score` is less than 1.0 and any `CREATE` action where `Overwrite` = `true`. This allows the AI to verify the exact changes applied.
+
+### 3.2. Automated Skipping (Soft Isolation)
 If a plan contains multiple actions, any "Terminal Action" (`PROMPT`, `INVOKE`, `RETURN`) is automatically skipped by the orchestrator.
 - **Status:** `SKIPPED`
 - **Reason:** Action must be executed in isolation to ensure state consistency.

@@ -114,13 +114,14 @@ All actions are located under the `## Action Plan` heading. Each action is defin
     ````markdown
     ### `READ`
     - **Resource:** [docs/ARCHITECTURE.md](/docs/ARCHITECTURE.md) or [www.example.com](https://example.com/docs)
+    - **File Path:** [docs/ARCHITECTURE.md](/docs/ARCHITECTURE.md)
     - **Description:** Read the current architectural conventions.
     ````
 -   **Parsing Rules:**
-  1.  Extract `Resource` and `Description` from the metadata list.
-  2.  The value for `Resource` can be a root-relative Markdown link `[text](/destination)` for a local file, or a standard Markdown link `[text](URL)` for a remote resource.
-  3.  If the destination starts with `/`, the parser **must** treat it as a local file path.
-  4.  If the destination starts with `http`, the parser **must** treat it as a URL.
+  1.  Extract `Resource` or `File Path` and `Description`.
+  2.  `Resource` supports both local paths (starting with `/`) and URLs (starting with `http`).
+  3.  `File Path` is an alias for local resources and **strictly forbids URLs**.
+  4.  The value for either can be a root-relative Markdown link `[text](/destination)`.
 
 ### 5.3. `EDIT`
 

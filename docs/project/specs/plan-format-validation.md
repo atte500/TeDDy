@@ -54,27 +54,32 @@ These checks validate the *content* of an action against the current state of th
 #### `EDIT`
 -   **[✓] `File Path` must be specified:** The metadata block must contain a valid `File Path`.
 -   **[✓] Target path must exist:** The specified file must already exist on the file system.
-    -   *Failure Example:* A plan tries to `EDIT` `src/utils.py` but that file does not exist.
--   **[✓] Target path must be in context:** The specified file must be listed in the current turn's context (`turn.context`). This is a safety measure to ensure the AI is not editing files it hasn't "read."
+-   **[✓] Target path must be in context:** The specified file must be listed in the current turn's context (`turn.context`).
 -   **[✓] Must contain `FIND`/`REPLACE` pairs:** The action block must contain at least one pair of `#### FIND:` and `#### REPLACE:` headings.
 -   **[✓] `FIND` and `REPLACE` must be different:** For each pair, the content of the `FIND` and `REPLACE` blocks must not be identical.
--   **[✓] `FIND` block must match exactly once:** For each `FIND`/`REPLACE` pair, the content of the `FIND` code block must be found **exactly one time** within the target file.
-    -   *Failure (0 matches):* The specified text to find does not exist in the file.
-    -   *Failure (>1 matches):* The specified text is ambiguous because it appears multiple times in the file.
-    -   **Enhanced Feedback on Mismatch:** If the `FIND` block fails with 0 matches, the validation system will find the "best" or "closest" match in the document using `difflib.SequenceMatcher`. The failure report provided to the AI must then include a high-clarity, intra-line `diff` (generated via a method like `difflib.ndiff`) that uses character-level markers to pinpoint the exact locations of the discrepancies. This provides a precise, actionable signal for self-correction.
+-   **[✓] `FIND` block must match exactly once:** The system attempts an exact match first. If no exact match is found, it performs a fuzzy search using the `Similarity Threshold` (default: 0.8).
+    -   **Multi-Match Logic:**
+        -   If multiple candidates meet the threshold, the system selects the candidate with the single highest `Similarity Score`.
+        -   If multiple candidates share the exact same highest score (Ambiguity), validation fails.
+    -   **Failure (0 matches):** If no candidate meets the threshold, validation fails.
+    -   **Enhanced Feedback on Mismatch:** Failure reports must include:
+        1. The `Similarity Score` of the best candidate and the current `Similarity Threshold`.
+        2. A high-clarity, intra-line `diff` pinpointing the discrepancies.
+        3. A hint to review the provided diff and match whitespace/indentation exactly or use a lower `Similarity Threshold`.
+
+#### `EXECUTE`
+-   **[✓] Must contain a core command:** The command code block must not be empty.
+-   **[✓] Multi-line Failure Reporting:** If a multi-line block fails, the system must identify the specific command that failed using shell-side reporting (traps/wrappers). The failure must be documented in the `ActionLog` under `failed_command`.
+-   **[✓] Allow Failure is optional:** Defaults to `false` if omitted. If present, the value MUST be `true` or `false`.
+-   **[✓] Background is optional:** Defaults to `false` if omitted. If present, the value MUST be `true` or `false`.
+-   **[✓] Timeout is optional:** If present, the value MUST be an integer representing seconds.
+-   **[✓] Supports Chaining & Directives:** Validation no longer blocks shell operators (&&, ||, ;, |) or directives (cd, export) in the command block.
 
 #### `READ`
 -   **[✓] `Resource` must be specified:** The metadata block must contain a `Resource`.
 -   **[✓] Local file must exist:** If the resource is a local file path (e.g., `[path/to/file.md](/path/to/file.md)`), that file must exist on the file system. (Note: URLs are not validated at this stage).
 -   **[✓] Target must NOT be in context:** The specified file must NOT be already listed in the session context (`session.context`) or the current turn's context (`turn.context`).
     -   *Failure Example:* A plan tries to `READ` `README.md` but that file is already in `session.context`.
-
-#### `EXECUTE`
--   **[✓] Must contain a core command:** The command code block must not be empty.
--   **[✓] Allow Failure is optional:** Defaults to `false` if omitted. If present, the value MUST be `true` or `false`.
--   **[✓] Background is optional:** Defaults to `false` if omitted. If present, the value MUST be `true` or `false`.
--   **[✓] Timeout is optional:** If present, the value MUST be an integer representing seconds.
--   **[✓] Supports Chaining & Directives:** Validation no longer blocks shell operators (&&, ||, ;, |) or directives (cd, export) in the command block.
 
 #### `PRUNE`
 -   **[✓] `Resource` must be specified:** The metadata block must contain a `Resource`.
