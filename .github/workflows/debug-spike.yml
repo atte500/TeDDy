@@ -107,6 +107,27 @@ jobs:
                   expected_code=1
               )
 
+              print("\n----- Verifying Proposed Solution (Parenthesis Grouping) -----")
+
+              # Test 4: Proposed fix for a single line.
+              cmd4 = f"({py_command_fail} || cmd /c \"echo FAILED_COMMAND >&2 & exit 1\")"
+              run_test(
+                  name="[FIX] Quoted Command with Parentheses",
+                  command_to_test=cmd4,
+                  expected_code=1
+              )
+
+              # Test 5: Proposed fix for the full multi-line command.
+              line1_fixed = f"({py_command_ok} || cmd /c \"echo FAILED_line1 >&2 & exit 1\")"
+              line2_fixed = f"({py_command_fail} || cmd /c \"echo FAILED_line2 >&2 & exit 1\")"
+              line3_fixed = f"({py_command_ok.replace('line1', 'line3')} || cmd /c \"echo FAILED_line3 >&2 & exit 1\")"
+              cmd5 = f"{line1_fixed} && {line2_fixed} && {line3_fixed}"
+              run_test(
+                  name="[FIX] Multi-line Simulation with Parentheses",
+                  command_to_test=cmd5,
+                  expected_code=1
+              )
+
               print("----- Spike Complete -----")
           "@
           New-Item -Path . -Name "verify_windows_subprocess.py" -ItemType "file" -Value $scriptContent
