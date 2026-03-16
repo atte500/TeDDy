@@ -127,13 +127,20 @@ def _find_starts_by_anchors(file_lines: List[str], find_lines: List[str]) -> Set
 def _find_starts_by_fuzzy_cascade(
     file_lines: List[str], num_find_lines: int, first_find_line_raw: str
 ) -> Set[int]:
-    """Tier 2: Find candidate windows by fuzzy matching the first line of the block."""
+    """
+    Tier 2: Find candidate windows by fuzzy matching the first line of the block.
+    Uses real_quick_ratio as a fast pre-filter before checking quick_ratio.
+    """
     candidate_starts: Set[int] = set()
     first_find_line = first_find_line_raw.strip()
     for i, f_line in enumerate(file_lines):
-        if _get_quick_ratio(f_line.strip(), first_find_line) > FUZZY_RATIO_THRESHOLD:
-            if 0 <= i <= len(file_lines) - num_find_lines:
-                candidate_starts.add(i)
+        f_line_stripped = f_line.strip()
+        # Pre-filter with real_quick_ratio which is O(N+M) and very fast
+        matcher = difflib.SequenceMatcher(None, f_line_stripped, first_find_line)
+        if matcher.real_quick_ratio() > FUZZY_RATIO_THRESHOLD:
+            if matcher.quick_ratio() > FUZZY_RATIO_THRESHOLD:
+                if 0 <= i <= len(file_lines) - num_find_lines:
+                    candidate_starts.add(i)
     return candidate_starts
 
 
@@ -195,7 +202,11 @@ def _evaluate_candidates(
 
 
 def _calculate_sub_sample_score(window: List[str], find_lines: List[str]) -> float:
-    """Calculates a quick sub-sampled similarity score for large blocks."""
+    """
+    Calculates a lightning-fast similarity score for large blocks.
+    Uses simple string equality on a sub-sample of lines to avoid the
+    overhead of difflib.SequenceMatcher.quick_ratio() during the filter phase.
+    """
     num_find_lines = len(find_lines)
     sub_sample_matches = 0
     total_checks = 0
@@ -203,10 +214,8 @@ def _calculate_sub_sample_score(window: List[str], find_lines: List[str]) -> flo
     step = max(1, num_find_lines // 10)
     for k in range(0, num_find_lines, step):
         total_checks += 1
-        if (
-            _get_quick_ratio(window[k].strip(), find_lines[k].strip())
-            > SUB_SAMPLE_RATIO_THRESHOLD
-        ):
+        # Simple equality is O(N) where N is line length, much faster than quick_ratio
+        if window[k].strip() == find_lines[k].strip():
             sub_sample_matches += 1
 
     return sub_sample_matches / total_checks
