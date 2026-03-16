@@ -21,6 +21,7 @@ class SessionReplanner:
         title: str,
         rationale: str,
         failed_resources: dict[str, str],
+        validation_ast: str | None = None,
     ) -> ExecutionReport:
         """Creates a validation failure report."""
         now = datetime.now(timezone.utc)
@@ -36,18 +37,29 @@ class SessionReplanner:
             rationale=rationale,
             action_logs=[],
             validation_result=errors,
+            validation_ast=validation_ast,
             failed_resources=failed_resources,
         )
 
     def trigger_replan_turn(
-        self, next_turn_dir: str, errors: list[str], original_content: str
+        self,
+        next_turn_dir: str,
+        errors: list[str],
+        original_content: str,
+        validation_ast: str | None = None,
     ) -> None:
         """Generates the feedback message and triggers the planning phase."""
-        error_msgs = [f"- {e}" for e in errors]
+        error_msgs = [e.strip() for e in errors]
+        ast_section = f"\n{validation_ast}\n" if validation_ast else ""
+
         feedback = (
             "The previous plan failed validation. Please review the errors and "
             "the original plan, then generate a corrected version.\n\n"
-            "## Validation Errors:\n" + "\n".join(error_msgs) + "\n\n"
+            "## Validation Errors:\n"
+            + "\n\n---\n\n".join(error_msgs)
+            + "\n"
+            + ast_section
+            + "\n"
             f"## Original Faulty Plan:\n"
             f"````````````markdown\n{original_content}\n````````````"
         )

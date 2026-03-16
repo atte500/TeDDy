@@ -81,7 +81,7 @@ def _render_ast_view(
     cutoff_idx: float = float("inf"),
 ) -> str:
     """
-    Core AST rendering logic with logical indentation and code block wrapping.
+    Core AST rendering logic with logical indentation. Returns raw text.
     """
     indent_level = 0
     lines = []
@@ -117,9 +117,7 @@ def _render_ast_view(
         n_name = format_node_name(node)
         lines.append(f"{display_indent}{status} {n_name}{reason}")
 
-    ast_content = "\n".join(lines) + "\n"
-    fence = get_fence_for_content(ast_content)
-    return f"{fence}text\n{ast_content}{fence}\n"
+    return "\n".join(lines) + "\n"
 
 
 def format_hybrid_ast_view(
@@ -129,19 +127,12 @@ def format_hybrid_ast_view(
     """
     Generates a hybrid AST visualization: surgical highlighting and logical indentation.
     """
-    msg = "### Plan AST with Highlighted Failures\n"
     error_ids = {id(e.offending_node) for e in errors if e.offending_node}
     error_map = {id(e.offending_node): e.message for e in errors if e.offending_node}
-    return msg + _render_ast_view(doc, error_ids, error_map)
+    ast_text = _render_ast_view(doc, error_ids, error_map)
 
-
-def assemble_logical_error_details(plan: Plan, errors: List[Any]) -> str:
-    """Assembles the detailed text summary for logical errors."""
-    details = []
-    for err in errors:
-        # Template handles the bullets
-        details.append(err.message)
-    return "\n".join(details) + "\n\n"
+    fence = get_fence_for_content(ast_text)
+    return f"### Plan AST with Highlighted Failures\n{fence}text\n{ast_text}{fence}\n"
 
 
 def get_action_type_from_node(plan: Plan, offending_node: Any) -> str:
@@ -199,7 +190,9 @@ def format_structural_mismatch_msg(
         error_ids_set = offending_ids
 
     cutoff = _get_failure_cutoff_idx(children, mismatch_idx, offending_ids)
-    msg += _render_ast_view(doc, error_ids_set, error_map, cutoff)
+    ast_text = _render_ast_view(doc, error_ids_set, error_map, cutoff)
+    fence = get_fence_for_content(ast_text)
+    msg += f"{fence}text\n{ast_text}{fence}\n"
 
     msg += "\n**Hint:** Parsing often fails due to improper Code Block Formatting.\n"
     return msg

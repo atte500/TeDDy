@@ -167,6 +167,11 @@ def _evaluate_candidates(
     scored_candidates.sort(key=lambda x: x[0], reverse=True)
     candidates_to_refine = scored_candidates[:CANDIDATE_EVALUATION_CAP]
 
+    # FALLBACK: If no candidates were found via heuristics, but the file is not empty,
+    # pick the very first block of the same size to at least provide a baseline diff.
+    if not candidates_to_refine and file_lines:
+        candidates_to_refine = [(0.0, file_lines[:num_find_lines])]
+
     ratio_calls = 0
     for score, window in candidates_to_refine:
         if num_find_lines > LARGE_BLOCK_LINE_LIMIT:

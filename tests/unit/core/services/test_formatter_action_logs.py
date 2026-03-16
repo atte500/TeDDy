@@ -336,8 +336,9 @@ def test_formats_validation_failed_report_with_errors():
 
     # Assert
     assert "## Validation Errors" in formatted_report
-    assert "- EXECUTE action must contain exactly one command." in formatted_report
-    assert "- Command chaining with '&&' is not allowed." in formatted_report
+    assert "EXECUTE action must contain exactly one command." in formatted_report
+    assert "---" in formatted_report
+    assert "Command chaining with '&&' is not allowed." in formatted_report
 
 
 def test_formats_prompt_action_omits_prompt_text():

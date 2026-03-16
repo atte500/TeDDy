@@ -153,9 +153,18 @@
 
 {% if report.validation_result -%}
 ## Validation Errors:
-{% for error in report.validation_result %}
-- {{ error }}
+{% for error in report.validation_result -%}
+{{ error | trim }}
+{% if not loop.last %}
+
+---
+
+{% endif %}
 {% endfor %}
+{% endif -%}
+
+{% if report.validation_ast -%}
+{{ report.validation_ast }}
 {% endif -%}
 {% if report.failed_resources %}
 

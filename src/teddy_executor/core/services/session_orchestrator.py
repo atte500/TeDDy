@@ -6,7 +6,6 @@ from teddy_executor.core.domain.models.execution_report import (
     ExecutionReport,
 )
 from teddy_executor.core.services.parser_reporting import (
-    assemble_logical_error_details,
     format_hybrid_ast_view,
 )
 from teddy_executor.core.domain.models.plan import Plan
@@ -171,15 +170,15 @@ class SessionOrchestrator(IRunPlanUseCase):
         rich_ast = (
             format_hybrid_ast_view(plan.source_doc, errors) if plan.source_doc else ""
         )
-        error_msg = assemble_logical_error_details(plan, errors)
-        full_error_msg = error_msg + rich_ast
+        error_messages = [e.message for e in errors]
 
         failed_resources = self._replanner.gather_failed_resources(errors)
 
         if is_session and plan_path:
             return self._trigger_replan(
                 plan_path=plan_path,
-                errors=[full_error_msg],
+                errors=error_messages,
+                validation_ast=rich_ast,
                 original_plan_content=content,
                 title=plan.title,
                 rationale=plan.rationale,
@@ -187,7 +186,8 @@ class SessionOrchestrator(IRunPlanUseCase):
             )
 
         return self._replanner.build_failure_report(
-            errors=[full_error_msg],
+            errors=error_messages,
+            validation_ast=rich_ast,
             title=plan.title,
             rationale=plan.rationale,
             failed_resources=failed_resources,
@@ -233,15 +233,20 @@ class SessionOrchestrator(IRunPlanUseCase):
         title: str = "Unknown Plan",
         rationale: str = "Structural Error",
         failed_resources: Optional[dict[str, str]] = None,
+        validation_ast: Optional[str] = None,
     ) -> ExecutionReport:
         """Triggers the Automated Re-plan Loop."""
         report = self._replanner.build_failure_report(
-            errors, title, rationale, failed_resources or {}
+            errors,
+            title,
+            rationale,
+            failed_resources or {},
+            validation_ast=validation_ast,
         )
         next_turn_dir = self._finalize_turn(
             plan_path, report, is_validation_failure=True
         )
         self._replanner.trigger_replan_turn(
-            next_turn_dir, errors, original_plan_content
+            next_turn_dir, errors, original_plan_content, validation_ast=validation_ast
         )
         return report

@@ -73,7 +73,7 @@ print("Goodbye")
     output = result.stdout
 
     assert "## Validation Errors:" in output
-    assert "- File to edit does not exist: non_existent_file.py" in output
+    assert "File to edit does not exist: non_existent_file.py" in output
     # When file is missing, the heading is the failure point
     assert (
         '[✗] [005] Heading (Level 3): "EDIT" (Error: File to edit does not exist: non_existent_file.py)'
@@ -122,7 +122,7 @@ NEW CONTENT
     output = result.stdout
 
     assert "## Validation Errors:" in output
-    assert "- The `FIND` block could not be located" in output
+    assert "The `FIND` block could not be located" in output
 
     # AST Visualization
     assert "### Plan AST with Highlighted Failures" in output

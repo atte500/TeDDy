@@ -55,4 +55,5 @@ class ExecutionReport:
     original_actions: Sequence[ActionData] = field(default_factory=list)
     action_logs: Sequence[ActionLog] = field(default_factory=list)
     validation_result: Sequence[str] | None = None
+    validation_ast: str | None = None
     failed_resources: dict[str, str] | None = None
