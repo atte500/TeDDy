@@ -32,6 +32,9 @@
 {% if log.details.get("return_code") is not none -%}
 - **Return Code:** `{{ log.details.return_code }}`
 {% endif -%}
+{% if log.details.get("failed_command") -%}
+- **Failed Command:** `{{ log.details.failed_command }}`
+{% endif -%}
 {% if log.details.get("stdout") -%}
 #### `stdout`
 {{ log.details.stdout | trim | fence }}text
@@ -51,7 +54,7 @@
 {{ log.details.diff | trim | fence }}
 {% endif -%}
 {# Render generic details if no specific fields matched, but avoid rendering if it's just content #}
-{% if not log.details.get("error") and not log.details.get("return_code") and not log.details.get("stdout") and not log.details.get("stderr") and not log.details.get("content") and not log.details.get("diff") %}
+{% if not log.details.get("error") and not log.details.get("return_code") and not log.details.get("stdout") and not log.details.get("stderr") and not log.details.get("content") and not log.details.get("diff") and not log.details.get("failed_command") %}
 {% if log.status.value in ['FAILURE', 'SKIPPED'] or log.action_type | upper not in ['INVOKE', 'RETURN'] %}
 - **Details:** `{{ log.details }}`
 {% endif -%}

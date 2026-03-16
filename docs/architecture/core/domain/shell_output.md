@@ -12,7 +12,7 @@
 The `ShellOutput` is a dictionary with the following structure:
 
 ```python
-from typing import TypedDict
+from typing import TypedDict, NotRequired
 
 class ShellOutput(TypedDict):
     """
@@ -21,9 +21,11 @@ class ShellOutput(TypedDict):
     stdout: str
     stderr: str
     return_code: int
+    failed_command: NotRequired[str]
 ```
 
 ### Fields
 - **`stdout` (str):** The standard output captured from the command.
 - **`stderr` (str):** The standard error captured from the command.
 - **`return_code` (int):** The integer exit code of the command. A value of `0` typically indicates success. In the event of an execution timeout, the system consistently returns a code of `124`.
+- **`failed_command` (NotRequired[str]):** In multi-line `EXECUTE` blocks, this field contains the specific command line that triggered a non-zero exit code.

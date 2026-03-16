@@ -33,13 +33,53 @@ class ShellAdapter(IShellExecutor):
         self, command: str
     ) -> tuple[str | List[str], bool]:
         """Determines command arguments and shell usage based on the OS."""
+        command = command.strip()
+        is_multiline = "\n" in command
+        # Check for shell operators to enable granular reporting for single-line chains
+        has_chaining = any(op in command for op in ["&&", "||", ";", "|"])
+        is_complex = is_multiline or has_chaining
+
         if sys.platform == "win32":
-            first_word = command.strip().split()[0]
+            if is_complex:
+                # Wrap complex commands to fail-fast on Windows.
+                # Use cmd /c with a list to avoid some quoting issues.
+                lines = [line.strip() for line in command.split("\n") if line.strip()]
+                wrapped = " && ".join(
+                    f"({line} || (echo TEDDY_FAILED_COMMAND: {line} >&2 && exit /b 1))"
+                    for line in lines
+                )
+                return ["cmd", "/c", wrapped], False
+
+            first_word = command.split()[0]
             if shutil.which(first_word):
                 return command, False  # It's a file, run directly.
             return command, True  # It's a shell built-in.
-        # On POSIX, always use the shell to support pipes, globbing, etc.
-        return command, True
+
+        # On POSIX
+        if is_complex and shutil.which("bash"):
+            # Use a high-precision diagnostic script that tracks the specific command.
+            # We use a DEBUG trap to capture the command before it runs and an EXIT trap
+            # to report it. We use a function for the EXIT trap because the DEBUG trap
+            # does not fire for commands executed inside a trap handler function,
+            # ensuring TEDDY_LAST_CMD remains untainted by our cleanup logic.
+            script = (
+                "__teddy_report() { "
+                "RET=$?; "
+                "if [ $RET -ne 0 ]; then "
+                'echo "TEDDY_FAILED_COMMAND: $TEDDY_LAST_CMD" >&2; '
+                "fi; "
+                "exit $RET; "
+                "}\n"
+                "trap 'TEDDY_LAST_CMD=$BASH_COMMAND' DEBUG\n"
+                "trap '__teddy_report' EXIT\n"
+                "set -e\n"
+                f"{command}"
+            )
+            return ["bash", "-c", script], False
+
+        # Fallback for simple single-line or when bash is missing
+        prefix = "set -e; " if is_multiline else ""
+        return f"{prefix}{command}", True
 
     def _log_debug_pre_execution(
         self, command: str, command_args: str | List[str], cwd: str, use_shell: bool
@@ -105,11 +145,22 @@ class ShellAdapter(IShellExecutor):
                 timeout=timeout,
             )
             self._log_debug_result(result)
-            return {
+
+            output: ShellOutput = {
                 "stdout": result.stdout,
                 "stderr": result.stderr,
                 "return_code": result.returncode,
             }
+
+            # Extract granular failure info if present in stderr
+            marker = "TEDDY_FAILED_COMMAND: "
+            if marker in result.stderr:
+                for line in result.stderr.splitlines():
+                    if marker in line:
+                        output["failed_command"] = line.split(marker)[1].strip()
+                        break
+
+            return output
         except subprocess.TimeoutExpired as e:
             self._log_debug_error(e)
             # Decode partial output. While often bytes even with text=True,

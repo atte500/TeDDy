@@ -67,20 +67,28 @@ To streamline the AI coding workflow by making the Markdown protocol more flexib
 - **Reporting Transparency:** `ActionExecutor` now automatically generates and injects a unified diff for *every* successful `EDIT` action into the final report, providing immediate visual feedback of the applied changes.
 - **Execution Resilience:** The `EditSimulator` was upgraded from exact string counting to fuzzy matching, ensuring that if a plan passes fuzzy validation, it will also succeed during the execution phase.
 
-### Scenario 4: Granular EXECUTE Failure Reporting
+### Scenario 4: Granular EXECUTE Failure Reporting [✓]
 **Given** an `EXECUTE` block with multiple commands (e.g., `cmd1\ncmd2`)
 **When** `cmd2` fails
 **Then** the `ActionLog` details must contain `failed_command: "cmd2"`.
 
 #### Deliverables
-- [ ] POSIX implementation in `ShellAdapter` using `set -e` and `trap '...' ERR`.
-- [ ] Windows implementation in `ShellAdapter` using `%ERRORLEVEL%` checks.
-- [ ] Acceptance test with a multi-line failing shell script.
+- [✓] POSIX implementation in `ShellAdapter` using a function-based `DEBUG`/`EXIT` trap wrapper for high granularity.
+- [✓] Windows implementation in `ShellAdapter` using `&&` logic and `TEDDY_FAILED_COMMAND` markers.
+- [✓] Acceptance test with a multi-line failing shell script.
+- [✓] Unit tests verifying sub-command isolation within `&&` chains.
+
+#### Implementation Notes
+- **Diagnostic Wrappers:** `ShellAdapter` now automatically wraps multi-line and chained command strings in platform-specific diagnostic scripts.
+- **POSIX (Bash):** Uses a sophisticated diagnostic script with a `DEBUG` trap to capture the `BASH_COMMAND` before execution and an `EXIT` trap (handled by a shell function to prevent pollution) that reports the last attempted sub-command if the shell terminates with a non-zero status. This provides sub-command level granularity even within `&&` chains.
+- **Windows (CMD):** Joins commands with `&&` and injects `|| (echo TEDDY_FAILED_COMMAND: ... >&2 && exit /b 1)` for each line to ensure "fail-fast" behavior and identification.
+- **Extraction Logic:** The adapter parses the stderr of the command execution to find the `TEDDY_FAILED_COMMAND` marker and populates the `failed_command` field in the `ShellOutput` DTO.
+- **Reporting:** The Execution Report template renders the `failed_command` prominently in the Action Log when present.
 
 ### Scenario 5: Success Transparency & Multi-Instance Replacement
 **Given** an `EDIT` action is successful
 **When** the execution report is generated
-**Then** it must include the `Similarity Score` and `Similarity Threshold` even if the score is 1.0.
+**Then** it must include the `Similarity Score` even if the score is 1.0.
 
 **Given** an `EDIT` action with the parameter - **Replace All:** `true`
 **When** executed
@@ -89,7 +97,7 @@ To streamline the AI coding workflow by making the Markdown protocol more flexib
 **And** if an ambiguous match is detected, the error message must include a specific hint recommending code refactoring and to use - **Replace All:** `true` if intention is to change all occurrences in the file.
 
 #### Deliverables
-- [ ] Update `IMarkdownReportFormatter` and the Jinja2 template to include `similarity_score` and `similarity_threshold` in the successful action log.
+- [ ] Update `IMarkdownReportFormatter` and the Jinja2 template to include `similarity_score` in the successful action log.
 - [ ] Update `EditAction` domain model to include a `replace_all` boolean field.
 - [ ] Update `parse_edit_action` to extract `Replace All` from metadata.
 - [ ] Update `EditSimulator` to handle multiple replacements when `replace_all` is true.

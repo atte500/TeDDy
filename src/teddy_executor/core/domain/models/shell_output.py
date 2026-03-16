@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import TypedDict, NotRequired
 
 
 class ShellOutput(TypedDict):
@@ -9,3 +9,4 @@ class ShellOutput(TypedDict):
     stdout: str
     stderr: str
     return_code: int
+    failed_command: NotRequired[str]
