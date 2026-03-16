@@ -29,7 +29,7 @@ class CreateActionValidator(BaseActionValidator):
                 if self._file_system_manager.path_exists(path_str):
                     if not action.params.get("overwrite"):
                         msg = (
-                            f"File already exists: {path_str}. Hint: The 'Overwrite: true' "
+                            f"File already exists: {path_str}. **Hint:** The 'Overwrite: true' "
                             "parameter can be used with caution to bypass this."
                         )
                         raise PlanValidationError(msg, file_path=path_str)
