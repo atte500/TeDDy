@@ -77,6 +77,30 @@ To streamline the AI coding workflow by making the Markdown protocol more flexib
 - [ ] Windows implementation in `ShellAdapter` using `%ERRORLEVEL%` checks.
 - [ ] Acceptance test with a multi-line failing shell script.
 
+### Scenario 5: Success Transparency & Multi-Instance Replacement
+**Given** an `EDIT` action is successful
+**When** the execution report is generated
+**Then** it must include the `Similarity Score` and `Similarity Threshold` even if the score is 1.0.
+
+**Given** an `EDIT` action with the parameter - **Replace All:** `true`
+**When** executed
+**Then** the system must replace *all* occurrences of the `FIND` block within the target file.
+**And** it must still respect the `Similarity Threshold` for each match.
+**And** if an ambiguous match is detected, the error message must include a specific hint recommending code refactoring and to use - **Replace All:** `true` if intention is to change all occurrences in the file.
+
+#### Deliverables
+- [ ] Update `IMarkdownReportFormatter` and the Jinja2 template to include `similarity_score` and `similarity_threshold` in the successful action log.
+- [ ] Update `EditAction` domain model to include a `replace_all` boolean field.
+- [ ] Update `parse_edit_action` to extract `Replace All` from metadata.
+- [ ] Update `EditSimulator` to handle multiple replacements when `replace_all` is true.
+- [ ] Update `ActionExecutor` to aggregate scores/results for bulk edits.
+- [ ] Refactor the ambiguity error message.
+
+#### Implementation Notes
+- **Soft Deprecation:** The `Similarity Threshold` parameter is kept in the parser for manual human overrides but will not be included in any agent system prompts to prevent AI-driven "lazy matching."
+- **Replace All Scope:** This feature is strictly file-scoped. Multi-file edits still require separate `### EDIT` blocks to maintain "Atomic Approval" in the TUI.
+- **Ambiguity Hint:** The hint specifically targets duplication in the target code as a root cause of ambiguity, reinforcing clean code principles.
+
 ## 3. Architectural Changes
 - **Parser Layer:** Logic moved from block-level to line-level for `RESEARCH`.
 - **Validation Layer:** `EditActionValidator` now uses scoring to resolve candidate selection.
