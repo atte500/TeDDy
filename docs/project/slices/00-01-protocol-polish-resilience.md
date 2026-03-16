@@ -94,7 +94,7 @@ To streamline the AI coding workflow by making the Markdown protocol more flexib
 **When** executed
 **Then** the system must replace *all* occurrences of the `FIND` block within the target file.
 **And** it must still respect the `Similarity Threshold` for each match.
-**And** if an ambiguous match is detected, the error message must include a specific hint recommending code refactoring and to use - **Replace All:** `true` if intention is to change all occurrences in the file.
+**And** if an ambiguous match is detected, the error message must include a specific hint recommending code refactoring and to use Replace All: `true` if intention is to change all occurrences in the file.
 
 #### Deliverables
 - [ ] Update `IMarkdownReportFormatter` and the Jinja2 template to include `similarity_score` in the successful action log.
@@ -105,7 +105,7 @@ To streamline the AI coding workflow by making the Markdown protocol more flexib
 - [ ] Refactor the ambiguity error message.
 
 #### Implementation Notes
-- **Soft Deprecation:** The `Similarity Threshold` parameter is kept in the parser for manual human overrides but will not be included in any agent system prompts to prevent AI-driven "lazy matching."
+- **Internal Use:** The `Similarity Threshold` parameter is kept in the parser for manual human overrides but will not be included in any agent system prompts to prevent AI-driven "lazy matching."
 - **Replace All Scope:** This feature is strictly file-scoped. Multi-file edits still require separate `### EDIT` blocks to maintain "Atomic Approval" in the TUI.
 - **Ambiguity Hint:** The hint specifically targets duplication in the target code as a root cause of ambiguity, reinforcing clean code principles.
 
