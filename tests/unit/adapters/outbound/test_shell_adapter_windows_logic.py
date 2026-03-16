@@ -32,6 +32,24 @@ def test_windows_command_wrapping_includes_parentheses(adapter):
         assert wrapped_cmd.endswith('")')
 
 
+def test_windows_command_wrapping_isolates_exit_commands(adapter):
+    """
+    Verify that 'exit' commands on Windows are wrapped in 'cmd /c'
+    instead of 'call' to ensure they don't terminate the parent shell.
+    """
+    command = "echo hello\nexit /b 1\necho world"
+
+    with patch("sys.platform", "win32"), patch("shutil.which", return_value=None):
+        wrapped_cmd, _ = adapter._prepare_command_for_platform(command)
+
+        # Non-exit command should use 'call'
+        assert "(call echo hello ||" in wrapped_cmd
+        # Exit command should use 'cmd /c' and be quoted
+        assert '&& (cmd /c "exit /b 1" ||' in wrapped_cmd
+        # Ensure the failure reporter is still there
+        assert 'echo FAILED_COMMAND: exit /b 1 >&2 & exit 1")' in wrapped_cmd
+
+
 def test_windows_wraps_complex_single_line_commands(adapter):
     """
     Verify that single-line chained commands are wrapped on Windows

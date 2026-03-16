@@ -66,10 +66,15 @@ class ShellAdapter(IShellExecutor):
                         .replace(">", "^>")
                         .replace("<", "^<")
                     )
-                    # We use 'call' to ensure that built-in commands like 'exit /b'
-                    # do not terminate the parent shell before the || handler runs.
+                    # Surgical isolation for 'exit' commands. Using 'call' for 'exit /b'
+                    # terminates the parent context; 'cmd /c' allows the parent to survive.
+                    prefix = (
+                        "cmd /c" if line.strip().lower().startswith("exit") else "call"
+                    )
+                    cmd_part = f'"{line}"' if prefix == "cmd /c" else line
+
                     wrapped_parts.append(
-                        f'(call {line} || cmd /c "echo FAILED_COMMAND: {safe_line} >&2 & exit 1")'
+                        f'({prefix} {cmd_part} || cmd /c "echo FAILED_COMMAND: {safe_line} >&2 & exit 1")'
                     )
                 wrapped = " && ".join(wrapped_parts)
                 return wrapped, True
