@@ -13,16 +13,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  debug-windows-exit:
-    name: "Debug: Windows Exit Code Behavior"
-    runs-on: windows-latest
-    steps:
-      - name: Final Hybrid Fix Validation
-        continue-on-error: true
-        shell: cmd
-        run: |
-          echo --- FINAL VALIDATION: Hybrid Multi-line Fail-Fast ---
-          (call echo line1 || cmd /c "echo FAILED_COMMAND: echo line1 >&2 & exit 1") && (cmd /c "exit /b 1" || cmd /c "echo FAILED_COMMAND: exit /b 1 >&2 & exit 1") && (call echo line3 || cmd /c "echo FAILED_COMMAND: echo line3 >&2 & exit 1")
   build-and-test:
     runs-on: ${{ matrix.os }}
     defaults:
