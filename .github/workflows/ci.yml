@@ -18,6 +18,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Test 1 - Current Implementation (call)
+        continue-on-error: true
         shell: cmd
         run: |
           echo Testing: (call exit /b 1 ^|^| echo HANDLER_RAN)
@@ -25,6 +26,7 @@ jobs:
           echo ERRORLEVEL: %ERRORLEVEL%
 
       - name: Test 2 - Without call
+        continue-on-error: true
         shell: cmd
         run: |
           echo Testing: (exit /b 1 ^|^| echo HANDLER_RAN)
@@ -32,6 +34,7 @@ jobs:
           echo ERRORLEVEL: %ERRORLEVEL%
 
       - name: Test 3 - Sub-shell (cmd /c)
+        continue-on-error: true
         shell: cmd
         run: |
           echo Testing: (cmd /c "exit /b 1" ^|^| echo HANDLER_RAN)
@@ -39,6 +42,7 @@ jobs:
           echo ERRORLEVEL: %ERRORLEVEL%
 
       - name: Test 4 - Double shell (nested)
+        continue-on-error: true
         shell: cmd
         run: |
           echo Testing: (cmd /c "exit /b 1" ^|^| cmd /c "echo HANDLER_RAN ^& exit 1")
@@ -46,6 +50,7 @@ jobs:
           echo ERRORLEVEL: %ERRORLEVEL%
 
       - name: Test 5 - Basic exit (no /b)
+        continue-on-error: true
         shell: cmd
         run: |
           echo Testing: (exit 1 ^|^| echo HANDLER_RAN)
