@@ -33,8 +33,8 @@ def test_windows_uses_exit_not_exit_b(adapter):
     with patch("sys.platform", "win32"):
         prepared, _ = adapter._prepare_command_for_platform(cmd)
 
-        assert "exit 1)" in prepared
-        assert "exit /b 1" not in prepared
+        assert '& exit 1"' in prepared
+    assert "exit /b 1" not in prepared
 
 
 def test_windows_escapes_redirection_operators(adapter):

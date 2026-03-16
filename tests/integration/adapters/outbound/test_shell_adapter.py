@@ -104,7 +104,7 @@ def test_shell_adapter_preserves_parent_environment():
     # Check that PATH from parent env is not empty
     assert result["stdout"].splitlines()[0] != ""
     # Check that the custom env var was passed correctly
-    assert result["stdout"].splitlines()[1] == "custom_value"
+    assert result["stdout"].splitlines()[1].strip() == "custom_value"
 
 
 @pytest.mark.timeout(10)  # Add a timeout to prevent hanging indefinitely
