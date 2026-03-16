@@ -123,6 +123,7 @@ def _register_services(container: punq.Container) -> None:
     from teddy_executor.core.ports.inbound.init import IInitUseCase
     from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
     from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
+    from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
     from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
     from teddy_executor.core.ports.outbound import (
         IConfigService,
@@ -165,7 +166,17 @@ def _register_services(container: punq.Container) -> None:
     container.register(
         IMarkdownReportFormatter, MarkdownReportFormatter, scope=punq.Scope.transient
     )
-    container.register(ExecutionOrchestrator, scope=punq.Scope.transient)
+    container.register(
+        ExecutionOrchestrator,
+        factory=lambda: ExecutionOrchestrator(
+            plan_parser=container.resolve(IPlanParser),
+            plan_validator=container.resolve(IPlanValidator),
+            action_executor=container.resolve(ActionExecutor),
+            file_system_manager=container.resolve(IFileSystemManager),
+            plan_reviewer=container.resolve(IPlanReviewer),
+        ),
+        scope=punq.Scope.transient,
+    )
     container.register(IGetContextUseCase, ContextService, scope=punq.Scope.transient)
     container.register(
         IPlanningUseCase,

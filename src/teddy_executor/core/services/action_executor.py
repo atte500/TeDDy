@@ -6,10 +6,14 @@ from teddy_executor.core.domain.models import (
     ActionStatus,
     ChangeSet,
 )
-from teddy_executor.core.utils.diff import generate_unified_diff
 from teddy_executor.core.ports.inbound.edit_simulator import IEditSimulator
+from teddy_executor.core.services.action_diff_manager import ActionDiffManager
 from teddy_executor.core.ports.outbound import IFileSystemManager, IUserInteractor
 from teddy_executor.core.services.action_dispatcher import ActionDispatcher
+
+
+# Constant for perfect match detection to avoid floating point noise
+PERFECT_MATCH_THRESHOLD = 0.99999
 
 
 class ActionExecutor:
@@ -135,11 +139,13 @@ class ActionExecutor:
         path = Path(path_str)
 
         if action.type.upper() == "EDIT":
-            threshold = action.params.get("Similarity Threshold", 0.95)
-            after_content = self._edit_simulator.simulate_edits(
+            threshold = action.params.get("similarity_threshold", 0.95)
+            replace_all = action.params.get("replace_all", False)
+            after_content, _ = self._edit_simulator.simulate_edits(
                 before_content,
                 action.params.get("edits", []),
                 threshold=threshold,
+                replace_all=replace_all,
             )
         else:  # CREATE
             after_content = action.params.get("content", "")
@@ -208,60 +214,7 @@ class ActionExecutor:
         if action_log.status == ActionStatus.FAILURE:
             return self._enrich_failed_log(action, action_log)
 
-        # Don't inject diff if we already showed it in interactive mode
-        if interactive:
-            return action_log
-
-        return self._inject_execution_diff(action, action_log, change_set)
-
-    def _inject_execution_diff(self, action, action_log, change_set) -> ActionLog:
-        """
-        Injects a unified diff into the log for CREATE overwrites or EDITs.
-        """
-        if action_log.status != ActionStatus.SUCCESS:
-            return action_log
-
-        is_create_overwrite = (
-            action.type.upper() == "CREATE"
-            and action.params.get("overwrite")
-            and change_set
-            and change_set.before_content
-        )
-        is_edit = action.type.upper() == "EDIT"
-
-        if not (is_create_overwrite or is_edit):
-            return action_log
-
-        # Check types to handle Mocks in tests gracefully
-        if (
-            not change_set
-            or not isinstance(change_set.before_content, str)
-            or not isinstance(change_set.after_content, str)
-        ):
-            return action_log
-
-        diff = generate_unified_diff(
-            change_set.before_content,
-            change_set.after_content,
-            change_set.path.name,
-        )
-
-        if not diff:
-            return action_log
-
-        # Inject the diff into details for the reporter
-        details = action_log.details
-        new_details = {"diff": diff}
-
-        if isinstance(details, dict):
-            new_details.update(details)
-
-        return ActionLog(
-            status=action_log.status,
-            action_type=action_log.action_type,
-            params=action_log.params,
-            details=new_details,
-        )
+        return ActionDiffManager.inject_diff(action, action_log, change_set)
 
     def handle_skipped_action(self, action, reason: str) -> ActionLog:
         """Public method for skipping actions."""

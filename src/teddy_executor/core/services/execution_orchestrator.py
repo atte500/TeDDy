@@ -10,10 +10,11 @@ from teddy_executor.core.domain.models import (
     RunStatus,
     ActionStatus,
 )
-from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
+from teddy_executor.core.ports.inbound.plan_parser import IPlanParser, InvalidPlanError
 from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
-from teddy_executor.core.ports.outbound import IFileSystemManager, IUserInteractor
+from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
+from teddy_executor.core.ports.outbound import IFileSystemManager
 from teddy_executor.core.services.action_executor import ActionExecutor
 
 
@@ -21,14 +22,14 @@ class ExecutionOrchestrator(IRunPlanUseCase):
     def __init__(
         self,
         plan_parser: IPlanParser,
+        plan_validator: IPlanValidator,
         action_executor: ActionExecutor,
-        user_interactor: IUserInteractor,
         file_system_manager: IFileSystemManager,
         plan_reviewer: IPlanReviewer = None,  # type: ignore
     ):
         self._plan_parser = plan_parser
+        self._plan_validator = plan_validator
         self._action_executor = action_executor
-        self._user_interactor = user_interactor
         self._file_system_manager = file_system_manager
         self._plan_reviewer = plan_reviewer
 
@@ -60,7 +61,6 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         for action in plan.actions:
             if halt_execution:
                 reason = "Skipped because a previous action failed."
-                self._user_interactor.notify_skipped_action(action, reason)
                 action_logs.append(
                     self._action_executor.handle_skipped_action(action, reason)
                 )
@@ -68,7 +68,6 @@ class ExecutionOrchestrator(IRunPlanUseCase):
 
             if not action.selected:
                 reason = "User deselected this action in the plan reviewer."
-                self._user_interactor.notify_skipped_action(action, reason)
                 action_logs.append(
                     self._action_executor.handle_skipped_action(action, reason)
                 )
@@ -103,6 +102,18 @@ class ExecutionOrchestrator(IRunPlanUseCase):
                 raise ValueError("Must provide either plan, plan_content, or plan_path")
 
         start_time = datetime.now()
+
+        # Pre-flight logical validation
+        validation_errors = self._plan_validator.validate(plan)
+        if validation_errors:
+            error_msgs = "\n---\n".join(e.message for e in validation_errors)
+            raise InvalidPlanError(
+                f"Plan failed logical validation:\n{error_msgs}",
+                offending_nodes=[
+                    e.offending_node for e in validation_errors if e.offending_node
+                ],
+            )
+
         plan = self._perform_interactive_review(plan)
         if plan is None:
             return ExecutionReport(

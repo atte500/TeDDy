@@ -16,10 +16,11 @@ def test_simulate_edits_applies_multiple_pairs_sequentially():
     simulator = EditSimulator()
 
     # When
-    result = simulator.simulate_edits(content, edits)
+    result, scores = simulator.simulate_edits(content, edits)
 
     # Then
     assert result == "LINE ONE\nline 2\nLINE THREE"
+    assert all(s == 1.0 for s in scores)
 
 
 def test_simulate_edits_raises_error_if_find_not_found():
@@ -49,6 +50,6 @@ def test_simulate_edits_removes_newline_on_empty_replacement():
     edits = [{"find": "Line 2", "replace": ""}]
     simulator = EditSimulator()
 
-    result = simulator.simulate_edits(content, edits)
+    result, _ = simulator.simulate_edits(content, edits)
 
     assert result == "Line 1\nLine 3\n"

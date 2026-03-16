@@ -25,6 +25,8 @@ class ActionData:
     selected: bool = True
     modified: bool = False
     node: Any = None
+    similarity_score: float | None = None
+    similarity_scores: list[float] | None = None
 
 
 @dataclass(frozen=True)

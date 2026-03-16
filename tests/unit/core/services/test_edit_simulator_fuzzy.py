@@ -13,7 +13,7 @@ def test_simulate_edits_fuzzy_success():
     edits = [{"find": "def hello(): ", "replace": "def greeting():"}]
 
     # Should succeed with threshold 0.8
-    result = simulator.simulate_edits(content, edits, threshold=0.8)
+    result, _ = simulator.simulate_edits(content, edits, threshold=0.8)
     assert "def greeting():" in result
     assert "print('world')" in result
 

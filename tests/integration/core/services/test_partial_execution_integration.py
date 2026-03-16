@@ -44,18 +44,21 @@ def test_orchestrator_skips_unselected_actions_integration(
 
         ### `CREATE`
         - **File Path:** [foo.py](/foo.py)
+        - **Overwrite:** true
         ````python
         print("foo")
         ````
 
         ### `CREATE`
         - **File Path:** [bar.py](/bar.py)
+        - **Overwrite:** true
         ````python
         print("bar")
         ````
 
         ### `CREATE`
         - **File Path:** [baz.py](/baz.py)
+        - **Overwrite:** true
         ````python
         print("baz")
         ````

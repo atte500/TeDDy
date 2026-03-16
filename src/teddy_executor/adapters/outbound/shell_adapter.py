@@ -64,7 +64,7 @@ class ShellAdapter(IShellExecutor):
                         .replace("|", "^|")
                     )
                     wrapped_parts.append(
-                        f"{line} || (echo TEDDY_FAILED_COMMAND: {safe_line} >&2 & exit /b 1)"
+                        f"{line} || (echo FAILED_COMMAND: {safe_line} >&2 & exit /b 1)"
                     )
                 wrapped = " && ".join(wrapped_parts)
                 return wrapped, True
@@ -88,7 +88,7 @@ class ShellAdapter(IShellExecutor):
                 "__teddy_report() { "
                 "RET=$?; "
                 "if [ $RET -ne 0 ]; then "
-                'echo "TEDDY_FAILED_COMMAND: $TEDDY_LAST_CMD" >&2; '
+                'echo "FAILED_COMMAND: $TEDDY_LAST_CMD" >&2; '
                 "fi; "
                 "exit $RET; "
                 "}\n"
@@ -175,7 +175,7 @@ class ShellAdapter(IShellExecutor):
             }
 
             # Extract granular failure info if present in stderr
-            marker = "TEDDY_FAILED_COMMAND: "
+            marker = "FAILED_COMMAND: "
             if marker in result.stderr:
                 for line in result.stderr.splitlines():
                     if marker in line:

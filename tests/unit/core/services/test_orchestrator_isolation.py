@@ -21,10 +21,12 @@ def test_orchestrator_skips_non_isolated_terminal_action():
         file_system_manager=file_system_manager,
         edit_simulator=edit_simulator,
     )
+    mock_validator = MagicMock()
+    mock_validator.validate.return_value = []
     orchestrator = ExecutionOrchestrator(
         plan_parser=plan_parser,
+        plan_validator=mock_validator,
         action_executor=action_executor,
-        user_interactor=user_interactor,
         file_system_manager=file_system_manager,
     )
 

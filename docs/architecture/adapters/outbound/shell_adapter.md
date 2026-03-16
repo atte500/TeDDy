@@ -30,5 +30,5 @@ The `execute` method runs the command string provided by the core. To ensure con
 4.  **Subprocess Execution (Synchronous):** For standard execution, the adapter uses Python's `subprocess.run` with a `timeout` parameter.
     - **Timeout Handling:** If the command exceeds the timeout, the adapter catches `subprocess.TimeoutExpired`, kills the process, and captures any partial `stdout`/`stderr`. These partial outputs are decoded (UTF-8 with replacement) and returned with a standard exit code of `124`.
 5.  **Background Execution (Asynchronous):** If the `background` flag is set, the adapter uses `subprocess.Popen` with `start_new_session=True` to detach the process. It immediately returns a success response containing the new Process ID (PID).
-6.  **Result Mapping & Extraction:** It maps the raw results (or partial results) to a `ShellOutput` DTO. If the execution failed, it parses `stderr` for the `TEDDY_FAILED_COMMAND` marker to populate the `failed_command` field.
+6.  **Result Mapping & Extraction:** It maps the raw results (or partial results) to a `ShellOutput` DTO. If the execution failed, it parses `stderr` for the `FAILED_COMMAND` marker to populate the `failed_command` field.
 6.  **Debug Mode:** If the `TEDDY_DEBUG` environment variable is set, detailed pre-execution and post-execution logs are printed to `stderr` to aid in diagnostics.

@@ -52,6 +52,7 @@ def find_best_match_and_diff(
 ) -> tuple[str, float, bool]:
     """
     Finds the most similar block of text in the file content and generates a diff.
+    Uses character-level ndiff (with ? markers) for fuzzy matches.
 
     Returns:
         tuple[str, float, bool]: (diff_text, best_score, is_ambiguous)
@@ -65,10 +66,11 @@ def find_best_match_and_diff(
 
     res = ""
     if best_match_str and not is_ambiguous:
-        # Generate diff for any non-perfect match to aid user/AI debugging
-        if score != 1.0:
+        # Generate character-level diff only for non-perfect matches
+        if 0 < score < 1.0:
             find_lines = find_block.splitlines(keepends=True)
             match_lines = best_match_str.splitlines(keepends=True)
+            # ndiff provides the '?' lines for intra-line changes
             diff = difflib.ndiff(find_lines, match_lines)
             res = "\n".join(line.rstrip("\n\r") for line in diff)
 
@@ -243,12 +245,10 @@ def _apply_substring_boost(
         find_text = find_lines[0].rstrip("\n\r")
         if find_text and find_text in window[0]:
             match_count = window[0].count(find_text)
-            if match_count == 1:
-                ratio = 1.0
-                match_lines = [find_text]
-            elif match_count > 1:
+            ratio = 1.0
+            match_lines = [find_text]
+            if match_count > 1:
                 # Intra-line ambiguity detected
-                ratio = 1.0
                 is_ambiguous = True
 
     return match_lines, ratio, is_ambiguous

@@ -44,6 +44,7 @@ Rationale.
 ## Action Plan
 ### `CREATE`
 - **File Path:** [file1.txt](/file1.txt)
+- **Overwrite:** true
 - **Description:** First file.
 ````text
 content1

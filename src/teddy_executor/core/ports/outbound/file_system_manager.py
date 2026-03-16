@@ -51,7 +51,8 @@ class IFileSystemManager(Protocol):
         path: str,
         edits: list[dict[str, str]],
         similarity_threshold: float = 0.95,
-    ) -> None:
+        replace_all: bool = False,
+    ) -> list[float]:
         """
         Modifies an existing file by applying a list of find-and-replace blocks.
 

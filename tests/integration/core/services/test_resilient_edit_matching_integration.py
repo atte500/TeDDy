@@ -56,10 +56,9 @@ def test_fuzzy_edit_success_with_diff_in_report(tmp_path, monkeypatch):
     # Check that the file was updated
     assert "hello universe" in target_file.read_text(encoding="utf-8")
     # Check that a diff was injected into the report (stdout/clipboard)
-    assert "--- a/app.py" in result.stdout
-    assert "+++ b/app.py" in result.stdout
-    assert "-    print('hello world')" in result.stdout
-    assert "+    print('hello universe')" in result.stdout
+    assert "?" in result.stdout
+    assert "-     print('hello world')" in result.stdout
+    assert "+     print('hello universe')" in result.stdout
 
 
 def test_edit_custom_threshold_fail(tmp_path, monkeypatch):

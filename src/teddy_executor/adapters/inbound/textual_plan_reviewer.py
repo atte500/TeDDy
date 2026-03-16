@@ -117,7 +117,9 @@ class ReviewerApp(App):
 
         # 2. Simulate the AI's proposed edits
         edits = action.params.get("edits", [])
-        proposed_content = self._edit_simulator.simulate_edits(original_content, edits)
+        proposed_content, _ = self._edit_simulator.simulate_edits(
+            original_content, edits
+        )
 
         # 3. Open in editor
         temp_file = self._system_env.create_temp_file(suffix=suffix)

@@ -175,7 +175,8 @@ class LocalFileSystemAdapter(IFileSystemManager):
         path: str,
         edits: list[dict[str, str]],
         similarity_threshold: float = 0.95,
-    ) -> None:
+        replace_all: bool = False,
+    ) -> list[float]:
         """
         Modifies an existing file by applying a list of find-and-replace blocks.
         """
@@ -183,11 +184,17 @@ class LocalFileSystemAdapter(IFileSystemManager):
         content = file_path.read_text(encoding="utf-8")
 
         # Cast to match the port's expected EditPair structure
-        cast_edits: List[EditPair] = [
-            {"find": e["find"], "replace": e["replace"]} for e in edits
-        ]
-        new_content = self._edit_simulator.simulate_edits(
-            content, cast_edits, threshold=similarity_threshold
+        cast_edits: List[EditPair] = []
+        for e in edits:
+            pair: EditPair = {"find": e["find"], "replace": e["replace"]}
+            cast_edits.append(pair)
+
+        new_content, scores = self._edit_simulator.simulate_edits(
+            content,
+            cast_edits,
+            threshold=similarity_threshold,
+            replace_all=replace_all,
         )
 
         file_path.write_text(new_content, encoding="utf-8")
+        return scores

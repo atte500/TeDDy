@@ -91,6 +91,9 @@ class ActionDispatcher:
                 result = {"content": result}
             elif action_type.lower() == "prompt":
                 result = {"response": result}
+        elif action_type.lower() == "edit" and isinstance(result, list):
+            # edit_file now returns a list of scores
+            result = {"similarity_scores": result}
 
         status = ActionStatus.SUCCESS
         if isinstance(result, dict) and "return_code" in result:

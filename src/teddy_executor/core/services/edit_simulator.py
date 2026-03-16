@@ -19,18 +19,18 @@ class EditSimulator(IEditSimulator):
         find: str,
         replace: str,
         threshold: float = 0.95,
-    ) -> str:
+        replace_all: bool = False,
+    ) -> tuple[str, float]:
         """
         Applies a single find/replace operation to content with domain logic.
         """
         best_match, score, is_ambiguous = find_best_match(content, find, threshold)
 
-        if is_ambiguous:
-            # We use content.count to check for exact ambiguity count if the score is 1.0,
-            # but if it's fuzzy, any tie is a MultipleMatchesFoundError.
+        if is_ambiguous and not replace_all:
             count = content.count(find) if score == 1.0 else 2
+            hint = " Please provide a larger FIND block to uniquely identify the section, refactor the code to avoid duplication, and to use Replace All: true if intention is to change all occurrences in the file."
             raise MultipleMatchesFoundError(
-                message=f"Found {count} ambiguous occurrences of {find!r}. Aborting edit to prevent ambiguity.",
+                message=f"Found {count} ambiguous occurrences of {find!r}. Aborting edit to prevent ambiguity.{hint}",
                 content=content,
             )
 
@@ -50,29 +50,52 @@ class EditSimulator(IEditSimulator):
         ):
             final_replace += "\n"
 
-        if replace == "":
-            # Newline cleanup logic to prevent orphaned empty lines
+        if replace == "" and not replace_all:
+            # Newline cleanup logic for surgical deletions
             if best_match.endswith("\n") and (best_match) in content:
-                return content.replace(best_match, "", 1)
+                return content.replace(best_match, "", 1), score
             if "\n" + best_match in content:
-                return content.replace("\n" + best_match, "", 1)
+                return content.replace("\n" + best_match, "", 1), score
 
-        return content.replace(best_match, final_replace, 1)
+        if replace_all:
+            # Replaces all occurrences of the found block
+            return content.replace(best_match, final_replace), score
+        return content.replace(best_match, final_replace, 1), score
 
     def simulate_edits(
         self,
         content: str,
         edits: List[EditPair],
         threshold: float = 0.95,
-    ) -> str:
+        replace_all: bool = False,
+    ) -> tuple[str, list[float]]:
         """
         Applies each FIND/REPLACE pair in sequence.
         """
         current_content = content
+        all_scores = []
 
         for edit in edits:
-            current_content = self._apply_single_edit(
-                current_content, edit["find"], edit["replace"], threshold
-            )
+            # Local replace_all override from action params or global
+            do_replace_all = edit.get("replace_all", replace_all)
 
-        return current_content
+            if do_replace_all:
+                current_content, score = self._apply_single_edit(
+                    current_content,
+                    edit["find"],
+                    edit["replace"],
+                    threshold,
+                    replace_all=True,
+                )
+                all_scores.append(score)
+            else:
+                current_content, score = self._apply_single_edit(
+                    current_content,
+                    edit["find"],
+                    edit["replace"],
+                    threshold,
+                    replace_all=False,
+                )
+                all_scores.append(score)
+
+        return current_content, all_scores

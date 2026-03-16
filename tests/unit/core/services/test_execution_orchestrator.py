@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock
+
 import pytest
 
 from teddy_executor.core.domain.models import (
@@ -7,22 +9,26 @@ from teddy_executor.core.domain.models import (
     Plan,
     RunStatus,
 )
-from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
 
 
 @pytest.fixture
-def orchestrator(  # noqa: PLR0913
-    container,
-    mock_plan_parser,
-    mock_action_dispatcher,
-    mock_user_interactor,
-    mock_fs,
-    mock_edit_simulator,
-) -> ExecutionOrchestrator:
-    """Resolves ExecutionOrchestrator with all mocked dependencies."""
-    container.register(IRunPlanUseCase, ExecutionOrchestrator)
-    return container.resolve(IRunPlanUseCase)
+def orchestrator(
+    mock_plan_parser, mock_action_dispatcher, mock_user_interactor, mock_fs
+):
+    from teddy_executor.core.services.action_executor import ActionExecutor
+
+    action_executor = ActionExecutor(
+        mock_action_dispatcher, mock_user_interactor, mock_fs, MagicMock()
+    )
+    mock_validator = MagicMock()
+    mock_validator.validate.return_value = []
+    return ExecutionOrchestrator(
+        mock_plan_parser,
+        mock_validator,
+        action_executor,
+        mock_fs,
+    )
 
 
 def test_execute_with_failing_action(
@@ -37,8 +43,8 @@ def test_execute_with_failing_action(
     Then the final report status should be 'FAILURE'
     """
     # Arrange
-    action1_params = {"name": "failing action", "details": {}}
-    action1 = ActionData(type="action1", params=action1_params)
+    action1_params = {"command": "exit 1", "description": "failing action"}
+    action1 = ActionData(type="EXECUTE", params=action1_params)
     plan = Plan(title="Test Plan", rationale="Test", actions=[action1])
     failing_log = ActionLog(
         status=ActionStatus.FAILURE,
@@ -73,7 +79,7 @@ def test_execute_interactive_and_skipped(
     And a 'SKIPPED' action log should be recorded
     """
     # Arrange
-    action1 = ActionData(type="action1", params={})
+    action1 = ActionData(type="EXECUTE", params={"command": "ls"})
     plan = Plan(title="Test Plan", rationale="Test", actions=[action1])
 
     mock_user_interactor.confirm_action.return_value = (False, "Just because")
@@ -101,8 +107,8 @@ def test_execute_with_mixed_success_and_skipped_is_success(
     Then the final report status should be 'SUCCESS'
     """
     # Arrange
-    action1 = ActionData(type="action1", params={})
-    action2 = ActionData(type="action2", params={})
+    action1 = ActionData(type="EXECUTE", params={"command": "ls"})
+    action2 = ActionData(type="EXECUTE", params={"command": "pwd"})
     plan = Plan(title="Test Plan", rationale="Test", actions=[action1, action2])
     success_log = ActionLog(
         status=ActionStatus.SUCCESS,
@@ -140,8 +146,8 @@ def test_execute_interactive_and_approved(
     Then the orchestrator should prompt the user and then dispatch the action
     """
     # Arrange
-    action1_params = {"name": "first action", "details": {}}
-    action1 = ActionData(type="action1", params=action1_params)
+    action1_params = {"command": "ls", "description": "first action"}
+    action1 = ActionData(type="EXECUTE", params=action1_params)
     plan = Plan(title="Test Plan", rationale="Test", actions=[action1])
     action_log1 = ActionLog(
         status=ActionStatus.SUCCESS,
@@ -177,8 +183,12 @@ def test_execute_auto_skips_after_failure(
     And the overall status should be FAILURE
     """
     # Arrange
-    action1 = ActionData(type="action1", params={}, description="First Action")
-    action2 = ActionData(type="action2", params={}, description="Second Action")
+    action1 = ActionData(
+        type="EXECUTE", params={"command": "ls"}, description="First Action"
+    )
+    action2 = ActionData(
+        type="EXECUTE", params={"command": "ls"}, description="Second Action"
+    )
     plan = Plan(title="Test Plan", rationale="Test", actions=[action1, action2])
 
     failing_log = ActionLog(
@@ -218,11 +228,6 @@ def test_execute_auto_skips_after_failure(
     # Dispatcher should only be called once
     mock_action_dispatcher.dispatch_and_execute.assert_called_once_with(
         action1, agent_name=None
-    )
-
-    # Interactor should be notified of the skip
-    mock_user_interactor.notify_skipped_action.assert_called_once_with(
-        action2, "Skipped because a previous action failed."
     )
 
 
@@ -285,8 +290,8 @@ def test_execute_happy_path_non_interactive(
     And it should not interact with the user
     """
     # Arrange
-    action1_params = {"name": "first action", "details": {}}
-    action1 = ActionData(type="action1", params=action1_params)
+    action1_params = {"command": "ls", "description": "first action"}
+    action1 = ActionData(type="EXECUTE", params=action1_params)
     plan = Plan(title="Test Plan", rationale="Test", actions=[action1])
     action_log1 = ActionLog(
         status=ActionStatus.SUCCESS,

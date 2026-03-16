@@ -74,18 +74,18 @@ To streamline the AI coding workflow by making the Markdown protocol more flexib
 
 #### Deliverables
 - [✓] POSIX implementation in `ShellAdapter` using a function-based `DEBUG`/`EXIT` trap wrapper for high granularity.
-- [✓] Windows implementation in `ShellAdapter` using `&&` logic and `TEDDY_FAILED_COMMAND` markers.
+- [✓] Windows implementation in `ShellAdapter` using `&&` logic and `FAILED_COMMAND` markers.
 - [✓] Acceptance test with a multi-line failing shell script.
 - [✓] Unit tests verifying sub-command isolation within `&&` chains.
 
 #### Implementation Notes
 - **Diagnostic Wrappers:** `ShellAdapter` now automatically wraps multi-line and chained command strings in platform-specific diagnostic scripts.
 - **POSIX (Bash):** Uses a sophisticated diagnostic script with a `DEBUG` trap to capture the `BASH_COMMAND` before execution and an `EXIT` trap (handled by a shell function to prevent pollution) that reports the last attempted sub-command if the shell terminates with a non-zero status. This provides sub-command level granularity even within `&&` chains.
-- **Windows (CMD):** Joins commands with `&&` and injects `|| (echo TEDDY_FAILED_COMMAND: ... >&2 && exit /b 1)` for each line to ensure "fail-fast" behavior and identification.
-- **Extraction Logic:** The adapter parses the stderr of the command execution to find the `TEDDY_FAILED_COMMAND` marker and populates the `failed_command` field in the `ShellOutput` DTO.
+- **Windows (CMD):** Joins commands with `&&` and injects `|| (echo FAILED_COMMAND: ... >&2 && exit /b 1)` for each line to ensure "fail-fast" behavior and identification.
+- **Extraction Logic:** The adapter parses the stderr of the command execution to find the `FAILED_COMMAND` marker and populates the `failed_command` field in the `ShellOutput` DTO.
 - **Reporting:** The Execution Report template renders the `failed_command` prominently in the Action Log when present.
 
-### Scenario 5: Success Transparency & Multi-Instance Replacement
+### Scenario 5: Success Transparency & Multi-Instance Replacement [✓]
 **Given** an `EDIT` action is successful
 **When** the execution report is generated
 **Then** it must include the `Similarity Score` even if the score is 1.0.
@@ -97,17 +97,20 @@ To streamline the AI coding workflow by making the Markdown protocol more flexib
 **And** if an ambiguous match is detected, the error message must include a specific hint recommending code refactoring and to use Replace All: `true` if intention is to change all occurrences in the file.
 
 #### Deliverables
-- [ ] Update `IMarkdownReportFormatter` and the Jinja2 template to include `similarity_score` in the successful action log.
-- [ ] Update `EditAction` domain model to include a `replace_all` boolean field.
-- [ ] Update `parse_edit_action` to extract `Replace All` from metadata.
-- [ ] Update `EditSimulator` to handle multiple replacements when `replace_all` is true.
-- [ ] Update `ActionExecutor` to aggregate scores/results for bulk edits.
-- [ ] Refactor the ambiguity error message.
+- [✓] Update `IMarkdownReportFormatter` and the Jinja2 template to include `similarity_score` in the successful action log.
+- [✓] Update `EditAction` domain model to include a `replace_all` boolean field.
+- [✓] Update `parse_edit_action` to extract `Replace All` from metadata.
+- [✓] Update `EditSimulator` to handle multiple replacements when `replace_all` is true.
+- [✓] Update `ActionExecutor` to aggregate scores/results for bulk edits.
+- [✓] Refactor the ambiguity error message.
 
 #### Implementation Notes
-- **Internal Use:** The `Similarity Threshold` parameter is kept in the parser for manual human overrides but will not be included in any agent system prompts to prevent AI-driven "lazy matching."
-- **Replace All Scope:** This feature is strictly file-scoped. Multi-file edits still require separate `### EDIT` blocks to maintain "Atomic Approval" in the TUI.
-- **Ambiguity Hint:** The hint specifically targets duplication in the target code as a root cause of ambiguity, reinforcing clean code principles.
+- **Hunk-Based Transparency:** Refactored `generate_character_diff` to use a windowing/merging algorithm. This ensures multi-site edits are shown clearly with `...` separators and no context duplication, resolving the "only one change shown" transparency issue.
+- **Character-Level Diffs (`ndiff`):** Enabled surgical `ndiff` markers (`?`) for all fuzzy `EDIT` matches in the Execution Report, even in interactive mode, to provide high-fidelity audit trails.
+- **Multi-Instance Replacement:** `EditSimulator` now supports `Replace All: true` metadata, which iterates through the file applying the replacement to every match meeting the `Similarity Threshold`.
+- **Ambiguity Diagnostics:** Updated `MultipleMatchesFoundError` with a specific hint directing the user toward either code refactoring or the use of `Replace All`.
+- **Reporting Polish:** Unified similarity score rendering in the Jinja2 template, ensuring scores are always present for successful `EDIT` actions to maintain transparency.
+- **Diff Injection Resilience:** Upgraded `ActionExecutor` to automatically inject unified diffs for `CREATE` overwrites and character-level diffs for fuzzy `EDIT` matches. Diffs for perfect `EDIT` matches remain suppressed to reduce noise.
 
 ## 3. Architectural Changes
 - **Parser Layer:** Logic moved from block-level to line-level for `RESEARCH`.

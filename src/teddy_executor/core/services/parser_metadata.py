@@ -32,9 +32,13 @@ def _process_link_key(
 
 def _process_text_key(text: str, key_map: dict[str, str]) -> Optional[tuple[str, str]]:
     """Helper to process a single text-based metadata key."""
+    # Strip markdown bolding for resilient key matching
+    clean_text = text.replace("**", "")
     for key_text, param_key in key_map.items():
-        if f"{key_text}:" in text:
-            return param_key, text.split(":", 1)[1].strip()
+        if f"{key_text}:" in clean_text:
+            # Use clean text for finding the colon and splitting
+            parts = clean_text.split(":", 1)
+            return param_key, parts[1].strip()
     return None
 
 

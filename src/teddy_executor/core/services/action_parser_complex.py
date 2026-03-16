@@ -74,8 +74,14 @@ def parse_edit_action(
     description, params = parse_action_metadata(
         metadata_list,
         link_key_map={"File Path": "path"},
-        text_key_map={"Similarity Threshold": "similarity_threshold"},
+        text_key_map={
+            "Similarity Threshold": "similarity_threshold",
+            "Replace All": "replace_all",
+        },
     )
+
+    if "replace_all" in params:
+        params["replace_all"] = str(params["replace_all"]).lower() == "true"
 
     if "similarity_threshold" in params:
         try:
