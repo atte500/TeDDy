@@ -24,10 +24,10 @@ def test_windows_command_wrapping_includes_parentheses(adapter):
         # (line1 || handler1) && (line2 || handler2)
 
         assert use_shell is True
-        # Check for parentheses around the first command segment
-        assert "(echo line1 ||" in wrapped_cmd
-        # Check for parentheses around the second command segment
-        assert "&& (echo line2 ||" in wrapped_cmd
+        # Check for parentheses and 'call' prefix around the first command segment
+        assert "(call echo line1 ||" in wrapped_cmd
+        # Check for parentheses and 'call' prefix around the second command segment
+        assert "&& (call echo line2 ||" in wrapped_cmd
         # Ensure the final parenthesis is present
         assert wrapped_cmd.endswith('")')
 
@@ -61,14 +61,14 @@ def test_windows_uses_exit_not_exit_b(adapter):
         assert "exit /b 1" not in prepared
 
 
-def test_windows_escapes_redirection_operators(adapter):
+def test_windows_escapes_redirection_and_carets(adapter):
     """
-    Verify that redirection operators (> and <) are escaped in the
-    diagnostic echo to prevent side effects during reporting.
+    Verify that redirection operators (> and <) and carets (^) are escaped
+    in the diagnostic echo.
     """
-    cmd = "echo something > file.txt\nexit 1"
+    cmd = "echo ^something > file.txt\nexit 1"
     with patch("sys.platform", "win32"):
         prepared, _ = adapter._prepare_command_for_platform(cmd)
 
-        # The FAILED_COMMAND part should have escaped redirection
-        assert "FAILED_COMMAND: echo something ^> file.txt" in prepared
+        # The FAILED_COMMAND part should have escaped redirection and carets
+        assert "FAILED_COMMAND: echo ^^something ^> file.txt" in prepared

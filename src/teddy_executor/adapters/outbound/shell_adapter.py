@@ -58,6 +58,7 @@ class ShellAdapter(IShellExecutor):
                     # THE FIX: Replace double quotes to prevent breaking the outer "..."
                     safe_line = (
                         line.replace('"', "'")
+                        .replace("^", "^^")
                         .replace("(", "^(")
                         .replace(")", "^)")
                         .replace("&", "^&")
@@ -65,8 +66,10 @@ class ShellAdapter(IShellExecutor):
                         .replace(">", "^>")
                         .replace("<", "^<")
                     )
+                    # We use 'call' to ensure that built-in commands like 'exit /b'
+                    # do not terminate the parent shell before the || handler runs.
                     wrapped_parts.append(
-                        f'({line} || cmd /c "echo FAILED_COMMAND: {safe_line} >&2 & exit 1")'
+                        f'(call {line} || cmd /c "echo FAILED_COMMAND: {safe_line} >&2 & exit 1")'
                     )
                 wrapped = " && ".join(wrapped_parts)
                 return wrapped, True
