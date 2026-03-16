@@ -77,6 +77,13 @@ The solution is to use `exit 1` for robust termination, expand wrapping to all "
 - **Granular CI Tests:** Maintain acceptance tests that explicitly fail internal commands to verify error propagation.
 
 ## 6. Recommended Regression Test
-The fix is protected by the following existing tests (once the blueprint is applied):
+The fix is protected by the following tests:
+- `tests/unit/adapters/outbound/test_shell_adapter_windows_logic.py` (New platform-mocked logic tests)
 - `tests/unit/adapters/outbound/test_shell_adapter_granular_failure.py`
 - `tests/acceptance/test_execute_granular_failure.py`
+
+## 7. Implementation Notes
+Implemented in `src/teddy_executor/adapters/outbound/shell_adapter.py`. The solution strictly follows the blueprint provided in this RCA:
+1.  **Trigger:** Changed from `is_multiline` to `is_complex` for Windows wrapping.
+2.  **Escaping:** Added `>` and `<` to the diagnostic `echo` escaping logic.
+3.  **Termination:** Switched from `exit /b 1` to `exit 1` for reliable process exit in `cmd /c` contexts.
