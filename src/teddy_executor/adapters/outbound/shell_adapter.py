@@ -55,8 +55,10 @@ class ShellAdapter(IShellExecutor):
                 wrapped_parts = []
                 for line in lines:
                     # Escape special characters that break cmd.exe parentheses or redirect output.
+                    # THE FIX: Replace double quotes to prevent breaking the outer "..."
                     safe_line = (
-                        line.replace("(", "^(")
+                        line.replace('"', "'")
+                        .replace("(", "^(")
                         .replace(")", "^)")
                         .replace("&", "^&")
                         .replace("|", "^|")
