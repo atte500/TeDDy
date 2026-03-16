@@ -16,7 +16,7 @@ class IEditSimulator(Protocol):
         self,
         content: str,
         edits: List[EditPair],
-        threshold: float = 0.95,
+        threshold: float = 0.96,
         replace_all: bool = False,
     ) -> tuple[str, list[float]]:
         """

@@ -44,7 +44,7 @@ To streamline the AI coding workflow by making the Markdown protocol more flexib
 ### Scenario 3: Resilient EDIT Matching [✓]
 **Given** an `EDIT` action where the `FIND` block has minor whitespace differences from the source file
 **When** validation is run
-**Then** the system should identify the closest match using a `Similarity Threshold` (default: 0.95).
+**Then** the system should identify the closest match using a `Similarity Threshold` (default: 0.96).
 **And** if multiple candidates meet the threshold, the one with the highest `Similarity Score` must be selected.
 **And** if there is a tie for the highest score, validation must fail for ambiguity.
 **And** if it's a fuzzy match (Score < 1.0), the Execution Report must include a unified diff of the change.
@@ -60,7 +60,7 @@ To streamline the AI coding workflow by making the Markdown protocol more flexib
 
 #### Implementation Notes
 - **Unified Matching Engine:** `edit_matcher.py` was refactored to expose `find_best_match`, which is now shared by the `EditActionValidator` (for diagnostics) and the `EditSimulator` (for execution).
-- **High-Fidelity Threshold:** Based on regression analysis, the default `Similarity Threshold` was unified to **0.95** across the entire stack (Validator, Port, Adapter, and Simulator) to ensure predictable behavior while remaining resilient to minor AI formatting errors.
+- **High-Fidelity Threshold:** Based on regression analysis, the default `Similarity Threshold` was unified to **0.96** across the entire stack (Validator, Port, Adapter, and Simulator) to ensure predictable behavior while remaining resilient to minor AI formatting errors.
 - **Custom Thresholds:** The parser now extracts `- **Similarity Threshold:**` from `EDIT` metadata. This parameter is passed through the validator, the `IFileSystemManager` port, and finally to the simulator.
 - **Enhanced Diagnostics:** Validation errors for `EDIT` now include the `Similarity Score` and the current `Similarity Threshold`. If a tie is detected (Ambiguity), the error specifically instructs the user/AI to provide a larger `FIND` block.
 - **Surgical Matching (Substring Boost):** The matcher was enhanced to support surgical intra-line replacements. If a single-line `FIND` block matches a substring exactly, it is boosted to a 1.0 score, returning only the matching substring to prevent whole-line replacements.

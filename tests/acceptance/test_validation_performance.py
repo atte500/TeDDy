@@ -26,10 +26,10 @@ def test_validation_performance_on_large_files(container, tmp_path, monkeypatch)
     file_path.write_text("".join(lines), encoding="utf-8")
 
     # 2. Define a 100-line FIND block that is almost identical to lines 200-300
-    # but has multiple changes to force fuzzy matching below 0.95
+    # but has multiple changes to force fuzzy matching below 0.96
     target_lines = lines[200:300]
     find_block = "".join(target_lines)
-    # Introduce 10 changes to drop ratio below 0.95 (approx 0.90)
+    # Introduce 10 changes to drop ratio below 0.96 (approx 0.90)
     for i in range(250, 260):
         find_block = find_block.replace(f"Index {i}", f"Index {i} MODIFIED")
 
