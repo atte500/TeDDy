@@ -66,7 +66,13 @@ class ActionDispatcher:
 
         params.pop("expected_outcome", None)
         params.pop("Description", None)
-        return params
+
+        # Filter out internal metadata keys (convention: starts with 'metadata_')
+        clean_params = {
+            k: v for k, v in params.items() if not k.startswith("metadata_")
+        }
+
+        return clean_params
 
     def _execute_and_process_result(
         self, action_type: str, execution_params: dict[str, Any]

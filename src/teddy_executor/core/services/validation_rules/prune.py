@@ -22,10 +22,25 @@ class PruneActionValidator(BaseActionValidator):
     ) -> List[ValidationError]:
         """Validates a 'prune' action."""
         resource = action.params.get("resource")
+        used_alias = action.params.get("metadata_used_file_path_alias", False)
+
         if not resource:
             return [
                 ValidationError(
                     message="PRUNE action missing 'resource' parameter.",
+                )
+            ]
+
+        if (
+            used_alias
+            and isinstance(resource, str)
+            and (resource.startswith("http://") or resource.startswith("https://"))
+        ):
+            return [
+                ValidationError(
+                    message="Strict Local Only: 'File Path' alias does not support URLs",
+                    file_path=resource,
+                    offending_node=action.node,
                 )
             ]
 

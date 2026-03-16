@@ -253,12 +253,14 @@ All actions are located under the `## Action Plan` heading. Each action is defin
 -   **Format:**
     ````markdown
     ### `PRUNE`
-    - **Resource:** [docs/project/specs/old-spec.md](/docs/project/specs/old-spec.md)
-    - **Description:** Remove the old specification as it is no longer relevant.
+    -   **Resource:** [docs/project/specs/old-spec.md](/docs/project/specs/old-spec.md)
+    -   **File Path:** [docs/project/specs/old-spec.md](/docs/project/specs/old-spec.md)
+    -   **Description:** Remove the old specification as it is no longer relevant.
     ````
 -   **Parsing Rules:**
-    1.  Extract `Resource` and `Description` from the metadata list.
-    2.  The value for `Resource` will be a root-relative Markdown link `[text](/destination)`. The parser should use the destination as the path to remove from the context.
+    1.  Extract `Resource` or `File Path` and `Description`.
+    2.  `File Path` is an alias for local resources and **strictly forbids URLs**.
+    3.  The value for either can be a root-relative Markdown link `[text](/destination)`. The parser should use the destination as the path to remove from the context.
 
 ## 6. Comprehensive Example Plan
 

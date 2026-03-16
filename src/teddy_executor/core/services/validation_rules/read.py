@@ -26,6 +26,21 @@ class ReadActionValidator(BaseActionValidator):
         errors: List[ValidationError] = []
         try:
             path_str = action.params.get("resource")
+            used_alias = action.params.get("metadata_used_file_path_alias", False)
+
+            if (
+                used_alias
+                and isinstance(path_str, str)
+                and (path_str.startswith("http://") or path_str.startswith("https://"))
+            ):
+                errors.append(
+                    ValidationError(
+                        message="Strict Local Only: 'File Path' alias does not support URLs",
+                        file_path=path_str,
+                        offending_node=action.node,
+                    )
+                )
+                return errors
 
             # Context Check: READ must NOT be in context
             if path_str and is_path_in_context(path_str, context_paths):

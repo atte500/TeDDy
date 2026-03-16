@@ -9,16 +9,24 @@ To streamline the AI coding workflow by making the Markdown protocol more flexib
 
 ## 2. Acceptance Criteria (Scenarios)
 
-### Scenario 1: Flexible READ Parsing
-**Given** a plan with a `READ` action using `- **File Path:** [path/to/file](/path/to/file)`
+### Scenario 1: Flexible Resource Parsing (READ/PRUNE)
+**Given** a plan with a `READ` or `PRUNE` action using `- **File Path:** [path/to/file](/path/to/file)`
 **When** the plan is parsed
-**Then** the `path` parameter should be correctly populated.
+**Then** the `path` or `resource` parameter should be correctly populated.
 **And** if a URL is provided under `File Path`, validation should fail with a "Strict Local Only" error.
 
 #### Deliverables
-- [ ] Updated `parse_resource_action` in `action_parser_strategies.py`.
-- [ ] New validation rule in `READ` validator for the `File Path` constraint.
-- [ ] Unit tests for alias parsing and URL constraint.
+- [✓] Updated `parse_resource_action` in `action_parser_strategies.py` (shared by READ/PRUNE).
+- [✓] New validation rule in `READ` validator for the `File Path` constraint.
+- [✓] New validation rule in `PRUNE` validator for the `File Path` constraint.
+- [✓] Updated acceptance tests to cover both `READ` and `PRUNE` aliases.
+- [✓] Unit tests for alias parsing and URL constraint.
+
+#### Implementation Notes
+- **Shared Parsing:** `parse_resource_action` was updated to support the `File Path` alias, which is shared by both `READ` and `PRUNE` actions.
+- **Metadata Flagging:** The parser now sets an internal `metadata_used_file_path_alias` flag in the action parameters.
+- **Validation Constraint:** Both `ReadActionValidator` and `PruneActionValidator` now enforce a "Strict Local Only" policy when the alias is used, rejecting URLs.
+- **Infrastructure Safety:** `ActionDispatcher` filters out all parameters prefixed with `metadata_` before execution to prevent `TypeError`s in infrastructure adapters.
 
 ### Scenario 2: Multi-line RESEARCH Handling
 **Given** a `RESEARCH` block containing multiple lines of queries

@@ -60,8 +60,13 @@ def parse_resource_action(
         )
 
     description, params = parse_action_metadata(
-        metadata_list, link_key_map={"Resource": "resource"}
+        metadata_list,
+        link_key_map={"Resource": "resource", "File Path": "path_alias"},
     )
+
+    if "path_alias" in params:
+        params["resource"] = params.pop("path_alias")
+        params["metadata_used_file_path_alias"] = True
 
     return ActionData(
         type=action_type, description=description, params=params, node=node
