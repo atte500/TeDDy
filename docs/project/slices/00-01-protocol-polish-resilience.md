@@ -44,16 +44,19 @@ To streamline the AI coding workflow by making the Markdown protocol more flexib
 ### Scenario 3: Resilient EDIT Matching
 **Given** an `EDIT` action where the `FIND` block has minor whitespace differences from the source file
 **When** validation is run
-**Then** the system should identify the closest match using a `Similarity Threshold` of 0.8.
+**Then** the system should identify the closest match using a `Similarity Threshold` (default: 0.8).
 **And** if multiple candidates meet the threshold, the one with the highest `Similarity Score` must be selected.
 **And** if there is a tie for the highest score, validation must fail for ambiguity.
 **And** if it's a fuzzy match (Score < 1.0), the Execution Report must include a unified diff of the change.
 
 #### Deliverables
-- [ ] Updated `EditActionValidator` in `edit.py` to handle priority-based matching.
-- [ ] Updated `find_best_match_and_diff` in `edit_matcher.py` to return the score.
-- [ ] Updated `ActionExecutor` to inject diffs into `ActionLog` for fuzzy `EDIT`s.
-- [ ] TDD suite for ambiguity and priority logic.
+- [✓] Multi-layered matching heuristics in `edit_matcher.py` (Exact -> Fuzzy Cascade -> Exhaustive).
+- [✓] Performance optimization (Priority Capping & Sub-sampling) in `edit_matcher.py`.
+- [ ] Update `parse_edit_action` in `action_parser_complex.py` to extract `Similarity Threshold` from metadata.
+- [ ] Update `find_best_match_and_diff` signature to accept `threshold: float` and return `(diff: str, score: float, is_ambiguous: bool)`.
+- [ ] Update `EditActionValidator` to pass the parsed threshold to the matcher and handle the `is_ambiguous` flag.
+- [ ] Update `ActionExecutor._inject_execution_diff` to inject unified diffs for fuzzy `EDIT` matches (Score < 1.0).
+- [ ] TDD suite for ambiguity (tie-breaking) and threshold override logic.
 
 ### Scenario 4: Granular EXECUTE Failure Reporting
 **Given** an `EXECUTE` block with multiple commands (e.g., `cmd1\ncmd2`)
