@@ -67,7 +67,8 @@ To streamline the AI coding workflow by making the Markdown protocol more flexib
 - **Reporting Transparency:** `ActionExecutor` now automatically generates and injects a unified diff for *every* successful `EDIT` action into the final report, providing immediate visual feedback of the applied changes.
 - **Execution Resilience:** The `EditSimulator` was upgraded from exact string counting to fuzzy matching, ensuring that if a plan passes fuzzy validation, it will also succeed during the execution phase.
 
-### Scenario 4: Granular EXECUTE Failure Reporting**Given** an `EXECUTE` block with multiple commands (e.g., `cmd1\ncmd2`)
+### Scenario 4: Granular EXECUTE Failure Reporting
+**Given** an `EXECUTE` block with multiple commands (e.g., `cmd1\ncmd2`)
 **When** `cmd2` fails
 **Then** the `ActionLog` details must contain `failed_command: "cmd2"`.
 
