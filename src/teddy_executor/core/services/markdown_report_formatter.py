@@ -2,8 +2,6 @@ import os
 from datetime import timezone
 from typing import Any
 
-from jinja2 import Environment, FileSystemLoader
-
 from teddy_executor.core.domain.models import ExecutionReport
 from teddy_executor.core.ports.outbound.markdown_report_formatter import (
     IMarkdownReportFormatter,
@@ -20,6 +18,8 @@ class MarkdownReportFormatter(IMarkdownReportFormatter):
     """
 
     def __init__(self):
+        from jinja2 import Environment, FileSystemLoader
+
         template_dir = os.path.join(os.path.dirname(__file__), "templates")
         self.env = Environment(
             loader=FileSystemLoader(template_dir),

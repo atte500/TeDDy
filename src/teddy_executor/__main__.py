@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import logging
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import typer
 
@@ -11,29 +13,10 @@ from teddy_executor.core.domain.models import (
     RunStatus,
     RunSummary,
 )
-from teddy_executor.core.ports.inbound.init import IInitUseCase
-from teddy_executor.core.ports.inbound.plan_parser import IPlanParser, InvalidPlanError
-from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
-from teddy_executor.core.ports.outbound.file_system_manager import (
-    IFileSystemManager,
-)
-from teddy_executor.core.ports.outbound.repo_tree_generator import (
-    IRepoTreeGenerator,
-)
-from teddy_executor.adapters.outbound.local_file_system_adapter import (
-    LocalFileSystemAdapter,
-)
-from teddy_executor.adapters.outbound.local_repo_tree_generator import (
-    LocalRepoTreeGenerator,
-)
-from teddy_executor.adapters.inbound.cli_helpers import (
-    find_project_root,
-    echo_and_copy,
-    get_plan_content,
-    handle_report_output,
-)
 from teddy_executor.container import create_container
-from teddy_executor.prompts import find_prompt_content
+
+if TYPE_CHECKING:
+    from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
 
 
 app = typer.Typer()
@@ -54,6 +37,21 @@ def bootstrap():
     """
     Ensures the project is anchored to the root and initialized.
     """
+    from teddy_executor.adapters.inbound.cli_helpers import find_project_root
+    from teddy_executor.core.ports.outbound.file_system_manager import (
+        IFileSystemManager,
+    )
+    from teddy_executor.core.ports.outbound.repo_tree_generator import (
+        IRepoTreeGenerator,
+    )
+    from teddy_executor.adapters.outbound.local_file_system_adapter import (
+        LocalFileSystemAdapter,
+    )
+    from teddy_executor.adapters.outbound.local_repo_tree_generator import (
+        LocalRepoTreeGenerator,
+    )
+    from teddy_executor.core.ports.inbound.init import IInitUseCase
+
     project_root = find_project_root()
 
     # Re-register file system components anchored to the project root
@@ -141,6 +139,9 @@ def get_prompt(
 
     Searches for root-relative overrides in ./.teddy/prompts/ before falling back to defaults.
     """
+    from teddy_executor.adapters.inbound.cli_helpers import echo_and_copy
+    from teddy_executor.prompts import find_prompt_content
+
     prompt_content = find_prompt_content(prompt_name)
 
     if prompt_content:
@@ -218,6 +219,13 @@ def execute(
         rich_help_panel="Advanced Options",
     ),
 ):
+    from teddy_executor.adapters.inbound.cli_helpers import (
+        get_plan_content,
+        handle_report_output,
+    )
+    from teddy_executor.core.ports.inbound.plan_parser import InvalidPlanError
+    from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
+
     report: Optional[ExecutionReport] = None
     interactive_mode = not yes
     start_time = datetime.now(timezone.utc)
