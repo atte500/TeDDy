@@ -17,18 +17,18 @@ jobs:
     name: "Debug: Windows Exit Code Behavior"
     runs-on: windows-latest
     steps:
-      - name: Quoting Resilience Tests
+      - name: Surgical Isolation (Hybrid) Tests
         continue-on-error: true
         shell: cmd
         run: |
-          echo --- Test Q5: Extra Outer Quotes (cmd /c ^" ^"cmd^" ^") ---
-          (cmd /c ^" ^"python -c "import sys; sys.exit(1)"^" ^" || echo HANDLER_RAN_Q5)
+          echo --- Test H1: call for python (Should work, but might miss FAILED_COMMAND) ---
+          (call python -c "import sys; sys.exit(1)" || echo HANDLER_RAN_H1)
 
-          echo --- Test Q6: Extra Outer Quotes (Minimal) ---
-          (cmd /c ""python -c "import sys; sys.exit(1)"" || echo HANDLER_RAN_Q6)
+          echo --- Test H2: cmd /c for exit /b (Surgical fix) ---
+          (cmd /c "exit /b 1" || echo HANDLER_RAN_H2)
 
-          echo --- Test Q7: Exit /b with Extra Outer Quotes ---
-          (cmd /c ""exit /b 1"" || echo HANDLER_RAN_Q7)
+          echo --- Test H3: Multi-line Hybrid ---
+          echo line1 && (cmd /c "exit /b 1" || echo HANDLER_RAN_H3) && echo line3
   build-and-test:
     runs-on: ${{ matrix.os }}
     defaults:
