@@ -1,14 +1,12 @@
-import os
-from typing import Any, List
+from __future__ import annotations
 
-import mistletoe
-from mistletoe.block_token import (
-    BlockCode,
-    CodeFence,
-    Heading,
-    List as MdList,
-    Document,
-)
+import os
+from typing import TYPE_CHECKING, Any, List
+
+if TYPE_CHECKING:
+    from mistletoe.block_token import (
+        Document,
+    )
 
 from teddy_executor.core.domain.models import ActionData, Plan, ActionType
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser, InvalidPlanError
@@ -72,11 +70,15 @@ class MarkdownPlanParser(IPlanParser):
         """
         Parses the specified Markdown plan string into a structured Plan object.
         """
+        from mistletoe.block_token import (
+            Document,
+        )
+
         if not plan_content.strip():
             raise InvalidPlanError("Plan content cannot be empty.")
 
         processed_content = self._preprocessor.process(plan_content)
-        doc = mistletoe.Document(processed_content)
+        doc = Document(processed_content)
 
         if os.environ.get("TEDDY_DEBUG"):
             print_ast(doc)
@@ -138,6 +140,8 @@ class MarkdownPlanParser(IPlanParser):
     def _parse_strict_top_level(
         self, stream: _PeekableStream, doc: Document
     ) -> tuple[str, str, dict[str, str]]:
+        from mistletoe.block_token import Heading
+
         # 0: Find H1 Title. Must be at index 0 per Rule 3.1.
         node = stream.peek()
         start_idx = 0
@@ -178,6 +182,13 @@ class MarkdownPlanParser(IPlanParser):
 
     def _validate_top_level_schema(self, doc: Document, start_idx: int):
         """Validates the structural schema of the top-level nodes (C901)."""
+        from mistletoe.block_token import (
+            BlockCode,
+            CodeFence,
+            Heading,
+            List as MdList,
+        )
+
         doc_children = doc.children if doc.children is not None else []
         children = list(doc_children)
         expected_schema = [

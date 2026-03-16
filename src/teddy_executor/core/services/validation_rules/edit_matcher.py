@@ -122,18 +122,23 @@ def _evaluate_candidates(
     find_block: str,
 ) -> List[str]:
     """Evaluates candidates using difflib ratio, with sub-sampling for large blocks."""
-    best_ratio = 0.0
+    best_ratio = -1.0
     best_match_lines: List[str] = []
     num_find_lines = len(find_lines)
 
     for start in candidate_starts:
         window = file_lines[start : start + num_find_lines]
 
+        # Hybrid Matching Strategy:
+        # 1. Large Blocks: Use line-based matching for O(N) performance.
+        # 2. Small Blocks: Use character-based matching for precision (e.g. typos).
         if num_find_lines > LARGE_BLOCK_LINE_LIMIT:
             if not _is_promising_candidate(window, find_lines):
                 continue
+            matcher = difflib.SequenceMatcher(None, window, find_lines)
+        else:
+            matcher = difflib.SequenceMatcher(None, "".join(window), find_block)
 
-        matcher = difflib.SequenceMatcher(None, "".join(window), find_block)
         ratio = matcher.ratio()
         if ratio > best_ratio:
             best_ratio = ratio

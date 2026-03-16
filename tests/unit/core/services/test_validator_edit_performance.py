@@ -8,17 +8,20 @@ def test_edit_validator_performance_large_file(mock_fs):
     Inner Loop RED: Assert that EditActionValidator.validate() handles large files
     in under 100ms when a match is not found.
     """
-    # 1. Setup large content (500 lines)
+    # 1. Setup large content (500 lines) with repeating patterns
+    # Using repeating lines forces the anchor heuristic to find multiple candidates.
     lines = [
-        f"Line {i:03}: Standard content for performance testing. Index {i}.\n"
+        f"Line {i % 10:03}: This line repeats every 10 lines to stress the matcher. Content...\n"
         for i in range(500)
     ]
     file_content = "".join(lines)
 
     # 2. Setup large FIND block (100 lines) that is ALMOST a match
-    # This triggers the expensive fuzzy matching logic.
-    find_lines = lines[200:300]
-    find_block = "".join(find_lines).replace("Index 250", "Index 250 MODIFIED")
+    # We take a slice and modify the content of one line.
+    # Since the file lines contain "This line repeats", we modify it in the FIND block.
+    target_lines = list(lines[200:300])
+    target_lines[50] = target_lines[50].replace("repeats", "REPEATS_MODIFIED")
+    find_block = "".join(target_lines)
 
     mock_fs.path_exists.return_value = True
     mock_fs.read_file.return_value = file_content
