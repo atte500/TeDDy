@@ -1,45 +1,6 @@
+from __future__ import annotations
+
 import punq
-from teddy_executor.core.ports.inbound.edit_simulator import IEditSimulator
-from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
-from teddy_executor.core.ports.inbound.init import IInitUseCase
-from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
-from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
-from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
-from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
-from teddy_executor.core.ports.outbound import (
-    IConfigService,
-    IEnvironmentInspector,
-    IFileSystemManager,
-    ILlmClient,
-    IMarkdownReportFormatter,
-    IRepoTreeGenerator,
-    ISessionManager,
-    IShellExecutor,
-    ISystemEnvironment,
-    IUserInteractor,
-    IWebScraper,
-    IWebSearcher,
-)
-from teddy_executor.core.services.action_dispatcher import (
-    ActionDispatcher,
-    IActionFactory,
-)
-from teddy_executor.core.services.action_executor import ActionExecutor
-from teddy_executor.core.services.action_factory import ActionFactory
-from teddy_executor.core.services.context_service import ContextService
-from teddy_executor.core.services.edit_simulator import EditSimulator
-from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
-from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
-from teddy_executor.core.services.init_service import InitService
-from teddy_executor.core.services.planning_service import PlanningService
-from teddy_executor.core.services.session_orchestrator import SessionOrchestrator
-from teddy_executor.core.services.session_planner import SessionPlanner
-from teddy_executor.core.services.session_replanner import SessionReplanner
-from teddy_executor.core.services.session_service import SessionService
-from teddy_executor.core.services.markdown_plan_parser import MarkdownPlanParser
-from teddy_executor.core.services.markdown_report_formatter import (
-    MarkdownReportFormatter,
-)
 
 
 def create_container() -> punq.Container:
@@ -56,6 +17,18 @@ def create_container() -> punq.Container:
 
 def _register_infrastructure(container: punq.Container) -> None:
     """Registers core OS and infrastructure adapters."""
+    from teddy_executor.core.ports.outbound import (
+        IConfigService,
+        IEnvironmentInspector,
+        IFileSystemManager,
+        ILlmClient,
+        IRepoTreeGenerator,
+        IShellExecutor,
+        ISystemEnvironment,
+        IUserInteractor,
+        IWebScraper,
+        IWebSearcher,
+    )
     from teddy_executor.adapters.outbound.console_interactor import (
         ConsoleInteractorAdapter,
     )
@@ -104,6 +77,10 @@ def _register_infrastructure(container: punq.Container) -> None:
 
 def _register_validators(container: punq.Container) -> None:
     """Registers action-specific and plan validators."""
+    from teddy_executor.core.ports.outbound.file_system_manager import (
+        IFileSystemManager,
+    )
+    from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
     from teddy_executor.core.services.plan_validator import PlanValidator
     from teddy_executor.core.services.validation_rules.create import (
         CreateActionValidator,
@@ -139,6 +116,40 @@ def _register_validators(container: punq.Container) -> None:
 
 def _register_services(container: punq.Container) -> None:
     """Registers core application services."""
+    from teddy_executor.core.ports.inbound.edit_simulator import IEditSimulator
+    from teddy_executor.core.ports.inbound.get_context_use_case import (
+        IGetContextUseCase,
+    )
+    from teddy_executor.core.ports.inbound.init import IInitUseCase
+    from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
+    from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
+    from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
+    from teddy_executor.core.ports.outbound import (
+        IConfigService,
+        IFileSystemManager,
+        ILlmClient,
+        IMarkdownReportFormatter,
+        ISessionManager,
+    )
+    from teddy_executor.core.services.action_dispatcher import (
+        ActionDispatcher,
+        IActionFactory,
+    )
+    from teddy_executor.core.services.action_executor import ActionExecutor
+    from teddy_executor.core.services.action_factory import ActionFactory
+    from teddy_executor.core.services.context_service import ContextService
+    from teddy_executor.core.services.edit_simulator import EditSimulator
+    from teddy_executor.core.services.execution_orchestrator import (
+        ExecutionOrchestrator,
+    )
+    from teddy_executor.core.services.init_service import InitService
+    from teddy_executor.core.services.planning_service import PlanningService
+    from teddy_executor.core.services.session_service import SessionService
+    from teddy_executor.core.services.markdown_plan_parser import MarkdownPlanParser
+    from teddy_executor.core.services.markdown_report_formatter import (
+        MarkdownReportFormatter,
+    )
+
     container.register(IEditSimulator, EditSimulator, scope=punq.Scope.transient)
     container.register(IPlanParser, MarkdownPlanParser, scope=punq.Scope.transient)
     container.register(IPlanReviewer, instance=None)
@@ -172,6 +183,23 @@ def _register_services(container: punq.Container) -> None:
 
 def _register_orchestration(container: punq.Container) -> None:
     """Registers session orchestration components."""
+    from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
+    from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
+    from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
+    from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
+    from teddy_executor.core.ports.outbound import (
+        IFileSystemManager,
+        IMarkdownReportFormatter,
+        ISessionManager,
+        IUserInteractor,
+    )
+    from teddy_executor.core.services.execution_orchestrator import (
+        ExecutionOrchestrator,
+    )
+    from teddy_executor.core.services.session_orchestrator import SessionOrchestrator
+    from teddy_executor.core.services.session_planner import SessionPlanner
+    from teddy_executor.core.services.session_replanner import SessionReplanner
+
     container.register(
         SessionReplanner,
         factory=lambda: SessionReplanner(
