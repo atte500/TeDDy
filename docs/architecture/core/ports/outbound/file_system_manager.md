@@ -54,17 +54,17 @@ The `FileSystemManager` port defines a technology-agnostic interface for interac
 **Status:** Implemented
 **Introduced in:** [Slice 06: Implement `edit` Action](../../slices/06-edit-action.md)
 
-*   **Description:** Modifies an existing file by applying a list of find-and-replace blocks. **(Updated in: [Slice 09-02: Auto-Initialization](../../slices/09-02-auto-initialization.md))**
-*   **Signature:** `edit_file(path: str, edits: list[dict[str, str]]) -> None`
+*   **Description:** Modifies an existing file by applying a list of find-and-replace blocks. **(Updated in: [Slice 00-01: Protocol Polish & Resilience](../../slices/00-01-protocol-polish-resilience.md))**
+*   **Signature:** `edit_file(path: str, edits: list[dict[str, str]], similarity_threshold: float = 0.8) -> None`
 *   **Preconditions:**
     *   `path` must be a valid, non-empty string representing a file path.
     *   A file must exist at the specified `path`.
+    *   `similarity_threshold` must be a float between 0.0 and 1.0.
 *   **Postconditions:**
-    *   On success, the file at `path` is updated with the `replace` string substituted for the single occurrence of each `find` string.
+    *   On success, the file at `path` is updated with the `replace` string substituted for the best-matching occurrence of each `find` string.
     *   If no file exists at `path`, a `FileNotFoundError` must be raised.
-    *   If any `find` string is not found in the file, a `SearchTextNotFoundError` must be raised.
-    *   If any `find` string is found more than once in the file, a `MultipleMatchesFoundError` must be raised.
-
+    *   If no match for a `find` string meets the `similarity_threshold`, a `SearchTextNotFoundError` must be raised.
+    *   If multiple matches for a `find` string share the same highest similarity score (ambiguity), a `MultipleMatchesFoundError` must be raised.
 ---
 
 ### `path_exists`

@@ -68,10 +68,11 @@ class EditActionValidator(BaseActionValidator):
         action_errors: List[ValidationError] = []
         content = self._file_system_manager.read_file(path_str)
 
+        threshold = action.params.get("similarity_threshold")
         edits = action.params.get("edits")
         if isinstance(edits, list):
             for edit in edits:
-                for err in _validate_single_edit(edit, content, path_str):
+                for err in _validate_single_edit(edit, content, path_str, threshold):
                     # Attach specific FIND CodeBlock node for surgical diagnostics
                     # Fallback to action node if find_node is missing
                     offending_node = edit.get("find_node") or action.node
@@ -86,7 +87,7 @@ class EditActionValidator(BaseActionValidator):
 
 
 def _validate_single_edit(
-    edit: dict, content: str, file_path: str
+    edit: dict, content: str, file_path: str, threshold: Optional[float] = None
 ) -> List[ValidationError]:
     """Validates a single edit dictionary."""
     errors: List[ValidationError] = []
@@ -116,13 +117,37 @@ def _validate_single_edit(
             )
             return errors
 
-        matches = content.count(find_block)
-        if matches == 0:
-            diff_text = find_best_match_and_diff(content, find_block)
-            fence = get_fence_for_content(find_block)
+        # Use the resilient matcher for all matching logic
+        matcher_kwargs = {}
+        if threshold is not None:
+            matcher_kwargs["threshold"] = threshold
+
+        diff_text, score, is_ambiguous = find_best_match_and_diff(
+            content, find_block, **matcher_kwargs
+        )
+
+        effective_threshold = threshold if threshold is not None else 0.95
+        fence = get_fence_for_content(find_block)
+
+        if is_ambiguous:
+            errors.append(
+                ValidationError(
+                    message=(
+                        f"The `FIND` block is ambiguous in: {file_path}\n"
+                        f"**Similarity Score:** {score:.2f}\n"
+                        f"**FIND Block:**\n"
+                        f"{fence}\n{find_block}\n{fence}\n"
+                        "**Hint:** Please provide a larger FIND block to uniquely identify the section and consider refactoring the target code to avoid duplication."
+                    ),
+                    file_path=str(file_path),
+                )
+            )
+        elif score < effective_threshold:
             error_msg = (
                 f"The `FIND` block could not be located in the file: "
                 f"{file_path}\n"
+                f"**Similarity Score:** {score:.2f}\n"
+                f"**Similarity Threshold:** {effective_threshold:.2f}\n"
                 f"**FIND Block:**\n"
                 f"{fence}\n{find_block}\n{fence}\n"
             )
@@ -137,20 +162,6 @@ def _validate_single_edit(
                 "exactly, including whitespace and indentations."
             )
             errors.append(ValidationError(message=error_msg, file_path=str(file_path)))
-        elif matches > 1:
-            fence = get_fence_for_content(find_block)
-            errors.append(
-                ValidationError(
-                    message=(
-                        f"The `FIND` block is ambiguous. Found {matches} "
-                        f"matches in: {file_path}\n"
-                        f"**FIND Block:**\n"
-                        f"{fence}\n{find_block}\n{fence}\n"
-                        "**Hint:** Please provide a larger FIND block to uniquely identify the section and consider refactoring the target code to avoid duplication."
-                    ),
-                    file_path=str(file_path),
-                )
-            )
     return errors
 
 

@@ -198,7 +198,7 @@ def test_edit_file_raises_error_on_multiple_occurrences(adapter, tmp_path: Path)
         )
 
     # Check the exception details
-    assert "Found 2 occurrences of 'hello'" in str(exc_info.value)
+    assert "Found 2 ambiguous occurrences of 'hello'" in str(exc_info.value)
     assert exc_info.value.content == original_content
 
     # Verify the file was not changed

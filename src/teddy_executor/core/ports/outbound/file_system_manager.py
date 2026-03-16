@@ -46,7 +46,12 @@ class IFileSystemManager(Protocol):
         """
         ...
 
-    def edit_file(self, path: str, edits: list[dict[str, str]]) -> None:
+    def edit_file(
+        self,
+        path: str,
+        edits: list[dict[str, str]],
+        similarity_threshold: float = 0.95,
+    ) -> None:
         """
         Modifies an existing file by applying a list of find-and-replace blocks.
 

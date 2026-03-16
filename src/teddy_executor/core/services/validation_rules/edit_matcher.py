@@ -9,7 +9,7 @@ from collections import defaultdict
 from typing import List, Set
 
 # Performance Heuristic Constants
-FUZZY_RATIO_THRESHOLD = 0.8
+FUZZY_RATIO_THRESHOLD = 0.95
 SMALL_FILE_LINE_LIMIT = 100
 LARGE_BLOCK_LINE_LIMIT = 20
 SUB_SAMPLE_RATIO_THRESHOLD = 0.7
@@ -17,58 +17,67 @@ SUB_SAMPLE_PASS_THRESHOLD = 0.7
 CANDIDATE_EVALUATION_CAP = 5
 
 
-def find_best_match_and_diff(file_content: str, find_block: str) -> str:
+def find_best_match(
+    file_content: str, find_block: str, threshold: float = FUZZY_RATIO_THRESHOLD
+) -> tuple[str, float, bool]:
     """
-    Finds the most similar block of text in the file content and generates a diff.
+    Finds the most similar block of text in the file content.
 
-    Performance Optimization:
-    Uses a multi-layered heuristic to avoid quadratic complexity of difflib
-    on large files (N lines) with large blocks (M lines).
+    Returns:
+        tuple[str, float, bool]: (best_match_string, best_score, is_ambiguous)
     """
-    debug = os.environ.get("TEDDY_DEBUG")
-    start_total = time.perf_counter()
-
     file_lines = file_content.splitlines(keepends=True)
     find_lines = find_block.splitlines(keepends=True)
     num_find_lines = len(find_lines)
 
     if not file_lines or not find_lines:
-        return ""
+        return "", 0.0, False
 
     # If the file is smaller than the find block, just compare against the whole file
     if len(file_lines) < num_find_lines:
-        diff = difflib.ndiff(find_lines, file_lines)
-        return "\n".join(line.rstrip("\n\r") for line in diff)
+        matcher = difflib.SequenceMatcher(None, find_lines, file_lines)
+        score = matcher.ratio()
+        return "".join(file_lines), score, False
 
-    # 1. Gather Candidates using Tiered Heuristics
-    start_gather = time.perf_counter()
     candidate_starts = _gather_candidate_starts(file_lines, find_lines)
-    gather_duration = time.perf_counter() - start_gather
-
-    # 2. Evaluate Candidates with sub-sampling optimization
-    start_eval = time.perf_counter()
-    best_match_lines = _evaluate_candidates(
+    best_match_lines, score, is_ambiguous = _evaluate_candidates(
         file_lines, find_lines, candidate_starts, find_block
     )
-    eval_duration = time.perf_counter() - start_eval
 
-    if best_match_lines:
-        start_diff = time.perf_counter()
-        diff = difflib.ndiff(find_lines, best_match_lines)
-        res = "\n".join(line.rstrip("\n\r") for line in diff)
-        diff_duration = time.perf_counter() - start_diff
+    return "".join(best_match_lines), score, is_ambiguous
+
+
+def find_best_match_and_diff(
+    file_content: str, find_block: str, threshold: float = FUZZY_RATIO_THRESHOLD
+) -> tuple[str, float, bool]:
+    """
+    Finds the most similar block of text in the file content and generates a diff.
+
+    Returns:
+        tuple[str, float, bool]: (diff_text, best_score, is_ambiguous)
+    """
+    debug = os.environ.get("TEDDY_DEBUG")
+    start_total = time.perf_counter()
+
+    best_match_str, score, is_ambiguous = find_best_match(
+        file_content, find_block, threshold
+    )
+
+    res = ""
+    if best_match_str and not is_ambiguous:
+        # Generate diff for any non-perfect match to aid user/AI debugging
+        if score != 1.0:
+            find_lines = find_block.splitlines(keepends=True)
+            match_lines = best_match_str.splitlines(keepends=True)
+            diff = difflib.ndiff(find_lines, match_lines)
+            res = "\n".join(line.rstrip("\n\r") for line in diff)
 
         if debug:
             print("--- MATCHER PROFILING ---")
-            print(f"Candidates: {len(candidate_starts)}")
-            print(f"Gather: {gather_duration:.4f}s")
-            print(f"Eval:   {eval_duration:.4f}s")
-            print(f"Diff:   {diff_duration:.4f}s")
             print(f"Total:  {time.perf_counter() - start_total:.4f}s")
             print("-------------------------")
-        return res
 
-    return ""
+    return res, score, is_ambiguous
 
 
 def _get_quick_ratio(line1: str, line2: str) -> float:
@@ -92,7 +101,14 @@ def _gather_candidate_starts(file_lines: List[str], find_lines: List[str]) -> Se
             file_lines, num_find_lines, find_lines[0]
         )
 
-    # Tier 3: Exhaustive Fallback for Small Files
+    # Tier 3: Substring Fallback (For single-word or intra-line matches)
+    if not candidate_starts and num_find_lines == 1:
+        find_text = find_lines[0].strip()
+        for i, line in enumerate(file_lines):
+            if find_text in line:
+                candidate_starts.add(i)
+
+    # Tier 4: Exhaustive Fallback for Small Files
     if not candidate_starts and len(file_lines) < SMALL_FILE_LINE_LIMIT:
         candidate_starts = set(range(len(file_lines) - num_find_lines + 1))
 
@@ -149,24 +165,18 @@ def _evaluate_candidates(
     find_lines: List[str],
     candidate_starts: Set[int],
     find_block: str,
-) -> List[str]:
+) -> tuple[List[str], float, bool]:
     """Evaluates candidates using difflib ratio, with sub-sampling and priority capping."""
-    best_ratio = -1.0
-    best_match_lines: List[str] = []
     num_find_lines = len(find_lines)
-
-    debug = os.environ.get("TEDDY_DEBUG")
     scored_candidates = []
 
     for start in candidate_starts:
         window = file_lines[start : start + num_find_lines]
-
         if num_find_lines > LARGE_BLOCK_LINE_LIMIT:
             score = _calculate_sub_sample_score(window, find_lines)
             if score >= SUB_SAMPLE_PASS_THRESHOLD:
                 scored_candidates.append((score, window))
         else:
-            # For small blocks, the ratio calculation is fast enough
             matcher = difflib.SequenceMatcher(None, "".join(window), find_block)
             scored_candidates.append((matcher.ratio(), window))
 
@@ -174,31 +184,74 @@ def _evaluate_candidates(
     scored_candidates.sort(key=lambda x: x[0], reverse=True)
     candidates_to_refine = scored_candidates[:CANDIDATE_EVALUATION_CAP]
 
-    # FALLBACK: If no candidates were found via heuristics, but the file is not empty,
-    # pick the very first block of the same size to at least provide a baseline diff.
+    # FALLBACK: pick first block if no candidates found
     if not candidates_to_refine and file_lines:
         candidates_to_refine = [(0.0, file_lines[:num_find_lines])]
 
+    return _refine_and_select_best(candidates_to_refine, find_lines, num_find_lines)
+
+
+def _refine_and_select_best(
+    candidates: List[tuple[float, List[str]]],
+    find_lines: List[str],
+    num_find_lines: int,
+) -> tuple[List[str], float, bool]:
+    """Refines top candidates and returns the best match with ambiguity info."""
+    best_ratio = -1.0
+    best_match_lines: List[str] = []
+    is_ambiguous = False
     ratio_calls = 0
-    for score, window in candidates_to_refine:
+
+    for score, window in candidates:
         if num_find_lines > LARGE_BLOCK_LINE_LIMIT:
-            # Perform expensive character-based refinement for large blocks
             matcher = difflib.SequenceMatcher(None, window, find_lines)
             ratio = matcher.ratio()
         else:
-            # Score already calculated for small blocks
             ratio = score
+
+        current_match_lines, ratio, current_is_ambiguous = _apply_substring_boost(
+            window, find_lines, ratio
+        )
 
         ratio_calls += 1
         if ratio > best_ratio:
             best_ratio = ratio
-            best_match_lines = window
-    if debug:
-        print(f"Candidates Scored: {len(candidate_starts)}")
-        print(f"Top Candidates Refined: {len(candidates_to_refine)}")
+            best_match_lines = current_match_lines
+            is_ambiguous = current_is_ambiguous
+        elif ratio == best_ratio and ratio > 0:
+            is_ambiguous = True
+
+    if os.environ.get("TEDDY_DEBUG"):
+        print(f"Top Candidates Refined: {len(candidates)}")
         print(f"Ratio Calls: {ratio_calls}")
 
-    return best_match_lines
+    return best_match_lines, best_ratio, is_ambiguous
+
+
+def _apply_substring_boost(
+    window: List[str], find_lines: List[str], current_ratio: float
+) -> tuple[List[str], float, bool]:
+    """
+    Applies Substring Boost: If a single-line block matches a substring exactly,
+    ratio is 1.0. This handles surgical intra-line replacements.
+    """
+    ratio = current_ratio
+    match_lines = window
+    is_ambiguous = False
+
+    if ratio < 1.0 and len(find_lines) == 1:
+        find_text = find_lines[0].rstrip("\n\r")
+        if find_text and find_text in window[0]:
+            match_count = window[0].count(find_text)
+            if match_count == 1:
+                ratio = 1.0
+                match_lines = [find_text]
+            elif match_count > 1:
+                # Intra-line ambiguity detected
+                ratio = 1.0
+                is_ambiguous = True
+
+    return match_lines, ratio, is_ambiguous
 
 
 def _calculate_sub_sample_score(window: List[str], find_lines: List[str]) -> float:

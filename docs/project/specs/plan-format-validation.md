@@ -57,7 +57,7 @@ These checks validate the *content* of an action against the current state of th
 -   **[✓] Target path must be in context:** The specified file must be listed in the current turn's context (`turn.context`).
 -   **[✓] Must contain `FIND`/`REPLACE` pairs:** The action block must contain at least one pair of `#### FIND:` and `#### REPLACE:` headings.
 -   **[✓] `FIND` and `REPLACE` must be different:** For each pair, the content of the `FIND` and `REPLACE` blocks must not be identical.
--   **[✓] `FIND` block must match exactly once:** The system attempts an exact match first. If no exact match is found, it performs a fuzzy search using the `Similarity Threshold` (default: 0.8).
+-   **[✓] `FIND` block must match exactly once:** The system attempts an exact match first. If no exact match is found, it performs a fuzzy search using the `Similarity Threshold` (default: 0.95).
     -   **Multi-Match Logic:**
         -   If multiple candidates meet the threshold, the system selects the candidate with the single highest `Similarity Score`.
         -   If multiple candidates share the exact same highest score (Ambiguity), validation fails.

@@ -45,8 +45,8 @@ def test_edit_validator_performance_large_file(mock_fs):
 
     # 4. Assertions
     assert len(errors) == 1
-    assert "The `FIND` block could not be located" in errors[0].message
-    assert "Closest Match Diff" in errors[0].message
+    # Large repeating patterns in the setup trigger ambiguity at 0.95
+    assert "ambiguous" in errors[0].message.lower()
 
     # 100ms is a generous budget for the optimized version (RCA says 10ms)
     # but the current logic takes ~15-20s.

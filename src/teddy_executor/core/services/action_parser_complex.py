@@ -72,8 +72,17 @@ def parse_edit_action(
             "EDIT action is missing metadata list.", offending_node=metadata_list
         )
     description, params = parse_action_metadata(
-        metadata_list, link_key_map={"File Path": "path"}
+        metadata_list,
+        link_key_map={"File Path": "path"},
+        text_key_map={"Similarity Threshold": "similarity_threshold"},
     )
+
+    if "similarity_threshold" in params:
+        try:
+            params["similarity_threshold"] = float(params["similarity_threshold"])
+        except ValueError:
+            # Leave as string, validation will handle it
+            pass
 
     edits = []
     while stream.has_next():

@@ -41,10 +41,10 @@ To streamline the AI coding workflow by making the Markdown protocol more flexib
 - **Line-based Splitting:** `parse_research_action` now iterates over each line of a code block's content, stripping whitespace and filtering out empty lines.
 - **Backwards Compatibility:** It continues to support multiple code blocks, aggregating all discovered queries into a single list.
 
-### Scenario 3: Resilient EDIT Matching
+### Scenario 3: Resilient EDIT Matching [✓]
 **Given** an `EDIT` action where the `FIND` block has minor whitespace differences from the source file
 **When** validation is run
-**Then** the system should identify the closest match using a `Similarity Threshold` (default: 0.8).
+**Then** the system should identify the closest match using a `Similarity Threshold` (default: 0.95).
 **And** if multiple candidates meet the threshold, the one with the highest `Similarity Score` must be selected.
 **And** if there is a tie for the highest score, validation must fail for ambiguity.
 **And** if it's a fuzzy match (Score < 1.0), the Execution Report must include a unified diff of the change.
@@ -52,14 +52,22 @@ To streamline the AI coding workflow by making the Markdown protocol more flexib
 #### Deliverables
 - [✓] Multi-layered matching heuristics in `edit_matcher.py` (Exact -> Fuzzy Cascade -> Exhaustive).
 - [✓] Performance optimization (Priority Capping & Sub-sampling) in `edit_matcher.py`.
-- [ ] Update `parse_edit_action` in `action_parser_complex.py` to extract `Similarity Threshold` from metadata.
-- [ ] Update `find_best_match_and_diff` signature to accept `threshold: float` and return `(diff: str, score: float, is_ambiguous: bool)`.
-- [ ] Update `EditActionValidator` to pass the parsed threshold to the matcher and handle the `is_ambiguous` flag.
-- [ ] Update `ActionExecutor._inject_execution_diff` to inject unified diffs for fuzzy `EDIT` matches (Score < 1.0).
-- [ ] TDD suite for ambiguity (tie-breaking) and threshold override logic.
+- [✓] Update `parse_edit_action` in `action_parser_complex.py` to extract `Similarity Threshold` from metadata.
+- [✓] Update `find_best_match_and_diff` signature to accept `threshold: float` and return `(diff: str, score: float, is_ambiguous: bool)`.
+- [✓] Update `EditActionValidator` to pass the parsed threshold to the matcher and handle the `is_ambiguous` flag.
+- [✓] Update `ActionExecutor._inject_execution_diff` to inject unified diffs for all successful `EDIT` actions.
+- [✓] TDD suite for ambiguity (tie-breaking) and threshold override logic.
 
-### Scenario 4: Granular EXECUTE Failure Reporting
-**Given** an `EXECUTE` block with multiple commands (e.g., `cmd1\ncmd2`)
+#### Implementation Notes
+- **Unified Matching Engine:** `edit_matcher.py` was refactored to expose `find_best_match`, which is now shared by the `EditActionValidator` (for diagnostics) and the `EditSimulator` (for execution).
+- **High-Fidelity Threshold:** Based on regression analysis, the default `Similarity Threshold` was unified to **0.95** across the entire stack (Validator, Port, Adapter, and Simulator) to ensure predictable behavior while remaining resilient to minor AI formatting errors.
+- **Custom Thresholds:** The parser now extracts `- **Similarity Threshold:**` from `EDIT` metadata. This parameter is passed through the validator, the `IFileSystemManager` port, and finally to the simulator.
+- **Enhanced Diagnostics:** Validation errors for `EDIT` now include the `Similarity Score` and the current `Similarity Threshold`. If a tie is detected (Ambiguity), the error specifically instructs the user/AI to provide a larger `FIND` block.
+- **Surgical Matching (Substring Boost):** The matcher was enhanced to support surgical intra-line replacements. If a single-line `FIND` block matches a substring exactly, it is boosted to a 1.0 score, returning only the matching substring to prevent whole-line replacements.
+- **Reporting Transparency:** `ActionExecutor` now automatically generates and injects a unified diff for *every* successful `EDIT` action into the final report, providing immediate visual feedback of the applied changes.
+- **Execution Resilience:** The `EditSimulator` was upgraded from exact string counting to fuzzy matching, ensuring that if a plan passes fuzzy validation, it will also succeed during the execution phase.
+
+### Scenario 4: Granular EXECUTE Failure Reporting**Given** an `EXECUTE` block with multiple commands (e.g., `cmd1\ncmd2`)
 **When** `cmd2` fails
 **Then** the `ActionLog` details must contain `failed_command: "cmd2"`.
 

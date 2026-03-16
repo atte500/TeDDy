@@ -143,11 +143,12 @@ def test_validate_edit_fails_if_find_block_not_unique(validator, mock_fs):
     When validated,
     Then it should return an error.
     """
-    content = "def foo():\n    pass\n\ndef foo():\n    pass"
+    # Use identical blocks including newlines to trigger ambiguity at high thresholds
+    content = "def foo():\n    pass\n\ndef foo():\n    pass\n"
     mock_fs.path_exists.return_value = True
     mock_fs.read_file.return_value = content
 
-    find_content = "def foo():\n    pass"
+    find_content = "def foo():\n    pass\n"
     plan = Plan(
         title="Test",
         rationale="Test",
@@ -165,7 +166,7 @@ def test_validate_edit_fails_if_find_block_not_unique(validator, mock_fs):
     errors = validator.validate(plan)
 
     assert len(errors) == 1
-    assert "Found 2 matches" in errors[0].message
+    assert "ambiguous" in errors[0].message.lower()
 
 
 def test_validate_edit_reports_multiple_failures(validator, mock_fs):
@@ -229,6 +230,8 @@ def test_validate_edit_provides_diff_on_mismatch(validator, mock_fs):
         ],
     )
 
+    # Use high threshold to force validation failure on a single-char typo
+    plan.actions[0].params["similarity_threshold"] = 0.99
     errors = validator.validate(plan)
 
     assert len(errors) == 1

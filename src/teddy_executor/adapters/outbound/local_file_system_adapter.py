@@ -174,6 +174,7 @@ class LocalFileSystemAdapter(IFileSystemManager):
         self,
         path: str,
         edits: list[dict[str, str]],
+        similarity_threshold: float = 0.95,
     ) -> None:
         """
         Modifies an existing file by applying a list of find-and-replace blocks.
@@ -185,6 +186,8 @@ class LocalFileSystemAdapter(IFileSystemManager):
         cast_edits: List[EditPair] = [
             {"find": e["find"], "replace": e["replace"]} for e in edits
         ]
-        new_content = self._edit_simulator.simulate_edits(content, cast_edits)
+        new_content = self._edit_simulator.simulate_edits(
+            content, cast_edits, threshold=similarity_threshold
+        )
 
         file_path.write_text(new_content, encoding="utf-8")

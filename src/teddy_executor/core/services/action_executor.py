@@ -135,8 +135,11 @@ class ActionExecutor:
         path = Path(path_str)
 
         if action.type.upper() == "EDIT":
+            threshold = action.params.get("Similarity Threshold", 0.95)
             after_content = self._edit_simulator.simulate_edits(
-                before_content, action.params.get("edits", [])
+                before_content,
+                action.params.get("edits", []),
+                threshold=threshold,
             )
         else:  # CREATE
             after_content = action.params.get("content", "")
@@ -205,12 +208,28 @@ class ActionExecutor:
         if action_log.status == ActionStatus.FAILURE:
             return self._enrich_failed_log(action, action_log)
 
+        # Don't inject diff if we already showed it in interactive mode
+        if interactive:
+            return action_log
+
         return self._inject_execution_diff(action, action_log, change_set)
 
     def _inject_execution_diff(self, action, action_log, change_set) -> ActionLog:
-        """Injects a unified diff into the log for CREATE overwrites."""
-        # Scenario 3: If it was a CREATE overwrite, ensure the report includes a diff
-        if action.type.upper() != "CREATE" or action_log.status != ActionStatus.SUCCESS:
+        """
+        Injects a unified diff into the log for CREATE overwrites or EDITs.
+        """
+        if action_log.status != ActionStatus.SUCCESS:
+            return action_log
+
+        is_create_overwrite = (
+            action.type.upper() == "CREATE"
+            and action.params.get("overwrite")
+            and change_set
+            and change_set.before_content
+        )
+        is_edit = action.type.upper() == "EDIT"
+
+        if not (is_create_overwrite or is_edit):
             return action_log
 
         # Check types to handle Mocks in tests gracefully
@@ -218,7 +237,6 @@ class ActionExecutor:
             not change_set
             or not isinstance(change_set.before_content, str)
             or not isinstance(change_set.after_content, str)
-            or not change_set.before_content
         ):
             return action_log
 

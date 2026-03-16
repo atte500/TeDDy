@@ -26,11 +26,12 @@ def test_validation_performance_on_large_files(container, tmp_path, monkeypatch)
     file_path.write_text("".join(lines), encoding="utf-8")
 
     # 2. Define a 100-line FIND block that is almost identical to lines 200-300
-    # but has one small change to force fuzzy matching
+    # but has multiple changes to force fuzzy matching below 0.95
     target_lines = lines[200:300]
     find_block = "".join(target_lines)
-    # Introduce a small change in the middle to break exact match
-    find_block = find_block.replace("Index 250", "Index 250 MODIFIED")
+    # Introduce 10 changes to drop ratio below 0.95 (approx 0.90)
+    for i in range(250, 260):
+        find_block = find_block.replace(f"Index {i}", f"Index {i} MODIFIED")
 
     plan_content = f"""# Performance Test Plan
 - **Status:** Green 🟢
@@ -61,7 +62,7 @@ Replacement content.
     # We use execute --plan-content which triggers validation before any confirmation.
     # Validation failure will stop execution and print the report.
     start_time = time.perf_counter()
-    result = runner.invoke(app, ["execute", "--plan-content", plan_content])
+    result = runner.invoke(app, ["execute", "--yes", "--plan-content", plan_content])
     end_time = time.perf_counter()
 
     duration = end_time - start_time

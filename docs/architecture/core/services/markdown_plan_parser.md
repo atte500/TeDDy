@@ -18,8 +18,7 @@ The `MarkdownPlanParser` service is responsible for parsing a plan written in th
 ## 3. Supported Actions
 The parser supports the following actions, each with its own parsing strategy:
 - `CREATE`: Extracts file path and content.
-- `EDIT`: Extracts file path and sequential `FIND`/`REPLACE` pairs.
-- `READ`, `PRUNE`: Extracts resource path or URL.
+- `EDIT`: Extracts file path, optional `Similarity Threshold`, and sequential `FIND`/`REPLACE` pairs.- `READ`, `PRUNE`: Extracts resource path or URL.
 - `EXECUTE`: Extracts the raw command block and metadata (Description, Expected Outcome, Allow Failure, Background, Timeout). Chaining and directives are preserved as-is in the command string for execution by the shell.
 - `RESEARCH`: Extracts multiple web search queries. It splits the content of each code block by newlines, treating each non-empty, stripped line as an individual query.
 - `PROMPT`: Extracts the markdown message to the user.
