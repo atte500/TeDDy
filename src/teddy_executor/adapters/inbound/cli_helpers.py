@@ -14,6 +14,7 @@ from teddy_executor.core.domain.models import (
 )
 from teddy_executor.core.domain.models.change_set import ChangeSet
 from teddy_executor.core.domain.models.plan import ActionData, Plan
+from teddy_executor.core.ports.inbound.plan_parser import IPlanParser, InvalidPlanError
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.markdown_report_formatter import (
     IMarkdownReportFormatter,
@@ -78,6 +79,55 @@ def get_plan_content(plan_content_str: Optional[str], plan_file: Optional[Path])
     except pyperclip.PyperclipException as e:
         typer.echo(f"Error accessing clipboard: {e}", err=True)
         raise typer.Exit(code=1)
+
+
+def create_failure_report(
+    e: Exception,
+    start_time: datetime,
+    container: Container,
+    plan_content: Optional[str] = None,
+) -> ExecutionReport:
+    """
+    Creates a rich ExecutionReport for a failure that occurred before or during execution.
+    """
+    error_messages = [str(e)]
+
+    if isinstance(e, InvalidPlanError) and plan_content:
+        try:
+            plan_parser = container.resolve(IPlanParser)
+            temp_plan = plan_parser.parse(plan_content)
+
+            errors_to_report = getattr(e, "validation_errors", [])
+            if errors_to_report:
+                return handle_validation_failure(
+                    temp_plan, errors_to_report, start_time
+                )
+
+            return ExecutionReport(
+                plan_title=temp_plan.title,
+                run_summary=RunSummary(
+                    status=RunStatus.VALIDATION_FAILED,
+                    start_time=start_time,
+                    end_time=datetime.now(timezone.utc),
+                    error=str(e),
+                ),
+                validation_result=error_messages,
+            )
+        except Exception:  # nosec B110
+            pass  # Fallback to basic report
+
+    return ExecutionReport(
+        plan_title="Execution Error",
+        run_summary=RunSummary(
+            status=RunStatus.FAILURE
+            if isinstance(e, NotImplementedError)
+            else RunStatus.VALIDATION_FAILED,
+            start_time=start_time,
+            end_time=datetime.now(timezone.utc),
+            error=str(e),
+        ),
+        validation_result=error_messages,
+    )
 
 
 def handle_validation_failure(

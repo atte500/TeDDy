@@ -133,10 +133,10 @@ def _validate_single_edit(
             errors.append(
                 ValidationError(
                     message=(
-                        f"FIND and REPLACE blocks are identical in: "
-                        f"{file_path}\n"
+                        f"FIND and REPLACE blocks are identical in: {file_path}\n"
                         f"**Block Content:**\n"
-                        f"{fence}\n{find_block}\n{fence}"
+                        f"{fence}\n{find_block}\n{fence}\n"
+                        "**Hint:** FIND and REPLACE blocks are identical. This edit can be safely omitted."
                     ),
                     file_path=str(file_path),
                 )

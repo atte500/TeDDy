@@ -112,6 +112,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
                 offending_nodes=[
                     e.offending_node for e in validation_errors if e.offending_node
                 ],
+                validation_errors=validation_errors,
             )
 
         plan = self._perform_interactive_review(plan)

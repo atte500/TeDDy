@@ -10,8 +10,6 @@ import typer
 
 from teddy_executor.core.domain.models import (
     ExecutionReport,
-    RunStatus,
-    RunSummary,
 )
 from teddy_executor.container import create_container
 
@@ -241,18 +239,10 @@ def execute(
         )
 
     except (InvalidPlanError, NotImplementedError) as e:
-        report = ExecutionReport(
-            plan_title="Invalid Plan",
-            run_summary=RunSummary(
-                status=RunStatus.FAILURE
-                if isinstance(e, NotImplementedError)
-                else RunStatus.VALIDATION_FAILED,
-                start_time=start_time,
-                end_time=datetime.now(timezone.utc),
-                error=str(e),
-            ),
-            validation_result=[str(e)] if isinstance(e, InvalidPlanError) else None,
-            action_logs=[],
+        from teddy_executor.adapters.inbound.cli_helpers import create_failure_report
+
+        report = create_failure_report(
+            e, start_time, container, plan_content=final_plan_content
         )
 
     handle_report_output(container, report, no_copy)

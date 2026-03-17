@@ -14,9 +14,11 @@ class InvalidPlanError(Exception):
         message: str,
         offending_node: Optional[Any] = None,
         offending_nodes: Optional[List[Any]] = None,
+        validation_errors: Optional[List[Any]] = None,
     ):
         super().__init__(message)
         self.offending_nodes = offending_nodes or []
+        self.validation_errors = validation_errors or []
         if offending_node:
             self.offending_nodes.append(offending_node)
 

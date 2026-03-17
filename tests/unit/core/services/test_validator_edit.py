@@ -336,3 +336,7 @@ def test_validate_edit_fails_if_find_and_replace_identical(validator, mock_fs):
 
     assert len(errors) == 1
     assert "FIND and REPLACE blocks are identical" in errors[0].message
+    assert (
+        "**Hint:** FIND and REPLACE blocks are identical. This edit can be safely omitted."
+        in errors[0].message
+    )
