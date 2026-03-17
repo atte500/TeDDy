@@ -78,3 +78,70 @@ def test_identical_find_and_replace_blocks_returns_hint(tmp_path, monkeypatch):
         "FIND and REPLACE blocks are identical. This edit can be safely omitted."
     )
     assert expected_hint in result.stdout
+
+
+def test_edit_validation_hint_already_applied(tmp_path, monkeypatch):
+    """
+    Scenario 2: Already Applied Edit Detection
+    Given a plan contains an EDIT action where the FIND block is NOT found
+    And the REPLACE block IS found
+    When the plan is validated
+    Then the error message must include the "Already Applied" hint.
+    """
+    # Arrange
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / ".teddy").mkdir()
+
+    target_file = Path("app.py")
+    # Content already has the "REPLACE" block but not the "FIND" block
+    target_file.write_text(
+        "def hello():\n    print('Hello pytest')\n", encoding="utf-8"
+    )
+
+    plan_content = textwrap.dedent("""\
+        # Test Plan
+        - **Status:** Green 🟢
+        - **Plan Type:** Implementation
+        - **Agent:** Developer
+
+        ## Rationale
+        ```text
+        ### 1. Synthesis
+        Testing already applied hint.
+
+        ### 2. Justification
+        Testing already applied hint.
+
+        ### 3. Expected Outcome
+        Testing already applied hint.
+
+        ### 4. State Dashboard
+        Testing already applied hint.
+        ```
+
+        ## Action Plan
+        ### `EDIT`
+        - **File Path:** app.py
+        - **Description:** This edit has already been applied.
+
+        #### `FIND:`
+        ```python
+        def hello():
+            print('Hello world')
+        ```
+        #### `REPLACE:`
+        ```python
+        def hello():
+            print('Hello pytest')
+        ```
+        """)
+
+    # Act
+    result = runner.invoke(app, ["execute", "--plan-content", plan_content])
+
+    # Assert
+    assert result.exit_code != 0
+    assert "Validation Failed" in result.stdout
+    assert "The `FIND` block could not be located" in result.stdout
+    expected_hint = "The FIND block was not found, but the REPLACE block is already present. This change might have already been applied."
+    assert expected_hint in result.stdout

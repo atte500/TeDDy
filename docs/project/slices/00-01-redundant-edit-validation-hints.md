@@ -24,7 +24,7 @@ Improve the UX of the `EDIT` action by providing actionable hints when an edit i
 - Refactored `teddy execute` command in `src/teddy_executor/__main__.py` to use `handle_validation_failure` for rich reporting of validation errors, ensuring hints are surfaced to the user.
 - Added acceptance test `tests/acceptance/test_redundant_edit_hints.py` to verify the end-to-end reporting.
 
-### Scenario 2: Already Applied Edit Detection
+### Scenario 2: Already Applied Edit Detection [✓]
 **Given** a plan contains an `EDIT` action where the `FIND` block is NOT found (score < threshold)
 **And** the `REPLACE` block IS found (score >= threshold)
 **When** the plan is validated
@@ -32,8 +32,14 @@ Improve the UX of the `EDIT` action by providing actionable hints when an edit i
 **And** the error message must include: "**Hint:** The FIND block was not found, but the REPLACE block is already present. This change might have already been applied."
 
 #### Deliverables
-- [ ] Update `src/teddy_executor/core/services/validation_rules/edit.py` to perform the "Already Applied" check using `find_best_match_and_diff` if the initial FIND fails.
-- [ ] Add a unit test in `tests/unit/core/services/test_validator_edit.py` verifying the presence of the hint.
+- [✓] Update `src/teddy_executor/core/services/validation_rules/edit.py` to perform the "Already Applied" check using `find_best_match_and_diff` if the initial FIND fails.
+- [✓] Add a unit test in `tests/unit/core/services/test_validator_edit.py` verifying the presence of the hint.
+
+#### Implementation Notes
+- Enhanced `EditActionValidator` to attempt matching the `REPLACE` block if the `FIND` block match fails.
+- Added a specific hint: "The FIND block was not found, but the REPLACE block is already present. This change might have already been applied."
+- Standardized hint formatting to use Markdown bolding (`**Hint:**`) across `EDIT` validation logic.
+- Verified end-to-end behavior with a new acceptance test scenario in `tests/acceptance/test_redundant_edit_hints.py`.
 
 ## 3. Architectural Changes
 - No structural changes; logic is encapsulated within `EditActionValidator._validate_single_edit`.

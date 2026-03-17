@@ -185,12 +185,38 @@ def _validate_single_edit(
                     f"**Closest Match Diff:**\n{diff_fence}diff\n"
                     f"{diff_text}\n{diff_fence}\n"
                 )
-            error_msg += (
-                "**Hint:** Review the provided diff and make sure to match the target content "
-                "exactly, including whitespace and indentations."
+
+            hint = _get_already_applied_hint(
+                content, replace_block, effective_threshold, matcher_kwargs
             )
+            error_msg += f"**Hint:** {hint}"
             errors.append(ValidationError(message=error_msg, file_path=str(file_path)))
     return errors
+
+
+def _get_already_applied_hint(
+    content: str,
+    replace_block: Optional[str],
+    threshold: float,
+    matcher_kwargs: dict,
+) -> str:
+    """Detects if the REPLACE block is already present in the content."""
+    replace_score = 0.0
+    if isinstance(replace_block, str):
+        _, replace_score, _ = find_best_match_and_diff(
+            content, replace_block, **matcher_kwargs
+        )
+
+    if replace_score >= threshold:
+        return (
+            "The FIND block was not found, but the REPLACE block is already "
+            "present. This change might have already been applied."
+        )
+
+    return (
+        "Review the provided diff and make sure to match the target content "
+        "exactly, including whitespace and indentations."
+    )
 
 
 # Removed legacy functional validation rule in favor of EditActionValidator class.

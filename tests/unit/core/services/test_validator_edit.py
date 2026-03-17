@@ -340,3 +340,44 @@ def test_validate_edit_fails_if_find_and_replace_identical(validator, mock_fs):
         "**Hint:** FIND and REPLACE blocks are identical. This edit can be safely omitted."
         in errors[0].message
     )
+
+
+def test_validate_edit_provides_hint_if_replace_block_already_present(
+    validator, mock_fs
+):
+    """
+    Given an EDIT action where the FIND block is not found,
+    But the REPLACE block IS found in the file,
+    When validated,
+    Then the error message should include a hint that the change might be already applied.
+    """
+    # Arrange
+    file_path = "app.py"
+    # Content has the REPLACE block ("New") but not the FIND block ("Old")
+    mock_fs.path_exists.return_value = True
+    mock_fs.read_file.return_value = "This is the New content"
+
+    plan = Plan(
+        title="Test Already Applied",
+        rationale="Test",
+        actions=[
+            ActionData(
+                type="EDIT",
+                params={
+                    "path": file_path,
+                    "edits": [{"find": "This is the Old content", "replace": "New"}],
+                },
+            )
+        ],
+    )
+
+    # Act
+    errors = validator.validate(plan)
+
+    # Assert
+    assert len(errors) == 1
+    assert "The `FIND` block could not be located" in errors[0].message
+    assert (
+        "**Hint:** The FIND block was not found, but the REPLACE block is already present. This change might have already been applied."
+        in errors[0].message
+    )

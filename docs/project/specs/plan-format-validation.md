@@ -63,10 +63,12 @@ These checks validate the *content* of an action against the current state of th
         -   If multiple candidates meet the threshold, the system selects the candidate with the single highest `Similarity Score`.
         -   If multiple candidates share the exact same highest score (Ambiguity), validation fails.
     -   **Failure (0 matches):** If no candidate meets the threshold, validation fails.
-    -   **Enhanced Feedback on Mismatch:** Failure reports must include:
+    - **Enhanced Feedback on Mismatch:** Failure reports must include:
         1. The `Similarity Score` of the best candidate and the current `Similarity Threshold`.
         2. A high-clarity, intra-line `diff` pinpointing the discrepancies.
-        3. A hint to review the provided diff and match whitespace/indentation exactly or use a lower `Similarity Threshold`.
+        3. A context-aware hint:
+            - If the `REPLACE` block is already present in the file (score >= threshold), provide a hint that the change might have already been applied.
+            - Otherwise, provide a hint to review the provided diff and match whitespace/indentation exactly.
 
 #### `EXECUTE`
 -   **[✓] Must contain a core command:** The command code block must not be empty.
