@@ -6,7 +6,7 @@ To implement the `IPlanValidator` inbound port. This service orchestrates the pr
 
 ## 2. Ports
 -   **Implements (Inbound):** `IPlanValidator`
--   **Uses (Outbound):** `IFileSystemManager` (via its validator strategies).
+-   **Uses (Outbound):** `IFileSystemManager` (via its validator strategies), `IConfigService` (via `EditActionValidator`).
 
 ## 3. Implementation Details
 This service is implemented using a **Standardized Strategy Pattern** with constructor-based dependency injection.

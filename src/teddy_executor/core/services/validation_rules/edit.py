@@ -5,7 +5,11 @@ Validation rules for the 'EDIT' action.
 import os
 from typing import Dict, List, Optional, Sequence
 
-from teddy_executor.core.domain.models.plan import ActionData
+from teddy_executor.core.domain.models.plan import (
+    ActionData,
+    DEFAULT_SIMILARITY_THRESHOLD,
+)
+from teddy_executor.core.ports.outbound import IConfigService, IFileSystemManager
 from teddy_executor.core.services.validation_rules.edit_matcher import (
     find_best_match_and_diff,
 )
@@ -21,6 +25,12 @@ from teddy_executor.core.utils.markdown import get_fence_for_content
 
 class EditActionValidator(BaseActionValidator):
     """Validator for the 'EDIT' action."""
+
+    def __init__(
+        self, file_system_manager: IFileSystemManager, config_service: IConfigService
+    ):
+        super().__init__(file_system_manager)
+        self._config_service = config_service
 
     def validate(
         self,
@@ -68,7 +78,14 @@ class EditActionValidator(BaseActionValidator):
         action_errors: List[ValidationError] = []
         content = self._file_system_manager.read_file(path_str)
 
-        threshold = action.params.get("similarity_threshold")
+        # Get global threshold from config, fallback to domain default
+        global_threshold = self._config_service.get_setting(
+            "similarity_threshold", DEFAULT_SIMILARITY_THRESHOLD
+        )
+
+        # Use plan-level override if present, else global
+        threshold = action.params.get("similarity_threshold", global_threshold)
+
         replace_all = action.params.get("replace_all", False)
         edits = action.params.get("edits")
         if isinstance(edits, list):
@@ -135,7 +152,9 @@ def _validate_single_edit(
             content, find_block, **matcher_kwargs
         )
 
-        effective_threshold = threshold if threshold is not None else 0.95
+        effective_threshold = (
+            threshold if threshold is not None else DEFAULT_SIMILARITY_THRESHOLD
+        )
         fence = get_fence_for_content(find_block)
 
         if is_ambiguous and not replace_all:

@@ -19,7 +19,7 @@ def orchestrator(
     from teddy_executor.core.services.action_executor import ActionExecutor
 
     action_executor = ActionExecutor(
-        mock_action_dispatcher, mock_user_interactor, mock_fs, MagicMock()
+        mock_action_dispatcher, mock_user_interactor, mock_fs, MagicMock(), MagicMock()
     )
     mock_validator = MagicMock()
     mock_validator.validate.return_value = []

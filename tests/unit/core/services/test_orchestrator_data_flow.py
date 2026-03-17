@@ -12,7 +12,7 @@ def test_orchestrator_populates_report_metadata():
     fs = MagicMock()
     simulator = MagicMock()
 
-    action_executor = ActionExecutor(dispatcher, interactor, fs, simulator)
+    action_executor = ActionExecutor(dispatcher, interactor, fs, simulator, MagicMock())
     mock_validator = MagicMock()
     mock_validator.validate.return_value = []
     orchestrator = ExecutionOrchestrator(parser, mock_validator, action_executor, fs)

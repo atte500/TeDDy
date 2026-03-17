@@ -39,6 +39,9 @@ class ValidationError:
     offending_node: Any = None
 
 
+DEFAULT_SIMILARITY_THRESHOLD = 0.95
+
+
 @dataclass
 class Plan:
     """Represents a parsed and validated execution plan."""

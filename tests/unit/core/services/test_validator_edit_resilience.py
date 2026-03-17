@@ -14,7 +14,7 @@ def test_validator_handles_ambiguity(mock_fs):
     mock_fs.read_file.return_value = content
     mock_fs.path_exists.return_value = True
 
-    validator = EditActionValidator(mock_fs)
+    validator = EditActionValidator(mock_fs, MagicMock())
     action = ActionData(
         type="EDIT",
         description="test",
@@ -36,7 +36,7 @@ def test_validator_respects_custom_threshold(mock_fs):
     mock_fs.read_file.return_value = content
     mock_fs.path_exists.return_value = True
 
-    validator = EditActionValidator(mock_fs)
+    validator = EditActionValidator(mock_fs, MagicMock())
 
     # Threshold 0.99 with a minor mismatch (extra space)
     action = ActionData(
@@ -61,7 +61,7 @@ def test_validator_passes_on_successful_fuzzy_match(mock_fs):
     mock_fs.read_file.return_value = content
     mock_fs.path_exists.return_value = True
 
-    validator = EditActionValidator(mock_fs)
+    validator = EditActionValidator(mock_fs, MagicMock())
 
     # Explicit threshold 0.8 with a minor mismatch
     action = ActionData(

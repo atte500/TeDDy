@@ -77,9 +77,7 @@ def _register_infrastructure(container: punq.Container) -> None:
 
 def _register_validators(container: punq.Container) -> None:
     """Registers action-specific and plan validators."""
-    from teddy_executor.core.ports.outbound.file_system_manager import (
-        IFileSystemManager,
-    )
+    from teddy_executor.core.ports.outbound import IConfigService, IFileSystemManager
     from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
     from teddy_executor.core.services.plan_validator import PlanValidator
     from teddy_executor.core.services.validation_rules.create import (
@@ -93,7 +91,13 @@ def _register_validators(container: punq.Container) -> None:
     from teddy_executor.core.services.validation_rules.prune import PruneActionValidator
 
     container.register(CreateActionValidator, scope=punq.Scope.transient)
-    container.register(EditActionValidator, scope=punq.Scope.transient)
+    container.register(
+        EditActionValidator,
+        factory=lambda: EditActionValidator(
+            container.resolve(IFileSystemManager), container.resolve(IConfigService)
+        ),
+        scope=punq.Scope.transient,
+    )
     container.register(ExecuteActionValidator, scope=punq.Scope.transient)
     container.register(ReadActionValidator, scope=punq.Scope.transient)
     container.register(PruneActionValidator, scope=punq.Scope.transient)
@@ -131,6 +135,7 @@ def _register_services(container: punq.Container) -> None:
         ILlmClient,
         IMarkdownReportFormatter,
         ISessionManager,
+        IUserInteractor,
     )
     from teddy_executor.core.services.action_dispatcher import (
         ActionDispatcher,
@@ -162,7 +167,17 @@ def _register_services(container: punq.Container) -> None:
         scope=punq.Scope.transient,
     )
     container.register(ActionDispatcher, scope=punq.Scope.transient)
-    container.register(ActionExecutor, scope=punq.Scope.transient)
+    container.register(
+        ActionExecutor,
+        factory=lambda: ActionExecutor(
+            action_dispatcher=container.resolve(ActionDispatcher),
+            user_interactor=container.resolve(IUserInteractor),
+            file_system_manager=container.resolve(IFileSystemManager),
+            edit_simulator=container.resolve(IEditSimulator),
+            config_service=container.resolve(IConfigService),
+        ),
+        scope=punq.Scope.transient,
+    )
     container.register(
         IMarkdownReportFormatter, MarkdownReportFormatter, scope=punq.Scope.transient
     )

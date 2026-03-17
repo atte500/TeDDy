@@ -12,6 +12,8 @@ The `YamlConfigAdapter` is responsible for reading application configuration fro
 
 ## 3. Implementation Details / Logic
 
+-   **Configuration Schema:**
+    -   **`similarity_threshold`**: (Optional) A float between 0.0 and 1.0 defining the global default for fuzzy `EDIT` matching. Defaults to `0.95`.
 -   The adapter will look for the configuration file at a fixed path: `.teddy/config.yaml` relative to the project root.
 -   It will parse the YAML file upon first access and cache the contents in memory to prevent redundant file I/O operations for the lifetime of the application instance.
 -   **Nested Key Support:** The adapter supports dot-notation for retrieving nested configuration keys (e.g., `execution.default_timeout_seconds`).

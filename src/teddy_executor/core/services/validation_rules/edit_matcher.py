@@ -7,9 +7,10 @@ import os
 import time
 from collections import defaultdict
 from typing import List, Set
+from teddy_executor.core.domain.models.plan import DEFAULT_SIMILARITY_THRESHOLD
 
 # Performance Heuristic Constants
-FUZZY_RATIO_THRESHOLD = 0.95
+FUZZY_RATIO_THRESHOLD = DEFAULT_SIMILARITY_THRESHOLD
 SMALL_FILE_LINE_LIMIT = 100
 LARGE_BLOCK_LINE_LIMIT = 20
 SUB_SAMPLE_RATIO_THRESHOLD = 0.7

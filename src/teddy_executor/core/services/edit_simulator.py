@@ -4,6 +4,7 @@ from teddy_executor.core.domain.models import (
     MultipleMatchesFoundError,
     SearchTextNotFoundError,
 )
+from teddy_executor.core.domain.models.plan import DEFAULT_SIMILARITY_THRESHOLD
 from teddy_executor.core.ports.inbound.edit_simulator import EditPair, IEditSimulator
 from teddy_executor.core.services.validation_rules.edit_matcher import find_best_match
 
@@ -18,7 +19,7 @@ class EditSimulator(IEditSimulator):
         content: str,
         find: str,
         replace: str,
-        threshold: float = 0.95,
+        threshold: float = DEFAULT_SIMILARITY_THRESHOLD,
         replace_all: bool = False,
     ) -> tuple[str, float]:
         """
@@ -66,7 +67,7 @@ class EditSimulator(IEditSimulator):
         self,
         content: str,
         edits: List[EditPair],
-        threshold: float = 0.95,
+        threshold: float = DEFAULT_SIMILARITY_THRESHOLD,
         replace_all: bool = False,
     ) -> tuple[str, list[float]]:
         """

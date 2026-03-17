@@ -20,6 +20,7 @@ def test_orchestrator_skips_non_isolated_terminal_action():
         user_interactor=user_interactor,
         file_system_manager=file_system_manager,
         edit_simulator=edit_simulator,
+        config_service=MagicMock(),
     )
     mock_validator = MagicMock()
     mock_validator.validate.return_value = []

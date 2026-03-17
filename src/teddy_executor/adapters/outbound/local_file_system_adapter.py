@@ -2,6 +2,7 @@ import logging
 import os
 from pathlib import Path
 from typing import List, Sequence
+from teddy_executor.core.domain.models.plan import DEFAULT_SIMILARITY_THRESHOLD
 from teddy_executor.core.ports.inbound.edit_simulator import EditPair, IEditSimulator
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 
@@ -174,7 +175,7 @@ class LocalFileSystemAdapter(IFileSystemManager):
         self,
         path: str,
         edits: list[dict[str, str]],
-        similarity_threshold: float = 0.95,
+        similarity_threshold: float = DEFAULT_SIMILARITY_THRESHOLD,
         replace_all: bool = False,
     ) -> list[float]:
         """

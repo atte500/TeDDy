@@ -1,4 +1,5 @@
 import time
+from unittest.mock import MagicMock
 from teddy_executor.core.services.validation_rules.edit import EditActionValidator
 from teddy_executor.core.domain.models.plan import ActionData
 
@@ -26,7 +27,7 @@ def test_edit_validator_performance_large_file(mock_fs):
     mock_fs.path_exists.return_value = True
     mock_fs.read_file.return_value = file_content
 
-    validator = EditActionValidator(mock_fs)
+    validator = EditActionValidator(mock_fs, MagicMock())
 
     action = ActionData(
         type="EDIT",

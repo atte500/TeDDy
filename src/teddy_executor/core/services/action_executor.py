@@ -6,9 +6,14 @@ from teddy_executor.core.domain.models import (
     ActionStatus,
     ChangeSet,
 )
+from teddy_executor.core.domain.models.plan import DEFAULT_SIMILARITY_THRESHOLD
 from teddy_executor.core.ports.inbound.edit_simulator import IEditSimulator
 from teddy_executor.core.services.action_diff_manager import ActionDiffManager
-from teddy_executor.core.ports.outbound import IFileSystemManager, IUserInteractor
+from teddy_executor.core.ports.outbound import (
+    IConfigService,
+    IFileSystemManager,
+    IUserInteractor,
+)
 from teddy_executor.core.services.action_dispatcher import ActionDispatcher
 
 
@@ -30,11 +35,13 @@ class ActionExecutor:
         user_interactor: IUserInteractor,
         file_system_manager: IFileSystemManager,
         edit_simulator: IEditSimulator,
+        config_service: IConfigService,
     ):
         self._action_dispatcher = action_dispatcher
         self._user_interactor = user_interactor
         self._file_system_manager = file_system_manager
         self._edit_simulator = edit_simulator
+        self._config_service = config_service
 
     def _create_intercepted_log(
         self, action, status: ActionStatus, details: str
@@ -139,7 +146,10 @@ class ActionExecutor:
         path = Path(path_str)
 
         if action.type.upper() == "EDIT":
-            threshold = action.params.get("similarity_threshold", 0.95)
+            global_threshold = self._config_service.get_setting(
+                "similarity_threshold", DEFAULT_SIMILARITY_THRESHOLD
+            )
+            threshold = action.params.get("similarity_threshold", global_threshold)
             replace_all = action.params.get("replace_all", False)
             after_content, _ = self._edit_simulator.simulate_edits(
                 before_content,

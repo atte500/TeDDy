@@ -46,9 +46,15 @@ class PlanValidator(IPlanValidator):
                 PruneActionValidator,
             )
 
+            # Fallback for YamlConfigAdapter
+            from teddy_executor.adapters.outbound.yaml_config_adapter import (
+                YamlConfigAdapter,
+            )
+
+            config_service = YamlConfigAdapter()
             self._validators = [
                 CreateActionValidator(file_system_manager),
-                EditActionValidator(file_system_manager),
+                EditActionValidator(file_system_manager, config_service),
                 ExecuteActionValidator(),
                 ReadActionValidator(file_system_manager),
                 PruneActionValidator(file_system_manager),

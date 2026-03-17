@@ -8,6 +8,7 @@ from teddy_executor.core.ports.outbound import (
     IWebSearcher,
     IConfigService,
 )
+from teddy_executor.core.domain.models.plan import DEFAULT_SIMILARITY_THRESHOLD
 from teddy_executor.core.services.action_dispatcher import IAction, IActionFactory
 
 
@@ -99,36 +100,54 @@ class ActionFactory(IActionFactory):
         def execute_wrapper(**kwargs: Any) -> Any:
             if "resource" in kwargs and "path" not in kwargs:
                 kwargs["path"] = kwargs.pop("resource")
+
             if method_name == "execute":
-                execute_params = {
-                    k: v
-                    for k, v in kwargs.items()
-                    if k in ("command", "cwd", "env", "background", "timeout")
-                    and v is not None
-                }
-                if "command" not in execute_params:
-                    raise ValueError(
-                        "'command' parameter is required for the execute action."
-                    )
-
-                # Inject global timeout if not already specified in kwargs
-                if "timeout" not in execute_params and self._config_service:
-                    default_timeout = self._config_service.get_setting(
-                        "execution.default_timeout_seconds"
-                    )
-                    if default_timeout is not None:
-                        execute_params["timeout"] = float(default_timeout)
-
-                return original_method(**execute_params)
+                return self._handle_execute_protocol(original_method, kwargs)
+            if method_name == "edit_file":
+                return self._handle_edit_protocol(original_method, kwargs)
             if method_name == "ask_question":
-                return original_method(
-                    kwargs["prompt"],
-                    resources=kwargs.get("handoff_resources"),
-                    agent_name=kwargs.get("agent_name"),
-                )
+                return self._handle_prompt_protocol(original_method, kwargs)
             return original_method(**kwargs)
 
         setattr(handler, "execute", execute_wrapper)
+
+    def _handle_execute_protocol(self, method: Any, kwargs: dict) -> Any:
+        """Handles the complex parameter injection for the EXECUTE action."""
+        execute_params = {
+            k: v
+            for k, v in kwargs.items()
+            if k in ("command", "cwd", "env", "background", "timeout") and v is not None
+        }
+        if "command" not in execute_params:
+            raise ValueError("'command' parameter is required for the execute action.")
+
+        # Inject global timeout if not already specified in kwargs
+        if "timeout" not in execute_params and self._config_service:
+            default_timeout = self._config_service.get_setting(
+                "execution.default_timeout_seconds"
+            )
+            if default_timeout is not None:
+                execute_params["timeout"] = float(default_timeout)
+
+        return method(**execute_params)
+
+    def _handle_edit_protocol(self, method: Any, kwargs: dict) -> Any:
+        """Handles the similarity threshold injection for the EDIT action."""
+        if "similarity_threshold" not in kwargs and self._config_service:
+            global_threshold = self._config_service.get_setting(
+                "similarity_threshold", DEFAULT_SIMILARITY_THRESHOLD
+            )
+            if global_threshold is not None:
+                kwargs["similarity_threshold"] = float(global_threshold)
+        return method(**kwargs)
+
+    def _handle_prompt_protocol(self, method: Any, kwargs: dict) -> Any:
+        """Handles the positional argument mapping for the PROMPT action."""
+        return method(
+            kwargs["prompt"],
+            resources=kwargs.get("handoff_resources"),
+            agent_name=kwargs.get("agent_name"),
+        )
 
     def _create_standard_action(
         self, action_type: str, params: Optional[dict] = None

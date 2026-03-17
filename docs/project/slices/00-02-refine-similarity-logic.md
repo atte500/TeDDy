@@ -9,15 +9,20 @@ Improve the consistency and maintainability of the similarity matching logic by 
 
 ## 2. Acceptance Criteria (Scenarios)
 
-### Scenario 1: Global Threshold Configuration
+### Scenario 1: Global Threshold Configuration [✓]
 **Given** a configuration file `.teddy/config.yaml` with `similarity_threshold: 0.8`
 **When** a plan with an `EDIT` action is executed
-**Then** the validation should use `0.8` as the threshold for fuzzy matching.
-**And** if no value is set in `config.yaml`, it should fallback to `0.95`.
+**Then** the validation and execution should use `0.8` as the threshold for fuzzy matching.
+**And** if no value is set in `config.yaml`, the system MUST fallback to the default of `0.95`.
 
 #### Deliverables
-- [ ] Update `EditActionValidator` to retrieve `similarity_threshold` from `IConfigService`.
-- [ ] Update `container.py` to inject `IConfigService` into `EditActionValidator`.
+- [✓] Update `EditActionValidator` to retrieve `similarity_threshold` from `IConfigService`.
+- [✓] Update `container.py` to inject `IConfigService` into `EditActionValidator`.
+
+#### Implementation Notes
+- Centralized `DEFAULT_SIMILARITY_THRESHOLD = 0.95` in `src/teddy_executor/core/domain/models/plan.py`.
+- Updated `EditActionValidator` and `ActionExecutor` to consume `similarity_threshold` from `IConfigService`.
+- Refactored `container.py` to use factory registrations for components requiring `IConfigService`.
 
 ### Scenario 2: Score Rounding and Comparison
 **Given** a fuzzy match with a raw similarity score (e.g., 0.94999)
