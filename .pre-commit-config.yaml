@@ -71,14 +71,14 @@ repos:
 
     -   id: test-pyramid
         name: Test Pyramid Verification
-        entry: python3 scripts/verify_test_pyramid.py
+        entry: python scripts/verify_test_pyramid.py
         language: system
         always_run: true
         pass_filenames: false
 
     -   id: run-tests
         name: Run Full Test Suite
-        entry: poetry run pytest
+        entry: pytest
         language: system
         always_run: true
         pass_filenames: false
