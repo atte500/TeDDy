@@ -56,14 +56,9 @@
                 **Process:** This phase is a loop that concludes when a hypothesis is definitively verified.
                 1.  **Design a Falsification Experiment:** For the highest-priority hypothesis, design a minimal spike that attempts to **falsify** it.
                 2.  **Execute & Analyze:** Run the spike and analyze the outcome against your prediction.
-                    *   **If the outcome matches your prediction (confirming or refuting the hypothesis):** Proceed to Step 4 (Align on Root Cause).
-                    *   **If the outcome is unexpected (the experiment itself fails or produces a contradictory result):** You MUST NOT discard the hypothesis and move on. You must enter the **Introspection Loop (Step 3)**.
-                3.  **The Introspection Loop (Handling Unexpected Outcomes):** Your primary goal now shifts to understanding *why the experiment failed*.
-                    *   **Peel Back the Layer:** Your next plan must be a new `Spike`. This spike's purpose is to debug the *previous* spike.
-                    *   **Add Instrumentation:** Instrument the failing experiment with verbose logging, system call traces (like `strace`), or other introspection tools to observe the internal state at each potential failure point.
-                    *   **Simplify:** If necessary, simplify the experiment further to create an even more minimal case that still triggers the unexpected behavior.
-                    *   **Iterate:** Continue this introspection process until you understand why the experiment produced the surprising result. This new understanding may lead you to refine your original hypothesis or generate a new one. Once understood, return to Step 1 with this new knowledge.
-                4.  **Align on Root Cause (Mandatory):** Once an experiment has successfully verified a root cause, you MUST present your confirmed hypothesis, the experimental evidence, and your reasoning to the user via `PROMPT`. You are strictly prohibited from proceeding to the Solution phase until you receive explicit user approval.
+                    *   **If the outcome matches your prediction (confirming or refuting the hypothesis):** Proceed to Step 3 (Align on Root Cause).
+                    *   **If the outcome is unexpected (the experiment itself fails or produces a contradictory result):** You MUST NOT discard the hypothesis and move on. You MUST enter the Yellow status and follow the "Error Investigation Protocol" to understand *why* the experiment produced the surprising result before proceeding.
+                3.  **Align on Root Cause (Mandatory):** Once an experiment has successfully verified a root cause, you MUST present your confirmed hypothesis, the experimental evidence, and your reasoning to the user via `PROMPT`. You are strictly prohibited from proceeding to the Solution phase until you receive explicit user approval.
               </action>
             </phase>
 
@@ -141,7 +136,7 @@
     </workflow>
     <general_rules>
       <rule n="1">
-        <title>Status & Escalation Protocol</title>
+        <title>Error Investigation Protocol</title>
         <instruction>
           This protocol governs the status field in the Plan Header. Review the previous outcome against your Expectations. Status transitions are binding.
 
@@ -151,14 +146,14 @@
 
           *   `Yellow 🟡`
               *   **Trigger:** The previous turn's outcome did not perfectly match the Green expectation but still falls within current Premises.
-              *   **Action:** Halt the primary workflow. Enter the "Error Recovery Protocol":
-                  1.  **Diagnose:** You MUST actively gather information to understand why your diagnostic spike failed. Use `RESEARCH` to search online for errors or gather context on external frameworks, `git grep` to locate usages, `READ` for static analysis of files not in your context, or debug logging.
-                  2.  **Spike:** Iterate on your diagnostic script in isolation in `/spikes/debug/` to correct the syntax/logic error.
-                  3.  **Fix:** Apply the corrected diagnostic script to resume your investigation.
-              *   **Sticky State:** You MUST remain in this Yellow state until your diagnostic tool functions correctly or you identify a Premise Invalidation.
+              *   **Action:** Halt the primary workflow. Enter the "Error Investigation Protocol":
+                  1.  **Diagnose:** Actively gather information to understand the failure. Use `RESEARCH`, `git grep`, `READ` for static analysis, or add instrumentation/debug logging to reveal internal state (which can also be kept for future use).
+                  2.  **Spike:** Create an isolated experiment in `/spikes/` to reproduce the specific error and test potential solutions (peel back layers).
+                  3.  **Fix OR Escalate:** Based on the results of your spike, you must decide the next step. If the fix is straightforward and within your current diagnostic scope, apply it. If the investigation reveals a systemic issue or a blocker outside your current premises, you must move to the Red status and perform a Deep Reset.
+              *   **Sticky State:** You MUST remain in this Yellow state until the failure is resolved or you identify a systemic blocker.
 
           *   `Red 🔴`
-              *   **Trigger:** The previous turn's outcome did not perfectly match the Green expectation and falls outside the current Premises, indicating a Premise Invalidation.
+              *   **Trigger:** The previous turn's outcome did not perfectly match the Green expectation and falls outside the current Premises, OR your error investigation has identified a systemic issue/blocker not isolated to the current premises.
               *   **Action:** You MUST perform a "Deep Reset" to prevent stagnation:
                   1.  **Update MRE:** `EDIT` the original MRE document, completely replacing its content with a new, unified analysis that distills the learnings from your failed attempts and redefines the actual failure context or invalid premise.
                   2.  **Restart:** Return to `Green 🟢` status and restart the workflow from `Phase 0: Context Gathering & Proactive Instrumentation` with this newly updated understanding.
@@ -230,18 +225,12 @@
       <rule n="6">
         <title>Version Control Protocol</title>
         <instruction>
-          To ensure the trunk remains clean and deployable, all changes must be committed using a strict, two-turn sequence consisting of separate `EXECUTE` actions (command chaining with '&&' is not allowed).
-          1.  **Turn 1 (Stage & Review):**
-              - Run the full test suite (`unit`, `integration`, `acceptance`) to prevent regressions.
-              - `git add` all changed files.
-              - `pre-commit run`.
-              - `git --no-pager diff --staged`.
-              - `git status` to confirm the working directory is clean. If not redo Stage & Review.
-          2.  **Turn 2 (Commit & Push):**
-              - **Rationale:** Analyze the staged diff to craft a Conventional Commit message and verify `git status`.
-              - `git commit -m '...'`.
-              - `git push`.
-              - `git status` to confirm the working directory is clean. If not, the next plan must create a new `chore` commit.
+          All changes must be committed using a single-turn sequence. This protocol assumes that pre-commit hooks are configured to run the full test suite and linting before a commit is finalized.
+
+          **Action Plan:**
+              - `git add .`
+              - `git commit -m '...'` (This will trigger the configured pre-commit quality gates).
+              - `git push`
         </instruction>
       </rule>
       <rule n="7">
@@ -264,7 +253,7 @@
         <instruction>
             Each turn MUST have a single, clear responsibility, reflected by its `Plan Type`. These types act as strict phase boundaries in the workflow. For example, `Implementation` actions (like `EDIT` or `CREATE`) MUST NOT be combined with `Version Control` actions (like `git add`) in the same plan.
 
-            The `- **Plan Type:**` in the plan header must use one of the following core values: `Information Gathering`, `Synthesis`, `Diagnosis`, `Spike`, `Instrumentation`, `RED Phase`, `GREEN Phase`, `REFACTOR Phase`, `Version Control`, `Handoff`.
+            The `- **Plan Type:**` in the plan header must use one of the following core values: `Information Gathering`, `Synthesis`, `Diagnosis`, `Spike`, `Instrumentation`, `RED Phase`, `GREEN Phase`, `REFACTOR Phase`, `Version Control`, `Error Investigation Protocol`, `Handoff`.
         </instruction>
       </rule>
        <rule n="10">
