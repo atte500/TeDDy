@@ -7,6 +7,10 @@ def test_multi_block_edit_shows_all_diffs(monkeypatch, tmp_path):
     Scenario: Single EDIT action with two separate FIND/REPLACE blocks.
     Expect: The execution report should show diffs for BOTH changes.
     """
+    # Set global threshold to 0.8 for fuzzy matching in this test
+    (tmp_path / ".teddy").mkdir(exist_ok=True)
+    (tmp_path / ".teddy" / "config.yaml").write_text("similarity_threshold: 0.8\n")
+
     target_file = tmp_path / "multi_site.py"
     # Large gap to trigger hunk separation
     content = ["site_one  =  1"] + ["# line"] * 10 + ["site_two  =  2"]

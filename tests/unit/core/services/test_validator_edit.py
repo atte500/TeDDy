@@ -12,7 +12,15 @@ from teddy_executor.core.services.validation_rules.read import ReadActionValidat
 @pytest.fixture
 def validator(container, mock_fs) -> IPlanValidator:
     """Resolves the PlanValidator from the container with all rules."""
-    # Register individual rules; container will inject mock_fs automatically
+    from unittest.mock import MagicMock
+    from teddy_executor.core.ports.outbound import IConfigService
+
+    # Provide a default mock for IConfigService
+    mock_config = MagicMock()
+    mock_config.get_setting.return_value = 0.95
+    container.register(IConfigService, instance=mock_config)
+
+    # Register individual rules
     container.register(CreateActionValidator)
     container.register(EditActionValidator)
     container.register(ExecuteActionValidator)
@@ -204,12 +212,18 @@ def test_validate_edit_reports_multiple_failures(validator, mock_fs):
     assert "Bad2" in errors[1].message
 
 
-def test_validate_edit_provides_diff_on_mismatch(validator, mock_fs):
+def test_validate_edit_provides_diff_on_mismatch(container, validator, mock_fs):
     """
     Given an EDIT action with a near-match FIND block,
     When validated,
     Then the error message should contain a diff.
     """
+    from teddy_executor.core.ports.outbound import IConfigService
+
+    # Arrange: Override default threshold for this test to force failure on tiny typo
+    mock_config = container.resolve(IConfigService)
+    mock_config.get_setting.return_value = 0.99
+
     file_path = "test.txt"
     mock_fs.path_exists.return_value = True
     mock_fs.read_file.return_value = "This is the original content"
@@ -230,10 +244,10 @@ def test_validate_edit_provides_diff_on_mismatch(validator, mock_fs):
         ],
     )
 
-    # Use high threshold to force validation failure on a single-char typo
-    plan.actions[0].params["similarity_threshold"] = 0.99
+    # Act
     errors = validator.validate(plan)
 
+    # Assert
     assert len(errors) == 1
     assert "- This is the orignal content" in errors[0].message
     assert "+ This is the original content" in errors[0].message

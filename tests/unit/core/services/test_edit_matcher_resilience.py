@@ -67,3 +67,22 @@ def test_matcher_surgical_substring_boost():
     assert score == 1.0
     assert match_str == "brown fox"
     assert is_ambiguous is False
+
+
+def test_matcher_rounds_score_to_two_decimal_places():
+    """Verify that similarity scores are rounded to 2 decimal places."""
+    from teddy_executor.core.services.validation_rules.edit_matcher import (
+        find_best_match,
+    )
+
+    # 'The quick brown fox' (19 chars)
+    # 'The quick brown fix' (19 chars)
+    # 18 chars match. Ratio = 2*18 / (19+19) = 36/38 = 0.947368...
+    content = "The quick brown fox"
+    find_block = "The quick brown fix"
+
+    _, score, _ = find_best_match(content, find_block)
+
+    # Should be rounded to 0.95
+    expected_rounded_score = 0.95
+    assert score == expected_rounded_score

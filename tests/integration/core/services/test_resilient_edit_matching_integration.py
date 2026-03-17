@@ -70,7 +70,9 @@ def test_edit_custom_threshold_fail(tmp_path, monkeypatch):
     target_file = tmp_path / "app.py"
     target_file.write_text("def hello():\n    print('hello world')\n", encoding="utf-8")
 
-    # Threshold set to 0.99, while the match (with extra space) will be around 0.95-0.98
+    # Set global threshold to 1.0 to force failure on any non-perfect match
+    (tmp_path / ".teddy" / "config.yaml").write_text("similarity_threshold: 1.0\n")
+
     plan = dedent("""\
         # Test Plan
         - Status: Green 🟢
@@ -93,7 +95,6 @@ def test_edit_custom_threshold_fail(tmp_path, monkeypatch):
 
         ### `EDIT`
         - File Path: [app.py](/app.py)
-        - Similarity Threshold: 0.99
         - Description: Update hello world.
 
         #### `FIND:`
@@ -112,7 +113,8 @@ def test_edit_custom_threshold_fail(tmp_path, monkeypatch):
     assert result.exit_code != 0
     assert "The `FIND` block could not be located" in result.stdout
     assert "Similarity Score" in result.stdout
-    assert "Similarity Threshold: 0.99" in result.stdout
+    # Similarity Threshold: 1.0 (float) rendered as 1.00 in report
+    assert "**Similarity Threshold:** 1.00" in result.stdout
 
 
 def test_edit_ambiguity_tie_fail(tmp_path, monkeypatch):

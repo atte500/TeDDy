@@ -75,20 +75,12 @@ def parse_edit_action(
         metadata_list,
         link_key_map={"File Path": "path"},
         text_key_map={
-            "Similarity Threshold": "similarity_threshold",
             "Replace All": "replace_all",
         },
     )
 
     if "replace_all" in params:
         params["replace_all"] = str(params["replace_all"]).lower() == "true"
-
-    if "similarity_threshold" in params:
-        try:
-            params["similarity_threshold"] = float(params["similarity_threshold"])
-        except ValueError:
-            # Leave as string, validation will handle it
-            pass
 
     edits = []
     while stream.has_next():

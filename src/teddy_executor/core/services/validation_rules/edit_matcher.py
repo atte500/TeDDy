@@ -10,7 +10,6 @@ from typing import List, Set
 from teddy_executor.core.domain.models.plan import DEFAULT_SIMILARITY_THRESHOLD
 
 # Performance Heuristic Constants
-FUZZY_RATIO_THRESHOLD = DEFAULT_SIMILARITY_THRESHOLD
 SMALL_FILE_LINE_LIMIT = 100
 LARGE_BLOCK_LINE_LIMIT = 20
 SUB_SAMPLE_RATIO_THRESHOLD = 0.7
@@ -19,7 +18,9 @@ CANDIDATE_EVALUATION_CAP = 5
 
 
 def find_best_match(
-    file_content: str, find_block: str, threshold: float = FUZZY_RATIO_THRESHOLD
+    file_content: str,
+    find_block: str,
+    threshold: float = DEFAULT_SIMILARITY_THRESHOLD,
 ) -> tuple[str, float, bool]:
     """
     Finds the most similar block of text in the file content.
@@ -38,18 +39,20 @@ def find_best_match(
     if len(file_lines) < num_find_lines:
         matcher = difflib.SequenceMatcher(None, find_lines, file_lines)
         score = matcher.ratio()
-        return "".join(file_lines), score, False
+        return "".join(file_lines), round(score, 2), False
 
-    candidate_starts = _gather_candidate_starts(file_lines, find_lines)
+    candidate_starts = _gather_candidate_starts(file_lines, find_lines, threshold)
     best_match_lines, score, is_ambiguous = _evaluate_candidates(
         file_lines, find_lines, candidate_starts, find_block
     )
 
-    return "".join(best_match_lines), score, is_ambiguous
+    return "".join(best_match_lines), round(score, 2), is_ambiguous
 
 
 def find_best_match_and_diff(
-    file_content: str, find_block: str, threshold: float = FUZZY_RATIO_THRESHOLD
+    file_content: str,
+    find_block: str,
+    threshold: float = DEFAULT_SIMILARITY_THRESHOLD,
 ) -> tuple[str, float, bool]:
     """
     Finds the most similar block of text in the file content and generates a diff.
@@ -68,6 +71,7 @@ def find_best_match_and_diff(
     res = ""
     if best_match_str and not is_ambiguous:
         # Generate character-level diff only for non-perfect matches
+        # Note: score is already rounded to 2 decimal places by find_best_match
         if 0 < score < 1.0:
             find_lines = find_block.splitlines(keepends=True)
             match_lines = best_match_str.splitlines(keepends=True)
@@ -91,7 +95,9 @@ def _get_quick_ratio(line1: str, line2: str) -> float:
     return difflib.SequenceMatcher(None, line1, line2).quick_ratio()
 
 
-def _gather_candidate_starts(file_lines: List[str], find_lines: List[str]) -> Set[int]:
+def _gather_candidate_starts(
+    file_lines: List[str], find_lines: List[str], threshold: float
+) -> Set[int]:
     """Orchestrates tiered heuristic search for candidate window start positions."""
     num_find_lines = len(find_lines)
 
@@ -101,7 +107,7 @@ def _gather_candidate_starts(file_lines: List[str], find_lines: List[str]) -> Se
     # Tier 2: Incremental Fuzzy Cascade (Fallback)
     if not candidate_starts:
         candidate_starts = _find_starts_by_fuzzy_cascade(
-            file_lines, num_find_lines, find_lines[0]
+            file_lines, num_find_lines, find_lines[0], threshold
         )
 
     # Tier 3: Substring Fallback (For single-word or intra-line matches)
@@ -144,7 +150,10 @@ def _find_starts_by_anchors(file_lines: List[str], find_lines: List[str]) -> Set
 
 
 def _find_starts_by_fuzzy_cascade(
-    file_lines: List[str], num_find_lines: int, first_find_line_raw: str
+    file_lines: List[str],
+    num_find_lines: int,
+    first_find_line_raw: str,
+    threshold: float,
 ) -> Set[int]:
     """
     Tier 2: Find candidate windows by fuzzy matching the first line of the block.
@@ -156,8 +165,8 @@ def _find_starts_by_fuzzy_cascade(
         f_line_stripped = f_line.strip()
         # Pre-filter with real_quick_ratio which is O(N+M) and very fast
         matcher = difflib.SequenceMatcher(None, f_line_stripped, first_find_line)
-        if matcher.real_quick_ratio() > FUZZY_RATIO_THRESHOLD:
-            if matcher.quick_ratio() > FUZZY_RATIO_THRESHOLD:
+        if matcher.real_quick_ratio() > threshold:
+            if matcher.quick_ratio() > threshold:
                 if 0 <= i <= len(file_lines) - num_find_lines:
                     candidate_starts.add(i)
     return candidate_starts

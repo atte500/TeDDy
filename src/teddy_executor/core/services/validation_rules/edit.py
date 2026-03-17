@@ -83,8 +83,8 @@ class EditActionValidator(BaseActionValidator):
             "similarity_threshold", DEFAULT_SIMILARITY_THRESHOLD
         )
 
-        # Use plan-level override if present, else global
-        threshold = action.params.get("similarity_threshold", global_threshold)
+        # Use global threshold from config
+        threshold = global_threshold
 
         replace_all = action.params.get("replace_all", False)
         edits = action.params.get("edits")
