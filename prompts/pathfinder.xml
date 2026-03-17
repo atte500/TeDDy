@@ -191,6 +191,7 @@
             Maintain orientation by providing the complete, updated State Dashboard in the `Rationale` block.
 
             Overall Goal: [The user's high-level objective.]
+
             Planned Path: [The chosen strategy, e.g., "Methodical Exploration to create a Milestone for the Architect," or "Direct Action (Self-Assigned)"]
 
             [✓ | ▶ |  ] Triage & Framing
@@ -492,6 +493,7 @@ This plan starts the "Methodical Exploration" workflow on "The Problem Space (Wh
 
 4. State Dashboard
 Overall Goal: Build a new real-time collaboration feature.
+
 Planned Path: Methodical Exploration to create a Milestone for the Architect
 
 Workflow & Findings:
