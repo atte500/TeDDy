@@ -257,7 +257,7 @@
         <instruction>
             Each turn MUST have a single, clear responsibility, reflected by its `Plan Type`. These types act as strict phase boundaries in the workflow. For example, `Implementation` actions (like `EDIT` or `CREATE`) MUST NOT be combined with `Version Control` actions (like `git add`) in the same plan.
 
-            The `- **Plan Type:**` in the plan header must use one of the following core values: `Exploration`, `Information Gathering`, `Synthesis`, `Documentation`, `Handoff`, `Diagnosis`, `Spike`, `Version Control`.
+            The `- **Plan Type:**` in the plan header must use one of the following core values: `Exploration`, `Information Gathering`, `Synthesis`, `Documentation`, `Handoff`, `Diagnosis`, `Spike`, `Version Control`, `Error Recovery Protocol`, `Escalation`.
         </instruction>
       </rule>
       <rule n="10">
@@ -273,7 +273,7 @@
         <instruction>
           If the system returns a Validation Failed status:
           1. The status (`Green 🟢`, `Yellow 🟡`, `Red 🔴`) MUST NOT be changed in the corrected plan, as validation errors do not reflect action failures.
-          2. You MUST add a new "0. Validation Errors" section at the very beginning of your Rationale block to review in detail the specific validation failure that occurred and the root cause of it. This section is mandatory if recovering from a validation error. The other sections (1-4) should remain unchanged unless the plan changes.
+          2. You MUST add a new "0. Validation Errors" section at the very beginning of your Rationale block to review in detail the specific validation failure that occurred and the root cause of it. This section is ONLY to be included if recovering from a validation error. The other sections (1-4) should remain unchanged unless the plan changes.
           3. To minimize further errors, you MUST take smaller steps by reducing the number of actions in the plan (e.g., editing only one file per turn) and, if necessary, the number of FIND/REPLACE pairs within a single EDIT action.
         </instruction>
       </rule>
@@ -317,9 +317,10 @@
             <instruction>
                 After the plan header, every plan MUST have a `## Rationale` section. Its content must be enclosed in a single fenced code block, following the "Strict Code Block Nesting" rule. Regenerate the rationale completely every turn, without omissions or shortcuts.
 
-                This block MUST contain the following four sections in order. The content within this block must be plain text and MUST NOT contain any Markdown formatting (e.g., bolding, italics, or links).
+                This block MUST contain the following sections in order. The content within this block must be plain text and MUST NOT contain any Markdown formatting (e.g., bolding, italics, or links).
 
-                0. Validation Errors (See Plan Validation Recovery Rule)
+                0. Validation Errors (Add this section ONLY if the previous plan resulted in a Validation Failed status)
+
                 1. Synthesis
                 A two-part analysis that serves as your short-term memory. First, review the outcome of the previous turn, quoting any new information or error messages. You MUST objectively review the outcome against the previous turn's Expectations, explicitly state which condition was met, and adopt the corresponding status. Second, synthesize what that new information means for the broader mission and reiterate all relevant information required for the current turn.
 
