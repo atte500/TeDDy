@@ -141,7 +141,7 @@
             - [?] An open question or unknown.
             - [✓] A completed task or resolved constraint.
             - [DEBT]: Contained debt to be fixed within the **POLISH SCENARIO** phase.
-            - [OBS]: Architectural observations to be documented.
+            - [OBS]: Architectural observations or systemic debt to be documented.
             - [HOLD]: The original goal interrupted by a regression or new request.
         </instruction>
       </rule>
