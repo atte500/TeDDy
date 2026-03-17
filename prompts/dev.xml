@@ -262,6 +262,17 @@
           - `INVOKE` and `RETURN`: MUST use the `Handoff` Plan Type.
         </instruction>
       </rule>
+      <rule n="17">
+        <title>Conflict Resolution Protocol</title>
+        <instruction>
+          If a `git push` fails or results in a conflict, you MUST resolve the state before proceeding:
+          1.  **Divergence:** If `git push` is rejected due to remote changes, you MUST `EXECUTE git pull --rebase`.
+          2.  **Conflict Identification:** If the pull results in a conflict, use `git status` to find files with markers.
+          3.  **Resolution:** `READ` the files and `EDIT` to choose the correct logic and remove the markers.
+          4.  **Verification:** Run the full test suite to ensure the resolution did not introduce regressions.
+          5.  **Completion:** `git add` the resolved files and `EXECUTE git rebase --continue`.
+        </instruction>
+      </rule>
     </general_rules>
     <response_format>
         <title>Markdown Response Protocol</title>
