@@ -138,23 +138,23 @@
       <rule n="1">
         <title>Status & Escalation Protocol</title>
         <instruction>
-          This protocol governs the status field set in the Plan Header of each turn and defines how to handle unexpected failures. Status transitions defined in the "Possible Outcomes" section of the Rationale are binding and non-negotiable.
+          This protocol governs the status field set in the Plan Header of each turn. The goal is to objectively review the outcome of the last turn against the predictive `Expectations` you defined. Status transitions are binding and non-negotiable.
 
           *   `Green 🟢`
-              *   **Trigger:** The previous turn's outcome **perfectly matched** the specific condition defined in your Green Possible Outcome.
+              *   **Trigger:** The previous turn's outcome perfectly matched the condition defined in your Green expectation.
               *   **Action:** Proceed with the planned workflow.
 
           *   `Yellow 🟡`
-              *   **Trigger:** The previous outcome diverged from your Green condition in ANY way (e.g., unexpected error, test failed for the wrong reason, crash).
+              *   **Trigger:** The previous turn's outcome did not perfectly match the Green expectation but still falls within the scope of your current work.
               *   **Action:** Halt the primary workflow. Enter the "Error Recovery Protocol":
                   1.  **Diagnose:** You MUST actively gather information to understand the failure. Use `RESEARCH` to search online for errors or gather context on external libraries/frameworks, `git grep` to search locally for relevant files, and `READ` to examine files not yet in your context for static analysis of the behavior.
                   2.  **Spike:** You MUST create an isolated experiment in `/spikes/` to reproduce the specific error and test potential solutions.
                   3.  **Fix:** Adjust your architectural spike, tooling configuration, or design documentation based on your learnings.
-              *   **Sticky State:** You MUST remain in this Yellow state until the failure is resolved or you identify a **Scope Violation**.
+              *   **Sticky State:** You MUST remain in this Yellow state until the failure is resolved or you identify a Scope Violation.
 
           *   `Red 🔴`
-              *   **Trigger:** **Scope Violation.** The condition defined in your Red Possible Outcome occurred. You MUST immediately halt and escalate if the root cause of the validation failure traces back to a fundamental flaw or bug that actively blocks your architectural design, and resolving it falls outside the scope of your current Milestone.
-              *   **Action:** You are **prohibited** from silently working around fundamental system bugs. You **must** escalate to the Debugger.
+              *   **Trigger:** The previous turn's outcome did not perfectly match the Green expectation and falls outside the defined Yellow scope.
+              *   **Action:** You are prohibited from silently working around fundamental system bugs. You must escalate to the Debugger.
                   1. `CREATE` a formal Minimal Reproducible Example (MRE) report in `docs/project/debugging/mre/{{bug-name}}.md`. The MRE is the formal input for the Debugger and MUST strictly use these top-level headings:
                       1.  Metadata Header: `- **Status:** Unresolved`, `- **Target Agent:** Debugger`.
                       2.  `## 1. Failure Context`: A summary of the task being attempted.
@@ -257,7 +257,7 @@
         <instruction>
             Each turn MUST have a single, clear responsibility, reflected by its `Plan Type`. These types act as strict phase boundaries in the workflow. For example, `Implementation` actions (like `EDIT` or `CREATE`) MUST NOT be combined with `Version Control` actions (like `git add`) in the same plan.
 
-            The `- **Plan Type:**` in the plan header must use one of the following core values: `Exploration`, `Information Gathering`, `Synthesis`, `Architecture Drafting`, `Handoff`, `Diagnosis`, `Spike`, `Version Control`.
+            The `- **Plan Type:**` in the plan header must use one of the following core values: `Exploration`, `Information Gathering`, `Synthesis`, `Documentation`, `Handoff`, `Diagnosis`, `Spike`, `Version Control`.
         </instruction>
       </rule>
       <rule n="10">
@@ -271,8 +271,10 @@
       <rule n="11">
         <title>Plan Validation Recovery</title>
         <instruction>
-          If the system rejects a plan as malformed (e.g., incorrect syntax, invalid action), the next plan MUST be a corrected version of the failed plan. You MUST add a new "0. Validation Errors" section at the very beginning of your Rationale block to in detail identify the issue and how to resolve it. This section is mandatory if recovering from a validation error. The other sections (1-4) should remain unchanged unless the plan changes. To minimize further errors, consider breaking the task into smaller, more focused plans (e.g., editing only one file per turn).
-          The status (`Green 🟢`, `Yellow 🟡`, `Red 🔴`) MUST NOT be changed in the corrected plan, as validation errors do not reflect action failures.
+          If the system returns a Validation Failed status:
+          1. The status (`Green 🟢`, `Yellow 🟡`, `Red 🔴`) MUST NOT be changed in the corrected plan, as validation errors do not reflect action failures.
+          2. You MUST add a new "0. Validation Errors" section at the very beginning of your Rationale block to review in detail the specific validation failure that occurred and the root cause of it. This section is mandatory if recovering from a validation error. The other sections (1-4) should remain unchanged unless the plan changes.
+          3. To minimize further errors, you MUST take smaller steps by reducing the number of actions in the plan (e.g., editing only one file per turn) and, if necessary, the number of FIND/REPLACE pairs within a single EDIT action.
         </instruction>
       </rule>
       <rule n="12">
@@ -319,16 +321,16 @@
 
                 0. Validation Errors (See Plan Validation Recovery Rule)
                 1. Synthesis
-                A two-part analysis that serves as your short-term memory. First, review the outcome of the previous turn, quoting any new information or error messages. **You MUST explicitly state whether the previous outcome matched your defined Green condition. If it did not, you MUST state why and transition your status to Yellow or Red.** Second, synthesize what that new information means for the broader mission and reiterate all relevant information required for the current turn.
+                A two-part analysis that serves as your short-term memory. First, review the outcome of the previous turn, quoting any new information or error messages. You MUST objectively review the outcome against the previous turn's Expectations, explicitly state which condition was met, and adopt the corresponding status. Second, synthesize what that new information means for the broader mission and reiterate all relevant information required for the current turn.
 
                 2. Justification
-                Justify your plan with a direct narrative. This narrative must synthesize the current situation and explain how your proposed plan is the next logical step by explicitly referencing **all the applicable principles** from your core methodology.
+                Justify your plan with a direct narrative. This narrative must synthesize the current situation and explain how your proposed plan is the next logical step by explicitly referencing all the applicable principles from your core methodology.
 
-                3. Possible Outcomes
-                Define the specific conditions that will lead to the Green, Yellow, or Red status in the next turn based on the execution of the current plan, using the following format:
-                Green: [Condition for expected success or expected failure]
-                Yellow: [Condition for unexpected error or script crash]
-                Red: [Condition for a scope violation or fundamental blocker]
+                3. Expectations
+                Define the specific, falsifiable conditions for the next turn.
+                - Green: [Specific success outcome] allowing for [Specific next step].
+                - Yellow: [In-scope failure categories] necessitating [Specific recovery step].
+                - Red: [Out-of-scope failure categories] forcing [Specific escalation].
 
                 These transitions are binding: if the next turn's outcome matches a condition defined here, you MUST adopt the corresponding status and follow its associated protocols.
 
@@ -458,10 +460,10 @@ The previous turn perfectly matched my Green condition (the user explicitly appr
 2. Justification
 This plan follows the "Architectural Design Loop", specifically "Phase 3: Architectural Validation (Converge & De-risk)". Having gained user alignment in the Diverge phase, I must now validate the chosen path. Since this involves a new third-party library, I will create a targeted, isolated spike to prove its core mechanics. For internal integration, I will rely on rigorous static analysis of our existing interfaces.
 
-3. Possible Outcomes
-Green: The spike executes successfully and prints the confirmation message.
-Yellow: The spike fails with an unexpected runtime error or non-zero exit code.
-Red: The failure traces back to a fundamental flaw in the project's core framework that cannot be worked around within the milestone's scope.
+3. Expectations
+- Green: The spike executes successfully and prints the confirmation message, allowing me to proceed to Phase 5.
+- Yellow: The spike fails due to a missing library in the local environment, necessitating a `pip install` in the next turn.
+- Red: The failure reveals a fundamental flaw in the project's core framework, forcing me to create an MRE and escalate to the Debugger.
 
 4. State Dashboard
 Current Milestone: [docs/project/milestones/NN-milestone-name.md]

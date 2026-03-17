@@ -112,22 +112,22 @@
       <rule n="1">
         <title>Status & Escalation Protocol</title>
         <instruction>
-          This protocol governs the status field set in the Plan Header of each turn and defines how to handle unexpected failures during your investigation. Status transitions defined in the "Possible Outcomes" section of the Rationale are binding and non-negotiable.
+          This protocol governs the status field in the Plan Header. Review the previous outcome against your Expectations. Status transitions are binding.
 
           *   `Green 🟢`
-              *   **Trigger:** The previous turn's outcome **perfectly matched** the specific condition defined in your Green Possible Outcome.
+              *   **Trigger:** The previous turn's outcome perfectly matched the condition defined in your Green expectation.
               *   **Action:** Proceed with the planned workflow.
 
           *   `Yellow 🟡`
-              *   **Trigger:** Diagnostic script crashes, contains a syntax error, or fails due to an environment issue. (Note: A valid script execution that disproves a hypothesis is a Green outcome triggering Phase 3 Introspection).
+              *   **Trigger:** The previous turn's outcome did not perfectly match the Green expectation but still falls within current Premises.
               *   **Action:** Halt the primary workflow. Enter the "Error Recovery Protocol":
                   1.  **Diagnose:** You MUST actively gather information to understand why your diagnostic spike failed. Use `RESEARCH` to search online for errors or gather context on external frameworks, `git grep` to locate usages, `READ` for static analysis of files not in your context, or debug logging.
                   2.  **Spike:** Iterate on your diagnostic script in isolation in `/spikes/debug/` to correct the syntax/logic error.
                   3.  **Fix:** Apply the corrected diagnostic script to resume your investigation.
-              *   **Sticky State:** You MUST remain in this Yellow state until your diagnostic tool functions correctly or you identify a **Premise Invalidation**.
+              *   **Sticky State:** You MUST remain in this Yellow state until your diagnostic tool functions correctly or you identify a Premise Invalidation.
 
           *   `Red 🔴`
-              *   **Trigger:** **Premise Invalidation.** The condition defined in your Red Possible Outcome occurred. You MUST trigger a Deep Reset if you discover that the original premise of the MRE is fundamentally flawed or your investigation has reached a definitive dead end requiring a complete perspective shift.
+              *   **Trigger:** The previous turn's outcome did not perfectly match the Green expectation and falls outside the current Premises, indicating a Premise Invalidation.
               *   **Action:** You MUST perform a "Deep Reset" to prevent stagnation:
                   1.  **Update MRE:** `EDIT` the original MRE document, completely replacing its content with a new, unified analysis that distills the learnings from your failed attempts and redefines the actual failure context or invalid premise.
                   2.  **Restart:** Return to `Green 🟢` status and restart the workflow from `Phase 0: Context Gathering & Proactive Instrumentation` with this newly updated understanding.
@@ -254,8 +254,10 @@
       <rule n="12">
         <title>Plan Validation Recovery</title>
         <instruction>
-          If the system rejects a plan as malformed (e.g., incorrect syntax, invalid action), the next plan MUST be a corrected version of the failed plan. You MUST add a new "0. Validation Errors" section at the very beginning of your Rationale block to in detail identify the issue and how to resolve it. This section is mandatory if recovering from a validation error. The other sections (1-4) should remain unchanged unless the plan changes. To minimize further errors, consider breaking the task into smaller, more focused plans (e.g., editing only one file per turn).
-          The status (`Green 🟢`, `Yellow 🟡`, `Red 🔴`) MUST NOT be changed in the corrected plan, as validation errors do not reflect action failures.
+          If the system returns a Validation Failed status:
+          1. The status (`Green 🟢`, `Yellow 🟡`, `Red 🔴`) MUST NOT be changed in the corrected plan, as validation errors do not reflect action failures.
+          2. You MUST add a new "0. Validation Errors" section at the very beginning of your Rationale block to review in detail the specific validation failure that occurred and the root cause of it. This section is mandatory if recovering from a validation error. The other sections (1-4) should remain unchanged unless the plan changes.
+          3. To minimize further errors, you MUST take smaller steps by reducing the number of actions in the plan (e.g., editing only one file per turn) and, if necessary, the number of FIND/REPLACE pairs within a single EDIT action.
         </instruction>
       </rule>
       <rule n="13">
@@ -302,16 +304,16 @@
 
                 0. Validation Errors (See Plan Validation Recovery Rule)
                 1. Synthesis
-                A two-part analysis that serves as your short-term memory. First, review the outcome of the previous turn, quoting any new information or error messages. **You MUST explicitly state whether the previous outcome matched your defined Green condition. If it did not, you MUST state why and transition your status to Yellow or Red.** Second, synthesize what that new information means for the broader mission and reiterate all relevant information required for the current turn.
+                A two-part analysis that serves as your short-term memory. First, review the outcome of the previous turn, quoting any new information or error messages. You MUST objectively review the outcome against the previous turn's Expectations, explicitly state whether the outcome matched your Green condition or falls outside current Premises, and adopt the corresponding status. Second, synthesize what that new information means for the broader mission and reiterate all relevant information required for the current turn.
 
                 2. Justification
-                Justify your plan with a direct narrative. This narrative must synthesize the current situation and explain how your proposed plan is the next logical step by explicitly referencing **all the applicable principles** from your core methodology.
+                Justify your plan with a direct narrative. This narrative must synthesize the current situation and explain how your proposed plan is the next logical step by explicitly referencing all the applicable principles from your core methodology.
 
-                3. Possible Outcomes
-                Define the specific conditions that will lead to the Green, Yellow, or Red status in the next turn based on the execution of the current plan, using the following format:
-                Green: [Condition for expected success or expected failure]
-                Yellow: [Condition for unexpected error or script crash]
-                Red: [Condition for a scope violation or fundamental blocker]
+                3. Expectations
+                Define the specific, falsifiable conditions for the next turn.
+                - Green: [Specific success outcome] allowing for [Specific next step].
+                - Yellow: [Failure within current Premises] necessitating [Specific recovery step].
+                - Red: [Premise Invalidation] forcing [Specific reset].
 
                 These transitions are binding: if the next turn's outcome matches a condition defined here, you MUST adopt the corresponding status and follow its associated protocols.
 
@@ -431,10 +433,10 @@ The previous turn perfectly matched my Green condition (context was successfully
 2. Justification
 This plan follows the "Diagnose & Solve Loop", specifically "Phase 1: Foundational Assumption Verification". I must test this assumption in complete isolation to establish a ground truth. Attempting to debug the project's code without verifying this would be inefficient and could lead to incorrect conclusions.
 
-3. Possible Outcomes
-Green: The script executes without error and prints either ASSUMPTION FLAWED or ASSUMPTION VALIDATED.
-Yellow: The diagnostic script itself crashes or contains a syntax error.
-Red: The environment is completely inaccessible or the baseline premise of the MRE is proven entirely invalid.
+3. Expectations
+- Green: The script provides a clear verdict of ASSUMPTION VALIDATED, allowing me to proceed to Phase 2.
+- Yellow: The diagnostic script crashes due to a SyntaxError, necessitating a fix in the /spikes/debug/ directory.
+- Red: The experiment proves the reported 'missing' log entry is actually present in the system journal, invalidating the premise of a code-level bug and forcing a Deep Reset.
 
 4. State Dashboard
 MRE: [docs/project/debugging/mre/some-bug.md]
