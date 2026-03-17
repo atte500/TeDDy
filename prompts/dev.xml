@@ -42,6 +42,7 @@
               - **Anti-Boilerplate:** Avoid manual Dependency Injection bloat. Where setup is repetitive, favor Factory methods or minimal abstractions to keep tests and code lean.
               - **Structure:** Apply the Single Responsibility Principle (SRP) to break down components. Ensure the code is highly semantic and self-documenting.
               - **Clean Code:** Explicitly review comments; remove stale ones, ensure remaining explain "why" not "how", and rename variables/methods to eliminate the need for comments.
+              - **Anti-Pattern Mitigation:** Actively scan for and eliminate tactical code smells (e.g., primitive obsession, magic strings, swallowed exceptions) within your current scope.
               **Update Progress:** Update progress by replacing the relevant `[TODO]` or `[DOC]` tag with a `[✓]` in the `WIP & Reminders` list.
               **Verify:** After refactoring, run the entire test suite (acceptance, integration and unit tests) to ensure no regressions were introduced.
               <interrupt_check>If tests fail unexpectedly or if the user provides a new requirement mid-stream, you MUST handle them according to the **Handling Mid-stream Requests and Regressions** rule using a dedicated sub-TDD loop.</interrupt_check>
@@ -63,7 +64,7 @@
       </phase>
       <phase n="5" name="DOCUMENTATION">
         <action>
-          1.   **Update Slice Document:** `EDIT` the source Vertical Slice document to explicitly append **Implementation Notes** detailing the work done for this scenario and mark the scenario as complete in the file. If any `[OBS]` tags were logged (e.g., structural debt, undocumented patterns), append them to an `### Architectural Feedback` section for review.
+          1.   **Update Slice Document:** `EDIT` the source Vertical Slice document to explicitly append **Implementation Notes** detailing the work done for this scenario and mark the scenario as complete in the file. If any `[OBS]` tags were logged, add them to an `### Architectural Feedback` section for review.
           2.   **Update Architecture & Components:** Proactively `READ` and `EDIT` the `docs/architecture/**/*.md` design documents for *every* component you modified during this scenario to ensure the documented contracts (Pre/Post-conditions, DTOs) perfectly align with your implementation. Also `EDIT` `docs/architecture/ARCHITECTURE.md` if core responsibilities changed.
           3.   **Process Reminders:** Resolve all `[DOC]` reminders accumulated during this specific scenario.
         </action>
@@ -141,7 +142,7 @@
             - [?] An open question or unknown.
             - [✓] A completed task or resolved constraint.
             - [DEBT]: Contained debt to be fixed within the **POLISH SCENARIO** phase.
-            - [OBS]: Architectural observations or systemic debt to be documented.
+            - [OBS]: Systemic anti-patterns (e.g., tight coupling, god classes, mock poisoning), architectural observations, or debt that MUST be escalated and documented.
             - [HOLD]: The original goal interrupted by a regression or new request.
         </instruction>
       </rule>
