@@ -166,17 +166,21 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 
 #### Test Harness (Primary Driving Adapters)
 
-| Component               | Description                                                                                                         | Contract                                               |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| Component               | Description                                                                                                     | Contract                                           |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
 | **MarkdownPlanBuilder** | A fluent DSL for constructing validated Markdown plans for testing.                                                 | [MarkdownPlanBuilder](./tests/dsl/plan_builder.md)     |
-| **CliTestAdapter**      | A specialized adapter that drives the CLI in-process and parses its output into structured data for assertions.     | [CliTestAdapter](./tests/adapters/cli_adapter.md)      |
-| **Test Composition**    | The global test configuration and DI container setup that enables isolation and mocking.                             | [TestComposition](./tests/contexts/composition.md)     |
+| **ReportParser**        | An "Inverse Adapter" that parses Markdown reports back into structured DTOs for assertions.                         | [ReportParser](./tests/adapters/report_parser.md)      |
+| **CliTestAdapter**      | A specialized adapter that drives the CLI in-process and orchestrates builders and parsers.                         | [CliTestAdapter](./tests/adapters/cli_adapter.md)      |
+| **TestEnvironment**     | A harness that encapsulates DI isolation, environment patching, and workspace management.                           | [TestEnvironment](./tests/contexts/test_environment.md)|
 
 ---
 
 ## 3. Key Architectural Decisions
 
 This section serves as the "System Law" (Poka-Yoke) for TeDDy. It defines the prescriptive standards that all development work MUST follow.
+
+-   **Rule:** The Test Harness (DSLs, Builders, Contexts) MUST reside exclusively within the `tests/` directory. **Rationale:** To maintain strict isolation between production and test-related code, preventing test dependencies from leaking into the core application.
+
 
 -   **Rule:** Use Hexagonal Architecture (Ports & Adapters) to isolate core business logic from external frameworks and I/O. **Rationale:** To enable independent testing and allow for easy swapping of infrastructure technologies.
 -   **Rule:** Use the `punq` library for Dependency Injection in the `main.py` composition root. **Rationale:** To decouple services from concrete implementations, facilitating testability and modularity.
