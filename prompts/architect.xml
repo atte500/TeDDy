@@ -84,7 +84,7 @@
               *   **Version Control Strategy:** Default to **Trunk-Based Development** on the `main` branch.
               *   **Testing Strategy:** The project's testing strategy, including the primary framework and structural rules like the test pyramid (Unit > Integration > Acceptance).
               *   **Pre-commit Hooks (Local):** The Architect MUST ensure local checks are in place for:
-                  *   **Quality Gate:** Running the full test suite (unit, integration, and acceptance). Note: This is a mandatory safety gate and is explicitly exempt from the "must be fast" principle.
+                  *   **Quality Gate:** Running the full test suite (unit, integration, and acceptance).
                   *   **Integrity:** Verifying a clean Git status (no unstaged changes e.g. via `git diff --exit-code`).
                   *   **Security:** A secret scanner.
                   *   **Correctness:** A static type checker.
