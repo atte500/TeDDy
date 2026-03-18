@@ -111,13 +111,14 @@
         <action>
           **Goal:** To implement the fix on a transient branch to ensure 100% reliable verification.
           **Process: The Isolated Repair Protocol**
-          1.  **Stash WIP:** `EXECUTE` `git stash` to save the Developer's current work-in-progress. Record the name of the current branch.
-          2.  **Branch:** `EXECUTE` a checkout of a transient branch `fix/{{bug-name}}` from the last stable commit of the main trunk.
-          3.  **Baseline Run:** `EXECUTE` the full test suite. Record the results (even failures) as the **Baseline State**.
-          4.  **RED Phase:** Create a new regression test in `tests/suites/` that reproduces the bug. You MUST utilize the project's established Test Harness Triad (Setup, Driver, Observer) for state, interaction, and verification to ensure the test acts as a first-class architectural citizen. Confirm it fails as expected.
-          5.  **GREEN Phase:** Apply minimal changes to `src/` and `CREATE` the RCA document in `docs/project/debugging/rca/{{bug-name}}.md` on this branch.
-          6.  **REFACTOR Phase:** Clean up implementation and finalize the documentation.
-          7.  **Delta Verification:** Run the full test suite again. The repair is "Verified" only if the new regression test passes AND the suite results match the **Baseline State** exactly (no new failures).
+          *   **Check:** If `git status --porcelain` is empty, skip steps 1-2. Perform the repair on the current branch.
+          1.  **Stash WIP:** `EXECUTE` `git stash` and record the current branch name.
+          2.  **Branch:** `EXECUTE` a checkout of a transient branch `fix/{{bug-name}}` from the last stable commit.
+          3.  **Baseline Run:** `EXECUTE` the full test suite. Record results as the **Baseline State**.
+          4.  **RED Phase:** Create a regression test in `tests/suites/` using the Test Harness Triad. Confirm failure.
+          5.  **GREEN Phase:** Apply minimal `src/` changes and `CREATE` the RCA in `docs/project/debugging/rca/{{bug-name}}.md`.
+          6.  **REFACTOR Phase:** Clean up code and documentation.
+          7.  **Delta Verification:** Run the full suite. Success = new test passes AND suite matches **Baseline State**.
         </action>
       </phase>
 
@@ -125,12 +126,11 @@
         <action>
           **Goal:** To restore the Developer's workspace in a "Zero-Touch" or "Conflict-Ready" state.
           **Process: The Sequential Integration Protocol**
-          1.  **Commit (Branch):** Execute the **Version Control Protocol** for the code and RCA documentation on the `fix/` branch. Record the commit hash.
-          2.  **Restore Main:** `EXECUTE` a checkout of the original branch.
-          3.  **Zero-Touch Integration:** `EXECUTE` `git cherry-pick --no-edit {{hash}}`. **If it fails, do NOT abort; leave the conflict markers in the files.**
-          4.  **Cleanup:** `EXECUTE` `git branch -D fix/{{bug-name}}`.
-          5.  **Restore WIP:** Verify if a stash exists (e.g., via `git stash list`). If a stash exists, `EXECUTE` `git stash pop`. **If it fails, do NOT abort; leave the conflict markers in the files.**
-          6.  **Handoff:** Use `RETURN` to pass the final RCA to the calling agent.
+          1.  **Commit:** Execute **Version Control Protocol** for code and RCA. Record commit hash.
+          2.  **Restore:** If a `fix/` branch was used, `checkout` the original branch and `cherry-pick --no-edit {{hash}}`. Otherwise, `git push`.
+          3.  **Cleanup:** If a `fix/` branch was used, `branch -D` it.
+          4.  **Restore WIP:** If a stash was created, `git stash pop`. Do not abort on conflicts.
+          5.  **Handoff:** Use `RETURN` to pass the final RCA to the calling agent.
         </action>
       </phase>
     </workflow>
