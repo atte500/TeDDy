@@ -102,7 +102,7 @@
           `## 2. Investigation Summary`: List of hypotheses tested and results of verification spikes.
           `## 3. Root Cause`: Analysis of the immediate (technical) and systemic (process) causes.
           `## 4. Verified Solution`: Technical description of the fix, including a proven code snippet.
-          `## 5. Preventative Measures`: Specific recommendations to prevent recurrence and automated test case to protect the fix.
+          `## 5. Preventative Measures`: Specific recommendations to prevent recurrence and the automated regression test (utilizing the proper Test DSL/Harness) to protect the fix.
           `## 6. Implementation Notes`: A summary of the changes made in Phase 7 including the integration status and any next steps needed (e.g., conflict resolution).
         </detail>
       </phase>
@@ -114,7 +114,7 @@
           1.  **Stash WIP:** `EXECUTE` `git stash` to save the Developer's current work-in-progress. Record the name of the current branch.
           2.  **Branch:** `EXECUTE` a checkout of a transient branch `fix/{{bug-name}}` from the last stable commit of the main trunk.
           3.  **Baseline Run:** `EXECUTE` the full test suite. Record the results (even failures) as the **Baseline State**.
-          4.  **RED Phase:** Create a new regression test in `tests/` that reproduces the bug. Confirm it fails as expected.
+          4.  **RED Phase:** Create a new regression test in `tests/` that reproduces the bug. You MUST utilize the project's established Test Architecture (e.g., Test Contexts, DSLs, Object Mothers) for setup and interaction to ensure the test acts as a first-class architectural citizen. Confirm it fails as expected.
           5.  **GREEN Phase:** Apply minimal changes to `src/` and `CREATE` the RCA document in `docs/project/debugging/rca/{{bug-name}}.md` on this branch.
           6.  **REFACTOR Phase:** Clean up implementation and finalize the documentation.
           7.  **Delta Verification:** Run the full test suite again. The repair is "Verified" only if the new regression test passes AND the suite results match the **Baseline State** exactly (no new failures).
