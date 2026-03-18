@@ -61,7 +61,7 @@ def test_prompt_action_multiline_editor(tmp_path, monkeypatch):
     def mock_run_editor(cmd, *args, **kwargs):
         filepath = Path(cmd[-1])  # Temp path is the last arg
         # Use the exact marker from ConsoleInteractor background launch logic
-        marker = "<!-- Please enter your response above this line. Save and close this file to submit. -->"
+        marker = "<!-- Please enter your response above this line. -->"
         filepath.write_text(f"{user_response}\n{marker}\n", encoding="utf-8")
 
     mock_env.run_command.side_effect = mock_run_editor

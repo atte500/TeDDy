@@ -130,7 +130,7 @@ class ConsoleInteractorAdapter(IUserInteractor):
 
     def _launch_editor_background(self, prompt: str) -> None:
         """Opens a temporary file in a non-blocking external editor."""
-        marker = "<!-- Please enter your response above this line. Save and close this file to submit. -->"
+        marker = "<!-- Please enter your response above this line. -->"
         initial_content = f"\n\n{marker}\n\n{prompt}\n"
 
         temp_path = self._system_env.create_temp_file(suffix=".md")
