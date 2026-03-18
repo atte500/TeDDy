@@ -164,6 +164,14 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 | **WebSearcherAdapter**         | Implements `IWebSearcher` using the `ddgs` library for keyless DuckDuckGo searches.                     | [WebSearcherAdapter](./adapters/outbound/web_searcher_adapter.md)                 |
 | **YamlConfigAdapter**          | Implements `IConfigService` by reading configuration from a `.teddy/config.yaml` file.                  | [YamlConfigAdapter](./adapters/outbound/yaml_config_adapter.md)                   |
 
+#### Test Harness (Primary Driving Adapters)
+
+| Component               | Description                                                                                                         | Contract                                               |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| **MarkdownPlanBuilder** | A fluent DSL for constructing validated Markdown plans for testing.                                                 | [MarkdownPlanBuilder](./tests/dsl/plan_builder.md)     |
+| **CliTestAdapter**      | A specialized adapter that drives the CLI in-process and parses its output into structured data for assertions.     | [CliTestAdapter](./tests/adapters/cli_adapter.md)      |
+| **Test Composition**    | The global test configuration and DI container setup that enables isolation and mocking.                             | [TestComposition](./tests/contexts/composition.md)     |
+
 ---
 
 ## 3. Key Architectural Decisions
