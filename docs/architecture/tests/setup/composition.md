@@ -2,7 +2,7 @@
 - **Status:** Implemented
 
 ## 1. Purpose / Responsibility
-The `Test Composition` component acts as the "Composition Root" for the testing suite. Its primary responsibility is to ensure absolute test isolation by providing a fresh Dependency Injection (DI) container for every test and managing global mocks for heavy or side-effect-prone external libraries.
+The `Test Composition` component acts as the "Composition Root" for the testing suite. Its primary responsibility is to ensure absolute test isolation by providing a fresh Dependency Injection (DI) container for every test and managing global mocks for heavy or side-effect-prone external libraries. It serves as the foundation for the higher-level `TestEnvironment` harness.
 
 ## 2. Ports
 - **Primary Driving Adapter:** Drives the `Core` services by injecting mocks/stubs into the `container`.

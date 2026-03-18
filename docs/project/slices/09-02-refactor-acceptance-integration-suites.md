@@ -8,7 +8,7 @@ Migrate the existing acceptance and integration test suites to use the formal Te
 
 ## 2. Acceptance Criteria (Scenarios)
 
-### Scenario 1: Establish Symmetrical Test Harness
+### Scenario 1: Establish Symmetrical Test Harness [✓]
 **Goal:** Create a complete, exhaustive harness for driving the system and verifying outcomes.
 - **Precondition:** Test setup and verification are ad-hoc and heavily reliant on manual string manipulation.
 - **Success Condition:** `MarkdownPlanBuilder` (Driver) is exhaustive, supporting all 9 action types and protocol flags.
@@ -16,11 +16,14 @@ Migrate the existing acceptance and integration test suites to use the formal Te
 - **Success Condition:** `CliTestAdapter` is refactored to orchestrate the builder and parser, providing a "One-Liner" API for test cases: `adapter.execute(plan).assert_action_success(0)`.
 - **Success Condition:** `TestEnvironment` (Setup) harness is implemented, encapsulating DI patching and workspace setup.
 #### Deliverables
-- [ ] Exhaustive `MarkdownPlanBuilder` in `tests/drivers/plan_builder.py`.
-- [ ] `ReportParser` in `tests/observers/report_parser.py`.
-- [ ] `CliTestAdapter` in `tests/drivers/cli_adapter.py`.
-- [ ] `TestEnvironment` harness in `tests/setup/test_environment.py`.
-- [ ] Update Design Documents for all new harness components.
+- [✓] Exhaustive `MarkdownPlanBuilder` in `tests/drivers/plan_builder.py`.
+- [✓] `ReportParser` in `tests/observers/report_parser.py`.
+- [✓] `CliTestAdapter` in `tests/drivers/cli_adapter.py`.
+- [✓] `TestEnvironment` harness in `tests/setup/test_environment.py`.
+- [✓] Update Design Documents for all new harness components.
+
+#### Implementation Notes
+Scenario 1 established the formal Test Harness Triad. The `MarkdownPlanBuilder` now supports all 9 action types with specialized fluent methods. The `ReportParser` provides a robust, regex-based observer for CLI output. The `CliTestAdapter` orchestrates in-process CLI execution, and the `TestEnvironment` ensures isolation and workspace anchoring for every test run. Unit tests for all harness components are located in `tests/unit/`.
 
 ### Scenario 2: Refactor ALL Acceptance Tests
 **Goal:** Replace hardcoded plan strings and manual CLI invocation logic across the entire acceptance suite.

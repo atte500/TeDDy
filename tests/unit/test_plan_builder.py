@@ -1,9 +1,81 @@
 from textwrap import dedent
+from tests.drivers.plan_builder import MarkdownPlanBuilder
 
-from tests.acceptance.plan_builder import MarkdownPlanBuilder
+
+def test_builder_supports_all_nine_specialized_methods():
+    """
+    Ensures the builder has specialized methods for all 9 actions.
+    This test defines the target API for the refactored builder.
+    """
+    builder = MarkdownPlanBuilder("Exhaustive Test Plan")
+
+    # Each call should return self to allow chaining
+    assert builder.add_create("src/app.py", "print('hello')", overwrite=True) is builder
+    builder.add_read("README.md")
+    builder.add_edit("src/app.py", "print('hello')", "print('world')", replace_all=True)
+    builder.add_execute(
+        "pytest",
+        expected_outcome="Tests pass",
+        allow_failure=True,
+        background=False,
+        timeout=60,
+    )
+    builder.add_research(["how to test python"], description="Searching for tests")
+    builder.add_prompt("Is this okay?", reference_files=["docs/spec.md"])
+    builder.add_invoke(
+        "Architect", "Designing system", reference_files=["docs/goals.md"]
+    )
+    builder.add_return("Feature complete", reference_files=["tests/results.xml"])
+    builder.add_prune("old_file.py")
+
+    plan = builder.build()
+
+    # Verify presence of all action types
+    assert "### `CREATE`" in plan
+    assert "### `READ`" in plan
+    assert "### `EDIT`" in plan
+    assert "### `EXECUTE`" in plan
+    assert "### `RESEARCH`" in plan
+    assert "### `PROMPT`" in plan
+    assert "### `INVOKE`" in plan
+    assert "### `RETURN`" in plan
+    assert "### `PRUNE`" in plan
 
 
-def test_plan_builder_create_simple_plan():
+def test_builder_path_normalization():
+    """Ensures paths are always formatted as root-relative links [path](/path)."""
+    builder = MarkdownPlanBuilder("Path Test")
+    builder.add_create("docs/architecture/README.md", "content")
+
+    plan = builder.build()
+    assert (
+        "- **File Path:** [docs/architecture/README.md](/docs/architecture/README.md)"
+        in plan
+    )
+
+
+def test_builder_edit_multi_block():
+    """Ensures add_edit supports multiple find/replace pairs."""
+    builder = MarkdownPlanBuilder("Multi-Edit Test")
+    # Using a list of tuples for multiple edits
+    edits = [("find1", "replace1"), ("find2", "replace2")]
+    builder.add_edit("file.txt", edits)
+
+    plan = builder.build()
+    assert "#### FIND:\n`````text\nfind1\n`````" in plan
+    assert "#### REPLACE:\n`````text\nreplace1\n`````" in plan
+    assert "#### FIND:\n`````text\nfind2\n`````" in plan
+    assert "#### REPLACE:\n`````text\nreplace2\n`````" in plan
+
+
+def test_builder_execute_options():
+    """Verifies that EXECUTE protocol flags are correctly rendered in backticks."""
+    builder = MarkdownPlanBuilder("Execute Flags")
+    builder.add_execute("exit 1", allow_failure=True, background=True)
+
+    plan = builder.build()
+    assert "- **Allow Failure:** `true`" in plan
+    assert "- **Background:** `true`" in plan
     """
     Tests that the plan builder can create a basic plan with a title,
     default rationale, and a single action.

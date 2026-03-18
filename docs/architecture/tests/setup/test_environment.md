@@ -1,5 +1,5 @@
 # Test Context: TestEnvironment
-- **Status:** Planned
+- **Status:** Implemented
 
 ## 1. Purpose / Responsibility
 The `TestEnvironment` encapsulates the complex setup required for atomic, isolated acceptance and integration tests. It manages the lifecycle of the DI container, temporary filesystems, and monkeypatching.
