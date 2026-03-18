@@ -116,7 +116,6 @@
             All component design documents (`docs/architecture/**/*.md`) **must** follow this structure.
             *   **Header Metadata (Mandatory):**
                 *   `**Status:**` [Planned | Implemented | Refactoring | Deprecated]
-                *   `**Introduced in:**` [Link to the relevant slice document]
             *   **Standard Sections (Mandatory):**
                 1.  **`## 1. Purpose / Responsibility`**: A concise, single-paragraph description of the component's single responsibility.
                 2.  **`## 2. Ports`**: Explicitly declare the component's relationship to the Hexagonal Architecture (e.g., implements/uses inbound/outbound ports).
