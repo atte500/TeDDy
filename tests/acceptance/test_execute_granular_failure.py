@@ -1,44 +1,37 @@
 import sys
-from typer.testing import CliRunner
-from teddy_executor.__main__ import app
+from tests.setup.test_environment import TestEnvironment
+from tests.drivers.cli_adapter import CliTestAdapter
+from tests.drivers.plan_builder import MarkdownPlanBuilder
 
-runner = CliRunner()
+from teddy_executor.adapters.outbound.shell_adapter import ShellAdapter
+from teddy_executor.core.ports.outbound import IShellExecutor
 
 
-def test_execute_reports_specific_failing_command_in_multiline_block():
-    """
-    Scenario: Granular EXECUTE failure reporting
-    Given a plan with an EXECUTE block containing multiple commands
-    When the second command fails
-    Then the action log should explicitly identify the second command as the failure point
-    """
-    # Using python -c to ensure cross-platform failure behavior for the test logic
-    # while the adapter handles the shell wrapping.
-    plan_content = f"""# Granular Failure Test
-- Status: Green 🟢
-- Plan Type: Implementation
-- Agent: Developer
+def test_execute_reports_specific_failing_command_in_multiline_block(
+    tmp_path, monkeypatch
+):
+    """Scenario: Granular EXECUTE failure identifies the specific command that failed in a multi-line block."""
+    env = TestEnvironment(monkeypatch, tmp_path)
+    env.setup()
+    # Register a real shell adapter to test actual shell-side error trapping
+    env.container.register(IShellExecutor, ShellAdapter)
 
-## Rationale
-```text
-### 1. Synthesis
-Testing granular failure reporting.
-```
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
 
-## Action Plan
+    # Use python -c for cross-platform failure behavior
+    cmd = f"{sys.executable} -c \"print('first')\"\n"
+    cmd += f"{sys.executable} -c \"import sys; print('second'); sys.exit(1)\"\n"
+    cmd += f"{sys.executable} -c \"print('third')\""
 
-### `EXECUTE`
-- Description: Multi-line command where middle fails
-```shell
-{sys.executable} -c "print('first')"
-{sys.executable} -c "import sys; print('second'); sys.exit(1)"
-{sys.executable} -c "print('third')"
-```
-"""
-    result = runner.invoke(app, ["execute", "--plan-content", plan_content, "--yes"])
+    plan = (
+        MarkdownPlanBuilder("Granular Failure Test")
+        .add_execute(cmd, description="Multi-line command where middle fails")
+        .build()
+    )
+
+    result = adapter.run_execute_with_plan(plan, tmp_path, input="y\n")
 
     assert result.exit_code != 0
-    # We expect the failure report to contain the failed command in the metadata/details
-    # The template renders this as "- **Failed Command:** ..."
-    assert "Failed Command" in result.output
-    assert "sys.exit(1)" in result.output
+    # The report detail should explicitly identify the second command as the failure point
+    assert "- **Failed Command:**" in result.stdout
+    assert "sys.exit(1)" in result.stdout

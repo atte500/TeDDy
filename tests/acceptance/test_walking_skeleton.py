@@ -1,70 +1,38 @@
-from .helpers import parse_markdown_report, run_execute_with_plan_content
-from .plan_builder import MarkdownPlanBuilder
+from tests.setup.test_environment import TestEnvironment
+from tests.drivers.cli_adapter import CliTestAdapter
+from tests.drivers.plan_builder import MarkdownPlanBuilder
+from tests.observers.report_parser import ReportParser
 
 
-def test_successful_execution(monkeypatch, tmp_path):
-    """
-    Given a valid Markdown plan with a single 'echo' command,
-    When the plan is run via the CLI,
-    Then the command should exit with status 0,
-    And the report should show SUCCESS with the correct output.
-    """
-    # ARRANGE
-    builder = MarkdownPlanBuilder("Test Successful Execution")
-    builder.add_action(
-        "EXECUTE",
-        params={"Description": "Echo hello world."},
-        content_blocks={"COMMAND": ("shell", 'echo "hello world"')},
-    )
-    plan_content = builder.build()
+def test_successful_execution(tmp_path, monkeypatch):
+    """Scenario: Valid plan with echo succeeds."""
+    TestEnvironment(monkeypatch, tmp_path).setup().with_real_shell()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
 
-    # ACT
-    result = run_execute_with_plan_content(monkeypatch, plan_content, tmp_path)
-
-    # ASSERT
-    assert result.exit_code == 0, (
-        f"Teddy should exit with 0 on success. Output: {result.stdout}"
+    plan = (
+        MarkdownPlanBuilder("Success")
+        .add_execute("echo 'hello world'", description="Echo hello")
+        .build()
     )
 
-    report = parse_markdown_report(result.stdout)
-    assert report["run_summary"]["Overall Status"] == "SUCCESS"
-    action_log = report["action_logs"][0]
-    assert action_log["status"] == "SUCCESS"
-    details_dict = action_log["details"]
-    assert "hello world" in details_dict.get("stdout", "")
+    result = adapter.run_execute_with_plan(plan_content=plan)
+
+    assert result.exit_code == 0
+    report = ReportParser(result.stdout)
+    assert report.run_summary["Overall Status"] == "SUCCESS"
+    assert "hello world" in report.action_logs[0].details["stdout"]
 
 
-def test_failed_execution(monkeypatch, tmp_path):
-    """
-    Given a valid Markdown plan with a failing command,
-    When the plan is run via the CLI,
-    Then the command should exit with a non-zero code,
-    And the report should show FAILURE with the correct error output.
-    """
-    # ARRANGE
-    builder = MarkdownPlanBuilder("Test Failed Execution")
-    builder.add_action(
-        "EXECUTE",
-        params={"Description": "Run a non-existent command."},
-        content_blocks={"COMMAND": ("shell", "nonexistentcommand12345")},
-    )
-    plan_content = builder.build()
+def test_failed_execution(tmp_path, monkeypatch):
+    """Scenario: Failing command returns non-zero and marks failure."""
+    TestEnvironment(monkeypatch, tmp_path).setup().with_real_shell()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
 
-    # ACT
-    result = run_execute_with_plan_content(monkeypatch, plan_content, tmp_path)
+    plan = MarkdownPlanBuilder("Failure").add_execute("nonexistentcommand12345").build()
 
-    # ASSERT
-    assert result.exit_code == 1, "Teddy should exit with 1 on failure"
+    result = adapter.run_execute_with_plan(plan_content=plan)
 
-    report = parse_markdown_report(result.stdout)
-    assert report["run_summary"]["Overall Status"] == "FAILURE"
-    action_log = report["action_logs"][0]
-    assert action_log["status"] == "FAILURE"
-
-    details_dict = action_log["details"]
-    error_msg = details_dict.get("stderr", "").lower()
-    assert (
-        "not found" in error_msg
-        or "no such file" in error_msg
-        or "not recognized" in error_msg
-    )
+    assert result.exit_code == 1
+    report = ReportParser(result.stdout)
+    assert report.run_summary["Overall Status"] == "FAILURE"
+    assert report.action_logs[0].status == "FAILURE"

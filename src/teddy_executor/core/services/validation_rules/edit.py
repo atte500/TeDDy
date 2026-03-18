@@ -165,7 +165,7 @@ def _validate_single_edit(
                         f"**Similarity Score:** {score:.2f}\n"
                         f"**FIND Block:**\n"
                         f"{fence}\n{find_block}\n{fence}\n"
-                        "**Hint:** Please provide a larger FIND block to uniquely identify the section, refactor the code to avoid duplication, and to use Replace All: true if intention is to change all occurrences in the file."
+                        "**Hint:** Please provide a larger FIND block to uniquely identify the section, refactor the code to avoid duplication. Alternatively you can use `Replace All: true` to change all occurrences in the file at once."
                     ),
                     file_path=str(file_path),
                 )

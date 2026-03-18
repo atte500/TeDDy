@@ -193,7 +193,7 @@
 {%- endif %}
 
 {# Extract logs that should display resource content #}
-{% set ns = namespace(content_logs=[]) %}
+{% set report_ns = namespace(content_logs=[]) %}
 {% for log in report.action_logs %}
   {% if log.details and log.details is mapping and log.details.get('content') %}
     {# In concise mode, include READ content. In non-concise mode, omit successful READ content. #}
@@ -202,14 +202,14 @@
     {% set is_failure = log.status.value == 'FAILURE' %}
 
     {% if is_failure or (is_read and is_success and is_concise) %}
-      {% set ns.content_logs = ns.content_logs + [log] %}
+      {% set report_ns.content_logs = report_ns.content_logs + [log] %}
     {% endif %}
   {% endif %}
 {% endfor -%}
 
-{% if ns.content_logs %}
+{% if report_ns.content_logs %}
 ## Resource Contents
-{% for log in ns.content_logs %}
+{% for log in report_ns.content_logs %}
 {% set res_path = log.params.get('File Path') or log.params.get('Resource') or log.params.get('resource') or log.params.get('path') %}
 {{ render_resource(res_path, log.details.content) }}
 {% endfor %}
@@ -285,33 +285,28 @@
 {% else %}
 {# Generic Params for CREATE, EDIT, READ, RESEARCH etc #}
 {% if params %}
+  {# Use namespace for persistent ignored_keys across if-blocks #}
+  {% set param_ns = namespace(ignored=['content', 'find', 'replace', 'edits', 'similarity_scores', 'similarity_score', 'similarity threshold', 'similarity_threshold']) %}
+
+  {% if action_type in ['EXECUTE', 'RESEARCH'] %}
+    {% set param_ns.ignored = param_ns.ignored + ['description', 'Description'] %}
+  {% endif %}
+  {% if action_type == 'INVOKE' %}
+    {% set param_ns.ignored = param_ns.ignored + ['agent', 'Agent'] %}
+  {% endif %}
+  {% if action_type == 'RESEARCH' %}
+    {% set param_ns.ignored = param_ns.ignored + ['queries'] %}
+  {% endif %}
+  {% if action_type in ['RETURN', 'INVOKE', 'PROMPT'] %}
+    {% set param_ns.ignored = param_ns.ignored + ['message', 'handoff_resources', 'handoff resources'] %}
+  {% endif %}
+  {% if action_type == 'PROMPT' %}
+    {% set param_ns.ignored = param_ns.ignored + ['prompt'] %}
+  {% endif %}
+
   {% for key, value in params.items() %}
     {% set k_lower = key.lower() %}
-    {# Filter out fields handled in headers or special blocks #}
-    {% set ignored_keys = ['content', 'find', 'replace', 'edits'] %}
-    {# Only ignore description if it's used in the header (EXECUTE, RESEARCH) #}
-    {% if action_type in ['EXECUTE', 'RESEARCH'] %}
-        {% set ignored_keys = ignored_keys + ['description', 'Description'] %}
-    {% endif %}
-    {# For INVOKE, hide Agent (in header) #}
-    {% if action_type == 'INVOKE' %}
-        {% set ignored_keys = ignored_keys + ['agent', 'Agent'] %}
-    {% endif %}
-    {# For RESEARCH, hide queries (in body) #}
-    {% if action_type == 'RESEARCH' %}
-        {% set ignored_keys = ignored_keys + ['queries'] %}
-    {% endif %}
-    {# For RETURN/INVOKE, hide message and resources (handled separately) #}
-    {% if action_type in ['RETURN', 'INVOKE'] %}
-        {% set ignored_keys = ignored_keys + ['message', 'handoff_resources', 'handoff resources'] %}
-    {% endif %}
-    {# For PROMPT, hide the AI prompt #}
-    {% if action_type == 'PROMPT' %}
-        {% set ignored_keys = ignored_keys + ['prompt'] %}
-    {% endif %}
-    {# Hide plumbing keys handled in specific logic blocks #}
-    {% set ignored_keys = ignored_keys + ['similarity_scores', 'similarity_score', 'similarity threshold', 'similarity_threshold'] %}
-    {% if k_lower not in ignored_keys %}
+    {% if k_lower not in param_ns.ignored %}
       {# Normalize key to Title Case #}
       {% set display_key = key.replace('_', ' ').title() %}
       {# Map plumbing keys back to human readable names for display #}
@@ -339,25 +334,22 @@
 {% endfor %}
 {% endif %}
 
-{% if action_type == 'PROMPT' %}
-{% if log.details and log.details is mapping and log.details.get('response') %}
+{% if action_type in ['RETURN', 'INVOKE', 'PROMPT'] %}
+  {% set resources = params.get('handoff_resources') or params.get('Handoff Resources') -%}
+  {% if resources -%}
+- **Reference Files:**
+{% for res in resources -%}
+[{{ res }}]({% if not res.startswith('/') %}/{% endif %}{{ res }})
+{% endfor -%}
+  {% endif -%}
+{% endif %}
+
+{% if action_type == 'PROMPT' and log.details and log.details is mapping and log.details.get('response') %}
 
 #### User Response
 {{ log.details.get('response') | fence }}text
 {{ log.details.get('response') }}
 {{ log.details.get('response') | fence }}
-{% else %}
-{{ render_action_details(log) }}
-{% endif %}
-{% elif action_type in ['RETURN', 'INVOKE', 'PROMPT'] %}
-{% set resources = params.get('handoff_resources') or params.get('Handoff Resources') -%}
-{% if resources -%}
-- **Reference Files:**
-{% for res in resources -%}
-[{{ res }}]({% if not res.startswith('/') %}/{% endif %}{{ res }})
-{% endfor -%}
-{% endif -%}
-{{ render_action_details(log) }}
 {% elif action_type != 'RESEARCH' %}
 {{ render_action_details(log) }}
 {% endif %}

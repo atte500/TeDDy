@@ -19,9 +19,19 @@ class ReportParser:
     Parses Markdown Execution Reports back into structured data.
     """
 
+    @property
+    def stdout(self) -> str:
+        """Returns the raw Markdown content of the report."""
+        return self._content
+
+    @property
+    def summary(self) -> Dict[str, str]:
+        """Returns the parsed summary fields."""
+        return self.run_summary
+
     def __init__(self, content: str):
         self._content = content
-        self.summary: Dict[str, str] = {}
+        self.run_summary: Dict[str, str] = {}
         self.action_logs: List[ActionLogEntry] = []
         self._parse()
 
@@ -37,7 +47,7 @@ class ReportParser:
             if match:
                 key = match.group(1).strip()
                 value = match.group(2).strip().strip("`").strip()
-                self.summary[key] = value
+                self.run_summary[key] = value
 
         # 2. Parse Action Logs
         if len(parts) > 1:
@@ -67,6 +77,15 @@ class ReportParser:
         )
         status = status_match.group(1).upper() if status_match else "UNKNOWN"
 
+        # Extract Skip Reason/Note/Details if present
+        skip_match = re.search(
+            r"-\s*\*\*(?:Skip Reason|Note|Details):\*\*\s*(?:`?)(.*?)(?:`?)$",
+            chunk,
+            re.MULTILINE,
+        )
+        if skip_match:
+            params["Skip Reason"] = skip_match.group(1).strip()
+
         return ActionLogEntry(
             type=action_type, status=status, params=params, details=details
         )
@@ -90,6 +109,8 @@ class ReportParser:
                 if key in ["Status", "Error", "Return Code", "Details"]:
                     if key == "Return Code" and value:
                         details["return_code"] = int(value)
+                    if key == "Details":
+                        details["details"] = value
                     continue
                 params[key] = value
 

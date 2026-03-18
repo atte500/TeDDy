@@ -9,6 +9,7 @@ INTEGRATION_DIR = ROOT_DIR / "tests" / "integration"
 UNIT_DIR = ROOT_DIR / "tests" / "unit"
 # ---
 
+
 def count_tests_in_dir(directory: Path) -> int:
     """Counts 'def test_' occurrences by walking python files."""
     if not directory.is_dir():
@@ -27,6 +28,7 @@ def count_tests_in_dir(directory: Path) -> int:
             print(f"Error reading file {py_file}: {e}", file=sys.stderr)
     return total_count
 
+
 def main():
     """
     Main function to verify the test pyramid structure and exit with a status
@@ -43,9 +45,7 @@ def main():
     print(f"Unit Tests:        {unit_count}")
 
     # The simple rule: Acceptance < Integration < Unit
-    pyramid_is_healthy = (
-        acceptance_count < integration_count < unit_count
-    )
+    pyramid_is_healthy = acceptance_count < integration_count < unit_count
 
     if pyramid_is_healthy:
         print("\n[OK] Test pyramid structure is healthy.")
@@ -55,6 +55,7 @@ def main():
         print("The rule is: Acceptance < Integration < Unit", file=sys.stderr)
         print("Please refactor", file=sys.stderr)
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

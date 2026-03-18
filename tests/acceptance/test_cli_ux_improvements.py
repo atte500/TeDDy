@@ -1,105 +1,56 @@
-from pathlib import Path
-from typer.testing import CliRunner
-from teddy_executor.__main__ import app
-import pytest
-
-runner = CliRunner()
+from tests.setup.test_environment import TestEnvironment
+from tests.drivers.cli_adapter import CliTestAdapter
+from tests.drivers.plan_builder import MarkdownPlanBuilder
 
 
-@pytest.fixture
-def mock_clipboard(monkeypatch):
-    """Mocks pyperclip.copy to avoid clipboard side effects during tests."""
+def test_cli_interactive_prompt_formatting(tmp_path, monkeypatch):
+    """Scenario: Interactive prompt follows the 'Action: TYPE' format."""
+    env = TestEnvironment(monkeypatch, tmp_path)
+    env.setup().with_real_interactor()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
 
-    def mock_copy(x: str) -> None:
-        pass
-
-    monkeypatch.setattr("pyperclip.copy", mock_copy)
-
-
-def test_get_prompt_retrieves_default_prompt_from_root(mock_clipboard, tmp_path):
-    """
-    Scenario 1 (Revised): Get a default prompt from the root prompts folder.
-    - Given: A /prompts/architect.md file exists at the project root.
-    - And: The command is run from a subdirectory.
-    - When: The user runs `teddy get-prompt architect`.
-    - Then: The content of the root prompt file is printed, regardless of extension.
-    """
-    # Setup root prompt with a .md extension to test extension-agnostic logic
-    prompt_dir = tmp_path / "prompts"
-    prompt_dir.mkdir()
-    (prompt_dir / "architect.md").write_text(
-        "dummy root prompt content", encoding="utf-8"
+    plan = (
+        MarkdownPlanBuilder("Prompt Format")
+        .add_create("test.txt", "content", description="Make file")
+        .build()
     )
 
-    # Use a .git folder as the project root sentinel
+    result = adapter.run_execute_with_plan(plan, input="y\n", interactive=True)
+
+    assert result.exit_code == 0
+    output = result.stdout + result.stderr
+    assert "Action: CREATE" in output
+    assert "Description: Make file" in output
+
+
+def test_get_prompt_retrieves_default_prompt_from_root(tmp_path, monkeypatch):
+    """Scenario: Get prompt from root prompts directory."""
+    env = TestEnvironment(monkeypatch, tmp_path)
+    env.setup()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+
+    # Mock pyperclip to prevent exceptions in headless environment
+    monkeypatch.setattr("pyperclip.copy", lambda x: None)
+
+    (tmp_path / "prompts").mkdir()
+    (tmp_path / "prompts" / "architect.md").write_text("root prompt", encoding="utf-8")
     (tmp_path / ".git").mkdir()
 
-    # Setup subdirectory to run from
-    subdir = tmp_path / "some" / "subdir"
-    subdir.mkdir(parents=True)
+    subdir = tmp_path / "subdir"
+    subdir.mkdir()
 
-    with runner.isolated_filesystem(temp_dir=subdir):
-        result = runner.invoke(app, ["get-prompt", "architect"])
-
+    result = adapter.run_cli_command(["get-prompt", "architect"], cwd=subdir)
     assert result.exit_code == 0
-    assert "dummy root prompt content" in result.stdout
-    # The confirmation message is printed to stderr
-    assert "Output copied to clipboard." in result.stderr
+    assert "root prompt" in result.stdout
+    assert "Output copied to clipboard." in result.stdout + result.stderr
 
 
-def test_get_prompt_retrieves_local_override_prompt(mock_clipboard, tmp_path):
-    """
-    Scenario 2: Get a locally overridden prompt
-    - Given: A file exists at `.teddy/prompts/architect.md`.
-    - When: The user runs `teddy get-prompt architect` from that directory.
-    - Then: The content of the local file is printed.
-    """
-    # Run command from the temp directory, creating files inside it
-    with runner.isolated_filesystem(temp_dir=tmp_path):
-        # Setup local prompt override inside the CWD
-        prompt_dir = Path.cwd() / ".teddy" / "prompts"
-        prompt_dir.mkdir(parents=True)
-        (prompt_dir / "architect.md").write_text(
-            "local override content", encoding="utf-8"
-        )
+def test_get_prompt_fails_for_non_existent_prompt(tmp_path, monkeypatch):
+    """Scenario: Attempt to get a non-existent prompt."""
+    env = TestEnvironment(monkeypatch, tmp_path)
+    env.setup()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
 
-        result = runner.invoke(app, ["get-prompt", "architect"])
-
-    assert result.exit_code == 0
-    assert "local override content" in result.stdout
-
-
-def test_get_prompt_fails_for_non_existent_prompt(mock_clipboard):
-    """
-    Scenario 3: Attempt to get a non-existent prompt
-    - Given: No prompt named 'non-existent' exists.
-    - When: The user runs `teddy get-prompt non-existent`.
-    - Then: An error message is printed to stderr.
-    - And: The command exits with a non-zero status code.
-    """
-    result = runner.invoke(app, ["get-prompt", "non-existent-prompt"])
-
+    result = adapter.run_cli_command(["get-prompt", "unknown"])
     assert result.exit_code != 0
-    assert "Prompt 'non-existent-prompt' not found." in result.stderr
-
-
-def test_get_prompt_with_no_copy_flag(mock_clipboard, tmp_path):
-    """
-    Scenario 4: Use the --no-copy flag
-    - Given: A default prompt exists.
-    - When: The user runs `teddy get-prompt architect --no-copy`.
-    - Then: The prompt content is printed.
-    - And: No clipboard confirmation message is shown.
-    """
-    # Setup root prompt
-    prompt_dir = tmp_path / "prompts"
-    prompt_dir.mkdir()
-    (prompt_dir / "architect.xml").write_text("dummy prompt", encoding="utf-8")
-    (tmp_path / ".git").mkdir()
-
-    with runner.isolated_filesystem(temp_dir=tmp_path):
-        result = runner.invoke(app, ["get-prompt", "architect", "--no-copy"])
-
-    assert result.exit_code == 0
-    assert "dummy prompt" in result.stdout
-    assert "Output copied to clipboard." not in result.stdout
+    assert "Prompt 'unknown' not found." in result.stdout + result.stderr

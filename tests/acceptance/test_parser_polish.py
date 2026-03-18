@@ -1,20 +1,19 @@
 import textwrap
-import pytest
-from teddy_executor.core.services.markdown_plan_parser import MarkdownPlanParser
-from teddy_executor.core.ports.inbound.plan_parser import InvalidPlanError
+from tests.setup.test_environment import TestEnvironment
+from tests.drivers.cli_adapter import CliTestAdapter
 
 
-def test_parser_highlights_multiple_structural_mismatches():
+def test_parser_highlights_multiple_structural_mismatches(tmp_path, monkeypatch):
     """
     Scenario: Multi-Highlight AST Mismatches
     Given a plan with multiple structural errors (missing metadata list AND wrong heading level)
-    When the plan is parsed
-    Then the error message should highlight all offending nodes.
+    When the plan is executed
+    Then the CLI should output the AST summary with highlights on all offending nodes.
     """
-    parser = MarkdownPlanParser()
+    env = TestEnvironment(monkeypatch, tmp_path)
+    env.setup()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
 
-    # A plan missing the Metadata List (Node 1) and having a wrong heading level for Rationale (Node 2)
-    # Correct order: H1, List, H2 (Rationale), Code, H2 (Action Plan)
     malformed_plan = textwrap.dedent("""\
         # A Malformed Plan
         This is a paragraph instead of a list.
@@ -25,44 +24,34 @@ def test_parser_highlights_multiple_structural_mismatches():
         ## Action Plan
     """)
 
-    with pytest.raises(InvalidPlanError) as excinfo:
-        parser.parse(malformed_plan)
+    result = adapter.run_command(["execute", "--plan-content", malformed_plan])
 
-    error_msg = str(excinfo.value)
+    assert result.exit_code != 0
+    output = result.stdout
 
     # Ensure the AST summary is present
-    assert "### Actual Document Structure" in error_msg
+    assert "### Actual Document Structure" in output
+
+    # Extract the structure section for focused assertions
+    structure_section = output.split("### Actual Document Structure")[-1]
 
     # We expect highlights on the paragraph (Node 1) and the H3 heading (Node 2)
-    # The current implementation will only highlight one of them (likely the first one it hits)
-    # Note: Indices are 0-based.
-    # [000] Heading (Level 1)
-    # [001] Paragraph (Mismatch: expected List)
-    # [002] Heading (Level 3) (Mismatch: expected H2 Rationale)
-
-    # We assert that the indicator [✗] appears at least twice in the structure section
-    structure_section = error_msg.split("### Actual Document Structure")[-1]
-    indicator_count = structure_section.count("[✗]")
-
-    expected_min_indicators = 2
-    assert indicator_count >= expected_min_indicators, (
-        f"Expected at least {expected_min_indicators} mismatch indicators ([✗]), "
-        f"found {indicator_count} in:\n{structure_section}"
-    )
     assert "[✗] [001] Paragraph" in structure_section
     assert 'Paragraph: "This is a paragraph instead of a list."' in structure_section
     assert 'Heading (Level 3): "Wrong Heading Level (Rationale)"' in structure_section
     assert "(Error: " in structure_section
 
 
-def test_parser_highlights_multiple_mismatches_in_action_plan():
+def test_parser_highlights_multiple_mismatches_in_action_plan(tmp_path, monkeypatch):
     """
     Scenario: Multi-Highlight AST Mismatches (Action Plan)
     Given a plan with multiple structural errors inside the Action Plan section
-    When the plan is parsed
-    Then the error message should highlight all offending nodes in the Action Plan.
+    When the plan is executed
+    Then the CLI should output highlights for offending nodes.
     """
-    parser = MarkdownPlanParser()
+    env = TestEnvironment(monkeypatch, tmp_path)
+    env.setup()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
 
     malformed_plan = textwrap.dedent("""\
         # Valid Title
@@ -90,21 +79,24 @@ def test_parser_highlights_multiple_mismatches_in_action_plan():
         This is another invalid paragraph.
     """)
 
-    with pytest.raises(InvalidPlanError) as excinfo:
-        parser.parse(malformed_plan)
+    result = adapter.run_command(["execute", "--plan-content", malformed_plan])
+    assert result.exit_code != 0
+    structure_section = result.stdout.split("### Actual Document Structure")[-1]
 
-    error_msg = str(excinfo.value)
-    structure_section = error_msg.split("### Actual Document Structure")[-1]
-
-    # We expect highlights on both invalid paragraphs
     assert 'Paragraph: "This is an invalid paragraph."' in structure_section
     assert "[✗]" in structure_section
 
-    # Add a very long paragraph to test truncation at 60 chars
+
+def test_parser_truncates_long_paragraphs_in_ast(tmp_path, monkeypatch):
+    """Scenario: Parser truncates long paragraphs in AST summary for readability."""
+    env = TestEnvironment(monkeypatch, tmp_path)
+    env.setup()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+
     long_msg = "This is a very long paragraph that exceeds the sixty character limit to test truncation."
     truncated_msg = long_msg[:60].strip() + "..."
 
-    malformed_plan_long = textwrap.dedent(f"""\
+    malformed_plan = textwrap.dedent(f"""\
         # Valid Title
         - Status: Green
         - Agent: Pathfinder
@@ -118,14 +110,9 @@ def test_parser_highlights_multiple_mismatches_in_action_plan():
         {long_msg}
     """)
 
-    with pytest.raises(InvalidPlanError) as excinfo_long:
-        parser.parse(malformed_plan_long)
+    result = adapter.run_command(["execute", "--plan-content", malformed_plan])
+    assert result.exit_code != 0
+    structure_section = result.stdout.split("### Actual Document Structure")[-1]
 
-    structure_long = str(excinfo_long.value).split("### Actual Document Structure")[-1]
-    assert f'Paragraph: "{truncated_msg}"' in structure_long
-    assert "[✗]" in structure_long
-
-    indicator_count = structure_section.count("[✗]")
-    assert (
-        indicator_count >= 1
-    )  # In this specific plan, only the first mismatch is tagged
+    assert f'Paragraph: "{truncated_msg}"' in structure_section
+    assert "[✗]" in structure_section

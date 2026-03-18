@@ -1,95 +1,70 @@
-from typer.testing import CliRunner
-from teddy_executor.__main__ import app
+from pathlib import Path
+from tests.drivers.plan_builder import MarkdownPlanBuilder
+from tests.drivers.cli_adapter import CliTestAdapter
+from tests.setup.test_environment import TestEnvironment
+from teddy_executor.core.ports.outbound import IUserInteractor
 
 
-def test_prompt_report_omits_prompt(monkeypatch):
-    runner = CliRunner()
+def test_prompt_report_omits_prompt(tmp_path: Path, monkeypatch):
+    """Scenario: PROMPT report includes user response but excludes the AI's prompt string."""
+    env = TestEnvironment(monkeypatch, tmp_path)
+    env.setup()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+    interactor = env.get_service(IUserInteractor)  # type: ignore[type-abstract]
 
-    plan_content = """# Test Plan
-- **Status:** Green 🟢
-- **Agent:** Developer
+    prompt_text = "The AI prompt string here."
+    user_response = "User response string here."
+    interactor.ask_question.return_value = user_response  # type: ignore[attr-defined]
 
-## Rationale
-````text
-Rationale.
-````
+    plan = MarkdownPlanBuilder("Prompt Test").add_prompt(prompt_text).build()
 
-## Action Plan
-### `PROMPT`
-The AI prompt string here.
-"""
-    # Mock user input for the chat action. Note: PROMPT auto-approves.
-    result = runner.invoke(
-        app,
-        ["execute", "--plan-content", plan_content],
-        input="User response string here.\n",
+    # PROMPT triggers interactor.ask_question
+    report = adapter.execute_plan(plan, interactive=True)
+
+    assert report.action_was_successful(0)
+    assert user_response in report.stdout
+    assert prompt_text not in report.stdout
+
+
+def test_invoke_report_omits_details(tmp_path: Path, monkeypatch):
+    """Scenario: INVOKE report omits the 'Details' section for control-flow actions."""
+    env = TestEnvironment(monkeypatch, tmp_path)
+    env.setup()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+
+    plan = (
+        MarkdownPlanBuilder("Invoke Test")
+        .add_invoke("PathFinder", "Hello PathFinder!")
+        .build()
     )
 
-    assert result.exit_code == 0
-    assert "User response string here." in result.stdout
-    assert "The AI prompt string here." not in result.stdout
+    # Interactive mode triggers manual handoff confirmation (mocked to True)
+    report = adapter.execute_plan(plan, interactive=True, user_input="\n")
+
+    assert report.action_was_successful(0)
+    assert "- **Details:**" not in report.stdout
 
 
-def test_invoke_report_omits_details(monkeypatch):
-    runner = CliRunner()
+def test_dynamic_language_in_code_blocks(tmp_path: Path, monkeypatch):
+    """Scenario: Multiple READ actions are correctly formatted in the report."""
+    env = TestEnvironment(monkeypatch, tmp_path)
+    env.setup()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
 
-    plan_content = """# Test Plan
-- **Status:** Green 🟢
-- **Agent:** Developer
+    (tmp_path / "main.py").write_text("print('hello')", encoding="utf-8")
+    (tmp_path / "config.cfg").write_text("debug=true", encoding="utf-8")
 
-## Rationale
-````text
-Rationale.
-````
+    plan = (
+        MarkdownPlanBuilder("Read Test")
+        .add_read("main.py")
+        .add_read("config.cfg")
+        .build()
+    )
 
-## Action Plan
-### `INVOKE`
-- **Agent:** PathFinder
-- **Description:** Hello PathFinder!
-"""
-    result = runner.invoke(app, ["execute", "--plan-content", plan_content], input="\n")
+    report = adapter.execute_plan(plan)
 
-    assert result.exit_code == 0
-    assert "- **Details:**" not in result.stdout
-
-
-def test_dynamic_language_in_code_blocks(tmp_path, monkeypatch):
-    """
-    Ensures the system executes multiple READ actions correctly.
-    Formatting details are covered in unit tests.
-    """
-    runner = CliRunner()
-    monkeypatch.chdir(tmp_path)
-
-    # Setup files
-    src_dir = tmp_path / "src"
-    src_dir.mkdir()
-    py_file = src_dir / "main.py"
-    py_file.write_text("print('hello')", encoding="utf-8")
-
-    cfg_file = tmp_path / "config.cfg"
-    cfg_file.write_text("debug=true", encoding="utf-8")
-
-    plan_content = """# Test Plan
-- **Status:** Green 🟢
-- **Agent:** Developer
-
-## Rationale
-````text
-Rationale.
-````
-
-## Action Plan
-### `READ`
-- **Resource:** src/main.py
-
-### `READ`
-- **Resource:** config.cfg
-"""
-    result = runner.invoke(app, ["execute", "-y", "--plan-content", plan_content])
-
-    assert result.exit_code == 0
-    # High-level check that resources were read
-    assert "Resource Contents" in result.stdout
-    assert "print('hello')" in result.stdout
-    assert "debug=true" in result.stdout
+    assert report.action_was_successful(0)
+    assert report.action_was_successful(1)
+    assert "Resource Contents" in report.stdout
+    assert "print('hello')" in report.stdout
+    assert "debug=true" in report.stdout

@@ -1,177 +1,81 @@
 from pathlib import Path
-from typer.testing import CliRunner
-
-from teddy_executor.__main__ import app
-from teddy_executor.core.domain.models import ActionLog, ActionStatus
-from tests.acceptance.plan_builder import MarkdownPlanBuilder
-
-runner = CliRunner()
+from tests.drivers.plan_builder import MarkdownPlanBuilder
+from tests.drivers.cli_adapter import CliTestAdapter
+from tests.setup.test_environment import TestEnvironment
+from teddy_executor.core.ports.outbound import IUserInteractor
 
 
-def test_interactive_prompt_shows_description(
-    tmp_path: Path, mock_user_interactor, monkeypatch
-):
-    """
-    Given a plan with an action that has a 'description' field,
-    When the user runs `execute` interactively,
-    Then the confirmation prompt should include the description.
-    """
-    # Arrange
-    test_file = tmp_path / "test.txt"
-    plan_content = (
-        MarkdownPlanBuilder("QoL Test Plan: Description")
-        .add_action(
-            "create",
-            params={
-                "File Path": f"[{test_file.name}](/{test_file.name})",
-                "Description": "Create a test file for the QoL feature.",
-            },
-            content_blocks={"": ("text", "hello")},
-        )
+def test_interactive_prompt_shows_description(tmp_path: Path, monkeypatch):
+    """Scenario: Interactive confirmation prompt includes action description."""
+    env = TestEnvironment(monkeypatch, tmp_path)
+    env.setup()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+    interactor = env.get_service(IUserInteractor)  # type: ignore[type-abstract]
+
+    plan = (
+        MarkdownPlanBuilder("QoL: Description")
+        .add_create("test.txt", "hello", description="Special description")
         .build()
     )
 
-    # Mock the UserInteractor to simulate user approval and capture the prompt
-    mock_user_interactor.confirm_action.return_value = (True, "")
+    interactor.confirm_action.return_value = (True, "")  # type: ignore[attr-defined]
 
-    # Act
-    # Change CWD to the temp path so file operations in the plan are contained
-    with monkeypatch.context() as m:
-        m.chdir(tmp_path)
-        result = runner.invoke(app, ["execute", "--plan-content", plan_content])
+    adapter.execute_plan(plan, interactive=True, user_input="y\n")
 
-    # Assert
-    assert result.exit_code == 0
-    assert test_file.exists()
-
-    # Verify the prompt sent to the user included the description
-    mock_user_interactor.confirm_action.assert_called_once()
-    _, call_kwargs = mock_user_interactor.confirm_action.call_args
-    prompt_message = call_kwargs["action_prompt"]
-    assert "Create a test file for the QoL feature." in prompt_message
+    interactor.confirm_action.assert_called_once()  # type: ignore[attr-defined]
+    _, kwargs = interactor.confirm_action.call_args  # type: ignore[attr-defined]
+    assert "Special description" in kwargs["action_prompt"]
 
 
-def test_prompt_skips_approval_prompt(
-    tmp_path: Path, mock_user_interactor, mock_action_dispatcher
-):
-    """
-    Given a plan with a 'prompt' action,
-    When the plan is run in interactive mode,
-    Then the approval prompt should be skipped and the action dispatched directly.
-    """
-    # Arrange
-    plan_content = (
-        MarkdownPlanBuilder("QoL Test Plan: Chat")
-        .add_action("prompt", params={"prompt": "Hello?"})
-        .build()
-    )
+def test_prompt_action_skips_approval_prompt(tmp_path: Path, monkeypatch):
+    """Scenario: PROMPT action skips the y/n approval prompt in interactive mode."""
+    env = TestEnvironment(monkeypatch, tmp_path)
+    env.setup()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+    interactor = env.get_service(IUserInteractor)  # type: ignore[type-abstract]
 
-    # Configure confirm_action to prevent a ValueError if it's called.
-    mock_user_interactor.confirm_action.return_value = (True, "")
-    # The action handler for prompt is the interactor's `ask_question`
-    mock_user_interactor.ask_question.return_value = "World"
+    plan = MarkdownPlanBuilder("QoL: Skip Prompt Approval").add_prompt("Hello?").build()
 
-    # We also mock the dispatcher to prevent it from trying to create a real
-    # action handler, which would be complex to set up. We just need to know
-    # that the orchestrator calls it.
-    mock_action_dispatcher.dispatch_and_execute.return_value = ActionLog(
-        action_type="PROMPT",
-        status=ActionStatus.SUCCESS,
-        params={"prompt": "Hello?"},
-    )
+    interactor.ask_question.return_value = "World"  # type: ignore[attr-defined]
 
-    # Act
-    # Run in interactive mode (no --yes flag)
-    result = runner.invoke(app, ["execute", "--plan-content", plan_content])
+    adapter.execute_plan(plan, interactive=True, user_input="\n")
 
-    # Assert
-    assert result.exit_code == 0
-    # The core of the test: `confirm_action` should NOT have been called.
-    mock_user_interactor.confirm_action.assert_not_called()
-    # But the action dispatcher should have been called.
-    mock_action_dispatcher.dispatch_and_execute.assert_called_once()
+    # PROMPT should not trigger y/n confirmation
+    interactor.confirm_action.assert_not_called()  # type: ignore[attr-defined]
+    interactor.ask_question.assert_called_once()  # type: ignore[attr-defined]
 
 
-def test_read_action_report_formats_multiline_content_correctly(
-    tmp_path: Path, container, monkeypatch
-):
-    """
-    Verifies that the Markdown report for a `read` action correctly formats
-    multi-line file content. (Regression Test)
-    """
-    # GIVEN a file with multi-line content
-    test_file = tmp_path / "multi_line.txt"
-    test_file.write_text("line one\nline two", encoding="utf-8")
+def test_read_action_report_formats_multiline_content(tmp_path: Path, monkeypatch):
+    """Scenario: READ action report correctly preserves multiline file content."""
+    env = TestEnvironment(monkeypatch, tmp_path)
+    env.setup()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
 
-    # and a plan to read that file
-    plan_content = (
-        MarkdownPlanBuilder("QoL Test Plan: Read multiline")
-        .add_action(
-            "read", params={"Resource": f"[{test_file.name}](/{test_file.name})"}
-        )
-        .build()
-    )
+    content = "line one\nline two"
+    (tmp_path / "multi.txt").write_text(content, encoding="utf-8")
 
-    # WHEN the plan is executed
-    # Change CWD to the temp path so file operations in the plan are contained
-    with monkeypatch.context() as m:
-        m.chdir(tmp_path)
-        result = runner.invoke(
-            app, ["execute", "--plan-content", plan_content, "--yes"]
-        )
+    plan = MarkdownPlanBuilder("QoL: Read Multiline").add_read("multi.txt").build()
 
-    # THEN the command should succeed
-    assert result.exit_code == 0
+    report = adapter.execute_plan(plan)
 
-    # AND the output should contain the content in the report
-    assert "line one" in result.stdout
-    assert "line two" in result.stdout
+    assert report.action_was_successful(0)
+    assert "line one" in report.stdout
+    assert "line two" in report.stdout
 
 
-def test_read_action_is_formatted_as_literal_block(
-    tmp_path: Path, container, monkeypatch
-):
-    """
-    Given a read action on a multi-line file containing markdown,
-    When the execution report is generated,
-    Then the file content should be correctly included in the report.
-    """
-    # Arrange
-    file_content = """# TeDDy
+def test_read_action_preserves_markdown_formatting(tmp_path: Path, monkeypatch):
+    """Scenario: READ action report preserves complex markdown content."""
+    env = TestEnvironment(monkeypatch, tmp_path)
+    env.setup()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
 
-This is a paragraph with **bold** text.
+    content = "# Header\n\n```python\nprint('hi')\n```"
+    (tmp_path / "complex.md").write_text(content, encoding="utf-8")
 
-- A list item
-- Another list item
+    plan = MarkdownPlanBuilder("QoL: Read Markdown").add_read("complex.md").build()
 
-```python
-# A code block
-def hello():
-    print("Hello")
-```
-"""
-    test_file = tmp_path / "test.txt"
-    test_file.write_text(file_content, encoding="utf-8")
+    report = adapter.execute_plan(plan)
 
-    plan_content = (
-        MarkdownPlanBuilder("QoL Test Plan: Read complex markdown")
-        .add_action(
-            "read", params={"Resource": f"[{test_file.name}](/{test_file.name})"}
-        )
-        .build()
-    )
-
-    # Act
-    # Change CWD to the temp path so file operations in the plan are contained
-    with monkeypatch.context() as m:
-        m.chdir(tmp_path)
-        result = runner.invoke(
-            app, ["execute", "--plan-content", plan_content, "--yes"]
-        )
-
-    # Assert
-    assert result.exit_code == 0
-    # Assert on the raw string output to verify content is present
-    stdout = result.stdout
-    assert "def hello():" in stdout
-    assert 'print("Hello")' in stdout
+    assert report.action_was_successful(0)
+    assert "# Header" in report.stdout
+    assert "print('hi')" in report.stdout

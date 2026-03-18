@@ -1,75 +1,40 @@
-from .helpers import run_execute_with_plan_content
-import textwrap
+from tests.setup.test_environment import TestEnvironment
+from tests.drivers.cli_adapter import CliTestAdapter
+from tests.drivers.plan_builder import MarkdownPlanBuilder
 
 
 def test_multi_edit_ux_polish(monkeypatch, tmp_path):
-    """
-    Scenario: Multi-edit plan where one match is perfect and one is fuzzy.
-    Expect:
-    1. Similarity score list is shown correctly.
-    2. Fuzzy match has character-level diff (ndiff style).
-    3. Proper whitespace in report.
-    """
+    """Scenario: Multi-edit plan with perfect and fuzzy matches shows similarity scores and ndiff markers."""
+    env = TestEnvironment(monkeypatch, tmp_path)
+    env.setup()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+
     # Set global threshold to 0.8 for fuzzy matching in this test
     (tmp_path / ".teddy").mkdir(exist_ok=True)
     (tmp_path / ".teddy" / "config.yaml").write_text("similarity_threshold: 0.8\n")
 
     target_file = tmp_path / "code.py"
-    # Create the fuzzy discrepancy: file has 'line_two  =  2', plan asks for 'line_two = 2'
     target_file.write_text("line_one = 1\nline_two  =  2\n")
 
-    plan_content = textwrap.dedent("""\
-        # UX Polish Plan
-        - **Status:** Green 🟢
-        - **Agent:** Developer
-        - **Plan Type:** Implementation
+    plan = (
+        MarkdownPlanBuilder("UX Polish Plan")
+        .add_edit(
+            "code.py",
+            [
+                ("line_one = 1", 'line_one = "perfect"'),
+                ("line_two = 2", "line_two = 2.0"),
+            ],
+            description="Apply perfect and fuzzy edits",
+        )
+        .build()
+    )
 
-        ## Rationale
-        ```text
-        ### 1. Synthesis
-        Testing diff UX.
-
-        ### 2. Justification
-        TDD for UX polish.
-
-        ### 3. Expected Outcome
-        Fuzzy match and report.
-
-        ### 4. State Dashboard
-        [✓] Test
-        ```
-
-        ## Action Plan
-
-        ### `EDIT`
-        - **File Path:** [code.py](/code.py)
-        - **Similarity Threshold:** 0.8
-        - **Description:** Apply perfect and fuzzy edits.
-
-        #### `FIND:`
-        ```python
-        line_one = 1
-        ```
-        #### `REPLACE:`
-        ```python
-        line_one = "perfect"
-        ```
-
-        #### `FIND:`
-        ```python
-        line_two = 2
-        ```
-        #### `REPLACE:`
-        ```python
-        line_two = 2.0
-        ```
-    """)
-    result = run_execute_with_plan_content(monkeypatch, plan_content, tmp_path)
+    result = adapter.run_execute_with_plan(plan, tmp_path, input="y\n")
 
     assert result.exit_code == 0
     report = result.stdout
 
-    # 1. Similarity Scores should show both (0.89 remains roughly correct for 'line_two  =  2' vs 'line_two = 2')
+    # 1. Similarity Scores should show both
     assert "**Similarity Scores:** 1.00, 0.89" in report
 
     # 2. Check for ndiff markers
@@ -79,50 +44,25 @@ def test_multi_edit_ux_polish(monkeypatch, tmp_path):
 
     # 3. Check whitespace (#### diff should be preceded by a newline)
     assert "#### `diff`" in report
-    # Ensure it's not jammed against the previous line
     assert "\n#### `diff`" in report
 
 
 def test_perfect_edit_suppresses_diff(monkeypatch, tmp_path):
-    """Scenario: All edits are 1.0, #### diff should be missing."""
+    """Scenario: All edits are 1.0, #### diff should be missing from report."""
+    env = TestEnvironment(monkeypatch, tmp_path)
+    env.setup()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+
     target_file = tmp_path / "clean.py"
-    # Ensure exact match by matching the whole content if necessary, or stripping newline
     target_file.write_text("hello")
 
-    plan_content = textwrap.dedent("""\
-        # Perfect Plan
-        - **Status:** Green 🟢
-        - **Agent:** Developer
-        - **Plan Type:** Implementation
+    plan = (
+        MarkdownPlanBuilder("Perfect Plan")
+        .add_edit("clean.py", "hello", "world", description="Perfect edit")
+        .build()
+    )
 
-        ## Rationale
-        ```text
-        ### 1. Synthesis
-        Perfect match test.
-        ### 2. Justification
-        Verify suppression.
-        ### 3. Expected Outcome
-        No diff.
-        ### 4. State Dashboard
-        [✓] Done
-        ```
-
-        ## Action Plan
-
-        ### `EDIT`
-        - **File Path:** [clean.py](/clean.py)
-        - **Description:** Perfect edit.
-
-        #### `FIND:`
-        ```
-        hello
-        ```
-        #### `REPLACE:`
-        ```
-        world
-        ```
-    """)
-    result = run_execute_with_plan_content(monkeypatch, plan_content, tmp_path)
+    result = adapter.run_execute_with_plan(plan, tmp_path, input="y\n")
     assert result.exit_code == 0
     assert "#### `diff`" not in result.stdout
     assert "**Similarity Score:** 1.00" in result.stdout

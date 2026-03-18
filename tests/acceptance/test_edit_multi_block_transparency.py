@@ -1,12 +1,14 @@
-import textwrap
-from .helpers import run_execute_with_plan_content
+from tests.setup.test_environment import TestEnvironment
+from tests.drivers.cli_adapter import CliTestAdapter
+from tests.drivers.plan_builder import MarkdownPlanBuilder
 
 
 def test_multi_block_edit_shows_all_diffs(monkeypatch, tmp_path):
-    """
-    Scenario: Single EDIT action with two separate FIND/REPLACE blocks.
-    Expect: The execution report should show diffs for BOTH changes.
-    """
+    """Scenario: Single EDIT action with two separate FIND/REPLACE blocks shows all diffs and hunks."""
+    env = TestEnvironment(monkeypatch, tmp_path)
+    env.setup()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+
     # Set global threshold to 0.8 for fuzzy matching in this test
     (tmp_path / ".teddy").mkdir(exist_ok=True)
     (tmp_path / ".teddy" / "config.yaml").write_text("similarity_threshold: 0.8\n")
@@ -16,50 +18,21 @@ def test_multi_block_edit_shows_all_diffs(monkeypatch, tmp_path):
     content = ["site_one  =  1"] + ["# line"] * 10 + ["site_two  =  2"]
     target_file.write_text("\n".join(content) + "\n")
 
-    plan_content = textwrap.dedent("""\
-        # Multi-Site Plan
-        - **Status:** Green 🟢
-        - **Agent:** Developer
-        - **Plan Type:** Implementation
+    plan = (
+        MarkdownPlanBuilder("Multi-Site Plan")
+        .add_edit(
+            "multi_site.py",
+            [("site_one = 1", "site_one = 1.0"), ("site_two = 2", "site_two = 2.0")],
+            description="Edit two sites",
+        )
+        .build()
+    )
 
-        ## Rationale
-        ```text
-        ### 1. Synthesis
-        Testing multi-site transparency with fuzzy matches and hunks.
-        ### 2. Justification
-        Verify both edits show in report with hunks.
-        ### 3. Expected Outcome
-        Two diff segments separated by '...'.
-        ### 4. State Dashboard
-        [✓] Test
-        ```
+    # We need to manually add the Similarity Threshold to the builder output
+    # as the builder doesn't have a specific parameter for per-action threshold yet.
+    # Alternatively, we rely on the global config we just wrote.
 
-        ## Action Plan
-
-        ### `EDIT`
-        - **File Path:** [multi_site.py](/multi_site.py)
-        - **Similarity Threshold:** 0.8
-        - **Description:** Edit two sites.
-
-        #### `FIND:`
-        ```python
-        site_one = 1
-        ```
-        #### `REPLACE:`
-        ```python
-        site_one = 1.0
-        ```
-
-        #### `FIND:`
-        ```python
-        site_two = 2
-        ```
-        #### `REPLACE:`
-        ```python
-        site_two = 2.0
-        ```
-    """)
-    result = run_execute_with_plan_content(monkeypatch, plan_content, tmp_path)
+    result = adapter.run_execute_with_plan(plan, tmp_path, input="y\n")
     assert result.exit_code == 0
     report = result.stdout
 

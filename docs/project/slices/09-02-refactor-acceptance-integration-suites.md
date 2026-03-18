@@ -25,44 +25,53 @@ Migrate the existing acceptance and integration test suites to use the formal Te
 #### Implementation Notes
 Scenario 1 established the formal Test Harness Triad. The `MarkdownPlanBuilder` now supports all 9 action types with specialized fluent methods. The `ReportParser` provides a robust, regex-based observer for CLI output. The `CliTestAdapter` orchestrates in-process CLI execution, and the `TestEnvironment` ensures isolation and workspace anchoring for every test run. Unit tests for all harness components are located in `tests/unit/`.
 
-### Scenario 2: Refactor ALL Acceptance Tests
+### Scenario 2: Refactor ALL Acceptance Tests [✓]
 **Goal:** Replace hardcoded plan strings and manual CLI invocation logic across the entire acceptance suite.
 - **Precondition:** Many tests use `textwrap.dedent` for plans and manual `CliRunner` calls.
 - **Success Condition:** ALL files in `tests/acceptance/` are refactored to use `MarkdownPlanBuilder`.
 - **Success Condition:** ALL refactored files do not exceed the 300 SLOC limit.
 #### Deliverables
-- [ ] `tests/acceptance/test_action_isolation.py`
-- [ ] `tests/acceptance/test_ai_telemetry.py`
-- [ ] `tests/acceptance/test_all_validation_errors_show_ast.py`
-- [ ] `tests/acceptance/test_auto_initialization.py`
-- [ ] `tests/acceptance/test_change_preview_feature.py`
-- [ ] `tests/acceptance/test_cli_polish.py`
-- [ ] `tests/acceptance/test_cli_ux_improvements.py`
-- [ ] `tests/acceptance/test_context_aware_editing.py`
-- [ ] `tests/acceptance/test_context_command_refactor.py`
-- [ ] `tests/acceptance/test_create_overwrite.py`
-- [ ] `tests/acceptance/test_edit_multi_block_transparency.py`
-- [ ] `tests/acceptance/test_edit_transparency_and_bulk.py`
-- [ ] `tests/acceptance/test_edit_ux_polish.py`
-- [ ] `tests/acceptance/test_enhanced_validation.py`
-- [ ] `tests/acceptance/test_execute_granular_failure.py`
-- [ ] `tests/acceptance/test_generalized_clipboard_output.py`
-- [ ] `tests/acceptance/test_hanging_command_management.py`
-- [ ] `tests/acceptance/test_interactive_execution.py`
-- [ ] `tests/acceptance/test_non_interactive_orchestration.py`
-- [ ] `tests/acceptance/test_parser_polish.py`
-- [ ] `tests/acceptance/test_progress_logging.py`
-- [ ] `tests/acceptance/test_prompt_action.py`
-- [ ] `tests/acceptance/test_quality_of_life_improvements.py`
-- [ ] `tests/acceptance/test_redundant_edit_hints.py`
-- [ ] `tests/acceptance/test_relax_execute_protocol.py`
-- [ ] `tests/acceptance/test_report_enhancements.py`
-- [ ] `tests/acceptance/test_session_management.py`
-- [ ] `tests/acceptance/test_session_resume_robustness.py`
-- [ ] `tests/acceptance/test_similarity_threshold_config.py`
-- [ ] `tests/acceptance/test_streamlined_init.py`
-- [ ] `tests/acceptance/test_validation_performance.py`
-- [ ] `tests/acceptance/test_walking_skeleton.py`
+- [✓] `tests/acceptance/test_action_isolation.py`
+- [✓] `tests/acceptance/test_ai_telemetry.py`
+- [✓] `tests/acceptance/test_all_validation_errors_show_ast.py`
+- [✓] `tests/acceptance/test_auto_initialization.py`
+- [✓] `tests/acceptance/test_change_preview_feature.py`
+- [✓] `tests/acceptance/test_cli_polish.py`
+- [✓] `tests/acceptance/test_cli_ux_improvements.py`
+- [✓] `tests/acceptance/test_context_aware_editing.py`
+- [✓] `tests/acceptance/test_context_command_refactor.py`
+- [✓] `tests/acceptance/test_create_overwrite.py`
+- [✓] `tests/acceptance/test_edit_multi_block_transparency.py`
+- [✓] `tests/acceptance/test_edit_transparency_and_bulk.py`
+- [✓] `tests/acceptance/test_edit_ux_polish.py`
+- [✓] `tests/acceptance/test_enhanced_validation.py`
+- [✓] `tests/acceptance/test_execute_granular_failure.py`
+- [✓] `tests/acceptance/test_generalized_clipboard_output.py`
+- [✓] `tests/acceptance/test_hanging_command_management.py`
+- [✓] `tests/acceptance/test_interactive_execution.py`
+- [✓] `tests/acceptance/test_cli_polish.py`
+- [✓] `tests/acceptance/test_non_interactive_orchestration.py`
+- [✓] `tests/acceptance/test_parser_polish.py`
+- [✓] `tests/acceptance/test_progress_logging.py`
+- [✓] `tests/acceptance/test_prompt_action.py`
+- [✓] `tests/acceptance/test_quality_of_life_improvements.py`
+- [✓] `tests/acceptance/test_redundant_edit_hints.py`
+- [✓] `tests/acceptance/test_relax_execute_protocol.py`
+- [✓] `tests/acceptance/test_report_enhancements.py`
+- [✓] `tests/acceptance/test_session_management.py`
+- [✓] `tests/acceptance/test_session_resume_robustness.py`
+- [✓] `tests/acceptance/test_similarity_threshold_config.py`
+- [✓] `tests/acceptance/test_streamlined_init.py`
+- [✓] `tests/acceptance/test_validation_performance.py`
+- [✓] `tests/acceptance/test_walking_skeleton.py`
+
+#### Implementation Notes (Scenario 2)
+- Refactored the entire acceptance test suite (87 tests) to use the Test Harness Triad.
+- Standardized workspace isolation and DI patching using `TestEnvironment`.
+- Replaced manual `CliRunner` usage with `CliTestAdapter` for robust CLI orchestration.
+- Migrated all hardcoded Markdown plan strings to the fluent `MarkdownPlanBuilder` DSL.
+- Fixed several brittle regressions in existing tests caused by direct filesystem manipulation or missing mocks.
+- Verified performance requirements in `test_validation_performance.py` (< 500ms).
 
 ### Scenario 3: Refactor ALL Integration Tests
 **Goal:** Ensure all integration tests use the `TestComposition` (punq-based) fixture and standardized mocks.

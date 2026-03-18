@@ -1,148 +1,125 @@
-from .helpers import run_execute_with_plan_content
-from .plan_builder import MarkdownPlanBuilder
+from tests.setup.test_environment import TestEnvironment
+from tests.drivers.cli_adapter import CliTestAdapter
+from tests.drivers.plan_builder import MarkdownPlanBuilder
 
 
 def test_global_timeout_enforcement(monkeypatch, tmp_path):
-    """
-    Scenario 1: Configurable Global Timeout
-    Verifies that a command exceeding the global timeout defined in config is terminated.
-    """
+    """Scenario: Verifies that a command exceeding the global timeout is terminated."""
+    TestEnvironment(monkeypatch, tmp_path).setup().with_real_shell()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+
     # 1. Setup a local config with a very short timeout
     teddy_dir = tmp_path / ".teddy"
-    teddy_dir.mkdir()
+    teddy_dir.mkdir(parents=True)
     config_file = teddy_dir / "config.yaml"
     config_file.write_text(
         "execution:\n  default_timeout_seconds: 0.1\n", encoding="utf-8"
     )
 
     # 2. Define a plan with a command that takes longer than 0.1 second
-    builder = MarkdownPlanBuilder("Hanging Plan")
-    builder.add_action(
-        "EXECUTE",
-        params={"Description": "Run a command that hangs."},
-        content_blocks={
-            "COMMAND": ("shell", 'python -c "import time; time.sleep(0.5)"')
-        },
+    plan = (
+        MarkdownPlanBuilder("Hanging Plan")
+        .add_execute(
+            'python -c "import time; time.sleep(0.5)"', description="Hanging command"
+        )
+        .build()
     )
-    plan_content = builder.build()
 
     # 3. Execute the plan.
-    result = run_execute_with_plan_content(monkeypatch, plan_content, tmp_path)
+    report = adapter.execute_plan(plan, user_input="y\n")
 
     # 4. Assertions
-    assert "timed out" in result.stdout.lower()
-    assert result.exit_code != 0
+    assert "timed out" in report.stdout.lower()
+    assert report.action_was_successful(0) is False
 
 
 def test_timeout_captures_partial_output(monkeypatch, tmp_path):
-    """
-    Scenario 2: Command Timeout with Partial Output
-    Verifies that partial output generated before a timeout is captured and reported.
-    """
+    """Scenario: Verifies that partial output generated before a timeout is captured."""
+    TestEnvironment(monkeypatch, tmp_path).setup().with_real_shell()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+
     # 1. Setup a local config with a short timeout
     teddy_dir = tmp_path / ".teddy"
-    teddy_dir.mkdir()
+    teddy_dir.mkdir(parents=True, exist_ok=True)
     config_file = teddy_dir / "config.yaml"
     config_file.write_text(
         "execution:\n  default_timeout_seconds: 0.5\n", encoding="utf-8"
     )
 
     # 2. Define a plan with a command that prints then hangs
-    # We use a python script to ensure it flushes output so we can capture it.
     script = (
         "import sys, time; print('Partial progress'); sys.stdout.flush(); time.sleep(2)"
     )
-    builder = MarkdownPlanBuilder("Partial Output Plan")
-    builder.add_action(
-        "EXECUTE",
-        params={"Description": "Run a command that prints then hangs."},
-        content_blocks={"COMMAND": ("shell", f'python -c "{script}"')},
+    plan = (
+        MarkdownPlanBuilder("Partial Output Plan")
+        .add_execute(f'python -c "{script}"', description="Prints then hangs")
+        .build()
     )
-    plan_content = builder.build()
 
     # 3. Execute the plan.
-    result = run_execute_with_plan_content(monkeypatch, plan_content, tmp_path)
+    report = adapter.execute_plan(plan, user_input="y\n")
 
     # 4. Assertions
-    # The partial output should be present in the execution report
-    assert "Partial progress" in result.stdout
-    # The error message should indicate the timeout
-    assert "timed out after 0.5 seconds" in result.stdout.lower()
-    # The exit code for timeout should be 124
-    # Note: result.exit_code is the CLI's exit code, but we check the report content
-    assert "124" in result.stdout
+    entry = report.action_logs[0]
+    assert "Partial progress" in entry.details.get("stdout", "")
+    assert "timed out after 0.5 seconds" in report.stdout.lower()
+    assert "124" in report.stdout  # The exit code for timeout should be in the report
 
 
 def test_intentional_background_execution(monkeypatch, tmp_path):
-    """
-    Scenario 3: Intentional Background Execution
-    Verifies that a command can be run in the background, returns a PID,
-    and doesn't block the executor.
-    """
+    """Scenario: Verifies that a command can be run in the background."""
+    TestEnvironment(monkeypatch, tmp_path).setup().with_real_shell()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+
     # 1. Define a plan with a background command
-    builder = MarkdownPlanBuilder("Background Plan")
-    builder.add_action(
-        "EXECUTE",
-        params={
-            "Description": "Start a background process.",
-            "Background": "true",
-        },
-        content_blocks={"COMMAND": ("shell", 'python -c "import time; time.sleep(5)"')},
+    plan = (
+        MarkdownPlanBuilder("Background Plan")
+        .add_execute('python -c "import time; time.sleep(5)"', background=True)
+        .build()
     )
-    plan_content = builder.build()
 
     # 2. Execute the plan with a timing check
     import time
 
     start_time = time.time()
-    result = run_execute_with_plan_content(monkeypatch, plan_content, tmp_path)
+    report = adapter.execute_plan(plan, user_input="y\n")
     end_time = time.time()
 
     # 3. Assertions
-    # It should have finished much faster than the 5-second sleep duration
-    max_background_start_time = 2.0
-    assert end_time - start_time < max_background_start_time
-    assert result.exit_code == 0
-    # The output should contain the PID notification
-    assert "SUCCESS: Background process started with PID" in result.stdout
+    MAX_BACKGROUND_STARTUP_SECONDS = 2.0
+    assert (
+        end_time - start_time < MAX_BACKGROUND_STARTUP_SECONDS
+    )  # Should be much faster than 5s
+    assert report.action_was_successful(0) is True
+    assert "SUCCESS: Background process started with PID" in report.stdout
 
 
 def test_explicit_timeout_override(monkeypatch, tmp_path):
-    """
-    Scenario 4: Explicit Timeout Override
-    Verifies that a specific 'Timeout' in the action metadata overrides the global default.
-    """
+    """Scenario: Verifies that a specific 'Timeout' in the action metadata overrides default."""
+    TestEnvironment(monkeypatch, tmp_path).setup().with_real_shell()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+
     # 1. Setup a local config with a very short timeout (0.5s)
     teddy_dir = tmp_path / ".teddy"
-    teddy_dir.mkdir()
+    teddy_dir.mkdir(parents=True, exist_ok=True)
     config_file = teddy_dir / "config.yaml"
     config_file.write_text(
         "execution:\n  default_timeout_seconds: 0.5\n", encoding="utf-8"
     )
 
     # 2. Define a plan with an explicit timeout override (5s)
-    # The command takes 1s, which is > 0.5s but < 5s.
-    builder = MarkdownPlanBuilder("Timeout Override Plan")
-    builder.add_action(
-        "EXECUTE",
-        params={
-            "Description": "Command that needs more than default time.",
-            "Timeout": "5",
-        },
-        content_blocks={
-            "COMMAND": (
-                "shell",
-                "python -c \"import time; time.sleep(1.0); print('Success')\"",
-            )
-        },
+    plan = (
+        MarkdownPlanBuilder("Timeout Override Plan")
+        .add_execute(
+            "python -c \"import time; time.sleep(1.0); print('Success')\"", timeout=5
+        )
+        .build()
     )
-    plan_content = builder.build()
 
     # 3. Execute the plan.
-    result = run_execute_with_plan_content(monkeypatch, plan_content, tmp_path)
+    report = adapter.execute_plan(plan, user_input="y\n")
 
     # 4. Assertions
-    # If the override works, it should succeed.
-    # If it fails (uses 0.5s default), it will timeout.
-    assert "Success" in result.stdout
-    assert result.exit_code == 0
+    assert report.action_was_successful(0) is True
+    entry = report.action_logs[0]
+    assert "Success" in entry.details.get("stdout", "")
