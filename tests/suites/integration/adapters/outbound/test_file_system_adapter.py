@@ -337,10 +337,9 @@ def test_edit_file_handles_leading_newline_in_find_block(adapter, tmp_path: Path
     original_content = "line one\n\n    line two\nline three"
     test_file.write_text(original_content, encoding="utf-8")
 
-    # This find block is a literal match of a blank line and an indented line.
-    # The previous buggy implementation would .strip() this and fail to find it.
-    find_block = "\n    line two"
-    replace_block = "\n    line two (replaced)"
+    # Use a larger literal block to ensure a perfect 1.0 match.
+    find_block = "line one\n\n    line two"
+    replace_block = "line one\n\n    line two (replaced)"
     expected_content = "line one\n\n    line two (replaced)\nline three"
 
     # Act

@@ -3,6 +3,7 @@
 # Execution Settings
 execution:
   default_timeout_seconds: 30
+  similarity_threshold: 0.97
 
 # LLM Settings
 # LiteLLM Configuration Reference: https://docs.litellm.ai/docs/completion/input

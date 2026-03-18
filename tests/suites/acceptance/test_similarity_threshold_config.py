@@ -43,7 +43,7 @@ def test_respects_global_similarity_threshold(tmp_path, monkeypatch):
 
 
 def test_fallback_to_default_threshold(tmp_path, monkeypatch):
-    """Scenario: Defaults to 0.95 if not configured."""
+    """Scenario: Defaults to 0.97 if not configured."""
     # 1. Setup Environment
     TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
     adapter = CliTestAdapter(monkeypatch, tmp_path)
@@ -64,9 +64,9 @@ def test_fallback_to_default_threshold(tmp_path, monkeypatch):
         .build()
     )
 
-    # 4. Execute - should fail because 0.82 < 0.95
+    # 4. Execute - should fail because 0.82 < 0.97
     result = adapter.run_execute_with_plan(plan, interactive=False)
 
     assert "Validation Failed" in result.stdout
-    assert "Similarity Threshold:** 0.95" in result.stdout
+    assert "Similarity Threshold:** 0.97" in result.stdout
     assert "def hello():\n    return 'world'" in target_file.read_text(encoding="utf-8")
