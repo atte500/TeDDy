@@ -42,10 +42,15 @@ This document outlines the technical standards, conventions, and setup process f
 
 ### Testing Strategy
 - **Framework:** `pytest`.
-- **Location of Tests:** Tests are organized as follows:
-    - `tests/acceptance/`: End-to-end tests validating full user workflows. These should be kept to a minimum to maintain suite execution speed.
-    - `tests/integration/`: Tests for components interacting with external systems AND high-level orchestration/service tests that do not require full end-to-end setup.
-    - `tests/unit/`: Tests for individual functions or classes in isolation.
+- **Location of Tests:** Tests are organized into two primary top-level directories:
+    - **`tests/suites/`**: Contains the test pyramid validating system intent.
+        - `tests/suites/acceptance/`: End-to-end tests validating full user workflows.
+        - `tests/suites/integration/`: Tests for components interacting with external systems.
+        - `tests/suites/unit/`: Tests for individual functions or classes in isolation.
+    - **`tests/harness/`**: Contains the testing infrastructure and utilities.
+        - `tests/harness/setup/`: Workspace management and DI isolation.
+        - `tests/harness/drivers/`: DSLs and adapters for driving the system.
+        - `tests/harness/observers/`: Parsers for verifying system output.
 - **Execution:** Tests are run from the **project root** using `poetry run pytest`.
     - **Run all tests:** `poetry run pytest` (Runs in parallel by default via `-n auto` in `pyproject.toml`)
     - **Run all tests with coverage:** `poetry run pytest --cov=src --cov-report=term-missing`
@@ -166,13 +171,13 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 
 #### Test Harness Triad (Setup, Driver, Observer)
 
-| Component                        | Description                                                                                                     | Contract                                               |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| **MarkdownPlanBuilder** (Driver) | A fluent DSL for constructing validated Markdown plans for testing.                                             | [MarkdownPlanBuilder](./tests/drivers/plan_builder.md) |
-| **ReportParser** (Observer)      | An "Inverse Adapter" that parses Markdown reports back into structured DTOs for assertions.                     | [ReportParser](./tests/observers/report_parser.md)     |
-| **CliTestAdapter** (Driver)      | A specialized adapter that drives the CLI in-process and orchestrates builders and parsers.                     | [CliTestAdapter](./tests/drivers/cli_adapter.md)       |
-| **TestEnvironment** (Setup)      | A harness that encapsulates DI isolation, environment patching, and workspace management.                       | [TestEnvironment](./tests/setup/test_environment.md)   |
-| **TestComposition** (Setup)      | A specialized harness that handles Dependency Injection (punq) wiring and global mocks for integration tests. | [TestComposition](./tests/setup/composition.md)        |
+| Component                        | Description                                                                                                     | Contract                                                       |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| **MarkdownPlanBuilder** (Driver) | A fluent DSL for constructing validated Markdown plans for testing.                                             | [MarkdownPlanBuilder](./tests/harness/drivers/plan_builder.md) |
+| **ReportParser** (Observer)      | An "Inverse Adapter" that parses Markdown reports back into structured DTOs for assertions.                     | [ReportParser](./tests/harness/observers/report_parser.md)     |
+| **CliTestAdapter** (Driver)      | A specialized adapter that drives the CLI in-process and orchestrates builders and parsers.                     | [CliTestAdapter](./tests/harness/drivers/cli_adapter.md)       |
+| **TestEnvironment** (Setup)      | A harness that encapsulates DI isolation, environment patching, and workspace management.                       | [TestEnvironment](./tests/harness/setup/test_environment.md)   |
+| **TestComposition** (Setup)      | A specialized harness that handles Dependency Injection (punq) wiring and global mocks for integration tests. | [TestComposition](./tests/harness/setup/composition.md)        |
 
 ---
 

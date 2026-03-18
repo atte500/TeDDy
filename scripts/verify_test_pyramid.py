@@ -4,9 +4,9 @@ from pathlib import Path
 
 # --- Configuration ---
 ROOT_DIR = Path(__file__).parent.parent
-ACCEPTANCE_DIR = ROOT_DIR / "tests" / "acceptance"
-INTEGRATION_DIR = ROOT_DIR / "tests" / "integration"
-UNIT_DIR = ROOT_DIR / "tests" / "unit"
+ACCEPTANCE_DIR = ROOT_DIR / "tests" / "suites" / "acceptance"
+INTEGRATION_DIR = ROOT_DIR / "tests" / "suites" / "integration"
+UNIT_DIR = ROOT_DIR / "tests" / "suites" / "unit"
 # ---
 
 
