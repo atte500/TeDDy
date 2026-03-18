@@ -82,7 +82,7 @@
               1.  Metadata Header: `- **Status:** Planned`, `- **Specs:** [links]`.
               2.  `## 1. Goal (The "Why")`: The approved problem definition.
               3.  `## 2. Proposed Solution (The "What")`: The approved solution, technologies, and trade-offs.
-              4.  `## 3. Implementation Guidelines (The "How")`: Concrete, actionable plan based on codebase exploration and key learnings from spikes (e.g., algorithmic breakdown). This MUST explicitly include the strategy for Test Architecture (e.g., identifying required Test DSLs, Object Mothers, or Data Builders).
+              4.  `## 3. Implementation Guidelines (The "How")`: Concrete, actionable plan based on codebase exploration and key learnings from spikes (e.g., algorithmic breakdown). This MUST explicitly include the strategy for the Test Harness Triad (Setup, Driver, Observer).
               5.  `## 4. Technical Specifications`: API contracts, data models, or other critical details.
               6.  `## 5. Vertical Slices`: High-level, ordered checklist of implementation steps.
 
@@ -94,7 +94,7 @@
               1.  Metadata Header: `- **Status:** Planned`, `- **Milestone:** [link]`, and `- **Specs:** [links]`.
               2.  `## 1. Business Goal`: The core objective linking to the milestone.
               3.  `## 2. Acceptance Criteria (Scenarios)`: Purely behavioral scenarios (no technical assumptions). If user-facing, include manual verification steps. Under each scenario, create a `#### Deliverables` heading with a detailed checklist of what will be delivered for that specific scenario.
-              4.  `## 3. Architectural Changes`: Description of the components to be created or modified. This MUST explicitly include both production components AND first-class test components (e.g., Test DSLs, Object Mothers, Test Contexts).
+              4.  `## 3. Architectural Changes`: Description of the components to be created or modified. This MUST explicitly include both production components AND the required Test Harness Triad components (Setup, Driver, Observer).
 
           #### Scenario C: Handoff to Debugger
           *   **When:** A reproducible bug has been identified and analyzed.

@@ -2,7 +2,7 @@
 - **Status:** Implemented
 
 ## 1. Purpose / Responsibility
-The `MarkdownPlanBuilder` is a fluent interface designed to simplify the creation of complex, multi-action Markdown plans in tests. It abstracts the boilerplate of Markdown formatting (headers, rationale, code block fences) and ensures that generated plans adhere to the TeDDy protocol.
+Acting as the **Driver** in the Test Harness Triad, the `MarkdownPlanBuilder` is a fluent interface designed to simplify the creation of complex, multi-action Markdown plans in tests. It abstracts the boilerplate of Markdown formatting (headers, rationale, code block fences) and ensures that generated plans adhere to the TeDDy protocol.
 
 ## 2. Ports
 - **Primary Driving Adapter:** Used by Acceptance and Integration tests to drive the `IPlanParser` and `IRunPlanUseCase`.

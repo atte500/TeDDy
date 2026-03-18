@@ -164,14 +164,15 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 | **WebSearcherAdapter**         | Implements `IWebSearcher` using the `ddgs` library for keyless DuckDuckGo searches.                     | [WebSearcherAdapter](./adapters/outbound/web_searcher_adapter.md)                 |
 | **YamlConfigAdapter**          | Implements `IConfigService` by reading configuration from a `.teddy/config.yaml` file.                  | [YamlConfigAdapter](./adapters/outbound/yaml_config_adapter.md)                   |
 
-#### Test Harness (Primary Driving Adapters)
+#### Test Harness Triad (Setup, Driver, Observer)
 
-| Component               | Description                                                                                                     | Contract                                           |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| **MarkdownPlanBuilder** | A fluent DSL for constructing validated Markdown plans for testing.                                                 | [MarkdownPlanBuilder](./tests/dsl/plan_builder.md)     |
-| **ReportParser**        | An "Inverse Adapter" that parses Markdown reports back into structured DTOs for assertions.                         | [ReportParser](./tests/adapters/report_parser.md)      |
-| **CliTestAdapter**      | A specialized adapter that drives the CLI in-process and orchestrates builders and parsers.                         | [CliTestAdapter](./tests/adapters/cli_adapter.md)      |
-| **TestEnvironment**     | A harness that encapsulates DI isolation, environment patching, and workspace management.                           | [TestEnvironment](./tests/contexts/test_environment.md)|
+| Component                        | Description                                                                                                     | Contract                                               |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| **MarkdownPlanBuilder** (Driver) | A fluent DSL for constructing validated Markdown plans for testing.                                             | [MarkdownPlanBuilder](./tests/drivers/plan_builder.md) |
+| **ReportParser** (Observer)      | An "Inverse Adapter" that parses Markdown reports back into structured DTOs for assertions.                     | [ReportParser](./tests/observers/report_parser.md)     |
+| **CliTestAdapter** (Driver)      | A specialized adapter that drives the CLI in-process and orchestrates builders and parsers.                     | [CliTestAdapter](./tests/drivers/cli_adapter.md)       |
+| **TestEnvironment** (Setup)      | A harness that encapsulates DI isolation, environment patching, and workspace management.                       | [TestEnvironment](./tests/setup/test_environment.md)   |
+| **TestComposition** (Setup)      | A specialized harness that handles Dependency Injection (punq) wiring and global mocks for integration tests. | [TestComposition](./tests/setup/composition.md)        |
 
 ---
 

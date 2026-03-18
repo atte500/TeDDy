@@ -4,22 +4,22 @@
 - **Specs:** N/A
 
 ## 1. Business Goal
-Migrate the existing acceptance and integration test suites to use the formal Test Harness (MarkdownPlanBuilder and TestComposition). This migration will eliminate thousands of lines of duplicated Markdown strings, improve test readability, and bring the test suite into compliance with the project's strict 300 SLOC limit.
+Migrate the existing acceptance and integration test suites to use the formal Test Harness Triad (Setup, Driver, Observer). This migration will eliminate thousands of lines of duplicated Markdown strings, improve test readability, and bring the test suite into compliance with the project's strict 300 SLOC limit.
 
 ## 2. Acceptance Criteria (Scenarios)
 
 ### Scenario 1: Establish Symmetrical Test Harness
 **Goal:** Create a complete, exhaustive harness for driving the system and verifying outcomes.
 - **Precondition:** Test setup and verification are ad-hoc and heavily reliant on manual string manipulation.
-- **Success Condition:** `MarkdownPlanBuilder` (In) is exhaustive, supporting all 9 action types and protocol flags.
-- **Success Condition:** `ReportParser` (Out) is implemented, allowing tests to parse CLI output back into typed DTOs.
+- **Success Condition:** `MarkdownPlanBuilder` (Driver) is exhaustive, supporting all 9 action types and protocol flags.
+- **Success Condition:** `ReportParser` (Observer) is implemented, allowing tests to parse CLI output back into typed DTOs.
 - **Success Condition:** `CliTestAdapter` is refactored to orchestrate the builder and parser, providing a "One-Liner" API for test cases: `adapter.execute(plan).assert_action_success(0)`.
-- **Success Condition:** `TestEnvironment` harness is implemented, encapsulating DI patching and workspace setup.
+- **Success Condition:** `TestEnvironment` (Setup) harness is implemented, encapsulating DI patching and workspace setup.
 #### Deliverables
-- [ ] Exhaustive `MarkdownPlanBuilder` in `tests/dsl/plan_builder.py`.
-- [ ] `ReportParser` in `tests/adapters/report_parser.py`.
-- [ ] `CliTestAdapter` in `tests/adapters/cli_adapter.py`.
-- [ ] `TestEnvironment` harness in `tests/contexts/test_environment.py`.
+- [ ] Exhaustive `MarkdownPlanBuilder` in `tests/drivers/plan_builder.py`.
+- [ ] `ReportParser` in `tests/observers/report_parser.py`.
+- [ ] `CliTestAdapter` in `tests/drivers/cli_adapter.py`.
+- [ ] `TestEnvironment` harness in `tests/setup/test_environment.py`.
 - [ ] Update Design Documents for all new harness components.
 
 ### Scenario 2: Refactor ALL Acceptance Tests
