@@ -1,5 +1,4 @@
 **Status:** Planned
-**Introduced in:** [Slice 09-06](/docs/project/slices/09-06-interactive-tui-resume-workflow.md)
 
 ## 1. Purpose / Responsibility
 Defines the contract for the interactive review and modification of a `Plan` domain object. This component bridges the gap between the static plan and its final execution by allowing a human-in-the-loop to selective enable/disable actions or modify their parameters.

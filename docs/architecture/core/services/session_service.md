@@ -1,6 +1,5 @@
 # Component: SessionService
 - **Status:** Implemented
-- **Introduced in:** [Slice 09-04](/docs/project/slices/09-04-core-session-context-engine.md)
 
 ## 1. Purpose / Responsibility
 

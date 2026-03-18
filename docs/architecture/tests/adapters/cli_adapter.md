@@ -1,6 +1,5 @@
 # Test Adapter: CliTestAdapter
 - **Status:** Refactoring
-- **Introduced in:** [Slice 09-01](../../../project/slices/09-01-test-harness-blueprinting.md)
 
 ## 1. Purpose / Responsibility
 The `CliTestAdapter` provides a high-level API for driving the TeDDy CLI in an isolated, in-process environment. It encapsulates the use of `typer.testing.CliRunner` and provides "Inverse Adapters" that parse the CLI's Markdown output back into structured DTOs for easy assertion.

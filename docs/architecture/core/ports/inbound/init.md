@@ -1,7 +1,6 @@
 # Inbound Port: `IInitUseCase`
 
 **Status:** Implemented
-**Introduced in:** [Slice 09-02: Auto-Initialization](../../../project/slices/09-02-auto-initialization.md)
 
 ## 1. Responsibility
 

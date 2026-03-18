@@ -1,9 +1,6 @@
 # Application Service: `ContextService`
 
 **Status:** Implemented
-**Introduced in:**
-- [Slice 13: Implement `context` Command](../../slices/executor/13-context-command.md)
-- [Slice 17: Refactor `context` Command Output](../../slices/executor/17-refactor-context-command-output.md)
 
 ## 1. Purpose
 

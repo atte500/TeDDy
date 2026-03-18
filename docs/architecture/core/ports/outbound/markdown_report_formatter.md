@@ -1,5 +1,4 @@
 **Status:** Planned
-**Introduced in:** [Slice 01: Markdown Report Generator](../../slices/01-markdown-report-generator.md)
 
 ## 1. Purpose / Responsibility
 Defines the contract for any service that can format an `ExecutionReport` domain object into a final, user-facing Markdown string.

@@ -1,5 +1,4 @@
 **Status:** Implemented
-**Introduced in:** [Slice 09-04: Core Session & Context Engine](/docs/project/slices/09-04-core-session-context-engine.md)
 
 ## 1. Purpose / Responsibility
 

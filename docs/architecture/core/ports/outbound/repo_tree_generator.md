@@ -1,7 +1,6 @@
 # Outbound Port: `IRepoTreeGenerator`
 
 **Status:** Implemented
-**Introduced in:** [Slice 13: Implement `context` Command](../../slices/13-context-command.md)
 
 ## 1. Responsibility
 

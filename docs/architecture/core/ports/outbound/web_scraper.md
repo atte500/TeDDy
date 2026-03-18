@@ -1,7 +1,6 @@
 # Outbound Port: Web Scraper
 
 **Status:** Implemented
-**Motivating Slice:** [Slice 04: Implement `read` Action](../../slices/04-read-action.md)
 
 ## 1. Purpose
 

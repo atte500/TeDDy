@@ -1,9 +1,6 @@
 # Outbound Adapter: `LocalFileSystemAdapter`
 
 **Status:** Implemented
-**Introduced in:**
-- [Slice 02: Implement `create_file` Action](../../slices/executor/02-create-file-action.md)
-- [Slice 17: Refactor `context` Command Output](../../slices/executor/17-refactor-context-command-output.md)
 
 ## 1. Responsibility
 
@@ -18,20 +15,19 @@ The `LocalFileSystemAdapter` implements the `FileSystemManager` port to provide 
 The adapter will leverage Python's built-in `pathlib` and `open()` functions for file operations.
 
 *   **File Creation (`create_file`):** To satisfy the port's requirement for exclusive creation (failing if a file already exists), the `create_file` method will use the `'x'` (exclusive creation) mode when calling `open()`.
-*   **Error Handling (`create_file`):** (**Updated in:** [Slice 07: Update Action Failure Behavior](../../slices/07-update-action-failure-behavior.md)) If `open()` is called with `'x'` mode on a path that already exists, it will raise a standard `FileExistsError`. The adapter must catch this and re-raise it as the domain-specific `FileAlreadyExistsError`, attaching the file path to the exception, to fulfill the port's contract.
-*   **File Reading (`read_file`):** (**Introduced in:** [Slice 04: Implement `read_file` Action](../../slices/04-read-action.md)) The `read_file` method will use the standard `'r'` (read) mode with `utf-8` encoding. It must catch `FileNotFoundError` if the path does not exist and `UnicodeDecodeError` for non-text files, propagating these as failures.
-*   **File Writing (`write_file`):** (**Introduced in:** [Slice 13: Implement `context` Command](../../slices/13-context-command.md)) The `write_file` method will use Python's `pathlib.Path.write_text()`. This conveniently handles both creating a new file and overwriting an existing one, fulfilling the "upsert" requirement of the port.
+*   **Error Handling (`create_file`):** If `open()` is called with `'x'` mode on a path that already exists, it will raise a standard `FileExistsError`. The adapter must catch this and re-raise it as the domain-specific `FileAlreadyExistsError`, attaching the file path to the exception, to fulfill the port's contract.
+*   **File Reading (`read_file`):** The `read_file` method will use the standard `'r'` (read) mode with `utf-8` encoding. It must catch `FileNotFoundError` if the path does not exist and `UnicodeDecodeError` for non-text files, propagating these as failures.
+*   **File Writing (`write_file`):** The `write_file` method will use Python's `pathlib.Path.write_text()`. This conveniently handles both creating a new file and overwriting an existing one, fulfilling the "upsert" requirement of the port.
 *   **File Editing (`edit_file`):** Delegates string manipulation to the `IEditSimulator` using the provided `similarity_threshold`, ensuring that the same resilience applied during validation is respected during execution.
-*   **Path Existence (`path_exists`):** (**Introduced in:** [Slice 13: Implement `context` Command](../../slices/13-context-command.md)) This will be implemented using `pathlib.Path.exists()`, which correctly checks for both files and directories.
-*   **Directory Creation (`create_directory`):** (**Introduced in:** [Slice 13: Implement `context` Command](../../slices/executor/13-context-command.md)) This will use `pathlib.Path.mkdir()` with the `parents=True` and `exist_ok=True` flags. This ensures the method is idempotent and can create parent directories as needed.
-*   **Default Context File Creation (`create_default_context_file`):** (**Introduced in:** [Slice 17: Refactor `context` Command Output](../../slices/executor/17-refactor-context-command-output.md)) This method creates the `.teddy` directory if it doesn't exist, adds a `.gitignore` file inside it to ignore all contents, and creates a default `init.context` file with a simple list of starting files (`README.md`, `docs/ARCHITECTURE.md`).
-*   **Context Path Gathering (`get_context_paths`):** (**Introduced in:** [Slice 17: Refactor `context` Command Output](../../slices/executor/17-refactor-context-command-output.md)) This method finds all files ending with `.context` inside the `.teddy` directory, reads them, and returns a sorted, deduplicated list of all file paths, ignoring comments and empty lines.
-*   **Vault File Reading (`read_files_in_vault`):** (**Introduced in:** [Slice 17: Refactor `context` Command Output](../../slices/executor/17-refactor-context-command-output.md)) This method takes a list of file paths and returns a dictionary mapping each path to its content. If a file is not found, the path is still included in the dictionary, but its value is `None`.
+*   **Path Existence (`path_exists`):** This will be implemented using `pathlib.Path.exists()`, which correctly checks for both files and directories.
+*   **Directory Creation (`create_directory`):** This will use `pathlib.Path.mkdir()` with the `parents=True` and `exist_ok=True` flags. This ensures the method is idempotent and can create parent directories as needed.
+*   **Default Context File Creation (`create_default_context_file`):** This method creates the `.teddy` directory if it doesn't exist, adds a `.gitignore` file inside it to ignore all contents, and creates a default `init.context` file with a simple list of starting files (`README.md`, `docs/ARCHITECTURE.md`).
+*   **Context Path Gathering (`get_context_paths`):** This method finds all files ending with `.context` inside the `.teddy` directory, reads them, and returns a sorted, deduplicated list of all file paths, ignoring comments and empty lines.
+*   **Vault File Reading (`read_files_in_vault`):** This method takes a list of file paths and returns a dictionary mapping each path to its content. If a file is not found, the path is still included in the dictionary, but its value is `None`.
 
 ## 4. Key Code Snippets
 
 ### `create_file`
-**(Updated in: [Slice 07: Update Action Failure Behavior](../../slices/07-update-action-failure-behavior.md))**
 ```python
 # Note: FileAlreadyExistsError is a custom exception from the domain model
 from teddy.core.domain import FileAlreadyExistsError
@@ -49,7 +45,6 @@ def create_file(self, path: str, content: str) -> None:
 ```
 
 ### `read_file`
-**Introduced in:** [Slice 04: Implement `read_file` Action](../../slices/04-read-action.md)
 ```python
 def read_file(self, path: str) -> str:
     """
@@ -65,7 +60,6 @@ def read_file(self, path: str) -> str:
 ```
 
 ### `write_file`
-**Introduced in:** [Slice 13: Implement `context` Command](../../slices/13-context-command.md)
 ```python
 from pathlib import Path
 
@@ -77,11 +71,9 @@ def write_file(self, path: str, content: str) -> None:
 ```
 
 ### `edit_file`
-**(Updated in: [Slice 11: Implement Smart Indentation for Edit Action](../../../project/slices/11-smart-indentation-for-edit-action.md))**
 The implementation for multiline edits uses a regex-based approach to find the indented block and `textwrap.indent` to apply the correct indentation to the replacement. A simplified code snippet would not accurately capture the logic. Please refer to the implementation notes above and the source code for details.
 
 ### `path_exists`
-**Introduced in:** [Slice 13: Implement `context` Command](../../slices/13-context-command.md)
 ```python
 from pathlib import Path
 
@@ -90,7 +82,6 @@ def path_exists(self, path: str) -> bool:
 ```
 
 ### `create_directory`
-**Introduced in:** [Slice 13: Implement `context` Command](../../slices/13-context-command.md)
 ```python
 from pathlib import Path
 
@@ -99,7 +90,6 @@ def create_directory(self, path: str) -> None:
 ```
 
 ### `create_default_context_file`
-**Introduced in:** [Slice 17: Refactor `context` Command Output](../../slices/executor/17-refactor-context-command-output.md)
 ```python
 def create_default_context_file(self) -> None:
     teddy_dir = self.root_dir / ".teddy"
@@ -114,7 +104,6 @@ def create_default_context_file(self) -> None:
 ```
 
 ### `get_context_paths`
-**Introduced in:** [Slice 17: Refactor `context` Command Output](../../slices/executor/17-refactor-context-command-output.md)
 ```python
 def get_context_paths(self) -> list[str]:
     teddy_dir = self.root_dir / ".teddy"
@@ -135,7 +124,6 @@ def get_context_paths(self) -> list[str]:
 ```
 
 ### `read_files_in_vault`
-**Introduced in:** [Slice 17: Refactor `context` Command Output](../../slices/executor/17-refactor-context-command-output.md)
 ```python
 def read_files_in_vault(self, paths: list[str]) -> dict[str, str | None]:
     contents: dict[str, str | None] = {}

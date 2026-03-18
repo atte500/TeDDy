@@ -1,5 +1,4 @@
 **Status:** Implemented
-**Introduced in:** [Slice 10: Foundation (Security, Config, LLM Client)](/docs/project/slices/10-foundation-security-config-llm.md)
 
 ## 1. Purpose / Responsibility
 

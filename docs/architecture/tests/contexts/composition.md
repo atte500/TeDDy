@@ -1,6 +1,5 @@
 # Test Context: Test Composition
 - **Status:** Implemented
-- **Introduced in:** [Slice 09-01](../../../project/slices/09-01-test-harness-blueprinting.md)
 
 ## 1. Purpose / Responsibility
 The `Test Composition` component acts as the "Composition Root" for the testing suite. Its primary responsibility is to ensure absolute test isolation by providing a fresh Dependency Injection (DI) container for every test and managing global mocks for heavy or side-effect-prone external libraries.

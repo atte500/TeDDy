@@ -2,7 +2,6 @@
 
 **Status:** Implemented
 **Language:** Python 3.9+
-**Vertical Slice:** [Slice 01: Walking Skeleton](../../slices/executor/01-walking-skeleton.md)
 **Modified in:** [Structured `execute` Action](../../slices/executor/18-structured-execute-action.md)
 
 ## 1. Purpose

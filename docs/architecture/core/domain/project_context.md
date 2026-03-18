@@ -1,5 +1,4 @@
 **Status:** Implemented
-**Introduced in:** [Slice: Refactor `ContextResult` to `ProjectContext`](/docs/project/slices/16-refactor-contextresult-to-projectcontext.md)
 
 ## 1. Purpose / Responsibility
 `ProjectContext` is a strictly-typed, immutable data transfer object (DTO) that represents the complete, aggregated project context gathered by the `ContextService`. It serves as the definitive data structure passed from the core to any adapter responsible for presenting context to the user or an AI agent.

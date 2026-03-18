@@ -2,9 +2,6 @@
 
 **Status:** Implemented
 **Language:** Python 3.9+
-**Introduced in:**
-- [Slice 13: Implement `context` Command](../../slices/executor/13-context-command.md)
-- [Slice 17: Refactor `context` Command Output](../../slices/executor/17-refactor-context-command-output.md)
 
 ## 1. Purpose
 
@@ -28,7 +25,6 @@ The adapter performs a recursive walk of the project directory. For each file an
 The adapter builds the tree structure in memory and returns it as a single, multi-line string. It **does not** write to any intermediate files (e.g., `repotree.txt`). The format is a simple, space-indented list of files and directories, which is the canonical format for providing file hierarchy context to an LLM.
 
 ### `.teddyignore` Precedence Logic
-**Introduced in:** [Slice 14: Teddyignore Override](../../slices/executor/14-teddyignore-override.md)
 **Status:** Implemented
 
 To provide ultimate control over the AI's context, the generator also supports a `.teddyignore` file in the project root. This file uses the same syntax as `.gitignore`, but its rules are applied with higher precedence. This is achieved by loading patterns in a specific order:

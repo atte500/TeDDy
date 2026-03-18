@@ -1,5 +1,4 @@
 **Status:** Planned
-**Introduced in:** [Slice 09-06](/docs/project/slices/09-06-interactive-tui-resume-workflow.md)
 
 ## 1. Purpose / Responsibility
 Implements the `IPlanReviewer` port using the `Textual` TUI framework. It provides a rich, interactive terminal experience for reviewing and modifying plans.

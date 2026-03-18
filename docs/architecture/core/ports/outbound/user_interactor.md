@@ -1,6 +1,5 @@
 # Outbound Port: User Interactor
 
-**Motivating Slice:** [Slice 10: Implement `prompt` Action](../../slices/10-chat-with-user-action.md)
 
 This port defines the contract for components that can interact with the user by asking questions and capturing their input. It abstracts the specific mechanism of interaction (e.g., console, GUI) from the core application logic.
 
@@ -11,7 +10,6 @@ This port defines the contract for components that can interact with the user by
 ### `ask_question(prompt: str, resources: list[str] | None = None, agent_name: str | None = None) -> str`
 
 **Status:** Refactored
-**Motivating Slice:** [Slice 00-08: Polishing UX & Logic Improvements](/docs/project/slices/00-08-polishing-ux-logic.md)
 
 *   **Description:**
     Displays a `prompt` string to the user and captures their free-text response. The implementation should expect and handle multi-line input (e.g., via a background editor) and allow for terminal quick-replies.
@@ -31,7 +29,6 @@ This port defines the contract for components that can interact with the user by
 ### `confirm_action(action: 'ActionData', action_prompt: str) -> tuple[bool, str]`
 
 **Status:** Refactored
-**Motivating Slice:** [Slice 23: Foundational CLI Additions & Refactoring](../../../slices/executor/23-cli-ux-foundations.md)
 
 *   **Description:**
     Displays a prompt describing an action and asks the user for `y/n` confirmation. If the user denies the action, it prompts them for an optional reason. The full `Action` object is passed to allow implementing adapters to provide enhanced previews (e.g., diffs for `edit` actions).
@@ -50,7 +47,6 @@ This port defines the contract for components that can interact with the user by
 ### `confirm_manual_handoff(action_type: str, target_agent: str | None, resources: list[str], message: str) -> tuple[bool, str]`
 
 **Status:** Implemented
-**Motivating Slice:** [Slice 10: CLI Orchestration Polish](../../../slices/10-cli-orchestration-polish.md)
 
 *   **Description:**
     Displays a specialized instruction block for a manual handoff (`INVOKE` or `RETURN`) and captures user confirmation.
@@ -67,7 +63,6 @@ This port defines the contract for components that can interact with the user by
 ### `display_message(message: str) -> None`
 
 **Status:** Implemented
-**Motivating Slice:** [Slice 09-07: UX Polish & Logging](/docs/project/slices/09-07-ux-polish-logging.md)
 
 *   **Description:**
     Displays a non-interactive message to the user. This is intended for status updates, telemetry, or other information that doesn't require a response but should be visible in the user's interface (e.g., printed to the console).

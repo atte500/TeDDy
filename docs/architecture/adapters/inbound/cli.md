@@ -2,7 +2,6 @@
 
 **Status:** Implemented
 **Language:** Python 3.9+
-**Introduced in:** [Slice 01: Walking Skeleton](../../../project/slices/01-walking-skeleton.md)
 
 ## 1. Dependency Injection & Composition Root
 
@@ -82,7 +81,7 @@ The CLI adapter is the primary entry point for the `teddy` application. It is re
 This adapter is a "driving" adapter that uses inbound ports to interact with the application core.
 
 *   For plan execution: [`RunPlanUseCase`](../../core/ports/inbound/run_plan_use_case.md), implemented by the `ExecutionOrchestrator` service.
-*   For context gathering: [`IGetContextUseCase`](../../core/ports/inbound/get_context_use_case.md) (**Introduced in:** [Slice 13: Implement `context` Command](../../../project/slices/13-context-command.md))
+*   For context gathering: [`IGetContextUseCase`](../../core/ports/inbound/get_context_use_case.md) )
 
 ## 4. Command-Line Interface
 
@@ -91,7 +90,6 @@ This adapter is a "driving" adapter that uses inbound ports to interact with the
 
 ### Session Command: `start`
 **Status:** Implemented
-**Introduced in:** [Slice 09-04: Core Session & Context Engine](../../../project/slices/09-04-core-session-context-engine.md)
 
 Initializes a new session.
 
@@ -104,7 +102,6 @@ Initializes a new session.
 
 ### Main Command: `execute`
 **Status:** Implemented
-**Updated in:** [Slice 19: Unified `execute` Command & Interactive Approval](../../../project/slices/19-unified-execute-command.md)
 
 This is the primary command for executing a plan.
 
@@ -124,7 +121,6 @@ This is the primary command for executing a plan.
 
 ### Utility Command: `context`
 **Status:** Implemented
-**Introduced in:** [Slice 13: Implement `context` Command](../../../project/slices/13-context-command.md)
 
 This command provides a comprehensive snapshot of the project for an AI agent.
 
@@ -134,7 +130,6 @@ This command provides a comprehensive snapshot of the project for an AI agent.
 
 ### Utility Command: `get-prompt`
 **Status:** Implemented
-**Introduced in:** [Slice 23: Foundational CLI Additions & Refactoring](../../../project/slices/23-cli-ux-foundations.md)
 
 This command provides a convenient way for users to access and override system prompts.
 
@@ -149,12 +144,11 @@ This command provides a convenient way for users to access and override system p
     4.  If the prompt is not found in either location, an error is printed to `stderr` and the command exits with a non-zero status code.
 
 ### Auto-Initialization Callback
-**(Introduced in: [Slice 09-02: Auto-Initialization](../../../project/slices/09-02-auto-initialization.md))**
+**)**
 
 The CLI includes a global `bootstrap` callback registered using `app.callback()`. This function is executed by `Typer` before any specific command. Its responsibility is to resolve the `IInitUseCase` from the DI container and invoke `ensure_initialized()`, ensuring that the TeDDy environment is ready for use even on the first run.
 
 ### Standard Output Handling
-**Updated in:** [Slice 22: Generalized Clipboard Output](../../../project/slices/22-generalized-clipboard-output.md)
 
 To streamline the interactive user workflow, commands that produce substantial text output (like `context` and `execute`) follow a standard behavior, encapsulated in a private helper function within `main.py`:
 
@@ -166,7 +160,7 @@ To streamline the interactive user workflow, commands that produce substantial t
 The application exits with a non-zero status code if any action in the `execute` plan fails.
 
 #### Project Context Snapshot
-**(Updated in: [Slice 17: Refactor `context` Command Output](../../../project/slices/17-refactor-context-command-output.md))**
+**)**
 
 The `cli_formatter.py` module contains a `format_project_context` function. This function takes the `ProjectContext` DTO and renders its `header` and `content` attributes into a single string. The logic for constructing the detailed content of these strings now resides within the `ContextService`, simplifying the adapter's responsibility to pure presentation.
 

@@ -1,5 +1,4 @@
 **Status:** Implemented
-**Introduced in:** [Slice 01: Markdown Report Generator](../../slices/01-markdown-report-generator.md)
 
 ## 1. Purpose / Responsibility
 To implement the `IMarkdownReportFormatter` outbound port. This service uses the Jinja2 templating engine to render an `ExecutionReport` object into a Markdown string suitable for CLI output.

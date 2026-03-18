@@ -1,6 +1,5 @@
 # Test DSL: MarkdownPlanBuilder
 - **Status:** Implemented
-- **Introduced in:** [Slice 09-01](../../../project/slices/09-01-test-harness-blueprinting.md)
 
 ## 1. Purpose / Responsibility
 The `MarkdownPlanBuilder` is a fluent interface designed to simplify the creation of complex, multi-action Markdown plans in tests. It abstracts the boilerplate of Markdown formatting (headers, rationale, code block fences) and ensures that generated plans adhere to the TeDDy protocol.

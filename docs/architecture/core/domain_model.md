@@ -50,7 +50,6 @@ Represents the contract for a single, executable step in a plan. This is an abst
 
 ### `ExecuteAction` (Entity)
 **Status:** Implemented
-**Introduced in:** [Slice 01: Walking Skeleton](../slices/executor/01-walking-skeleton.md)
 **Modified in:** [Structured `execute` Action](../slices/executor/18-structured-execute-action.md)
 
 An action that executes a shell command.
@@ -68,7 +67,6 @@ An action that executes a shell command.
 
 ### `CreateFileAction` (Entity)
 **Status:** Implemented
-**Introduced in:** [Slice 02: Implement `create_file` Action](../slices/02-create-file-action.md)
 
 An action that creates a new file.
 
@@ -94,7 +92,6 @@ A synthetic action used internally to represent the plan parsing step in executi
 
 ### `ReadAction` (Entity)
 **Status:** Implemented
-**Introduced in:** [Slice 04: Implement `read` Action](../slices/04-read-action.md)
 
 An action that reads the content of a local file or a remote URL.
 
@@ -110,7 +107,6 @@ An action that reads the content of a local file or a remote URL.
 
 ### `EditAction` (Entity)
 **Status:** Implemented
-**Introduced in:** [Slice 06: Implement `edit` Action](../slices/06-edit-action.md)
 
 An action that finds and replaces content within an existing file.
 
@@ -128,7 +124,6 @@ An action that finds and replaces content within an existing file.
 
 ### `ChatWithUserAction` (Entity)
 **Status:** Implemented
-**Introduced in:** [Slice 10: Implement `prompt` Action](../slices/10-chat-with-user-action.md)
 
 An action that prompts the user with a question and captures their free-text response.
 
@@ -142,7 +137,6 @@ An action that prompts the user with a question and captures their free-text res
 
 ### `ResearchAction` (Entity)
 **Status:** Implemented
-**Introduced in:** [Slice 11: Implement `research` action](../slices/11-research-action.md)
 
 An action that performs a web search for a list of queries.
 
@@ -212,7 +206,6 @@ These are custom exceptions that represent specific business rule violations wit
 
 ### `FileAlreadyExistsError` (Exception)
 **Status:** Implemented
-**Introduced in:** [Slice 07: Update Action Failure Behavior](../slices/07-update-action-failure-behavior.md)
 
 Raised by the `FileSystemManager` port when a `create_file` operation is attempted on a path that already exists.
 
@@ -222,7 +215,6 @@ Raised by the `FileSystemManager` port when a `create_file` operation is attempt
 
 ### `SearchTextNotFoundError` (Exception)
 **Status:** Implemented
-**Introduced in:** [Slice 07: Update Action Failure Behavior](../slices/07-update-action-failure-behavior.md)
 
 Raised by the `FileSystemManager` port when an `edit_file` operation cannot find the specified `find` string within the target file.
 
@@ -232,7 +224,6 @@ Raised by the `FileSystemManager` port when an `edit_file` operation cannot find
 
 ### `MultipleMatchesFoundError` (Exception)
 **Status:** Implemented
-**Introduced in:** [Slice 09: Enhance `edit` Action Safety](../slices/09-enhance-edit-action-safety.md)
 
 Raised by the `FileSystemManager` port when an `edit_file` operation finds more than one occurrence of the `find` string.
 
@@ -242,7 +233,6 @@ Raised by the `FileSystemManager` port when an `edit_file` operation finds more 
 
 ### `WebSearchError` (Exception)
 **Status:** Implemented
-**Introduced in:** [Slice 11: Implement `research` action](../slices/11-research-action.md)
 
 Raised by the `IWebSearcher` port when it fails to retrieve search results for any reason (e.g., network error, library failure).
 
@@ -257,7 +247,6 @@ This section defines the objects related to gathering and representing the proje
 
 ### `FileContext` (Value Object)
 **Status:** Implemented
-**Introduced in:** [Implement `context` Command](../slices/13-context-command.md)
 
 Represents the content and status of a single file requested for context.
 

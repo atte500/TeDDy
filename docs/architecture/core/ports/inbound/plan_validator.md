@@ -1,5 +1,4 @@
 **Status:** Implemented
-**Introduced in:** [Slice 09-05](/docs/project/slices/09-05-plan-validation-self-correction.md)
 
 ## 1. Purpose / Responsibility
 Defines the contract for performing pre-flight validation of a `Plan` domain object before execution. In session-aware mode, it validates action targets against the current working context.

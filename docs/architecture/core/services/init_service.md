@@ -1,7 +1,6 @@
 # Application Service: `InitService`
 
 **Status:** Implemented
-**Introduced in:** [Slice 09-02: Auto-Initialization](../../slices/09-02-auto-initialization.md)
 
 ## 1. Purpose
 

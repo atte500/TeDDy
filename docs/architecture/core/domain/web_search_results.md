@@ -1,5 +1,4 @@
 **Status:** Implemented
-**Introduced in:** [Slice: Refactor `SERPReport` to `WebSearchResults`](/docs/project/slices/15-refactor-serpreport-to-websearchresults.md)
 
 ## 1. Purpose / Responsibility
 `WebSearchResults` is a strictly-typed Data Transfer Object (DTO) that defines the data contract for the results of one or more web search queries. It replaced the legacy `SERPReport` dataclass to improve type safety and align with modern Python practices using `TypedDict`.

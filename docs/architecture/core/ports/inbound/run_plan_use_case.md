@@ -2,7 +2,6 @@
 
 **Status:** Implemented
 **Language:** Python 3.9+ (using Abstract Base Classes)
-**Vertical Slice:** [Slice 01: Walking Skeleton](../../slices/01-walking-skeleton.md)
 
 ## 1. Purpose
 

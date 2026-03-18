@@ -2,7 +2,6 @@
 
 **Status:** Implemented
 **Language:** Python 3.9+ (using Abstract Base Classes)
-**Vertical Slice:** [Slice 01: Walking Skeleton](../../slices/executor/01-walking-skeleton.md)
 **Modified in:** [Structured `execute` Action](../../slices/executor/18-structured-execute-action.md)
 
 ## 1. Purpose
@@ -39,7 +38,6 @@ class IShellExecutor(ABC):
 ### `execute(command: str, cwd: Optional[str], env: Optional[Dict[str, str]]) -> ShellOutput`
 **Status:** Implemented
 
-*   **Vertical Slice:** [Slice 01: Walking Skeleton](../../slices/executor/01-walking-skeleton.md)
 *   **Modified in:** [Structured `execute` Action](../../slices/executor/18-structured-execute-action.md)
 *   **Description:** This method accepts a command string and optional `cwd` and `env` parameters. It executes the command within the specified context and waits for its completion, returning a structured `ShellOutput` object.
 *   **Preconditions:**
