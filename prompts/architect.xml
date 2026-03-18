@@ -127,7 +127,7 @@
             *   **Generic Path Structure:**
                 *   **Documentation:** `docs/architecture/BOUNDARY/LAYER/COMPONENT_TYPE/component_name.md`
                 *   **Source Code:** `src/{{package_name}}/BOUNDARY/LAYER/COMPONENT_TYPE/component_name.py`
-                *   **Test File:** `tests/TEST_TYPE/BOUNDARY/LAYER/COMPONENT_TYPE/test_component_name.py`
+                *   **Test File:** `tests/suites/TEST_TYPE/BOUNDARY/LAYER/COMPONENT_TYPE/test_component_name.py`
             *   **Architectural Boundary & Layer Definitions:**
                 *   **Boundary: `core`**: The application's business logic.
                     *   **Valid Layers:** `domain`, `ports` (with sub-layers `inbound`, `outbound`), `services`.
@@ -136,7 +136,7 @@
                 *   **Boundary: `tests`**: The testing suite, treated as a first-class architectural citizen (e.g., Test Harnesses, Object Mothers, DSLs).
                     *   **Valid Layers:** `COMPONENT_TYPE` (e.g., `setup`, `drivers`, `observers`).
                     *   **Documentation Path:** `docs/architecture/tests/COMPONENT_TYPE/component_name.md`
-                    *   **Source Code Path:** `tests/COMPONENT_TYPE/component_name.py`
+                    *   **Source Code Path:** `tests/harness/COMPONENT_TYPE/component_name.py`
         </detail>
     </workflow>
     <general_rules>

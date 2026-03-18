@@ -22,7 +22,7 @@
       </phase>
       <phase n="2" name="TEST SCENARIO">
         <action>
-          *   **Outer RED:** Locate the appropriate test file in `tests/acceptance/`.
+          *   **Outer RED:** Locate the appropriate test file in `tests/suites/acceptance/`.
           *   Translate the Gherkin-formatted Acceptance Criteria for the current scenario into a new or updated failing acceptance test. You MUST utilize the Architect's defined Test Harness Triad (Setup, Driver, Observer) for state, interaction, and verification right from the start. Do not write tests or mock behavior for future scenarios. Run the test locally to confirm its RED state and that it fails as expected. This test acts as your temporary North Star.
         </action>
       </phase>
@@ -113,7 +113,7 @@
             Vertical Slice: [docs/project/slices/MM-NN-{{feature}}.md]
 
             Outer Cycle: [Scenario Name]
-            Guiding Acceptance Test: tests/acceptance/test_feature.py::test_the_scenario
+            Guiding Acceptance Test: tests/suites/acceptance/test_feature.py::test_the_scenario
             - [✓ | ▶ |  ] ORIENTATION
             - [✓ | ▶ |  ] TEST SCENARIO
             - [✓ | ▶ |  ] IMPLEMENT SCENARIO
@@ -122,7 +122,7 @@
             - [✓ | ▶ |  ] COMMIT
 
             Inner Loop: [Current Focus]
-            Target Test: tests/unit/test_component.py
+            Target Test: tests/suites/unit/test_component.py
             - [✓ | ▶ |  ] RED
             - [✓ | ▶ |  ] GREEN
             - [✓ | ▶ |  ] REFACTOR
@@ -204,9 +204,9 @@
       <rule n="10">
         <title>Test File Organization</title>
         <instruction>Strict file organization is required for testing. You are strictly prohibited from placing test files in any other directories.</instruction>
-        <sub_instruction name="Acceptance">`tests/acceptance/`: High-level "Happy Path" tests that validate a business scenario from the user's perspective by checking the system's wiring.</sub_instruction>
-        <sub_instruction name="Integration">`tests/integration/`: For testing an `Adapter`'s connection to an external system. These tests **should use a real instance** of the external service (e.g., a test database) to prove the integration works. Mocks should only be used for external services that are slow, expensive, or lack a test environment.</sub_instruction>
-        <sub_instruction name="Unit">`tests/unit/`: Isolated tests for core business logic. This layer is responsible for testing all complex permutations, edge cases, and business rule validations.</sub_instruction>
+        <sub_instruction name="Acceptance">`tests/suites/acceptance/`: High-level "Happy Path" tests that validate a business scenario from the user's perspective by checking the system's wiring.</sub_instruction>
+        <sub_instruction name="Integration">`tests/suites/integration/`: For testing an `Adapter`'s connection to an external system. These tests **should use a real instance** of the external service (e.g., a test database) to prove the integration works. Mocks should only be used for external services that are slow, expensive, or lack a test environment.</sub_instruction>
+        <sub_instruction name="Unit">`tests/suites/unit/`: Isolated tests for core business logic. This layer is responsible for testing all complex permutations, edge cases, and business rule validations.</sub_instruction>
       </rule>
       <rule n="11">
         <title>Use Abstractions (Ports & Test Harness Triad) at the Boundaries</title>
@@ -452,7 +452,7 @@ This plan follows the "Inner Loop" of the TDD workflow. I have a clear target fr
 Vertical Slice: docs/project/slices/MM-NN-{{feature}}.md
 
 Outer Cycle: [Scenario Name]
-Guiding Acceptance Test: tests/acceptance/test_feature.py::test_the_scenario
+Guiding Acceptance Test: tests/suites/acceptance/test_feature.py::test_the_scenario
 - [✓] ORIENTATION
 - [✓] TEST SCENARIO
 - [▶] IMPLEMENT SCENARIO
@@ -461,7 +461,7 @@ Guiding Acceptance Test: tests/acceptance/test_feature.py::test_the_scenario
 - [ ] COMMIT
 
 Inner Loop: Implementing core [Component] contract
-Target Test: tests/unit/test_component.py
+Target Test: tests/suites/unit/test_component.py
 - [▶] RED
 - [ ] GREEN
 - [ ] REFACTOR
@@ -474,7 +474,7 @@ WIP & Reminders:
 ## Action Plan
 
 ### `CREATE`
-- **File Path:** [tests/unit/test_component.py](/tests/unit/test_component.py)
+- **File Path:** [tests/suites/unit/test_component.py](/tests/suites/unit/test_component.py)
 - **Description:** Create a new failing unit test for the [Component].
 ````python
 # Minimal code for a failing test that expresses a requirement.
@@ -484,7 +484,7 @@ WIP & Reminders:
 - **Description:** Run the new failing test to confirm the RED state.
 - **Expected Outcome:** The test will fail with a `NotImplementedError`.
 ````shell
-pytest tests/unit/test_component.py
+pytest tests/suites/unit/test_component.py
 ````
         </example>
     </response_format>
