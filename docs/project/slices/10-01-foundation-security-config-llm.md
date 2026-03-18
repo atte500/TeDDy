@@ -4,7 +4,7 @@
 
 To establish the foundational security, configuration, and LLM interaction capabilities required for the interactive session workflow. This involves integrating comprehensive security gates into the development lifecycle, creating a configuration service to manage settings and secrets, and implementing a decoupled LLM client to handle communication with language models.
 
--   **Source Milestone:** [Milestone 09: Interactive Session Workflow & LLM Integration](/docs/project/milestones/09-interactive-session-and-config.md)
+-   **Source Milestone:** [Milestone 09: Interactive Session Workflow & LLM Integration](/docs/project/milestones/10-interactive-session-and-config.md)
 
 ## 2. Interaction Sequence
 

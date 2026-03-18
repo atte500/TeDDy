@@ -5,7 +5,7 @@
 
 To transform TeDDy from a stateless CLI tool into a stateful, local-first session manager. This slice implements the "backbone" of the interactive workflow, allowing users to create sessions, generate turn-based context payloads, and execute plans that automatically transition to the next turn.
 
--   **Source Milestone:** [Milestone 09: Interactive Session Workflow & LLM Integration](/docs/project/milestones/09-interactive-session-and-config.md)
+-   **Source Milestone:** [Milestone 09: Interactive Session Workflow & LLM Integration](/docs/project/milestones/10-interactive-session-and-config.md)
 
 ## Preliminary Refactoring
 

@@ -4,7 +4,7 @@
 
 To eliminate manual setup friction for new projects or users by ensuring the `.teddy/` directory and its essential configuration files are automatically created with sensible defaults upon the first use of the `teddy` CLI.
 
-- **Source Milestone:** [Milestone 09: Interactive Session Workflow & LLM Integration](/docs/project/milestones/09-interactive-session-and-config.md)
+- **Source Milestone:** [Milestone 09: Interactive Session Workflow & LLM Integration](/docs/project/milestones/10-interactive-session-and-config.md)
 
 ## 2. Acceptance Criteria (Scenarios)
 

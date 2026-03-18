@@ -4,7 +4,7 @@
 ## 1. Business Goal
 To provide a professional, interactive experience for reviewing and modifying AI plans before execution. This includes the "smart resume" capability to intelligently pick up where a session left off, a "Streamlined Initialization" flow where new sessions immediately trigger planning, and a Textual-based TUI for granular control over action execution and modification.
 
-- **Source Milestone:** [Milestone 09: Interactive Session Workflow & LLM Integration](/docs/project/milestones/09-interactive-session-and-config.md)
+- **Source Milestone:** [Milestone 09: Interactive Session Workflow & LLM Integration](/docs/project/milestones/10-interactive-session-and-config.md)
 
 ## 2. Preliminary Refactoring
 - **Unfreeze Plan Domain:** The `Plan` and `ActionData` dataclasses in `src/teddy_executor/core/domain/models/plan.py` must be unfrozen (`frozen=False`) to allow the TUI to modify them during the "Modify & Preview" phase, or a `replace()` based transformation pattern must be established.

@@ -5,7 +5,7 @@
 
 To provide distinct report formats for the two primary TeDDy workflows: a concise, self-contained **CLI Report** for manual, clipboard-driven use, and a comprehensive, auditable **Session Report** for the stateful, interactive workflow.
 
--   **Source Milestone:** [Milestone 09: Interactive Session Workflow & LLM Integration](/docs/project/milestones/09-interactive-session-and-config.md)
+-   **Source Milestone:** [Milestone 09: Interactive Session Workflow & LLM Integration](/docs/project/milestones/10-interactive-session-and-config.md)
 
 ## 2. Interaction Sequence
 

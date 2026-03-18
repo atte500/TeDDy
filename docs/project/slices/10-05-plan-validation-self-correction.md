@@ -5,7 +5,7 @@
 
 To enhance the reliability of the TeDDy workflow by catching common errors before execution and enabling the AI to self-correct. This slice integrates the `PlanValidator` into the execution flow and implements the "Automated Re-plan Loop" for stateful sessions.
 
--   **Source Milestone:** [Milestone 09: Interactive Session Workflow & LLM Integration](/docs/project/milestones/09-interactive-session-and-config.md)
+-   **Source Milestone:** [Milestone 09: Interactive Session Workflow & LLM Integration](/docs/project/milestones/10-interactive-session-and-config.md)
 
 ## 2. Interaction Sequence
 
