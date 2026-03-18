@@ -95,6 +95,14 @@ The `spikes/` directory is intentionally excluded from `ruff` and `mypy` checks 
 - **Scanning:** Managed via `detect-secrets`.
 - **False Positives:** MUST be handled by updating `.secrets.baseline`. **Do not use inline pragmas.**
 
+### Configuration Hierarchy
+- **Principle:** The system follows a "Safe-by-Default" configuration strategy.
+- **Hierarchy:**
+    1. **Active Config:** `.teddy/config.yaml` (Personal overrides, not committed).
+    2. **Project Template:** `config/config.yaml` (Reference defaults, committed).
+    3. **Hardcoded Fallbacks:** Defined within the services (e.g., `ActionFactory`, `PlanValidator`).
+- **Guideline:** Services MUST provide hardcoded fallbacks to the `IConfigService.get_setting` method to ensure stability in uninitialized environments.
+
 ### Third-Party Dependency Vetting
 - **Strategy:** Mandate a "Verify, Then Document" Spike for new dependencies.
 - **Rationale:** Based on the RCA for a failure involving the `gitwalk` library ([see RCA](./rca/unreliable-third-party-library-gitwalk.md)), new third-party dependencies must be de-risked before integration.

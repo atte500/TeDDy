@@ -123,8 +123,9 @@ class ActionFactory(IActionFactory):
 
         # Inject global timeout if not already specified in kwargs
         if "timeout" not in execute_params and self._config_service:
+            # Safe-by-Default: Provide hardcoded 30.0 fallback if config is missing
             default_timeout = self._config_service.get_setting(
-                "execution.default_timeout_seconds"
+                "execution.default_timeout_seconds", 30.0
             )
             if default_timeout is not None:
                 execute_params["timeout"] = float(default_timeout)
@@ -134,6 +135,7 @@ class ActionFactory(IActionFactory):
     def _handle_edit_protocol(self, method: Any, kwargs: dict) -> Any:
         """Handles the similarity threshold injection for the EDIT action."""
         if "similarity_threshold" not in kwargs and self._config_service:
+            # Safe-by-Default: Provide domain default if config is missing
             global_threshold = self._config_service.get_setting(
                 "similarity_threshold", DEFAULT_SIMILARITY_THRESHOLD
             )
