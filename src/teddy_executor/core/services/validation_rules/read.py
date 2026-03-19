@@ -51,6 +51,7 @@ class ReadActionValidator(BaseActionValidator):
                         offending_node=action.node,
                     )
                 )
+                return errors  # Return immediately to prevent duplicate errors
 
             if (
                 isinstance(path_str, str)

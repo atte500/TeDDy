@@ -1,13 +1,15 @@
 from pathlib import Path
 from typing import Set
 
+from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
+
 
 class SessionRepository:
     """
     Handles low-level filesystem lookups and path resolution for TeDDy sessions.
     """
 
-    def __init__(self, file_system_manager):
+    def __init__(self, file_system_manager: IFileSystemManager):
         self._file_system_manager = file_system_manager
 
     def get_latest_session_name(self) -> str:

@@ -26,40 +26,7 @@ class PlanValidator(IPlanValidator):
         validators: Optional[List[IActionValidator]] = None,
     ):
         self._file_system_manager = file_system_manager
-        if validators is not None:
-            self._validators = validators
-        else:
-            # Default set of validators for backward compatibility and ease of use
-            from teddy_executor.core.services.validation_rules.create import (
-                CreateActionValidator,
-            )
-            from teddy_executor.core.services.validation_rules.edit import (
-                EditActionValidator,
-            )
-            from teddy_executor.core.services.validation_rules.execute import (
-                ExecuteActionValidator,
-            )
-            from teddy_executor.core.services.validation_rules.read import (
-                ReadActionValidator,
-            )
-            from teddy_executor.core.services.validation_rules.prune import (
-                PruneActionValidator,
-            )
-
-            # Fallback for isolation (e.g. unit tests without a full container)
-            # We use a neutral config service that just returns defaults.
-            from teddy_executor.adapters.outbound.yaml_config_adapter import (
-                YamlConfigAdapter,
-            )
-
-            config_service = YamlConfigAdapter(config_path="/nonexistent")
-            self._validators = [
-                CreateActionValidator(file_system_manager),
-                EditActionValidator(file_system_manager, config_service),
-                ExecuteActionValidator(),
-                ReadActionValidator(file_system_manager),
-                PruneActionValidator(file_system_manager),
-            ]
+        self._validators = validators or []
 
     def validate(
         self, plan: Plan, context_paths: Optional[Dict[str, Sequence[str]]] = None

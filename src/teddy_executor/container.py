@@ -154,12 +154,18 @@ def _register_services(container: punq.Container) -> None:
     )
     from teddy_executor.core.services.init_service import InitService
     from teddy_executor.core.services.planning_service import PlanningService
+    from teddy_executor.core.services.session_repository import SessionRepository
     from teddy_executor.core.services.session_service import SessionService
     from teddy_executor.core.services.markdown_plan_parser import MarkdownPlanParser
     from teddy_executor.core.services.markdown_report_formatter import (
         MarkdownReportFormatter,
     )
 
+    container.register(
+        SessionRepository,
+        factory=lambda: SessionRepository(container.resolve(IFileSystemManager)),
+        scope=punq.Scope.transient,
+    )
     container.register(IEditSimulator, EditSimulator, scope=punq.Scope.transient)
     container.register(IPlanParser, MarkdownPlanParser, scope=punq.Scope.transient)
     container.register(IPlanReviewer, instance=None)
@@ -212,7 +218,14 @@ def _register_services(container: punq.Container) -> None:
         factory=lambda: InitService(container.resolve(IFileSystemManager)),
         scope=punq.Scope.transient,
     )
-    container.register(ISessionManager, SessionService, scope=punq.Scope.transient)
+    container.register(
+        ISessionManager,
+        factory=lambda: SessionService(
+            container.resolve(IFileSystemManager),
+            container.resolve(SessionRepository),
+        ),
+        scope=punq.Scope.transient,
+    )
 
 
 def _register_orchestration(container: punq.Container) -> None:

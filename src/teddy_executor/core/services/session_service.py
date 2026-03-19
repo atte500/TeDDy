@@ -21,9 +21,13 @@ class SessionService(ISessionManager):
     Service for managing session directories and metadata.
     """
 
-    def __init__(self, file_system_manager: IFileSystemManager):
+    def __init__(
+        self,
+        file_system_manager: IFileSystemManager,
+        repository: SessionRepository,
+    ):
         self._file_system_manager = file_system_manager
-        self._repository = SessionRepository(file_system_manager)
+        self._repository = repository
 
     def create_session(self, name: str, agent_name: str) -> str:
         """
