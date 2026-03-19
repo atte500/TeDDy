@@ -1,39 +1,49 @@
-from unittest.mock import MagicMock
-import pytest
 import yaml
-from teddy_executor.core.services.session_service import SessionService
+from datetime import datetime, timezone
+from teddy_executor.core.domain.models.execution_report import (
+    ExecutionReport,
+    RunSummary,
+    RunStatus,
+)
+from teddy_executor.core.ports.outbound.session_manager import ISessionManager
 
 
-@pytest.fixture
-def mock_fs():
-    return MagicMock()
+def test_transition_to_next_turn_updates_cumulative_cost(env):
+    """
+    Verify that cumulative cost is correctly carried forward and incremented.
+    """
+    # Arrange
+    service = env.get_service(ISessionManager)
+    mock_fs = env.get_mock_filesystem()
 
+    plan_path = ".teddy/sessions/feat-x/01/plan.md"
+    current_meta = {"turn_id": "01", "cumulative_cost": 1.50}
 
-@pytest.fixture
-def service(mock_fs):
-    return SessionService(mock_fs)
+    valid_paths = {
+        ".teddy/sessions/feat-x/01/meta.yaml",
+        ".teddy/sessions/feat-x/01/pathfinder.xml",
+        ".teddy/sessions/feat-x/01/turn.context",
+    }
+    mock_fs.path_exists.side_effect = lambda p: p in valid_paths
+    mock_fs.read_file.side_effect = lambda path: {
+        ".teddy/sessions/feat-x/01/meta.yaml": yaml.dump(current_meta),
+        ".teddy/sessions/feat-x/01/pathfinder.xml": "<prompt/>",
+        ".teddy/sessions/feat-x/01/turn.context": "file.py",
+    }.get(path, "")
 
+    now = datetime.now(timezone.utc)
+    report = ExecutionReport(
+        run_summary=RunSummary(status=RunStatus.SUCCESS, start_time=now, end_time=now),
+        original_actions=[],
+    )
 
-def test_transition_to_next_turn_persists_cumulative_cost(service, mock_fs):
-    plan_path = "session/01/plan.md"
-    # mock_fs setup: meta.yaml, turn.context, pathfinder.xml (for copying)
-    mock_fs.read_file.side_effect = [
-        yaml.dump(
-            {"turn_id": "01", "cumulative_cost": 0.01, "agent_name": "pathfinder"}
-        ),  # current meta.yaml
-        "",  # current turn.context
-        "<prompt/>",  # pathfinder.xml
-    ]
-    mock_fs.path_exists.return_value = True
+    # Act
+    service.transition_to_next_turn(plan_path, report, turn_cost=0.75)
 
-    service.transition_to_next_turn(plan_path, turn_cost=0.02)
-
-    # Verify next meta.yaml content
-    write_calls = [
-        call
-        for call in mock_fs.write_file.call_args_list
-        if "02/meta.yaml" in call[0][0]
-    ]
-    assert len(write_calls) == 1
-    next_meta = yaml.safe_load(write_calls[0][0][1])
-    assert next_meta["cumulative_cost"] == 0.03  # noqa: PLR2004
+    # Assert
+    meta_call = next(
+        c for c in mock_fs.write_file.call_args_list if "02/meta.yaml" in c.args[0]
+    )
+    meta_data = yaml.safe_load(meta_call.args[1])
+    expected_cost = 2.25
+    assert meta_data["cumulative_cost"] == expected_cost

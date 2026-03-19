@@ -1,22 +1,14 @@
-from unittest.mock import MagicMock
-import pytest
 from teddy_executor.core.domain.models.plan import ActionData
 from teddy_executor.core.services.validation_rules.edit import EditActionValidator
 
 
-@pytest.fixture
-def mock_fs():
-    return MagicMock()
-
-
-def test_validator_handles_ambiguity(mock_fs):
+def test_validator_handles_ambiguity(container, mock_fs, mock_config):
     content = "block1\nblock2\n"
     mock_fs.read_file.return_value = content
     mock_fs.path_exists.return_value = True
 
-    mock_config = MagicMock()
     mock_config.get_setting.return_value = 0.95
-    validator = EditActionValidator(mock_fs, mock_config)
+    validator = container.resolve(EditActionValidator)
     action = ActionData(
         type="EDIT",
         description="test",
@@ -33,7 +25,7 @@ def test_validator_handles_ambiguity(mock_fs):
     assert "Similarity Score" in errors[0].message
 
 
-def test_validator_respects_custom_threshold(mock_fs):
+def test_validator_respects_custom_threshold(container, mock_fs, mock_config):
     """
     Scenario: The validator should use the threshold from IConfigService.
     Note: Plan-level threshold is now deprecated and ignored.
@@ -42,9 +34,8 @@ def test_validator_respects_custom_threshold(mock_fs):
     mock_fs.read_file.return_value = content
     mock_fs.path_exists.return_value = True
 
-    mock_config = MagicMock()
     mock_config.get_setting.return_value = 0.99
-    validator = EditActionValidator(mock_fs, mock_config)
+    validator = container.resolve(EditActionValidator)
 
     # Minor mismatch (extra space)
     action = ActionData(
@@ -63,14 +54,13 @@ def test_validator_respects_custom_threshold(mock_fs):
     assert "**Similarity Threshold:** 0.99" in errors[0].message
 
 
-def test_validator_passes_on_successful_fuzzy_match(mock_fs):
+def test_validator_passes_on_successful_fuzzy_match(container, mock_fs, mock_config):
     content = "def hello():\n    pass\n"
     mock_fs.read_file.return_value = content
     mock_fs.path_exists.return_value = True
 
-    mock_config = MagicMock()
     mock_config.get_setting.return_value = 0.8
-    validator = EditActionValidator(mock_fs, mock_config)
+    validator = container.resolve(EditActionValidator)
 
     # Minor mismatch
     action = ActionData(

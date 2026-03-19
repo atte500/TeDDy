@@ -6,18 +6,21 @@ from teddy_executor.core.domain.models import (
     ActionLog,
     ActionStatus,
 )
+from teddy_executor.core.ports.outbound.markdown_report_formatter import (
+    IMarkdownReportFormatter,
+)
 from teddy_executor.core.services.markdown_report_formatter import (
     MarkdownReportFormatter,
 )
 
 
-def test_formatter_does_not_corrupt_code_block_content():
+def test_formatter_does_not_corrupt_code_block_content(container):
     """
-    [DEBT REPRODUCTION]
     Ensures that whitespace sanitization does NOT collapse newlines
     inside action content (e.g., READ contents or EXECUTE stdout).
     """
-    formatter = MarkdownReportFormatter()
+    container.register(IMarkdownReportFormatter, MarkdownReportFormatter)
+    formatter = container.resolve(IMarkdownReportFormatter)
 
     # Content with 3 newlines (2 blank lines)
     content_with_gaps = "Line 1\n\n\nLine 4"
@@ -39,7 +42,6 @@ def test_formatter_does_not_corrupt_code_block_content():
 
     formatted = formatter.format(report)
 
-    # This currently FAILS because the global regex collapses it
     assert "Line 1\n\n\nLine 4" in formatted, (
         "Content was corrupted by whitespace sanitization"
     )

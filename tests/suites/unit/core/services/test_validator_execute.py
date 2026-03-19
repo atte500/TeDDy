@@ -1,38 +1,14 @@
-import pytest
-
 from teddy_executor.core.domain.models.plan import ActionData, Plan
 from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
-from teddy_executor.core.services.plan_validator import PlanValidator
-from teddy_executor.core.services.validation_rules.create import CreateActionValidator
-from teddy_executor.core.services.validation_rules.edit import EditActionValidator
-from teddy_executor.core.services.validation_rules.execute import ExecuteActionValidator
-from teddy_executor.core.services.validation_rules.read import ReadActionValidator
 
 
-@pytest.fixture
-def validator(container, mock_fs) -> IPlanValidator:
-    """Resolves the PlanValidator from the container with all rules."""
-    # Register individual rules; container will inject mock_fs automatically
-    container.register(CreateActionValidator)
-    container.register(EditActionValidator)
-    container.register(ExecuteActionValidator)
-    container.register(ReadActionValidator)
-
-    # Register IPlanValidator implementation and its dependencies in one go
-    container.register(
-        IPlanValidator,
-        PlanValidator,
-        validators=[
-            container.resolve(CreateActionValidator),
-            container.resolve(EditActionValidator),
-            container.resolve(ExecuteActionValidator),
-            container.resolve(ReadActionValidator),
-        ],
-    )
-    return container.resolve(IPlanValidator)
-
-
-def test_validate_execute_action_allows_multiline_commands(validator):
+def test_validate_execute_action_allows_multiline_commands(container):
+    """
+    Given an EXECUTE action with multiple commands,
+    When validated,
+    Then it should return no errors.
+    """
+    validator = container.resolve(IPlanValidator)
     """
     Given an EXECUTE action with multiple commands,
     When validated,
@@ -54,7 +30,8 @@ def test_validate_execute_action_allows_multiline_commands(validator):
     assert len(errors) == 0
 
 
-def test_validate_execute_action_allows_chained_commands(validator):
+def test_validate_execute_action_allows_chained_commands(container):
+    validator = container.resolve(IPlanValidator)
     """
     Given an EXECUTE action with any chaining operator (&&, ||, ;, |, &),
     When validated,
@@ -78,8 +55,9 @@ def test_validate_execute_action_allows_chained_commands(validator):
 
 
 def test_validate_execute_succeeds_for_single_command_with_line_continuations(
-    validator,
+    container,
 ):
+    validator = container.resolve(IPlanValidator)
     """
     Given an EXECUTE action with a single command spanning multiple lines using '\\',
     When validated,
@@ -102,8 +80,9 @@ def test_validate_execute_succeeds_for_single_command_with_line_continuations(
 
 
 def test_validate_execute_succeeds_for_single_command_with_multiline_argument(
-    validator,
+    container,
 ):
+    validator = container.resolve(IPlanValidator)
     """
     Given a single command with a multiline string argument,
     When validated,
@@ -123,7 +102,8 @@ def test_validate_execute_succeeds_for_single_command_with_multiline_argument(
     )
 
 
-def test_validate_execute_succeeds_with_ampersands_in_quoted_string(validator):
+def test_validate_execute_succeeds_with_ampersands_in_quoted_string(container):
+    validator = container.resolve(IPlanValidator)
     """
     Given an EXECUTE action with '&&' inside a quoted string,
     When validated,
@@ -143,7 +123,8 @@ def test_validate_execute_succeeds_with_ampersands_in_quoted_string(validator):
     )
 
 
-def test_validate_execute_action_allows_directives(validator):
+def test_validate_execute_action_allows_directives(container):
+    validator = container.resolve(IPlanValidator)
     """
     Given an EXECUTE action with 'cd' or 'export' in the command block,
     When validated,
@@ -166,7 +147,8 @@ def test_validate_execute_action_allows_directives(validator):
         assert len(errors) == 0
 
 
-def test_validate_execute_fails_with_posix_absolute_cwd(validator):
+def test_validate_execute_fails_with_posix_absolute_cwd(container):
+    validator = container.resolve(IPlanValidator)
     """
     Given an EXECUTE action with a POSIX absolute CWD (starting with /),
     When validated,
@@ -189,7 +171,8 @@ def test_validate_execute_fails_with_posix_absolute_cwd(validator):
     assert "is an absolute path and is not allowed" in errors[0].message
 
 
-def test_validate_execute_fails_with_traversal_cwd(validator):
+def test_validate_execute_fails_with_traversal_cwd(container):
+    validator = container.resolve(IPlanValidator)
     """
     Given an EXECUTE action with a CWD containing traversal (..),
     When validated,
@@ -212,7 +195,8 @@ def test_validate_execute_fails_with_traversal_cwd(validator):
     assert "is outside the project directory" in errors[0].message
 
 
-def test_validate_execute_fails_with_unsafe_cwd_traversal(validator):
+def test_validate_execute_fails_with_unsafe_cwd_traversal(container):
+    validator = container.resolve(IPlanValidator)
     """
     Given an EXECUTE action where `cwd` attempts to traverse outside the project root,
     When validated,
@@ -235,7 +219,8 @@ def test_validate_execute_fails_with_unsafe_cwd_traversal(validator):
     assert errors[0].file_path is None  # Not file-specific error
 
 
-def test_validate_execute_fails_with_absolute_cwd(validator):
+def test_validate_execute_fails_with_absolute_cwd(container):
+    validator = container.resolve(IPlanValidator)
     """
     Given an EXECUTE action where `cwd` is an absolute path,
     When validated,

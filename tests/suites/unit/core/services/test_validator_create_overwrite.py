@@ -1,14 +1,11 @@
-from unittest.mock import MagicMock
 from teddy_executor.core.domain.models.plan import ActionData
 from teddy_executor.core.services.validation_rules.create import CreateActionValidator
-from teddy_executor.core.ports.outbound import IFileSystemManager
 
 
-def test_create_validator_includes_overwrite_hint_when_file_exists():
+def test_create_validator_includes_overwrite_hint_when_file_exists(container, mock_fs):
     # Given a file system where the file exists
-    fs_manager = MagicMock(spec=IFileSystemManager)
-    fs_manager.path_exists.return_value = True
-    validator = CreateActionValidator(fs_manager)
+    mock_fs.path_exists.return_value = True
+    validator = container.resolve(CreateActionValidator)
 
     # And a CREATE action targeting that file
     action = ActionData(
@@ -25,11 +22,10 @@ def test_create_validator_includes_overwrite_hint_when_file_exists():
     assert "parameter can be used with caution to bypass this" in errors[0].message
 
 
-def test_create_validator_passes_when_file_exists_with_overwrite():
+def test_create_validator_passes_when_file_exists_with_overwrite(container, mock_fs):
     # Given a file system where the file exists
-    fs_manager = MagicMock(spec=IFileSystemManager)
-    fs_manager.path_exists.return_value = True
-    validator = CreateActionValidator(fs_manager)
+    mock_fs.path_exists.return_value = True
+    validator = container.resolve(CreateActionValidator)
 
     # And a CREATE action targeting that file WITH overwrite=True
     action = ActionData(

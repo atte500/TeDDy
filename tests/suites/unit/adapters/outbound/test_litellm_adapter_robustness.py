@@ -1,22 +1,11 @@
 import pytest
 from unittest.mock import MagicMock, patch
-from teddy_executor.adapters.outbound.litellm_adapter import LiteLLMAdapter
-from teddy_executor.core.ports.outbound.llm_client import LlmApiError
+from teddy_executor.core.ports.outbound.llm_client import ILlmClient, LlmApiError
 
 
-@pytest.fixture
-def mock_config():
-    config = MagicMock()
-    config.get_setting.return_value = {}
-    return config
-
-
-@pytest.fixture
-def adapter(mock_config):
-    return LiteLLMAdapter(mock_config)
-
-
-def test_get_completion_returns_raw_response(adapter):
+def test_get_completion_returns_raw_response(container, mock_config):
+    mock_config.get_setting.return_value = {}
+    adapter = container.resolve(ILlmClient)
     # Mock a standard LiteLLM response object
     mock_response = MagicMock()
     mock_choice = MagicMock()
@@ -32,7 +21,9 @@ def test_get_completion_returns_raw_response(adapter):
         assert result.choices[0].message.content == "Verified Content"
 
 
-def test_get_completion_passthrough_empty_choices(adapter):
+def test_get_completion_passthrough_empty_choices(container, mock_config):
+    mock_config.get_setting.return_value = {}
+    adapter = container.resolve(ILlmClient)
     mock_response = MagicMock()
     mock_response.choices = []
 
@@ -44,7 +35,9 @@ def test_get_completion_passthrough_empty_choices(adapter):
         assert len(result.choices) == 0
 
 
-def test_get_completion_passthrough_none_content(adapter):
+def test_get_completion_passthrough_none_content(container, mock_config):
+    mock_config.get_setting.return_value = {}
+    adapter = container.resolve(ILlmClient)
     mock_response = MagicMock()
     mock_choice = MagicMock()
     mock_choice.message.content = None
@@ -58,7 +51,9 @@ def test_get_completion_passthrough_none_content(adapter):
         assert result.choices[0].message.content is None
 
 
-def test_get_completion_error_handling(adapter):
+def test_get_completion_error_handling(container, mock_config):
+    mock_config.get_setting.return_value = {}
+    adapter = container.resolve(ILlmClient)
     with patch("litellm.completion", side_effect=Exception("Connection Timeout")):
         with pytest.raises(LlmApiError) as excinfo:
             adapter.get_completion("test-model", [{"role": "user", "content": "hi"}])

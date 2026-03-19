@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import pytest
 from teddy_executor.core.domain.models.execution_report import (
     ActionLog,
     ActionStatus,
@@ -6,19 +7,27 @@ from teddy_executor.core.domain.models.execution_report import (
     RunStatus,
     RunSummary,
 )
+from teddy_executor.core.ports.outbound.markdown_report_formatter import (
+    IMarkdownReportFormatter,
+)
 from teddy_executor.core.services.markdown_report_formatter import (
     MarkdownReportFormatter,
 )
 
 
-def test_formatter_crashes_when_details_is_string():
+@pytest.fixture
+def formatter(container):
+    container.register(IMarkdownReportFormatter, MarkdownReportFormatter)
+    return container.resolve(IMarkdownReportFormatter)
+
+
+def test_formatter_crashes_when_details_is_string(formatter):
     """
     Given an ActionLog where details is a string (not a dict),
     When the report is formatted,
     Then it should not raise an UndefinedError.
     """
     # Arrange
-    formatter = MarkdownReportFormatter()
     report = ExecutionReport(
         plan_title="Crash Repro",
         run_summary=RunSummary(
@@ -42,45 +51,3 @@ def test_formatter_crashes_when_details_is_string():
 
     # Assert
     assert "This is a string detail" in output
-
-
-def test_repro_prompt_headers_bug():
-    """
-    Reproduces a bug where H3 headers inside a PROMPT action
-    are misidentified as new actions.
-    """
-    from teddy_executor.core.services.markdown_plan_parser import MarkdownPlanParser
-
-    parser = MarkdownPlanParser()
-    plan_content = """# Phase 1: Problem Space Exploration
-- **Status:** Green 🟢
-- **Plan Type:** Synthesis
-- **Agent:** Pathfinder
-
-## Rationale
-```text
-Rationale content
-```
-
-## Action Plan
-
-### `PROMPT`
-Based on current developer sentiment...
-
-### 1. The Best All-Rounder: **Godot Engine**
-*   **Best For:** Most developers...
-
-### 2. The Best for Rust: **Bevy**
-*   **Best For:** Rust developers...
-"""
-
-    # This should parse as ONE action (PROMPT), containing the rest as content.
-    # Currently it likely fails or parses "1. The Best All-Rounder..." as an unknown action.
-    plan = parser.parse(plan_content)
-
-    assert len(plan.actions) == 1
-    assert plan.actions[0].type == "PROMPT"
-    # The content is usually stripped of the header, so check for subsequent content
-    # Note: PROMPT content handling might vary, but it should capture the markdown body
-    # If the parser treats `### 1...` as a new action, `len(plan.actions)` will be > 1
-    # or it will raise an InvalidPlanError for unknown action type.

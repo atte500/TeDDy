@@ -41,6 +41,15 @@ def container(monkeypatch):
 
 
 @pytest.fixture
+def mock_config(container):
+    from teddy_executor.core.ports.outbound import IConfigService
+
+    mock = Mock(spec=IConfigService)
+    container.register(IConfigService, instance=mock)
+    return mock
+
+
+@pytest.fixture
 def mock_user_interactor(container):
     from teddy_executor.core.ports.outbound import IUserInteractor
 
@@ -95,6 +104,26 @@ def mock_searcher(container):
 
 
 @pytest.fixture
+def mock_session_manager(container):
+    from teddy_executor.core.ports.outbound import ISessionManager
+
+    mock = Mock(spec=ISessionManager)
+    container.register(ISessionManager, instance=mock)
+    return mock
+
+
+@pytest.fixture
+def mock_planning_service(container):
+    from teddy_executor.core.ports.inbound.planning_use_case import (
+        IPlanningUseCase,
+    )
+
+    mock = Mock(spec=IPlanningUseCase)
+    container.register(IPlanningUseCase, instance=mock)
+    return mock
+
+
+@pytest.fixture
 def mock_tree_gen(container):
     from teddy_executor.core.ports.outbound import IRepoTreeGenerator
 
@@ -118,6 +147,15 @@ def mock_plan_parser(container):
 
     mock = Mock(spec=IPlanParser)
     container.register(IPlanParser, instance=mock)
+    return mock
+
+
+@pytest.fixture
+def mock_plan_validator(container):
+    from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
+
+    mock = Mock(spec=IPlanValidator)
+    container.register(IPlanValidator, instance=mock)
     return mock
 
 

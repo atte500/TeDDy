@@ -5,13 +5,8 @@ from teddy_executor.core.services.action_dispatcher import ActionDispatcher
 
 
 @pytest.fixture
-def mock_action_factory():
-    return Mock()
-
-
-@pytest.fixture
-def dispatcher(mock_action_factory):
-    return ActionDispatcher(action_factory=mock_action_factory)
+def dispatcher(container, mock_action_factory):
+    return container.resolve(ActionDispatcher)
 
 
 def test_dispatcher_normalizes_create_action_parameters(

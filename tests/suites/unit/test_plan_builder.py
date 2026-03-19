@@ -2,7 +2,7 @@ from textwrap import dedent
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
 
 
-def test_builder_supports_all_nine_specialized_methods():
+def test_builder_supports_all_nine_specialized_methods(container):
     """
     Ensures the builder has specialized methods for all 9 actions.
     This test defines the target API for the refactored builder.
@@ -42,7 +42,7 @@ def test_builder_supports_all_nine_specialized_methods():
     assert "### `PRUNE`" in plan
 
 
-def test_builder_path_normalization():
+def test_builder_path_normalization(container):
     """Ensures paths are always formatted as root-relative links [path](/path)."""
     builder = MarkdownPlanBuilder("Path Test")
     builder.add_create("docs/architecture/README.md", "content")
@@ -54,7 +54,7 @@ def test_builder_path_normalization():
     )
 
 
-def test_builder_edit_multi_block():
+def test_builder_edit_multi_block(container):
     """Ensures add_edit supports multiple find/replace pairs."""
     builder = MarkdownPlanBuilder("Multi-Edit Test")
     # Using a list of tuples for multiple edits
@@ -68,7 +68,7 @@ def test_builder_edit_multi_block():
     assert "#### REPLACE:\n`````text\nreplace2\n`````" in plan
 
 
-def test_builder_execute_options():
+def test_builder_execute_options(container):
     """Verifies that EXECUTE protocol flags are correctly rendered in backticks."""
     builder = MarkdownPlanBuilder("Execute Flags")
     builder.add_execute("exit 1", allow_failure=True, background=True)

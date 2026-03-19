@@ -1,39 +1,48 @@
 import yaml
-from unittest.mock import MagicMock
-from teddy_executor.core.services.session_service import SessionService
-from teddy_executor.core.domain.models.execution_report import ExecutionReport
+from datetime import datetime, timezone
+from teddy_executor.core.domain.models.execution_report import (
+    ExecutionReport,
+    RunSummary,
+    RunStatus,
+)
+from teddy_executor.core.domain.models.plan import ActionData, ActionType
+from teddy_executor.core.ports.outbound.session_manager import ISessionManager
 
 
-def test_transition_to_next_turn_creates_directory_and_linkage():
+def test_transition_to_next_turn_creates_directory_and_linkage(env):
     """
     transition_to_next_turn should create a new turn directory (T_next)
     and seed it with metadata linked to the current turn (T_current).
     """
     # Arrange
-    from pathlib import Path
-
-    fs = MagicMock()
-    service = SessionService(file_system_manager=fs)
+    service = env.get_service(ISessionManager)
+    mock_fs = env.get_mock_filesystem()
 
     # Mock current turn state
     plan_path = ".teddy/sessions/feat-x/01/plan.md"
-    current_meta = "turn_id: 'abc'\nagent_name: 'pathfinder'\n"
+    current_meta = {"turn_id": "abc", "agent_name": "pathfinder"}
     current_prompt = "system prompt content"
     current_context = "file_a.py"
 
-    # Mocking FS reads for T_current
-    fs.read_file.side_effect = lambda path: {
-        ".teddy/sessions/feat-x/01/meta.yaml": current_meta,
+    # Mocking FS for T_current
+    valid_paths = {
+        ".teddy/sessions/feat-x/01/meta.yaml",
+        ".teddy/sessions/feat-x/01/pathfinder.xml",
+        ".teddy/sessions/feat-x/01/turn.context",
+    }
+    mock_fs.path_exists.side_effect = lambda p: p in valid_paths
+    mock_fs.read_file.side_effect = lambda path: {
+        ".teddy/sessions/feat-x/01/meta.yaml": yaml.dump(current_meta),
         ".teddy/sessions/feat-x/01/pathfinder.xml": current_prompt,
         ".teddy/sessions/feat-x/01/turn.context": current_context,
-    }.get(Path(path).as_posix(), "")
+    }.get(path, "")
 
-    # Mock directory existence check
-    fs.path_exists.return_value = True
-    fs.create_directory.return_value = None
-
-    report = MagicMock(spec=ExecutionReport)
-    report.original_actions = []  # No READ/PRUNE actions yet
+    now = datetime.now(timezone.utc)
+    # Use a real report
+    report = ExecutionReport(
+        run_summary=RunSummary(status=RunStatus.SUCCESS, start_time=now, end_time=now),
+        original_actions=[],
+    )
 
     # Act
     next_turn_path = service.transition_to_next_turn(plan_path, report)
@@ -42,11 +51,11 @@ def test_transition_to_next_turn_creates_directory_and_linkage():
     assert next_turn_path == ".teddy/sessions/feat-x/02"
 
     # Verify directory creation
-    fs.create_directory.assert_any_call(".teddy/sessions/feat-x/02")
+    mock_fs.create_directory.assert_any_call(".teddy/sessions/feat-x/02")
 
-    # Verify meta.yaml linkage (parent_turn_id: 'abc')
+    # Verify meta.yaml linkage
     meta_call = next(
-        c for c in fs.write_file.call_args_list if "02/meta.yaml" in c.args[0]
+        c for c in mock_fs.write_file.call_args_list if "02/meta.yaml" in c.args[0]
     )
     meta_data = yaml.safe_load(meta_call.args[1])
     assert meta_data["parent_turn_id"] == "abc"
@@ -54,59 +63,63 @@ def test_transition_to_next_turn_creates_directory_and_linkage():
 
     # Verify pathfinder.xml is copied
     prompt_call = next(
-        c for c in fs.write_file.call_args_list if "02/pathfinder.xml" in c.args[0]
+        c for c in mock_fs.write_file.call_args_list if "02/pathfinder.xml" in c.args[0]
     )
     assert prompt_call.args[1] == "system prompt content"
 
     # Verify report.md is added to context
     context_call = next(
-        c for c in fs.write_file.call_args_list if "02/turn.context" in c.args[0]
+        c for c in mock_fs.write_file.call_args_list if "02/turn.context" in c.args[0]
     )
     assert "01/report.md" in context_call.args[1]
 
 
-def test_transition_to_next_turn_applies_read_and_prune_side_effects():
+def test_transition_to_next_turn_applies_read_and_prune_side_effects(env):
     """
     transition_to_next_turn should add READ resources to and remove PRUNE
     resources from the next turn's context.
     """
     # Arrange
-    from pathlib import Path
-
-    fs = MagicMock()
-    service = SessionService(file_system_manager=fs)
+    service = env.get_service(ISessionManager)
+    mock_fs = env.get_mock_filesystem()
 
     plan_path = ".teddy/sessions/feat-x/01/plan.md"
-    current_meta = "turn_id: 'abc'\n"
+    current_meta = {"turn_id": "abc"}
     current_prompt = "system prompt content"
     current_context = "file_a.py\nfile_b.py"  # file_b.py is in context
 
-    fs.read_file.side_effect = lambda path: {
-        ".teddy/sessions/feat-x/01/meta.yaml": current_meta,
+    valid_paths = {
+        ".teddy/sessions/feat-x/01/meta.yaml",
+        ".teddy/sessions/feat-x/01/pathfinder.xml",
+        ".teddy/sessions/feat-x/01/turn.context",
+    }
+    mock_fs.path_exists.side_effect = lambda p: p in valid_paths
+    mock_fs.read_file.side_effect = lambda path: {
+        ".teddy/sessions/feat-x/01/meta.yaml": yaml.dump(current_meta),
         ".teddy/sessions/feat-x/01/pathfinder.xml": current_prompt,
         ".teddy/sessions/feat-x/01/turn.context": current_context,
-    }.get(Path(path).as_posix(), "")
+    }.get(path, "")
 
-    # Mock Report with READ (new_file.py) and PRUNE (file_b.py)
-    report = MagicMock(spec=ExecutionReport)
+    # Mock Report with real ActionData objects
+    action_read = ActionData(
+        type=ActionType.READ.value, params={"Resource": "[new_file.py](/new_file.py)"}
+    )
+    action_prune = ActionData(
+        type=ActionType.PRUNE.value, params={"Resource": "[file_b.py](/file_b.py)"}
+    )
 
-    # We need to mock the action objects as well
-    action_read = MagicMock()
-    action_read.type = "READ"
-    action_read.params = {"Resource": "[new_file.py](/new_file.py)"}
-
-    action_prune = MagicMock()
-    action_prune.type = "PRUNE"
-    action_prune.params = {"Resource": "[file_b.py](/file_b.py)"}
-
-    report.original_actions = [action_read, action_prune]
+    now = datetime.now(timezone.utc)
+    report = ExecutionReport(
+        run_summary=RunSummary(status=RunStatus.SUCCESS, start_time=now, end_time=now),
+        original_actions=[action_read, action_prune],
+    )
 
     # Act
     service.transition_to_next_turn(plan_path, report)
 
     # Assert
     context_call = next(
-        c for c in fs.write_file.call_args_list if "02/turn.context" in c.args[0]
+        c for c in mock_fs.write_file.call_args_list if "02/turn.context" in c.args[0]
     )
     next_context = context_call.args[1]
 

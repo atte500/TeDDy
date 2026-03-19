@@ -1,11 +1,11 @@
 import pytest
 import sys
-from teddy_executor.adapters.outbound.shell_adapter import ShellAdapter
+from teddy_executor.core.ports.outbound.shell_executor import IShellExecutor
 
 
 @pytest.fixture
-def adapter():
-    return ShellAdapter()
+def adapter(container):
+    return container.resolve(IShellExecutor)
 
 
 def test_execute_multi_line_command_fails_fast_and_reports_command(adapter):

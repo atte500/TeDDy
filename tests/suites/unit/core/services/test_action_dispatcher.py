@@ -24,8 +24,8 @@ class FakeFailingAction:
 
 
 @pytest.fixture
-def dispatcher(mock_action_factory: Mock) -> ActionDispatcher:
-    return ActionDispatcher(action_factory=mock_action_factory)
+def dispatcher(container, mock_action_factory: Mock) -> ActionDispatcher:
+    return container.resolve(ActionDispatcher)
 
 
 # --- Test Cases ---

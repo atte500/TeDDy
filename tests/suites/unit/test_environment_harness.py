@@ -2,7 +2,7 @@ from tests.harness.setup.test_environment import TestEnvironment
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 
 
-def test_environment_isolates_container(monkeypatch):
+def test_environment_isolates_container(monkeypatch, container):
     """
     Verifies that TestEnvironment provides a fresh container and patches the global one.
     """
@@ -21,7 +21,7 @@ def test_environment_isolates_container(monkeypatch):
     env.teardown()
 
 
-def test_environment_workspace_management(monkeypatch, tmp_path):
+def test_environment_workspace_management(monkeypatch, tmp_path, container):
     """Verifies that the environment can anchor services to a specific workspace."""
     env = TestEnvironment(monkeypatch, workspace=tmp_path)
     env.setup()
@@ -33,7 +33,7 @@ def test_environment_workspace_management(monkeypatch, tmp_path):
     env.teardown()
 
 
-def test_environment_automated_workspace_lifecycle(monkeypatch):
+def test_environment_automated_workspace_lifecycle(monkeypatch, container):
     """
     Scenario 4: TestEnvironment should create and cleanup its own workspace
     under tests/.tmp/ if none is provided.

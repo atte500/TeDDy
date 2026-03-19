@@ -11,19 +11,20 @@ class InitService(IInitUseCase):
     def __init__(self, file_system: IFileSystemManager, config_dir: str | None = None):
         self._file_system = file_system
         # Find the config directory relative to the package root if not provided
-        self._config_dir = config_dir or os.path.join(
-            os.path.dirname(__file__), "..", "..", "..", "..", "config"
+        self._config_dir = config_dir or os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "config")
         )
 
     def _get_default_content(self, filename: str) -> str | None:
         """Loads default content from the config directory."""
+        # Use the file system manager even for internal templates to allow mocking
         path = os.path.join(self._config_dir, filename)
-        if not os.path.exists(path):
+
+        # We check path_exists on the file_system port
+        if not self._file_system.path_exists(path):
             return None
-        # Use direct reading for the template dir as it's part of the package,
-        # but consider if this should also be virtualized.
-        with open(path, "r", encoding="utf-8") as f:
-            return f.read()
+
+        return self._file_system.read_file(path)
 
     def ensure_initialized(self) -> None:
         """

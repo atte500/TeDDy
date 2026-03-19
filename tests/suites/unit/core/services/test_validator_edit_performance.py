@@ -1,10 +1,9 @@
 import time
-from unittest.mock import MagicMock
 from teddy_executor.core.services.validation_rules.edit import EditActionValidator
 from teddy_executor.core.domain.models.plan import ActionData
 
 
-def test_edit_validator_performance_large_file(mock_fs):
+def test_edit_validator_performance_large_file(container, mock_fs, mock_config):
     """
     Inner Loop RED: Assert that EditActionValidator.validate() handles large files
     in under 100ms when a match is not found.
@@ -26,8 +25,9 @@ def test_edit_validator_performance_large_file(mock_fs):
 
     mock_fs.path_exists.return_value = True
     mock_fs.read_file.return_value = file_content
+    mock_config.get_setting.return_value = 0.95
 
-    validator = EditActionValidator(mock_fs, MagicMock())
+    validator = container.resolve(EditActionValidator)
 
     action = ActionData(
         type="EDIT",

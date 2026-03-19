@@ -1,14 +1,9 @@
-import sys
 from unittest.mock import MagicMock
 import pytest
+import litellm
 
-# Mock the entire litellm module BEFORE importing the adapter or running tests
-# to prevent the expensive 1.2s import and ensure no network calls.
-mock_litellm = MagicMock()
-sys.modules["litellm"] = mock_litellm
-
-from teddy_executor.adapters.outbound.litellm_adapter import LiteLLMAdapter  # noqa: E402
-from teddy_executor.core.ports.outbound.llm_client import LlmApiError  # noqa: E402
+from teddy_executor.adapters.outbound.litellm_adapter import LiteLLMAdapter
+from teddy_executor.core.ports.outbound.llm_client import LlmApiError
 
 
 @pytest.fixture(autouse=True)
@@ -16,26 +11,26 @@ def reset_litellm_mock():
     """
     Ensure the shared global mock is fresh and isolated for every test.
     """
-    mock_litellm.reset_mock()
+    # litellm is already mocked globally in tests/harness/setup/composition.py
+    litellm.reset_mock()
     # Explicitly restore attributes that are overwritten by literal assignments
     # in the adapter (e.g., litellm.set_verbose = False).
-    mock_litellm.set_verbose = MagicMock()
-    mock_litellm.suppress_debug_info = MagicMock()
-    mock_litellm.completion.side_effect = None
-    mock_litellm.completion.return_value = MagicMock()
+    litellm.set_verbose = MagicMock()
+    litellm.suppress_debug_info = MagicMock()
+    litellm.completion.side_effect = None
+    litellm.completion.return_value = MagicMock()
     yield
 
 
-def test_get_completion_calls_litellm_correctly():
+def test_get_completion_calls_litellm_correctly(mock_config):
     # Arrange
     # Mock the response structure of litellm
     mock_response = MagicMock()
     mock_choice = MagicMock()
     mock_choice.message.content = "AI response text"
     mock_response.choices = [mock_choice]
-    mock_litellm.completion.return_value = mock_response
+    litellm.completion.return_value = mock_response
 
-    mock_config = MagicMock()
     mock_config.get_setting.return_value = {}
 
     adapter = LiteLLMAdapter(mock_config)
@@ -47,16 +42,15 @@ def test_get_completion_calls_litellm_correctly():
 
     # Assert
     assert result.choices[0].message.content == "AI response text"
-    mock_litellm.completion.assert_called_once_with(
+    litellm.completion.assert_called_once_with(
         model=model, messages=messages, temperature=0.7
     )
 
 
-def test_get_completion_wraps_errors_in_llm_api_error():
+def test_get_completion_wraps_errors_in_llm_api_error(mock_config):
     # Arrange
-    mock_config = MagicMock()
     mock_config.get_setting.return_value = {}
-    mock_litellm.completion.side_effect = RuntimeError("API Failure")
+    litellm.completion.side_effect = RuntimeError("API Failure")
 
     adapter = LiteLLMAdapter(mock_config)
 
@@ -67,13 +61,12 @@ def test_get_completion_wraps_errors_in_llm_api_error():
     assert "API Failure" in str(excinfo.value)
 
 
-def test_get_completion_returns_empty_string_for_empty_choices():
+def test_get_completion_returns_empty_string_for_empty_choices(mock_config):
     # Arrange
     mock_response = MagicMock()
     mock_response.choices = []
-    mock_litellm.completion.return_value = mock_response
+    litellm.completion.return_value = mock_response
 
-    mock_config = MagicMock()
     mock_config.get_setting.return_value = {}
 
     adapter = LiteLLMAdapter(mock_config)
@@ -87,9 +80,8 @@ def test_get_completion_returns_empty_string_for_empty_choices():
     assert result == mock_response
 
 
-def test_config_model_overrides_caller_model():
+def test_config_model_overrides_caller_model(mock_config):
     # Arrange
-    mock_config = MagicMock()
     mock_config.get_setting.return_value = {"model": "config-model-name"}
     adapter = LiteLLMAdapter(mock_config)
 
@@ -97,14 +89,13 @@ def test_config_model_overrides_caller_model():
     adapter.get_completion(model="caller-suggested-model", messages=[])
 
     # Assert
-    mock_litellm.completion.assert_called_once()
-    actual_kwargs = mock_litellm.completion.call_args.kwargs
+    litellm.completion.assert_called_once()
+    actual_kwargs = litellm.completion.call_args.kwargs
     assert actual_kwargs["model"] == "config-model-name"
 
 
-def test_config_api_key_overrides_caller_kwargs():
+def test_config_api_key_overrides_caller_kwargs(mock_config):
     # Arrange
-    mock_config = MagicMock()
     mock_config.get_setting.return_value = {"api_key": "sk-config-key"}
     adapter = LiteLLMAdapter(mock_config)
 
@@ -112,18 +103,17 @@ def test_config_api_key_overrides_caller_kwargs():
     adapter.get_completion(model="gpt-4", messages=[], api_key="sk-caller-key")
 
     # Assert
-    mock_litellm.completion.assert_called_once()
-    actual_kwargs = mock_litellm.completion.call_args.kwargs
+    litellm.completion.assert_called_once()
+    actual_kwargs = litellm.completion.call_args.kwargs
     assert actual_kwargs["api_key"] == "sk-config-key"
 
 
-def test_adapter_does_not_import_litellm_on_init():
+def test_adapter_does_not_import_litellm_on_init(mock_config):
     # Arrange
-    mock_config = MagicMock()
-    mock_litellm.reset_mock()
+    litellm.reset_mock()
     # Reset to fresh mocks to ensure we can check if they were replaced by assignment
-    mock_litellm.set_verbose = MagicMock()
-    mock_litellm.suppress_debug_info = MagicMock()
+    litellm.set_verbose = MagicMock()
+    litellm.suppress_debug_info = MagicMock()
 
     # Act
     LiteLLMAdapter(mock_config)
@@ -132,6 +122,6 @@ def test_adapter_does_not_import_litellm_on_init():
     # In __init__, the adapter should NOT touch litellm properties.
     # If it did (lazily), these would be replaced by booleans or called.
     # We check if they are still the fresh MagicMocks we just assigned.
-    assert isinstance(mock_litellm.set_verbose, MagicMock)
-    assert isinstance(mock_litellm.suppress_debug_info, MagicMock)
-    assert not mock_litellm.set_verbose.called
+    assert isinstance(litellm.set_verbose, MagicMock)
+    assert isinstance(litellm.suppress_debug_info, MagicMock)
+    assert not litellm.set_verbose.called

@@ -1,19 +1,9 @@
-import pytest
 from unittest.mock import MagicMock, patch
-from teddy_executor.adapters.outbound.litellm_adapter import LiteLLMAdapter
+from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 
 
-@pytest.fixture
-def mock_config():
-    return MagicMock()
-
-
-@pytest.fixture
-def adapter(mock_config):
-    return LiteLLMAdapter(mock_config)
-
-
-def test_get_token_count_delegates_to_litellm(adapter):
+def test_get_token_count_delegates_to_litellm(container, mock_config):
+    adapter = container.resolve(ILlmClient)
     messages = [{"role": "user", "content": "Hello"}]
     model = "gpt-4"
 
@@ -25,7 +15,8 @@ def test_get_token_count_delegates_to_litellm(adapter):
         mock_counter.assert_called_once_with(model=model, messages=messages)
 
 
-def test_get_completion_cost_delegates_to_litellm(adapter):
+def test_get_completion_cost_delegates_to_litellm(container, mock_config):
+    adapter = container.resolve(ILlmClient)
     mock_response = MagicMock()
 
     with patch("litellm.completion_cost") as mock_cost:

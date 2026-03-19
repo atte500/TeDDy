@@ -1,7 +1,7 @@
 from tests.suites.acceptance.helpers import parse_markdown_report
 
 
-def test_parse_markdown_report_with_params_and_details():
+def test_parse_markdown_report_with_params_and_details(container):
     """
     Given a markdown report string that matches the Jinja2 template format,
     When `parse_markdown_report` is called,
@@ -34,7 +34,7 @@ def test_parse_markdown_report_with_params_and_details():
     assert action_log["details"] == {"stdout": "hello", "stderr": "", "return_code": 0}
 
 
-def test_parse_markdown_report_summary():
+def test_parse_markdown_report_summary(container):
     """
     Given a markdown report string,
     When the report is parsed,

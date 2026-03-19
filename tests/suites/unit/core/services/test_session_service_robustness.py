@@ -1,47 +1,50 @@
 import pytest
-from unittest.mock import MagicMock
-from teddy_executor.core.services.session_service import SessionService
-from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
+from teddy_executor.core.ports.outbound.session_manager import ISessionManager
 
 
-@pytest.fixture
-def mock_fs():
-    return MagicMock(spec=IFileSystemManager)
+def test_rename_session_moves_directory(env):
+    """
+    Verify that rename_session renames the directory on the filesystem.
+    """
+    # Arrange
+    service = env.get_service(ISessionManager)
+    mock_fs = env.get_mock_filesystem()
+
+    mock_fs.path_exists.side_effect = lambda p: p == ".teddy/sessions/old-name"
+
+    # Act
+    new_path = service.rename_session("old-name", "new-name")
+
+    # Assert
+    assert new_path == ".teddy/sessions/new-name"
+    mock_fs.move_directory.assert_called_once_with(
+        ".teddy/sessions/old-name", ".teddy/sessions/new-name"
+    )
 
 
-@pytest.fixture
-def service(mock_fs):
-    return SessionService(mock_fs)
+def test_rename_session_raises_if_not_found(env):
+    """
+    Verify that renaming a non-existent session raises ValueError.
+    """
+    # Arrange
+    service = env.get_service(ISessionManager)
+    mock_fs = env.get_mock_filesystem()
+    mock_fs.path_exists.return_value = False
+
+    # Act & Assert
+    with pytest.raises(ValueError, match="Session 'missing' not found."):
+        service.rename_session("missing", "new")
 
 
-def test_get_latest_session_name_returns_most_recent(service, mock_fs):
-    """Should sort sessions by mtime and return the latest."""
-    mock_fs.list_directory.return_value = ["old-session", "new-session"]
-    # Mocking mtime: new-session is newer
-    mock_fs.get_mtime.side_effect = lambda p: 2000 if "new-session" in p else 1000
+def test_rename_session_raises_if_target_exists(env):
+    """
+    Verify that renaming to an existing session name raises ValueError.
+    """
+    # Arrange
+    service = env.get_service(ISessionManager)
+    mock_fs = env.get_mock_filesystem()
     mock_fs.path_exists.return_value = True
 
-    assert service.get_latest_session_name() == "new-session"
-
-
-def test_resolve_session_from_path_with_session_root(service, mock_fs):
-    """Should return session name if path points to session root."""
-    path = ".teddy/sessions/my-session"
-    mock_fs.path_exists.return_value = True
-    # Simulate directory structure check
-    # In reality we might just check if it's inside .teddy/sessions
-    assert service.resolve_session_from_path(path) == "my-session"
-
-
-def test_resolve_session_from_path_with_turn_dir(service, mock_fs):
-    """Should return session name if path points to a turn directory."""
-    path = ".teddy/sessions/my-session/01"
-    mock_fs.path_exists.return_value = True
-    assert service.resolve_session_from_path(path) == "my-session"
-
-
-def test_resolve_session_from_path_with_file(service, mock_fs):
-    """Should return session name if path points to a file inside a turn."""
-    path = ".teddy/sessions/my-session/01/meta.yaml"
-    mock_fs.path_exists.return_value = True
-    assert service.resolve_session_from_path(path) == "my-session"
+    # Act & Assert
+    with pytest.raises(ValueError, match="Session 'new' already exists."):
+        service.rename_session("old", "new")

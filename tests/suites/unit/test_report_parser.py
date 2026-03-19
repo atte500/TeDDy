@@ -2,7 +2,7 @@ from textwrap import dedent
 from tests.harness.observers.report_parser import ReportParser
 
 
-def test_parse_exhaustive_report():
+def test_parse_exhaustive_report(container):
     """
     Verifies that the ReportParser can extract summary data and multiple action logs.
     """
@@ -58,7 +58,7 @@ def test_parse_exhaustive_report():
     assert logs[1].details["stderr"] == "Error: 404"
 
 
-def test_action_was_successful_helper():
+def test_action_was_successful_helper(container):
     """Verifies the ergonomic helper for checking action success."""
     report_content = dedent("""\
         # Execution Report

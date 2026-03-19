@@ -1,46 +1,48 @@
-from pathlib import Path
-from teddy_executor.core.services.session_service import SessionService
+from teddy_executor.core.ports.outbound.session_manager import ISessionManager
 
 
-def test_resolve_context_paths_finds_session_and_turn_context(tmp_path, monkeypatch):
-    # Setup session structure: .teddy/sessions/my-session/01/plan.md
-    session_dir = tmp_path / ".teddy" / "sessions" / "my-session"
-    turn_dir = session_dir / "01"
-    turn_dir.mkdir(parents=True)
+def test_resolve_context_paths_finds_session_and_turn_context(env):
+    """
+    Verify that resolve_context_paths correctly identifies and reads
+    session.context and turn.context relative to the plan path.
+    """
+    # Arrange
+    service = env.get_service(ISessionManager)
+    mock_fs = env.get_mock_filesystem()
 
-    plan_path = turn_dir / "plan.md"
-    plan_path.touch()
+    plan_path = ".teddy/sessions/my-session/01/plan.md"
+    session_context_path = ".teddy/sessions/my-session/session.context"
+    turn_context_path = ".teddy/sessions/my-session/01/turn.context"
 
-    session_context = session_dir / "session.context"
-    session_context.write_text("file1.md", encoding="utf-8")
+    valid_paths = {session_context_path, turn_context_path}
+    mock_fs.path_exists.side_effect = lambda p: p in valid_paths
+    mock_fs.read_file.side_effect = lambda p: {
+        session_context_path: "file1.md",
+        turn_context_path: "file2.md",
+    }.get(p, "")
 
-    turn_context = turn_dir / "turn.context"
-    turn_context.write_text("file2.md", encoding="utf-8")
-
-    from unittest.mock import MagicMock
-
-    fsm = MagicMock()
-    fsm.read_file.side_effect = lambda p: Path(p).read_text(encoding="utf-8")
-    # Initialize service with mocks (not needed for this specific path logic if it's pure)
-    service = SessionService(file_system_manager=fsm)
-
-    # Execute
-    paths = service.resolve_context_paths(str(plan_path))
+    # Act
+    paths = service.resolve_context_paths(plan_path)
 
     # Assert
     assert paths["Session"] == ["file1.md"]
     assert paths["Turn"] == ["file2.md"]
 
 
-def test_resolve_context_paths_handles_missing_files(tmp_path):
-    # Mock fsm raising FileNotFoundError for missing files
-    from unittest.mock import MagicMock
+def test_resolve_context_paths_handles_missing_files(env):
+    """
+    Verify that resolve_context_paths returns empty lists when context files are missing.
+    """
+    # Arrange
+    service = env.get_service(ISessionManager)
+    mock_fs = env.get_mock_filesystem()
 
-    fsm = MagicMock()
-    fsm.read_file.side_effect = FileNotFoundError()
+    # Repository returns empty set if path_exists is False
+    mock_fs.path_exists.return_value = False
 
-    service = SessionService(fsm)
+    # Act
     paths = service.resolve_context_paths(".teddy/sessions/my-session/01/plan.md")
 
+    # Assert
     assert paths["Session"] == []
     assert paths["Turn"] == []

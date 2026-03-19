@@ -1,12 +1,12 @@
 from unittest.mock import patch, MagicMock
-from teddy_executor.adapters.outbound.shell_adapter import ShellAdapter
+from teddy_executor.core.ports.outbound.shell_executor import IShellExecutor
 
 
-def test_execute_background_starts_popen_and_returns_pid():
+def test_execute_background_starts_popen_and_returns_pid(container):
     """
     Verifies that when background=True, ShellAdapter uses Popen and returns the PID.
     """
-    adapter = ShellAdapter()
+    adapter = container.resolve(IShellExecutor)
     mock_process = MagicMock()
     mock_process.pid = 12345
 

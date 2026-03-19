@@ -1,11 +1,12 @@
 from unittest.mock import patch
 import pytest
-from teddy_executor.adapters.outbound.shell_adapter import ShellAdapter
+from teddy_executor.core.ports.outbound.shell_executor import IShellExecutor
 
 
 @pytest.fixture
-def adapter():
-    return ShellAdapter()
+def adapter(container):
+    # Resolve via port; we know it's a ShellAdapter in this unit test
+    return container.resolve(IShellExecutor)
 
 
 def test_windows_command_wrapping_includes_parentheses(adapter):

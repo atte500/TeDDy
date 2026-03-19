@@ -1,17 +1,8 @@
 import pytest
-from unittest.mock import MagicMock
-from teddy_executor.core.services.session_service import SessionService
-from teddy_executor.core.ports.outbound.session_manager import SessionState
-
-
-@pytest.fixture
-def file_system_manager():
-    return MagicMock()
-
-
-@pytest.fixture
-def session_service(file_system_manager):
-    return SessionService(file_system_manager)
+from teddy_executor.core.ports.outbound.session_manager import (
+    ISessionManager,
+    SessionState,
+)
 
 
 @pytest.mark.parametrize(
@@ -23,13 +14,18 @@ def session_service(file_system_manager):
         (False, True, SessionState.COMPLETE_TURN),  # Edge case: report but no plan
     ],
 )
-def test_get_session_state_matrix(
-    session_service, file_system_manager, plan_exists, report_exists, expected_state
-):
-    session_name = "test-session"
-    latest_turn_dir = ".teddy/sessions/test-session/01"
+def test_get_session_state_matrix(env, plan_exists, report_exists, expected_state):
+    """
+    Tests the get_session_state matrix using a mocked filesystem.
+    """
+    # Arrange
+    service = env.get_service(ISessionManager)
+    mock_fs = env.get_mock_filesystem()
 
-    file_system_manager.list_directory.return_value = ["01"]
+    session_name = "test-session"
+    latest_turn_dir = f".teddy/sessions/{session_name}/01"
+
+    mock_fs.list_directory.return_value = ["01"]
 
     def path_exists_mock(path):
         if path == f"{latest_turn_dir}/plan.md":
@@ -38,9 +34,11 @@ def test_get_session_state_matrix(
             return report_exists
         return False
 
-    file_system_manager.path_exists.side_effect = path_exists_mock
+    mock_fs.path_exists.side_effect = path_exists_mock
 
-    state, turn_path = session_service.get_session_state(session_name)
+    # Act
+    state, turn_path = service.get_session_state(session_name)
 
+    # Assert
     assert state == expected_state
     assert turn_path == latest_turn_dir

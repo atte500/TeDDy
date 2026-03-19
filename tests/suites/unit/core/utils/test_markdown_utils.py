@@ -1,7 +1,7 @@
 from teddy_executor.core.utils.markdown import get_fence_for_content
 
 
-def test_get_fence_for_simple_content():
+def test_get_fence_for_simple_content(container):
     """
     Given simple content with no backticks,
     When getting the fence,
@@ -11,7 +11,7 @@ def test_get_fence_for_simple_content():
     assert get_fence_for_content(content) == "```"
 
 
-def test_get_fence_for_content_with_triple_backticks():
+def test_get_fence_for_content_with_triple_backticks(container):
     """
     Given content containing triple backticks,
     When getting the fence,
@@ -21,7 +21,7 @@ def test_get_fence_for_content_with_triple_backticks():
     assert get_fence_for_content(content) == "````"
 
 
-def test_get_fence_for_content_with_complex_backticks():
+def test_get_fence_for_content_with_complex_backticks(container):
     """
     Given content containing varying lengths of backticks,
     When getting the fence,
@@ -31,7 +31,7 @@ def test_get_fence_for_content_with_complex_backticks():
     assert get_fence_for_content(content) == "`````"
 
 
-def test_get_language_from_path():
+def test_get_language_from_path(container):
     from teddy_executor.core.utils.markdown import get_language_from_path
 
     # Common extensions mapping

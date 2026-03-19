@@ -1,26 +1,16 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import ANY, patch
 
-import pytest
-
-from teddy_executor.core.services.session_service import SessionService
+from teddy_executor.core.ports.outbound.session_manager import ISessionManager
 
 
-@pytest.fixture
-def mock_fs():
-    return MagicMock()
-
-
-@pytest.fixture
-def service(mock_fs):
-    # We will need a way to fetch prompts, maybe another mock or just dependency on fs
-    return SessionService(file_system_manager=mock_fs)
-
-
-def test_create_session_orchestrates_filesystem_correctly(service, mock_fs):
+def test_create_session_orchestrates_filesystem_correctly(env):
     """
     Tests that create_session creates the correct directory structure and files.
     """
     # Arrange
+    service = env.get_service(ISessionManager)
+    mock_fs = env.get_mock_filesystem()
+
     session_name = "feat-x"
     agent_name = "pathfinder"
     # Include a comment to test stripping
@@ -53,8 +43,5 @@ def test_create_session_orchestrates_filesystem_correctly(service, mock_fs):
             ".teddy/sessions/feat-x/01/pathfinder.xml", agent_prompt
         )
 
-        # 4. meta.yaml creation (just check it was called, parsing checked in acceptance)
-        # We use ANY for the content since it has a dynamic timestamp
-        from unittest.mock import ANY
-
+        # 4. meta.yaml creation
         mock_fs.write_file.assert_any_call(".teddy/sessions/feat-x/01/meta.yaml", ANY)

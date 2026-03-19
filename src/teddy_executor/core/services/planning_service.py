@@ -81,6 +81,10 @@ class PlanningService(IPlanningUseCase):
         plan_content = self._extract_plan_content(response)
         turn_cost = self._llm_client.get_completion_cost(response)
 
+        # Log telemetry to console
+        print(f"Tokens: {token_count}")
+        print(f"Cost: ${turn_cost:.4f}")
+
         # 5. Persistence
         plan_path = (turn_path / "plan.md").as_posix()
         self._file_system_manager.write_file(plan_path, plan_content)

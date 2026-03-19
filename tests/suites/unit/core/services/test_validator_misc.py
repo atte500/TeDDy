@@ -1,5 +1,4 @@
 from unittest.mock import MagicMock
-import pytest
 
 from teddy_executor.core.domain.models.plan import ActionData, Plan
 from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
@@ -8,36 +7,11 @@ from teddy_executor.core.services.validation_rules.helpers import (
     IActionValidator,
     ValidationError,
 )
-from teddy_executor.core.services.validation_rules.create import CreateActionValidator
-from teddy_executor.core.services.validation_rules.edit import EditActionValidator
-from teddy_executor.core.services.validation_rules.execute import ExecuteActionValidator
-from teddy_executor.core.services.validation_rules.read import ReadActionValidator
 
 
-@pytest.fixture
-def validator(container, mock_fs) -> IPlanValidator:
-    """Resolves the PlanValidator from the container with all rules."""
-    # Register individual rules; container will inject mock_fs automatically
-    container.register(CreateActionValidator)
-    container.register(EditActionValidator)
-    container.register(ExecuteActionValidator)
-    container.register(ReadActionValidator)
-
-    # Register IPlanValidator implementation and its dependencies in one go
-    container.register(
-        IPlanValidator,
-        PlanValidator,
-        validators=[
-            container.resolve(CreateActionValidator),
-            container.resolve(EditActionValidator),
-            container.resolve(ExecuteActionValidator),
-            container.resolve(ReadActionValidator),
-        ],
-    )
-    return container.resolve(IPlanValidator)
-
-
-def test_plan_validator_uses_injected_validators(validator):
+def test_plan_validator_uses_injected_validators(container):
+    # Arrange
+    # (Removed unused assignment to 'validator')
     # Arrange
     mock_validator = MagicMock(spec=IActionValidator)
     mock_validator.can_validate.return_value = True
@@ -63,7 +37,8 @@ def test_plan_validator_uses_injected_validators(validator):
     mock_validator.validate.assert_called_once()
 
 
-def test_validate_fails_for_unknown_action_type(validator):
+def test_validate_fails_for_unknown_action_type(container):
+    validator = container.resolve(IPlanValidator)
     """
     Given a plan with an unknown action type,
     When validated,

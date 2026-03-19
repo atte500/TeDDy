@@ -1,20 +1,25 @@
 from contextlib import contextmanager
-from unittest.mock import Mock
 import pytest
 from textual.widgets import Header, Footer, Tree
 from teddy_executor.core.domain.models.plan import ActionData, Plan
 from teddy_executor.adapters.inbound.textual_plan_reviewer import ReviewerApp
+from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
+from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 
 
 @pytest.mark.anyio
-async def test_reviewer_app_has_required_widgets():
+async def test_reviewer_app_has_required_widgets(container):
     """
     Verify that ReviewerApp composes the required widgets.
     """
     # Arrange
     action = ActionData(type="READ", params={"resource": "foo.txt"})
     plan = Plan(title="Test Plan", rationale="Test Rationale", actions=[action])
-    app = ReviewerApp(plan=plan, system_env=Mock(), file_system=Mock())
+    app = ReviewerApp(
+        plan=plan,
+        system_env=container.resolve(ISystemEnvironment),
+        file_system=container.resolve(IFileSystemManager),
+    )
 
     # Act & Assert
     async with app.run_test():
@@ -24,7 +29,7 @@ async def test_reviewer_app_has_required_widgets():
 
 
 @pytest.mark.anyio
-async def test_reviewer_app_populates_tree_with_actions():
+async def test_reviewer_app_populates_tree_with_actions(container):
     """
     Verify that ReviewerApp populates the tree with actions from the plan.
     """
@@ -34,7 +39,11 @@ async def test_reviewer_app_populates_tree_with_actions():
         ActionData(type="READ", params={"resource": "docs/readme.md"}),
     ]
     plan = Plan(title="Test Plan", rationale="Test Rationale", actions=actions)
-    app = ReviewerApp(plan=plan, system_env=Mock(), file_system=Mock())
+    app = ReviewerApp(
+        plan=plan,
+        system_env=container.resolve(ISystemEnvironment),
+        file_system=container.resolve(IFileSystemManager),
+    )
 
     # Act & Assert
     async with app.run_test():
@@ -47,14 +56,18 @@ async def test_reviewer_app_populates_tree_with_actions():
 
 
 @pytest.mark.anyio
-async def test_reviewer_app_toggles_action_selection():
+async def test_reviewer_app_toggles_action_selection(container):
     """
     Verify that ReviewerApp toggles action selection when Enter is pressed.
     """
     # Arrange
     action = ActionData(type="CREATE", params={"path": "src/foo.py"}, selected=True)
     plan = Plan(title="Test Plan", rationale="Test Rationale", actions=[action])
-    app = ReviewerApp(plan=plan, system_env=Mock(), file_system=Mock())
+    app = ReviewerApp(
+        plan=plan,
+        system_env=container.resolve(ISystemEnvironment),
+        file_system=container.resolve(IFileSystemManager),
+    )
 
     async with app.run_test() as pilot:
         tree = app.query_one(Tree)
@@ -81,14 +94,18 @@ async def test_reviewer_app_toggles_action_selection():
 
 
 @pytest.mark.anyio
-async def test_reviewer_app_submits_plan():
+async def test_reviewer_app_submits_plan(container):
     """
     Verify that ReviewerApp exits and returns the plan when 's' is pressed.
     """
     # Arrange
     action = ActionData(type="CREATE", params={"path": "src/foo.py"}, selected=True)
     plan = Plan(title="Test Plan", rationale="Test Rationale", actions=[action])
-    app = ReviewerApp(plan=plan, system_env=Mock(), file_system=Mock())
+    app = ReviewerApp(
+        plan=plan,
+        system_env=container.resolve(ISystemEnvironment),
+        file_system=container.resolve(IFileSystemManager),
+    )
 
     async with app.run_test() as pilot:
         # Act: Press 's' to submit
@@ -99,14 +116,18 @@ async def test_reviewer_app_submits_plan():
 
 
 @pytest.mark.anyio
-async def test_reviewer_app_cancels_on_q():
+async def test_reviewer_app_cancels_on_q(container):
     """
     Verify that ReviewerApp exits and returns None when 'q' is pressed.
     """
     # Arrange
     action = ActionData(type="CREATE", params={"path": "src/foo.py"}, selected=True)
     plan = Plan(title="Test Plan", rationale="Test Rationale", actions=[action])
-    app = ReviewerApp(plan=plan, system_env=Mock(), file_system=Mock())
+    app = ReviewerApp(
+        plan=plan,
+        system_env=container.resolve(ISystemEnvironment),
+        file_system=container.resolve(IFileSystemManager),
+    )
 
     async with app.run_test() as pilot:
         # Act: Press 'q' to cancel
@@ -117,7 +138,7 @@ async def test_reviewer_app_cancels_on_q():
 
 
 @pytest.mark.anyio
-async def test_reviewer_app_previews_create_action(tmp_path):
+async def test_reviewer_app_previews_create_action(tmp_path, mock_env, container):
     """
     Verify that ReviewerApp launches an editor for CREATE actions and updates content.
     """
@@ -129,18 +150,21 @@ async def test_reviewer_app_previews_create_action(tmp_path):
     )
     plan = Plan(title="Test Plan", rationale="Test Rationale", actions=[action])
 
-    mock_system_env = Mock()
     temp_file = str(tmp_path / "temp_preview.py")
-    mock_system_env.create_temp_file.return_value = temp_file
-    mock_system_env.get_env.return_value = "nano"  # Mocking an editor
+    mock_env.create_temp_file.return_value = temp_file
+    mock_env.get_env.return_value = "nano"  # Mocking an editor
 
     def simulate_editor_edit(*args, **kwargs):
         with open(temp_file, "w") as f:
             f.write(new_content)
 
-    mock_system_env.run_command.side_effect = simulate_editor_edit
+    mock_env.run_command.side_effect = simulate_editor_edit
 
-    app = ReviewerApp(plan=plan, system_env=mock_system_env, file_system=Mock())
+    app = ReviewerApp(
+        plan=plan,
+        system_env=mock_env,
+        file_system=container.resolve(IFileSystemManager),
+    )
 
     # Patch suspend to be a no-op for headless testing
     @contextmanager
@@ -155,8 +179,8 @@ async def test_reviewer_app_previews_create_action(tmp_path):
         await pilot.press("p")
 
         # Assert: Editor was launched with temp file
-        mock_system_env.create_temp_file.assert_called_once_with(suffix=".py")
-        mock_system_env.run_command.assert_called()
+        mock_env.create_temp_file.assert_called_once_with(suffix=".py")
+        mock_env.run_command.assert_called()
 
         # Assert: Action content was updated
         assert action.params["content"] == new_content
@@ -166,7 +190,7 @@ async def test_reviewer_app_previews_create_action(tmp_path):
 
 
 @pytest.mark.anyio
-async def test_reviewer_app_previews_edit_action(tmp_path):
+async def test_reviewer_app_previews_edit_action(tmp_path, mock_env, mock_fs):
     """
     Verify that ReviewerApp launches an editor for EDIT actions with proposed state.
     """
@@ -186,14 +210,12 @@ async def test_reviewer_app_previews_edit_action(tmp_path):
     )
     plan = Plan(title="Test Plan", rationale="Test Rationale", actions=[action])
 
-    mock_system_env = Mock()
     temp_file = str(tmp_path / "temp_preview_edit.py")
-    mock_system_env.create_temp_file.return_value = temp_file
-    mock_system_env.get_env.return_value = "nano"
+    mock_env.create_temp_file.return_value = temp_file
+    mock_env.get_env.return_value = "nano"
 
     # We also need to mock IFileSystemManager to provide the 'original' content
-    mock_fs_manager = Mock()
-    mock_fs_manager.read_file.return_value = initial_content
+    mock_fs.read_file.return_value = initial_content
 
     def simulate_editor_edit(*args, **kwargs):
         # Verify the temp file was seeded with proposed content
@@ -202,12 +224,10 @@ async def test_reviewer_app_previews_edit_action(tmp_path):
         with open(temp_file, "w") as f:
             f.write(user_content)
 
-    mock_system_env.run_command.side_effect = simulate_editor_edit
+    mock_env.run_command.side_effect = simulate_editor_edit
 
     # Injecting dependencies - we'll need to update ReviewerApp signature
-    app = ReviewerApp(
-        plan=plan, system_env=mock_system_env, file_system=mock_fs_manager
-    )
+    app = ReviewerApp(plan=plan, system_env=mock_env, file_system=mock_fs)
 
     @contextmanager
     def mock_suspend():
@@ -229,7 +249,7 @@ async def test_reviewer_app_previews_edit_action(tmp_path):
 
 
 @pytest.mark.anyio
-async def test_reviewer_app_toggles_all_actions():
+async def test_reviewer_app_toggles_all_actions(container):
     """
     Verify that ReviewerApp toggles all actions correctly when 'a' is pressed.
     """
@@ -239,7 +259,11 @@ async def test_reviewer_app_toggles_all_actions():
         ActionData(type="READ", params={"resource": "docs/readme.md"}, selected=False),
     ]
     plan = Plan(title="Test Plan", rationale="Test Rationale", actions=actions)
-    app = ReviewerApp(plan=plan, system_env=Mock(), file_system=Mock())
+    app = ReviewerApp(
+        plan=plan,
+        system_env=container.resolve(ISystemEnvironment),
+        file_system=container.resolve(IFileSystemManager),
+    )
 
     async with app.run_test() as pilot:
         tree = app.query_one(Tree)
@@ -257,17 +281,21 @@ async def test_reviewer_app_toggles_all_actions():
         assert "[ ]" in str(tree.root.children[1].label)
 
 
-def test_reviewer_app_initialization():
+def test_reviewer_app_initialization(container):
     """
     Verify that ReviewerApp can be initialized with a plan and system env.
     """
     # Arrange
     action = ActionData(type="READ", params={"resource": "foo.txt"})
     plan = Plan(title="Test", rationale="Test", actions=[action])
-    mock_system_env = Mock()
+    mock_system_env = container.resolve(ISystemEnvironment)
 
     # Act
-    app = ReviewerApp(plan=plan, system_env=mock_system_env, file_system=Mock())
+    app = ReviewerApp(
+        plan=plan,
+        system_env=mock_system_env,
+        file_system=container.resolve(IFileSystemManager),
+    )
 
     # Assert
     assert app.plan == plan
