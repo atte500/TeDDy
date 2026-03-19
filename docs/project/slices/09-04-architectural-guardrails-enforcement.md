@@ -30,11 +30,13 @@ To finalize the elevation of tests to first-class architectural citizens by enfo
 
 ### Scenario 3: CI/CD Parity & Streamlining
 **Goal:** Eliminate redundancy in the CI pipeline while maintaining 100% parity with local checks.
-- **Precondition:** `ci.yml` duplicates several checks already present in `pre-commit`.
-- **Success Condition:** `ci.yml` is updated to remove redundant `vulture` and `test-pyramid` steps, relying on the `pre-commit` run.
-- **Success Condition:** CI remains "Green" on all platforms.
+- **Precondition:** `ci.yml` triple-runs static analysis and audits across the OS matrix.
+- **Success Condition:** `ci.yml` is refactored into a "Canonical Gate" (Ubuntu) and a "Compatibility Matrix" (macOS/Windows) that run in **parallel**.
+- **Success Condition:** Job 1 (Canonical) runs the full `pre-commit` suite (including `pytest`), `jscpd`, and `pip-audit`.
+- **Success Condition:** Job 2 (Compatibility) runs *only* `pytest` (without coverage) to ensure cross-platform runtime.
 #### Deliverables
-- [ ] Streamline `.github/workflows/ci.yml`.
+- [ ] Refactor `.github/workflows/ci.yml` into two independent, parallel jobs.
+- [ ] Optimize macOS/Windows jobs to skip coverage and static analysis.
 
 ### Scenario 4: Codify "System Law" [✓]
 **Goal:** Document the new unified standards in the project's single source of truth.
@@ -46,12 +48,15 @@ To finalize the elevation of tests to first-class architectural citizens by enfo
 ## 3. Architectural Changes
 
 ### Unified Guardrail Implementation
-The core architectural shift is the removal of the "test exemption" for quality gates. This is implemented via:
+The core architectural shift is the removal of the "test exemption" for quality gates and the consolidation of auditing tools. This is implemented via:
 
 1.  **Consolidated Hook Logic:** The `pre-commit` configuration will now treat the repository as a single quality domain.
-2.  **Interaction Sequence:**
+2.  **Canonical vs. Compatibility Architecture (Parallel):**
+    *   **Job 1 (Canonical Gate):** Executes on `ubuntu-latest`. It is the *sole* runner for `pre-commit` (which includes `pytest` + coverage), `jscpd`, and `pip-audit`.
+    *   **Job 2 (Compatibility Matrix):** Executes on `macos-latest` and `windows-latest`. It *only* executes `pytest`.
+3.  **Interaction Sequence:**
     *   **Developer Commit:** Triggers `pre-commit` -> Runs Ruff (Complexity/Statements) -> Runs Unified SLOC check -> Runs Test Pyramid Check -> Runs Full Test Suite.
-    *   **CI Pipeline:** Triggers on Push -> Runs `pre-commit run --all-files` (Single Source of Truth) -> Runs external/slow checks (jscpd, pip-audit).
+    *   **CI Pipeline:** Triggers on Push -> Job 1 (Ubuntu) and Job 2 (Matrix) run in parallel to minimize feedback latency.
 
 ### Updated Component Designs
 - **Test Harness Observer:** A new observer component `tests/harness/observers/file_system_observer.py` will be introduced to encapsulate complex file-system assertions (e.g., verifying directory contents and file matching), enabling the refactoring of large integration tests.
