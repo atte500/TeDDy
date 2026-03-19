@@ -64,8 +64,8 @@ This document outlines the technical standards, conventions, and setup process f
 - **Framework:** `pre-commit`, configured in `.pre-commit-config.yaml`.
 - **Principle:** All hooks configured here **must** be fast to run. **Note:** The "Full Test Suite" and "Clean Git Status" hooks are mandatory safety gates and are explicitly exempt from this speed requirement.
 - **Included Checks:**
-    - **Quality Gate:**
-        - `run-tests`: Executes the full test suite (`poetry run pytest`).
+    -   **Quality Gate:**
+        - `run-tests`: Executes the full test suite with coverage (`poetry run pytest --cov=src --cov-report=term-missing --cov-fail-under=90`).
         - `test-pyramid`: Verifies the Test Pyramid structure (Unit > Integration > Acceptance).
     - **Integrity:**
         - `git-status-clean`: Verifies a clean Git status (`git diff --exit-code`) to ensure the commit matches the working directory state.
@@ -80,7 +80,7 @@ This document outlines the technical standards, conventions, and setup process f
 - **Goal:** To provide a comprehensive, automated quality gate that protects the main branch.
 - **Principle:** The CI pipeline **must** run all checks from the `pre-commit` suite. It **may** also include additional, slower-running checks.
 - **CI-Only Checks:**
-    - **Test Coverage:** The CI pipeline **must** perform test coverage analysis using `pytest-cov` and enforce a strict failure threshold of **90%**. Note: Coverage is disabled by default for local runs to optimize the developer "Inner Loop" speed; it must be explicitly invoked or run via CI.
+    - **Test Coverage:** Both the local `pre-commit` hook and the CI pipeline **must** perform test coverage analysis using `pytest-cov` and enforce a strict failure threshold of **90%**. This ensures parity between the developer "Inner Loop" and the CI "Outer Loop."
     - **Code Duplication:** Checked via `jscpd` with a minimum token count of **50**.
     - **Complexity & Dead Code:**
         - `ruff`: Configured to enforce a **precise Cyclomatic Complexity** limit of **9** per function (Rule `C901`) and a **precise Statement Limit** of **40** per function (Rule `PLR0915`).

@@ -78,7 +78,7 @@ repos:
 
     -   id: run-tests
         name: Run Full Test Suite
-        entry: pytest
+        entry: pytest --cov=src --cov-report=term-missing --cov-fail-under=90
         language: system
         always_run: true
         pass_filenames: false
