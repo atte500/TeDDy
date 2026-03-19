@@ -6,7 +6,7 @@
 To elevate the TeDDy testing suite to a "first-class architectural citizen" by treating it conceptually as a Primary Driving Adapter (Hexagonal Architecture). We must eliminate test setup rot, prevent monolithic test scripts, and formally document our Test Harness Triad (Setup, Driver, Observer). The ultimate goal is to apply the exact same strict code quality guardrails (SLOC and complexity limits) to our test files as we do to our production files, mathematically forcing the extraction of reusable test infrastructure.
 
 ## 2. Proposed Solution (The "What")
-1.  **Formalize the Test Harness:** Map existing and new test utilities (e.g., `plan_builder.py`, `TestContext`) as formally documented components under the `testing` boundary.
+1.  **Formalize the Test Harness:** Map existing and new test utilities as formally documented components under the `testing` boundary, utilizing a standard `tests/conftest.py` entry point with lazy-loading fixtures to ensure accurate coverage tracking.
 2.  **Sequential Refactoring:** Iteratively refactor the Acceptance, Integration, and Unit test suites to utilize these formal Test Contexts and Builders, significantly DRYing up setup logic.
 3.  **Unified Architectural Guardrails:** Once the suites are clean, update `.pre-commit-config.yaml` and `ARCHITECTURE.md` to remove all leniency for tests. The 300 SLOC limit and Cyclomatic Complexity rules will apply universally to force compliance moving forward.
 

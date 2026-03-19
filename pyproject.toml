@@ -86,8 +86,6 @@ addopts = [
     "-n",
     "auto",
     "--import-mode=importlib",
-    "-p",
-    "tests.harness.setup.composition",
 ]
 filterwarnings = [
     "ignore:No data was collected:coverage.exceptions.CoverageWarning",

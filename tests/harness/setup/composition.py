@@ -22,32 +22,6 @@ mock_litellm.completion_cost.return_value = 0.01
 
 sys.modules["litellm"] = mock_litellm
 
-from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
-from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
-from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
-from teddy_executor.core.services.context_service import ContextService
-from teddy_executor.core.ports.outbound import (
-    IUserInteractor,
-    IFileSystemManager,
-    ISystemEnvironment,
-    IShellExecutor,
-    IWebScraper,
-    IWebSearcher,
-    IRepoTreeGenerator,
-    IEnvironmentInspector,
-    IMarkdownReportFormatter,
-    ILlmClient,
-)
-from teddy_executor.core.services.edit_simulator import EditSimulator
-from teddy_executor.core.services.action_dispatcher import (
-    ActionDispatcher,
-    IActionFactory,
-)
-from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
-
-import teddy_executor.__main__
-from teddy_executor.container import create_container
-
 
 @pytest.fixture
 def container(monkeypatch):
@@ -55,6 +29,9 @@ def container(monkeypatch):
     Provides a fresh DI container for each test and automatically
     patches the global container in teddy_executor.__main__.
     """
+    import teddy_executor.__main__
+    from teddy_executor.container import create_container
+
     c = create_container()
     # Force the global container to be this fresh instance
     monkeypatch.setattr(teddy_executor.__main__, "container", c)
@@ -63,6 +40,8 @@ def container(monkeypatch):
 
 @pytest.fixture
 def mock_user_interactor(container):
+    from teddy_executor.core.ports.outbound import IUserInteractor
+
     mock = Mock(spec=IUserInteractor)
     container.register(IUserInteractor, instance=mock)
     return mock
@@ -70,6 +49,8 @@ def mock_user_interactor(container):
 
 @pytest.fixture
 def mock_fs(container):
+    from teddy_executor.core.ports.outbound import IFileSystemManager
+
     mock = Mock(spec=IFileSystemManager)
     container.register(IFileSystemManager, instance=mock)
     return mock
@@ -77,6 +58,8 @@ def mock_fs(container):
 
 @pytest.fixture
 def mock_env(container):
+    from teddy_executor.core.ports.outbound import ISystemEnvironment
+
     mock = Mock(spec=ISystemEnvironment)
     container.register(ISystemEnvironment, instance=mock)
     return mock
@@ -84,6 +67,8 @@ def mock_env(container):
 
 @pytest.fixture
 def mock_shell(container):
+    from teddy_executor.core.ports.outbound import IShellExecutor
+
     mock = Mock(spec=IShellExecutor)
     container.register(IShellExecutor, instance=mock)
     return mock
@@ -91,6 +76,8 @@ def mock_shell(container):
 
 @pytest.fixture
 def mock_scraper(container):
+    from teddy_executor.core.ports.outbound import IWebScraper
+
     mock = Mock(spec=IWebScraper)
     container.register(IWebScraper, instance=mock)
     return mock
@@ -98,6 +85,8 @@ def mock_scraper(container):
 
 @pytest.fixture
 def mock_searcher(container):
+    from teddy_executor.core.ports.outbound import IWebSearcher
+
     mock = Mock(spec=IWebSearcher)
     container.register(IWebSearcher, instance=mock)
     return mock
@@ -105,6 +94,8 @@ def mock_searcher(container):
 
 @pytest.fixture
 def mock_tree_gen(container):
+    from teddy_executor.core.ports.outbound import IRepoTreeGenerator
+
     mock = Mock(spec=IRepoTreeGenerator)
     container.register(IRepoTreeGenerator, instance=mock)
     return mock
@@ -112,6 +103,8 @@ def mock_tree_gen(container):
 
 @pytest.fixture
 def mock_action_factory(container):
+    from teddy_executor.core.services.action_factory import IActionFactory
+
     mock = Mock(spec=IActionFactory)
     container.register(IActionFactory, instance=mock)
     return mock
@@ -119,6 +112,8 @@ def mock_action_factory(container):
 
 @pytest.fixture
 def mock_plan_parser(container):
+    from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
+
     mock = Mock(spec=IPlanParser)
     container.register(IPlanParser, instance=mock)
     return mock
@@ -126,6 +121,8 @@ def mock_plan_parser(container):
 
 @pytest.fixture
 def mock_action_dispatcher(container):
+    from teddy_executor.core.services.action_dispatcher import ActionDispatcher
+
     mock = Mock(spec=ActionDispatcher)
     container.register(ActionDispatcher, instance=mock)
     return mock
@@ -133,15 +130,25 @@ def mock_action_dispatcher(container):
 
 @pytest.fixture
 def mock_run_plan(container):
+    from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
+    from teddy_executor.core.services.execution_orchestrator import (
+        ExecutionOrchestrator,
+    )
+
     mock = Mock(spec=IRunPlanUseCase)
-    container.register(IRunPlanUseCase, instance=mock)
     # The CLI resolves concrete ExecutionOrchestrator directly
+    container.register(IRunPlanUseCase, instance=mock)
     container.register(ExecutionOrchestrator, instance=mock)
     return mock
 
 
 @pytest.fixture
 def mock_context_service(container):
+    from teddy_executor.core.ports.inbound.get_context_use_case import (
+        IGetContextUseCase,
+    )
+    from teddy_executor.core.services.context_service import ContextService
+
     mock = Mock(spec=IGetContextUseCase)
     container.register(IGetContextUseCase, instance=mock)
     # The CLI resolves concrete ContextService directly in some places
@@ -151,6 +158,8 @@ def mock_context_service(container):
 
 @pytest.fixture
 def mock_edit_simulator(container):
+    from teddy_executor.core.services.edit_simulator import EditSimulator
+
     mock = Mock(spec=EditSimulator)
     container.register(EditSimulator, instance=mock)
     return mock
@@ -158,6 +167,8 @@ def mock_edit_simulator(container):
 
 @pytest.fixture
 def mock_inspector(container):
+    from teddy_executor.core.ports.outbound import IEnvironmentInspector
+
     mock = Mock(spec=IEnvironmentInspector)
     container.register(IEnvironmentInspector, instance=mock)
     return mock
@@ -165,6 +176,8 @@ def mock_inspector(container):
 
 @pytest.fixture
 def mock_report_formatter(container):
+    from teddy_executor.core.ports.outbound import IMarkdownReportFormatter
+
     mock = Mock(spec=IMarkdownReportFormatter)
     container.register(IMarkdownReportFormatter, instance=mock)
     return mock
@@ -172,11 +185,11 @@ def mock_report_formatter(container):
 
 @pytest.fixture
 def mock_llm_client(container):
+    from teddy_executor.core.ports.outbound import ILlmClient
+
     mock = Mock(spec=ILlmClient)
 
     # Create a structured ModelResponse mock
-    from unittest.mock import MagicMock
-
     mock_response = MagicMock()
     mock_choice = MagicMock()
 
@@ -191,4 +204,5 @@ def mock_llm_client(container):
     mock.get_completion_cost.return_value = 0.01
 
     container.register(ILlmClient, instance=mock)
+    return mock
     return mock
