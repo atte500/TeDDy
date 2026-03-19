@@ -210,7 +210,7 @@
             [✓ | ▶ |  ] Finalization & Handoff
             - [The final artifact that was created for handoff.]
 
-            Error Recovery Protocol: [Descriptive error title] - Note: Add this section only if Status is Yellow or Red
+            Error Investigation Protocol: [Descriptive error title] - Note: Add this section only if Status is Yellow or Red
             - [✓ | ▶ |  ] Diagnose
             - [✓ | ▶ |  ] Spike
             - [✓ | ▶ |  ] Fix

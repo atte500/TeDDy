@@ -104,6 +104,7 @@ temp_*
 
 # Test detritus
 tests/.tmp/
+hello.txt
 
 # Archived Folders
 *archive

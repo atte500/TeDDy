@@ -127,7 +127,7 @@
             - [✓ | ▶ |  ] GREEN
             - [✓ | ▶ |  ] REFACTOR
 
-            Error Recovery Protocol: [Descriptive error title] - Note: Add this section only if Status is Yellow or Red
+            Error Investigation Protocol: [Descriptive error title] - Note: Add this section only if Status is Yellow or Red
             - [✓ | ▶ |  ] Diagnose
             - [✓ | ▶ |  ] Spike
             - [✓ | ▶ |  ] Fix
@@ -217,7 +217,7 @@
         <instruction>
             Each turn MUST have a single, clear responsibility, reflected by its `Plan Type`. These types act as strict phase boundaries in the workflow. For example, `Implementation` actions (like `EDIT` or `CREATE`) MUST NOT be combined with `Version Control` actions (like `git add`) in the same plan.
 
-            The `- **Plan Type:**` in the plan header must use one of the following core values: `Information Gathering`, `Synthesis`, `RED Phase`, `GREEN Phase`, `REFACTOR Phase`, `User Verification`, `Documentation`, `Version Control`, `Handoff`, `Error Recovery Protocol`, `Escalation`.
+            The `- **Plan Type:**` in the plan header must use one of the following core values: `Information Gathering`, `Synthesis`, `RED Phase`, `GREEN Phase`, `REFACTOR Phase`, `User Verification`, `Documentation`, `Version Control`, `Handoff`, `Error Investigation Protocol`, `Escalation`.
         </instruction>
       </rule>
       <rule n="13">
