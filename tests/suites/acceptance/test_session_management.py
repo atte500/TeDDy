@@ -51,26 +51,6 @@ def test_teddy_start_bootstraps_session(tmp_path: Path, monkeypatch):
     assert "Pathfinder" in (session_dir / "01" / "pathfinder.xml").read_text()
 
 
-def test_teddy_plan_injects_turn_1_hint(tmp_path: Path, monkeypatch):
-    """Scenario: 'plan' command injects alignment hint for the first turn."""
-    env = TestEnvironment(monkeypatch, tmp_path).setup()
-    adapter = CliTestAdapter(monkeypatch, tmp_path)
-    turn_dir = tmp_path / ".teddy" / "sessions" / "hint-test" / "01"
-    turn_dir.mkdir(parents=True)
-    (turn_dir.parent / "session.context").touch()
-    (turn_dir / "turn.context").touch()
-    (turn_dir / "pathfinder.xml").touch()
-    (turn_dir / "meta.yaml").write_text("turn_id: '01'")
-
-    llm = env.get_service(ILlmClient)  # type: ignore[type-abstract]
-    result = adapter.run_cli_command(["plan", "-m", "Do stuff"], cwd=turn_dir)
-    assert result.exit_code == 0
-
-    args, kwargs = llm.get_completion.call_args  # type: ignore[attr-defined]
-    sent = kwargs["messages"][1]["content"]
-    assert "Do stuff" in sent and "aligned" in sent.lower()
-
-
 def test_teddy_resume_executes_pending_plan(tmp_path: Path, monkeypatch):
     """Scenario: 'resume' executes an existing plan if one is pending."""
     (

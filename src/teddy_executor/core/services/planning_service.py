@@ -54,13 +54,7 @@ class PlanningService(IPlanningUseCase):
         if self._file_system_manager.path_exists(prompt_file_path):
             system_prompt = self._file_system_manager.read_file(prompt_file_path)
 
-        # 3. Inject Contextual Hints
-        # Session Start: If turn 01, encourage alignment
-        if turn_path.name == "01":
-            hint = "\n\n*(Hint: first make sure you are aligned with the user's intentions and have the full context required)*"
-            user_message += hint
-
-        # 4. Call LLM
+        # 3. Call LLM
         # Combine header and content for the LLM
         full_context = f"{context.header}\n{context.content}"
 
