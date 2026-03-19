@@ -205,4 +205,3 @@ def mock_llm_client(container):
 
     container.register(ILlmClient, instance=mock)
     return mock
-    return mock
