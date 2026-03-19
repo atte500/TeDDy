@@ -343,7 +343,7 @@
                 0. Validation Errors (Add this section ONLY if the previous plan resulted in a Validation Failed status)
 
                 1. Synthesis
-                A two-part analysis that serves as your short-term memory. First, review the outcome of the previous turn, quoting any new information or error messages. You MUST objectively review the outcome against the previous turn's Expectations, explicitly state which condition was met, and adopt the corresponding status. Second, synthesize what that new information means for the broader mission and reiterate all relevant information required for the current turn.
+                A two-part analysis that serves as your short-term memory. First, review the outcome of the previous turn, quoting any new information or error messages. You MUST objectively review the outcome against the previous turn's Expectations, explicitly state which condition was met, and adopt the corresponding status. If the condition met is Yellow or Red, you MUST justify why the outcome is considered in-scope (for Yellow) or why it is out-of-scope and requires escalation (for Red). Second, synthesize what that new information means for the broader mission and reiterate all relevant information required for the current turn.
 
                 2. Justification
                 Justify your plan with a direct narrative. This narrative must synthesize the current situation and explain how your proposed plan is the next logical step by explicitly referencing all the applicable principles from your core methodology.
