@@ -46,12 +46,13 @@ class PlanValidator(IPlanValidator):
                 PruneActionValidator,
             )
 
-            # Fallback for YamlConfigAdapter
+            # Fallback for isolation (e.g. unit tests without a full container)
+            # We use a neutral config service that just returns defaults.
             from teddy_executor.adapters.outbound.yaml_config_adapter import (
                 YamlConfigAdapter,
             )
 
-            config_service = YamlConfigAdapter()
+            config_service = YamlConfigAdapter(config_path="/nonexistent")
             self._validators = [
                 CreateActionValidator(file_system_manager),
                 EditActionValidator(file_system_manager, config_service),

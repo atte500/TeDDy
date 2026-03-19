@@ -1,7 +1,3 @@
-from unittest.mock import MagicMock
-
-import pytest
-
 from teddy_executor.core.domain.models import (
     ActionData,
     ActionLog,
@@ -12,30 +8,8 @@ from teddy_executor.core.domain.models import (
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
 
 
-@pytest.fixture
-def orchestrator(
-    mock_plan_parser, mock_action_dispatcher, mock_user_interactor, mock_fs
-):
-    from teddy_executor.core.services.action_executor import ActionExecutor
-
-    action_executor = ActionExecutor(
-        mock_action_dispatcher, mock_user_interactor, mock_fs, MagicMock(), MagicMock()
-    )
-    mock_validator = MagicMock()
-    mock_validator.validate.return_value = []
-    return ExecutionOrchestrator(
-        mock_plan_parser,
-        mock_validator,
-        action_executor,
-        mock_fs,
-    )
-
-
 def test_execute_with_failing_action(
-    orchestrator: ExecutionOrchestrator,
-    mock_plan_parser,
-    mock_action_dispatcher,
-    mock_user_interactor,
+    env, mock_action_dispatcher, mock_plan_parser, mock_user_interactor
 ):
     """
     Given a plan with an action that fails
@@ -43,6 +17,8 @@ def test_execute_with_failing_action(
     Then the final report status should be 'FAILURE'
     """
     # Arrange
+    orchestrator = env.get_service(ExecutionOrchestrator)
+
     action1_params = {"command": "exit 1", "description": "failing action"}
     action1 = ActionData(type="EXECUTE", params=action1_params)
     plan = Plan(title="Test Plan", rationale="Test", actions=[action1])
@@ -59,7 +35,7 @@ def test_execute_with_failing_action(
     report = orchestrator.execute(plan=plan, interactive=False)
 
     # Assert
-    assert report.run_summary.status == "FAILURE"
+    assert report.run_summary.status == RunStatus.FAILURE
     mock_plan_parser.parse.assert_not_called()
     mock_action_dispatcher.dispatch_and_execute.assert_called_once_with(
         action1, agent_name=None
@@ -68,9 +44,7 @@ def test_execute_with_failing_action(
 
 
 def test_execute_interactive_and_skipped(
-    orchestrator: ExecutionOrchestrator,
-    mock_user_interactor,
-    mock_action_dispatcher,
+    env, mock_user_interactor, mock_action_dispatcher
 ):
     """
     Given interactive mode is enabled
@@ -79,6 +53,8 @@ def test_execute_interactive_and_skipped(
     And a 'SKIPPED' action log should be recorded
     """
     # Arrange
+    orchestrator = env.get_service(ExecutionOrchestrator)
+
     action1 = ActionData(type="EXECUTE", params={"command": "ls"})
     plan = Plan(title="Test Plan", rationale="Test", actions=[action1])
 
@@ -97,9 +73,7 @@ def test_execute_interactive_and_skipped(
 
 
 def test_execute_with_mixed_success_and_skipped_is_success(
-    orchestrator: ExecutionOrchestrator,
-    mock_action_dispatcher,
-    mock_user_interactor,
+    env, mock_user_interactor, mock_action_dispatcher
 ):
     """
     Given a plan where one action succeeds and one is skipped
@@ -107,6 +81,8 @@ def test_execute_with_mixed_success_and_skipped_is_success(
     Then the final report status should be 'SUCCESS'
     """
     # Arrange
+    orchestrator = env.get_service(ExecutionOrchestrator)
+
     action1 = ActionData(type="EXECUTE", params={"command": "ls"})
     action2 = ActionData(type="EXECUTE", params={"command": "pwd"})
     plan = Plan(title="Test Plan", rationale="Test", actions=[action1, action2])
@@ -136,9 +112,7 @@ def test_execute_with_mixed_success_and_skipped_is_success(
 
 
 def test_execute_interactive_and_approved(
-    orchestrator: ExecutionOrchestrator,
-    mock_action_dispatcher,
-    mock_user_interactor,
+    env, mock_user_interactor, mock_action_dispatcher
 ):
     """
     Given interactive mode is enabled
@@ -146,6 +120,8 @@ def test_execute_interactive_and_approved(
     Then the orchestrator should prompt the user and then dispatch the action
     """
     # Arrange
+    orchestrator = env.get_service(ExecutionOrchestrator)
+
     action1_params = {"command": "ls", "description": "first action"}
     action1 = ActionData(type="EXECUTE", params=action1_params)
     plan = Plan(title="Test Plan", rationale="Test", actions=[action1])
@@ -163,18 +139,14 @@ def test_execute_interactive_and_approved(
     report = orchestrator.execute(plan=plan, interactive=True)
 
     # Assert
-    assert report.run_summary.status == "SUCCESS"
+    assert report.run_summary.status == RunStatus.SUCCESS
     mock_user_interactor.confirm_action.assert_called_once()
     mock_action_dispatcher.dispatch_and_execute.assert_called_once_with(
         action1, agent_name=None
     )
 
 
-def test_execute_auto_skips_after_failure(
-    orchestrator: ExecutionOrchestrator,
-    mock_action_dispatcher,
-    mock_user_interactor,
-):
+def test_execute_auto_skips_after_failure(env, mock_action_dispatcher):
     """
     Given a plan with two actions
     When the first action fails during execution
@@ -183,6 +155,8 @@ def test_execute_auto_skips_after_failure(
     And the overall status should be FAILURE
     """
     # Arrange
+    orchestrator = env.get_service(ExecutionOrchestrator)
+
     action1 = ActionData(
         type="EXECUTE", params={"command": "ls"}, description="First Action"
     )
@@ -232,8 +206,7 @@ def test_execute_auto_skips_after_failure(
 
 
 def test_execute_continues_on_failure_if_allow_failure_is_true(
-    orchestrator: ExecutionOrchestrator,
-    mock_action_dispatcher,
+    env, mock_action_dispatcher
 ):
     """
     Given a plan with an action that has allow_failure=True,
@@ -241,6 +214,8 @@ def test_execute_continues_on_failure_if_allow_failure_is_true(
     Then the subsequent actions should still be executed.
     """
     # Arrange
+    orchestrator = env.get_service(ExecutionOrchestrator)
+
     action1 = ActionData(
         type="EXECUTE",
         description="Action 1",
@@ -278,10 +253,7 @@ def test_execute_continues_on_failure_if_allow_failure_is_true(
 
 
 def test_execute_happy_path_non_interactive(
-    orchestrator: ExecutionOrchestrator,
-    mock_plan_parser,
-    mock_action_dispatcher,
-    mock_user_interactor,
+    env, mock_plan_parser, mock_action_dispatcher, mock_user_interactor
 ):
     """
     Given a valid plan path and non-interactive mode
@@ -290,6 +262,8 @@ def test_execute_happy_path_non_interactive(
     And it should not interact with the user
     """
     # Arrange
+    orchestrator = env.get_service(ExecutionOrchestrator)
+
     action1_params = {"command": "ls", "description": "first action"}
     action1 = ActionData(type="EXECUTE", params=action1_params)
     plan = Plan(title="Test Plan", rationale="Test", actions=[action1])
@@ -306,7 +280,7 @@ def test_execute_happy_path_non_interactive(
     report = orchestrator.execute(plan=plan, interactive=False)
 
     # Assert
-    assert report.run_summary.status == "SUCCESS"
+    assert report.run_summary.status == RunStatus.SUCCESS
     assert len(report.action_logs) == 1
     assert report.action_logs[0] == action_log1
     mock_plan_parser.parse.assert_not_called()

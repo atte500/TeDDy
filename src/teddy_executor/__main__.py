@@ -64,6 +64,14 @@ def bootstrap():
         LocalRepoTreeGenerator,
         root_dir=str(project_root),
     )
+    from teddy_executor.core.ports.outbound.config_service import IConfigService
+    from teddy_executor.adapters.outbound.yaml_config_adapter import YamlConfigAdapter
+
+    container.register(
+        IConfigService,
+        YamlConfigAdapter,
+        root_dir=str(project_root),
+    )
 
     init_service: IInitUseCase = container.resolve(IInitUseCase)
     init_service.ensure_initialized()

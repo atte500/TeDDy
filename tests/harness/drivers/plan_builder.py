@@ -23,7 +23,8 @@ class MarkdownPlanBuilder:
         """Formats a path as a root-relative Markdown link. If already a link, returns as is."""
         if path.startswith("[") and "]" in path:
             return path
-        return f"[{path}](/{path})"
+        dest = path if path.startswith("/") else f"/{path}"
+        return f"[{path}]({dest})"
 
     def add_action(
         self,
@@ -91,18 +92,38 @@ class MarkdownPlanBuilder:
     def add_execute(self, command: str, description: str = "Running command", **kwargs):
         """
         Adds an EXECUTE action. Supports expected_outcome, allow_failure,
-        background, and timeout via kwargs.
+        background, and timeout via kwargs. Any additional kwargs are added as metadata.
         """
         params = {
             "Description": description,
             "Expected Outcome": kwargs.get("expected_outcome", "Success"),
         }
-        if kwargs.get("allow_failure"):
-            params["Allow Failure"] = "`true`"
-        if kwargs.get("background"):
-            params["Background"] = "`true`"
+
+        if (allow_failure := kwargs.get("allow_failure")) is not None:
+            params["Allow Failure"] = f"`{str(allow_failure).lower()}`"
+
+        if (background := kwargs.get("background")) is not None:
+            params["Background"] = f"`{str(background).lower()}`"
+
         if timeout := kwargs.get("timeout"):
             params["Timeout"] = str(timeout)
+
+        # Add any other parameters (like cwd, env) directly
+        for key, value in kwargs.items():
+            if key not in [
+                "expected_outcome",
+                "allow_failure",
+                "background",
+                "timeout",
+            ]:
+                # Convert dicts (like env) to a list format for rendering
+                if isinstance(value, dict):
+                    rendered_list = "\n".join(
+                        f"    - `{k}`: {v}" for k, v in value.items()
+                    )
+                    params[key] = "\n" + rendered_list
+                else:
+                    params[key] = str(value)
 
         return self.add_action("EXECUTE", params, {"": ("shell", command)})
 

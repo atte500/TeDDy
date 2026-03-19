@@ -48,7 +48,7 @@ def test_parse_exhaustive_report():
     # Action 0: CREATE
     assert logs[0].type == "CREATE"
     assert logs[0].status == "SUCCESS"
-    assert logs[0].params["File Path"] == "[test.txt](/test.txt)"
+    assert logs[0].params["File Path"] == "test.txt"
 
     # Action 1: EXECUTE
     assert logs[1].type == "EXECUTE"

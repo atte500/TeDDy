@@ -37,11 +37,11 @@ class ReportParser:
 
     def _parse(self):
         """Orchestrates the parsing of the report content."""
-        # Split into Summary and Action Log
-        parts = self._content.split("## Action Log")
-        summary_text = parts[0]
+        # Use regex to split by H2 headings to isolate sections
+        sections = re.split(r"(?m)^##\s+", self._content)
 
-        # 1. Parse Summary
+        # Section 0 is title and summary
+        summary_text = sections[0]
         for line in summary_text.splitlines():
             match = re.match(r"-\s*\*\*(.+?):\*\*\s*(.*)", line)
             if match:
@@ -49,14 +49,46 @@ class ReportParser:
                 value = match.group(2).strip().strip("`").strip()
                 self.run_summary[key] = value
 
-        # 2. Parse Action Logs
-        if len(parts) > 1:
-            log_content = parts[1]
-            # Split by action headings (H3)
-            chunks = re.split(r"(?m)(?=^\s*###\s*`[A-Z_]+`)", log_content)
-            for chunk in chunks:
-                if entry := self._parse_action_chunk(chunk):
-                    self.action_logs.append(entry)
+        # Parse other sections
+        self.resource_contents: Dict[str, str] = {}
+        for section in sections[1:]:
+            if section.startswith("Action Log"):
+                self._parse_action_logs(section)
+            elif section.startswith("Resource Contents"):
+                self._parse_resource_contents(section)
+
+    def _parse_action_logs(self, section: str):
+        # Split by action headings (H3) - allow lowercase and different status styles
+        chunks = re.split(r"(?m)(?=^\s*###\s*`)", section)
+        for chunk in chunks:
+            if entry := self._parse_action_chunk(chunk):
+                self.action_logs.append(entry)
+
+    def _parse_resource_contents(self, section: str):
+        # Resource blocks are H3 links followed by code blocks
+        # ### [basename](path)
+        # ````[lang]
+        # content
+        # ````
+        chunks = re.split(r"(?m)(?=^\s*###\s*\[)", section)
+        for chunk in chunks:
+            # Match the link destination if available, otherwise the text
+            path_match = re.search(r"###\s*\[.*?\]\((.*?)\)", chunk)
+            if not path_match:
+                path_match = re.search(r"###\s*\[(.*?)\]", chunk)
+
+            if path_match:
+                path = path_match.group(1).lstrip("/")
+                # Lenient content matching (allows optional language and varying newlines)
+                content_match = re.search(
+                    r"(`{3,})(?:\w+)?\s*\n(.*?)\n\s*\1", chunk, re.DOTALL
+                )
+                if content_match:
+                    self.resource_contents[path] = content_match.group(2).strip()
+
+    def extract_resource_contents(self) -> Dict[str, str]:
+        """Returns the dictionary of resource contents found in the report."""
+        return self.resource_contents
 
     def _parse_action_chunk(self, chunk: str) -> Optional[ActionLogEntry]:
         """Parses a single H3 action block."""
@@ -72,8 +104,11 @@ class ReportParser:
         subject = heading_match.group(2).strip() if heading_match.group(2) else None
         params, details = self._extract_params_and_details(action_type, subject, chunk)
 
+        # Flexible status matching for various template versions
         status_match = re.search(
-            r"-\s*\*\*Status:\*\*\s*(?:\n\s*-\s*)?(\w+)", chunk, re.MULTILINE
+            r"-\s*\*\*Status:\*\*\s*(?:\n\s*-\s*)?([A-Z_]+)",
+            chunk,
+            re.IGNORECASE | re.MULTILINE,
         )
         status = status_match.group(1).upper() if status_match else "UNKNOWN"
 
@@ -121,6 +156,11 @@ class ReportParser:
         self, action_type: str, subject: str, params: Dict[str, str]
     ):
         """Maps the heading subject to the params dict based on action type."""
+        # Strip Markdown links: [text](path) -> path
+        link_match = re.search(r"\[.*?\]\((.*?)\)", subject)
+        if link_match:
+            subject = link_match.group(1).lstrip("/")
+
         if action_type in ["CREATE", "EDIT", "READ", "PRUNE"]:
             params["File Path"] = subject
             if action_type == "READ":

@@ -118,7 +118,8 @@ class TestEnvironment:
             self.workspace = base_tmp / unique_name
             self.workspace.mkdir(parents=True, exist_ok=True)
 
-        self.container = create_container()
+        if self.container is None:
+            self.container = create_container()
         self._register_default_mocks()
 
         # Monkeypatch the global container instance used by the CLI

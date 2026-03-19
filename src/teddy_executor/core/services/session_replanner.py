@@ -1,4 +1,6 @@
 from datetime import datetime, timezone
+from typing import Any, Sequence
+
 from teddy_executor.core.domain.models.execution_report import (
     ExecutionReport,
     RunStatus,
@@ -15,13 +17,14 @@ class SessionReplanner:
         self._file_system_manager = file_system_manager
         self._planning_service = planning_service
 
-    def build_failure_report(
+    def build_failure_report(  # noqa: PLR0913
         self,
         errors: list[str],
         title: str,
         rationale: str,
         failed_resources: dict[str, str],
         validation_ast: str | None = None,
+        original_actions: Sequence[Any] | None = None,
     ) -> ExecutionReport:
         """Creates a validation failure report."""
         now = datetime.now(timezone.utc)
@@ -35,6 +38,7 @@ class SessionReplanner:
             run_summary=summary,
             plan_title=title,
             rationale=rationale,
+            original_actions=original_actions or [],
             action_logs=[],
             validation_result=errors,
             validation_ast=validation_ast,

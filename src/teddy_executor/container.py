@@ -65,7 +65,11 @@ def _register_infrastructure(container: punq.Container) -> None:
         IUserInteractor, ConsoleInteractorAdapter, scope=punq.Scope.transient
     )
     container.register(IWebSearcher, WebSearcherAdapter, scope=punq.Scope.transient)
-    container.register(IConfigService, YamlConfigAdapter, scope=punq.Scope.transient)
+    container.register(
+        IConfigService,
+        factory=lambda: YamlConfigAdapter(),
+        scope=punq.Scope.transient,
+    )
     container.register(
         ILlmClient,
         factory=lambda: LiteLLMAdapter(container.resolve(IConfigService)),
@@ -204,7 +208,9 @@ def _register_services(container: punq.Container) -> None:
         scope=punq.Scope.transient,
     )
     container.register(
-        IInitUseCase, InitService, config_dir=None, scope=punq.Scope.transient
+        IInitUseCase,
+        factory=lambda: InitService(container.resolve(IFileSystemManager)),
+        scope=punq.Scope.transient,
     )
     container.register(ISessionManager, SessionService, scope=punq.Scope.transient)
 

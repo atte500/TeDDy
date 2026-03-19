@@ -134,10 +134,11 @@ class ActionFactory(IActionFactory):
 
     def _handle_edit_protocol(self, method: Any, kwargs: dict) -> Any:
         """Handles the similarity threshold injection for the EDIT action."""
+        # 1. Inject from config if missing
         if "similarity_threshold" not in kwargs and self._config_service:
             # Safe-by-Default: Provide domain default if config is missing
             global_threshold = self._config_service.get_setting(
-                "similarity_threshold", DEFAULT_SIMILARITY_THRESHOLD
+                "execution.similarity_threshold", DEFAULT_SIMILARITY_THRESHOLD
             )
             if global_threshold is not None:
                 kwargs["similarity_threshold"] = float(global_threshold)

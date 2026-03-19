@@ -223,12 +223,13 @@ def mock_pyperclip():
 
 
 @pytest.fixture
-def env(monkeypatch):
+def env(monkeypatch, container):
     """
     Standard fixture for a managed TestEnvironment with Mocks.
     Automatically handles workspace creation and cleanup.
     """
     e = TestEnvironment(monkeypatch)
+    e.container = container
     e.setup()
     yield e
     e.teardown()

@@ -66,9 +66,9 @@ def test_fallback_to_default_threshold(tmp_path, monkeypatch):
         .build()
     )
 
-    # 4. Execute - should fail because 0.82 < 0.96
+    # 4. Execute - should fail because 0.82 < 0.95
     result = adapter.run_execute_with_plan(plan, interactive=False)
 
     assert "Validation Failed" in result.stdout
-    assert "Similarity Threshold:** 0.96" in result.stdout
+    assert "Similarity Threshold:** 0.95" in result.stdout
     assert "def hello():\n    return 'world'" in target_file.read_text(encoding="utf-8")

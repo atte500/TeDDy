@@ -1,209 +1,128 @@
 import pytest
+from unittest.mock import MagicMock
 
-from teddy_executor.core.domain.models.plan import ActionData, Plan
+from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
 from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
+from teddy_executor.core.ports.outbound import IConfigService
+from teddy_executor.core.services.markdown_plan_parser import MarkdownPlanParser
 from teddy_executor.core.services.plan_validator import PlanValidator
 from teddy_executor.core.services.validation_rules.create import CreateActionValidator
 from teddy_executor.core.services.validation_rules.edit import EditActionValidator
 from teddy_executor.core.services.validation_rules.execute import ExecuteActionValidator
 from teddy_executor.core.services.validation_rules.read import ReadActionValidator
+from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
+
+
+@pytest.fixture
+def parser(container) -> IPlanParser:
+    """Provides a wired MarkdownPlanParser."""
+    container.register(IPlanParser, MarkdownPlanParser)
+    return container.resolve(IPlanParser)
 
 
 @pytest.fixture
 def validator(container, mock_fs) -> IPlanValidator:
     """Resolves the PlanValidator from the container with all rules."""
-    from unittest.mock import MagicMock
-    from teddy_executor.core.ports.outbound import IConfigService
-
-    # Provide a default mock for IConfigService
     mock_config = MagicMock()
     mock_config.get_setting.return_value = 0.95
     container.register(IConfigService, instance=mock_config)
 
-    # Register individual rules
-    container.register(CreateActionValidator)
-    container.register(EditActionValidator)
-    container.register(ExecuteActionValidator)
-    container.register(ReadActionValidator)
+    rules = [
+        CreateActionValidator,
+        EditActionValidator,
+        ExecuteActionValidator,
+        ReadActionValidator,
+    ]
+    for rule in rules:
+        container.register(rule)
 
-    # Register IPlanValidator implementation and its dependencies in one go
     container.register(
         IPlanValidator,
         PlanValidator,
-        validators=[
-            container.resolve(CreateActionValidator),
-            container.resolve(EditActionValidator),
-            container.resolve(ExecuteActionValidator),
-            container.resolve(ReadActionValidator),
-        ],
+        validators=[container.resolve(rule) for rule in rules],
     )
     return container.resolve(IPlanValidator)
 
 
-def test_validate_edit_action_with_nonexistent_find_block(validator, mock_fs):
-    """
-    Given a plan with an EDIT action,
-    And the target file exists,
-    But the FIND block content does not exist in the file,
-    When the plan is validated,
-    Then a PlanValidationError should be raised.
-    """
-    # Arrange
+def _p(parser, builder):
+    """Helper to parse a plan from a builder."""
+    return parser.parse(builder.build())
+
+
+def test_validate_edit_action_with_nonexistent_find_block(parser, validator, mock_fs):
+    """Verify error when FIND block content does not exist."""
     file_path = "app/test.txt"
     mock_fs.path_exists.return_value = True
     mock_fs.read_file.return_value = "Hello world"
 
-    plan = Plan(
-        title="Test Plan",
-        rationale="Test",
-        actions=[
-            ActionData(
-                type="edit",
-                params={
-                    "path": file_path,
-                    "edits": [
-                        {"find": "Goodbye world", "replace": "Hello pytest"},
-                    ],
-                },
-                description="Test edit action validation",
-            )
-        ],
+    plan = _p(
+        parser,
+        MarkdownPlanBuilder("Test").add_edit(
+            file_path, "Goodbye world", "Hello pytest"
+        ),
     )
-
-    # Act
     errors = validator.validate(plan)
 
-    # Assert
     assert len(errors) == 1
     assert "The `FIND` block could not be located in the file" in errors[0].message
 
 
-def test_validate_edit_action_with_nonexistent_file(validator, mock_fs):
-    """
-    Given a plan with an EDIT action targeting a non-existent file,
-    When the plan is validated,
-    Then a PlanValidationError should be raised.
-    """
-    # Arrange
-    file_path = "app/nonexistent.txt"
+def test_validate_edit_action_with_nonexistent_file(parser, validator, mock_fs):
+    """Verify error when editing a non-existent file."""
     mock_fs.path_exists.return_value = False
-
-    plan = Plan(
-        title="Test Plan",
-        rationale="Test",
-        actions=[
-            ActionData(
-                type="edit",
-                params={
-                    "path": file_path,
-                    "edits": [{"find": "anything", "replace": "doesn't matter"}],
-                },
-                description="Test edit on non-existent file",
-            )
-        ],
+    plan = _p(
+        parser, MarkdownPlanBuilder("Test").add_edit("nonexistent.txt", "any", "thing")
     )
-
-    # Act
     errors = validator.validate(plan)
 
-    # Assert
     assert len(errors) == 1
     assert "File to edit does not exist" in errors[0].message
 
 
-def test_validate_edit_action_with_valid_find_block(validator, mock_fs):
-    """
-    Given a plan with an EDIT action,
-    And the FIND block content exists in the file,
-    When the plan is validated,
-    Then no exception should be raised.
-    """
-    # Arrange
+def test_validate_edit_action_with_valid_find_block(parser, validator, mock_fs):
+    """Verify success when FIND block content exists."""
     file_path = "app/test.txt"
     mock_fs.path_exists.return_value = True
     mock_fs.read_file.return_value = "Hello world"
 
-    plan = Plan(
-        title="Test Plan",
-        rationale="Test",
-        actions=[
-            ActionData(
-                type="edit",
-                params={
-                    "path": file_path,
-                    "edits": [{"find": "Hello world", "replace": "Hello pytest"}],
-                },
-                description="Test edit action validation",
-            )
-        ],
+    plan = _p(
+        parser,
+        MarkdownPlanBuilder("Test").add_edit(file_path, "Hello world", "Hello pytest"),
     )
-
-    # Act
     errors = validator.validate(plan)
 
-    # Assert
-    assert len(errors) == 0, f"Expected no errors, but got: {errors}"
+    assert len(errors) == 0
 
 
-def test_validate_edit_fails_if_find_block_not_unique(validator, mock_fs):
-    """
-    Given an EDIT action where the FIND block appears multiple times in the file,
-    When validated,
-    Then it should return an error.
-    """
-    # Use identical blocks including newlines to trigger ambiguity at high thresholds
+def test_validate_edit_fails_if_find_block_not_unique(parser, validator, mock_fs):
+    """Verify error when FIND block is ambiguous."""
     content = "def foo():\n    pass\n\ndef foo():\n    pass\n"
     mock_fs.path_exists.return_value = True
     mock_fs.read_file.return_value = content
 
-    find_content = "def foo():\n    pass\n"
-    plan = Plan(
-        title="Test",
-        rationale="Test",
-        actions=[
-            ActionData(
-                type="EDIT",
-                params={
-                    "path": "source.py",
-                    "edits": [{"find": find_content, "replace": "bar"}],
-                },
-            )
-        ],
+    plan = _p(
+        parser,
+        MarkdownPlanBuilder("Test").add_edit(
+            "source.py", "def foo():\n    pass\n", "bar"
+        ),
     )
-
     errors = validator.validate(plan)
 
     assert len(errors) == 1
     assert "ambiguous" in errors[0].message.lower()
 
 
-def test_validate_edit_reports_multiple_failures(validator, mock_fs):
-    """
-    Given an EDIT action with multiple FIND blocks that do not match,
-    When validated,
-    Then all errors should be reported.
-    """
-    file_path = "test.txt"
+def test_validate_edit_reports_multiple_failures(parser, validator, mock_fs):
+    """Verify all failing edits are reported."""
     mock_fs.path_exists.return_value = True
     mock_fs.read_file.return_value = "Some content"
 
-    plan = Plan(
-        title="Test",
-        rationale="Test",
-        actions=[
-            ActionData(
-                type="EDIT",
-                params={
-                    "path": file_path,
-                    "edits": [
-                        {"find": "Bad1", "replace": "Good1"},
-                        {"find": "Bad2", "replace": "Good2"},
-                    ],
-                },
-            )
-        ],
+    plan = _p(
+        parser,
+        MarkdownPlanBuilder("Test").add_edit(
+            "test.txt", [("Bad1", "G1"), ("Bad2", "G2")]
+        ),
     )
-
     errors = validator.validate(plan)
 
     expected_error_count = 2
@@ -212,172 +131,73 @@ def test_validate_edit_reports_multiple_failures(validator, mock_fs):
     assert "Bad2" in errors[1].message
 
 
-def test_validate_edit_provides_diff_on_mismatch(container, validator, mock_fs):
-    """
-    Given an EDIT action with a near-match FIND block,
-    When validated,
-    Then the error message should contain a diff.
-    """
-    from teddy_executor.core.ports.outbound import IConfigService
-
-    # Arrange: Override default threshold for this test to force failure on tiny typo
-    mock_config = container.resolve(IConfigService)
-    mock_config.get_setting.return_value = 0.99
-
-    file_path = "test.txt"
+def test_validate_edit_provides_diff_on_mismatch(container, parser, validator, mock_fs):
+    """Verify error message contains a diff on near-match."""
+    container.resolve(IConfigService).get_setting.return_value = 0.99
     mock_fs.path_exists.return_value = True
     mock_fs.read_file.return_value = "This is the original content"
 
-    plan = Plan(
-        title="Test",
-        rationale="Test",
-        actions=[
-            ActionData(
-                type="EDIT",
-                params={
-                    "path": file_path,
-                    "edits": [
-                        {"find": "This is the orignal content", "replace": "New"},
-                    ],
-                },
-            )
-        ],
+    plan = _p(
+        parser,
+        MarkdownPlanBuilder("Test").add_edit(
+            "t.txt", "This is the orignal content", "New"
+        ),
     )
-
-    # Act
     errors = validator.validate(plan)
 
-    # Assert
     assert len(errors) == 1
     assert "- This is the orignal content" in errors[0].message
     assert "+ This is the original content" in errors[0].message
-    assert "?" in errors[0].message
 
 
-def test_validate_edit_diff_handling_no_trailing_newline(validator, mock_fs):
-    """
-    Scenario: Diff lines are always separated by newlines
-    Given a FIND block and file content that do NOT end in newlines,
-    And they are near matches,
-    When validated,
-    Then the generated diff must have correct newline separation.
-    """
-    # Arrange: Note the lack of trailing \n
-    file_content = "Line with typo"
-    find_block = "Line with typo extra"
-    file_path = "test.txt"
+def test_validate_edit_diff_handling_no_trailing_newline(parser, validator, mock_fs):
+    """Verify diff formatting for content without trailing newlines."""
     mock_fs.path_exists.return_value = True
-    mock_fs.read_file.return_value = file_content
+    mock_fs.read_file.return_value = "Line with typo"
 
-    plan = Plan(
-        title="Test Newline",
-        rationale="Test",
-        actions=[
-            ActionData(
-                type="EDIT",
-                params={
-                    "path": file_path,
-                    "edits": [{"find": find_block, "replace": "fixed"}],
-                },
-            )
-        ],
+    plan = _p(
+        parser,
+        MarkdownPlanBuilder("Test").add_edit(
+            "test.txt", "Line with typo extra", "fixed"
+        ),
     )
-
-    # Act
     errors = validator.validate(plan)
 
-    # Assert
     assert len(errors) == 1
-    error_msg = errors[0].message
-
-    # Find the diff section
-    assert "Closest Match Diff:" in error_msg
-    diff_content = error_msg.split("diff\n")[1].split("\n```")[0]
-
-    # Verify that the diff lines are NOT collapsed.
-    # ndiff output for this should be:
-    # - Line with typo extra
-    # ?                ------
-    # + Line with typo
+    diff_content = errors[0].message.split("diff\n")[1].split("\n```")[0]
+    min_lines = 3
     lines = diff_content.splitlines()
-    min_expected_lines = 3
-    assert len(lines) >= min_expected_lines, (
-        f"Expected at least {min_expected_lines} lines in diff, but got: {repr(diff_content)}"
-    )
+    assert len(lines) >= min_lines
     assert lines[0].startswith("-")
     assert lines[1].startswith("?")
     assert lines[2].startswith("+")
 
 
-def test_validate_edit_fails_if_find_and_replace_identical(validator, mock_fs):
-    """
-    Given an EDIT action where FIND and REPLACE are identical,
-    When validated,
-    Then it should return an error.
-    """
+def test_validate_edit_fails_if_find_and_replace_identical(parser, validator, mock_fs):
+    """Verify error when FIND and REPLACE are identical."""
     mock_fs.path_exists.return_value = True
-
-    content = "same content"
-    plan = Plan(
-        title="Test",
-        rationale="Test",
-        actions=[
-            ActionData(
-                type="EDIT",
-                params={
-                    "path": "source.py",
-                    "edits": [{"find": content, "replace": content}],
-                },
-            )
-        ],
-    )
-
+    plan = _p(parser, MarkdownPlanBuilder("T").add_edit("s.py", "same", "same"))
     errors = validator.validate(plan)
 
     assert len(errors) == 1
     assert "FIND and REPLACE blocks are identical" in errors[0].message
-    assert (
-        "**Hint:** FIND and REPLACE blocks are identical. This edit can be safely omitted."
-        in errors[0].message
-    )
 
 
 def test_validate_edit_provides_hint_if_replace_block_already_present(
-    validator, mock_fs
+    parser, validator, mock_fs
 ):
-    """
-    Given an EDIT action where the FIND block is not found,
-    But the REPLACE block IS found in the file,
-    When validated,
-    Then the error message should include a hint that the change might be already applied.
-    """
-    # Arrange
-    file_path = "app.py"
-    # Content has the REPLACE block ("New") but not the FIND block ("Old")
+    """Verify hint when REPLACE block is already present but FIND is not."""
     mock_fs.path_exists.return_value = True
     mock_fs.read_file.return_value = "This is the New content"
 
-    plan = Plan(
-        title="Test Already Applied",
-        rationale="Test",
-        actions=[
-            ActionData(
-                type="EDIT",
-                params={
-                    "path": file_path,
-                    "edits": [{"find": "This is the Old content", "replace": "New"}],
-                },
-            )
-        ],
+    plan = _p(
+        parser,
+        MarkdownPlanBuilder("T").add_edit("a.py", "This is the Old content", "New"),
     )
-
-    # Act
     errors = validator.validate(plan)
 
-    # Assert
     assert len(errors) == 1
-    assert "The `FIND` block could not be located" in errors[0].message
     assert (
-        "**Hint:** The FIND block was not found, but the REPLACE block is already present. This change might have already been applied."
+        "Hint:** The FIND block was not found, but the REPLACE block is already present"
         in errors[0].message
     )

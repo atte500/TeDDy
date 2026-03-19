@@ -247,7 +247,7 @@
 {% else %}
 ### `{{ action_type }}`
 {% endif %}
-- **Status:** {{ log.status.value }}
+- **Status:** {{ log.status.value if log.status and log.status.value is defined else log.status }}
 {% if action_type in ['CREATE', 'EDIT'] %}
   {% set path_val = params.get('File Path') or params.get('file_path') or params.get('path') %}
   {% if path_val %}

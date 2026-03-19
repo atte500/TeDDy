@@ -147,9 +147,11 @@ class ActionExecutor:
 
         if action.type.upper() == "EDIT":
             global_threshold = self._config_service.get_setting(
-                "similarity_threshold", DEFAULT_SIMILARITY_THRESHOLD
+                "execution.similarity_threshold", DEFAULT_SIMILARITY_THRESHOLD
             )
-            threshold = action.params.get("similarity_threshold", global_threshold)
+            threshold = action.params.get(
+                "execution.similarity_threshold", global_threshold
+            )
             replace_all = action.params.get("replace_all", False)
             after_content, _ = self._edit_simulator.simulate_edits(
                 before_content,

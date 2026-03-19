@@ -80,7 +80,7 @@ class EditActionValidator(BaseActionValidator):
 
         # Get global threshold from config, fallback to domain default
         global_threshold = self._config_service.get_setting(
-            "similarity_threshold", DEFAULT_SIMILARITY_THRESHOLD
+            "execution.similarity_threshold", DEFAULT_SIMILARITY_THRESHOLD
         )
 
         # Use global threshold from config

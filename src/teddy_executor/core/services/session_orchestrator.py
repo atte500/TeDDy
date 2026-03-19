@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, Sequence
 
 import yaml
 from teddy_executor.core.domain.models.execution_report import (
@@ -178,19 +178,21 @@ class SessionOrchestrator(IRunPlanUseCase):
             return self._trigger_replan(
                 plan_path=plan_path,
                 errors=error_messages,
-                validation_ast=rich_ast,
                 original_plan_content=content,
                 title=plan.title,
                 rationale=plan.rationale,
                 failed_resources=failed_resources,
+                validation_ast=rich_ast,
+                original_actions=plan.actions,
             )
 
         return self._replanner.build_failure_report(
             errors=error_messages,
-            validation_ast=rich_ast,
             title=plan.title,
             rationale=plan.rationale,
             failed_resources=failed_resources,
+            validation_ast=rich_ast,
+            original_actions=plan.actions,
         )
 
     def _finalize_turn(
@@ -234,6 +236,7 @@ class SessionOrchestrator(IRunPlanUseCase):
         rationale: str = "Structural Error",
         failed_resources: Optional[dict[str, str]] = None,
         validation_ast: Optional[str] = None,
+        original_actions: Optional[Sequence[Any]] = None,
     ) -> ExecutionReport:
         """Triggers the Automated Re-plan Loop."""
         report = self._replanner.build_failure_report(
@@ -242,6 +245,7 @@ class SessionOrchestrator(IRunPlanUseCase):
             rationale,
             failed_resources or {},
             validation_ast=validation_ast,
+            original_actions=original_actions,
         )
         next_turn_dir = self._finalize_turn(
             plan_path, report, is_validation_failure=True
