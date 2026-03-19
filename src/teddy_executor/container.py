@@ -203,7 +203,9 @@ def _register_services(container: punq.Container) -> None:
         ),
         scope=punq.Scope.transient,
     )
-    container.register(IInitUseCase, InitService, scope=punq.Scope.transient)
+    container.register(
+        IInitUseCase, InitService, config_dir=None, scope=punq.Scope.transient
+    )
     container.register(ISessionManager, SessionService, scope=punq.Scope.transient)
 
 

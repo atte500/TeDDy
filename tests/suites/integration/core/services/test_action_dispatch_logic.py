@@ -1,33 +1,25 @@
-import pytest
 from teddy_executor.core.domain.models.execution_report import RunStatus
-from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.domain.models.plan import ActionData, Plan
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
-from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
+from tests.harness.setup.test_environment import TestEnvironment
 
 
-@pytest.fixture
-def orchestrator(container):
-    """Provides a real ExecutionOrchestrator for integration testing."""
-    container.register(IRunPlanUseCase, ExecutionOrchestrator)
-    return container.resolve(IRunPlanUseCase)
-
-
-def test_create_action_is_dispatched_to_filesystem(orchestrator, mock_fs):
+def test_create_action_is_dispatched_to_filesystem(monkeypatch):
     """
     Given a Plan with a CREATE action,
     When the plan is executed,
-    Then the ExecutionOrchestrator should dispatch the action to the IFileSystemManager.
+    Then it should dispatch the action to the IFileSystemManager.
     """
     # Arrange
+    env = TestEnvironment(monkeypatch).setup()
+    orchestrator = env.get_service(IRunPlanUseCase)
+    mock_fs = env.get_mock_filesystem()
+
     plan = Plan(
         title="Test Plan",
         rationale="Test Rationale",
         actions=[
-            ActionData(
-                type="CREATE",
-                params={"path": "hello.txt", "content": "Hello, world!"},
-            )
+            ActionData(type="CREATE", params={"path": "hello.txt", "content": "Hello!"})
         ],
     )
 
@@ -36,25 +28,22 @@ def test_create_action_is_dispatched_to_filesystem(orchestrator, mock_fs):
 
     # Assert
     assert report.run_summary.status == RunStatus.SUCCESS
-    mock_fs.create_file.assert_called_once_with(
-        path="hello.txt", content="Hello, world!"
-    )
+    mock_fs.create_file.assert_called_once_with(path="hello.txt", content="Hello!")
 
 
-def test_edit_action_is_dispatched_to_filesystem(container, mock_fs):
+def test_edit_action_is_dispatched_to_filesystem(monkeypatch):
     """
     Given a Plan with an EDIT action,
     When the plan is executed,
-    Then the ExecutionOrchestrator should dispatch the action to the IFileSystemManager.
+    Then it should dispatch the action to the IFileSystemManager.
     """
     # Arrange
-    # Register this specific mock instance so the orchestrator and validator share it.
-    container.register(IFileSystemManager, instance=mock_fs)
+    env = TestEnvironment(monkeypatch).setup()
+    orchestrator = env.get_service(IRunPlanUseCase)
+    mock_fs = env.get_mock_filesystem()
+
     mock_fs.path_exists.return_value = True
     mock_fs.read_file.return_value = "old"
-
-    # Resolve orchestrator manually to pick up the instance registration.
-    orchestrator = container.resolve(ExecutionOrchestrator)
 
     plan = Plan(
         title="Test Edit",
@@ -68,11 +57,6 @@ def test_edit_action_is_dispatched_to_filesystem(container, mock_fs):
                 },
             )
         ],
-        metadata={
-            "Agent": "Developer",
-            "Plan Type": "Implementation",
-            "Status": "Green 🟢",
-        },
     )
 
     # Act
@@ -80,60 +64,56 @@ def test_edit_action_is_dispatched_to_filesystem(container, mock_fs):
 
     # Assert
     assert report.run_summary.status == RunStatus.SUCCESS
-    # We check that edit_file was called. The exact parameters may vary by
-    # implementation (e.g., passing the list of edits).
     assert mock_fs.edit_file.called
 
 
-def test_execute_action_is_dispatched_to_shell(container, orchestrator, mock_shell):
+def test_execute_action_is_dispatched_to_shell(monkeypatch):
     """
     Given a Plan with an EXECUTE action,
     When the plan is executed,
-    Then the ExecutionOrchestrator should dispatch the action to the IShellExecutor.
+    Then it should dispatch the action to the IShellExecutor.
     """
     # Arrange
+    env = TestEnvironment(monkeypatch).setup()
+    orchestrator = env.get_service(IRunPlanUseCase)
+    mock_shell = env.get_mock_shell()
+
+    # Capture the original mock method before it is wrapped/replaced by the service layer
+    mock_execute = mock_shell.execute
+    mock_execute.return_value = {"stdout": "hello", "return_code": 0}
+
     plan = Plan(
         title="Test Execute",
         rationale="Test Rationale",
-        actions=[
-            ActionData(
-                type="EXECUTE",
-                params={"command": "echo hello"},
-            )
-        ],
+        actions=[ActionData(type="EXECUTE", params={"command": "echo hello"})],
     )
-    # ActionFactory wraps the mock's method, replacing the attribute on the instance.
-    # We capture the original mock method to assert on it later.
-    original_execute = mock_shell.execute
-    original_execute.return_value = {"stdout": "hello", "return_code": 0}
 
     # Act
     report = orchestrator.execute(plan=plan, interactive=False)
 
     # Assert
     assert report.run_summary.status == RunStatus.SUCCESS
-    # We expect the default timeout (30.0) from config/config.yaml
-    original_execute.assert_called_once_with(command="echo hello", timeout=30.0)
+    # We expect the default timeout (30.0)
+    mock_execute.assert_called_once_with(command="echo hello", timeout=30.0)
 
 
-def test_read_action_is_dispatched_to_filesystem(orchestrator, mock_fs):
+def test_read_action_is_dispatched_to_filesystem(monkeypatch):
     """
     Given a Plan with a READ action,
     When the plan is executed,
-    Then the ExecutionOrchestrator should dispatch the action to the IFileSystemManager.
+    Then it should dispatch the action to the IFileSystemManager.
     """
     # Arrange
+    env = TestEnvironment(monkeypatch).setup()
+    orchestrator = env.get_service(IRunPlanUseCase)
+    mock_fs = env.get_mock_filesystem()
+    mock_fs.read_file.return_value = "content"
+
     plan = Plan(
         title="Test Read",
         rationale="Test Rationale",
-        actions=[
-            ActionData(
-                type="READ",
-                params={"path": "hello.txt"},
-            )
-        ],
+        actions=[ActionData(type="READ", params={"path": "hello.txt"})],
     )
-    mock_fs.read_file.return_value = "content"
 
     # Act
     report = orchestrator.execute(plan=plan, interactive=False)
@@ -143,25 +123,23 @@ def test_read_action_is_dispatched_to_filesystem(orchestrator, mock_fs):
     mock_fs.read_file.assert_called_once_with(path="hello.txt")
 
 
-def test_invoke_action_returns_success(mock_user_interactor, orchestrator):
+def test_invoke_action_returns_success(monkeypatch):
     """
     Given a Plan with an INVOKE action,
     When the plan is executed,
     Then it should return a SUCCESS report.
     """
     # Arrange
+    env = TestEnvironment(monkeypatch).setup()
+    orchestrator = env.get_service(IRunPlanUseCase)
+    mock_user = env.get_mock_user_interactor()
+    mock_user.confirm_manual_handoff.return_value = (True, "")
+
     plan = Plan(
         title="Test Invoke",
         rationale="Test Rationale",
-        actions=[
-            ActionData(
-                type="INVOKE",
-                params={"agent": "Architect"},
-            )
-        ],
+        actions=[ActionData(type="INVOKE", params={"agent": "Architect"})],
     )
-    # Mock the interactor to approve the handoff
-    mock_user_interactor.confirm_manual_handoff.return_value = (True, "")
 
     # Act
     report = orchestrator.execute(plan=plan, interactive=False)

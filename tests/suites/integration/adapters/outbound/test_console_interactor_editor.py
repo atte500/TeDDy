@@ -1,6 +1,7 @@
-from typer.testing import CliRunner
-from teddy_executor.__main__ import app
-from unittest.mock import MagicMock
+from tests.harness.setup.test_environment import TestEnvironment
+from tests.harness.drivers.cli_adapter import CliTestAdapter
+from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
+from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
 
 
 def test_enhanced_prompt_marker_in_editor(monkeypatch, tmp_path):
@@ -10,47 +11,29 @@ def test_enhanced_prompt_marker_in_editor(monkeypatch, tmp_path):
     When the user selects 'e' to open the editor
     Then the marker instruction in the temporary file must be wrapped in an HTML comment.
     """
-    runner = CliRunner()
-    monkeypatch.chdir(tmp_path)
+    env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
+    cli = CliTestAdapter(monkeypatch, tmp_path)
 
-    plan_content = """# Prompt Test
-- **Status:** Green 🟢
-- **Agent:** Developer
-
-## Rationale
-````text
-Rationale.
-````
-
-## Action Plan
-### `PROMPT`
-Please provide feedback.
-"""
-
-    # We need to intercept the file creation in the editor flow
-    from teddy_executor.adapters.outbound.system_environment_adapter import (
-        SystemEnvironmentAdapter,
+    plan = (
+        MarkdownPlanBuilder("Prompt Test")
+        .add_prompt("Please provide feedback.")
+        .build()
     )
 
-    mock_run = MagicMock()
-    monkeypatch.setattr(SystemEnvironmentAdapter, "run_command", mock_run)
-    # Prevent deletion so we can read the file
-    monkeypatch.setattr(SystemEnvironmentAdapter, "delete_file", MagicMock())
-    monkeypatch.setattr(
-        SystemEnvironmentAdapter, "which", lambda s, cmd: "/usr/bin/nano"
-    )
+    # Configure the mocked environment from the container
+    mock_env = env.get_service(ISystemEnvironment)
+    temp_file = tmp_path / "prompt_edit.md"
+    mock_env.create_temp_file.return_value = str(temp_file)
+    mock_env.get_env.return_value = "nano"
+    mock_env.which.return_value = "/usr/bin/nano"
 
-    # Run command and simulate 'e' then Enter to use editor content
-    # First Enter is to press 'e', second Enter is to confirm editor completion
-    runner.invoke(app, ["execute", "--plan-content", plan_content], input="e\n\n")
+    # Run command and simulate 'e' (editor), then Enter (confirm editor)
+    cli.run_execute_with_plan(plan, input="e\n\n", interactive=True)
 
-    # Check that run_command was called with a path
-    assert mock_run.called
-    temp_file_path = mock_run.call_args[0][0][
-        -1
-    ]  # Last arg of shlex.split(editor) + [path]
+    # Check that run_command was called
+    assert mock_env.run_command.called
 
-    with open(temp_file_path, "r", encoding="utf-8") as f:
+    with open(temp_file, "r", encoding="utf-8") as f:
         content = f.read()
 
     # Requirement: wrapped in HTML comment
@@ -66,45 +49,24 @@ def test_enhanced_prompt_terminal_quick_reply_after_editor_launch(
     Scenario 3: Enhanced PROMPT Interactive Flow
     And the terminal must continue to allow a single-line reply even while the editor is open.
     """
-    runner = CliRunner()
-    monkeypatch.chdir(tmp_path)
+    env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
+    cli = CliTestAdapter(monkeypatch, tmp_path)
 
-    plan_content = """# Prompt Test
-- **Status:** Green 🟢
-- **Agent:** Developer
+    plan = MarkdownPlanBuilder("Prompt Test").add_prompt("Feedback?").build()
 
-## Rationale
-````text
-Rationale.
-````
-
-## Action Plan
-### `PROMPT`
-Feedback?
-"""
-    # Mock system environment to prevent actual editor launch blocking
-    from teddy_executor.adapters.outbound.system_environment_adapter import (
-        SystemEnvironmentAdapter,
-    )
-
-    monkeypatch.setattr(SystemEnvironmentAdapter, "run_command", MagicMock())
-    monkeypatch.setattr(
-        SystemEnvironmentAdapter, "which", lambda s, cmd: "/usr/bin/nano"
-    )
+    # Configure mock env
+    mock_env = env.get_service(ISystemEnvironment)
+    mock_env.create_temp_file.return_value = str(tmp_path / "quick_reply.md")
+    mock_env.get_env.return_value = "nano"
+    mock_env.which.return_value = "/usr/bin/nano"
 
     # Input: 'e' to open editor, then "Terminal Reply" to override it
-    # The 'e' triggers the editor, and the second line provides the quick reply.
-    # We add a trailing newline to ensure the input is processed.
-    result = runner.invoke(
-        app, ["execute", "--plan-content", plan_content], input="e\nTerminal Reply\n"
+    result = cli.run_execute_with_plan(
+        plan, input="e\nTerminal Reply\n", interactive=True
     )
 
     assert result.exit_code == 0
-    # Search in details dict as well if report format is concise
-    assert (
-        "Terminal Reply" in result.stdout
-        or "'response': 'Terminal Reply'" in result.stdout
-    )
+    assert "Terminal Reply" in result.stdout
 
 
 def test_enhanced_prompt_empty_response_confirmation_ux(monkeypatch, tmp_path):
@@ -114,27 +76,13 @@ def test_enhanced_prompt_empty_response_confirmation_ux(monkeypatch, tmp_path):
     When the user presses Enter without typing anything
     Then the system should prompt to "Press [Enter] again to confirm"
     """
-    runner = CliRunner()
-    monkeypatch.chdir(tmp_path)
+    TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
+    cli = CliTestAdapter(monkeypatch, tmp_path)
 
-    plan_content = """# Prompt Test
-- **Status:** Green 🟢
-- **Agent:** Developer
-
-## Rationale
-````text
-Test empty response confirmation.
-````
-
-## Action Plan
-### `PROMPT`
-Empty?
-"""
+    plan = MarkdownPlanBuilder("Prompt Test").add_prompt("Empty?").build()
 
     # Input: Enter (empty), then Enter again (confirm)
-    result = runner.invoke(
-        app, ["execute", "--plan-content", plan_content], input="\n\n"
-    )
+    result = cli.run_execute_with_plan(plan, input="\n\n", interactive=True)
 
     assert result.exit_code == 0
     assert "Press [Enter] again to confirm" in result.stderr

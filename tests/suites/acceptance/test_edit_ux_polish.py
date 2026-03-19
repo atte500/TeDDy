@@ -6,7 +6,7 @@ from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
 def test_multi_edit_ux_polish(monkeypatch, tmp_path):
     """Scenario: Multi-edit plan with perfect and fuzzy matches shows similarity scores and ndiff markers."""
     env = TestEnvironment(monkeypatch, tmp_path)
-    env.setup()
+    env.setup().with_real_config()
     adapter = CliTestAdapter(monkeypatch, tmp_path)
 
     # Set global threshold to 0.8 for fuzzy matching in this test

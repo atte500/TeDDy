@@ -2,21 +2,19 @@ from pathlib import Path
 import pytest
 
 
+from tests.harness.setup.test_environment import TestEnvironment
 from teddy_executor.core.domain.models import MultipleMatchesFoundError
-from teddy_executor.core.services.edit_simulator import EditSimulator
-from teddy_executor.adapters.outbound.local_file_system_adapter import (
-    LocalFileSystemAdapter,
-)
+from teddy_executor.core.ports.outbound import IFileSystemManager
 
 
 @pytest.fixture
-def edit_simulator():
-    return EditSimulator()
-
-
-@pytest.fixture
-def adapter(edit_simulator):
-    return LocalFileSystemAdapter(edit_simulator=edit_simulator)
+def adapter(monkeypatch, tmp_path: Path):
+    """
+    Provides a real LocalFileSystemAdapter anchored to a temporary path,
+    resolved via the Test Harness.
+    """
+    env = TestEnvironment(monkeypatch, tmp_path).setup()
+    return env.get_service(IFileSystemManager)  # type: ignore[type-abstract]
 
 
 def test_create_file_raises_custom_error_if_file_exists(adapter, tmp_path: Path):
@@ -255,15 +253,12 @@ def test_write_file(adapter, tmp_path: Path):
     assert file_path.read_text() == "second content"
 
 
-def test_read_files_in_vault(edit_simulator, tmp_path: Path):
+def test_read_files_in_vault(adapter, tmp_path: Path):
     """
     Tests that read_files_in_vault reads content for existing files
     and ignores non-existent files.
     """
     # Arrange
-    adapter = LocalFileSystemAdapter(
-        edit_simulator=edit_simulator, root_dir=str(tmp_path)
-    )
     (tmp_path / "file1.txt").write_text("content1", encoding="utf-8")
     (tmp_path / "docs").mkdir()
     (tmp_path / "docs" / "file2.txt").write_text("content2", encoding="utf-8")
@@ -302,15 +297,12 @@ def test_resolve_paths_from_files_returns_sorted_deduplicated_paths(adapter, tmp
     assert result == ["path/a", "path/b", "path/c"]
 
 
-def test_get_context_paths(edit_simulator, tmp_path: Path):
+def test_get_context_paths(adapter, tmp_path: Path):
     """
     Tests that get_context_paths finds all .context files, reads them,
     and returns a sorted, deduplicated list of non-commented paths.
     """
     # Arrange
-    adapter = LocalFileSystemAdapter(
-        edit_simulator=edit_simulator, root_dir=str(tmp_path)
-    )
     teddy_dir = tmp_path / ".teddy"
     teddy_dir.mkdir()
 

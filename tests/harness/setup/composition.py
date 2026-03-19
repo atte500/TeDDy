@@ -1,5 +1,5 @@
+# ruff: noqa: E402
 import sys
-from pathlib import Path
 from unittest.mock import Mock, MagicMock
 import pytest
 
@@ -22,11 +22,11 @@ mock_litellm.completion_cost.return_value = 0.01
 
 sys.modules["litellm"] = mock_litellm
 
-from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase  # noqa: E402
-from teddy_executor.core.ports.inbound.plan_parser import IPlanParser  # noqa: E402
-from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase  # noqa: E402
-from teddy_executor.core.services.context_service import ContextService  # noqa: E402
-from teddy_executor.core.ports.outbound import (  # noqa: E402
+from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
+from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
+from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
+from teddy_executor.core.services.context_service import ContextService
+from teddy_executor.core.ports.outbound import (
     IUserInteractor,
     IFileSystemManager,
     ISystemEnvironment,
@@ -38,24 +38,15 @@ from teddy_executor.core.ports.outbound import (  # noqa: E402
     IMarkdownReportFormatter,
     ILlmClient,
 )
-from teddy_executor.core.services.edit_simulator import EditSimulator  # noqa: E402
-from teddy_executor.core.services.action_dispatcher import (  # noqa: E402
+from teddy_executor.core.services.edit_simulator import EditSimulator
+from teddy_executor.core.services.action_dispatcher import (
     ActionDispatcher,
     IActionFactory,
 )
-from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator  # noqa: E402
+from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
 
-# Add the project root directory to the Python path.
-# This is necessary to ensure that `pytest` can correctly resolve imports
-# when running tests from a specific file path, as it might not add the
-# project root to `sys.path` by default in that scenario.
-# We add it to the beginning of the list to ensure it's checked first.
-project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
-
-
-import teddy_executor.__main__  # noqa: E402
-from teddy_executor.container import create_container  # noqa: E402
+import teddy_executor.__main__
+from teddy_executor.container import create_container
 
 
 @pytest.fixture

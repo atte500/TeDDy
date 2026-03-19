@@ -73,44 +73,47 @@ Scenario 1 established the formal Test Harness Triad. The `MarkdownPlanBuilder` 
 - Fixed several brittle regressions in existing tests caused by direct filesystem manipulation or missing mocks.
 - Verified performance requirements in `test_validation_performance.py` (< 500ms).
 
-### Scenario 3: Refactor ALL Integration Tests
+### Scenario 3: Refactor ALL Integration Tests [✓]
 **Goal:** Ensure all integration tests use the `TestComposition` (punq-based) fixture and standardized mocks.
 - **Precondition:** Integration tests have inconsistent mocking and setup strategies.
 - **Success Condition:** ALL files in `tests/integration/` use the `container` fixture and global mocks (e.g., `mock_fs`).
 - **Success Condition:** ALL refactored files do not exceed the 300 SLOC limit.
 #### Deliverables
-- [ ] `tests/integration/adapters/inbound/test_cli_adapter.py`
-- [ ] `tests/integration/adapters/inbound/test_cli_formatting_integration.py`
-- [ ] `tests/integration/adapters/outbound/test_console_interactor_editor.py`
-- [ ] `tests/integration/adapters/outbound/test_console_interactor_headers.py`
-- [ ] `tests/integration/adapters/outbound/test_file_system_adapter.py`
-- [ ] `tests/integration/adapters/outbound/test_local_repo_tree_generator.py`
-- [ ] `tests/integration/adapters/outbound/test_shell_adapter.py`
-- [ ] `tests/integration/adapters/outbound/test_system_environment_inspector.py`
-- [ ] `tests/integration/adapters/outbound/test_tree_generator_performance.py`
-- [ ] `tests/integration/adapters/outbound/test_web_scraper_adapter.py`
-- [ ] `tests/integration/adapters/outbound/test_web_searcher_adapter.py`
-- [ ] `tests/integration/core/services/test_action_dispatch_logic.py`
-- [ ] `tests/integration/core/services/test_action_executor_integration.py`
-- [ ] `tests/integration/core/services/test_container_wiring.py`
-- [ ] `tests/integration/core/services/test_create_overwrite_integration.py`
-- [ ] `tests/integration/core/services/test_enhanced_validation_integration.py`
-- [ ] `tests/integration/core/services/test_execution_orchestrator.py`
-- [ ] `tests/integration/core/services/test_flexible_resource_parsing.py`
-- [ ] `tests/integration/core/services/test_lazy_loading_integration.py`
-- [ ] `tests/integration/core/services/test_partial_execution_integration.py`
-- [ ] `tests/integration/core/services/test_plan_validator_integration.py`
-- [ ] `tests/integration/core/services/test_reference_files_integration.py`
-- [ ] `tests/integration/core/services/test_report_formats_integration.py`
-- [ ] `tests/integration/core/services/test_report_whitespace_sanitization.py`
-- [ ] `tests/integration/core/services/test_research_parsing_integration.py`
-- [ ] `tests/integration/core/services/test_resilient_edit_matching_integration.py`
-- [ ] `tests/integration/core/services/test_session_orchestration_integration.py`
-- [ ] `tests/integration/core/services/test_session_orchestrator_validation.py`
-- [ ] `tests/integration/core/services/test_session_resume.py`
-- [ ] `tests/integration/core/services/test_session_service.py`
-- [ ] `tests/integration/core/services/test_session_validation_integration.py`
-- [ ] `tests/integration/core/services/test_validation_diagnostics_integration.py`
+- [✓] `tests/integration/adapters/inbound/test_cli_adapter.py`
+- [✓] `tests/integration/adapters/inbound/test_cli_formatting_integration.py`
+- [✓] `tests/integration/adapters/outbound/test_console_interactor_editor.py`
+- [✓] `tests/integration/adapters/outbound/test_console_interactor_headers.py`
+- [✓] `tests/integration/adapters/outbound/test_file_system_adapter.py`
+- [✓] `tests/integration/adapters/outbound/test_local_repo_tree_generator.py`
+- [✓] `tests/integration/adapters/outbound/test_shell_adapter.py`
+- [✓] `tests/integration/adapters/outbound/test_system_environment_inspector.py`
+- [✓] `tests/integration/adapters/outbound/test_tree_generator_performance.py`
+- [✓] `tests/integration/adapters/outbound/test_web_scraper_adapter.py`
+- [✓] `tests/integration/adapters/outbound/test_web_searcher_adapter.py`
+- [✓] `tests/integration/core/services/test_action_dispatch_logic.py`
+- [✓] `tests/integration/core/services/test_action_executor_integration.py`
+- [✓] `tests/integration/core/services/test_container_wiring.py`
+- [✓] `tests/integration/core/services/test_create_overwrite_integration.py`
+- [✓] `tests/integration/core/services/test_enhanced_validation_integration.py`
+- [✓] `tests/integration/core/services/test_execution_orchestrator.py`
+- [✓] `tests/integration/core/services/test_flexible_resource_parsing.py`
+- [✓] `tests/integration/core/services/test_lazy_loading_integration.py`
+- [✓] `tests/integration/core/services/test_partial_execution_integration.py`
+- [✓] `tests/integration/core/services/test_plan_validator_integration.py`
+- [✓] `tests/integration/core/services/test_reference_files_integration.py`
+- [✓] `tests/integration/core/services/test_report_formats_integration.py`
+- [✓] `tests/integration/core/services/test_report_whitespace_sanitization.py`
+- [✓] `tests/integration/core/services/test_research_parsing_integration.py`
+- [✓] `tests/integration/core/services/test_resilient_edit_matching_integration.py`
+- [✓] `tests/integration/core/services/test_session_orchestration_integration.py`
+- [✓] `tests/integration/core/services/test_session_orchestrator_validation.py`
+- [✓] `tests/integration/core/services/test_session_resume.py`
+- [✓] `tests/integration/core/services/test_session_service.py`
+- [✓] `tests/integration/core/services/test_session_validation_integration.py`
+- [✓] `tests/integration/core/services/test_validation_diagnostics_integration.py`
+
+#### Implementation Notes (Scenario 3)
+Refactored the entire integration suite (96 tests) to utilize the formal Test Harness Triad and `TestEnvironment` setup. Migrated ad-hoc mocking to the standardized `container` fixture and global mocks (e.g., `mock_fs`, `mock_shell`). Consolidated all `conftest.py` logic into `tests/suites/conftest.py` and removed the redundant global `tests/conftest.py`. Fixed a critical regression in `test_shell_adapter.py` related to parallel execution and resolved various linting/typing issues in the harness infrastructure. Resolved a subtle regression in session management caused by a `TypeError` in `PlanningService` (mock cost) and an isolation leak in `InitService` (path resolution), ensuring a stable foundation for Milestones 10+.
 
 ## 3. Architectural Changes
 This slice implements the "Primary Driving Adapter" pattern for the test suite.

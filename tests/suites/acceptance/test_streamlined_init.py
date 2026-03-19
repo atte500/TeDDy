@@ -8,6 +8,7 @@ from teddy_executor.core.ports.outbound import ILlmClient
 def make_mock_response(content, model="gpt-4o"):
     mock_response = MagicMock()
     mock_response.model = model
+    mock_response.cost = 0.0
     mock_message = MagicMock()
     mock_message.content = content
     mock_choice = MagicMock()

@@ -1,130 +1,90 @@
-from typer.testing import CliRunner
-from teddy_executor.__main__ import app
-from pathlib import Path
-import uuid
-
-runner = CliRunner()
+import pytest
+from tests.harness.drivers.cli_adapter import CliTestAdapter
+from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
+from tests.harness.setup.test_environment import TestEnvironment
 
 
-def test_read_action_supports_file_path_alias():
-    # Given a file exists in the current project root (safe for validation)
-    test_file_path = f"test_read_alias_{uuid.uuid4().hex}.txt"
-    test_file = Path(test_file_path)
+@pytest.fixture
+def adapter(tmp_path, monkeypatch):
+    """Fixture providing a CliTestAdapter anchored to a temporary workspace."""
+    TestEnvironment(monkeypatch, workspace=tmp_path).setup()
+    return CliTestAdapter(monkeypatch, cwd=tmp_path)
+
+
+def test_read_action_supports_file_path_alias(adapter, tmp_path):
+    """Scenario: READ action supports the 'File Path' alias."""
+    test_file = tmp_path / "test_read_alias.txt"
     test_file.write_text("hello world", encoding="utf-8")
 
-    try:
-        # And a plan with a READ action using the 'File Path' alias
-        plan_content = f"""# Test Plan
-- **Status:** Green 🟢
-- **Plan Type:** Implementation
-- **Agent:** Developer
-
-## Rationale
-```
-Testing alias.
-```
-
-## Action Plan
-### `READ`
-- **File Path:** [{test_file_path}](/{test_file_path})
-- **Description:** Read the test file.
-"""
-
-        # When the plan is executed
-        # We use --no-copy to avoid clipboard issues in tests
-        result = runner.invoke(
-            app, ["execute", "--plan-content", plan_content, "--no-copy"], input="y\n"
+    plan_content = (
+        MarkdownPlanBuilder("Alias Test")
+        .add_read(
+            resource="test_read_alias.txt",
+            description="Read the test file",
+            key="File Path",
         )
-
-        # Then it should succeed and the report should contain the file content
-        assert result.exit_code == 0, f"Execution failed: {result.stdout}"
-        assert "hello world" in result.stdout
-    finally:
-        if test_file.exists():
-            test_file.unlink()
-
-
-def test_read_action_fails_when_url_provided_in_file_path_alias():
-    # Given a plan with a READ action using 'File Path' with a URL
-    plan_content = """# Test Plan
-- **Status:** Green 🟢
-- **Plan Type:** Implementation
-- **Agent:** Developer
-
-## Rationale
-```
-Testing URL constraint.
-```
-
-## Action Plan
-### `READ`
-- **File Path:** [www.google.com](https://www.google.com)
-- **Description:** Try to read a URL as a file path.
-"""
-
-    # When the plan is executed
-    result = runner.invoke(
-        app, ["execute", "--plan-content", plan_content, "--no-copy"]
+        .build()
     )
 
-    # Then validation should fail with a "Strict Local Only" error
-    assert result.exit_code != 0, f"Execution should have failed: {result.stdout}"
-    assert "Strict Local Only" in result.stdout, (
-        f"Error message missing: {result.stdout}"
+    result = adapter.run_execute_with_plan(plan_content)
+
+    assert result.exit_code == 0
+    assert "hello world" in result.stdout
+
+
+def test_read_action_fails_when_url_provided_in_file_path_alias(adapter):
+    """Scenario: READ fails when a URL is provided to the 'File Path' alias."""
+    # We pass a raw link string to test the URL constraint bypass
+    plan_content = (
+        MarkdownPlanBuilder("URL Constraint Test")
+        .add_read(
+            resource="[www.google.com](https://www.google.com)",
+            description="Try to read a URL as a file path",
+            key="File Path",
+        )
+        .build()
     )
 
+    result = adapter.run_execute_with_plan(plan_content)
 
-def test_prune_action_supports_file_path_alias():
-    # Given a plan with a PRUNE action using the 'File Path' alias
-    # Note: We use a file that actually exists in the context (README.md) to pass validation
-    plan_content = """# Test Plan
-- **Status:** Green 🟢
-- **Plan Type:** Implementation
-- **Agent:** Developer
+    assert result.exit_code != 0
+    assert "Strict Local Only" in result.stdout
 
-## Rationale
-```
-Testing PRUNE alias.
-```
 
-## Action Plan
-### `PRUNE`
-- **File Path:** [README.md](/README.md)
-- **Description:** Prune the README.
-"""
+def test_prune_action_supports_file_path_alias(adapter, tmp_path):
+    """Scenario: PRUNE action supports the 'File Path' alias."""
+    # We need a file in the environment for validation (even if mocked FS, the path must exist)
+    (tmp_path / "README.md").write_text("context content", encoding="utf-8")
 
-    # When the plan is executed (manually providing context-mocked path)
-    result = runner.invoke(
-        app, ["execute", "--plan-content", plan_content, "--no-copy"], input="n\n"
+    plan_content = (
+        MarkdownPlanBuilder("PRUNE Alias Test")
+        .add_prune(
+            resource="README.md",
+            description="Prune the README",
+            key="File Path",
+        )
+        .build()
     )
 
-    # Then it should parse and find the action even if execution is skipped/ignored
+    result = adapter.run_execute_with_plan(plan_content)
+
+    # Use the Observer pattern if needed, or check stdout for the action header
     assert "### `PRUNE`: [README.md](/README.md)" in result.stdout
 
 
-def test_prune_action_fails_when_url_provided_in_file_path_alias():
-    # Given a plan with a PRUNE action using 'File Path' with a URL
-    plan_content = """# Test Plan
-- **Status:** Green 🟢
-- **Plan Type:** Implementation
-- **Agent:** Developer
-
-## Rationale
-```
-Testing PRUNE URL constraint.
-```
-
-## Action Plan
-### `PRUNE`
-- **File Path:** [www.google.com](https://www.google.com)
-- **Description:** Try to prune a URL.
-"""
-
-    # When the plan is executed
-    result = runner.invoke(
-        app, ["execute", "--plan-content", plan_content, "--no-copy"]
+def test_prune_action_fails_when_url_provided_in_file_path_alias(adapter):
+    """Scenario: PRUNE fails when a URL is provided to the 'File Path' alias."""
+    plan_content = (
+        MarkdownPlanBuilder("PRUNE URL Constraint Test")
+        .add_prune(
+            resource="[www.google.com](https://www.google.com)",
+            description="Try to prune a URL",
+            key="File Path",
+        )
+        .build()
     )
 
-    # Then validation should fail with a "Strict Local Only" error
+    result = adapter.run_execute_with_plan(plan_content)
+
     assert result.exit_code != 0
     assert "Strict Local Only" in result.stdout

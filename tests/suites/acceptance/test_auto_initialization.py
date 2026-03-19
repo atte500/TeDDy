@@ -7,7 +7,7 @@ def test_first_time_initialization_creates_teddy_directory_and_files(
 ):
     """Scenario: First-time initialization of the .teddy directory."""
     env = TestEnvironment(monkeypatch, tmp_path)
-    env.setup()
+    env.setup().with_real_config()
     adapter = CliTestAdapter(monkeypatch, tmp_path)
 
     # When

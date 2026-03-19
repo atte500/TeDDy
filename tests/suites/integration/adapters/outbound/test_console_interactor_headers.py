@@ -1,5 +1,6 @@
-from typer.testing import CliRunner
-from teddy_executor.__main__ import app
+from tests.harness.setup.test_environment import TestEnvironment
+from tests.harness.drivers.cli_adapter import CliTestAdapter
+from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
 
 
 def test_prompt_header_uses_agent_name(tmp_path, monkeypatch):
@@ -9,26 +10,17 @@ def test_prompt_header_uses_agent_name(tmp_path, monkeypatch):
     When the action is executed
     Then the terminal header should be "--- MESSAGE from Architect ---" in cyan.
     """
-    runner = CliRunner()
-    monkeypatch.chdir(tmp_path)
+    TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
+    cli = CliTestAdapter(monkeypatch, tmp_path)
 
-    plan_content = """# Architect Plan
-- **Status:** Green 🟢
-- **Agent:** Architect
-
-## Rationale
-````text
-Rationale content.
-````
-
-## Action Plan
-### `PROMPT`
-Hello from Architect.
-"""
-
-    result = runner.invoke(
-        app, ["execute", "--plan-content", plan_content], input="Got it\n"
+    plan = (
+        MarkdownPlanBuilder("Architect Plan")
+        .with_agent("Architect")
+        .add_prompt("Hello from Architect.")
+        .build()
     )
+
+    result = cli.run_execute_with_plan(plan, input="Got it\n", interactive=True)
 
     # Check for the expected dynamic header (printed to stderr)
     assert "--- MESSAGE from Architect ---" in result.stderr
@@ -41,25 +33,17 @@ def test_prompt_header_defaults_to_teddy(tmp_path, monkeypatch):
     When the action is executed
     Then the terminal header should be "--- MESSAGE from TeDDy ---".
     """
-    runner = CliRunner()
-    monkeypatch.chdir(tmp_path)
+    TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
+    cli = CliTestAdapter(monkeypatch, tmp_path)
 
-    # A plan with a missing Agent field in metadata
-    plan_content = """# No Agent Plan
-- **Status:** Green 🟢
-
-## Rationale
-````text
-Rationale.
-````
-
-## Action Plan
-### `PROMPT`
-Hello from TeDDy.
-"""
-
-    result = runner.invoke(
-        app, ["execute", "--plan-content", plan_content], input="Ok\n"
+    # A plan with no agent name
+    plan = (
+        MarkdownPlanBuilder("No Agent Plan")
+        .with_agent(None)
+        .add_prompt("Hello from TeDDy.")
+        .build()
     )
+
+    result = cli.run_execute_with_plan(plan, input="Ok\n", interactive=True)
 
     assert "--- MESSAGE from TeDDy ---" in result.stderr

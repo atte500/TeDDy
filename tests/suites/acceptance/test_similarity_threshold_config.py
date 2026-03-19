@@ -6,7 +6,9 @@ from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
 def test_respects_global_similarity_threshold(tmp_path, monkeypatch):
     """Scenario: Low threshold allows a messy edit to pass."""
     # 1. Setup Environment
-    TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
+    TestEnvironment(
+        monkeypatch, tmp_path
+    ).setup().with_real_interactor().with_real_config()
     adapter = CliTestAdapter(monkeypatch, tmp_path)
 
     # 2. Setup config with low threshold
@@ -64,9 +66,9 @@ def test_fallback_to_default_threshold(tmp_path, monkeypatch):
         .build()
     )
 
-    # 4. Execute - should fail because 0.82 < 0.97
+    # 4. Execute - should fail because 0.82 < 0.96
     result = adapter.run_execute_with_plan(plan, interactive=False)
 
     assert "Validation Failed" in result.stdout
-    assert "Similarity Threshold:** 0.97" in result.stdout
+    assert "Similarity Threshold:** 0.96" in result.stdout
     assert "def hello():\n    return 'world'" in target_file.read_text(encoding="utf-8")

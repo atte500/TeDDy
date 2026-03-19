@@ -11,10 +11,18 @@ class MarkdownPlanBuilder:
     def __init__(self, title: str):
         """Initializes the builder with a plan title."""
         self._title = title
+        self._agent: Optional[str] = "Developer"
         self._actions: List[Dict[str, Any]] = []
 
+    def with_agent(self, agent: Optional[str]) -> "MarkdownPlanBuilder":
+        """Sets the agent name for the plan header. Use None for no agent."""
+        self._agent = agent
+        return self
+
     def _path_link(self, path: str) -> str:
-        """Formats a path as a root-relative Markdown link."""
+        """Formats a path as a root-relative Markdown link. If already a link, returns as is."""
+        if path.startswith("[") and "]" in path:
+            return path
         return f"[{path}](/{path})"
 
     def add_action(
@@ -45,8 +53,13 @@ class MarkdownPlanBuilder:
             params["Overwrite"] = "true"
         return self.add_action("CREATE", params, {"": ("text", content)})
 
-    def add_read(self, resource: str, description: str = "Reading resource"):
-        params = {"Resource": self._path_link(resource), "Description": description}
+    def add_read(
+        self,
+        resource: str,
+        description: str = "Reading resource",
+        key: str = "Resource",
+    ):
+        params = {key: self._path_link(resource), "Description": description}
         return self.add_action("READ", params)
 
     def add_edit(
@@ -123,8 +136,13 @@ class MarkdownPlanBuilder:
             )
         return self.add_action("RETURN", params)
 
-    def add_prune(self, resource: str, description: str = "Pruning resource"):
-        params = {"File Path": self._path_link(resource), "Description": description}
+    def add_prune(
+        self,
+        resource: str,
+        description: str = "Pruning resource",
+        key: str = "File Path",
+    ):
+        params = {key: self._path_link(resource), "Description": description}
         return self.add_action("PRUNE", params)
 
     def _render_params(self, params: Dict[str, Any]) -> str:
@@ -187,13 +205,13 @@ class MarkdownPlanBuilder:
         return action_str
 
     def build(self) -> str:
+        agent_line = f"- **Agent:** {self._agent}\n" if self._agent else ""
         header = dedent(
             f"""\
             # {self._title}
             - **Status:** Green 🟢
             - **Plan Type:** Implementation
-            - **Agent:** Developer
-            """
+            {agent_line}"""
         )
 
         rationale = dedent(

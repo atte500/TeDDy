@@ -1,5 +1,6 @@
 from pathlib import Path
-from typing import Optional, Type, TypeVar
+from typing import Any, Optional, TypeVar, cast
+from unittest.mock import MagicMock, Mock
 import teddy_executor.__main__
 from teddy_executor.container import create_container
 
@@ -46,76 +47,201 @@ class TestEnvironment:
         self._container.register(IUserInteractor, ConsoleInteractorAdapter)
         return self
 
+    def with_real_inspector(self) -> "TestEnvironment":
+        """Re-registers the real SystemEnvironmentInspector instead of the mock."""
+        from teddy_executor.core.ports.outbound import IEnvironmentInspector
+        from teddy_executor.adapters.outbound.system_environment_inspector import (
+            SystemEnvironmentInspector,
+        )
+
+        self._container.register(IEnvironmentInspector, SystemEnvironmentInspector)
+        return self
+
+    def with_real_tree_generator(self, root_dir: str) -> "TestEnvironment":
+        """Re-registers the real LocalRepoTreeGenerator instead of the mock."""
+        from teddy_executor.core.ports.outbound import IRepoTreeGenerator
+        from teddy_executor.adapters.outbound.local_repo_tree_generator import (
+            LocalRepoTreeGenerator,
+        )
+
+        self._container.register(
+            IRepoTreeGenerator, lambda: LocalRepoTreeGenerator(root_dir=root_dir)
+        )
+        return self
+
+    def with_real_web_scraper(self) -> "TestEnvironment":
+        """Re-registers the real WebScraperAdapter instead of the mock."""
+        from teddy_executor.core.ports.outbound import IWebScraper
+        from teddy_executor.adapters.outbound.web_scraper_adapter import (
+            WebScraperAdapter,
+        )
+
+        self._container.register(IWebScraper, WebScraperAdapter)
+        return self
+
+    def with_real_config(self) -> "TestEnvironment":
+        """Re-registers the real YamlConfigAdapter instead of the mock."""
+        from teddy_executor.core.ports.outbound import IConfigService
+        from teddy_executor.adapters.outbound.yaml_config_adapter import (
+            YamlConfigAdapter,
+        )
+
+        config_path = (
+            str(self.workspace / ".teddy" / "config.yaml")
+            if self.workspace
+            else ".teddy/config.yaml"
+        )
+        self._container.register(
+            IConfigService, lambda: YamlConfigAdapter(config_path=config_path)
+        )
+        return self
+
+    def with_real_searcher(self) -> "TestEnvironment":
+        """Re-registers the real WebSearcherAdapter instead of the mock."""
+        from teddy_executor.core.ports.outbound import IWebSearcher
+        from teddy_executor.adapters.outbound.web_searcher_adapter import (
+            WebSearcherAdapter,
+        )
+
+        self._container.register(IWebSearcher, WebSearcherAdapter)
+        return self
+
     def setup(self) -> "TestEnvironment":
         """Initializes a fresh container and patches the global CLI container."""
         self.container = create_container()
+        self._register_default_mocks()
 
-        # Register mocks for side-effect-prone outbound ports by default
-        from unittest.mock import MagicMock, Mock
+        # Monkeypatch the global container instance used by the CLI
+        self._monkeypatch.setattr(teddy_executor.__main__, "container", self.container)
 
+        if self.workspace:
+            self._anchor_workspace()
+
+        return self
+
+    def _register_default_mocks(self) -> None:
+        """Registers mocks for side-effect-prone outbound ports."""
         from teddy_executor.core.ports.outbound import (
+            IConfigService,
+            IEnvironmentInspector,
+            IFileSystemManager,
             ILlmClient,
+            IRepoTreeGenerator,
             IShellExecutor,
             ISystemEnvironment,
             IUserInteractor,
+            IWebScraper,
+            IWebSearcher,
         )
 
+        # System Environment & Shell
         mock_env = Mock(spec=ISystemEnvironment)
-        # Ensure env and which return None by default to prevent truthy Mock issues
         mock_env.get_env.return_value = None
         mock_env.which.return_value = None
         self._container.register(ISystemEnvironment, instance=mock_env)
 
-        # Interactor MUST be unpack-safe for interactive sequences
+        mock_shell = Mock(spec=IShellExecutor)
+        mock_shell.execute.return_value = {"stdout": "", "stderr": "", "return_code": 0}
+        self._container.register(IShellExecutor, instance=mock_shell)
+
+        # UI & Interaction
         mock_interactor = Mock(spec=IUserInteractor)
         mock_interactor.confirm_action.return_value = (True, "")
         mock_interactor.confirm_manual_handoff.return_value = (True, "")
         mock_interactor.ask_question.return_value = ""
         self._container.register(IUserInteractor, instance=mock_interactor)
 
+        # LLM
         mock_llm = Mock(spec=ILlmClient)
-        # Create a structured ModelResponse mock for safe defaults
         mock_response = MagicMock()
         mock_response.choices = [MagicMock()]
         mock_response.choices[
             0
-        ].message.content = (
-            "# Mock Plan\nRationale: Test\n## Action Plan\n### EXECUTE\necho 1"
-        )
+        ].message.content = "# Plan\n## Action Plan\n### EXECUTE\necho 1"
         mock_response.model = "test-model"
         mock_llm.get_completion.return_value = mock_response
-        mock_llm.get_token_count.return_value = 100
-        mock_llm.get_completion_cost.return_value = 0.01
+        mock_llm.get_completion_cost.return_value = 0.0
+        mock_llm.get_token_count.return_value = 0
         self._container.register(ILlmClient, instance=mock_llm)
 
-        self._container.register(IShellExecutor, instance=Mock(spec=IShellExecutor))
+        # Filesystem
+        mock_fs = Mock(spec=IFileSystemManager)
+        mock_fs.path_exists.return_value = False
+        self._container.register(IFileSystemManager, instance=mock_fs)
 
-        # Monkeypatch the global container instance used by the CLI
-        self._monkeypatch.setattr(teddy_executor.__main__, "container", self.container)
+        # Configuration & Inspection
+        mock_config = Mock(spec=IConfigService)
+        mock_config.get_setting.side_effect = lambda key, default=None: default
+        self._container.register(IConfigService, instance=mock_config)
 
-        # Optionally anchor the workspace
-        if self.workspace:
-            from teddy_executor.core.ports.outbound.file_system_manager import (
-                IFileSystemManager,
-            )
-            from teddy_executor.adapters.outbound.local_file_system_adapter import (
-                LocalFileSystemAdapter,
-            )
+        self._container.register(IWebScraper, instance=Mock(spec=IWebScraper))
+        self._container.register(IWebSearcher, instance=Mock(spec=IWebSearcher))
+        self._container.register(
+            IRepoTreeGenerator, instance=Mock(spec=IRepoTreeGenerator)
+        )
+        self._container.register(
+            IEnvironmentInspector, instance=Mock(spec=IEnvironmentInspector)
+        )
 
-            # Re-register with the anchored root
-            self._container.register(
-                IFileSystemManager, LocalFileSystemAdapter, root_dir=str(self.workspace)
-            )
+    def _anchor_workspace(self) -> None:
+        """Configures the container for a specific anchored workspace."""
+        import os
+        from teddy_executor.core.ports.outbound.file_system_manager import (
+            IFileSystemManager,
+        )
+        from teddy_executor.adapters.outbound.local_file_system_adapter import (
+            LocalFileSystemAdapter,
+        )
+        from teddy_executor.core.ports.outbound.repo_tree_generator import (
+            IRepoTreeGenerator,
+        )
+        from teddy_executor.adapters.outbound.local_repo_tree_generator import (
+            LocalRepoTreeGenerator,
+        )
+        from teddy_executor.core.ports.inbound.init import IInitUseCase
+        from teddy_executor.core.services.init_service import InitService
 
-        return self
+        # Re-register with the anchored root
+        self._container.register(
+            IFileSystemManager, LocalFileSystemAdapter, root_dir=str(self.workspace)
+        )
+        self._container.register(
+            IRepoTreeGenerator, LocalRepoTreeGenerator, root_dir=str(self.workspace)
+        )
 
-    def get_service(self, service_type: Type[T]) -> T:
+        # Anchor InitService with absolute template path
+        real_config = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "../../../config")
+        )
+        self._container.register(
+            IInitUseCase,
+            lambda: InitService(
+                self.get_service(IFileSystemManager), config_dir=real_config
+            ),
+        )
+
+    def get_service(self, service_type: Any) -> Any:
         """Resolves a service from the test-configured container."""
         if not self.container:
             raise RuntimeError(
                 "TestEnvironment.setup() must be called before get_service()"
             )
         return self.container.resolve(service_type)
+
+    def get_mock_filesystem(self) -> Mock:
+        from teddy_executor.core.ports.outbound import IFileSystemManager
+
+        return cast(Mock, self.get_service(IFileSystemManager))
+
+    def get_mock_shell(self) -> Mock:
+        from teddy_executor.core.ports.outbound import IShellExecutor
+
+        return self.get_service(IShellExecutor)  # type: ignore
+
+    def get_mock_user_interactor(self) -> Mock:
+        from teddy_executor.core.ports.outbound import IUserInteractor
+
+        return self.get_service(IUserInteractor)  # type: ignore
 
     def teardown(self):
         """Cleans up monkeypatches and resets state."""

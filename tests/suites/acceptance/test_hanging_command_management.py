@@ -5,7 +5,7 @@ from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
 
 def test_global_timeout_enforcement(monkeypatch, tmp_path):
     """Scenario: Verifies that a command exceeding the global timeout is terminated."""
-    TestEnvironment(monkeypatch, tmp_path).setup().with_real_shell()
+    TestEnvironment(monkeypatch, tmp_path).setup().with_real_shell().with_real_config()
     adapter = CliTestAdapter(monkeypatch, tmp_path)
 
     # 1. Setup a local config with a very short timeout
@@ -35,7 +35,7 @@ def test_global_timeout_enforcement(monkeypatch, tmp_path):
 
 def test_timeout_captures_partial_output(monkeypatch, tmp_path):
     """Scenario: Verifies that partial output generated before a timeout is captured."""
-    TestEnvironment(monkeypatch, tmp_path).setup().with_real_shell()
+    TestEnvironment(monkeypatch, tmp_path).setup().with_real_shell().with_real_config()
     adapter = CliTestAdapter(monkeypatch, tmp_path)
 
     # 1. Setup a local config with a short timeout

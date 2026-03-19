@@ -8,10 +8,10 @@ class InitService(IInitUseCase):
     Service for initializing projects.
     """
 
-    def __init__(self, file_system: IFileSystemManager):
+    def __init__(self, file_system: IFileSystemManager, config_dir: str | None = None):
         self._file_system = file_system
-        # Find the config directory relative to the package root
-        self._config_dir = os.path.join(
+        # Find the config directory relative to the package root if not provided
+        self._config_dir = config_dir or os.path.join(
             os.path.dirname(__file__), "..", "..", "..", "..", "config"
         )
 

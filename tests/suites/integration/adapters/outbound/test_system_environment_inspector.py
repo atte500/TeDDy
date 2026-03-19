@@ -1,14 +1,17 @@
-def test_get_environment_info():
+from tests.harness.setup.test_environment import TestEnvironment
+from teddy_executor.core.ports.outbound.environment_inspector import (
+    IEnvironmentInspector,
+)
+
+
+def test_get_environment_info(monkeypatch):
     """
     Tests that the SystemEnvironmentInspector returns a dictionary with
     the expected keys and non-empty string values.
     """
-    from teddy_executor.adapters.outbound.system_environment_inspector import (
-        SystemEnvironmentInspector,
-    )
+    env = TestEnvironment(monkeypatch).setup().with_real_inspector()
+    inspector = env.get_service(IEnvironmentInspector)
 
-    # Arrange
-    adapter = SystemEnvironmentInspector()
     expected_keys = {
         "os_name",
         "os_version",
@@ -18,7 +21,7 @@ def test_get_environment_info():
     }
 
     # Act
-    env_info = adapter.get_environment_info()
+    env_info = inspector.get_environment_info()
 
     # Assert
     assert isinstance(env_info, dict)

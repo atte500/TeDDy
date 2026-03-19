@@ -80,11 +80,14 @@ exclude = ["spikes/"]
 exclude_dirs = ["tests", "spikes"]
 
 [tool.pytest.ini_options]
+pythonpath = ["src", "."]
 norecursedirs = "spikes"
 addopts = [
     "-n",
     "auto",
     "--import-mode=importlib",
+    "-p",
+    "tests.harness.setup.composition",
 ]
 filterwarnings = [
     "ignore:No data was collected:coverage.exceptions.CoverageWarning",

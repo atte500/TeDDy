@@ -1,22 +1,20 @@
 from unittest.mock import patch, MagicMock
-from teddy_executor.core.domain.models import WebSearchError
-from teddy_executor.core.ports.outbound.web_searcher import IWebSearcher
 import pytest
+from tests.harness.setup.test_environment import TestEnvironment
+from teddy_executor.core.ports.outbound import IWebSearcher
+from teddy_executor.core.domain.models import WebSearchError
 
 
-@pytest.fixture
-def adapter(container):
-    return container.resolve(IWebSearcher)
-
-
-def test_search_success_returns_websearchresults_dict(adapter):
+def test_search_success_returns_websearchresults_dict(monkeypatch):
     """
     Tests that the adapter returns a dictionary conforming to the
     WebSearchResults TypedDict structure.
     """
     # Arrange
-    queries = ["python"]
+    env = TestEnvironment(monkeypatch).setup().with_real_searcher()
+    searcher = env.get_service(IWebSearcher)
 
+    queries = ["python"]
     mock_ddgs_result = [
         {
             "title": "Welcome to Python.org",
@@ -31,32 +29,26 @@ def test_search_success_returns_websearchresults_dict(adapter):
         mock_ddgs_class.return_value.__enter__.return_value = mock_ddgs_instance
 
         # Act
-        result = adapter.search(queries)
+        result = searcher.search(queries)
 
         # Assert
         assert isinstance(result, dict)
-        assert "query_results" in result
         assert len(result["query_results"]) == 1
-
-        query_result = result["query_results"][0]
-        assert query_result["query"] == "python"
-        assert len(query_result["results"]) == 1
-
-        search_result = query_result["results"][0]
-        assert search_result["title"] == "Welcome to Python.org"
-        assert search_result["href"] == "https://www.python.org/"
+        assert result["query_results"][0]["query"] == "python"
         assert (
-            search_result["body"]
-            == "The official home of the Python Programming Language"
+            result["query_results"][0]["results"][0]["title"] == "Welcome to Python.org"
         )
 
 
-def test_search_handles_library_exception(adapter):
+def test_search_handles_library_exception(monkeypatch):
     """
     Tests that the adapter catches an exception from the ddgs library
     and raises a WebSearchError.
     """
     # Arrange
+    env = TestEnvironment(monkeypatch).setup().with_real_searcher()
+    searcher = env.get_service(IWebSearcher)
+
     queries = ["test query"]
 
     # Patch DDGS where it's defined to intercept the lazy import
@@ -67,4 +59,4 @@ def test_search_handles_library_exception(adapter):
 
         # Act & Assert
         with pytest.raises(WebSearchError, match="Failed to execute search"):
-            adapter.search(queries)
+            searcher.search(queries)

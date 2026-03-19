@@ -6,7 +6,7 @@ from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
 def test_multi_block_edit_shows_all_diffs(monkeypatch, tmp_path):
     """Scenario: Single EDIT action with two separate FIND/REPLACE blocks shows all diffs and hunks."""
     env = TestEnvironment(monkeypatch, tmp_path)
-    env.setup()
+    env.setup().with_real_config()
     adapter = CliTestAdapter(monkeypatch, tmp_path)
 
     # Set global threshold to 0.8 for fuzzy matching in this test

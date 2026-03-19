@@ -4,7 +4,7 @@
 
 ## 1. Purpose
 
-The `InitService` is the application service responsible for the idempotent initialization of a TeDDy project. It implements the `IInitUseCase` port and centralizes the logic for creating the foundational directory structure and default templates.
+The `InitService` is the application service responsible for the idempotent initialization of a TeDDy project. It implements the `IInitUseCase` port and centralizes the logic for creating the foundational directory structure and default templates. It supports a configurable template directory to ensure isolation in test environments.
 
 ## 2. Used Outbound Ports
 
