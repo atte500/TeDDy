@@ -81,7 +81,7 @@
           *   **Goal:** To establish the foundational engineering practices for the project.
           *   **Structure:** This section will contain a list of key-value definitions or short paragraphs. It **must** establish the project's strategy for the following, using these as strong defaults, and may be extended with other project-specific conventions:
               *   **Version Control Strategy:** Default to **Trunk-Based Development** on the `main` branch.
-              *   **Testing Strategy:** The project's testing strategy, including the primary framework and structural rules like the test pyramid (Unit > Integration > Acceptance).
+              *   **Testing Strategy:** The project's testing strategy, including the primary framework, structural rules (Unit > Integration > Acceptance), and the mandate for centralized test detritus management in `tests/.tmp/`.
               *   **Pre-commit Hooks (Local):** The Architect MUST ensure local checks are in place for:
                   *   **Quality Gate:** Running the full test suite (unit, integration, and acceptance) with a mandatory coverage threshold (e.g., 90%).
                   *   **Integrity:** Verifying a clean Git status (no unstaged changes e.g. via `git diff --exit-code`).

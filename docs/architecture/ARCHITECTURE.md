@@ -194,6 +194,7 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 This section serves as the "System Law" (Poka-Yoke) for TeDDy. It defines the prescriptive standards that all development work MUST follow.
 
 -   **Rule:** The Test Harness (DSLs, Builders, Contexts) MUST reside exclusively within the `tests/` directory. **Rationale:** To maintain strict isolation between production and test-related code, preventing test dependencies from leaking into the core application.
+-   **Rule:** All temporary test files and workspaces MUST be created within the standardized `tests/.tmp/` directory and explicitly cleaned up during test teardown. **Rationale:** To prevent filesystem pollution, ensure a consistent environment for all tests, and simplify CI detritus management.
 
 
 -   **Rule:** Use Hexagonal Architecture (Ports & Adapters) to isolate core business logic from external frameworks and I/O. **Rationale:** To enable independent testing and allow for easy swapping of infrastructure technologies.

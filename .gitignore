@@ -102,5 +102,8 @@ spikes/
 private/
 temp_*
 
+# Test detritus
+tests/.tmp/
+
 # Archived Folders
 *archive
