@@ -23,6 +23,9 @@ from tests.harness.setup.composition import (
     mock_inspector,
     mock_report_formatter,
     mock_llm_client,
+    mock_pyperclip,
+    env,
+    real_env,
 )
 
 # Exporting these fixtures makes them globally available to all test suites
@@ -44,4 +47,7 @@ __all__ = [
     "mock_inspector",
     "mock_report_formatter",
     "mock_llm_client",
+    "mock_pyperclip",
+    "env",
+    "real_env",
 ]

@@ -1,3 +1,6 @@
+import os
+import shutil
+import uuid
 from pathlib import Path
 from typing import Any, Optional, TypeVar, cast
 from unittest.mock import MagicMock, Mock
@@ -18,6 +21,7 @@ class TestEnvironment:
     def __init__(self, monkeypatch, workspace: Optional[Path] = None):
         self._monkeypatch = monkeypatch
         self.workspace = workspace
+        self._is_managed_workspace = workspace is None
         self.container: Optional[teddy_executor.container.punq.Container] = None
 
     @property
@@ -108,13 +112,21 @@ class TestEnvironment:
 
     def setup(self) -> "TestEnvironment":
         """Initializes a fresh container and patches the global CLI container."""
+        if self._is_managed_workspace:
+            base_tmp = Path(__file__).parent.parent.parent / ".tmp"
+            unique_name = f"test_{uuid.uuid4().hex}"
+            self.workspace = base_tmp / unique_name
+            self.workspace.mkdir(parents=True, exist_ok=True)
+
         self.container = create_container()
         self._register_default_mocks()
 
         # Monkeypatch the global container instance used by the CLI
         self._monkeypatch.setattr(teddy_executor.__main__, "container", self.container)
 
-        if self.workspace:
+        # Legacy Compatibility: If a workspace was EXPLICITLY provided, anchor real adapters.
+        # For managed workspaces (automated), we stay with mocks by default.
+        if not self._is_managed_workspace and self.workspace:
             self._anchor_workspace()
 
         return self
@@ -183,33 +195,36 @@ class TestEnvironment:
             IEnvironmentInspector, instance=Mock(spec=IEnvironmentInspector)
         )
 
-    def _anchor_workspace(self) -> None:
-        """Configures the container for a specific anchored workspace."""
-        import os
-        from teddy_executor.core.ports.outbound.file_system_manager import (
+    def with_real_filesystem(self) -> "TestEnvironment":
+        """Anchors real Filesystem and Tree Generator to the workspace."""
+        from teddy_executor.core.ports.outbound import (
             IFileSystemManager,
+            IRepoTreeGenerator,
         )
         from teddy_executor.adapters.outbound.local_file_system_adapter import (
             LocalFileSystemAdapter,
         )
-        from teddy_executor.core.ports.outbound.repo_tree_generator import (
-            IRepoTreeGenerator,
-        )
         from teddy_executor.adapters.outbound.local_repo_tree_generator import (
             LocalRepoTreeGenerator,
         )
-        from teddy_executor.core.ports.inbound.init import IInitUseCase
-        from teddy_executor.core.services.init_service import InitService
 
-        # Re-register with the anchored root
+        if not self.workspace:
+            raise RuntimeError("Cannot anchor real filesystem without a workspace.")
+
         self._container.register(
             IFileSystemManager, LocalFileSystemAdapter, root_dir=str(self.workspace)
         )
         self._container.register(
             IRepoTreeGenerator, LocalRepoTreeGenerator, root_dir=str(self.workspace)
         )
+        return self
 
-        # Anchor InitService with absolute template path
+    def with_real_init_service(self) -> "TestEnvironment":
+        """Anchors a real InitService with correctly resolved template paths."""
+        from teddy_executor.core.ports.inbound.init import IInitUseCase
+        from teddy_executor.core.services.init_service import InitService
+        from teddy_executor.core.ports.outbound import IFileSystemManager
+
         real_config = os.path.abspath(
             os.path.join(os.path.dirname(__file__), "../../../config")
         )
@@ -219,6 +234,12 @@ class TestEnvironment:
                 self.get_service(IFileSystemManager), config_dir=real_config
             ),
         )
+        return self
+
+    def _anchor_workspace(self) -> None:
+        """Deprecated: Use with_real_filesystem() and with_real_init_service() instead."""
+        self.with_real_filesystem()
+        self.with_real_init_service()
 
     def get_service(self, service_type: Any) -> Any:
         """Resolves a service from the test-configured container."""
@@ -246,4 +267,5 @@ class TestEnvironment:
     def teardown(self):
         """Cleans up monkeypatches and resets state."""
         # Monkeypatching is automatically handled by the pytest fixture
-        pass
+        if self._is_managed_workspace and self.workspace and self.workspace.exists():
+            shutil.rmtree(self.workspace, ignore_errors=True)

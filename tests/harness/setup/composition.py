@@ -1,7 +1,9 @@
 # ruff: noqa: E402
 import sys
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock, MagicMock, patch
 import pytest
+import pyperclip
+from tests.harness.setup.test_environment import TestEnvironment
 
 # Globally mock litellm to prevent the expensive 1.2s import in all tests.
 # This ensures that even if LiteLLMAdapter is instantiated, it doesn't
@@ -205,3 +207,42 @@ def mock_llm_client(container):
 
     container.register(ILlmClient, instance=mock)
     return mock
+
+
+@pytest.fixture(autouse=True)
+def mock_pyperclip():
+    """
+    Automatically mock pyperclip for all tests to prevent clipboard pollution.
+    Raises PyperclipException to force the application to skip clipboard logging.
+    """
+    with patch(
+        "pyperclip.copy",
+        side_effect=pyperclip.PyperclipException("Clipboard not available in test"),
+    ) as mock_copy:
+        yield mock_copy
+
+
+@pytest.fixture
+def env(monkeypatch):
+    """
+    Standard fixture for a managed TestEnvironment with Mocks.
+    Automatically handles workspace creation and cleanup.
+    """
+    e = TestEnvironment(monkeypatch)
+    e.setup()
+    yield e
+    e.teardown()
+
+
+@pytest.fixture
+def real_env(monkeypatch):
+    """
+    Managed TestEnvironment with real Filesystem and Shell.
+    """
+    e = TestEnvironment(monkeypatch)
+    e.setup()
+    e.with_real_filesystem()
+    e.with_real_shell()
+    e.with_real_init_service()
+    yield e
+    e.teardown()

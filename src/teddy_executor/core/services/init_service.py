@@ -20,6 +20,8 @@ class InitService(IInitUseCase):
         path = os.path.join(self._config_dir, filename)
         if not os.path.exists(path):
             return None
+        # Use direct reading for the template dir as it's part of the package,
+        # but consider if this should also be virtualized.
         with open(path, "r", encoding="utf-8") as f:
             return f.read()
 

@@ -113,18 +113,21 @@ Scenario 1 established the formal Test Harness Triad. The `MarkdownPlanBuilder` 
 - [✓] `tests/integration/core/services/test_validation_diagnostics_integration.py`
 
 #### Implementation Notes (Scenario 3)
-Refactored the entire integration suite (96 tests) to utilize the formal Test Harness Triad and `TestEnvironment` setup. Migrated ad-hoc mocking to the standardized `container` fixture and global mocks (e.g., `mock_fs`, `mock_shell`). Consolidated all `conftest.py` logic into `tests/suites/conftest.py` and removed the redundant global `tests/conftest.py`. Fixed a critical regression in `test_shell_adapter.py` related to parallel execution and resolved various linting/typing issues in the harness infrastructure. Resolved a subtle regression in session management caused by a `TypeError` in `PlanningService` (mock cost) and an isolation leak in `InitService` (path resolution), ensuring a stable foundation for Milestones 10+.
+Refactored the entire integration suite (96 tests) to utilize the formal Test Harness Triad and `TestEnvironment` setup. Migrated ad-hoc mocking to the standardized `container` fixture and global mocks (e.g., `mock_fs`, `mock_shell`). Consolidated all `conftest.py` logic into `tests/conftest.py` and removed the redundant global `tests/conftest.py`. Fixed a critical regression in `test_shell_adapter.py` related to parallel execution and resolved various linting/typing issues in the harness infrastructure. Resolved a subtle regression in session management caused by a `TypeError` in `PlanningService` (mock cost) and an isolation leak in `InitService` (path resolution), ensuring a stable foundation for Milestones 10+.
 
-### Scenario 4: Standardize Test Detritus Management [ ]
+### Scenario 4: Standardize Test Detritus Management [✓]
 **Goal:** Centralize temporary workspace creation and ensure automated cleanup across the entire suite.
 - **Precondition:** Tests create temporary directories in decentralized or inconsistent locations (e.g., `temp_*` or using default `pytest` paths).
 - **Success Condition:** `TestEnvironment` creates all temporary workspaces under a standardized `tests/.tmp/` directory.
 - **Success Condition:** `TestEnvironment` ensures the deletion of these directories during `teardown()`.
 - **Success Condition:** `tests/.tmp/` is ignored by version control.
 #### Deliverables
-- [ ] Update `TestEnvironment` to automatically create and cleanup `tests/.tmp/` subdirectories.
-- [ ] Standardize existing tests to use this centralized workspace logic.
-- [ ] Verify cleanup reliability across Acceptance and Integration suites.
+- [✓] Update `TestEnvironment` to automatically create and cleanup `tests/.tmp/` subdirectories.
+- [✓] Standardize existing tests to use this centralized workspace logic.
+- [✓] Verify cleanup reliability across Acceptance and Integration suites.
+
+#### Implementation Notes (Scenario 4)
+Standardized the management of test detritus by making `TestEnvironment` responsible for the entire workspace lifecycle. All temporary workspaces are now uniquely created within `tests/.tmp/` and automatically cleaned up during teardown. Unified the test harness by consolidating all fixtures into `tests/conftest.py` and removing redundant specialized conftests. Added a global `env` fixture that provides a managed, self-cleaning environment by default for all tests. Verified cleanup reliability across the suite and documented the new standards in `ARCHITECTURE.md`.
 
 ## 3. Architectural Changes
 This slice implements the "Primary Driving Adapter" pattern for the test suite.

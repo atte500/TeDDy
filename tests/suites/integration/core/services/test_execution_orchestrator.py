@@ -1,14 +1,9 @@
-import pytest
 from teddy_executor.core.domain.models import ActionStatus, RunStatus
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
-from tests.harness.setup.test_environment import TestEnvironment
 
 
-@pytest.fixture
-def env(tmp_path, monkeypatch):
-    """Fixture providing a TestEnvironment anchored to a temporary workspace."""
-    return TestEnvironment(monkeypatch, workspace=tmp_path).setup()
+# env fixture is now provided globally from tests/conftest.py
 
 
 def test_execute_handles_valid_plan_successfully(env):

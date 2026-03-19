@@ -31,3 +31,26 @@ def test_environment_workspace_management(monkeypatch, tmp_path):
     assert env.workspace == tmp_path
 
     env.teardown()
+
+
+def test_environment_automated_workspace_lifecycle(monkeypatch):
+    """
+    Scenario 4: TestEnvironment should create and cleanup its own workspace
+    under tests/.tmp/ if none is provided.
+    """
+    env = TestEnvironment(monkeypatch)
+    env.setup()
+
+    workspace = env.workspace
+    assert workspace is not None
+    # Use as_posix() to ensure cross-platform string matching
+    assert "tests/.tmp" in workspace.as_posix()
+    assert workspace.exists()
+    assert workspace.is_dir()
+
+    # Create a dummy file in the workspace
+    (workspace / "dummy.txt").write_text("hello", encoding="utf-8")
+
+    # Teardown should delete the workspace
+    env.teardown()
+    assert not workspace.exists()
