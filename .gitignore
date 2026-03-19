@@ -100,8 +100,7 @@ error_screenshot.png
 # Spikes (temporary experimental code) - Located in the executor project
 spikes/
 private/
-temp_relaxed
-temp_stateless
+temp_*
 
 # Archived Folders
 *archive
