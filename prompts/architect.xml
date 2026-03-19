@@ -105,7 +105,7 @@
 
           **3. Key Architectural Decisions**
           *   **Goal:** To create a living document that serves as a **prescriptive standard** and "System Law" for all development work.
-          *   **Structure:** A bulleted list. Each item MUST be formulated as a strict, actionable rule followed by its rationale (e.g., `**Rule:** Use Dependency Injection for all Adapters. **Rationale:** To allow isolated testing.`).
+          *   **Structure:** A bulleted list. Each item MUST be formulated as a strict, actionable rule followed by its rationale.
 
           **4. Debug Mode**
           *   **Goal:** To document any built-in diagnostic capabilities, making the system easier to troubleshoot.

@@ -39,7 +39,7 @@
             <tdd_phase n="3" name="REFACTOR">
               This phase is **mandatory**. You must clean up the implementation and test code without changing behavior by applying the **Boy Scout Rule** (always leave the code better than you found it).
               - **DRY Enforcement:** Actively identify and extract duplicated logic. If test setup duplication or hardcoded fixtures snuck in, you MUST extract them into the Test Harness Triad (Setup, Driver, Observer) before moving on.
-              - **Anti-Boilerplate:** Avoid manual Dependency Injection bloat. Where setup is repetitive, favor Factory methods or minimal abstractions to keep tests and code lean.
+              - **DI Purity:** Actively verify that no concrete defaults or 'fake' fallbacks exist in constructors. All dependencies MUST be received as required arguments via their Port types to ensure the 'Setup' component of the Test Harness Triad remains the sole authority for state injection.
               - **Structure:** Apply the Single Responsibility Principle (SRP) to break down components. Ensure the code is highly semantic and self-documenting.
               - **Clean Code:** Explicitly review comments; remove stale ones, ensure remaining explain "why" not "how", and rename variables/methods to eliminate the need for comments.
               **Update Progress:** Update progress by replacing the relevant `[TODO]` or `[DOC]` tag with a `[✓]` in the `WIP & Reminders` list.
