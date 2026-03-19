@@ -55,19 +55,12 @@ repos:
         types: [python]
         pass_filenames: false
 
-    -   id: file-length-src
-        name: Check Source File Length (Max 300 Lines)
-        entry: bash -c 'for f in "$@"; do if [ $(wc -l < "$f") -gt 300 ]; then echo "Source file $f is too long (>300 lines). Please refactor."; exit 1; fi; done' --
+    -   id: file-length-python
+        name: Check Python File Length (Max 300 Lines)
+        entry: bash -c 'for f in "$@"; do if [ $(wc -l < "$f") -gt 300 ]; then echo "File $f is too long (>300 lines). Please refactor."; exit 1; fi; done' --
         language: system
         types: [python]
-        files: ^src/
-
-    -   id: file-length-tests
-        name: Check Test File Length (Max 500 Lines)
-        entry: bash -c 'for f in "$@"; do if [ $(wc -l < "$f") -gt 500 ]; then echo "Test file $f is too long (>500 lines). Please refactor."; exit 1; fi; done' --
-        language: system
-        types: [python]
-        files: ^tests/
+        files: ^(src|tests)/
 
     -   id: test-pyramid
         name: Test Pyramid Verification

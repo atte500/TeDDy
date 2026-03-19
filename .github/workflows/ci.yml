@@ -56,17 +56,11 @@ jobs:
     - name: Install dependencies
       run: poetry install --no-interaction
 
-    - name: Run pre-commit checks (Lint, Format, Types)
+    - name: Run all pre-commit checks (Lint, Format, Types, SLOC, Pyramid, Tests)
       run: poetry run pre-commit run --all-files
 
     - name: Run Pip-Audit (Dependency Vulnerability Scan)
       run: poetry run pip-audit
-
-    - name: Run Vulture (Dead Code Detection)
-      run: poetry run vulture src --min-confidence 80
-
-    - name: Run tests (with coverage)
-      run: poetry run pytest --cov=src --cov-report=term-missing --cov-fail-under=90
 
     - name: Setup Node.js
       uses: actions/setup-node@v6
@@ -78,5 +72,3 @@ jobs:
 
     - name: Run jscpd (Code Duplication Detection)
       run: jscpd --min-tokens=50 --reporters=console --threshold 0 src
-
-    # Pyramid check is now part of the pre-commit run

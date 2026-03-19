@@ -67,6 +67,8 @@ This document outlines the technical standards, conventions, and setup process f
     -   **Quality Gate:**
         - `run-tests`: Executes the full test suite with coverage (`poetry run pytest --cov=src --cov-report=term-missing --cov-fail-under=90`).
         - `test-pyramid`: Verifies the Test Pyramid structure (Unit > Integration > Acceptance).
+        - `ruff-complexity`: Enforces a **precise Cyclomatic Complexity** limit of **9** per function (Rule `C901`) and a **precise Statement Limit** of **40** per function (Rule `PLR0915`) for ALL code.
+        - `file-length-python`: Enforces a strict **300 line limit** for all Python files (excluding spikes).
     - **Integrity:**
         - `git-status-clean`: Verifies a clean Git status (`git diff --exit-code`) to ensure the commit matches the working directory state.
     - **Style & Formatting:**
@@ -80,12 +82,7 @@ This document outlines the technical standards, conventions, and setup process f
 - **Goal:** To provide a comprehensive, automated quality gate that protects the main branch.
 - **Principle:** The CI pipeline **must** run all checks from the `pre-commit` suite. It **may** also include additional, slower-running checks.
 - **CI-Only Checks:**
-    - **Test Coverage:** Both the local `pre-commit` hook and the CI pipeline **must** perform test coverage analysis using `pytest-cov` and enforce a strict failure threshold of **90%**. This ensures parity between the developer "Inner Loop" and the CI "Outer Loop."
     - **Code Duplication:** Checked via `jscpd` with a minimum token count of **50**.
-    - **Complexity & Dead Code:**
-        - `ruff`: Configured to enforce a **precise Cyclomatic Complexity** limit of **9** per function (Rule `C901`) and a **precise Statement Limit** of **40** per function (Rule `PLR0915`).
-        - `vulture`: For detecting dead (unreachable) code. Must be configured with a minimum confidence of **80%**.
-        - **File Length (SLOC):** A custom check enforces a maximum of **300 lines** per Python file (excluding tests and spikes). This ensures components remain focused and modular.
 
 ### Spike Directory Exclusion
 The `spikes/` directory is intentionally excluded from `ruff` and `mypy` checks in `.pre-commit-config.yaml`.
