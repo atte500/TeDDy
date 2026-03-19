@@ -23,7 +23,7 @@
       <phase n="2" name="TEST SCENARIO">
         <action>
           *   **Outer RED:** Locate the appropriate test file in `tests/suites/acceptance/`.
-          *   Translate the Gherkin-formatted Acceptance Criteria for the current scenario into a new or updated failing acceptance test. You MUST utilize the Architect's defined Test Harness Triad (Setup, Driver, Observer) for state, interaction, and verification right from the start. Do not write tests or mock behavior for future scenarios. Run the test locally to confirm its RED state and that it fails as expected. This test acts as your temporary North Star.
+          *   Translate the Gherkin-formatted Acceptance Criteria for the current scenario into a new or updated failing acceptance test. You MUST utilize the Architect's defined Test Harness Triad (Setup for 'Arrange', Driver for 'Act', Observer for 'Assert') for state, interaction, and verification right from the start. Do not write tests or mock behavior for future scenarios. Run the test locally to confirm its RED state and that it fails as expected. This test acts as your temporary North Star.
         </action>
       </phase>
       <phase n="3" name="IMPLEMENT SCENARIO">
@@ -209,8 +209,8 @@
         <sub_instruction name="Unit">`tests/suites/unit/`: Isolated tests for core business logic. This layer is responsible for testing all complex permutations, edge cases, and business rule validations.</sub_instruction>
       </rule>
       <rule n="11">
-        <title>Use Abstractions (Ports & Test Harness Triad) at the Boundaries</title>
-        <instruction>To effectively test at the boundaries, you must depend on Port abstractions, not concrete implementations. This allows you to use test doubles in unit tests. Furthermore, treat tests as first-class architectural citizens: you are strictly prohibited from bypassing the Test Harness Triad. High-level tests (Acceptance/Integration) must use Setup (state), Drivers (interaction), and Observers (verification), never raw framework drivers (e.g., `page.click()`) or raw database queries.</instruction>
+        <title>Mandatory Test Harness Triad</title>
+        <instruction>To test at boundaries, depend on Port abstractions, not concrete implementations. Furthermore, you are strictly prohibited from bypassing the Test Harness Triad in Acceptance/Integration tests. You MUST use Setup for 'Arrange', Drivers for 'Act', and Observers for 'Assert'. Direct use of raw UI drivers, direct data access, environment shims, or raw network calls is a zero-tolerance violation.</instruction>
       </rule>
       <rule n="12">
         <title>Standardized Plan Types</title>

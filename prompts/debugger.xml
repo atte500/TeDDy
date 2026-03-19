@@ -115,7 +115,7 @@
           1.  **Stash WIP:** `EXECUTE` `git stash` and record the current branch name.
           2.  **Branch:** `EXECUTE` a checkout of a transient branch `fix/{{bug-name}}` from the last stable commit.
           3.  **Baseline Run:** `EXECUTE` the full test suite. Record results as the **Baseline State**.
-          4.  **RED Phase:** Create a regression test in `tests/suites/` using the Test Harness Triad. Confirm failure.
+          4.  **RED Phase:** Create a regression test in `tests/suites/`. You MUST utilize the Test Harness Triad in `tests/harness/` (Setup for 'Arrange', Driver for 'Act', Observer for 'Assert'). Bypassing the harness to use raw assertions or direct data access is strictly prohibited. Confirm failure.
           5.  **GREEN Phase:** Apply minimal `src/` changes and `CREATE` the RCA in `docs/project/debugging/rca/{{bug-name}}.md`.
           6.  **REFACTOR Phase:** Clean up code and documentation.
           7.  **Delta Verification:** Run the full suite. Success = new test passes AND suite matches **Baseline State**.
@@ -298,6 +298,14 @@
           4.  **Trigger & Poll:** Use CLI tools (e.g., `gh workflow run`, `gh run watch`) to trigger and ingest logs autonomously.
           5.  **Clean up:** Delete the transient branch once logs are ingested and branch is no longer needed.
         </instruction>
+      </rule>
+      <rule n="15">
+        <title>Mandatory Test Harness Triad</title>
+        <instruction>When performing repairs in Phase 7, you are strictly prohibited from bypassing the Test Harness Triad in `tests/suites/`. You MUST use the established harness in `tests/harness/`:
+          - **Setup (Arrange):** Use `tests/harness/setup/` to configure the environment.
+          - **Drivers (Act):** Use `tests/harness/drivers/` for all interactions.
+          - **Observers (Assert):** Use `tests/harness/observers/` for all verifications.
+        Bypassing the harness to use raw assertions or direct system calls during the repair phase is a zero-tolerance violation.</instruction>
       </rule>
     </general_rules>
     <response_format>
