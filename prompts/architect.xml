@@ -82,7 +82,7 @@
           *   **Structure:** This section will contain a list of key-value definitions or short paragraphs. It **must** establish the project's strategy for the following, using these as strong defaults, and may be extended with other project-specific conventions:
               *   **Version Control Strategy:** Default to **Trunk-Based Development** on the `main` branch.
               *   **Testing Strategy:** The project's testing strategy, including the primary framework, structural rules (Unit > Integration > Acceptance), and the mandate for centralized test detritus management in `tests/.tmp/`.
-              *   **Pre-commit Hooks (Local):** The Architect MUST ensure local checks are in place for:
+              *   **Pre-commit Hooks & CI:** The Architect MUST ensure checks are in place for:
                   *   **Quality Gate:** Running the full test suite (unit, integration, and acceptance) with a mandatory coverage threshold (e.g., 90%).
                   *   **Integrity:** Verifying a clean Git status (no unstaged changes e.g. via `git diff --exit-code`).
                   *   **Security:** A secret scanner.
@@ -90,12 +90,10 @@
                   *   **Style & Formatting:** A standard linter/formatter, AND explicitly configured **test-specific linters** (e.g., `eslint-plugin-playwright`, `flake8-pytest-style`) to catch test smells.
                   *   **Architectural Guardrails:** An architectural linter (e.g., `dependency-cruiser`, `ArchUnit`) to strictly enforce boundary rules and Test Harness Triad usage.
                   *   **Sanity & Consistency:** Basic file format and consistency checks.
-              *   **CI Quality Gates (Pipeline):** The Architect MUST ensure the CI pipeline runs all pre-commit checks AND may add slower, more comprehensive checks for:
-                  *   **Test Coverage:** A mandatory threshold for test coverage.
-                  *   **Code Duplication:** A copy-paste detector (CPD).
-                  *   **Complexity:** Static complexity analysis for **Cyclomatic Complexity** per function and **Source Lines of Code (SLOC)** per file. You MUST mandate **unified, strict limits** across both production and test files (e.g., 300 lines max for both). This physically forces developers to extract test logic into the Test Harness Triad (Setup, Driver, Observer), preventing monolithic test files.
+
+                  *   **Code Duplication:** A copy-paste detector (CPD) with a strict minimum token (eg. 25-token threshold).
+                  *   **Complexity:** Static complexity analysis for **Cyclomatic Complexity** per function and **Source Lines of Code (SLOC)** per file. You MUST mandate **unified, strict limits** across both production and test files (e.g., 300 lines max for both).
                   *   **Dead Code:** Unused code detection.
-                  * **Verifying Test Pyramid Structure:** A custom script to verify Unit > Integration > Acceptance.
 
           **2. Component & Boundary Map**
           *   **Goal:** To provide a single source of truth for the system's structure.
