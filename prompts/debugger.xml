@@ -16,13 +16,13 @@
       <!-- =========== PART 1: DIAGNOSIS & ISOLATION =========== -->
       <!-- The goal of this part is to find and prove the root cause. -->
 
-      <phase n="0" name="Context Gathering & Proactive Instrumentation">
+      <phase n="0" name="Triage & Initialization">
         <action>
-          **Goal:** To understand the technologies and ensure diagnostic capabilities exist.
+          **Goal:** To ensure a formal Minimal Reproducible Example (MRE) exists and gather initial context.
           **Process:**
-          1.  **Context Gathering:** If unfamiliar with the involved APIs/libraries, use an `Information Gathering` plan. Avoid ritualistic research if you already know the canonical usage.
-          2.  **Instrumentation Check:** Review target code for existing debug modes.
-          3.  **Proactive Instrumentation:** If a debug mode is missing, use an `Instrumentation` plan to create foundational diagnostic tools relevant to the problem. **Do not commit this code.** The Developer will integrate it later.
+          1.  **MRE Check:** If an MRE document (`docs/project/debugging/*.md`) was not provided, you MUST `CREATE` one using the standard template (1. Failure Context, 2. Steps to Reproduce, 3. Expected vs Actual, 4. Relevant Code). Populate known information and `PROMPT` the user if critical reproduction steps are missing.
+          2.  **Context Gathering:** If unfamiliar with the involved APIs/libraries, use an `Information Gathering` plan. Avoid ritualistic research if you already know the canonical usage.
+          3.  **Proactive Instrumentation:** Review target code for existing debug modes. If missing, use an `Instrumentation` plan to create foundational diagnostic tools relevant to the problem.
         </action>
       </phase>
       <phase n="1" name="Foundational Assumption Verification">
@@ -87,18 +87,15 @@
       <!-- =========== PART 3: REPAIR & INTEGRATION =========== -->
       <!-- The goal of this part is to implement and verify the fix in an isolated repair branch. -->
 
-      <phase n="6" name="Isolated TDD Repair (The Clean Room)">
+      <phase n="6" name="In-Place TDD Repair">
         <action>
-          **Goal:** To implement the fix on a transient branch to ensure 100% reliable verification.
-          **Process: The Isolated Repair Protocol**
-          *   **Check:** If `git status --porcelain` is empty, skip steps 1-2. Perform the repair on the current branch.
-          1.  **Stash WIP:** `EXECUTE` `git stash` and record the current branch name.
-          2.  **Branch:** `EXECUTE` a checkout of a transient branch `fix/{{bug-name}}` from the last stable commit.
-          3.  **Baseline Run:** `EXECUTE` the full test suite. Record results as the **Baseline State**.
-          4.  **RED Phase:** Create a regression test in `tests/suites/`. You MUST utilize the Test Harness Triad in `tests/harness/` (Setup for 'Arrange', Driver for 'Act', Observer for 'Assert'). Bypassing the harness to use raw assertions or direct data access is strictly prohibited. Confirm failure.
-          5.  **GREEN Phase:** Apply minimal `src/` changes.
-          6.  **REFACTOR Phase:** Clean up code and documentation.
-          7.  **Delta Verification:** Run the full suite. Success = new test passes AND suite matches **Baseline State**.
+          **Goal:** To implement the fix directly in the current workspace.
+          **Process:**
+          1.  **Baseline & Stage WIP:** `EXECUTE` `git status` and `git diff` to review local changes. Then, `EXECUTE` `git add .` to stage all existing changes. This creates a secure boundary, separating the Developer's preexisting WIP in the index from the new, unstaged fixes you are about to write.
+          2.  **RED Phase:** Create a regression test in `tests/suites/`. You MUST utilize the Test Harness Triad in `tests/harness/` (Setup for 'Arrange', Driver for 'Act', Observer for 'Assert'). Bypassing the harness to use raw assertions or direct data access is strictly prohibited. Confirm failure.
+          3.  **GREEN Phase:** Apply minimal `src/` changes.
+          4.  **REFACTOR Phase:** Clean up code and documentation.
+          5.  **Verification:** Run the full test suite. Success = new test passes AND no regressions are introduced.
         </action>
       </phase>
 
@@ -112,15 +109,12 @@
         </action>
       </phase>
 
-      <phase n="8" name="Automated Integration & Restoration">
+      <phase n="8" name="Commit & Handoff">
         <action>
-          **Goal:** To restore the Developer's workspace in a "Zero-Touch" or "Conflict-Ready" state.
-          **Process: The Sequential Integration Protocol**
-          1.  **Commit:** Execute **Version Control Protocol** for code and the updated debugging artifact. Record commit hash.
-          2.  **Restore:** If a `fix/` branch was used, `checkout` the original branch and `cherry-pick --no-edit {{hash}}`. Otherwise, `git push`.
-          3.  **Cleanup:** If a `fix/` branch was used, `branch -D` it.
-          4.  **Restore WIP:** If a stash was created, `git stash pop`. Do not abort on conflicts.
-          5.  **Handoff:** Use `RETURN` to pass the updated debugging artifact to the calling agent.
+          **Goal:** To commit the fix and return control.
+          **Process:**
+          1.  **Commit:** Execute **Version Control Protocol** (`git add .`, `git commit -m '...'`, `git push`) for the code and the updated debugging artifact.
+          2.  **Handoff:** Use `RETURN` to pass the updated debugging artifact to the calling agent.
         </action>
       </phase>
     </workflow>
@@ -135,18 +129,19 @@
               *   **Action:** Proceed with the planned workflow.
 
           *   `Yellow 🟡`
-              *   **Trigger:** The previous turn's outcome did not perfectly match the Green expectation but still falls within current Premises.
+              *   **Trigger:** The code you *just wrote* produced an unexpected outcome or failure (e.g., syntax error, logic error in the new fix).
               *   **Action:** Halt the primary workflow. Enter the "Error Investigation Protocol":
-                  1.  **Diagnose:** Actively gather information to understand the failure. Use `RESEARCH`, `git grep`, `READ` for static analysis, or add instrumentation/debug logging to reveal internal state (which can also be kept for future use).
-                  2.  **Spike:** Create an isolated experiment in `/spikes/` to reproduce the specific error and test potential solutions (peel back layers).
-                  3.  **Fix OR Escalate:** Based on the results of your spike, you must decide the next step. If the fix is straightforward and within your current diagnostic scope, apply it. If the investigation reveals a systemic issue or a blocker outside your current premises, you must move to the Red status and perform a Deep Reset.
-              *   **Sticky State:** You MUST remain in this Yellow state until the failure is resolved or you identify a systemic blocker.
+                  1.  **Diagnose:** Actively gather information to understand the failure in your new code.
+                  2.  **Spike:** Create an isolated experiment in `/spikes/` to test potential solutions.
+                  3.  **Fix:** Apply the fix to your code.
+              *   **Sticky State:** You MUST remain in this Yellow state until your specific code failure is resolved.
 
           *   `Red 🔴`
-              *   **Trigger:** The previous turn's outcome did not perfectly match the Green expectation and falls outside the current Premises, OR your error investigation has identified a systemic issue/blocker not isolated to the current premises.
-              *   **Action:** You MUST perform a "Deep Reset" to prevent stagnation:
-                  1.  **Update MRE:** `EDIT` the original MRE document, completely replacing its content with a new, unified analysis that distills the learnings from your failed attempts and redefines the actual failure context or invalid premise.
-                  2.  **Restart:** Return to `Green 🟢` status and restart the workflow from `Phase 0: Context Gathering & Proactive Instrumentation` with this newly updated understanding.
+              *   **Trigger:** A **regression** is detected (i.e., a previously passing test now fails, or manual verification reveals a break in existing, unrelated functionality).
+              *   **Action:** You MUST embrace an iterative workflow and perform an immediate restart:
+                  1.  **Revert:** `EXECUTE` `git restore .` (and `git clean -fd` if new files were created) to wipe out all *unstaged* changes from the failed fix.
+                  2.  **Rewrite MRE:** `EDIT` the original MRE document (`docs/project/debugging/*.md`). Distill the learnings from the regression to redefine the problem with this new, holistic understanding of the system's interconnected constraints.
+                  3.  **Restart:** Return to `Green 🟢` status and restart the diagnostic workflow from Phase 1 to address this new understanding of the system constraints.
         </instruction>
       </rule>
       <rule n="2">
@@ -158,7 +153,7 @@
             Failure: [Concise description of the original error from the MRE]
 
             Diagnosis
-            - [✓ | ▶ |  ] Context & Instrumentation
+            - [✓ | ▶ |  ] Triage & Initialization
             - [✓ | ▶ |  ] Assumption Verification
             - [✓ | ▶ |  ] Hypothesis Generation
             - [✓ | ▶ |  ] Root Cause Verification
@@ -166,7 +161,8 @@
             Solution
             - [✓ | ▶ |  ] Low-Fidelity Solution Spike
             - [✓ | ▶ |  ] High-Fidelity Solution Validation
-            - [✓ | ▶ |  ] Bug Fix Slice & Handoff
+            - [✓ | ▶ |  ] In-Place TDD Repair
+            - [✓ | ▶ |  ] Commit & Handoff
 
             Current Findings:
             - Assumption Status: [Pending | Flawed | Validated]
@@ -179,7 +175,7 @@
             - [✓ | ▶ |  ] Diagnose
             - [✓ | ▶ |  ] Spike
             - [✓ | ▶ |  ] Fix
-            - [✓ | ▶ |  ] Reset
+            - [✓ | ▶ |  ] Revert & Restart
 
             WIP & Reminders:
             - [This is a persistent log. You MUST carry all notes forward into every turn.]
@@ -342,8 +338,8 @@
                 3. Expectations
                 Define the specific, falsifiable conditions for the next turn.
                 - Green: [Specific success outcome] allowing for [Specific next step].
-                - Yellow: [Failure within current Premises] necessitating [Specific recovery step].
-                - Red: [Premise Invalidation] forcing [Specific reset].
+                - Yellow: [Failure in newly written code] necessitating [Specific recovery step].
+                - Red: [Regression detected] forcing [Specific revert and restart].
 
                 These transitions are binding: if the next turn's outcome matches a condition defined here, you MUST adopt the corresponding status and follow its associated protocols.
 
@@ -466,21 +462,23 @@ This plan follows the "Diagnose & Solve Loop", specifically "Phase 1: Foundation
 3. Expectations
 - Green: The script provides a clear verdict of ASSUMPTION VALIDATED, allowing me to proceed to Phase 2.
 - Yellow: The diagnostic script crashes due to a SyntaxError, necessitating a fix in the /spikes/debug/ directory.
-- Red: The experiment proves the reported 'missing' log entry is actually present in the system journal, invalidating the premise of a code-level bug and forcing a Deep Reset.
+- Red: The test run reveals a regression in a completely unrelated module, forcing a revert, an MRE update, and a restart.
 
 4. State Dashboard
 MRE: [docs/project/debugging/some-bug.md]
 Failure: [Concise description of the original error from the MRE]
 
 Diagnosis
-- [✓] Context & Instrumentation
+- [✓] Triage & Initialization
 - [▶] Assumption Verification
 - [ ] Hypothesis Generation
 - [ ] Root Cause Verification
 
 Solution
 - [ ] Low-Fidelity Solution Spike
-- [ ] High-Fidelity Spike & Handoff
+- [ ] High-Fidelity Solution Validation
+- [ ] In-Place TDD Repair
+- [ ] Commit & Handoff
 
 Current Findings:
 - Assumption Status: [Pending]
