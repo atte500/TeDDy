@@ -34,7 +34,7 @@ def test_structural_validation_error_format(tmp_path, monkeypatch):
     assert "[✓]" in output and 'List: "Status: Green 🟢' in output
     assert "[✗]" in output and 'Heading (Level 2): "Action Plan"' in output
     assert "Error: Expected a Level 2 Heading containing 'Rationale'" in output
-    assert "### Actual Document Structure" in output
+    assert "### Actual Response Structure" in output
 
 
 def test_logical_validation_error_format(tmp_path, monkeypatch):

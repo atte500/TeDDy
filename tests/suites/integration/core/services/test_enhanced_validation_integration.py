@@ -43,7 +43,7 @@ def test_structural_validation_error_format(adapter):
         "[✗] [002] Heading (Level 2): \"Action Plan\" (Error: Expected a Level 2 Heading containing 'Rationale')"
         in output
     )
-    assert "### Actual Document Structure" in output
+    assert "### Actual Response Structure" in output
 
 
 def test_logical_validation_error_format(adapter, tmp_path):

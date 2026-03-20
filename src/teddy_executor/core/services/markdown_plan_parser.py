@@ -96,7 +96,7 @@ class MarkdownPlanParser(IPlanParser):
                 source_doc=doc,
             )
         except InvalidPlanError as e:
-            if "### Expected Document Structure " in str(e):
+            if "### Expected Response Structure " in str(e):
                 raise e
 
             # Re-format the error using the shared infrastructure to always include AST

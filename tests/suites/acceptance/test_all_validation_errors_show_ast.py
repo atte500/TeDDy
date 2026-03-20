@@ -33,5 +33,5 @@ print("hello")
 
     assert result.exit_code != 0
     assert "Missing REPLACE block" in result.stdout
-    assert "Actual Document Structure" in result.stdout
+    assert "Actual Response Structure" in result.stdout
     assert '[000] Heading (Level 1): "Invalid Content Plan"' in result.stdout

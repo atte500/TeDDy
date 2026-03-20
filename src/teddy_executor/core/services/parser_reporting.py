@@ -51,7 +51,7 @@ def _format_expected_structure() -> str:
     ]
     content = "\n".join(lines) + "\n"
     fence = get_fence_for_content(content)
-    return f"### Expected Document Structure \n{fence}text\n{content}{fence}\n"
+    return f"### Expected Response Structure \n{fence}text\n{content}{fence}\n"
 
 
 def format_node_name(node: Any) -> str:
@@ -178,7 +178,7 @@ def format_structural_mismatch_msg(
         msg = f"Plan structure is invalid. {error_header}, but found {actual_name}.\n\n"
 
     msg += _format_expected_structure()
-    msg += "\n### Actual Document Structure\n"
+    msg += "\n### Actual Response Structure\n"
 
     children = list(doc.children) if doc.children else []
     offending_ids = {id(node) for node in offending_nodes if node is not None}

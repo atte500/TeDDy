@@ -30,10 +30,10 @@ def test_parser_highlights_multiple_structural_mismatches(tmp_path, monkeypatch)
     output = result.stdout
 
     # Ensure the AST summary is present
-    assert "### Actual Document Structure" in output
+    assert "### Actual Response Structure" in output
 
     # Extract the structure section for focused assertions
-    structure_section = output.split("### Actual Document Structure")[-1]
+    structure_section = output.split("### Actual Response Structure")[-1]
 
     # We expect highlights on the paragraph (Node 1) and the H3 heading (Node 2)
     assert "[✗] [001] Paragraph" in structure_section
@@ -81,7 +81,7 @@ def test_parser_highlights_multiple_mismatches_in_action_plan(tmp_path, monkeypa
 
     result = adapter.run_command(["execute", "--plan-content", malformed_plan])
     assert result.exit_code != 0
-    structure_section = result.stdout.split("### Actual Document Structure")[-1]
+    structure_section = result.stdout.split("### Actual Response Structure")[-1]
 
     assert 'Paragraph: "This is an invalid paragraph."' in structure_section
     assert "[✗]" in structure_section
@@ -112,7 +112,7 @@ def test_parser_truncates_long_paragraphs_in_ast(tmp_path, monkeypatch):
 
     result = adapter.run_command(["execute", "--plan-content", malformed_plan])
     assert result.exit_code != 0
-    structure_section = result.stdout.split("### Actual Document Structure")[-1]
+    structure_section = result.stdout.split("### Actual Response Structure")[-1]
 
     assert f'Paragraph: "{truncated_msg}"' in structure_section
     assert "[✗]" in structure_section
