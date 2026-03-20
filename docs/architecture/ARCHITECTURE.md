@@ -69,6 +69,7 @@ This document outlines the technical standards, conventions, and setup process f
         - `test-pyramid`: Verifies the Test Pyramid structure (Unit > Integration > Acceptance).
         - `ruff-complexity`: Enforces a **precise Cyclomatic Complexity** limit of **9** per function (Rule `C901`) and a **precise Statement Limit** of **40** per function (Rule `PLR0915`) for ALL code.
         - `file-length-python`: Enforces a strict **300 line limit** for all Python files (excluding spikes).
+        - `jscpd`: Enforces a **3% duplication threshold** for any block over **25 tokens** within the `src/` directory. This threshold accommodates the necessary redundancy of Hexagonal Architecture (Port/Adapter signatures).
     - **Integrity:**
         - `git-status-clean`: Verifies a clean Git status (`git diff --exit-code`) to ensure the commit matches the working directory state.
     - **Style & Formatting:**
@@ -80,9 +81,7 @@ This document outlines the technical standards, conventions, and setup process f
 
 ### CI Quality Gates
 - **Goal:** To provide a comprehensive, automated quality gate that protects the main branch.
-- **Principle:** The CI pipeline **must** run all checks from the `pre-commit` suite. It **may** also include additional, slower-running checks.
-- **CI-Only Checks:**
-    - **Code Duplication:** Checked via `jscpd` with a minimum token count of **50**.
+- **Principle:** The CI pipeline **must** run all checks from the `pre-commit` suite and verify compatibility across system architectures.
 
 ### Spike Directory Exclusion
 The `spikes/` directory is intentionally excluded from `ruff` and `mypy` checks in `.pre-commit-config.yaml`.

@@ -1,5 +1,7 @@
 from teddy_executor.core.domain.models.plan import ActionData
-from teddy_executor.core.services.validation_rules.create import CreateActionValidator
+from teddy_executor.core.services.validation_rules.filesystem import (
+    CreateActionValidator,
+)
 
 
 def test_create_validator_includes_overwrite_hint_when_file_exists(container, mock_fs):

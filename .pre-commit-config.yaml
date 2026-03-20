@@ -78,7 +78,7 @@ repos:
 
     -   id: git-status-clean
         name: Check for Uncommitted Changes
-        entry: git diff --exit-code
+        entry: git diff --name-only --exit-code
         language: system
         always_run: true
         pass_filenames: false
@@ -89,3 +89,10 @@ repos:
         language: system
         always_run: true
         pass_filenames: false
+
+    -   id: jscpd
+        name: Code Duplication Detection (jscpd)
+        entry: npx jscpd --min-tokens 25 --threshold 3 src
+        language: system
+        pass_filenames: false
+        always_run: true

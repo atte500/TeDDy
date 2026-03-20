@@ -168,7 +168,7 @@ def test_validate_execute_fails_with_posix_absolute_cwd(container):
     errors = validator.validate(plan)
 
     assert len(errors) == 1
-    assert "is an absolute path and is not allowed" in errors[0].message
+    assert "contains an absolute path, which is not allowed" in errors[0].message
 
 
 def test_validate_execute_fails_with_traversal_cwd(container):
@@ -192,7 +192,7 @@ def test_validate_execute_fails_with_traversal_cwd(container):
     errors = validator.validate(plan)
 
     assert len(errors) == 1
-    assert "is outside the project directory" in errors[0].message
+    assert "contains a directory traversal attempt" in errors[0].message
 
 
 def test_validate_execute_fails_with_unsafe_cwd_traversal(container):
@@ -215,7 +215,7 @@ def test_validate_execute_fails_with_unsafe_cwd_traversal(container):
     errors = validator.validate(plan)
 
     assert len(errors) == 1
-    assert "is outside the project directory" in errors[0].message
+    assert "contains a directory traversal attempt" in errors[0].message
     assert errors[0].file_path is None  # Not file-specific error
 
 
@@ -243,4 +243,4 @@ def test_validate_execute_fails_with_absolute_cwd(container):
     errors = validator.validate(plan)
 
     assert len(errors) == 1
-    assert "is an absolute path and is not allowed" in errors[0].message
+    assert "contains an absolute path, which is not allowed" in errors[0].message

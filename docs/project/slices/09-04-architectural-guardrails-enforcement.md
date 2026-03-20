@@ -1,5 +1,5 @@
-# Slice 09-04: Architectural Guardrails & Unified Linting
-- **Status:** Planned
+# Slice 09-04: Architectural Guardrails & Unified Linting [✓]
+- **Status:** Completed
 - **Milestone:** [Milestone 09: Hexagonal Test Architecture](../milestones/09-hexagonal-test-architecture.md)
 - **Specs:** N/A
 
@@ -8,35 +8,35 @@ To finalize the elevation of tests to first-class architectural citizens by enfo
 
 ## 2. Acceptance Criteria (Scenarios)
 
-### Scenario 1: Refactor SLOC Offenders
+### Scenario 1: Refactor SLOC Offenders [✓]
 **Goal:** Bring the identified test files into compliance with the unified 300-line limit.
 - **Precondition:** `test_file_system_adapter.py` (344 lines) and `test_reviewer_app.py` (302 lines) exceed the limit.
 - **Success Condition:** `test_reviewer_app.py` is split into logical units to reduce file size.
 - **Success Condition:** `test_file_system_adapter.py` is refactored to use the `FileSystemObserver` for complex assertions.
 - **Success Condition:** All Python files (excluding spikes) are strictly under 300 SLOC.
 #### Deliverables
-- [ ] Refactor `tests/suites/unit/adapters/inbound/test_reviewer_app.py` (302 -> <300).
-- [ ] Refactor `tests/suites/integration/adapters/outbound/test_file_system_adapter.py` (344 -> <300).
+- [✓] Refactor `tests/suites/unit/adapters/inbound/test_reviewer_app.py` (302 -> <300).
+- [✓] Refactor `tests/suites/integration/adapters/outbound/test_file_system_adapter.py` (344 -> <300).
 
-### Scenario 2: Unified Guardrail Enforcement
+### Scenario 2: Unified Guardrail Enforcement [✓]
 **Goal:** Mathematically enforce quality standards across the entire codebase.
 - **Precondition:** `.pre-commit-config.yaml` has separate, lenient rules for tests.
 - **Success Condition:** The `file-length-python` hook replaces all previous length checks and targets `^(src|tests)/` with a strict 300-line limit.
 - **Success Condition:** All Ruff complexity (limit 9) and statement (limit 40) checks are active for both `src/` and `tests/`.
 #### Deliverables
-- [ ] Update `.pre-commit-config.yaml` to unify SLOC limits and consolidate hooks.
-- [ ] Update `pyproject.toml` to ensure Ruff checks explicitly target all directories.
+- [✓] Update `.pre-commit-config.yaml` to unify SLOC limits and consolidate hooks.
+- [✓] Update `pyproject.toml` to ensure Ruff checks explicitly target all directories.
 
-### Scenario 3: Local CPD & CI Parity
+### Scenario 3: Local CPD & CI Parity [✓]
 **Goal:** Enable local duplication checks and ensure 100% parity with the CI pipeline.
 - **Precondition:** `jscpd` is currently global/CI-only with a 50-token limit.
 - **Success Condition:** A root `package.json` defines `jscpd` as a `devDependency`.
 - **Success Condition:** A new `pre-commit` hook executes `npx jscpd` with a strict **25-token** threshold (approx. 3-5 lines).
 - **Success Condition:** `ci.yml` is refactored into a "Canonical Gate" (Ubuntu) that runs `npm install` followed by the full `pre-commit` suite.
 #### Deliverables
-- [ ] Create root `package.json` with `jscpd` as a `devDependency`.
-- [ ] Add `jscpd` hook to `.pre-commit-config.yaml` (using `npx jscpd --min-tokens 25`).
-- [ ] Refactor `.github/workflows/ci.yml` into independent parallel jobs (Canonical vs. Compatibility Matrix).
+- [✓] Create root `package.json` with `jscpd` as a `devDependency`.
+- [✓] Add `jscpd` hook to `.pre-commit-config.yaml` (using `npx jscpd --min-tokens 25`).
+- [✓] Refactor `.github/workflows/ci.yml` into independent parallel jobs (Canonical vs. Compatibility Matrix).
 
 ### Scenario 4: Codify "System Law" [✓]
 **Goal:** Document the new unified standards in the project's single source of truth.
@@ -57,6 +57,20 @@ The core architectural shift is the removal of the "test exemption" for quality 
 3.  **Interaction Sequence:**
     *   **Developer Commit:** Triggers `pre-commit` -> Runs Ruff (Complexity/Statements) -> Runs Unified SLOC check -> Runs Test Pyramid Check -> Runs Full Test Suite.
     *   **CI Pipeline:** Triggers on Push -> Job 1 (Ubuntu) and Job 2 (Matrix) run in parallel to minimize feedback latency.
+
+## 4. Implementation Notes
+
+### Refactored Test Suite
+`test_reviewer_app.py` was split into smaller logical units and `test_file_system_adapter.py` was refactored to use the new `FileSystemObserver`, bringing all test files under the strict 300-line limit.
+
+### Consolidated Validation Rules
+To reduce duplication identified by `jscpd`, validation rules for `CREATE`, `READ`, and `PRUNE` were consolidated into `filesystem.py`. Method signatures were simplified using `ValidationResult` and `ContextPaths` type aliases in `helpers.py`.
+
+### Unified Path Safety
+A centralized `validate_path_is_safe` function in `helpers.py` now handles absolute path and directory traversal checks for all validators, ensuring consistent error messaging and logic across the system.
+
+### Local CPD and Canonical Gate
+The root `package.json` now manages `jscpd` locally. A new `pre-commit` hook enforces a strict duplication threshold. The CI pipeline was refactored into a "Canonical Gate" (Ubuntu) and a "Compatibility Matrix" (MacOS/Windows) to ensure full parity between local and remote environments.
 
 ### Updated Component Designs
 - **Test Harness Observer:** A new observer component `tests/harness/observers/file_system_observer.py` will be introduced to encapsulate complex file-system assertions (e.g., verifying directory contents and file matching), enabling the refactoring of large integration tests.

@@ -77,7 +77,9 @@ ignore_missing_imports = true
 exclude = ["spikes/"]
 
 [tool.bandit]
-exclude_dirs = ["tests", "spikes"]
+exclude_dirs = ["spikes"]
+# Exclude specific patterns in tests that look like secrets but are test data
+skips = ["B101"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src", "."]

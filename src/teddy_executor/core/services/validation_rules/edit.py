@@ -3,7 +3,7 @@ Validation rules for the 'EDIT' action.
 """
 
 import os
-from typing import Dict, List, Optional, Sequence
+from typing import Optional
 
 from teddy_executor.core.domain.models.plan import (
     ActionData,
@@ -15,8 +15,10 @@ from teddy_executor.core.services.validation_rules.edit_matcher import (
 )
 from teddy_executor.core.services.validation_rules.helpers import (
     BaseActionValidator,
+    ContextPaths,
     PlanValidationError,
     ValidationError,
+    ValidationResult,
     is_path_in_context,
     validate_path_is_safe,
 )
@@ -35,8 +37,8 @@ class EditActionValidator(BaseActionValidator):
     def validate(
         self,
         action: ActionData,
-        context_paths: Optional[Dict[str, Sequence[str]]] = None,
-    ) -> List[ValidationError]:
+        context_paths: Optional[ContextPaths] = None,
+    ) -> ValidationResult:
         """
         Validates an 'edit' action.
         """
@@ -75,7 +77,7 @@ class EditActionValidator(BaseActionValidator):
                 )
             ]
 
-        action_errors: List[ValidationError] = []
+        action_errors: ValidationResult = []
         content = self._file_system_manager.read_file(path_str)
 
         # Get global threshold from config, fallback to domain default
@@ -114,9 +116,9 @@ def _validate_single_edit(
     file_path: str,
     threshold: Optional[float] = None,
     replace_all: bool = False,
-) -> List[ValidationError]:
+) -> ValidationResult:
     """Validates a single edit dictionary."""
-    errors: List[ValidationError] = []
+    errors: ValidationResult = []
     find_block = edit.get("find")
     replace_block = edit.get("replace")
 

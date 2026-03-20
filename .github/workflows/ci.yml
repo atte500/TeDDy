@@ -1,6 +1,5 @@
 name: CI
 
-# Trigger configuration
 on:
   push:
     branches: [ main ]
@@ -13,26 +12,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-test:
-    runs-on: ${{ matrix.os }}
-    defaults:
-      run:
-        shell: bash
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.11"]
-
+  canonical-gate:
+    name: Canonical Quality Gate (Ubuntu)
+    runs-on: ubuntu-latest
     steps:
     - name: Check out repository
       uses: actions/checkout@v5
 
-    - name: Set up Python ${{ matrix.python-version }}
-      id: setup-python # This ID is required to reference the step's outputs later
+    - name: Set up Python
       uses: actions/setup-python@v6
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: "3.11"
 
     - name: Install Poetry
       uses: snok/install-poetry@v1
@@ -45,30 +35,63 @@ jobs:
       uses: actions/cache@v5
       with:
         path: .venv
-        key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-
-    - name: Install clipboard backend (Linux)
-      if: runner.os == 'Linux'
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y xclip
+        key: venv-ubuntu-3.11-${{ hashFiles('**/poetry.lock') }}
 
     - name: Install dependencies
       run: poetry install --no-interaction
 
-    - name: Run all pre-commit checks (Lint, Format, Types, SLOC, Pyramid, Tests)
+    - name: Install clipboard backend (Linux)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y xclip
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install npm dependencies
+      run: npm install
+
+    - name: Run Full Pre-commit Suite (Lint, CPD, Audit, Tests)
       run: poetry run pre-commit run --all-files
 
-    - name: Run Pip-Audit (Dependency Vulnerability Scan)
+    - name: Run Pip-Audit
       run: poetry run pip-audit
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v6
+  compatibility-matrix:
+    name: Compatibility Matrix (${{ matrix.os }})
+    needs: canonical-gate
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v5
+
+    - name: Set up Python
+      uses: actions/setup-python@v6
       with:
-        node-version: '24'
+        python-version: "3.11"
 
-    - name: Install jscpd
-      run: npm install -g jscpd
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        virtualenvs-create: true
+        virtualenvs-in-project: true
 
-    - name: Run jscpd (Code Duplication Detection)
-      run: jscpd --min-tokens=50 --reporters=console --threshold 0 src
+    - name: Load cached venv
+      id: cached-poetry-dependencies
+      uses: actions/cache@v5
+      with:
+        path: .venv
+        key: venv-${{ runner.os }}-3.11-${{ hashFiles('**/poetry.lock') }}
+
+    - name: Install dependencies
+      run: poetry install --no-interaction
+
+    - name: Run Tests
+      run: poetry run pytest

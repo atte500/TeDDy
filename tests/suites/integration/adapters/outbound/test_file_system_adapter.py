@@ -1,76 +1,52 @@
 from pathlib import Path
 import pytest
 
-
 from tests.harness.setup.test_environment import TestEnvironment
-from teddy_executor.core.domain.models import MultipleMatchesFoundError
+from tests.harness.observers.file_system_observer import FileSystemObserver
+from teddy_executor.core.domain.models import (
+    MultipleMatchesFoundError,
+    FileAlreadyExistsError,
+    SearchTextNotFoundError,
+)
 from teddy_executor.core.ports.outbound import IFileSystemManager
 
 
 @pytest.fixture
+def observer():
+    return FileSystemObserver()
+
+
+@pytest.fixture
 def adapter(monkeypatch, tmp_path: Path):
-    """
-    Provides a real LocalFileSystemAdapter anchored to a temporary path,
-    resolved via the Test Harness.
-    """
     env = TestEnvironment(monkeypatch, tmp_path).setup()
     return env.get_service(IFileSystemManager)  # type: ignore[type-abstract]
 
 
 def test_create_file_raises_custom_error_if_file_exists(adapter, tmp_path: Path):
-    """
-    Tests that create_file raises FileAlreadyExistsError when the file
-    already exists, and that the exception contains the file path.
-    """
-    from teddy_executor.core.domain.models import FileAlreadyExistsError
-
-    # Arrange
     file_path = tmp_path / "existing_file.txt"
     file_path.write_text("initial content", encoding="utf-8")
 
-    # Act & Assert
     with pytest.raises(FileAlreadyExistsError) as excinfo:
         adapter.create_file(path=str(file_path), content="new content")
 
     assert excinfo.value.file_path == str(file_path)
 
 
-def test_create_file_creates_parent_directories(adapter, tmp_path: Path):
-    """
-    Verifies that create_file successfully creates necessary parent directories
-    for the target file.
-    """
-    # Arrange
+def test_create_file_creates_parent_directories(adapter, observer, tmp_path: Path):
     new_file_path = "new_dir/sub_dir/test.txt"
     full_path = tmp_path / new_file_path
-
-    # Pre-condition: Assert that the parent directory does not exist yet
     assert not full_path.parent.exists()
 
-    # Act
     adapter.create_file(path=str(full_path), content="content")
-
-    # Assert
-    assert full_path.exists()
-    assert full_path.read_text() == "content"
+    observer.assert_file_content_equals(full_path, "content")
 
 
-def test_create_file_happy_path(adapter, tmp_path: Path):
-    """
-    Given a file path and content,
-    When the create_file method is called,
-    Then it should create a file with the specified content.
-    """
-    # Arrange
+def test_create_file_happy_path(adapter, observer, tmp_path: Path):
     file_path = tmp_path / "test_file.txt"
     content = "Hello, Teddy!"
 
-    # Act
     adapter.create_file(path=str(file_path), content=content)
-
-    # Assert
-    assert file_path.exists(), "File was not created."
-    assert file_path.read_text() == content
+    observer.assert_file_content_equals(file_path, content)
 
 
 def test_read_file_happy_path(adapter, tmp_path: Path):
@@ -101,156 +77,87 @@ def test_read_file_raises_error_if_not_exists(adapter, tmp_path: Path):
         adapter.read_file(path=str(non_existent_path))
 
 
-def test_edit_file_successfully_replaces_content(adapter, tmp_path: Path):
-    """
-    Tests that edit_file correctly finds and replaces content in an existing file.
-    """
-    # Arrange
+def test_edit_file_successfully_replaces_content(adapter, observer, tmp_path: Path):
     test_file = tmp_path / "test.txt"
-    initial_content = "Hello world, this is a test."
-    test_file.write_text(initial_content, encoding="utf-8")
+    test_file.write_text("Hello world, this is a test.", encoding="utf-8")
 
-    # Act
     adapter.edit_file(
         path=str(test_file), edits=[{"find": "world", "replace": "TeDDy"}]
     )
-
-    # Assert
-    final_content = test_file.read_text()
-    assert final_content == "Hello TeDDy, this is a test."
+    observer.assert_file_content_equals(test_file, "Hello TeDDy, this is a test.")
 
 
-def test_edit_file_handles_multiline_replacement(adapter, tmp_path: Path):
-    """
-    Verifies that edit_file handles multiline find and replace blocks verbatim.
-    """
-    # Arrange
+def test_edit_file_handles_multiline_replacement(adapter, observer, tmp_path: Path):
     test_file = tmp_path / "code.py"
-    initial_content = "def foo():\n    return 42\n"
-    test_file.write_text(initial_content, encoding="utf-8")
+    test_file.write_text("def foo():\n    return 42\n", encoding="utf-8")
 
     find_block = "def foo():\n    return 42"
     replace_block = "def bar(x):\n    return x * 2"
-
-    # Act
     adapter.edit_file(
         path=str(test_file), edits=[{"find": find_block, "replace": replace_block}]
     )
-
-    # Assert
-    assert test_file.read_text() == "def bar(x):\n    return x * 2\n"
+    observer.assert_file_content_equals(test_file, "def bar(x):\n    return x * 2\n")
 
 
-def test_edit_file_removes_newline_on_empty_replacement(adapter, tmp_path: Path):
-    """
-    Verifies that an empty REPLACE block removes the associated newline
-    to prevent orphaned empty lines.
-    """
-    # Arrange
+def test_edit_file_removes_newline_on_empty_replacement(
+    adapter, observer, tmp_path: Path
+):
     test_file = tmp_path / "lines.txt"
-    initial_content = "Line 1\nLine 2\nLine 3\n"
-    test_file.write_text(initial_content, encoding="utf-8")
+    test_file.write_text("Line 1\nLine 2\nLine 3\n", encoding="utf-8")
 
-    # Act: Remove middle line
     adapter.edit_file(path=str(test_file), edits=[{"find": "Line 2", "replace": ""}])
-
-    # Assert: Should not have double \n
-    assert test_file.read_text() == "Line 1\nLine 3\n"
+    observer.assert_file_content_equals(test_file, "Line 1\nLine 3\n")
 
 
 def test_edit_file_raises_error_if_find_text_not_found(adapter, tmp_path: Path):
-    """
-    Tests that edit_file raises a specific error if the search text is not found.
-    """
-    # Arrange
-    from teddy_executor.core.domain.models import SearchTextNotFoundError
-
     test_file = tmp_path / "test.txt"
     initial_content = "Hello world, this is a test."
     test_file.write_text(initial_content, encoding="utf-8")
 
-    # Act & Assert
     with pytest.raises(SearchTextNotFoundError) as excinfo:
         adapter.edit_file(
             path=str(test_file), edits=[{"find": "goodbye", "replace": "TeDDy"}]
         )
 
-    # Assert that the original content is part of the exception
     assert excinfo.value.content == initial_content
 
 
 def test_edit_file_raises_error_on_multiple_occurrences(adapter, tmp_path: Path):
-    """
-    Tests that edit_file raises MultipleMatchesFoundError if the `find` string
-    has more than one occurrence.
-    """
-    # Arrange
     test_file = tmp_path / "test.txt"
     original_content = "hello world, hello again"
     test_file.write_text(original_content, encoding="utf-8")
 
-    # Act & Assert
     with pytest.raises(MultipleMatchesFoundError) as exc_info:
         adapter.edit_file(
             path=str(test_file), edits=[{"find": "hello", "replace": "goodbye"}]
         )
 
-    # Check the exception details
     assert "Found 2 ambiguous occurrences of 'hello'" in str(exc_info.value)
     assert exc_info.value.content == original_content
-
-    # Verify the file was not changed
-    content_after = test_file.read_text()
-    assert content_after == original_content
+    assert test_file.read_text() == original_content
 
 
 def test_path_exists(adapter, tmp_path: Path):
-    """
-    Tests that path_exists correctly reports the existence of a file.
-    """
-    # Arrange
     existing_file = tmp_path / "exists.txt"
     existing_file.touch()
-    non_existing_file = tmp_path / "not_exists.txt"
-
-    # Act & Assert
     assert adapter.path_exists(str(existing_file)) is True
-    assert adapter.path_exists(str(non_existing_file)) is False
+    assert adapter.path_exists(str(tmp_path / "not_exists.txt")) is False
 
 
 def test_create_directory(adapter, tmp_path: Path):
-    """
-    Tests that create_directory creates a directory, including parents.
-    """
-    # Arrange
     new_dir = tmp_path / "new" / "nested" / "dir"
-
-    # Act
     adapter.create_directory(str(new_dir))
-
-    # Assert
     assert new_dir.is_dir()
 
 
-def test_write_file(adapter, tmp_path: Path):
-    """
-    Tests that write_file creates a file if it doesn't exist,
-    and overwrites it if it does.
-    """
-    # Arrange
+def test_write_file(adapter, observer, tmp_path: Path):
     file_path = tmp_path / "test.txt"
 
-    # Act (Create)
     adapter.write_file(str(file_path), "first content")
+    observer.assert_file_content_equals(file_path, "first content")
 
-    # Assert (Create)
-    assert file_path.read_text() == "first content"
-
-    # Act (Overwrite)
     adapter.write_file(str(file_path), "second content")
-
-    # Assert (Overwrite)
-    assert file_path.read_text() == "second content"
+    observer.assert_file_content_equals(file_path, "second content")
 
 
 def test_read_files_in_vault(adapter, tmp_path: Path):
@@ -319,26 +226,17 @@ def test_get_context_paths(adapter, tmp_path: Path):
     assert actual_paths == expected_paths
 
 
-def test_edit_file_handles_leading_newline_in_find_block(adapter, tmp_path: Path):
-    """
-    Tests that edit_file can literally match a find block that includes a
-    leading newline, which was a previously failing case.
-    """
-    # Arrange
+def test_edit_file_handles_leading_newline_in_find_block(
+    adapter, observer, tmp_path: Path
+):
     test_file = tmp_path / "test.txt"
-    original_content = "line one\n\n    line two\nline three"
-    test_file.write_text(original_content, encoding="utf-8")
+    test_file.write_text("line one\n\n    line two\nline three", encoding="utf-8")
 
-    # Use a larger literal block to ensure a perfect 1.0 match.
     find_block = "line one\n\n    line two"
     replace_block = "line one\n\n    line two (replaced)"
-    expected_content = "line one\n\n    line two (replaced)\nline three"
-
-    # Act
     adapter.edit_file(
         path=str(test_file), edits=[{"find": find_block, "replace": replace_block}]
     )
-
-    # Assert
-    actual_content = test_file.read_text()
-    assert actual_content == expected_content
+    observer.assert_file_content_equals(
+        test_file, "line one\n\n    line two (replaced)\nline three"
+    )

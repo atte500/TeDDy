@@ -5,8 +5,10 @@ from teddy_executor.core.services.action_parser_strategies import (
     parse_prune_action,
 )
 from teddy_executor.core.services.parser_infrastructure import _PeekableStream
-from teddy_executor.core.services.validation_rules.read import ReadActionValidator
-from teddy_executor.core.services.validation_rules.prune import PruneActionValidator
+from teddy_executor.core.services.validation_rules.filesystem import (
+    PruneActionValidator,
+    ReadActionValidator,
+)
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 
 

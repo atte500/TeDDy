@@ -1,0 +1,11 @@
+{
+  "name": "teddy-executor",
+  "version": "0.1.0",
+  "description": "A CLI tool to safely execute AI-generated action plans.",
+  "devDependencies": {
+    "jscpd": "^4.0.5"
+  },
+  "scripts": {
+    "cpd": "jscpd src"
+  }
+}
