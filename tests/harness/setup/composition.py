@@ -3,7 +3,7 @@ import sys
 from unittest.mock import Mock, MagicMock, patch
 import pytest
 import pyperclip
-from tests.harness.setup.test_environment import TestEnvironment
+from tests.harness.setup.test_environment import TestEnvironment, POSIXPathMock
 
 # Globally mock litellm to prevent the expensive 1.2s import in all tests.
 # This ensures that even if LiteLLMAdapter is instantiated, it doesn't
@@ -62,7 +62,7 @@ def mock_user_interactor(container):
 def mock_fs(container):
     from teddy_executor.core.ports.outbound import IFileSystemManager
 
-    mock = Mock(spec=IFileSystemManager)
+    mock = POSIXPathMock(spec=IFileSystemManager)
     container.register(IFileSystemManager, instance=mock)
     return mock
 
