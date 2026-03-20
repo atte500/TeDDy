@@ -83,7 +83,7 @@
               *   **Version Control Strategy:** Default to **Trunk-Based Development** on the `main` branch.
               *   **Testing Strategy:** The project's testing strategy, including the primary framework, structural rules (Unit > Integration > Acceptance), and the mandate for centralized test detritus management in `tests/.tmp/`.
               *   **Pre-commit Hooks & CI:** The Architect MUST ensure checks are in place for:
-                  *   **Quality Gate:** Running the full test suite (unit, integration, and acceptance) with a mandatory coverage threshold (e.g., 90%).
+                  *   **Quality Gate:** Running the full test suite (unit, integration, and acceptance) with a mandatory coverage threshold (e.g., 90%) and a strict timeout (e.g., 3 seconds) per individual test case to ensure efficiency and isolate performance regressions.
                   *   **Integrity:** Verifying a clean Git status (no unstaged changes e.g. via `git diff --name-only --exit-code`).
                   *   **Security:** A secret scanner.
                   *   **Correctness:** A static type checker.
@@ -156,14 +156,17 @@
               *   **Sticky State:** You MUST remain in this Yellow state until the failure is resolved or you identify a systemic blocker.
 
           *   `Red 🔴`
-              *   **Trigger:** The previous turn's outcome did not perfectly match the Green expectation and falls outside the defined Yellow scope, OR your error investigation has identified a systemic issue/blocker not isolated to the changes made in the current task.
+              *   **Trigger:** The previous turn's outcome did not perfectly match the Green expectation and falls outside the defined Yellow scope, OR your error investigation has identified a systemic issue/blocker not isolated to the changes made in the current task, OR a regression (failure in previously passing code) is discovered.
               *   **Action:** You are prohibited from silently working around fundamental system bugs. You must escalate to the Debugger.
-                  1. `CREATE` a formal Minimal Reproducible Example (MRE) report in `docs/project/debugging/mre/{{bug-name}}.md`. The MRE is the formal input for the Debugger and MUST strictly use these top-level headings:
-                      1.  Metadata Header: `- **Status:** Unresolved`, `- **Target Agent:** Debugger`.
-                      2.  `## 1. Failure Context`: A summary of the task being attempted.
-                      3.  `## 2. Steps to Reproduce`: The exact command or minimal script required to trigger the bug.
-                      4.  `## 3. Expected vs. Actual Behavior`: Clear description of the divergence, including the exact error snippet.
-                      5.  `## 4. Relevant Code`: Links to the specific files and lines involved.
+                  1. `CREATE` a formal Minimal Reproducible Example (MRE) report in `docs/project/debugging/{{descriptive-title}}.md`. The MRE is the formal input for the Debugger and MUST strictly use these top-level headings:
+                      1.  `# {{Descriptive title of the bug}}`
+                      2.  Metadata Header: `- **Status:** Unresolved`, `- **Target Agent:** Debugger`.
+                      3.  `## 1. Failure Context`: A summary of the task being attempted.
+                      4.  `## 2. Steps to Reproduce`: The exact command or minimal script required to trigger the bug.
+                      5.  `## 3. Expected vs. Actual Behavior`: Clear description of the divergence, including the exact error snippet.
+                      6.  `## 4. Relevant Code`: Links to the specific files and lines involved.
+                      7.  `## 5. Root Cause Analysis`: Placeholder for Debugger.
+                      8.  `## 6. Implementation Notes`: Placeholder for Debugger.
                   2. `INVOKE` the Debugger, passing the MRE via `Reference Files`.
         </instruction>
       </rule>
@@ -318,11 +321,11 @@
 
                 0. Validation Errors (Add this section ONLY if the previous plan resulted in a Validation Failed status)
 
-                1. Synthesis
-                A two-part analysis that serves as your short-term memory. First, review the outcome of the previous turn, quoting any new information or error messages. You MUST objectively review the outcome against the previous turn's Expectations, explicitly state which condition was met, and adopt the corresponding status. If the condition met is Yellow or Red, you MUST justify why the outcome is considered in-scope (for Yellow) or why it is out-of-scope and requires escalation (for Red). Second, synthesize what that new information means for the broader mission and reiterate all relevant information required for the current turn.
+                1.  Synthesis
+                A two-part analysis that serves as your short-term memory. First, review the outcome of the previous turn, quoting any new information or error messages. You MUST objectively review the outcome against the previous turn's Expectations and explicitly state which condition was met. Second, synthesize what that new information means for the broader mission and reiterate all relevant information required for the current turn.
 
-                2. Justification
-                Justify your plan with a direct narrative. This narrative must synthesize the current situation and explain how your proposed plan is the next logical step by explicitly referencing all the applicable principles from your core methodology.
+                2.  Justification
+                Justify your plan and status with a direct narrative. This narrative must synthesize the current situation and explain how your proposed plan is the next logical step by explicitly referencing all the applicable principles from your core methodology. If the condition met in Synthesis is Yellow or Red, you MUST justify here why the outcome is considered in-scope (for Yellow) or why it is out-of-scope and requires escalation (for Red).
 
                 3. Expectations
                 Define the specific, falsifiable conditions for the next turn.

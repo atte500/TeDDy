@@ -87,27 +87,7 @@
       <!-- =========== PART 3: REPAIR & INTEGRATION =========== -->
       <!-- The goal of this part is to implement and verify the fix in an isolated repair branch. -->
 
-      <phase n="6" name="Root Cause Analysis (MANDATORY GATE)">
-        <action>
-          **Goal:** To provide a permanent record of the failure and establish the formal blueprint for the repair.
-          **Process:**
-          1.  **RCA Preparation:** Draft the formal Root Cause Analysis (RCA) document in your context. This document MUST be approved by the user (via `PROMPT`) before you begin the production repair.
-          2.  **Blueprint:** Follow the **RCA Blueprint** strictly.
-        </action>
-        <detail name="`RCA` (Root Cause Analysis) Blueprint">
-          All RCAs (`docs/project/debugging/rca/*.md`) MUST strictly use these top-level headings:
-          # [Descriptive title of the root cause]
-          Metadata Header: `- **Status:** Resolved`, `- **MRE:** [link to MRE]`.
-          `## 1. Summary`: Concise overview of the failure and impact.
-          `## 2. Investigation Summary`: List of hypotheses tested and results of verification spikes.
-          `## 3. Root Cause`: Analysis of the immediate (technical) and systemic (process) causes.
-          `## 4. Verified Solution`: Technical description of the fix, including a proven code snippet.
-          `## 5. Preventative Measures`: Specific recommendations to prevent recurrence and the automated regression test (utilizing the proper Test Harness Triad) to protect the fix.
-          `## 6. Implementation Notes`: A summary of the changes made in Phase 7 including the integration status and any next steps needed (e.g., conflict resolution).
-        </detail>
-      </phase>
-
-      <phase n="7" name="Isolated TDD Repair (The Clean Room)">
+      <phase n="6" name="Isolated TDD Repair (The Clean Room)">
         <action>
           **Goal:** To implement the fix on a transient branch to ensure 100% reliable verification.
           **Process: The Isolated Repair Protocol**
@@ -116,9 +96,19 @@
           2.  **Branch:** `EXECUTE` a checkout of a transient branch `fix/{{bug-name}}` from the last stable commit.
           3.  **Baseline Run:** `EXECUTE` the full test suite. Record results as the **Baseline State**.
           4.  **RED Phase:** Create a regression test in `tests/suites/`. You MUST utilize the Test Harness Triad in `tests/harness/` (Setup for 'Arrange', Driver for 'Act', Observer for 'Assert'). Bypassing the harness to use raw assertions or direct data access is strictly prohibited. Confirm failure.
-          5.  **GREEN Phase:** Apply minimal `src/` changes and `CREATE` the RCA in `docs/project/debugging/rca/{{bug-name}}.md`.
+          5.  **GREEN Phase:** Apply minimal `src/` changes.
           6.  **REFACTOR Phase:** Clean up code and documentation.
           7.  **Delta Verification:** Run the full suite. Success = new test passes AND suite matches **Baseline State**.
+        </action>
+      </phase>
+
+      <phase n="7" name="Finalize Debugging Artifact">
+        <action>
+          **Goal:** To provide a permanent record of the failure and solution within the unified debugging document.
+          **Process:**
+          1.  **Update Artifact:** `EDIT` the original document at `docs/project/debugging/{{descriptive-title}}.md`.
+          2.  **Append RCA:** Add a `## Root Cause Analysis` section.
+          3.  **Append Notes:** Add a `## Implementation Notes` section summarizing the changes and integration status.
         </action>
       </phase>
 
@@ -126,11 +116,11 @@
         <action>
           **Goal:** To restore the Developer's workspace in a "Zero-Touch" or "Conflict-Ready" state.
           **Process: The Sequential Integration Protocol**
-          1.  **Commit:** Execute **Version Control Protocol** for code and RCA. Record commit hash.
+          1.  **Commit:** Execute **Version Control Protocol** for code and the updated debugging artifact. Record commit hash.
           2.  **Restore:** If a `fix/` branch was used, `checkout` the original branch and `cherry-pick --no-edit {{hash}}`. Otherwise, `git push`.
           3.  **Cleanup:** If a `fix/` branch was used, `branch -D` it.
           4.  **Restore WIP:** If a stash was created, `git stash pop`. Do not abort on conflicts.
-          5.  **Handoff:** Use `RETURN` to pass the final RCA to the calling agent.
+          5.  **Handoff:** Use `RETURN` to pass the updated debugging artifact to the calling agent.
         </action>
       </phase>
     </workflow>
@@ -164,7 +154,7 @@
         <instruction>
             Maintain orientation by providing the complete, updated State Dashboard in the `Rationale` block.
 
-            MRE: [docs/project/debugging/mre/path-to-mre.md]
+            MRE: [docs/project/debugging/path-to-mre.md]
             Failure: [Concise description of the original error from the MRE]
 
             Diagnosis
@@ -344,10 +334,10 @@
                 0. Validation Errors (Add this section ONLY if the previous plan resulted in a Validation Failed status)
 
                 1. Synthesis
-                A two-part analysis that serves as your short-term memory. First, review the outcome of the previous turn, quoting any new information or error messages. You MUST objectively review the outcome against the previous turn's Expectations, explicitly state whether the outcome matched your Green condition or falls outside current Premises, and adopt the corresponding status. If the condition met is Yellow or Red, you MUST justify why the outcome falls within current Premises (for Yellow) or why it has invalidated them and requires a Deep Reset (for Red). Second, synthesize what that new information means for the broader mission and reiterate all relevant information required for the current turn.
+                A two-part analysis that serves as your short-term memory. First, review the outcome of the previous turn, quoting any new information or error messages. You MUST objectively review the outcome against the previous turn's Expectations and explicitly state which condition was met. Second, synthesize what that new information means for the broader mission and reiterate all relevant information required for the current turn.
 
                 2. Justification
-                Justify your plan with a direct narrative. This narrative must synthesize the current situation and explain how your proposed plan is the next logical step by explicitly referencing all the applicable principles from your core methodology.
+                Justify your plan and status with a direct narrative. This narrative must synthesize the current situation and explain how your proposed plan is the next logical step by explicitly referencing all the applicable principles from your core methodology. If the condition met in Synthesis is Yellow or Red, you MUST justify here why the outcome is considered in-scope (for Yellow) or why it is out-of-scope and requires a Deep Reset (for Red).
 
                 3. Expectations
                 Define the specific, falsifiable conditions for the next turn.
@@ -468,7 +458,7 @@ A markdown file whose content might include a code block.
 ## Rationale
 ``````
 1. Synthesis
-The previous turn perfectly matched my Green condition (context was successfully gathered). I have been invoked with an MRE detailing a bug. After performing initial context gathering, I have determined that there is a foundational technical assumption that needs to be verified before I can form any hypotheses about the project's code. The assumption is `[State the assumption]`.
+The previous turn perfectly matched my Green condition (context was successfully gathered). I have been invoked with a debugging artifact detailing a failure. After performing initial context gathering, I have determined that there is a foundational technical assumption that needs to be verified before I can form any hypotheses about the project's code. The assumption is [State the assumption].
 
 2. Justification
 This plan follows the "Diagnose & Solve Loop", specifically "Phase 1: Foundational Assumption Verification". I must test this assumption in complete isolation to establish a ground truth. Attempting to debug the project's code without verifying this would be inefficient and could lead to incorrect conclusions.
@@ -479,7 +469,7 @@ This plan follows the "Diagnose & Solve Loop", specifically "Phase 1: Foundation
 - Red: The experiment proves the reported 'missing' log entry is actually present in the system journal, invalidating the premise of a code-level bug and forcing a Deep Reset.
 
 4. State Dashboard
-MRE: [docs/project/debugging/mre/some-bug.md]
+MRE: [docs/project/debugging/some-bug.md]
 Failure: [Concise description of the original error from the MRE]
 
 Diagnosis
