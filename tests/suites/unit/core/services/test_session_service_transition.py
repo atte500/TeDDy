@@ -51,7 +51,9 @@ def test_transition_to_next_turn_creates_directory_and_linkage(env):
     assert next_turn_path == ".teddy/sessions/feat-x/02"
 
     # Verify directory creation
-    mock_fs.create_directory.assert_any_call(".teddy/sessions/feat-x/02")
+    from pathlib import Path
+
+    mock_fs.create_directory.assert_any_call(str(Path(".teddy/sessions/feat-x/02")))
 
     # Verify meta.yaml linkage
     meta_call = next(

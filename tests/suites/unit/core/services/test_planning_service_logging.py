@@ -65,7 +65,9 @@ def test_generate_plan_logs_input_and_uses_agent_prompt(
 
     # Assert
     # 1. Verify pathfinder.xml was read
-    mock_fs.read_file.assert_any_call("session/01/pathfinder.xml")
+    from pathlib import Path
+
+    mock_fs.read_file.assert_any_call(str(Path("session/01/pathfinder.xml")))
 
     # 2. Verify input.log was written
     log_call = [

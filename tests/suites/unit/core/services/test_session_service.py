@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import ANY, patch
 
 from teddy_executor.core.ports.outbound.session_manager import ISessionManager
@@ -31,17 +32,19 @@ def test_create_session_orchestrates_filesystem_correctly(env):
 
         # Assert
         # 1. Directory creation
-        mock_fs.create_directory.assert_any_call(".teddy/sessions/feat-x/01")
+        mock_fs.create_directory.assert_any_call(str(Path(".teddy/sessions/feat-x/01")))
 
         # 2. session.context creation (with comments stripped)
         mock_fs.write_file.assert_any_call(
-            ".teddy/sessions/feat-x/session.context", clean_context
+            str(Path(".teddy/sessions/feat-x/session.context")), clean_context
         )
 
         # 3. pathfinder.xml creation
         mock_fs.write_file.assert_any_call(
-            ".teddy/sessions/feat-x/01/pathfinder.xml", agent_prompt
+            str(Path(".teddy/sessions/feat-x/01/pathfinder.xml")), agent_prompt
         )
 
         # 4. meta.yaml creation
-        mock_fs.write_file.assert_any_call(".teddy/sessions/feat-x/01/meta.yaml", ANY)
+        mock_fs.write_file.assert_any_call(
+            str(Path(".teddy/sessions/feat-x/01/meta.yaml")), ANY
+        )
