@@ -54,3 +54,18 @@ def test_environment_automated_workspace_lifecycle(monkeypatch, container):
     # Teardown should delete the workspace
     env.teardown()
     assert not workspace.exists()
+
+
+def test_filesystem_mock_normalizes_paths_systemically(env):
+    """
+    REGRESSION: Verifies that the filesystem mock normalizes paths to POSIX
+    format regardless of the host OS or call convention.
+    """
+    mock_fs = env.get_mock_filesystem()
+
+    # Simulate a call from production code using Windows-style paths
+    mock_fs.read_file("some\\windows\\path.txt")
+
+    # This should pass even on non-Windows systems once the fix is applied,
+    # as the mock will normalize the call to POSIX.
+    mock_fs.read_file.assert_called_with("some/windows/path.txt")

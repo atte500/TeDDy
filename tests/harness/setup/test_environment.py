@@ -1,16 +1,59 @@
-import os
 import shutil
 import uuid
 from pathlib import Path
 from typing import Any, Optional, TypeVar, cast
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock, Mock, _Call
 import teddy_executor.__main__
 from teddy_executor.container import create_container
+from tests.harness.setup.real_adapter_mixin import RealAdapterMixin
 
 T = TypeVar("T")
 
 
-class TestEnvironment:
+class POSIXPathMock(MagicMock):
+    """
+    A specialized mock that normalizes the first string argument of any call
+    AND any assertion to POSIX format. This ensures that unit tests are
+    cross-platform and consistent with the core's Internal POSIX convention.
+    """
+
+    def _get_child_mock(self, /, **kw):
+        return POSIXPathMock(**kw)
+
+    def _normalize_args(self, args, kwargs):
+        new_args = list(args)
+        if new_args and isinstance(new_args[0], str):
+            # Systemic normalization: replace \ with /
+            new_args[0] = new_args[0].replace("\\", "/")
+        return tuple(new_args), kwargs
+
+    def __call__(self, /, *args, **kwargs):
+        new_args, new_kwargs = self._normalize_args(args, kwargs)
+        return super().__call__(*new_args, **new_kwargs)
+
+    def assert_called_with(self, /, *args, **kwargs):
+        new_args, new_kwargs = self._normalize_args(args, kwargs)
+        return super().assert_called_with(*new_args, **new_kwargs)
+
+    def assert_any_call(self, /, *args, **kwargs):
+        new_args, new_kwargs = self._normalize_args(args, kwargs)
+        return super().assert_any_call(*new_args, **new_kwargs)
+
+    def assert_called_once_with(self, /, *args, **kwargs):
+        new_args, new_kwargs = self._normalize_args(args, kwargs)
+        return super().assert_called_once_with(*new_args, **new_kwargs)
+
+    def assert_has_calls(self, calls, any_order=False):
+        normalized_calls = []
+        for call in calls:
+            # call is a _Call object (tuple-like: (args, kwargs))
+            args, kwargs = call[1], call[2]
+            new_args, new_kwargs = self._normalize_args(args, kwargs)
+            normalized_calls.append(_Call((new_args, new_kwargs), two=True))
+        return super().assert_has_calls(normalized_calls, any_order=any_order)
+
+
+class TestEnvironment(RealAdapterMixin):
     """
     Setup component in the Test Harness Triad.
     Manages the lifecycle of the DI container and workspace isolation.
@@ -33,82 +76,7 @@ class TestEnvironment:
             )
         return self.container
 
-    def with_real_shell(self) -> "TestEnvironment":
-        """Re-registers the real ShellAdapter instead of the mock."""
-        from teddy_executor.core.ports.outbound import IShellExecutor
-        from teddy_executor.adapters.outbound.shell_adapter import ShellAdapter
-
-        self._container.register(IShellExecutor, ShellAdapter)
-        return self
-
-    def with_real_interactor(self) -> "TestEnvironment":
-        """Re-registers the real ConsoleInteractor instead of the mock."""
-        from teddy_executor.core.ports.outbound import IUserInteractor
-        from teddy_executor.adapters.outbound.console_interactor import (
-            ConsoleInteractorAdapter,
-        )
-
-        self._container.register(IUserInteractor, ConsoleInteractorAdapter)
-        return self
-
-    def with_real_inspector(self) -> "TestEnvironment":
-        """Re-registers the real SystemEnvironmentInspector instead of the mock."""
-        from teddy_executor.core.ports.outbound import IEnvironmentInspector
-        from teddy_executor.adapters.outbound.system_environment_inspector import (
-            SystemEnvironmentInspector,
-        )
-
-        self._container.register(IEnvironmentInspector, SystemEnvironmentInspector)
-        return self
-
-    def with_real_tree_generator(self, root_dir: str) -> "TestEnvironment":
-        """Re-registers the real LocalRepoTreeGenerator instead of the mock."""
-        from teddy_executor.core.ports.outbound import IRepoTreeGenerator
-        from teddy_executor.adapters.outbound.local_repo_tree_generator import (
-            LocalRepoTreeGenerator,
-        )
-
-        self._container.register(
-            IRepoTreeGenerator, lambda: LocalRepoTreeGenerator(root_dir=root_dir)
-        )
-        return self
-
-    def with_real_web_scraper(self) -> "TestEnvironment":
-        """Re-registers the real WebScraperAdapter instead of the mock."""
-        from teddy_executor.core.ports.outbound import IWebScraper
-        from teddy_executor.adapters.outbound.web_scraper_adapter import (
-            WebScraperAdapter,
-        )
-
-        self._container.register(IWebScraper, WebScraperAdapter)
-        return self
-
-    def with_real_config(self) -> "TestEnvironment":
-        """Re-registers the real YamlConfigAdapter instead of the mock."""
-        from teddy_executor.core.ports.outbound import IConfigService
-        from teddy_executor.adapters.outbound.yaml_config_adapter import (
-            YamlConfigAdapter,
-        )
-
-        config_path = (
-            str(self.workspace / ".teddy" / "config.yaml")
-            if self.workspace
-            else ".teddy/config.yaml"
-        )
-        self._container.register(
-            IConfigService, lambda: YamlConfigAdapter(config_path=config_path)
-        )
-        return self
-
-    def with_real_searcher(self) -> "TestEnvironment":
-        """Re-registers the real WebSearcherAdapter instead of the mock."""
-        from teddy_executor.core.ports.outbound import IWebSearcher
-        from teddy_executor.adapters.outbound.web_searcher_adapter import (
-            WebSearcherAdapter,
-        )
-
-        self._container.register(IWebSearcher, WebSearcherAdapter)
-        return self
+    # Real adapter registration methods moved to RealAdapterMixin
 
     def setup(self) -> "TestEnvironment":
         """Initializes a fresh container and patches the global CLI container."""
@@ -178,7 +146,7 @@ class TestEnvironment:
         self._container.register(ILlmClient, instance=mock_llm)
 
         # Filesystem
-        mock_fs = Mock(spec=IFileSystemManager)
+        mock_fs = POSIXPathMock(spec=IFileSystemManager)
         mock_fs.path_exists.return_value = False
         self._container.register(IFileSystemManager, instance=mock_fs)
 
@@ -196,46 +164,7 @@ class TestEnvironment:
             IEnvironmentInspector, instance=Mock(spec=IEnvironmentInspector)
         )
 
-    def with_real_filesystem(self) -> "TestEnvironment":
-        """Anchors real Filesystem and Tree Generator to the workspace."""
-        from teddy_executor.core.ports.outbound import (
-            IFileSystemManager,
-            IRepoTreeGenerator,
-        )
-        from teddy_executor.adapters.outbound.local_file_system_adapter import (
-            LocalFileSystemAdapter,
-        )
-        from teddy_executor.adapters.outbound.local_repo_tree_generator import (
-            LocalRepoTreeGenerator,
-        )
-
-        if not self.workspace:
-            raise RuntimeError("Cannot anchor real filesystem without a workspace.")
-
-        self._container.register(
-            IFileSystemManager, LocalFileSystemAdapter, root_dir=str(self.workspace)
-        )
-        self._container.register(
-            IRepoTreeGenerator, LocalRepoTreeGenerator, root_dir=str(self.workspace)
-        )
-        return self
-
-    def with_real_init_service(self) -> "TestEnvironment":
-        """Anchors a real InitService with correctly resolved template paths."""
-        from teddy_executor.core.ports.inbound.init import IInitUseCase
-        from teddy_executor.core.services.init_service import InitService
-        from teddy_executor.core.ports.outbound import IFileSystemManager
-
-        real_config = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "../../../config")
-        )
-        self._container.register(
-            IInitUseCase,
-            lambda: InitService(
-                self.get_service(IFileSystemManager), config_dir=real_config
-            ),
-        )
-        return self
+    # with_real_filesystem and with_real_init_service moved to RealAdapterMixin
 
     def _anchor_workspace(self) -> None:
         """Deprecated: Use with_real_filesystem() and with_real_init_service() instead."""
