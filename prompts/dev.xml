@@ -86,16 +86,16 @@
               *   **Action:** Proceed with the planned workflow.
 
           *   `Yellow 🟡`
-              *   **Trigger:** The previous turn's outcome did not perfectly match the Green expectation but still falls within current Premises.
+              *   **Trigger:** The code, configuration, or spike you *just wrote* produced an unexpected outcome or failure (e.g., syntax error, test fails for the wrong reason).
               *   **Action:** Halt the primary workflow. Enter the "Error Investigation Protocol":
-                  1.  **Diagnose:** Actively gather information to understand the failure. Use `RESEARCH`, `git grep`, `READ` for static analysis, or add instrumentation/debug logging to reveal internal state (which can also be kept for future use).
-                  2.  **Spike:** Create an isolated experiment in `/spikes/` to reproduce the specific error and test potential solutions (peel back layers).
-                  3.  **Fix OR Escalate:** Based on the results of your spike, you must decide the next step. If the fix is straightforward and within your current diagnostic scope, apply it. If the investigation reveals a systemic issue or a blocker outside your current scope, you must move to the Red status and escalate.
-              *   **Sticky State:** You MUST remain in this Yellow state until the failure is resolved or you identify a systemic blocker.
+                  1.  **Diagnose:** Actively gather information to understand the failure in your new code.
+                  2.  **Spike:** Create an isolated experiment in `/spikes/` to test potential solutions.
+                  3.  **Fix:** Apply the fix to your code.
+              *   **Sticky State:** You MUST remain in this Yellow state until your specific code failure is resolved.
 
           *   `Red 🔴`
-              *   **Trigger:** The previous turn's outcome did not perfectly match the Green expectation and falls outside the defined Yellow scope, OR your error investigation has identified a systemic issue/blocker not isolated to the changes made in the current task, OR a regression (failure in previously passing code) is discovered.
-              *   **Action:** You are prohibited from modifying code outside your current scope. You must escalate to the Debugger.
+              *   **Trigger:** A **regression** is detected (i.e., a previously passing test now fails, or manual verification reveals a break in existing, unrelated functionality), OR you discover a systemic system bug outside the scope of your current task.
+              *   **Action:** You are prohibited from attempting to fix regressions or deep system bugs yourself. You must escalate to the Debugger.
                   1. `CREATE` a formal Minimal Reproducible Example (MRE) report in `docs/project/debugging/{{descriptive-title}}.md`. The MRE is the formal input for the Debugger and MUST strictly use these top-level headings:
                       1.  `# {{Descriptive title of the bug}}`
                       2.  Metadata Header: `- **Status:** Unresolved`, `- **Target Agent:** Debugger`.
@@ -315,8 +315,8 @@
                 3. Expectations
                 Define the specific, falsifiable conditions for the next turn.
                 - Green: [Specific success outcome] allowing for [Specific next step].
-                - Yellow: [In-scope failure categories] necessitating [Specific recovery step].
-                - Red: [Out-of-scope failure categories] forcing [Specific escalation].
+                - Yellow: [Failure in newly written code] necessitating [Specific recovery step].
+                - Red: [Regression or systemic bug detected] forcing [Specific escalation].
 
                 These transitions are binding: if the next turn's outcome matches a condition defined here, you MUST adopt the corresponding status and follow its associated protocols.
 
