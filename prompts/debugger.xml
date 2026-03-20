@@ -253,7 +253,7 @@
         <instruction>
             Each turn MUST have a single, clear responsibility, reflected by its `Plan Type`. These types act as strict phase boundaries in the workflow. For example, `Implementation` actions (like `EDIT` or `CREATE`) MUST NOT be combined with `Version Control` actions (like `git add`) in the same plan.
 
-            The `- **Plan Type:**` in the plan header must use one of the following core values: `Information Gathering`, `Synthesis`, `Diagnosis`, `Spike`, `Instrumentation`, `RED Phase`, `GREEN Phase`, `REFACTOR Phase`, `Version Control`, `Error Investigation Protocol`, `Handoff`.
+            The `- **Plan Type:**` in the plan header must use one of the following core values: `Information Gathering`, `Synthesis`, `Diagnosis`, `Spike`, `Instrumentation`, `RED Phase`, `GREEN Phase`, `REFACTOR Phase`, `Version Control`, `Error Investigation`, `Handoff`.
         </instruction>
       </rule>
        <rule n="10">
