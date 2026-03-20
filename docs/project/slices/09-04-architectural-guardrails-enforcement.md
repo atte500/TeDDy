@@ -11,32 +11,32 @@ To finalize the elevation of tests to first-class architectural citizens by enfo
 ### Scenario 1: Refactor SLOC Offenders
 **Goal:** Bring the identified test files into compliance with the unified 300-line limit.
 - **Precondition:** `test_file_system_adapter.py` (344 lines) and `test_reviewer_app.py` (302 lines) exceed the limit.
-- **Success Condition:** `test_reviewer_app.py` is split into `test_reviewer_app.py` and `test_reviewer_logic.py`.
-- **Success Condition:** `test_file_system_adapter.py` is refactored to use a new harness observer for file-matching assertions.
-- **Success Condition:** Both files are < 300 SLOC.
+- **Success Condition:** `test_reviewer_app.py` is split into logical units to reduce file size.
+- **Success Condition:** `test_file_system_adapter.py` is refactored to use the `FileSystemObserver` for complex assertions.
+- **Success Condition:** All Python files (excluding spikes) are strictly under 300 SLOC.
 #### Deliverables
-- [ ] Refactor `tests/suites/unit/adapters/inbound/test_reviewer_app.py`.
-- [ ] Refactor `tests/suites/integration/adapters/outbound/test_file_system_adapter.py`.
+- [ ] Refactor `tests/suites/unit/adapters/inbound/test_reviewer_app.py` (302 -> <300).
+- [ ] Refactor `tests/suites/integration/adapters/outbound/test_file_system_adapter.py` (344 -> <300).
 
 ### Scenario 2: Unified Guardrail Enforcement
 **Goal:** Mathematically enforce quality standards across the entire codebase.
 - **Precondition:** `.pre-commit-config.yaml` has separate, lenient rules for tests.
-- **Success Condition:** `file-length-tests` hook is removed.
-- **Success Condition:** `file-length-src` is renamed to `file-length-python` and applied to `^(src|tests)/` with a strict 300-line limit.
-- **Success Condition:** All Ruff complexity and statement checks are active for both `src/` and `tests/`.
+- **Success Condition:** The `file-length-python` hook replaces all previous length checks and targets `^(src|tests)/` with a strict 300-line limit.
+- **Success Condition:** All Ruff complexity (limit 9) and statement (limit 40) checks are active for both `src/` and `tests/`.
 #### Deliverables
 - [ ] Update `.pre-commit-config.yaml` to unify SLOC limits and consolidate hooks.
 - [ ] Update `pyproject.toml` to ensure Ruff checks explicitly target all directories.
 
-### Scenario 3: CI/CD Parity & Streamlining
-**Goal:** Eliminate redundancy in the CI pipeline while maintaining 100% parity with local checks.
-- **Precondition:** `ci.yml` triple-runs static analysis and audits across the OS matrix.
-- **Success Condition:** `ci.yml` is refactored into a "Canonical Gate" (Ubuntu) and a "Compatibility Matrix" (macOS/Windows) that run in **parallel**.
-- **Success Condition:** Job 1 (Canonical) runs the full `pre-commit` suite (including `pytest`), `jscpd`, and `pip-audit`.
-- **Success Condition:** Job 2 (Compatibility) runs *only* `pytest` (without coverage) to ensure cross-platform runtime.
+### Scenario 3: Local CPD & CI Parity
+**Goal:** Enable local duplication checks and ensure 100% parity with the CI pipeline.
+- **Precondition:** `jscpd` is currently global/CI-only with a 50-token limit.
+- **Success Condition:** A root `package.json` defines `jscpd` as a `devDependency`.
+- **Success Condition:** A new `pre-commit` hook executes `npx jscpd` with a strict **25-token** threshold (approx. 3-5 lines).
+- **Success Condition:** `ci.yml` is refactored into a "Canonical Gate" (Ubuntu) that runs `npm install` followed by the full `pre-commit` suite.
 #### Deliverables
-- [ ] Refactor `.github/workflows/ci.yml` into two independent, parallel jobs.
-- [ ] Optimize macOS/Windows jobs to skip coverage and static analysis.
+- [ ] Create root `package.json` with `jscpd` as a `devDependency`.
+- [ ] Add `jscpd` hook to `.pre-commit-config.yaml` (using `npx jscpd --min-tokens 25`).
+- [ ] Refactor `.github/workflows/ci.yml` into independent parallel jobs (Canonical vs. Compatibility Matrix).
 
 ### Scenario 4: Codify "System Law" [✓]
 **Goal:** Document the new unified standards in the project's single source of truth.
