@@ -62,7 +62,6 @@ jobs:
 
   compatibility-matrix:
     name: Compatibility Matrix (${{ matrix.os }})
-    needs: canonical-gate
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
