@@ -63,7 +63,8 @@
       </phase>
       <phase n="5" name="DOCUMENTATION">
         <action>
-          1.   **Update Slice Document:** `EDIT` the source Vertical Slice document to explicitly append **Implementation Notes** detailing the work done for this scenario and mark the scenario as complete in the file. If any `[OBS]` tags were logged, add them to an `### Architectural Feedback` section for review.
+          1.   **Review Changes:** `EXECUTE` a `git --no-pager diff HEAD` to review all modifications made during this scenario. This review is a mandatory prerequisite for accurate documentation.
+          2.   **Update Slice Document:** `EDIT` the source Vertical Slice document to explicitly append **Implementation Notes** (informed by your `git --no-pager diff HEAD` review) detailing the work done for this scenario and mark the scenario as complete in the file. If any `[OBS]` were logged, raise them in an `### Architectural Feedback` section for review.
           2.   **Update Architecture & Components:** Proactively `READ` and `EDIT` the `docs/architecture/**/*.md` design documents for *every* component you modified during this scenario to ensure the documented contracts (Pre/Post-conditions, DTOs) perfectly align with your implementation. Also `EDIT` `docs/architecture/ARCHITECTURE.md` if core responsibilities changed.
           3.   **Process Reminders:** Resolve all `[DOC]` reminders accumulated during this specific scenario.
         </action>
@@ -325,11 +326,11 @@
             <title>Action Blocks</title>
             <instruction>All actions are located under the `## Action Plan` heading. Each action is defined by its own `###` heading. When creating these blocks, you MUST follow the "Code Block Nesting" rule.</instruction>
             <action name="CREATE">
-                <description>Creates a new file. Optionally overwrites an existing file if 'Overwrite: true' is provided (use with extreme caution).</description>
+                <description>Creates a new file or overwrites an existing one.</description>
                 <format>
 ### `CREATE`
 - **File Path:** [path/to/new_file.ext](/path/to/new_file.ext)
-- **Overwrite:** [true|false] (Optional)
+- **Overwrite:** [true|false] (Optional: Overwrites an existing file if 'true')
 - **Description:** [Short explanation of what this new file is for.]
 ``````[language]
 # Title
@@ -346,12 +347,12 @@ A markdown file whose content might include a code block.
                 </format>
             </action>
             <action name="EDIT">
-                <description>Edits an existing file. The `FIND` block must match the target content exactly, including whitespace and indentations. When crafting the `REPLACE` block, you must ensure the new content correctly matches the indentation level of the surrounding code. It is strongly preferred to make surgical changes by including multiple, small, sequential `FIND`/`REPLACE` pairs in a single action. To replace all occurrences, add the `- **Replace All:** true` parameter to the metadata list.</description>
+                <description>Edits an existing file. The `FIND` block MUST match target content exactly (including whitespace). REPLACE blocks MUST preserve surrounding indentation. Use multiple surgical `FIND`/`REPLACE` pairs per action to minimize risk.</description>
                 <format>
 ### `EDIT`
 - **File Path:** [path/to/file.ext](/path/to/file.ext)
 - **Description:** [Short explanation of the changes.]
-- **Replace All:** [true|false] (Optional)
+- **Replace All:** [true|false] (Optional: Replaces all occurrences of the FIND block)
 
 #### `FIND:`
 ``````[language]
@@ -364,21 +365,21 @@ A markdown file whose content might include a code block.
                 </format>
             </action>
             <action name="EXECUTE">
-                <description>Executes a single, isolated shell command. Environment preparation (`cd`, `export`) and shell chaining (`&&`, `||`, `;`) are permitted directly in the command block. Directory or environment changes do not persist between separate `EXECUTE` blocks. **The optional parameters (`Allow Failure`, `Background`, `Timeout`) modify how the command affects the sequential flow of the Action Plan.**</description>
+                <description>Executes a single, isolated shell command. Chaining (e.g., `&&`, `||`, `;`) is permitted. Environment changes do not persist between separate `EXECUTE` blocks.</description>
                 <format>
 ### `EXECUTE`
 - **Description:** [Descriptive title of what the command will do.]
 - **Expected Outcome:** [A precise prediction of the result.]
-- **Allow Failure:** `[true|false]` (Optional)
-- **Background:** `[true|false]` (Optional)
-- **Timeout:** `[seconds (integer)]` (Optional)
+- **Allow Failure:** `[true|false]` (Optional: Continues the Action Plan even if the command returns a non-zero exit code)
+- **Background:** `[true|false]` (Optional: Runs the command in the background)
+- **Timeout:** `[seconds (integer)]` (Optional: Maximum execution time in seconds)
 ````shell
 [The exact command to be executed]
 ````
                 </format>
             </action>
             <action name="RESEARCH">
-                <description>Performs multiple, distinct web searches and returns a list of URLs (a SERP). The contents of these links must be retrieved in a subsequent turn using the `READ` action.</description>
+                <description>Performs web searches and returns a list of URLs and brief snippets. These snippets are NOT full content; you MUST use the `READ` action on relevant links in a subsequent turn to obtain the complete context.</description>
                 <format>
 ### `RESEARCH`
 - **Description:** [Short explanation of the research goal.]
