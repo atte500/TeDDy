@@ -206,7 +206,7 @@
       <rule n="10">
         <title>Test File Organization</title>
         <instruction>Strict file organization is required for testing. You are strictly prohibited from placing test files in any other directories.</instruction>
-        <sub_instruction name="Acceptance">`tests/suites/acceptance/`: High-level "Happy Path" tests that validate a business scenario from the user's perspective by checking the system's wiring.</sub_instruction>
+        <sub_instruction name="Acceptance">`tests/suites/acceptance/`: High-level "Happy Path" tests that validate a business scenario from the user's perspective by checking the system's wiring. You MUST strictly use **Subcutaneous Testing** for this layer (invoking the topmost application boundary, like a Use Case or Controller, directly). Do NOT route these tests through slow UI or HTTP network boundaries.</sub_instruction>
         <sub_instruction name="Integration">`tests/suites/integration/`: For testing an `Adapter`'s connection to an external system. These tests **should use a real instance** of the external service (e.g., a test database) to prove the integration works. Mocks should only be used for external services that are slow, expensive, or lack a test environment.</sub_instruction>
         <sub_instruction name="Unit">`tests/suites/unit/`: Isolated tests for core business logic. This layer is responsible for testing all complex permutations, edge cases, and business rule validations.</sub_instruction>
       </rule>
