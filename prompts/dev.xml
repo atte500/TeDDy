@@ -200,9 +200,8 @@
       <rule n="9">
         <title>Implementing Contract Enforcement (DbC)</title>
         <instruction>A contract is only effective if it's enforced. Your implementation must perform active checks at runtime.</instruction>
-        <sub_instruction name="Immediate Failure">The program must not continue in an invalid state. Upon detecting a contract violation, your code must throw an unrecoverable error or assertion failure ("fail fast").</sub_instruction>
-        <sub_instruction name="Informative Messages">The error message must clearly state which contract was violated (precondition, postcondition, or invariant) and provide context.</sub_instruction>
-        <sub_instruction name="Adhere to Build Configurations">In **Debug Builds**, all contract checks must be enabled. In **Production Builds**, contract checks must be disabled or compiled out for performance.</sub_instruction>
+        <sub_instruction name="Zero-Cost Abstractions">To ensure contracts do not degrade production compute, you MUST strictly use the native `assert` keyword (e.g., `assert condition, "Message"`) for all Pre/Post-condition and Invariant checks. Do NOT use `raise ValueError` or custom exceptions for DbC, as these cannot be compiled out. This guarantees assertions are stripped when running in optimized mode (`python -O`).</sub_instruction>
+        <sub_instruction name="Informative Messages">The assertion message must clearly state which contract was violated (precondition, postcondition, or invariant) and provide context.</sub_instruction>
       </rule>
       <rule n="10">
         <title>Test File Organization</title>
@@ -212,10 +211,13 @@
         <sub_instruction name="Unit">`tests/suites/unit/`: Isolated tests for core business logic. This layer is responsible for testing all complex permutations, edge cases, and business rule validations.</sub_instruction>
       </rule>
       <rule n="11">
-        <title>Test Purity & Mandatory Harness Triad</title>
-        <instruction>To ensure a clean architecture, you must strictly separate test logic from test support code.
-          - **Test Purity:** You are strictly prohibited from creating helper functions, factories, or object mothers within test files in `tests/suites/`. All support code MUST reside in the Test Harness Triad (`tests/harness/`).
-          - **Harness Usage:** You MUST use the harness for state (Setup), interaction (Drivers), and verification (Observers). Bypassing the harness to use raw UI drivers, direct data access, environment shims, or raw network calls is a zero-tolerance violation.</instruction>
+        <title>Testing Strategy & Boundaries</title>
+        <instruction>Strictly adhere to the following test architecture to ensure high-performance, refactor-safe testing</instruction>
+        <sub_instruction name="Harness Encapsulation">Do not create test doubles or helpers directly inside test files (`tests/suites/`). All double instantiation/configuration MUST reside in the Harness `Setup`, and all verifications/assertions in the `Observer`.</sub_instruction>
+        <sub_instruction name="Real Domain Objects">When testing core business logic, you MUST use REAL instances of internal Domain Entities, Value Objects, and pure Services. Never mock or fake internal logic; reserve test doubles exclusively for architectural boundaries.</sub_instruction>
+        <sub_instruction name="Mandatory Fakes">For Outbound Ports managing data/state (e.g., Repositories), you MUST use In-Memory Fakes (e.g., dictionary-backed). Verify their resulting state via the `Observer`. Fakes run significantly faster than mocks by avoiding reflection.</sub_instruction>
+        <sub_instruction name="Targeted Mocks">Use Mocks (e.g., `unittest.mock.MagicMock`) ONLY for Outbound Ports triggering external side-effects where state verification is impossible (e.g., sending emails). Verify these interactions via the `Observer`.</sub_instruction>
+        <sub_instruction name="DI Boundaries">Unit Tests MUST manually instantiate the SUT and inject dependencies via the Setup harness—never use the global DI `container` fixture to avoid slow bootstrapping. Conversely, Integration/Acceptance tests MUST use the real DI container to prove system wiring.</sub_instruction>
       </rule>
       <rule n="12">
         <title>Standardized Plan Types</title>
