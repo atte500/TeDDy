@@ -368,7 +368,7 @@ A markdown file whose content might include a code block.
 ### `EDIT`
 - **File Path:** [path/to/file.ext](/path/to/file.ext)
 - **Description:** [Short explanation of the changes.]
-- **Replace All:** [true|false] (Optional: Replaces all occurrences of the FIND block)
+- **Match All:** [true|false] (Optional: Replaces all occurrences of the FIND block)
 
 #### `FIND:`
 ``````[language]

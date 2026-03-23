@@ -176,7 +176,7 @@ class LocalFileSystemAdapter(IFileSystemManager):
         path: str,
         edits: list[dict[str, str]],
         similarity_threshold: float = DEFAULT_SIMILARITY_THRESHOLD,
-        replace_all: bool = False,
+        match_all: bool = False,
     ) -> list[float]:
         """
         Modifies an existing file by applying a list of find-and-replace blocks.
@@ -194,7 +194,7 @@ class LocalFileSystemAdapter(IFileSystemManager):
             content,
             cast_edits,
             threshold=similarity_threshold,
-            replace_all=replace_all,
+            match_all=match_all,
         )
 
         file_path.write_text(new_content, encoding="utf-8")

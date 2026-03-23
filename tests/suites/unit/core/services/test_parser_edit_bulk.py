@@ -23,14 +23,14 @@ def _parse_content(content: str):
     return parse_edit_action(stream, VALID_ACTIONS)
 
 
-def test_parse_edit_action_extracts_replace_all():
+def test_parse_edit_action_extracts_match_all():
     """
-    Asserts that parse_edit_action correctly identifies 'Replace All: true'.
+    Asserts that parse_edit_action correctly identifies 'Match All: true'.
     """
     content = textwrap.dedent("""\
         ### `EDIT`
         - **File Path:** [app.py](/app.py)
-        - **Replace All:** true
+        - **Match All:** true
         - **Description:** Bulk edit
 
         #### `FIND:`
@@ -43,12 +43,12 @@ def test_parse_edit_action_extracts_replace_all():
         ```
         """)
     action_data = _parse_content(content)
-    assert action_data.params.get("replace_all") is True
+    assert action_data.params.get("match_all") is True
 
 
-def test_parse_edit_action_defaults_replace_all_to_none_or_false():
+def test_parse_edit_action_defaults_match_all_to_none_or_false():
     """
-    Asserts that if Replace All is omitted, it's not present or is False.
+    Asserts that if Match All is omitted, it's not present or is False.
     """
     content = textwrap.dedent("""\
         ### `EDIT`
@@ -65,4 +65,4 @@ def test_parse_edit_action_defaults_replace_all_to_none_or_false():
         ```
         """)
     action_data = _parse_content(content)
-    assert action_data.params.get("replace_all") in (None, False)
+    assert action_data.params.get("match_all") in (None, False)

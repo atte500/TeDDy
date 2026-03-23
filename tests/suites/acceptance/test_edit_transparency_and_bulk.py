@@ -27,7 +27,7 @@ def test_edit_reports_similarity_score_on_success(monkeypatch, tmp_path):
 
 
 def test_edit_bulk_replacement(monkeypatch, tmp_path):
-    """Scenario 5.2: Multi-Instance Replacement with Replace All: true."""
+    """Scenario 5.2: Multi-Instance Replacement with Match All: true."""
     env = TestEnvironment(monkeypatch, tmp_path)
     env.setup()
     adapter = CliTestAdapter(monkeypatch, tmp_path)
@@ -42,8 +42,8 @@ def test_edit_bulk_replacement(monkeypatch, tmp_path):
             "multi.py",
             "DEBUG:",
             "INFO:",
-            description="Replace all DEBUG logs",
-            replace_all=True,
+            description="Match All DEBUG logs",
+            match_all=True,
         )
         .build()
     )
@@ -57,7 +57,7 @@ def test_edit_bulk_replacement(monkeypatch, tmp_path):
 
     # Verify reporting
     assert "**Similarity Score:** 1.00" in result.stdout
-    assert "**Replace All:** True" in result.stdout
+    assert "**Match All:** True" in result.stdout
 
 
 def test_edit_ambiguity_hint_update(monkeypatch, tmp_path):
@@ -80,6 +80,6 @@ def test_edit_ambiguity_hint_update(monkeypatch, tmp_path):
     # Should fail validation
     assert "The `FIND` block is ambiguous" in result.stdout
     assert (
-        "use `Replace All: true` to change all occurrences in the file at once"
+        "use `Match All: true` to change all occurrences in the file at once"
         in result.stdout
     )

@@ -75,12 +75,12 @@ def parse_edit_action(
         metadata_list,
         link_key_map={"File Path": "path"},
         text_key_map={
-            "Replace All": "replace_all",
+            "Match All": "match_all",
         },
     )
 
-    if "replace_all" in params:
-        params["replace_all"] = str(params["replace_all"]).lower() == "true"
+    if "match_all" in params:
+        params["match_all"] = str(params["match_all"]).lower() == "true"
 
     edits = []
     while stream.has_next():

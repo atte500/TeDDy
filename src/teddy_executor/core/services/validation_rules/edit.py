@@ -88,14 +88,14 @@ class EditActionValidator(BaseActionValidator):
         # Use global threshold from config
         threshold = global_threshold
 
-        replace_all = action.params.get("replace_all", False)
+        match_all = action.params.get("match_all", False)
         edits = action.params.get("edits")
         if isinstance(edits, list):
             for edit in edits:
                 # Local override from edit metadata takes precedence
-                local_replace_all = edit.get("replace_all", replace_all)
+                local_match_all = edit.get("match_all", match_all)
                 for err in _validate_single_edit(
-                    edit, content, path_str, threshold, replace_all=local_replace_all
+                    edit, content, path_str, threshold, match_all=local_match_all
                 ):
                     # Attach specific FIND CodeBlock node for surgical diagnostics
                     # Fallback to action node if find_node is missing
@@ -115,7 +115,7 @@ def _validate_single_edit(
     content: str,
     file_path: str,
     threshold: Optional[float] = None,
-    replace_all: bool = False,
+    match_all: bool = False,
 ) -> ValidationResult:
     """Validates a single edit dictionary."""
     errors: ValidationResult = []
@@ -159,7 +159,7 @@ def _validate_single_edit(
         )
         fence = get_fence_for_content(find_block)
 
-        if is_ambiguous and not replace_all:
+        if is_ambiguous and not match_all:
             errors.append(
                 ValidationError(
                     message=(
@@ -167,7 +167,7 @@ def _validate_single_edit(
                         f"**Similarity Score:** {score:.2f}\n"
                         f"**FIND Block:**\n"
                         f"{fence}\n{find_block}\n{fence}\n"
-                        "**Hint:** Please provide a larger FIND block to uniquely identify the section, refactor the code to avoid duplication. Alternatively you can use `Replace All: true` to change all occurrences in the file at once."
+                        "**Hint:** Please provide a larger FIND block to uniquely identify the section, refactor the code to avoid duplication. Alternatively you can use `Match All: true` to change all occurrences in the file at once."
                     ),
                     file_path=str(file_path),
                 )

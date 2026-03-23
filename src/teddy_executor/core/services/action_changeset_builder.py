@@ -81,12 +81,12 @@ class ActionChangeSetBuilder:
                 float(threshold_raw) if threshold_raw is not None else global_threshold
             )
 
-            replace_all = action.params.get("replace_all", False)
+            match_all = action.params.get("match_all", False)
             after_content, _ = self._edit_simulator.simulate_edits(
                 before_content,
                 action.params.get("edits", []),
                 threshold=threshold,
-                replace_all=replace_all,
+                match_all=match_all,
             )
         else:  # CREATE
             after_content = action.params.get("content", "")

@@ -311,7 +311,7 @@
       {% set display_key = key.replace('_', ' ').title() %}
       {# Map plumbing keys back to human readable names for display #}
       {% if k_lower == 'similarity_threshold' %}{% set display_key = 'Similarity Threshold' %}{% endif %}
-      {% if k_lower == 'replace_all' %}{% set display_key = 'Replace All' %}{% endif %}
+      {% if k_lower == 'match_all' %}{% set display_key = 'Match All' %}{% endif %}
       {# Skip path params in body since they are in header #}
       {% if k_lower not in ['file path', 'file_path', 'resource', 'path'] %}
 - **{{ display_key }}:** {{ value }}

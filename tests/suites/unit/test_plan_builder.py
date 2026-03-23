@@ -12,7 +12,7 @@ def test_builder_supports_all_nine_specialized_methods(container):
     # Each call should return self to allow chaining
     assert builder.add_create("src/app.py", "print('hello')", overwrite=True) is builder
     builder.add_read("README.md")
-    builder.add_edit("src/app.py", "print('hello')", "print('world')", replace_all=True)
+    builder.add_edit("src/app.py", "print('hello')", "print('world')", match_all=True)
     builder.add_execute(
         "pytest",
         expected_outcome="Tests pass",

@@ -21,15 +21,15 @@ def test_simulate_edits_returns_scores():
 
 def test_simulate_edits_bulk_replacement():
     """
-    Asserts that replace_all=True replaces all occurrences.
+    Asserts that match_all=True replaces all occurrences.
     """
     simulator = EditSimulator()
     content = "a a a"
     edits = [{"find": "a", "replace": "b"}]
 
-    # Currently it only replaces one. We want it to handle a replace_all flag.
+    # Currently it only replaces one. We want it to handle a match_all flag.
     # Note: I'll need to update the EditPair TypedDict in the port as well.
-    new_content, scores = simulator.simulate_edits(content, edits, replace_all=True)
+    new_content, scores = simulator.simulate_edits(content, edits, match_all=True)
 
     assert new_content == "b b b"
     # For bulk edits, we might return a list of scores or an average.

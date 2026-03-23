@@ -69,11 +69,11 @@ class MarkdownPlanBuilder:
         find_replace: Union[str, List[Tuple[str, str]]],
         replace: Optional[str] = None,
         description: str = "Editing file",
-        replace_all: bool = False,
+        match_all: bool = False,
     ):
         params = {"File Path": self._path_link(path), "Description": description}
-        if replace_all:
-            params["Replace All"] = "true"
+        if match_all:
+            params["Match All"] = "true"
 
         content_blocks = {}
         if isinstance(find_replace, list):
