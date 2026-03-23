@@ -36,7 +36,7 @@ def container(monkeypatch):
 
     c = create_container()
     # Force the global container to be this fresh instance
-    monkeypatch.setattr(teddy_executor.__main__, "container", c)
+    monkeypatch.setattr(teddy_executor.__main__, "_container", c)
     return c
 
 

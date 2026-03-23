@@ -35,9 +35,15 @@ The heavy regex compilation penalty of the `mistletoe` library should be deferre
 ### Scenario 3: CLI Lazy Initialization
 The Dependency Injection container should only be initialized when a CLI command is actively executed, rather than at module import time.
 #### Deliverables
-- [ ] In `src/teddy_executor/__main__.py`, replace the global `container = create_container()` with a cached `get_container()` getter function.
-- [ ] Update all Typer command callbacks in `__main__.py` to call `get_container()` when resolving dependencies.
-- [ ] **CRITICAL:** Update `tests/harness/setup/composition.py` and `tests/harness/setup/test_environment.py` to correctly patch the new `get_container()` logic. If you skip this, the test suite will fail because the global `container` attribute will no longer exist.
+- [x] In `src/teddy_executor/__main__.py`, replace the global `container = create_container()` with a cached `get_container()` getter function.
+- [x] Update all Typer command callbacks in `__main__.py` to call `get_container()` when resolving dependencies.
+- [x] **CRITICAL:** Update `tests/harness/setup/composition.py` and `tests/harness/setup/test_environment.py` to correctly patch the new `get_container()` logic. If you skip this, the test suite will fail because the global `container` attribute will no longer exist.
+
+#### Implementation Notes
+- Replaced the eager `container = create_container()` in `__main__.py` with a `get_container()` function wrapping a private `_container` global.
+- Updated all Typer command callbacks (`start`, `plan`, `context`, `resume`, `execute`) to call `get_container()` at runtime.
+- Updated `composition.py` and `test_environment.py` fixtures to patch `teddy_executor.__main__._container` instead of `container` to maintain test harness isolation.
+- Fixed a broken unit test (`test_environment_harness.py`) that had directly asserted against the removed `main.container` attribute.
 
 ### Scenario 4: Worker I/O Bottleneck Mitigated
 The file generation loop in the tree generator performance test should be reduced to prevent monopolizing a test worker with excessive synchronous I/O.

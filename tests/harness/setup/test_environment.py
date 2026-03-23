@@ -91,7 +91,7 @@ class TestEnvironment(RealAdapterMixin):
         self._register_default_mocks()
 
         # Monkeypatch the global container instance used by the CLI
-        self._monkeypatch.setattr(teddy_executor.__main__, "container", self.container)
+        self._monkeypatch.setattr(teddy_executor.__main__, "_container", self.container)
 
         # Legacy Compatibility: If a workspace was EXPLICITLY provided, anchor real adapters.
         # For managed workspaces (automated), we stay with mocks by default.

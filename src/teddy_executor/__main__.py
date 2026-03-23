@@ -11,14 +11,24 @@ import typer
 from teddy_executor.core.domain.models import (
     ExecutionReport,
 )
-from teddy_executor.container import create_container
 
 if TYPE_CHECKING:
     from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
 
 
 app = typer.Typer()
-container = create_container()
+
+_container = None
+
+
+def get_container():
+    global _container
+    if _container is None:
+        from teddy_executor.container import create_container
+
+        _container = create_container()
+    return _container
+
 
 # Configure logging to output to stderr (which Typer handles well)
 # Using a simple format since this is intended for user progress updates.
@@ -51,6 +61,7 @@ def bootstrap():
     from teddy_executor.core.ports.inbound.init import IInitUseCase
 
     project_root = find_project_root()
+    container = get_container()
 
     # Re-register file system components anchored to the project root
     # This ensures all paths are resolved relative to where the .teddy folder lives.
@@ -94,7 +105,7 @@ def start(
     """
     from teddy_executor.adapters.inbound.session_cli_handlers import handle_new_session
 
-    handle_new_session(container, name, agent, no_copy)
+    handle_new_session(get_container(), name, agent, no_copy)
 
 
 @app.command()
@@ -110,7 +121,7 @@ def plan(
         handle_plan_generation,
     )
 
-    handle_plan_generation(container, message)
+    handle_plan_generation(get_container(), message)
 
 
 @app.command()
@@ -130,7 +141,7 @@ def context(
         handle_context_gathering,
     )
 
-    handle_context_gathering(container, no_copy)
+    handle_context_gathering(get_container(), no_copy)
 
 
 @app.command(name="get-prompt")
@@ -163,7 +174,7 @@ def create_parser_for_plan(plan_content: str) -> IPlanParser:
     Factory function to determine which plan parser to use.
     """
     # Legacy YAML plans are deprecated. Only Markdown is supported.
-    return container.resolve(IPlanParser)
+    return get_container().resolve(IPlanParser)
 
 
 @app.command()
@@ -192,7 +203,7 @@ def resume(
     )
 
     handle_resume_session(
-        container=container,
+        container=get_container(),
         path=path,
         interactive=interactive,
         no_copy=no_copy,
@@ -238,7 +249,7 @@ def execute(
 
     try:
         final_plan_content = get_plan_content(plan_content, plan_file)
-        orchestrator = container.resolve(IRunPlanUseCase)
+        orchestrator = get_container().resolve(IRunPlanUseCase)
 
         report = orchestrator.execute(
             plan_content=final_plan_content,
@@ -250,10 +261,10 @@ def execute(
         from teddy_executor.adapters.inbound.cli_helpers import create_failure_report
 
         report = create_failure_report(
-            e, start_time, container, plan_content=final_plan_content
+            e, start_time, get_container(), plan_content=final_plan_content
         )
 
-    handle_report_output(container, report, no_copy)
+    handle_report_output(get_container(), report, no_copy)
 
 
 if __name__ == "__main__":

@@ -16,7 +16,7 @@ def test_environment_isolates_container(monkeypatch, container):
     # Check that the global container in __main__ is patched
     import teddy_executor.__main__ as main
 
-    assert main.container is env.container
+    assert main._container is env.container
 
     env.teardown()
 
