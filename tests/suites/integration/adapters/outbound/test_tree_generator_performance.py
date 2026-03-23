@@ -13,7 +13,7 @@ def test_repo_tree_generator_performance_with_large_ignored_dir(
     # Arrange
     ignored_dir = tmp_path / ".venv"
     ignored_dir.mkdir()
-    for i in range(5000):
+    for i in range(500):
         (ignored_dir / f"file_{i}.py").touch()
 
     src_dir = tmp_path / "src"
@@ -37,8 +37,8 @@ def test_repo_tree_generator_performance_with_large_ignored_dir(
     assert "src/" in tree_output
     assert "main.py" in tree_output
 
-    # Performance: Should be very fast (< 200ms)
-    max_duration_ms = 200
+    # Performance: Should be very fast (< 50ms)
+    max_duration_ms = 50
     assert duration_ms < max_duration_ms, (
         f"Tree generation took too long: {duration_ms:.2f}ms"
     )

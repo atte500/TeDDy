@@ -48,8 +48,12 @@ The Dependency Injection container should only be initialized when a CLI command
 ### Scenario 4: Worker I/O Bottleneck Mitigated
 The file generation loop in the tree generator performance test should be reduced to prevent monopolizing a test worker with excessive synchronous I/O.
 #### Deliverables
-- [ ] Update `tests/suites/integration/adapters/outbound/test_tree_generator_performance.py` to reduce the loop from 5000 to 500 files.
-- [ ] Adjust the `max_duration_ms` assertion to be tighter (e.g., `< 50ms`) to reflect the smaller payload.
+- [x] Update `tests/suites/integration/adapters/outbound/test_tree_generator_performance.py` to reduce the loop from 5000 to 500 files.
+- [x] Adjust the `max_duration_ms` assertion to be tighter (e.g., `< 50ms`) to reflect the smaller payload.
+
+#### Implementation Notes
+- Reduced the synchronous disk I/O in `test_tree_generator_performance.py` by scaling the `ignored_dir` creation loop down from 5000 files to 500 files.
+- Tightened the performance assertion threshold from `< 200ms` down to `< 50ms` to accurately test the smaller dataset while preventing the worker thread from hanging unnecessarily.
 
 ### Scenario 5: Purge Legacy Action Models & Extract Exceptions
 The `_legacy_models.py` file contains obsolete, strongly-typed action classes that were replaced by the dynamic `ActionData` model. We must purge this technical debt while preserving the custom exceptions still actively used by the domain.
