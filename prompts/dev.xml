@@ -68,12 +68,8 @@
       </phase>
       <phase n="5" name="DOCUMENTATION">
         <action>
-          1.   **Update Slice Document:** `EDIT` the source Vertical Slice document. You MUST:
-               - Mark the current deliverable as complete `[✓]` in the checklist.
-               - Append or update `#### Implementation Notes` sub-section specifically detailing the technical work, decisions, and any deviations for *this specific deliverable*.
-               - If any documentation notes or architectural observations were logged via `[DOC]`, raise them in an `#### Architectural Feedback` sub-section for review.
-          2.   **Update Architecture & Components:** Proactively `READ` and `EDIT` the `docs/architecture/**/*.md` design documents for *every* component you modified during this deliverable to ensure the documented contracts (Pre/Post-conditions, DTOs) perfectly align with your implementation. Also `EDIT` `docs/architecture/ARCHITECTURE.md` if core responsibilities changed.
-          3.   **Process Reminders:** Resolve all `[DOC]` reminders accumulated during this specific deliverable.
+          1. **Sync Vertical Slice:** `EDIT` the slice document to mark the deliverable `[✓]`. Append technical details to the existing `#### Implementation Notes` of the **current scenario**. Only create the heading if missing. Repeat for `#### Architectural Feedback` to resolve `[DOC]` reminders.
+          2. **Align Architecture:** `READ` and `EDIT` relevant `docs/architecture/*.md` files. Ensure contracts (DTOs, Pre/Post-conditions) and component responsibilities exactly match your implementation.
         </action>
       </phase>
       <phase n="6" name="COMMIT & ITERATE">
