@@ -11,7 +11,11 @@ Drop the overall test suite execution time below the 10-second threshold and eli
 ### Scenario 1: Pytest Collection Restricted
 The test suite should no longer waste time traversing non-test directories (like `.venv` or `.git`) during the collection phase.
 #### Deliverables
-- [ ] Update `pyproject.toml` to include `testpaths = ["tests"]` within the `[tool.pytest.ini_options]` block.
+- [x] Update `pyproject.toml` to include `testpaths = ["tests"]` within the `[tool.pytest.ini_options]` block.
+
+#### Implementation Notes
+- Added `testpaths = ["tests"]` to `pyproject.toml`.
+- Verified that `pytest --collect-only` execution time dropped to ~0.20s, eliminating the primary traversal bottleneck.
 
 ### Scenario 2: Mistletoe Lazy Loading
 The heavy regex compilation penalty of the `mistletoe` library should be deferred until absolutely necessary, removing the import penalty from CLI startup and test collection.

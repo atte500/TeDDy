@@ -82,6 +82,7 @@ exclude_dirs = ["spikes"]
 skips = ["B101"]
 
 [tool.pytest.ini_options]
+testpaths = ["tests"]
 pythonpath = ["src", "."]
 norecursedirs = "spikes"
 addopts = [
