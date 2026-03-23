@@ -18,7 +18,7 @@ To enable the interactive TUI for all execution modes and polish the session wor
 
 #### Deliverables
 - [✓] **Contract:** Update `IPlanReviewer` port to include `review_action` (per-action sequential) and `review_plan` (bulk TUI) methods.
-- [ ] **Implementation:** Implement `ConsolePlanReviewer.review_action` to handle sequential Y/N logic and immediate execution.
+- [✓] **Implementation:** Implement `ConsolePlanReviewer.review_action` to handle sequential Y/N logic and immediate execution.
 - [ ] **Implementation:** Implement `ConsolePlanReviewer.review_plan` to handle bulk summary approval in non-interactive sessions.
 - [ ] **Core Refactoring:** Update `ExecutionOrchestrator` to delegate action confirmation entirely to the `IPlanReviewer` port.
 - [ ] **Wiring:** Update `YamlConfigAdapter` to support `ui_mode` (default: `tui`).

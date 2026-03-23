@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import Optional
 
 from teddy_executor.core.domain.models import (
@@ -6,9 +5,9 @@ from teddy_executor.core.domain.models import (
     ActionStatus,
     ChangeSet,
 )
-from teddy_executor.core.domain.models.plan import DEFAULT_SIMILARITY_THRESHOLD
 from teddy_executor.core.ports.inbound.edit_simulator import IEditSimulator
 from teddy_executor.core.services.action_diff_manager import ActionDiffManager
+from teddy_executor.core.services.action_changeset_builder import ActionChangeSetBuilder
 from teddy_executor.core.ports.outbound import (
     IConfigService,
     IFileSystemManager,
@@ -40,8 +39,9 @@ class ActionExecutor:
         self._action_dispatcher = action_dispatcher
         self._user_interactor = user_interactor
         self._file_system_manager = file_system_manager
-        self._edit_simulator = edit_simulator
-        self._config_service = config_service
+        self._changeset_builder = ActionChangeSetBuilder(
+            file_system_manager, config_service, edit_simulator
+        )
 
     def _create_intercepted_log(
         self, action, status: ActionStatus, details: str
@@ -131,61 +131,11 @@ class ActionExecutor:
 
     def _create_change_set(self, action) -> ChangeSet | None:
         """Creates a ChangeSet for file operations."""
-        if action.type.upper() not in ("CREATE", "EDIT"):
-            return None
-
-        path_str = action.params.get("path") or action.params.get("File Path")
-        if not path_str:
-            return None
-
-        before_content = (
-            self._file_system_manager.read_file(path_str)
-            if self._file_system_manager.path_exists(path_str)
-            else ""
-        )
-        path = Path(path_str)
-
-        if action.type.upper() == "EDIT":
-            global_threshold = self._config_service.get_setting(
-                "execution.similarity_threshold", DEFAULT_SIMILARITY_THRESHOLD
-            )
-            threshold = action.params.get(
-                "execution.similarity_threshold", global_threshold
-            )
-            replace_all = action.params.get("replace_all", False)
-            after_content, _ = self._edit_simulator.simulate_edits(
-                before_content,
-                action.params.get("edits", []),
-                threshold=threshold,
-                replace_all=replace_all,
-            )
-        else:  # CREATE
-            after_content = action.params.get("content", "")
-
-        return ChangeSet(
-            path=path,
-            before_content=before_content,
-            after_content=after_content,
-            action_type=action.type.upper(),
-        )
+        return self._changeset_builder.create_change_set(action)
 
     def _get_interactive_confirmation(self, action) -> tuple[bool, str]:
         """Prompts the user for confirmation of an action."""
-        prompt_parts = [
-            "---",
-            f"Action: {action.type}",
-            f"Description: {action.description}" if action.description else "",
-        ]
-        display_map = {"handoff_resources": "Reference Files"}
-        param_str = "\n".join(
-            f"  - {display_map.get(k, k)}: {v}"
-            for k, v in action.params.items()
-            if k.lower() not in ("edits", "content")
-        )
-        if param_str:
-            prompt_parts.extend(["Parameters:", param_str])
-        prompt_parts.append("---")
-        prompt = "\n".join(filter(None, prompt_parts))
+        prompt = ActionChangeSetBuilder.format_action_prompt(action)
 
         change_set = self._create_change_set(action)
 
