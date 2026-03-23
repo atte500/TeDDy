@@ -160,6 +160,19 @@ def mock_plan_validator(container):
 
 
 @pytest.fixture
+def mock_plan_reviewer(container):
+    from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
+
+    mock = Mock(spec=IPlanReviewer)
+    # Default pass-through behavior for review methods
+    mock.review.side_effect = lambda p: p
+    mock.review_plan.side_effect = lambda p: p
+
+    container.register(IPlanReviewer, instance=mock)
+    return mock
+
+
+@pytest.fixture
 def mock_action_dispatcher(container):
     from teddy_executor.core.services.action_dispatcher import ActionDispatcher
 

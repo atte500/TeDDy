@@ -18,6 +18,14 @@ class FakeReviewer(IPlanReviewer):
             plan.actions[idx].selected = False
         return plan
 
+    def review_plan(self, plan: Plan) -> Plan:
+        return self.review(plan)
+
+    def review_action(self, action, total_actions: int, agent_name=None) -> bool:
+        # For this integration test, we just use the selection state
+        # determined by the bulk review() call.
+        return action.selected
+
 
 def test_orchestrator_skips_unselected_actions_integration(
     container, mock_action_dispatcher, mock_fs, mock_user_interactor

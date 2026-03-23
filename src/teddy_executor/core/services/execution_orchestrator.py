@@ -74,9 +74,26 @@ class ExecutionOrchestrator(IRunPlanUseCase):
                 continue
 
             agent_name = plan.metadata.get("Agent") or plan.metadata.get("agent")
-            action_log = self._action_executor.confirm_and_dispatch(
-                action, interactive, len(plan.actions), agent_name=agent_name
-            )
+
+            reviewer_handled = False
+            should_dispatch = True
+            if interactive and self._plan_reviewer:
+                should_dispatch = self._plan_reviewer.review_action(
+                    action, len(plan.actions), agent_name=agent_name
+                )
+                reviewer_handled = True
+
+            if not should_dispatch:
+                action_log = self._action_executor.handle_skipped_action(
+                    action, "User skipped this action in the plan reviewer."
+                )
+            else:
+                # Fallback to ActionExecutor interaction ONLY if the reviewer didn't handle it
+                pass_interactive = interactive if not reviewer_handled else False
+                action_log = self._action_executor.confirm_and_dispatch(
+                    action, pass_interactive, len(plan.actions), agent_name=agent_name
+                )
+
             action_logs.append(action_log)
 
             if action_log.status == ActionStatus.FAILURE:

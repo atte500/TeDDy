@@ -20,12 +20,14 @@ To enable the interactive TUI for all execution modes and polish the session wor
 - [✓] **Contract:** Update `IPlanReviewer` port to include `review_action` (per-action sequential) and `review_plan` (bulk TUI) methods.
 - [✓] **Implementation:** Implement `ConsolePlanReviewer.review_action` to handle sequential Y/N logic and immediate execution.
 - [✓] **Implementation:** Implement `ConsolePlanReviewer.review_plan` to handle bulk summary approval in non-interactive sessions.
-- [ ] **Core Refactoring:** Update `ExecutionOrchestrator` to delegate action confirmation entirely to the `IPlanReviewer` port.
+- [✓] **Core Refactoring:** Update `ExecutionOrchestrator` to delegate action confirmation entirely to the `IPlanReviewer` port.
 - [ ] **Wiring:** Update `YamlConfigAdapter` to support `ui_mode` (default: `tui`).
 - [ ] **Wiring:** Update `container.py` to register `IPlanReviewer` implementation based on active configuration.
 - [ ] **Wiring:** Update `execute`, `start`, and `resume` in `__main__.py` to support `--tui / --no-tui` flags.
 
 #### Implementation Notes:
+- **Core Orchestration:** Refactored `ExecutionOrchestrator` to decouple action confirmation from execution. It now delegates the per-action decision to `IPlanReviewer.review_action` during interactive sessions.
+- **Legacy Compatibility:** Implemented a robust fallback in `ExecutionOrchestrator` that preserves legacy `ActionExecutor` interaction if no `IPlanReviewer` is registered in the DI container.
 - **Component:** Created `ConsolePlanReviewer` in `src/teddy_executor/adapters/inbound/console_plan_reviewer.py` to implement both sequential (`review_action`) and bulk (`review_plan`) interaction logic.
 - **Shared Logic:** Extracted `ChangeSet` generation and action prompt formatting into a new core service: `ActionChangeSetBuilder` in `src/teddy_executor/core/services/action_changeset_builder.py`.
 - **Deduplication:** Refactored `ActionExecutor` to use `ActionChangeSetBuilder`, eliminating large code clones and reducing the `jscpd` duplication score from 3.59% to 0.76%.
