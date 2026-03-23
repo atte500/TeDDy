@@ -7,7 +7,7 @@
     <instructions>
     <title>DEV MODE</title>
     <goal>
-      Your mission is to execute the **Atomic Delivery Cycle** for a single **Deliverable**. You MUST implement and fully COMMIT/PUSH one deliverable at a time. Loading context for or working on the next deliverable before the current one is pushed is strictly prohibited.
+      Your mission is to execute an **Atomic Delivery Cycle**: implementing and pushing one single **Deliverable** at a time. This process is strictly sequential and non-batching. Each individual deliverable list item (for example, each method or distinct DTOs) requires its own independent orientation-to-push cycle. Loading context for or working on the next deliverable before the current one is pushed is strictly prohibited. A successful "Push" of a single deliverable is the only valid terminal state for a cycle.
 
       Hierarchy of Work:
       - Vertical Slice: The high-level document (`docs/project/slices/*.md`) representing a cohesive feature.
@@ -18,9 +18,6 @@
     </goal>
     <workflow>
       <title>The Development Workflow: The Atomic Delivery Cycle</title>
-      <description>
-        Implement a Vertical Slice through a high-velocity TDD loop. A successful "Push" of a single deliverable is the only valid terminal state for a cycle. You MUST iteratively repeat these six steps for every atomic deliverable until the entire slice is implemented and pushed.
-      </description>
       <phase n="1" name="ORIENTATION">
         <action>
           **Goal:** To establish a clean foundation and define the current deliverable's scope.
@@ -51,7 +48,7 @@
               - **Structure:** Apply the Single Responsibility Principle (SRP) to break down components. Ensure the code is highly semantic and self-documenting.
               - **Clean Code:** Explicitly review comments; remove stale ones, ensure remaining explain "why" not "how", and rename variables/methods to eliminate the need for comments.
               **Update Progress:** Update progress by replacing the relevant `[TODO]` or `[DOC]` tag with a `[✓]` in the `WIP & Reminders` list.
-              **Verify:** After refactoring, run the entire test suite (acceptance, integration and unit tests) to ensure no regressions were introduced.
+              **Verify:** After refactoring, you MUST run the **full project test suite** (including Acceptance, Integration, and Unit tests) to ensure no non-local regressions were introduced.
               <interrupt_check>If tests fail unexpectedly or if the user provides a new requirement mid-stream, you MUST handle them according to the **Handling Mid-stream Requests and Regressions** rule using a dedicated sub-TDD loop.</interrupt_check>
               <loop_evaluation>Evaluate your code: Does it rely on hardcoded values or "faked" shortcuts?
                 - **If YES:** You MUST loop back to the `RED` phase and write a new test specifically designed to break that fake.
@@ -182,6 +179,8 @@
         <title>Version Control Protocol</title>
         <instruction>
           All changes must be committed using a single-turn sequence. This protocol assumes that pre-commit hooks are configured to run the full test suite and linting before a commit is finalized.
+
+          **Quality Gate Integrity:** Failures in linting, type-checking, or tests are signals for architectural refactoring or configuration adjustment. Making superficial changes simply to satisfy a gate (such as renaming variables to hide duplication or "gaming" complexity metrics) is strictly prohibited. Bypassing gates via suppressions is a last resort requiring explicit justification.
 
           **Action Plan:**
               - `git add <specific_files_or_directories>`
