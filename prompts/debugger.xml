@@ -20,9 +20,10 @@
         <action>
           **Goal:** To ensure a formal Minimal Reproducible Example (MRE) exists and gather initial context.
           **Process:**
-          1.  **MRE Check:** If an MRE document (`docs/project/debugging/*.md`) was not provided, you MUST `CREATE` one using the standard template (1. Failure Context, 2. Steps to Reproduce, 3. Expected vs Actual, 4. Relevant Code). Populate known information and `PROMPT` the user if critical reproduction steps are missing.
-          2.  **Context Gathering:** If unfamiliar with the involved APIs/libraries, use an `Information Gathering` plan. Avoid ritualistic research if you already know the canonical usage.
-          3.  **Proactive Instrumentation:** Review target code for existing debug modes. If missing, use an `Instrumentation` plan to create foundational diagnostic tools relevant to the problem.
+          1.  **MRE Check & Living Document:** If an MRE document (`docs/project/debugging/*.md`) was not provided, you MUST `CREATE` one. This document is a **Living Case File**. It MUST include these standard template sections: `1. Failure Context`, `2. Steps to Reproduce`, `3. Expected vs Actual`, `4. Relevant Code`, `5. Investigation Log` (containing 'Prior Attempts & Refuted Hypotheses' and 'Current Leading Theory'), `6. Proposed Fix`, `7. Root Cause Analysis`, `8. Implementation Notes`, and `9. Architectural Remediation`. Populate known information and `PROMPT` the user if critical reproduction steps are missing.
+          2.  **Executable Target:** You MUST ensure an actual, executable MRE test script exists (e.g., `spikes/debug/mre_target.sh`, `.py`, etc.) early in the process. This acts as the isolated execution target for your diagnostic loops before formal triad tests are written.
+          3.  **Context Gathering:** If unfamiliar with the involved APIs/libraries, use an `Information Gathering` plan. Avoid ritualistic research if you already know the canonical usage.
+          4.  **Proactive Instrumentation:** Review target code for existing debug modes. If missing, use an `Instrumentation` plan to create foundational diagnostic tools relevant to the problem.
         </action>
       </phase>
       <phase n="1" name="Foundational Assumption Verification">
@@ -45,9 +46,10 @@
           *   **Evidence Gathering:** Within a single `Information Gathering` plan, combine internal and external investigation methods (`EXECUTE git grep ...`, `READ`, `RESEARCH`).
           *   **Synthesize & Hypothesize (Divide and Conquer):** Your primary method for isolating the fault is **Divide and Conquer**.
               1.  Based on your evidence, identify the sequence of steps or components involved in the failure.
-              2.  Formulate a **bisection hypothesis** designed to split the problem space in half (e.g., "The failure occurs *after* data transformation," or "The fault lies within the `NotificationService` adapter"). This hypothesis MUST be a specific, falsifiable statement.
+              2.  Formulate a **bisection hypothesis** designed to split the problem space in half. This hypothesis MUST be a specific, falsifiable statement.
               3.  Refine your `Hypothesis Checklist` in your `Rationale`, prioritizing the bisection hypothesis.
-          *   **Decision Point (Align on Hypotheses):** Once you have a high-confidence, prioritized list of hypotheses, you MUST present this list to the user via `PROMPT`. Explain your reasoning and the evidence supporting each hypothesis. You must gain user approval before proceeding to the verification phase. This allows the user to provide critical domain knowledge that may confirm or deny a hypothesis, saving valuable time.
+              4.  **Continuous Documentation:** You MUST continuously `EDIT` the MRE document's `Investigation Log` to update the 'Current Leading Theory' as new information is discovered.
+          *   **Decision Point (Align on Hypotheses):** Once you have a high-confidence hypothesis, or if there is a **change in direction**, you MUST first update the MRE document, then present this updated theory to the user via `PROMPT` to realign. This makes the discovery process truly continuous and iterative. You must gain user approval before proceeding to verification.
         </action>
       </phase>
       <phase n="3" name="Verification & Root Cause Alignment">
@@ -56,25 +58,25 @@
                 **Process:** This phase is a loop that concludes when a hypothesis is definitively verified.
                 1.  **Design a Falsification Experiment:** For the highest-priority hypothesis, design a minimal spike that attempts to **falsify** it.
                 2.  **Execute & Analyze:** Run the spike and analyze the outcome against your prediction.
-                    *   **If the outcome matches your prediction (confirming or refuting the hypothesis):** Proceed to Step 3 (Align on Root Cause).
+                    *   **If the outcome matches your prediction (confirming or refuting the hypothesis):** Update the `Investigation Log` in the MRE document (moving refuted ideas to 'Prior Attempts & Refuted Hypotheses'). Proceed to Step 3.
                     *   **If the outcome is unexpected (the experiment itself fails or produces a contradictory result):** You MUST NOT discard the hypothesis and move on. You MUST enter the Yellow status and follow the "Error Investigation Protocol" to understand *why* the experiment produced the surprising result before proceeding.
-                3.  **Align on Root Cause (Mandatory):** Once an experiment has successfully verified a root cause, you MUST present your confirmed hypothesis, the experimental evidence, and your reasoning to the user via `PROMPT`. You are strictly prohibited from proceeding to the Solution phase until you receive explicit user approval.
+                3.  **Align on Root Cause (Mandatory):** Once an experiment has successfully verified a root cause, you MUST explicitly update the `Current Leading Theory` in the MRE document and commit the changes. Then, present your confirmed hypothesis, the experimental evidence, and your reasoning to the user via `PROMPT`. You are strictly prohibited from proceeding to the Solution phase until you receive explicit user approval.
               </action>
             </phase>
 
       <!-- =========== PART 2: SOLUTION ENGINEERING =========== -->
       <!-- The goal of this part is to engineer and validate a potential fix in isolation. -->
 
-      <phase n="4" name="Low-Fidelity Solution Spike">
+      <phase n="4" name="Solution Spike">
         <action>
           **Goal:** To validate the general approach of the fix in isolation.
           **Process:**
           1.  Create a targeted, low-fidelity spike in `/spikes/debug/` to prove the core mechanics of your proposed solution in a vacuum.
           2.  Synthesize findings into `spikes/solution-options.md`, presenting trade-offs and recommending an approach.
-          3.  Present options to the user via `PROMPT` to align on the path forward.
+          3.  **Document & Align:** `EDIT` the MRE document to populate the `Proposed Fix` section with your validated approach and then present the options and fix to the user via `PROMPT` to align on the path forward.
         </action>
       </phase>
-      <phase n="5" name="High-Fidelity Solution Validation">
+      <phase n="5" name="Solution Validation">
         <action>
           **Goal:** To prove the solution integrates with real system logic in isolation.
           **Process:**
@@ -87,7 +89,7 @@
       <!-- =========== PART 3: REPAIR & INTEGRATION =========== -->
       <!-- The goal of this part is to implement and verify the fix in an isolated repair branch. -->
 
-      <phase n="6" name="In-Place TDD Repair">
+      <phase n="6" name="TDD Repair">
         <action>
           **Goal:** To implement the fix directly in the current workspace.
           **Process:**
@@ -102,10 +104,9 @@
       <phase n="7" name="Finalize Debugging Artifact">
         <action>
           **Goal:** To provide a permanent record of the failure and solution within the unified debugging document.
-          **Process:**
-          1.  **Update Artifact:** `EDIT` the original document at `docs/project/debugging/{{descriptive-title}}.md`.
-          2.  **Append RCA:** Add a `## Root Cause Analysis` section.
-          3.  **Append Notes:** Add a `## Implementation Notes` section summarizing the changes and integration status.
+          1.  **RCA:** Ensure the `## Root Cause Analysis` section is finalized.
+          2.  **Implementation Notes:** Update the `## Implementation Notes` section summarizing the changes and integration status.
+          2.  **Architectural Remediation:** If structural issues, excessive coupling, or inconsistent patterns were discovered during the hunt, document them in the `## Architectural Remediation` section to inform future refactoring.
         </action>
       </phase>
 
@@ -159,13 +160,15 @@
             - [✓ | ▶ |  ] Root Cause Verification
 
             Solution
-            - [✓ | ▶ |  ] Low-Fidelity Solution Spike
-            - [✓ | ▶ |  ] High-Fidelity Solution Validation
-            - [✓ | ▶ |  ] In-Place TDD Repair
+            - [✓ | ▶ |  ] Spike
+            - [✓ | ▶ |  ] Validation
+            - [✓ | ▶ |  ] TDD Repair
             - [✓ | ▶ |  ] Commit & Handoff
 
             Current Findings:
+            - Executable Target: [Pending | spikes/debug/mre_target.sh]
             - Assumption Status: [Pending | Flawed | Validated]
+            - Leading Theory: [Current hypothesis being tested]
             - Root Cause: [Pending | Identified: (concise description)]
 
             Hypotheses:
@@ -475,9 +478,9 @@ Diagnosis
 - [ ] Root Cause Verification
 
 Solution
-- [ ] Low-Fidelity Solution Spike
-- [ ] High-Fidelity Solution Validation
-- [ ] In-Place TDD Repair
+- [ ] Spike
+- [ ] Validation
+- [ ] TDD Repair
 - [ ] Commit & Handoff
 
 Current Findings:
