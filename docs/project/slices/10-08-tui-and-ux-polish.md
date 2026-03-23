@@ -11,66 +11,66 @@ To enable the interactive TUI for all execution modes and polish the session wor
 ### Scenario: UI Mode Toggling (TUI vs. Console) [ ]
 - **Given** the configuration `ui_mode: "console"` is set in `.teddy/config.yaml`.
 - **When** I run a plan.
-- **Then** the system MUST use a sequential `ConsolePlanReviewer`.
+- **Then** the system MUST use a sequential `ConsolePlanReviewer` that executes each action immediately after approval.
 - **Given** the flag `--tui` is passed via CLI.
 - **When** I run a plan.
 - **Then** the system MUST override the config and use the `TextualPlanReviewer`.
 
 #### Deliverables
-- [ ] **Console Reviewer:** Implement `ConsolePlanReviewer` (in `src/teddy_executor/adapters/inbound/`). This MUST refactor and centralize the sequential approval logic currently residing in `ActionExecutor._get_interactive_confirmation` and `ConsoleInteractor.confirm_action`.
-- [ ] **Core Refactoring:** Update `ActionExecutor` and `ExecutionOrchestrator` to delegate the "Should I run this action?" decision entirely to the `IPlanReviewer` interface, removing the hardcoded `interactive` checks. Implement `interactive` flag support in both `TextualPlanReviewer` and `ConsolePlanReviewer` to respect `-y` flag.
-- [ ] **Config Logic:** Update `YamlConfigAdapter` and `ConfigService` to support a `ui_mode` setting (defaulting to `tui`).
-- [ ] **Dynamic Wiring:** Update `src/teddy_executor/container.py` to register the correct `IPlanReviewer` implementation based on configuration.
-- [ ] **CLI Flags:** Update `execute`, `start`, and `resume` commands in `__main__.py` to support `--tui / --no-tui` flags.
+- [ ] **Contract:** Update `IPlanReviewer` port to include `review_action` (per-action sequential) and `review_plan` (bulk TUI) methods.
+- [ ] **Implementation:** Implement `ConsolePlanReviewer.review_action` to handle sequential Y/N logic and immediate execution.
+- [ ] **Implementation:** Implement `ConsolePlanReviewer.review_plan` to handle bulk summary approval in non-interactive sessions.
+- [ ] **Core Refactoring:** Update `ExecutionOrchestrator` to delegate action confirmation entirely to the `IPlanReviewer` port.
+- [ ] **Wiring:** Update `YamlConfigAdapter` to support `ui_mode` (default: `tui`).
+- [ ] **Wiring:** Update `container.py` to register `IPlanReviewer` implementation based on active configuration.
+- [ ] **Wiring:** Update `execute`, `start`, and `resume` in `__main__.py` to support `--tui / --no-tui` flags.
 
-### Scenario: Hide PRUNE in Manual TUI [ ]
+### Scenario: PRUNE Behavior in Manual Mode [ ]
 - **Given** I am running a manual CLI execution (e.g., `teddy execute plan.md`).
 - **And** the plan contains a `PRUNE` action.
-- **When** the TUI opens.
-- **Then** the `PRUNE` action MUST NOT be visible in the tree.
+- **When** the execution starts.
+- **Then** the `PRUNE` action MUST NOT be reviewed by the user.
 - **And** the `PRUNE` action MUST be automatically marked as `SKIPPED` in the execution report.
 
 #### Deliverables
-- [ ] **TUI Filtering:** Update `ReviewerApp` in `textual_plan_reviewer.py` to accept an `is_session` flag and filter out `PRUNE` actions from the UI tree if `False`.
-- [ ] **Context Passing:** Update `ExecutionOrchestrator` to detect session context (presence of `plan_path`) and pass the `is_session` hint to the reviewer.
+- [ ] **Contract:** Add `is_session` property to `Plan` domain model.
+- [ ] **Implementation:** Update `MarkdownPlanParser` to set `is_session=True` if the plan is within a `.teddy/sessions/` directory.
+- [ ] **Implementation:** Update `ActionExecutor` to automatically skip `PRUNE` actions if `plan.is_session` is `False`.
+- [ ] **Implementation:** Update `ReviewerApp` (TUI) to filter out `PRUNE` actions from the UI tree if `plan.is_session` is `False`.
 
 ### Scenario: Continuous Session Loop [ ]
 - **Given** I am in an interactive session.
 - **When** a plan execution completes.
-- **Then** the CLI MUST NOT exit.
-- **And** it MUST automatically transition to the next turn and prompt for new instructions.
+- **Then** the CLI MUST NOT exit and MUST prompt for new instructions.
 
 #### Deliverables
-- [ ] **Orchestration Loop:** Refactor `SessionOrchestrator.resume` (or its caller in `session_cli_handlers.py`) to loop the `plan -> execute -> resume` cycle until the user explicitly cancels or an error occurs.
+- [ ] **Implementation:** Refactor `session_cli_handlers.py` to loop the `plan -> execute -> resume` cycle in a `while` loop.
 
 ### Scenario: Planning Visibility & Turn Info [ ]
 - **Given** the AI is generating a plan.
 - **When** the LLM call is initiated.
-- **Then** the CLI MUST immediately display a progress message.
-- **And** the message MUST include the current Turn ID (e.g., `[02] Planning Turn with pathfinder...`).
+- **Then** the CLI MUST display `[Turn ID] Planning Turn with [agent]...` BEFORE the call.
 
 #### Deliverables
-- [ ] **Log Refactoring:** In `SessionOrchestrator._trigger_new_plan`, move the `display_message` call to *before* the `generate_plan` call. Use the folder name of `turn_dir` to extract the Turn ID.
+- [ ] **Implementation:** Update `SessionOrchestrator._trigger_new_plan` to extract Turn ID from the folder name and display progress message before `generate_plan`.
 
 ### Scenario: Relaxed Terminal Action Isolation [ ]
-- **Given** a plan contains a `PROMPT`, `INVOKE`, or `RETURN` action mixed with other actions.
-- **When** the plan is reviewed in the TUI.
-- **Then** the terminal action MUST NOT be hard-blocked.
-- **And** the terminal action MUST be deselected (`[ ]`) by default in the TUI.
-- **And** the user MUST be able to manually select it if they wish to override isolation.
+- **Given** a plan contains a terminal action (`PROMPT`, `INVOKE`, `RETURN`) mixed with other actions.
+- **When** reviewed in the TUI.
+- **Then** the terminal action MUST be deselected (`[ ]`) by default but selectable by the user.
 
 #### Deliverables
-- [ ] **Isolation Policy Update:** Update `ActionExecutor._check_action_isolation` to allow non-isolated terminal actions.
-- [ ] **Default Selection Logic:** Update `MarkdownPlanParser` or `ActionExecutor` to set `selected=False` for `PROMPT`, `INVOKE`, and `RETURN` actions if `total_actions > 1`.
+- [ ] **Implementation:** Update `ActionExecutor._check_action_isolation` to allow terminal actions in mixed plans.
+- [ ] **Implementation:** Update `MarkdownPlanParser` to set `is_selected=False` for terminal actions if `total_actions > 1`.
 
 ### Scenario: Telemetry Coloring Fix [ ]
-- **Given** the telemetry (token count, cost) is displayed.
-- **When** the values contain decimals or symbols (e.g., `32.5k`, `$0.04`).
-- **Then** the entire value (including symbols and units) MUST be colored consistently.
+- **Given** telemetry (token count, cost) is displayed.
+- **When** values contain symbols (e.g., `$0.04`).
+- **Then** the entire string MUST be colored consistently.
 
 #### Deliverables
-- [ ] **Style Fix:** In `SessionOrchestrator._trigger_new_plan`, wrap the entire formatted strings for Model, Context, and Cost in the Rich style tags (e.g., `[cyan]Model: {model}[/]`).
+- [ ] **Implementation:** Update `SessionOrchestrator._trigger_new_plan` to wrap entire formatted telemetry strings in Rich style tags.
 
 ## 3. Architectural Changes
-- **IPlanReviewer Wiring:** Transitioning from a null-implementation to a live TUI-based implementation.
-- **Stateful Loop:** Changing the session orchestrator from a one-shot execution to a continuous loop.
+- **Reviewer Port Expansion:** Moving from binary confirmation to a structured review interface.
+- **Stateful Loop:** Converting the session handler from one-shot to a continuous loop.
