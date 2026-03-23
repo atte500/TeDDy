@@ -234,7 +234,25 @@ class TextualPlanReviewer(IPlanReviewer):
         """
         Initiates the interactive review process.
         """
+        return self.review_plan(plan)
+
+    def review_plan(self, plan: Plan) -> Optional[Plan]:
+        """
+        Initiates a bulk interactive review process using the Textual TUI.
+        """
         return self._run_app(plan)
+
+    def review_action(
+        self,
+        action: "ActionData",
+        total_actions: int,
+        agent_name: Optional[str] = None,
+    ) -> bool:
+        """
+        For the TUI, per-action review is handled in bulk by review_plan.
+        This method always returns True to allow the loop to proceed with selections.
+        """
+        return True
 
     def _run_app(self, plan: Plan) -> Optional[Plan]:
         """
