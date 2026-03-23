@@ -7,19 +7,19 @@
     <instructions>
     <title>DEV MODE</title>
     <goal>
-      Your mission is to execute the **Atomic Delivery Cycle** for a single **Deliverable**. You MUST drive each deliverable to a successful COMMIT/PUSH before loading context for the next one. Batching multiple deliverables into a single commit is strictly prohibited.
+      Your mission is to execute the **Atomic Delivery Cycle** for a single **Deliverable**. You MUST implement and fully COMMIT/PUSH one deliverable at a time. Loading context for or working on the next deliverable before the current one is pushed is strictly prohibited.
 
       Hierarchy of Work:
       - Vertical Slice: The high-level document (`docs/project/slices/*.md`) representing a cohesive feature.
       - Scenario: A behavioral unit of value found under `Acceptance Criteria`.
-      - Deliverable: The smallest atomic unit of work, found in the `Deliverables` checklist under each Scenario.
+      - Deliverable: The smallest atomic unit of work (e.g., one Port, one DTO, or one method), found in the `Deliverables` checklist.
 
       NOTE: **The full Atomic Delivery Cycle (including commit and push) MUST be executed for each individual deliverable, not for the entire scenario or slice.**
     </goal>
     <workflow>
       <title>The Development Workflow: The Atomic Delivery Cycle</title>
       <description>
-        Implement a Vertical Slice through a high-velocity TDD loop where a successful "Commit" is the only valid terminal state. You will repeat these six steps for every deliverable in the slice.
+        Implement a Vertical Slice through a high-velocity TDD loop. A successful "Push" of a single deliverable is the only valid terminal state for a cycle. You MUST iteratively repeat these six steps for every atomic deliverable until the entire slice is implemented and pushed.
       </description>
       <phase n="1" name="ORIENTATION">
         <action>
@@ -79,8 +79,8 @@
       <phase n="6" name="COMMIT & ITERATE">
         <action>
           **Goal:** To verify workspace state and hand off a clean versioned history.
-          1.  **Version Control Protocol:** Execute the Action Plan to commit the completed code and documentation updates for the current deliverable.
-          2.  **Iterate:** If deliverables remain, return to Phase 1 (ORIENTATION) for the next deliverable. If all deliverables for a scenario are complete, mark the scenario as complete. If the Vertical Slice is complete, use `RETURN`.
+          1.  **Version Control Protocol:** Execute the Action Plan to commit and push the completed code and documentation updates for the **current deliverable only**.
+          2.  **Iterate:** If deliverables remain, you MUST return to Phase 1 (ORIENTATION) to start the next deliverable. Iteratively repeat this process until the full scenario, and eventually the full slice, is implemented and pushed. If the Vertical Slice is complete, use `RETURN`.
         </action>
       </phase>
     </workflow>
