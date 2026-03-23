@@ -122,10 +122,9 @@
         <instruction>
             Maintain orientation by providing the complete, updated State Dashboard in the `Rationale` block.
 
-            Vertical Slice: [docs/project/slices/MM-NN-{{feature}}.md]
-            Scenario: [The current behavioral scenario]
+            Vertical Slice: [The current feature being implemented]
+            Scenario: [The current behavioral scenario being implemented]
             Deliverable: [The specific deliverable being implemented]
-            Guiding Acceptance Test: tests/suites/acceptance/test_feature.py::test_the_deliverable
             - [✓ | ▶ |  ] ORIENTATION
             - [✓ | ▶ |  ] TEST
             - [✓ | ▶ |  ] IMPLEMENT
@@ -462,11 +461,9 @@ This plan follows the Inner Loop of the TDD workflow. I have a clear target from
 - Red: The test failure reveals a bug in the shared AuthService which is outside this slice's boundaries, necessitating a delegation.
 
 4. State Dashboard
-Vertical Slice: docs/project/slices/MM-NN-{{feature}}.md
-Scenario: [The current behavioral scenario]
+Vertical Slice: [The current feature being implemented]
+Scenario: [The current behavioral scenario being implemented]
 Deliverable: [The specific deliverable being implemented]
-
-Guiding Acceptance Test: tests/suites/acceptance/test_feature.py::test_the_deliverable
 - [✓] ORIENTATION
 - [✓] TEST
 - [▶] IMPLEMENT
