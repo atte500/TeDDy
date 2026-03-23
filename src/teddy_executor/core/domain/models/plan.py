@@ -53,5 +53,4 @@ class Plan:
     source_doc: Any = None
 
     def __post_init__(self):
-        if not self.actions:
-            raise ValueError("Plan must contain at least one action.")
+        assert self.actions, "Plan must contain at least one action."

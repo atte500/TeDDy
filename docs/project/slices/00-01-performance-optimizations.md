@@ -1,5 +1,5 @@
 # Performance Optimizations: Test Suite & CLI
-- **Status:** Planned
+- **Status:** Completed
 - **Milestone:** N/A (Fast-Track)
 - **Specs:** [performance_regression_v3.md](/docs/project/debugging/performance_regression_v3.md)
 
@@ -74,8 +74,12 @@ The `_legacy_models.py` file contains obsolete, strongly-typed action classes th
 ### Scenario 6: Zero-Cost Contract Enforcement (DbC)
 Domain models currently use `raise ValueError` for invariant checks (e.g., in `Plan.__post_init__`). These consume compute cycles in production. They must be replaced with native `assert` statements so they can be compiled out in optimized builds.
 #### Deliverables
-- [ ] Refactor `src/teddy_executor/core/domain/models/plan.py` to replace `raise ValueError` with `assert` statements (e.g., `assert self.actions, "Plan must contain at least one action."`).
-- [ ] Ensure all tests that previously asserted `pytest.raises(ValueError)` for domain model instantiation are updated to check for `AssertionError`.
+- [x] Refactor `src/teddy_executor/core/domain/models/plan.py` to replace `raise ValueError` with `assert` statements (e.g., `assert self.actions, "Plan must contain at least one action."`).
+- [x] Ensure all tests that previously asserted `pytest.raises(ValueError)` for domain model instantiation are updated to check for `AssertionError`.
+
+#### Implementation Notes
+- Replaced the `ValueError` raised during `Plan` initialization with a native Python `assert` statement in `__post_init__`. This conforms to the "Zero-Cost Abstraction" rule for Contract-First Design.
+- Updated `test_plan_raises_error_on_empty_actions_list` in `test_models.py` to check for `AssertionError`.
 
 ## 3. Architectural Changes
 This is a Fast-Track refactoring slice. No new architectural components or explicit Test Harness Triad scaffolding are required. The focus is strictly on optimizing existing configurations, lazy-loading imports, deferring initialization, and purging legacy technical debt.

@@ -13,7 +13,7 @@ def test_plan_raises_error_on_empty_actions_list():
     """
     Tests that a Plan cannot be instantiated with an empty list of actions.
     """
-    with pytest.raises(ValueError, match="Plan must contain at least one action"):
+    with pytest.raises(AssertionError, match="Plan must contain at least one action."):
         Plan(title="Test Plan", rationale="Test", actions=[])
 
 
