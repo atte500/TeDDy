@@ -1,4 +1,4 @@
-# Slice 09-07: UX Polish & Logging (Session Lifecycle)
+# Slice 10-07: UX Polish & Logging (Session Lifecycle)
 - **Status:** Completed
 - **Milestone:** [Milestone 09: Interactive Session Workflow & LLM Integration](/docs/project/milestones/10-interactive-session-and-config.md)
 - **Specs:** [Interactive Session Workflow](/docs/project/specs/interactive-session-workflow.md)

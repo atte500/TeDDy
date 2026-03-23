@@ -1,4 +1,4 @@
-# Slice 09-08: TUI & UX Polish
+# Slice 10-08: TUI & UX Polish
 - **Status:** Planned
 - **Milestone:** [Milestone 09: Interactive Session Workflow & LLM Integration](/docs/project/milestones/10-interactive-session-and-config.md)
 - **Specs:** [Interactive Session Workflow](/docs/project/specs/interactive-session-workflow.md)
@@ -18,7 +18,7 @@ To enable the interactive TUI for all execution modes and polish the session wor
 
 #### Deliverables
 - [ ] **Console Reviewer:** Implement `ConsolePlanReviewer` (in `src/teddy_executor/adapters/inbound/`). This MUST refactor and centralize the sequential approval logic currently residing in `ActionExecutor._get_interactive_confirmation` and `ConsoleInteractor.confirm_action`.
-- [ ] **Core Refactoring:** Update `ActionExecutor` and `ExecutionOrchestrator` to delegate the "Should I run this action?" decision entirely to the `IPlanReviewer` interface, removing the hardcoded `interactive` checks.
+- [ ] **Core Refactoring:** Update `ActionExecutor` and `ExecutionOrchestrator` to delegate the "Should I run this action?" decision entirely to the `IPlanReviewer` interface, removing the hardcoded `interactive` checks. Implement `interactive` flag support in both `TextualPlanReviewer` and `ConsolePlanReviewer` to respect `-y` flag.
 - [ ] **Config Logic:** Update `YamlConfigAdapter` and `ConfigService` to support a `ui_mode` setting (defaulting to `tui`).
 - [ ] **Dynamic Wiring:** Update `src/teddy_executor/container.py` to register the correct `IPlanReviewer` implementation based on configuration.
 - [ ] **CLI Flags:** Update `execute`, `start`, and `resume` commands in `__main__.py` to support `--tui / --no-tui` flags.

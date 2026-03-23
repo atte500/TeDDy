@@ -1,4 +1,4 @@
-# Slice 09-06: Interactive TUI & resume Workflow
+# Slice 10-06: Interactive TUI & resume Workflow
 - **Status:** [✓] Completed
 
 ## 1. Business Goal
