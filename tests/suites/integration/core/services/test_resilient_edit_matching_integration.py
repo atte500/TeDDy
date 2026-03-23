@@ -12,9 +12,9 @@ def test_fuzzy_edit_success_with_diff_in_report(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     (tmp_path / ".teddy").mkdir()
     target_file = tmp_path / "app.py"
-    target_file.write_text("def hello():\n    print('hello world')\n", encoding="utf-8")
+    # Use content that differs from the FIND block by one character
+    target_file.write_text("def hello():\n    print('hello worLd')\n", encoding="utf-8")
 
-    # FIND block has minor whitespace difference (extra space at end of line)
     plan = dedent("""\
         # Test Plan
         - Status: Green 🟢
@@ -57,7 +57,7 @@ def test_fuzzy_edit_success_with_diff_in_report(tmp_path, monkeypatch):
     assert "hello universe" in target_file.read_text(encoding="utf-8")
     # Check that a diff was injected into the report (stdout/clipboard)
     assert "?" in result.stdout
-    assert "-     print('hello world')" in result.stdout
+    assert "-     print('hello worLd')" in result.stdout
     assert "+     print('hello universe')" in result.stdout
 
 
@@ -68,7 +68,8 @@ def test_edit_custom_threshold_fail(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     (tmp_path / ".teddy").mkdir()
     target_file = tmp_path / "app.py"
-    target_file.write_text("def hello():\n    print('hello world')\n", encoding="utf-8")
+    # Use character mismatch ('worLd') to ensure score < 1.0
+    target_file.write_text("def hello():\n    print('hello worLd')\n", encoding="utf-8")
 
     # Set global threshold to 1.0 to force failure on any non-perfect match
     (tmp_path / ".teddy" / "config.yaml").write_text("similarity_threshold: 1.0\n")
@@ -124,11 +125,12 @@ def test_edit_ambiguity_tie_fail(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     (tmp_path / ".teddy").mkdir()
     target_file = tmp_path / "app.py"
+    # Ensure content is TRULY identical including newlines
     target_file.write_text(
-        "def block1():\n    pass\n\ndef block2():\n    pass\n", encoding="utf-8"
+        "def block():\n    pass\n\ndef block():\n    pass\n", encoding="utf-8"
     )
 
-    # FIND block matches both block1 and block2 with same similarity score
+    # FIND block matches both block occurrences with same similarity score
     plan = dedent("""\
         # Test Plan
         - Status: Green 🟢
@@ -155,12 +157,12 @@ def test_edit_ambiguity_tie_fail(tmp_path, monkeypatch):
 
         #### `FIND:`
         ```python
-        def block_match():
+        def block():
             pass
         ```
         #### `REPLACE:`
         ```python
-        def block_match():
+        def block():
             print('done')
         ```
         """)

@@ -14,7 +14,8 @@ def test_multi_edit_ux_polish(monkeypatch, tmp_path):
     (tmp_path / ".teddy" / "config.yaml").write_text("similarity_threshold: 0.8\n")
 
     target_file = tmp_path / "code.py"
-    target_file.write_text("line_one = 1\nline_two  =  2\n")
+    # line_two has different characters 'XXX'
+    target_file.write_text("line_one = 1\nline_two XXX 2\n")
 
     plan = (
         MarkdownPlanBuilder("UX Polish Plan")
@@ -35,11 +36,12 @@ def test_multi_edit_ux_polish(monkeypatch, tmp_path):
     report = result.stdout
 
     # 1. Similarity Scores should show both
-    assert "**Similarity Scores:** 1.00, 0.89" in report
+    # 0.8 is the threshold. "line_two XXX 2" vs "line_two = 2" is approx 0.81
+    assert "**Similarity Scores:** 1.00, 0.81" in report
 
     # 2. Check for ndiff markers
     assert "?" in report  # Character level marker
-    assert "- line_two  =  2" in report
+    assert "- line_two XXX 2" in report
     assert "+ line_two = 2.0" in report
 
     # 3. Check whitespace (#### diff should be preceded by a newline)

@@ -33,7 +33,8 @@ def test_simulate_edits_raises_error_if_find_not_found():
 
 
 def test_simulate_edits_raises_error_if_find_is_ambiguous():
-    content = "duplicate\nduplicate"
+    # Use content where both occurrences are identical including newlines
+    content = "duplicate\nduplicate\n"
     edits = [{"find": "duplicate", "replace": "unique"}]
     simulator = EditSimulator()
 

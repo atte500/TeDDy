@@ -189,8 +189,19 @@ def _evaluate_candidates(
             if score >= SUB_SAMPLE_PASS_THRESHOLD:
                 scored_candidates.append((score, window))
         else:
-            matcher = difflib.SequenceMatcher(None, "".join(window), find_block)
-            scored_candidates.append((matcher.ratio(), window))
+            window_str = "".join(window)
+            matcher = difflib.SequenceMatcher(None, window_str, find_block)
+            score = matcher.ratio()
+
+            # Line Ending Indifference Bonus:
+            # If the strings are identical except for trailing newlines (\n or \r\n),
+            # we treat it as a perfect 1.0 match. This solves the case
+            # where the parser strips newlines but the file contains them,
+            # while preserving stable ratios for genuinely fuzzy matches.
+            if score < 1.0 and window_str.rstrip("\r\n") == find_block.rstrip("\r\n"):
+                score = 1.0
+
+            scored_candidates.append((score, window))
 
     # Sort by score descending and cap evaluation
     scored_candidates.sort(key=lambda x: x[0], reverse=True)
