@@ -17,7 +17,8 @@ To enable the interactive TUI for all execution modes and polish the session wor
 - **Then** the system MUST override the config and use the `TextualPlanReviewer`.
 
 #### Deliverables
-- [ ] **Console Reviewer:** Implement `ConsolePlanReviewer` (in `src/teddy_executor/adapters/inbound/`) that handles sequential action approval via standard `typer.confirm`.
+- [ ] **Console Reviewer:** Implement `ConsolePlanReviewer` (in `src/teddy_executor/adapters/inbound/`). This MUST refactor and centralize the sequential approval logic currently residing in `ActionExecutor._get_interactive_confirmation` and `ConsoleInteractor.confirm_action`.
+- [ ] **Core Refactoring:** Update `ActionExecutor` and `ExecutionOrchestrator` to delegate the "Should I run this action?" decision entirely to the `IPlanReviewer` interface, removing the hardcoded `interactive` checks.
 - [ ] **Config Logic:** Update `YamlConfigAdapter` and `ConfigService` to support a `ui_mode` setting (defaulting to `tui`).
 - [ ] **Dynamic Wiring:** Update `src/teddy_executor/container.py` to register the correct `IPlanReviewer` implementation based on configuration.
 - [ ] **CLI Flags:** Update `execute`, `start`, and `resume` commands in `__main__.py` to support `--tui / --no-tui` flags.
