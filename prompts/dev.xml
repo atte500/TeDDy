@@ -68,12 +68,11 @@
           3.   **Process Reminders:** Resolve all `[DOC]` reminders accumulated during this specific deliverable.
         </action>
       </phase>
-      <phase n="6" name="CLEANUP & COMMIT">
+      <phase n="6" name="COMMIT & ITERATE">
         <action>
-          **Goal:** To verify workspace state, clean up ephemeral files, and hand off a clean versioned history.
-          1.  **Audit & Cleanup:** `EXECUTE` `git status` to verify exactly what is modified and untracked. Explicitly remove any ephemeral artifacts (e.g., `rm -rf spikes/`).
-          2.  **Version Control Protocol:** Execute the Action Plan to commit the completed code and documentation updates for the current deliverable.
-          3.  **Iterate:** If deliverables remain, return to Phase 1 (ORIENTATION) for the next deliverable. If all deliverables for a scenario are complete, mark the scenario as complete. If the Vertical Slice is complete, use `RETURN`.
+          **Goal:** To verify workspace state and hand off a clean versioned history.
+          1.  **Version Control Protocol:** Execute the Action Plan to commit the completed code and documentation updates for the current deliverable.
+          2.  **Iterate:** If deliverables remain, return to Phase 1 (ORIENTATION) for the next deliverable. If all deliverables for a scenario are complete, mark the scenario as complete. If the Vertical Slice is complete, use `RETURN`.
         </action>
       </phase>
     </workflow>
@@ -179,7 +178,7 @@
           All changes must be committed using a single-turn sequence. This protocol assumes that pre-commit hooks are configured to run the full test suite and linting before a commit is finalized.
 
           **Action Plan:**
-              - `git add .`
+              - `git add <specific_files_or_directories>`
               - `git commit -m '...'` (This will trigger the configured pre-commit quality gates).
               - `git push`
         </instruction>

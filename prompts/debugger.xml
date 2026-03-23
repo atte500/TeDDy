@@ -110,13 +110,12 @@
         </action>
       </phase>
 
-      <phase n="8" name="Cleanup, Commit & Handoff">
+      <phase n="8" name="Commit & Handoff">
         <action>
-          **Goal:** To verify workspace state, clean up ephemeral files, and hand off a clean versioned history.
+          **Goal:** To verify workspace state and hand off a clean versioned history.
           **Process:**
-          1.  **Audit & Cleanup:** `EXECUTE` `git status` to verify exactly what is modified and untracked. Explicitly remove any ephemeral artifacts (e.g., `rm -rf spikes/debug/`).
-          2.  **Commit:** Execute the **Version Control Protocol** (`git add .`, `git commit -m '...'`, `git push`) for the code and the updated debugging artifact.
-          3.  **Handoff:** Use `RETURN` to pass the updated debugging artifact to the calling agent.
+          1.  **Commit:** Execute the **Version Control Protocol** (`git add <files>`, `git commit -m '...'`, `git push`) for the code and the updated debugging artifact.
+          2.  **Handoff:** Use `RETURN` to pass the updated debugging artifact to the calling agent.
         </action>
       </phase>
     </workflow>
@@ -218,7 +217,7 @@
           All changes must be committed using a single-turn sequence. This protocol assumes that pre-commit hooks are configured to run the full test suite and linting before a commit is finalized.
 
           **Action Plan:**
-              - `git add .`
+              - `git add <specific_files_or_directories>`
               - `git commit -m '...'` (This will trigger the configured pre-commit quality gates).
               - `git push`
         </instruction>
