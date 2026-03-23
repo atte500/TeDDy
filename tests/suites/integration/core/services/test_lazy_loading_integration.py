@@ -14,6 +14,7 @@ def test_heavy_libraries_are_not_loaded_on_startup():
     Then 'litellm' MUST NOT be in sys.modules
     And 'trafilatura' MUST NOT be in sys.modules
     And 'ddgs' MUST NOT be in sys.modules
+    And 'mistletoe' MUST NOT be in sys.modules
     """
     # We use a subprocess to ensure we're checking the actual CLI startup process
     # and not the state of the current pytest process.
@@ -24,7 +25,8 @@ def test_heavy_libraries_are_not_loaded_on_startup():
         "import sys; from teddy_executor.__main__ import app; "
         "print('litellm' in sys.modules); "
         "print('trafilatura' in sys.modules); "
-        "print('ddgs' in sys.modules)",
+        "print('ddgs' in sys.modules); "
+        "print('mistletoe' in sys.modules)",
     ]
     result = subprocess.run(
         cmd, capture_output=True, text=True, env={"PYTHONPATH": "src"}
@@ -45,4 +47,7 @@ def test_heavy_libraries_are_not_loaded_on_startup():
     )
     assert outputs[2] == "False", (
         f"ddgs should be lazy-loaded, but was found in sys.modules: {outputs[2]}"
+    )
+    assert outputs[3] == "False", (
+        f"mistletoe should be lazy-loaded, but was found in sys.modules: {outputs[3]}"
     )

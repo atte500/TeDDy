@@ -20,11 +20,17 @@ The test suite should no longer waste time traversing non-test directories (like
 ### Scenario 2: Mistletoe Lazy Loading
 The heavy regex compilation penalty of the `mistletoe` library should be deferred until absolutely necessary, removing the import penalty from CLI startup and test collection.
 #### Deliverables
-- [ ] Refactor `src/teddy_executor/core/services/markdown_plan_parser.py` to lazy-load `mistletoe` dependencies.
-- [ ] Refactor `src/teddy_executor/core/services/action_parser_complex.py` to lazy-load `mistletoe` dependencies.
-- [ ] Refactor `src/teddy_executor/core/services/action_parser_strategies.py` to lazy-load `mistletoe` dependencies.
-- [ ] Refactor `src/teddy_executor/core/services/parser_infrastructure.py` to lazy-load `mistletoe` dependencies.
-- [ ] Ensure the tests in `test_lazy_loading_integration.py` remain green.
+- [x] Refactor `src/teddy_executor/core/services/markdown_plan_parser.py` to lazy-load `mistletoe` dependencies.
+- [x] Refactor `src/teddy_executor/core/services/action_parser_complex.py` to lazy-load `mistletoe` dependencies.
+- [x] Refactor `src/teddy_executor/core/services/action_parser_strategies.py` to lazy-load `mistletoe` dependencies.
+- [x] Refactor `src/teddy_executor/core/services/parser_infrastructure.py` to lazy-load `mistletoe` dependencies.
+- [x] Ensure the tests in `test_lazy_loading_integration.py` remain green.
+
+#### Implementation Notes
+- Discovered that `markdown_plan_parser.py` was already mostly lazy-loaded, but its dependencies (`action_parser_complex.py`, `action_parser_strategies.py`, `parser_infrastructure.py`, `parser_metadata.py`, and `parser_reporting.py`) eagerly imported `mistletoe` classes at the module level.
+- Refactored all parser service files to defer `mistletoe` imports into `if TYPE_CHECKING:` blocks and local function scopes.
+- Updated `test_lazy_loading_integration.py` to explicitly assert that `mistletoe` is not in `sys.modules` upon CLI startup.
+- Full test suite execution dropped to ~4.9 seconds.
 
 ### Scenario 3: CLI Lazy Initialization
 The Dependency Injection container should only be initialized when a CLI command is actively executed, rather than at module import time.

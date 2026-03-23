@@ -1,8 +1,8 @@
 from typing import Any, Optional
-from mistletoe.block_token import (
-    CodeFence,
-    List as MdList,
-)
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    pass
 
 from teddy_executor.core.domain.models import ActionData
 from teddy_executor.core.ports.inbound.plan_parser import InvalidPlanError
@@ -17,6 +17,8 @@ from teddy_executor.core.services.parser_metadata import (
 def parse_create_action(
     stream: _PeekableStream, node: Optional[Any] = None
 ) -> ActionData:
+    from mistletoe.block_token import List as MdList, CodeFence
+
     metadata_list = stream.next()
     if not isinstance(metadata_list, MdList):
         raise InvalidPlanError(
@@ -52,6 +54,8 @@ def parse_create_action(
 def parse_resource_action(
     stream: _PeekableStream, action_type: str, node: Optional[Any] = None
 ) -> ActionData:
+    from mistletoe.block_token import List as MdList
+
     metadata_list = stream.next()
     if not isinstance(metadata_list, MdList):
         raise InvalidPlanError(

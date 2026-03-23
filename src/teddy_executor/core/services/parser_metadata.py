@@ -1,9 +1,12 @@
 from typing import Any, List, Optional
-from mistletoe.block_token import (
-    List as MdList,
-    ListItem as MdListItem,
-)
-from mistletoe.span_token import Link
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from mistletoe.block_token import (
+        List as MdList,
+        ListItem as MdListItem,
+    )
+    from mistletoe.span_token import Link
 
 from teddy_executor.core.services.parser_infrastructure import (
     EXPECTED_KV_PARTS,
@@ -15,9 +18,11 @@ from teddy_executor.core.services.parser_infrastructure import (
 
 
 def _process_link_key(
-    item: MdListItem, text: str, key_map: dict[str, str]
+    item: "MdListItem", text: str, key_map: dict[str, str]
 ) -> Optional[tuple[str, str]]:
     """Helper to process a single link-based metadata key."""
+    from mistletoe.span_token import Link
+
     for key_text, param_key in key_map.items():
         if f"{key_text}:" in text:
             link_node = find_node_in_tree(item, Link)
@@ -43,11 +48,13 @@ def _process_text_key(text: str, key_map: dict[str, str]) -> Optional[tuple[str,
 
 
 def parse_action_metadata(
-    metadata_list: MdList,
+    metadata_list: "MdList",
     link_key_map: Optional[dict[str, str]] = None,
     text_key_map: Optional[dict[str, str]] = None,
 ) -> tuple[Optional[str], dict[str, Any]]:
     """Parses metadata from a Markdown list."""
+    from mistletoe.block_token import ListItem as MdListItem
+
     params: dict[str, Any] = {}
     description: Optional[str] = None
     if not metadata_list.children:
@@ -77,8 +84,10 @@ def parse_action_metadata(
     return description, params
 
 
-def parse_env_from_metadata(metadata_list: MdList) -> Optional[dict[str, str]]:
+def parse_env_from_metadata(metadata_list: "MdList") -> Optional[dict[str, str]]:
     """Parses environment variables from a nested metadata list."""
+    from mistletoe.block_token import List as MdList
+
     if not metadata_list.children:
         return None
 
@@ -95,8 +104,10 @@ def parse_env_from_metadata(metadata_list: MdList) -> Optional[dict[str, str]]:
     return env_dict if env_dict else None
 
 
-def _find_all_links(node) -> List[Link]:
+def _find_all_links(node) -> "List[Link]":
     """Recursively finds all Link tokens in a node tree."""
+    from mistletoe.span_token import Link
+
     links = []
     if isinstance(node, Link):
         links.append(node)
@@ -106,7 +117,7 @@ def _find_all_links(node) -> List[Link]:
     return links
 
 
-def parse_handoff_resources_from_list(metadata_list: MdList) -> List[str] | None:
+def parse_handoff_resources_from_list(metadata_list: "MdList") -> "List[str] | None":
     """
     Parses handoff resources from a metadata list item.
     Supports both nested lists and simple multi-line links within the item.

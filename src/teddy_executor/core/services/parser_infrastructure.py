@@ -1,9 +1,11 @@
 import os
 from typing import Any, List, Optional, Iterator
-from mistletoe.block_token import (
-    Heading,
-)
-from mistletoe.span_token import InlineCode
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from mistletoe.block_token import (
+        Heading,
+    )
 
 # Constants for Markdown structure
 H1_LEVEL = 1
@@ -91,8 +93,11 @@ def get_child_text(node: Any) -> str:
     return getattr(node, "content", "")
 
 
-def get_action_heading(node: Any, valid_actions: set[str]) -> Optional[Heading]:
+def get_action_heading(node: Any, valid_actions: set[str]) -> "Optional[Heading]":
     """Checks if a node is a valid H3 action heading."""
+    from mistletoe.block_token import Heading
+    from mistletoe.span_token import InlineCode
+
     if isinstance(node, Heading) and node.level == H3_LEVEL:
         text = get_child_text(node).strip()
         potential_type = text.split(":")[0].strip().replace("`", "")
@@ -109,6 +114,8 @@ def consume_content_until_next_action(
     stream: _PeekableStream, valid_actions: set[str]
 ) -> List[Any]:
     """Consumes nodes from the stream until the next H3 action heading or H1/H2."""
+    from mistletoe.block_token import Heading
+
     content_nodes = []
     while stream.has_next():
         node = stream.peek()

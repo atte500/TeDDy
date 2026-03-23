@@ -1,9 +1,10 @@
 from typing import Any, List
-from mistletoe.block_token import (
-    Heading,
-    Document,
-    CodeFence,
-)
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from mistletoe.block_token import (
+        Document,
+    )
 from teddy_executor.core.domain.models.plan import Plan
 from teddy_executor.core.services.parser_infrastructure import (
     get_child_text,
@@ -56,6 +57,8 @@ def _format_expected_structure() -> str:
 
 def format_node_name(node: Any) -> str:
     """Formats the type name of a node with relevant metadata and content preview."""
+    from mistletoe.block_token import Heading, CodeFence
+
     if node is None:
         return "EOF"
     name = type(node).__name__
@@ -75,7 +78,7 @@ def format_node_name(node: Any) -> str:
 
 
 def _render_ast_view(
-    doc: Document,
+    doc: "Document",
     error_ids: set[int],
     error_map: dict[int, str],
     cutoff_idx: float = float("inf"),
@@ -83,6 +86,8 @@ def _render_ast_view(
     """
     Core AST rendering logic with logical indentation. Returns raw text.
     """
+    from mistletoe.block_token import Heading
+
     indent_level = 0
     lines = []
 
@@ -121,7 +126,7 @@ def _render_ast_view(
 
 
 def format_hybrid_ast_view(
-    doc: Document,
+    doc: "Document",
     errors: List[Any],  # List[ValidationError]
 ) -> str:
     """
@@ -137,6 +142,8 @@ def format_hybrid_ast_view(
 
 def get_action_type_from_node(plan: Plan, offending_node: Any) -> str:
     """Walks back from a node to find its parent action type."""
+    from mistletoe.block_token import Heading
+
     if not offending_node:
         return "Unknown"
 
@@ -159,7 +166,7 @@ def get_action_type_from_node(plan: Plan, offending_node: Any) -> str:
 
 
 def format_structural_mismatch_msg(
-    doc: Document,
+    doc: "Document",
     expected: str,
     mismatch_idx: int,
     offending_nodes: List[Any],

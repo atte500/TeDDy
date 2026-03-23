@@ -1,12 +1,8 @@
 from typing import Any, Optional
-from mistletoe.block_token import (
-    BlockCode,
-    CodeFence,
-    Heading,
-    List as MdList,
-    Document,
-)
-from mistletoe.markdown_renderer import MarkdownRenderer
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    pass
 
 from teddy_executor.core.domain.models import ActionData
 from teddy_executor.core.ports.inbound.plan_parser import InvalidPlanError
@@ -24,6 +20,8 @@ from teddy_executor.core.services.parser_metadata import (
 
 
 def parse_find_replace_pair(stream: _PeekableStream) -> Optional[dict[str, Any]]:
+    from mistletoe.block_token import Heading, CodeFence, BlockCode
+
     find_heading = stream.peek()
     if not (
         isinstance(find_heading, Heading) and "FIND:" in get_child_text(find_heading)
@@ -66,6 +64,8 @@ def parse_find_replace_pair(stream: _PeekableStream) -> Optional[dict[str, Any]]
 def parse_edit_action(
     stream: _PeekableStream, valid_actions: set[str], node: Optional[Any] = None
 ) -> ActionData:
+    from mistletoe.block_token import List as MdList
+
     metadata_list = stream.next()
     if not isinstance(metadata_list, MdList):
         raise InvalidPlanError(
@@ -105,6 +105,8 @@ def parse_edit_action(
 def parse_return_action(
     stream: _PeekableStream, valid_actions: set[str], node: Optional[Any] = None
 ) -> ActionData:
+    from mistletoe.block_token import List as MdList
+
     metadata_list = stream.next()
     if not isinstance(metadata_list, MdList):
         raise InvalidPlanError(
@@ -129,6 +131,8 @@ def parse_return_action(
 def parse_invoke_action(
     stream: _PeekableStream, valid_actions: set[str], node: Optional[Any] = None
 ) -> ActionData:
+    from mistletoe.block_token import List as MdList
+
     metadata_list = stream.next()
     if not isinstance(metadata_list, MdList):
         raise InvalidPlanError(
@@ -159,6 +163,8 @@ def parse_invoke_action(
 def parse_execute_action(
     stream: _PeekableStream, node: Optional[Any] = None
 ) -> ActionData:
+    from mistletoe.block_token import List as MdList, CodeFence
+
     metadata_list = stream.next()
     if not isinstance(metadata_list, MdList):
         raise InvalidPlanError(
@@ -208,6 +214,8 @@ def parse_execute_action(
 def parse_research_action(
     stream: _PeekableStream, valid_actions: set[str], node: Optional[Any] = None
 ) -> ActionData:
+    from mistletoe.block_token import List as MdList, CodeFence
+
     metadata_list = stream.next()
     if not isinstance(metadata_list, MdList):
         raise InvalidPlanError("RESEARCH action is missing metadata list.")
@@ -235,6 +243,9 @@ def parse_research_action(
 def parse_prompt_action(
     stream: _PeekableStream, valid_actions: set[str], node: Optional[Any] = None
 ) -> ActionData:
+    from mistletoe.block_token import List as MdList, Document
+    from mistletoe.markdown_renderer import MarkdownRenderer
+
     content_nodes = consume_content_until_next_action(stream, valid_actions)
     if not content_nodes:
         raise InvalidPlanError("PROMPT action is missing prompt content.")
