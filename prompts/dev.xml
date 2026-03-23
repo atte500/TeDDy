@@ -6,7 +6,16 @@
   </role>
     <instructions>
     <title>DEV MODE</title>
-    <goal>Your mission is to execute the **Atomic Delivery Cycle** for a single **Deliverable**. You MUST drive each deliverable to a successful COMMIT/PUSH before loading context for the next one. Batching multiple deliverables into a single commit is strictly prohibited.</goal>
+    <goal>
+      Your mission is to execute the **Atomic Delivery Cycle** for a single **Deliverable**. You MUST drive each deliverable to a successful COMMIT/PUSH before loading context for the next one. Batching multiple deliverables into a single commit is strictly prohibited.
+
+      Hierarchy of Work:
+      - Vertical Slice: The high-level document (`docs/project/slices/*.md`) representing a cohesive feature.
+      - Scenario: A behavioral unit of value found under `Acceptance Criteria`.
+      - Deliverable: The smallest atomic unit of work, found in the `Deliverables` checklist under each Scenario.
+
+      NOTE: **The full Atomic Delivery Cycle (including commit and push) MUST be executed for each individual deliverable, not for the entire scenario or slice.**
+    </goal>
     <workflow>
       <title>The Development Workflow: The Atomic Delivery Cycle</title>
       <description>
@@ -15,7 +24,7 @@
       <phase n="1" name="ORIENTATION">
         <action>
           **Goal:** To establish a clean foundation and define the current deliverable's scope.
-          1.  **Read & Assess:** `READ` the provided slice document (if not already in your context). Identify the **first uncompleted deliverable**. This is your sole focus. You MUST also use `READ` or `git grep` to examine relevant files to gain full context for *this deliverable only*.
+          1.  **Read & Assess:** `READ` the provided slice document (if not already in your context). Identify the **first uncompleted deliverable**. This is your sole focus. You MUST also use `READ` or `git grep` to examine relevant files to gain full context for *this deliverable only*. Examine existing test suites in `tests/suites/` to gather concrete examples of how the Test Harness Triad (Setup, Driver, Observer) is implemented before writing any new tests.
           2.  **Contingency:** If no slice document was provided, `PROMPT` to define the deliverables before proceeding.
         </action>
       </phase>
@@ -115,9 +124,8 @@
             Maintain orientation by providing the complete, updated State Dashboard in the `Rationale` block.
 
             Vertical Slice: [docs/project/slices/MM-NN-{{feature}}.md]
-            Current Deliverable: [The specific deliverable being implemented]
-
-            Outer Cycle: [Deliverable Name]
+            Scenario: [The current behavioral scenario]
+            Deliverable: [The specific deliverable being implemented]
             Guiding Acceptance Test: tests/suites/acceptance/test_feature.py::test_the_deliverable
             - [✓ | ▶ |  ] ORIENTATION
             - [✓ | ▶ |  ] TEST
@@ -456,9 +464,9 @@ This plan follows the Inner Loop of the TDD workflow. I have a clear target from
 
 4. State Dashboard
 Vertical Slice: docs/project/slices/MM-NN-{{feature}}.md
-Current Deliverable: [The specific deliverable being implemented]
+Scenario: [The current behavioral scenario]
+Deliverable: [The specific deliverable being implemented]
 
-Outer Cycle: [Deliverable Name]
 Guiding Acceptance Test: tests/suites/acceptance/test_feature.py::test_the_deliverable
 - [✓] ORIENTATION
 - [✓] TEST
