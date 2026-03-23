@@ -38,6 +38,9 @@ This method prints a formatted, colorized warning to `sys.stderr` when an action
 #### `display_message(message: str) -> None`
 Prints a message to standard error. The implementation uses formatting (e.g., Rich tags) to ensure important status information is visually distinct.
 
+#### `confirm_plan_review(plan: Plan) -> bool`
+Displays a colorized summary of the plan's actions using `cli_helpers.echo_plan_summary` and prompts for bulk `y/n` confirmation. If the user aborts or denies, it returns `False`.
+
 #### `confirm_action(action: ActionData, action_prompt: str, change_set: Optional[ChangeSet] = None) -> tuple[bool, str]`
 The `confirm_action` method is responsible for presenting a proposed action to the user and capturing their approval or denial. For `CREATE` and `EDIT` actions, it uses a `ChangeSet` to present a visual preview.
 

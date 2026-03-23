@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from teddy_executor.core.domain.models import ActionData, ChangeSet
+    from teddy_executor.core.domain.models import ActionData, ChangeSet, Plan
 
 
 class IUserInteractor(ABC):
@@ -47,6 +47,19 @@ class IUserInteractor(ABC):
 
         Args:
             message: The message to display.
+        """
+        pass
+
+    @abstractmethod
+    def confirm_plan_review(self, plan: "Plan") -> bool:
+        """
+        Displays a summary of the plan and asks for bulk confirmation.
+
+        Args:
+            plan: The Plan to be reviewed.
+
+        Returns:
+            True if the plan is approved, False otherwise.
         """
         pass
 

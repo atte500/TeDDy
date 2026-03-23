@@ -8,9 +8,10 @@ from teddy_executor.adapters.inbound.cli_helpers import (
     echo_diff_preview,
     echo_handoff_details,
     echo_skipped_action,
+    echo_plan_summary,
 )
 from teddy_executor.core.domain.models.change_set import ChangeSet
-from teddy_executor.core.domain.models.plan import ActionData
+from teddy_executor.core.domain.models.plan import ActionData, Plan
 from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 from teddy_executor.adapters.outbound.console_tooling import ConsoleToolingHelper
@@ -173,6 +174,16 @@ class ConsoleInteractorAdapter(IUserInteractor):
             return ""
         finally:
             self._cleanup_editor()
+
+    def confirm_plan_review(self, plan: Plan) -> bool:
+        """Displays a summary of the plan and asks for bulk confirmation."""
+        echo_plan_summary(plan)
+        try:
+            prompt = "\nExecute this plan? (y/n): "
+            response = typer.prompt(prompt, default="n", show_default=False, err=True)
+            return response.lower().strip().startswith("y")
+        except (EOFError, typer.Abort):
+            return False
 
     def _handle_external_preview(
         self, change_set: ChangeSet, diff_command: List[str], temp_files: List[str]

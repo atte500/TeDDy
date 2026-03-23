@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from teddy_executor.adapters.inbound.console_plan_reviewer import ConsolePlanReviewer
-from teddy_executor.core.domain.models.plan import ActionData
+from teddy_executor.core.domain.models.plan import Plan, ActionData
 from teddy_executor.core.domain.models import ChangeSet
 
 
@@ -102,6 +102,40 @@ def test_review_action_returns_false_on_denial(reviewer, mock_interactor):
 
     assert result is False
     assert action.selected is False
+
+
+def test_review_plan_returns_plan_on_bulk_approval(reviewer, mock_interactor):
+    """Should return the plan if the user approves the bulk summary."""
+    mock_interactor.confirm_plan_review.return_value = True
+    plan = Plan(
+        title="Test Plan",
+        rationale="Test Rationale",
+        actions=[
+            ActionData(type="CREATE", params={"path": "test.txt"}, description="Test")
+        ],
+    )
+
+    result = reviewer.review_plan(plan)
+
+    assert result == plan
+    mock_interactor.confirm_plan_review.assert_called_once_with(plan)
+
+
+def test_review_plan_returns_none_on_bulk_rejection(reviewer, mock_interactor):
+    """Should return None if the user rejects the bulk summary."""
+    mock_interactor.confirm_plan_review.return_value = False
+    plan = Plan(
+        title="Test Plan",
+        rationale="Test Rationale",
+        actions=[
+            ActionData(type="CREATE", params={"path": "test.txt"}, description="Test")
+        ],
+    )
+
+    result = reviewer.review_plan(plan)
+
+    assert result is None
+    mock_interactor.confirm_plan_review.assert_called_once()
 
 
 def test_review_action_no_changeset_for_research(reviewer, mock_interactor):

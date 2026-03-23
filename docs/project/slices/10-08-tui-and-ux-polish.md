@@ -19,17 +19,19 @@ To enable the interactive TUI for all execution modes and polish the session wor
 #### Deliverables
 - [✓] **Contract:** Update `IPlanReviewer` port to include `review_action` (per-action sequential) and `review_plan` (bulk TUI) methods.
 - [✓] **Implementation:** Implement `ConsolePlanReviewer.review_action` to handle sequential Y/N logic and immediate execution.
-- [ ] **Implementation:** Implement `ConsolePlanReviewer.review_plan` to handle bulk summary approval in non-interactive sessions.
+- [✓] **Implementation:** Implement `ConsolePlanReviewer.review_plan` to handle bulk summary approval in non-interactive sessions.
 - [ ] **Core Refactoring:** Update `ExecutionOrchestrator` to delegate action confirmation entirely to the `IPlanReviewer` port.
 - [ ] **Wiring:** Update `YamlConfigAdapter` to support `ui_mode` (default: `tui`).
 - [ ] **Wiring:** Update `container.py` to register `IPlanReviewer` implementation based on active configuration.
 - [ ] **Wiring:** Update `execute`, `start`, and `resume` in `__main__.py` to support `--tui / --no-tui` flags.
 
-#### Implementation Notes: `ConsolePlanReviewer.review_action`
-- **Component:** Created `ConsolePlanReviewer` in `src/teddy_executor/adapters/inbound/console_plan_reviewer.py` to implement the sequential interaction logic.
+#### Implementation Notes:
+- **Component:** Created `ConsolePlanReviewer` in `src/teddy_executor/adapters/inbound/console_plan_reviewer.py` to implement both sequential (`review_action`) and bulk (`review_plan`) interaction logic.
 - **Shared Logic:** Extracted `ChangeSet` generation and action prompt formatting into a new core service: `ActionChangeSetBuilder` in `src/teddy_executor/core/services/action_changeset_builder.py`.
 - **Deduplication:** Refactored `ActionExecutor` to use `ActionChangeSetBuilder`, eliminating large code clones and reducing the `jscpd` duplication score from 3.59% to 0.76%.
-- **Validation:** Added unit tests in `tests/suites/unit/adapters/inbound/test_console_plan_reviewer.py` covering `CREATE`, `EDIT`, and non-file actions (e.g., `RESEARCH`).
+- **Bulk Review:** Implemented `review_plan` which utilizes a new `echo_plan_summary` helper in `cli_helpers.py` to display colorized action counts.
+- **Validation:** Added unit tests in `tests/suites/unit/adapters/inbound/test_console_plan_reviewer.py` covering `CREATE`, `EDIT`, `RESEARCH`, and bulk approval/rejection.
+- **Contract Expansion:** Updated `IPlanReviewer` and `IUserInteractor` ports to support the new multi-tier review model.
 - **Quality Gates:** Resolved `mypy` type casting issues for similarity thresholds and fixed `ruff` import order violations (E402).
 
 ### Scenario: PRUNE Behavior in Manual Mode [ ]

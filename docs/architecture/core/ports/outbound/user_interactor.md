@@ -26,6 +26,21 @@ This port defines the contract for components that can interact with the user by
 
 ---
 
+### `confirm_plan_review(plan: 'Plan') -> bool`
+
+**Status:** Implemented
+
+*   **Description:**
+    Displays a high-level summary of the entire plan (e.g., action counts) and asks the user for a bulk `y/n` confirmation.
+*   **Preconditions:**
+    *   `plan` must be a valid `Plan` domain object.
+*   **Postconditions:**
+    *   Returns `True` if the user approved the plan, `False` otherwise.
+*   **Returns:**
+    *   `bool`: Approval status.
+
+---
+
 ### `confirm_action(action: 'ActionData', action_prompt: str) -> tuple[bool, str]`
 
 **Status:** Refactored

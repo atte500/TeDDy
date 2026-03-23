@@ -262,6 +262,24 @@ def echo_diff_preview(change_set: ChangeSet):
     typer.echo("------------", err=True)
 
 
+def echo_plan_summary(plan: Plan):
+    """Prints a summary of the plan's actions to the terminal."""
+    header = f'\n▶ Reviewing Plan: "{plan.title}"'
+    typer.secho(header, fg=typer.colors.CYAN, bold=True, err=True)
+    typer.echo("-" * 68, err=True)
+
+    counts: dict[str, int] = {}
+    for action in plan.actions:
+        counts[action.type] = counts.get(action.type, 0) + 1
+
+    typer.echo("\n Action Plan:", err=True)
+    for action_type in sorted(counts.keys()):
+        count = counts[action_type]
+        label = "action" if count == 1 else "actions"
+        typer.echo(f"  - {action_type}: {count} {label}", err=True)
+    typer.echo("\n" + "-" * 68, err=True)
+
+
 def echo_skipped_action(action: ActionData, reason: str):
     """Prints a colorized skip notification."""
     message = f"[SKIPPED] {action.type}: {reason}"

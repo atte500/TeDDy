@@ -32,12 +32,18 @@ class ConsolePlanReviewer(IPlanReviewer):
         )
 
     def review(self, plan: "Plan") -> Optional["Plan"]:
-        """Bulk review not yet implemented for console."""
-        return plan
+        """
+        Legacy review method. Delegating to review_plan for bulk console review.
+        """
+        return self.review_plan(plan)
 
     def review_plan(self, plan: "Plan") -> Optional["Plan"]:
-        """Bulk review not yet implemented for console."""
-        return plan
+        """
+        Initiates a bulk interactive review process for the entire plan.
+        """
+        if self._user_interactor.confirm_plan_review(plan):
+            return plan
+        return None
 
     def review_action(
         self,
