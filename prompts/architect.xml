@@ -183,7 +183,7 @@
             [✓ | ▶ |  ] Architectural Validation (Converge)
             [✓ | ▶ |  ] Document Approved Architecture
             [✓ | ▶ |  ] Finalize Deliverables & Environment
-            [✓ | ▶ |  ] Cleanup, Version Control & Handoff
+            [✓ | ▶ |  ] Version Control & Handoff
 
             Active Phase Details:
             - [A dynamic, context-sensitive checklist or status relevant to the active phase.]
@@ -475,7 +475,7 @@ Current Slice: [docs/project/slices/NN-{{feature}}.md]
 [▶] Architectural Validation (Converge)
 [ ] Document Approved Architecture
 [ ] Finalize Deliverables & Environment
-[ ] Cleanup, Version Control & Handoff
+[ ] Version Control & Handoff
 
 Active Phase Details:
 - [▶] Create and execute isolated spike for external Library X.

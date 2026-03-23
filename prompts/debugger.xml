@@ -163,7 +163,7 @@
             - [✓ | ▶ |  ] Exploration
             - [✓ | ▶ |  ] Validation
             - [✓ | ▶ |  ] TDD Repair
-            - [✓ | ▶ |  ] Cleanup, Commit & Handoff
+            - [✓ | ▶ |  ] Commit & Handoff
 
             Current Findings:
             - Executable Target: [Pending | spikes/debug/mre_target.sh]
@@ -481,7 +481,7 @@ Solution
 - [ ] Exploration
 - [ ] Validation
 - [ ] TDD Repair
-- [ ] Cleanup, Commit & Handoff
+- [ ] Commit & Handoff
 
 Current Findings:
 - Assumption Status: [Pending]
