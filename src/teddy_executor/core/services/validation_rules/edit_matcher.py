@@ -192,15 +192,6 @@ def _evaluate_candidates(
             window_str = "".join(window)
             matcher = difflib.SequenceMatcher(None, window_str, find_block)
             score = matcher.ratio()
-
-            # Line Ending Indifference Bonus:
-            # If the strings are identical except for trailing newlines (\n or \r\n),
-            # we treat it as a perfect 1.0 match. This solves the case
-            # where the parser strips newlines but the file contains them,
-            # while preserving stable ratios for genuinely fuzzy matches.
-            if score < 1.0 and window_str.rstrip("\r\n") == find_block.rstrip("\r\n"):
-                score = 1.0
-
             scored_candidates.append((score, window))
 
     # Sort by score descending and cap evaluation
@@ -211,13 +202,16 @@ def _evaluate_candidates(
     if not candidates_to_refine and file_lines:
         candidates_to_refine = [(0.0, file_lines[:num_find_lines])]
 
-    return _refine_and_select_best(candidates_to_refine, find_lines, num_find_lines)
+    return _refine_and_select_best(
+        candidates_to_refine, find_lines, num_find_lines, find_block
+    )
 
 
 def _refine_and_select_best(
     candidates: List[tuple[float, List[str]]],
     find_lines: List[str],
     num_find_lines: int,
+    find_block: str,
 ) -> tuple[List[str], float, bool]:
     """Refines top candidates and returns the best match with ambiguity info."""
     best_ratio = -1.0
@@ -231,6 +225,14 @@ def _refine_and_select_best(
             ratio = matcher.ratio()
         else:
             ratio = score
+
+        # Line Ending Indifference Bonus:
+        # If the strings are identical except for trailing newlines (\n or \r\n),
+        # we treat it as a perfect 1.0 match. This solves the case
+        # where the parser strips newlines but the file contains them,
+        # while preserving stable ratios for genuinely fuzzy matches.
+        if ratio < 1.0 and "".join(window).rstrip("\r\n") == find_block.rstrip("\r\n"):
+            ratio = 1.0
 
         current_match_lines, ratio, current_is_ambiguous = _apply_substring_boost(
             window, find_lines, ratio

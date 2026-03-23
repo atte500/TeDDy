@@ -17,7 +17,7 @@ Ensure that surgical `EDIT` operations are resilient to the trailing newline str
 **And** the replacement should be applied successfully.
 
 #### Deliverables
-- [ ] Updated `EditMatcher` test suite to include "Indifference Bonus" cases for exact content with mismatched endings.
+- [✓] Updated `EditMatcher` test suite to include "Indifference Bonus" cases for exact content with mismatched endings.
 
 ### Scenario 2: Exact Match with Missing Newline (Large Block)
 **Given** a file with 25 lines of code ending in `\r\n`
@@ -26,7 +26,14 @@ Ensure that surgical `EDIT` operations are resilient to the trailing newline str
 **Then** the matcher should return a `1.0` score (overriding the list-of-lines ratio).
 
 #### Deliverables
-- [ ] Refactored `EditMatcher._evaluate_candidates` to apply the "Indifference Bonus" to the refinement phase of large blocks.
+- [✓] Refactored `EditMatcher._evaluate_candidates` to apply the "Indifference Bonus" to the refinement phase of large blocks.
+
+## Implementation Notes
+
+### Indifference Bonus (Scenarios 1 & 2)
+- **Unified Logic:** The "Indifference Bonus" logic was refactored from `_evaluate_candidates` (small blocks) into `_refine_and_select_best`. This ensures that any candidate that is identical to the `FIND` block (ignoring trailing `\r\n`) receives a perfect `1.0` score.
+- **Large Block Resilience:** For blocks exceeding `LARGE_BLOCK_LINE_LIMIT`, the bonus now overrides the line-list based ratio if the raw string content matches (minus newlines).
+- **Test Coverage:** Added `tests/suites/unit/core/services/test_edit_matcher_indifference.py` covering small blocks, large blocks, and CRLF indifference.
 
 ### Scenario 3: Line Ending Preservation (Zero Git Noise)
 **Given** a file with CRLF (`\r\n`) line endings
