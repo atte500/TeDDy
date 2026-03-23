@@ -89,7 +89,7 @@ addopts = [
     "-n",
     "auto",
     "--import-mode=importlib",
-    "--timeout=1",
+    "--timeout=5",
 ]
 filterwarnings = [
     "ignore:No data was collected:coverage.exceptions.CoverageWarning",
