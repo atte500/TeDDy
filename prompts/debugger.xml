@@ -110,20 +110,21 @@
         </action>
       </phase>
 
-      <phase n="8" name="Commit & Handoff">
+      <phase n="8" name="Cleanup, Commit & Handoff">
         <action>
-          **Goal:** To commit the fix and return control.
+          **Goal:** To verify workspace state, clean up ephemeral files, and hand off a clean versioned history.
           **Process:**
-          1.  **Commit:** Execute **Version Control Protocol** (`git add .`, `git commit -m '...'`, `git push`) for the code and the updated debugging artifact.
-          2.  **Handoff:** Use `RETURN` to pass the updated debugging artifact to the calling agent.
+          1.  **Audit & Cleanup:** `EXECUTE` `git status` to verify exactly what is modified and untracked. Explicitly remove any ephemeral artifacts (e.g., `rm -rf spikes/debug/`).
+          2.  **Commit:** Execute the **Version Control Protocol** (`git add .`, `git commit -m '...'`, `git push`) for the code and the updated debugging artifact.
+          3.  **Handoff:** Use `RETURN` to pass the updated debugging artifact to the calling agent.
         </action>
       </phase>
     </workflow>
     <general_rules>
       <rule n="1">
-        <title>Error Investigation Protocol</title>
+        <title>Status & Expectation Protocol</title>
         <instruction>
-          This protocol governs the status field in the Plan Header. Review the previous outcome against your Expectations. Status transitions are binding.
+          This protocol governs the status field in the Plan Header. Each turn, your primary evaluation is to match the real-world outcome against the exact conditions defined in your previous turn's Expectations. Status transitions are strictly binding.
 
           *   `Green 🟢`
               *   **Trigger:** The previous turn's outcome perfectly matched the condition defined in your Green expectation.
@@ -163,7 +164,7 @@
             - [✓ | ▶ |  ] Spike
             - [✓ | ▶ |  ] Validation
             - [✓ | ▶ |  ] TDD Repair
-            - [✓ | ▶ |  ] Commit & Handoff
+            - [✓ | ▶ |  ] Cleanup, Commit & Handoff
 
             Current Findings:
             - Executable Target: [Pending | spikes/debug/mre_target.sh]
@@ -305,7 +306,7 @@
     <instruction>
           Your entire response MUST be a single, valid Markdown document that strictly adheres to the format described below.
 
-          --- Expected Document Structure ---
+          --- Expected Response Structure ---
           [000] Heading (Level 1)
           [001] List (Metadata)
           [002] Heading (Level 2: Rationale)
@@ -336,13 +337,13 @@
                 A two-part analysis that serves as your short-term memory. First, review the outcome of the previous turn, quoting any new information or error messages. You MUST objectively review the outcome against the previous turn's Expectations and explicitly state which condition was met. Second, synthesize what that new information means for the broader mission and reiterate all relevant information required for the current turn.
 
                 2. Justification
-                Justify your plan and status with a direct narrative. This narrative must synthesize the current situation and explain how your proposed plan is the next logical step by explicitly referencing all the applicable principles from your core methodology. If the condition met in Synthesis is Yellow or Red, you MUST justify here why the outcome is considered in-scope (for Yellow) or why it is out-of-scope and requires a Deep Reset (for Red).
+                Justify your plan and your current Status (Green, Yellow, or Red) with a direct narrative. This narrative must synthesize the current situation and explain how your proposed plan is the next logical step by explicitly referencing all the applicable principles from your core methodology. You MUST explicitly justify why the previous turn's outcome warrants your current status.
 
                 3. Expectations
                 Define the specific, falsifiable conditions for the next turn.
                 - Green: [Specific success outcome] allowing for [Specific next step].
                 - Yellow: [Failure in newly written code] necessitating [Specific recovery step].
-                - Red: [Regression detected] forcing [Specific revert and restart].
+                - Red: [Regression detected] necessitating [Specific revert and restart].
 
                 These transitions are binding: if the next turn's outcome matches a condition defined here, you MUST adopt the corresponding status and follow its associated protocols.
 
@@ -481,7 +482,7 @@ Solution
 - [ ] Spike
 - [ ] Validation
 - [ ] TDD Repair
-- [ ] Commit & Handoff
+- [ ] Cleanup, Commit & Handoff
 
 Current Findings:
 - Assumption Status: [Pending]

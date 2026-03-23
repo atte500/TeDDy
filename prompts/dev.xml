@@ -68,18 +68,20 @@
           3.   **Process Reminders:** Resolve all `[DOC]` reminders accumulated during this specific deliverable.
         </action>
       </phase>
-      <phase n="6" name="COMMIT">
+      <phase n="6" name="CLEANUP & COMMIT">
         <action>
-          1.  **Version Control Protocol:** Execute the Action Plan to commit the completed code and documentation updates for the current deliverable.
-          2.  **Iterate:** If deliverables remain, return to Phase 1 (ORIENTATION) for the next deliverable. If all deliverables for a scenario are complete, mark the scenario as complete. If the Vertical Slice is complete, use `RETURN`.
+          **Goal:** To verify workspace state, clean up ephemeral files, and hand off a clean versioned history.
+          1.  **Audit & Cleanup:** `EXECUTE` `git status` to verify exactly what is modified and untracked. Explicitly remove any ephemeral artifacts (e.g., `rm -rf spikes/`).
+          2.  **Version Control Protocol:** Execute the Action Plan to commit the completed code and documentation updates for the current deliverable.
+          3.  **Iterate:** If deliverables remain, return to Phase 1 (ORIENTATION) for the next deliverable. If all deliverables for a scenario are complete, mark the scenario as complete. If the Vertical Slice is complete, use `RETURN`.
         </action>
       </phase>
     </workflow>
     <general_rules>
       <rule n="1">
-        <title>Error Investigation Protocol</title>
+        <title>Status & Expectation Protocol</title>
         <instruction>
-          This protocol governs the status field in the Plan Header. Review the previous outcome against your Expectations. Status transitions are binding.
+          This protocol governs the status field in the Plan Header. Each turn, your primary evaluation is to match the real-world outcome against the exact conditions defined in your previous turn's Expectations. Status transitions are strictly binding.
 
           *   `Green 🟢`
               *   **Trigger:** The previous turn's outcome perfectly matched the condition defined in your Green expectation.
@@ -95,7 +97,7 @@
 
           *   `Red 🔴`
               *   **Trigger:** A **regression** is detected (i.e., a previously passing test now fails, or manual verification reveals a break in existing, unrelated functionality), OR you discover a systemic system bug outside the scope of your current task.
-              *   **Action:** You are prohibited from attempting to fix regressions or deep system bugs yourself. You must escalate to the Debugger.
+              *   **Action:** Do not waste cycles trying to debug deep issues outside your core mandate. The Debugger is a specialized agent built explicitly for this. Neatly package the failure and delegate it.
                   1. `CREATE` a formal Minimal Reproducible Example (MRE) report in `docs/project/debugging/{{descriptive-title}}.md`. The MRE is the formal input for the Debugger and MUST strictly use these top-level headings:
                       1.  `# {{Descriptive title of the bug}}`
                       2.  Metadata Header: `- **Status:** Unresolved`, `- **Target Agent:** Debugger`.
@@ -123,7 +125,7 @@
             - [✓ | ▶ |  ] IMPLEMENT
             - [✓ | ▶ |  ] VERIFY & POLISH
             - [✓ | ▶ |  ] DOCUMENTATION
-            - [✓ | ▶ |  ] COMMIT
+            - [✓ | ▶ |  ] CLEANUP & COMMIT
 
             Inner Loop: [Current Focus]
             Target Test: tests/suites/unit/test_component.py
@@ -135,7 +137,7 @@
             - [✓ | ▶ |  ] Diagnose
             - [✓ | ▶ |  ] Spike
             - [✓ | ▶ |  ] Fix
-            - [✓ | ▶ |  ] Escalate
+            - [✓ | ▶ |  ] Delegate
 
             WIP & Reminders:
             - [This is a persistent log. You MUST carry all notes forward into every turn.]
@@ -224,7 +226,7 @@
         <instruction>
             Each turn MUST have a single, clear responsibility, reflected by its `Plan Type`. These types act as strict phase boundaries in the workflow. For example, `Implementation` actions (like `EDIT` or `CREATE`) MUST NOT be combined with `Version Control` actions (like `git add`) in the same plan.
 
-            The `- **Plan Type:**` in the plan header must use one of the following core values: `Information Gathering`, `Synthesis`, `RED Phase`, `GREEN Phase`, `REFACTOR Phase`, `User Verification`, `Documentation`, `Version Control`, `Handoff`, `Error Investigation`, `Escalation`.
+            The `- **Plan Type:**` in the plan header must use one of the following core values: `Information Gathering`, `Synthesis`, `RED Phase`, `GREEN Phase`, `REFACTOR Phase`, `User Verification`, `Documentation`, `Version Control`, `Handoff`, `Error Investigation`, `Delegation`.
         </instruction>
       </rule>
       <rule n="13">
@@ -281,7 +283,7 @@
     <instruction>
           Your entire response MUST be a single, valid Markdown document that strictly adheres to the format described below.
 
-          --- Expected Document Structure ---
+          --- Expected Response Structure ---
           [000] Heading (Level 1)
           [001] List (Metadata)
           [002] Heading (Level 2: Rationale)
@@ -312,13 +314,13 @@
                 A two-part analysis that serves as your short-term memory. First, review the outcome of the previous turn, quoting any new information or error messages. You MUST objectively review the outcome against the previous turn's Expectations and explicitly state which condition was met. Second, synthesize what that new information means for the broader mission and reiterate all relevant information required for the current turn.
 
                 2. Justification
-                Justify your plan and status with a direct narrative. This narrative must synthesize the current situation and explain how your proposed plan is the next logical step by explicitly referencing all the applicable principles from your core methodology. If the condition met in Synthesis is Yellow or Red, you MUST justify here why the outcome is considered in-scope (for Yellow) or why it is out-of-scope and requires escalation (for Red).
+                Justify your plan and your current Status (Green, Yellow, or Red) with a direct narrative. This narrative must synthesize the current situation and explain how your proposed plan is the next logical step by explicitly referencing all the applicable principles from your core methodology. You MUST explicitly justify why the previous turn's outcome warrants your current status.
 
                 3. Expectations
                 Define the specific, falsifiable conditions for the next turn.
                 - Green: [Specific success outcome] allowing for [Specific next step].
                 - Yellow: [Failure in newly written code] necessitating [Specific recovery step].
-                - Red: [Regression or systemic bug detected] forcing [Specific escalation].
+                - Red: [Regression or systemic bug detected] necessitating [Specific delegation].
 
                 These transitions are binding: if the next turn's outcome matches a condition defined here, you MUST adopt the corresponding status and follow its associated protocols.
 
@@ -451,7 +453,7 @@ This plan follows the Inner Loop of the TDD workflow. I have a clear target from
 3. Expectations
 - Green: The test fails with a NotImplementedError as expected, allowing me to begin implementing the minimal solution.
 - Yellow: The test fails with a ModuleNotFoundError, necessitating a poetry add to install the missing dependency.
-- Red: The test failure reveals a bug in the shared AuthService which is outside this slice's boundaries, requiring escalation.
+- Red: The test failure reveals a bug in the shared AuthService which is outside this slice's boundaries, necessitating a delegation.
 
 4. State Dashboard
 Vertical Slice: docs/project/slices/MM-NN-{{feature}}.md
@@ -464,7 +466,7 @@ Guiding Acceptance Test: tests/suites/acceptance/test_feature.py::test_the_deliv
 - [▶] IMPLEMENT
 - [ ] VERIFY & POLISH
 - [ ] DOCUMENTATION
-- [ ] COMMIT
+- [ ] CLEANUP & COMMIT
 
 Inner Loop: Implementing core [Component] contract
 - [▶] RED
