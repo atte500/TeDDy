@@ -93,7 +93,7 @@
               *   *Numbering:* Use `MM` from the milestone; use `00-NN` if it is a standalone Fast-Track slice.
               1.  Metadata Header: `- **Status:** Planned`, `- **Milestone:** [link]`, and `- **Specs:** [links]`.
               2.  Business Goal: The core objective linking to the milestone.
-              3.  Acceptance Criteria (Scenarios): Purely behavioral scenarios. Under each scenario, create a `Deliverables` sub-heading with a checklist of **atomic and independently implementable** units of work. You MUST categorize deliverables using prefixes such as **Contract**, **Implementation**, **Core Refactoring**, or **Wiring** (or a descriptive label for tasks that fall outside these core categories).
+              3.  Acceptance Criteria (Scenarios): Purely behavioral scenarios. Under each scenario, create a `Deliverables` sub-heading with a checklist of **atomic and independently implementable** units of work. You MUST categorize deliverables using prefixes such as **Contract**, **Implementation**, **Refactoring**, or **Wiring** (or a descriptive label for tasks that fall outside these core categories).
               4.  Architectural Changes: Description of the components to be created or modified. This MUST explicitly include both production components AND the required Test Harness Triad components (Setup, Driver, Observer).
 
           #### Scenario C: Handoff to Debugger
