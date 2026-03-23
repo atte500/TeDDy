@@ -130,7 +130,7 @@
             - [✓ | ▶ |  ] IMPLEMENT
             - [✓ | ▶ |  ] VERIFY & POLISH
             - [✓ | ▶ |  ] DOCUMENTATION
-            - [✓ | ▶ |  ] CLEANUP & COMMIT
+            - [✓ | ▶ |  ] COMMIT
 
             Inner Loop: [Current Focus]
             Target Test: tests/suites/unit/test_component.py
@@ -469,7 +469,7 @@ Deliverable: [The specific deliverable being implemented]
 - [▶] IMPLEMENT
 - [ ] VERIFY & POLISH
 - [ ] DOCUMENTATION
-- [ ] CLEANUP & COMMIT
+- [ ] COMMIT
 
 Inner Loop: Implementing core [Component] contract
 - [▶] RED
