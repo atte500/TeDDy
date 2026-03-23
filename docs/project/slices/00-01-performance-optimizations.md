@@ -58,12 +58,18 @@ The file generation loop in the tree generator performance test should be reduce
 ### Scenario 5: Purge Legacy Action Models & Extract Exceptions
 The `_legacy_models.py` file contains obsolete, strongly-typed action classes that were replaced by the dynamic `ActionData` model. We must purge this technical debt while preserving the custom exceptions still actively used by the domain.
 #### Deliverables
-- [ ] Create `src/teddy_executor/core/domain/models/exceptions.py`.
-- [ ] Move `FileAlreadyExistsError`, `MultipleMatchesFoundError`, `SearchTextNotFoundError`, and `WebSearchError` into `exceptions.py`.
-- [ ] Delete `src/teddy_executor/core/domain/models/_legacy_models.py`.
-- [ ] Update `src/teddy_executor/core/domain/models/__init__.py` to export the exceptions from the new file.
-- [ ] Fix all broken imports across the `src/` and `tests/` directories caused by this move.
-- [ ] Delete the obsolete unit tests targeting the legacy models in `tests/suites/unit/core/domain/test_models.py`.
+- [x] Create `src/teddy_executor/core/domain/models/exceptions.py`.
+- [x] Move `FileAlreadyExistsError`, `MultipleMatchesFoundError`, `SearchTextNotFoundError`, and `WebSearchError` into `exceptions.py`.
+- [x] Delete `src/teddy_executor/core/domain/models/_legacy_models.py`.
+- [x] Update `src/teddy_executor/core/domain/models/__init__.py` to export the exceptions from the new file.
+- [x] Fix all broken imports across the `src/` and `tests/` directories caused by this move.
+- [x] Delete the obsolete unit tests targeting the legacy models in `tests/suites/unit/core/domain/test_models.py`.
+
+#### Implementation Notes
+- Extracted the 4 custom domain exceptions into a dedicated `exceptions.py` file.
+- Deleted the obsolete `_legacy_models.py` file, fully deprecating the strongly-typed `*Action` classes (e.g., `ExecuteAction`, `EditAction`).
+- Maintained backward compatibility by updating `models/__init__.py` to export the exceptions from the new file. Verified that no files imported `_legacy_models` directly.
+- Pruned obsolete unit tests for the legacy action classes from `tests/suites/unit/core/domain/test_models.py` and migrated `test_plan_instantiation` to use `ActionData`.
 
 ### Scenario 6: Zero-Cost Contract Enforcement (DbC)
 Domain models currently use `raise ValueError` for invariant checks (e.g., in `Plan.__post_init__`). These consume compute cycles in production. They must be replaced with native `assert` statements so they can be compiled out in optimized builds.
