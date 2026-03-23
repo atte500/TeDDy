@@ -71,8 +71,7 @@
       </phase>
       <phase n="5" name="DOCUMENTATION">
         <action>
-          1.   **Review Changes:** `EXECUTE` a `git --no-pager diff HEAD` to review all modifications made during this deliverable. This review is a mandatory prerequisite for accurate documentation.
-          2.   **Update Slice Document:** `EDIT` the source Vertical Slice document to explicitly append **Implementation Notes** (informed by your `git --no-pager diff HEAD` review) detailing the work done for this deliverable and mark the deliverable as complete in the file. If any documentation notes or architectural observations were logged via `[DOC]`, raise them in an `### Architectural Feedback` section for review.
+          1.   **Update Slice Document:** `EDIT` the source Vertical Slice document to explicitly append **Implementation Notes** detailing the work done for this deliverable and mark the deliverable as complete in the file. If any documentation notes or architectural observations were logged via `[DOC]`, raise them in an `### Architectural Feedback` section for review.
           2.   **Update Architecture & Components:** Proactively `READ` and `EDIT` the `docs/architecture/**/*.md` design documents for *every* component you modified during this deliverable to ensure the documented contracts (Pre/Post-conditions, DTOs) perfectly align with your implementation. Also `EDIT` `docs/architecture/ARCHITECTURE.md` if core responsibilities changed.
           3.   **Process Reminders:** Resolve all `[DOC]` reminders accumulated during this specific deliverable.
         </action>
