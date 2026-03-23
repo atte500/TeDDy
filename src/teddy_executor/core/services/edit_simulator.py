@@ -49,7 +49,9 @@ class EditSimulator(IEditSimulator):
             and not replace.endswith("\n")
             and replace != ""
         ):
-            final_replace += "\n"
+            # Detect original line ending to prevent "Git Noise"
+            terminator = "\r\n" if best_match.endswith("\r\n") else "\n"
+            final_replace += terminator
 
         if replace == "" and not replace_all:
             # Newline cleanup logic for surgical deletions

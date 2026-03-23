@@ -43,7 +43,12 @@ Ensure that surgical `EDIT` operations are resilient to the trailing newline str
 **And** the rest of the file MUST NOT be converted to LF.
 
 #### Deliverables
-- [ ] Updated `EditSimulator` to detect the line ending of the `best_match` and append the correct terminator (`\n` or `\r\n`) to the replacement text.
+- [✓] Updated `EditSimulator` to detect the line ending of the `best_match` and append the correct terminator (`\n` or `\r\n`) to the replacement text.
+
+### Line Ending Preservation (Scenario 3)
+- **Dynamic Terminator Detection:** Updated `EditSimulator._apply_single_edit` to detect whether the identified match ends with `\r\n` or `\n`.
+- **Git Noise Prevention:** The replacement logic now appends the detected `terminator` instead of a hardcoded `\n`. This ensures that surgical edits to CRLF files do not introduce LF characters, preventing unnecessary diff noise.
+- **Test Coverage:** Added `tests/suites/unit/core/services/test_edit_simulator_newline_preservation.py` asserting preservation of both LF and CRLF in multi-line replacements.
 
 ## 3. Architectural Changes
 

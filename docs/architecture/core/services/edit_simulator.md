@@ -16,6 +16,7 @@ The simulator iterates through the provided list of edits and applies them seque
     - If `replace_all` is `true`, replace *every* occurrence meeting the threshold.
     - If `replace_all` is `false`, replace only the single best match.
 4.  Handle special "empty replace" logic to clean up trailing newlines if the identified match block included them.
+5.  **Line Ending Preservation:** To prevent "Git Noise," the simulator detects the specific line ending (`\n` or `\r\n`) of the `best_match`. If a newline needs to be appended to the replacement (to align with the original block's structure), it uses the detected terminator rather than a hardcoded default.
 
 ## 4. Data Contracts / Methods
 
