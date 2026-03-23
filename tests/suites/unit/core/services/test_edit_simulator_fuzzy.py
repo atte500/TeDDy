@@ -9,8 +9,8 @@ from teddy_executor.core.domain.models import (
 def test_simulate_edits_fuzzy_success():
     simulator = EditSimulator()
     content = "def hello():\n    print('world')\n"
-    # Minor discrepancy (extra space)
-    edits = [{"find": "def hello(): ", "replace": "def greeting():"}]
+    # Minor discrepancy (extra character 'o')
+    edits = [{"find": "def helloo():", "replace": "def greeting():"}]
 
     # Should succeed with threshold 0.8
     result, _ = simulator.simulate_edits(content, edits, threshold=0.8)
@@ -21,7 +21,8 @@ def test_simulate_edits_fuzzy_success():
 def test_simulate_edits_fuzzy_fail_threshold():
     simulator = EditSimulator()
     content = "def hello():\n    print('world')\n"
-    edits = [{"find": "def hello(): ", "replace": "def greeting():"}]
+    # Use a character change ('helloo') which is NOT ignored by whitespace indifference
+    edits = [{"find": "def helloo():", "replace": "def greeting():"}]
 
     # Should fail with high threshold 0.99
     with pytest.raises(SearchTextNotFoundError) as excinfo:

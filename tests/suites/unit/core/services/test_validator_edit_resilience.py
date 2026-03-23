@@ -37,13 +37,13 @@ def test_validator_respects_custom_threshold(container, mock_fs, mock_config):
     mock_config.get_setting.return_value = 0.99
     validator = container.resolve(EditActionValidator)
 
-    # Minor mismatch (extra space)
+    # Minor mismatch (extra character 'o')
     action = ActionData(
         type="EDIT",
         description="test",
         params={
             "path": "test.py",
-            "edits": [{"find": "def hello(): ", "replace": "new", "find_node": None}],
+            "edits": [{"find": "def helloo():", "replace": "new", "find_node": None}],
         },
     )
 
@@ -62,13 +62,13 @@ def test_validator_passes_on_successful_fuzzy_match(container, mock_fs, mock_con
     mock_config.get_setting.return_value = 0.8
     validator = container.resolve(EditActionValidator)
 
-    # Minor mismatch
+    # Minor mismatch (extra character 'o')
     action = ActionData(
         type="EDIT",
         description="test",
         params={
             "path": "test.py",
-            "edits": [{"find": "def hello(): ", "replace": "new", "find_node": None}],
+            "edits": [{"find": "def helloo():", "replace": "new", "find_node": None}],
         },
     )
 
