@@ -25,6 +25,13 @@ To enable the interactive TUI for all execution modes and polish the session wor
 - [ ] **Wiring:** Update `container.py` to register `IPlanReviewer` implementation based on active configuration.
 - [ ] **Wiring:** Update `execute`, `start`, and `resume` in `__main__.py` to support `--tui / --no-tui` flags.
 
+#### Implementation Notes: `ConsolePlanReviewer.review_action`
+- **Component:** Created `ConsolePlanReviewer` in `src/teddy_executor/adapters/inbound/console_plan_reviewer.py` to implement the sequential interaction logic.
+- **Shared Logic:** Extracted `ChangeSet` generation and action prompt formatting into a new core service: `ActionChangeSetBuilder` in `src/teddy_executor/core/services/action_changeset_builder.py`.
+- **Deduplication:** Refactored `ActionExecutor` to use `ActionChangeSetBuilder`, eliminating large code clones and reducing the `jscpd` duplication score from 3.59% to 0.76%.
+- **Validation:** Added unit tests in `tests/suites/unit/adapters/inbound/test_console_plan_reviewer.py` covering `CREATE`, `EDIT`, and non-file actions (e.g., `RESEARCH`).
+- **Quality Gates:** Resolved `mypy` type casting issues for similarity thresholds and fixed `ruff` import order violations (E402).
+
 ### Scenario: PRUNE Behavior in Manual Mode [ ]
 - **Given** I am running a manual CLI execution (e.g., `teddy execute plan.md`).
 - **And** the plan contains a `PRUNE` action.
