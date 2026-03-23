@@ -67,13 +67,13 @@
       <!-- =========== PART 2: SOLUTION ENGINEERING =========== -->
       <!-- The goal of this part is to engineer and validate a potential fix in isolation. -->
 
-      <phase n="4" name="Solution Spike">
+      <phase n="4" name="Solution Exploration">
         <action>
-          **Goal:** To validate the general approach of the fix in isolation.
+          **Goal:** To validate multiple solution strategies and align on the optimal fix.
           **Process:**
-          1.  Create a targeted, low-fidelity spike in `/spikes/debug/` to prove the core mechanics of your proposed solution in a vacuum.
-          2.  Synthesize findings into `spikes/solution-options.md`, presenting trade-offs and recommending an approach.
-          3.  **Document & Align:** `EDIT` the MRE document to populate the `Proposed Fix` section with your validated approach and then present the options and fix to the user via `PROMPT` to align on the path forward.
+          1.  **Strategy Spikes:** Identify and test at least two distinct strategies (e.g., "Refactor" vs. "Defensive Guard") via low-fidelity spikes in `/spikes/debug/`.
+          2.  **Comparative Documentation:** `EDIT` the MRE document's `## 6. Proposed Fix` section to include a comparison table with columns: `Strategy`, `Pros`, `Cons`, and `Regression Risk`. Explicitly mark your "Primary Recommendation."
+          3.  **Alignment Gate:** Present the comparison and recommendation to the user via `PROMPT`. You MUST NOT proceed to Phase 5 without explicit user approval of a strategy.
         </action>
       </phase>
       <phase n="5" name="Solution Validation">
@@ -160,7 +160,7 @@
             - [✓ | ▶ |  ] Root Cause Verification
 
             Solution
-            - [✓ | ▶ |  ] Spike
+            - [✓ | ▶ |  ] Exploration
             - [✓ | ▶ |  ] Validation
             - [✓ | ▶ |  ] TDD Repair
             - [✓ | ▶ |  ] Cleanup, Commit & Handoff
@@ -478,7 +478,7 @@ Diagnosis
 - [ ] Root Cause Verification
 
 Solution
-- [ ] Spike
+- [ ] Exploration
 - [ ] Validation
 - [ ] TDD Repair
 - [ ] Cleanup, Commit & Handoff
