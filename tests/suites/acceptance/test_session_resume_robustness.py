@@ -1,4 +1,5 @@
 import time
+import pytest
 from unittest.mock import MagicMock
 from tests.harness.setup.test_environment import TestEnvironment
 from tests.harness.drivers.cli_adapter import CliTestAdapter
@@ -28,6 +29,7 @@ def setup_robust_env(tmp_path):
     (prompts_dir / "pathfinder.xml").write_text("<prompt/>", encoding="utf-8")
 
 
+@pytest.mark.timeout(5)
 def test_resume_auto_detects_latest_session(tmp_path, monkeypatch):
     """Scenario: 'resume' without args picks the most recent session."""
     env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
@@ -39,7 +41,7 @@ def test_resume_auto_detects_latest_session(tmp_path, monkeypatch):
     mock_llm.get_completion.return_value = make_mock_response(plan)
 
     adapter.run_start(["older-session"], input="prompt\ny\n")
-    time.sleep(1.1)
+    time.sleep(0.1)
     adapter.run_start(["newer-session"], input="prompt\ny\n")
 
     result = adapter.run_cli_command(["resume"], input="prompt\ny\ny\ny\n")

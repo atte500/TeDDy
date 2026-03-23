@@ -1,3 +1,4 @@
+import pytest
 from tests.harness.setup.test_environment import TestEnvironment
 from tests.harness.drivers.cli_adapter import CliTestAdapter
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
@@ -94,6 +95,7 @@ def test_intentional_background_execution(monkeypatch, tmp_path):
     assert "SUCCESS: Background process started with PID" in report.stdout
 
 
+@pytest.mark.timeout(5)
 def test_explicit_timeout_override(monkeypatch, tmp_path):
     """Scenario: Verifies that a specific 'Timeout' in the action metadata overrides default."""
     TestEnvironment(monkeypatch, tmp_path).setup().with_real_shell()
