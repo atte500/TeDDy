@@ -96,3 +96,10 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+
+    -   id: pip-audit
+        name: Vulnerability Scanning (pip-audit)
+        entry: pip-audit
+        language: system
+        pass_filenames: false
+        always_run: true
