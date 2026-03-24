@@ -13,10 +13,10 @@ def test_environment_isolates_container(monkeypatch, container):
     fs = env.get_service(IFileSystemManager)
     assert fs is not None
 
-    # Check that the global container in __main__ is patched
-    import teddy_executor.__main__ as main
+    # Check that the global container in container.py is patched
+    import teddy_executor.container as container_mod
 
-    assert main._container is env.container
+    assert container_mod._container is env.container
 
     env.teardown()
 

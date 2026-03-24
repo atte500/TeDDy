@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import yaml
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
@@ -56,27 +56,34 @@ class SessionPlanner:
     def _display_planning_telemetry(
         self, turn_dir: str, plan_path: str, turn_cost: float
     ):
+        def safe_float(v: Any, default: float = 0.0) -> float:
+            try:
+                if hasattr(v, "__float__"):
+                    return float(v)
+                return float(str(v))
+            except (TypeError, ValueError):
+                return default
+
         meta_content = self._file_system_manager.read_file(f"{turn_dir}/meta.yaml")
         meta_loaded = yaml.safe_load(str(meta_content))
         meta = meta_loaded if isinstance(meta_loaded, dict) else {}
 
-        model = meta.get("model", "unknown")
-        token_count = meta.get("token_count", 0)
-        agent_name = meta.get("agent_name", "pathfinder")
+        model = str(meta.get("model", "unknown"))
+        agent_name = str(meta.get("agent_name", "pathfinder"))
 
-        try:
-            # We use the turn_cost passed from generate_plan to ensure we show
-            # the absolute latest telemetry, even before disk sync.
-            cumulative_cost = float(meta.get("cumulative_cost", 0.0)) + turn_cost
-        except (TypeError, ValueError):
-            cumulative_cost = 0.0
+        # Arithmetic and formatting must be robust to MagicMocks leaked in tests
+        raw_token_count = safe_float(meta.get("token_count", 0))
+        # Cumulative cost in meta for current turn doesn't include current turn yet
+        cumulative_cost = safe_float(meta.get("cumulative_cost", 0.0)) + safe_float(
+            turn_cost
+        )
 
         self._user_interactor.display_message(
             f"\n[bold green]Planning Turn with {agent_name}...[/]"
         )
         self._user_interactor.display_message(f"  Model: {model}")
         self._user_interactor.display_message(
-            f"  Context: {token_count / 1000:.1f}k tokens"
+            f"  Context: {raw_token_count / 1000:.1f}k tokens"
         )
         self._user_interactor.display_message(
             f"  Session Cost: ${cumulative_cost:.4f}\n"

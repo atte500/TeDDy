@@ -14,15 +14,23 @@ class ModifyingFakeReviewer(IPlanReviewer):
     def review(self, plan: Plan) -> Plan:
         return self.modifier_func(plan)
 
+    def review_action(self, action, total_actions, agent_name=None):
+        return True
+
+    def review_plan(self, plan):
+        return plan
+
 
 def test_context_aware_editing_modifies_create_action(tmp_path, monkeypatch):
     """Scenario: Verify that interactive plan modifications are executed and reported."""
     env = TestEnvironment(monkeypatch, tmp_path)
-    env.setup()
+    env.setup().with_real_filesystem()
 
     # Define a reviewer that changes the path to bar.py and modifies the content
     def modify_create_action(plan: Plan) -> Plan:
         action = plan.actions[0]
+        # ActionDispatcher/Executor uses "path" internally after normalization
+        action.params.pop("File Path", None)
         action.params["path"] = "bar.py"
         action.params["content"] = 'print("modified content")\n'
         return plan
@@ -38,9 +46,9 @@ def test_context_aware_editing_modifies_create_action(tmp_path, monkeypatch):
         .build()
     )
 
-    # When I run execute in interactive mode (execute_plan is interactive by default)
-    # The 'y\n' confirms the first (and only) action.
-    report = adapter.execute_plan(plan, user_input="y\n")
+    # When I run execute in interactive mode
+    # (Note: adapter.execute_plan defaults to interactive=False, so we must be explicit)
+    report = adapter.execute_plan(plan, interactive=True)
 
     # Then the final execution MUST create bar.py with the modified content
     assert (tmp_path / "bar.py").exists()

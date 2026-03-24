@@ -91,7 +91,11 @@ class TestEnvironment(RealAdapterMixin):
         self._register_default_mocks()
 
         # Monkeypatch the global container instance used by the CLI
-        self._monkeypatch.setattr(teddy_executor.__main__, "_container", self.container)
+        import teddy_executor.container
+
+        self._monkeypatch.setattr(
+            teddy_executor.container, "_container", self.container
+        )
 
         # Legacy Compatibility: If a workspace was EXPLICITLY provided, anchor real adapters.
         # For managed workspaces (automated), we stay with mocks by default.
@@ -101,21 +105,18 @@ class TestEnvironment(RealAdapterMixin):
         return self
 
     def _register_default_mocks(self) -> None:
-        """Registers mocks for side-effect-prone outbound ports."""
+        """Registers mocks for side-effect-prone outbound ports (PLR0915)."""
+        self._register_system_mocks()
+        self._register_ui_mocks()
+        self._register_ai_mocks()
+        self._register_io_mocks()
+
+    def _register_system_mocks(self) -> None:
         from teddy_executor.core.ports.outbound import (
-            IConfigService,
-            IEnvironmentInspector,
-            IFileSystemManager,
-            ILlmClient,
-            IRepoTreeGenerator,
             IShellExecutor,
             ISystemEnvironment,
-            IUserInteractor,
-            IWebScraper,
-            IWebSearcher,
         )
 
-        # System Environment & Shell
         mock_env = Mock(spec=ISystemEnvironment)
         mock_env.get_env.return_value = None
         mock_env.which.return_value = None
@@ -125,14 +126,24 @@ class TestEnvironment(RealAdapterMixin):
         mock_shell.execute.return_value = {"stdout": "", "stderr": "", "return_code": 0}
         self._container.register(IShellExecutor, instance=mock_shell)
 
-        # UI & Interaction
+    def _register_ui_mocks(self) -> None:
+        from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
+        from teddy_executor.core.ports.outbound import IUserInteractor
+
         mock_interactor = Mock(spec=IUserInteractor)
         mock_interactor.confirm_action.return_value = (True, "")
         mock_interactor.confirm_manual_handoff.return_value = (True, "")
         mock_interactor.ask_question.return_value = ""
         self._container.register(IUserInteractor, instance=mock_interactor)
+        self._container.register(IPlanReviewer, instance=None)
 
-        # LLM
+    def _register_ai_mocks(self) -> None:
+        from teddy_executor.core.ports.outbound import (
+            ILlmClient,
+            IWebScraper,
+            IWebSearcher,
+        )
+
         mock_llm = Mock(spec=ILlmClient)
         mock_response = MagicMock()
         mock_response.choices = [MagicMock()]
@@ -144,22 +155,32 @@ class TestEnvironment(RealAdapterMixin):
         mock_llm.get_completion_cost.return_value = 0.0
         mock_llm.get_token_count.return_value = 0
         self._container.register(ILlmClient, instance=mock_llm)
-
-        # Filesystem
-        mock_fs = POSIXPathMock(spec=IFileSystemManager)
-        mock_fs.path_exists.return_value = False
-        self._container.register(IFileSystemManager, instance=mock_fs)
-
-        # Configuration & Inspection
-        mock_config = Mock(spec=IConfigService)
-        mock_config.get_setting.side_effect = lambda key, default=None: default
-        self._container.register(IConfigService, instance=mock_config)
-
         self._container.register(IWebScraper, instance=Mock(spec=IWebScraper))
         self._container.register(IWebSearcher, instance=Mock(spec=IWebSearcher))
-        self._container.register(
-            IRepoTreeGenerator, instance=Mock(spec=IRepoTreeGenerator)
+
+    def _register_io_mocks(self) -> None:
+        from teddy_executor.core.ports.outbound import (
+            IConfigService,
+            IEnvironmentInspector,
+            IFileSystemManager,
+            IRepoTreeGenerator,
         )
+
+        mock_fs = POSIXPathMock(spec=IFileSystemManager)
+        mock_fs.path_exists.return_value = False
+        mock_fs.get_context_paths.return_value = {}
+        mock_fs.read_files_in_vault.return_value = {}
+        self._container.register(IFileSystemManager, instance=mock_fs)
+
+        mock_config = Mock(spec=IConfigService)
+        mock_config.get_setting.side_effect = lambda k, d=None: (
+            None if k == "ui_mode" else d
+        )
+        self._container.register(IConfigService, instance=mock_config)
+
+        mock_tree = Mock(spec=IRepoTreeGenerator)
+        mock_tree.generate_tree.return_value = ""
+        self._container.register(IRepoTreeGenerator, instance=mock_tree)
         self._container.register(
             IEnvironmentInspector, instance=Mock(spec=IEnvironmentInspector)
         )

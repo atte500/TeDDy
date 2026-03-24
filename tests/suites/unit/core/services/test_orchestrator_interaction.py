@@ -8,6 +8,7 @@ from teddy_executor.core.domain.models import (
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
 from unittest.mock import patch
 from teddy_executor.core.services.action_executor import ActionExecutor
+from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
 
 
 def test_orchestrator_delegates_to_reviewer_in_interactive_mode(
@@ -19,6 +20,7 @@ def test_orchestrator_delegates_to_reviewer_in_interactive_mode(
     Then it should call review_action on the reviewer for each action
     """
     # Arrange
+    env.container.register(IPlanReviewer, instance=mock_plan_reviewer)
     orchestrator = env.get_service(ExecutionOrchestrator)
 
     action1 = ActionData(type="EXECUTE", params={"command": "ls"})
@@ -26,8 +28,6 @@ def test_orchestrator_delegates_to_reviewer_in_interactive_mode(
 
     # Reviewer approves
     mock_plan_reviewer.review_action.return_value = True
-    # Reviewer bulk review just returns the plan
-    mock_plan_reviewer.review.return_value = plan
 
     success_log = ActionLog(
         status=ActionStatus.SUCCESS,
@@ -94,6 +94,8 @@ def test_execute_interactive_and_skipped(
     And a 'SKIPPED' action log should be recorded
     """
     # Arrange
+    # Ensure the container has the mock_plan_reviewer fixture's version
+    env.container.register(IPlanReviewer, instance=mock_plan_reviewer)
     orchestrator = env.get_service(ExecutionOrchestrator)
 
     action1 = ActionData(type="EXECUTE", params={"command": "ls"})
@@ -122,6 +124,7 @@ def test_execute_with_mixed_success_and_skipped_is_success(
     Then the final report status should be 'SUCCESS'
     """
     # Arrange
+    env.container.register(IPlanReviewer, instance=mock_plan_reviewer)
     orchestrator = env.get_service(ExecutionOrchestrator)
 
     action1 = ActionData(type="EXECUTE", params={"command": "ls"})
@@ -161,6 +164,8 @@ def test_execute_interactive_and_approved(
     Then the orchestrator should dispatch the action
     """
     # Arrange
+    # Ensure the container has the mock_plan_reviewer fixture's version
+    env.container.register(IPlanReviewer, instance=mock_plan_reviewer)
     orchestrator = env.get_service(ExecutionOrchestrator)
 
     action1_params = {"command": "ls", "description": "first action"}

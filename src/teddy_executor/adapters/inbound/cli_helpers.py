@@ -284,3 +284,16 @@ def echo_skipped_action(action: ActionData, reason: str):
     """Prints a colorized skip notification."""
     message = f"[SKIPPED] {action.type}: {reason}"
     typer.secho(message, fg=typer.colors.YELLOW, err=True)
+
+
+def apply_ui_mode_override(container: Container, ui_mode_bool: bool) -> None:
+    """Applies a UI mode override to the container."""
+    from teddy_executor.container import register_reviewer
+
+    mode = "tui" if ui_mode_bool else "console"
+    register_reviewer(container, ui_mode=mode)
+
+
+def style_text(text: str, style: str) -> str:
+    """Wraps text in Rich style tags."""
+    return f"[{style}]{text}[/]"

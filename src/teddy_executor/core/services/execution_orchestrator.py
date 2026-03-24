@@ -38,21 +38,26 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         if not action_logs:
             return RunStatus.SUCCESS
 
-        statuses = {log.status for log in action_logs}
+        statuses = [log.status for log in action_logs]
         if ActionStatus.FAILURE in statuses:
             return RunStatus.FAILURE
+
+        # Success takes precedence: if any action succeeded, the run is a success.
         if ActionStatus.SUCCESS in statuses:
             return RunStatus.SUCCESS
-        # If no failures and no successes, it means everything was skipped.
-        if all(s == ActionStatus.SKIPPED for s in statuses):
+
+        # If every single action was skipped, the run is skipped.
+        if statuses and all(s == ActionStatus.SKIPPED for s in statuses):
             return RunStatus.SKIPPED
+
         return RunStatus.SUCCESS
 
-    def _perform_interactive_review(self, plan: Plan) -> Plan | None:
+    def _perform_interactive_review(self, plan: Plan, interactive: bool) -> Plan | None:
         """Allows the user to review and modify the plan before execution."""
-        if not self._plan_reviewer:
-            return plan
-        return self._plan_reviewer.review(plan)
+        # We only call the bulk review (TUI) if interactive is True AND a reviewer is present.
+        if interactive and self._plan_reviewer:
+            return self._plan_reviewer.review(plan)
+        return plan
 
     def _process_plan_actions(self, plan: Plan, interactive: bool) -> list[ActionLog]:
         """Iterates through actions and dispatches them."""
@@ -87,11 +92,15 @@ class ExecutionOrchestrator(IRunPlanUseCase):
                 action_log = self._action_executor.handle_skipped_action(
                     action, "User skipped this action in the plan reviewer."
                 )
-            else:
-                # Fallback to ActionExecutor interaction ONLY if the reviewer didn't handle it
-                pass_interactive = interactive if not reviewer_handled else False
+            elif reviewer_handled:
+                # Reviewer already confirmed it, so execute immediately
                 action_log = self._action_executor.confirm_and_dispatch(
-                    action, pass_interactive, len(plan.actions), agent_name=agent_name
+                    action, False, len(plan.actions), agent_name=agent_name
+                )
+            else:
+                # Fallback to ActionExecutor interaction ONLY if no reviewer is present
+                action_log = self._action_executor.confirm_and_dispatch(
+                    action, interactive, len(plan.actions), agent_name=agent_name
                 )
 
             action_logs.append(action_log)
@@ -132,7 +141,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
                 validation_errors=validation_errors,
             )
 
-        plan = self._perform_interactive_review(plan)
+        plan = self._perform_interactive_review(plan, interactive)
         if plan is None:
             return ExecutionReport(
                 run_summary=RunSummary(

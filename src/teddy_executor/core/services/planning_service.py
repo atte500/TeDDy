@@ -5,6 +5,7 @@ from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient
+from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 
 
 class PlanningService(IPlanningUseCase):
@@ -18,11 +19,13 @@ class PlanningService(IPlanningUseCase):
         llm_client: ILlmClient,
         file_system_manager: IFileSystemManager,
         config_service: IConfigService,
+        user_interactor: IUserInteractor = None,  # type: ignore
     ):
         self._context_service = context_service
         self._llm_client = llm_client
         self._file_system_manager = file_system_manager
         self._config_service = config_service
+        self._user_interactor = user_interactor
 
     def generate_plan(
         self,
@@ -81,9 +84,8 @@ class PlanningService(IPlanningUseCase):
         plan_content = self._extract_plan_content(response)
         turn_cost = self._llm_client.get_completion_cost(response)
 
-        # Log telemetry to console
-        print(f"Tokens: {token_count}")
-        print(f"Cost: ${turn_cost:.4f}")
+        # Log telemetry to console (harden against MagicMocks)
+        cost_val = self._log_telemetry(token_count, turn_cost)
 
         # 5. Persistence
         plan_path = (turn_path / "plan.md").as_posix()
@@ -92,7 +94,30 @@ class PlanningService(IPlanningUseCase):
         # 6. Update meta.yaml
         self._update_meta(meta, response, token_count, turn_cost, meta_file_path)
 
-        return plan_path, float(turn_cost)
+        return plan_path, cost_val
+
+    def _log_telemetry(self, token_count: Any, turn_cost: Any) -> float:
+        """Logs planning telemetry to the appropriate output stream."""
+
+        def safe_float(v: Any, default: float = 0.0) -> float:
+            try:
+                return float(v)
+            except (TypeError, ValueError):
+                return default
+
+        cost_val = safe_float(turn_cost)
+        count_val = int(safe_float(token_count))
+        msg_tokens, msg_cost = f"Tokens: {count_val}", f"Cost: ${cost_val:.4f}"
+
+        if self._user_interactor:
+            self._user_interactor.display_message(msg_tokens)
+            self._user_interactor.display_message(msg_cost)
+        else:
+            import sys
+
+            sys.stdout.write(f"{msg_tokens}\n{msg_cost}\n")
+            sys.stdout.flush()
+        return cost_val
 
     def _extract_plan_content(self, response: Any) -> str:
         """Robustly extracts content from the LLM response object."""

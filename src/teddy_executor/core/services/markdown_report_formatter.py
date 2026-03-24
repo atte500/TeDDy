@@ -38,20 +38,44 @@ class MarkdownReportFormatter(IMarkdownReportFormatter):
         """Prepares the report data for rendering."""
 
         def format_datetime(dt):
+            if not dt:
+                return ""
             if dt.tzinfo is None:
                 dt = dt.replace(tzinfo=timezone.utc)
             return dt.isoformat()
 
+        plan_title: str = "Untitled Plan"
+        if hasattr(report, "plan_title"):
+            val = getattr(report, "plan_title")
+            plan_title = str(val) if val is not None else "Untitled Plan"
+        elif isinstance(report, dict):
+            plan_title = str(report.get("plan_title", "Untitled Plan"))
+
         return {
             "report": report,
             "is_concise": is_concise,
-            "plan_title": report.plan_title,
+            "plan_title": plan_title,
             "format_datetime": format_datetime,
         }
 
     def format(self, report: ExecutionReport, is_concise: bool = True) -> str:
         """Renders the execution report to a Markdown string."""
+        from teddy_executor.core.utils.serialization import (
+            scrub_dict_for_serialization,
+        )
+
+        # 1. Prepare context with real objects to support attribute access in Python
         context = self._prepare_context(report, is_concise)
+
+        # 2. Scrub the report data specifically to neutralize mocks for Jinja2
+        report_data = (
+            report.__dict__
+            if hasattr(report, "__dict__")
+            else (report if isinstance(report, dict) else {})
+        )
+        context["report"] = scrub_dict_for_serialization(report_data)
+
+        # 3. Render with scrubbed data but real functions
         rendered = self.template.render(context)
 
         # Post-process for whitespace sanitization

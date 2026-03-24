@@ -84,7 +84,8 @@
 
 {% macro render_header(report, show_metadata=False) %}
 # Execution Report: {{ report.plan_title | default('Untitled Plan') }}
-- **Overall Status:** {{ "Validation Failed" if report.run_summary.status.value == "VALIDATION_FAILED" else report.run_summary.status.value }}
+{% set status_val = report.run_summary.status.value | default(report.run_summary.status) -%}
+- **Overall Status:** {{ "Validation Failed" if status_val == "VALIDATION_FAILED" else status_val }}
 - **Execution Start Time:** {{ format_datetime(report.run_summary.start_time) }}
 - **Execution End Time:** {{ format_datetime(report.run_summary.end_time) }}
 {% endmacro %}
@@ -247,7 +248,8 @@
 {% else %}
 ### `{{ action_type }}`
 {% endif %}
-- **Status:** {{ log.status.value if log.status and log.status.value is defined else log.status }}
+{% set log_status = log.status.value | default(log.status) -%}
+- **Status:** {{ log_status }}
 {% if action_type in ['CREATE', 'EDIT'] %}
   {% set path_val = params.get('File Path') or params.get('file_path') or params.get('path') %}
   {% if path_val %}
