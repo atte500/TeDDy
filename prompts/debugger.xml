@@ -110,12 +110,14 @@
         </action>
       </phase>
 
-      <phase n="8" name="Commit & Handoff">
+      <phase n="8" name="Finalize & Handoff">
         <action>
-          **Goal:** To verify workspace state and hand off a clean versioned history.
+          **Goal:** To verify the fix and hand control back to the user or calling agent.
           **Process:**
-          1.  **Commit:** Execute the **Version Control Protocol** (`git add <files>`, `git commit -m '...'`, `git push`) for the code and the updated debugging artifact.
-          2.  **Handoff:** Use `RETURN` to pass the updated debugging artifact to the calling agent.
+          1.  **Verification:** Ensure all tests pass and the MRE document is fully updated and saved.
+          2.  **State Management:** By default, you MUST NOT commit the code changes. Leave the workspace "dirty" (unstaged or staged, but uncommitted) so the user or calling Dev agent can review and absorb the fix into their own feature commits.
+          3.  **Handoff:** Use `RETURN` to pass the updated debugging artifact to the calling agent.
+          *(Note: Only execute the formal Version Control Protocol in this phase if the user explicitly requested you to commit the fix.)*
         </action>
       </phase>
     </workflow>
@@ -218,7 +220,7 @@
 
           **Action Plan:**
               - `git add <specific_files_or_directories>`
-              - `git commit -m '...'` (This will trigger the configured pre-commit quality gates).
+              - `git commit -m '...'`
               - `git push`
         </instruction>
       </rule>

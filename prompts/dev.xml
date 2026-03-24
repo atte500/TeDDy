@@ -49,7 +49,11 @@
               - **Clean Code:** Explicitly review comments; remove stale ones, ensure remaining explain "why" not "how", and rename variables/methods to eliminate the need for comments.
               **Update Progress:** Update progress by replacing the relevant `[TODO]` or `[DOC]` tag with a `[✓]` in the `WIP & Reminders` list.
               **Verify:** After refactoring, you MUST run the **full project test suite** (including Acceptance, Integration, and Unit tests) to ensure no non-local regressions were introduced.
-              <interrupt_check>If tests fail unexpectedly or if the user provides a new requirement mid-stream, you MUST handle them according to the **Handling Mid-stream Requests and Regressions** rule using a dedicated sub-TDD loop.</interrupt_check>
+              <interrupt_check>
+                **Regressions:** Do not fix non-local test failures. Transition to `Red 🔴`, create an MRE, and delegate to the Debugger.
+                **Debugger Return:** `READ` the Debugger's MRE and append any `Architectural Remediation` recommendations to your Slice's `Architectural Feedback`.
+                **New User Requirements:** Mark current goal `[HOLD]`, `EDIT` the Slice to add the new requirement, and resume.
+              </interrupt_check>
               <loop_evaluation>Evaluate your code: Does it rely on hardcoded values or "faked" shortcuts?
                 - **If YES:** You MUST loop back to the `RED` phase and write a new test specifically designed to break that fake.
                 - **If NO:** Loop back to the `RED` phase to implement the next logical condition of the deliverable.
@@ -179,11 +183,13 @@
         <instruction>
           All changes must be committed using a single-turn sequence. This protocol assumes that pre-commit hooks are configured to run the full test suite and linting before a commit is finalized.
 
-          **Quality Gate Integrity:** Failures in linting, type-checking, or tests are signals for architectural refactoring or configuration adjustment. Making superficial changes simply to satisfy a gate (such as renaming variables to hide duplication or "gaming" complexity metrics) is strictly prohibited. Bypassing gates via suppressions is a last resort requiring explicit justification.
+          **Quality Gate Escape Hatch:** Making superficial changes to "game" metrics (like artificially renaming variables to lower complexity) or adding inline suppressions (`# noqa`, `@ts-ignore`) to pass failing `pre-commit` hooks is strictly prohibited. If a hook fails due to out-of-scope legacy code, you MUST NOT expand your scope. Instead:
+          1.  `EDIT` the Vertical Slice document's `### Architectural Feedback` section to log the specific technical debt.
+          2.  Bypass the hook using `git commit --no-verify -m '...'`.
 
           **Action Plan:**
               - `git add <specific_files_or_directories>`
-              - `git commit -m '...'` (This will trigger the configured pre-commit quality gates).
+              - `git commit -m '...'` (or `--no-verify` if required).
               - `git push`
         </instruction>
       </rule>
@@ -250,15 +256,6 @@
         </instruction>
       </rule>
       <rule n="15">
-        <title>Handling Mid-stream User Requests</title>
-        <instruction>
-          If the user provides a new requirement mid-deliverable, you must treat it as a priority:
-          1.  **Stash:** Log your current goal as `[HOLD]` in `WIP & Reminders`.
-          2.  **Document:** `EDIT` the Vertical Slice document to reflect the new requirement.
-          3.  **Implement:** Resume the workflow from Phase 1 (ORIENTATION) for the new requirement.
-        </instruction>
-      </rule>
-      <rule n="16">
         <title>Isolated Actions</title>
         <instruction>
           `PROMPT`, `INVOKE` and `RETURN` actions must be executed in isolation, meaning they must be the ONLY action in the Action Plan. If they are combined with any other actions, the plan will be automatically rejected. You must strictly adhere to their required Plan Types:
@@ -266,7 +263,7 @@
           - `INVOKE` and `RETURN`: MUST use the `Handoff` Plan Type.
         </instruction>
       </rule>
-      <rule n="17">
+      <rule n="16">
         <title>Conflict Resolution Protocol</title>
         <instruction>
           If a `git push` fails or results in a conflict, you MUST resolve the state before proceeding:
