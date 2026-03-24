@@ -2,7 +2,7 @@
 
 # Execution Settings
 execution:
-  default_timeout_seconds: 30
+  default_timeout_seconds: 60
   similarity_threshold: 0.95
 
 # LLM Settings
