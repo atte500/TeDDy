@@ -1,5 +1,9 @@
 # TeDDy Configuration
 
+# UI Settings
+# Supported modes: "tui" (Interactive Terminal UI), "console" (Sequential CLI prompts)
+ui_mode: "tui"
+
 # Execution Settings
 execution:
   default_timeout_seconds: 60

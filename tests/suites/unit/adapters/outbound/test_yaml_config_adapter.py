@@ -78,3 +78,29 @@ def test_get_setting_handles_empty_key(fs, container):
 
     # Act & Assert
     assert adapter.get_setting("", default="fallback") == "fallback"
+
+
+def test_get_setting_retrieves_ui_mode(fs, container):
+    # Arrange
+    config_path = ".teddy/config.yaml"
+    config_data = {"ui_mode": "console"}
+    fs.create_dir(".teddy")
+    fs.create_file(config_path, contents=yaml.dump(config_data))
+
+    adapter = container.resolve(IConfigService)
+
+    # Act & Assert
+    assert adapter.get_setting("ui_mode") == "console"
+
+
+def test_get_setting_ui_mode_defaults_to_tui_at_call_site(fs, container):
+    # Arrange - Empty config
+    fs.create_dir(".teddy")
+    fs.create_file(".teddy/config.yaml", contents="{}")
+
+    adapter = container.resolve(IConfigService)
+
+    # Act & Assert
+    # The adapter itself doesn't have hardcoded defaults,
+    # but we verify it respects the default passed by the caller.
+    assert adapter.get_setting("ui_mode", default="tui") == "tui"
