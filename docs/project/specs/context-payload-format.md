@@ -25,13 +25,16 @@ The payload is a single Markdown document with the following top-level sections.
 ## 1. System Information
 ...
 
-## 2. Project Structure
+## 2. Git Status
 ...
 
-## 3. Context Summary
+## 3. Project Structure
 ...
 
-## 4. Resource Contents
+## 4. Context Summary
+...
+
+## 5. Resource Contents
 ...
 ```
 
@@ -49,7 +52,18 @@ A simple key-value list of essential environment details, giving the AI awarenes
     - **Shell:** /bin/zsh
     ```
 
-### 3.2. Project Structure
+### 3.2. Git Status
+
+A concise view of the current working tree status (`git status -s`). This gives the AI immediate visibility into which files are staged, modified, or untracked.
+
+-   **Example:**
+    ```markdown
+    ## 2. Git Status
+     M src/teddy_executor/core/services/context_service.py
+    ?? new_file.txt
+    ```
+
+### 3.3. Project Structure
 
 A textual representation of the repository's file tree, using simple indentation. This gives the AI a high-level map of the project. The tree generation respects two files:
 -   `.gitignore`: The standard git ignore file.
@@ -57,7 +71,7 @@ A textual representation of the repository's file tree, using simple indentation
 
 -   **Example:**
     `````markdown
-    ## 2. Project Structure
+    ## 3. Project Structure
     ````
     docs/
       specs/
@@ -73,13 +87,13 @@ A textual representation of the repository's file tree, using simple indentation
     ````
     `````
 
-### 3.3. Context Summary
+### 3.4. Context Summary
 
 This section provides a scannable summary of all file paths and URLs that make up the AI's context for the turn, broken down by their scope of origin. It must include a brief instruction block explaining how the AI can manage its working context.
 
 -   **Example:**
     `````markdown
-    ## 3. Context Summary
+    ## 4. Context Summary
 
     > **Context Management:** Use the `READ` action to add files to the **Turn** context, and the `PRUNE` action to remove them. The **Session** context is managed by the user and cannot be modified by the AI.
 
@@ -96,7 +110,7 @@ This section provides a scannable summary of all file paths and URLs that make u
     ````
     `````
 
-### 3.4. Resource Contents
+### 3.5. Resource Contents
 
 The full, verbatim content of every resource (file or URL) listed in the `Context Summary`.
 
@@ -104,7 +118,7 @@ The full, verbatim content of every resource (file or URL) listed in the `Contex
 -   **Format:** Each resource's content is preceded by a horizontal rule and a header line identifying it.
 -   **Example:**
     `````markdown
-    ## 4. Resource Contents
+    ## 5. Resource Contents
 
     ---
     ### [https://example.com/docs](https://example.com/docs)
