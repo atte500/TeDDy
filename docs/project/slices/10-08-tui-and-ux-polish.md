@@ -75,19 +75,20 @@ To enable the interactive TUI for all execution modes and polish the session wor
 - **Reviewer Port Expansion:** Moving from binary confirmation to a structured review interface.
 - **Stateful Loop:** Converting the session handler from one-shot to a continuous loop.
 
-## 4. Implementation Notes:
+## 4. Implementation Notes
 - **Core Orchestration:** Refactored `ExecutionOrchestrator` to decouple action confirmation from execution. It now delegates the per-action decision to `IPlanReviewer.review_action` during interactive sessions.
 - **Legacy Compatibility:** Implemented a robust fallback in `ExecutionOrchestrator` that preserves legacy `ActionExecutor` interaction if no `IPlanReviewer` is registered in the DI container.
 - **Component:** Created `ConsolePlanReviewer` in `src/teddy_executor/adapters/inbound/console_plan_reviewer.py` to implement both sequential (`review_action`) and bulk (`review_plan`) interaction logic.
-- **Shared Logic:** Extracted `ChangeSet` generation and action prompt formatting into a new core service: `ActionChangeSetBuilder` in `src/teddy_executor/core/services/action_changeset_builder.py`.
-- **Deduplication:** Refactored `ActionExecutor` to use `ActionChangeSetBuilder`, eliminating large code clones and reducing the `jscpd` duplication score from 3.59% to 0.76%.
-- **Bulk Review:** Implemented `review_plan` which utilizes a new `echo_plan_summary` helper in `cli_helpers.py` to display colorized action counts.
-- **Validation:** Added unit tests in `tests/suites/unit/adapters/inbound/test_console_plan_reviewer.py` covering `CREATE`, `EDIT`, `RESEARCH`, and bulk approval/rejection.
-- **Configuration:** Updated `config/config.yaml` template to include `ui_mode: "tui"`. Verified `YamlConfigAdapter` generic retrieval via new unit tests in `tests/suites/unit/adapters/outbound/test_yaml_config_adapter.py`.
+- **Shared Logic:** Extracted `ChangeSet` generation and action prompt formatting into a new core service: `ActionChangeSetBuilder`.
+- **Bulk Review:** Implemented `review_plan` which utilizes a new `echo_plan_summary` helper in `cli_helpers.py`.
+- **Validation:** Added unit tests in `test_console_plan_reviewer.py` covering `CREATE`, `EDIT`, `RESEARCH`, and bulk approval.
+- **Configuration:** Updated `config/config.yaml` template to include `ui_mode: "tui"`.
 - **Contract Expansion:** Updated `IPlanReviewer` and `IUserInteractor` ports to support the new multi-tier review model.
-- **Quality Gates:** Resolved `mypy` type casting issues for similarity thresholds and fixed `ruff` import order violations (E402).
-- **DI Isolation:** Updated `TestEnvironment` and `composition.py` to explicitly register `IPlanReviewer` as `None` or a mock to prevent accidental TUI launches during tests, resolving a systemic timeout regression.
-- **CLI Wiring:** Implemented `_apply_ui_mode_override` in `__main__.py` to allow runtime switching between `TextualPlanReviewer` and `ConsolePlanReviewer` via `--tui/--console` flags.
-- **Registry Refactor:** Split `container.py` into specialized `registries/` modules (infrastructure, validators, reviewer) to comply with the 300-line file limit quality gate.
-- **Serialization Safety:** Implemented a recursive `scrub_dict_for_serialization` in `serialization.py` to neutralize `MagicMock` objects before they reach Jinja2 templates, preventing infinite recursion hangs during reporting.
-- **Telemetry Hardening:** Updated `PlanningService` and `SessionPlanner` to handle potentially mocked telemetry values (tokens, cost) safely, preventing `TypeError` during display.
+- **CLI Wiring:** Implemented `_apply_ui_mode_override` in `__main__.py` to allow runtime switching via `--tui/--console` flags.
+- **Telemetry Hardening:** Updated `PlanningService` and `SessionPlanner` to handle potentially mocked telemetry values safely.
+
+### Architectural Feedback
+- **[DEBT] Registry Refactor:** Split `container.py` into specialized `registries/` modules to bypass the 300-line file limit quality gate. This structure should be reviewed by the Architect for proper cohesion.
+- **[DEBT] Deduplication:** Refactored `ActionExecutor` to use `ActionChangeSetBuilder`, reducing the `jscpd` duplication score from 3.59% to 0.76%.
+- **[REMEDIATION] Serialization Safety:** (From Debugger) Implemented a recursive `scrub_dict_for_serialization` to neutralize `MagicMock` objects before Jinja2. *Architect Note:* System should use a schema-based serialization (like Pydantic) for reports rather than scrubbing raw dictionaries, which is error-prone.
+- **[REMEDIATION] DI Isolation & Harness Robustness:** (From Debugger) Updated `TestEnvironment` to explicitly register `IPlanReviewer` as `None` to prevent TUI test hangs. *Architect Note:* The test harness should resolve the DI container location dynamically or via a central port rather than hardcoded module paths.
