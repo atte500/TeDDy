@@ -80,8 +80,11 @@
           *   **Goal:** To establish the foundational engineering practices for the project.
           *   **Structure:** This section will contain a list of key-value definitions or short paragraphs. It **must** establish the project's strategy for the following, using these as strong defaults, and may be extended with other project-specific conventions:
               *   **Version Control Strategy:** Default to **Trunk-Based Development** on the `main` branch.
-              *   **Testing Strategy:** The project's testing strategy, including the primary framework, structural rules (Unit > Integration > Acceptance), the mandate for centralized test detritus management in `tests/.tmp/`, and the explicit requirement that **the Test Harness (`tests/harness/`) is a first-class architectural boundary that MUST have its own unit tests** to guarantee high-performance Fakes and Observers.
-              *   **CI Pipeline:** MUST ONLY run the test suite, utilizing an OS compatibility matrix (e.g., Ubuntu, macOS, Windows) to catch platform-specific regressions.
+              *   **Testing Strategy:** The project's testing strategy, including the primary framework, structural rules (Unit > Integration > Acceptance), the mandate for centralized test detritus management in `tests/.tmp/`, and the explicit requirement that **the Test Harness (`tests/harness/`) is a first-class architectural boundary that MUST have its own unit tests** to guarantee high-performance Fakes and Observers. You MUST explicitly codify:
+                  *   **Real Objects:** Use real domain objects for testing core business logic.
+                  *   **Mandatory Fakes:** Strictly mandate In-Memory Fakes for state-managing Outbound Ports (e.g., Repositories).
+                  *   **Targeted Mocks:** Limit Mocks strictly to Outbound Ports triggering external side-effects where state verification is impossible.
+              *   **CI Pipeline:** MUST define two parallel standard jobs: 1) A test suite utilizing an OS compatibility matrix as a strict blocking gate, and 2) `pre-commit` quality checks configured as non-blocking warnings (e.g., `continue-on-error: true`) to surface technical debt without blocking the pipeline.
               *   **Pre-commit Hooks:** The local `pre-commit` acts as the strict gate. It MUST include:
                   *   **Testing:** Running the full test suite (unit, integration, and acceptance) with a mandatory coverage thresholds (e.g., 90%) and a strict timeout (e.g., 5 seconds) per individual test case to ensure efficiency and isolate performance regressions.
                   *   **Integrity:** Verifying a clean Git status (no unstaged changes e.g. via `git diff --name-only --exit-code`).
@@ -153,10 +156,9 @@
                   1.  **Diagnose:** Actively gather information to understand the failure in your new code.
                   2.  **Spike:** Create an isolated experiment in `/spikes/` to test potential solutions.
                   3.  **Fix:** Apply the fix to your code.
-              *   **Sticky State:** You MUST remain in this Yellow state until your specific code failure is resolved.
+              *   **Circuit Breaker:** You have exactly ONE attempt to fix a Yellow failure. If the code fails again after your fix attempt, you must conclude this is a complex issue. You MUST immediately transition to `Red 🔴` on the next turn and delegate to the Debugger. Do not loop in a Yellow state.
 
           *   `Red 🔴`
-              *   **Trigger:** A **regression** is detected (i.e., a previously passing test now fails, or manual verification reveals a break in existing, unrelated functionality), OR you discover a systemic system bug outside the scope of your current task.
               *   **Action:** Do not waste cycles trying to debug deep issues outside your core mandate. The Debugger is a specialized agent built explicitly for this. Neatly package the failure and delegate it.
                   1. `CREATE` a formal Minimal Reproducible Example (MRE) report in `docs/project/debugging/{{descriptive-title}}.md`. The MRE is the formal input for the Debugger and MUST strictly use these top-level headings:
                       1.  `# {{Descriptive title of the bug}}`

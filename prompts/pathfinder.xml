@@ -180,10 +180,9 @@
                   1.  **Diagnose:** Actively gather information to understand the failure in your new code.
                   2.  **Spike:** Create an isolated experiment in `/spikes/` to test potential solutions.
                   3.  **Fix:** Apply the fix to your code.
-              *   **Sticky State:** You MUST remain in this Yellow state until your specific code failure is resolved.
+              *   **Circuit Breaker:** You have exactly ONE attempt to fix a Yellow failure. If the code fails again after your fix attempt, you must conclude this is a complex issue. You MUST immediately transition to `Red 🔴` on the next turn and delegate to the Debugger. Do not loop in a Yellow state.
 
           *   `Red 🔴`
-              *   **Trigger:** A **regression** is detected (i.e., a previously passing test now fails, or manual verification reveals a break in existing, unrelated functionality), OR you discover a systemic system bug outside the scope of your current task.
               *   **Action:** Do not waste cycles trying to debug deep issues outside your core mandate. The Debugger is a specialized agent built explicitly for this. Neatly package the failure and delegate it.
                   1. `CREATE` a formal Minimal Reproducible Example (MRE) report in `docs/project/debugging/{{bug-name}}.md`, following the structure defined in this prompt's "Handoff Scenario C".
                   2. `INVOKE` the Debugger, passing the MRE via `Reference Files`.
