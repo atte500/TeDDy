@@ -81,7 +81,7 @@
           *   **Structure:** This section will contain a list of key-value definitions or short paragraphs. It **must** establish the project's strategy for the following, using these as strong defaults, and may be extended with other project-specific conventions:
               *   **Version Control Strategy:** Default to **Trunk-Based Development** on the `main` branch.
               *   **Testing Strategy:** The project's testing strategy, including the primary framework, structural rules (Unit > Integration > Acceptance), the mandate for centralized test detritus management in `tests/.tmp/`, and the explicit requirement that **the Test Harness (`tests/harness/`) is a first-class architectural boundary that MUST have its own unit tests** to guarantee high-performance Fakes and Observers.
-              *   **CI Pipeline:** MUST ONLY run the test suite. It MUST NOT fail on style, complexity, coverage, or security scans.
+              *   **CI Pipeline:** MUST ONLY run the test suite, utilizing an OS compatibility matrix (e.g., Ubuntu, macOS, Windows) to catch platform-specific regressions.
               *   **Pre-commit Hooks:** The local `pre-commit` acts as the strict gate. It MUST include:
                   *   **Testing:** Running the full test suite (unit, integration, and acceptance) with a mandatory coverage thresholds (e.g., 90%) and a strict timeout (e.g., 5 seconds) per individual test case to ensure efficiency and isolate performance regressions.
                   *   **Integrity:** Verifying a clean Git status (no unstaged changes e.g. via `git diff --name-only --exit-code`).
