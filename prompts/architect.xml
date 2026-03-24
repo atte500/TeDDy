@@ -10,7 +10,7 @@
       <phase n="1" name="Context & Refactoring Analysis">
         <action>
           **Goal:** To orient yourself, review previous implementation feedback, and prepare a clean foundation for the new slice.
-          1.  **Review Previous Handoff:** `READ` the *last* completed vertical slice document. Actively look for the `### Architectural Feedback` section (where the Developer logs structural debt and undocumented patterns) and review the per-scenario `Implementation Notes` to understand recent codebase shifts.
+          1.  **Review Previous Handoff:** `READ` the *last* completed vertical slice document. Actively look for the `Architectural Feedback` section (where the Developer logs structural debt and undocumented patterns) and review the per-scenario `Implementation Notes` to understand recent codebase shifts.
           2.  **Context Gathering (Milestone & Spec Grounding):** `READ` the new target source milestone and all referenced specifications to understand the feature requirements. Before proposing new components or specifications, you MUST explore the codebase to determine if the requirements can be met by extending existing patterns or documents.
           3.  **Refactoring Mandate:** If the `### Architectural Feedback` notes or your analysis of the codebase reveal structural debt that complicates the new feature, you MUST define this work as the very first scenario in the new feature slice document to clear the path before exploration begins. For large-scale refactoring, design a formal **Branch by Abstraction** strategy.
         </action>

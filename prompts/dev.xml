@@ -22,7 +22,7 @@
         <action>
           **Goal:** To establish a clean foundation and define the current deliverable's scope.
           1.  **Read & Assess:** `READ` the provided slice document (if not already in your context). Identify the **first uncompleted deliverable**. This is your sole focus. You MUST also use `READ` or `git grep` to examine relevant files to gain full context for *this deliverable only*. Examine existing test suites in `tests/suites/` to gather concrete examples of how the Test Harness Triad (Setup, Driver, Observer) is implemented before writing any new tests.
-          2.  **Contingency:** If no slice document was provided, `PROMPT` to define the deliverables before proceeding.
+          2.  **Contingency:** If no slice document was provided, you MUST `PROMPT` the user with a proposed list of **atomic and independently implementable** deliverables to gain alignment before starting implementation.
         </action>
       </phase>
       <phase n="2" name="TEST">
@@ -68,7 +68,7 @@
       </phase>
       <phase n="5" name="DOCUMENTATION">
         <action>
-          1. **Sync Vertical Slice:** `EDIT` the slice document to mark the deliverable `[✓]`. Append technical details to the existing `#### Implementation Notes` of the **current scenario**. Only create the heading if missing. Repeat for `#### Architectural Feedback` to resolve `[DOC]` reminders.
+          1. **Sync Vertical Slice:** `EDIT` the slice document to mark the deliverable `[✓]`. Append technical details to the single, consolidated `## Implementation Notes` section at the end of the document. Repeat for the `### Architectural Feedback` sub-section to resolve `[DOC]` reminders.
           2. **Align Architecture:** `READ` and `EDIT` relevant `docs/architecture/*.md` files. Ensure contracts (DTOs, Pre/Post-conditions) and component responsibilities exactly match your implementation.
         </action>
       </phase>
