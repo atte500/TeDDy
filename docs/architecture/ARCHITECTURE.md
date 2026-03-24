@@ -20,7 +20,9 @@ This document outlines the technical standards, conventions, and setup process f
 ### CI/CD Strategy
 - **Platform:** GitHub Actions.
 - **Triggers:** On every push to the `main` branch.
-- **Pipeline:** The CI pipeline will lint, type-check, test, and build the packages.
+- **Pipeline:** The CI pipeline executes two parallel jobs:
+    1.  **Test Suite (Blocking):** A multi-OS matrix (Ubuntu, macOS, Windows) running the full `pytest` suite. Failures here block merges.
+    2.  **Quality Checks (Non-Blocking):** Runs the full `pre-commit` suite (excluding tests) on Ubuntu. Configured with `continue-on-error: true` to surface technical debt (linting, complexity, security) without halting development velocity.
 
 ### Service Layer Naming Convention
 - **Dependency Attributes:** Injected dependencies in the core application services (`src/teddy_executor/core/services/`) MUST be private.
