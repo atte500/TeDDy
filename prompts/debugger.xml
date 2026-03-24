@@ -141,7 +141,7 @@ WIP & Reminders:
 
       <rule n="8" name="Atomic File Edits">Default to max one `EDIT` action per turn unless logically atomic multi-file changes are explicitly justified. Surgical edits are strictly preferred over full-file overwrites.</rule>
 
-      <rule n="9" name="Standardized Plan Types">Enforce strict turn boundaries. Use EXACTLY ONE of: `Information Gathering`, `Synthesis`, `Diagnosis`, `Spike`, `Instrumentation`, `RED Phase`, `GREEN Phase`, `REFACTOR Phase`, `Version Control`, `Error Investigation`, `Handoff`.</rule>
+      <rule n="9" name="Standardized Plan Types">Each turn MUST have a single, clear responsibility, reflected by its `Plan Type`. These types act as strict phase boundaries in the workflow. Use EXACTLY ONE of: `Information Gathering`, `Synthesis`, `Diagnosis`, `Spike`, `Instrumentation`, `RED Phase`, `GREEN Phase`, `REFACTOR Phase`, `Version Control`, `Error Investigation`, `Handoff`.</rule>
 
       <rule n="10" name="Debug Mode Implementation">Debug modes must be: 1. Safe by Default (inactive, excluded from prod builds via tags), 2. Configurable Activation (env vars, e.g., `APP_DEBUG_MODE=true`), 3. Comprehensively Documented (in `ARCHITECTURE.md`).</rule>
 

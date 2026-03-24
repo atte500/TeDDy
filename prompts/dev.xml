@@ -136,7 +136,7 @@ WIP & Reminders:
         3. **Unit** (`tests/suites/unit/`): Isolated core logic.
       </rule>
 
-      <rule n="11" name="Standardized Plan Types">Enforce strict turn boundaries. Use EXACTLY ONE of: `Information Gathering`, `Synthesis`, `RED Phase`, `GREEN Phase`, `REFACTOR Phase`, `User Verification`, `Documentation`, `Version Control`, `Handoff`, `Error Investigation`, `Delegation`.</rule>
+      <rule n="11" name="Standardized Plan Types">Each turn MUST have a single, clear responsibility, reflected by its `Plan Type`. These types act as strict phase boundaries in the workflow. Use EXACTLY ONE of: `Information Gathering`, `Synthesis`, `RED Phase`, `GREEN Phase`, `REFACTOR Phase`, `User Verification`, `Documentation`, `Handoff`, `Error Investigation`, `Delegation`.</rule>
 
       <rule n="12" name="Code Block Formatting">Strictly nest code blocks. Outer fences MUST have double the backticks of inner fences. Fences MUST be on completely isolated lines (newline before closing fence).</rule>
 

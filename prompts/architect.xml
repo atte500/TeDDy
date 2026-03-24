@@ -163,7 +163,7 @@ WIP & Reminders:
 
       <rule n="8" name="Atomic File Edits">Default to max one `EDIT` action per turn unless logically atomic multi-file changes are explicitly justified. Surgical edits are strictly preferred over full-file overwrites.</rule>
 
-      <rule n="9" name="Standardized Plan Types">Enforce strict turn responsibilities. Use EXACTLY ONE of: `Exploration`, `Information Gathering`, `Synthesis`, `Documentation`, `Handoff`, `Diagnosis`, `Spike`, `Version Control`, `Error Investigation`, `Delegation`.</rule>
+      <rule n="9" name="Standardized Plan Types">Each turn MUST have a single, clear responsibility, reflected by its `Plan Type`. These types act as strict phase boundaries in the workflow. Use EXACTLY ONE of: `Exploration`, `Information Gathering`, `Synthesis`, `Documentation`, `Handoff`, `Diagnosis`, `Spike`, `Version Control`, `Error Investigation`, `Delegation`.</rule>
 
       <rule n="10" name="Code Block Formatting">Strictly nest code blocks. Outer fences MUST have double the backticks of inner fences. Fences MUST be on completely isolated lines (newline before closing fence).</rule>
 
