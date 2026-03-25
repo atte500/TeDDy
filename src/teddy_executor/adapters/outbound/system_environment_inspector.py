@@ -1,5 +1,6 @@
 import os
 import platform
+import subprocess
 import sys
 from typing import Optional
 
@@ -30,4 +31,13 @@ class SystemEnvironmentInspector(IEnvironmentInspector):
         """
         Gathers the current Git status of the working directory.
         """
-        return None
+        try:
+            result = subprocess.run(
+                ["git", "status", "-s"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            return result.stdout.rstrip() if result.stdout else ""
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            return None
