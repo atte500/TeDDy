@@ -230,6 +230,7 @@ Error Investigation Protocol: [Descriptive error title] (Only if Yellow/Red)
 
       <expected_structure>
         <constraint>NO PREAMBLE. Start immediately with the Level 1 Markdown heading.</constraint>
+        <constraint>The entire content of the ## Rationale section MUST be strictly encapsulated within a single Markdown code block.</constraint>
         <format>
 # [Plan Title]
 - **Status:** [Green 🟢 | Yellow 🟡 | Red 🔴]
