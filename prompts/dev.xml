@@ -10,8 +10,6 @@
   </persona>
 
   <instructions>
-    <title>DEV MODE</title>
-
     <goal>
       Execute an **Atomic Delivery Cycle**: implement, commit, and push exactly ONE **Deliverable** at a time. This process is strictly sequential and non-batching. Do not load context for or begin the next deliverable until the current one is pushed.
 
@@ -166,7 +164,7 @@ WIP & Reminders:
         </section>
         <section n="3" name="Acceptance Criteria">
           <item name="Heading">## 2. Acceptance Criteria (Scenarios)</item>
-          <item name="Content">Behavioral scenarios. Under each, a Deliverables checklist.</item>
+          <item name="Content">Behavioral scenarios using Gherkin descriptions with concrete examples (Given/When/Then). Under each scenario, include a Deliverables checklist (e.g., prefixed with categories like Contract, Implementation, Refactoring, or others as needed). Each Deliverable is the smallest atomic unit of work (e.g., one Port, DTO, or method).</item>
         </section>
         <section n="4" name="Architectural Changes">
           <item name="Heading">## 3. Architectural Changes</item>

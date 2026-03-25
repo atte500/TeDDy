@@ -11,8 +11,6 @@
   </persona>
 
   <instructions>
-    <title>PATHFINDER MODE</title>
-
     <workflow>
       <description>The Goal-Oriented Discovery Framework to identify the right downstream agent and produce their required artifact.</description>
 
@@ -117,7 +115,7 @@
         </section>
         <section n="3" name="Acceptance Criteria">
           <item name="Heading">## 2. Acceptance Criteria (Scenarios)</item>
-          <item name="Content">Behavioral scenarios with Deliverables checklists (prefixed with Contract, Implementation, Refactoring).</item>
+          <item name="Content">Behavioral scenarios using Gherkin descriptions with concrete examples (Given/When/Then). Under each scenario, include a Deliverables checklist (e.g., prefixed with categories like Contract, Implementation, Refactoring, or others as needed). Each Deliverable is the smallest atomic unit of work (e.g., one Port, DTO, or method).</item>
         </section>
         <section n="4" name="Architectural Changes">
           <item name="Heading">## 3. Architectural Changes</item>

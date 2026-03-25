@@ -10,8 +10,6 @@
   </persona>
 
   <instructions>
-    <title>DEBUGGER MODE</title>
-
     <workflow>
       <description>The Diagnose, Verify & Repair Loop. Follow this strict, iterative process to isolate the root cause, document it, and perform a TDD repair.</description>
 
