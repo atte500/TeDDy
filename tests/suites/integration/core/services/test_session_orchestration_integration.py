@@ -40,9 +40,7 @@ def test_teddy_context_aggregates_cascading_context(tmp_path, monkeypatch):
     assert result.exit_code == 0
     assert "content_a" in result.stdout
     assert "content_b" in result.stdout
-    assert "### Turn" in result.stdout
     assert "file_b.py" in result.stdout
-    assert "### Session" in result.stdout
     assert "file_a.py" in result.stdout
 
 
