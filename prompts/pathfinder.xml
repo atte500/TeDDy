@@ -39,7 +39,7 @@
         <goal>Synthesize findings, check consistency, and hand off the correct artifact.</goal>
         <step n="1" name="Consistency Check">Execute git grep sanity check to ensure no stale references remain.</step>
         <step n="2" name="Consolidation & Sequencing">Find Prerequisites in backlog. Append to recent Milestone if it's a logical extension. Sequence as a new Milestone only if it is a distinct epic. Ensure all logged Technical Debt in the active Milestone is addressed or scheduled before marking a milestone as Done.</step>
-        <step n="3" name="Execute Handoff">Produce the required artifact using the Blueprints and use `INVOKE` (or `RETURN` for Self assignments after version control is complete in a separate turn).</step>
+        <step n="3" name="Execute Commit & Handoff">Produce the required artifact using the Blueprints and use `INVOKE` (or `RETURN` for Self assignments after version control is complete in a separate turn).</step>
       </phase>
 
     </workflow>
