@@ -5,9 +5,7 @@ def test_iplan_reviewer_defines_required_methods():
     """
     Verifies that IPlanReviewer Protocol defines the required methods.
     """
-    assert hasattr(IPlanReviewer, "review"), (
-        "IPlanReviewer must define review"
-    )
+    assert hasattr(IPlanReviewer, "review"), "IPlanReviewer must define review"
     assert hasattr(IPlanReviewer, "review_action"), (
         "IPlanReviewer must define review_action"
     )

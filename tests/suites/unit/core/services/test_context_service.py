@@ -130,7 +130,10 @@ def test_get_context_uses_dynamic_fences_for_safe_encapsulation(
 
     # Assert
     # Should use 4 backticks because content has 3
-    assert "````markdown\nCode with fence: ```python\nprint('hi')\n```\n````" in result.content
+    assert (
+        "````markdown\nCode with fence: ```python\nprint('hi')\n```\n````"
+        in result.content
+    )
 
 
 def test_get_context_always_includes_git_status_even_if_empty(

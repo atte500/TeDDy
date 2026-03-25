@@ -51,6 +51,7 @@ class Plan:
     actions: Sequence[ActionData]
     metadata: dict[str, str] = field(default_factory=dict)
     source_doc: Any = None
+    is_session: bool = False
 
     def __post_init__(self):
         assert self.actions, "Plan must contain at least one action."

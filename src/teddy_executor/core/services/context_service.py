@@ -1,6 +1,9 @@
 from typing import Dict, List, Optional, Sequence
 from teddy_executor.core.domain.models import ProjectContext
-from teddy_executor.core.utils.markdown import get_fence_for_content, get_language_from_path
+from teddy_executor.core.utils.markdown import (
+    get_fence_for_content,
+    get_language_from_path,
+)
 from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.ports.outbound.repo_tree_generator import IRepoTreeGenerator

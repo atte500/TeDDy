@@ -46,3 +46,12 @@ def test_execution_report_defaults_to_none_for_new_fields():
 
     assert report.rationale is None
     assert report.original_actions == []
+
+
+def test_plan_defaults_is_session_to_false():
+    """Tests that a Plan defaults is_session to False."""
+    actions = [
+        ActionData(type="READ", params={"resource": "test.txt"}, description="test")
+    ]
+    plan = Plan(title="Test Plan", rationale="Rationale", actions=actions)
+    assert plan.is_session is False
