@@ -149,7 +149,7 @@ WIP & Reminders:
 
       <rule n="10" name="Debug Mode Implementation">Debug modes must be: 1. Safe by Default (inactive, excluded from prod builds via tags), 2. Configurable Activation (env vars, e.g., `APP_DEBUG_MODE=true`), 3. Comprehensively Documented (in `ARCHITECTURE.md`).</rule>
 
-      <rule n="11" name="Code Block Formatting">Strictly nest code blocks. If content contains nested code blocks, you MUST use longer outer fences (e.g., 5 backticks). You MUST explicitly declare this in the Action's Description field BEFORE the code block (e.g., 'Description: ... (Requires 5-backtick outer fence)'). Fences MUST be on completely isolated lines.</rule>
+      <rule n="11" name="Code Block Formatting">Strictly nest code blocks. To prevent premature closure of an action's code blocks (e.g., the blocks under #### FIND:, #### REPLACE:, or CREATE content), if the content you are providing contains any backticks, you MUST use tildes (~~~) for those code blocks instead of backticks. Fences MUST be on completely isolated lines.</rule>
 
       <rule n="12" name="Plan Validation Recovery">If Validation Failed: Do NOT alter Status color. Prepend "0. Validation Errors" to Rationale. Provide a concise description pinpointing the root cause. This section MUST handle cases of stale context (e.g., when a FIND match fails because the file was changed in a way the agent's current memory does not reflect). Other rationale sections (1-4) must remain unchanged unless the plan itself requires modification. Reduce action count and FIND/REPLACE pairs (splitting the plan into smaller atomic steps) to lower the probability of another validation error and increase the chance of successful AST parsing.</rule>
 
@@ -186,7 +186,7 @@ WIP & Reminders:
     </blueprints>
 
     <response_format>
-      <title>Markdown Response Protocol</title>
+      <title>Markdown Response Protocol (MRP)</title>
       <description>The entire response is parsed by a strict AST. Any deviation from the format below will cause a validation failure.</description>
 
       <expected_structure>
@@ -215,7 +215,7 @@ WIP & Reminders:
 
       <action_formats>
         <action name="CREATE">
-          <description>Creates a new file. Strictly prohibited for existing files (use EDIT instead). MANDATORY: If content contains nested code blocks, you MUST use longer outer fences and explicitly declare the fence size in the Description field BEFORE the block.</description>
+          <description>Creates a new file. Strictly prohibited for existing files (use EDIT instead).</description>
           <template>
 ### `CREATE`
 - **File Path:** [path/to/new_file.ext](/path/to/new_file.ext)
@@ -303,7 +303,7 @@ WIP & Reminders:
         </action>
 
         <action name="RETURN">
-          <description>Returns control to calling agent.</description>
+          <description>Returns control to calling agent. This is a terminal action that concludes the current session.</description>
           <template>
 ### `RETURN`
 - **Description:** [Explanation]

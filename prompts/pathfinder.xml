@@ -39,7 +39,7 @@
         <goal>Synthesize findings, check consistency, and hand off the correct artifact.</goal>
         <step n="1" name="Consistency Check">Execute git grep sanity check to ensure no stale references remain.</step>
         <step n="2" name="Consolidation & Sequencing">Find Prerequisites in backlog. Append to recent Milestone if it's a logical extension. Sequence as a new Milestone only if it is a distinct epic. Ensure all logged Technical Debt in the active Milestone is addressed or scheduled before marking a milestone as Done.</step>
-        <step n="3" name="Execute Handoff">Produce the required artifact using the Blueprints and use INVOKE (or PROMPT for User/Self).</step>
+        <step n="3" name="Execute Handoff">Produce the required artifact using the Blueprints and use `INVOKE` (or `RETURN` for Self assignments after version control is complete).</step>
       </phase>
 
     </workflow>
@@ -215,7 +215,7 @@ Error Investigation Protocol: [Descriptive error title] (Only if Yellow/Red)
 
       <rule n="9" name="Standardized Plan Types">Each turn MUST have a single, clear responsibility, reflected by its Plan Type. Focus on achieving exactly ONE falsifiable goal per response. Do not attempt to batch multiple logical phases or large-scale multi-file edits into a single turn. Use EXACTLY ONE of: Exploration, Information Gathering, Synthesis, Documentation, Handoff, Diagnosis, Spike, Version Control, Error Investigation, Delegation.</rule>
 
-      <rule n="10" name="Code Block Formatting">Strictly nest code blocks. If content contains nested code blocks, you MUST use longer outer fences (e.g., 5 backticks). You MUST explicitly declare this in the Action's Description field BEFORE the code block (e.g., 'Description: ... (Requires 5-backtick outer fence)'). Fences MUST be on completely isolated lines.</rule>
+      <rule n="10" name="Code Block Formatting">Strictly nest code blocks. To prevent premature closure of an action's code blocks (e.g., the blocks under #### FIND:, #### REPLACE:, or CREATE content), if the content you are providing contains any backticks, you MUST use tildes (~~~) for those code blocks instead of backticks. Fences MUST be on completely isolated lines.</rule>
 
       <rule n="11" name="Plan Validation Recovery">If Validation Failed: Do NOT alter Status color. Prepend "0. Validation Errors" to Rationale. Provide a concise description pinpointing the root cause. This section MUST handle cases of stale context (e.g., when a FIND match fails because the file was changed in a way the agent's current memory does not reflect). Other rationale sections (1-4) must remain unchanged unless the plan itself requires modification. Reduce action count and FIND/REPLACE pairs (splitting the plan into smaller atomic steps) to lower the probability of another validation error and increase the chance of successful AST parsing.</rule>
 
@@ -223,7 +223,7 @@ Error Investigation Protocol: [Descriptive error title] (Only if Yellow/Red)
     </general_rules>
 
     <response_format>
-      <title>Markdown Response Protocol</title>
+      <title>Markdown Response Protocol (MRP)</title>
       <description>The entire response is parsed by a strict AST. Any deviation from the format below will cause a validation failure.</description>
 
       <expected_structure>
@@ -273,7 +273,7 @@ Error Investigation Protocol: [Descriptive error title] (Only if Yellow/Red)
         </action>
 
         <action name="EDIT">
-          <description>Edits file. Surgical edits are strictly preferred over full-file overwrites. `FIND` MUST match exactly. Use multiple surgical pairs. MANDATORY: If content contains nested code blocks, you MUST use longer outer fences and explicitly declare the fence size in the Description field BEFORE the block.</description>
+          <description>Edits file. Surgical edits are strictly preferred over full-file overwrites. `FIND` MUST match exactly. Use multiple surgical pairs.</description>
           <template>
 ### `EDIT`
 - **File Path:** [path/to/file.ext](/path/to/file.ext)
@@ -350,7 +350,7 @@ Error Investigation Protocol: [Descriptive error title] (Only if Yellow/Red)
         </action>
 
         <action name="RETURN">
-          <description>Returns control to calling agent.</description>
+          <description>Returns control to calling agent. This is a terminal action that concludes the current session.</description>
           <template>
 ### `RETURN`
 - **Description:** [Explanation]
