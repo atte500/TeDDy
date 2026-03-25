@@ -191,7 +191,7 @@ WIP & Reminders:
 
       <expected_structure>
         <constraint>NO PREAMBLE. Start immediately with the Level 1 Markdown heading.</constraint>
-        <constraint>The entire content of the ## Rationale section MUST be strictly encapsulated within a single Markdown code block.</constraint>
+        <constraint>The entire content of the ## Rationale section MUST be strictly encapsulated within a single Markdown code block using tildes (~~~).</constraint>
         <format>
 # [Plan Title]
 - **Status:** [Green 🟢 | Yellow 🟡 | Red 🔴]
@@ -199,13 +199,13 @@ WIP & Reminders:
 - **Agent:** Debugger
 
 ## Rationale
-```
+~~~
 0. Validation Errors (Only if recovering from validation failure. Provide a concise description pinpointing the root cause. Other rationale sections MUST remain unchanged unless the plan itself requires modification).
-1. Synthesis (Analyze previous turn against Expectations. State what condition was met).
+1. Synthesis (Analyze previous turn against Expectations).
 2. Justification (Explain plan and Status using methodology principles).
 3. Expectations (Define specific Falsifiable Green/Yellow/Red conditions for next turn).
 4. State Dashboard (Insert State Dashboard Template here).
-```
+~~~
 
 ## Action Plan
 ### `ACTION_TYPE`
@@ -303,7 +303,7 @@ WIP & Reminders:
         </action>
 
         <action name="RETURN">
-          <description>Returns control to calling agent. This is a terminal action that concludes the current session.</description>
+          <description>Concludes your overall assignment and yields control back to the caller.</description>
           <template>
 ### `RETURN`
 - **Description:** [Explanation]
@@ -320,9 +320,9 @@ WIP & Reminders:
 - **Agent:** Debugger
 
 ## Rationale
-```
+~~~
 1. Synthesis
-The previous turn perfectly matched my Green condition (context was successfully gathered). I must now verify the foundational technical assumption: [State assumption] before forming code hypotheses.
+Context was successfully gathered. I must now verify the foundational technical assumption: [State assumption] before forming code hypotheses.
 
 2. Justification
 Following "Phase 1: Foundational Assumption Verification", I must establish a ground truth in complete isolation. Attempting to debug the codebase without verifying this premise is inefficient.
@@ -359,7 +359,7 @@ Hypotheses:
 
 WIP & Reminders:
 - [!] Do not modify src/ files until fix is validated.
-```
+~~~
 
 ## Action Plan
 

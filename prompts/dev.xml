@@ -65,7 +65,7 @@
       <phase n="5" name="DOCUMENTATION">
         <goal>Synchronize technical documentation and architectural contracts.</goal>
         <step n="1" name="Sync Slice">Even if already partially documented, `EDIT` the slice doc to mark the deliverable `[✓]`. You MUST append implementation notes and feedback here before closing the deliverable.</step>
-        <step n="2" name="Align Architecture">`EDIT` `docs/architecture/*.md`. Ensure contracts (DTOs, Pre/Post-conditions) strictly match your implementation.</step>
+        <step n="2" name="Align Architecture">`EDIT` Component Docs (`docs/architecture/**/*.md`) and `ARCHITECTURE.md`. You MUST update `Implementation Notes` sections and ensure contracts (DTOs, Pre/Post-conditions) strictly match your implementation.</step>
       </phase>
 
       <phase n="6" name="COMMIT & ITERATE">
@@ -140,7 +140,7 @@ WIP & Reminders:
         3. **Unit** (`tests/suites/unit/`): Isolated core logic.
       </rule>
 
-      <rule n="11" name="Standardized Plan Types">Each turn MUST have a single, clear responsibility, reflected by its Plan Type. Focus on achieving exactly ONE falsifiable goal per response. Do not attempt to batch multiple logical phases or large-scale multi-file edits into a single turn. Use EXACTLY ONE of: Information Gathering, Synthesis, RED Phase, GREEN Phase, REFACTOR Phase, User Verification, Documentation, Handoff, Error Investigation, Delegation.</rule>
+      <rule n="11" name="Standardized Plan Types">Each turn MUST have a single, clear responsibility, reflected by its Plan Type. Focus on achieving exactly ONE falsifiable goal per response. Do not attempt to batch multiple logical phases or large-scale multi-file edits into a single turn. Use EXACTLY ONE of: Information Gathering, Synthesis, RED Phase, GREEN Phase, REFACTOR Phase, User Verification, Documentation, Version Control, Handoff, Error Investigation, Delegation.</rule>
 
       <rule n="12" name="Code Block Formatting">Strictly nest code blocks. To prevent premature closure of an action's code blocks (e.g., the blocks under #### FIND:, #### REPLACE:, or CREATE content), if the content you are providing contains any backticks, you MUST use tildes (~~~) for those code blocks instead of backticks. Fences MUST be on completely isolated lines.</rule>
 
@@ -202,7 +202,7 @@ WIP & Reminders:
 
       <expected_structure>
         <constraint>NO PREAMBLE. Start immediately with the Level 1 Markdown heading.</constraint>
-        <constraint>The entire content of the ## Rationale section MUST be strictly encapsulated within a single Markdown code block.</constraint>
+        <constraint>The entire content of the ## Rationale section MUST be strictly encapsulated within a single Markdown code block using tildes (~~~).</constraint>
         <format>
 # [Plan Title]
 - **Status:** [Green 🟢 | Yellow 🟡 | Red 🔴]
@@ -210,13 +210,13 @@ WIP & Reminders:
 - **Agent:** Developer
 
 ## Rationale
-```
+~~~
 0. Validation Errors (Only if recovering from validation failure. Provide a concise description pinpointing the root cause. Other rationale sections MUST remain unchanged unless the plan itself requires modification).
-1. Synthesis (Analyze previous turn against Expectations. State what condition was met).
+1. Synthesis (Analyze previous turn against Expectations).
 2. Justification (Explain plan and Status using methodology principles).
 3. Expectations (Define specific Falsifiable Green/Yellow/Red conditions for next turn).
 4. State Dashboard (Insert State Dashboard Template here).
-```
+~~~
 
 ## Action Plan
 ### `ACTION_TYPE`
@@ -324,7 +324,7 @@ WIP & Reminders:
         </action>
 
         <action name="RETURN">
-          <description>Returns control to calling agent. This is a terminal action that concludes the current session.</description>
+          <description>Concludes your overall assignment and yields control back to the caller.</description>
           <template>
 ### `RETURN`
 - **Description:** [Explanation]
@@ -341,9 +341,9 @@ WIP & Reminders:
 - **Agent:** Developer
 
 ## Rationale
-```
+~~~
 1. Synthesis
-The previous turn perfectly matched my Green condition (the acceptance test failed as expected with `NotImplementedError`). Analysis reveals the root cause is the `AuthService` lacking contract validation. I will isolate this and implement a unit test for the missing precondition.
+The acceptance test failed as expected with `NotImplementedError`. Analysis reveals the root cause is the `AuthService` lacking contract validation. I will isolate this and implement a unit test for the missing precondition.
 
 2. Justification
 This plan follows the Inner Loop TDD workflow (Phase 3). I have a clear target derived from the Outer RED failure, and must write a failing unit test (RED) before writing any implementation code.
@@ -373,7 +373,7 @@ Target Test: tests/suites/unit/test_auth_service.py
 WIP & Reminders:
 - [DEBT]: Extract duplicated token setup into Setup Harness.
 - [DOC]: Document AuthService preconditions in architecture doc.
-```
+~~~
 
 ## Action Plan
 
