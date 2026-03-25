@@ -17,6 +17,9 @@ Enhance the context payload with the current Git working state to give AI agents
 - [✓] **Implementation:** Update the markdown formatting logic (likely in `ContextService` or `MarkdownReportFormatter`) to render the `## 2. Git Status` section as defined in the spec.
 - [✓] **Test:** Add or update acceptance tests (e.g., `tests/suites/acceptance/test_context_command_refactor.py`) to verify that the `teddy context` output includes the expected git status section when run within a git repository.
 - [ ] **Test:** Ensure the `ReportParser` observer in the test harness correctly parses the new section if the context payload structure is part of its domain.
+- [ ] **Alignment:** Update `ContextService` heading hierarchy to match spec (H2 numbered sections).
+- [ ] **Alignment:** Implement dynamic backtick fences for resource contents.
+- [ ] **Alignment:** Ensure Git Status section always appears.
 
 ## Architectural Changes
 - **Production Components:**
