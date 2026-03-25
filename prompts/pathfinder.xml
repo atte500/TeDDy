@@ -151,7 +151,7 @@ WIP & Reminders:
 
       <rule n="5" name="Information Gathering Workflow">Discover via `RESEARCH`/`EXECUTE`, then `READ` promising resources in a *subsequent* turn. Loop if unhelpful.</rule>
 
-      <rule n="6" name="Version Control Protocol">Single-turn commit sequence: `git add <files>` -> `git commit -m '...'` -> `git push`.</rule>
+      <rule n="6" name="Version Control Protocol">Single-turn commit sequence: `git add <files>` -> `git commit -m '...'` -> `git push`. Quality Gate Escape Hatch: Do NOT game metrics to pass `pre-commit`. If legacy code breaks a hook, log the debt in `PROJECT.md` or the active Milestone and bypass via `git commit --no-verify -m '...'`.</rule>
 
       <rule n="7" name="Conventional Commits">Format: `<type>(<scope>): <description>`. Wrap entirely in single quotes. Description must use imperative mood (e.g., "Add endpoint"). Append `!` for breaking changes.</rule>
 
