@@ -25,7 +25,7 @@ To enable the interactive TUI for all execution modes and polish the session wor
 - [✓] **Wiring:** Update `container.py` to register `IPlanReviewer` implementation based on active configuration.
 - [✓] **Wiring:** Update `execute`, `start`, and `resume` in `__main__.py` to support `--tui / --console` flags.
 
-### Scenario: PRUNE Behavior in Manual Mode [ ]
+### Scenario: PRUNE Behavior in Manual Mode [✓]
 - **Given** I am running a manual CLI execution (e.g., `teddy execute plan.md`).
 - **And** the plan contains a `PRUNE` action.
 - **When** the execution starts.
@@ -35,8 +35,8 @@ To enable the interactive TUI for all execution modes and polish the session wor
 #### Deliverables
 - [✓] **Contract:** Add `is_session` property to `Plan` domain model.
 - [✓] **Implementation:** Update `MarkdownPlanParser` to set `is_session=True` if the plan is within a `.teddy/sessions/` directory.
-- [ ] **Implementation:** Update `ActionExecutor` to automatically skip `PRUNE` actions if `plan.is_session` is `False`.
-- [ ] **Implementation:** Update `ReviewerApp` (TUI) to filter out `PRUNE` actions from the UI tree if `plan.is_session` is `False`.
+- [✓] **Implementation:** Update `ActionExecutor` to automatically skip `PRUNE` actions if `plan.is_session` is `False`.
+- [✓] **Implementation:** Update `ReviewerApp` (TUI) to filter out `PRUNE` actions from the UI tree if `plan.is_session` is `False`.
 
 ### Scenario: Continuous Session Loop [ ]
 - **Given** I am in an interactive session.

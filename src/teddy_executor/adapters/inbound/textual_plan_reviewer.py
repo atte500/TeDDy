@@ -56,6 +56,8 @@ class ReviewerApp(App):
         tree = self.query_one(Tree)
         tree.root.expand()
         for action in self.plan.actions:
+            if action.type == "PRUNE" and not self.plan.is_session:
+                continue
             tree.root.add(self._format_node_label(action), data=action)
 
     def on_tree_node_selected(self, event: Tree.NodeSelected) -> None:
