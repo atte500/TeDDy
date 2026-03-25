@@ -29,5 +29,4 @@ Enhance the context payload with the current Git working state to give AI agents
   - `ReportParser` (Observer - if applicable to context payloads)
 
 ## Technical Debt
-- [ ] Resolve legacy `jscpd` duplication (2.3% detected).
-- [ ] Update `pygments` to resolve GHSA-5239-wwwm-4pmq.
+- [✓] Transferred to [Milestone 10](/docs/project/milestones/10-interactive-session-and-config.md).
