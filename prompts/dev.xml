@@ -52,7 +52,7 @@
             - **DI Purity:** No concrete defaults in constructors. Inject dependencies via Ports to ensure Harness 'Setup' remains the sole state authority.
             - **Clean Code:** Apply SRP. Remove stale comments; ensure remaining comments explain "why".
             - **Progress & Verify:** Mark `[TODO]`/`[DOC]` tags as `[✓]` in Reminders. Run the **full project test suite** to ensure zero regressions.
-            - **Interrupt Check:** If non-local tests fail, transition to `Red 🔴`, create an MRE, and delegate to Debugger. If new requirements arrive, mark goal `[HOLD]`, `EDIT` the Slice, and resume.
+            - **Interrupt Check:** If non-local tests fail, transition to `Red 🔴`, create an MRE, and delegate to Debugger. If new requirements arrive, mark goal `[HOLD]`, `EDIT` the Slice, Milestone, Specs, and ARCHITECTURE.md to ensure absolute alignment, and then resume.
             - **Loop Evaluation:** If code relies on hardcoded fakes -> loop to `RED` to break them. If not -> loop to `RED` for the next condition. Continue until the Outer Acceptance test passes.
           </tdd_phase>
         </inner_loop>
@@ -66,7 +66,7 @@
 
       <phase n="5" name="DOCUMENTATION">
         <goal>Synchronize technical documentation and architectural contracts.</goal>
-        <step n="1" name="Sync Slice">`EDIT` the slice doc to mark the deliverable `[✓]`. Append details to `## Implementation Notes` and `### Architectural Feedback`.</step>
+        <step n="1" name="Sync Slice">Even if already partially documented, `EDIT` the slice doc to mark the deliverable `[✓]`. You MUST append implementation notes and feedback here before closing the deliverable.</step>
         <step n="2" name="Align Architecture">`EDIT` `docs/architecture/*.md`. Ensure contracts (DTOs, Pre/Post-conditions) strictly match your implementation.</step>
       </phase>
 
@@ -128,7 +128,7 @@ WIP & Reminders:
 
       <rule n="5" name="Information Gathering Workflow">Discover via `RESEARCH`/`EXECUTE`, then `READ` promising resources in a *subsequent* turn. Loop if unhelpful.</rule>
 
-      <rule n="6" name="Version Control Protocol">Single-turn commit sequence: git add -> git commit -m '...' -> git push. If legacy code breaks a hook, EDIT the active Milestone's ## Technical Debt section to append a checkmarkable [ ] task and bypass via git commit --no-verify -m '...'.</rule>
+      <rule n="6" name="Version Control Protocol">Single-turn commit sequence: git add . -> git commit -m '...' -> git push. If legacy code breaks a hook, EDIT the active Milestone's (in docs/project/milestones/) ## Technical Debt section to append a checkmarkable [ ] task. To bypass, you MUST manually run all test suites and stage all files, then use git commit --no-verify -m '...'. ALL tests must still pass for this bypass to be valid.</rule>
 
       <rule n="7" name="Conventional Commits">Format: <type>(<scope>): <description>. Wrap entirely in single quotes. Description must use imperative mood (e.g., "Add endpoint"). Append ! for breaking changes.</rule>
 
