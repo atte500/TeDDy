@@ -11,7 +11,7 @@ Enhance the context payload with the current Git working state to give AI agents
 ### Scenario 1: Generating the Context Payload (`teddy context`)
 #### Deliverables
 - [✓] **Contract:** Update the `ProjectContext` domain model to include an optional `git_status` string field.
-- [ ] **Contract:** Extend `IEnvironmentInspector` (or a more appropriate outbound port) to define a `get_git_status()` method.
+- [✓] **Contract:** Extend `IEnvironmentInspector` (or a more appropriate outbound port) to define a `get_git_status()` method.
 - [ ] **Implementation:** Implement the `get_git_status()` method in `SystemEnvironmentInspector` using `subprocess` to call `git status -s`. Ensure it degrades gracefully (e.g., returns a specific string or `None`) if `git` is not installed or the directory is not a git repository.
 - [ ] **Implementation:** Update `ContextService` to fetch the git status and populate it in the `ProjectContext`.
 - [ ] **Implementation:** Update the markdown formatting logic (likely in `ContextService` or `MarkdownReportFormatter`) to render the `## 2. Git Status` section as defined in the spec.
