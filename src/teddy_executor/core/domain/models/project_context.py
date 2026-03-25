@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 
 from dataclasses import field
@@ -16,8 +16,10 @@ class ProjectContext:
         header: A string containing metadata about the context (e.g., CWD, OS).
         content: The main body of the context (e.g., file tree and contents).
         scoped_paths: A mapping of scope names (e.g., 'Turn', 'Session') to lists of file paths.
+        git_status: An optional string containing the output of 'git status -s'.
     """
 
     header: str
     content: str
     scoped_paths: Dict[str, List[str]] = field(default_factory=dict)
+    git_status: Optional[str] = None
