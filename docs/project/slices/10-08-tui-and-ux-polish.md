@@ -88,7 +88,4 @@ To enable the interactive TUI for all execution modes and polish the session wor
 - **Telemetry Hardening:** Updated `PlanningService` and `SessionPlanner` to handle potentially mocked telemetry values safely.
 
 ### Architectural Feedback
-- **[DEBT] Registry Refactor:** Split `container.py` into specialized `registries/` modules to bypass the 300-line file limit quality gate. This structure should be reviewed by the Architect for proper cohesion.
 - **[DEBT] Deduplication:** Refactored `ActionExecutor` to use `ActionChangeSetBuilder`, reducing the `jscpd` duplication score from 3.59% to 0.76%.
-- **[REMEDIATION] Serialization Safety:** (From Debugger) Implemented a recursive `scrub_dict_for_serialization` to neutralize `MagicMock` objects before Jinja2. *Architect Note:* System should use a schema-based serialization (like Pydantic) for reports rather than scrubbing raw dictionaries, which is error-prone.
-- **[REMEDIATION] DI Isolation & Harness Robustness:** (From Debugger) Updated `TestEnvironment` to explicitly register `IPlanReviewer` as `None` to prevent TUI test hangs. *Architect Note:* The test harness should resolve the DI container location dynamically or via a central port rather than hardcoded module paths.

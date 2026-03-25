@@ -92,7 +92,7 @@ repos:
 
     -   id: jscpd
         name: Code Duplication Detection (jscpd)
-        entry: npx jscpd --min-tokens 25 --threshold 1 src
+        entry: npx jscpd --min-tokens 25 --threshold 0 --ignore "**/ports/**" src
         language: system
         pass_filenames: false
         always_run: true

@@ -105,5 +105,4 @@ To refine the user experience of the interactive session workflow by ensuring ro
 - **Defensive Serialization:** Implemented a mandatory primitive-casting layer in `SessionService` and `PlanningService` before `yaml.dump` calls. This prevents `PyYAML` from entering infinite recursion or hanging when encountering `MagicMock` objects in unit tests.
 
 ### Architectural Feedback
-- **[OBS] Mock-Induced Serialization Hangs:** The discovery of `yaml.dump` hanging on `MagicMock` objects highlights a fragility in our unit testing strategy when dealing with dynamic metadata. The implemented primitive-casting scrub in the service layer effectively mitigates this, but suggests that we should prefer `spec=...` and strict primitive validation in our domain models to avoid such "leakage" into infrastructure operations.
 - **[OBS] Test Pyramid Rebalancing:** During this slice, the test pyramid was rebalanced by moving high-level CLI orchestration tests from the acceptance layer to the integration layer. This significantly improved suite performance while maintaining the rule: Acceptance < Integration < Unit.
