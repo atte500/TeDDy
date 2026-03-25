@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, Any, List, Optional
 
 if TYPE_CHECKING:
     from mistletoe.block_token import (
@@ -91,7 +91,7 @@ class MarkdownPlanParser(IPlanParser):
 
             is_session = False
             if plan_path:
-                normalized_path = plan_path.replace("\\", "/")
+                normalized_path = plan_path.replace("\\", "/").lower()
                 is_session = ".teddy/sessions/" in normalized_path
 
             return Plan(

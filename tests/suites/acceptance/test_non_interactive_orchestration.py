@@ -22,7 +22,7 @@ def test_prune_auto_skipped_in_non_interactive_mode(tmp_path, monkeypatch):
     # Check status and reason (stored in params['Skip Reason'])
     assert report.action_logs[0].status == "SKIPPED"
     assert (
-        "PRUNE is not supported in manual execution mode"
+        "manual mode to prevent workspace corruption"
         in report.action_logs[0].params["Skip Reason"]
     )
 

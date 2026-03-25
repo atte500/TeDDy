@@ -143,7 +143,7 @@ class SessionOrchestrator(IRunPlanUseCase):
     ) -> Plan:
         """Parses the plan and triggers a replan on structural failure."""
         try:
-            return self._plan_parser.parse(content)
+            return self._plan_parser.parse(content, plan_path=plan_path)
         except Exception as e:
             if is_session and plan_path:
                 # Ensure the rich diagnostic is visible to the user

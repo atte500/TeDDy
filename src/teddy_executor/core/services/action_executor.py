@@ -96,14 +96,16 @@ class ActionExecutor:
             )
         return None
 
-    def _intercept_control_flow_action(self, action) -> ActionLog | None:
+    def _intercept_control_flow_action(
+        self, action, is_session: bool = False
+    ) -> ActionLog | None:
         """Intercepts control flow actions in the manual CLI workflow."""
         action_type = action.type.upper()
 
-        if action_type == "PRUNE":
+        if action_type == "PRUNE" and not is_session:
             return self._handle_skipped_action(
                 action,
-                "Skipped: PRUNE is not supported in manual execution mode.",
+                "PRUNE actions are automatically skipped in manual mode to prevent workspace corruption. PRUNE is only active within TeDDy sessions.",
             )
 
         if action_type in ("INVOKE", "RETURN"):
@@ -149,12 +151,15 @@ class ActionExecutor:
         interactive: bool,
         total_actions: int,
         agent_name: Optional[str] = None,
+        is_session: bool = False,
     ) -> ActionLog:
         """Handles user confirmation and dispatches a single action."""
         if isolation_log := self._check_action_isolation(action, total_actions):
             return isolation_log
 
-        if intercepted_log := self._intercept_control_flow_action(action):
+        if intercepted_log := self._intercept_control_flow_action(
+            action, is_session=is_session
+        ):
             return intercepted_log
 
         # Capture the change set BEFORE execution for diff reporting

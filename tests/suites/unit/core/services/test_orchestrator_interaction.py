@@ -81,7 +81,9 @@ def test_orchestrator_falls_back_to_legacy_interaction_if_no_reviewer(
         orchestrator.execute(plan=plan, interactive=True)
 
         # Assert
-        mock_confirm.assert_called_once_with(action1, True, 1, agent_name=None)
+        mock_confirm.assert_called_once_with(
+            action1, True, 1, agent_name=None, is_session=False
+        )
 
 
 def test_execute_interactive_and_skipped(

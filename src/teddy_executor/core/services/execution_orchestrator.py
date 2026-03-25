@@ -95,12 +95,20 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             elif reviewer_handled:
                 # Reviewer already confirmed it, so execute immediately
                 action_log = self._action_executor.confirm_and_dispatch(
-                    action, False, len(plan.actions), agent_name=agent_name
+                    action,
+                    False,
+                    len(plan.actions),
+                    agent_name=agent_name,
+                    is_session=plan.is_session,
                 )
             else:
                 # Fallback to ActionExecutor interaction ONLY if no reviewer is present
                 action_log = self._action_executor.confirm_and_dispatch(
-                    action, interactive, len(plan.actions), agent_name=agent_name
+                    action,
+                    interactive,
+                    len(plan.actions),
+                    agent_name=agent_name,
+                    is_session=plan.is_session,
                 )
 
             action_logs.append(action_log)
@@ -120,7 +128,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
     ) -> ExecutionReport:
         if plan is None:
             if plan_content is not None:
-                plan = self._plan_parser.parse(plan_content)
+                plan = self._plan_parser.parse(plan_content, plan_path=plan_path)
             elif plan_path is not None:
                 content = self._file_system_manager.read_file(plan_path)
                 plan = self._plan_parser.parse(content, plan_path=plan_path)
