@@ -191,6 +191,7 @@ def mock_inspector(container):
     from teddy_executor.core.ports.outbound import IEnvironmentInspector
 
     mock = Mock(spec=IEnvironmentInspector)
+    mock.get_git_status.return_value = None
     container.register(IEnvironmentInspector, instance=mock)
     return mock
 

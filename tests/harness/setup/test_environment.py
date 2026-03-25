@@ -181,9 +181,10 @@ class TestEnvironment(RealAdapterMixin):
         mock_tree = Mock(spec=IRepoTreeGenerator)
         mock_tree.generate_tree.return_value = ""
         self._container.register(IRepoTreeGenerator, instance=mock_tree)
-        self._container.register(
-            IEnvironmentInspector, instance=Mock(spec=IEnvironmentInspector)
-        )
+
+        mock_inspector = Mock(spec=IEnvironmentInspector)
+        mock_inspector.get_git_status.return_value = None
+        self._container.register(IEnvironmentInspector, instance=mock_inspector)
 
     # with_real_filesystem and with_real_init_service moved to RealAdapterMixin
 

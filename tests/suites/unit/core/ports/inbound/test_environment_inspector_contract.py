@@ -1,6 +1,7 @@
-from typing import Optional
-from teddy_executor.core.ports.outbound.environment_inspector import IEnvironmentInspector
-from teddy_executor.adapters.outbound.system_environment_inspector import SystemEnvironmentInspector
+from teddy_executor.adapters.outbound.system_environment_inspector import (
+    SystemEnvironmentInspector,
+)
+
 
 def test_environment_inspector_contract_requires_get_git_status():
     """

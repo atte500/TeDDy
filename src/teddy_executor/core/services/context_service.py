@@ -31,6 +31,7 @@ class ContextService(IGetContextUseCase):
         """
         # Gather all information from outbound ports
         system_info = self._environment_inspector.get_environment_info()
+        git_status = self._environment_inspector.get_git_status()
         repo_tree = self._repo_tree_generator.generate_tree()
 
         scoped_paths: Dict[str, List[str]] = {}
@@ -56,10 +57,17 @@ class ContextService(IGetContextUseCase):
         )
 
         header = self._format_header(system_info)
-        content = self._format_content(repo_tree, scoped_paths, file_contents)
+        content = self._format_content(
+            repo_tree, scoped_paths, file_contents, git_status
+        )
 
         # Assemble and return the DTO
-        return ProjectContext(header=header, content=content, scoped_paths=scoped_paths)
+        return ProjectContext(
+            header=header,
+            content=content,
+            scoped_paths=scoped_paths,
+            git_status=git_status,
+        )
 
     def _format_header(self, system_info: Dict[str, str]) -> str:
         """Formats the header section of the context report."""
@@ -77,9 +85,15 @@ class ContextService(IGetContextUseCase):
         repo_tree: str,
         scoped_paths: Dict[str, List[str]],
         file_contents: Dict[str, Optional[str]],
+        git_status: Optional[str] = None,
     ) -> str:
         """Formats the main content section of the context report."""
-        content_parts = ["\n# Repository Tree", repo_tree]
+        content_parts = []
+
+        if git_status:
+            content_parts.extend(["\n# Git Status", git_status])
+
+        content_parts.extend(["\n# Repository Tree", repo_tree])
 
         content_parts.extend(self._format_context_summary(scoped_paths))
         content_parts.extend(

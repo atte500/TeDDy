@@ -34,11 +34,13 @@ def test_get_context_orchestrates_and_returns_correct_dto(
         "cwd": "/test/dir",
         "os_version": "1.0",
     }
+    mock_git_status = " M file.py\n?? new.txt"
     mock_repo_tree = "dir/\n  file.txt"
     mock_vault_paths = ["file1.txt", "file2.py"]
     mock_file_contents = {"file1.txt": "content1", "file2.py": "print('hello')"}
 
     mock_inspector.get_environment_info.return_value = mock_sys_info
+    mock_inspector.get_git_status.return_value = mock_git_status
     mock_tree_gen.generate_tree.return_value = mock_repo_tree
     mock_fs.get_context_paths.return_value = mock_vault_paths
     mock_fs.read_files_in_vault.return_value = mock_file_contents
@@ -49,6 +51,7 @@ def test_get_context_orchestrates_and_returns_correct_dto(
     # Assert
     # Check that dependencies were called correctly
     mock_inspector.get_environment_info.assert_called_once()
+    mock_inspector.get_git_status.assert_called_once()
     mock_tree_gen.generate_tree.assert_called_once()
     mock_fs.get_context_paths.assert_called_once()
     mock_fs.read_files_in_vault.assert_called_once_with(mock_vault_paths)
@@ -61,8 +64,14 @@ def test_get_context_orchestrates_and_returns_correct_dto(
     assert "shell: /bin/test" in result.header
     assert "cwd: /test/dir" in result.header
 
+    # Check git status
+    assert result.git_status == mock_git_status
+
     # Check main content
+    assert "# Repository Tree" in result.content
     assert mock_repo_tree in result.content
+    assert "# Git Status" in result.content
+    assert mock_git_status in result.content
     assert "[file1.txt](/file1.txt)" in result.content
     assert "```txt\ncontent1\n```" in result.content
     assert "[file2.py](/file2.py)" in result.content
@@ -85,6 +94,7 @@ def test_get_context_with_specific_files_uses_resolve_paths_from_files(
     mock_file_contents = {"file_a.txt": "content_a"}
 
     mock_inspector.get_environment_info.return_value = {}
+    mock_inspector.get_git_status.return_value = None
     mock_tree_gen.generate_tree.return_value = ""
     mock_fs.resolve_paths_from_files.return_value = mock_vault_paths
     mock_fs.read_files_in_vault.return_value = mock_file_contents

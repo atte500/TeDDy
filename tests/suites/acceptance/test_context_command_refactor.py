@@ -1,4 +1,7 @@
 from pathlib import Path
+from teddy_executor.core.ports.outbound.environment_inspector import (
+    IEnvironmentInspector,
+)
 from tests.harness.setup.test_environment import TestEnvironment
 from tests.harness.drivers.cli_adapter import CliTestAdapter
 
@@ -71,3 +74,26 @@ def test_context_includes_file_contents(tmp_path, monkeypatch):
 
     assert result.exit_code == 0
     assert "print('hello')" in result.stdout
+
+
+def test_context_includes_git_status_when_present(tmp_path, monkeypatch):
+    """Scenario: context command includes the Git Status section when available."""
+    env = TestEnvironment(monkeypatch, tmp_path)
+    env.setup()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+
+    # Mock the inspector to return a specific git status
+    mock_inspector = env.get_service(IEnvironmentInspector)
+    mock_git_status = " M modified_file.py\n?? untracked_file.txt"
+    mock_inspector.get_git_status.return_value = mock_git_status
+
+    (tmp_path / ".teddy").mkdir()
+    (tmp_path / ".teddy/init.context").write_text("README.md\n", encoding="utf-8")
+    (tmp_path / "README.md").touch()
+
+    result = adapter.run_cli_command(["context"], tmp_path)
+
+    assert result.exit_code == 0
+    assert "# Git Status" in result.stdout
+    assert " M modified_file.py" in result.stdout
+    assert "?? untracked_file.txt" in result.stdout

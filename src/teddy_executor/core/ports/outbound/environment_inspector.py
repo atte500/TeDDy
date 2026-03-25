@@ -1,7 +1,7 @@
 from typing import Protocol
 
 
-from typing import Optional, Protocol
+from typing import Optional
 
 
 class IEnvironmentInspector(Protocol):
