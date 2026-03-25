@@ -20,7 +20,7 @@ The core principle is the **separation of concerns**:
 The payload is a single Markdown document with the following top-level sections.
 
 ```markdown
-# Agent Invocation Payload
+# Project Context
 
 ## 1. System Information
 ...
@@ -31,10 +31,7 @@ The payload is a single Markdown document with the following top-level sections.
 ## 3. Project Structure
 ...
 
-## 4. Context Summary
-...
-
-## 5. Resource Contents
+## 4. Resource Contents
 ...
 ```
 
@@ -54,13 +51,12 @@ A simple key-value list of essential environment details, giving the AI awarenes
 
 ### 3.2. Git Status
 
-A concise view of the current working tree status (`git status -s`). This gives the AI immediate visibility into which files are staged, modified, or untracked.
+A concise view of the current working tree status (`git status -s`). This gives the AI immediate visibility into which files are staged, modified, or untracked. If the repository is clean, it displays a descriptive message.
 
 -   **Example:**
     ```markdown
     ## 2. Git Status
-     M src/teddy_executor/core/services/context_service.py
-    ?? new_file.txt
+    nothing to commit, working tree clean
     ```
 
 ### 3.3. Project Structure
@@ -72,7 +68,7 @@ A textual representation of the repository's file tree, using simple indentation
 -   **Example:**
     `````markdown
     ## 3. Project Structure
-    ````
+    ```
     docs/
       specs/
         context-payload-format.md
@@ -84,56 +80,19 @@ A textual representation of the repository's file tree, using simple indentation
       architect.xml
     pyproject.toml
     README.md
-    ````
+    ```
     `````
 
-### 3.4. Context Summary
+### 3.4. Resource Contents
 
-This section provides a scannable summary of all file paths and URLs that make up the AI's context for the turn, broken down by their scope of origin. It must include a brief instruction block explaining how the AI can manage its working context.
+The full, verbatim content of every resource (file or URL) included in the context.
 
--   **Example:**
-    `````markdown
-    ## 4. Context Summary
-
-    > **Context Management:** Use the `READ` action to add files to the **Turn** context, and the `PRUNE` action to remove them. The **Session** context is managed by the user and cannot be modified by the AI.
-
-    *(If the payload exceeds the configured `context_pruning_threshold`, an additional hint is appended here:)*
-    > **Hint:** Context payload is above `context_pruning_threshold` tokens, please consider using `PRUNE` to remove irrelevant files from the Turn context.
-
-    ### Turn
-    - [src/main.py](/src/main.py)
-    - [tests/test_main.py](/tests/test_main.py)
-
-    ### Session
-    - [docs/project/specs/interactive-session-workflow.md](/docs/project/specs/interactive-session-workflow.md)
-    - [docs/project/specs/core-philosophy.md](/docs/project/specs/core-philosophy.md)
-    ````
-    `````
-
-### 3.5. Resource Contents
-
-The full, verbatim content of every resource (file or URL) listed in the `Context Summary`.
-
--   **Sourcing & De-duplication:** The content is aggregated in the following order of precedence: `turn` -> `session`. If a resource is listed in both context files, its content will only be displayed once.
 -   **Format:** Each resource's content is preceded by a horizontal rule and a header line identifying it.
+-   **Safety:** Resource contents are enclosed in dynamic code fences (e.g., ```` or ````) that are at least one backtick longer than any existing fence within the content to prevent formatting collisions.
 -   **Example:**
     `````markdown
-    ## 5. Resource Contents
+    ## 4. Resource Contents
 
-    ---
-    ### [https://example.com/docs](https://example.com/docs)
-    ````html
-    <!doctype html>
-    <html>
-      <head>
-        <title>Example Domain</title>
-      </head>
-      <body>
-        <h1>Example Domain</h1>
-        <p>This domain is for use in illustrative examples in documents.</p>
-      </body>
-    </html>
-    ````
     ---
     ### [docs/project/specs/core-philosophy.md](/docs/project/specs/core-philosophy.md)
     ````markdown
