@@ -66,7 +66,7 @@ class MarkdownPlanParser(IPlanParser):
             ),
         }
 
-    def parse(self, plan_content: str) -> Plan:
+    def parse(self, plan_content: str, plan_path: Optional[str] = None) -> Plan:
         """
         Parses the specified Markdown plan string into a structured Plan object.
         """
@@ -88,12 +88,19 @@ class MarkdownPlanParser(IPlanParser):
         try:
             title, rationale, metadata = self._parse_strict_top_level(stream, doc)
             actions = self._parse_actions(stream, doc)
+
+            is_session = False
+            if plan_path:
+                normalized_path = plan_path.replace("\\", "/")
+                is_session = ".teddy/sessions/" in normalized_path
+
             return Plan(
                 title=title,
                 rationale=rationale,
                 actions=actions,
                 metadata=metadata,
                 source_doc=doc,
+                is_session=is_session,
             )
         except InvalidPlanError as e:
             if "### Expected Response Structure " in str(e):

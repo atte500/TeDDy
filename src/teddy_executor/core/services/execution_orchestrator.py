@@ -123,7 +123,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
                 plan = self._plan_parser.parse(plan_content)
             elif plan_path is not None:
                 content = self._file_system_manager.read_file(plan_path)
-                plan = self._plan_parser.parse(content)
+                plan = self._plan_parser.parse(content, plan_path=plan_path)
             else:
                 raise ValueError("Must provide either plan, plan_content, or plan_path")
 

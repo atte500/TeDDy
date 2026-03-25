@@ -35,12 +35,13 @@ class IPlanParser(ABC):
     """
 
     @abstractmethod
-    def parse(self, plan_content: str) -> Plan:
+    def parse(self, plan_content: str, plan_path: Optional[str] = None) -> Plan:
         """
         Reads and parses the specified plan string into a structured Plan object.
 
         Args:
             plan_content: The raw string content of the plan.
+            plan_path: The optional path to the plan file for context detection.
 
         Returns:
             A Plan domain object.
