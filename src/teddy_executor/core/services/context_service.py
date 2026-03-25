@@ -89,9 +89,13 @@ class ContextService(IGetContextUseCase):
         git_status: Optional[str] = None,
     ) -> str:
         """Formats the main content section of the context report."""
+        display_status = git_status
+        if git_status == "":
+            display_status = "nothing to commit, working tree clean"
+
         content_parts = [
             "\n## 2. Git Status",
-            git_status if git_status is not None else "",
+            display_status if display_status is not None else "",
             "\n## 3. Project Structure",
             f"```\n{repo_tree}\n```",
         ]

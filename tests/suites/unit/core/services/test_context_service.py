@@ -148,3 +148,4 @@ def test_get_context_always_includes_git_status_even_if_empty(
 
     # Assert
     assert "## 2. Git Status" in result.content
+    assert "nothing to commit, working tree clean" in result.content
