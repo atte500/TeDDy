@@ -104,9 +104,8 @@ def test_review_action_returns_false_on_denial(reviewer, mock_interactor):
     assert action.selected is False
 
 
-def test_review_plan_returns_plan_on_bulk_approval(reviewer, mock_interactor):
-    """Should return the plan if the user approves the bulk summary."""
-    mock_interactor.confirm_plan_review.return_value = True
+def test_review_skips_bulk_summary(reviewer, mock_interactor):
+    """Should return the plan immediately without calling the interactor's bulk summary."""
     plan = Plan(
         title="Test Plan",
         rationale="Test Rationale",
@@ -115,27 +114,10 @@ def test_review_plan_returns_plan_on_bulk_approval(reviewer, mock_interactor):
         ],
     )
 
-    result = reviewer.review_plan(plan)
+    result = reviewer.review(plan)
 
     assert result == plan
-    mock_interactor.confirm_plan_review.assert_called_once_with(plan)
-
-
-def test_review_plan_returns_none_on_bulk_rejection(reviewer, mock_interactor):
-    """Should return None if the user rejects the bulk summary."""
-    mock_interactor.confirm_plan_review.return_value = False
-    plan = Plan(
-        title="Test Plan",
-        rationale="Test Rationale",
-        actions=[
-            ActionData(type="CREATE", params={"path": "test.txt"}, description="Test")
-        ],
-    )
-
-    result = reviewer.review_plan(plan)
-
-    assert result is None
-    mock_interactor.confirm_plan_review.assert_called_once()
+    mock_interactor.confirm_plan_review.assert_not_called()
 
 
 def test_review_action_no_changeset_for_research(reviewer, mock_interactor):

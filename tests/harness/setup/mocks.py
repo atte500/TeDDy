@@ -133,7 +133,6 @@ def mock_plan_reviewer(container):
     mock = Mock(spec=IPlanReviewer)
     # Default pass-through behavior for review methods
     mock.review.side_effect = lambda p: p
-    mock.review_plan.side_effect = lambda p: p
     mock.review_action.return_value = True  # Default to auto-approving in tests
 
     container.register(IPlanReviewer, instance=mock)

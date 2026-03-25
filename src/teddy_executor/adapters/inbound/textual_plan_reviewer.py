@@ -232,13 +232,7 @@ class TextualPlanReviewer(IPlanReviewer):
 
     def review(self, plan: Plan) -> Optional[Plan]:
         """
-        Initiates the interactive review process.
-        """
-        return self.review_plan(plan)
-
-    def review_plan(self, plan: Plan) -> Optional[Plan]:
-        """
-        Initiates a bulk interactive review process using the Textual TUI.
+        Initiates the interactive review process using the Textual TUI.
         """
         return self._run_app(plan)
 

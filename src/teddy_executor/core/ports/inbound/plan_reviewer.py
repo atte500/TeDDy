@@ -20,15 +20,6 @@ class IPlanReviewer(Protocol):
         """
         ...
 
-    def review_plan(self, plan: Plan) -> Optional[Plan]:
-        """
-        Initiates a bulk interactive review process for the entire plan.
-
-        Returns:
-            The modified Plan object, or None if the user cancels.
-        """
-        ...
-
     def review_action(
         self,
         action: "ActionData",

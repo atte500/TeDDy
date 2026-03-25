@@ -33,17 +33,13 @@ class ConsolePlanReviewer(IPlanReviewer):
 
     def review(self, plan: "Plan") -> Optional["Plan"]:
         """
-        Legacy review method. Delegating to review_plan for bulk console review.
+        Prints the plan header and returns immediately to proceed to actions.
         """
-        return self.review_plan(plan)
+        import typer
 
-    def review_plan(self, plan: "Plan") -> Optional["Plan"]:
-        """
-        Initiates a bulk interactive review process for the entire plan.
-        """
-        if self._user_interactor.confirm_plan_review(plan):
-            return plan
-        return None
+        header = f'\n▶ Reviewing Plan: "{plan.title}"'
+        typer.secho(header, fg=typer.colors.CYAN, bold=True, err=True)
+        return plan
 
     def review_action(
         self,

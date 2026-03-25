@@ -16,15 +16,7 @@ The implementation should:
 ## 4. Data Contracts / Methods
 
 ### `review(self, plan: Plan) -> Plan | None`
-- **Description:** Initiates the interactive review process. (Note: This is a legacy method that delegates to `review_plan` for compatibility).
-- **Preconditions:**
-  - `plan` must be a valid `Plan` object.
-- **Postconditions:**
-  - Returns a `Plan` object containing the user's modifications and selections.
-  - Returns `None` if the user cancels or quits the review process.
-
-### `review_plan(self, plan: Plan) -> Plan | None`
-- **Description:** Initiates a bulk interactive review process for the entire plan.
+- **Description:** Initiates the interactive review process (bulk or TUI).
 - **Preconditions:**
   - `plan` must be a valid `Plan` object.
 - **Postconditions:**

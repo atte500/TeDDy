@@ -17,9 +17,9 @@ To enable the interactive TUI for all execution modes and polish the session wor
 - **Then** the system MUST override the config and use the `TextualPlanReviewer`.
 
 #### Deliverables
-- [✓] **Contract:** Update `IPlanReviewer` port to include `review_action` (per-action sequential) and `review_plan` (bulk TUI) methods.
+- [✓] **Contract:** Update `IPlanReviewer` port to include `review_action` (per-action sequential) and `review` (bulk TUI) methods.
 - [✓] **Implementation:** Implement `ConsolePlanReviewer.review_action` to handle sequential Y/N logic and immediate execution.
-- [✓] **Implementation:** Implement `ConsolePlanReviewer.review_plan` to handle bulk summary approval in non-interactive sessions.
+- [✓] **Implementation:** Implement `ConsolePlanReviewer.review` to print the plan header while skipping the bulk summary/approval in console mode.
 - [✓] **Core Refactoring:** Update `ExecutionOrchestrator` to delegate action confirmation entirely to the `IPlanReviewer` port.
 - [✓] **Wiring:** Update `YamlConfigAdapter` to support `ui_mode` (default: `tui`).
 - [✓] **Wiring:** Update `container.py` to register `IPlanReviewer` implementation based on active configuration.

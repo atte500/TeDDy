@@ -14,9 +14,9 @@ def test_ui_mode_console_uses_sequential_reviewer(tmp_path, monkeypatch):
     # Run in console mode.
     # Since TestEnvironment registers IPlanReviewer=None,
     # the CLI flag should override it and use ConsolePlanReviewer.
-    # We need "y\n" for the bulk plan summary AND "y\n" for the single action.
+    # We now skip the bulk summary and go straight to the action prompt.
     report = adapter.execute_plan(
-        plan, user_input="y\ny\n", interactive=True, extra_args=["--console"]
+        plan, user_input="y\n", interactive=True, extra_args=["--console"]
     )
 
     # ReportParser uses the run_summary dict.
@@ -25,7 +25,5 @@ def test_ui_mode_console_uses_sequential_reviewer(tmp_path, monkeypatch):
         "Status"
     )
     assert "SUCCESS" in status_val.upper()
-    # Verify that the console reviewer was used by checking the output for its specific headers.
-    # ConsolePlanReviewer uses cli_helpers.echo_plan_summary
-    # CliTestAdapter stores the raw output in stdout
-    assert "Action Plan:" in report.stdout
+    # Verify that the console reviewer was used by checking for the action-level prompt.
+    assert "Approve? (y/n):" in report.stdout
