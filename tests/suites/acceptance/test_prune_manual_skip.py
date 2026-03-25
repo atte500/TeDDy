@@ -59,12 +59,12 @@ def test_prune_is_NOT_automatically_skipped_in_session_mode(monkeypatch, tmp_pat
     )
 
     plan_path = session_dir / "plan.md"
-    plan_path.write_text(plan_content)
+    plan_path.write_text(plan_content, encoding="utf-8")
 
     # We must ensure the file exists so it passes validator (which might be called)
-    (tmp_path / "old_file.md").write_text("content")
+    (tmp_path / "old_file.md").write_text("content", encoding="utf-8")
     # And it must be in context
-    (session_dir / "turn.context").write_text("old_file.md")
+    (session_dir / "turn.context").write_text("old_file.md", encoding="utf-8")
 
     # When I execute the plan
     with monkeypatch.context() as m:
