@@ -39,7 +39,7 @@
         <goal>Synthesize findings, check consistency, and hand off the correct artifact.</goal>
         <step n="1" name="Consistency Check">Execute git grep sanity check to ensure no stale references remain.</step>
         <step n="2" name="Consolidation & Sequencing">Find Prerequisites in backlog. Append to recent Milestone if it's a logical extension. Sequence as a new Milestone only if it is a distinct epic. Ensure all logged Technical Debt in the active Milestone is addressed or scheduled before marking a milestone as Done.</step>
-        <step n="3" name="Execute Handoff">Produce the required artifact using the Blueprints and use `INVOKE` (or `RETURN` for Self assignments after version control is complete).</step>
+        <step n="3" name="Execute Handoff">Produce the required artifact using the Blueprints and use `INVOKE` (or `RETURN` for Self assignments after version control is complete in a separate turn).</step>
       </phase>
 
     </workflow>
@@ -207,7 +207,7 @@ Error Investigation Protocol: [Descriptive error title] (Only if Yellow/Red)
 
       <rule n="5" name="Information Gathering Workflow">Discover via `RESEARCH`/`EXECUTE`, then `READ` promising resources in a *subsequent* turn. Loop if unhelpful.</rule>
 
-      <rule n="6" name="Version Control Protocol">Single-turn commit sequence: git add . -> git commit -m '...' -> git push. If a linter or quality gate fails and it is not a minor fix, EDIT the active Milestone's (in docs/project/milestones/) ## Technical Debt section to append a checkmarkable [ ] task. To bypass, you MUST manually run all test suites and stage all files, then use git commit --no-verify -m '...'. ALL tests must still pass for this bypass to be valid.</rule>
+      <rule n="6" name="Version Control Protocol">Single-turn commit sequence: git add . -> git commit -m '...' -> git push. This sequence MUST be performed in its own dedicated turn (Plan Type: Version Control) and cannot be combined with any other actions (e.g., EDIT, CREATE). If a linter or quality gate fails and it is not a minor fix, EDIT the active Milestone's (in docs/project/milestones/) ## Technical Debt section to append a checkmarkable [ ] task. To bypass, you MUST manually run all test suites and stage all files, then use git commit --no-verify -m '...'. ALL tests must still pass for this bypass to be valid.</rule>
 
       <rule n="7" name="Conventional Commits">Format: <type>(<scope>): <description>. Wrap entirely in single quotes. Description must use imperative mood (e.g., "Add endpoint"). Append ! for breaking changes.</rule>
 
@@ -217,9 +217,9 @@ Error Investigation Protocol: [Descriptive error title] (Only if Yellow/Red)
 
       <rule n="10" name="Code Block Formatting">Strictly nest code blocks. To prevent premature closure of an action's code blocks (e.g., the blocks under #### FIND:, #### REPLACE:, or CREATE content), if the content you are providing contains any backticks, you MUST use tildes (~~~) for those code blocks instead of backticks. Fences MUST be on completely isolated lines.</rule>
 
-      <rule n="11" name="Plan Validation Recovery">If Validation Failed: Do NOT alter Status color. Prepend "0. Validation Errors" to Rationale. Provide a concise description pinpointing the root cause. This section MUST handle cases of stale context (e.g., when a FIND match fails because the file was changed in a way the agent's current memory does not reflect). Other rationale sections (1-4) must remain unchanged unless the plan itself requires modification. Reduce action count and FIND/REPLACE pairs (splitting the plan into smaller atomic steps) to lower the probability of another validation error and increase the chance of successful AST parsing.</rule>
+      <rule n="11" name="Plan Validation Recovery">If Validation Failed: Do NOT alter Status color. Prepend "0. Validation Errors" to Rationale. Analyze the root cause (e.g., stale context, improper tilde/backtick usage), then submit a corrected plan with fewer / smaller atomic steps. Rationale sections (1-4) must remain unchanged unless the fix requires modifying the plan's logic.</rule>
 
-      <rule n="12" name="Isolated Actions">`PROMPT` (Plan Type: `Synthesis`), `INVOKE` (Plan Type: `Handoff`), and `RETURN` (Plan Type: `Handoff`) MUST be the ONLY action in a plan.</rule>
+      <rule n="12" name="Isolated Actions">`PROMPT` (Plan Type: `Synthesis`), `INVOKE` (Plan Type: `Handoff`), and `RETURN` (Plan Type: `Handoff`) MUST be the ONLY action in a plan. `RETURN` is a terminal action that concludes the current session.</rule>
     </general_rules>
 
     <response_format>
@@ -257,9 +257,9 @@ Error Investigation Protocol: [Descriptive error title] (Only if Yellow/Red)
 ### `CREATE`
 - **File Path:** [path/to/new_file.ext](/path/to/new_file.ext)
 - **Description:** [Explanation]
-```[language]
+```[language] or ~~~[language]
 [Content]
-```
+``` or ~~~
           </template>
         </action>
 
@@ -281,13 +281,13 @@ Error Investigation Protocol: [Descriptive error title] (Only if Yellow/Red)
 - **Match All:** [true|false] (Optional: Replaces all occurrences of the FIND block)
 
 #### `FIND:`
-```[language]
+```[language] or ~~~[language]
 [Exact snippet to replace]
-```
+``` or ~~~
 #### `REPLACE:`
-```[language]
+```[language] or ~~~[language]
 [New content]
-```
+``` or ~~~
           </template>
         </action>
 
