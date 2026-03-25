@@ -107,8 +107,13 @@ def handle_resume_session(
         typer.echo(f"Resuming session: {session_name}")
 
         orchestrator = container.resolve(IRunPlanUseCase)
-        report = orchestrator.resume(session_name=session_name, interactive=interactive)
-        handle_report_output(container, report, no_copy)
+        while True:
+            report = orchestrator.resume(
+                session_name=session_name, interactive=interactive
+            )
+            if not report:
+                break
+            handle_report_output(container, report, no_copy)
 
     except Exception as e:
         typer.echo(f"Error during resume: {e}", err=True)

@@ -123,6 +123,50 @@ def test_teddy_start_dynamic_renaming_and_flow(tmp_path: Path, monkeypatch):
     ).exists()
 
 
+def test_teddy_resume_continuous_loop(tmp_path: Path, monkeypatch):
+    """Scenario: 'resume' continuously loops until the user exits."""
+    env = (
+        TestEnvironment(monkeypatch, tmp_path)
+        .setup()
+        .with_real_shell()
+        .with_real_interactor()
+    )
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+    turn_dir = tmp_path / ".teddy" / "sessions" / "loop-session" / "01"
+    turn_dir.mkdir(parents=True)
+    (turn_dir.parent / "session.context").touch()
+    (turn_dir / "turn.context").touch()
+    (turn_dir / "pathfinder.xml").touch()
+    (turn_dir / "meta.yaml").write_text("turn_id: '01'")
+
+    llm = env.get_service(ILlmClient)  # type: ignore[type-abstract]
+
+    # First plan
+    plan1 = MarkdownPlanBuilder("Plan 1").add_execute("echo turn1").build()
+    # Second plan
+    plan2 = MarkdownPlanBuilder("Plan 2").add_execute("echo turn2").build()
+
+    llm.get_completion.side_effect = [mock_response(plan1), mock_response(plan2)]
+
+    # Input sequence:
+    # 1. Provide goal for Turn 01
+    # 2. Approve Plan 1 (y)
+    # 3. Provide goal for Turn 02 (because it loops)
+    # 4. Approve Plan 2 (y)
+    # 5. Empty input to exit the loop
+    input_sequence = "Goal 1\ny\nGoal 2\ny\n\n"
+
+    result = adapter.run_cli_command(["resume"], cwd=turn_dir, input=input_sequence)
+
+    assert result.exit_code == 0
+    assert "turn1" in result.stdout
+    assert "turn2" in result.stdout
+
+    # Verify both turns were executed
+    assert (turn_dir.parent / "01" / "report.md").exists()
+    assert (turn_dir.parent / "02" / "report.md").exists()
+
+
 def test_teddy_start_with_explicit_name(tmp_path: Path, monkeypatch):
     """Scenario: 'start' with an explicit name disables dynamic renaming."""
     env = (

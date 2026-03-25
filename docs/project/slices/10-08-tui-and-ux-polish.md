@@ -38,13 +38,13 @@ To enable the interactive TUI for all execution modes and polish the session wor
 - [✓] **Implementation:** Update `ActionExecutor` to automatically skip `PRUNE` actions if `plan.is_session` is `False`.
 - [✓] **Implementation:** Update `ReviewerApp` (TUI) to filter out `PRUNE` actions from the UI tree if `plan.is_session` is `False`.
 
-### Scenario: Continuous Session Loop [ ]
+### Scenario: Continuous Session Loop [✓]
 - **Given** I am in an interactive session.
 - **When** a plan execution completes.
 - **Then** the CLI MUST NOT exit and MUST prompt for new instructions.
 
 #### Deliverables
-- [ ] **Implementation:** Refactor `session_cli_handlers.py` to loop the `plan -> execute -> resume` cycle in a `while` loop.
+- [✓] **Implementation:** Refactor `session_cli_handlers.py` to loop the `plan -> execute -> resume` cycle in a `while` loop.
 
 ### Scenario: Planning Visibility & Turn Info [ ]
 - **Given** the AI is generating a plan.
@@ -76,6 +76,7 @@ To enable the interactive TUI for all execution modes and polish the session wor
 - **Stateful Loop:** Converting the session handler from one-shot to a continuous loop.
 
 ## 4. Implementation Notes
+- **Continuous Loop:** Updated `handle_resume_session` in `session_cli_handlers.py` to use a `while True` loop that executes `orchestrator.resume` repeatedly, stopping only when the user explicitly aborts (causing `resume` to return `None`).
 - **Core Orchestration:** Refactored `ExecutionOrchestrator` to decouple action confirmation from execution. It now delegates the per-action decision to `IPlanReviewer.review_action` during interactive sessions.
 - **Legacy Compatibility:** Implemented a robust fallback in `ExecutionOrchestrator` that preserves legacy `ActionExecutor` interaction if no `IPlanReviewer` is registered in the DI container.
 - **Component:** Created `ConsolePlanReviewer` in `src/teddy_executor/adapters/inbound/console_plan_reviewer.py` to implement both sequential (`review_action`) and bulk (`review_plan`) interaction logic.
