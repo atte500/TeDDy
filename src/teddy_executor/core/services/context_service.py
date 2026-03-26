@@ -78,6 +78,8 @@ class ContextService(IGetContextUseCase):
         header_parts = [
             "# Project Context",
             "\n## 1. System Information",
+            f"- **Current Date:** {system_info.get('current_date', 'N/A')}",
+            f"- **Current Time:** {system_info.get('current_time', 'N/A')}",
             f"- **CWD:** {system_info.get('cwd', 'N/A')}",
             f"- **OS:** {system_info.get('os_name', 'N/A')} {system_info.get('os_version', 'N/A')}".strip(),
             f"- **Shell:** {system_info.get('shell', 'N/A')}",

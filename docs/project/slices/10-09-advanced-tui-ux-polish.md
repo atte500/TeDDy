@@ -7,13 +7,13 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 
 ## 2. Acceptance Criteria (Scenarios)
 
-### Scenario: Timestamped Context (Standard) [ ]
+### Scenario: Timestamped Context (Standard) [✓]
 - **Given** `teddy context` is executed.
 - **When** the project context is gathered.
 - **Then** the Header MUST include `Current Date` and `Current Time`.
 
 #### Deliverables
-- [ ] **Implementation:** Update `ContextService._format_header` to include current system time/date.
+- [✓] **Implementation:** Update `ContextService._format_header` to include current system time/date.
 
 ### Scenario: Standardized Planning Artifact (`input.md`) [ ]
 - **Given** a planning turn is initiated in an interactive session.
@@ -101,3 +101,8 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - **ExecutionOrchestrator:** In `_process_plan_actions`, if `len(plan.actions) == 1` and `action.type == "PROMPT"`, skip the `review_action` call and proceed to dispatch.
 - **ParserReporting:** Update `format_node_name` to check `node.delimiter[0]` and append "(N tildes)" or "(N backticks)".
 - **EditActionValidator:** Update `_validate_single_edit` to prepend `--- Actual\n+++ Provided\n` to the `diff_text`.
+
+## 6. Implementation Notes
+### Timestamped Context Header
+- **Technical Decision:** Extended the `IEnvironmentInspector` port and `SystemEnvironmentInspector` adapter to provide `current_date` and `current_time` rather than calculating them directly in `ContextService`. This maintains DI Purity and ensures the service remains testable with predictable mock values.
+- **Formatting:** Used `strftime("%Y-%m-%d")` and `strftime("%H:%M:%S")` for consistency.

@@ -33,6 +33,8 @@ def test_get_context_orchestrates_and_returns_correct_dto(
         "shell": "/bin/test",
         "cwd": "/test/dir",
         "os_version": "1.0",
+        "current_date": "2026-03-26",
+        "current_time": "16:50:00",
     }
     mock_git_status = " M file.py\n?? new.txt"
     mock_repo_tree = "dir/\n  file.txt"
@@ -64,6 +66,8 @@ def test_get_context_orchestrates_and_returns_correct_dto(
     assert "## 1. System Information" in result.header
     assert "- **CWD:** /test/dir" in result.header
     assert "- **OS:** test_os" in result.header
+    assert "- **Current Date:** 2026-03-26" in result.header
+    assert "- **Current Time:** 16:50:00" in result.header
 
     # Check git status section
     assert result.git_status == mock_git_status

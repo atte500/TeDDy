@@ -20,6 +20,8 @@ def test_get_environment_info(monkeypatch):
         "python_version",
         "cwd",
         "shell",
+        "current_date",
+        "current_time",
     }
 
     # Act
@@ -41,7 +43,7 @@ def test_get_git_status_returns_none_when_not_in_git_repo(monkeypatch):
     inspector = env.get_service(IEnvironmentInspector)
 
     # Mock subprocess.run to simulate 'not a git repository' error
-    def mock_run(*args, **kwargs):
+    def mock_run(*_args, **_kwargs):
         raise subprocess.CalledProcessError(128, ["git", "status", "-s"])
 
     monkeypatch.setattr(subprocess, "run", mock_run)

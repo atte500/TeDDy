@@ -2,6 +2,7 @@ import os
 import platform
 import subprocess
 import sys
+from datetime import datetime
 from typing import Optional
 
 from teddy_executor.core.ports.outbound.environment_inspector import (
@@ -19,12 +20,15 @@ class SystemEnvironmentInspector(IEnvironmentInspector):
         """
         Gathers key information about the system environment.
         """
+        now = datetime.now()
         return {
             "os_name": platform.system(),
             "os_version": platform.release(),
             "python_version": sys.version,
             "cwd": os.getcwd(),
             "shell": os.getenv("SHELL", "unknown"),
+            "current_date": now.strftime("%Y-%m-%d"),
+            "current_time": now.strftime("%H:%M:%S"),
         }
 
     def get_git_status(self) -> Optional[str]:

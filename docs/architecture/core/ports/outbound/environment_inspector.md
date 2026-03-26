@@ -16,6 +16,7 @@ The `IEnvironmentInspector` port defines a technology-agnostic interface for gat
 *   **Preconditions:** None.
 *   **Postconditions:**
     *   Returns a dictionary where keys are property names (e.g., "os_name") and values are the corresponding system details.
+    *   Keys include: `os_name`, `os_version`, `python_version`, `cwd`, `shell`, `current_date` (YYYY-MM-DD), and `current_time` (HH:MM:SS).
 
 ## 3. Related Spikes
 

@@ -15,6 +15,8 @@ class IEnvironmentInspector(Protocol):
 
         Returns:
             dict[str, str]: A dictionary of environment properties.
+            Keys include: os_name, os_version, python_version, cwd, shell,
+            current_date (YYYY-MM-DD), current_time (HH:MM:SS).
         """
         ...
 
