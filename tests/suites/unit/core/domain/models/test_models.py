@@ -1,4 +1,5 @@
 from datetime import datetime
+import pytest
 from teddy_executor.core.domain.models import (
     ActionData,
     ExecutionReport,
@@ -55,3 +56,23 @@ def test_plan_defaults_is_session_to_false():
     ]
     plan = Plan(title="Test Plan", rationale="Rationale", actions=actions)
     assert plan.is_session is False
+
+
+@pytest.mark.parametrize(
+    "action_type, expected",
+    [
+        ("PROMPT", True),
+        ("INVOKE", True),
+        ("RETURN", True),
+        ("CREATE", False),
+        ("EDIT", False),
+        ("EXECUTE", False),
+        ("READ", False),
+        ("PRUNE", False),
+        ("RESEARCH", False),
+    ],
+)
+def test_action_data_is_terminal(action_type, expected):
+    """Tests that is_terminal property correctly identifies terminal actions."""
+    action = ActionData(type=action_type, params={}, description="test")
+    assert action.is_terminal is expected

@@ -28,6 +28,11 @@ class ActionData:
     similarity_score: float | None = None
     similarity_scores: list[float] | None = None
 
+    @property
+    def is_terminal(self) -> bool:
+        """Returns True if the action is a terminal action (PROMPT, INVOKE, RETURN)."""
+        return self.type in (ActionType.PROMPT, ActionType.INVOKE, ActionType.RETURN)
+
 
 @dataclass(frozen=True)
 class ValidationError:

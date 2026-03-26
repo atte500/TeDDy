@@ -24,7 +24,7 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - **Note:** If the Terminal Action is the ONLY action in the plan, it should execute normally (respecting `-y`).
 
 #### Deliverables
-- [ ] **Domain:** Add `is_terminal` property to `ActionData` model.
+- [✓] **Domain:** Add `is_terminal` property to `ActionData` model.
 - [ ] **Implementation:** Update `ActionExecutor.confirm_and_dispatch` to implement the soft isolation check.
 - [ ] **UX Polish:** Ensure `ExecutionOrchestrator` uses the descriptive reason "User deselected this action in the plan reviewer." ONLY when skipped via TUI.
 

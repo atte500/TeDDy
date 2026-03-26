@@ -160,6 +160,19 @@ Represents a full plan to be executed. It is the aggregate root for a collection
     *   `title` (str): The plan's title.
     *   `rationale` (str): The AI's explanation for the plan.
     *   `actions` (list[ActionData]): A list of `ActionData` objects.
+
+### `ActionData` (Value Object/Entity)
+**Status:** Implemented
+
+Represents a single action within a plan, including its parameters and execution state.
+
+*   **Attributes:**
+    *   `type` (str): The type of action (e.g., `CREATE`, `EXECUTE`).
+    *   `params` (dict): Action-specific parameters.
+    *   `selected` (bool): Whether the action is currently selected for execution.
+    *   `modified` (bool): Whether the action was modified by the user.
+*   **Behaviors:**
+    *   `is_terminal`: (Property) Returns `True` if the action is a terminal action (`PROMPT`, `INVOKE`, `RETURN`) that should trigger isolation or handoff.
 *   **Invariants:**
     *   `actions` must be a list containing at least one action.
 
