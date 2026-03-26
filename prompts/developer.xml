@@ -64,9 +64,9 @@
 
       <phase n="5" name="DOCUMENTATION">
         <goal>Synchronize technical documentation and architectural contracts.</goal>
-        <step n="1" name="Sync Slice">Even if already partially documented, `EDIT` the slice doc to mark the deliverable `[✓]`. You MUST update the `Implementation Notes` section documenting any noteworthy additional details (including frictions experienced) here before closing the deliverable.</step>
+        <step n="1" name="Sync Slice">Even if already partially documented, `EDIT` the slice doc to mark the deliverable `[✓]`. You MUST update the `## 6. Implementation Notes` section at the end of the document to record any noteworthy technical findings or frictions before closing the deliverable.</step>
         <step n="2" name="Harvest Debt">If any `[DEBT]` was logged during this turn, `EDIT` the active Milestone's (in `docs/project/milestones/`) `## Technical Debt` section to append it as a checkmarkable `[ ]` task.</step>
-        <step n="3" name="Align Architecture">`READ` the documentation of edited components (`docs/architecture/**/*.md`) and `ARCHITECTURE.md`. Then, `EDIT` them to ensure strict alignment with your implementation. You MUST update `Implementation Notes` sections and ensure contracts (DTOs, Pre/Post-conditions) strictly match your code.</step>
+        <step n="3" name="Align Architecture">`READ` the documentation of all modified components (`docs/architecture/**/*.md`) and `ARCHITECTURE.md`. Then, `EDIT` them to ensure strict alignment with your implementation. You MUST update `Implementation Notes` sections and ensure contracts (DTOs, Pre/Post-conditions) strictly match your code.</step>
       </phase>
 
       <phase n="6" name="COMMIT & ITERATE">
@@ -161,22 +161,19 @@ WIP & REMINDERS:
 
     <blueprints>
       <blueprint name="Vertical Slice">
-        <description>The smallest deliverable unit of behavioral value.</description>
-        <section n="1" name="Metadata">
-          <item name="Path">docs/project/slices/MM-NN-{{feature}}.md (Use 00-NN for Fast-Track).</item>
-          <item name="Status">- **Status:** Planned</item>
-          <item name="Milestone">- **Milestone:** [link]</item>
-        </section>
-        <section n="2" name="Business Goal">
-          <item name="Heading">## 1. Business Goal</item>
-        </section>
-        <section n="3" name="Acceptance Criteria">
+        <description>A cohesive feature that delivers a set of correlated and testable behaviors.</description>
+        <section n="1" name="Acceptance Criteria">
           <item name="Heading">## 2. Acceptance Criteria (Scenarios)</item>
-          <item name="Content">Behavioral scenarios using Gherkin descriptions with concrete examples (Given/When/Then). Under each scenario, include a Deliverables checklist prefixed with categories like Contract, Implementation, Refactoring, or others as needed. Each Deliverable is the smallest atomic unit of work (e.g., one Port, DTO, or method).</item>
+          <item name="Content">Behavioral scenarios to be implemented.</item>
+          <item name="Deliverables">`### Deliverables` checklist under each scenario. Each checklist item is the atomic unit for one Atomic Delivery Cycle. MUST mark items `[✓]` as completed before committing each piece of work.</item>
         </section>
-        <section n="4" name="Architectural Changes">
-          <item name="Heading">## 3. Architectural Changes</item>
-          <item name="Content">Modified components (including Test Harness triads).</item>
+        <section n="2" name="Execution Context">
+          <item name="Heading">## 3. Implementation Guidelines / ## 5. Interaction Sequence</item>
+          <item name="Content">Follow these instructions and diagrams strictly during implementation.</item>
+        </section>
+        <section n="3" name="Implementation Notes">
+          <item name="Heading">## 6. Implementation Notes</item>
+          <item name="Content">MANDATORY: Filled by the Developer during implementation. Record technical frictions, key decisions, and findings.</item>
         </section>
       </blueprint>
 

@@ -55,7 +55,7 @@
         <goal>Configure environments and generate the developer checklist.</goal>
         <step n="1" name="Environment Audit">`READ` config files (`pyproject.toml`, `.pre-commit-config.yaml`, `.github/workflows/ci.yml`, `.gitignore`).</step>
         <step n="2" name="Environment Configuration">`EDIT` configs to enforce CI gates and test discovery paths aligned with the new blueprint.</step>
-        <step n="3" name="Finalize Slice">`EDIT` the slice doc in order to finalize it for implementation. Detail the **Interaction Sequence**. Under `Deliverables`, create ordered checklists of **atomic, independent units of work**. Prefix tasks with categories (e.g., **Contract**, **Implementation**, **Refactoring**, **Wiring**, **Cleanup**). Setup/dependency commands MUST be first.</step>
+        <step n="3" name="Finalize Slice">`EDIT` the slice doc to finalize all technical sections and sequences. For each scenario, create an ordered `### Deliverables` checklist of atomic units. MUST split contract definitions, DTOs, and interfaces into separate points ordered by dependency. Setup/dependency commands MUST be first.</step>
       </phase>
 
       <phase n="7" name="Version Control & Handoff">
@@ -118,7 +118,7 @@
       </blueprint>
 
       <blueprint name="Vertical Slice">
-        <description>The smallest deliverable unit of behavioral value.</description>
+        <description>A cohesive feature that delivers a set of correlated and testable behaviors.</description>
         <section n="1" name="Metadata">
           <item name="Status">- **Status:** Planned</item>
           <item name="Milestone">- **Milestone:** [link]</item>
@@ -129,11 +129,24 @@
         </section>
         <section n="3" name="Acceptance Criteria">
           <item name="Heading">## 2. Acceptance Criteria (Scenarios)</item>
-          <item name="Content">Behavioral scenarios using Gherkin descriptions with concrete examples (Given/When/Then). Under each scenario, include a Deliverables checklist prefixed with categories like Contract, Implementation, Refactoring, or others as needed. Each Deliverable is the smallest atomic unit of work (e.g., one Port, DTO, or method).</item>
+          <item name="Content">Behavioral scenarios using Gherkin descriptions with concrete examples (Given/When/Then).</item>
+          <item name="Deliverables">Under each scenario, include a `### Deliverables` checklist of atomic units. MUST split contract definitions, DTOs, and interfaces into distinct tasks ordered by dependency.</item>
         </section>
-        <section n="4" name="Architectural Changes">
-          <item name="Heading">## 3. Architectural Changes</item>
+        <section n="4" name="Implementation Guidelines">
+          <item name="Heading">## 3. Implementation Guidelines</item>
+          <item name="Content">Actionable strategy for implementation. MUST include Test Harness Triad strategy.</item>
+        </section>
+        <section n="5" name="Architectural Changes">
+          <item name="Heading">## 4. Architectural Changes</item>
           <item name="Content">Modified components (including Test Harness triads).</item>
+        </section>
+        <section n="6" name="Interaction Sequence">
+          <item name="Heading">## 5. Interaction Sequence</item>
+          <item name="Content">Mermaid sequence diagram or narrative describing the flow between components.</item>
+        </section>
+        <section n="7" name="Implementation Notes">
+          <item name="Heading">## 6. Implementation Notes</item>
+          <item name="Content">Filled by the Developer as things get implemented. Record of frictions, technical decisions, and findings.</item>
         </section>
       </blueprint>
 

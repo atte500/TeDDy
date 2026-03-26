@@ -59,21 +59,25 @@
       </blueprint>
 
       <blueprint name="Specification Document">
-        <description>The living document defining a feature's Why, What, and How.</description>
+        <description>The technical single source of truth for a feature, format, or workflow.</description>
         <section n="1" name="Metadata">
           <item name="Path">docs/project/specs/{{feature}}.md</item>
         </section>
-        <section n="2" name="Problem Space">
-          <item name="Heading">## 1. Problem Statement</item>
-          <item name="Content">Core problem and value proposition.</item>
+        <section n="2" name="Overview">
+          <item name="Heading">## 1. Overview / Problem Statement</item>
+          <item name="Content">Core problem, context, and value proposition.</item>
         </section>
-        <section n="3" name="Solution Space">
-          <item name="Heading">## 2. Proposed Solution</item>
-          <item name="Content">Trade-offs, spike learnings, and strong recommendation.</item>
+        <section n="3" name="Guiding Principles">
+          <item name="Heading">## 2. Guiding Principles / Core Logic</item>
+          <item name="Content">Foundational rules, engineering philosophy, or logical constraints.</item>
         </section>
-        <section n="4" name="Implementation Space">
-          <item name="Heading">## 3. Implementation Guidelines</item>
-          <item name="Content">Actionable plan (not code) for the Architect.</item>
+        <section n="4" name="Technical Specification">
+          <item name="Heading">## 3. Technical Specification</item>
+          <item name="Content">Detailed logic, file formats, directory structures, or workflow diagrams (Mermaid).</item>
+        </section>
+        <section n="5" name="Implementation Guidelines">
+          <item name="Heading">## 4. Implementation Guidelines</item>
+          <item name="Content">High-level phasing, sequencing, and technical strategy for the Architect.</item>
         </section>
       </blueprint>
 
@@ -104,7 +108,7 @@
       </blueprint>
 
       <blueprint name="Vertical Slice">
-        <description>The smallest deliverable unit of behavioral value.</description>
+        <description>A cohesive feature that delivers a set of correlated and testable behaviors.</description>
         <section n="1" name="Metadata">
           <item name="Path">docs/project/slices/MM-NN-{{feature}}.md (Use 00-NN for Fast-Track).</item>
           <item name="Status">- **Status:** Planned</item>
@@ -115,11 +119,24 @@
         </section>
         <section n="3" name="Acceptance Criteria">
           <item name="Heading">## 2. Acceptance Criteria (Scenarios)</item>
-          <item name="Content">Behavioral scenarios using Gherkin descriptions with concrete examples (Given/When/Then). Under each scenario, include a Deliverables checklist prefixed with categories like Contract, Implementation, Refactoring, or others as needed. Each Deliverable is the smallest atomic unit of work (e.g., one Port, DTO, or method).</item>
+          <item name="Content">Behavioral scenarios using Gherkin descriptions with concrete examples (Given/When/Then).</item>
+          <item name="Deliverables">Under each scenario, include a `### Deliverables` checklist of atomic units of work prefixed by category. MUST split contract definitions, DTOs, and interfaces into distinct tasks ordered by dependency.</item>
         </section>
-        <section n="4" name="Architectural Changes">
-          <item name="Heading">## 3. Architectural Changes</item>
+        <section n="4" name="Implementation Guidelines">
+          <item name="Heading">## 3. Implementation Guidelines</item>
+          <item name="Content">Actionable strategy for implementation. MUST include Test Harness Triad strategy.</item>
+        </section>
+        <section n="5" name="Architectural Changes">
+          <item name="Heading">## 4. Architectural Changes</item>
           <item name="Content">Modified components (including Test Harness triads).</item>
+        </section>
+        <section n="6" name="Interaction Sequence">
+          <item name="Heading">## 5. Interaction Sequence</item>
+          <item name="Content">Mermaid sequence diagram or narrative describing the flow between components.</item>
+        </section>
+        <section n="7" name="Implementation Notes">
+          <item name="Heading">## 6. Implementation Notes</item>
+          <item name="Content">Filled by the Developer as things get implemented. Record of frictions, technical decisions, and findings.</item>
         </section>
       </blueprint>
 
