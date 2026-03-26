@@ -71,10 +71,12 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
     - Implement the `SessionLogGenerator` to compile session histories into a human-readable `session-log.md`, excluding turns that fail validation.
 
 ## 6. Technical Debt
+- [x] **Security:** Pin `litellm` to `1.82.6` to mitigate March 2026 supply chain attack (TeamPCP).
+- [x] **Security:** Update `requests` to `^2.33.0` (GHSA-gc5v-m9x4-r6x2).
+- [ ] **Security:** Monitor `pygments` for version `2.19.3+` release on PyPI to resolve GHSA-5239-wwwm-4pmq (ReDoS). Current version `2.19.2` is the latest available but flagged.
 
 - [ ] **Registry Refactor Review:** Review the newly split `registries/` modules (formerly `container.py`) for proper architectural cohesion.
 - [ ] **Serialization Safety:** Replace the recursive `scrub_dict_for_serialization` workaround with schema-based serialization (e.g., Pydantic) for reports to prevent mock-induced hangs.
 - [ ] **Domain Model Validation:** Introduce `spec=...` and strict primitive validation in domain models to prevent `MagicMock` leakage into infrastructure operations.
 - [ ] **DI Isolation & Harness Robustness:** Update the test harness to resolve the DI container location dynamically or via a central port rather than hardcoding module paths.
-- [ ] **Dependency Vulnerability (pip-audit):** Upgrade `pygments` to resolve `GHSA-5239-wwwm-4pmq`.
 - [ ] **Code Duplication (jscpd):** Refactor internal logic duplication to satisfy the new 0% threshold. Focus areas: `action_parser_complex.py` vs `action_parser_strategies.py`, `session_service.py` internal matches, `session_orchestrator.py` internal matches, and `cli_helpers.py` overlap with `diff.py`.
