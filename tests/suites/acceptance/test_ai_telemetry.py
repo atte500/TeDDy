@@ -48,7 +48,8 @@ def test_ai_telemetry_and_logging(tmp_path, monkeypatch):
     mock_llm_client.get_completion_cost.return_value = 0.04
 
     # Input: Goal prompt -> Confirmation for plan execution (y)
-    result = adapter.run_start(["--agent", "pathfinder"], input="My Goal\ny\n")
+    # Using -y to prevent the loop from consuming inputs meant for other checks
+    result = adapter.run_start(["--agent", "pathfinder", "-y"], input="My Goal\n")
 
     assert result.exit_code == 0
     turn_dir = Path(".teddy/sessions/new-feature/01")
@@ -86,7 +87,8 @@ def test_telemetry_persistence_across_turns(tmp_path, monkeypatch):
     plan_1 = MarkdownPlanBuilder("Turn 1").add_execute("echo 1").build()
     mock_llm_client.get_completion.return_value = make_mock_response(plan_1)
     mock_llm_client.get_completion_cost.return_value = 0.01
-    adapter.run_start(["turn-1", "--agent", "pathfinder"])
+    # Use -y to ensure Turn 1 finishes before we manually trigger Turn 2 via resume
+    adapter.run_start(["turn-1", "--agent", "pathfinder", "-y"], input="yes\n")
 
     # Turn 2
     plan_2 = MarkdownPlanBuilder("Turn 2").add_execute("echo 2").build()
@@ -135,6 +137,6 @@ def test_input_log_during_replan(tmp_path, monkeypatch):
         make_mock_response(good_plan),
     ]
 
-    result = adapter.run_start(["replan-test"], input="Go\n")
+    result = adapter.run_start(["replan-test", "-y"], input="Go\n")
     assert result.exit_code == 1
     assert (tmp_path / ".teddy/sessions/replan-test/02/input.log").exists()

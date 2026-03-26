@@ -14,7 +14,11 @@ from teddy_executor.adapters.inbound.cli_helpers import (
 
 
 def handle_new_session(
-    container: Container, name: Optional[str], agent: str, no_copy: bool = False
+    container: Container,
+    name: Optional[str],
+    agent: str,
+    interactive: bool = True,
+    no_copy: bool = False,
 ):
     """Logic for the 'start' command."""
     from datetime import datetime
@@ -31,9 +35,22 @@ def handle_new_session(
 
         # Streamlined Initialization: Trigger resume (which triggers planning for EMPTY state)
         orchestrator = container.resolve(IRunPlanUseCase)
-        report = orchestrator.resume(session_name=actual_name)
 
-        handle_report_output(container, report, no_copy)
+        current_session_name = actual_name
+        while True:
+            report = orchestrator.resume(
+                session_name=current_session_name, interactive=interactive
+            )
+            if not report:
+                break
+
+            handle_report_output(container, report, no_copy)
+
+            if not interactive:
+                break
+
+            # Re-resolve the session name in case it was auto-renamed during the turn
+            current_session_name = session_manager.get_latest_session_name()
 
     except Exception as e:
         typer.echo(f"Error: {e}", err=True)

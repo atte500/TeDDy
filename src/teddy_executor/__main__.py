@@ -81,6 +81,9 @@ OPT_UI_MODE = typer.Option(
 def start(
     name: Optional[str] = typer.Argument(None, help="The name of the new session."),
     agent: str = typer.Option("pathfinder", "--agent", help="Agent prompt to use."),
+    interactive: bool = typer.Option(
+        True, "--interactive/--no-interactive", "-i/-y", help="Interactive mode."
+    ),
     no_copy: bool = OPT_NO_COPY,
     ui_mode: Optional[bool] = OPT_UI_MODE,
 ):
@@ -93,7 +96,13 @@ def start(
     if ui_mode is not None:
         _apply_ui_mode_override(container, ui_mode)
 
-    handle_new_session(container, name, agent, no_copy)
+    handle_new_session(
+        container=container,
+        name=name,
+        agent=agent,
+        interactive=interactive,
+        no_copy=no_copy,
+    )
 
 
 @app.command()
