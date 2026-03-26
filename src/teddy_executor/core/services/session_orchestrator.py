@@ -226,7 +226,6 @@ class SessionOrchestrator(IRunPlanUseCase):
         return self._session_service.transition_to_next_turn(
             plan_path=plan_path,
             execution_report=report,
-            is_validation_failure=is_validation_failure,
             turn_cost=turn_cost,
         )
 

@@ -105,6 +105,7 @@ def test_session_orchestrator_triggers_transition_on_success(  # noqa: PLR0913
     # Mock parsing and validation to allow execution flow
     mock_plan_parser.parse.return_value = MagicMock()
     mock_plan_validator.validate.return_value = []
+    mock_session_manager.transition_to_next_turn.return_value = "02"
 
     # Act
     orchestrator.execute(plan_content=plan_content, plan_path=plan_path)
@@ -117,7 +118,6 @@ def test_session_orchestrator_triggers_transition_on_success(  # noqa: PLR0913
     mock_session_manager.transition_to_next_turn.assert_called_once_with(
         plan_path=plan_path,
         execution_report=mock_run_plan.execute.return_value,
-        is_validation_failure=False,
         turn_cost=0.0,
     )
 

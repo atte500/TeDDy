@@ -35,6 +35,7 @@ def test_transition_to_next_turn_handles_missing_turn_context(tmp_path, containe
     assert next_turn_path.exists()
     assert (next_turn_path / "turn.context").exists()
 
-    # The context should only contain the report from turn 01
+    # The context should contain BOTH the plan and report from turn 01
     context_content = (next_turn_path / "turn.context").read_text()
-    assert context_content.strip() == ".teddy/sessions/test-session/01/report.md"
+    assert ".teddy/sessions/test-session/01/plan.md" in context_content
+    assert ".teddy/sessions/test-session/01/report.md" in context_content

@@ -68,13 +68,7 @@ class SessionService(ISessionManager):
             "turn_cost": 0.0,
             "creation_timestamp": datetime.now(timezone.utc).isoformat(),
         }
-
-        from teddy_executor.core.utils.serialization import scrub_dict_for_serialization
-
-        serializable_meta = scrub_dict_for_serialization(meta_data)
-        self._file_system_manager.write_file(
-            f"{turn_dir}/meta.yaml", yaml.dump(serializable_meta)
-        )
+        self._write_meta(f"{turn_dir}/meta.yaml", meta_data)
 
         return session_root
 
@@ -129,7 +123,6 @@ class SessionService(ISessionManager):
         self,
         plan_path: str,
         execution_report: Optional[ExecutionReport] = None,
-        is_validation_failure: bool = False,
         turn_cost: float = 0.0,
     ) -> str:
         """
@@ -154,24 +147,25 @@ class SessionService(ISessionManager):
         # 4. Handle context
         paths = self._repository.read_context_file(f"{cur_dir.as_posix()}/turn.context")
         self._apply_execution_effects(paths, execution_report)
-        if not is_validation_failure:
-            # Add the report from the turn that just finished to the next turn's context.
-            # We use the full relative path from project root to ensure ContextService
-            # can resolve it.
-            report_path = cur_dir.joinpath("report.md")
-            path_parts = report_path.parts
-            if ".teddy" in path_parts:
-                idx = path_parts.index(".teddy")
-                root_relative_path = "/".join(path_parts[idx:])
-                paths.add(root_relative_path)
-            else:
-                # Fallback for non-standard paths (mostly in isolated tests)
-                paths.add(f"{cur_dir.name}/report.md")
+
+        # Always append BOTH plan.md and report.md to the next turn's context
+        # to ensure the AI has its previous intent and the resulting outcome.
+        paths.add(self._to_root_relative(cur_dir, "plan.md"))
+        paths.add(self._to_root_relative(cur_dir, "report.md"))
 
         self._file_system_manager.write_file(
             f"{next_dir}/turn.context", "\n".join(sorted(list(paths)))
         )
         return next_dir
+
+    def _to_root_relative(self, turn_dir: Path, filename: str) -> str:
+        """Calculates a root-relative path for a file within a turn directory."""
+        file_path = turn_dir.joinpath(filename)
+        path_parts = file_path.parts
+        if ".teddy" in path_parts:
+            idx = path_parts.index(".teddy")
+            return "/".join(path_parts[idx:])
+        return f"{turn_dir.name}/{filename}"
 
     def _load_meta(self, turn_dir: str) -> Dict[str, Any]:
         """Loads and parses meta.yaml for a turn."""
@@ -224,13 +218,14 @@ class SessionService(ISessionManager):
             "parent_turn_id": current_meta.get("turn_id", "00"),
             "creation_timestamp": datetime.now(timezone.utc).isoformat(),
         }
+        self._write_meta(f"{next_dir}/meta.yaml", meta)
 
+    def _write_meta(self, path: str, data: Dict[str, Any]) -> None:
+        """Serializes and writes meta.yaml."""
         from teddy_executor.core.utils.serialization import scrub_dict_for_serialization
 
-        serializable = scrub_dict_for_serialization(meta)
-        self._file_system_manager.write_file(
-            f"{next_dir}/meta.yaml", yaml.dump(serializable)
-        )
+        serializable = scrub_dict_for_serialization(data)
+        self._file_system_manager.write_file(path, yaml.dump(serializable))
 
     def rename_session(self, old_name: str, new_name: str) -> str:
         """

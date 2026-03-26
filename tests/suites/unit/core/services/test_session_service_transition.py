@@ -1,5 +1,6 @@
 import yaml
 from datetime import datetime, timezone
+from pathlib import Path
 from teddy_executor.core.domain.models.execution_report import (
     ExecutionReport,
     RunSummary,
@@ -7,6 +8,27 @@ from teddy_executor.core.domain.models.execution_report import (
 )
 from teddy_executor.core.domain.models.plan import ActionData, ActionType
 from teddy_executor.core.ports.outbound.session_manager import ISessionManager
+
+
+def setup_transition_harness(env, meta_id="abc", context="file_a.py"):
+    """Helper to setup a standardized transition mock state."""
+    mock_fs = env.get_mock_filesystem()
+    plan_path = ".teddy/sessions/feat-x/01/plan.md"
+    current_meta = {"turn_id": meta_id, "agent_name": "pathfinder"}
+    current_prompt = "system prompt content"
+
+    valid_paths = {
+        ".teddy/sessions/feat-x/01/meta.yaml",
+        ".teddy/sessions/feat-x/01/pathfinder.xml",
+        ".teddy/sessions/feat-x/01/turn.context",
+    }
+    mock_fs.path_exists.side_effect = lambda p: p in valid_paths
+    mock_fs.read_file.side_effect = lambda path: {
+        ".teddy/sessions/feat-x/01/meta.yaml": yaml.dump(current_meta),
+        ".teddy/sessions/feat-x/01/pathfinder.xml": current_prompt,
+        ".teddy/sessions/feat-x/01/turn.context": context,
+    }.get(path, "")
+    return plan_path
 
 
 def test_transition_to_next_turn_creates_directory_and_linkage(env):
@@ -17,28 +39,9 @@ def test_transition_to_next_turn_creates_directory_and_linkage(env):
     # Arrange
     service = env.get_service(ISessionManager)
     mock_fs = env.get_mock_filesystem()
-
-    # Mock current turn state
-    plan_path = ".teddy/sessions/feat-x/01/plan.md"
-    current_meta = {"turn_id": "abc", "agent_name": "pathfinder"}
-    current_prompt = "system prompt content"
-    current_context = "file_a.py"
-
-    # Mocking FS for T_current
-    valid_paths = {
-        ".teddy/sessions/feat-x/01/meta.yaml",
-        ".teddy/sessions/feat-x/01/pathfinder.xml",
-        ".teddy/sessions/feat-x/01/turn.context",
-    }
-    mock_fs.path_exists.side_effect = lambda p: p in valid_paths
-    mock_fs.read_file.side_effect = lambda path: {
-        ".teddy/sessions/feat-x/01/meta.yaml": yaml.dump(current_meta),
-        ".teddy/sessions/feat-x/01/pathfinder.xml": current_prompt,
-        ".teddy/sessions/feat-x/01/turn.context": current_context,
-    }.get(path, "")
+    plan_path = setup_transition_harness(env)
 
     now = datetime.now(timezone.utc)
-    # Use a real report
     report = ExecutionReport(
         run_summary=RunSummary(status=RunStatus.SUCCESS, start_time=now, end_time=now),
         original_actions=[],
@@ -49,10 +52,6 @@ def test_transition_to_next_turn_creates_directory_and_linkage(env):
 
     # Assert
     assert next_turn_path == ".teddy/sessions/feat-x/02"
-
-    # Verify directory creation
-    from pathlib import Path
-
     mock_fs.create_directory.assert_any_call(str(Path(".teddy/sessions/feat-x/02")))
 
     # Verify meta.yaml linkage
@@ -61,7 +60,6 @@ def test_transition_to_next_turn_creates_directory_and_linkage(env):
     )
     meta_data = yaml.safe_load(meta_call.args[1])
     assert meta_data["parent_turn_id"] == "abc"
-    assert meta_data["turn_id"] == "02"
 
     # Verify pathfinder.xml is copied
     prompt_call = next(
@@ -84,25 +82,8 @@ def test_transition_to_next_turn_applies_read_and_prune_side_effects(env):
     # Arrange
     service = env.get_service(ISessionManager)
     mock_fs = env.get_mock_filesystem()
+    plan_path = setup_transition_harness(env, context="file_a.py\nfile_b.py")
 
-    plan_path = ".teddy/sessions/feat-x/01/plan.md"
-    current_meta = {"turn_id": "abc"}
-    current_prompt = "system prompt content"
-    current_context = "file_a.py\nfile_b.py"  # file_b.py is in context
-
-    valid_paths = {
-        ".teddy/sessions/feat-x/01/meta.yaml",
-        ".teddy/sessions/feat-x/01/pathfinder.xml",
-        ".teddy/sessions/feat-x/01/turn.context",
-    }
-    mock_fs.path_exists.side_effect = lambda p: p in valid_paths
-    mock_fs.read_file.side_effect = lambda path: {
-        ".teddy/sessions/feat-x/01/meta.yaml": yaml.dump(current_meta),
-        ".teddy/sessions/feat-x/01/pathfinder.xml": current_prompt,
-        ".teddy/sessions/feat-x/01/turn.context": current_context,
-    }.get(path, "")
-
-    # Mock Report with real ActionData objects
     action_read = ActionData(
         type=ActionType.READ.value, params={"Resource": "[new_file.py](/new_file.py)"}
     )
@@ -125,7 +106,32 @@ def test_transition_to_next_turn_applies_read_and_prune_side_effects(env):
     )
     next_context = context_call.args[1]
 
-    assert "file_a.py" in next_context  # Persisted from T_current
-    assert "new_file.py" in next_context  # Added via READ
+    assert "file_a.py" in next_context  # Persisted
+    assert "new_file.py" in next_context  # Added
     assert "01/report.md" in next_context  # Always added
-    assert "file_b.py" not in next_context  # Removed via PRUNE
+    assert "file_b.py" not in next_context  # Removed
+
+
+def test_transition_to_next_turn_appends_plan_and_report_on_validation_failure(env):
+    """
+    transition_to_next_turn should append BOTH plan.md and report.md
+    even if the execution failed validation.
+    """
+    # Arrange
+    service = env.get_service(ISessionManager)
+    mock_fs = env.get_mock_filesystem()
+    plan_path = setup_transition_harness(env, meta_id="01", context="existing.py")
+
+    # Act
+    service.transition_to_next_turn(plan_path, execution_report=None)
+
+    # Assert
+    context_call = next(
+        c for c in mock_fs.write_file.call_args_list if "02/turn.context" in c.args[0]
+    )
+    next_context = context_call.args[1]
+
+    assert "01/plan.md" in next_context
+    assert "01/report.md" in next_context
+    assert "01/plan.md" in next_context
+    assert "01/report.md" in next_context

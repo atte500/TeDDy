@@ -36,7 +36,7 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 
 #### Deliverables
 - [✓] **Implementation:** Update `PlanningService.generate_plan` to write `input.md` using the standardized `ContextService` output.
-- [ ] **Implementation:** Update `SessionService.transition_to_next_turn` to always append BOTH the current turn's `plan.md` and `report.md` to the next turn's context.
+- [✓] **Implementation:** Update `SessionService.transition_to_next_turn` to always append BOTH the current turn's `plan.md` and `report.md` to the next turn's context.
 
 ### Scenario: Global TUI Instruction Bridge & Prompt Deprecation [ ]
 - **Given** I am in the `ReviewerApp` (TUI), regardless of session mode.
@@ -129,3 +129,7 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - **Issue:** Multi-action plans containing `PROMPT`, `INVOKE`, or `RETURN` were being skipped in the TUI because the orchestrator passed `interactive=False` to the executor (to avoid double-prompting).
 - **Fix:** Introduced a `skip_isolation` flag in `ActionExecutor.confirm_and_dispatch`. The orchestrator sets this to `True` when an `IPlanReviewer` (TUI) has already handled the action approval.
 - **Refactoring:** Moved hardcoded terminal action detection in `ActionExecutor` to the `ActionData.is_terminal` domain property.
+
+### Transition Logic
+- `SessionService.transition_to_next_turn` now unconditionally appends the current turn's `plan.md` and `report.md` to the next turn's context. This ensures that even in self-correction loops triggered by validation failure, the AI has both its faulty plan and the specific error report in its worldview.
+- **Path Resolution:** A private helper method `_to_root_relative` was introduced in `SessionService` to calculate correct project-root relative paths (e.g., `.teddy/sessions/name/01/plan.md`) to ensure the `ContextService` can reliably resolve and i

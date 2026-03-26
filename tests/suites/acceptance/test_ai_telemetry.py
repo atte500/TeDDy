@@ -117,7 +117,7 @@ def test_telemetry_persistence_across_turns(tmp_path, monkeypatch):
 
 
 def test_input_log_during_replan(tmp_path, monkeypatch):
-    """Verifies input.log during re-planning."""
+    """Verifies input.md during re-planning."""
     from teddy_executor.core.ports.outbound import ILlmClient
 
     env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()

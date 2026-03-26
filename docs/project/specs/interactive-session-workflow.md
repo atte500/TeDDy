@@ -178,7 +178,7 @@ The `teddy execute` command creates the *next* turn (`T_next`) based on the stat
 6.  **Finalize and Report:**
     -   **Generate Report:** The factual `T_current/report.md` is generated based on the execution of the plan (or its validation failure).
     -   **Update Session Log:** The system will create or append to the `<session_name>/session-log.md` file. It will append the full content of `T_current/plan.md` and the "Action Log" section from `T_current/report.md`. See the [Automatic Session Log Specification](./session-history-view.md) for details.
-    -   **Append Previous Artifacts to Context:** The paths to BOTH the original `T_current/plan.md` and the newly generated `T_current/report.md` are always appended to `T_next/turn.context`. This ensures the AI has its previous intent and the resulting outcome (including any validation errors) in its worldview for the next turn.
+    -   **Append Previous Artifacts to Context:** The paths to BOTH the original `T_current/plan.md` and the newly generated `T_current/report.md` are always appended to `T_next/turn.context` (regardless of execution outcome or validation status). This ensures the AI has its previous intent and the resulting outcome in its worldview for the next turn.
 7.  **Continuous Loop:**
     -   Instead of exiting, the command should automatically trigger the `plan` phase for `T_next` (prompting the user for their next instruction), creating a seamless, continuous conversational loop until the user explicitly exits.
 

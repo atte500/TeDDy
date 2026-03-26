@@ -40,7 +40,6 @@ class ISessionManager(Protocol):
         self,
         plan_path: str,
         execution_report: Optional[ExecutionReport] = None,
-        is_validation_failure: bool = False,
         turn_cost: float = 0.0,
     ) -> str:
         """
