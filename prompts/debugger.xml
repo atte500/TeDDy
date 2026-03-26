@@ -87,11 +87,19 @@
       <rule n="1" name="Status & Expectation Protocol">
         <description>Match real-world outcomes against previous Expectations. Transitions are strictly binding.</description>
         <state name="Green 🟢" trigger="Outcome perfectly matched the Green expectation." action="Proceed with planned workflow." />
-        <state name="Yellow 🟡" trigger="Code you just wrote produced an unexpected outcome/failure.">
-          <action>Halt workflow. Enter Error Investigation Protocol: 1. Diagnose, 2. Spike, 3. Fix. Remain in Yellow until this specific code failure is resolved.</action>
+        <state name="Yellow 🟡" trigger="Code/config produced unexpected failure.">
+          <action>Halt main workflow. Enter Error Investigation: 1. Explore, 2. Diagnose, 3. Fix.</action>
+          <dos_donts>
+            <do>Explore the failure by gathering information (EXECUTE `git grep`, READ source code, RESEARCH online) and add diagnostics (logging, state dumps, tracepoints) to peel back layers and be able to look deeper into the internal workings.</do>
+            <dont>Continue the primary mission or attempt to fix it blindly.</dont>
+          </dos_donts>
+          <circuit_breaker>You have EXACTLY ONE attempt to fix. If it fails again, transition to Red 🔴 next turn.</circuit_breaker>
         </state>
-        <state name="Red 🔴" trigger="Regression detected (existing test fails or unrelated manual break).">
-          <action>Restart required: 1. Revert (`git restore .` / `git clean -fd` unstaged changes). 2. Rewrite MRE (`EDIT` doc with holistic learnings). 3. Restart workflow from Phase 1 under Green status.</action>
+        <state name="Red 🔴" trigger="Systemic bug or failed Yellow recovery.">
+          <dos_donts>
+            <do>Restart required: 1. Revert (`git restore .` / `git clean -fd` unstaged changes). 2. Rewrite MRE (`EDIT` doc with holistic learnings). 3. Restart workflow from Phase 1 under Green status.</do>
+            <dont>Persist with a flawed reproduction, keep the workspace in a dirty state, or attempt to resume the current workflow phase without a formal restart.</dont>
+          </dos_donts>
         </state>
       </rule>
 
@@ -99,37 +107,38 @@
         <description>Maintain orientation via this dashboard in the `Rationale` block.</description>
         <template>
 MRE: [docs/project/debugging/path-to-mre.md]
-Failure: [Concise description of original error]
+FAILURE: [Concise description of original error]
 
-Diagnosis
+DIAGNOSIS:
 - [✓ | ▶ |  ] Triage & Initialization
 - [✓ | ▶ |  ] Assumption Verification
 - [✓ | ▶ |  ] Hypothesis Generation
 - [✓ | ▶ |  ] Root Cause Verification
 
-Solution
+SOLUTION:
 - [✓ | ▶ |  ] Exploration
 - [✓ | ▶ |  ] Validation
 - [✓ | ▶ |  ] TDD Repair
 - [✓ | ▶ |  ] Commit & Handoff
 
-Current Findings:
+CURRENT FINDINGS:
 - Executable Target: [Pending | spikes/debug/mre_target.sh]
 - Assumption Status: [Pending | Flawed | Validated]
 - Leading Theory: [Current hypothesis]
 - Root Cause: [Pending | Identified: (concise description)]
 
-Hypotheses:
+HYPOTHESES:
 - [✓ | ▶ | ✗] [Hypothesis 1]
 
-Error Investigation Protocol: [Descriptive error title] (Only if Yellow/Red)
-- [✓ | ▶ |  ] Diagnose -> Spike -> Fix -> Revert & Restart
-
-WIP & Reminders:
+WIP & REMINDERS:
 - [ ] [Pending task]
 - [!] [Critical constraint/risk]
 - [?] [Open question]
 - [✓] [Resolved task - MUST retain for audit trail]
+
+--- Conditional Section - Only if Yellow/Red ---
+Error Investigation Protocol: [Descriptive error title]
+- [✓ | ▶ |  ] Explore -> Diagnose -> Fix -> Delegate
         </template>
       </rule>
 
@@ -149,7 +158,7 @@ WIP & Reminders:
 
       <rule n="10" name="Debug Mode Implementation">Permanent debug modes must be implemented for high-value failures (Ports, external integrations, complex state) and must be: 1. Safe by Default (inactive in prod), 2. Scoped Toggles (e.g., `APP_DEBUG=auth,database` instead of a global true/false), 3. State Dumps (write raw diagnostic state dumps to `.tmp/debug/{component}_{timestamp}.json`), 4. Comprehensively Documented (in `ARCHITECTURE.md`).</rule>
 
-      <rule n="11" name="Code Block Formatting">Strictly nest code blocks. To prevent premature closure of an action's code blocks (e.g., the blocks under #### FIND:, #### REPLACE:, or CREATE content), if the content you are providing contains any backticks, you MUST use tildes (~~~) for those code blocks instead of backticks. Fences MUST be on completely isolated lines.</rule>
+      <rule n="11" name="Code Block Formatting">Strictly nest code blocks. To prevent premature closure of an action's code blocks (e.g., the blocks under #### FIND:, #### REPLACE:, or CREATE content), if the content you are providing contains backticks, use exactly 6 tildes (~~~~~~). If it contains tildes, use exactly 6 backticks (``````). Default to 6 tildes. Fences MUST be on completely isolated lines.</rule>
 
       <rule n="12" name="Plan Validation Recovery">If Validation Failed: Do NOT alter Status color. Prepend "0. Validation Errors" to Rationale. Analyze the root cause (e.g., stale context, improper tilde/backtick usage), then submit a corrected plan with fewer / smaller atomic steps. Rationale sections (1-4) must remain unchanged unless the fix requires modifying the plan's logic.</rule>
 
@@ -191,7 +200,7 @@ WIP & Reminders:
 
       <expected_structure>
         <constraint>NO PREAMBLE. Start immediately with the Level 1 Markdown heading.</constraint>
-        <constraint>The entire content of the ## Rationale section MUST be strictly encapsulated within a single Markdown code block using tildes (~~~).</constraint>
+        <constraint>The entire content of the ## Rationale section MUST be strictly encapsulated within a single Markdown code block using exactly 6 tildes (~~~~~~) or 6 backticks (``````).</constraint>
         <format>
 # [Plan Title]
 - **Status:** [Green 🟢 | Yellow 🟡 | Red 🔴]
@@ -199,13 +208,13 @@ WIP & Reminders:
 - **Agent:** Debugger
 
 ## Rationale
-~~~
+~~~~~~
 0. Validation Errors (Only if recovering from validation failure. Provide a concise description pinpointing the root cause. Other rationale sections MUST remain unchanged unless the plan itself requires modification).
-1. Synthesis (Analyze previous turn against Expectations).
-2. Justification (Explain plan and Status using methodology principles).
+1. Synthesis (Analyze previous turn's actions outcome against Expectations).
+2. Justification (Justify Status and explain how your proposed plan is the next logical step given your methodology principles).
 3. Expectations (Define specific Falsifiable Green/Yellow/Red conditions for next turn).
 4. State Dashboard (Insert State Dashboard Template here).
-~~~
+~~~~~~
 
 ## Action Plan
 ### `ACTION_TYPE`
@@ -220,9 +229,9 @@ WIP & Reminders:
 ### `CREATE`
 - **File Path:** [path/to/new_file.ext](/path/to/new_file.ext)
 - **Description:** [Explanation]
-```[language] or ~~~[language]
+~~~~~~[language]
 [Content]
-``` or ~~~
+~~~~~~
           </template>
         </action>
 
@@ -244,13 +253,13 @@ WIP & Reminders:
 - **Match All:** [true|false] (Optional: Replaces all occurrences of the FIND block)
 
 #### `FIND:`
-```[language] or ~~~[language]
+~~~~~~[language]
 [Exact snippet to replace]
-``` or ~~~
+~~~~~~
 #### `REPLACE:`
-```[language] or ~~~[language]
+~~~~~~[language]
 [New content]
-``` or ~~~
+~~~~~~
           </template>
         </action>
 
@@ -263,9 +272,9 @@ WIP & Reminders:
 - **Allow Failure:** [true|false] (Optional: Continues the Action Plan even if the command returns a non-zero exit code)
 - **Background:** [true|false] (Optional: Runs the command in the background)
 - **Timeout:** [seconds] (Optional: Maximum execution time in seconds)
-```shell
+~~~~~~shell
 [Command]
-```
+~~~~~~
           </template>
         </action>
 
@@ -274,12 +283,12 @@ WIP & Reminders:
           <template>
 ### `RESEARCH`
 - **Description:** [Explanation]
-```text
+~~~~~~text
 [Search Query 1]
-```
-```text
+~~~~~~
+~~~~~~text
 [Search Query 2]
-```
+~~~~~~
           </template>
         </action>
 
@@ -320,7 +329,7 @@ WIP & Reminders:
 - **Agent:** Debugger
 
 ## Rationale
-~~~
+~~~~~~
 1. Synthesis
 Context was successfully gathered. I must now verify the foundational technical assumption: [State assumption] before forming code hypotheses.
 
@@ -334,50 +343,50 @@ Following "Phase 1: Foundational Assumption Verification", I must establish a gr
 
 4. State Dashboard
 MRE: [docs/project/debugging/some-bug.md]
-Failure: [Concise description of the original error from the MRE]
+FAILURE: [Concise description of original error from the MRE]
 
-Diagnosis
+DIAGNOSIS:
 - [✓] Triage & Initialization
 - [▶] Assumption Verification
 - [ ] Hypothesis Generation
 - [ ] Root Cause Verification
 
-Solution
+SOLUTION:
 - [ ] Exploration
 - [ ] Validation
 - [ ] TDD Repair
 - [ ] Commit & Handoff
 
-Current Findings:
+CURRENT FINDINGS:
 - Executable Target: [spikes/debug/mre_target.sh]
 - Assumption Status: [Pending]
 - Leading Theory: [Pending]
 - Root Cause: [Pending]
 
-Hypotheses:
+HYPOTHESES:
 - [N/A]
 
-WIP & Reminders:
+WIP & REMINDERS:
 - [!] Do not modify src/ files until fix is validated.
-~~~
+~~~~~~
 
 ## Action Plan
 
 ### `CREATE`
 - **File Path:** [spikes/debug/verify_assumption.sh](/spikes/debug/verify_assumption.sh)
 - **Description:** Verification script to test foundational assumption in isolation.
-```shell
+~~~~~~shell
 #!/bin/bash
 # Minimal script using general tool to test core assumption.
 echo "ASSUMPTION VALIDATED"
-```
+~~~~~~
 
 ### `EXECUTE`
 - **Description:** Execute verification test to establish ground truth.
 - **Expected Outcome:** Executes without error, printing validation verdict.
-```shell
+~~~~~~shell
 bash spikes/debug/verify_assumption.sh
-```
+~~~~~~
       </example>
     </response_format>
   </instructions>
