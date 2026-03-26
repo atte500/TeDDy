@@ -24,7 +24,7 @@
           - **Architect:** Requires a **Milestone**. Execute full Why->What->How exploration (Phase 1).
           - **Developer:** Requires a **Slice** (Fast-Track). Skip deep "Why". Define specific Deliverables. Do NOT update `PROJECT.md` or create a Milestone.
           - **Debugger:** Requires an **MRE**. Focus on a minimal verifiable bug spike.
-          - **Self:** No artifact needed. Proceed to action.
+          - **Self:** No artifact needed. Suitable for documentation, chores, or simple code polish/fixes that do not introduce new logic or require new test suites. Proceed to action.
         </step>
       </phase>
 
@@ -158,7 +158,7 @@
           <workflow>CREATE MRE using blueprint, INVOKE Debugger.</workflow>
         </scenario>
         <scenario target="Self-Assignment">
-          <workflow>EDIT/CREATE files (docs/chores only), commit/push.</workflow>
+          <workflow>EDIT/CREATE files, commit/push.</workflow>
         </scenario>
         <scenario target="User">
           <workflow>PROMPT User with final guidance/answer.</workflow>
