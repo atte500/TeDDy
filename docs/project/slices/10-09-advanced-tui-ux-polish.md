@@ -38,19 +38,35 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - [✓] **Implementation:** Update `PlanningService.generate_plan` to write `input.md` using the standardized `ContextService` output.
 - [✓] **Implementation:** Update `SessionService.transition_to_next_turn` to always append BOTH the current turn's `plan.md` and `report.md` to the next turn's context.
 
-### Scenario: Global TUI Instruction Bridge & Prompt Deprecation [ ]
-- **Given** I am in the `ReviewerApp` (TUI), regardless of session mode.
-- **When** the execution loop starts.
-- **Then** the legacy CLI instruction prompt (typer.prompt) MUST be entirely removed.
+### Scenario: Unified Instruction Bridge (TUI & Console) [ ]
+- **Given** I am executing a session command (`start`, `resume`, or `execute`).
+- **When** I provide a message via the `-m / --message` flag in `--console` mode.
+- **Then** that message MUST be captured as the `user_request`.
+- **And** the legacy interactive `typer.prompt` MUST be bypassed if a message is provided.
 - **And** the TUI MUST provide an `m` binding ("Add Message") which opens an external editor to capture instructions.
-- **And** these instructions MUST be stored in `plan.metadata["user_request"]`.
+- **And** these instructions MUST be stored in `plan.metadata["user_request"]` for the current execution.
 - **And** these instructions MUST be appended to the final `Execution Report` (stdout/clipboard) or `report.md` under a `## User Request` section.
+- **And** the **Transition Algorithm** MUST ensure this message is passed to the **next** turn's planning phase.
 
 #### Deliverables
+- [ ] **CLI:** Add `-m / --message` flag to `start`, `resume`, and `execute` commands in `__main__.py`.
+- [ ] **Implementation:** Update `SessionCLIHandlers` to pass the message to the orchestrator.
 - [ ] **Implementation:** Remove legacy `typer.prompt` from session loops and handlers.
 - [ ] **Implementation:** Implement global `m` binding in `ReviewerApp` using the configured external editor.
-- [✓] **Implementation:** Update `ExecutionReport` domain model and Jinja2 template to include the captured `user_request` for manual workflow feedback.
-- [ ] **Implementation:** Update `SessionOrchestrator` to bridge instructions back to the planner in session mode.
+- [✓] **Implementation:** Update `ExecutionReport` domain model and Jinja2 template to include the captured `user_request`.
+- [ ] **Implementation:** Update `SessionOrchestrator` to bridge instructions from CLI flags/reports to the planner.
+
+### Scenario: Message Consumption (Session & Manual) [ ]
+- **Given** a planning turn is initiated via `teddy plan` or as part of a session.
+- **When** it looks for user instructions.
+- **Then** it MUST check in this priority order:
+  1. Explicit `message` passed from the current command (e.g., `resume -m "..."`).
+  2. `user_request` found in the **previous** turn's `report.md` (for sessions) or a `report.md` in the CWD (for manual).
+  3. Fallback: If in `--interactive` mode, prompt the user. If in `--no-interactive` mode, provide none.
+
+#### Deliverables
+- [ ] **CLI:** Update `plan` command to make `-m` optional (defaulting to None).
+- [ ] **Implementation:** Update `SessionPlanner` and `PlanningService` to implement the tiered message resolution logic.
 
 ### Scenario: TUI "View Plan" Workflow [ ]
 - **Given** I am in the `ReviewerApp` (TUI).
@@ -132,4 +148,4 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 
 ### Transition Logic
 - `SessionService.transition_to_next_turn` now unconditionally appends the current turn's `plan.md` and `report.md` to the next turn's context. This ensures that even in self-correction loops triggered by validation failure, the AI has both its faulty plan and the specific error report in its worldview.
-- **Path Resolution:** A private helper method `_to_root_relative` was introduced in `SessionService` to calculate correct project-root relative paths (e.g., `.teddy/sessions/name/01/plan.md`) to ensure the `ContextService` can reliably resolve and i
+- **Path Resolution:** A private helper method `_to_root_relative` was introduced in `SessionService` to calculate correct project-root relative paths (e.g., `.teddy/sessions/name/01/plan.md`) to ensure the `ContextService` can reliably resolve and include them in the `input.md` artifact.
