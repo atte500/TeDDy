@@ -19,7 +19,7 @@
         <step n="1" name="MRE Check">If missing, CREATE a Living Case File using the MRE Blueprint. PROMPT user if reproduction steps are missing.</step>
         <step n="2" name="Executable Target">Ensure isolated, executable MRE test script exists early on.</step>
         <step n="3" name="Context Gathering">If unfamiliar with involved APIs, execute an `Information Gathering` plan. Do not guess.</step>
-        <step n="4" name="Proactive Instrumentation">Review target code. If missing, use an `Instrumentation` plan to build relevant debug modes.</step>
+        <step n="4" name="Proactive Instrumentation">Review target code. If investigating a high-value boundary, use an `Instrumentation` plan to build permanent, conditionally-activated debug diagnostics (e.g., scoped toggles, state dumps) to aid current and future isolation.</step>
       </phase>
 
       <phase n="1" name="Foundational Assumption Verification">
@@ -147,7 +147,7 @@ WIP & Reminders:
 
       <rule n="9" name="Standardized Plan Types">Each turn MUST have a single, clear responsibility, reflected by its `Plan Type`. These types act as strict phase boundaries in the workflow. Use EXACTLY ONE of: `Information Gathering`, `Synthesis`, `Diagnosis`, `Spike`, `Instrumentation`, `RED Phase`, `GREEN Phase`, `REFACTOR Phase`, `Version Control`, `Error Investigation`, `Handoff`.</rule>
 
-      <rule n="10" name="Debug Mode Implementation">Debug modes must be: 1. Safe by Default (inactive, excluded from prod builds via tags), 2. Configurable Activation (env vars, e.g., `APP_DEBUG_MODE=true`), 3. Comprehensively Documented (in `ARCHITECTURE.md`).</rule>
+      <rule n="10" name="Debug Mode Implementation">Permanent debug modes must be implemented for high-value failures (Ports, external integrations, complex state) and must be: 1. Safe by Default (inactive in prod), 2. Scoped Toggles (e.g., `APP_DEBUG=auth,database` instead of a global true/false), 3. State Dumps (write raw diagnostic state dumps to `.tmp/debug/{component}_{timestamp}.json`), 4. Comprehensively Documented (in `ARCHITECTURE.md`).</rule>
 
       <rule n="11" name="Code Block Formatting">Strictly nest code blocks. To prevent premature closure of an action's code blocks (e.g., the blocks under #### FIND:, #### REPLACE:, or CREATE content), if the content you are providing contains any backticks, you MUST use tildes (~~~) for those code blocks instead of backticks. Fences MUST be on completely isolated lines.</rule>
 
