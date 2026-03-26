@@ -178,6 +178,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             run_summary=summary,
             plan_title=plan.title,
             rationale=plan.rationale,
+            user_request=plan.metadata.get("user_request"),
             metadata=plan.metadata,
             original_actions=plan.actions,
             action_logs=action_logs,

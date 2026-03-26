@@ -192,6 +192,11 @@
 {{ render_resource(path, content) }}
 {% endfor %}
 {%- endif %}
+{% if report.user_request %}
+
+## User Request
+{{ report.user_request }}
+{% endif %}
 
 {# Extract logs that should display resource content #}
 {% set report_ns = namespace(content_logs=[]) %}

@@ -43,13 +43,13 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - **When** the execution loop starts.
 - **Then** the legacy CLI instruction prompt (typer.prompt) MUST be entirely removed.
 - **And** the TUI MUST provide an `m` binding ("Add Message") which opens an external editor to capture instructions.
-- **And** these instructions MUST be stored in `plan.metadata["next_instructions"]`.
+- **And** these instructions MUST be stored in `plan.metadata["user_request"]`.
 - **And** these instructions MUST be appended to the final `Execution Report` (stdout/clipboard) or `report.md` under a `## User Request` section.
 
 #### Deliverables
 - [ ] **Implementation:** Remove legacy `typer.prompt` from session loops and handlers.
 - [ ] **Implementation:** Implement global `m` binding in `ReviewerApp` using the configured external editor.
-- [ ] **Implementation:** Update `ExecutionReport` domain model and Jinja2 template to include the captured `next_instructions` for manual workflow feedback.
+- [✓] **Implementation:** Update `ExecutionReport` domain model and Jinja2 template to include the captured `user_request` for manual workflow feedback.
 - [ ] **Implementation:** Update `SessionOrchestrator` to bridge instructions back to the planner in session mode.
 
 ### Scenario: TUI "View Plan" Workflow [ ]
@@ -108,8 +108,8 @@ To refine the interactive session workflow into a seamless, high-visibility expe
   - Add `BINDING` for `m` ("Add Message").
   - On trigger, suspend the TUI and open the configured external editor with a temporary file.
   - **Stateful Editing:** If instructions were already entered in the current TUI session, they MUST be loaded into the editor for refinement.
-  - **Finalization:** The final content of the instruction buffer/file MUST only be moved to `self.plan.metadata["next_instructions"]` when the user presses `s` (Submit) to finalize the plan.
-- **SessionPlanner:** Update `trigger_new_plan` to check for `next_instructions` in the *previous* turn's execution report or a temporary state file before prompting the user via the interactor.
+  - **Finalization:** The final content of the instruction buffer/file MUST only be moved to `self.plan.metadata["user_request"]` when the user presses `s` (Submit) to finalize the plan.
+- **SessionPlanner:** Update `trigger_new_plan` to check for `user_request` in the *previous* turn's execution report or a temporary state file before prompting the user via the interactor.
 
 ### Orchestration & Validation
 - **ExecutionOrchestrator:** In `_process_plan_actions`, if `len(plan.actions) == 1` and `action.type == "PROMPT"`, skip the `review_action` call and proceed to dispatch.
