@@ -13,7 +13,7 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - **Then** the Header MUST include `Current Date` and `Current Time`.
 
 #### Deliverables
-- [✓] **Implementation:** Update `ContextService._format_header` to include current system time/date.
+- [✓] **Logic** - Update `ContextService._format_header` to include current system time/date.
 
 ### Scenario: Soft Isolation for Terminal Actions (Non-TUI) [✓]
 - **Given** I run `teddy execute` (with or without `-y`) AND NOT using the TUI.
@@ -24,8 +24,8 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - **Note:** If the Terminal Action is the ONLY action in the plan, it should execute normally (respecting `-y`).
 
 #### Deliverables
-- [✓] **Domain:** Add `is_terminal` property to `ActionData` model.
-- [✓] **Implementation:** Update `ActionExecutor.confirm_and_dispatch` to implement the soft isolation check.
+- [✓] **Contract** - Add `is_terminal` property to `ActionData` model.
+- [✓] **Logic** - Update `ActionExecutor.confirm_and_dispatch` to implement the soft isolation check.
 
 ### Scenario: Standardized Planning Artifact (`input.md`) [✓]
 - **Given** a planning turn is initiated in an interactive session.
@@ -35,8 +35,8 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - **And** the **Transition Algorithm** MUST ensure that both `plan.md` and `report.md` from the previous turn are added to the current `turn.context` (regardless of validation success/failure).
 
 #### Deliverables
-- [✓] **Implementation:** Update `PlanningService.generate_plan` to write `input.md` using the standardized `ContextService` output.
-- [✓] **Implementation:** Update `SessionService.transition_to_next_turn` to always append BOTH the current turn's `plan.md` and `report.md` to the next turn's context.
+- [✓] **Logic** - Update `PlanningService.generate_plan` to write `input.md` using the standardized `ContextService` output.
+- [✓] **Logic** - Update `SessionService.transition_to_next_turn` to always append BOTH the current turn's `plan.md` and `report.md` to the next turn's context.
 
 ### Scenario: Unified Instruction Bridge (TUI & Console) [ ]
 - **Given** I am executing a session command (`start`, `resume`, or `execute`).
@@ -49,12 +49,12 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - **And** the **Transition Algorithm** MUST ensure this message is passed to the **next** turn's planning phase.
 
 #### Deliverables
-- [ ] **CLI:** Add `-m / --message` flag to `start`, `resume`, and `execute` commands in `__main__.py`.
-- [ ] **Implementation:** Update `SessionCLIHandlers` to pass the message to the orchestrator.
-- [ ] **Implementation:** Remove legacy `typer.prompt` from session loops and handlers.
-- [ ] **Implementation:** Implement global `m` binding in `ReviewerApp` using the configured external editor.
-- [✓] **Implementation:** Update `ExecutionReport` domain model and Jinja2 template to include the captured `user_request`.
-- [ ] **Implementation:** Update `SessionOrchestrator` to bridge instructions from CLI flags/reports to the planner.
+- [✓] **Contract** - Update `ExecutionReport` domain model and Jinja2 template to include the captured `user_request`.
+- [ ] **Logic** - Update `SessionOrchestrator` to bridge instructions from CLI flags/reports to the planner.
+- [ ] **Wiring** - Add `-m / --message` flag to `start`, `resume`, and `execute` commands in `__main__.py`.
+- [ ] **Wiring** - Update `SessionCLIHandlers` to pass the message to the orchestrator.
+- [ ] **Wiring** - Implement global `m` binding in `ReviewerApp` using the configured external editor.
+- [ ] **Cleanup** - Remove legacy `typer.prompt` from session loops and handlers.
 
 ### Scenario: Message Consumption (Session & Manual) [ ]
 - **Given** a planning turn is initiated via `teddy plan` or as part of a session.
@@ -65,8 +65,8 @@ To refine the interactive session workflow into a seamless, high-visibility expe
   3. Fallback: If in `--interactive` mode, prompt the user. If in `--no-interactive` mode, provide none.
 
 #### Deliverables
-- [ ] **CLI:** Update `plan` command to make `-m` optional (defaulting to None).
-- [ ] **Implementation:** Update `SessionPlanner` and `PlanningService` to implement the tiered message resolution logic.
+- [ ] **Logic** - Update `SessionPlanner` and `PlanningService` to implement the tiered message resolution logic.
+- [ ] **Wiring** - Update `plan` command to make `-m` optional (defaulting to None).
 
 ### Scenario: TUI "View Plan" Workflow [ ]
 - **Given** I am in the `ReviewerApp` (TUI).
@@ -74,9 +74,8 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - **Then** the entire `plan.md` currently being executed MUST open in the configured external editor.
 
 #### Deliverables
-- [ ] **Implementation:** Add `v` binding to `ReviewerApp` to open the full plan content in the external editor.
-- [ ] **Technical Detail:** Use the existing `plan.md` file located in the turn directory for sessions.
-- [ ] **Implementation:** Update `ExecutionOrchestrator` to persist manual plan content to a temporary file to support the `v` binding in manual mode.
+- [ ] **Logic** - Update `ExecutionOrchestrator` to persist manual plan content to a temporary file to support the `v` binding in manual mode.
+- [ ] **Wiring** - Add `v` binding to `ReviewerApp` to open the full plan content in the external editor.
 
 ### Scenario: Universal PROMPT Auto-Execution [ ]
 - **Given** a plan contains exactly ONE action of type `PROMPT`.
@@ -84,7 +83,7 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - **Then** the `PROMPT` message MUST be displayed immediately without requiring user approval, regardless of session mode.
 
 #### Deliverables
-- [ ] **Implementation:** Update `ExecutionOrchestrator._process_plan_actions` to automatically approve `PROMPT` actions if they are the sole action in any plan.
+- [ ] **Logic** - Update `ExecutionOrchestrator._process_plan_actions` to automatically approve `PROMPT` actions if they are the sole action in any plan.
 
 ### Scenario: Context-Aware Editing (p key) [ ]
 - **Given** I am in the `ReviewerApp` (TUI).
@@ -96,11 +95,12 @@ To refine the interactive session workflow into a seamless, high-visibility expe
   - **Read-only (READ/PRUNE)**: Modal preview of the target resource.
 
 #### Deliverables
-- [ ] **Implementation:** Implement multi-stage `CREATE` workflow in `ReviewerApp`.
-- [ ] **Implementation:** Implement "Proposed Final Version" simulation logic using `EditSimulator` and multi-stage `EDIT` workflow in `ReviewerApp`.
-- [ ] **Implementation:** Implement modal text editing for `EXECUTE` and `RESEARCH`.
-- [ ] **Implementation:** Implement modal preview for `READ` and `PRUNE`.
-- [ ] **Contract:** Ensure `report.md` explicitly notes when an action was `*modified` by the user.
+- [ ] **Contract** - Ensure `report.md` explicitly notes when an action was `*modified` by the user.
+- [ ] **Logic** - Implement "Proposed Final Version" simulation logic using `EditSimulator` in `ReviewerApp`.
+- [ ] **Wiring** - Implement multi-stage `CREATE` workflow in `ReviewerApp`.
+- [ ] **Wiring** - Implement multi-stage `EDIT` workflow in `ReviewerApp`.
+- [ ] **Wiring** - Implement modal text editing for `EXECUTE` and `RESEARCH`.
+- [ ] **Wiring** - Implement modal preview for `READ` and `PRUNE`.
 
 ### Scenario: Diagnostic Clarity (AST & Diffs) [ ]
 - **Given** a plan fails validation.
@@ -110,8 +110,8 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - **Then** the diff block MUST include standard headers: `--- Actual` and `+++ Provided`.
 
 #### Deliverables
-- [ ] **Implementation:** Update `ParserReporting.format_node_name` to append precise delimiter metadata.
-- [ ] **Implementation:** Update `EditActionValidator._validate_single_edit` to include `--- Actual` and `+++ Provided` headers in the failure diff block.
+- [ ] **Logic** - Update `ParserReporting.format_node_name` to append precise delimiter metadata.
+- [ ] **Logic** - Update `EditActionValidator._validate_single_edit` to include `--- Actual` and `+++ Provided` headers in the failure diff block.
 
 ## 3. Implementation Guidelines
 
