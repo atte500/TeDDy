@@ -120,7 +120,7 @@ Initializes a new session directory, generates the first plan, and immediately e
     2.  Ensures `.teddy/init.context` exists. If the file is missing, it is created with a default content (`README.md`, `docs/project/PROJECT.md`, and `docs/architecture/ARCHITECTURE.md`). **An existing `init.context` file will not be overwritten.**
     3.  Creates the session-specific context file at `<session>/session.context` and copies the full contents of `.teddy/init.context` into it (with all `#` comments stripped out) to seed the session's default context.
     4.  Uses `teddy get-prompt` to fetch the agent prompt and saves it using its actual name (e.g., `01/pathfinder.xml`).
-    5.  Automatically triggers the planning phase for the first turn. The exact text sent to the LLM must be saved as `01/input.log`.
+    5.  Automatically triggers the planning phase for the first turn. The exact text sent to the LLM must be saved as 01/input.md.
     6.  Once the `plan.md` is generated, the command **must not exit**. It must seamlessly invoke the `execute` logic to prompt the user for approval via the TUI.
 
 ---

@@ -34,7 +34,6 @@ class PlanningService(IPlanningUseCase):
         context_files: Optional[Dict[str, Sequence[str]]] = None,
     ) -> tuple[str, float]:
         import yaml
-        import json
 
         turn_path = Path(turn_dir)
 
@@ -69,11 +68,9 @@ class PlanningService(IPlanningUseCase):
             },
         ]
 
-        # Log exact raw payload
-        log_path = (turn_path / "input.log").as_posix()
-        self._file_system_manager.write_file(
-            log_path, json.dumps(messages, indent=2, ensure_ascii=False)
-        )
+        # Log exact raw payload as standardized artifact (Deliverable: input.md artifact)
+        log_path = (turn_path / "input.md").as_posix()
+        self._file_system_manager.write_file(log_path, full_context)
 
         # Resolve model from config with fallback
         model = self._config_service.get_setting("planning_model", "gpt-4o") or "gpt-4o"

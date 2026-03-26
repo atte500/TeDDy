@@ -1,4 +1,3 @@
-import json
 import yaml
 from teddy_executor.core.services.planning_service import PlanningService
 from teddy_executor.core.ports.outbound import (
@@ -77,11 +76,11 @@ def test_generate_plan_logs_input_and_uses_agent_prompt(env):
 
     mock_fs.read_file.assert_any_call(str(Path("session/01/pathfinder.xml")))
 
-    # 2. Verify input.log was written
+    # 2. Verify input.md was written
     log_call = [
-        call for call in mock_fs.write_file.call_args_list if "input.log" in call[0][0]
+        call for call in mock_fs.write_file.call_args_list if "input.md" in call[0][0]
     ]
     assert len(log_call) == 1
-    log_content = json.loads(log_call[0][0][1])
-    assert log_content[0]["role"] == "system"
-    assert log_content[0]["content"] == "<prompt>Pathfinder prompt</prompt>"
+    # Verify input.md contains the context (Deliverable: input.md artifact)
+    # The context header contains "Project Context"
+    assert "Project Context" in log_call[0][0][1]

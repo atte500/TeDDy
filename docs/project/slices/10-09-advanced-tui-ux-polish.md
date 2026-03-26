@@ -35,7 +35,7 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - **And** the **Transition Algorithm** MUST ensure that both `plan.md` and `report.md` from the previous turn are added to the current `turn.context` (regardless of validation success/failure).
 
 #### Deliverables
-- [ ] **Implementation:** Update `PlanningService.generate_plan` to write `input.md` using the standardized `ContextService` output.
+- [✓] **Implementation:** Update `PlanningService.generate_plan` to write `input.md` using the standardized `ContextService` output.
 - [ ] **Implementation:** Update `SessionService.transition_to_next_turn` to always append BOTH the current turn's `plan.md` and `report.md` to the next turn's context.
 
 ### Scenario: Global TUI Instruction Bridge & Prompt Deprecation [ ]
@@ -117,6 +117,10 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - **EditActionValidator:** Update `_validate_single_edit` to prepend `--- Actual\n+++ Provided\n` to the `diff_text`.
 
 ## 6. Implementation Notes
+### Standardized Planning Artifact (input.md)
+- **Technical Decision:** Replaced the JSON-formatted `input.log` in `PlanningService` with a Markdown-formatted `input.md`. This file contains the project context (header + content) gathered by the `ContextService`.
+- **Rational:** Standardizing the input as a Markdown artifact ensures it is human-readable on disk and consistent with the "Markdown as Interface" principle. It also simplifies context gathering for the planner.
+
 ### Timestamped Context Header
 - **Technical Decision:** Extended the `IEnvironmentInspector` port and `SystemEnvironmentInspector` adapter to provide `current_date` and `current_time` rather than calculating them directly in `ContextService`. This maintains DI Purity and ensures the service remains testable with predictable mock values.
 - **Formatting:** Used `strftime("%Y-%m-%d")` and `strftime("%H:%M:%S")` for consistency.

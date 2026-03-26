@@ -61,7 +61,7 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 - [x] **Slice 7: UX Polish & Bug Fixes (Session Lifecycle & Logging)**
     - **Core Bugs:** Fix `FileNotFoundError` in `session_service.py` when `turn.context` is missing.
     - **Lifecycle:** Rename `teddy new` to `teddy start`. Allow `start` to use a dynamic session name based on the first plan's H1. Update `resume` to accept an optional path argument (resolving a session folder, turn folder, or file) and auto-detect the active session if omitted.
-    - **Logging:** Suppress verbose LiteLLM logs. Generate an `input.log` in the turn directory containing the exact raw payload sent to the LLM. Save agent prompts using their actual names (e.g., `pathfinder.xml`) instead of `system_prompt.xml`.
+    -   **Logging:** Suppress verbose LiteLLM logs. Generate an `input.md` in the turn directory containing the standardized project context. Save agent prompts using their actual names (e.g., `pathfinder.xml`) instead of `system_prompt.xml`.
     - **Config:** Add `--model`, `--provider`, and `--api-key` overrides to `teddy start`.
 - [x] **Slice 8: TUI & UX Polish**
     - Wire `TextualPlanReviewer` to `IPlanReviewer` in `container.py`. Create a continuous interactive loop in the session orchestrator. Move planning logs to before the LLM call and add Turn N. Fix telemetry coloring and relax terminal action isolation.
@@ -87,3 +87,4 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 - [ ] **DI Isolation & Harness Robustness:** Update the test harness to resolve the DI container location dynamically or via a central port rather than hardcoding module paths.
 - [ ] Code Duplication (jscpd): Refactor internal logic duplication to satisfy the new 0% threshold. Focus areas: `action_parser_complex.py` vs `action_parser_strategies.py`, `session_service.py` internal matches, `session_orchestrator.py` internal matches, and `cli_helpers.py` overlap with `diff.py`.
 - [ ] Code Duplication (jscpd): Resolve new clones in `session_cli_handlers.py`, `__main__.py`, and test setups in `test_ai_telemetry.py` and `test_session_resume_robustness.py` introduced during Turn Loop fix.
+- [ ] Code Duplication (jscpd): Resolve clones in `test_planning_service.py`, `test_ai_telemetry.py`, and `test_planning_service_logging.py` introduced/exposed by `input.md` artifact standardized.

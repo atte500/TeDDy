@@ -53,7 +53,7 @@ def test_ai_telemetry_and_logging(tmp_path, monkeypatch):
 
     assert result.exit_code == 0
     turn_dir = Path(".teddy/sessions/new-feature/01")
-    assert (tmp_path / turn_dir / "input.log").exists()
+    assert (tmp_path / turn_dir / "input.md").exists()
     assert (tmp_path / turn_dir / "pathfinder.xml").exists()
     import re
 
@@ -139,4 +139,4 @@ def test_input_log_during_replan(tmp_path, monkeypatch):
 
     result = adapter.run_start(["replan-test", "-y"], input="Go\n")
     assert result.exit_code == 1
-    assert (tmp_path / ".teddy/sessions/replan-test/02/input.log").exists()
+    assert (tmp_path / ".teddy/sessions/replan-test/02/input.md").exists()
