@@ -27,7 +27,7 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - [✓] **Domain:** Add `is_terminal` property to `ActionData` model.
 - [✓] **Implementation:** Update `ActionExecutor.confirm_and_dispatch` to implement the soft isolation check.
 
-### Scenario: Standardized Planning Artifact (`input.md`) [ ]
+### Scenario: Standardized Planning Artifact (`input.md`) [✓]
 - **Given** a planning turn is initiated in an interactive session.
 - **When** the input is saved to disk.
 - **Then** it MUST be named `input.md` (instead of `input.log`).
