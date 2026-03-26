@@ -63,11 +63,13 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
     - **Lifecycle:** Rename `teddy new` to `teddy start`. Allow `start` to use a dynamic session name based on the first plan's H1. Update `resume` to accept an optional path argument (resolving a session folder, turn folder, or file) and auto-detect the active session if omitted.
     - **Logging:** Suppress verbose LiteLLM logs. Generate an `input.log` in the turn directory containing the exact raw payload sent to the LLM. Save agent prompts using their actual names (e.g., `pathfinder.xml`) instead of `system_prompt.xml`.
     - **Config:** Add `--model`, `--provider`, and `--api-key` overrides to `teddy start`.
-- [ ] **Slice 8: TUI & UX Polish**
+- [x] **Slice 8: TUI & UX Polish**
     - Wire `TextualPlanReviewer` to `IPlanReviewer` in `container.py`. Create a continuous interactive loop in the session orchestrator. Move planning logs to before the LLM call and add Turn N. Fix telemetry coloring and relax terminal action isolation.
-- [ ] **Slice 9: Agent Collaboration Model**
+- [ ] **Slice 9: Advanced TUI & UX Polish**
+    - Implement `input.md` standardized artifact, TUI instruction bridge, universal previewing, and enhanced diagnostic labels (AST/Diffs).
+- [ ] **Slice 10: Agent Collaboration Model**
     - Implement `meta.yaml` ledgers, turn transition algorithms, and `INVOKE`/`RETURN` capabilities.
-- [ ] **Slice 10: Automatic Session Log Generation**
+- [ ] **Slice 11: Automatic Session Log Generation**
     - Implement the `SessionLogGenerator` to compile session histories into a human-readable `session-log.md`, excluding turns that fail validation.
 
 ## 6. Technical Debt
