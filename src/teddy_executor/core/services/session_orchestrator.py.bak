@@ -87,6 +87,7 @@ class SessionOrchestrator(IRunPlanUseCase):
 
     def _trigger_new_plan(self, turn_dir: str) -> Optional[str]:
         """Orchestrates the planning phase for a new turn."""
+        self._display_planning_progress(turn_dir)
         return self._session_planner.trigger_new_plan(turn_dir)
 
     def execute(
