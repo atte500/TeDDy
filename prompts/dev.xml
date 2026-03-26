@@ -112,8 +112,7 @@ PHASES:
 - [✓ | ▶ |  ] DOCUMENTATION
 - [✓ | ▶ |  ] COMMIT
 
-INNER LOOP: [Current Focus]
-Target Test: [tests/suites/unit/test_component.py]
+INNER LOOP: [tests/suites/unit/target_test_component.py]
 - [✓ | ▶ |  ] RED
 - [✓ | ▶ |  ] GREEN
 - [✓ | ▶ |  ] REFACTOR
@@ -379,8 +378,7 @@ PHASES:
 - [ ] DOCUMENTATION
 - [ ] COMMIT
 
-INNER LOOP: Implementing core AuthService contract
-Target Test: tests/suites/unit/test_auth_service.py
+INNER LOOP: tests/suites/unit/test_auth_service.py
 - [▶] RED
 - [ ] GREEN
 - [ ] REFACTOR
