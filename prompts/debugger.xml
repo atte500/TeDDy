@@ -98,7 +98,7 @@
         </state>
         <state name="Red 🔴" trigger="Systemic bug or failed Yellow recovery.">
           <dos_donts>
-            <do>Restart required: 1. Revert (`git restore .` / `git clean -fd` unstaged changes). 2. Rewrite MRE (`EDIT` doc with holistic learnings). 3. Restart workflow from Phase 1 under Green status.</do>
+            <do>Restart required: 1. Rewrite MRE (`EDIT` doc with holistic learnings). 2. Stage Documentation (`git add docs/`). 3. Reset Unstaged (`git restore .` / `git clean -fd`). 4. Restart workflow from Phase 1 under Green status.</do>
             <dont>Persist with a flawed reproduction, keep the workspace in a dirty state, or attempt to resume the current workflow phase without a formal restart.</dont>
           </dos_donts>
         </state>
