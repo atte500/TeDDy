@@ -22,12 +22,9 @@ def orchestrator(  # noqa: PLR0913
     mock_run_plan,
     mock_session_manager,
     mock_fs,
-    mock_report_formatter,
     mock_plan_validator,
-    mock_planning_service,
     mock_plan_parser,
     mock_user_interactor,
-    mock_context_service,
 ):
     # Manually instantiate sub-services using the container to resolve ports
     replanner = SessionReplanner(
@@ -128,5 +125,5 @@ def test_session_orchestrator_displays_planning_progress(
     orchestrator._display_planning_progress(turn_dir)
 
     # Assert
-    expected_msg = "[02] Planning Turn with architect..."
+    expected_msg = "[cyan][02] Planning Turn with architect...[/cyan]"
     mock_user_interactor.display_message.assert_called_with(expected_msg)

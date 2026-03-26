@@ -36,7 +36,7 @@ Delegates terminal output to `cli_helpers.echo_skipped_action` to maintain SLOC 
 This method prints a formatted, colorized warning to `sys.stderr` when an action is skipped by the orchestrator (e.g., due to a previous failure), ensuring the user is immediately aware of halted execution without needing to inspect the final markdown report.
 
 #### `display_message(message: str) -> None`
-Prints a message to standard error. The implementation uses formatting (e.g., Rich tags) to ensure important status information is visually distinct.
+Prints a message to standard error using `rich.console.Console(stderr=True).print()`. This natively parses and renders Rich style tags (e.g., `[dim]`, `[cyan]`) embedded in the message strings by core services, ensuring consistent terminal coloring while remaining testable via `CliRunner`.
 
 #### `confirm_plan_review(plan: Plan) -> bool`
 Displays a colorized summary of the plan's actions using `cli_helpers.echo_plan_summary` and prompts for bulk `y/n` confirmation. If the user aborts or denies, it returns `False`.

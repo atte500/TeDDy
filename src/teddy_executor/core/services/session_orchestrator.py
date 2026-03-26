@@ -244,7 +244,7 @@ class SessionOrchestrator(IRunPlanUseCase):
             if isinstance(meta, dict):
                 agent_name = meta.get("agent_name", agent_name)
 
-        msg = f"[{turn_id}] Planning Turn with {agent_name}..."
+        msg = f"[cyan][{turn_id}] Planning Turn with {agent_name}...[/cyan]"
         self._user_interactor.display_message(msg)
 
     def _trigger_replan(  # noqa: PLR0913

@@ -71,6 +71,7 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
     - Implement the `SessionLogGenerator` to compile session histories into a human-readable `session-log.md`, excluding turns that fail validation.
 
 ## 6. Technical Debt
+- [ ] **Code Duplication (jscpd):** Resolve internal logic duplication in `session_orchestrator.py` between lines 185-193 and 194-202.
 - [ ] **Security:** Resolve `bandit` subprocess security warning in `system_environment_inspector.py`.
 - [ ] **Code Quality:** Resolve extensive `vulture` dead-code warnings (mostly unused variables/imports in tests and core ports).
 - [x] **Security:** Pin `litellm` to `1.82.6` to mitigate March 2026 supply chain attack (TeamPCP).

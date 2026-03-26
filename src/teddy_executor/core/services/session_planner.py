@@ -77,12 +77,12 @@ class SessionPlanner:
             turn_cost
         )
 
-        self._user_interactor.display_message(f"  Model: {model}")
+        self._user_interactor.display_message(f"[dim]  Model: {model}[/dim]")
         self._user_interactor.display_message(
-            f"  Context: {raw_token_count / 1000:.1f}k tokens"
+            f"[dim]  Context: {raw_token_count / 1000:.1f}k tokens[/dim]"
         )
         self._user_interactor.display_message(
-            f"  Session Cost: ${cumulative_cost:.4f}\n"
+            f"[dim]  Session Cost: ${cumulative_cost:.4f}[/dim]\n"
         )
 
     def _handle_dynamic_rename(self, plan_path: str) -> Optional[str]:

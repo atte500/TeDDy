@@ -30,8 +30,8 @@ class ConsoleInteractorAdapter(IUserInteractor):
         return typer.prompt(text, default=default, show_default=False, err=True)
 
     def display_message(self, message: str) -> None:
-        """Displays a message using Typer echo to ensure visibility and testability."""
-        typer.echo(message, err=True)
+        """Displays a message using Rich console to ensure consistent coloring."""
+        self._console.print(message)
 
     def ask_question(
         self,
