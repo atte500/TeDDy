@@ -64,7 +64,7 @@
 
       <phase n="5" name="DOCUMENTATION">
         <goal>Synchronize technical documentation and architectural contracts.</goal>
-        <step n="1" name="Sync Slice">Even if already partially documented, `EDIT` the slice doc to mark the deliverable `[✓]`. You MUST append implementation notes and feedback (including frictions experienced) here before closing the deliverable.</step>
+        <step n="1" name="Sync Slice">Even if already partially documented, `EDIT` the slice doc to mark the deliverable `[✓]`. You MUST update the `Implementation Notes` section documenting any noteworthy additional details (including frictions experienced) here before closing the deliverable.</step>
         <step n="2" name="Harvest Debt">If any `[DEBT]` was logged during this turn, `EDIT` the active Milestone's (in `docs/project/milestones/`) `## Technical Debt` section to append it as a checkmarkable `[ ]` task.</step>
         <step n="3" name="Align Architecture">`READ` the documentation of edited components (`docs/architecture/**/*.md`) and `ARCHITECTURE.md`. Then, `EDIT` them to ensure strict alignment with your implementation. You MUST update `Implementation Notes` sections and ensure contracts (DTOs, Pre/Post-conditions) strictly match your code.</step>
       </phase>
