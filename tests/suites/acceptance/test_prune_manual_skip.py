@@ -30,7 +30,7 @@ def test_prune_is_automatically_skipped_in_manual_mode(monkeypatch, tmp_path):
     report = ReportParser(result.stdout)
     prune_log = next(log for log in report.action_logs if log.type == "PRUNE")
     assert prune_log.status == "SKIPPED"
-    assert "manual mode to prevent workspace corruption" in prune_log.params.get(
+    assert "action only available within TeDDy sessions." in prune_log.params.get(
         "Skip Reason", ""
     )
 

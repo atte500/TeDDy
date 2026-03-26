@@ -15,18 +15,17 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 #### Deliverables
 - [✓] **Implementation:** Update `ContextService._format_header` to include current system time/date.
 
-### Scenario: Soft Isolation for Terminal Actions (Non-TUI) [ ]
+### Scenario: Soft Isolation for Terminal Actions (Non-TUI) [✓]
 - **Given** I run `teddy execute` (with or without `-y`) AND NOT using the TUI.
 - **When** a plan contains a Terminal Action (`PROMPT`, `INVOKE`, `RETURN`).
 - **And** the total number of actions in the plan is GREATER THAN 1.
 - **Then** that Terminal Action MUST be automatically skipped.
-- **And** the skip reason MUST be: "Terminal actions are skipped in bulk execution to ensure isolation; please execute them as a single-action plan."
+- **And** the skip reason MUST be: "Action skipped to ensure state isolation; must be executed as a single-action plan."
 - **Note:** If the Terminal Action is the ONLY action in the plan, it should execute normally (respecting `-y`).
 
 #### Deliverables
 - [✓] **Domain:** Add `is_terminal` property to `ActionData` model.
-- [ ] **Implementation:** Update `ActionExecutor.confirm_and_dispatch` to implement the soft isolation check.
-- [ ] **UX Polish:** Ensure `ExecutionOrchestrator` uses the descriptive reason "User deselected this action in the plan reviewer." ONLY when skipped via TUI.
+- [✓] **Implementation:** Update `ActionExecutor.confirm_and_dispatch` to implement the soft isolation check.
 
 ### Scenario: Standardized Planning Artifact (`input.md`) [ ]
 - **Given** a planning turn is initiated in an interactive session.
@@ -121,3 +120,8 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 ### Timestamped Context Header
 - **Technical Decision:** Extended the `IEnvironmentInspector` port and `SystemEnvironmentInspector` adapter to provide `current_date` and `current_time` rather than calculating them directly in `ContextService`. This maintains DI Purity and ensures the service remains testable with predictable mock values.
 - **Formatting:** Used `strftime("%Y-%m-%d")` and `strftime("%H:%M:%S")` for consistency.
+
+### Soft Isolation for Terminal Actions
+- **Issue:** Multi-action plans containing `PROMPT`, `INVOKE`, or `RETURN` were being skipped in the TUI because the orchestrator passed `interactive=False` to the executor (to avoid double-prompting).
+- **Fix:** Introduced a `skip_isolation` flag in `ActionExecutor.confirm_and_dispatch`. The orchestrator sets this to `True` when an `IPlanReviewer` (TUI) has already handled the action approval.
+- **Refactoring:** Moved hardcoded terminal action detection in `ActionExecutor` to the `ActionData.is_terminal` domain property.

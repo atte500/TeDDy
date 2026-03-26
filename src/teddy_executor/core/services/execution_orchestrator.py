@@ -93,13 +93,15 @@ class ExecutionOrchestrator(IRunPlanUseCase):
                     action, "User skipped this action in the plan reviewer."
                 )
             elif reviewer_handled:
-                # Reviewer already confirmed it, so execute immediately
+                # Reviewer already confirmed it, so execute immediately.
+                # We skip isolation because the reviewer (TUI) allows multi-action execution.
                 action_log = self._action_executor.confirm_and_dispatch(
                     action,
-                    False,
-                    len(plan.actions),
+                    interactive=False,
+                    total_actions=len(plan.actions),
                     agent_name=agent_name,
                     is_session=plan.is_session,
+                    skip_isolation=True,
                 )
             else:
                 # Fallback to ActionExecutor interaction ONLY if no reviewer is present
@@ -182,7 +184,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         )
 
     def resume(
-        self, session_name: str, interactive: bool = True
+        self, _session_name: str, interactive: bool = True
     ) -> Optional[ExecutionReport]:
         """Stateless orchestrator does not support session resumption."""
         raise NotImplementedError(

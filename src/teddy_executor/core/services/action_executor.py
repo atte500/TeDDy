@@ -26,8 +26,6 @@ class ActionExecutor:
     interception, and user confirmation.
     """
 
-    TERMINAL_ACTIONS = ("PROMPT", "INVOKE", "RETURN")
-
     def __init__(
         self,
         action_dispatcher: ActionDispatcher,
@@ -87,13 +85,28 @@ class ActionExecutor:
         except Exception:
             return action_log
 
-    def _check_action_isolation(self, action, total_actions: int) -> ActionLog | None:
+    def _check_action_isolation(
+        self,
+        action,
+        total_actions: int,
+        interactive: bool = False,
+        skip_isolation: bool = False,
+    ) -> ActionLog | None:
         """
         Ensures terminal actions are handled correctly.
 
         Note: Strict isolation is now relaxed. The user is responsible for
         deciding whether to execute terminal actions in mixed plans via the TUI.
         """
+        if skip_isolation:
+            return None
+
+        if action.is_terminal and total_actions > 1 and not interactive:
+            return self._handle_skipped_action(
+                action,
+                "Action skipped to ensure state isolation; must be executed as a single-action plan.",
+            )
+
         return None
 
     def _intercept_control_flow_action(
@@ -105,7 +118,7 @@ class ActionExecutor:
         if action_type == "PRUNE" and not is_session:
             return self._handle_skipped_action(
                 action,
-                "PRUNE actions are automatically skipped in manual mode to prevent workspace corruption. PRUNE is only active within TeDDy sessions.",
+                "PRUNE is automatically skipped in manual execution mode - action only available within TeDDy sessions.",
             )
 
         if action_type in ("INVOKE", "RETURN"):
@@ -145,16 +158,22 @@ class ActionExecutor:
             action=action, action_prompt=prompt, change_set=change_set
         )
 
-    def confirm_and_dispatch(
+    def confirm_and_dispatch(  # noqa: PLR0913
         self,
         action,
         interactive: bool,
         total_actions: int,
         agent_name: Optional[str] = None,
         is_session: bool = False,
+        skip_isolation: bool = False,
     ) -> ActionLog:
         """Handles user confirmation and dispatches a single action."""
-        if isolation_log := self._check_action_isolation(action, total_actions):
+        if isolation_log := self._check_action_isolation(
+            action,
+            total_actions,
+            interactive=interactive,
+            skip_isolation=skip_isolation,
+        ):
             return isolation_log
 
         if intercepted_log := self._intercept_control_flow_action(

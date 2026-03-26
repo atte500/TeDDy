@@ -22,7 +22,7 @@ def test_prune_auto_skipped_in_non_interactive_mode(tmp_path, monkeypatch):
     # Check status and reason (stored in params['Skip Reason'])
     assert report.action_logs[0].status == "SKIPPED"
     assert (
-        "manual mode to prevent workspace corruption"
+        "action only available within TeDDy sessions."
         in report.action_logs[0].params["Skip Reason"]
     )
 

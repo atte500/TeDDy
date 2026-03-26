@@ -57,7 +57,7 @@ If a plan contains multiple actions, any "Terminal Action" (`PROMPT`, `INVOKE`, 
 - **Status:** `SKIPPED`
 - **Reasons:**
   - "User deselected this action in the plan reviewer." (TUI mode)
-  - "Terminal actions are skipped in bulk execution to ensure isolation; please execute them as a single-action plan." (Console/Auto mode, multi-action plan)
+  - "Action skipped to ensure state isolation; must be executed as a single-action plan." (Console/Auto mode, multi-action plan)
   - "Skipped because a previous action failed." (Sequential halt)
 
 The precise rendering logic and format are defined by the canonical Jinja2 template. This specification serves as a high-level guide to its behavior.
