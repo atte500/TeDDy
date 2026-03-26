@@ -60,31 +60,35 @@ class SessionOrchestrator(IRunPlanUseCase):
             return self.execute(plan_path=plan_path, interactive=interactive)
 
         if state == SessionState.EMPTY:
-            new_name = self._session_planner.trigger_new_plan(turn_path)
-            if not new_name:
-                return None
-            # After planning, the turn is now PENDING_PLAN.
-            # Resolve path again to account for potential renaming.
-            _, actual_turn_path = self._session_service.get_session_state(new_name)
-            return self.execute(
-                plan_path=f"{actual_turn_path}/plan.md", interactive=interactive
-            )
+            return self._handle_planning_and_execution(turn_path, interactive)
 
         if state == SessionState.COMPLETE_TURN:
             # Case C: Start next turn
             next_turn_dir = self._session_service.transition_to_next_turn(
                 plan_path=f"{turn_path}/plan.md"
             )
-            new_name = self._session_planner.trigger_new_plan(next_turn_dir)
-            if not new_name:
-                return None
-            # After planning, the next turn is now PENDING_PLAN.
-            _, actual_turn_path = self._session_service.get_session_state(new_name)
-            return self.execute(
-                plan_path=f"{actual_turn_path}/plan.md", interactive=interactive
-            )
+            return self._handle_planning_and_execution(next_turn_dir, interactive)
 
         return None
+
+    def _handle_planning_and_execution(
+        self, turn_dir: str, interactive: bool
+    ) -> Optional[ExecutionReport]:
+        """Triggers planning for a turn and then executes the resulting plan."""
+        new_name = self._trigger_new_plan(turn_dir)
+        if not new_name:
+            return None
+        # After planning, the turn is now PENDING_PLAN.
+        # Resolve path again to account for potential renaming.
+        _, actual_turn_path = self._session_service.get_session_state(new_name)
+        return self.execute(
+            plan_path=f"{actual_turn_path}/plan.md", interactive=interactive
+        )
+
+    def _trigger_new_plan(self, turn_dir: str) -> Optional[str]:
+        """Orchestrates the planning phase for a new turn."""
+        self._display_planning_progress(turn_dir)
+        return self._session_planner.trigger_new_plan(turn_dir)
 
     def execute(
         self,
@@ -227,6 +231,22 @@ class SessionOrchestrator(IRunPlanUseCase):
             turn_cost=turn_cost,
         )
 
+    def _display_planning_progress(self, turn_dir: Any) -> None:
+        """Displays a progress message before planning starts."""
+        turn_dir_str = str(turn_dir)
+        turn_id = Path(turn_dir_str).name
+        meta_path = Path(turn_dir_str) / "meta.yaml"
+
+        agent_name = "pathfinder"
+        if self._file_system_manager.path_exists(str(meta_path)):
+            content = self._file_system_manager.read_file(str(meta_path))
+            meta = yaml.safe_load(str(content)) or {}
+            if isinstance(meta, dict):
+                agent_name = meta.get("agent_name", agent_name)
+
+        msg = f"[{turn_id}] Planning Turn with {agent_name}..."
+        self._user_interactor.display_message(msg)
+
     def _trigger_replan(  # noqa: PLR0913
         self,
         plan_path: str,
@@ -250,6 +270,8 @@ class SessionOrchestrator(IRunPlanUseCase):
         next_turn_dir = self._finalize_turn(
             plan_path, report, is_validation_failure=True
         )
+
+        self._display_planning_progress(next_turn_dir)
         self._replanner.trigger_replan_turn(
             next_turn_dir, errors, original_plan_content, validation_ast=validation_ast
         )

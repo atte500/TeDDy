@@ -109,3 +109,24 @@ def test_session_orchestrator_triggers_transition_on_success(  # noqa: PLR0913
         is_validation_failure=False,
         turn_cost=0.0,
     )
+
+
+def test_session_orchestrator_displays_planning_progress(
+    orchestrator, mock_user_interactor, mock_fs
+):
+    """
+    SessionOrchestrator._display_planning_progress should extract Turn ID and
+    Agent Name and display the progress message.
+    """
+    # Arrange
+    turn_dir = "/path/to/session/02"
+    meta_content = "agent_name: architect\n"
+    mock_fs.read_file.return_value = meta_content
+    mock_fs.path_exists.return_value = True
+
+    # Act
+    orchestrator._display_planning_progress(turn_dir)
+
+    # Assert
+    expected_msg = "[02] Planning Turn with architect..."
+    mock_user_interactor.display_message.assert_called_with(expected_msg)

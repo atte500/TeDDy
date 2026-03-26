@@ -26,6 +26,7 @@ The `SessionOrchestrator` is a decorator-style service that wraps the stateless 
     -   Generates a `report.md` in the current turn containing the validation errors.
     -   Calls `SessionService.transition_to_next_turn` with `is_validation_failure=True`. This ensures the failure report is NOT added to the next turn's context.
     -   Calls `PlanningService.generate_plan` for the new turn, using a structured feedback payload (Errors + Original Plan) as the user message.
+5.  **Planning Visibility:** Centralizes planning triggers to provide consistent UI feedback, extracting the Turn ID from the directory name and the agent name from metadata to display a progress message (e.g., `[01] Planning Turn with pathfinder...`) before LLM calls.
 5.  **Telemetry Display:** After plan generation, retrieves metadata and displays model name, context token usage, and cumulative session cost to the user.
 6.  **Auto-Naming:** Sessions created without a name (Turn 01) use a temporary timestamped name. The orchestrator automatically renames the session directory based on the slugified H1 title of the first generated plan. This allows the AI to suggest a meaningful name based on the actual content of the initial request.
 7.  **Report Persistence:** In Session Mode, the `ExecutionReport` is formatted and saved to `report.md` in the turn directory.

@@ -69,7 +69,6 @@ class SessionPlanner:
         meta = meta_loaded if isinstance(meta_loaded, dict) else {}
 
         model = str(meta.get("model", "unknown"))
-        agent_name = str(meta.get("agent_name", "pathfinder"))
 
         # Arithmetic and formatting must be robust to MagicMocks leaked in tests
         raw_token_count = safe_float(meta.get("token_count", 0))
@@ -78,9 +77,6 @@ class SessionPlanner:
             turn_cost
         )
 
-        self._user_interactor.display_message(
-            f"\n[bold green]Planning Turn with {agent_name}...[/]"
-        )
         self._user_interactor.display_message(f"  Model: {model}")
         self._user_interactor.display_message(
             f"  Context: {raw_token_count / 1000:.1f}k tokens"

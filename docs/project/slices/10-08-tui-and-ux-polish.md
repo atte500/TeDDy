@@ -46,13 +46,13 @@ To enable the interactive TUI for all execution modes and polish the session wor
 #### Deliverables
 - [✓] **Implementation:** Refactor `session_cli_handlers.py` to loop the `plan -> execute -> resume` cycle in a `while` loop.
 
-### Scenario: Planning Visibility & Turn Info [ ]
+### Scenario: Planning Visibility & Turn Info [✓]
 - **Given** the AI is generating a plan.
 - **When** the LLM call is initiated.
 - **Then** the CLI MUST display `[Turn ID] Planning Turn with [agent]...` BEFORE the call.
 
 #### Deliverables
-- [ ] **Implementation:** Update `SessionOrchestrator._trigger_new_plan` to extract Turn ID from the folder name and display progress message before `generate_plan`.
+- [✓] **Implementation:** Update `SessionOrchestrator._trigger_new_plan` to extract Turn ID from the folder name and display progress message before `generate_plan`.
 
 ### Scenario: Relaxed Terminal Action Isolation [ ]
 - **Given** a plan contains a terminal action (`PROMPT`, `INVOKE`, `RETURN`) mixed with other actions.

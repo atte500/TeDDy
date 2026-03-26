@@ -23,7 +23,7 @@ async def test_reviewer_app_filters_out_prune_in_manual_mode(container):
     app = ReviewerApp(plan=plan, system_env=container.resolve(ISystemEnvironment))
 
     # Act
-    async with app.run_test() as pilot:
+    async with app.run_test():
         tree = app.query_one(Tree)
 
         # Assert
@@ -45,7 +45,7 @@ async def test_reviewer_app_shows_prune_in_session_mode(container):
     app = ReviewerApp(plan=plan, system_env=container.resolve(ISystemEnvironment))
 
     # Act
-    async with app.run_test() as pilot:
+    async with app.run_test():
         tree = app.query_one(Tree)
 
         # Assert
