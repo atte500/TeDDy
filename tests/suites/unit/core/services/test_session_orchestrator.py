@@ -1,5 +1,11 @@
+from datetime import datetime, timezone
 from unittest.mock import MagicMock
 import pytest
+from teddy_executor.core.domain.models.execution_report import (
+    ExecutionReport,
+    RunStatus,
+    RunSummary,
+)
 from teddy_executor.core.services.session_orchestrator import SessionOrchestrator
 from teddy_executor.core.services.session_planner import SessionPlanner
 from teddy_executor.core.services.session_replanner import SessionReplanner
@@ -74,7 +80,15 @@ def test_session_orchestrator_triggers_transition_on_success(  # noqa: PLR0913
     """
     # Arrange
     # Mock successful execution
-    mock_run_plan.execute.return_value = MagicMock()  # ExecutionReport
+    mock_run_plan.execute.return_value = ExecutionReport(
+        run_summary=RunSummary(
+            status=RunStatus.SUCCESS,
+            start_time=datetime.now(timezone.utc),
+            end_time=datetime.now(timezone.utc),
+        ),
+        plan_title="Test Plan",
+        rationale="Test Rationale",
+    )
 
     plan_content = MarkdownPlanBuilder("Test").build()
     plan_path = "path/to/01/plan.md"
