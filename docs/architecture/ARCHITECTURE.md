@@ -64,26 +64,28 @@ This document outlines the technical standards, conventions, and setup process f
 ### Pre-commit Hooks
 - **Goal:** To provide a fast, local feedback loop for developers.
 - **Framework:** `pre-commit`, configured in `.pre-commit-config.yaml`.
-- **Principle:** All hooks configured here **must** be fast to run. **Note:** The "Full Test Suite" and "Clean Git Status" hooks are mandatory safety gates and are explicitly exempt from this speed requirement.
+- **Principle:** Pre-commit hooks MUST be scoped strictly to **staged files** to provide a fast, local feedback loop. Heavy, repository-wide checks (like the full test suite or global static analysis) belong in the Continuous Integration (CI) pipeline, not on the developer's local machine pre-commit.
 - **Included Checks:**
     -   **Quality Gate:**
-        - `run-tests`: Executes the full test suite with coverage (`poetry run pytest --cov=src --cov-report=term-missing --cov-fail-under=90`).
         - `test-pyramid`: Verifies the Test Pyramid structure (Unit > Integration > Acceptance).
         - `ruff-complexity`: Enforces a **precise Cyclomatic Complexity** limit of **9** per function (Rule `C901`) and a **precise Statement Limit** of **40** per function (Rule `PLR0915`) for ALL code.
         - `file-length-python`: Enforces a strict **300 line limit** for all Python files (excluding spikes).
-        - `jscpd`: Enforces a strict **0% duplication threshold** for any block over **25 tokens** within the `src/` directory. The `src/teddy_executor/core/ports/` directory is explicitly ignored to accommodate the necessary structural redundancy of Hexagonal Architecture interface signatures.
-    - **Integrity:**
-        - `git-status-clean`: Verifies a clean Git status (`git diff --exit-code`) to ensure the commit matches the working directory state.
+        - `jscpd`: Enforces a strict **0% duplication threshold** for any block over **25 tokens**.
     - **Style & Formatting:**
         - `ruff`: For linting and formatting. **Note:** `E501` (Line too long) is explicitly ignored to favor readability of long URLs and comments.
     - **Correctness:**
         - `mypy`: For static type checking.
+        - `vulture`: For dead code detection.
+    - **Security:**
+        - `detect-secrets`: For hardcoded credential prevention.
+        - `bandit`: For static security analysis.
+        - `pip-audit`: Vulnerability scanning (runs only when dependency files change).
     - **Sanity & Consistency:**
         - `check-yaml`, `check-toml`, and other basic file checks.
 
 ### CI Quality Gates
 - **Goal:** To provide a comprehensive, automated quality gate that protects the main branch.
-- **Principle:** The CI pipeline **must** run all checks from the `pre-commit` suite and verify compatibility across system architectures.
+- **Principle:** The CI pipeline **must** run the full test suite and all checks from the `pre-commit` suite (using `--all-files`) to verify global compatibility and system health.
 
 ### Spike Directory Exclusion
 The `spikes/` directory is intentionally excluded from `ruff` and `mypy` checks in `.pre-commit-config.yaml`.
@@ -213,7 +215,7 @@ This section serves as the "System Law" (Poka-Yoke) for TeDDy. It defines the pr
 -   **Rule:** Heavy third-party libraries (e.g., `litellm`, `trafilatura`) MUST be imported lazily within the methods where they are used. **Rationale:** To ensure the CLI remains responsive and initializes in under 500ms (excluding shell overhead). Module-level imports of heavy libraries significantly degrade the user experience.
 -   **Rule:** Validation rules for plan actions MUST be optimized for performance on large inputs (e.g., 500+ line prompt files). **Rationale:** To prevent high-latency feedback loops during plan pre-flight checks.
 -   **Rule:** Any diagnostic logic involving sequence matching (like fuzzy `EDIT` matching) MUST use tiered heuristics (Exact Anchors -> Incremental Fuzzy -> Sub-sampling) combined with **Priority Capping** and a default `Similarity Threshold`. **Rationale:** "Priority Capping" limits the number of expensive evaluations to the top-scoring candidates to maintain sub-second response times. The threshold provides a high-fidelity default that balances resilience to AI formatting with protection against accidental over-matching.
--   **Rule:** The pre-commit workflow MUST include a full test suite run and a clean git status check. **Rationale:** To ensure that every commit is verified against the complete test suite and exactly matches the local environment state, preventing "it works on my machine" regressions.
+-   **Rule:** The local pre-commit workflow MUST run checks only against staged files, delegating full test suites and global analysis to the CI pipeline. **Rationale:** To ensure lightning-fast commits that encourage small, atomic version control steps without forcing a boil-the-ocean refactor of legacy code during active development.
 
 ---
 

@@ -71,6 +71,8 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
     - Implement the `SessionLogGenerator` to compile session histories into a human-readable `session-log.md`, excluding turns that fail validation.
 
 ## 6. Technical Debt
+- [ ] **Security:** Resolve `bandit` subprocess security warning in `system_environment_inspector.py`.
+- [ ] **Code Quality:** Resolve extensive `vulture` dead-code warnings (mostly unused variables/imports in tests and core ports).
 - [x] **Security:** Pin `litellm` to `1.82.6` to mitigate March 2026 supply chain attack (TeamPCP).
 - [x] **Security:** Update `requests` to `^2.33.0` (GHSA-gc5v-m9x4-r6x2).
 - [ ] **Security:** Monitor `pygments` for version `2.19.3+` release on PyPI to resolve GHSA-5239-wwwm-4pmq (ReDoS). Current version `2.19.2` is the latest available but flagged.
