@@ -15,6 +15,19 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 #### Deliverables
 - [✓] **Implementation:** Update `ContextService._format_header` to include current system time/date.
 
+### Scenario: Soft Isolation for Terminal Actions (Non-TUI) [ ]
+- **Given** I run `teddy execute` (with or without `-y`) AND NOT using the TUI.
+- **When** a plan contains a Terminal Action (`PROMPT`, `INVOKE`, `RETURN`).
+- **And** the total number of actions in the plan is GREATER THAN 1.
+- **Then** that Terminal Action MUST be automatically skipped.
+- **And** the skip reason MUST be: "Terminal actions are skipped in bulk execution to ensure isolation; please execute them as a single-action plan."
+- **Note:** If the Terminal Action is the ONLY action in the plan, it should execute normally (respecting `-y`).
+
+#### Deliverables
+- [ ] **Domain:** Add `is_terminal` property to `ActionData` model.
+- [ ] **Implementation:** Update `ActionExecutor.confirm_and_dispatch` to implement the soft isolation check.
+- [ ] **UX Polish:** Ensure `ExecutionOrchestrator` uses the descriptive reason "User deselected this action in the plan reviewer." ONLY when skipped via TUI.
+
 ### Scenario: Standardized Planning Artifact (`input.md`) [ ]
 - **Given** a planning turn is initiated in an interactive session.
 - **When** the input is saved to disk.
@@ -30,24 +43,25 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - **Given** I am in the `ReviewerApp` (TUI), regardless of session mode.
 - **When** the execution loop starts.
 - **Then** the legacy CLI instruction prompt (typer.prompt) MUST be entirely removed.
-- **And** the TUI MUST provide an `m` binding ("Add Message") to capture instructions.
+- **And** the TUI MUST provide an `m` binding ("Add Message") which opens an external editor to capture instructions.
 - **And** these instructions MUST be stored in `plan.metadata["next_instructions"]`.
 - **And** these instructions MUST be appended to the final `Execution Report` (stdout/clipboard) or `report.md` under a `## User Request` section.
 
 #### Deliverables
 - [ ] **Implementation:** Remove legacy `typer.prompt` from session loops and handlers.
-- [ ] **Implementation:** Implement global `m` binding in `ReviewerApp`.
+- [ ] **Implementation:** Implement global `m` binding in `ReviewerApp` using the configured external editor.
 - [ ] **Implementation:** Update `ExecutionReport` domain model and Jinja2 template to include the captured `next_instructions` for manual workflow feedback.
 - [ ] **Implementation:** Update `SessionOrchestrator` to bridge instructions back to the planner in session mode.
 
 ### Scenario: TUI "View Plan" Workflow [ ]
 - **Given** I am in the `ReviewerApp` (TUI).
 - **When** I press `v`.
-- **Then** the entire `plan.md` currently being executed MUST open in the configured external editor (read-only mode if possible, or as a temporary copy).
+- **Then** the entire `plan.md` currently being executed MUST open in the configured external editor.
 
 #### Deliverables
 - [ ] **Implementation:** Add `v` binding to `ReviewerApp` to open the full plan content in the external editor.
-- [ ] **Refactoring:** Ensure `plan_content` is correctly passed or reconstructed for the viewer.
+- [ ] **Technical Detail:** Use the existing `plan.md` file located in the turn directory for sessions.
+- [ ] **Implementation:** Update `ExecutionOrchestrator` to persist manual plan content to a temporary file to support the `v` binding in manual mode.
 
 ### Scenario: Universal PROMPT Auto-Execution [ ]
 - **Given** a plan contains exactly ONE action of type `PROMPT`.
@@ -93,8 +107,9 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 ### TUI & Loop
 - **ReviewerApp:**
   - Add `BINDING` for `m` ("Add Message").
-  - Implement a `ModalScreen` with a `TextArea` or `Input` for next-turn instructions.
-  - On submit, store the value in `self.plan.metadata["next_instructions"]`.
+  - On trigger, suspend the TUI and open the configured external editor with a temporary file.
+  - **Stateful Editing:** If instructions were already entered in the current TUI session, they MUST be loaded into the editor for refinement.
+  - **Finalization:** The final content of the instruction buffer/file MUST only be moved to `self.plan.metadata["next_instructions"]` when the user presses `s` (Submit) to finalize the plan.
 - **SessionPlanner:** Update `trigger_new_plan` to check for `next_instructions` in the *previous* turn's execution report or a temporary state file before prompting the user via the interactor.
 
 ### Orchestration & Validation

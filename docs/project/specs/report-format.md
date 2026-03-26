@@ -54,7 +54,10 @@ To ensure transparency during fuzzy matching and file overwrites, the system mus
 If a plan contains multiple actions, any "Terminal Action" (`PROMPT`, `INVOKE`, `RETURN`) is parsed as deselected by default.
 - **In Headless/Console Mode:** These actions are automatically skipped to ensure state consistency.
 - **In TUI Mode:** The user can explicitly toggle them on to force execution.
-- **Status:** `SKIPPED` (if not explicitly enabled)
-- **Reason:** User deselected this action in the plan reviewer.
+- **Status:** `SKIPPED`
+- **Reasons:**
+  - "User deselected this action in the plan reviewer." (TUI mode)
+  - "Terminal actions are skipped in bulk execution to ensure isolation; please execute them as a single-action plan." (Console/Auto mode, multi-action plan)
+  - "Skipped because a previous action failed." (Sequential halt)
 
 The precise rendering logic and format are defined by the canonical Jinja2 template. This specification serves as a high-level guide to its behavior.
