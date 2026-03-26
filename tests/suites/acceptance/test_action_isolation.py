@@ -46,6 +46,4 @@ def test_terminal_action_is_skipped_in_multi_action_plan(tmp_path, monkeypatch):
     # PROMPT should be SKIPPED
     assert report.action_logs[1].type == "PROMPT"
     assert report.action_logs[1].status == "SKIPPED"
-    assert "Action must be executed in isolation to ensure state consistency." in str(
-        report.action_logs[1].params
-    )
+    assert "User deselected this action" in str(report.action_logs[1].params)

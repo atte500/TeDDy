@@ -33,6 +33,14 @@ def test_execute_handles_valid_plan_successfully(env):
     assert report.action_logs[0].status == ActionStatus.SUCCESS
 
 
+def _assert_first_action_is_successful_execute(report):
+    """Helper to assert the first action is a successful EXECUTE."""
+    expected_logs = 2
+    assert len(report.action_logs) == expected_logs
+    assert report.action_logs[0].action_type == "EXECUTE"
+    assert report.action_logs[0].status == ActionStatus.SUCCESS
+
+
 def test_orchestrator_skips_terminal_action_in_multi_action_plan_integration(env):
     """
     Scenario: Orchestrator skips terminal actions when part of a multi-action plan.
@@ -50,15 +58,12 @@ def test_orchestrator_skips_terminal_action_in_multi_action_plan_integration(env
     report = orchestrator.execute(plan_content=plan_content, interactive=False)
 
     # Assert
-    assert len(report.action_logs) == 2  # noqa: PLR2004
-    # First action (EXECUTE) should succeed (mocked shell returns success by default)
-    assert report.action_logs[0].action_type == "EXECUTE"
-    assert report.action_logs[0].status == ActionStatus.SUCCESS
+    _assert_first_action_is_successful_execute(report)
 
     # Second action (PROMPT) should be SKIPPED by orchestrator logic
     assert report.action_logs[1].action_type == "PROMPT"
     assert report.action_logs[1].status == ActionStatus.SKIPPED
-    assert "Action must be executed in isolation" in str(report.action_logs[1].details)
+    assert "User deselected this action" in str(report.action_logs[1].details)
 
 
 def test_orchestrator_skips_invoke_in_multi_action_plan_integration(env):
@@ -78,11 +83,9 @@ def test_orchestrator_skips_invoke_in_multi_action_plan_integration(env):
     report = orchestrator.execute(plan_content=plan_content, interactive=False)
 
     # Assert
-    assert len(report.action_logs) == 2  # noqa: PLR2004
-    assert report.action_logs[0].action_type == "EXECUTE"
-    assert report.action_logs[0].status == ActionStatus.SUCCESS
+    _assert_first_action_is_successful_execute(report)
 
     # Second action (INVOKE) should be SKIPPED
     assert report.action_logs[1].action_type == "INVOKE"
     assert report.action_logs[1].status == ActionStatus.SKIPPED
-    assert "Action must be executed in isolation" in str(report.action_logs[1].details)
+    assert "User deselected this action" in str(report.action_logs[1].details)

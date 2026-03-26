@@ -60,8 +60,8 @@ To enable the interactive TUI for all execution modes and polish the session wor
 - **Then** the terminal action MUST be deselected (`[ ]`) by default but selectable by the user.
 
 #### Deliverables
-- [ ] **Implementation:** Update `ActionExecutor._check_action_isolation` to allow terminal actions in mixed plans.
-- [ ] **Implementation:** Update `MarkdownPlanParser` to set `is_selected=False` for terminal actions if `total_actions > 1`.
+- [✓] **Implementation:** Update `ActionExecutor._check_action_isolation` to allow terminal actions in mixed plans.
+- [✓] **Implementation:** Update `MarkdownPlanParser` to set `is_selected=False` for terminal actions if `total_actions > 1`.
 
 ### Scenario: Telemetry Coloring Fix [ ]
 - **Given** telemetry (token count, cost) is displayed.

@@ -88,12 +88,12 @@ class ActionExecutor:
             return action_log
 
     def _check_action_isolation(self, action, total_actions: int) -> ActionLog | None:
-        """Ensures terminal actions are executed in isolation."""
-        if total_actions > 1 and action.type.upper() in self.TERMINAL_ACTIONS:
-            return self._handle_skipped_action(
-                action,
-                "Action must be executed in isolation to ensure state consistency.",
-            )
+        """
+        Ensures terminal actions are handled correctly.
+
+        Note: Strict isolation is now relaxed. The user is responsible for
+        deciding whether to execute terminal actions in mixed plans via the TUI.
+        """
         return None
 
     def _intercept_control_flow_action(

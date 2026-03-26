@@ -25,6 +25,8 @@ The parser supports the following actions, each with its own parsing strategy:
 - `INVOKE`: Extracts the target agent, message, and optional handoff resources.
 - `RETURN`: Extracts the completion message and optional handoff resources.
 
+*Note on Terminal Actions:* If a terminal action (`PROMPT`, `INVOKE`, `RETURN`) is parsed as part of a multi-action plan, the parser explicitly initializes its `selected` state to `False`. This allows the TUI to present it as deselected by default while causing headless executions to safely skip it.
+
 ## 4. Modular Architecture
 To maintain focus and adhere to file complexity limits, the parser delegates to specialized helper modules:
 - **[Parser Infrastructure](./parser_infrastructure.md):** Low-level AST traversal utilities, stream handling (`_PeekableStream`), and high-fidelity AST structural reporting logic.

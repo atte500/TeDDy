@@ -275,6 +275,11 @@ class MarkdownPlanParser(IPlanParser):
             parse_method = self._dispatch_map[action_type_str]
             actions.append(parse_method(stream, node=action_heading))
 
+        if len(actions) > 1:
+            for action in actions:
+                if action.type in ("PROMPT", "INVOKE", "RETURN"):
+                    action.selected = False
+
         if offending_nodes and primary_mismatch is not None:
             expected_desc, mismatch_idx, actual_node = primary_mismatch
             raise InvalidPlanError(

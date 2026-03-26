@@ -50,8 +50,10 @@ Both report types share a common base structure. Sections are rendered condition
 To ensure transparency during fuzzy matching and file overwrites, the system must include a unified diff in the `Action Log` for any `EDIT` action where the `Similarity Score` is less than 1.0 and any `CREATE` action where `Overwrite` = `true`. This allows the AI to verify the exact changes applied.
 
 ### 3.2. Automated Skipping (Soft Isolation)
-If a plan contains multiple actions, any "Terminal Action" (`PROMPT`, `INVOKE`, `RETURN`) is automatically skipped by the orchestrator.
-- **Status:** `SKIPPED`
-- **Reason:** Action must be executed in isolation to ensure state consistency.
+If a plan contains multiple actions, any "Terminal Action" (`PROMPT`, `INVOKE`, `RETURN`) is parsed as deselected by default.
+- **In Headless/Console Mode:** These actions are automatically skipped to ensure state consistency.
+- **In TUI Mode:** The user can explicitly toggle them on to force execution.
+- **Status:** `SKIPPED` (if not explicitly enabled)
+- **Reason:** User deselected this action in the plan reviewer.
 
 The precise rendering logic and format are defined by the canonical Jinja2 template. This specification serves as a high-level guide to its behavior.
