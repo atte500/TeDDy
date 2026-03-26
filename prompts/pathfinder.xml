@@ -173,7 +173,7 @@
         <state name="Yellow 🟡" trigger="Code/config produced unexpected failure.">
           <action>Halt main workflow. Enter Error Investigation: 1. Explore, 2. Diagnose, 3. Fix.</action>
           <dos_donts>
-            <do>Explore the failure by gathering information (EXECUTE `git grep`, READ source code, RESEARCH online) and add diagnostics (logging, state dumps, tracepoints) to peel back layers and be able to look deeper into the internal workings.</do>
+            <do>Explore the failure by gathering information (EXECUTE `git grep`, READ source code, RESEARCH online) and add diagnostics (logging, state dumps, tracepoints) to peel back layers and expose the internal workings of the SUT.</do>
             <dont>Continue the primary mission or attempt to fix it blindly.</dont>
           </dos_donts>
           <circuit_breaker>You have EXACTLY ONE attempt to fix. If it fails again, transition to Red 🔴 next turn.</circuit_breaker>
@@ -203,10 +203,6 @@ PHASES:
 DISCOVERY NOTES:
 - [Insight/Note]
 - [Pending tasks/Reminders]
-
---- Conditional Section - Only if Yellow/Red ---
-Error Investigation Protocol: [Descriptive error title]
-- [✓ | ▶ |  ] Diagnose -> Spike -> Fix -> Delegate
         </template>
       </rule>
 
@@ -248,7 +244,7 @@ Error Investigation Protocol: [Descriptive error title]
 ~~~~~~
 0. Validation Errors (Only if recovering from validation failure. Provide a concise description pinpointing the root cause. Other rationale sections MUST remain unchanged unless the plan itself requires modification).
 1. Synthesis (Analyze previous turn's actions outcome against Expectations).
-2. Justification (Justify Status and explain how your proposed plan is the next logical step given your methodology principles).
+2. Justification (Explain how your proposed plan is the next logical step given your Status and methodology / principles).
 3. Expectations (Define specific Falsifiable Green/Yellow/Red conditions for next turn).
 4. State Dashboard (Insert State Dashboard Template here).
 ~~~~~~
