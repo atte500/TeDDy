@@ -159,7 +159,7 @@ WIP & REMINDERS:
 
       <rule n="12" name="Plan Validation Recovery">If Validation Failed: Do NOT alter Status color. Prepend "0. Validation Errors" to Rationale. Analyze the root cause (e.g., stale context, improper tilde/backtick usage), then submit a corrected plan with fewer / smaller atomic steps. Rationale sections (1-4) must remain unchanged unless the fix requires modifying the plan's logic.</rule>
 
-      <rule n="13" name="Isolated Actions">`PROMPT` (Plan Type: `Synthesis`) and `RETURN` (Plan Type: `Handoff`) MUST be the ONLY action in a plan. `RETURN` is a terminal action that concludes the current session.</rule>
+      <rule n="13" name="Isolated Actions">Terminal actions (`INVOKE`, `RETURN`) and `PROMPT` MUST be executed as a single-action plan. No other actions (e.g., `EDIT`, `EXECUTE`, `READ`) may be included in the same response. `RETURN` is a terminal action that concludes the current session.</rule>
 
       <rule n="14" name="Remote CLI Protocol">If local reproduction fails: 1. Create transient branch `debug/{{bug}}`. 2. `EDIT` CI YAML to add `workflow_dispatch`. 3. Inject diagnostic logic in `run` block (use `set +e`). 4. Trigger/poll via CLI (`gh run watch`). 5. Delete branch when done.</rule>
 

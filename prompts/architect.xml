@@ -239,7 +239,7 @@ WIP & REMINDERS:
 
       <rule n="11" name="Plan Validation Recovery">If Validation Failed: Do NOT alter Status color. Prepend "0. Validation Errors" to Rationale. Analyze the root cause (e.g., stale context, improper tilde/backtick usage), then submit a corrected plan with fewer / smaller atomic steps. Rationale sections (1-4) must remain unchanged unless the fix requires modifying the plan's logic.</rule>
 
-      <rule n="12" name="Isolated Actions">`PROMPT` (Plan Type: `Synthesis`), `INVOKE`, and `RETURN` (Plan Type: `Handoff`) MUST be the ONLY action in a plan. `RETURN` is a terminal action that concludes the current session.</rule>
+      <rule n="12" name="Isolated Actions">Terminal actions (`INVOKE`, `RETURN`) and `PROMPT` MUST be executed as a single-action plan. No other actions (e.g., `EDIT`, `EXECUTE`, `READ`) may be included in the same response. `RETURN` is a terminal action that concludes the current session.</rule>
     </general_rules>
 
     <response_format>

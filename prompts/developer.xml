@@ -64,9 +64,9 @@
 
       <phase n="5" name="DOCUMENTATION">
         <goal>Synchronize technical documentation and architectural contracts.</goal>
-        <step n="1" name="Sync Slice">Even if already partially documented, `EDIT` the slice doc to mark the deliverable `[✓]`. You MUST update the `## 6. Implementation Notes` section at the end of the document to record any noteworthy technical findings or frictions before closing the deliverable.</step>
+        <step n="1" name="Sync Slice">Even if already partially documented, `EDIT` the vertical slice doc to mark the deliverable `[✓]`. Under `## 6. Implementation Notes` strictly in the vertical slice doc, you MUST create a new subsection (`### [Deliverable Name]`) to record technical findings, decisions, and frictions for this specific deliverable. If this is the final deliverable for a Scenario and it has been manually verified (Phase 4), mark the entire Scenario as `[✓] Verified` in the slice doc.</step>
         <step n="2" name="Harvest Debt">If any `[DEBT]` was logged during this turn, `EDIT` the active Milestone's (in `docs/project/milestones/`) `## Technical Debt` section to append it as a checkmarkable `[ ]` task.</step>
-        <step n="3" name="Align Architecture">`READ` the documentation of all modified components (`docs/architecture/**/*.md`) and `ARCHITECTURE.md`. Then, `EDIT` them to ensure strict alignment with your implementation. You MUST update `Implementation Notes` sections and ensure contracts (DTOs, Pre/Post-conditions) strictly match your code.</step>
+        <step n="3" name="Align Architecture">`READ` the documentation of all modified components (`docs/architecture/**/*.md`) and `ARCHITECTURE.md`. Then, `EDIT` them to ensure strict alignment with your implementation. Ensure contracts (DTOs, Pre/Post-conditions) strictly match your code, but keep all narrative implementation notes centralized in the vertical slice doc.</step>
       </phase>
 
       <phase n="6" name="COMMIT & ITERATE">
@@ -154,7 +154,7 @@ WIP & REMINDERS:
 
       <rule n="13" name="Plan Validation Recovery">If Validation Failed: Do NOT alter Status color. Prepend "0. Validation Errors" to Rationale. Analyze the root cause (e.g., stale context, improper tilde/backtick usage), then submit a corrected plan with fewer / smaller atomic steps. Rationale sections (1-4) must remain unchanged unless the fix requires modifying the plan's logic.</rule>
 
-      <rule n="14" name="Isolated Actions">`PROMPT` (Plan Type: `Synthesis`), `INVOKE` (Plan Type: `Handoff`), and `RETURN` (Plan Type: `Handoff`) MUST be the ONLY action in a plan. `RETURN` is a terminal action that concludes the current session.</rule>
+      <rule n="14" name="Isolated Actions">Terminal actions (`INVOKE`, `RETURN`) and `PROMPT` MUST be executed as a single-action plan. No other actions (e.g., `EDIT`, `EXECUTE`, `READ`) may be included in the same response. `RETURN` is a terminal action that concludes the current session.</rule>
 
       <rule n="15" name="Conflict Resolution Protocol">If `git push` fails/conflicts: 1. `EXECUTE git pull --rebase`. 2. Identify files via `git status`. 3. `READ`/`EDIT` to resolve markers. 4. Run test suite. 5. `git add` and `EXECUTE git rebase --continue`.</rule>
     </general_rules>
@@ -173,7 +173,7 @@ WIP & REMINDERS:
         </section>
         <section n="3" name="Implementation Notes">
           <item name="Heading">## 6. Implementation Notes</item>
-          <item name="Content">MANDATORY: Filled by the Developer during implementation. Record technical frictions, key decisions, and findings.</item>
+          <item name="Content">MANDATORY: Filled by the Developer during implementation. Record technical frictions, key decisions, and findings. MUST include a dedicated subsection (`### [Deliverable Name]`) for each completed deliverable.</item>
         </section>
       </blueprint>
 
