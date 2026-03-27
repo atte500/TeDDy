@@ -71,6 +71,27 @@ class CliTestAdapter:
             args.append("--no-interactive")
         return self.run_cli_command(args, input=input)
 
+    def set_mock_editor_output(self, content: str) -> None:
+        """
+        Intercepts calls to subprocess.run (used for external editors)
+        and writes the specified content to the target file.
+        """
+        import subprocess
+        from unittest.mock import MagicMock
+
+        def mock_run(args, **_kwargs):
+            # The last argument is the file path provided to the editor
+            file_path = Path(args[-1])
+            file_path.write_text(content, encoding="utf-8")
+
+            mock_res = MagicMock(spec=subprocess.CompletedProcess)
+            mock_res.returncode = 0
+            return mock_res
+
+        # We must monkeypatch it in the core module where it's used if possible,
+        # or globally in subprocess.
+        self._monkeypatch.setattr(subprocess, "run", mock_run)
+
     def execute_plan(
         self,
         plan_content: str,

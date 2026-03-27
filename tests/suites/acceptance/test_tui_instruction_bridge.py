@@ -53,9 +53,59 @@ echo "hello"
     assert "Please refactor the service" in result.stdout
 
 
-def test_tui_instruction_bridge_capture(env: TestEnvironment):
+def test_tui_instruction_bridge_m_binding_captures_message(
+    env: TestEnvironment, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """
-    Scenario: User uses 'm' binding in TUI.
-    This will be implemented in the next turn once the report logic is green.
+    Scenario: User reviews a plan in TUI and adds a message via 'm'.
+    Then: The message is captured and appears in the final execution report.
     """
-    pass
+    env.setup().with_real_filesystem()
+    assert env.workspace, "Workspace must be initialized"
+
+    # We use a standard plan that should trigger the TUI
+    plan_content = """# Test Plan
+- **Status:** Green 🟢
+- **Agent:** Pathfinder
+- **Plan Type:** Implementation
+
+## Rationale
+````text
+### 1. Synthesis
+Test.
+### 2. Justification
+Test.
+### 3. Expected Outcome
+Test.
+### 4. State Dashboard
+Test.
+````
+
+## Action Plan
+### `EXECUTE`
+- **Description:** Run test
+````shell
+echo "hello"
+````
+"""
+    plan_path = env.workspace / "plan.md"
+    plan_path.write_text(plan_content, encoding="utf-8")
+
+    adapter = CliTestAdapter(monkeypatch, env.workspace)
+
+    # We need a way to mock the editor output.
+    # This deliverable focuses on ADDING this capability to the adapter.
+    # For now, we call a method we EXPECT to exist.
+    adapter.set_mock_editor_output(
+        "Refactor this service specifically for performance."
+    )
+
+    # Run execute in interactive mode (no -y)
+    # We simulate pressing 'm' (to edit message), then 'a' (to approve all)
+    result = adapter.run_cli_command(
+        ["execute", "plan.md", "--no-copy"], input="m\na\n"
+    )
+
+    # Assert: Check for ## User Request section in the report
+    assert "## User Request" in result.stdout
+    assert "Refactor this service specifically for performance." in result.stdout
