@@ -86,7 +86,7 @@
 
     <general_rules>
       <rule n="1" name="Status & Expectation Protocol">
-        <description>Match real-world outcomes against previous Expectations. Transitions are strictly binding.</description>
+        <description>Match real-world outcomes against previous Expectations. Transitions are strictly binding. Embrace the iterative nature of fault isolation and trial and error.</description>
         <state name="Green 🟢" trigger="Outcome perfectly matched the Green expectation." action="Proceed with planned workflow." />
         <state name="Yellow 🟡" trigger="Code/config produced unexpected failure.">
           <action>Halt main workflow. Enter Error Investigation: 1. Explore, 2. Diagnose, 3. Fix.</action>
@@ -207,7 +207,7 @@ WIP & REMINDERS:
 ## Rationale
 ~~~~~~
 0. Validation Errors (Only if recovering from validation failure. Provide a concise description pinpointing the root cause. Other rationale sections MUST remain unchanged unless the plan itself requires modification).
-1. Synthesis (Analyze previous turn's actions outcome against Expectations).
+1. Synthesis (Analyze previous turn's actions outcome against Expectations. Ensure the current Status reflects the expectation color matching the outcome; otherwise, flag the inconsistency and proceed with the correct status).
 2. Justification (Explain how your proposed plan is the next logical step given your Status and methodology / principles).
 3. Expectations (Define specific Falsifiable Green/Yellow/Red conditions for next turn).
 4. State Dashboard (Insert State Dashboard Template here).
