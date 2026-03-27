@@ -87,7 +87,7 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - **Then** the entire `plan.md` currently being executed MUST open in the configured external editor.
 
 #### Deliverables
-- [ ] **Logic** - Update `ExecutionOrchestrator` to persist manual plan content to a temporary file to support the `v` binding in manual mode.
+- [✓] **Logic** - Update `ExecutionOrchestrator` to persist manual plan content to a temporary file to support the `v` binding in manual mode.
 - [ ] **Wiring** - Add `v` binding to `ReviewerApp` to open the full plan content in the external editor.
 
 ### Scenario: Universal PROMPT Auto-Execution [ ]
@@ -158,6 +158,9 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - **EditActionValidator:** Update `_validate_single_edit` to prepend `--- Actual\n+++ Provided\n` to the `diff_text`.
 
 ## 6. Implementation Notes
+### Scenario: TUI "View Plan" Workflow
+- **Plan Persistence:** Updated `ExecutionOrchestrator.execute` to persist manual plan content (when `plan_path` is missing) to a temporary file. This ensures that even plans provided via the clipboard have a physical file path that the TUI can open in an external editor using the `v` key. A `try...finally` block ensures the temporary file is deleted after execution.
+
 ### Scenario: Unified Instruction Bridge
 - **Instruction Bridge Logic:** The `ExecutionOrchestrator` now bridges the `user_request` from plan metadata (populated by the CLI `-m` flag or the TUI `m` binding) to the final `ExecutionReport`.
 - **TUI Suspension:** The `ReviewerApp` (TUI) uses the `suspend()` context manager to allow the user to edit messages in their preferred external editor without corrupting the terminal state.

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from typing import Optional, Sequence
+from typing import Any, Optional, Sequence
 
 from teddy_executor.core.domain.models import (
     ActionLog,
@@ -78,48 +78,9 @@ class ExecutionOrchestrator(IRunPlanUseCase):
                 )
                 continue
 
-            agent_name = plan.metadata.get("Agent") or plan.metadata.get("agent")
-
-            reviewer_handled = False
-            should_dispatch = True
-            captured_message = ""
-            if interactive and self._plan_reviewer:
-                should_dispatch, captured_message = self._plan_reviewer.review_action(
-                    action, len(plan.actions), agent_name=agent_name
-                )
-                reviewer_handled = True
-
-            if not should_dispatch:
-                action_log = self._action_executor.handle_skipped_action(
-                    action, "User skipped this action in the plan reviewer."
-                )
-            elif reviewer_handled:
-                # Reviewer already confirmed it, so execute immediately.
-                # We skip isolation because the reviewer (TUI) allows multi-action execution.
-                action_log, dispatch_message = (
-                    self._action_executor.confirm_and_dispatch(
-                        action,
-                        interactive=False,
-                        total_actions=len(plan.actions),
-                        agent_name=agent_name,
-                        is_session=plan.is_session,
-                        skip_isolation=True,
-                    )
-                )
-                # If the executor (e.g. via a modal editor in TUI) returned a message, it takes precedence
-                if dispatch_message:
-                    captured_message = dispatch_message
-            else:
-                # Fallback to ActionExecutor interaction ONLY if no reviewer is present
-                action_log, captured_message = (
-                    self._action_executor.confirm_and_dispatch(
-                        action,
-                        interactive=interactive,
-                        total_actions=len(plan.actions),
-                        agent_name=agent_name,
-                        is_session=plan.is_session,
-                    )
-                )
+            action_log, captured_message = self._dispatch_single_action(
+                action, plan, interactive
+            )
 
             if captured_message:
                 plan.metadata["user_request"] = captured_message
@@ -132,6 +93,50 @@ class ExecutionOrchestrator(IRunPlanUseCase):
                     halt_execution = True
         return action_logs
 
+    def _dispatch_single_action(
+        self, action: Any, plan: Plan, interactive: bool
+    ) -> tuple[ActionLog, str]:
+        """Handles the review and dispatch of a single action."""
+        agent_name = plan.metadata.get("Agent") or plan.metadata.get("agent")
+        reviewer_handled = False
+        should_dispatch = True
+        captured_message = ""
+
+        if interactive and self._plan_reviewer:
+            should_dispatch, captured_message = self._plan_reviewer.review_action(
+                action, len(plan.actions), agent_name=agent_name
+            )
+            reviewer_handled = True
+
+        if not should_dispatch:
+            return (
+                self._action_executor.handle_skipped_action(
+                    action, "User skipped this action in the plan reviewer."
+                ),
+                "",
+            )
+
+        if reviewer_handled:
+            # Reviewer (TUI) handled approval, execute immediately skipping isolation.
+            action_log, dispatch_message = self._action_executor.confirm_and_dispatch(
+                action,
+                interactive=False,
+                total_actions=len(plan.actions),
+                agent_name=agent_name,
+                is_session=plan.is_session,
+                skip_isolation=True,
+            )
+            return action_log, dispatch_message or captured_message
+
+        # Fallback to ActionExecutor interaction if no reviewer is present.
+        return self._action_executor.confirm_and_dispatch(
+            action,
+            interactive=interactive,
+            total_actions=len(plan.actions),
+            agent_name=agent_name,
+            is_session=plan.is_session,
+        )
+
     def execute(
         self,
         plan: Optional[Plan] = None,
@@ -140,64 +145,92 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         interactive: bool = True,
         message: Optional[str] = None,
     ) -> ExecutionReport:
-        if plan is None:
-            if plan_content is not None:
-                plan = self._plan_parser.parse(plan_content, plan_path=plan_path)
-            elif plan_path is not None:
-                content = self._file_system_manager.read_file(plan_path)
-                plan = self._plan_parser.parse(content, plan_path=plan_path)
-            else:
-                raise ValueError("Must provide either plan, plan_content, or plan_path")
+        import os
+        import tempfile
 
-        start_time = datetime.now()
+        temp_plan_path = None
+        try:
+            if plan is None:
+                if plan_content is not None:
+                    # Scenario: TUI "View Plan" Workflow
+                    # If content is provided without a path, persist it to a temporary file
+                    # so the TUI has a physical file to open for previewing.
+                    if not plan_path:
+                        # We use a known prefix to help identify it as a TeDDy manual plan
+                        temp_fd, temp_plan_path = tempfile.mkstemp(
+                            prefix="teddy_manual_plan_", suffix=".md"
+                        )
+                        os.close(temp_fd)
+                        self._file_system_manager.write_file(
+                            temp_plan_path, plan_content
+                        )
+                        plan_path = temp_plan_path
 
-        # Pre-flight logical validation
-        validation_errors = self._plan_validator.validate(plan)
-        if validation_errors:
-            error_msgs = "\n---\n".join(e.message for e in validation_errors)
-            raise InvalidPlanError(
-                f"Plan failed logical validation:\n{error_msgs}",
-                offending_nodes=[
-                    e.offending_node for e in validation_errors if e.offending_node
-                ],
-                validation_errors=validation_errors,
+                    plan = self._plan_parser.parse(plan_content, plan_path=plan_path)
+                elif plan_path is not None:
+                    content = self._file_system_manager.read_file(plan_path)
+                    plan = self._plan_parser.parse(content, plan_path=plan_path)
+                else:
+                    raise ValueError(
+                        "Must provide either plan, plan_content, or plan_path"
+                    )
+
+            start_time = datetime.now()
+
+            # Pre-flight logical validation
+            validation_errors = self._plan_validator.validate(plan)
+            if validation_errors:
+                error_msgs = "\n---\n".join(e.message for e in validation_errors)
+                raise InvalidPlanError(
+                    f"Plan failed logical validation:\n{error_msgs}",
+                    offending_nodes=[
+                        e.offending_node for e in validation_errors if e.offending_node
+                    ],
+                    validation_errors=validation_errors,
+                )
+
+            plan = self._perform_interactive_review(plan, interactive)
+            if plan is None:
+                return ExecutionReport(
+                    run_summary=RunSummary(
+                        status=RunStatus.SKIPPED,
+                        start_time=start_time,
+                        end_time=datetime.now(),
+                    ),
+                    plan_title="",
+                    rationale="",
+                    metadata={},
+                    original_actions=[],
+                    action_logs=[],
+                )
+
+            action_logs = self._process_plan_actions(plan, interactive)
+
+            summary = RunSummary(
+                status=self._determine_overall_status(action_logs),
+                start_time=start_time,
+                end_time=datetime.now(),
             )
 
-        plan = self._perform_interactive_review(plan, interactive)
-        if plan is None:
+            # Capture any message added during the execution loop or passed from CLI
+            final_user_request = plan.metadata.get("user_request") or message
+
             return ExecutionReport(
-                run_summary=RunSummary(
-                    status=RunStatus.SKIPPED,
-                    start_time=start_time,
-                    end_time=datetime.now(),
-                ),
-                plan_title="",
-                rationale="",
-                metadata={},
-                original_actions=[],
-                action_logs=[],
+                run_summary=summary,
+                plan_title=plan.title,
+                rationale=plan.rationale,
+                user_request=final_user_request,
+                metadata=plan.metadata,
+                original_actions=plan.actions,
+                action_logs=action_logs,
             )
-
-        action_logs = self._process_plan_actions(plan, interactive)
-
-        summary = RunSummary(
-            status=self._determine_overall_status(action_logs),
-            start_time=start_time,
-            end_time=datetime.now(),
-        )
-
-        # Capture any message added during the execution loop or passed from CLI
-        final_user_request = plan.metadata.get("user_request") or message
-
-        return ExecutionReport(
-            run_summary=summary,
-            plan_title=plan.title,
-            rationale=plan.rationale,
-            user_request=final_user_request,
-            metadata=plan.metadata,
-            original_actions=plan.actions,
-            action_logs=action_logs,
-        )
+        finally:
+            if temp_plan_path and os.path.exists(temp_plan_path):
+                try:
+                    os.remove(temp_plan_path)
+                except Exception:  # nosec B110
+                    # Silently fail on cleanup errors (e.g. file busy)
+                    pass
 
     def resume(
         self,
