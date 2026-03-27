@@ -270,7 +270,10 @@ class MarkdownPlanParser(IPlanParser):
             action_type_str = get_child_text(action_heading).strip().replace("`", "")
 
             if action_type_str not in self._dispatch_map:
-                raise InvalidPlanError(f"Unknown action type: {action_type_str}")
+                raise InvalidPlanError(
+                    f"Unknown action type: {action_type_str}",
+                    offending_nodes=[action_heading],
+                )
 
             parse_method = self._dispatch_map[action_type_str]
             actions.append(parse_method(stream, node=action_heading))
