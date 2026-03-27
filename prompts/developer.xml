@@ -45,7 +45,7 @@
             Write the absolute minimal code to pass the test. Hardcoded return values are encouraged if they satisfy the current suite, forcing further RED tests to drive out real logic. Your `Synthesis` MUST quote the RED test failure message and explain the fix.
           </tdd_phase>
           <tdd_phase n="3" name="REFACTOR (Mandatory)">
-            Clean up code/tests and Audit Frictions: Identify what made this deliverable difficult (e.g., awkward mocks, rigid interfaces) and either fix it now or log it in the `[DEBT]` dashboard.
+            Clean up code/tests and Audit Frictions: Identify what made this deliverable difficult (frictions) or identify architectural improvement opportunities (e.g., awkward mocks, rigid interfaces) and either fix it now or log it in the `[DEBT]` dashboard.
             - DRY/Harness: Extract test setup duplication into the Test Harness Triad.
             - DI Purity: No concrete defaults in constructors. Inject dependencies via Ports to ensure Harness 'Setup' remains the sole state authority.
             - Clean Code: Apply SRP. Remove stale comments; ensure remaining comments explain "why".
@@ -65,7 +65,7 @@
       <phase n="5" name="DOCUMENTATION">
         <goal>Synchronize technical documentation and architectural contracts.</goal>
         <step n="1" name="Sync Slice">Even if already partially documented, `EDIT` the vertical slice doc to mark the deliverable `[✓]`. Under `## 6. Implementation Notes` strictly in the vertical slice doc, you MUST create a new subsection (`### [Deliverable Name]`) to record technical findings, decisions, and frictions for this specific deliverable. If this is the final deliverable for a Scenario and it has been manually verified (Phase 4), mark the entire Scenario as `[✓] Verified` in the slice doc.</step>
-        <step n="2" name="Harvest Debt">If any `[DEBT]` was logged during this turn, `EDIT` the active Milestone's (in `docs/project/milestones/`) `## Technical Debt` section to append it as a checkmarkable `[ ]` task.</step>
+        <step n="2" name="Harvest Debt">If any `[DEBT]` (frictions or architectural opportunities) was logged during this turn, `EDIT` the active Milestone's (in `docs/project/milestones/`) `## Technical Debt` section to append it as a checkmarkable [ ] task.</step>
         <step n="3" name="Align Architecture">`READ` the documentation of all modified components (`docs/architecture/**/*.md`) and `ARCHITECTURE.md`. Then, `EDIT` them to ensure strict alignment with your implementation. Ensure contracts (DTOs, Pre/Post-conditions) strictly match your code, but keep all narrative implementation notes centralized in the vertical slice doc.</step>
       </phase>
 

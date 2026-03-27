@@ -73,7 +73,7 @@
       <phase n="7" name="Finalize Debugging Artifact">
         <goal>Provide permanent record of failure and solution.</goal>
         <step n="1" name="RCA & Notes">Finalize ## Root Cause Analysis and ## Implementation Notes in the MRE doc.</step>
-        <step n="2" name="Technical Debt">Log any discovered structural issues or inconsistent patterns to the active Milestone's ## Technical Debt section as checkmark items.</step>
+        <step n="2" name="Technical Debt">Log any discovered frictions or architectural improvement opportunities (structural issues or inconsistent patterns) to the active Milestone's (in `docs/project/milestones/`) ## Technical Debt section as checkmark items.</step>
       </phase>
 
       <phase n="8" name="Finalize & Handoff">
@@ -96,9 +96,9 @@
           </dos_donts>
           <circuit_breaker>You have EXACTLY ONE attempt to fix. If it fails again, transition to Red 🔴 next turn.</circuit_breaker>
         </state>
-        <state name="Red 🔴" trigger="Systemic bug or failed Yellow recovery.">
+      <state name="Red 🔴" trigger="Systemic bug or failed Yellow recovery.">
           <dos_donts>
-            <do>Restart required: 1. Rewrite MRE (`EDIT` doc with holistic learnings). 2. Stage Documentation (`git add docs/`). 3. Reset Unstaged (`git restore .` / `git clean -fd`). 4. Restart workflow from Phase 1 under Green status.</do>
+            <do>Restart required: 1. Rewrite MRE (`EDIT` doc with holistic learnings, ensuring you retain a trace of the previous investigation's findings). 2. Stage Documentation (`git add docs/`). 3. Reset Unstaged (`git restore .` / `git clean -fd`). 4. Restart workflow from Phase 1 under Green status.</do>
             <dont>Persist with a flawed reproduction, keep the workspace in a dirty state, or attempt to resume the current workflow phase without a formal restart.</dont>
           </dos_donts>
         </state>
