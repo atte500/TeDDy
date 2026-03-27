@@ -5,9 +5,11 @@
 ## 1. Business Goal
 To refine the interactive session workflow into a seamless, high-visibility experience by enabling instruction capture within the TUI, standardizing human-readable artifacts, and hardening diagnostic output.
 
-## 2. Acceptance Criteria (Scenarios)
+## 2. Scenarios
 
 ### Scenario: Timestamped Context (Standard) [✓]
+> As a developer, I want to see the exact time and date context was gathered so that I can audit and reproduce AI sessions with precision.
+
 - **Given** `teddy context` is executed.
 - **When** the project context is gathered.
 - **Then** the Header MUST include `Current Date` and `Current Time`.
@@ -16,6 +18,8 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - [✓] **Logic** - Update `ContextService._format_header` to include current system time/date.
 
 ### Scenario: Soft Isolation for Terminal Actions (Non-TUI) [✓]
+> As a developer using the non-interactive CLI, I want the system to automatically prevent the execution of terminal actions when they are part of a larger plan so that the AI receives feedback from other actions before making a state-changing decision.
+
 - **Given** I run `teddy execute` (with or without `-y`) AND NOT using the TUI.
 - **When** a plan contains a Terminal Action (`PROMPT`, `INVOKE`, `RETURN`).
 - **And** the total number of actions in the plan is GREATER THAN 1.
@@ -28,6 +32,8 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - [✓] **Logic** - Update `ActionExecutor.confirm_and_dispatch` to implement the soft isolation check.
 
 ### Scenario: Standardized Planning Artifact (`input.md`) [✓]
+> As a developer, I want the AI's input to be a standardized, human-readable Markdown file (`input.md`) so that I can easily inspect and audit the exact context provided for each planning turn.
+
 - **Given** a planning turn is initiated in an interactive session.
 - **When** the input is saved to disk.
 - **Then** it MUST be named `input.md` (instead of `input.log`).
@@ -39,6 +45,8 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - [✓] **Logic** - Update `SessionService.transition_to_next_turn` to always append BOTH the current turn's `plan.md` and `report.md` to the next turn's context.
 
 ### Scenario: Unified Instruction Bridge (TUI & Console) [ ]
+> As a user, I want a consistent way to provide instructions to the AI via a message flag or an in-TUI editor so that my requests are captured, documented, and passed between turns seamlessly.
+
 - **Given** I am executing a session command (`start`, `resume`, or `execute`).
 - **When** I provide a message via the `-m / --message` flag in `--console` mode.
 - **Then** that message MUST be captured as the `user_request`.
@@ -57,6 +65,8 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - [ ] **Cleanup** - Remove legacy `typer.prompt` from session loops and handlers.
 
 ### Scenario: Message Consumption (Session & Manual) [ ]
+> As an AI agent, I want a clear, prioritized system for consuming user instructions so that I always act on the most recent and relevant request.
+
 - **Given** a planning turn is initiated via `teddy plan` or as part of a session.
 - **When** it looks for user instructions.
 - **Then** it MUST check in this priority order:
@@ -69,6 +79,8 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - [ ] **Wiring** - Update `plan` command to make `-m` optional (defaulting to None).
 
 ### Scenario: TUI "View Plan" Workflow [ ]
+> As a user reviewing a plan in the TUI, I want to quickly open the full plan in my preferred editor so that I can get a complete, syntax-highlighted overview before approving it.
+
 - **Given** I am in the `ReviewerApp` (TUI).
 - **When** I press `v`.
 - **Then** the entire `plan.md` currently being executed MUST open in the configured external editor.
@@ -78,6 +90,8 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - [ ] **Wiring** - Add `v` binding to `ReviewerApp` to open the full plan content in the external editor.
 
 ### Scenario: Universal PROMPT Auto-Execution [ ]
+> As a user, I want single-action `PROMPT` plans to display their message immediately without needing approval so that I can have a more fluid, conversational interaction for simple checkpoints.
+
 - **Given** a plan contains exactly ONE action of type `PROMPT`.
 - **When** the execution starts.
 - **Then** the `PROMPT` message MUST be displayed immediately without requiring user approval, regardless of session mode.
@@ -86,6 +100,8 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - [ ] **Logic** - Update `ExecutionOrchestrator._process_plan_actions` to automatically approve `PROMPT` actions if they are the sole action in any plan.
 
 ### Scenario: Context-Aware Editing (p key) [ ]
+> As a user reviewing a plan in the TUI, I want to press a single key to preview and interactively edit any action so that I can make precise, fine-grained adjustments before execution.
+
 - **Given** I am in the `ReviewerApp` (TUI).
 - **When** I highlight an action and press `p`.
 - **Then** it MUST trigger the specific workflow for that action type:
@@ -103,6 +119,8 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - [ ] **Wiring** - Implement modal preview for `READ` and `PRUNE`.
 
 ### Scenario: Diagnostic Clarity (AST & Diffs) [ ]
+> As a developer debugging a failed plan, I want validation errors to provide maximum clarity, including specific Markdown delimiters in the AST and standard diff headers, so that I can quickly diagnose and fix the root cause.
+
 - **Given** a plan fails validation.
 - **When** the AST view is displayed.
 - **Then** Code Blocks MUST explicitly state the delimiter type and count (e.g., "Code Block (3 backticks)" or "Code Block (6 tildes)").
