@@ -73,7 +73,8 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
     - Implement the `SessionLogGenerator` to compile session histories into a human-readable `session-log.md`, excluding turns that fail validation.
 
 ## 6. Technical Debt
-- [ ] **Code Duplication (jscpd):** Resolve internal logic duplication in `session_orchestrator.py` between lines 185-193 and 194-202.
+- [ ] **Code Duplication (jscpd):** Resolve internal logic duplication in `session_orchestrator.py` between lines 185-193 and 194-202 (shifted to ~201-218).
+- [ ] **Code Duplication (jscpd):** Resolve clones in `tests/suites/unit/core/services/test_session_orchestrator_validation.py` between lines 18-25 and 72-77.
 - [ ] **Code Duplication (jscpd):** Resolve clones in `tests/suites/acceptance/test_non_interactive_orchestration.py` triggered by soft-isolation changes.
 - [ ] **Security:** Resolve `bandit` subprocess security warning in `system_environment_inspector.py`.
 - [ ] **Code Quality:** Resolve extensive `vulture` dead-code warnings (mostly unused variables/imports in tests and core ports).

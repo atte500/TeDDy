@@ -119,6 +119,7 @@ def test_session_orchestrator_triggers_transition_on_success(  # noqa: PLR0913
         plan_path=plan_path,
         execution_report=mock_run_plan.execute.return_value,
         turn_cost=0.0,
+        is_validation_failure=False,
     )
 
 

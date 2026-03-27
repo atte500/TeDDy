@@ -219,6 +219,7 @@ class SessionOrchestrator(IRunPlanUseCase):
         self,
         plan_path: str,
         report: ExecutionReport,
+        is_validation_failure: bool = False,
     ):
         """Persists the report and transitions to the next turn."""
         turn_dir = Path(plan_path).parent
@@ -243,6 +244,7 @@ class SessionOrchestrator(IRunPlanUseCase):
             plan_path=plan_path,
             execution_report=report,
             turn_cost=turn_cost,
+            is_validation_failure=is_validation_failure,
         )
 
     def _display_planning_progress(self, turn_dir: Any) -> None:
