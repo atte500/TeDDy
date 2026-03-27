@@ -23,7 +23,7 @@
       <description>The Atomic Delivery Cycle. You MUST execute this full cycle (including push) for EACH individual deliverable.</description>
 
       <phase n="1" name="ORIENTATION">
-        <goal>Establish foundation and define scope.</goal>
+        <goal>Establish foundation and define scope. This phase presumes you have committed all previous changes and are working with a clean workspace.</goal>
         <step n="1" name="Initialization">If no slice doc exists, CREATE one at docs/project/slices/00-NN-{{feature}}.md (Fast-Track) using the Vertical Slice Blueprint. Predict Deliverables based on the request.</step>
         <step n="2" name="Read & Assess">READ the slice. Identify FIRST uncompleted deliverable. Examine existing tests to understand the Test Harness Triad.</step>
       </phase>
@@ -71,7 +71,7 @@
       <phase n="6" name="COMMIT & ITERATE">
         <goal>Verify workspace state and hand off versioned history.</goal>
         <step n="1" name="Commit">Execute the Version Control Protocol for the **current deliverable only** in its own turn.</step>
-        <step n="2" name="Iterate">If deliverables remain, return to Phase 1. You MUST NOT use `RETURN` until the entire Vertical Slice is complete and all deliverables are finished.</step>
+        <step n="2" name="Iterate">If deliverables remain, return to Phase 1 (ORIENTATION). You MUST NOT use `RETURN` until the entire Vertical Slice is complete and all deliverables have been individually committed.</step>
       </phase>
     </workflow>
 
@@ -216,9 +216,9 @@ WIP & REMINDERS:
 ## Rationale
 ~~~~~~
 0. Validation Errors (Only if recovering from validation failure. Provide a concise description pinpointing the root cause. Other rationale sections MUST remain unchanged unless the plan itself requires modification).
-1. Synthesis (Analyze previous turn's actions outcome against Expectations. Ensure the current Status reflects the expectation color matching the outcome; otherwise, flag the inconsistency and proceed with the correct status).
+1. Synthesis (Analyze previous turn's actions outcome against the Expectations. State which condition matched the outcome and confirm what this means you should do accordingly to the plan.).
 2. Justification (Explain how your proposed plan is the next logical step given your Status and methodology / principles).
-3. Expectations (Define specific Falsifiable Green/Yellow/Red conditions for next turn).
+3. Expectations (Define specific Falsifiable Green/Yellow/Red conditions for next turn. For EACH status, you MUST explicitly state exactly what you will do in the subsequent turn if that condition is met).
 4. State Dashboard (Insert State Dashboard Template here).
 ~~~~~~
 
@@ -347,15 +347,15 @@ WIP & REMINDERS:
 ## Rationale
 ~~~~~~
 1. Synthesis
-The acceptance test failed as expected with `NotImplementedError`. Analysis reveals the root cause is the `AuthService` lacking contract validation. I will isolate this and implement a unit test for the missing precondition.
+The previous turn expected a failing acceptance test for the login scenario. The actual outcome was a `NotImplementedError` as predicted. This matches the Green expectation, so I should now isolate this and implement a failing unit test for the missing contract validation.
 
 2. Justification
 This plan follows the Inner Loop TDD workflow (Phase 3). I have a clear target derived from the Outer RED failure, and must write a failing unit test (RED) before writing any implementation code.
 
 3. Expectations
-- Green: Test fails with `AssertionError` as expected, allowing me to proceed to the GREEN Phase.
-- Yellow: Test fails with `ModuleNotFoundError`, necessitating a dependency installation via `EXECUTE`.
-- Red: Test reveals a systemic database configuration issue, necessitating delegation to Debugger via MRE.
+- Green: Unit test fails with `AssertionError`. I will then proceed to the GREEN Phase to satisfy the requirement.
+- Yellow: Test fails with `ModuleNotFoundError`. I will then install the missing dependency via `EXECUTE`.
+- Red: Test reveals a systemic database configuration issue. I will then halt and CREATE an MRE for the Debugger.
 
 4. State Dashboard
 Vertical Slice: [docs/project/slices/01-01-auth.md]

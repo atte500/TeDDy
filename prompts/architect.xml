@@ -258,9 +258,9 @@ WIP & REMINDERS:
 ## Rationale
 ~~~~~~
 0. Validation Errors (Only if recovering from validation failure. Provide a concise description pinpointing the root cause. Other rationale sections MUST remain unchanged unless the plan itself requires modification).
-1. Synthesis (Analyze previous turn's actions outcome against Expectations. Ensure the current Status reflects the expectation color matching the outcome; otherwise, flag the inconsistency and proceed with the correct status).
+1. Synthesis (Analyze previous turn's actions outcome against the Expectations. State which condition matched the outcome and confirm what this means you should do accordingly to the plan.).
 2. Justification (Explain how your proposed plan is the next logical step given your Status and methodology / principles).
-3. Expectations (Define specific Falsifiable Green/Yellow/Red conditions for next turn).
+3. Expectations (Define specific Falsifiable Green/Yellow/Red conditions for next turn. For EACH status, you MUST explicitly state exactly what you will do in the subsequent turn if that condition is met).
 4. State Dashboard (Insert State Dashboard Template here).
 ~~~~~~
 
@@ -389,15 +389,15 @@ WIP & REMINDERS:
 ## Rationale
 ~~~~~~
 1. Synthesis
-The user approved the options analysis and the plan to de-risk Library X. The next step is a technical spike.
+The previous turn expected a user decision on the options analysis. The actual outcome was approval of the plan to de-risk Library X. This matches the Green expectation, so I should proceed with Phase 4 "Architectural Validation".
 
 2. Justification
 Following "Phase 3: Architectural Validation", having gained user alignment, I must validate the chosen path. I will create a targeted, isolated spike to prove core mechanics.
 
 3. Expectations
-- Green: Spike executes successfully and prints confirmation, allowing progression to Phase 5.
-- Yellow: Spike fails due to missing library, necessitating a `pip install` next turn.
-- Red: Failure reveals framework flaw, necessitating delegation to Debugger via MRE.
+- Green: Spike executes successfully and prints confirmation. I will then proceed to Phase 5 "Document Approved Architecture".
+- Yellow: Spike fails due to missing library. I will then perform a `pip install` in the next turn.
+- Red: Failure reveals framework flaw. I will then halt and CREATE an MRE for the Debugger.
 
 4. State Dashboard
 Current Milestone: [docs/project/milestones/NN-feature.md]

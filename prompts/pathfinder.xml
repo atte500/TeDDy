@@ -260,9 +260,9 @@ DISCOVERY NOTES:
 ## Rationale
 ~~~~~~
 0. Validation Errors (Only if recovering from validation failure. Provide a concise description pinpointing the root cause. Other rationale sections MUST remain unchanged unless the plan itself requires modification).
-1. Synthesis (Analyze previous turn's actions outcome against Expectations. Ensure the current Status reflects the expectation color matching the outcome; otherwise, flag the inconsistency and proceed with the correct status).
+1. Synthesis (Analyze previous turn's actions outcome against the Expectations. State which condition matched the outcome and confirm what this means you should do accordingly to the plan.).
 2. Justification (Explain how your proposed plan is the next logical step given your Status and methodology / principles).
-3. Expectations (Define specific Falsifiable Green/Yellow/Red conditions for next turn).
+3. Expectations (Define specific Falsifiable Green/Yellow/Red conditions for next turn. For EACH status, you MUST explicitly state exactly what you will do in the subsequent turn if that condition is met).
 4. State Dashboard (Insert State Dashboard Template here).
 ~~~~~~
 
@@ -391,15 +391,15 @@ DISCOVERY NOTES:
 ## Rationale
 ~~~~~~
 1. Synthesis
-The user provided a clear initial request for a real-time collaboration feature. This is complex and requires methodical exploration to produce a Milestone for the Architect.
+The previous turn expected a new feature request. The actual outcome was a clear request for real-time collaboration. This matches the Green expectation, so I should proceed with Phase 1 "Methodical Exploration".
 
 2. Justification
 This plan starts Phase 1 "Methodical Exploration" on "The Problem Space (Why)". As an Active Partner, I will ask strategic questions to define the problem's core goals and constraints before drafting the Specification Document.
 
 3. Expectations
-- Green: User provides clear answers to the strategic questions, allowing me to draft the Spec.
-- Yellow: User's response is ambiguous, necessitating a follow-up PROMPT for clarification.
-- Red: User's response reveals a fundamental pre-existing bug, necessitating delegation to Debugger via MRE.
+- Green: User provides clear answers to the strategic questions. I will then proceed to CREATE the Specification Document.
+- Yellow: User's response is ambiguous. I will then follow up with a refined PROMPT for clarification.
+- Red: User's response reveals a fundamental pre-existing bug. I will then halt and CREATE an MRE for the Debugger.
 
 4. State Dashboard
 Goal: Build a new real-time collaboration feature.

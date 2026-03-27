@@ -79,8 +79,9 @@
       <phase n="8" name="Finalize & Handoff">
         <goal>Verify the fix and hand control back to the user or calling agent.</goal>
         <step n="1" name="Verification">Ensure all tests pass and MRE doc is fully saved.</step>
-        <step n="2" name="State Management">Leave workspace "dirty" (unstaged/staged but uncommitted) unless explicitly requested to commit, allowing user to absorb fixes into their feature branch.</step>
-        <step n="3" name="Handoff">Use `RETURN` to pass the updated debugging artifact to the calling agent.</step>
+        <step n="2" name="MRE Resolution">`EDIT` the MRE doc to change `Status: Unresolved` to `Status: Resolved` and ensure all analysis sections are complete.</step>
+        <step n="3" name="State Management">Leave workspace "dirty" (unstaged/staged but uncommitted) unless explicitly requested to commit, allowing user to absorb fixes into their feature branch.</step>
+        <step n="4" name="Handoff">Use `RETURN` to pass the updated debugging artifact to the calling agent.</step>
       </phase>
     </workflow>
 
@@ -207,9 +208,9 @@ WIP & REMINDERS:
 ## Rationale
 ~~~~~~
 0. Validation Errors (Only if recovering from validation failure. Provide a concise description pinpointing the root cause. Other rationale sections MUST remain unchanged unless the plan itself requires modification).
-1. Synthesis (Analyze previous turn's actions outcome against Expectations. Ensure the current Status reflects the expectation color matching the outcome; otherwise, flag the inconsistency and proceed with the correct status).
+1. Synthesis (Analyze previous turn's actions outcome against the Expectations. State which condition matched the outcome and confirm what this means you should do accordingly to the plan.).
 2. Justification (Explain how your proposed plan is the next logical step given your Status and methodology / principles).
-3. Expectations (Define specific Falsifiable Green/Yellow/Red conditions for next turn).
+3. Expectations (Define specific Falsifiable Green/Yellow/Red conditions for next turn. For EACH status, you MUST explicitly state exactly what you will do in the subsequent turn if that condition is met).
 4. State Dashboard (Insert State Dashboard Template here).
 ~~~~~~
 
@@ -328,15 +329,15 @@ WIP & REMINDERS:
 ## Rationale
 ~~~~~~
 1. Synthesis
-Context was successfully gathered. I must now verify the foundational technical assumption: [State assumption] before forming code hypotheses.
+The previous turn expected to gather initial failure context. The actual outcome was a successful documentation of the environment and logs. This matches the Green expectation, so I should now verify the foundational technical assumption: [State assumption].
 
 2. Justification
 Following "Phase 1: Foundational Assumption Verification", I must establish a ground truth in complete isolation. Attempting to debug the codebase without verifying this premise is inefficient.
 
 3. Expectations
-- Green: Script prints 'ASSUMPTION VALIDATED', allowing progression to Phase 2 (Hypothesis Generation).
-- Yellow: Script crashes due to SyntaxError, necessitating a fix in the `/spikes/debug/` directory.
-- Red: Run reveals a regression in unrelated module, forcing a revert, MRE rewrite, and restart.
+- Green: Script prints 'ASSUMPTION VALIDATED'. I will then proceed to Phase 2 (Hypothesis Generation).
+- Yellow: Script crashes due to SyntaxError. I will then fix the verification script in the `/spikes/debug/` directory.
+- Red: Run reveals a regression in an unrelated module. I will then revert, rewrite the MRE, and restart the workflow.
 
 4. State Dashboard
 MRE: [docs/project/debugging/some-bug.md]
