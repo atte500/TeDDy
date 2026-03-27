@@ -58,6 +58,7 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 
 #### Deliverables
 - [✓] **Contract** - Update `ExecutionReport` domain model and Jinja2 template to include the captured `user_request`.
+- [ ] **Harness** - Update `CliTestAdapter` to allow mocking of external editor output for instruction capture.
 - [✓] **Logic** - Update `SessionOrchestrator` to bridge instructions from CLI flags/reports to the planner.
 - [✓] **Wiring** - Add `-m / --message` flag to `start`, `resume`, and `execute` commands in `__main__.py`.
 - [✓] **Wiring** - Update `SessionCLIHandlers` to pass the message to the orchestrator.
@@ -112,6 +113,7 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 
 #### Deliverables
 - [ ] **Contract** - Ensure `report.md` explicitly notes when an action was `*modified` by the user.
+- [ ] **Harness** - Update `ReviewerApp` driver in test harness to support simulated keypresses for modal editing.
 - [ ] **Logic** - Implement "Proposed Final Version" simulation logic using `EditSimulator` in `ReviewerApp`.
 - [ ] **Wiring** - Implement multi-stage `CREATE` workflow in `ReviewerApp`.
 - [ ] **Wiring** - Implement multi-stage `EDIT` workflow in `ReviewerApp`.
@@ -132,6 +134,11 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - [ ] **Logic** - Update `EditActionValidator._validate_single_edit` to include `--- Actual` and `+++ Provided` headers in the failure diff block.
 
 ## 3. Implementation Guidelines
+
+### Test Harness Triad Strategy
+- **Acceptance Layer:** Use `CliTestAdapter` and `MarkdownPlanBuilder` to verify the new TUI bindings (`m`, `v`, `p`) and terminal isolation logic.
+- **Integration Layer:** Update `CliTestAdapter` to support TUI-specific interactions (like opening an external editor) via the `ReviewerApp` driver.
+- **Unit Layer:** Use `pytest` parameterized tests for `ParserReporting` and `EditActionValidator` logic.
 
 ### Infrastructure & Artifacts
 - **PlanningService:** Update `generate_plan` to write `input.md`. Use `self._context_service.get_context()` and the `format_project_context` helper from `cli_formatter.py`.
