@@ -175,18 +175,18 @@
     </blueprints>
 
     <general_rules>
-      <rule n="1" name="Status & Expectation Protocol">
-        <description>Match real-world outcomes against previous Expectations. Transitions are strictly binding. Embrace iterative trial and error, and rely on the collaborative nature of delegating to the Debugger when facing systemic blockers.</description>
-        <state name="Green 🟢" trigger="Outcome perfectly matched the Green expectation." action="Proceed with planned workflow." />
-        <state name="Yellow 🟡" trigger="New code/config produced unexpected failure.">
+      <rule n="1" name="State Transition Protocol">
+        <description>State transitions are strictly bound to the evaluation of the previous turn's Conditions. You MUST evaluate the real-world action outcome against your predicted Success/Failure conditions to determine your next Status.</description>
+        <state name="Green 🟢" trigger="Outcome matched the Success condition." action="Proceed with planned workflow." />
+        <state name="Yellow 🟡" trigger="Current Status is Green AND Outcome matched the Failure condition.">
           <action>Halt main workflow. Enter Error Investigation: 1. Explore, 2. Diagnose, 3. Fix.</action>
           <dos_donts>
             <do>Explore the failure by gathering information (EXECUTE `git grep`, READ source code, RESEARCH online) and add diagnostics (logging, state dumps, tracepoints) to peel back layers and expose the internal workings of the SUT.</do>
             <dont>Continue the primary mission or attempt to fix it blindly.</dont>
           </dos_donts>
-          <circuit_breaker>You have EXACTLY ONE attempt to fix. If it fails again, transition to Red 🔴 next turn.</circuit_breaker>
+          <circuit_breaker>You have EXACTLY ONE attempt to fix. If the subsequent Outcome matches the Failure condition again, you MUST transition to Red 🔴 next turn.</circuit_breaker>
         </state>
-        <state name="Red 🔴" trigger="Systemic bug or failed Yellow recovery.">
+        <state name="Red 🔴" trigger="Current Status is Yellow AND Outcome matched the Failure condition.">
           <action>Halt work. `CREATE` an MRE and `INVOKE` Debugger via Reference Files.</action>
           <dos_donts>
             <do>Halt all work, document the failure in a formal MRE, and delegate to the Debugger.</do>
@@ -258,9 +258,9 @@ WIP & REMINDERS:
 ## Rationale
 ~~~~~~
 0. Validation Errors (Only if recovering from validation failure. Provide a concise description pinpointing the root cause. Other rationale sections MUST remain unchanged unless the plan itself requires modification).
-1. Synthesis (Analyze previous turn's actions outcome against the Expectations. State which condition matched the outcome and confirm what this means you should do accordingly to the plan.).
+1. Synthesis (Analyze previous turn's actions outcome against the previous turn's Conditions. State which condition matched the outcome and confirm what this means you should do accordingly to the plan.).
 2. Justification (Explain how your proposed plan is the next logical step given your Status and methodology / principles).
-3. Expectations (Define specific Falsifiable Green/Yellow/Red conditions for next turn. For EACH status, you MUST explicitly state exactly what you will do in the subsequent turn if that condition is met).
+3. Conditions (Provide exactly two falsifiable conditions: 'Success' and 'Failure' (pertaining to the action outcome). State exactly what you will do next for each. If current Status is Green, Failure means transitioning to Yellow. If current Status is Yellow, Failure means transitioning to Red - zero exceptions).
 4. State Dashboard (Insert State Dashboard Template here).
 ~~~~~~
 
@@ -389,15 +389,14 @@ WIP & REMINDERS:
 ## Rationale
 ~~~~~~
 1. Synthesis
-The previous turn expected a user decision on the options analysis. The actual outcome was approval of the plan to de-risk Library X. This matches the Green expectation, so I should proceed with Phase 4 "Architectural Validation".
+The previous turn expected a user decision on the options analysis. The actual outcome was approval of the plan to de-risk Library X. This matches the Success condition, so I should proceed with Phase 4 "Architectural Validation".
 
 2. Justification
 Following "Phase 3: Architectural Validation", having gained user alignment, I must validate the chosen path. I will create a targeted, isolated spike to prove core mechanics.
 
-3. Expectations
-- Green: Spike executes successfully and prints confirmation. I will then proceed to Phase 5 "Document Approved Architecture".
-- Yellow: Spike fails due to missing library. I will then perform a `pip install` in the next turn.
-- Red: Failure reveals framework flaw. I will then halt and CREATE an MRE for the Debugger.
+3. Conditions
+- Success: Spike executes successfully and prints confirmation. I will remain Green and proceed to Phase 5 "Document Approved Architecture".
+- Failure: Spike fails to execute or throws an unexpected missing dependency error. I will transition to Yellow and investigate the configuration issue.
 
 4. State Dashboard
 Current Milestone: [docs/project/milestones/NN-feature.md]

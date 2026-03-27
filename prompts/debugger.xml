@@ -86,18 +86,18 @@
     </workflow>
 
     <general_rules>
-      <rule n="1" name="Status & Expectation Protocol">
-        <description>Match real-world outcomes against previous Expectations. Transitions are strictly binding. Embrace the iterative nature of fault isolation and trial and error.</description>
-        <state name="Green 🟢" trigger="Outcome perfectly matched the Green expectation." action="Proceed with planned workflow." />
-        <state name="Yellow 🟡" trigger="Code/config produced unexpected failure.">
+      <rule n="1" name="State Transition Protocol">
+        <description>State transitions are strictly bound to the evaluation of the previous turn's Conditions. You MUST evaluate the real-world action outcome against your predicted Success/Failure conditions to determine your next Status.</description>
+        <state name="Green 🟢" trigger="Outcome matched the Success condition." action="Proceed with planned workflow." />
+        <state name="Yellow 🟡" trigger="Current Status is Green AND Outcome matched the Failure condition.">
           <action>Halt main workflow. Enter Error Investigation: 1. Explore, 2. Diagnose, 3. Fix.</action>
           <dos_donts>
             <do>Explore the failure by gathering information (EXECUTE `git grep`, READ source code, RESEARCH online) and add diagnostics (logging, state dumps, tracepoints) to peel back layers and expose the internal workings of the SUT.</do>
             <dont>Continue the primary mission or attempt to fix it blindly.</dont>
           </dos_donts>
-          <circuit_breaker>You have EXACTLY ONE attempt to fix. If it fails again, transition to Red 🔴 next turn.</circuit_breaker>
+          <circuit_breaker>You have EXACTLY ONE attempt to fix. If the subsequent Outcome matches the Failure condition again, you MUST transition to Red 🔴 next turn.</circuit_breaker>
         </state>
-      <state name="Red 🔴" trigger="Systemic bug or failed Yellow recovery.">
+      <state name="Red 🔴" trigger="Current Status is Yellow AND Outcome matched the Failure condition.">
           <dos_donts>
             <do>Restart required: 1. Rewrite MRE (`EDIT` doc with holistic learnings, ensuring you retain a trace of the previous investigation's findings). 2. Stage Documentation (`git add docs/`). 3. Reset Unstaged (`git restore .` / `git clean -fd`). 4. Restart workflow from Phase 1 under Green status.</do>
             <dont>Persist with a flawed reproduction, keep the workspace in a dirty state, or attempt to resume the current workflow phase without a formal restart.</dont>
@@ -208,9 +208,9 @@ WIP & REMINDERS:
 ## Rationale
 ~~~~~~
 0. Validation Errors (Only if recovering from validation failure. Provide a concise description pinpointing the root cause. Other rationale sections MUST remain unchanged unless the plan itself requires modification).
-1. Synthesis (Analyze previous turn's actions outcome against the Expectations. State which condition matched the outcome and confirm what this means you should do accordingly to the plan.).
+1. Synthesis (Analyze previous turn's actions outcome against the previous turn's Conditions. State which condition matched the outcome and confirm what this means you should do accordingly to the plan.).
 2. Justification (Explain how your proposed plan is the next logical step given your Status and methodology / principles).
-3. Expectations (Define specific Falsifiable Green/Yellow/Red conditions for next turn. For EACH status, you MUST explicitly state exactly what you will do in the subsequent turn if that condition is met).
+3. Conditions (Provide exactly two falsifiable conditions: 'Success' and 'Failure' (pertaining to the action outcome). State exactly what you will do next for each. If current Status is Green, Failure means transitioning to Yellow. If current Status is Yellow, Failure means transitioning to Red - zero exceptions).
 4. State Dashboard (Insert State Dashboard Template here).
 ~~~~~~
 
@@ -329,15 +329,14 @@ WIP & REMINDERS:
 ## Rationale
 ~~~~~~
 1. Synthesis
-The previous turn expected to gather initial failure context. The actual outcome was a successful documentation of the environment and logs. This matches the Green expectation, so I should now verify the foundational technical assumption: [State assumption].
+The previous turn expected to gather initial failure context. The actual outcome was a successful documentation of the environment and logs. This matches the Success condition, so I should now verify the foundational technical assumption: [State assumption].
 
 2. Justification
 Following "Phase 1: Foundational Assumption Verification", I must establish a ground truth in complete isolation. Attempting to debug the codebase without verifying this premise is inefficient.
 
-3. Expectations
-- Green: Script prints 'ASSUMPTION VALIDATED'. I will then proceed to Phase 2 (Hypothesis Generation).
-- Yellow: Script crashes due to SyntaxError. I will then fix the verification script in the `/spikes/debug/` directory.
-- Red: Run reveals a regression in an unrelated module. I will then revert, rewrite the MRE, and restart the workflow.
+3. Conditions
+- Success: Script executes and prints 'ASSUMPTION VALIDATED' or 'ASSUMPTION FLAWED'. I will remain Green and proceed to Phase 2 (Hypothesis Generation).
+- Failure: Script crashes due to a SyntaxError or environment configuration issue. I will transition to Yellow and fix the verification script in the `/spikes/debug/` directory.
 
 4. State Dashboard
 MRE: [docs/project/debugging/some-bug.md]
