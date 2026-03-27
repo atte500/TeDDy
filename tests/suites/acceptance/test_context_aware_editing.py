@@ -15,7 +15,7 @@ class ModifyingFakeReviewer(IPlanReviewer):
         return self.modifier_func(plan)
 
     def review_action(self, action, total_actions, agent_name=None):
-        return True
+        return True, ""
 
     def review_plan(self, plan):
         return plan

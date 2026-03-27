@@ -27,7 +27,7 @@ def test_orchestrator_delegates_to_reviewer_in_interactive_mode(
     plan = Plan(title="Test Plan", rationale="Test", actions=[action1])
 
     # Reviewer approves
-    mock_plan_reviewer.review_action.return_value = True
+    mock_plan_reviewer.review_action.return_value = (True, "")
 
     success_log = ActionLog(
         status=ActionStatus.SUCCESS,
@@ -73,8 +73,14 @@ def test_orchestrator_falls_back_to_legacy_interaction_if_no_reviewer(
 
     # We need to mock ActionExecutor.confirm_and_dispatch since we're testing the orchestrator's call to it
     with patch.object(ActionExecutor, "confirm_and_dispatch") as mock_confirm:
-        mock_confirm.return_value = ActionLog(
-            status=ActionStatus.SUCCESS, action_type="EXECUTE", params={}, details=""
+        mock_confirm.return_value = (
+            ActionLog(
+                status=ActionStatus.SUCCESS,
+                action_type="EXECUTE",
+                params={},
+                details="",
+            ),
+            "",
         )
 
         # Act
@@ -82,7 +88,11 @@ def test_orchestrator_falls_back_to_legacy_interaction_if_no_reviewer(
 
         # Assert
         mock_confirm.assert_called_once_with(
-            action1, True, 1, agent_name=None, is_session=False
+            action1,
+            interactive=True,
+            total_actions=1,
+            agent_name=None,
+            is_session=False,
         )
 
 
@@ -103,7 +113,7 @@ def test_execute_interactive_and_skipped(
     action1 = ActionData(type="EXECUTE", params={"command": "ls"})
     plan = Plan(title="Test Plan", rationale="Test", actions=[action1])
 
-    mock_plan_reviewer.review_action.return_value = False
+    mock_plan_reviewer.review_action.return_value = (False, "")
 
     # Act
     report = orchestrator.execute(plan=plan, interactive=True)
@@ -140,7 +150,7 @@ def test_execute_with_mixed_success_and_skipped_is_success(
     )
 
     # User approves first action, skips second
-    mock_plan_reviewer.review_action.side_effect = [True, False]
+    mock_plan_reviewer.review_action.side_effect = [(True, ""), (False, "")]
     mock_action_dispatcher.dispatch_and_execute.return_value = success_log
 
     # Act
@@ -181,7 +191,7 @@ def test_execute_interactive_and_approved(
     )
 
     mock_action_dispatcher.dispatch_and_execute.return_value = action_log1
-    mock_plan_reviewer.review_action.return_value = True
+    mock_plan_reviewer.review_action.return_value = (True, "")
 
     # Act
     report = orchestrator.execute(plan=plan, interactive=True)

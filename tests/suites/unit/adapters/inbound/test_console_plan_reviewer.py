@@ -100,7 +100,7 @@ def test_review_action_returns_false_on_denial(reviewer, mock_interactor):
 
     result = reviewer.review_action(action, total_actions=1)
 
-    assert result is False
+    assert result == (False, "Reason")
     assert action.selected is False
 
 

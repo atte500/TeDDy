@@ -68,8 +68,10 @@ def format_node_name(node: Any) -> str:
     if isinstance(node, Heading):
         name += f" (Level {node.level})"
     elif isinstance(node, CodeFence):
-        backtick_count = len(getattr(node, "delimiter", "```"))
-        name += f" ({backtick_count} backticks)"
+        delimiter = getattr(node, "delimiter", "```")
+        count = len(delimiter)
+        label = "tildes" if delimiter.startswith("~") else "backticks"
+        name += f" ({count} {label})"
 
     preview = _get_node_preview(node)
     if preview:

@@ -29,6 +29,18 @@ class ConsoleInteractorAdapter(IUserInteractor):
         """Prompts the user using typer.prompt."""
         return typer.prompt(text, default=default, show_default=False, err=True)
 
+    def prompt_for_message(
+        self, initial_message: Optional[str] = None
+    ) -> Optional[str]:
+        """Opens the external editor to capture a user message."""
+        import os
+
+        mock_output = os.environ.get("TEDDY_TEST_MOCK_EDITOR_OUTPUT")
+        if mock_output:
+            return mock_output
+
+        return self._launch_editor_synchronous(initial_message or "")
+
     def display_message(self, message: str) -> None:
         """Displays a message using Rich console to ensure consistent coloring."""
         self._console.print(message)
@@ -154,6 +166,36 @@ class ConsoleInteractorAdapter(IUserInteractor):
             typer.echo(f"Error: Editor launch failed: {e}", err=True)
             self._system_env.delete_file(temp_path)
 
+    def _launch_editor_synchronous(self, initial_content: str) -> str:
+        """Opens a temporary file in an external editor and waits for it to close."""
+        import os
+
+        # Testing Hook
+        mock_output = os.environ.get("TEDDY_TEST_MOCK_EDITOR_OUTPUT")
+        if mock_output:
+            return mock_output
+
+        temp_path = self._system_env.create_temp_file(suffix=".md")
+        try:
+            with open(temp_path, "w", encoding="utf-8") as f:
+                f.write(initial_content)
+
+            editor = self._tooling.find_editor()
+            if not editor:
+                typer.echo("Error: No suitable editor found.", err=True)
+                return ""
+
+            cmd = shlex.split(editor) + [temp_path]
+            self._system_env.run_command(cmd)
+
+            with open(temp_path, "r", encoding="utf-8") as f:
+                return f.read().strip()
+        except Exception as e:
+            typer.echo(f"Error: Editor launch failed: {e}", err=True)
+            return ""
+        finally:
+            self._system_env.delete_file(temp_path)
+
     def _read_editor_result(self) -> str:
         """Reads the content of the background editor's temp file."""
         if not self._active_editor_path:
@@ -232,18 +274,28 @@ class ConsoleInteractorAdapter(IUserInteractor):
                 else:
                     self._handle_external_preview(change_set, diff_command, temp_files)
 
-            prompt = f"{action_prompt}\nApprove? (y/n): "
-            # Use typer.prompt which handles echoing to stderr correctly
-            response = typer.prompt(prompt, default="n", show_default=False, err=True)
+            message = ""
+            while True:
+                prompt = f"{action_prompt}\nApprove? (y/n/m): "
+                # Use typer.prompt which handles echoing to stderr correctly
+                response = (
+                    typer.prompt(prompt, default="n", show_default=False, err=True)
+                    .lower()
+                    .strip()
+                )
 
-            if response.lower().strip().startswith("y"):
-                return True, ""
+                if response.startswith("y"):
+                    return True, message
 
-            reason_prompt = "Reason for skipping (optional): "
-            reason = typer.prompt(
-                reason_prompt, default="", show_default=False, err=True
-            )
-            return False, reason
+                if response.startswith("m"):
+                    message = self._launch_editor_synchronous("")
+                    continue
+
+                reason_prompt = "Reason for skipping (optional): "
+                reason = typer.prompt(
+                    reason_prompt, default="", show_default=False, err=True
+                )
+                return False, reason
         except (EOFError, typer.Abort):
             # If input stream is closed (e.g., in non-interactive script),
             # default to denying the action.

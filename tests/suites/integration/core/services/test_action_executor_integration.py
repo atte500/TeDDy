@@ -22,7 +22,9 @@ def test_action_executor_confirms_and_dispatches_with_real_dispatcher(monkeypatc
     )
 
     # Act
-    log = executor.confirm_and_dispatch(action, interactive=True, total_actions=1)
+    log, message = executor.confirm_and_dispatch(
+        action, interactive=True, total_actions=1
+    )
 
     # Assert
     assert log.status == ActionStatus.SUCCESS

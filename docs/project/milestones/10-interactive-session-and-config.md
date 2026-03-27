@@ -73,6 +73,11 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
     - Implement the `SessionLogGenerator` to compile session histories into a human-readable `session-log.md`, excluding turns that fail validation.
 
 ## 6. Technical Debt
+- [ ] **Code Quality (Ruff):** `ExecutionOrchestrator._process_plan_actions` complexity is 11 (limit 9). Needs decomposition.
+- [ ] **Code Quality (File Length):** `ConsoleInteractorAdapter` exceeds 300 lines. Needs class splitting (e.g., extracting Editor/Diff logic).
+- [ ] **Code Quality (Vulture):** Resolve dead code in `ExecutionOrchestrator`, `ConsolePlanReviewer`, and various test suites.
+- [ ] **Code Duplication (jscpd):** Resolve new clones in `test_orchestrator_interaction.py` and `test_change_preview_feature.py` introduced by Instruction Bridge verification.
+- [ ] **Code Duplication (Logic):** `ReviewerApp._launch_editor` in `textual_plan_reviewer.py` duplicates editor selection logic (VISUAL/EDITOR/nano) and should be refactored to use `ConsoleToolingHelper` or a central utility.
 - [ ] **Code Duplication (jscpd):** Resolve internal logic duplication in `session_orchestrator.py` between lines 185-193 and 194-202 (shifted to ~201-218).
 - [ ] **Code Duplication (jscpd):** Resolve clones in `tests/suites/unit/core/services/test_session_orchestrator_validation.py` between lines 18-25 and 72-77.
 - [ ] **Code Duplication (jscpd):** Resolve clones in `tests/suites/acceptance/test_non_interactive_orchestration.py` triggered by soft-isolation changes.

@@ -46,13 +46,13 @@ class ConsolePlanReviewer(IPlanReviewer):
         action: "ActionData",
         total_actions: int,
         agent_name: Optional[str] = None,
-    ) -> bool:
+    ) -> tuple[bool, str]:
         prompt = ActionChangeSetBuilder.format_action_prompt(action)
 
         change_set = self._changeset_builder.create_change_set(action)
 
-        approved, _ = self._user_interactor.confirm_action(
+        approved, message = self._user_interactor.confirm_action(
             action=action, action_prompt=prompt, change_set=change_set
         )
         action.selected = approved
-        return approved
+        return approved, message

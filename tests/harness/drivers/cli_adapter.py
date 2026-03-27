@@ -15,15 +15,24 @@ class CliTestAdapter:
         self._runner = CliRunner()
         self._monkeypatch = monkeypatch
         self._cwd = cwd
+        self._mock_editor_output: Optional[str] = None
+
+    def set_mock_editor_output(self, content: str) -> None:
+        """Sets the content that will be 'returned' by the external editor mock."""
+        self._mock_editor_output = content
 
     def run_cli_command(
         self, args: List[str], cwd: Optional[Path] = None, input: Optional[str] = None
     ) -> Result:
         """Executes a CLI command in the specified workspace (defaults to self._cwd)."""
         target_cwd = cwd or self._cwd
+        env = {}
+        if self._mock_editor_output:
+            env["TEDDY_TEST_MOCK_EDITOR_OUTPUT"] = self._mock_editor_output
+
         with self._monkeypatch.context() as m:
             m.chdir(target_cwd)
-            result = self._runner.invoke(app, args, input=input)
+            result = self._runner.invoke(app, args, input=input, env=env)
             if result.stderr is None:
                 result.stderr = ""
             return result
@@ -70,27 +79,6 @@ class CliTestAdapter:
         if not interactive:
             args.append("--no-interactive")
         return self.run_cli_command(args, input=input)
-
-    def set_mock_editor_output(self, content: str) -> None:
-        """
-        Intercepts calls to subprocess.run (used for external editors)
-        and writes the specified content to the target file.
-        """
-        import subprocess
-        from unittest.mock import MagicMock
-
-        def mock_run(args, **_kwargs):
-            # The last argument is the file path provided to the editor
-            file_path = Path(args[-1])
-            file_path.write_text(content, encoding="utf-8")
-
-            mock_res = MagicMock(spec=subprocess.CompletedProcess)
-            mock_res.returncode = 0
-            return mock_res
-
-        # We must monkeypatch it in the core module where it's used if possible,
-        # or globally in subprocess.
-        self._monkeypatch.setattr(subprocess, "run", mock_run)
 
     def execute_plan(
         self,

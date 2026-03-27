@@ -57,10 +57,10 @@ def test_tui_instruction_bridge_m_binding_captures_message(
     env: TestEnvironment, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """
-    Scenario: User reviews a plan in TUI and adds a message via 'm'.
+    Scenario: User reviews a plan in Console (Bridge Parity) and adds a message via 'm'.
     Then: The message is captured and appears in the final execution report.
     """
-    env.setup().with_real_filesystem()
+    env.setup().with_real_filesystem().with_real_system_environment().with_real_shell().with_real_interactor()
     assert env.workspace, "Workspace must be initialized"
 
     # We use a standard plan that should trigger the TUI
@@ -101,11 +101,11 @@ echo "hello"
     )
 
     # Run execute in interactive mode (no -y)
-    # We simulate pressing 'm' (to edit message), then 'a' (to approve all)
+    # We simulate pressing 'm' (to add message), then 'y' (to approve)
+    # We force --console mode because CliRunner cannot drive Textual TUI apps.
     result = adapter.run_cli_command(
-        ["execute", "plan.md", "--no-copy"], input="m\na\n"
+        ["execute", "plan.md", "--no-copy", "--console"], input="m\ny\n"
     )
-
     # Assert: Check for ## User Request section in the report
     assert "## User Request" in result.stdout
     assert "Refactor this service specifically for performance." in result.stdout

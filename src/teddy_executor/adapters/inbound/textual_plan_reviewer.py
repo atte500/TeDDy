@@ -23,6 +23,7 @@ class ReviewerApp(App):
         ("s", "submit", "Submit"),
         ("a", "toggle_all", "Toggle All"),
         ("p", "preview", "Preview/Modify"),
+        ("m", "add_message", "Add Message"),
         ("q", "cancel", "Cancel"),
     ]
 
@@ -101,6 +102,16 @@ class ReviewerApp(App):
         elif action.type == "EDIT":
             self._preview_edit(action, node)
 
+    def action_add_message(self) -> None:
+        """
+        Open the external editor to add/edit the user instruction message.
+        """
+        current_message = self.plan.metadata.get("user_request") or ""
+        new_message = self._launch_editor(current_message, suffix=".md")
+
+        if new_message is not None and new_message.strip() != current_message.strip():
+            self.plan.metadata["user_request"] = new_message.strip()
+
     def _preview_edit(self, action: "ActionData", node: Any) -> None:
         """
         Handle the preview workflow for an EDIT action.
@@ -124,28 +135,13 @@ class ReviewerApp(App):
         )
 
         # 3. Open in editor
-        temp_file = self._system_env.create_temp_file(suffix=suffix)
-        with open(temp_file, "w", encoding="utf-8") as f:
-            f.write(proposed_content)
-
-        editor = (
-            self._system_env.get_env("VISUAL")
-            or self._system_env.get_env("EDITOR")
-            or "nano"
-        )
-        with self.suspend():
-            self._system_env.run_command([editor, temp_file])
-
-        with open(temp_file, "r", encoding="utf-8") as f:
-            final_content = f.read()
+        final_content = self._launch_editor(proposed_content, suffix=suffix)
 
         # 4. If modified, override the action with a "content-override"
-        if final_content != proposed_content:
+        if final_content is not None and final_content != proposed_content:
             action.params["content"] = final_content
             action.modified = True
             self._refresh_node(node)
-
-        self._system_env.delete_file(temp_file)
 
     def _preview_create(self, action: "ActionData", node: Any) -> None:
         """
@@ -154,31 +150,46 @@ class ReviewerApp(App):
         path_str = action.params.get("path", "")
         suffix = pathlib.Path(path_str).suffix or ".txt"
 
-        temp_file = self._system_env.create_temp_file(suffix=suffix)
         content = action.params.get("content", "")
+        new_content = self._launch_editor(content, suffix=suffix)
 
-        with open(temp_file, "w", encoding="utf-8") as f:
-            f.write(content)
-
-        editor = (
-            self._system_env.get_env("VISUAL")
-            or self._system_env.get_env("EDITOR")
-            or "nano"
-        )
-
-        # Suspend the TUI and launch the editor
-        with self.suspend():
-            self._system_env.run_command([editor, temp_file])
-
-        with open(temp_file, "r", encoding="utf-8") as f:
-            new_content = f.read()
-
-        if new_content != content:
+        if new_content is not None and new_content != content:
             action.params["content"] = new_content
             action.modified = True
             self._refresh_node(node)
 
-        self._system_env.delete_file(temp_file)
+    def _launch_editor(
+        self, initial_content: str, suffix: str = ".txt"
+    ) -> Optional[str]:
+        """
+        Suspends the TUI and launches an external editor with the given content.
+        Returns the modified content, or None if the operation failed.
+        """
+        # Testing Hook
+        mock_output = os.environ.get("TEDDY_TEST_MOCK_EDITOR_OUTPUT")
+        if mock_output:
+            return mock_output
+
+        temp_file = self._system_env.create_temp_file(suffix=suffix)
+        try:
+            with open(temp_file, "w", encoding="utf-8") as f:
+                f.write(initial_content)
+
+            editor = (
+                self._system_env.get_env("VISUAL")
+                or self._system_env.get_env("EDITOR")
+                or "nano"
+            )
+
+            with self.suspend():
+                self._system_env.run_command([editor, temp_file])
+
+            with open(temp_file, "r", encoding="utf-8") as f:
+                return f.read()
+        except Exception:
+            return None
+        finally:
+            self._system_env.delete_file(temp_file)
 
     def action_toggle_all(self) -> None:
         """
@@ -243,12 +254,12 @@ class TextualPlanReviewer(IPlanReviewer):
         action: "ActionData",
         total_actions: int,
         agent_name: Optional[str] = None,
-    ) -> bool:
+    ) -> tuple[bool, str]:
         """
         For the TUI, per-action review is handled in bulk by review_plan.
         This method always returns True to allow the loop to proceed with selections.
         """
-        return True
+        return True, ""
 
     def _run_app(self, plan: Plan) -> Optional[Plan]:
         """

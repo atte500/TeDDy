@@ -23,3 +23,9 @@ Refer to the [IPlanReviewer](/docs/architecture/core/ports/inbound/plan_reviewer
 
 ### Implementation Notes:
 - **Refactoring Requirement:** The `Plan` and `ActionData` models must be unfrozen to support direct in-memory updates by the TUI.
+- **Keyboard Bindings:**
+  - `s`: Submit the plan and finalize selection.
+  - `a`: Toggle all actions.
+  - `m`: Add/Edit User Message (Instruction Bridge).
+  - `p`: Preview/Modify the highlighted action (Context-Aware Editing).
+  - `q`: Cancel and exit.

@@ -82,8 +82,9 @@ class ExecutionOrchestrator(IRunPlanUseCase):
 
             reviewer_handled = False
             should_dispatch = True
+            captured_message = ""
             if interactive and self._plan_reviewer:
-                should_dispatch = self._plan_reviewer.review_action(
+                should_dispatch, captured_message = self._plan_reviewer.review_action(
                     action, len(plan.actions), agent_name=agent_name
                 )
                 reviewer_handled = True
@@ -95,23 +96,33 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             elif reviewer_handled:
                 # Reviewer already confirmed it, so execute immediately.
                 # We skip isolation because the reviewer (TUI) allows multi-action execution.
-                action_log = self._action_executor.confirm_and_dispatch(
-                    action,
-                    interactive=False,
-                    total_actions=len(plan.actions),
-                    agent_name=agent_name,
-                    is_session=plan.is_session,
-                    skip_isolation=True,
+                action_log, dispatch_message = (
+                    self._action_executor.confirm_and_dispatch(
+                        action,
+                        interactive=False,
+                        total_actions=len(plan.actions),
+                        agent_name=agent_name,
+                        is_session=plan.is_session,
+                        skip_isolation=True,
+                    )
                 )
+                # If the executor (e.g. via a modal editor in TUI) returned a message, it takes precedence
+                if dispatch_message:
+                    captured_message = dispatch_message
             else:
                 # Fallback to ActionExecutor interaction ONLY if no reviewer is present
-                action_log = self._action_executor.confirm_and_dispatch(
-                    action,
-                    interactive,
-                    len(plan.actions),
-                    agent_name=agent_name,
-                    is_session=plan.is_session,
+                action_log, captured_message = (
+                    self._action_executor.confirm_and_dispatch(
+                        action,
+                        interactive=interactive,
+                        total_actions=len(plan.actions),
+                        agent_name=agent_name,
+                        is_session=plan.is_session,
+                    )
                 )
+
+            if captured_message:
+                plan.metadata["user_request"] = captured_message
 
             action_logs.append(action_log)
 
@@ -175,11 +186,14 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             end_time=datetime.now(),
         )
 
+        # Capture any message added during the execution loop or passed from CLI
+        final_user_request = plan.metadata.get("user_request") or message
+
         return ExecutionReport(
             run_summary=summary,
             plan_title=plan.title,
             rationale=plan.rationale,
-            user_request=message or plan.metadata.get("user_request"),
+            user_request=final_user_request,
             metadata=plan.metadata,
             original_actions=plan.actions,
             action_logs=action_logs,
@@ -187,7 +201,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
 
     def resume(
         self,
-        session_name: str,
+        _session_name: str,
         interactive: bool = True,
         message: Optional[str] = None,
     ) -> Optional[ExecutionReport]:

@@ -26,4 +26,4 @@ def test_ui_mode_console_uses_sequential_reviewer(tmp_path, monkeypatch):
     )
     assert "SUCCESS" in status_val.upper()
     # Verify that the console reviewer was used by checking for the action-level prompt.
-    assert "Approve? (y/n):" in report.stdout
+    assert "Approve? (y/n/m):" in report.stdout

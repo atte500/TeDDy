@@ -166,20 +166,21 @@ class ActionExecutor:
         agent_name: Optional[str] = None,
         is_session: bool = False,
         skip_isolation: bool = False,
-    ) -> ActionLog:
+    ) -> tuple[ActionLog, str]:
         """Handles user confirmation and dispatches a single action."""
+        # 1. Check isolation constraints
         if isolation_log := self._check_action_isolation(
             action,
             total_actions,
             interactive=interactive,
             skip_isolation=skip_isolation,
         ):
-            return isolation_log
+            return isolation_log, ""
 
         if intercepted_log := self._intercept_control_flow_action(
             action, is_session=is_session
         ):
-            return intercepted_log
+            return intercepted_log, ""
 
         # Capture the change set BEFORE execution for diff reporting
         change_set = self._create_change_set(action)
@@ -189,8 +190,11 @@ class ActionExecutor:
             should_dispatch, reason = self._get_interactive_confirmation(action)
 
         if not should_dispatch:
-            return self._handle_skipped_action(
-                action, f"User skipped this action. Reason: {reason}"
+            return (
+                self._handle_skipped_action(
+                    action, f"User skipped this action. Reason: {reason}"
+                ),
+                "",
             )
 
         action_log = self._action_dispatcher.dispatch_and_execute(
@@ -198,9 +202,13 @@ class ActionExecutor:
         )
 
         if action_log.status == ActionStatus.FAILURE:
-            return self._enrich_failed_log(action, action_log)
+            return self._enrich_failed_log(action, action_log), reason
 
-        return ActionDiffManager.inject_diff(action, action_log, change_set)
+        # For success, we still want to return the message captured via 'm'
+        return (
+            ActionDiffManager.inject_diff(action, action_log, change_set),
+            reason,
+        )
 
     def handle_skipped_action(self, action, reason: str) -> ActionLog:
         """Public method for skipping actions."""

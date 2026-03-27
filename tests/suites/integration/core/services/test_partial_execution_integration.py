@@ -21,10 +21,12 @@ class FakeReviewer(IPlanReviewer):
     def review_plan(self, plan: Plan) -> Plan:
         return self.review(plan)
 
-    def review_action(self, action, total_actions: int, agent_name=None) -> bool:
+    def review_action(
+        self, action, total_actions: int, agent_name=None
+    ) -> tuple[bool, str]:
         # For this integration test, we just use the selection state
         # determined by the bulk review() call.
-        return action.selected
+        return action.selected, ""
 
 
 def test_orchestrator_skips_unselected_actions_integration(

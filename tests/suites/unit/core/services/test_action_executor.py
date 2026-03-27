@@ -29,7 +29,9 @@ def test_confirm_and_dispatch_skips_terminal_action_in_multi_action_plan_when_no
 
     # Act
     # interactive=False represents non-TUI/bulk execution
-    log = executor.confirm_and_dispatch(action, interactive=False, total_actions=2)
+    log, message = executor.confirm_and_dispatch(
+        action, interactive=False, total_actions=2
+    )
 
     # Assert
     assert log.status == ActionStatus.SKIPPED
@@ -37,6 +39,7 @@ def test_confirm_and_dispatch_skips_terminal_action_in_multi_action_plan_when_no
         log.details
         == "Action skipped to ensure state isolation; must be executed as a single-action plan."
     )
+    assert message == ""
 
 
 def test_confirm_and_dispatch_allows_terminal_action_in_single_action_plan_when_not_interactive(
@@ -49,7 +52,10 @@ def test_confirm_and_dispatch_allows_terminal_action_in_single_action_plan_when_
     )
 
     # Act
-    log = executor.confirm_and_dispatch(action, interactive=False, total_actions=1)
+    log, message = executor.confirm_and_dispatch(
+        action, interactive=False, total_actions=1
+    )
 
     # Assert
     assert log.status == ActionStatus.SUCCESS
+    assert message == ""

@@ -95,6 +95,7 @@ class ExecutionReport:
     run_summary: RunSummary
     plan_title: str | None = None
     rationale: str | None = None
+    user_request: str | None = None
     original_actions: Sequence[Any] = field(default_factory=list) # Sequence[ActionData]
     action_logs: Sequence[ActionLog] = field(default_factory=list)
     validation_result: Sequence[str] | None = None
@@ -102,6 +103,7 @@ class ExecutionReport:
 ```
 -   `run_summary`: Contains the overall status and timing information.
 -   `plan_title`: The title of the plan, extracted from the Markdown.
+-   `user_request`: Captured user instructions via CLI flag or TUI bridge.
 -   `action_logs`: A sequence of logs, one for each action attempted.
 -   `validation_result`: A sequence of error messages if pre-flight validation fails.
 -   `failed_resources`: A dictionary mapping file paths to their content if a file-based action (like `CREATE` or `EDIT`) fails.

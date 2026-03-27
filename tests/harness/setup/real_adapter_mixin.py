@@ -7,6 +7,15 @@ class RealAdapterMixin:
     Mixin for TestEnvironment that handles the registration of real outbound adapters.
     """
 
+    def with_real_system_environment(self: Any) -> Any:
+        from teddy_executor.core.ports.outbound import ISystemEnvironment
+        from teddy_executor.adapters.outbound.system_environment_adapter import (
+            SystemEnvironmentAdapter,
+        )
+
+        self._container.register(ISystemEnvironment, SystemEnvironmentAdapter)
+        return self
+
     def with_real_shell(self: Any) -> Any:
         from teddy_executor.core.ports.outbound import IShellExecutor
         from teddy_executor.adapters.outbound.shell_adapter import ShellAdapter

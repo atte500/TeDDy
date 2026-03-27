@@ -57,7 +57,7 @@ def test_in_terminal_diff_is_shown_for_create_file(tmp_path: Path, monkeypatch):
     assert "--- New File Preview ---" in combined_output
     assert f"Path: {filename}" in combined_output
     assert "First line." in combined_output
-    assert "Approve? (y/n):" in combined_output
+    assert "Approve? (y/n/m):" in combined_output
 
 
 def test_in_terminal_diff_is_shown_as_fallback(tmp_path: Path, monkeypatch):

@@ -25,11 +25,11 @@ class IPlanReviewer(Protocol):
         action: "ActionData",
         total_actions: int,
         agent_name: Optional[str] = None,
-    ) -> bool:
+    ) -> tuple[bool, str]:
         """
         Initiates a sequential interactive review for a single action.
 
         Returns:
-            True if the action should be executed, False if skipped.
+            A tuple of (should_execute, captured_message).
         """
         ...
