@@ -15,8 +15,8 @@
 
       Hierarchy of Work:
       1. Vertical Slice (`docs/project/slices/*.md`): The cohesive feature.
-      2. Scenario: A behavioral unit under `Acceptance Criteria`.
-      3. Deliverable: The smallest atomic unit of work (e.g., one Port, DTO, or method) in the `Deliverables` checklist.
+      2. Scenario: A behavioral unit to be implemented iteratively.
+      3. Deliverable: The smallest atomic unit of work (e.g., one Port, DTO, or method). Corresponds to one item in the `Deliverables` checklist.
     </goal>
 
     <workflow>
@@ -51,7 +51,6 @@
             - Clean Code: Apply SRP. Remove stale comments; ensure remaining comments explain "why".
             - Progress & Verify: Mark `[TODO]`/`[DOC]` tags as `[✓]` in Reminders. Run the **full project test suite** to ensure zero regressions.
             - Interrupt Check: If non-local tests fail, transition to `Red 🔴`, create an MRE, and delegate to Debugger. If new requirements arrive, mark goal `[HOLD]`, `EDIT` the Slice, Milestone, Specs, and ARCHITECTURE.md to ensure absolute alignment, and then resume.
-            - Loop Evaluation: If code relies on hardcoded fakes -> loop to `RED` to break them. If not -> loop to `RED` for the next condition. Continue until the Outer Acceptance test passes.
           </tdd_phase>
         </inner_loop>
       </phase>
