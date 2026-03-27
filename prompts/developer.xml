@@ -63,7 +63,7 @@
 
       <phase n="5" name="DOCUMENTATION">
         <goal>Synchronize technical documentation and architectural contracts.</goal>
-        <step n="1" name="Sync Slice">Even if already partially documented, `EDIT` the vertical slice doc to mark the deliverable `[✓]`. Under `## 6. Implementation Notes` strictly in the vertical slice doc, you MUST create a new subsection (`### [Deliverable Name]`) to record technical findings, decisions, and frictions for this specific deliverable. If this is the final deliverable for a Scenario and it has been manually verified (Phase 4), mark the entire Scenario as `[✓] Verified` in the slice doc.</step>
+        <step n="1" name="Sync Slice">Even if already partially documented, `EDIT` the vertical slice doc to mark the deliverable `[✓]`. Under `## 6. Implementation Notes` strictly in the vertical slice doc under a scenario-specific subsection (`### [Scenario]`) to record technical findings and decisions for this specific deliverable. If this is the final deliverable for a Scenario and it has been manually verified (Phase 4), mark the entire Scenario as `[✓] Verified` in the slice doc.</step>
         <step n="2" name="Harvest Debt">If any `[DEBT]` (frictions or architectural opportunities) was logged during this turn, `EDIT` the active Milestone's (in `docs/project/milestones/`) `## Technical Debt` section to append it as a checkmarkable [ ] task.</step>
         <step n="3" name="Align Architecture">`READ` the documentation of all modified components (`docs/architecture/**/*.md`) and `ARCHITECTURE.md`. Then, `EDIT` them to ensure strict alignment with your implementation. Ensure contracts (DTOs, Pre/Post-conditions) strictly match your code, but keep all narrative implementation notes centralized in the vertical slice doc.</step>
       </phase>
@@ -172,7 +172,7 @@ WIP & REMINDERS:
         </section>
         <section n="3" name="Implementation Notes">
           <item name="Heading">## 6. Implementation Notes</item>
-          <item name="Content">MANDATORY: Filled by the Developer during implementation. Record technical frictions, key decisions, and findings. MUST include a dedicated subsection (`### [Deliverable Name]`) for each completed deliverable.</item>
+          <item name="Content">MANDATORY: Filled by the Developer during implementation. Record technical frictions, key decisions, and findings. MUST use thematic subsections (e.g., `### Scenario: [Name]`) to group notes logically for all deliverables within that theme.</item>
         </section>
       </blueprint>
 
