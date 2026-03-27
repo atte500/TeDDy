@@ -23,6 +23,7 @@ class ReviewerApp(App):
         ("s", "submit", "Submit"),
         ("a", "toggle_all", "Toggle All"),
         ("p", "preview", "Preview/Modify"),
+        ("v", "view_plan", "View Plan"),
         ("m", "add_message", "Add Message"),
         ("q", "cancel", "Cancel"),
     ]
@@ -101,6 +102,20 @@ class ReviewerApp(App):
             self._preview_create(action, node)
         elif action.type == "EDIT":
             self._preview_edit(action, node)
+
+    def action_view_plan(self) -> None:
+        """
+        Open the full plan.md in an external editor.
+        """
+        if not self.plan.plan_path or not self._file_system:
+            return
+
+        try:
+            content = self._file_system.read_file(self.plan.plan_path)
+            # Use launch_editor to handle TUI suspension and editor discovery
+            self._launch_editor(content, suffix=".md")
+        except Exception:  # nosec B110
+            pass
 
     def action_add_message(self) -> None:
         """
@@ -252,8 +267,8 @@ class TextualPlanReviewer(IPlanReviewer):
     def review_action(
         self,
         action: "ActionData",
-        total_actions: int,
-        agent_name: Optional[str] = None,
+        _total_actions: int,
+        _agent_name: Optional[str] = None,
     ) -> tuple[bool, str]:
         """
         For the TUI, per-action review is handled in bulk by review_plan.

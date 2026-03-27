@@ -97,3 +97,4 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 - [ ] Code Duplication (jscpd): Resolve turn-loop duplication in `session_cli_handlers.py`, `__main__.py`, and `session_orchestrator.py` introduced by Instruction Bridge wiring.
 - [ ] Code Duplication (jscpd): Resolve clones in `tests/suites/unit/core/services/test_session_orchestrator_resume.py` and `tests/suites/unit/core/services/test_session_planner.py` introduced during tiered message resolution logic implementation.
 - [ ] Code Quality (vulture): Investigate and resolve false-positive "unused variable" warnings in `IRunPlanUseCase` port.
+- [ ] Documentation Debt: Reconcile `ARCHITECTURE.md` setup descriptions with the actual fixture-based pattern in `composition.py`.

@@ -79,7 +79,7 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - [✓] **Logic** - Update `SessionPlanner` and `PlanningService` to implement the tiered message resolution logic.
 - [✓] **Wiring** - Update `plan` command to make `-m` optional (defaulting to None).
 
-### Scenario: TUI "View Plan" Workflow [ ]
+### Scenario: TUI "View Plan" Workflow [✓] Verified
 > As a user reviewing a plan in the TUI, I want to quickly open the full plan in my preferred editor so that I can get a complete, syntax-highlighted overview before approving it.
 
 - **Given** I am in the `ReviewerApp` (TUI).
@@ -88,7 +88,7 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 
 #### Deliverables
 - [✓] **Logic** - Update `ExecutionOrchestrator` to persist manual plan content to a temporary file to support the `v` binding in manual mode.
-- [ ] **Wiring** - Add `v` binding to `ReviewerApp` to open the full plan content in the external editor.
+- [✓] **Wiring** - Add `v` binding to `ReviewerApp` to open the full plan content in the external editor.
 
 ### Scenario: Universal PROMPT Auto-Execution [ ]
 > As a user, I want single-action `PROMPT` plans to display their message immediately without needing approval so that I can have a more fluid, conversational interaction for simple checkpoints.
@@ -160,6 +160,8 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 ## 6. Implementation Notes
 ### Scenario: TUI "View Plan" Workflow
 - **Plan Persistence:** Updated `ExecutionOrchestrator.execute` to persist manual plan content (when `plan_path` is missing) to a temporary file. This ensures that even plans provided via the clipboard have a physical file path that the TUI can open in an external editor using the `v` key. A `try...finally` block ensures the temporary file is deleted after execution.
+- **Path Retention:** The `Plan` domain model was extended with a `plan_path` attribute, and the `MarkdownPlanParser` was updated to populate it. This preserves the file system location of the plan (whether permanent or temporary) across the application layers.
+- **TUI Binding:** Implemented the `v` keybinding in `ReviewerApp`. It leverages the existing `_launch_editor` utility, which correctly handles TUI suspension and editor discovery (VISUAL/EDITOR/nano) while ensuring cross-platform compatibility.
 
 ### Scenario: Unified Instruction Bridge
 - **Instruction Bridge Logic:** The `ExecutionOrchestrator` now bridges the `user_request` from plan metadata (populated by the CLI `-m` flag or the TUI `m` binding) to the final `ExecutionReport`.

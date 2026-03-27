@@ -57,6 +57,7 @@ class Plan:
     metadata: dict[str, str] = field(default_factory=dict)
     source_doc: Any = None
     is_session: bool = False
+    plan_path: str | None = None
 
     def __post_init__(self):
         assert self.actions, "Plan must contain at least one action."
