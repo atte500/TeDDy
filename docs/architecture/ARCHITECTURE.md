@@ -179,13 +179,13 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 
 #### Test Harness Triad (Setup, Driver, Observer)
 
-| Component                        | Description                                                                                                   | Contract                                                       |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| **MarkdownPlanBuilder** (Driver) | A fluent DSL for constructing validated Markdown plans for testing.                                           | [MarkdownPlanBuilder](./tests/harness/drivers/plan_builder.md) |
-| **ReportParser** (Observer)      | An "Inverse Adapter" that parses Markdown reports back into structured DTOs for assertions.                   | [ReportParser](./tests/harness/observers/report_parser.md)     |
-| **CliTestAdapter** (Driver)      | A specialized adapter that drives the CLI in-process and orchestrates builders and parsers.                   | [CliTestAdapter](./tests/harness/drivers/cli_adapter.md)       |
-| **TestEnvironment** (Setup)      | A harness that encapsulates DI isolation, environment patching, and workspace management.                     | [TestEnvironment](./tests/harness/setup/test_environment.md)   |
-| **TestComposition** (Setup)      | A specialized harness that handles Dependency Injection (punq) wiring and global mocks for integration tests. | [TestComposition](./tests/harness/setup/composition.md)        |
+| Component                        | Description                                                                                                   | Contract                                               |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| **MarkdownPlanBuilder** (Driver) | A fluent DSL for constructing validated Markdown plans for testing.                                           | [MarkdownPlanBuilder](./tests/drivers/plan_builder.md) |
+| **ReportParser** (Observer)      | An "Inverse Adapter" that parses Markdown reports back into structured DTOs for assertions.                   | [ReportParser](./tests/observers/report_parser.md)     |
+| **CliTestAdapter** (Driver)      | A specialized adapter that drives the CLI in-process and orchestrates builders and parsers.                   | [CliTestAdapter](./tests/drivers/cli_adapter.md)       |
+| **TestEnvironment** (Setup)      | A harness that encapsulates DI isolation, environment patching, and workspace management.                     | [TestEnvironment](./tests/setup/test_environment.md)   |
+| **TestComposition** (Setup)      | A specialized harness that handles Dependency Injection (punq) wiring and global mocks for integration tests. | [TestComposition](./tests/setup/composition.md)        |
 
 ---
 
