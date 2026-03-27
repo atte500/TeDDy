@@ -162,9 +162,9 @@ WIP & REMINDERS:
     <blueprints>
       <blueprint name="Vertical Slice">
         <description>A cohesive feature that delivers a set of correlated and testable behaviors.</description>
-        <section n="1" name="Acceptance Criteria">
-          <item name="Heading">## 2. Acceptance Criteria (Scenarios)</item>
-          <item name="Content">Behavioral scenarios to be implemented.</item>
+        <section n="1" name="Scenarios">
+          <item name="Heading">## 2. Scenarios</item>
+          <item name="Content">Each scenario includes a user story and Gherkin descriptions. You are to implement these behaviors.</item>
           <item name="Deliverables">`### Deliverables` checklist under each scenario. Each checklist item is the atomic unit for one Atomic Delivery Cycle. MUST mark items `[✓]` as completed before committing each piece of work.</item>
         </section>
         <section n="2" name="Execution Context">

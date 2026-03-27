@@ -127,10 +127,10 @@
         <section n="2" name="Business Goal">
           <item name="Heading">## 1. Business Goal</item>
         </section>
-        <section n="3" name="Acceptance Criteria">
-          <item name="Heading">## 2. Acceptance Criteria (Scenarios)</item>
-          <item name="Content">Behavioral scenarios using Gherkin descriptions with concrete examples (Given/When/Then).</item>
-          <item name="Deliverables">Under each scenario, include a `### Deliverables` checklist of atomic units of work. MUST use strict Design-by-Contract prefixes ordered exactly as follows: 1. **Contract** - (Interfaces, DTOs), 2. **Logic** - (Domain implementation), 3. **Wiring** - (DI, Controllers, Adapters), 4. **Cleanup** - (Optional). Format exactly as: `- [ ] **Prefix** - Description`. Each item must be a distinct, testable unit.</item>
+        <section n="3" name="Scenarios">
+          <item name="Heading">## 2. Scenarios</item>
+          <item name="Content">Each scenario MUST include a user story (e.g., "As a [user type], I want to [action] so that [benefit]") followed by behavioral scenarios using Gherkin descriptions with concrete examples (Given/When/Then).</item>
+          <item name="Deliverables">Under each scenario, include a `### Deliverables` checklist of atomic units of work. MUST use strict Design-by-Contract prefixes ordered as follows: 1. **Contract** - (Interfaces, DTOs), 2. **Logic** - (Domain implementation), 3. **Wiring** - (DI, Controllers, Adapters), 4. **Cleanup** - (Optional). Format exactly as: `- [ ] **Prefix** - Description`. Each item must be a distinct, testable unit.</item>
         </section>
         <section n="4" name="Implementation Guidelines">
           <item name="Heading">## 3. Implementation Guidelines</item>
