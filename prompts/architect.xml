@@ -55,7 +55,7 @@
         <goal>Configure environments and generate the developer checklist.</goal>
         <step n="1" name="Environment Audit">`READ` config files (`pyproject.toml`, `.pre-commit-config.yaml`, `.github/workflows/ci.yml`, `.gitignore`).</step>
         <step n="2" name="Environment Configuration">`EDIT` configs to enforce CI gates and test discovery paths aligned with the new blueprint.</step>
-        <step n="3" name="Finalize Slice">`EDIT` the slice doc to finalize all technical sections and sequences. For each scenario, create an ordered `### Deliverables` checklist of atomic units. MUST use strict Design-by-Contract prefixes (**Contract**, **Logic**, **Wiring**, **Cleanup**). Setup/dependency commands MUST be first.</step>
+        <step n="3" name="Finalize Slice">`EDIT` the slice doc to finalize all technical sections and sequences. Ensure the `Implementation Guidelines` explicitly name the required Test Harness components to prevent the Developer from defaulting to hardcoded patterns. For each scenario, create an ordered `### Deliverables` checklist of atomic units. MUST use strict Design-by-Contract prefixes (**Contract**, **Logic**, **Wiring**, **Cleanup**). Setup/dependency commands MUST be first.</step>
       </phase>
 
       <phase n="7" name="Version Control & Handoff">
@@ -130,11 +130,11 @@
         <section n="3" name="Scenarios">
           <item name="Heading">## 2. Scenarios</item>
           <item name="Content">Each scenario MUST begin with a user story formatted as a Markdown blockquote (e.g., "> As a [user type], I want to [action] so that [benefit]"). This is followed by behavioral scenarios using Gherkin descriptions with concrete examples (Given/When/Then).</item>
-          <item name="Deliverables">Under each scenario, include a `### Deliverables` checklist of atomic units of work. MUST use strict Design-by-Contract prefixes ordered as follows: 1. **Contract** - (Interfaces, DTOs), 2. **Logic** - (Domain implementation), 3. **Wiring** - (DI, Controllers, Adapters), 4. **Cleanup** - (Optional). Format exactly as: `- [ ] **Prefix** - Description`. Each item must be a distinct, testable unit.</item>
+          <item name="Deliverables">Under each scenario, include a `### Deliverables` checklist of atomic units of work. MUST use strict Design-by-Contract prefixes ordered as follows: 1. **Contract** - (Interfaces, DTOs), 2. **Harness** (Optional) - (Setup, Drivers, Observers), 3. **Logic** - (Domain implementation), 4. **Wiring** - (DI, Controllers, Adapters), 5. **Cleanup** (Optional). Format exactly as: `- [ ] **Prefix** - Description`. Each item must be a distinct, testable unit.</item>
         </section>
         <section n="4" name="Implementation Guidelines">
           <item name="Heading">## 3. Implementation Guidelines</item>
-          <item name="Content">Actionable strategy for implementation. MUST include Test Harness Triad strategy.</item>
+          <item name="Content">Actionable strategy for implementation. MUST include Test Harness Triad strategy to ensure the Developer uses project-specific testing tools instead of hardcoding.</item>
         </section>
         <section n="5" name="Architectural Changes">
           <item name="Heading">## 4. Architectural Changes</item>

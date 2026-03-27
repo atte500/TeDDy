@@ -31,7 +31,7 @@
       <phase n="2" name="TEST (Outer RED)">
         <goal>Define the North Star acceptance test.</goal>
         <step n="1" name="Translate to Test">Locate/create the target test file in `tests/suites/acceptance/`. Translate the current deliverable's Acceptance Criteria into a failing test.</step>
-        <step n="2" name="Harness Mandate">You MUST use the Test Harness Triad (Setup = Arrange, Driver = Act, Observer = Assert). Do not mock future deliverables.</step>
+        <step n="2" name="Harness Mandate">You MUST use the Test Harness Triad (Setup = Arrange, Driver = Act, Observer = Assert) following the strategy defined in the Vertical Slice. Do not mock future deliverables.</step>
         <step n="3" name="Confirm RED">Run the test locally to confirm it fails as expected.</step>
       </phase>
 
