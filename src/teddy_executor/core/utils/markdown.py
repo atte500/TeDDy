@@ -44,6 +44,23 @@ def get_language_from_path(path: str) -> str:
     return extension_map.get(ext, ext)
 
 
+def extract_markdown_section(content: str, header: str, level: int = 2) -> str | None:
+    """
+    Extracts the content of a specific Markdown section.
+    Returns None if the section is not found or empty.
+    """
+    prefix = "#" * level
+    # Split by the specified header level
+    sections = re.split(rf"(?m)^{prefix}\s+", content)
+    for section in sections:
+        if section.startswith(header):
+            lines = section.splitlines()
+            if len(lines) > 1:
+                body = "\n".join(lines[1:]).strip()
+                return body if body else None
+    return None
+
+
 def get_fence_for_content(content: str) -> str:
     """
     Returns a markdown code fence string (e.g., "```") that is safe to use

@@ -17,20 +17,37 @@ class MarkdownReportFormatter(IMarkdownReportFormatter):
     Implements IMarkdownReportFormatter using the Jinja2 template engine.
     """
 
+    _cached_env = None
+    _cached_template = None
+
+    @classmethod
+    def _reset_singleton(cls):
+        """Internal helper for test isolation."""
+        cls._cached_env = None
+        cls._cached_template = None
+
     def __init__(self):
         from jinja2 import Environment, FileSystemLoader
 
-        template_dir = os.path.join(os.path.dirname(__file__), "templates")
-        self.env = Environment(
-            loader=FileSystemLoader(template_dir),
-            trim_blocks=True,
-            lstrip_blocks=True,
-            autoescape=False,  # nosec B701
-        )
-        self.env.filters["basename"] = os.path.basename
-        self.env.filters["fence"] = get_fence_for_content
-        self.env.filters["language_from_path"] = get_language_from_path
-        self.template = self.env.get_template("execution_report.md.j2")
+        if MarkdownReportFormatter._cached_env is None:
+            template_dir = os.path.join(os.path.dirname(__file__), "templates")
+            env = Environment(
+                loader=FileSystemLoader(template_dir),
+                trim_blocks=True,
+                lstrip_blocks=True,
+                autoescape=False,  # nosec B701
+            )
+            env.filters["basename"] = os.path.basename
+            env.filters["fence"] = get_fence_for_content
+            env.filters["language_from_path"] = get_language_from_path
+
+            MarkdownReportFormatter._cached_env = env
+            MarkdownReportFormatter._cached_template = env.get_template(
+                "execution_report.md.j2"
+            )
+
+        self.env = MarkdownReportFormatter._cached_env
+        self.template = MarkdownReportFormatter._cached_template
 
     def _prepare_context(
         self, report: ExecutionReport, is_concise: bool

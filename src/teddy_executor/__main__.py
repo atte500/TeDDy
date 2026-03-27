@@ -111,8 +111,8 @@ def start(  # noqa: PLR0913
 
 @app.command()
 def plan(
-    message: str = typer.Option(
-        ..., "--message", "-m", help="The instructions for the AI."
+    message: Optional[str] = typer.Option(
+        None, "--message", "-m", help="The instructions for the AI."
     ),
 ):
     """

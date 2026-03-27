@@ -5,6 +5,8 @@ standard conftest.py instead of a pyproject.toml plugin, we ensure that
 pytest-cov starts tracking coverage BEFORE our core modules are imported.
 """
 
+import pytest
+
 from tests.harness.setup.composition import (
     container,
     mock_config,
@@ -61,3 +63,15 @@ __all__ = [
     "env",
     "real_env",
 ]
+
+
+@pytest.fixture(autouse=True)
+def reset_formatter_singleton():
+    """Ensures test isolation for the report formatter singleton."""
+    from teddy_executor.core.services.markdown_report_formatter import (
+        MarkdownReportFormatter,
+    )
+
+    MarkdownReportFormatter._reset_singleton()
+    yield
+    MarkdownReportFormatter._reset_singleton()

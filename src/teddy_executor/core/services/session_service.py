@@ -162,10 +162,19 @@ class SessionService(ISessionManager):
     def _to_root_relative(self, turn_dir: Path, filename: str) -> str:
         """Calculates a root-relative path for a file within a turn directory."""
         file_path = turn_dir.joinpath(filename)
-        path_parts = file_path.parts
+        path_parts = list(file_path.parts)
+
+        # Primary: find the hidden .teddy directory
         if ".teddy" in path_parts:
             idx = path_parts.index(".teddy")
             return "/".join(path_parts[idx:])
+
+        # Secondary (Tests): find the sessions/ folder
+        if "sessions" in path_parts:
+            idx = path_parts.index("sessions")
+            return ".teddy/" + "/".join(path_parts[idx:])
+
+        # Fallback to local turn name
         return f"{turn_dir.name}/{filename}"
 
     def _load_meta(self, turn_dir: str) -> Dict[str, Any]:

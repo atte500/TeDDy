@@ -87,7 +87,8 @@ class SessionOrchestrator(IRunPlanUseCase):
     ) -> Optional[ExecutionReport]:
         """Triggers planning for a turn and then executes the resulting plan."""
         new_name = self._trigger_new_plan(turn_dir, message=message)
-        if not new_name:
+        # Handle planning cancellation or empty input
+        if not new_name or new_name == "CANCELLED":
             return None
         # After planning, the turn is now PENDING_PLAN.
         # Resolve path again to account for potential renaming.

@@ -29,13 +29,41 @@ class PlanningService(IPlanningUseCase):
 
     def generate_plan(
         self,
-        user_message: str,
+        user_message: Optional[str],
         turn_dir: str,
         context_files: Optional[Dict[str, Sequence[str]]] = None,
     ) -> tuple[str, float]:
         import yaml
+        from teddy_executor.core.utils.markdown import extract_markdown_section
 
         turn_path = Path(turn_dir)
+
+        # 0. Message Resolution (CLI/Lookback -> local report.md -> Prompt)
+        resolved_message = user_message
+
+        # If no explicit message (CLI or lookback), try local report.md (for manual plan loops)
+        if not resolved_message:
+            report_path = (turn_path / "report.md").as_posix()
+            if self._file_system_manager.path_exists(report_path):
+                report_content = self._file_system_manager.read_file(report_path)
+                resolved_message = extract_markdown_section(
+                    report_content, "User Request"
+                )
+
+        # Finally, prompt if in interactive mode
+        if not resolved_message and self._user_interactor:
+            resolved_message = self._user_interactor.ask_question(
+                "Enter your instructions for the AI"
+            )
+
+        # Handle exit signal for empty input (Scenario: Unified Instruction Bridge)
+        if not resolved_message or not resolved_message.strip():
+            return None, 0.0  # type: ignore
+
+        # Ensure alignment hint is present to prevent drift (Scenario: Message Consumption)
+        hint = "\n\n*(Stop to reply to this user request and ensure alignment before proceeding)*"
+        if hint not in resolved_message:
+            resolved_message += hint
 
         # 1. Gather context
         context = self._context_service.get_context(context_files=context_files)
@@ -64,7 +92,7 @@ class PlanningService(IPlanningUseCase):
             {"role": "system", "content": system_prompt},
             {
                 "role": "user",
-                "content": f"Context:\n{full_context}\n\nUser Message: {user_message}",
+                "content": f"Context:\n{full_context}\n\nUser Message: {resolved_message}",
             },
         ]
 

@@ -125,7 +125,8 @@ def test_resume_triggers_planning_on_empty_state(  # noqa: PLR0913
 
     mock_planning_service.generate_plan.assert_called_once()
     args, kwargs = mock_planning_service.generate_plan.call_args
-    assert "Initial task" in kwargs["user_message"]
+    # PlanningService now handles the prompt if user_message is None
+    assert kwargs.get("user_message") is None
     assert kwargs["turn_dir"] == turn_path
 
 
@@ -178,5 +179,6 @@ def test_resume_transitions_on_complete_turn(  # noqa: PLR0913
     )
     mock_planning_service.generate_plan.assert_called_once()
     args, kwargs = mock_planning_service.generate_plan.call_args
-    assert "Next task" in kwargs["user_message"]
+    # PlanningService now handles the prompt if user_message is None
+    assert kwargs.get("user_message") is None
     assert kwargs["turn_dir"] == next_turn_path

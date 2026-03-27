@@ -10,7 +10,7 @@ class IPlanningUseCase(ABC):
     @abstractmethod
     def generate_plan(
         self,
-        user_message: str,
+        user_message: Optional[str],
         turn_dir: str,
         context_files: Optional[Dict[str, Sequence[str]]] = None,
     ) -> tuple[str, float]:

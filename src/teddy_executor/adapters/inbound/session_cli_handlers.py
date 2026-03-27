@@ -75,14 +75,14 @@ def detect_session_context() -> Optional[Dict[str, Sequence[str]]]:
     return None
 
 
-def handle_plan_generation(container: Container, message: str):
+def handle_plan_generation(container: Container, message: Optional[str]):
     """Logic for the 'plan' command."""
     planning_service: IPlanningUseCase = container.resolve(IPlanningUseCase)
     context_files = detect_session_context()
     cwd = Path.cwd()
 
     try:
-        plan_path = planning_service.generate_plan(
+        plan_path, _ = planning_service.generate_plan(
             user_message=message, turn_dir=str(cwd), context_files=context_files
         )
         typer.echo(f"Plan generated at: {plan_path}")
@@ -135,6 +135,9 @@ def handle_resume_session(
             if not report:
                 break
             handle_report_output(container, report, no_copy)
+
+            if not interactive:
+                break
 
     except Exception as e:
         typer.echo(f"Error during resume: {e}", err=True)

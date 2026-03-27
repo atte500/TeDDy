@@ -25,16 +25,15 @@ class SessionPlanner:
         self, turn_dir: str, message: Optional[str] = None
     ) -> Optional[str]:
         """Prompts user and triggers planning. Returns session name on success."""
-        if not message:
-            message = self._user_interactor.ask_question(
-                "Enter your instructions for the AI"
-            )
-        if not message:
-            return None
+        # 1. Tiered Message Resolution
+        # If CLI message is provided, we use it directly.
+        # Otherwise, we look at the previous turn's report.
+        resolved_message = message
+        if not resolved_message:
+            resolved_message = self._resolve_message_from_previous_turn(turn_dir)
 
-        # Add helpful hint for alignment
-        hint = "\n\n*(Stop to reply to this user request and ensure alignment before proceeding)*"
-        message += hint
+        # Note: PlanningService.generate_plan handles Priority 2 (local report) and 3 (prompt).
+        # We pass it to generate_plan which handles the resolution and hint.
 
         # Resolve context files
         turn_p = Path(turn_dir)
@@ -58,8 +57,14 @@ class SessionPlanner:
         self._user_interactor.display_message(msg)
 
         plan_path, turn_cost = self._planning_service.generate_plan(
-            user_message=message, turn_dir=turn_dir, context_files=context_files
+            user_message=resolved_message,
+            turn_dir=turn_dir,
+            context_files=context_files,
         )
+
+        # Handle planning cancellation/empty input
+        if plan_path is None:
+            return "CANCELLED"
 
         self._display_planning_telemetry(turn_dir, plan_path, turn_cost)
 
@@ -103,6 +108,26 @@ class SessionPlanner:
         self._user_interactor.display_message(
             f"[dim]  Session Cost: ${cumulative_cost:.4f}[/dim]\n"
         )
+
+    def _resolve_message_from_previous_turn(self, turn_dir: str) -> Optional[str]:
+        """Specialized session logic to look back at the previous turn's report."""
+        from teddy_executor.core.utils.markdown import extract_markdown_section
+
+        turn_path = Path(turn_dir)
+        try:
+            # Turn names are numeric strings (01, 02...)
+            turn_idx = int(turn_path.name)
+            if turn_idx > 1:
+                prev_turn_name = f"{turn_idx - 1:02d}"
+                prev_report_path = turn_path.parent / prev_turn_name / "report.md"
+                if self._file_system_manager.path_exists(prev_report_path.as_posix()):
+                    content = self._file_system_manager.read_file(
+                        prev_report_path.as_posix()
+                    )
+                    return extract_markdown_section(content, "User Request")
+        except (ValueError, TypeError):
+            pass
+        return None
 
     def _handle_dynamic_rename(self, plan_path: str) -> Optional[str]:
         """Renames the session based on the plan title."""

@@ -65,7 +65,7 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - [✓] **Wiring** - Implement global `m` binding in `ReviewerApp` using the configured external editor.
 - [✓] **Cleanup** - Remove legacy `typer.prompt` from session loops and handlers.
 
-### Scenario: Message Consumption (Session & Manual) [ ]
+### Scenario: Message Consumption (Session & Manual) [✓] Verified
 > As an AI agent, I want a clear, prioritized system for consuming user instructions so that I always act on the most recent and relevant request.
 
 - **Given** a planning turn is initiated via `teddy plan` or as part of a session.
@@ -76,8 +76,8 @@ To refine the interactive session workflow into a seamless, high-visibility expe
   3. Fallback: If in `--interactive` mode, prompt the user. If in `--no-interactive` mode, provide none and User Request section is not shown in execution report.
 
 #### Deliverables
-- [ ] **Logic** - Update `SessionPlanner` and `PlanningService` to implement the tiered message resolution logic.
-- [ ] **Wiring** - Update `plan` command to make `-m` optional (defaulting to None).
+- [✓] **Logic** - Update `SessionPlanner` and `PlanningService` to implement the tiered message resolution logic.
+- [✓] **Wiring** - Update `plan` command to make `-m` optional (defaulting to None).
 
 ### Scenario: TUI "View Plan" Workflow [ ]
 > As a user reviewing a plan in the TUI, I want to quickly open the full plan in my preferred editor so that I can get a complete, syntax-highlighted overview before approving it.
@@ -179,3 +179,8 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 ### Transition Logic
 - `SessionService.transition_to_next_turn` now unconditionally appends the current turn's `plan.md` and `report.md` to the next turn's context. This ensures that even in self-correction loops triggered by validation failure, the AI has both its faulty plan and the specific error report in its worldview.
 - **Path Resolution:** A private helper method `_to_root_relative` was introduced in `SessionService` to calculate correct project-root relative paths (e.g., `.teddy/sessions/name/01/plan.md`) to ensure the `ContextService` can reliably resolve and include them in the `input.md` artifact.
+
+### Message Consumption (Tiered Resolution)
+- **Priority Logic:** Implemented a tiered instruction resolution system in `PlanningService` and `SessionPlanner`. The order is: Command Line (`-m`) -> Previous `report.md` -> Interactive Prompt.
+- **Shared Utilities:** Introduced `extract_markdown_section` in `markdown.py` to extract specific Markdown headers (like `## User Request`) for instruction consumption.
+- **Alignment Hint:** Centralized the application of the "alignment hint" (`*(Stop to reply...)*`) in `PlanningService.generate_plan` to ensure all planning entry points consistently guide the LLM's behavior.

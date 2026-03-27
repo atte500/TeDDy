@@ -58,13 +58,8 @@ def test_trigger_new_plan_uses_ask_question(mocks):
     orchestrator.resume("session_name")
 
     # Assert
-    # Should NOT use prompt
-    mocks["user_interactor"].prompt.assert_not_called()
-    # Should use ask_question
-    mocks["user_interactor"].ask_question.assert_called_once_with(
-        "Enter your instructions for the AI"
-    )
-    # Planning service should be called with the result
+    # Planning service should be called with user_message=None (since lookback found nothing)
+    # The PlanningService itself will then handle the prompt.
     mocks["planning_service"].generate_plan.assert_called_once()
     args = mocks["planning_service"].generate_plan.call_args.kwargs
-    assert "User instructions" in args["user_message"]
+    assert args.get("user_message") is None
