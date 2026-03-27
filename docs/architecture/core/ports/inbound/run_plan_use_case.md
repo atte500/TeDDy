@@ -11,31 +11,64 @@ This port defines the primary entry point for executing a plan. It represents th
 
 ```python
 from abc import ABC, abstractmethod
+from typing import Optional
 from teddy_executor.core.domain.models import ExecutionReport, Plan
 
-class RunPlanUseCase(ABC):
+class IRunPlanUseCase(ABC):
     """
     Defines the contract for running a teddy execution plan.
     """
 
     @abstractmethod
-    def execute(self, plan: Plan, interactive: bool) -> ExecutionReport:
+    def execute(
+        self,
+        plan: Optional[Plan] = None,
+        plan_content: Optional[str] = None,
+        plan_path: Optional[str] = None,
+        interactive: bool = True,
+        message: Optional[str] = None,
+    ) -> ExecutionReport:
         """
-        Takes a parsed Plan object, executes it, and returns a report.
+        Executes a plan and returns a report.
 
         Args:
-            plan: The parsed Plan object to execute.
+            plan: An already parsed Plan object.
+            plan_content: Raw Markdown content of a plan.
+            plan_path: Path to a plan file on disk.
             interactive: A flag to enable/disable step-by-step user approval.
+            message: Optional user instruction to include in the report.
+        """
+        pass
+
+    @abstractmethod
+    def resume(
+        self,
+        session_name: str,
+        interactive: bool = True,
+        message: Optional[str] = None,
+    ) -> Optional[ExecutionReport]:
+        """
+        Intelligently resumes the session based on its state.
+
+        Args:
+            session_name: The name of the session to resume.
+            interactive: Whether to run in interactive mode.
+            message: Optional user instruction to bridge to the next turn.
         """
         pass
 ```
 
 ## 3. Method Contracts
 
-### `execute(plan: Plan, interactive: bool) -> ExecutionReport`
+### `execute(...) -> ExecutionReport`
 **Status:** Implemented
 
-*   **Description:** This is the sole method on the port. It accepts a pre-parsed `Plan` object, orchestrates the step-by-step execution of the actions described within it, and returns a structured `ExecutionReport` domain object.
+*   **Description:** Orchestrates the step-by-step execution of a plan and returns a structured `ExecutionReport` domain object.
+
+### `resume(...) -> ExecutionReport`
+**Status:** Implemented
+
+*   **Description:** Intelligently resumes the session based on its state, triggering planning or execution as needed.
 *   **Preconditions:**
     *   `plan` must be a fully parsed and valid `Plan` domain object.
 *   **Postconditions:**

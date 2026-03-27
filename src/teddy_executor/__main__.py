@@ -78,7 +78,7 @@ OPT_UI_MODE = typer.Option(
 
 
 @app.command()
-def start(
+def start(  # noqa: PLR0913
     name: Optional[str] = typer.Argument(None, help="The name of the new session."),
     agent: str = typer.Option("pathfinder", "--agent", help="Agent prompt to use."),
     interactive: bool = typer.Option(
@@ -86,6 +86,9 @@ def start(
     ),
     no_copy: bool = OPT_NO_COPY,
     ui_mode: Optional[bool] = OPT_UI_MODE,
+    message: Optional[str] = typer.Option(
+        None, "-m", "--message", help="Instruction for the first turn."
+    ),
 ):
     """
     Initializes a new session directory and bootstraps it for Turn 1.
@@ -102,6 +105,7 @@ def start(
         agent=agent,
         interactive=interactive,
         no_copy=no_copy,
+        message=message,
     )
 
 
@@ -182,6 +186,9 @@ def resume(
     ),
     no_copy: bool = OPT_NO_COPY,
     ui_mode: Optional[bool] = OPT_UI_MODE,
+    message: Optional[str] = typer.Option(
+        None, "-m", "--message", help="Instruction to bridge to the next turn."
+    ),
 ):
     """
     Intelligently resumes the last turn of a session or starts a new one.
@@ -200,11 +207,12 @@ def resume(
         path=path,
         interactive=interactive,
         no_copy=no_copy,
+        message=message,
     )
 
 
 @app.command()
-def execute(
+def execute(  # noqa: PLR0913
     plan_file: Optional[Path] = typer.Argument(
         None, help="Root-relative path to the plan file (.md).", show_default=False
     ),
@@ -214,6 +222,9 @@ def execute(
         None, "--plan-content", help="Plan content.", show_default=False
     ),
     ui_mode: Optional[bool] = OPT_UI_MODE,
+    message: Optional[str] = typer.Option(
+        None, "-m", "--message", help="Optional instruction for the report."
+    ),
 ):
     from teddy_executor.adapters.inbound.cli_helpers import (
         apply_ui_mode_override,
@@ -239,6 +250,7 @@ def execute(
             plan_content=final_plan_content,
             plan_path=str(plan_file) if plan_file else None,
             interactive=interactive_mode,
+            message=message,
         )
 
     except (InvalidPlanError, NotImplementedError) as e:

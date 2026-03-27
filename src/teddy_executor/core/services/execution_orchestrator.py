@@ -127,6 +127,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         plan_content: Optional[str] = None,
         plan_path: Optional[str] = None,
         interactive: bool = True,
+        message: Optional[str] = None,
     ) -> ExecutionReport:
         if plan is None:
             if plan_content is not None:
@@ -178,14 +179,17 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             run_summary=summary,
             plan_title=plan.title,
             rationale=plan.rationale,
-            user_request=plan.metadata.get("user_request"),
+            user_request=message or plan.metadata.get("user_request"),
             metadata=plan.metadata,
             original_actions=plan.actions,
             action_logs=action_logs,
         )
 
     def resume(
-        self, _session_name: str, interactive: bool = True
+        self,
+        session_name: str,
+        interactive: bool = True,
+        message: Optional[str] = None,
     ) -> Optional[ExecutionReport]:
         """Stateless orchestrator does not support session resumption."""
         raise NotImplementedError(

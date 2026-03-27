@@ -15,6 +15,7 @@ class IRunPlanUseCase(ABC):
         plan_content: Optional[str] = None,
         plan_path: Optional[str] = None,
         interactive: bool = True,
+        message: Optional[str] = None,
     ) -> ExecutionReport:
         """
         Executes a plan and returns a report.
@@ -24,12 +25,16 @@ class IRunPlanUseCase(ABC):
             plan_content: Raw Markdown content of a plan.
             plan_path: Path to a plan file on disk.
             interactive: A flag to enable/disable step-by-step user approval.
+            message: Optional user instruction to include in the report.
         """
         pass
 
     @abstractmethod
     def resume(
-        self, session_name: str, interactive: bool = True
+        self,
+        session_name: str,
+        interactive: bool = True,
+        message: Optional[str] = None,
     ) -> Optional[ExecutionReport]:
         """
         Intelligently resumes the session based on its state.
@@ -37,5 +42,6 @@ class IRunPlanUseCase(ABC):
         Args:
             session_name: The name of the session to resume.
             interactive: Whether to run in interactive mode.
+            message: Optional user instruction to bridge to the next turn.
         """
         pass

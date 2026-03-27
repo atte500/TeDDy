@@ -21,11 +21,14 @@ class SessionPlanner:
         self._user_interactor = user_interactor
         self._session_service = session_service
 
-    def trigger_new_plan(self, turn_dir: str) -> Optional[str]:
+    def trigger_new_plan(
+        self, turn_dir: str, message: Optional[str] = None
+    ) -> Optional[str]:
         """Prompts user and triggers planning. Returns session name on success."""
-        message = self._user_interactor.ask_question(
-            "Enter your instructions for the AI"
-        )
+        if not message:
+            message = self._user_interactor.ask_question(
+                "Enter your instructions for the AI"
+            )
         if not message:
             return None
 

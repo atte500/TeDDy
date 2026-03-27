@@ -13,12 +13,13 @@ from teddy_executor.adapters.inbound.cli_helpers import (
 )
 
 
-def handle_new_session(
+def handle_new_session(  # noqa: PLR0913
     container: Container,
     name: Optional[str],
     agent: str,
     interactive: bool = True,
     no_copy: bool = False,
+    message: Optional[str] = None,
 ):
     """Logic for the 'start' command."""
     from datetime import datetime
@@ -39,7 +40,9 @@ def handle_new_session(
         current_session_name = actual_name
         while True:
             report = orchestrator.resume(
-                session_name=current_session_name, interactive=interactive
+                session_name=current_session_name,
+                interactive=interactive,
+                message=message,
             )
             if not report:
                 break
@@ -102,6 +105,7 @@ def handle_resume_session(
     path: Optional[str] = None,
     interactive: bool = True,
     no_copy: bool = False,
+    message: Optional[str] = None,
 ):
     """Logic for the 'resume' command."""
     from teddy_executor.adapters.inbound.cli_helpers import handle_report_output
@@ -126,7 +130,7 @@ def handle_resume_session(
         orchestrator = container.resolve(IRunPlanUseCase)
         while True:
             report = orchestrator.resume(
-                session_name=session_name, interactive=interactive
+                session_name=session_name, interactive=interactive, message=message
             )
             if not report:
                 break

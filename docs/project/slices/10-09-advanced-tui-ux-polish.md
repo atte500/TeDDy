@@ -58,11 +58,11 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 
 #### Deliverables
 - [✓] **Contract** - Update `ExecutionReport` domain model and Jinja2 template to include the captured `user_request`.
-- [ ] **Logic** - Update `SessionOrchestrator` to bridge instructions from CLI flags/reports to the planner.
-- [ ] **Wiring** - Add `-m / --message` flag to `start`, `resume`, and `execute` commands in `__main__.py`.
-- [ ] **Wiring** - Update `SessionCLIHandlers` to pass the message to the orchestrator.
+- [✓] **Logic** - Update `SessionOrchestrator` to bridge instructions from CLI flags/reports to the planner.
+- [✓] **Wiring** - Add `-m / --message` flag to `start`, `resume`, and `execute` commands in `__main__.py`.
+- [✓] **Wiring** - Update `SessionCLIHandlers` to pass the message to the orchestrator.
 - [ ] **Wiring** - Implement global `m` binding in `ReviewerApp` using the configured external editor.
-- [ ] **Cleanup** - Remove legacy `typer.prompt` from session loops and handlers.
+- [✓] **Cleanup** - Remove legacy `typer.prompt` from session loops and handlers.
 
 ### Scenario: Message Consumption (Session & Manual) [ ]
 > As an AI agent, I want a clear, prioritized system for consuming user instructions so that I always act on the most recent and relevant request.
