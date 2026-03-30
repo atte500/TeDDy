@@ -54,6 +54,11 @@ class ExecutionOrchestrator(IRunPlanUseCase):
 
     def _perform_interactive_review(self, plan: Plan, interactive: bool) -> Plan | None:
         """Allows the user to review and modify the plan before execution."""
+        # Scenario: Universal PROMPT Auto-Execution
+        # Single PROMPT actions bypass approval for fluid conversation.
+        if len(plan.actions) == 1 and plan.actions[0].type == "PROMPT":
+            return plan
+
         # We only call the bulk review (TUI) if interactive is True AND a reviewer is present.
         if interactive and self._plan_reviewer:
             return self._plan_reviewer.review(plan)
@@ -102,7 +107,11 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         should_dispatch = True
         captured_message = ""
 
-        if interactive and self._plan_reviewer:
+        # Scenario: Universal PROMPT Auto-Execution
+        # Single PROMPT actions bypass approval for fluid conversation.
+        is_single_prompt = len(plan.actions) == 1 and action.type == "PROMPT"
+
+        if interactive and self._plan_reviewer and not is_single_prompt:
             should_dispatch, captured_message = self._plan_reviewer.review_action(
                 action, len(plan.actions), agent_name=agent_name
             )

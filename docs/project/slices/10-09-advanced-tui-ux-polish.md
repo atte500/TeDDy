@@ -90,7 +90,7 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - [✓] **Logic** - Update `ExecutionOrchestrator` to persist manual plan content to a temporary file to support the `v` binding in manual mode.
 - [✓] **Wiring** - Add `v` binding to `ReviewerApp` to open the full plan content in the external editor.
 
-### Scenario: Universal PROMPT Auto-Execution [ ]
+### Scenario: Universal PROMPT Auto-Execution [✓] Verified
 > As a user, I want single-action `PROMPT` plans to display their message immediately without needing approval so that I can have a more fluid, conversational interaction for simple checkpoints.
 
 - **Given** a plan contains exactly ONE action of type `PROMPT`.
@@ -98,7 +98,7 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - **Then** the `PROMPT` message MUST be displayed immediately without requiring user approval, regardless of session mode.
 
 #### Deliverables
-- [ ] **Logic** - Update `ExecutionOrchestrator._process_plan_actions` to automatically approve `PROMPT` actions if they are the sole action in any plan.
+- [✓] **Logic** - Update `ExecutionOrchestrator._process_plan_actions` to automatically approve `PROMPT` actions if they are the sole action in any plan.
 
 ### Scenario: Context-Aware Editing (p key) [ ]
 > As a user reviewing a plan in the TUI, I want to press a single key to preview and interactively edit any action so that I can make precise, fine-grained adjustments before execution.
@@ -189,3 +189,8 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - **Priority Logic:** Implemented a tiered instruction resolution system in `PlanningService` and `SessionPlanner`. The order is: Command Line (`-m`) -> Previous `report.md` -> Interactive Prompt.
 - **Shared Utilities:** Introduced `extract_markdown_section` in `markdown.py` to extract specific Markdown headers (like `## User Request`) for instruction consumption.
 - **Alignment Hint:** Centralized the application of the "alignment hint" (`*(Stop to reply...)*`) in `PlanningService.generate_plan` to ensure all planning entry points consistently guide the LLM's behavior.
+
+### Scenario: Universal PROMPT Auto-Execution
+- **Auto-Approval Logic**: Implemented bypass for both the TUI (bulk review) and the sequential action review in `ExecutionOrchestrator` when a plan contains exactly one `PROMPT` action. This enables fluid, conversational interaction for simple status updates or questions.
+- **Contract Alignment**: Synchronized the `IPlanReviewer` port and its `TextualPlanReviewer` implementation to ensure `agent_name` is correctly passed and handled, fixing a parameter name mismatch (`_agent_name` vs `agent_name`).
+- **Test Harness Robustness**: Implemented a class-level `__init__` monkeypatch for the orchestrator in acceptance tests. This ensures mock injection even when services are resolved via protocols in complex CLI environments, providing a more reliable way to verify orchestration logic than standard container patching.

@@ -268,7 +268,7 @@ class TextualPlanReviewer(IPlanReviewer):
         self,
         action: "ActionData",
         _total_actions: int,
-        _agent_name: Optional[str] = None,
+        agent_name: Optional[str] = None,
     ) -> tuple[bool, str]:
         """
         For the TUI, per-action review is handled in bulk by review_plan.
