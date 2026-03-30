@@ -32,17 +32,35 @@ To resolve specific UX frictions and regressions in the TUI and planning workflo
 #### Deliverables
 - [✓] **Logic** - Update `ReviewerApp.action_view_plan` to ensure it falls back to reading the `plan_path` even if the internal plan object was passed by value (leveraging the temp file path set by the orchestrator).
 
-### Scenario: Mandatory "Saved?" Confirmation [✓] Verified
-> As a user, I want a final confirmation after editing in an external editor so that I don't accidentally apply unsaved changes or lose progress.
+### Scenario: Non-Blocking "Immediate Prompt" Workflow [ ]
+> As a user, I want to trigger an edit and have the confirmation prompt waiting for me in the TUI so I can save and confirm without re-navigating.
 
-- **Given** I am in any "Preview/Modify" or "Add Message" workflow in the TUI.
-- **When** the external editor closes.
-- **Then** the TUI MUST display the `ConfirmScreen` ("Have you finished editing and saved?").
-- **And** changes MUST ONLY be applied if I select `y`.
+- **Given** I am in the TUI.
+- **When** I press `e` (Edit) on an action.
+- **Then** the external editor MUST launch in a non-blocking way (no `--wait` for GUIs).
+- **And** the TUI MUST IMMEDIATELY display a confirmation prompt (e.g., "Editing... Save changes? (y/n)") for the selected context.
+- **And** it MUST NOT wait for the editor process to exit or the tab to close.
+- **And** when I press `y`, the TUI MUST read the temp file and update the state to `*modified`.
+- **And** if I press `n`, it MUST discard the edit session and cleanup.
 
 #### Deliverables
-- [✓] **Logic** - Update `ReviewerApp.action_add_message` to be an `@work` async method and await `ConfirmScreen`.
-- [✓] **Logic** - Ensure all `_preview_*` methods in `ReviewerApp` correctly await and check the result of `ConfirmScreen`.
+- [ ] **Cleanup** - Remove `ConfirmScreen` and consolidate `m`/`p` into `e` (Edit).
+- [ ] **Logic** - Refactor `ReviewerApp._launch_editor` to launch the editor as a background task and immediately trigger a non-blocking inline prompt.
+- [ ] **Logic** - Ensure the `y` response to the prompt triggers the file read and state update (Action or Global Message).
+- [ ] **Logic** - Update `ReviewerApp.action_submit` to perform a final sync check of all active editor paths before exit.
+
+### Scenario: Revert Modifications (Undo) [ ]
+> As a user, I want to be able to undo my manual modifications to an action so that I can revert to the AI's original proposal.
+
+- **Given** an action is marked as `*modified` in the TUI.
+- **When** I press `r` (Revert) on that node.
+- **Then** the action's `modified` flag MUST be cleared.
+- **And** its parameters MUST be restored to their original state from the plan.
+- **And** the corresponding temp file (if any) MUST be updated or deleted.
+
+#### Deliverables
+- [ ] **Logic** - Add an `r` binding to `ReviewerApp` for `revert`.
+- [ ] **Logic** - Implement `action_revert` to restore original state and cleanup tracking.
 
 ### Scenario: Logical Log Sequencing [ ]
 > As a user, I want to see the "Planning Turn" message only after I've provided my instructions so that the UI reflects the actual sequence of events.
@@ -54,31 +72,44 @@ To resolve specific UX frictions and regressions in the TUI and planning workflo
 #### Deliverables
 - [ ] **Logic** - Move the display of the progress message in `SessionPlanner.trigger_new_plan` to *after* the `PlanningService.generate_plan` call or within it, ensuring it follows instruction capture.
 
+### Scenario: Enhanced Visibility (Header Replacement) [ ]
+> As a user, I want the TUI header to show the plan's title and status instead of "ReviewerApp" so I know exactly what I am reviewing.
+
+- **Given** I am in the TUI (`ReviewerApp`).
+- **When** the header is displayed.
+- **Then** the central text MUST be the Plan Title prefixed with its status emoji (e.g., "🟢 Implementation: Add User Auth").
+- **And** it MUST NOT say "ReviewerApp".
+- **And** in `--console` mode, the progress message MUST include the status emoji (red, green, yellow) matching the plan's status.
+
+#### Deliverables
+- [ ] **Logic** - Update `ReviewerApp` to override the default `title` property or update the `Header` widget to display `[Emoji] {plan.title}`.
+- [ ] **Logic** - Update `SessionOrchestrator._display_planning_progress` or `cli_helpers` to resolve and display the status emoji in console mode.
+
+### Scenario: Improved Instruction Template [ ]
+> As a user, I want a clear instruction template when adding messages so that I know where to provide my input.
+
+- **Given** I trigger the "Add Message" (`m`) workflow.
+- **When** the editor opens.
+- **Then** it MUST contain a descriptive header: "Provide message above this line --- START OF FILE text/plain ---".
+
+#### Deliverables
+- [ ] **Logic** - Update `ReviewerApp.action_add_message` to prepend the instruction template to the temporary file content.
+- [ ] **Logic** - Ensure the template is stripped before saving the final message.
+
 ### Scenario: Clean Telemetry Formatting [ ]
-> As a developer, I want telemetry to be concise and well-formatted so that I can quickly assess cost and tokens without visual noise.
+... (as before) ...
 
-- **Given** a plan has been generated.
-- **When** telemetry is displayed.
-- **Then** `Tokens` MUST be formatted using `k` units (e.g., `37.7k`).
-- **And** `Model` MUST be dedented (no leading spaces).
-- **And** `Context` and `Session Cost` lines MUST be removed from the planning output (Session Cost remains in the execution report).
+### Scenario: AI-Driven Continuity (Proceed on Empty) [ ]
+> As a user, I want the AI to proceed with planning based on the execution report even if I don't provide explicit instructions.
 
-#### Deliverables
-- [ ] **Logic** - Update `PlanningService._log_telemetry` to format token counts (e.g., `count / 1000` rounded to 1 decimal).
-- [ ] **Logic** - Update `SessionPlanner._display_planning_telemetry` to remove leading spaces from "Model".
-- [ ] **Logic** - Remove `Context` and `Session Cost` display from `SessionPlanner._display_planning_telemetry`.
-
-### Scenario: Direct Instruction Control [ ]
-> As a user, I want to control the session loop exclusively via instructions or the `m` binding so that I'm not interrupted by redundant prompts.
-
-- **Given** I am in an interactive session loop.
-- **When** the `PlanningService` looks for instructions.
-- **Then** it MUST NOT use `self._user_interactor.ask_question` as a fallback.
-- **And** an empty/null instruction MUST trigger an exit from the session loop.
+- **Given** I am in an interactive session.
+- **When** I provide an empty/null instruction.
+- **Then** the `PlanningService` MUST NOT exit the loop.
+- **And** it MUST proceed to call the LLM using the current context (including the `report.md` of the previous turn) as the primary instruction.
 
 #### Deliverables
-- [ ] **Logic** - Remove the interactive prompt fallback from `PlanningService.generate_plan`.
-- [ ] **Logic** - Ensure `SessionOrchestrator` or `SessionCLIHandlers` gracefully handles the `None` return from `resume` (caused by empty instructions) by exiting the loop.
+- [ ] **Logic** - Update `PlanningService.generate_plan` to treat empty input as a valid "Proceed with Context" signal.
+- [ ] **Logic** - Ensure `SessionOrchestrator` does not interpret empty return values from planning as a "Cancel" signal unless explicitly triggered by a `q` (Quit) equivalent.
 
 ## 3. Implementation Guidelines
 
