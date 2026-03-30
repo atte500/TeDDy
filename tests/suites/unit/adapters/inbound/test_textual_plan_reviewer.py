@@ -86,7 +86,9 @@ async def test_reviewer_app_preview_text_actions(
     )
     async with app.run_test() as pilot:
         await pilot.press("down")
-        await pilot.press("e")
+        await pilot.press("p")
+        await pilot.wait_for_scheduled_animations()
+        await pilot.press("y")
         await pilot.wait_for_scheduled_animations()
 
     # 4. Assert modification
@@ -117,7 +119,7 @@ async def test_reviewer_app_preview_readonly_actions(env, action_type):
     )
     async with app.run_test() as pilot:
         await pilot.press("down")
-        await pilot.press("e")
+        await pilot.press("p")
         await pilot.wait_for_scheduled_animations()
 
     # 4. Assert NO modification occurred

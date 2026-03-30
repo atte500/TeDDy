@@ -43,11 +43,15 @@ async def test_reviewer_app_previews_create_action(tmp_path, mock_env, container
     # run_process is no longer used; run_command is called via anyio
 
     async with app.run_test() as pilot:
-        await pilot.press("down", "e")
+        await pilot.press("down", "p")
         await pilot.pause()
 
         # Handle PathInputScreen
         await pilot.press("enter")
+        await pilot.pause()
+
+        # Handle ConfirmScreen
+        await pilot.press("y")
         await pilot.pause()
 
         # Wait for worker
@@ -104,7 +108,11 @@ async def test_reviewer_app_previews_edit_action(tmp_path, mock_env, mock_fs):
     # run_process is no longer used; run_command is called via anyio
 
     async with app.run_test() as pilot:
-        await pilot.press("down", "e")
+        await pilot.press("down", "p")
+        await pilot.pause()
+
+        # Handle ConfirmScreen
+        await pilot.press("y")
         await pilot.pause()
 
         # Wait for worker

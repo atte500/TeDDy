@@ -37,6 +37,19 @@ class PathInputScreen(ModalScreen[str]):
         self.dismiss(event.value)
 
 
+class ConfirmScreen(ModalScreen[bool]):
+    """Modal screen for final confirmation."""
+
+    def compose(self) -> ComposeResult:
+        yield Label("Have you finished editing and saved the changes? (y/n)")
+
+    def on_key(self, event) -> None:
+        if event.key == "y":
+            self.dismiss(True)
+        elif event.key == "n":
+            self.dismiss(False)
+
+
 T = TypeVar("T")
 
 
@@ -48,8 +61,9 @@ class ReviewerApp(App):
     BINDINGS = [
         ("s", "submit", "Submit"),
         ("a", "toggle_all", "Toggle All"),
-        ("e", "edit", "Edit"),
+        ("p", "preview", "Preview/Modify"),
         ("v", "view_plan", "View Plan"),
+        ("m", "add_message", "Add Message"),
         ("q", "cancel", "Cancel"),
     ]
 
@@ -75,9 +89,10 @@ class ReviewerApp(App):
         yield Tree("Action Plan")
         yield Footer()
 
-    async def push_screen_wait(self, screen: Screen[T], *, mode: Optional[str] = None) -> T:  # type: ignore[override]
+    async def push_screen_wait(
+        self, screen: Screen[T], *, mode: Optional[str] = None
+    ) -> T:  # type: ignore[override]
         """Push a screen and wait for its dismissal result."""
-        _ = mode  # Mark as used for vulture
         future: asyncio.Future[T] = asyncio.get_event_loop().create_future()
 
         def _callback(result: Optional[T]) -> None:
@@ -127,18 +142,13 @@ class ReviewerApp(App):
         self.exit(None)
 
     @work
-    async def action_edit(self) -> None:
+    async def action_preview(self) -> None:
         """
-        Universal edit handler for global messages or specific actions.
+        Preview and modify the currently selected action in an external editor.
         """
         tree = self.query_one(Tree)
         node = tree.cursor_node
         if not node:
-            return
-
-        # If on root node, edit global message
-        if node == tree.root:
-            await self.action_add_message().wait()
             return
 
         action: Optional["ActionData"] = node.data
@@ -189,7 +199,10 @@ class ReviewerApp(App):
         new_message = await self._launch_editor(current_message, suffix=".md")
 
         if new_message is not None:
-            self.plan.metadata["user_request"] = str(new_message).strip()
+            # Mandate confirmation even if unchanged to prevent accidental closure
+            confirmed = await self.push_screen_wait(ConfirmScreen())
+            if confirmed:
+                self.plan.metadata["user_request"] = new_message.strip()
 
     async def _preview_edit(self, action: "ActionData", node: Any) -> None:
         """
@@ -249,7 +262,11 @@ class ReviewerApp(App):
             if final_content is None:
                 return
 
-        # 4. Apply changes (Confirmation removed for non-blocking workflow)
+        # 4. Confirmation
+        confirmed = await self.push_screen_wait(ConfirmScreen())
+        if not confirmed:
+            return
+
         # 7. If modified, override the action with a "content-override"
         if final_content != proposed_content:
             action.params["content"] = final_content
@@ -274,7 +291,11 @@ class ReviewerApp(App):
         if new_path is None:
             return
 
-        # 3. Apply changes (Confirmation removed for non-blocking workflow)
+        # 3. Confirmation
+        confirmed = await self.push_screen_wait(ConfirmScreen())
+        if not confirmed:
+            return
+
         # 4. Apply changes
         action.params["content"] = new_content
         action.params["path"] = new_path
@@ -294,7 +315,11 @@ class ReviewerApp(App):
         if new_content is None:
             return
 
-        # 2. Apply changes if modified (Confirmation removed for non-blocking workflow)
+        # 2. Confirmation
+        confirmed = await self.push_screen_wait(ConfirmScreen())
+        if not confirmed:
+            return
+
         # 3. Apply changes if modified
         if new_content.strip() != content.strip():
             action.params[param_key] = new_content.strip()
