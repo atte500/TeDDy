@@ -51,8 +51,9 @@ class ActionExecutor:
         return ActionLog(
             status=status,
             action_type=action.type,
-            params=log_params,
+            params=action.params,
             details=details,
+            modified=action.modified,
         )
 
     def _handle_skipped_action(self, action, reason: str) -> ActionLog:

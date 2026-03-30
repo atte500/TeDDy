@@ -248,10 +248,11 @@
   {% endif %}
 {% endif %}
 
+{% set modified_tag = " (modified)" if log.modified else "" -%}
 {% if target %}
-### `{{ action_type }}`: {{ target }}
+### `{{ action_type }}`{{ modified_tag }}: {{ target }}
 {% else %}
-### `{{ action_type }}`
+### `{{ action_type }}`{{ modified_tag }}
 {% endif %}
 {% set log_status = log.status.value | default(log.status) -%}
 - **Status:** {{ log_status }}

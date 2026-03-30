@@ -112,7 +112,7 @@ To refine the interactive session workflow into a seamless, high-visibility expe
   - **Read-only (READ/PRUNE)**: Modal preview of the target resource.
 
 #### Deliverables
-- [ ] **Contract** - Ensure `report.md` explicitly notes when an action was `*modified` by the user.
+- [✓] **Contract** - Ensure `report.md` explicitly notes when an action was `*modified` by the user.
 - [ ] **Harness** - Update `ReviewerApp` driver in test harness to support simulated keypresses for modal editing.
 - [ ] **Logic** - Implement "Proposed Final Version" simulation logic using `EditSimulator` in `ReviewerApp`.
 - [ ] **Wiring** - Implement multi-stage `CREATE` workflow in `ReviewerApp`.

@@ -60,6 +60,7 @@ class ActionLog:
     action_type: str
     params: dict[str, Any]
     details: Any | None = None
+    modified: bool = False
 ```
 
 ### `RunSummary`
