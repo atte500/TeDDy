@@ -49,7 +49,12 @@ def register_infrastructure(container: punq.Container) -> None:
     )
     container.register(IWebScraper, WebScraperAdapter, scope=punq.Scope.transient)
     container.register(
-        IUserInteractor, ConsoleInteractorAdapter, scope=punq.Scope.transient
+        IUserInteractor,
+        factory=lambda: ConsoleInteractorAdapter(
+            system_env=container.resolve(ISystemEnvironment),
+            config_service=container.resolve(IConfigService),
+        ),
+        scope=punq.Scope.transient,
     )
     container.register(IWebSearcher, WebSearcherAdapter, scope=punq.Scope.transient)
     container.register(

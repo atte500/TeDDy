@@ -13,14 +13,16 @@ from teddy_executor.adapters.inbound.cli_helpers import (
 from teddy_executor.core.domain.models.change_set import ChangeSet
 from teddy_executor.core.domain.models.plan import ActionData, Plan
 from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
+from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 from teddy_executor.adapters.outbound.console_tooling import ConsoleToolingHelper
 
 
 class ConsoleInteractorAdapter(IUserInteractor):
-    def __init__(self, system_env: ISystemEnvironment):
+    def __init__(self, system_env: ISystemEnvironment, config_service: IConfigService):
         self._system_env = system_env
-        self._tooling = ConsoleToolingHelper(system_env)
+        self._config_service = config_service
+        self._tooling = ConsoleToolingHelper(system_env, config_service)
         self._console = Console(stderr=True)
         self._active_editor_path: Optional[str] = None
         self._active_editor_marker: Optional[str] = None
@@ -150,14 +152,14 @@ class ConsoleInteractorAdapter(IUserInteractor):
         with open(temp_path, "w", encoding="utf-8") as f:
             f.write(initial_content)
 
-        editor = self._tooling.find_editor()
-        if not editor:
+        editor_cmd = self._tooling.find_editor()
+        if not editor_cmd:
             typer.echo("Error: No suitable editor found.", err=True)
             self._system_env.delete_file(temp_path)
             return
 
         try:
-            cmd = shlex.split(editor) + [temp_path]
+            cmd = editor_cmd + [temp_path]
             self._system_env.run_command(cmd, background=True)
             self._active_editor_path = temp_path
             self._active_editor_marker = marker
@@ -180,12 +182,12 @@ class ConsoleInteractorAdapter(IUserInteractor):
             with open(temp_path, "w", encoding="utf-8") as f:
                 f.write(initial_content)
 
-            editor = self._tooling.find_editor()
-            if not editor:
+            editor_cmd = self._tooling.find_editor()
+            if not editor_cmd:
                 typer.echo("Error: No suitable editor found.", err=True)
                 return ""
 
-            cmd = shlex.split(editor) + [temp_path]
+            cmd = editor_cmd + [temp_path]
             self._system_env.run_command(cmd)
 
             with open(temp_path, "r", encoding="utf-8") as f:

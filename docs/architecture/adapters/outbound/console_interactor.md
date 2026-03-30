@@ -23,7 +23,8 @@ The `ConsoleInteractorAdapter` depends on the `ISystemEnvironment` outbound port
 #### `ask_question(prompt: str, ...)`
 The `ask_question` method implements a non-blocking interaction loop:
 1.  **Dynamic Header:** Prints a cyan header: `--- MESSAGE from [AGENT NAME] ---`. Defaults to "TeDDy" if the agent is unknown.
-2.  **Non-Blocking Interaction Loop:**
+2.  **Editor Selection:** Uses a prioritized chain: `config.yaml` -> `VISUAL` -> `EDITOR` -> discovery (`code`, `nano`, `vim`). Commands are parsed using `shlex.split` and the executable is resolved via `which`.
+3.  **Non-Blocking Interaction Loop:**
     -   **Trigger Editor ('e'):** Launches the user's preferred editor in the **background** using `ISystemEnvironment.run_command(background=True)`. This immediately returns control to the terminal.
     -   **Terminal Quick-Reply:** Even while the editor is open, the user can type a response directly in the terminal and press Enter to submit it, bypassing the editor.
     -   **Confirm Editor:** If the editor was launched, pressing Enter without a terminal reply signals the adapter to read and return the current content of the temporary file.
@@ -45,7 +46,7 @@ Displays a colorized summary of the plan's actions using `cli_helpers.echo_plan_
 The `confirm_action` method is responsible for presenting a proposed action to the user and capturing their approval or denial. For `CREATE` and `EDIT` actions, it uses a `ChangeSet` to present a visual preview.
 
 ##### Change Preview Logic
-1.  **Tool Detection:** Precedence: `TEDDY_DIFF_TOOL` env var -> `code` (VS Code) CLI -> In-terminal diff.
+1.  **Tool Detection:** Precedence: `config.yaml` (`editor`) -> `TEDDY_DIFF_TOOL` env var -> `code` (VS Code) CLI -> In-terminal diff.
 2.  **CREATE Actions:** If an external editor is detected, the file is opened as a single-file preview (stripping `--diff` flags). Otherwise, it shows a "New File Preview" in the terminal.
 3.  **EDIT Actions:** If an external tool is detected, it shows a split-pane diff. Otherwise, it shows a unified terminal diff.
 4.  **Syntax Highlighting:** Temporary files are created preserving the original file's extension (e.g., `.before.py`, `.preview.md`) to enable editor syntax highlighting.

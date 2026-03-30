@@ -17,8 +17,8 @@ To resolve specific UX frictions and regressions in the TUI and planning workflo
 - **And** it MUST support arbitrary command strings (e.g., `zed --wait` or `code`).
 
 #### Deliverables
-- [ ] **Contract** - Update `IConfigService` or `ConsoleToolingHelper` to support an `editor` setting.
-- [ ] **Logic** - Update `ConsoleToolingHelper.find_editor` to support parsing arbitrary command strings into a `List[str]`.
+- [✓] **Contract** - Update `IConfigService` or `ConsoleToolingHelper` to support an `editor` setting.
+- [✓] **Logic** - Update `ConsoleToolingHelper.find_editor` to support parsing arbitrary command strings into a `List[str]`.
 - [ ] **Logic** - Implement fallback chain: Config -> Env -> `code` -> `nano`.
 - [ ] **Logic** - Update `ReviewerApp._launch_editor` to use the command list with `self._system_env.run_command`.
 
@@ -97,3 +97,9 @@ To resolve specific UX frictions and regressions in the TUI and planning workflo
 ### Telemetry
 - Use `f"{count/1000:.1f}k"` for token formatting.
 - Ensure `PlanningService` and `SessionPlanner` use consistent, dedented output for CLI/TUI display.
+
+## 6. Implementation Notes
+
+### Scenario: Editor Configuration & Default
+- **ConsoleToolingHelper.find_editor**: Refactored to return `Optional[List[str]]` instead of a string. This allows for direct passing to `subprocess.run` (via `SystemEnvironment`) without manual splitting in calling adapters.
+- **Path Resolution**: The first element of the command list (the executable) is now explicitly resolved via `ISystemEnvironment.which` to ensure absolute paths are used when available, preventing PATH-related execution failures in sub-shells.

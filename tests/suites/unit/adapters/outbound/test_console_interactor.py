@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import MagicMock
 
 from teddy_executor.adapters.outbound.console_interactor import (
     ConsoleInteractorAdapter,
@@ -13,7 +14,9 @@ class TestConsoleInteractorAdapter:
         mock_env.create_temp_file.side_effect = lambda suffix="": str(
             tmp_path / f"temp_file{suffix}"
         )
-        return ConsoleInteractorAdapter(system_env=mock_env)
+        mock_config = MagicMock()
+        mock_config.get_setting.return_value = None
+        return ConsoleInteractorAdapter(system_env=mock_env, config_service=mock_config)
 
     def test_ask_question_standard_input_single_line(
         self, adapter: ConsoleInteractorAdapter, monkeypatch
@@ -38,7 +41,7 @@ class TestConsoleInteractorAdapter:
 
         file_content_before_editor = ""
 
-        def mock_run_command(cmd, *args, **kwargs):
+        def mock_run_command(cmd, *_args, **_kwargs):
             nonlocal file_content_before_editor
             filepath = Path(cmd[-1])
             file_content_before_editor = filepath.read_text(encoding="utf-8")
