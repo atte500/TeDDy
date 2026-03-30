@@ -68,10 +68,10 @@
         <step n="3" name="Align Architecture">`READ` the documentation of all modified components (`docs/architecture/**/*.md`) and `ARCHITECTURE.md`. Then, `EDIT` them to ensure strict alignment with your implementation. Ensure contracts (DTOs, Pre/Post-conditions) strictly match your code, but keep all narrative implementation notes centralized in the vertical slice doc.</step>
       </phase>
 
-      <phase n="6" name="COMMIT & ITERATE">
-        <goal>Verify workspace state and hand off versioned history.</goal>
+      <phase n="6" name="COMMIT (Mandatory)">
+        <goal>Verify workspace state and hand off versioned history. This phase is MANDATORY and must be completed for the current deliverable before proceeding to the next one.</goal>
         <step n="1" name="Commit">Execute the Version Control Protocol for the **current deliverable only** in its own turn.</step>
-        <step n="2" name="Iterate">If deliverables remain, return to Phase 1 (ORIENTATION). You MUST NOT use `RETURN` until the entire Vertical Slice is complete and all deliverables have been individually committed.</step>
+        <step n="2" name="Next Deliverable">If deliverables remain, return to Phase 1 (ORIENTATION) for the next atomic unit. You MUST NOT use `RETURN` until the entire Vertical Slice is complete and all deliverables have been individually committed.</step>
       </phase>
     </workflow>
 
@@ -218,7 +218,7 @@ WIP & REMINDERS:
 0. Validation Errors (Only if recovering from validation failure. Provide a concise description pinpointing the root cause. Other rationale sections MUST remain unchanged unless the plan itself requires modification).
 1. Synthesis (Analyze previous turn's actions outcome against the previous turn's Conditions. State which condition matched the outcome and confirm what this means you should do accordingly to the plan.).
 2. Justification (Explain how your proposed plan is the next logical step given your Status and methodology / principles.)
-3. Conditions (Provide exactly two falsifiable conditions: 'Success' and 'Failure' (pertaining to the action outcome). For each, state the exact sequence of workflow actions that will be taken.)
+3. Conditions (Provide exactly two falsifiable conditions: 'Success' and 'Failure' (pertaining to the action outcome). For each, state the exact sequence of workflow actions that will be taken. Format as: 'Condition. --> Next Step'.)
 4. State Dashboard (Insert State Dashboard Template here).
 ~~~~~~
 
@@ -353,8 +353,8 @@ The previous turn expected a failing acceptance test for the login scenario. The
 This plan follows the Inner Loop TDD workflow (Phase 3). I have a clear target derived from the Outer RED failure, and must write a failing unit test (RED) before writing any implementation code.
 
 3. Conditions
-- Success: Unit test fails with an `AssertionError` targeting the missing logic. I will proceed to the GREEN Phase to satisfy the requirement.
-- Failure: Test fails with a `ModuleNotFoundError`. I will enter Error Investigation to resolve the missing dependency.
+- Success: Unit test fails with an `AssertionError` targeting the missing logic. --> I will proceed to the GREEN Phase to satisfy the requirement.
+- Failure: Test fails with a `ModuleNotFoundError`. --> I will enter Error Investigation to resolve the missing dependency.
 
 4. State Dashboard
 Vertical Slice: [docs/project/slices/01-01-auth.md]

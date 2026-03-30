@@ -211,7 +211,7 @@ WIP & REMINDERS:
 0. Validation Errors (Only if recovering from validation failure. Provide a concise description pinpointing the root cause. Other rationale sections MUST remain unchanged unless the plan itself requires modification).
 1. Synthesis (Analyze previous turn's actions outcome against the previous turn's Conditions. State which condition matched the outcome and confirm what this means you should do accordingly to the plan.).
 2. Justification (Explain how your proposed plan is the next logical step given your Status and methodology / principles.)
-3. Conditions (Provide exactly two falsifiable conditions: 'Success' and 'Failure' (pertaining to the action outcome). For each, state the exact sequence of workflow actions that will be taken.)
+3. Conditions (Provide exactly two falsifiable conditions: 'Success' and 'Failure' (pertaining to the action outcome). For each, state the exact sequence of workflow actions that will be taken. Format as: 'Condition. --> Next Step'.)
 4. State Dashboard (Insert State Dashboard Template here).
 ~~~~~~
 
@@ -336,8 +336,8 @@ The previous turn expected to gather initial failure context. The actual outcome
 Following "Phase 1: Foundational Assumption Verification", I must establish a ground truth in complete isolation. Attempting to debug the codebase without verifying this premise is inefficient.
 
 3. Conditions
-- Success: Script executes and prints 'ASSUMPTION VALIDATED' or 'ASSUMPTION FLAWED'. I will proceed to Phase 2 (Hypothesis Generation).
-- Failure: Script crashes due to a SyntaxError. I will enter Error Investigation to fix the verification script in the `/spikes/debug/` directory.
+- Success: Script executes and prints 'ASSUMPTION VALIDATED' or 'ASSUMPTION FLAWED'. --> I will proceed to Phase 2 (Hypothesis Generation).
+- Failure: Script crashes due to a SyntaxError. --> I will enter Error Investigation to fix the verification script in the `/spikes/debug/` directory.
 
 4. State Dashboard
 MRE: [docs/project/debugging/some-bug.md]

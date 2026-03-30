@@ -261,7 +261,7 @@ WIP & REMINDERS:
 0. Validation Errors (Only if recovering from validation failure. Provide a concise description pinpointing the root cause. Other rationale sections MUST remain unchanged unless the plan itself requires modification).
 1. Synthesis (Analyze previous turn's actions outcome against the previous turn's Conditions. State which condition matched the outcome and confirm what this means you should do accordingly to the plan.).
 2. Justification (Explain how your proposed plan is the next logical step given your Status and methodology / principles.)
-3. Conditions (Provide exactly two falsifiable conditions: 'Success' and 'Failure' (pertaining to the action outcome). For each, state the exact sequence of workflow actions that will be taken.)
+3. Conditions (Provide exactly two falsifiable conditions: 'Success' and 'Failure' (pertaining to the action outcome). For each, state the exact sequence of workflow actions that will be taken. Format as: 'Condition. --> Next Step'.)
 4. State Dashboard (Insert State Dashboard Template here).
 ~~~~~~
 
@@ -396,8 +396,8 @@ The previous turn expected a user decision on the options analysis. The actual o
 Following "Phase 3: Architectural Validation", having gained user alignment, I must validate the chosen path. I will create a targeted, isolated spike to prove core mechanics.
 
 3. Conditions
-- Success: Spike executes successfully and prints confirmation. I will proceed to Phase 5 "Document Approved Architecture".
-- Failure: Spike fails to execute due to a missing dependency. I will enter Error Investigation to identify the missing package and update the environment.
+- Success: Spike executes successfully and prints confirmation. --> I will proceed to Phase 5 "Document Approved Architecture".
+- Failure: Spike fails to execute due to a missing dependency. --> I will enter Error Investigation to identify the missing package and update the environment.
 
 4. State Dashboard
 Current Milestone: [docs/project/milestones/NN-feature.md]
