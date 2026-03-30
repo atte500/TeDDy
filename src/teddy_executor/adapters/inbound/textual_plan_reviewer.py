@@ -89,6 +89,9 @@ class ReviewerApp(App):
         """
         Preview and modify the currently selected action in an external editor.
         """
+        if os.getenv("TEDDY_DEBUG"):
+            print("\n[DEBUG] Action preview triggered.")
+
         tree = self.query_one(Tree)
         node = tree.cursor_node
         if not node:
