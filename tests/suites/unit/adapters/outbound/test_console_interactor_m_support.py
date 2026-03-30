@@ -4,6 +4,9 @@ from teddy_executor.core.domain.models.plan import ActionData
 
 
 def test_confirm_action_supports_m_for_message(monkeypatch):
+    # Ensure no environment pollution affects this test
+    monkeypatch.delenv("TEDDY_TEST_MOCK_EDITOR_OUTPUT", raising=False)
+
     # Setup
     mock_env = MagicMock()
     # Mock system_env to avoid real IO
@@ -17,7 +20,7 @@ def test_confirm_action_supports_m_for_message(monkeypatch):
     # First prompt: 'm' (to add message)
     # Second prompt: 'y' (to approve after message added)
     prompts = iter(["m", "y"])
-    monkeypatch.setattr("typer.prompt", lambda p, **kwargs: next(prompts))
+    monkeypatch.setattr("typer.prompt", lambda p, **_: next(prompts))
 
     # Mock editor content reading
     # We need to mock 'open' to simulate reading the message from the temp file

@@ -75,3 +75,16 @@ def reset_formatter_singleton():
     MarkdownReportFormatter._reset_singleton()
     yield
     MarkdownReportFormatter._reset_singleton()
+
+
+@pytest.fixture(autouse=True)
+def clean_test_env():
+    """Proposed global fix: ensure isolation of testing hooks."""
+    import os
+
+    var = "TEDDY_TEST_MOCK_EDITOR_OUTPUT"
+    if var in os.environ:
+        del os.environ[var]
+    yield
+    if var in os.environ:
+        del os.environ[var]

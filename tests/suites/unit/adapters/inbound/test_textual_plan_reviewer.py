@@ -1,4 +1,3 @@
-import os
 import pytest
 from unittest.mock import Mock
 from teddy_executor.core.domain.models.plan import Plan, ActionData
@@ -54,7 +53,9 @@ def test_review_returns_plan_unchanged_in_non_interactive_mock(container, monkey
         ("RESEARCH", "queries"),
     ],
 )
-async def test_reviewer_app_preview_text_actions(env, action_type, param_key):
+async def test_reviewer_app_preview_text_actions(
+    env, monkeypatch, action_type, param_key
+):
     """Verify that p key (preview) triggers editing for simple text-based actions."""
     # 1. Setup plan with target action
     action = ActionData(
@@ -72,7 +73,7 @@ async def test_reviewer_app_preview_text_actions(env, action_type, param_key):
     # 2. Mock environment for editor
     sys_env = env.get_service(ISystemEnvironment)
     sys_env.get_env.side_effect = lambda k: "mock-editor" if k == "VISUAL" else None
-    os.environ["TEDDY_TEST_MOCK_EDITOR_OUTPUT"] = "modified content"
+    monkeypatch.setenv("TEDDY_TEST_MOCK_EDITOR_OUTPUT", "modified content")
 
     # 3. Run app and trigger preview
     app = ReviewerApp(
