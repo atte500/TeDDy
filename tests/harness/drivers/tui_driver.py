@@ -23,5 +23,15 @@ class TuiDriver:
             pilot.app.query_one(Tree).focus()
             for key in keys:
                 await pilot.press(key)
+                # If a worker is running (e.g. action_preview), we must not block
+                # but we should allow it to reach its first await (e.g. push_screen_wait).
                 await pilot.pause()
+
+                # If the current screen is a modal, wait for workers isn't
+                # possible as they are blocked on the screen's dismissal.
+                # Only wait for workers if we are on the main screen.
+                if pilot.app.screen == pilot.app._screen_stack[0]:
+                    await pilot.app.workers.wait_for_complete()
+                    await pilot.pause()
+
             return self.app.plan

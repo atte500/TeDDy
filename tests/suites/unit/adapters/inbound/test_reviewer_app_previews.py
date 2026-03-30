@@ -38,6 +38,19 @@ async def test_reviewer_app_previews_create_action(tmp_path, mock_env, container
 
     async with app.run_test() as pilot:
         await pilot.press("down", "p")
+        await pilot.pause()
+
+        # Handle PathInputScreen
+        await pilot.press("enter")
+        await pilot.pause()
+
+        # Handle ConfirmScreen
+        await pilot.press("y")
+        await pilot.pause()
+
+        # Wait for worker
+        await app.workers.wait_for_complete()
+
         mock_env.create_temp_file.assert_called_once_with(suffix=".py")
         assert action.params["content"] == new_content
         tree = app.query_one(Tree)
@@ -81,5 +94,14 @@ async def test_reviewer_app_previews_edit_action(tmp_path, mock_env, mock_fs):
 
     async with app.run_test() as pilot:
         await pilot.press("down", "p")
+        await pilot.pause()
+
+        # Handle ConfirmScreen
+        await pilot.press("y")
+        await pilot.pause()
+
+        # Wait for worker
+        await app.workers.wait_for_complete()
+
         assert action.modified is True
         assert action.params["content"] == user_content

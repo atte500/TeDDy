@@ -28,8 +28,10 @@ async def test_reviewer_app_marks_create_action_as_modified(container):
     try:
         driver = TuiDriver(plan, system_env, file_system)
 
-        # Act: Navigate down to first child, then 'p' (preview) then 's' (submit)
-        await driver.run_interaction(["down", "p", "s"])
+        # Act: Navigate down to first child, then 'p' (preview)
+        # Then handle PathInputScreen (enter) and ConfirmScreen (y)
+        # Then 's' (submit)
+        await driver.run_interaction(["down", "p", "enter", "y", "s"])
 
         # Assert
         assert action.modified is True

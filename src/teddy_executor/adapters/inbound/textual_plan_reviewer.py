@@ -1,8 +1,10 @@
 import os
 import pathlib
 from typing import Any, Optional, TYPE_CHECKING
+from textual import work
 from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, Tree
+from textual.widgets import Header, Footer, Tree, Input, Label
+from textual.screen import ModalScreen
 from teddy_executor.core.domain.models.plan import Plan
 from teddy_executor.core.services.edit_simulator import EditSimulator
 
@@ -12,6 +14,37 @@ if TYPE_CHECKING:
 from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
 from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
+
+
+class PathInputScreen(ModalScreen[str]):
+    """Modal screen for editing a file path."""
+
+    def __init__(self, initial_path: str):
+        super().__init__()
+        self.initial_path = initial_path
+
+    def compose(self) -> ComposeResult:
+        yield Label("File path:")
+        yield Input(value=self.initial_path, id="path_input")
+
+    def on_mount(self) -> None:
+        self.query_one(Input).focus()
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        self.dismiss(event.value)
+
+
+class ConfirmScreen(ModalScreen[bool]):
+    """Modal screen for final confirmation."""
+
+    def compose(self) -> ComposeResult:
+        yield Label("Have you finished editing and saved the changes? (y/n)")
+
+    def on_key(self, event) -> None:
+        if event.key == "y":
+            self.dismiss(True)
+        elif event.key == "n":
+            self.dismiss(False)
 
 
 class ReviewerApp(App):
@@ -85,13 +118,11 @@ class ReviewerApp(App):
         """
         self.exit(None)
 
-    def action_preview(self) -> None:
+    @work
+    async def action_preview(self) -> None:
         """
         Preview and modify the currently selected action in an external editor.
         """
-        if os.getenv("TEDDY_DEBUG"):
-            print("\n[DEBUG] Action preview triggered.")
-
         tree = self.query_one(Tree)
         node = tree.cursor_node
         if not node:
@@ -102,9 +133,9 @@ class ReviewerApp(App):
             return
 
         if action.type == "CREATE":
-            self._preview_create(action, node)
+            await self._preview_create(action, node)
         elif action.type == "EDIT":
-            self._preview_edit(action, node)
+            await self._preview_edit(action, node)
 
     def action_view_plan(self) -> None:
         """
@@ -130,7 +161,7 @@ class ReviewerApp(App):
         if new_message is not None and new_message.strip() != current_message.strip():
             self.plan.metadata["user_request"] = new_message.strip()
 
-    def _preview_edit(self, action: "ActionData", node: Any) -> None:
+    async def _preview_edit(self, action: "ActionData", node: Any) -> None:
         """
         Handle the preview workflow for an EDIT action.
         """
@@ -154,27 +185,48 @@ class ReviewerApp(App):
 
         # 3. Open in editor
         final_content = self._launch_editor(proposed_content, suffix=suffix)
+        if final_content is None:
+            return
 
-        # 4. If modified, override the action with a "content-override"
-        if final_content is not None and final_content != proposed_content:
+        # 4. Confirmation
+        confirmed = await self.push_screen_wait(ConfirmScreen())
+        if not confirmed:
+            return
+
+        # 5. If modified, override the action with a "content-override"
+        if final_content != proposed_content:
             action.params["content"] = final_content
             action.modified = True
             self._refresh_node(node)
 
-    def _preview_create(self, action: "ActionData", node: Any) -> None:
+    async def _preview_create(self, action: "ActionData", node: Any) -> None:
         """
         Handle the preview workflow for a CREATE action.
         """
         path_str = action.params.get("path", "")
         suffix = pathlib.Path(path_str).suffix or ".txt"
-
         content = action.params.get("content", "")
-        new_content = self._launch_editor(content, suffix=suffix)
 
-        if new_content is not None and new_content != content:
-            action.params["content"] = new_content
-            action.modified = True
-            self._refresh_node(node)
+        # 1. Content Edit
+        new_content = self._launch_editor(content, suffix=suffix)
+        if new_content is None:
+            return
+
+        # 2. Path Edit
+        new_path = await self.push_screen_wait(PathInputScreen(path_str))
+        if new_path is None:
+            return
+
+        # 3. Confirmation
+        confirmed = await self.push_screen_wait(ConfirmScreen())
+        if not confirmed:
+            return
+
+        # 4. Apply changes
+        action.params["content"] = new_content
+        action.params["path"] = new_path
+        action.modified = True
+        self._refresh_node(node)
 
     def _launch_editor(
         self, initial_content: str, suffix: str = ".txt"

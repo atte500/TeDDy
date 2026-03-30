@@ -115,7 +115,7 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - [✓] **Contract** - Ensure `report.md` explicitly notes when an action was `*modified` by the user.
 - [✓] **Harness** - Update `ReviewerApp` driver in test harness to support simulated keypresses for modal editing.
 - [✓] **Logic** - Implement "Proposed Final Version" simulation logic using `EditSimulator` in `ReviewerApp`.
-- [ ] **Wiring** - Implement multi-stage `CREATE` workflow in `ReviewerApp`.
+- [✓] **Wiring** - Implement multi-stage `CREATE` workflow in `ReviewerApp`.
 - [✓] **Wiring** - Implement multi-stage `EDIT` workflow in `ReviewerApp`.
 - [ ] **Wiring** - Implement modal text editing for `EXECUTE` and `RESEARCH`.
 - [ ] **Wiring** - Implement modal preview for `READ` and `PRUNE`.

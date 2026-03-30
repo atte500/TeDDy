@@ -28,4 +28,6 @@ Refer to the [IPlanReviewer](/docs/architecture/core/ports/inbound/plan_reviewer
   - `a`: Toggle all actions.
   - `m`: Add/Edit User Message (Instruction Bridge).
   - `p`: Preview/Modify the highlighted action (Context-Aware Editing).
+    - **CREATE:** Launches the external editor for content modification, followed by a `PathInputScreen` modal for path adjustment and a `ConfirmScreen` for final synchronization.
+    - **EDIT:** Launches the external editor showing the proposed final state (simulated), followed by a `ConfirmScreen`.
   - `q`: Cancel and exit.

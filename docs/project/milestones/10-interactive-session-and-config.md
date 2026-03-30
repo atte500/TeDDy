@@ -99,3 +99,6 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 - [ ] Code Quality (vulture): Investigate and resolve false-positive "unused variable" warnings in `IRunPlanUseCase` port.
 - [ ] Documentation Debt: Reconcile `ARCHITECTURE.md` setup descriptions with the actual fixture-based pattern in `composition.py`.
 - [ ] **Debt** - Resolve Test Pyramid Violation (Acceptance: 101, Integration: 101, Unit: 296) to satisfy 'Acceptance < Integration < Unit' rule.
+- [ ] **Code Quality (File Length):** `textual_plan_reviewer.py` has grown to 330 lines. Needs splitting.
+- [ ] **Code Duplication (jscpd):** Resolve clones in `test_reviewer_app_create_workflow.py`, `test_reviewer_app_modifications.py`, and `test_reviewer_app_previews.py`.
+- [ ] **Code Quality (vulture):** Resolve unused variables in `test_reviewer_app_previews.py` and `textual_plan_reviewer.py`.
