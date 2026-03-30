@@ -177,7 +177,7 @@
 
     <general_rules>
       <rule n="1" name="State Transition Protocol">
-        <description>State transitions are strictly bound to the evaluation of the previous turn's Conditions. You MUST evaluate the real-world action outcome against your predicted Success/Failure conditions to determine your next Status.</description>
+        <description>State transitions are strictly bound to evaluating the previous turn's Conditions. Header Status (SUCCESS/FAILURE) reports which condition was triggered; Emoji indicates the resulting State.</description>
         <state name="Green 🟢" trigger="Outcome matched the Success condition." action="Proceed with planned workflow." />
         <state name="Yellow 🟡" trigger="Current Status is Green AND Outcome matched the Failure condition.">
           <action>Halt main workflow. Enter Error Investigation: 1. Explore, 2. Diagnose, 3. Fix.</action>
@@ -252,7 +252,7 @@ WIP & REMINDERS:
         <constraint>The entire content of the ## Rationale section MUST be strictly encapsulated within a single Markdown code block using exactly 6 tildes (~~~~~~) or 6 backticks (``````).</constraint>
         <format>
 # [Plan Title]
-- **Status:** [SUCCESS | FAILURE] [Emoji Color]
+- **Status:** [SUCCESS | FAILURE] [🟢 | 🟡 | 🔴]
 - **Plan Type:** [Standardized Plan Type]
 - **Agent:** Architect
 
