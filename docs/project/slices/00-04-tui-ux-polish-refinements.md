@@ -1,4 +1,4 @@
-# Slice 10-10: TUI & UX Polish Refinements
+# Slice 00-04: TUI & UX Polish Refinements
 - **Status:** Planned
 - **Milestone:** [Milestone 10: Interactive Session Workflow & LLM Integration](/docs/project/milestones/10-interactive-session-and-config.md)
 
