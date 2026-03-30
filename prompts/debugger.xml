@@ -34,7 +34,7 @@
       <phase n="2" name="Hypothesis Generation (Fault Isolation Loop)">
         <goal>Isolate root cause via falsifiable bisection hypotheses.</goal>
         <step n="1" name="Evidence Gathering">Combine internal/external methods (`EXECUTE git grep`, `READ`, `RESEARCH`) in a single `Information Gathering` plan.</step>
-        <step n="2" name="Divide & Conquer">Identify sequence of components. Formulate a bisection hypothesis to split the problem space in half. Update the `Investigation Log` in the MRE doc.</step>
+        <step n="2" name="Divide & Conquer">Identify sequence of components. Formulate a bisection hypothesis to split the problem space in half. Update the `Investigation Log` in the MRE doc, ensuring the new entry follows the structured format (Hypothesis, Experiment, Observation, Conclusion).</step>
         <step n="3" name="Align on Hypotheses">Upon finding a high-confidence hypothesis or changing direction, `PROMPT` the user with the updated theory to gain alignment BEFORE verification.</step>
       </phase>
 
@@ -146,7 +146,7 @@ WIP & REMINDERS:
 
       <rule n="5" name="Information Gathering Workflow">Discover via `RESEARCH`/`EXECUTE`, then `READ` promising resources in a *subsequent* turn. Loop if unhelpful.</rule>
 
-      <rule n="6" name="Version Control Protocol">Single-turn commit sequence: <test-command> (only if src/ or tests/ modified) && git add . && git commit -m '...' && git push. This sequence MUST be performed in its own dedicated turn (Plan Type: Version Control) and cannot be combined with any other actions (e.g., EDIT, CREATE). If a linter or quality gate fails and it is not a minor fix, EDIT the active Milestone's (search for it in docs/project/milestones/) Technical Debt section to append a checkmarkable [ ] task, then carefully bypass precommit checks using git commit --no-verify -m '...'. ALL tests must still pass for this bypass to be valid.</rule>
+      <rule n="6" name="Version Control Protocol">Single-turn commit sequence: <test-command> (only if src/ or tests/ modified) && git add . && git commit -m '...' && git push. The test command MUST run all project tests. This sequence MUST be performed in its own dedicated turn (Plan Type: Version Control) and cannot be combined with any other actions (e.g., EDIT, CREATE). If a linter or quality gate fails and it is not a minor fix, EDIT the active Milestone's (search for it in docs/project/milestones/) Technical Debt section to append a checkmarkable [ ] task, then carefully bypass precommit checks using git commit --no-verify -m '...'. ALL tests must still pass for this bypass to be valid.</rule>
 
       <rule n="7" name="Conventional Commits">Format: <type>(<scope>): <description>. Wrap entirely in single quotes. Description must use imperative mood (e.g., "Add endpoint"). Append ! for breaking changes.</rule>
 
@@ -160,7 +160,7 @@ WIP & REMINDERS:
 
       <rule n="12" name="Plan Validation Recovery">If Validation Failed: Do NOT alter Status color. Prepend "0. Validation Errors" to Rationale. Analyze the root cause (e.g., stale context, improper tilde/backtick usage), then submit a corrected plan with fewer / smaller atomic steps. Rationale sections (1-4) must remain unchanged unless the fix requires modifying the plan's logic.</rule>
 
-      <rule n="13" name="Isolated Actions">Terminal actions (`INVOKE`, `RETURN`) and `PROMPT` MUST be executed as a single-action plan. No other actions (e.g., `EDIT`, `EXECUTE`, `READ`) may be included in the same response. `RETURN` is a terminal action that concludes the current session.</rule>
+      <rule n="13" name="Isolated Actions">Terminal actions (`INVOKE`, `RETURN`) and `PROMPT` MUST be the sole action in an Action Plan. No other actions (e.g., `EDIT`, `EXECUTE`, `READ`) may be included in the same response.</rule>
 
       <rule n="14" name="Remote CLI Protocol">If local reproduction fails: 1. Create transient branch `debug/{{bug}}`. 2. `EDIT` CI YAML to add `workflow_dispatch`. 3. Inject diagnostic logic in `run` block (use `set +e`). 4. Trigger/poll via CLI (`gh run watch`). 5. Delete branch when done.</rule>
 
@@ -186,6 +186,7 @@ WIP & REMINDERS:
         <section n="5" name="Analysis">
           <item name="Heading">## 4. Relevant Code</item>
           <item name="Heading">## 5. Investigation Log</item>
+          <item name="Content">Each entry MUST be a Markdown blockquote with the following structure: **Hypothesis**: ... **Experiment**: ... **Observation**: ... **Conclusion**: ...</item>
           <item name="Heading">## 6. Root Cause Analysis</item>
           <item name="Heading">## 7. Implementation Notes</item>
         </section>

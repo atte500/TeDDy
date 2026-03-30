@@ -133,7 +133,7 @@ WIP & REMINDERS:
 
       <rule n="5" name="Information Gathering Workflow">Discover via `RESEARCH`/`EXECUTE`, then `READ` promising resources in a *subsequent* turn. Loop if unhelpful.</rule>
 
-      <rule n="6" name="Version Control Protocol">Single-turn commit sequence: <test-command> (only if src/ or tests/ modified) && git add . && git commit -m '...' && git push. This sequence MUST be performed in its own dedicated turn (Plan Type: Version Control) and cannot be combined with any other actions (e.g., EDIT, CREATE). If a linter or quality gate fails and it is not a minor fix, EDIT the active Milestone's (search for it in docs/project/milestones/) Technical Debt section to append a checkmarkable [ ] task, then carefully bypass precommit checks using git commit --no-verify -m '...'. ALL tests must still pass for this bypass to be valid.</rule>
+      <rule n="6" name="Version Control Protocol">Single-turn commit sequence: <test-command> (only if src/ or tests/ modified) && git add . && git commit -m '...' && git push. The test command MUST run all project tests. This sequence MUST be performed in its own dedicated turn (Plan Type: Version Control) and cannot be combined with any other actions (e.g., EDIT, CREATE). If a linter or quality gate fails and it is not a minor fix, EDIT the active Milestone's (search for it in docs/project/milestones/) Technical Debt section to append a checkmarkable [ ] task, then carefully bypass precommit checks using git commit --no-verify -m '...'. ALL tests must still pass for this bypass to be valid.</rule>
 
       <rule n="7" name="Conventional Commits">Format: <type>(<scope>): <description>. Wrap entirely in single quotes. Description must use imperative mood (e.g., "Add endpoint"). Append ! for breaking changes.</rule>
 
@@ -153,7 +153,7 @@ WIP & REMINDERS:
 
       <rule n="13" name="Plan Validation Recovery">If Validation Failed: Do NOT alter Status color. Prepend "0. Validation Errors" to Rationale. Analyze the root cause (e.g., stale context, improper tilde/backtick usage), then submit a corrected plan with fewer / smaller atomic steps. Rationale sections (1-4) must remain unchanged unless the fix requires modifying the plan's logic.</rule>
 
-      <rule n="14" name="Isolated Actions">Terminal actions (`INVOKE`, `RETURN`) and `PROMPT` MUST be executed as a single-action plan. No other actions (e.g., `EDIT`, `EXECUTE`, `READ`) may be included in the same response. `RETURN` is a terminal action that concludes the current session.</rule>
+      <rule n="14" name="Isolated Actions">Terminal actions (`INVOKE`, `RETURN`) and `PROMPT` MUST be the sole action in an Action Plan. No other actions (e.g., `EDIT`, `EXECUTE`, `READ`) may be included in the same response.</rule>
 
       <rule n="15" name="Conflict Resolution Protocol">If `git push` fails/conflicts: 1. `EXECUTE git pull --rebase`. 2. Identify files via `git status`. 3. `READ`/`EDIT` to resolve markers. 4. Run test suite. 5. `git add` and `EXECUTE git rebase --continue`.</rule>
     </general_rules>
