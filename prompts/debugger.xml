@@ -210,7 +210,7 @@ WIP & REMINDERS:
 0. Validation Errors (Only if recovering from validation failure. Provide a concise description pinpointing the root cause. Other rationale sections MUST remain unchanged unless the plan itself requires modification).
 1. Synthesis (Analyze previous turn's actions outcome against the previous turn's Conditions. State which condition matched the outcome and confirm what this means you should do accordingly to the plan.).
 2. Justification (Explain how your proposed plan is the next logical step given your Status and methodology / principles).
-3. Conditions (Provide exactly two falsifiable conditions: 'Success' and 'Failure' (pertaining to the action outcome). State exactly what you will do next for each. If current Status is Green, Failure means transitioning to Yellow. If current Status is Yellow, Failure means transitioning to Red - zero exceptions).
+3. Conditions (Provide exactly two falsifiable conditions: 'Success' and 'Failure' (pertaining to the action outcome). For each, state the resulting Status and the exact sequence of actions that will be taken. If current Status is Green, Failure MUST result in a transition to Yellow to investigate. If current Status is Yellow, Failure MUST result in a transition to Red to delegate or restart.)
 4. State Dashboard (Insert State Dashboard Template here).
 ~~~~~~
 
