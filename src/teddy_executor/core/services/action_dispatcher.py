@@ -120,6 +120,7 @@ class ActionDispatcher:
         log_data: dict = {
             "action_type": action_data.type,
             "params": log_params,
+            "modified": action_data.modified,
         }
 
         try:
