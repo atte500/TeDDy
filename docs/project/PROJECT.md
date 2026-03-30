@@ -12,7 +12,7 @@ This table tracks the status of active Milestones and provides a high-level summ
 
 | Milestone                                                                              | Status        | Specs                                                                                                                                                               | Features                                                                                                                           |
 | :------------------------------------------------------------------------------------- | :------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :--------------------------------------------------------------------------------------------------------------------------------- |
-| [10-interactive-session-and-config](./milestones/10-interactive-session-and-config.md) | `In Progress` | [Interactive Session](./specs/interactive-session-workflow.md)<br>[Context Payload](./specs/context-payload-format.md)<br>[Report Format](./specs/report-format.md) | Stateful Session Management, TUI Instruction Bridge, LLM Integration (LiteLLM), and Agent Collaboration. |
+| [10-interactive-session-and-config](./milestones/10-interactive-session-and-config.md) | `In Progress` | [Interactive Session](./specs/interactive-session-workflow.md)<br>[Context Payload](./specs/context-payload-format.md)<br>[Report Format](./specs/report-format.md) | Stateful Session Management, TUI Instruction Bridge, LLM Integration (LiteLLM), and UX Polish. |
 
 ## Workflow Standards
 
