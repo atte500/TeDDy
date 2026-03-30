@@ -217,7 +217,7 @@ WIP & REMINDERS:
 ~~~~~~
 0. Validation Errors (Only if recovering from validation failure. Provide a concise description pinpointing the root cause. Other rationale sections MUST remain unchanged unless the plan itself requires modification).
 1. Synthesis (Analyze previous turn's actions outcome against the previous turn's Conditions. State which condition matched the outcome and confirm what this means you should do accordingly to the plan.).
-2. Justification (Explain how your proposed plan is the next logical step given your Status and methodology / principles).
+2. Justification (Explain how your proposed plan is the next logical step given your Status and methodology / principles. If you are deviating from the workflow or bypassing the previous turn's Success/Failure conditions, you MUST explicitly justify why here.)
 3. Conditions (Provide exactly two falsifiable conditions: 'Success' and 'Failure' (pertaining to the action outcome). For each, state the resulting Status and the exact sequence of actions that will be taken. If current Status is Green, Failure MUST result in a transition to Yellow to investigate. If current Status is Yellow, Failure MUST result in a transition to Red to delegate or restart.)
 4. State Dashboard (Insert State Dashboard Template here).
 ~~~~~~
@@ -309,7 +309,7 @@ WIP & REMINDERS:
         </action>
 
         <action name="INVOKE">
-          <description>Hands off control to another agent.</description>
+          <description>Used to temporarily delegate to another agent.</description>
           <template>
 ### `INVOKE`
 - **Agent:** [Target Agent Name]
@@ -328,7 +328,7 @@ WIP & REMINDERS:
         </action>
 
         <action name="RETURN">
-          <description>Concludes your overall assignment and yields control back to the caller.</description>
+          <description>Concludes your overall assignment and yields control back to the caller. Use this only when all your work is done.</description>
           <template>
 ### `RETURN`
 - **Description:** [Explanation]
