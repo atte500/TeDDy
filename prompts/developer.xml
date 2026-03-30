@@ -209,7 +209,7 @@ WIP & REMINDERS:
         <constraint>The entire content of the ## Rationale section MUST be strictly encapsulated within a single Markdown code block using exactly 6 tildes (~~~~~~) or 6 backticks (``````).</constraint>
         <format>
 # [Plan Title]
-- **Status:** [Green 🟢 | Yellow 🟡 | Red 🔴]
+- **Status:** [SUCCESS | FAILURE] [Emoji Color]
 - **Plan Type:** [Standardized Plan Type]
 - **Agent:** Developer
 
@@ -217,7 +217,7 @@ WIP & REMINDERS:
 ~~~~~~
 0. Validation Errors (Only if recovering from validation failure. Provide a concise description pinpointing the root cause. Other rationale sections MUST remain unchanged unless the plan itself requires modification).
 1. Synthesis (Analyze previous turn's actions outcome against the previous turn's Conditions. State which condition matched the outcome and confirm what this means you should do accordingly to the plan.).
-2. Justification (Explain how your proposed plan is the next logical step given your Status and methodology / principles. If you are deviating from the workflow or bypassing the previous turn's Success/Failure conditions, you MUST explicitly justify why here.)
+2. Justification (Explain how your proposed plan is the next logical step given your Status and methodology / principles.)
 3. Conditions (Provide exactly two falsifiable conditions: 'Success' and 'Failure' (pertaining to the action outcome). For each, state the resulting Status and the exact sequence of actions that will be taken. If current Status is Green, Failure MUST result in a transition to Yellow to investigate. If current Status is Yellow, Failure MUST result in a transition to Red to delegate or restart.)
 4. State Dashboard (Insert State Dashboard Template here).
 ~~~~~~
@@ -328,7 +328,7 @@ WIP & REMINDERS:
         </action>
 
         <action name="RETURN">
-          <description>Concludes your overall assignment and yields control back to the caller. Use this only when all your work is done.</description>
+          <description>Concludes your overall assignment and yields control back to the caller. Use this only when all your work is done, AFTER version control is complete in a separate turn.</description>
           <template>
 ### `RETURN`
 - **Description:** [Explanation]
@@ -340,7 +340,7 @@ WIP & REMINDERS:
       <example>
         <description>Complete example of the required response format.</description>
 # Write Failing Unit Test for AuthService
-- **Status:** Green 🟢
+- **Status:** SUCCESS 🟢
 - **Plan Type:** RED Phase
 - **Agent:** Developer
 
