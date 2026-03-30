@@ -1,3 +1,4 @@
+from unittest.mock import MagicMock
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
 from teddy_executor.adapters.inbound.textual_plan_reviewer import ReviewerApp
 from teddy_executor.core.services.markdown_plan_parser import MarkdownPlanParser
@@ -18,7 +19,7 @@ def test_tui_view_plan_binding_exists(env):
     plan = parser.parse(plan_content, plan_path="my_plan.md")
 
     system_env = env.get_service(ISystemEnvironment)
-    app = ReviewerApp(plan=plan, system_env=system_env)
+    app = ReviewerApp(plan=plan, system_env=system_env, console_tooling=MagicMock())
 
     # Assert
     # Bindings are defined as list of tuples: (key, action, description)

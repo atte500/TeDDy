@@ -1,10 +1,12 @@
+import asyncio
 import os
 import pathlib
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, Optional, TYPE_CHECKING, TypeVar
+import anyio
 from textual import work
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, Tree, Input, Label
-from textual.screen import ModalScreen
+from textual.screen import ModalScreen, Screen
 from teddy_executor.core.domain.models.plan import Plan
 from teddy_executor.core.services.edit_simulator import EditSimulator
 
@@ -14,6 +16,7 @@ if TYPE_CHECKING:
 from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
 from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
+from teddy_executor.adapters.outbound.console_tooling import ConsoleToolingHelper
 
 
 class PathInputScreen(ModalScreen[str]):
@@ -47,6 +50,9 @@ class ConfirmScreen(ModalScreen[bool]):
             self.dismiss(False)
 
 
+T = TypeVar("T")
+
+
 class ReviewerApp(App):
     """
     The Textual application for reviewing and modifying plans.
@@ -65,11 +71,13 @@ class ReviewerApp(App):
         self,
         plan: Plan,
         system_env: ISystemEnvironment,
+        console_tooling: ConsoleToolingHelper,
         file_system: Optional[IFileSystemManager] = None,
     ):
         super().__init__()
         self.plan = plan
         self._system_env = system_env
+        self._console_tooling = console_tooling
         self._file_system = file_system
         self._edit_simulator = EditSimulator()
 
@@ -80,6 +88,17 @@ class ReviewerApp(App):
         yield Header()
         yield Tree("Action Plan")
         yield Footer()
+
+    async def push_screen_wait(self, screen: Screen[T], *, mode: Optional[str] = None) -> T:  # type: ignore[override]
+        """Push a screen and wait for its dismissal result."""
+        future: asyncio.Future[T] = asyncio.get_event_loop().create_future()
+
+        def _callback(result: Optional[T]) -> None:
+            if not future.done():
+                future.set_result(result)  # type: ignore[arg-type]
+
+        self.push_screen(screen, callback=_callback)
+        return await future
 
     def on_mount(self) -> None:
         """
@@ -110,6 +129,8 @@ class ReviewerApp(App):
         """
         Exit the app and return the modified plan.
         """
+        if os.getenv("TEDDY_DEBUG"):
+            self.log("Submit action triggered. Exiting...")
         self.exit(self.plan)
 
     def action_cancel(self) -> None:
@@ -141,29 +162,45 @@ class ReviewerApp(App):
         elif action.type in ("READ", "PRUNE"):
             await self._preview_readonly(action)
 
-    def action_view_plan(self) -> None:
+    @work
+    async def action_view_plan(self) -> None:
         """
         Open the full plan.md in an external editor.
         """
-        if not self.plan.plan_path or not self._file_system:
-            return
+        content: Optional[str] = None
 
-        try:
-            content = self._file_system.read_file(self.plan.plan_path)
-            # Use launch_editor to handle TUI suspension and editor discovery
-            self._launch_editor(content, suffix=".md")
-        except Exception:  # nosec B110
-            pass
+        # 1. Try reading from plan_path
+        if self.plan.plan_path and self._file_system:
+            try:
+                content = self._file_system.read_file(self.plan.plan_path)
+            except Exception:  # nosec B110
+                pass
 
-    def action_add_message(self) -> None:
+        # 2. Fallback to raw_content
+        if not content:
+            content = self.plan.raw_content
+
+        # 3. Last resort: Fallback to a basic serialization of the plan
+        if not content:
+            content = f"# Plan: {self.plan.title}\n\n{self.plan.rationale}\n\n"
+            content += "(Internal representation used as raw content was missing)\n"
+
+        if content:
+            await self._launch_editor(content, suffix=".md")
+
+    @work
+    async def action_add_message(self) -> None:
         """
         Open the external editor to add/edit the user instruction message.
         """
         current_message = self.plan.metadata.get("user_request") or ""
-        new_message = self._launch_editor(current_message, suffix=".md")
+        new_message = await self._launch_editor(current_message, suffix=".md")
 
-        if new_message is not None and new_message.strip() != current_message.strip():
-            self.plan.metadata["user_request"] = new_message.strip()
+        if new_message is not None:
+            # Mandate confirmation even if unchanged to prevent accidental closure
+            confirmed = await self.push_screen_wait(ConfirmScreen())
+            if confirmed:
+                self.plan.metadata["user_request"] = new_message.strip()
 
     async def _preview_edit(self, action: "ActionData", node: Any) -> None:
         """
@@ -174,6 +211,7 @@ class ReviewerApp(App):
 
         path_str = action.params.get("path", "")
         suffix = pathlib.Path(path_str).suffix or ".txt"
+        final_content: Optional[str] = None
 
         # 1. Read original content
         try:
@@ -187,17 +225,47 @@ class ReviewerApp(App):
             original_content, edits
         )
 
-        # 3. Open in editor
-        final_content = self._launch_editor(proposed_content, suffix=suffix)
-        if final_content is None:
-            return
+        # 3. Handle Preview (Side-by-side Diff or Fallback)
+        diff_viewer = self._console_tooling.get_diff_viewer_command()
+
+        if diff_viewer:
+            # Side-by-side Diff Mode (e.g., code --diff)
+            before_path = self._system_env.create_temp_file(suffix=f".before{suffix}")
+            after_path = self._system_env.create_temp_file(suffix=f".after{suffix}")
+            try:
+                with open(before_path, "w", encoding="utf-8") as f:
+                    f.write(original_content)
+                with open(after_path, "w", encoding="utf-8") as f:
+                    f.write(proposed_content)
+
+                if os.getenv("TEDDY_DEBUG"):
+                    self.log(
+                        f"Launching side-by-side diff: {diff_viewer} {before_path} {after_path}"
+                    )
+
+                # Launch diff tool: tool before after
+                await anyio.to_thread.run_sync(
+                    self._system_env.run_command,
+                    diff_viewer + [before_path, after_path],
+                )
+
+                with open(after_path, "r", encoding="utf-8") as f:
+                    final_content = f.read()
+            finally:
+                self._system_env.delete_file(before_path)
+                self._system_env.delete_file(after_path)
+        else:
+            # Fallback to single-file edit if no diff tool found
+            final_content = await self._launch_editor(proposed_content, suffix=suffix)
+            if final_content is None:
+                return
 
         # 4. Confirmation
         confirmed = await self.push_screen_wait(ConfirmScreen())
         if not confirmed:
             return
 
-        # 5. If modified, override the action with a "content-override"
+        # 7. If modified, override the action with a "content-override"
         if final_content != proposed_content:
             action.params["content"] = final_content
             action.modified = True
@@ -212,7 +280,7 @@ class ReviewerApp(App):
         content = action.params.get("content", "")
 
         # 1. Content Edit
-        new_content = self._launch_editor(content, suffix=suffix)
+        new_content = await self._launch_editor(content, suffix=suffix)
         if new_content is None:
             return
 
@@ -241,7 +309,7 @@ class ReviewerApp(App):
         suffix = ".sh" if action.type == "EXECUTE" else ".txt"
 
         # 1. Content Edit
-        new_content = self._launch_editor(content, suffix=suffix)
+        new_content = await self._launch_editor(content, suffix=suffix)
         if new_content is None:
             return
 
@@ -272,9 +340,9 @@ class ReviewerApp(App):
 
         suffix = pathlib.Path(resource).suffix or ".txt"
         # We launch the editor but ignore modifications as it's a read-only preview
-        self._launch_editor(content, suffix=suffix)
+        await self._launch_editor(content, suffix=suffix)
 
-    def _launch_editor(
+    async def _launch_editor(
         self, initial_content: str, suffix: str = ".txt"
     ) -> Optional[str]:
         """
@@ -291,14 +359,28 @@ class ReviewerApp(App):
             with open(temp_file, "w", encoding="utf-8") as f:
                 f.write(initial_content)
 
-            editor = (
-                self._system_env.get_env("VISUAL")
-                or self._system_env.get_env("EDITOR")
-                or "nano"
-            )
+            editor_cmd = self._console_tooling.find_editor()
+            if not editor_cmd:
+                if os.getenv("TEDDY_DEBUG"):
+                    self.log("No editor found by console_tooling.")
+                return None
 
-            with self.suspend():
-                self._system_env.run_command([editor, temp_file])
+            if os.getenv("TEDDY_DEBUG"):
+                self.log(f"Launching editor: {editor_cmd} with {temp_file}")
+
+            # Smart Suspension: Don't suspend if it's a known GUI editor
+            editor_exe = editor_cmd[0].lower()
+            is_gui = any(gui in editor_exe for gui in ["code", "zed", "subl", "cursor"])
+
+            if is_gui:
+                await anyio.to_thread.run_sync(
+                    self._system_env.run_command, editor_cmd + [temp_file]
+                )
+            else:
+                with self.suspend():
+                    await anyio.to_thread.run_sync(
+                        self._system_env.run_command, editor_cmd + [temp_file]
+                    )
 
             with open(temp_file, "r", encoding="utf-8") as f:
                 return f.read()
@@ -355,9 +437,15 @@ class TextualPlanReviewer(IPlanReviewer):
     Implements IPlanReviewer using the Textual TUI framework.
     """
 
-    def __init__(self, system_env: ISystemEnvironment, file_system: IFileSystemManager):
+    def __init__(
+        self,
+        system_env: ISystemEnvironment,
+        file_system: IFileSystemManager,
+        console_tooling: ConsoleToolingHelper,
+    ):
         self._system_env = system_env
         self._file_system = file_system
+        self._console_tooling = console_tooling
 
     def review(self, plan: Plan) -> Optional[Plan]:
         """
@@ -375,6 +463,7 @@ class TextualPlanReviewer(IPlanReviewer):
         For the TUI, per-action review is handled in bulk by review_plan.
         This method always returns True to allow the loop to proceed with selections.
         """
+        _ = agent_name  # Mark as used for vulture
         return True, ""
 
     def _run_app(self, plan: Plan) -> Optional[Plan]:
@@ -383,6 +472,14 @@ class TextualPlanReviewer(IPlanReviewer):
         Separated to allow for easier testing and mocking.
         """
         app = ReviewerApp(
-            plan=plan, system_env=self._system_env, file_system=self._file_system
+            plan=plan,
+            system_env=self._system_env,
+            console_tooling=self._console_tooling,
+            file_system=self._file_system,
         )
-        return app.run()
+        result = app.run()
+        if os.getenv("TEDDY_DEBUG") and result:
+            print(
+                f"\n[DEBUG] ReviewerApp.run() returned plan with {len(result.actions)} actions."
+            )
+        return result

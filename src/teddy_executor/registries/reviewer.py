@@ -40,11 +40,15 @@ def register_reviewer(container: punq.Container, ui_mode: str | None = None) -> 
             IFileSystemManager,
             ISystemEnvironment,
         )
+        from teddy_executor.adapters.outbound.console_tooling import (
+            ConsoleToolingHelper,
+        )
 
         container.register(
             IPlanReviewer,
             factory=lambda: TextualPlanReviewer(
                 system_env=container.resolve(ISystemEnvironment),
                 file_system=container.resolve(IFileSystemManager),
+                console_tooling=container.resolve(ConsoleToolingHelper),
             ),
         )

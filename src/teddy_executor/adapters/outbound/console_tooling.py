@@ -20,28 +20,40 @@ class ConsoleToolingHelper:
             return None
 
         if code_path := self._system_env.which("code"):
-            return [code_path, "-r", "--diff"]
+            return [code_path, "-r", "--diff", "--wait"]
         return None
 
     def find_editor(self) -> Optional[List[str]]:
         # 1. Check Config
-        editor_str = self._config_service.get_setting("editor")
+        if cmd := self._resolve_editor_cmd(self._config_service.get_setting("editor")):
+            return cmd
 
         # 2. Check Env
-        if not editor_str:
-            editor_str = self._system_env.get_env("VISUAL") or self._system_env.get_env(
-                "EDITOR"
-            )
-
-        if editor_str:
-            parts = shlex.split(editor_str)
-            if tool_path := self._system_env.which(parts[0]):
-                parts[0] = tool_path
-                return parts
+        env_editor = self._system_env.get_env("VISUAL") or self._system_env.get_env(
+            "EDITOR"
+        )
+        if cmd := self._resolve_editor_cmd(env_editor):
+            return cmd
 
         # 3. Discovery Fallback
-        for fallback in ["code", "nano", "vim"]:
+        for fallback in ["code", "nano"]:
             if path := self._system_env.which(fallback):
                 return [path]
 
+        return None
+
+    def _resolve_editor_cmd(self, editor_str: Optional[str]) -> Optional[List[str]]:
+        """Parses a command string and resolves the executable path."""
+        if not editor_str:
+            return None
+        parts = shlex.split(editor_str)
+
+        # Heuristic: Append --wait to 'code' if no arguments are provided.
+        # This prevents the editor from returning immediately and the temp file being deleted.
+        if parts == ["code"]:
+            parts.append("--wait")
+
+        if tool_path := self._system_env.which(parts[0]):
+            parts[0] = tool_path
+            return parts
         return None

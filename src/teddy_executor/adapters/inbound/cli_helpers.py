@@ -40,13 +40,30 @@ def echo_and_copy(
     confirmation_message: str = "Output copied to clipboard.",
 ):
     """Prints content to stdout and copies it to the clipboard unless disabled."""
+    import threading
+    import os
+
     typer.echo(content)
     if not no_copy:
+        if os.getenv("TEDDY_DEBUG"):
+            typer.echo("DEBUG: Attempting clipboard copy...", err=True)
         try:
-            pyperclip.copy(content)
+            # Completely detached thread. We do NOT join it at all to ensure
+            # the main process can exit even if the clipboard provider hangs.
+            def _copy():
+                try:
+                    pyperclip.copy(content)
+                except Exception:  # nosec
+                    pass
+
+            thread = threading.Thread(target=_copy, daemon=True)
+            thread.start()
+            # Give the thread a small window to complete. 0.1s is enough for
+            # most healthy clipboard providers (pbcopy/xclip) without being
+            # a noticeable delay for the user.
+            thread.join(timeout=0.1)
             typer.echo(confirmation_message, err=True)
-        except pyperclip.PyperclipException:
-            # Silently fail if clipboard is not available.
+        except Exception:  # nosec
             pass
 
 

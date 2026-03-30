@@ -1,5 +1,6 @@
 from contextlib import contextmanager
 import pytest
+from unittest.mock import MagicMock
 from textual.widgets import Tree
 from teddy_executor.core.domain.models.plan import ActionData, Plan
 from teddy_executor.adapters.inbound.textual_plan_reviewer import ReviewerApp
@@ -24,10 +25,13 @@ async def test_reviewer_app_previews_create_action(tmp_path, mock_env, container
             f.write(new_content)
 
     mock_env.run_command.side_effect = simulate_editor_edit
+    mock_tooling = MagicMock()
+    mock_tooling.find_editor.return_value = ["nano"]
     app = ReviewerApp(
         plan=plan,
         system_env=mock_env,
         file_system=container.resolve(IFileSystemManager),
+        console_tooling=mock_tooling,
     )
 
     @contextmanager
@@ -35,6 +39,8 @@ async def test_reviewer_app_previews_create_action(tmp_path, mock_env, container
         yield
 
     app.suspend = mock_suspend
+
+    # run_process is no longer used; run_command is called via anyio
 
     async with app.run_test() as pilot:
         await pilot.press("down", "p")
@@ -84,13 +90,22 @@ async def test_reviewer_app_previews_edit_action(tmp_path, mock_env, mock_fs):
             f.write(user_content)
 
     mock_env.run_command.side_effect = simulate_editor_edit
-    app = ReviewerApp(plan=plan, system_env=mock_env, file_system=mock_fs)
+    mock_tooling = MagicMock()
+    mock_tooling.find_editor.return_value = ["nano"]
+    app = ReviewerApp(
+        plan=plan,
+        system_env=mock_env,
+        file_system=mock_fs,
+        console_tooling=mock_tooling,
+    )
 
     @contextmanager
     def mock_suspend():
         yield
 
     app.suspend = mock_suspend
+
+    # run_process is no longer used; run_command is called via anyio
 
     async with app.run_test() as pilot:
         await pilot.press("down", "p")

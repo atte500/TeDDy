@@ -63,6 +63,11 @@ This method handles the mandatory interruption for `INVOKE` and `RETURN` actions
 1.  **Print Request to Stderr:** Displays a cyan header and a summary of the handoff (target agent, message, and resources).
 2.  **Prompt for Approval:** Uses `typer.prompt` to wait for a user response. An empty response (Enter) is an approval. Any non-empty response is treated as a rejection reason.
 
-## 4. External Documentation
+## 4. Dependencies
+- `ConsoleToolingHelper`: For centralized discovery of editors and diff viewers.
+- `IConfigService`: For looking up custom settings.
+- `ISystemEnvironment`: For checking the system path for tools.
+
+## 5. External Documentation
 
 *   [Python `sys.stdin` documentation](https://docs.python.org/3/library/sys.html#sys.stdin)

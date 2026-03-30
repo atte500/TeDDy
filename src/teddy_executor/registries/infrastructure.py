@@ -26,6 +26,7 @@ def register_infrastructure(container: punq.Container) -> None:
     from teddy_executor.adapters.outbound.local_repo_tree_generator import (
         LocalRepoTreeGenerator,
     )
+    from teddy_executor.adapters.outbound.console_tooling import ConsoleToolingHelper
     from teddy_executor.adapters.outbound.shell_adapter import ShellAdapter
     from teddy_executor.adapters.outbound.system_environment_adapter import (
         SystemEnvironmentAdapter,
@@ -68,4 +69,20 @@ def register_infrastructure(container: punq.Container) -> None:
     )
     container.register(
         IRepoTreeGenerator, LocalRepoTreeGenerator, scope=punq.Scope.transient
+    )
+    container.register(
+        ConsoleToolingHelper,
+        factory=lambda: ConsoleToolingHelper(
+            system_env=container.resolve(ISystemEnvironment),
+            config_service=container.resolve(IConfigService),
+        ),
+        scope=punq.Scope.transient,
+    )
+    container.register(
+        ConsoleToolingHelper,
+        factory=lambda: ConsoleToolingHelper(
+            system_env=container.resolve(ISystemEnvironment),
+            config_service=container.resolve(IConfigService),
+        ),
+        scope=punq.Scope.transient,
     )

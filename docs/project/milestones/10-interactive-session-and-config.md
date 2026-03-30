@@ -108,4 +108,10 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 - [ ] **Code Duplication (jscpd):** Resolve setup clones in `tests/suites/unit/core/services/test_validator_edit.py`.
 - [ ] **Debt:** Resolve Test Pyramid Violation (Acceptance 101, Integration 101, Unit 304) to satisfy 'Acceptance < Integration < Unit' rule.
 - [ ] **Code Quality (File Length):** `src/teddy_executor/adapters/outbound/console_interactor.py` has reached 305 lines (Limit 300).
+- [ ] **Code Quality (File Length):** `src/teddy_executor/adapters/inbound/textual_plan_reviewer.py` has reached 398 lines (Limit 300).
 - [ ] **Code Duplication (jscpd):** High duplication (15%) in `tests/suites/acceptance/test_change_preview_feature.py` after recovery.
+- [ ] **Code Duplication (jscpd):** Internal clones in `src/teddy_executor/registries/infrastructure.py` around lines 54-88.
+- [ ] **Debt:** Resolve Test Pyramid Violation (Acceptance 101, Integration 101, Unit 305) to satisfy 'Acceptance < Integration < Unit' rule.
+- [ ] **Code Quality (File Length):** `src/teddy_executor/adapters/inbound/cli_helpers.py` exceeds 300 lines.
+- [ ] **Code Quality (vulture):** Unused variables in `test_reviewer_app_previews.py`.
+- [ ] **Code Duplication (jscpd):** Resolve clones in `test_reviewer_app_confirmations.py`, `test_textual_plan_reviewer.py`, `infrastructure.py`, `test_reviewer_app_core.py`, `cli_helpers.py`, `test_reviewer_app_previews.py`, and `test_reviewer_app_prune.py`.

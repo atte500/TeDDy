@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import MagicMock
 from textual.widgets import Header, Footer, Tree
 from teddy_executor.core.domain.models.plan import ActionData, Plan
 from teddy_executor.adapters.inbound.textual_plan_reviewer import ReviewerApp
@@ -14,6 +15,7 @@ async def test_reviewer_app_has_required_widgets(container):
         plan=plan,
         system_env=container.resolve(ISystemEnvironment),
         file_system=container.resolve(IFileSystemManager),
+        console_tooling=MagicMock(),
     )
 
     async with app.run_test():
@@ -33,6 +35,7 @@ async def test_reviewer_app_populates_tree_with_actions(container):
         plan=plan,
         system_env=container.resolve(ISystemEnvironment),
         file_system=container.resolve(IFileSystemManager),
+        console_tooling=MagicMock(),
     )
 
     async with app.run_test():
@@ -51,6 +54,7 @@ async def test_reviewer_app_toggles_action_selection(container):
         plan=plan,
         system_env=container.resolve(ISystemEnvironment),
         file_system=container.resolve(IFileSystemManager),
+        console_tooling=MagicMock(),
     )
 
     async with app.run_test() as pilot:
@@ -76,6 +80,7 @@ async def test_reviewer_app_submits_plan(container):
         plan=plan,
         system_env=container.resolve(ISystemEnvironment),
         file_system=container.resolve(IFileSystemManager),
+        console_tooling=MagicMock(),
     )
 
     async with app.run_test() as pilot:
@@ -91,6 +96,7 @@ async def test_reviewer_app_cancels_on_q(container):
         plan=plan,
         system_env=container.resolve(ISystemEnvironment),
         file_system=container.resolve(IFileSystemManager),
+        console_tooling=MagicMock(),
     )
 
     async with app.run_test() as pilot:
@@ -109,6 +115,7 @@ async def test_reviewer_app_toggles_all_actions(container):
         plan=plan,
         system_env=container.resolve(ISystemEnvironment),
         file_system=container.resolve(IFileSystemManager),
+        console_tooling=MagicMock(),
     )
 
     async with app.run_test() as pilot:
@@ -132,6 +139,7 @@ def test_reviewer_app_initialization(container):
         plan=plan,
         system_env=mock_system_env,
         file_system=container.resolve(IFileSystemManager),
+        console_tooling=MagicMock(),
     )
     assert app.plan == plan
     assert app._system_env == mock_system_env

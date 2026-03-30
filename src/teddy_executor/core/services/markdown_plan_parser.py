@@ -102,6 +102,7 @@ class MarkdownPlanParser(IPlanParser):
                 source_doc=doc,
                 is_session=is_session,
                 plan_path=plan_path,
+                raw_content=plan_content,
             )
         except InvalidPlanError as e:
             if "### Expected Response Structure " in str(e):

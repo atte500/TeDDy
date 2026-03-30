@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import Mock
+from unittest.mock import Mock, MagicMock
 from teddy_executor.core.domain.models.plan import Plan, ActionData
 from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
 from teddy_executor.adapters.inbound.textual_plan_reviewer import (
@@ -18,6 +18,7 @@ def test_textual_plan_reviewer_implements_protocol(container):
     reviewer = TextualPlanReviewer(
         system_env=container.resolve(ISystemEnvironment),
         file_system=container.resolve(IFileSystemManager),
+        console_tooling=MagicMock(),
     )
 
     # Assert
@@ -33,6 +34,7 @@ def test_review_returns_plan_unchanged_in_non_interactive_mock(container, monkey
     reviewer = TextualPlanReviewer(
         system_env=container.resolve(ISystemEnvironment),
         file_system=container.resolve(IFileSystemManager),
+        console_tooling=MagicMock(),
     )
     plan = Plan(title="Test", rationale="Test", actions=[Mock(selected=True)])
 
@@ -77,7 +79,10 @@ async def test_reviewer_app_preview_text_actions(
 
     # 3. Run app and trigger preview
     app = ReviewerApp(
-        plan=plan, system_env=sys_env, file_system=env.get_mock_filesystem()
+        plan=plan,
+        system_env=sys_env,
+        file_system=env.get_mock_filesystem(),
+        console_tooling=MagicMock(),
     )
     async with app.run_test() as pilot:
         await pilot.press("down")
@@ -109,7 +114,9 @@ async def test_reviewer_app_preview_readonly_actions(env, action_type):
 
     # 3. Run app and trigger preview
     sys_env = env.get_service(ISystemEnvironment)
-    app = ReviewerApp(plan=plan, system_env=sys_env, file_system=fs)
+    app = ReviewerApp(
+        plan=plan, system_env=sys_env, file_system=fs, console_tooling=MagicMock()
+    )
     async with app.run_test() as pilot:
         await pilot.press("down")
         await pilot.press("p")

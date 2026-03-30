@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import MagicMock
 from textual.widgets import Tree
 from teddy_executor.core.domain.models.plan import Plan, ActionData
 from teddy_executor.adapters.inbound.textual_plan_reviewer import ReviewerApp
@@ -20,7 +21,11 @@ async def test_reviewer_app_filters_out_prune_in_manual_mode(container):
         is_session=False,
     )
 
-    app = ReviewerApp(plan=plan, system_env=container.resolve(ISystemEnvironment))
+    app = ReviewerApp(
+        plan=plan,
+        system_env=container.resolve(ISystemEnvironment),
+        console_tooling=MagicMock(),
+    )
 
     # Act
     async with app.run_test():
@@ -42,7 +47,11 @@ async def test_reviewer_app_shows_prune_in_session_mode(container):
     action = ActionData(type="PRUNE", params={"path": "old.py"})
     plan = Plan(title="Test Plan", rationale="Test", actions=[action], is_session=True)
 
-    app = ReviewerApp(plan=plan, system_env=container.resolve(ISystemEnvironment))
+    app = ReviewerApp(
+        plan=plan,
+        system_env=container.resolve(ISystemEnvironment),
+        console_tooling=MagicMock(),
+    )
 
     # Act
     async with app.run_test():

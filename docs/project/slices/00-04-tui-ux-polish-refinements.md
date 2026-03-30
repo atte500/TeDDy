@@ -7,7 +7,7 @@ To resolve specific UX frictions and regressions in the TUI and planning workflo
 
 ## 2. Scenarios
 
-### Scenario: Editor Configuration & Default [ ]
+### Scenario: Editor Configuration & Default [✓] Verified
 > As a user, I want to configure my preferred editor in `config.yaml` or use a sensible default so that I can edit messages and actions using any arbitrary editor command.
 
 - **Given** I trigger an edit action in the TUI (`m`, `p`, or `v`).
@@ -19,10 +19,10 @@ To resolve specific UX frictions and regressions in the TUI and planning workflo
 #### Deliverables
 - [✓] **Contract** - Update `IConfigService` or `ConsoleToolingHelper` to support an `editor` setting.
 - [✓] **Logic** - Update `ConsoleToolingHelper.find_editor` to support parsing arbitrary command strings into a `List[str]`.
-- [ ] **Logic** - Implement fallback chain: Config -> Env -> `code` -> `nano`.
-- [ ] **Logic** - Update `ReviewerApp._launch_editor` to use the command list with `self._system_env.run_command`.
+- [✓] **Logic** - Implement fallback chain: Config -> Env -> `code` -> `nano`.
+- [✓] **Logic** - Update `ReviewerApp._launch_editor` to use the command list with `self._system_env.run_command`.
 
-### Scenario: Reliable "View Plan" (v) [ ]
+### Scenario: Reliable "View Plan" (v) [✓] Verified
 > As a user in manual execution mode, I want to view the plan in my editor so that I can verify the context even when the plan is provided via the clipboard.
 
 - **Given** I run `teddy execute` with `--plan-content`.
@@ -30,9 +30,9 @@ To resolve specific UX frictions and regressions in the TUI and planning workflo
 - **Then** the plan content MUST open in the external editor.
 
 #### Deliverables
-- [ ] **Logic** - Update `ReviewerApp.action_view_plan` to ensure it falls back to reading the `plan_path` even if the internal plan object was passed by value (leveraging the temp file path set by the orchestrator).
+- [✓] **Logic** - Update `ReviewerApp.action_view_plan` to ensure it falls back to reading the `plan_path` even if the internal plan object was passed by value (leveraging the temp file path set by the orchestrator).
 
-### Scenario: Mandatory "Saved?" Confirmation [ ]
+### Scenario: Mandatory "Saved?" Confirmation [✓] Verified
 > As a user, I want a final confirmation after editing in an external editor so that I don't accidentally apply unsaved changes or lose progress.
 
 - **Given** I am in any "Preview/Modify" or "Add Message" workflow in the TUI.
@@ -41,8 +41,8 @@ To resolve specific UX frictions and regressions in the TUI and planning workflo
 - **And** changes MUST ONLY be applied if I select `y`.
 
 #### Deliverables
-- [ ] **Logic** - Update `ReviewerApp.action_add_message` to be an `@work` async method and await `ConfirmScreen`.
-- [ ] **Logic** - Ensure all `_preview_*` methods in `ReviewerApp` correctly await and check the result of `ConfirmScreen`.
+- [✓] **Logic** - Update `ReviewerApp.action_add_message` to be an `@work` async method and await `ConfirmScreen`.
+- [✓] **Logic** - Ensure all `_preview_*` methods in `ReviewerApp` correctly await and check the result of `ConfirmScreen`.
 
 ### Scenario: Logical Log Sequencing [ ]
 > As a user, I want to see the "Planning Turn" message only after I've provided my instructions so that the UI reflects the actual sequence of events.
@@ -103,3 +103,13 @@ To resolve specific UX frictions and regressions in the TUI and planning workflo
 ### Scenario: Editor Configuration & Default
 - **ConsoleToolingHelper.find_editor**: Refactored to return `Optional[List[str]]` instead of a string. This allows for direct passing to `subprocess.run` (via `SystemEnvironment`) without manual splitting in calling adapters.
 - **Path Resolution**: The first element of the command list (the executable) is now explicitly resolved via `ISystemEnvironment.which` to ensure absolute paths are used when available, preventing PATH-related execution failures in sub-shells.
+
+### Scenario: Reliable "View Plan" (v)
+- **Robust Fallback**: `ReviewerApp.action_view_plan` now implements a tiered fallback: First, it tries the physical `plan_path` (which the orchestrator ensures exists even for clipboard plans). Second, it uses `plan.raw_content`. Finally, it falls back to a basic string serialization if all else fails.
+
+### Scenario: Mandatory "Saved?" Confirmation
+- **Unified Modification Loop**: Every workflow that modifies the plan (`Add Message`, `Preview/Modify`) now uses an async `@work` loop that awaits `ConfirmScreen` before applying changes.
+- **EDIT Preview Diffs (Side-by-Side)**: The `_preview_edit` method now supports true side-by-side diffing. If a diff tool (like `code --diff`) is detected, it creates two temporary files (`.before` and `.after`) and launches the viewer. The `--wait` flag is used for VS Code to prevent race conditions during file cleanup.
+- **Non-Blocking Clipboard**: Refactored `echo_and_copy` to use a completely detached, daemonized thread for clipboard operations without `join()`. This ensures the CLI can exit instantly even if `pyperclip` or the underlying OS clipboard provider (e.g., `pbcopy` or `xclip`) hangs.
+- **Test Robustness**: Updated TUI unit and acceptance tests to use unique temporary file paths per operation, resolving `OSError: [Errno 9] Bad file descriptor` caused by mock overlap during concurrent file cleanup.
+- **TUI Test Mocking (Sync vs Async CM)**: Resolved persistent `AssertionError` in `test_tui_view_plan_robustness.py` by ensuring the `suspend()` mock returns a synchronous context manager (`@contextmanager`) instead of an asynchronous one, matching the application's usage of a standard `with` statement.

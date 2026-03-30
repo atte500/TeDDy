@@ -9,9 +9,14 @@ class TuiDriver:
     Driver for the ReviewerApp (TUI) to support simulated interactions in tests.
     """
 
-    def __init__(self, plan: Plan, system_env, file_system):
+    def __init__(self, plan: Plan, system_env, file_system, console_tooling=None):
+        from unittest.mock import MagicMock
+
         self.app = ReviewerApp(
-            plan=plan, system_env=system_env, file_system=file_system
+            plan=plan,
+            system_env=system_env,
+            file_system=file_system,
+            console_tooling=console_tooling or MagicMock(),
         )
 
     async def run_interaction(self, keys: Sequence[str]) -> Optional[Plan]:

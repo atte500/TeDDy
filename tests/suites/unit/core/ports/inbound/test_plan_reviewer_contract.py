@@ -21,7 +21,9 @@ def test_textual_plan_reviewer_implements_contract():
     from unittest.mock import MagicMock
 
     # We don't need real dependencies for a contract check
-    reviewer = TextualPlanReviewer(system_env=MagicMock(), file_system=MagicMock())
+    reviewer = TextualPlanReviewer(
+        system_env=MagicMock(), file_system=MagicMock(), console_tooling=MagicMock()
+    )
 
     assert isinstance(reviewer, IPlanReviewer), (
         "TextualPlanReviewer must implement IPlanReviewer"
