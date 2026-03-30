@@ -136,6 +136,10 @@ class ReviewerApp(App):
             await self._preview_create(action, node)
         elif action.type == "EDIT":
             await self._preview_edit(action, node)
+        elif action.type in ("EXECUTE", "RESEARCH"):
+            await self._preview_text_action(action, node)
+        elif action.type in ("READ", "PRUNE"):
+            await self._preview_readonly(action)
 
     def action_view_plan(self) -> None:
         """
@@ -227,6 +231,48 @@ class ReviewerApp(App):
         action.params["path"] = new_path
         action.modified = True
         self._refresh_node(node)
+
+    async def _preview_text_action(self, action: "ActionData", node: Any) -> None:
+        """
+        Handle the preview workflow for EXECUTE and RESEARCH actions.
+        """
+        param_key = "command" if action.type == "EXECUTE" else "queries"
+        content = action.params.get(param_key, "")
+        suffix = ".sh" if action.type == "EXECUTE" else ".txt"
+
+        # 1. Content Edit
+        new_content = self._launch_editor(content, suffix=suffix)
+        if new_content is None:
+            return
+
+        # 2. Confirmation
+        confirmed = await self.push_screen_wait(ConfirmScreen())
+        if not confirmed:
+            return
+
+        # 3. Apply changes if modified
+        if new_content.strip() != content.strip():
+            action.params[param_key] = new_content.strip()
+            action.modified = True
+            self._refresh_node(node)
+
+    async def _preview_readonly(self, action: "ActionData") -> None:
+        """
+        Handle the preview workflow for READ and PRUNE actions (read-only).
+        """
+        if not self._file_system:
+            return
+
+        resource = action.params.get("resource") or action.params.get("path", "")
+        # For URLs or missing files, we show a placeholder
+        try:
+            content = self._file_system.read_file(resource)
+        except Exception:
+            content = f"--- Content for {resource} could not be retrieved ---"
+
+        suffix = pathlib.Path(resource).suffix or ".txt"
+        # We launch the editor but ignore modifications as it's a read-only preview
+        self._launch_editor(content, suffix=suffix)
 
     def _launch_editor(
         self, initial_content: str, suffix: str = ".txt"

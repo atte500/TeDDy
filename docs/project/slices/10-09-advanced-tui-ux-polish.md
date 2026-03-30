@@ -100,7 +100,7 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 #### Deliverables
 - [✓] **Logic** - Update `ExecutionOrchestrator._process_plan_actions` to automatically approve `PROMPT` actions if they are the sole action in any plan.
 
-### Scenario: Context-Aware Editing (p key) [ ]
+### Scenario: Context-Aware Editing (p key) [✓] Verified
 > As a user reviewing a plan in the TUI, I want to press a single key to preview and interactively edit any action so that I can make precise, fine-grained adjustments before execution.
 
 - **Given** I am in the `ReviewerApp` (TUI).
@@ -117,8 +117,8 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - [✓] **Logic** - Implement "Proposed Final Version" simulation logic using `EditSimulator` in `ReviewerApp`.
 - [✓] **Wiring** - Implement multi-stage `CREATE` workflow in `ReviewerApp`.
 - [✓] **Wiring** - Implement multi-stage `EDIT` workflow in `ReviewerApp`.
-- [ ] **Wiring** - Implement modal text editing for `EXECUTE` and `RESEARCH`.
-- [ ] **Wiring** - Implement modal preview for `READ` and `PRUNE`.
+- [✓] **Wiring** - Implement modal text editing for `EXECUTE` and `RESEARCH`.
+- [✓] **Wiring** - Implement modal preview for `READ` and `PRUNE`.
 
 ### Scenario: Diagnostic Clarity (AST & Diffs) [ ]
 > As a developer debugging a failed plan, I want validation errors to provide maximum clarity, including specific Markdown delimiters in the AST and standard diff headers, so that I can quickly diagnose and fix the root cause.
