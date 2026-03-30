@@ -7,18 +7,19 @@ To resolve specific UX frictions and regressions in the TUI and planning workflo
 
 ## 2. Scenarios
 
-### Scenario: Editor Configuration & VS Code Wait [ ]
-> As a user, I want to configure my preferred editor in `config.yaml` and have it work correctly with the TUI so that I can edit messages and actions without the TUI resuming prematurely.
+### Scenario: Editor Configuration & Default [ ]
+> As a user, I want to configure my preferred editor in `config.yaml` or use a sensible default so that I can edit messages and actions using any arbitrary editor command.
 
-- **Given** `editor: code` is set in `.teddy/config.yaml`.
-- **When** I trigger an edit action in the TUI (`m`, `p`, or `v`).
-- **Then** the system MUST use `code --wait` to launch the editor.
-- **And** the TUI MUST remain suspended until the VS Code instance is closed.
+- **Given** I trigger an edit action in the TUI (`m`, `p`, or `v`).
+- **When** the system looks for an editor.
+- **Then** it MUST check `config.yaml`, then `VISUAL`/`EDITOR` env vars.
+- **And** it MUST default to `code` if no other configuration is found.
+- **And** it MUST support arbitrary command strings (e.g., `zed --wait` or `code`).
 
 #### Deliverables
 - [ ] **Contract** - Update `IConfigService` or `ConsoleToolingHelper` to support an `editor` setting.
-- [ ] **Logic** - Update `ConsoleToolingHelper.find_editor` to return a `List[str]` (command + args) instead of a single string.
-- [ ] **Logic** - If `code` is the detected/configured editor, automatically append `--wait` to the command list.
+- [ ] **Logic** - Update `ConsoleToolingHelper.find_editor` to support parsing arbitrary command strings into a `List[str]`.
+- [ ] **Logic** - Implement fallback chain: Config -> Env -> `code` -> `nano`.
 - [ ] **Logic** - Update `ReviewerApp._launch_editor` to use the command list with `self._system_env.run_command`.
 
 ### Scenario: Reliable "View Plan" (v) [ ]
@@ -87,7 +88,8 @@ To resolve specific UX frictions and regressions in the TUI and planning workflo
   1. Check `config.get_setting("editor")`.
   2. Fallback to `VISUAL`/`EDITOR`.
   3. Fallback to discovery (`code`, `nano`, `vim`).
-  4. Return `[cmd, "--wait"]` if `cmd` is `code`.
+  4. Use `code` as the primary default if available on the path.
+  5. Parse the resulting command string using `shlex.split` to support arguments.
 
 ### TUI Confirmations
 - Every `@work` method in `ReviewerApp` that triggers `_launch_editor` (including `action_add_message`) must become a `ModalScreen` awaiter.
