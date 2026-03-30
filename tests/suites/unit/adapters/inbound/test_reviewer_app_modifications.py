@@ -29,7 +29,7 @@ async def test_reviewer_app_marks_create_action_as_modified(container, monkeypat
     # Act: Navigate down to first child, then 'p' (preview)
     # Then handle PathInputScreen (enter) and ConfirmScreen (y)
     # Then 's' (submit)
-    await driver.run_interaction(["down", "p", "enter", "y", "s"])
+    await driver.run_interaction(["down", "e", "enter", "s"])
 
     # Assert
     assert action.modified is True

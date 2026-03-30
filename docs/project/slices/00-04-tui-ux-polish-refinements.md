@@ -44,7 +44,7 @@ To resolve specific UX frictions and regressions in the TUI and planning workflo
 - **And** if I press `n`, it MUST discard the edit session and cleanup.
 
 #### Deliverables
-- [ ] **Cleanup** - Remove `ConfirmScreen` and consolidate `m`/`p` into `e` (Edit).
+- [✓] **Cleanup** - Remove `ConfirmScreen` and consolidate `m`/`p` into `e` (Edit).
 - [ ] **Logic** - Refactor `ReviewerApp._launch_editor` to launch the editor as a background task and immediately trigger a non-blocking inline prompt.
 - [ ] **Logic** - Ensure the `y` response to the prompt triggers the file read and state update (Action or Global Message).
 - [ ] **Logic** - Update `ReviewerApp.action_submit` to perform a final sync check of all active editor paths before exit.

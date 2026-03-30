@@ -32,20 +32,20 @@ async def test_reviewer_app_create_workflow_updates_path_and_content(container):
 
         # Act:
         # 1. down to action
-        # 2. 'p' triggers preview (editor returns "new content")
+        # 2. 'e' triggers preview (editor returns "new content")
         # 3. Path input appears (we type "new.py" and enter)
         # 4. Confirmation appears (we type "y")
         # 5. 's' to submit
         # Sequence:
         # 1. down to action
-        # 2. 'p' triggers preview (editor returns "new content")
+        # 2. 'e' triggers preview (editor returns "new content")
         # 3. PathInputScreen appears -> Type "new.py" + enter
         # 4. ConfirmScreen appears -> Press "y"
         # 5. Worker finishes -> Refresh node
         # 6. 's' to submit
-        interaction = ["down", "p"]
+        interaction = ["down", "e"]
         interaction.extend(list("new.py"))
-        interaction.extend(["enter", "y", "s"])
+        interaction.extend(["enter", "s"])
 
         await driver.run_interaction(interaction)
 

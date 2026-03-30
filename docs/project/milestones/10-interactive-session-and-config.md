@@ -115,3 +115,7 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 - [ ] **Code Quality (File Length):** `src/teddy_executor/adapters/inbound/cli_helpers.py` exceeds 300 lines.
 - [ ] **Code Quality (vulture):** Unused variables in `test_reviewer_app_previews.py`.
 - [ ] **Code Duplication (jscpd):** Resolve clones in `test_reviewer_app_confirmations.py`, `test_textual_plan_reviewer.py`, `infrastructure.py`, `test_reviewer_app_core.py`, `cli_helpers.py`, `test_reviewer_app_previews.py`, and `test_reviewer_app_prune.py`.
+- [ ] **Code Quality (File Length):** `src/teddy_executor/adapters/inbound/textual_plan_reviewer.py` has reached 310 lines (Limit 300) following binding consolidation.
+- [ ] **Code Duplication (jscpd):** Resolve clones in `test_reviewer_app_previews.py` and `test_context_aware_editing.py` introduced during consolidation (4.3% total duplication).
+- [ ] **Debt:** Resolve Test Pyramid Violation (Acceptance 101, Integration 101, Unit 305) to satisfy 'Acceptance < Integration < Unit' rule.
+- [ ] **Code Quality (vulture):** Resolve unused mock arguments in TUI unit tests.

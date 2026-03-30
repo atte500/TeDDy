@@ -41,17 +41,15 @@ def test_tui_context_aware_editing_marks_action_as_modified(env):
     os.environ["TEDDY_TEST_MOCK_EDITOR_OUTPUT"] = "print('modified')"
 
     try:
-        # 5. Act: Simulate TUI Interaction ('p' triggers preview/edit, 's' submits)
+        # 5. Act: Simulate TUI Interaction ('e' triggers edit, 's' submits)
         driver = TuiDriver(
             plan=plan,
             system_env=env.get_service(ISystemEnvironment),
             file_system=env.get_service(IFileSystemManager),
         )
 
-        # Run interaction (down, p, then modal sequence: enter, y, then submit: s)
-        modified_plan = asyncio.run(
-            driver.run_interaction(["down", "p", "enter", "y", "s"])
-        )
+        # Run interaction (down, e, then modal sequence: enter, then submit: s)
+        modified_plan = asyncio.run(driver.run_interaction(["down", "e", "enter", "s"]))
         assert modified_plan is not None
 
         # 6. Execute modified plan through orchestrator
