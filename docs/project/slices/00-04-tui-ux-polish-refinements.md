@@ -32,7 +32,54 @@ To resolve specific UX frictions and regressions in the TUI and planning workflo
 #### Deliverables
 - [✓] **Logic** - Update `ReviewerApp.action_view_plan` to ensure it falls back to reading the `plan_path` even if the internal plan object was passed by value (leveraging the temp file path set by the orchestrator).
 
-### Scenario: Non-Blocking "Immediate Prompt" Workflow [ ]
+### Scenario: Read-Only Preview (p) [ ]
+> As a user, I want to quickly preview an action's details without risk of accidental modification.
+
+- **Given** an action is highlighted in the TUI.
+- **When** I press `p`.
+- **Then** the action's details MUST open in the configured previewer (e.g., `code` or `nvim -R`).
+- **And** the TUI MUST NOT block; it remains responsive while the previewer is open.
+- **And** it MUST NOT allow modifications to the underlying action.
+- **And** for `READ` actions targeting local files, the previewer MUST open the **actual file** path directly rather than a temporary copy.
+
+#### Deliverables
+- [ ] **Logic** - Implement `ReviewerApp.action_preview` to launch a non-blocking, read-only view of the action content.
+- [ ] **Logic** - Add specialized `READ` preview logic to pass the direct file path to the viewer command.
+- [ ] **Logic** - Implement `p` handlers for `RESEARCH`, `PROMPT`, `INVOKE`, and `RETURN` to show their content in the previewer.
+
+### Scenario: Interactive PROMPT Answering [ ]
+> As a user, I want to answer an AI's PROMPT directly in the TUI so that the execution phase proceeds without stopping to ask me again.
+
+- **Given** a `PROMPT` action is displayed in the TUI.
+- **When** I press `e` (Edit) on the `PROMPT` node.
+- **Then** the external editor MUST open with the AI's question as a read-only header.
+- **And** I MUST be able to provide my response in the editor.
+- **And** when I save and confirm, the action MUST be marked as `*modified` (Answered).
+- **And** during the `execute` phase, if a `PROMPT` action has been answered in the TUI, the system MUST NOT trigger an interactive prompt; it MUST use the pre-provided answer in the execution report.
+
+#### Deliverables
+- [ ] **Logic** - Implement `e` handler for `PROMPT` actions in `ReviewerApp`.
+- [ ] **Contract** - Add an `answer` field to the `ActionData` or `PROMPT` parameters to store TUI responses.
+- [ ] **Logic** - Update `ExecutionOrchestrator` (or the relevant execution service) to skip the interactive prompt if an `answer` is already present.
+
+### Scenario: Universal Action Summaries [ ]
+> As a user, I want to see a concise summary of every action in the TUI tree so I don't have to preview every node to understand the plan.
+
+- **Given** the TUI tree is rendered.
+- **When** an action is displayed.
+- **Then** it MUST show a descriptive summary after the colon (`:`).
+- **And** the summary MUST follow these rules:
+  - `CREATE`/`EDIT`/`READ`/`PRUNE`: The file path or resource URL.
+  - `EXECUTE`: The first line of the command.
+  - `RESEARCH`: The first query or a count of queries (e.g., "3 queries").
+  - `PROMPT`: The first line of the message.
+  - `INVOKE`: The name of the target agent.
+  - `RETURN`: A snippet of the return description.
+
+#### Deliverables
+- [ ] **Logic** - Update `ReviewerApp._get_action_summary` to implement the summary resolution logic for all action types.
+
+### Scenario: Non-Blocking "Immediate Prompt" Edit (e) [ ]
 > As a user, I want to trigger an edit and have the confirmation prompt waiting for me in the TUI so I can save and confirm without re-navigating.
 
 - **Given** I am in the TUI.
@@ -44,7 +91,6 @@ To resolve specific UX frictions and regressions in the TUI and planning workflo
 - **And** if I press `n`, it MUST discard the edit session and cleanup.
 
 #### Deliverables
-- [ ] **Cleanup** - Remove `ConfirmScreen` and consolidate `m`/`p` into `e` (Edit).
 - [ ] **Logic** - Refactor `ReviewerApp._launch_editor` to launch the editor as a background task and immediately trigger a non-blocking inline prompt.
 - [ ] **Logic** - Ensure the `y` response to the prompt triggers the file read and state update (Action or Global Message).
 - [ ] **Logic** - Update `ReviewerApp.action_submit` to perform a final sync check of all active editor paths before exit.

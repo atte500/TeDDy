@@ -230,18 +230,20 @@ If the user selects `(m)odify`, they enter an interactive checklist to configure
 
 *Example UI:*
 ```text
-Use [↑/↓] to navigate, [enter] to toggle, [a] to toggle all, [p] to preview details, [s] to confirm.
+Use [↑/↓] to navigate, [enter] to toggle, [a] to toggle all, [p] to preview, [e] to edit, [s] to confirm.
 
 Action Plan
  ├─[ ] CREATE: src/components/new_component/core.py
  ├─[✓] EDIT:   pyproject.toml
  └─[ ] EXECUTE: poetry lock
 ```
--   **Controls:** Users can navigate the list, toggle items on/off with the spacebar, and press `[enter]` to confirm and execute the configured plan.
+- **Controls:** Users can navigate the list, toggle items on/off with the spacebar, and press `[enter]` to confirm and execute the configured plan.
 
--   **Interactive Previews & Manual Editing:** When any item is highlighted, pressing `(p)` will trigger the **"Context-Aware Editing"** workflow, allowing for both preview and direct manual modification of the action. If a user makes changes to an action, it will be marked with a `*modified` tag in the UI. To ensure a complete audit trail, the `report.md` will explicitly note any user modifications, and the final executed action will reflect the user's changes, not the AI's original proposal.
+- **Interactive Previews & Manual Editing:**
+    - **Preview (p):** Opens a read-only view of the action's details or the proposed file content. This is a non-blocking operation; the TUI remains responsive. For `READ` actions, the system opens the actual file path directly in the viewer.
+    - **Edit (e):** Triggers the **"Context-Aware Editing"** workflow. This launches an external editor in a non-blocking way and immediately displays a confirmation prompt in the TUI. If a user makes changes and confirms (`y`), the action is marked with a `*modified` tag. The final executed action will reflect these changes, and the `report.md` will note the manual modification.
 
-    The behavior of the `(p)` key is context-dependent:
+    The behavior of the `(e)` key is context-dependent:
 
     -   **For `CREATE` actions (The "Save As" Workflow):**
         1.  The tool immediately opens the proposed file content in a temporary file using the user's configured external editor (non-blocking).
@@ -272,7 +274,13 @@ Action Plan
         1.  A simple, in-terminal view of the action's content (e.g., the shell command) is displayed.
         2.  The user is prompted to `(e)dit` or `(c)lose`. Selecting edit provides a simple input field to change the content.
 
-    -   **For read-only actions (`READ`, `PRUNE`):**
+    - **For `PROMPT` actions (Interactive Answering):**
+        1.  Pressing `(e)` opens the external editor.
+        2.  The editor contains the AI's prompt as context.
+        3.  The user provides their response directly in the file.
+        4.  Once confirmed (`y`), the response is stored. During execution, this stored answer is used automatically, and the system does not prompt the user again.
+
+    - **For read-only actions (`READ`, `PRUNE`):**
         1.  A simple preview of the target resource is shown without an option to edit.
 
 ## 8. Plan Validation & Automated Re-planning
