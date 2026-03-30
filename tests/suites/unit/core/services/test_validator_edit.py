@@ -169,10 +169,12 @@ def test_validate_edit_diff_handling_no_trailing_newline(parser, validator, mock
     diff_content = errors[0].message.split("diff\n")[1].split("\n```")[0]
     min_lines = 3
     lines = diff_content.splitlines()
-    assert len(lines) >= min_lines
-    assert lines[0].startswith("-")
-    assert lines[1].startswith("?")
-    assert lines[2].startswith("+")
+    assert len(lines) >= min_lines + 2  # Accounting for headers
+    assert lines[0] == "--- Provided"
+    assert lines[1] == "+++ Actual"
+    assert lines[2].startswith("-")
+    assert lines[3].startswith("?")
+    assert lines[4].startswith("+")
 
 
 def test_validate_edit_fails_if_find_and_replace_identical(parser, validator, mock_fs):
@@ -203,3 +205,28 @@ def test_validate_edit_provides_hint_if_replace_block_already_present(
         "Hint:** The FIND block was not found, but the REPLACE block is already present"
         in errors[0].message
     )
+
+
+def test_validate_edit_diff_includes_standard_headers(
+    container, parser, validator, mock_fs
+):
+    """Verify that the failure diff includes standard '--- Actual' and '+++ Provided' headers."""
+    # Force strict threshold
+    container.resolve(IConfigService).get_setting.return_value = 0.99
+    mock_fs.path_exists.return_value = True
+    mock_fs.read_file.return_value = "This is the original content"
+
+    # Significant mismatch
+    plan = _p(
+        parser,
+        MarkdownPlanBuilder("Test").add_edit(
+            "f.txt", "This is the modified content", "New"
+        ),
+    )
+    errors = validator.validate(plan)
+
+    assert len(errors) == 1
+    msg = errors[0].message
+    # Check for the headers we want to add
+    assert "--- Provided" in msg
+    assert "+++ Actual" in msg

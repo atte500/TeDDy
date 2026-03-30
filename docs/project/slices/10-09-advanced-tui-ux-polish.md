@@ -120,18 +120,18 @@ To refine the interactive session workflow into a seamless, high-visibility expe
 - [✓] **Wiring** - Implement modal text editing for `EXECUTE` and `RESEARCH`.
 - [✓] **Wiring** - Implement modal preview for `READ` and `PRUNE`.
 
-### Scenario: Diagnostic Clarity (AST & Diffs) [ ]
+### Scenario: Diagnostic Clarity (AST & Diffs) [✓] Verified
 > As a developer debugging a failed plan, I want validation errors to provide maximum clarity, including specific Markdown delimiters in the AST and standard diff headers, so that I can quickly diagnose and fix the root cause.
 
 - **Given** a plan fails validation.
 - **When** the AST view is displayed.
 - **Then** Code Blocks MUST explicitly state the delimiter type and count (e.g., "Code Block (3 backticks)" or "Code Block (6 tildes)").
 - **When** an `EDIT` match fails.
-- **Then** the diff block MUST include standard headers: `--- Actual` and `+++ Provided`.
+- **Then** the diff block MUST include standard headers: `--- Provided` and `+++ Actual`.
 
 #### Deliverables
-- [ ] **Logic** - Update `ParserReporting.format_node_name` to append precise delimiter metadata.
-- [ ] **Logic** - Update `EditActionValidator._validate_single_edit` to include `--- Actual` and `+++ Provided` headers in the failure diff block.
+- [✓] **Logic** - Update `ParserReporting.format_node_name` to append precise delimiter metadata.
+- [✓] **Logic** - Update `EditActionValidator._validate_single_edit` to include `--- Provided` and `+++ Actual` headers in the failure diff block.
 
 ## 3. Implementation Guidelines
 

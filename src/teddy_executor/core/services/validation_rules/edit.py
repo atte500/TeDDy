@@ -182,10 +182,13 @@ def _validate_single_edit(
                 f"{fence}\n{find_block}\n{fence}\n"
             )
             if diff_text:
-                diff_fence = get_fence_for_content(diff_text)
+                # Prepend standard diff headers for high-clarity diagnostics
+                # ndiff(find, actual) means '-' is Provided and '+' is Actual
+                formatted_diff = f"--- Provided\n+++ Actual\n{diff_text}"
+                diff_fence = get_fence_for_content(formatted_diff)
                 error_msg += (
                     f"**Closest Match Diff:**\n{diff_fence}diff\n"
-                    f"{diff_text}\n{diff_fence}\n"
+                    f"{formatted_diff}\n{diff_fence}\n"
                 )
 
             hint = _get_already_applied_hint(

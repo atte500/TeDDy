@@ -179,13 +179,13 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 
 #### Test Harness Triad (Setup, Driver, Observer)
 
-| Component                        | Description                                                                                                   | Contract                                               |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| Component                        | Description                                                                                                                                | Contract                                               |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
 | **MarkdownPlanBuilder** (Driver) | A fluent DSL for constructing validated Markdown plans. MUST be used in tests to generate plan strings instead of hardcoding raw Markdown. | [MarkdownPlanBuilder](./tests/drivers/plan_builder.md) |
-| **ReportParser** (Observer)      | An "Inverse Adapter" that parses Markdown reports back into structured DTOs for assertions.                   | [ReportParser](./tests/observers/report_parser.md)     |
-| **CliTestAdapter** (Driver)      | A specialized adapter that drives the CLI in-process and orchestrates builders and parsers.                   | [CliTestAdapter](./tests/drivers/cli_adapter.md)       |
-| **TestEnvironment** (Setup)      | A harness that encapsulates DI isolation, environment patching, and workspace management.                     | [TestEnvironment](./tests/setup/test_environment.md)   |
-| **TestComposition (Fixtures)**   | A set of reusable pytest fixtures and globally mocked heavy dependencies (e.g., LiteLLM).                    | [TestComposition](./tests/setup/composition.md)        |
+| **ReportParser** (Observer)      | An "Inverse Adapter" that parses Markdown reports back into structured DTOs for assertions.                                                | [ReportParser](./tests/observers/report_parser.md)     |
+| **CliTestAdapter** (Driver)      | A specialized adapter that drives the CLI in-process and orchestrates builders and parsers.                                                | [CliTestAdapter](./tests/drivers/cli_adapter.md)       |
+| **TestEnvironment** (Setup)      | A harness that encapsulates DI isolation, environment patching, and workspace management.                                                  | [TestEnvironment](./tests/setup/test_environment.md)   |
+| **TestComposition (Fixtures)**   | A set of reusable pytest fixtures and globally mocked heavy dependencies (e.g., LiteLLM).                                                  | [TestComposition](./tests/setup/composition.md)        |
 
 ---
 

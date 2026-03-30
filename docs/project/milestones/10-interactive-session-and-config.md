@@ -105,3 +105,5 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 - [ ] **Debt** - Resolve Test Pyramid Violation (Acceptance: 101, Integration: 101, Unit: 296) to satisfy 'Acceptance < Integration < Unit' rule.
 - [ ] **Code Quality:** Refactor `TEDDY_TEST_MOCK_EDITOR_OUTPUT` testing hook to use an explicit dependency or a dedicated test-only adapter instead of an environment variable to improve isolation and type safety.
 - [ ] **Code Duplication (jscpd):** Resolve TUI pilot interaction clones in `tests/suites/unit/adapters/inbound/test_textual_plan_reviewer.py`.
+- [ ] **Code Duplication (jscpd):** Resolve setup clones in `tests/suites/unit/core/services/test_validator_edit.py`.
+- [ ] **Debt:** Resolve Test Pyramid Violation (Acceptance 101, Integration 101, Unit 301) to satisfy 'Acceptance < Integration < Unit' rule.

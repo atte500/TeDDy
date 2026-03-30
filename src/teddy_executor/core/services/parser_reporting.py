@@ -57,7 +57,7 @@ def _format_expected_structure() -> str:
 
 def format_node_name(node: Any) -> str:
     """Formats the type name of a node with relevant metadata and content preview."""
-    from mistletoe.block_token import Heading, CodeFence
+    from mistletoe.block_token import Heading, CodeFence, BlockCode
 
     if node is None:
         return "EOF"
@@ -72,6 +72,8 @@ def format_node_name(node: Any) -> str:
         count = len(delimiter)
         label = "tildes" if delimiter.startswith("~") else "backticks"
         name += f" ({count} {label})"
+    elif isinstance(node, BlockCode):
+        name += " (indented)"
 
     preview = _get_node_preview(node)
     if preview:
