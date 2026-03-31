@@ -19,10 +19,17 @@
       </phase>
 
       <phase n="2" name="Define Behavioral Requirements">
-        <goal>Frame the "Why" and define success conditions via active discovery.</goal>
-        <step n="1" name="Problem Space (Why)">Diverge: PROMPT with strategic questions to define the core problem and behavioral goals.</step>
-        <step n="2" name="Slice Creation">Converge: Once the user provides clarity, CREATE the Vertical Slice using the blueprint.</step>
-        <step n="3" name="Alignment Gate">PROMPT the user to review and approve the scenarios and business goals in the slice before proceeding to exploration.</step>
+        <goal>Frame the "Why" and define success conditions via active discovery and appropriate validation artifacts.</goal>
+        <step n="1" name="Initial Slice Draft">`CREATE` the Vertical Slice, defining ALL scenarios with only their User Story and Gherkin descriptions. Do NOT add Deliverables yet.</step>
+        <step n="2" name="Iterative Validation & Approval Loop">For EACH scenario defined in the slice:</step>
+        <step n="2a" name="Validation Artifact Creation">Based on the scenario type:
+          - For **user-facing behavior**, `CREATE` a runnable Behavioral Prototype in `prototypes/`.
+          - For **Non-Functional Requirements (NFRs)**, `CREATE` a targeted validation spike (e.g., a benchmark for performance, a test exploiting a vulnerability for security) in an appropriate `spikes/` subdirectory.
+          - For **refactoring**, no artifact is needed; validation is the existing test suite.
+        </step>
+        <step n="2b" name="Alignment Gate">If an artifact was created, `EDIT` the slice to link to it. `PROMPT` the user to review and approve the scenario and its validation artifact. If feedback is given, iterate on the artifact and scenario draft until approved. For refactoring, simply `PROMPT` for approval of the plan.</step>
+        <step n="2c" name="Deliverable Definition">Once the scenario is approved, `EDIT` the slice to add the detailed `### Deliverables` checklist, ensuring it aligns perfectly with the approved validation criteria.</step>
+        <step n="3" name="Proceed">Once all scenarios are approved and have defined deliverables, proceed to the next phase.</step>
       </phase>
 
       <phase n="3" name="Architectural Exploration (Diverge)">
@@ -130,7 +137,8 @@
         </section>
         <section n="3" name="Scenarios">
           <item name="Heading">## 2. Scenarios</item>
-          <item name="Content">Each scenario MUST begin with a user story formatted as a Markdown blockquote (e.g., "> As a [user type], I want to [action] so that [benefit]"). This is followed by behavioral scenarios using Gherkin descriptions with concrete examples (Given/When/Then).</item>
+          <item name="Content">Each scenario MUST begin with a user story formatted as a Markdown blockquote (e.g., "> As a [user type], I want to [action] so that [benefit]"). This is followed by behavioral scenarios using Gherkin descriptions with concrete examples (Given/When/Then). It MUST also include a link to its executable prototype.</item>
+          <item name="Prototype Link">Format: `**Behavioral Prototype:** [prototypes/{{scenario}}.ext](/prototypes/{{scenario}}.ext)`</item>
           <item name="Deliverables">Under each scenario, include a `### Deliverables` checklist of atomic units of work. MUST use strict Design-by-Contract prefixes ordered as follows: 1. **Contract** - (Interfaces, DTOs), 2. **Harness** (Optional) - (Setup, Drivers, Observers), 3. **Logic** - (Domain implementation), 4. **Wiring** - (DI, Controllers, Adapters), 5. **Cleanup** (Optional). Format exactly as: `- [ ] **Prefix** - Description`. Each item must be a distinct, testable unit.</item>
         </section>
         <section n="4" name="Implementation Guidelines">

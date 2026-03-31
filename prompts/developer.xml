@@ -25,7 +25,7 @@
       <phase n="1" name="ORIENTATION">
         <goal>Establish foundation and define scope. This phase presumes you have committed all previous changes and are working with a clean workspace.</goal>
         <step n="1" name="Initialization">If no slice doc exists, CREATE one at docs/project/slices/00-NN-{{feature}}.md (Fast-Track) using the Vertical Slice Blueprint. Predict Deliverables based on the request.</step>
-        <step n="2" name="Read & Assess">READ the slice. Identify FIRST uncompleted deliverable. Examine existing tests to understand the Test Harness Triad.</step>
+        <step n="2" name="Read & Assess">READ the slice. Identify the FIRST uncompleted deliverable. READ the Behavioral Prototype linked in the current scenario to get a concrete understanding of the expected behaviour. Examine existing tests to understand the Test Harness Triad.</step>
       </phase>
 
       <phase n="2" name="TEST (Outer RED)">

@@ -170,7 +170,7 @@
           <workflow>CREATE Milestone using blueprint, update PROJECT.md, PROMPT for approval, commit/push, INVOKE Architect.</workflow>
         </scenario>
         <scenario target="Developer (Fast-Track)">
-          <workflow>Run feasibility spike, CREATE Slice using blueprint, PROMPT for approval, commit/push, INVOKE Developer.</workflow>
+          <workflow>CREATE Slice with all Scenarios (User Story & Gherkin only). Then, for each Scenario: Based on its type, create the appropriate validation artifact (e.g., a Behavioral Prototype in `prototypes/` for user-facing changes, a targeted validation spike in an appropriate `spikes/` subdirectory for Non-Functional Requirements (NFRs), or rely on the existing test suite for refactoring). If an artifact is created, link it in the Slice. PROMPT for user approval of the scenario and its validation method. If feedback is given, iterate on the artifact and scenario draft until approved. Once a Scenario is approved, EDIT the Slice to add its detailed Deliverables checklist. After all Scenarios are approved and defined, commit/push, then INVOKE Developer.</workflow>
         </scenario>
         <scenario target="Debugger">
           <workflow>CREATE MRE using blueprint, INVOKE Debugger.</workflow>
