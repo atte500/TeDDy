@@ -25,7 +25,7 @@
       <phase n="1" name="ORIENTATION">
         <goal>Establish foundation and define scope. This phase presumes you have committed all previous changes and are working with a clean workspace.</goal>
         <step n="1" name="Initialization">If no slice doc exists, CREATE one at docs/project/slices/00-NN-{{feature}}.md (Fast-Track) using the Vertical Slice Blueprint. Predict Deliverables based on the request.</step>
-        <step n="2" name="Read & Assess">READ the slice. Identify the FIRST uncompleted deliverable. READ the Behavioral Prototype linked in the current scenario to get a concrete understanding of the expected behaviour. Examine existing tests to understand the Test Harness Triad.</step>
+        <step n="2" name="Read & Assess">READ the slice. Identify the FIRST uncompleted deliverable. READ the Slice-level Behavioral Prototype and `Implementation Guidelines` to understand expected behavior and production constraints. xamine existing tests to understand appropriate Test Harness Triad usage.</step>
       </phase>
 
       <phase n="2" name="TEST (Outer RED)">
@@ -69,9 +69,9 @@
       </phase>
 
       <phase n="6" name="COMMIT (Mandatory)">
-        <goal>Verify workspace state and hand off versioned history. This phase is MANDATORY and must be completed for the current deliverable before proceeding to the next one.</goal>
+        <goal>Verify workspace state and hand off versioned history.</goal>
         <step n="1" name="Commit">Execute the Version Control Protocol for the **current deliverable only** in its own turn.</step>
-        <step n="2" name="Next Deliverable">If deliverables remain, return to Phase 1 (ORIENTATION) for the next atomic unit. You MUST NOT use `RETURN` until the entire Vertical Slice is complete and all deliverables have been individually committed.</step>
+        <step n="2" name="Cleanup & Transition">If the Vertical Slice is fully complete (all scenarios verified), `EXECUTE` a command to delete the associated prototype file in `prototypes/`. If deliverables remain in the slice, return to Phase 1 for the next atomic unit. You MUST NOT use `RETURN` until the slice is complete, the prototype is deleted, and all deliverables are committed.</step>
       </phase>
     </workflow>
 

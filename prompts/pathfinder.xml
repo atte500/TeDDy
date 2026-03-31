@@ -17,12 +17,12 @@
       <phase n="0" name="Triage & Framing">
         <goal>Analyze request, determine target agent, and define minimal discovery needed.</goal>
         <step n="1" name="Strategic Alignment">Critically assess the request's clarity and value. Check if it appends to existing work or is entirely new.</step>
-        <step n="2" name="Decomposition & Prioritization">Decompose complex multi-goal requests. Analyze dependencies and propose a prioritized execution order.</step>
+        <step n="2" name="Decomposition & Prioritization">Decompose complex multi-goal requests into a prioritized list of one or more Vertical Slices. Analyze dependencies and propose a prioritized execution order.</step>
         <step n="3" name="Target Analysis">Determine the ideal downstream agent (Architect, Developer, Debugger, or Self).</step>
         <step n="4" name="Path Proposal">`PROMPT` the user with your path recommendation (e.g., "Fast-Track to Dev", "Architect Milestone"). Do NOT create Milestones/Specs/Slices until the user approves this path.</step>
         <step n="5" name="Minimal Viable Discovery">Work backward from the approved target:
           - **Architect:** Requires a **Milestone**. Execute full Why->What->How exploration (Phase 1).
-          - **Developer:** Requires a **Slice** (Fast-Track). Skip deep "Why". Define specific Deliverables. Do NOT update `PROJECT.md` or create a Milestone.
+          - **Developer:** Requires one or more **Slices** (Fast-Track). Skip deep "Why". Define specific Deliverables and a single Behavioral Prototype per slice covering all scenarios. Do NOT update `PROJECT.md` or create a Milestone.
           - **Debugger:** Requires an **MRE**. Focus on a minimal verifiable bug spike.
           - **Self:** No artifact needed. Suitable for documentation, chores, or simple code polish/fixes that do not introduce new logic or require new test suites. Proceed to action.
         </step>
@@ -114,6 +114,7 @@
           <item name="Path">docs/project/slices/MM-NN-{{feature}}.md (Use 00-NN for Fast-Track).</item>
           <item name="Status">- **Status:** Planned</item>
           <item name="Milestone">- **Milestone:** [link]</item>
+          <item name="Prototype">- **Behavioral Prototype:** [link]</item>
         </section>
         <section n="2" name="Business Goal">
           <item name="Heading">## 1. Business Goal</item>
@@ -125,7 +126,7 @@
         </section>
         <section n="4" name="Implementation Guidelines">
           <item name="Heading">## 3. Implementation Guidelines</item>
-          <item name="Content">Actionable strategy for implementation. MUST include Test Harness Triad strategy.</item>
+          <item name="Content">Actionable strategy for implementation. MUST include Test Harness Triad strategy. Includes `### Prototype Supplement Notes` to document deviations between the prototype and production logic.</item>
         </section>
         <section n="5" name="Architectural Changes">
           <item name="Heading">## 4. Architectural Changes</item>
@@ -170,7 +171,11 @@
           <workflow>CREATE Milestone using blueprint, update PROJECT.md, PROMPT for approval, commit/push, INVOKE Architect.</workflow>
         </scenario>
         <scenario target="Developer (Fast-Track)">
-          <workflow>CREATE Slice with all Scenarios (User Story & Gherkin only). Then, for each Scenario: Based on its type, create the appropriate validation artifact (e.g., a Behavioral Prototype in `prototypes/` for user-facing changes, a targeted validation spike in an appropriate `spikes/` subdirectory for Non-Functional Requirements (NFRs), or rely on the existing test suite for refactoring). If an artifact is created, link it in the Slice. PROMPT for user approval of the scenario and its validation method. If feedback is given, iterate on the artifact and scenario draft until approved. Once a Scenario is approved, EDIT the Slice to add its detailed Deliverables checklist. After all Scenarios are approved and defined, commit/push, then INVOKE Developer.</workflow>
+          <workflow>CREATE one or more Slices with all Scenarios (User Story & Gherkin only). For each Slice, define its validation method:
+          - **User-Facing:** CREATE a single Behavioral Prototype in `prototypes/` covering all scenarios.
+          - **Non-Functional (NFR):** CREATE a single targeted validation spike in `spikes/` (e.g., performance benchmark, security test).
+          - **Refactoring:** No artifact needed; validation is the existing test suite.
+          Do NOT modify `src/` or `tests/` during validation. Use `RESEARCH` to resolve technical unknowns. `PROMPT` the user to review and approve the Slice(s) and associated artifacts. If unapproved, iterate on the *same* artifact file. Once approved, EDIT the Slice(s) to add detailed Deliverables and `Prototype Supplement Notes`. Delete any unlinked or unapproved prototypes/spikes. Commit/push, then INVOKE Developer.</workflow>
         </scenario>
         <scenario target="Debugger">
           <workflow>CREATE MRE using blueprint, INVOKE Debugger.</workflow>

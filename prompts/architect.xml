@@ -19,17 +19,13 @@
       </phase>
 
       <phase n="2" name="Define Behavioral Requirements">
-        <goal>Frame the "Why" and define success conditions via active discovery and appropriate validation artifacts.</goal>
+        <goal>Frame the "Why" and define success conditions via active discovery and consolidated validation artifacts.</goal>
         <step n="1" name="Initial Slice Draft">`CREATE` the Vertical Slice, defining ALL scenarios with only their User Story and Gherkin descriptions. Do NOT add Deliverables yet.</step>
-        <step n="2" name="Iterative Validation & Approval Loop">For EACH scenario defined in the slice:</step>
-        <step n="2a" name="Validation Artifact Creation">Based on the scenario type:
-          - For **user-facing behavior**, `CREATE` a runnable Behavioral Prototype in `prototypes/`.
-          - For **Non-Functional Requirements (NFRs)**, `CREATE` a targeted validation spike (e.g., a benchmark for performance, a test exploiting a vulnerability for security) in an appropriate `spikes/` subdirectory.
-          - For **refactoring**, no artifact is needed; validation is the existing test suite.
-        </step>
-        <step n="2b" name="Alignment Gate">If an artifact was created, `EDIT` the slice to link to it. `PROMPT` the user to review and approve the scenario and its validation artifact. If feedback is given, iterate on the artifact and scenario draft until approved. For refactoring, simply `PROMPT` for approval of the plan.</step>
-        <step n="2c" name="Deliverable Definition">Once the scenario is approved, `EDIT` the slice to add the detailed `### Deliverables` checklist, ensuring it aligns perfectly with the approved validation criteria.</step>
-        <step n="3" name="Proceed">Once all scenarios are approved and have defined deliverables, proceed to the next phase.</step>
+        <step n="2" name="Slice Validation & Approval Loop">Establish ground truth for the entire slice:</step>
+        <step n="2a" name="Validation Artifact Creation">`RESEARCH` technical unknowns. Then, `CREATE` a single runnable Behavioral Prototype in `prototypes/` (or a targeted spike in `spikes/` for NFRs) that covers ALL scenarios in the slice. **STRICT CONSTRAINT:** You are PROHIBITED from modifying `src/` or `tests/` during this phase.</step>
+        <step n="2b" name="Alignment Gate">`EDIT` the slice to link the artifact and add `### Prototype Supplement Notes` in the Implementation Guidelines (detailing production deviations). `PROMPT` the user to review. If feedback is given, `EDIT` the *same* prototype file to iterate. Delete any unused/unapproved prototype files.</step>
+        <step n="2c" name="Deliverable Definition">Once the Slice and Prototype are approved, `EDIT` the slice to add detailed `### Deliverables` for all scenarios.</step>
+        <step n="3" name="Proceed">Once approved and defined, proceed to architectural exploration.</step>
       </phase>
 
       <phase n="3" name="Architectural Exploration (Diverge)">
