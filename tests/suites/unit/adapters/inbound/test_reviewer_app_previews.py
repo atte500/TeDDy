@@ -26,8 +26,9 @@ async def test_reviewer_app_preview_text_actions(
     )
     async with app.run_test() as pilot:
         await pilot.press("down")
-        await pilot.press("p")
-        await pilot.wait_for_scheduled_animations()
-        await pilot.press("y")
+        await pilot.press("e")
+        # In ParameterEditModal, we type the new value and press enter
+        await pilot.press(*"new")
+        await pilot.press("enter")
     assert action.params[param_key] == "new"
     assert action.modified is True

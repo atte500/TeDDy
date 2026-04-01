@@ -48,9 +48,9 @@ def test_tui_context_aware_editing_marks_action_as_modified(env):
             file_system=env.get_service(IFileSystemManager),
         )
 
-        # Run interaction (down, p, then modal sequence: enter, y, then submit: s)
+        # Run interaction (down, e, then modal sequence: enter, y, then submit: s)
         modified_plan = asyncio.run(
-            driver.run_interaction(["down", "p", "enter", "y", "s"])
+            driver.run_interaction(["down", "e", "enter", "y", "s"])
         )
         assert modified_plan is not None
 

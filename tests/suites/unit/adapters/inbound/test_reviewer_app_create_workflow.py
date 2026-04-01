@@ -21,7 +21,7 @@ async def test_reviewer_app_create_workflow(env, monkeypatch):
     )
     async with app.run_test() as pilot:
         await pilot.press("down")
-        await pilot.press("p")
+        await pilot.press("e")
         await pilot.wait_for_scheduled_animations()
         await pilot.press(*"new.py")
         await pilot.press("enter")

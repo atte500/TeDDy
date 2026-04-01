@@ -1,16 +1,13 @@
 from __future__ import annotations
 
 import os
-import pathlib
 import re
 from typing import TYPE_CHECKING, Any, Optional, cast
 
 import anyio
 
 from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
-    ConfirmScreen,
     ParameterEditModal,
-    PathInputScreen,
     StatusBar,
 )
 
@@ -61,81 +58,7 @@ async def launch_editor(
         app._system_env.delete_file(temp_file)
 
 
-async def preview_edit(app: ReviewerApp, action: ActionData, node: Any) -> None:
-    """Handle preview for EDIT."""
-    if not app._file_system:
-        return
-    path_str = cast(str, action.params.get("path", ""))
-    suffix = pathlib.Path(path_str).suffix or ".txt"
-    try:
-        original = app._file_system.read_file(path_str)
-    except Exception:
-        original = ""
-    proposed, _ = app._edit_simulator.simulate_edits(
-        original, action.params.get("edits", [])
-    )
-    diff_viewer = app._console_tooling.get_diff_viewer_command()
-    final: str | None = None
-    if diff_viewer:
-        before = app._system_env.create_temp_file(suffix=f".before{suffix}")
-        after = app._system_env.create_temp_file(suffix=f".after{suffix}")
-        try:
-            with open(before, "w", encoding="utf-8") as f:
-                f.write(original)
-            with open(after, "w", encoding="utf-8") as f:
-                f.write(proposed)
-            await anyio.to_thread.run_sync(
-                app._system_env.run_command, diff_viewer + [before, after]
-            )
-            with open(after, "r", encoding="utf-8") as f:
-                final = f.read()
-        finally:
-            app._system_env.delete_file(before)
-            app._system_env.delete_file(after)
-    else:
-        final = await launch_editor(app, proposed, suffix=suffix)
-    if final is not None and await app.push_screen_wait(ConfirmScreen()):
-        if final != proposed:
-            action.params["content"] = final
-            action.modified = True
-            app._refresh_node(node)
-
-
-async def preview_create(app: ReviewerApp, action: ActionData, node: Any) -> None:
-    """Handle preview for CREATE."""
-    path_str = cast(str, action.params.get("path", ""))
-    content = cast(str, action.params.get("content", ""))
-    new_content = await launch_editor(
-        app, content, suffix=pathlib.Path(path_str).suffix or ".txt"
-    )
-    if new_content is None:
-        return
-    new_path_val: str | None = await app.push_screen_wait(
-        cast(Any, PathInputScreen(path_str))
-    )
-    if new_path_val is not None and await app.push_screen_wait(ConfirmScreen()):
-        action.params["content"] = cast(str, new_content)
-        action.params["path"] = cast(str, new_path_val)
-        action.modified = True
-        app._refresh_node(node)
-
-
-async def preview_text_action(
-    app: "ReviewerApp", action: "ActionData", node: Any
-) -> None:
-    """Handle preview for EXECUTE/RESEARCH."""
-    key = "command" if action.type == "EXECUTE" else "queries"
-    content = action.params.get(key, "")
-    new_content = await launch_editor(
-        app, content, suffix=".sh" if action.type == "EXECUTE" else ".txt"
-    )
-    if new_content is not None and await app.push_screen_wait(ConfirmScreen()):
-        if new_content.strip() != content.strip():
-            action.params[key] = new_content.strip()
-            action.modified = True
-            app._refresh_node(node)
-
-
+# Functions preview_edit, preview_create, preview_text_action, preview_readonly
 def extract_status_emoji(raw_status: str) -> str:
     """Extracts the last emoji from a status string."""
     # A simple regex to find common status emojis.
@@ -144,16 +67,23 @@ def extract_status_emoji(raw_status: str) -> str:
     return emojis[-1] if emojis else ""
 
 
-async def preview_readonly(app: "ReviewerApp", action: "ActionData") -> None:
-    """Handle preview for READ/PRUNE."""
-    if not app._file_system:
-        return
-    resource = action.params.get("resource") or action.params.get("path", "")
-    try:
-        content = app._file_system.read_file(resource)
-    except Exception:
-        content = f"--- Content for {resource} could not be retrieved ---"
-    await launch_editor(app, content, suffix=pathlib.Path(resource).suffix or ".txt")
+async def do_preview_logic(app: ReviewerApp, node: Any, action: ActionData) -> None:
+    """Internal logic for previewing/modifying complex actions."""
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_previews import (
+        preview_create,
+        preview_edit,
+        preview_readonly,
+        preview_text_action,
+    )
+
+    if action.type == "CREATE":
+        await preview_create(app, action, node)
+    elif action.type == "EDIT":
+        await preview_edit(app, action, node)
+    elif action.type in ("EXECUTE", "RESEARCH"):
+        await preview_text_action(app, action, node)
+    elif action.type in ("READ", "PRUNE"):
+        await preview_readonly(app, action)
 
 
 def format_node_label(action: "ActionData") -> str:
@@ -199,22 +129,34 @@ async def edit_action_logic(
         await do_preview_logic(app, node, action)
 
 
-async def do_preview_logic(app: ReviewerApp, node: Any, action: ActionData) -> None:
-    """Internal logic for previewing/modifying complex actions."""
-    if action.type == "CREATE":
-        await preview_create(app, action, node)
-    elif action.type == "EDIT":
-        await preview_edit(app, action, node)
-    elif action.type in ("EXECUTE", "RESEARCH"):
-        await preview_text_action(app, action, node)
-    elif action.type in ("READ", "PRUNE"):
-        await preview_readonly(app, action)
-
-
 def refresh_node_logic(app: ReviewerApp, node: Any) -> None:
     """Refresh the label and state of a single tree node."""
     if node.data:
         node.label = format_node_label(node.data)
+
+
+def on_mount_logic(app: Any) -> None:
+    """Populate the action tree and set title when the app is mounted."""
+    status_raw = app.plan.metadata.get("Status", "")
+    status_emoji = extract_status_emoji(status_raw)
+    title_parts = [part for part in [status_emoji, app.plan.title] if part]
+    app.title = " ".join(title_parts)
+
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
+        ActionTree,
+        ParameterList,
+    )
+
+    tree = app.query_one(ActionTree)
+    param_tree = app.query_one(ParameterList)
+    param_tree.show_root = False
+
+    tree.root.expand()
+    for action in app.plan.actions:
+        if action.type == "PRUNE" and not app.plan.is_session:
+            continue
+        tree.root.add_leaf(format_node_label(action), data=action)
+    tree.focus()
 
 
 def check_action_logic(app: ReviewerApp, action_name: str) -> bool:

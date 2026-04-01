@@ -13,12 +13,10 @@ from textual.widgets import Footer, Header, Tree
 
 from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
     check_action_logic,
-    do_preview_logic,
     edit_action_logic,
     execute_step_logic,
-    extract_status_emoji,
-    format_node_label,
     launch_editor,
+    on_mount_logic,
     refresh_node_logic,
     revert_logic,
     toggle_all_logic,
@@ -83,11 +81,10 @@ class ReviewerApp(App):
     BINDINGS = [
         ("s", "submit", "Submit"),
         ("a", "toggle_all", "Toggle All"),
-        ("e", "edit_action", "Edit/Details"),
+        ("e", "edit_details", "Edit/Details"),
         ("r", "revert", "Revert"),
-        ("p", "preview", "Preview/Modify"),
         ("v", "view_plan", "View Plan"),
-        ("x", "execute_step", "Execute"),
+        ("x", "execute_step", "Execute Step"),
         ("m", "add_message", "Add Message"),
         ("q", "cancel", "Cancel"),
     ]
@@ -135,21 +132,7 @@ class ReviewerApp(App):
 
     def on_mount(self) -> None:
         """Populate the action tree when the app is mounted."""
-        status_raw = self.plan.metadata.get("Status", "")
-        status_emoji = extract_status_emoji(status_raw)
-        title_parts = [part for part in [status_emoji, self.plan.title] if part]
-        self.title = " ".join(title_parts)
-
-        tree = self.query_one(ActionTree)
-        param_tree = self.query_one(ParameterList)
-        param_tree.show_root = False
-
-        tree.root.expand()
-        for action in self.plan.actions:
-            if action.type == "PRUNE" and not self.plan.is_session:
-                continue
-            tree.root.add_leaf(format_node_label(action), data=action)
-        tree.focus()
+        on_mount_logic(self)
 
     def on_tree_node_selected(self, event: Tree.NodeSelected) -> None:
         """Toggle action selection when a node is selected."""
@@ -205,22 +188,13 @@ class ReviewerApp(App):
         self.exit(None)
 
     @work
-    async def action_edit_action(self) -> None:
-        """Edit the currently highlighted action."""
+    async def action_edit_details(self) -> None:
+        """Edit or preview the currently highlighted action."""
         tree = self.query_one(Tree)
         node = tree.cursor_node
         if not node or not node.data:
             return
         await edit_action_logic(self, node, node.data)
-
-    @work
-    async def action_preview(self) -> None:
-        """Preview and modify the currently selected action in an external editor."""
-        tree = self.query_one(Tree)
-        node = tree.cursor_node
-        if not node or not node.data:
-            return
-        await do_preview_logic(self, node, node.data)
 
     @work
     async def action_view_plan(self) -> None:

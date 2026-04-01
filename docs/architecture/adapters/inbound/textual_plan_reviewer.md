@@ -24,10 +24,14 @@ Refer to the [IPlanReviewer](/docs/architecture/core/ports/inbound/plan_reviewer
 ### Implementation Notes:
 - **Refactoring Requirement:** The `Plan` and `ActionData` models must be unfrozen to support direct in-memory updates by the TUI.
 - **Keyboard Bindings:**
-  - `s`: Submit the plan and finalize selection.
-  - `a`: Toggle all actions.
-  - `m`: Add/Edit User Message (Instruction Bridge).
-  - `p`: Preview/Modify the highlighted action (Context-Aware Editing).
-    - **CREATE:** Launches the external editor for content modification, followed by a `PathInputScreen` modal for path adjustment and a `ConfirmScreen` for final synchronization.
+  - `s`: Submit the plan and return the results.
+  - `a`: Toggle selection for all actions.
+  - `e`: Edit/Details (Context-Aware Editing).
+    - **CREATE:** Launches the external editor for content, followed by a `PathInputScreen` modal for path adjustment and a `ConfirmScreen`.
     - **EDIT:** Launches the external editor showing the proposed final state (simulated), followed by a `ConfirmScreen`.
+    - **EXECUTE/RESEARCH:** Uses a `ParameterEditModal` for simple value changes.
+  - `r`: Revert manual modifications (conditionally enabled).
+  - `v`: View the original plan file (read-only).
+  - `x`: Execute Step (marks the action as executed/successful).
+  - `m`: Add/Edit User Message (Instruction Bridge).
   - `q`: Cancel and exit.

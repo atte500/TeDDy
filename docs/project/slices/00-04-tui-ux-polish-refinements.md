@@ -53,8 +53,8 @@ To refine the plan review TUI by implementing a more robust interaction model ba
 - **And** after confirming any changes, the action MUST be marked as `*modified`.
 
 #### Deliverables
-- [ ] **Refactor** - Consolidate the functionality of `action_edit_action` (`e`) and `action_preview` (`p`) into a single `action_edit_details` method bound to `e`. Remove the `p` binding.
-- [ ] **Logic** - Implement branching logic within `action_edit_details` to show a modal for simple types and launch an external editor for complex types, as seen in the prototype.
+- [x] **Refactor** - Consolidate the functionality of `action_edit_action` (`e`) and `action_preview` (`p`) into a single `action_edit_details` method bound to `e`. Remove the `p` binding.
+- [x] **Logic** - Implement branching logic within `action_edit_details` to show a modal for simple types and launch an external editor for complex types, as seen in the prototype.
 - [ ] **Logic** - Ensure the external editor workflow for `CREATE` prompts for a file path ("Save As" model).
 - [ ] **Logic** - Ensure confirmation prompts are used to finalize changes and set the `modified` state on the `ActionData` object.
 
