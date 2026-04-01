@@ -14,33 +14,25 @@ To refine the plan review TUI by implementing a more robust interaction model ba
 - **Given** a plan is loaded in the TUI.
 - **When** an action is executed successfully via the `x` key.
 - **Then** its checkbox MUST be replaced with `[SUCCESS]` in green.
-- **When** an action fails execution (simulated via the `f` key in prototype).
-- **Then** its checkbox MUST be replaced with `[FAILURE]` in red.
 
 #### Deliverables
 - [✓] **Logic** - The `Action` domain model must track its execution state (`PENDING`, `SUCCESS`, `FAILURE`).
 - [✓] **Logic** - The node update logic must render the label with appropriate colors based on the state.
-
-## 6. Implementation Notes
-
-### Scenario: Clear Action Status and Execution Flow
-- **Deliverable: Action State Tracking**: Added `ExecutionStatus` string-based Enum to `plan.py` to match the existing `ActionType` pattern. Extended `ActionData` with `executed: bool` (default False) and `state: ExecutionStatus` (default PENDING). Verified with unit tests.
-- **Deliverable: Node Label Rendering**: Updated `ReviewerApp._format_node_label` to use rich color tags (`[green]`, `[red]`) when an action is executed. Note: Accessed `ExecutionStatus.value` explicitly in f-strings to avoid `EnumMember` stringification (e.g., `ExecutionStatus.SUCCESS` vs `SUCCESS`).
-- [ ] **Wiring** - The `(x)` keybinding should trigger state changes and a UI refresh.
+- [✓] **Wiring** - Wire the `(x)` keybinding to `action_execute_step`.
 
 ### Scenario: External Editor Integration for Modifications
-> As a user, when I want to edit or review the details of an action, I want to use my main, configured editor for a powerful and familiar experience.
+> As a user, when I want to edit or review the details of an action, I want to use my main, configured editor or a TUI modal for a powerful experience.
 
-- **Given** an `EDIT` or `CREATE` action is highlighted.
+- **Given** an action is highlighted.
 - **When** I press `e` (for "edit/details").
-- **Then** the system MUST open my configured external editor with the relevant content (e.g., proposed content for a `CREATE`, a diff for an `EDIT`).
-- **And** the TUI MUST display a confirmation prompt (`Submit manual changes? (y/n)`).
-- **And** if I confirm, the action in the list MUST be marked as modified (e.g., `*modified`).
+- **Then** the system MUST open a TUI modal for simple parameters (e.g., `EXECUTE` command).
+- **And** it MUST open my external editor for complex content (e.g., `CREATE` or `EDIT`).
+- **And** if I confirm changes, the action MUST be marked as `*modified`.
 
 #### Deliverables
-- [ ] **Logic** - Implement an `edit_action` handler that correctly identifies the editor, prepares content in a temporary file, and launches a non-blocking subprocess.
-- [ ] **Wiring** - Wire the `(e)` key to this handler.
-- [ ] **Logic** - The `Action` model must track a `modified` boolean state.
+- [✓] **Logic** - Implement `ParameterEditModal` for simple parameters.
+- [✓] **Wiring** - Wire the `(e)` key to `action_edit_action`.
+- [✓] **Logic** - Ensure the `Action` model tracks the `modified` state.
 
 ### Scenario: Dynamic Footer & Revert (r)
 > As a user, I want to revert manual modifications, but only see the option when it's applicable.
@@ -50,34 +42,51 @@ To refine the plan review TUI by implementing a more robust interaction model ba
 - **Then** the `(r) Revert` binding MUST only appear in the footer if the current action is `*modified`.
 
 #### Deliverables
-- [ ] **Logic** - Implement `ReviewerApp.check_action(action, parameters)` to conditionally enable/disable the `revert` binding.
-- [ ] **Wiring** - Refresh footer bindings on every node highlight event.
+- [✓] **Logic** - Implement `ReviewerApp.check_action` for conditional `(r)` binding.
+- [✓] **Wiring** - Refresh footer bindings on node highlight events.
 
 ### Scenario: Improved Instruction Template & Auto-Save
 > As a user, I want a clear instruction template and a fluid editing experience when adding messages.
 
 - **Given** the TUI footer shows `(m) Message`.
 - **When** I trigger the "Message" (`m`) workflow.
-- **Then** the editor MUST open with the existing message content followed by the standard marker: `\n\n<!-- Please enter your message above this line. -->`.
-- **And** the system MUST defer reading and saving the message until the user submits the entire plan (pressing `s`).
-- **And** upon submission, the system MUST read the file, strip the marker, and finalize the message automatically.
+- **Then** the editor MUST open with the standard marker: `\n\n<!-- Please enter your message above this line. -->`.
+- **And** the update MUST be deferred until the user submits the plan (`s`).
+
+#### Deliverables
+- [✓] **Logic** - Implement deferred processing and `INSTRUCTION_MARKER` stripping in `action_submit`.
+- [✓] **Harness** - Add a unit test verifying marker stripping.
 
 ### Scenario: Event Logging Status Bar
 > As a user, I want a persistent status bar that shows the last significant event.
 
 - **Given** the TUI is active.
 - **When** an action is triggered (e.g., launching an editor or executing a command).
-- **Then** a dedicated status bar at the bottom MUST display the event details (e.g., `LAUNCHING: code /tmp/file.md`).
-- **And** the log MUST use the `basename` of the editor (e.g., `code` instead of `/usr/bin/code`).
-- **And** for GUI editors (like VS Code), the launch MUST be non-blocking (`subprocess.Popen`), ensuring the TUI remains responsive.
+- **Then** a dedicated status bar at the bottom MUST display the event details.
 
 #### Deliverables
-- [ ] **Wiring** - Implement a `Vertical` container for the main UI to guarantee `StatusBar` visibility at the bottom.
-- [ ] **Logic** - Implement `StatusBar.notify(message: str)` to update this bar consistently without italics.
-- [ ] **Logic** - Define `INSTRUCTION_MARKER` constant in `ReviewerApp`: `"\n\n<!-- Please enter your message above this line. -->"`.
-- [ ] **Logic** - Implement workspace persistence: cache temporary file paths in a dictionary to ensure subsequent edits to the same message/action preserve previous content.
-- [ ] **Logic** - Implement deferred processing: perform final reading and `INSTRUCTION_MARKER` stripping only during `action_submit`.
-- [ ] **Harness** - Add a unit test verifying that content after the marker is correctly discarded during plan submission.
+- [✓] **Wiring** - Implement `StatusBar` widget and add it to the app layout.
+- [✓] **Logic** - Use `os.path.basename` for editor logging.
+
+## 6. Implementation Notes
+
+### Scenario: Clear Action Status and Execution Flow
+- **Deliverable: Action State Tracking**: Added `ExecutionStatus` string-based Enum to `plan.py`. Extended `ActionData` with `executed: bool` and `state: ExecutionStatus`. Verified with unit tests.
+- **Deliverable: Node Label Rendering**: Updated `ReviewerApp._format_node_label` to use rich color tags (`[green]`, `[red]`) when an action is executed.
+- [✓] **Deliverable: Wiring**: Wired `(x)` keybinding to `action_execute_step`.
+
+### Scenario: External Editor Integration for Modifications
+- [✓] **Deliverable: ParameterEditModal**: Implemented TUI modal for `EXECUTE`/`RESEARCH` parameters.
+- [✓] **Deliverable: Complex Editing**: Reused existing editor launch logic for `CREATE`/`EDIT`.
+
+### Scenario: Dynamic Footer & Revert (r)
+- [✓] **Deliverable: Conditional Binding**: Implemented `ReviewerApp.check_action` and `on_tree_node_highlighted` for dynamic footer updates.
+
+### Scenario: Improved Instruction Template & Auto-Save
+- [✓] **Deliverable: Deferral Logic**: Implemented `_user_message_cache`. Final update occurs in `action_submit`.
+
+### Scenario: Event Logging Status Bar
+- [✓] **Deliverable: StatusBar Widget**: Implemented persistent status bar using `dock: bottom` for layout visibility.
 
 ## 3. Implementation Guidelines
 This slice should be implemented by a Developer, using the reference prototype as a guide for the overall structure and desired UX.

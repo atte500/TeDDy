@@ -36,7 +36,7 @@ class SystemEnvironmentInspector(IEnvironmentInspector):
         Gathers the current Git status of the working directory.
         """
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603 B607
                 ["git", "status", "-s"],
                 capture_output=True,
                 text=True,

@@ -49,8 +49,9 @@ async def test_add_message_cancellation(plan, tmp_path):
     app = ReviewerApp(plan, mock_env, mock_tooling)
 
     with patch.object(app, "suspend", side_effect=mock_suspend):
-        with patch.object(
-            ReviewerApp, "_launch_editor", new_callable=AsyncMock
+        with patch(
+            "teddy_executor.adapters.inbound.textual_plan_reviewer.launch_editor",
+            new_callable=AsyncMock,
         ) as mock_launch:
             mock_launch.return_value = "new message"
             async with app.run_test() as pilot:
@@ -73,8 +74,9 @@ async def test_add_message_confirmation(plan, tmp_path):
     app = ReviewerApp(plan, mock_env, mock_tooling)
 
     with patch.object(app, "suspend", side_effect=mock_suspend):
-        with patch.object(
-            ReviewerApp, "_launch_editor", new_callable=AsyncMock
+        with patch(
+            "teddy_executor.adapters.inbound.textual_plan_reviewer.launch_editor",
+            new_callable=AsyncMock,
         ) as mock_launch:
             mock_launch.return_value = "new message"
             async with app.run_test() as pilot:
@@ -82,6 +84,9 @@ async def test_add_message_confirmation(plan, tmp_path):
                 await wait_for_confirm_screen(app)
                 await pilot.press("y")
                 await worker.wait()
+
+                # With deferred processing, we must submit to see the update
+                app.action_submit()
                 assert plan.metadata["user_request"] == "new message"
 
 
@@ -102,8 +107,9 @@ async def test_preview_edit_cancellation(plan, tmp_path):
     action = plan.actions[0]
 
     with patch.object(app, "suspend", side_effect=mock_suspend):
-        with patch.object(
-            ReviewerApp, "_launch_editor", new_callable=AsyncMock
+        with patch(
+            "teddy_executor.adapters.inbound.textual_plan_reviewer_logic.launch_editor",
+            new_callable=AsyncMock,
         ) as mock_launch:
             mock_launch.return_value = "modified content"
             async with app.run_test() as pilot:
@@ -137,8 +143,9 @@ async def test_preview_edit_confirmation(plan, tmp_path):
     action = plan.actions[0]
 
     with patch.object(app, "suspend", side_effect=mock_suspend):
-        with patch.object(
-            ReviewerApp, "_launch_editor", new_callable=AsyncMock
+        with patch(
+            "teddy_executor.adapters.inbound.textual_plan_reviewer_logic.launch_editor",
+            new_callable=AsyncMock,
         ) as mock_launch:
             mock_launch.return_value = "modified content"
             async with app.run_test() as pilot:

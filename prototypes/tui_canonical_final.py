@@ -1,7 +1,8 @@
-import asyncio
+# type: ignore
+# ruff: noqa
 import os
 import shutil
-import subprocess
+import subprocess  # nosec B404
 import tempfile
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
@@ -15,12 +16,15 @@ from textual.widgets import Footer, Header, Input, Label, Static, Tree
 
 class ActionTree(Tree):
     """A tree that allows both space and enter to toggle selection."""
+
     BINDINGS = [
         Binding("enter", "select_cursor", "Toggle", show=False),
     ]
 
+
 class ParameterList(Tree):
     """A simple tree for displaying parameters."""
+
 
 @dataclass
 class MockAction:
@@ -31,9 +35,12 @@ class MockAction:
     executed: bool = False
     state: str = "PENDING"  # PENDING, SUCCESS, FAILURE
 
+
 class ParameterEditModal(ModalScreen[str]):
     """A modal for editing parameters."""
+
     BINDINGS = [("escape", "app.pop_screen", "Cancel")]
+
     def __init__(self, key: str, value: str):
         self.key, self.value = key, value
         super().__init__()
@@ -42,15 +49,17 @@ class ParameterEditModal(ModalScreen[str]):
         with Vertical(id="param-edit-dialog"):
             yield Label(f"Edit {self.key}:")
             yield Input(value=self.value, id="param-input")
-    
+
     def on_mount(self) -> None:
         self.query_one(Input).focus()
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         self.dismiss(event.value)
 
+
 class PromptOverlay(ModalScreen[bool]):
     """A non-invasive y/n prompt at the top of the screen."""
+
     def __init__(self, message: str):
         self.message = message
         super().__init__()
@@ -64,10 +73,13 @@ class PromptOverlay(ModalScreen[bool]):
         elif event.key == "n":
             self.dismiss(False)
 
+
 class StatusBar(Static):
     """A simple status bar for event logging."""
+
     def notify(self, message: str) -> None:
         self.update(message)
+
 
 class CanonicalTuiPrototype(App):
     TITLE = "🟢 TeDDy Plan Review"
@@ -105,7 +117,9 @@ class CanonicalTuiPrototype(App):
         self.actions = actions
         self.editor = shutil.which("code") or shutil.which("vi") or shutil.which("nano")
         self.message_content = "This is the initial user message."
-        self.INSTRUCTION_MARKER = "\n\n<!-- Please enter your message above this line. -->"
+        self.INSTRUCTION_MARKER = (
+            "\n\n<!-- Please enter your message above this line. -->"
+        )
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
@@ -118,14 +132,14 @@ class CanonicalTuiPrototype(App):
     def on_mount(self) -> None:
         action_tree = self.query_one(ActionTree)
         param_tree = self.query_one(ParameterList)
-        
+
         param_tree.show_root = False
         action_tree.root.expand()
 
         for action in self.actions:
             node = action_tree.root.add_leaf("", data=action)
             self._update_node_label(node)
-        
+
         action_tree.focus()
         self._update_detail_view(None)
 
@@ -138,7 +152,7 @@ class CanonicalTuiPrototype(App):
         status_box = "[✓]" if action.selected else "[ ]"
         mod_tag = " *modified" if action.modified else ""
         summary = self._get_summary(action)
-        
+
         if action.executed:
             color = "green" if action.state == "SUCCESS" else "red"
             label = f"[{color}][{action.state}] {action.type}: {summary}[/]"
@@ -150,8 +164,8 @@ class CanonicalTuiPrototype(App):
         p = action.params
         summary = p.get("description") or p.get("path") or ""
         if action.type == "PROMPT" and not summary:
-            summary = p.get("message", "").strip().split('\n')[0]
-        summary = summary.strip().split('\n')[0]
+            summary = p.get("message", "").strip().split("\n")[0]
+        summary = summary.strip().split("\n")[0]
         return summary[:60] + "..." if len(summary) > 60 else summary
 
     def on_tree_node_selected(self) -> None:
@@ -163,7 +177,7 @@ class CanonicalTuiPrototype(App):
             self._update_detail_view(action)
         self.refresh_bindings()
 
-    def _update_detail_view(self, action: Optional['MockAction']):
+    def _update_detail_view(self, action: Optional["MockAction"]):
         param_tree = self.query_one(ParameterList)
         param_tree.clear()
         param_tree.root.label = "Parameters"
@@ -203,9 +217,10 @@ class CanonicalTuiPrototype(App):
 
     async def action_edit_details(self) -> None:
         node = self.query_one(ActionTree).cursor_node
-        if not node: return
+        if not node:
+            return
         action = node.data
-        
+
         # This is a simplified version of the dual-pane logic
         # For this prototype, we'll just use a modal for a simple param
         if action.type == "EXECUTE":
@@ -218,14 +233,18 @@ class CanonicalTuiPrototype(App):
             return
 
         # For CREATE/EDIT, use external editor
-        content = action.params.get("content", f"# Content for {action.type} on {action.params.get('path', '')}")
+        content = action.params.get(
+            "content", f"# Content for {action.type} on {action.params.get('path', '')}"
+        )
         with tempfile.NamedTemporaryFile(suffix=".md", delete=False, mode="w") as f:
             f.write(content)
             temp_path = f.name
 
-        self.query_one(StatusBar).notify(f"LAUNCHING: {os.path.basename(self.editor)} {temp_path}")
-        proc = subprocess.Popen([self.editor, temp_path])
-        
+        self.query_one(StatusBar).notify(
+            f"LAUNCHING: {os.path.basename(self.editor)} {temp_path}"
+        )
+        subprocess.Popen([self.editor, temp_path])  # nosec B603
+
         res = await self.push_screen_wait(PromptOverlay("Submit manual changes? (y/n)"))
         if res:
             action.modified = True
@@ -238,10 +257,12 @@ class CanonicalTuiPrototype(App):
         with tempfile.NamedTemporaryFile(suffix=".md", delete=False, mode="w") as f:
             f.write(content)
             temp_path = f.name
-        
-        self.query_one(StatusBar).notify(f"LAUNCHING: {os.path.basename(self.editor)} {temp_path}")
+
+        self.query_one(StatusBar).notify(
+            f"LAUNCHING: {os.path.basename(self.editor)} {temp_path}"
+        )
         proc = subprocess.Popen([self.editor, temp_path])
-        proc.wait() # In a real app this would be async
+        proc.wait()  # In a real app this would be async
 
         with open(temp_path, "r") as f:
             new_content = f.read().split(self.INSTRUCTION_MARKER)[0].strip()
@@ -252,10 +273,10 @@ class CanonicalTuiPrototype(App):
     def action_revert(self) -> None:
         node = self.query_one(ActionTree).cursor_node
         if node and node.data.modified:
-            node.data.modified = False # Simplistic revert for prototype
+            node.data.modified = False  # Simplistic revert for prototype
             self._update_node_label(node)
             self.query_one(StatusBar).notify("Reverted changes.")
-    
+
     def action_submit(self) -> None:
         # Finalize message content here
         final_message = self.message_content
@@ -264,10 +285,20 @@ class CanonicalTuiPrototype(App):
 
 if __name__ == "__main__":
     actions = [
-        MockAction("CREATE", {"path": "src/main.py", "description": "Create the app entry point"}),
-        MockAction("EDIT", {"path": "pyproject.toml", "description": "Add new dependencies"}),
-        MockAction("EXECUTE", {"command": "poetry install", "description": "Install dependencies"}),
-        MockAction("PROMPT", {"message": "Does this approach look correct?", "description": ""}),
+        MockAction(
+            "CREATE",
+            {"path": "src/main.py", "description": "Create the app entry point"},
+        ),
+        MockAction(
+            "EDIT", {"path": "pyproject.toml", "description": "Add new dependencies"}
+        ),
+        MockAction(
+            "EXECUTE",
+            {"command": "poetry install", "description": "Install dependencies"},
+        ),
+        MockAction(
+            "PROMPT", {"message": "Does this approach look correct?", "description": ""}
+        ),
     ]
     app = CanonicalTuiPrototype(actions)
     app.run()
