@@ -76,3 +76,12 @@ def test_action_data_is_terminal(action_type, expected):
     """Tests that is_terminal property correctly identifies terminal actions."""
     action = ActionData(type=action_type, params={}, description="test")
     assert action.is_terminal is expected
+
+
+def test_action_data_execution_state_defaults():
+    """Tests that ActionData defaults to PENDING and not executed."""
+    from teddy_executor.core.domain.models.plan import ExecutionStatus
+
+    action = ActionData(type="READ", params={}, description="test")
+    assert action.executed is False
+    assert action.state == ExecutionStatus.PENDING

@@ -15,6 +15,14 @@ class ActionType(str, Enum):
     RETURN = "RETURN"
 
 
+class ExecutionStatus(str, Enum):
+    """Represents the possible execution states of an action."""
+
+    PENDING = "PENDING"
+    SUCCESS = "SUCCESS"
+    FAILURE = "FAILURE"
+
+
 @dataclass
 class ActionData:
     """Represents a single action from the plan."""
@@ -24,6 +32,8 @@ class ActionData:
     description: str | None = None
     selected: bool = True
     modified: bool = False
+    executed: bool = False
+    state: ExecutionStatus = ExecutionStatus.PENDING
     node: Any = None
     similarity_score: float | None = None
     similarity_scores: list[float] | None = None

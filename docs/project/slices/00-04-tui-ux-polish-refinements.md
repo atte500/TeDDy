@@ -18,8 +18,13 @@ To refine the plan review TUI by implementing a more robust interaction model ba
 - **Then** its checkbox MUST be replaced with `[FAILURE]` in red.
 
 #### Deliverables
-- [ ] **Logic** - The `Action` domain model must track its execution state (`PENDING`, `SUCCESS`, `FAILURE`).
+- [✓] **Logic** - The `Action` domain model must track its execution state (`PENDING`, `SUCCESS`, `FAILURE`).
 - [ ] **Logic** - The node update logic must render the label with appropriate colors based on the state.
+
+## 6. Implementation Notes
+
+### Scenario: Clear Action Status and Execution Flow
+- **Deliverable: Action State Tracking**: Added `ExecutionStatus` string-based Enum to `plan.py` to match the existing `ActionType` pattern. Extended `ActionData` with `executed: bool` (default False) and `state: ExecutionStatus` (default PENDING). Verified with unit tests.
 - [ ] **Wiring** - The `(x)` keybinding should trigger state changes and a UI refresh.
 
 ### Scenario: External Editor Integration for Modifications

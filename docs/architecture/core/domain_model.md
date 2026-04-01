@@ -15,12 +15,16 @@ This document defines the core entities for the `teddy` executor application. Th
 
 ---
 
-## 1. ActionType (Enum)
+## 1. ActionType & ExecutionStatus (Enums)
 **Status:** Implemented
 
+### `ActionType`
 Enumerates the supported action types in the system.
-
 *   `CREATE`, `READ`, `EDIT`, `EXECUTE`, `RESEARCH`, `PROMPT`, `PRUNE`, `INVOKE`, `RETURN`
+
+### `ExecutionStatus`
+Enumerates the possible execution states of an individual action.
+*   `PENDING`, `SUCCESS`, `FAILURE`
 
 ---
 
@@ -171,6 +175,8 @@ Represents a single action within a plan, including its parameters and execution
     *   `params` (dict): Action-specific parameters.
     *   `selected` (bool): Whether the action is currently selected for execution.
     *   `modified` (bool): Whether the action was modified by the user.
+    *   `executed` (bool): Whether the action has been executed in the current session.
+    *   `state` (ExecutionStatus): The outcome of the execution (`PENDING`, `SUCCESS`, or `FAILURE`).
 *   **Behaviors:**
     *   `is_terminal`: (Property) Returns `True` if the action is a terminal action (`PROMPT`, `INVOKE`, `RETURN`) that should trigger isolation or handoff.
 *   **Invariants:**
