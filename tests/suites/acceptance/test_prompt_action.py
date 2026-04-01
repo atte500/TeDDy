@@ -58,7 +58,7 @@ def test_prompt_action_multiline_editor(tmp_path, monkeypatch):
         MarkdownPlanBuilder("Test Multiline Prompt").add_prompt("Write a poem:").build()
     )
 
-    def mock_run_editor(cmd, *args, **kwargs):
+    def mock_run_editor(cmd, *_args, **_kwargs):
         filepath = Path(cmd[-1])  # Temp path is the last arg
         # Use the exact marker from ConsoleInteractor background launch logic
         marker = "<!-- Please enter your response above this line. -->"
@@ -116,3 +116,30 @@ def test_invoke_with_reference_files_naming(tmp_path, monkeypatch):
     assert result.exit_code == 0
     assert "Reference Files:" in result.stdout
     assert "handoff.json" in result.stdout
+
+
+def test_prompt_bypass_if_response_pre_populated(tmp_path, monkeypatch):
+    """Scenario 5: Pre-populated user_response bypasses interactor in execution."""
+    from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
+    from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
+    from teddy_executor.core.domain.models import ActionStatus
+
+    env = TestEnvironment(monkeypatch, tmp_path)
+    env.setup().with_real_interactor()
+
+    # We create a plan but then manually inject the response into the domain model
+    # to simulate the state after a TUI review.
+    plan_str = (
+        MarkdownPlanBuilder("Bypass Prompt").add_prompt("What is your name?").build()
+    )
+    parser = env.get_service(IPlanParser)
+    plan_obj = parser.parse(plan_str)
+    plan_obj.actions[0].user_response = "TeDDy"
+
+    # Execution should be non-interactive/fluid for this action
+    # We bypass the CLI adapter and call the Use Case directly with our domain object.
+    use_case = env.get_service(IRunPlanUseCase)
+    report = use_case.execute(plan=plan_obj, interactive=True)
+
+    assert report.action_logs[0].status == ActionStatus.SUCCESS
+    assert report.action_logs[0].details["response"] == "TeDDy"

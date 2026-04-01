@@ -177,6 +177,7 @@ Represents a single action within a plan, including its parameters and execution
     *   `modified` (bool): Whether the action was modified by the user.
     *   `executed` (bool): Whether the action has been executed in the current session.
     *   `state` (ExecutionStatus): The outcome of the execution (`PENDING`, `SUCCESS`, or `FAILURE`).
+    *   `user_response` (Optional[str]): The captured response from a `PROMPT` action.
 *   **Behaviors:**
     *   `is_terminal`: (Property) Returns `True` if the action is a terminal action (`PROMPT`, `INVOKE`, `RETURN`) that should trigger isolation or handoff.
 *   **Invariants:**

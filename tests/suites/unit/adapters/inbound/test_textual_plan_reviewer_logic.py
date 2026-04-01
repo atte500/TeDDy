@@ -1,7 +1,31 @@
 import pytest
+from unittest.mock import AsyncMock, MagicMock, patch
 from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
     extract_status_emoji,
+    edit_action_logic,
 )
+from teddy_executor.core.domain.models.plan import ActionData
+
+
+@pytest.mark.anyio
+async def test_edit_action_logic_branches_to_prompt():
+    """Verify that edit_action_logic calls do_preview_logic for PROMPT type."""
+    # Setup
+    app = MagicMock()
+    node = MagicMock()
+    action = ActionData(type="PROMPT", params={"message": "What is your name?"})
+
+    # We mock do_preview_logic which is called for complex/fallback types
+    mock_preview = AsyncMock()
+    with patch(
+        "teddy_executor.adapters.inbound.textual_plan_reviewer_logic.do_preview_logic",
+        mock_preview,
+    ):
+        # Driver
+        await edit_action_logic(app, node, action)
+
+        # Observer
+        mock_preview.assert_called_once_with(app, node, action)
 
 
 @pytest.mark.parametrize(

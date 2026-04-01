@@ -16,7 +16,7 @@ from teddy_executor.core.domain.models.shell_output import ShellOutput
 class IAction(Protocol):
     """Defines the interface for any action handler."""
 
-    def execute(self, **kwargs) -> Any: ...
+    def execute(self, **_kwargs) -> Any: ...
 
 
 class IActionFactory(Protocol):
@@ -124,6 +124,13 @@ class ActionDispatcher:
         }
 
         try:
+            # Bypassed execution if a user response is already provided (from the review phase)
+            if action_data.type.upper() == "PROMPT" and action_data.user_response:
+                log_data["status"] = ActionStatus.SUCCESS
+                log_data["details"] = {"response": action_data.user_response}
+                logger.info("SUCCESS (Bypassed)")
+                return ActionLog(**log_data)
+
             execution_params = self._prepare_execution_params(action_data)
             if agent_name and action_data.type.upper() == "PROMPT":
                 execution_params["agent_name"] = agent_name

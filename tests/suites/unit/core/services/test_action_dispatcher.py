@@ -9,14 +9,14 @@ from teddy_executor.core.services.action_dispatcher import ActionDispatcher
 class FakeSuccessfulAction:
     """A test double for a generic action that always succeeds."""
 
-    def execute(self, **kwargs):
+    def execute(self, **_kwargs):
         return {"summary": "Fake action executed successfully."}
 
 
 class FakeFailingAction:
     """A test double for a generic action that always fails."""
 
-    def execute(self, **kwargs):
+    def execute(self, **_kwargs):
         raise RuntimeError("Fake action failed as intended.")
 
 
@@ -83,3 +83,29 @@ def test_dispatch_and_execute_failure(
     assert result_log.params == action_params
     assert isinstance(result_log.details, str)
     assert "Fake action failed as intended" in result_log.details
+
+
+def test_dispatch_and_execute_bypasses_prompt_if_user_response_provided(
+    dispatcher: ActionDispatcher, mock_action_factory: Mock
+):
+    """
+    Given a PROMPT action with a pre-existing user_response,
+    When dispatch_and_execute is called,
+    Then it should return a success log with that response immediately.
+    """
+    # Arrange
+    action_data = ActionData(
+        type="PROMPT",
+        params={"prompt": "How are you?"},
+        user_response="I am well.",
+    )
+
+    # Act
+    result_log = dispatcher.dispatch_and_execute(action_data)
+
+    # Assert
+    assert result_log.status == ActionStatus.SUCCESS
+    assert isinstance(result_log.details, dict)
+    assert result_log.details["response"] == "I am well."
+    # Ensure the factory was NOT called (bypass)
+    mock_action_factory.create_action.assert_not_called()

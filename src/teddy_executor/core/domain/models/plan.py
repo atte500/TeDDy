@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Sequence
+from typing import Any, Optional, Sequence
 
 
 class ActionType(str, Enum):
@@ -34,6 +34,7 @@ class ActionData:
     modified: bool = False
     executed: bool = False
     state: ExecutionStatus = ExecutionStatus.PENDING
+    user_response: Optional[str] = None
     node: Any = None
     similarity_score: float | None = None
     similarity_scores: list[float] | None = None

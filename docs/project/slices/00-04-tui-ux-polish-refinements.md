@@ -58,7 +58,7 @@ To refine the plan review TUI by implementing a more robust interaction model ba
 - [ ] **Logic** - Ensure the external editor workflow for `CREATE` prompts for a file path ("Save As" model).
 - [ ] **Logic** - Ensure confirmation prompts are used to finalize changes and set the `modified` state on the `ActionData` object.
 
-### Scenario: Interactive `PROMPT` Action
+### Scenario: Interactive `PROMPT` Action [✓] Verified
 > As a user, when I see a `PROMPT` action, I want to provide my answer directly within the TUI, so I don't have to be prompted again during execution.
 
 - **Given** a `PROMPT` action is highlighted.
@@ -68,9 +68,9 @@ To refine the plan review TUI by implementing a more robust interaction model ba
 - **Then** my response MUST be stored with the action, to be used automatically during execution.
 
 #### Deliverables
-- [ ] **Logic** - Add a case to the primary `action_edit_details` handler to manage the `PROMPT` action type.
-- [ ] **Domain** - Extend `ActionData` in `plan.py` with a field like `user_response: Optional[str] = None`.
-- [ ] **Harness** - Add an acceptance test to verify the end-to-end flow, ensuring the stored response is used during execution.
+- [✓] **Logic** - Add a case to the primary `action_edit_details` handler to manage the `PROMPT` action type.
+- [✓] **Domain** - Extend `ActionData` in `plan.py` with a field like `user_response: Optional[str] = None`.
+- [✓] **Harness** - Add an acceptance test to verify the end-to-end flow, ensuring the stored response is used during execution.
 
 ### Scenario: Comprehensive Toggling and Navigation
 > As a user, I want to use standard, efficient keybindings to select and deselect actions for execution.
@@ -83,7 +83,7 @@ To refine the plan review TUI by implementing a more robust interaction model ba
 
 #### Deliverables
 - [✓] **Logic** - The `(a)` key is wired to `action_toggle_all` with the correct logic.
-- [ ] **Wiring** - Add a `space` keybinding to `ReviewerApp` that toggles the current node's selection.
+- [✓] **Wiring** - Add a `space` keybinding to `ReviewerApp` that toggles the current node's selection.
 - [✓] **Wiring** - `on_tree_node_selected` (triggered by `enter`) correctly toggles selection.
 
 ### Scenario: Dynamic Footer & Full Plan Viewing
@@ -169,7 +169,8 @@ This slice should be implemented by a Developer, using the reference prototype a
 -   **Header Clock Implementation**: Configured the `Header` widget with `show_clock=True` in `ReviewerApp.compose`. Verified its presence in acceptance tests by querying for the internal `HeaderClock` widget (imported from `textual.widgets._header`).
 -   **Dual-Pane TUI Layout**: Refactored the single-pane tree into a dual-pane layout using `Horizontal` layout and `65%/35%` proportions. Introduced `ActionTree` and `ParameterList` specialized widgets.
 -   **Real-time Parameter Inspection**: Implemented dynamic population of the `ParameterList` when nodes in the `ActionTree` are highlighted. Added logic to filter out verbose content fields (like `content` or `FIND`/`REPLACE` blocks) to maintain a clean inspection view.
--   **Flat Visual Hierarchy**: Migrated `ActionTree` population to use `add_leaf` to remove expander icons from a traditionally flat list of actions.
+- **Flat Visual Hierarchy**: Migrated `ActionTree` population to use `add_leaf` to remove expander icons from a traditionally flat list of actions.
+- **Interactive PROMPT Handling**: Extended the `ActionData` domain model with a `user_response` field. Implemented `preview_prompt` in the previews adapter to allow answering questions via an external editor. This response is stored in the domain model and is intended to be used by the executor to bypass redundant prompts.
 
 **Delta Analysis Summary:**
 This slice has been updated based on a delta analysis between the reference prototype, the original slice, and the current source code (`textual_plan_reviewer.py`, `plan.py`). Key gaps identified include:

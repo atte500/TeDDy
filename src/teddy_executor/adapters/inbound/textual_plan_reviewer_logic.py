@@ -13,7 +13,7 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
 
 if TYPE_CHECKING:
     from teddy_executor.adapters.inbound.textual_plan_reviewer import ReviewerApp
-    from teddy_executor.core.domain.models.plan import ActionData, Plan
+    from teddy_executor.core.domain.models.plan import ActionData
 
 
 async def launch_editor(
@@ -72,6 +72,7 @@ async def do_preview_logic(app: ReviewerApp, node: Any, action: ActionData) -> N
     from teddy_executor.adapters.inbound.textual_plan_reviewer_previews import (
         preview_create,
         preview_edit,
+        preview_prompt,
         preview_readonly,
         preview_text_action,
     )
@@ -80,6 +81,8 @@ async def do_preview_logic(app: ReviewerApp, node: Any, action: ActionData) -> N
         await preview_create(app, action, node)
     elif action.type == "EDIT":
         await preview_edit(app, action, node)
+    elif action.type == "PROMPT":
+        await preview_prompt(app, action, node)
     elif action.type in ("EXECUTE", "RESEARCH"):
         await preview_text_action(app, action, node)
     elif action.type in ("READ", "PRUNE"):
@@ -203,7 +206,7 @@ def execute_step_logic(app: "ReviewerApp", node: Any) -> None:
         status_bar.update_status(f"EXECUTED: {action.type}")
 
 
-def toggle_all_logic(app: "ReviewerApp", plan: "Plan") -> None:
+def toggle_all_logic(app: "ReviewerApp", plan: Any) -> None:
     """Toggle selection for all actions."""
     any_unselected = any(not action.selected for action in plan.actions)
     new_state = any_unselected

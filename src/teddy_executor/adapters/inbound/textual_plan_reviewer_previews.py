@@ -117,3 +117,19 @@ async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
     except Exception:
         content = f"--- Content for {resource} could not be retrieved ---"
     await launch_editor(app, content, suffix=pathlib.Path(resource).suffix or ".txt")
+
+
+async def preview_prompt(app: ReviewerApp, action: ActionData, node: Any) -> None:
+    """Handle interactive answering for PROMPT."""
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
+        launch_editor,
+    )
+
+    message = cast(str, action.params.get("message", ""))
+    response = await launch_editor(app, message, suffix=".md")
+
+    if response is not None and await app.push_screen_wait(ConfirmScreen()):
+        if response.strip() != message.strip():
+            action.user_response = response.strip()
+            action.modified = True
+            app._refresh_node(node)

@@ -76,6 +76,7 @@ class ActionTree(Tree):
 
     BINDINGS = [
         Binding("enter", "select_cursor", "Toggle", show=False),
+        Binding("space", "select_cursor", "Toggle", show=False),
     ]
 
 
