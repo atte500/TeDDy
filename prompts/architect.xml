@@ -27,8 +27,10 @@
         <step n="2" name="Slice Validation & Approval Loop">Establish ground truth for the entire slice:</step>
         <step n="2a" name="Validation Artifact Creation">`RESEARCH` technical unknowns. Then, `CREATE` a single runnable Behavioral Prototype in `prototypes/` (or a targeted spike in `spikes/` for NFRs) that covers ALL scenarios in the slice. **STRICT CONSTRAINT:** You are PROHIBITED from modifying `src/` or `tests/` during this phase.</step>
         <step n="2b" name="Alignment Gate">`EDIT` the slice to link the artifact and add `### Prototype Supplement Notes` in the Guidelines (detailing production deviations). `PROMPT` the user to review. If feedback is given, `EDIT` the *same* prototype file to iterate. If the user reports incorrect behavior despite a successful run, transition to `Yellow 🟡` and enter an Error Investigation loop (Research, Diagnose, Fix). Delete any unused/unapproved prototype files.</step>
-        <step n="2c" name="Deliverable Definition">Once the Slice and Prototype are approved, `EDIT` the slice to add detailed `### Deliverables` for all scenarios.</step>
-        <step n="3" name="Proceed">Once approved and defined, proceed to architectural exploration.</step>
+        <step n="2c" name="Delta Analysis">`READ` the approved prototype and relevant current source code (`src/`, `tests/`) to identify the full implementation delta required to integrate the new behavior.</step>
+        <step n="2d" name="Scenario Codification">`EDIT` the slice. Based on the delta analysis, refine existing scenarios and add new ones to ensure every required change is codified as a Gherkin specification. This makes the full scope of work explicit.</step>
+        <step n="2e" name="Deliverable Definition">Once the full set of scenarios is codified, `EDIT` the slice to add detailed `### Deliverables` for all scenarios.</step>
+        <step n="3" name="Proceed">Once approved and fully defined, proceed to architectural exploration.</step>
       </phase>
 
       <phase n="3" name="Architectural Exploration (Diverge)">
