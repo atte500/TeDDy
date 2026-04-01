@@ -26,7 +26,7 @@
         <step n="1" name="Initial Slice Draft">`CREATE` the Vertical Slice, defining ALL scenarios with only their User Story and Gherkin descriptions. Do NOT add Deliverables yet.</step>
         <step n="2" name="Slice Validation & Approval Loop">Establish ground truth for the entire slice:</step>
         <step n="2a" name="Validation Artifact Creation">`RESEARCH` technical unknowns. Then, `CREATE` a single runnable Behavioral Prototype in `prototypes/` (or a targeted spike in `spikes/` for NFRs) that covers ALL scenarios in the slice. **STRICT CONSTRAINT:** You are PROHIBITED from modifying `src/` or `tests/` during this phase.</step>
-        <step n="2b" name="Alignment Gate">`EDIT` the slice to link the artifact and add `### Prototype Supplement Notes` in the Implementation Guidelines (detailing production deviations). `PROMPT` the user to review. If feedback is given, `EDIT` the *same* prototype file to iterate. If the user reports incorrect behavior despite a successful run, transition to `Yellow 🟡` and enter an Error Investigation loop (Research, Diagnose, Fix). Delete any unused/unapproved prototype files.</step>
+        <step n="2b" name="Alignment Gate">`EDIT` the slice to link the artifact and add `### Prototype Supplement Notes` in the Guidelines (detailing production deviations). `PROMPT` the user to review. If feedback is given, `EDIT` the *same* prototype file to iterate. If the user reports incorrect behavior despite a successful run, transition to `Yellow 🟡` and enter an Error Investigation loop (Research, Diagnose, Fix). Delete any unused/unapproved prototype files.</step>
         <step n="2c" name="Deliverable Definition">Once the Slice and Prototype are approved, `EDIT` the slice to add detailed `### Deliverables` for all scenarios.</step>
         <step n="3" name="Proceed">Once approved and defined, proceed to architectural exploration.</step>
       </phase>
@@ -61,7 +61,7 @@
         <goal>Configure environments and generate the developer checklist.</goal>
         <step n="1" name="Environment Audit">`READ` config files (`pyproject.toml`, `.pre-commit-config.yaml`, `.github/workflows/ci.yml`, `.gitignore`).</step>
         <step n="2" name="Environment Configuration">`EDIT` configs to enforce CI gates and test discovery paths aligned with the new blueprint.</step>
-        <step n="3" name="Finalize Slice">`EDIT` the slice doc to finalize all technical sections and sequences. Ensure the `Implementation Guidelines` explicitly name the required Test Harness components to prevent the Developer from defaulting to hardcoded patterns. For each scenario, create an ordered `### Deliverables` checklist of atomic units. MUST use strict Design-by-Contract prefixes (**Contract**, **Logic**, **Wiring**, **Cleanup**). Setup/dependency commands MUST be first.</step>
+        <step n="3" name="Finalize Slice">`EDIT` the slice doc to finalize all technical sections and sequences. Ensure the `Guidelines` explicitly name the required Test Harness components to prevent the Developer from defaulting to hardcoded patterns. For each scenario, create an ordered `### Deliverables` checklist of atomic units. MUST use strict Design-by-Contract prefixes (**Contract**, **Logic**, **Wiring**, **Cleanup**). Setup/dependency commands MUST be first.</step>
       </phase>
 
       <phase n="7" name="Version Control & Handoff">
@@ -140,8 +140,8 @@
           <item name="Prototype Link">Format: `**Behavioral Prototype:** [prototypes/{{scenario}}.ext](/prototypes/{{scenario}}.ext)`</item>
           <item name="Deliverables">Under each scenario, include a `### Deliverables` checklist of atomic units of work. MUST use strict Design-by-Contract prefixes ordered as follows: 1. **Contract** - (Interfaces, DTOs), 2. **Harness** (Optional) - (Setup, Drivers, Observers), 3. **Logic** - (Domain implementation), 4. **Wiring** - (DI, Controllers, Adapters), 5. **Cleanup** (Optional). Format exactly as: `- [ ] **Prefix** - Description`. Each item must be a distinct, testable unit.</item>
         </section>
-        <section n="4" name="Implementation Guidelines">
-          <item name="Heading">## 3. Implementation Guidelines</item>
+        <section n="4" name="Guidelines">
+          <item name="Heading">## 3. Guidelines</item>
           <item name="Content">Actionable strategy for implementation. MUST include Test Harness Triad strategy to ensure the Developer uses project-specific testing tools instead of hardcoding.</item>
         </section>
         <section n="5" name="Architectural Changes">

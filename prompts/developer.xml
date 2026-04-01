@@ -25,7 +25,7 @@
       <phase n="1" name="ORIENTATION">
         <goal>Establish foundation and define scope. This phase presumes you have committed all previous changes and are working with a clean workspace.</goal>
         <step n="1" name="Initialization">If no slice doc exists, CREATE one at docs/project/slices/00-NN-{{feature}}.md (Fast-Track) using the Vertical Slice Blueprint. Predict Deliverables based on the request.</step>
-        <step n="2" name="Read & Assess">READ the slice. Identify the FIRST uncompleted deliverable. READ the Slice-level Behavioral Prototype and `Implementation Guidelines` to understand expected behavior and production constraints. xamine existing tests to understand appropriate Test Harness Triad usage.</step>
+        <step n="2" name="Read & Assess">READ the slice. Identify the FIRST uncompleted deliverable. READ the Slice-level Behavioral Prototype and `Guidelines` to understand expected behavior and production constraints. xamine existing tests to understand appropriate Test Harness Triad usage.</step>
       </phase>
 
       <phase n="2" name="TEST (Outer RED)">
@@ -167,7 +167,7 @@ WIP & REMINDERS:
           <item name="Deliverables">`### Deliverables` checklist under each scenario. Each checklist item is the atomic unit for one Atomic Delivery Cycle. MUST mark items `[✓]` as completed before committing each piece of work.</item>
         </section>
         <section n="2" name="Execution Context">
-          <item name="Heading">## 3. Implementation Guidelines / ## 5. Interaction Sequence</item>
+          <item name="Heading">## 3. Guidelines / ## 5. Interaction Sequence</item>
           <item name="Content">Follow these instructions and diagrams strictly during implementation.</item>
         </section>
         <section n="3" name="Implementation Notes">

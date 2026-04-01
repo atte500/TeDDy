@@ -32,7 +32,7 @@
         <goal>Collaboratively build a living Specification Document to de-risk complex features (Architect path only).</goal>
         <step n="1" name="Problem Space (Why)">Diverge: `PROMPT` with strategic, clarifying questions. Converge: `CREATE` the Specification Document (`docs/project/specs/`) detailing core problem, goals, and constraints.</step>
         <step n="2" name="Solution Space (What)">Diverge: `RESEARCH` and `READ` distinct approaches. Converge: `EDIT` the Spec to add `## Proposed Solution` with trade-offs, spike learnings, and a strong recommendation.</step>
-        <step n="3" name="Implementation Space (How)">Diverge: `READ`/`EXECUTE` to explore codebase. Converge: `EDIT` the Spec to add `## Implementation Guidelines` (actionable plan, not code).</step>
+        <step n="3" name="Implementation Space (How)">Diverge: `READ`/`EXECUTE` to explore codebase. Converge: `EDIT` the Spec to add `## Guidelines` (actionable plan, not code).</step>
       </phase>
 
       <phase n="2" name="Finalization & Handoff">
@@ -76,8 +76,8 @@
           <item name="Heading">## 3. Technical Specification</item>
           <item name="Content">Detailed logic, file formats, directory structures, or workflow diagrams (Mermaid).</item>
         </section>
-        <section n="5" name="Implementation Guidelines">
-          <item name="Heading">## 4. Implementation Guidelines</item>
+        <section n="5" name="Guidelines">
+          <item name="Heading">## 4. Guidelines</item>
           <item name="Content">High-level phasing, sequencing, and technical strategy for the Architect.</item>
         </section>
       </blueprint>
@@ -94,8 +94,8 @@
         <section n="3" name="Proposed Solution">
           <item name="Description">## 2. Proposed Solution (The "What"): Approved tech and trade-offs.</item>
         </section>
-        <section n="4" name="Implementation Guidelines">
-          <item name="Description">## 3. Implementation Guidelines (The "How"): Actionable plan. MUST explicitly include Test Harness Triad strategy.</item>
+        <section n="4" name="Guidelines">
+          <item name="Description">## 3. Guidelines (The "How"): Actionable plan. MUST explicitly include Test Harness Triad strategy.</item>
         </section>
         <section n="5" name="Technical Specifications">
           <item name="Description">## 4. Technical Specifications: API contracts and data models.</item>
@@ -124,8 +124,8 @@
           <item name="Content">Each scenario MUST begin with a user story formatted as a Markdown blockquote (e.g., "> As a [user type], I want to [action] so that [benefit]"). This is followed by behavioral scenarios using Gherkin descriptions with concrete examples (Given/When/Then).</item>
           <item name="Deliverables">Under each scenario, include a `### Deliverables` checklist of atomic units of work. MUST use strict Design-by-Contract prefixes ordered as follows: 1. **Contract** - (Interfaces, DTOs), 2. **Harness** - (Setup, Drivers, Observers), 3. **Logic** - (Domain implementation), 4. **Wiring** - (DI, Controllers, Adapters), 5. **Cleanup** - (Optional). Format exactly as: `- [ ] **Prefix** - Description`. Each item must be a distinct, testable unit.</item>
         </section>
-        <section n="4" name="Implementation Guidelines">
-          <item name="Heading">## 3. Implementation Guidelines</item>
+        <section n="4" name="Guidelines">
+          <item name="Heading">## 3. Guidelines</item>
           <item name="Content">Actionable strategy for implementation. MUST include Test Harness Triad strategy. Includes `### Prototype Supplement Notes` to document deviations between the prototype and production logic.</item>
         </section>
         <section n="5" name="Architectural Changes">
