@@ -96,7 +96,7 @@ class ReviewerApp(App):
         """
         Create child widgets for the app.
         """
-        yield Header()
+        yield Header(show_clock=True)
         yield Tree("Action Plan")
         yield StatusBar("System Ready", id="status_bar")
         yield Footer()
