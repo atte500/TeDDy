@@ -86,6 +86,8 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 ### Architectural Debt
 - [x] **Windows CI Stability:** Fixed "Not properly terminated" worker crashes caused by CWD state leakage in integration tests.
 - [ ] **Test Pyramid Violation:** Resolve the structural imbalance (Acceptance: 101, Integration: 101, Unit: 305) to satisfy the 'Acceptance < Integration < Unit' rule.
+- [ ] **File Length (TUI Refactor):** Refactor `console_interactor.py` and `cli_helpers.py` to meet 300-line limit.
+- [ ] **Pygments Vulnerability:** Update `pygments` to 2.20.0+ to resolve GHSA-5239-wwwm-4pmq.
 - [ ] **DI & Test Harness:**
     - Refactor the `TEDDY_TEST_MOCK_EDITOR_OUTPUT` hook to use a dedicated test adapter instead of an environment variable.
     - Improve DI isolation by resolving container locations dynamically instead of using hardcoded module paths.

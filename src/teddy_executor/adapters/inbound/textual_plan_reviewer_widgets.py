@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
-from textual.widgets import Input, Label, Static
+
 from textual.screen import ModalScreen
+from textual.widgets import Input, Label, Static
 
 if TYPE_CHECKING:
     from textual.app import ComposeResult
@@ -13,7 +16,7 @@ class PathInputScreen(ModalScreen[str]):
         super().__init__()
         self.initial_path = initial_path
 
-    def compose(self) -> "ComposeResult":
+    def compose(self) -> ComposeResult:
         yield Label("File path:")
         yield Input(value=self.initial_path, id="path_input")
 
@@ -27,7 +30,7 @@ class PathInputScreen(ModalScreen[str]):
 class ConfirmScreen(ModalScreen[bool]):
     """Modal screen for final confirmation."""
 
-    def compose(self) -> "ComposeResult":
+    def compose(self) -> ComposeResult:
         yield Label("Have you finished editing and saved the changes? (y/n)")
 
     def on_key(self, event) -> None:
@@ -45,7 +48,7 @@ class ParameterEditModal(ModalScreen[str]):
         self.label = label
         self.initial_value = initial_value
 
-    def compose(self) -> "ComposeResult":
+    def compose(self) -> ComposeResult:
         from textual.containers import Vertical
 
         with Vertical(id="param_edit_container"):

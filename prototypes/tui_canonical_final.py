@@ -243,7 +243,7 @@ class CanonicalTuiPrototype(App):
         self.query_one(StatusBar).notify(
             f"LAUNCHING: {os.path.basename(self.editor)} {temp_path}"
         )
-        subprocess.Popen([self.editor, temp_path])  # nosec B603
+        subprocess.Popen([self.editor, temp_path])  # nosec B603 B607
 
         res = await self.push_screen_wait(PromptOverlay("Submit manual changes? (y/n)"))
         if res:
@@ -261,7 +261,7 @@ class CanonicalTuiPrototype(App):
         self.query_one(StatusBar).notify(
             f"LAUNCHING: {os.path.basename(self.editor)} {temp_path}"
         )
-        proc = subprocess.Popen([self.editor, temp_path])
+        proc = subprocess.Popen([self.editor, temp_path])  # nosec B603 B607
         proc.wait()  # In a real app this would be async
 
         with open(temp_path, "r") as f:

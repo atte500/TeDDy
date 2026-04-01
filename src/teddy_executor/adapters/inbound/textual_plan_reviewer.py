@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import os
 from collections.abc import Coroutine
@@ -9,20 +11,22 @@ from textual.screen import Screen
 from textual.widgets import Footer, Header, Tree
 
 from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
+    check_action_logic,
+    do_preview_logic,
     edit_action_logic,
+    execute_step_logic,
     format_node_label,
     launch_editor,
-    preview_create,
-    preview_edit,
-    preview_readonly,
-    preview_text_action,
+    refresh_node_logic,
+    revert_logic,
     toggle_all_logic,
+    toggle_selection_logic,
 )
 from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
     ConfirmScreen,
     StatusBar,
 )
-from teddy_executor.core.domain.models.plan import ExecutionStatus, Plan
+from teddy_executor.core.domain.models.plan import Plan
 from teddy_executor.core.services.edit_simulator import EditSimulator
 
 if TYPE_CHECKING:
@@ -122,69 +126,30 @@ class ReviewerApp(App):
         tree.focus()
 
     def on_tree_node_selected(self, event: Tree.NodeSelected) -> None:
-        """
-        Toggle action selection when a node is selected.
-        """
-        node = event.node
-        action: Optional["ActionData"] = node.data
-
-        if action is not None and not action.executed:
-            action.selected = not action.selected
-            self._refresh_node(node)
+        """Toggle action selection when a node is selected."""
+        toggle_selection_logic(self, event.node)
 
     def on_tree_node_highlighted(self, event: Tree.NodeHighlighted) -> None:
-        """
-        Refresh footer bindings when a new node is highlighted.
-        """
+        """Refresh footer bindings when a new node is highlighted."""
         _ = event
         self.refresh_bindings()
 
     def check_action(self, action: str, parameters: tuple[Any, ...]) -> bool:
-        """
-        Gate for enabling/disabling bindings based on state.
-        """
+        """Gate for enabling/disabling bindings based on state."""
         _ = parameters
-        if action == "revert":
-            tree = self.query_one(Tree)
-            node = tree.cursor_node
-            if not node:
-                return False
-            data: Optional["ActionData"] = node.data
-            return bool(data and data.modified)
-        return True
+        return check_action_logic(self, action)
 
     def action_revert(self) -> None:
-        """
-        Revert manual modifications for the currently highlighted action.
-        """
+        """Revert manual modifications for the currently highlighted action."""
         tree = self.query_one(Tree)
-        node = tree.cursor_node
-        if not node:
-            return
-
-        action: Optional["ActionData"] = node.data
-        if action and action.modified:
-            action.modified = False
-            # Note: A real implementation might need to restore original params
-            # but for Slice 00-04, we're focusing on the flag and UI state.
-            self._refresh_node(node)
-            self.refresh_bindings()
+        if tree.cursor_node:
+            revert_logic(self, tree.cursor_node)
 
     def action_execute_step(self) -> None:
-        """
-        Mark the currently highlighted action as executed and successful.
-        """
+        """Mark the currently highlighted action as executed and successful."""
         tree = self.query_one(Tree)
-        node = tree.cursor_node
-        if not node:
-            return
-
-        action: Optional["ActionData"] = node.data
-        if action and not action.executed:
-            action.executed = True
-            action.state = ExecutionStatus.SUCCESS
-            self._refresh_node(node)
-            self.query_one(StatusBar).update_status(f"EXECUTED: {action.type}")
+        if tree.cursor_node:
+            execute_step_logic(self, tree.cursor_node)
 
     def action_submit(self) -> None:
         """Exit the app and return the modified plan."""
@@ -210,30 +175,12 @@ class ReviewerApp(App):
 
     @work
     async def action_preview(self) -> None:
-        """
-        Preview and modify the currently selected action in an external editor.
-        """
+        """Preview and modify the currently selected action in an external editor."""
         tree = self.query_one(Tree)
         node = tree.cursor_node
-        if not node:
+        if not node or not node.data:
             return
-
-        action: Optional["ActionData"] = node.data
-        if not action:
-            return
-
-        await self._do_preview(tree, node, action)
-
-    async def _do_preview(self, _tree: Tree, node: Any, action: "ActionData") -> None:
-        """Internal logic for previewing/modifying complex actions."""
-        if action.type == "CREATE":
-            await preview_create(self, action, node)
-        elif action.type == "EDIT":
-            await preview_edit(self, action, node)
-        elif action.type in ("EXECUTE", "RESEARCH"):
-            await preview_text_action(self, action, node)
-        elif action.type in ("READ", "PRUNE"):
-            await preview_readonly(self, action)
+        await do_preview_logic(self, node, node.data)
 
     @work
     async def action_view_plan(self) -> None:
@@ -270,8 +217,7 @@ class ReviewerApp(App):
 
     def _refresh_node(self, node: Any) -> None:
         """Refresh the label and state of a single tree node."""
-        if node.data:
-            node.label = format_node_label(node.data)
+        refresh_node_logic(self, node)
 
 
 class TextualPlanReviewer(IPlanReviewer):

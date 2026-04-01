@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 import os
 import pathlib
-import anyio
 from typing import TYPE_CHECKING, Any, Optional, cast
+
+import anyio
 
 from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
     ConfirmScreen,
@@ -57,11 +60,11 @@ async def launch_editor(
         app._system_env.delete_file(temp_file)
 
 
-async def preview_edit(app: "ReviewerApp", action: "ActionData", node: Any) -> None:
+async def preview_edit(app: ReviewerApp, action: ActionData, node: Any) -> None:
     """Handle preview for EDIT."""
     if not app._file_system:
         return
-    path_str: str = action.params.get("path", "")
+    path_str = cast(str, action.params.get("path", ""))
     suffix = pathlib.Path(path_str).suffix or ".txt"
     try:
         original = app._file_system.read_file(path_str)
@@ -71,6 +74,7 @@ async def preview_edit(app: "ReviewerApp", action: "ActionData", node: Any) -> N
         original, action.params.get("edits", [])
     )
     diff_viewer = app._console_tooling.get_diff_viewer_command()
+    final: str | None = None
     if diff_viewer:
         before = app._system_env.create_temp_file(suffix=f".before{suffix}")
         after = app._system_env.create_temp_file(suffix=f".after{suffix}")
@@ -96,19 +100,21 @@ async def preview_edit(app: "ReviewerApp", action: "ActionData", node: Any) -> N
             app._refresh_node(node)
 
 
-async def preview_create(app: "ReviewerApp", action: "ActionData", node: Any) -> None:
+async def preview_create(app: ReviewerApp, action: ActionData, node: Any) -> None:
     """Handle preview for CREATE."""
-    path_str = action.params.get("path", "")
-    content = action.params.get("content", "")
+    path_str = cast(str, action.params.get("path", ""))
+    content = cast(str, action.params.get("content", ""))
     new_content = await launch_editor(
         app, content, suffix=pathlib.Path(path_str).suffix or ".txt"
     )
     if new_content is None:
         return
-    new_path = await app.push_screen_wait(PathInputScreen(path_str))
-    if new_path is not None and await app.push_screen_wait(ConfirmScreen()):
-        action.params["content"] = new_content
-        action.params["path"] = new_path
+    new_path_val: str | None = await app.push_screen_wait(
+        cast(Any, PathInputScreen(path_str))
+    )
+    if new_path_val is not None and await app.push_screen_wait(ConfirmScreen()):
+        action.params["content"] = cast(str, new_content)
+        action.params["path"] = cast(str, new_path_val)
         action.modified = True
         app._refresh_node(node)
 
@@ -180,12 +186,70 @@ async def edit_action_logic(
             action.modified = True
             app._refresh_node(node)
     # Fallback to existing preview logic for complex types
-    elif action.type == "CREATE":
+    else:
+        await do_preview_logic(app, node, action)
+
+
+async def do_preview_logic(app: ReviewerApp, node: Any, action: ActionData) -> None:
+    """Internal logic for previewing/modifying complex actions."""
+    if action.type == "CREATE":
         await preview_create(app, action, node)
     elif action.type == "EDIT":
         await preview_edit(app, action, node)
+    elif action.type in ("EXECUTE", "RESEARCH"):
+        await preview_text_action(app, action, node)
     elif action.type in ("READ", "PRUNE"):
         await preview_readonly(app, action)
+
+
+def refresh_node_logic(app: ReviewerApp, node: Any) -> None:
+    """Refresh the label and state of a single tree node."""
+    if node.data:
+        node.label = format_node_label(node.data)
+
+
+def check_action_logic(app: ReviewerApp, action_name: str) -> bool:
+    """Gate for enabling/disabling bindings based on state."""
+    if action_name == "revert":
+        from textual.widgets import Tree
+
+        tree = app.query_one(Tree)
+        node = tree.cursor_node
+        if not node:
+            return False
+        data: ActionData | None = node.data
+        return bool(data and data.modified)
+    return True
+
+
+def toggle_selection_logic(app: ReviewerApp, node: Any) -> None:
+    """Toggle action selection when a node is selected."""
+    action: Optional["ActionData"] = node.data
+    if action is not None and not action.executed:
+        action.selected = not action.selected
+        app._refresh_node(node)
+
+
+def revert_logic(app: "ReviewerApp", node: Any) -> None:
+    """Revert manual modifications for the currently highlighted action."""
+    action: Optional["ActionData"] = node.data
+    if action and action.modified:
+        action.modified = False
+        app._refresh_node(node)
+        app.refresh_bindings()
+
+
+def execute_step_logic(app: "ReviewerApp", node: Any) -> None:
+    """Mark the currently highlighted action as executed and successful."""
+    from teddy_executor.core.domain.models.plan import ExecutionStatus
+
+    action: Optional["ActionData"] = node.data
+    if action and not action.executed:
+        action.executed = True
+        action.state = ExecutionStatus.SUCCESS
+        app._refresh_node(node)
+        status_bar = cast(StatusBar, app.query_one("StatusBar"))
+        status_bar.update_status(f"EXECUTED: {action.type}")
 
 
 def toggle_all_logic(app: "ReviewerApp", plan: "Plan") -> None:

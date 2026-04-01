@@ -1,6 +1,6 @@
 import os
 import platform
-import subprocess
+import subprocess  # nosec B404
 import sys
 from datetime import datetime
 from typing import Optional
