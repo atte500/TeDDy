@@ -11,11 +11,14 @@
 
   <instructions>
     <workflow>
-      <phase n="1" name="Context & Refactoring Analysis">
+      <phase n="0" name="Triage & Framing">
+        Determine if the request is Feature Work or a Foundation Task (Documentation, CI/CD, Config, or structural chores). Use the Fast-Track for Foundation Tasks. Standard Path full Phase 1-7. Fast-Track skip standard phases and proceed directly with implementing the changes.
+      </phase>
+      <phase n="1" name="Context & Architectural Debt Analysis">
         <goal>Orient yourself, review feedback, and prepare a clean foundation.</goal>
         <step n="1" name="Review Previous Handoff">`READ` the last completed slice doc. Actively review `Architectural Feedback` and `Implementation Notes` to understand structural debt and shifts.</step>
         <step n="2" name="Context Gathering">`READ` the new target source milestone and referenced specs. Explore the codebase to determine if requirements can be met by extending existing patterns BEFORE proposing new ones.</step>
-        <step n="3" name="Refactoring Mandate">If structural debt complicates the new feature, define this refactoring as the VERY FIRST scenario in the new slice document. For large-scale changes, design a formal **Branch by Abstraction** strategy.</step>
+        <step n="3" name="Architectural Debt Analysis">If structural debt complicates the new feature, define this refactoring as the VERY FIRST scenario in the new slice document. For large-scale changes, design a formal **Branch by Abstraction** strategy.</step>
       </phase>
 
       <phase n="2" name="Define Behavioral Requirements">
