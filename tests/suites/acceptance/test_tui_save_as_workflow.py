@@ -1,0 +1,58 @@
+import pytest
+from unittest.mock import MagicMock
+from teddy_executor.core.domain.models.plan import Plan, ActionData
+from teddy_executor.adapters.inbound.textual_plan_reviewer import ReviewerApp
+from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
+
+
+@pytest.mark.anyio
+async def test_tui_create_action_save_as_workflow(env, monkeypatch):
+    """
+    Scenario: "Save As" workflow for CREATE actions.
+    The system should launch the editor and prompt for a new path.
+    """
+    action = ActionData(
+        type="CREATE",
+        params={
+            "path": "old/path.py",
+            "content": "original content",
+            "description": "desc",
+        },
+        selected=True,
+    )
+    plan = Plan(title="Save As Test", rationale="R", actions=[action])
+
+    # Setup mocks
+    sys_env = env.get_service(ISystemEnvironment)
+    # Mock editor output via environment variable (if supported by implementation)
+    monkeypatch.setenv("TEDDY_TEST_MOCK_EDITOR_OUTPUT", "modified content")
+
+    app = ReviewerApp(
+        plan=plan,
+        system_env=sys_env,
+        file_system=env.get_mock_filesystem(),
+        console_tooling=MagicMock(),
+    )
+
+    async with app.run_test() as pilot:
+        # 1. Highlight the CREATE action
+        await pilot.press("down")
+
+        # 2. Trigger edit
+        await pilot.press("e")
+
+        # 3. Handle the path input screen (PathInputScreen)
+        # In our implementation, we want this to happen while the editor is 'open'
+        await pilot.press(*"new/path.py")
+        await pilot.press("enter")
+
+        # 4. Handle the confirmation screen (ConfirmScreen)
+        await pilot.press("y")
+
+        # 5. Submit the plan
+        await pilot.press("s")
+
+    # Verification
+    assert action.params["path"] == "new/path.py"
+    assert action.params["content"] == "modified content"
+    assert action.modified is True

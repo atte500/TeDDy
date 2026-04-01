@@ -55,8 +55,8 @@ To refine the plan review TUI by implementing a more robust interaction model ba
 #### Deliverables
 - [x] **Refactor** - Consolidate the functionality of `action_edit_action` (`e`) and `action_preview` (`p`) into a single `action_edit_details` method bound to `e`. Remove the `p` binding.
 - [x] **Logic** - Implement branching logic within `action_edit_details` to show a modal for simple types and launch an external editor for complex types, as seen in the prototype.
-- [ ] **Logic** - Ensure the external editor workflow for `CREATE` prompts for a file path ("Save As" model).
-- [ ] **Logic** - Ensure confirmation prompts are used to finalize changes and set the `modified` state on the `ActionData` object.
+- [✓] **Logic** - Ensure the external editor workflow for `CREATE` prompts for a file path ("Save As" model).
+- [✓] **Logic** - Ensure confirmation prompts are used to finalize changes and set the `modified` state on the `ActionData` object.
 
 ### Scenario: Interactive `PROMPT` Action [✓] Verified
 > As a user, when I see a `PROMPT` action, I want to provide my answer directly within the TUI, so I don't have to be prompted again during execution.
@@ -170,7 +170,8 @@ This slice should be implemented by a Developer, using the reference prototype a
 -   **Dual-Pane TUI Layout**: Refactored the single-pane tree into a dual-pane layout using `Horizontal` layout and `65%/35%` proportions. Introduced `ActionTree` and `ParameterList` specialized widgets.
 -   **Real-time Parameter Inspection**: Implemented dynamic population of the `ParameterList` when nodes in the `ActionTree` are highlighted. Added logic to filter out verbose content fields (like `content` or `FIND`/`REPLACE` blocks) to maintain a clean inspection view.
 - **Flat Visual Hierarchy**: Migrated `ActionTree` population to use `add_leaf` to remove expander icons from a traditionally flat list of actions.
-- **Interactive PROMPT Handling**: Extended the `ActionData` domain model with a `user_response` field. Implemented `preview_prompt` in the previews adapter to allow answering questions via an external editor. This response is stored in the domain model and is intended to be used by the executor to bypass redundant prompts.
+-   **Interactive PROMPT Handling**: Extended the `ActionData` domain model with a `user_response` field. Implemented `preview_prompt` in the previews adapter to allow answering questions via an external editor. This response is stored in the domain model and is intended to be used by the executor to bypass redundant prompts.
+-   **Concurrent "Save As" Workflow**: Refactored `preview_create` and `preview_edit` to use `asyncio.gather` for launching the modification tool (editor or diff viewer) and the confirmation/path prompt concurrently. This ensures the TUI remains interactive and prompts the user while they are making changes, satisfying the "Unified, Context-Aware Action Modification" requirements. Verified the non-blocking behavior with dedicated concurrency unit tests for both `CREATE` and `EDIT` actions.
 
 **Delta Analysis Summary:**
 This slice has been updated based on a delta analysis between the reference prototype, the original slice, and the current source code (`textual_plan_reviewer.py`, `plan.py`). Key gaps identified include:
