@@ -63,7 +63,7 @@
 
       <phase n="5" name="DOCUMENTATION">
         <goal>Synchronize technical documentation and architectural contracts.</goal>
-        <step n="1" name="Sync Slice">Even if already partially documented, `EDIT` the vertical slice doc to mark the deliverable `[✓]`. Under `## 6. Implementation Notes` strictly in the vertical slice doc under a scenario-specific subsection (`### [Scenario]`) to record technical findings and decisions for this specific deliverable. If this is the final deliverable for a Scenario and it has been manually verified (Phase 4), mark the entire Scenario as `[✓] Verified` in the slice doc.</step>
+        <step n="1" name="Sync Slice">Even if already partially documented, `EDIT` the vertical slice doc to mark the deliverable `[✓]`. Append technical findings for this deliverable under the `## Implementation Notes` section. If this section does not exist, you MUST create it at the end of the file. If this is the final deliverable for a Scenario and it has been manually verified (Phase 4), mark the entire Scenario as `[✓] Verified` in the slice doc.</step>
         <step n="2" name="Harvest Debt">If any `[DEBT]` (frictions or architectural opportunities) was logged during this turn, `EDIT` the active Milestone's (in `docs/project/milestones/`) `## Technical Debt` section to append it as a checkmarkable [ ] task.</step>
         <step n="3" name="Align Architecture">`READ` the documentation of all modified components (`docs/architecture/**/*.md`) and `ARCHITECTURE.md`. Then, `EDIT` them to ensure strict alignment with your implementation. Ensure contracts (DTOs, Pre/Post-conditions) strictly match your code, but keep all narrative implementation notes centralized in the vertical slice doc.</step>
       </phase>
@@ -71,7 +71,7 @@
       <phase n="6" name="COMMIT (Mandatory)">
         <goal>Verify workspace state and hand off versioned history.</goal>
         <step n="1" name="Commit">Execute the Version Control Protocol for the **current deliverable only** in its own turn.</step>
-        <step n="2" name="Cleanup & Transition">If the Vertical Slice is fully complete (all scenarios verified), `EXECUTE` a command to delete the associated prototype file in `prototypes/`. If deliverables remain in the slice, return to Phase 1 for the next atomic unit. You MUST NOT use `RETURN` until the slice is complete, the prototype is deleted, and all deliverables are committed.</step>
+        <step n="2" name="Cleanup & Transition">If deliverables remain in the slice, return to Phase 1 for the next atomic unit. If the Vertical Slice is fully complete (all scenarios verified and all deliverables committed), you may use `RETURN`.</step>
       </phase>
     </workflow>
 
@@ -133,7 +133,17 @@ WIP & REMINDERS:
 
       <rule n="5" name="Information Gathering Workflow">Discover via `RESEARCH`/`EXECUTE`, then `READ` promising resources in a *subsequent* turn. Loop if unhelpful.</rule>
 
-      <rule n="6" name="Version Control Protocol">Single-turn commit sequence: <test-command> (only if src/ or tests/ modified) && git add . && git commit -m '...' && git push. The test command MUST run all project tests. This sequence MUST be performed in its own dedicated turn (Plan Type: Version Control) and cannot be combined with any other actions (e.g., EDIT, CREATE). If a linter or quality gate fails and it is not a minor fix, EDIT the active Milestone's (search for it in docs/project/milestones/) Technical Debt section to append a checkmarkable [ ] task, then carefully bypass precommit checks using git commit --no-verify -m '...'. ALL tests must still pass for this bypass to be valid.</rule>
+      <rule n="6" name="Version Control Protocol">
+        The commit message MUST be a comprehensive summary of all staged changes. If you are unsure of the full scope of changes, perform an `Information Gathering` turn to EXECUTE `git add . && git diff HEAD` first. Otherwise, proceed with the single-turn commit sequence:
+
+        `<test-command> (only if src/ or tests/ modified) && git add . && git commit -m '...' && git push`
+
+        This entire sequence MUST be performed in its own dedicated turn (Plan Type: Version Control) and cannot be combined with any other actions (e.g., EDIT, CREATE).
+
+        <bypass_protocol>
+          If a linter or quality gate fails and it is not a minor fix, EDIT the active Milestone's Technical Debt section, then bypass checks using `git commit --no-verify -m '...'`. ALL project tests must still pass for this bypass to be valid.
+        </bypass_protocol>
+      </rule>
 
       <rule n="7" name="Conventional Commits">Format: <type>(<scope>): <description>. Wrap entirely in single quotes. Description must use imperative mood (e.g., "Add endpoint"). Append ! for breaking changes.</rule>
 
@@ -162,17 +172,17 @@ WIP & REMINDERS:
       <blueprint name="Vertical Slice">
         <description>A cohesive feature that delivers a set of correlated and testable behaviors.</description>
         <section n="1" name="Scenarios">
-          <item name="Heading">## 2. Scenarios</item>
+          <item name="Heading">## Scenarios</item>
           <item name="Content">Each scenario includes a user story and Gherkin descriptions. You are to implement these behaviors.</item>
           <item name="Deliverables">`### Deliverables` checklist under each scenario. Each checklist item is the atomic unit for one Atomic Delivery Cycle. MUST mark items `[✓]` as completed before committing each piece of work.</item>
         </section>
         <section n="2" name="Execution Context">
-          <item name="Heading">## 3. Guidelines / ## 5. Interaction Sequence</item>
+          <item name="Heading">## Guidelines / Interaction Sequence</item>
           <item name="Content">Follow these instructions and diagrams strictly during implementation.</item>
         </section>
         <section n="3" name="Implementation Notes">
-          <item name="Heading">## 6. Implementation Notes</item>
-          <item name="Content">MANDATORY: Filled by the Developer during implementation. Record technical frictions, key decisions, and findings. MUST use thematic subsections (e.g., `### Scenario: [Name]`) to group notes logically for all deliverables within that theme.</item>
+          <item name="Heading">## Implementation Notes</item>
+          <item name="Content">Filled by the Developer during implementation. Record technical frictions, key decisions, and findings by appending them to this section.</item>
         </section>
       </blueprint>
 
@@ -183,19 +193,19 @@ WIP & REMINDERS:
           <item name="Status">- **Status:** Unresolved</item>
         </section>
         <section n="2" name="Context">
-          <item name="Heading">## 1. Failure Context</item>
+          <item name="Heading">## Failure Context</item>
         </section>
         <section n="3" name="Reproduction">
-          <item name="Heading">## 2. Steps to Reproduce</item>
+          <item name="Heading">## Steps to Reproduce</item>
         </section>
         <section n="4" name="Behavior">
-          <item name="Heading">## 3. Expected vs. Actual Behavior</item>
+          <item name="Heading">## Expected vs. Actual Behavior</item>
         </section>
         <section n="5" name="Analysis">
-          <item name="Heading">## 4. Relevant Code</item>
-          <item name="Heading">## 5. Investigation Log</item>
-          <item name="Heading">## 6. Root Cause Analysis</item>
-          <item name="Heading">## 7. Implementation Notes</item>
+          <item name="Heading">## Relevant Code</item>
+          <item name="Heading">## Investigation Log</item>
+          <item name="Heading">## Root Cause Analysis</item>
+          <item name="Heading">## Implementation Notes</item>
         </section>
       </blueprint>
     </blueprints>

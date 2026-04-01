@@ -65,19 +65,19 @@
           <item name="Path">docs/project/specs/{{feature}}.md</item>
         </section>
         <section n="2" name="Overview">
-          <item name="Heading">## 1. Overview / Problem Statement</item>
+          <item name="Heading">## Overview / Problem Statement</item>
           <item name="Content">Core problem, context, and value proposition.</item>
         </section>
         <section n="3" name="Guiding Principles">
-          <item name="Heading">## 2. Guiding Principles / Core Logic</item>
+          <item name="Heading">## Guiding Principles / Core Logic</item>
           <item name="Content">Foundational rules, engineering philosophy, or logical constraints.</item>
         </section>
         <section n="4" name="Technical Specification">
-          <item name="Heading">## 3. Technical Specification</item>
+          <item name="Heading">## Technical Specification</item>
           <item name="Content">Detailed logic, file formats, directory structures, or workflow diagrams (Mermaid).</item>
         </section>
         <section n="5" name="Guidelines">
-          <item name="Heading">## 4. Guidelines</item>
+          <item name="Heading">## Guidelines</item>
           <item name="Content">High-level phasing, sequencing, and technical strategy for the Architect.</item>
         </section>
       </blueprint>
@@ -89,22 +89,22 @@
           <item name="Specs">- **Specs:** [links]</item>
         </section>
         <section n="2" name="Goal">
-          <item name="Description">## 1. Goal (The "Why"): Approved problem definition and core objectives.</item>
+          <item name="Description">## Goal (The "Why"): Approved problem definition and core objectives.</item>
         </section>
         <section n="3" name="Proposed Solution">
-          <item name="Description">## 2. Proposed Solution (The "What"): Approved tech and trade-offs.</item>
+          <item name="Description">## Proposed Solution (The "What"): Approved tech and trade-offs.</item>
         </section>
         <section n="4" name="Guidelines">
-          <item name="Description">## 3. Guidelines (The "How"): Actionable plan. MUST explicitly include Test Harness Triad strategy.</item>
+          <item name="Description">## Guidelines (The "How"): Actionable plan. MUST explicitly include Test Harness Triad strategy.</item>
         </section>
         <section n="5" name="Technical Specifications">
-          <item name="Description">## 4. Technical Specifications: API contracts and data models.</item>
+          <item name="Description">## Technical Specifications: API contracts and data models.</item>
         </section>
         <section n="6" name="Vertical Slices">
-          <item name="Description">## 5. Vertical Slices: High-level checklist of implementation steps.</item>
+          <item name="Description">## Vertical Slices: High-level checklist of implementation steps.</item>
         </section>
         <section n="7" name="Technical Debt">
-          <item name="Description">## 6. Technical Debt: Bulleted list of [ ] tasks logged by any agent. MUST be addressed or scheduled before milestone closure.</item>
+          <item name="Description">## Technical Debt: Bulleted list of [ ] tasks logged by any agent. MUST be addressed or scheduled before milestone closure.</item>
         </section>
       </blueprint>
 
@@ -117,27 +117,27 @@
           <item name="Prototype">- **Behavioral Prototype:** [link]</item>
         </section>
         <section n="2" name="Business Goal">
-          <item name="Heading">## 1. Business Goal</item>
+          <item name="Heading">## Business Goal</item>
         </section>
         <section n="3" name="Scenarios">
-          <item name="Heading">## 2. Scenarios</item>
+          <item name="Heading">## Scenarios</item>
           <item name="Content">Each scenario MUST begin with a user story formatted as a Markdown blockquote (e.g., "> As a [user type], I want to [action] so that [benefit]"). This is followed by behavioral scenarios using Gherkin descriptions with concrete examples (Given/When/Then).</item>
           <item name="Deliverables">Under each scenario, include a `### Deliverables` checklist of atomic units of work. MUST use strict Design-by-Contract prefixes ordered as follows: 1. **Contract** - (Interfaces, DTOs), 2. **Harness** - (Setup, Drivers, Observers), 3. **Logic** - (Domain implementation), 4. **Wiring** - (DI, Controllers, Adapters), 5. **Cleanup** - (Optional). Format exactly as: `- [ ] **Prefix** - Description`. Each item must be a distinct, testable unit.</item>
         </section>
         <section n="4" name="Guidelines">
-          <item name="Heading">## 3. Guidelines</item>
+          <item name="Heading">## Guidelines</item>
           <item name="Content">Actionable strategy for implementation. MUST include Test Harness Triad strategy. Includes `### Prototype Supplement Notes` to document deviations between the prototype and production logic.</item>
         </section>
         <section n="5" name="Architectural Changes">
-          <item name="Heading">## 4. Architectural Changes</item>
+          <item name="Heading">## Architectural Changes</item>
           <item name="Content">Modified components (including Test Harness triads).</item>
         </section>
         <section n="6" name="Interaction Sequence">
-          <item name="Heading">## 5. Interaction Sequence</item>
+          <item name="Heading">## Interaction Sequence</item>
           <item name="Content">Mermaid sequence diagram or narrative describing the flow between components.</item>
         </section>
         <section n="7" name="Implementation Notes">
-          <item name="Heading">## 6. Implementation Notes</item>
+          <item name="Heading">## Implementation Notes</item>
           <item name="Content">Filled by the Developer as things get implemented. Record of frictions, technical decisions, and findings.</item>
         </section>
       </blueprint>
@@ -149,19 +149,19 @@
           <item name="Status">- **Status:** Unresolved</item>
         </section>
         <section n="2" name="Context">
-          <item name="Heading">## 1. Failure Context</item>
+          <item name="Heading">## Failure Context</item>
         </section>
         <section n="3" name="Reproduction">
-          <item name="Heading">## 2. Steps to Reproduce</item>
+          <item name="Heading">## Steps to Reproduce</item>
         </section>
         <section n="4" name="Behavior">
-          <item name="Heading">## 3. Expected vs. Actual Behavior</item>
+          <item name="Heading">## Expected vs. Actual Behavior</item>
         </section>
         <section n="5" name="Analysis">
-          <item name="Heading">## 4. Relevant Code</item>
-          <item name="Heading">## 5. Investigation Log</item>
-          <item name="Heading">## 6. Root Cause Analysis</item>
-          <item name="Heading">## 7. Implementation Notes</item>
+          <item name="Heading">## Relevant Code</item>
+          <item name="Heading">## Investigation Log</item>
+          <item name="Heading">## Root Cause Analysis</item>
+          <item name="Heading">## Implementation Notes</item>
         </section>
       </blueprint>
     </blueprints>
@@ -231,7 +231,17 @@ DISCOVERY NOTES:
 
       <rule n="5" name="Information Gathering Workflow">Discover via `RESEARCH`/`EXECUTE`, then `READ` promising resources in a *subsequent* turn. Loop if unhelpful.</rule>
 
-      <rule n="6" name="Version Control Protocol">Single-turn commit sequence: <test-command> (only if src/ or tests/ modified) && git add . && git commit -m '...' && git push. The test command MUST run all project tests. This sequence MUST be performed in its own dedicated turn (Plan Type: Version Control) and cannot be combined with any other actions (e.g., EDIT, CREATE). If a linter or quality gate fails and it is not a minor fix, EDIT the active Milestone's (search for it in docs/project/milestones/) Technical Debt section to append a checkmarkable [ ] task, then carefully bypass precommit checks using git commit --no-verify -m '...'. ALL tests must still pass for this bypass to be valid.</rule>
+      <rule n="6" name="Version Control Protocol">
+        The commit message MUST be a comprehensive summary of all staged changes. If you are unsure of the full scope of changes, perform an `Information Gathering` turn to EXECUTE `git add . && git diff HEAD` first. Otherwise, proceed with the single-turn commit sequence:
+
+        `<test-command> (only if src/ or tests/ modified) && git add . && git commit -m '...' && git push`
+
+        This entire sequence MUST be performed in its own dedicated turn (Plan Type: Version Control) and cannot be combined with any other actions (e.g., EDIT, CREATE).
+
+        <bypass_protocol>
+          If a linter or quality gate fails and it is not a minor fix, EDIT the active Milestone's Technical Debt section, then bypass checks using `git commit --no-verify -m '...'`. ALL project tests must still pass for this bypass to be valid.
+        </bypass_protocol>
+      </rule>
 
       <rule n="7" name="Conventional Commits">Format: <type>(<scope>): <description>. Wrap entirely in single quotes. Description must use imperative mood (e.g., "Add endpoint"). Append ! for breaking changes.</rule>
 

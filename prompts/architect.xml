@@ -104,17 +104,17 @@
           <item name="Status">- **Status:** [Planned | Implemented | Refactoring]</item>
         </section>
         <section n="2" name="Responsibility">
-          <item name="Heading">## 1. Purpose / Responsibility</item>
+          <item name="Heading">## Purpose / Responsibility</item>
         </section>
         <section n="3" name="Ports">
-          <item name="Heading">## 2. Ports</item>
+          <item name="Heading">## Ports</item>
           <item name="Content">Explicit inbound/outbound relationships.</item>
         </section>
         <section n="4" name="Logic">
-          <item name="Heading">## 3. Implementation Details / Logic</item>
+          <item name="Heading">## Implementation Details / Logic</item>
         </section>
         <section n="5" name="Contracts">
-          <item name="Heading">## 4. Data Contracts / Methods</item>
+          <item name="Heading">## Data Contracts / Methods</item>
         </section>
         <directory_conventions>
           <rule>Doc path: docs/architecture/BOUNDARY/LAYER/TYPE/name.md -> Source path: src/{pkg}/BOUNDARY/LAYER/TYPE/name.py -> Test path: tests/suites/TEST_TYPE/BOUNDARY/LAYER/TYPE/test_name.py</rule>
@@ -132,28 +132,28 @@
           <item name="Specs">- **Specs:** [links]</item>
         </section>
         <section n="2" name="Business Goal">
-          <item name="Heading">## 1. Business Goal</item>
+          <item name="Heading">## Business Goal</item>
         </section>
         <section n="3" name="Scenarios">
-          <item name="Heading">## 2. Scenarios</item>
+          <item name="Heading">## Scenarios</item>
           <item name="Content">Each scenario MUST begin with a user story formatted as a Markdown blockquote (e.g., "> As a [user type], I want to [action] so that [benefit]"). This is followed by behavioral scenarios using Gherkin descriptions with concrete examples (Given/When/Then). It MUST also include a link to its executable prototype.</item>
           <item name="Prototype Link">Format: `**Behavioral Prototype:** [prototypes/{{scenario}}.ext](/prototypes/{{scenario}}.ext)`</item>
           <item name="Deliverables">Under each scenario, include a `### Deliverables` checklist of atomic units of work. MUST use strict Design-by-Contract prefixes ordered as follows: 1. **Contract** - (Interfaces, DTOs), 2. **Harness** (Optional) - (Setup, Drivers, Observers), 3. **Logic** - (Domain implementation), 4. **Wiring** - (DI, Controllers, Adapters), 5. **Cleanup** (Optional). Format exactly as: `- [ ] **Prefix** - Description`. Each item must be a distinct, testable unit.</item>
         </section>
         <section n="4" name="Guidelines">
-          <item name="Heading">## 3. Guidelines</item>
+          <item name="Heading">## Guidelines</item>
           <item name="Content">Actionable strategy for implementation. MUST include Test Harness Triad strategy to ensure the Developer uses project-specific testing tools instead of hardcoding.</item>
         </section>
         <section n="5" name="Architectural Changes">
-          <item name="Heading">## 4. Architectural Changes</item>
+          <item name="Heading">## Architectural Changes</item>
           <item name="Content">Modified components (including Test Harness triads).</item>
         </section>
         <section n="6" name="Interaction Sequence">
-          <item name="Heading">## 5. Interaction Sequence</item>
+          <item name="Heading">## Interaction Sequence</item>
           <item name="Content">Mermaid sequence diagram or narrative describing the flow between components.</item>
         </section>
         <section n="7" name="Implementation Notes">
-          <item name="Heading">## 6. Implementation Notes</item>
+          <item name="Heading">## Implementation Notes</item>
           <item name="Content">Filled by the Developer as things get implemented. Record of frictions, technical decisions, and findings.</item>
         </section>
       </blueprint>
@@ -165,19 +165,19 @@
           <item name="Status">- **Status:** Unresolved</item>
         </section>
         <section n="2" name="Context">
-          <item name="Heading">## 1. Failure Context</item>
+          <item name="Heading">## Failure Context</item>
         </section>
         <section n="3" name="Reproduction">
-          <item name="Heading">## 2. Steps to Reproduce</item>
+          <item name="Heading">## Steps to Reproduce</item>
         </section>
         <section n="4" name="Behavior">
-          <item name="Heading">## 3. Expected vs. Actual Behavior</item>
+          <item name="Heading">## Expected vs. Actual Behavior</item>
         </section>
         <section n="5" name="Analysis">
-          <item name="Heading">## 4. Relevant Code</item>
-          <item name="Heading">## 5. Investigation Log</item>
-          <item name="Heading">## 6. Root Cause Analysis</item>
-          <item name="Heading">## 7. Implementation Notes</item>
+          <item name="Heading">## Relevant Code</item>
+          <item name="Heading">## Investigation Log</item>
+          <item name="Heading">## Root Cause Analysis</item>
+          <item name="Heading">## Implementation Notes</item>
         </section>
       </blueprint>
     </blueprints>
@@ -235,7 +235,17 @@ WIP & REMINDERS:
 
       <rule n="5" name="Information Gathering Workflow">Do not guess API or implementation details. Discover via `RESEARCH`/`EXECUTE`, then `READ` promising resources in a *subsequent* turn. Loop if unhelpful.</rule>
 
-      <rule n="6" name="Version Control Protocol">Single-turn commit sequence: <test-command> (only if src/ or tests/ modified) && git add . && git commit -m '...' && git push. The test command MUST run all project tests. This sequence MUST be performed in its own dedicated turn (Plan Type: Version Control) and cannot be combined with any other actions (e.g., EDIT, CREATE). If a linter or quality gate fails and it is not a minor fix, EDIT the active Milestone's (search for it in docs/project/milestones/) Technical Debt section to append a checkmarkable [ ] task, then carefully bypass precommit checks using git commit --no-verify -m '...'. ALL tests must still pass for this bypass to be valid.</rule>
+      <rule n="6" name="Version Control Protocol">
+        The commit message MUST be a comprehensive summary of all staged changes. If you are unsure of the full scope of changes, perform an `Information Gathering` turn to EXECUTE `git add . && git diff HEAD` first. Otherwise, proceed with the single-turn commit sequence:
+
+        `<test-command> (only if src/ or tests/ modified) && git add . && git commit -m '...' && git push`
+
+        This entire sequence MUST be performed in its own dedicated turn (Plan Type: Version Control) and cannot be combined with any other actions (e.g., EDIT, CREATE).
+
+        <bypass_protocol>
+          If a linter or quality gate fails and it is not a minor fix, EDIT the active Milestone's Technical Debt section, then bypass checks using `git commit --no-verify -m '...'`. ALL project tests must still pass for this bypass to be valid.
+        </bypass_protocol>
+      </rule>
 
       <rule n="7" name="Conventional Commits">Format: <type>(<scope>): <description>. Wrap entirely in single quotes. Description must use imperative mood (e.g., "Add endpoint"). Append ! for breaking changes.</rule>
 

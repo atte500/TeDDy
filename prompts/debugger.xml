@@ -146,7 +146,17 @@ WIP & REMINDERS:
 
       <rule n="5" name="Information Gathering Workflow">Discover via `RESEARCH`/`EXECUTE`, then `READ` promising resources in a *subsequent* turn. Loop if unhelpful.</rule>
 
-      <rule n="6" name="Version Control Protocol">Single-turn commit sequence: <test-command> (only if src/ or tests/ modified) && git add . && git commit -m '...' && git push. The test command MUST run all project tests. This sequence MUST be performed in its own dedicated turn (Plan Type: Version Control) and cannot be combined with any other actions (e.g., EDIT, CREATE). If a linter or quality gate fails and it is not a minor fix, EDIT the active Milestone's (search for it in docs/project/milestones/) Technical Debt section to append a checkmarkable [ ] task, then carefully bypass precommit checks using git commit --no-verify -m '...'. ALL tests must still pass for this bypass to be valid.</rule>
+      <rule n="6" name="Version Control Protocol">
+        The commit message MUST be a comprehensive summary of all staged changes. If you are unsure of the full scope of changes, perform an `Information Gathering` turn to EXECUTE `git add . && git diff HEAD` first. Otherwise, proceed with the single-turn commit sequence:
+
+        `<test-command> (only if src/ or tests/ modified) && git add . && git commit -m '...' && git push`
+
+        This entire sequence MUST be performed in its own dedicated turn (Plan Type: Version Control) and cannot be combined with any other actions (e.g., EDIT, CREATE).
+
+        <bypass_protocol>
+          If a linter or quality gate fails and it is not a minor fix, EDIT the active Milestone's Technical Debt section, then bypass checks using `git commit --no-verify -m '...'`. ALL project tests must still pass for this bypass to be valid.
+        </bypass_protocol>
+      </rule>
 
       <rule n="7" name="Conventional Commits">Format: <type>(<scope>): <description>. Wrap entirely in single quotes. Description must use imperative mood (e.g., "Add endpoint"). Append ! for breaking changes.</rule>
 
@@ -175,20 +185,20 @@ WIP & REMINDERS:
           <item name="Status">- **Status:** Unresolved</item>
         </section>
         <section n="2" name="Context">
-          <item name="Heading">## 1. Failure Context</item>
+          <item name="Heading">## Failure Context</item>
         </section>
         <section n="3" name="Reproduction">
-          <item name="Heading">## 2. Steps to Reproduce</item>
+          <item name="Heading">## Steps to Reproduce</item>
         </section>
         <section n="4" name="Behavior">
-          <item name="Heading">## 3. Expected vs. Actual Behavior</item>
+          <item name="Heading">## Expected vs. Actual Behavior</item>
         </section>
         <section n="5" name="Analysis">
-          <item name="Heading">## 4. Relevant Code</item>
-          <item name="Heading">## 5. Investigation Log</item>
+          <item name="Heading">## Relevant Code</item>
+          <item name="Heading">## Investigation Log</item>
           <item name="Content">Each entry MUST be a Markdown blockquote with the following structure: **Hypothesis**: ... **Experiment**: ... **Observation**: ... **Conclusion**: ...</item>
-          <item name="Heading">## 6. Root Cause Analysis</item>
-          <item name="Heading">## 7. Implementation Notes</item>
+          <item name="Heading">## Root Cause Analysis</item>
+          <item name="Heading">## Implementation Notes</item>
         </section>
       </blueprint>
     </blueprints>
