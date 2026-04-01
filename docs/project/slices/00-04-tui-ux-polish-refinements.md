@@ -28,10 +28,10 @@ To refine the plan review TUI by implementing a more robust interaction model ba
 - **Then** it MUST display all possible parameters for that action type, showing the actual value if present, or the system's default value if not.
 
 #### Deliverables
-- [ ] **Layout** - Refactor `ReviewerApp.compose` to use a `Horizontal` layout containing the `ActionTree` and a new `ParameterList` widget.
-- [ ] **Widget** - Create a new `ParameterList(Tree)` widget for the right pane, similar to the prototype.
-- [ ] **Logic** - Create a service or helper to resolve the full parameter set (including defaults) for any given `ActionType`.
-- [ ] **Wiring** - The `on_tree_node_highlighted` handler must use this service to populate the `ParameterList`.
+- [✓] **Layout** - Refactor `ReviewerApp.compose` to use a `Horizontal` layout containing the `ActionTree` and a new `ParameterList` widget.
+- [✓] **Widget** - Create a new `ParameterList(Tree)` widget for the right pane, similar to the prototype.
+- [✓] **Logic** - Create a service or helper to resolve the full parameter set (including defaults) for any given `ActionType`.
+- [✓] **Wiring** - The `on_tree_node_highlighted` handler must use this service to populate the `ParameterList`.
 
 ### Scenario: Clean Visual Hierarchy
 > As a user, I want to see a flat list of actions without expander icons, so the interface is clean and simple.
@@ -41,7 +41,7 @@ To refine the plan review TUI by implementing a more robust interaction model ba
 - **Then** each action MUST be displayed as a leaf node without an expander icon.
 
 #### Deliverables
-- [ ] **Wiring** - In `ReviewerApp.on_mount`, use `tree.root.add_leaf` instead of `tree.root.add` for each action.
+- [✓] **Wiring** - In `ReviewerApp.on_mount`, use `tree.root.add_leaf` instead of `tree.root.add` for each action.
 
 ### Scenario: Unified, Context-Aware Action Modification
 > As a user, I want a single, intuitive key to edit any action, which uses a simple modal for quick changes and my full editor for complex content.
@@ -167,6 +167,9 @@ This slice should be implemented by a Developer, using the reference prototype a
 
 -   **Header Title Logic**: Implemented dynamic title setting in `ReviewerApp.on_mount`. Refactored the logic for extracting the status emoji into a new, unit-tested helper function `extract_status_emoji` in `textual_plan_reviewer_logic.py` to improve robustness and testability.
 -   **Header Clock Implementation**: Configured the `Header` widget with `show_clock=True` in `ReviewerApp.compose`. Verified its presence in acceptance tests by querying for the internal `HeaderClock` widget (imported from `textual.widgets._header`).
+-   **Dual-Pane TUI Layout**: Refactored the single-pane tree into a dual-pane layout using `Horizontal` layout and `65%/35%` proportions. Introduced `ActionTree` and `ParameterList` specialized widgets.
+-   **Real-time Parameter Inspection**: Implemented dynamic population of the `ParameterList` when nodes in the `ActionTree` are highlighted. Added logic to filter out verbose content fields (like `content` or `FIND`/`REPLACE` blocks) to maintain a clean inspection view.
+-   **Flat Visual Hierarchy**: Migrated `ActionTree` population to use `add_leaf` to remove expander icons from a traditionally flat list of actions.
 
 **Delta Analysis Summary:**
 This slice has been updated based on a delta analysis between the reference prototype, the original slice, and the current source code (`textual_plan_reviewer.py`, `plan.py`). Key gaps identified include:

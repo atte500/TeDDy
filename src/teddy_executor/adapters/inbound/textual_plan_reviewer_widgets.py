@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from textual.binding import Binding
 from textual.screen import ModalScreen
-from textual.widgets import Input, Label, Static
+from textual.widgets import Input, Label, Static, Tree
 
 if TYPE_CHECKING:
     from textual.app import ComposeResult
@@ -68,3 +69,15 @@ class StatusBar(Static):
     def update_status(self, message: str) -> None:
         """Update the status bar content."""
         self.update(message)
+
+
+class ActionTree(Tree):
+    """A tree that allows both space and enter to toggle selection."""
+
+    BINDINGS = [
+        Binding("enter", "select_cursor", "Toggle", show=False),
+    ]
+
+
+class ParameterList(Tree):
+    """A simple tree for displaying parameters."""

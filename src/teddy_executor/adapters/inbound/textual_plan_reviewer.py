@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
 from textual import work
 from textual.app import App, ComposeResult
+from textual.containers import Horizontal
 from textual.screen import Screen
 from textual.widgets import Footer, Header, Tree
 
@@ -24,7 +25,9 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
     toggle_selection_logic,
 )
 from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
+    ActionTree,
     ConfirmScreen,
+    ParameterList,
     StatusBar,
 )
 from teddy_executor.core.domain.models.plan import Plan
@@ -53,6 +56,18 @@ class ReviewerApp(App):
     INSTRUCTION_MARKER = "\n\n<!-- Please enter your message above this line. -->"
 
     CSS = """
+    #main-container {
+        layout: horizontal;
+        height: 1fr;
+    }
+    #left-pane {
+        width: 65%;
+    }
+    #right-pane {
+        width: 35%;
+        border-left: vkey $foreground 15%;
+        padding: 0 1;
+    }
     #status_bar {
         background: $boost;
         color: $text;
@@ -97,7 +112,9 @@ class ReviewerApp(App):
         Create child widgets for the app.
         """
         yield Header(show_clock=True)
-        yield Tree("Action Plan")
+        with Horizontal(id="main-container"):
+            yield ActionTree("Action Plan", id="left-pane")
+            yield ParameterList("Parameters", id="right-pane")
         yield StatusBar("System Ready", id="status_bar")
         yield Footer()
 
@@ -123,12 +140,15 @@ class ReviewerApp(App):
         title_parts = [part for part in [status_emoji, self.plan.title] if part]
         self.title = " ".join(title_parts)
 
-        tree = self.query_one(Tree)
+        tree = self.query_one(ActionTree)
+        param_tree = self.query_one(ParameterList)
+        param_tree.show_root = False
+
         tree.root.expand()
         for action in self.plan.actions:
             if action.type == "PRUNE" and not self.plan.is_session:
                 continue
-            tree.root.add(format_node_label(action), data=action)
+            tree.root.add_leaf(format_node_label(action), data=action)
         tree.focus()
 
     def on_tree_node_selected(self, event: Tree.NodeSelected) -> None:
@@ -137,8 +157,22 @@ class ReviewerApp(App):
 
     def on_tree_node_highlighted(self, event: Tree.NodeHighlighted) -> None:
         """Refresh footer bindings when a new node is highlighted."""
-        _ = event
+        if event.node.tree.id == "left-pane":
+            action = event.node.data if not event.node.is_root else None
+            self._update_detail_view(action)
         self.refresh_bindings()
+
+    def _update_detail_view(self, action: Optional[ActionData]) -> None:
+        """Update the parameter list with the highlighted action's details."""
+        param_tree = self.query_one(ParameterList)
+        param_tree.clear()
+        param_tree.root.label = "Parameters"
+        if action:
+            param_tree.root.label = f"Parameters for {action.type}"
+            for key, value in action.params.items():
+                if key not in ("content", "find", "replace", "message"):
+                    param_tree.root.add_leaf(f"{key}: {str(value)}")
+            param_tree.root.expand()
 
     def check_action(self, action: str, parameters: tuple[Any, ...]) -> bool:
         """Gate for enabling/disabling bindings based on state."""
