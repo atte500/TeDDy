@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import pathlib
+import re
 from typing import TYPE_CHECKING, Any, Optional, cast
 
 import anyio
@@ -133,6 +134,14 @@ async def preview_text_action(
             action.params[key] = new_content.strip()
             action.modified = True
             app._refresh_node(node)
+
+
+def extract_status_emoji(raw_status: str) -> str:
+    """Extracts the last emoji from a status string."""
+    # A simple regex to find common status emojis.
+    # This is not exhaustive but covers the expected cases.
+    emojis = re.findall(r"[🟢🟡🔴]", raw_status)
+    return emojis[-1] if emojis else ""
 
 
 async def preview_readonly(app: "ReviewerApp", action: "ActionData") -> None:

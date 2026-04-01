@@ -15,6 +15,7 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
     do_preview_logic,
     edit_action_logic,
     execute_step_logic,
+    extract_status_emoji,
     format_node_label,
     launch_editor,
     refresh_node_logic,
@@ -117,6 +118,11 @@ class ReviewerApp(App):
 
     def on_mount(self) -> None:
         """Populate the action tree when the app is mounted."""
+        status_raw = self.plan.metadata.get("Status", "")
+        status_emoji = extract_status_emoji(status_raw)
+        title_parts = [part for part in [status_emoji, self.plan.title] if part]
+        self.title = " ".join(title_parts)
+
         tree = self.query_one(Tree)
         tree.root.expand()
         for action in self.plan.actions:

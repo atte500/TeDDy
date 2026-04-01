@@ -17,7 +17,7 @@ To refine the plan review TUI by implementing a more robust interaction model ba
 - **And** the `Header` widget MUST display a clock on the right.
 
 #### Deliverables
-- [ ] **Logic** - In `ReviewerApp.on_mount`, dynamically set `self.title` from `self.plan.title` and `self.plan.metadata["Status"]` (extracting the status emoji).
+- [✓] **Logic** - In `ReviewerApp.on_mount`, dynamically set `self.title` from `self.plan.title` and `self.plan.metadata["Status"]` (extracting the status emoji).
 - [ ] **Wiring** - In `ReviewerApp.compose`, the `Header` widget must be configured with `show_clock=True`.
 
 ### Scenario: Dual-Pane Layout with Comprehensive Parameter Inspection
@@ -164,6 +164,8 @@ This slice should be implemented by a Developer, using the reference prototype a
 - **Prototype-Only Keys:** The `(f)` keybinding from the prototype for simulating failure is for demonstration purposes only and MUST NOT be included in the final production implementation.
 
 ## 4. Implementation Notes
+
+-   **Header Title Logic**: Implemented dynamic title setting in `ReviewerApp.on_mount`. Refactored the logic for extracting the status emoji into a new, unit-tested helper function `extract_status_emoji` in `textual_plan_reviewer_logic.py` to improve robustness and testability.
 
 **Delta Analysis Summary:**
 This slice has been updated based on a delta analysis between the reference prototype, the original slice, and the current source code (`textual_plan_reviewer.py`, `plan.py`). Key gaps identified include:
