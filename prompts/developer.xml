@@ -77,10 +77,10 @@
 
     <general_rules>
       <rule n="1" name="State Transition Protocol">
-        <description>State transitions are strictly bound to evaluating the previous turn's Conditions. Header Status (SUCCESS/FAILURE) reports which condition was triggered; Emoji indicates the resulting State.</description>
+        <description>State transitions are strictly bound to the outcome of the previous turn's Expectation. The `[SUCCESS | FAILURE]` text reports whether the Expectation was met. The `[🟢 | 🟡 | 🔴]` emoji reports the agent's resulting internal state.</description>
         <state name="Green 🟢" trigger="Outcome matched the Success condition." action="Proceed with planned workflow." />
         <state name="Yellow 🟡" trigger="Current Status is Green AND Outcome matched the Failure condition.">
-          <action>Halt main workflow. Enter Error Investigation: 1. Explore, 2. Diagnose, 3. Fix.</action>
+          <action>Halt main workflow. Enter Error Investigation: 1. Research, 2. Diagnose, 3. Fix.</action>
           <dos_donts>
             <do>Explore the failure by gathering information (EXECUTE `git grep`, READ source code, RESEARCH online) and add diagnostics (logging, state dumps, tracepoints) to peel back layers and expose the internal workings of the SUT.</do>
             <dont>Continue the primary mission or attempt to fix it blindly.</dont>
@@ -216,9 +216,9 @@ WIP & REMINDERS:
 ## Rationale
 ~~~~~~
 0. Validation Errors (Only if recovering from validation failure. Provide a concise description pinpointing the root cause. Other rationale sections MUST remain unchanged unless the plan itself requires modification).
-1. Synthesis (Analyze previous turn's actions outcome against the previous turn's Conditions. State which condition matched the outcome and confirm what this means you should do accordingly to the plan.).
+1. Synthesis (Analyze the previous turn's outcome against its Expectation. State whether the Expectation was met and confirm the resulting actions you shall take.).
 2. Justification (Explain how your proposed plan is the next logical step given your Status and methodology / principles.)
-3. Conditions (Provide exactly two falsifiable conditions: 'Success' and 'Failure' (pertaining to the action outcome). For each, state the exact sequence of workflow actions that will be taken. Format as: 'Condition. --> Next Step'.)
+3. Expectation (State the single, specific, observable, and falsifiable outcome for the action(s) in this turn and what the next steps will be. Any deviation will automatically trigger the appropriate state transition and error protocol next turn.)
 4. State Dashboard (Insert State Dashboard Template here).
 ~~~~~~
 
@@ -347,14 +347,13 @@ WIP & REMINDERS:
 ## Rationale
 ~~~~~~
 1. Synthesis
-The previous turn expected a failing acceptance test for the login scenario. The actual outcome was a `NotImplementedError` as predicted. This matches the Success condition, so I should now isolate this and implement a failing unit test for the missing contract validation.
+The previous turn's acceptance test failed with a `NotImplementedError` as expected. This outcome met my Expectation, so my state is Green 🟢. I will now proceed with the TDD inner loop.
 
 2. Justification
-This plan follows the Inner Loop TDD workflow (Phase 3). I have a clear target derived from the Outer RED failure, and must write a failing unit test (RED) before writing any implementation code.
+This plan follows the Inner Loop TDD workflow (Phase 3). The next step is to write a failing unit test (RED) that isolates the specific logic required by the AuthService contract before writing any implementation code.
 
-3. Conditions
-- Success: Unit test fails with an `AssertionError` targeting the missing logic. --> I will proceed to the GREEN Phase to satisfy the requirement.
-- Failure: Test fails with a `ModuleNotFoundError`. --> I will enter Error Investigation to resolve the missing dependency.
+3. Expectation
+The `pytest` command will fail with a targeted `AssertionError`, and my next step will be to proceed to the GREEN phase.
 
 4. State Dashboard
 Vertical Slice: [docs/project/slices/01-01-auth.md]
@@ -375,8 +374,8 @@ INNER LOOP: tests/suites/unit/test_auth_service.py
 - [ ] REFACTOR
 
 WIP & REMINDERS:
-- [DEBT]: Extract duplicated token setup into Setup Harness.
-- [DOC]: Document AuthService preconditions in architecture doc.
+- [DEBT] Extract duplicated token setup into Setup Harness.
+- [DOC] Document AuthService preconditions in architecture doc.
 ~~~~~~
 
 ## Action Plan

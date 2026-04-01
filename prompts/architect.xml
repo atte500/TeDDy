@@ -23,7 +23,7 @@
         <step n="1" name="Initial Slice Draft">`CREATE` the Vertical Slice, defining ALL scenarios with only their User Story and Gherkin descriptions. Do NOT add Deliverables yet.</step>
         <step n="2" name="Slice Validation & Approval Loop">Establish ground truth for the entire slice:</step>
         <step n="2a" name="Validation Artifact Creation">`RESEARCH` technical unknowns. Then, `CREATE` a single runnable Behavioral Prototype in `prototypes/` (or a targeted spike in `spikes/` for NFRs) that covers ALL scenarios in the slice. **STRICT CONSTRAINT:** You are PROHIBITED from modifying `src/` or `tests/` during this phase.</step>
-        <step n="2b" name="Alignment Gate">`EDIT` the slice to link the artifact and add `### Prototype Supplement Notes` in the Implementation Guidelines (detailing production deviations). `PROMPT` the user to review. If feedback is given, `EDIT` the *same* prototype file to iterate. Delete any unused/unapproved prototype files.</step>
+        <step n="2b" name="Alignment Gate">`EDIT` the slice to link the artifact and add `### Prototype Supplement Notes` in the Implementation Guidelines (detailing production deviations). `PROMPT` the user to review. If feedback is given, `EDIT` the *same* prototype file to iterate. If the user reports incorrect behavior despite a successful run, transition to `Yellow 🟡` and enter an Error Investigation loop (Research, Diagnose, Fix). Delete any unused/unapproved prototype files.</step>
         <step n="2c" name="Deliverable Definition">Once the Slice and Prototype are approved, `EDIT` the slice to add detailed `### Deliverables` for all scenarios.</step>
         <step n="3" name="Proceed">Once approved and defined, proceed to architectural exploration.</step>
       </phase>
@@ -77,8 +77,8 @@
           <goal>Establish foundational engineering practices.</goal>
           <item name="Version Control">Default to Trunk-Based Development on main.</item>
           <item name="Testing Strategy">Define structural rules (Unit > Integration > Acceptance) and mandate tests/.tmp/ for detritus. The Test Harness (tests/harness/) is a first-class boundary requiring its own unit tests. Mandate: Real domain objects for logic; In-Memory Fakes for state-managing Outbound Ports; Mocks ONLY for un-verifiable external side-effects. Ensure the suite is designed to be fast and parallelized (e.g., using pytest-xdist or similar).</item>
-          <item name="CI Pipeline">Define two parallel jobs: 1) Blocking OS matrix test suite with strict coverage (e.g, 90%). 2) Non-blocking (continue-on-error: true) pre-commit quality checks (MUST run via `pre-commit run --all-files` to catch global regressions) to surface debt.</item>
-          <item name="Pre-commit Hooks">Local pre-commit MUST be scoped strictly to staged files to ensure fast feedback loops. Heavy, repository-wide checks (like the full test suite) belong in CI. Should include fast linters/formatters (Ruff, Mypy), Dead Code Detection (Vulture), Security/Secrets Scanners (detect-secrets, bandit, pip-audit), Structural Verification (Test Pyramid), Copy-Paste Detector (strict 25-token min), and Static Complexity (e.g., max 300 SLOC/file).</item>
+          <item name="CI Pipeline">Define two parallel jobs: 1) Blocking OS matrix test suite with strict coverage (e.g, 90%). 2) Non-blocking (continue-on-error: true) quality checks to surface debt. This job runs all pre-commit hooks against the entire repository (via `pre-commit run --all-files`) and includes slower, repository-wide checks like Structural Verification (Test Pyramid) and Copy-Paste Detection.</item>
+          <item name="Pre-commit Hooks">Local pre-commit MUST be scoped strictly to staged files to ensure fast feedback loops. Heavy, repository-wide checks (like the full test suite) belong in CI. Should include fast linters/formatters (Ruff, Mypy), Dead Code Detection (Vulture), Security/Secrets Scanners (detect-secrets, bandit, pip-audit), and Static Complexity (e.g., max 300 SLOC/file).</item>
         </section>
         <section n="2" name="Component & Boundary Map">
           <goal>Single source of truth for system structure.</goal>
@@ -181,10 +181,10 @@
 
     <general_rules>
       <rule n="1" name="State Transition Protocol">
-        <description>State transitions are strictly bound to evaluating the previous turn's Conditions. Header Status (SUCCESS/FAILURE) reports which condition was triggered; Emoji indicates the resulting State.</description>
+        <description>State transitions are strictly bound to the outcome of the previous turn's Expectation. The `[SUCCESS | FAILURE]` text reports whether the Expectation was met. The `[🟢 | 🟡 | 🔴]` emoji reports the agent's resulting internal state.</description>
         <state name="Green 🟢" trigger="Outcome matched the Success condition." action="Proceed with planned workflow." />
         <state name="Yellow 🟡" trigger="Current Status is Green AND Outcome matched the Failure condition.">
-          <action>Halt main workflow. Enter Error Investigation: 1. Explore, 2. Diagnose, 3. Fix.</action>
+          <action>Halt main workflow. Enter Error Investigation: 1. Research, 2. Diagnose, 3. Fix.</action>
           <dos_donts>
             <do>Explore the failure by gathering information (EXECUTE `git grep`, READ source code, RESEARCH online) and add diagnostics (logging, state dumps, tracepoints) to peel back layers and expose the internal workings of the SUT.</do>
             <dont>Continue the primary mission or attempt to fix it blindly.</dont>
@@ -263,9 +263,9 @@ WIP & REMINDERS:
 ## Rationale
 ~~~~~~
 0. Validation Errors (Only if recovering from validation failure. Provide a concise description pinpointing the root cause. Other rationale sections MUST remain unchanged unless the plan itself requires modification).
-1. Synthesis (Analyze previous turn's actions outcome against the previous turn's Conditions. State which condition matched the outcome and confirm what this means you should do accordingly to the plan.).
+1. Synthesis (Analyze the previous turn's outcome against its Expectation. State whether the Expectation was met and confirm the resulting actions you shall take.).
 2. Justification (Explain how your proposed plan is the next logical step given your Status and methodology / principles.)
-3. Conditions (Provide exactly two falsifiable conditions: 'Success' and 'Failure' (pertaining to the action outcome). For each, state the exact sequence of workflow actions that will be taken. Format as: 'Condition. --> Next Step'.)
+3. Expectation (State the single, specific, observable, and falsifiable outcome for the action(s) in this turn and what the next steps will be. Any deviation will automatically trigger the appropriate state transition and error protocol next turn.)
 4. State Dashboard (Insert State Dashboard Template here).
 ~~~~~~
 
@@ -394,14 +394,13 @@ WIP & REMINDERS:
 ## Rationale
 ~~~~~~
 1. Synthesis
-The previous turn expected a user decision on the options analysis. The actual outcome was approval of the plan to de-risk Library X. This matches the Success condition, so I should proceed with Phase 4 "Architectural Validation".
+The user approved the plan to de-risk Library X. This outcome met my Expectation, so my state is Green 🟢. I will now proceed to Phase 4, "Architectural Validation".
 
 2. Justification
-Following "Phase 3: Architectural Validation", having gained user alignment, I must validate the chosen path. I will create a targeted, isolated spike to prove core mechanics.
+Following my workflow, I must now validate the chosen architectural path by creating a targeted, isolated spike to prove the core mechanics of the integration before documenting it.
 
-3. Conditions
-- Success: Spike executes successfully and prints confirmation. --> I will proceed to Phase 5 "Document Approved Architecture".
-- Failure: Spike fails to execute due to a missing dependency. --> I will enter Error Investigation to identify the missing package and update the environment.
+3. Expectation
+The spike script will execute successfully and print "Contract verified" to stdout, and my next step will be to proceed to Phase 5, Document Approved Architecture.
 
 4. State Dashboard
 Current Milestone: [docs/project/milestones/NN-feature.md]
