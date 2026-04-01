@@ -1,4 +1,3 @@
-import os
 from typer.testing import CliRunner
 from teddy_executor.__main__ import app
 
@@ -11,7 +10,7 @@ def test_automated_replan_triggers_on_structure_error(
     """
     Scenario: Automated Re-plan triggers on structure error
     """
-    os.chdir(tmp_path)
+    monkeypatch.chdir(tmp_path)
     session_dir = tmp_path / ".teddy" / "sessions" / "test-structure"
     turn_01_dir = session_dir / "01"
     turn_01_dir.mkdir(parents=True)
@@ -55,12 +54,12 @@ def test_automated_replan_triggers_on_structure_error(
     assert (session_dir / "02" / "plan.md").exists()
 
 
-def test_manual_mode_validation_failure_no_replan(tmp_path):
+def test_manual_mode_validation_failure_no_replan(monkeypatch, tmp_path):
     """
     Scenario: Manual mode validation fails correctly.
     It should return a failure report but NOT trigger a re-plan loop.
     """
-    os.chdir(tmp_path)
+    monkeypatch.chdir(tmp_path)
     (tmp_path / "README.md").write_text("content", encoding="utf-8")
 
     # Plan trying to EDIT a file not in context (no context provided in manual mode)
@@ -103,7 +102,7 @@ def test_automated_replan_triggers_on_context_error(
     """
     Scenario: Context-aware validation failure triggers re-plan.
     """
-    os.chdir(tmp_path)
+    monkeypatch.chdir(tmp_path)
     session_dir = tmp_path / ".teddy" / "sessions" / "test-context"
     turn_01_dir = session_dir / "01"
     turn_01_dir.mkdir(parents=True)

@@ -79,12 +79,23 @@ def reset_formatter_singleton():
 
 @pytest.fixture(autouse=True)
 def clean_test_env():
-    """Proposed global fix: ensure isolation of testing hooks."""
+    """Defensive guard: ensure isolation of testing hooks and CWD state."""
     import os
+    from teddy_executor.adapters.inbound.cli_helpers import find_project_root
 
+    # Capture initial state
+    project_root = find_project_root()
     var = "TEDDY_TEST_MOCK_EDITOR_OUTPUT"
+
     if var in os.environ:
         del os.environ[var]
+
     yield
+
+    # Restore state
     if var in os.environ:
         del os.environ[var]
+
+    # Systemic Fix for Windows CI worker crashes: ensure CWD is restored
+    # to the project root after every test, preventing state leakage.
+    os.chdir(project_root)

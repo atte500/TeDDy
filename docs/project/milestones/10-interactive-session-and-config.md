@@ -83,6 +83,7 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 - [ ] **Duplicated Logic:** Refactor `ReviewerApp._launch_editor` in `textual_plan_reviewer.py` to use a central editor/diffing utility.
 
 ### Architectural Debt
+- [x] **Windows CI Stability:** Fixed "Not properly terminated" worker crashes caused by CWD state leakage in integration tests.
 - [ ] **Test Pyramid Violation:** Resolve the structural imbalance (Acceptance: 101, Integration: 101, Unit: 305) to satisfy the 'Acceptance < Integration < Unit' rule.
 - [ ] **DI & Test Harness:**
     - Refactor the `TEDDY_TEST_MOCK_EDITOR_OUTPUT` hook to use a dedicated test adapter instead of an environment variable.
