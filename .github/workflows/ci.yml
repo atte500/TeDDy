@@ -99,3 +99,11 @@ jobs:
       # We skip 'run-tests' as it is handled by the test-suite job
       run: |
         SKIP=run-tests poetry run pre-commit run --all-files
+
+    - name: Verify Test Pyramid
+      run: |
+        poetry run python scripts/verify_test_pyramid.py
+
+    - name: Detect Code Duplication
+      run: |
+        npx jscpd --min-tokens 25 --threshold 0 --ignore "**/ports/**,**/prompts/**"

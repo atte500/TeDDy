@@ -64,13 +64,11 @@ This document outlines the technical standards, conventions, and setup process f
 ### Pre-commit Hooks
 - **Goal:** To provide a fast, local feedback loop for developers.
 - **Framework:** `pre-commit`, configured in `.pre-commit-config.yaml`.
-- **Principle:** Pre-commit hooks MUST be scoped strictly to **staged files** to provide a fast, local feedback loop. Heavy, repository-wide checks (like the full test suite or global static analysis) belong in the Continuous Integration (CI) pipeline, not on the developer's local machine pre-commit.
+- **Principle:** Pre-commit hooks MUST be scoped strictly to **staged files** to provide a fast, local feedback loop. Heavy, repository-wide checks (like the full test suite, copy-paste detection, or test pyramid verification) belong in the Continuous Integration (CI) pipeline, not on the developer's local machine pre-commit.
 - **Included Checks:**
     -   **Quality Gate:**
-        - `test-pyramid`: Verifies the Test Pyramid structure (Unit > Integration > Acceptance).
         - `ruff-complexity`: Enforces a **precise Cyclomatic Complexity** limit of **9** per function (Rule `C901`) and a **precise Statement Limit** of **40** per function (Rule `PLR0915`) for ALL code.
         - `file-length-python`: Enforces a strict **300 line limit** for all Python files (excluding spikes).
-        - `jscpd`: Enforces a strict **0% duplication threshold** for any block over **25 tokens**.
     - **Style & Formatting:**
         - `ruff`: For linting and formatting. **Note:** `E501` (Line too long) is explicitly ignored to favor readability of long URLs and comments.
     - **Correctness:**
@@ -85,7 +83,9 @@ This document outlines the technical standards, conventions, and setup process f
 
 ### CI Quality Gates
 - **Goal:** To provide a comprehensive, automated quality gate that protects the main branch.
-- **Principle:** The CI pipeline **must** run the full test suite and all checks from the `pre-commit` suite (using `--all-files`) to verify global compatibility and system health.
+- **Principle:** The CI pipeline runs checks in two categories:
+    1. The full `pre-commit` suite (using `--all-files`) to verify global compatibility and system health.
+    2. Slower, repository-wide checks that are not suitable for local pre-commit hooks, such as Test Pyramid verification and copy-paste detection.
 
 ### Spike Directory Exclusion
 The `spikes/` directory is intentionally excluded from `ruff` and `mypy` checks in `.pre-commit-config.yaml`.

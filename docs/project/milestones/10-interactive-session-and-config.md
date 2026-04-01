@@ -73,45 +73,24 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
     - Implement the `SessionLogGenerator` to compile session histories into a human-readable `session-log.md`, excluding turns that fail validation.
 
 ## 6. Technical Debt
-- [x] **Code Quality (Ruff):** `ExecutionOrchestrator._process_plan_actions` complexity is 11 (limit 9). Needs decomposition.
-- [ ] **Code Quality (File Length):** `ConsoleInteractorAdapter` exceeds 300 lines. Needs class splitting (e.g., extracting Editor/Diff logic).
-- [ ] **Code Quality (Vulture):** Resolve dead code in `ExecutionOrchestrator`, `ConsolePlanReviewer`, and various test suites.
-- [ ] **Code Duplication (jscpd):** Resolve new clones in `test_orchestrator_interaction.py` and `test_change_preview_feature.py` introduced by Instruction Bridge verification.
-- [ ] **Code Duplication (Logic):** `ReviewerApp._launch_editor` in `textual_plan_reviewer.py` duplicates editor selection logic (VISUAL/EDITOR/nano) and should be refactored to use `ConsoleToolingHelper` or a central utility.
-- [ ] **Code Duplication (jscpd):** Resolve internal logic duplication in `session_orchestrator.py` between lines 185-193 and 194-202 (shifted to ~201-218).
-- [ ] **Code Duplication (jscpd):** Resolve clones in `tests/suites/unit/core/services/test_session_orchestrator_validation.py` between lines 18-25 and 72-77.
-- [ ] **Code Duplication (jscpd):** Resolve clones in `tests/suites/acceptance/test_non_interactive_orchestration.py` triggered by soft-isolation changes.
-- [ ] **Security:** Resolve `bandit` subprocess security warning in `system_environment_inspector.py`.
-- [ ] **Code Quality:** Resolve extensive `vulture` dead-code warnings (mostly unused variables/imports in tests and core ports).
-- [x] **Security:** Pin `litellm` to `1.82.6` to mitigate March 2026 supply chain attack (TeamPCP).
-- [x] **Security:** Update `requests` to `^2.33.0` (GHSA-gc5v-m9x4-r6x2).
-- [ ] **Security:** Monitor `pygments` for version `2.19.3+` release on PyPI to resolve GHSA-5239-wwwm-4pmq (ReDoS). Current version `2.19.2` is the latest available but flagged.
+### Code Quality
+- [ ] **File Length:** Refactor oversized files to adhere to the 300-line limit:
+    - `src/teddy_executor/adapters/outbound/console_interactor.py`
+    - `src/teddy_executor/adapters/inbound/textual_plan_reviewer.py`
+    - `src/teddy_executor/adapters/inbound/cli_helpers.py`
+- [ ] **Code Duplication (jscpd):** Resolve code duplication across multiple files to meet the 0% threshold.
+- [ ] **Dead Code (Vulture):** Resolve all dead code warnings, investigating potential false positives in ports.
+- [ ] **Duplicated Logic:** Refactor `ReviewerApp._launch_editor` in `textual_plan_reviewer.py` to use a central editor/diffing utility.
 
-- [ ] **Registry Refactor Review:** Review the newly split `registries/` modules (formerly `container.py`) for proper architectural cohesion.
-- [ ] **Serialization Safety:** Replace the recursive `scrub_dict_for_serialization` workaround with schema-based serialization (e.g., Pydantic) for reports to prevent mock-induced hangs.
-- [ ] **Domain Model Validation:** Introduce `spec=...` and strict primitive validation in domain models to prevent `MagicMock` leakage into infrastructure operations.
-- [ ] **DI Isolation & Harness Robustness:** Update the test harness to resolve the DI container location dynamically or via a central port rather than hardcoding module paths.
-- [ ] Code Duplication (jscpd): Refactor internal logic duplication to satisfy the new 0% threshold. Focus areas: `action_parser_complex.py` vs `action_parser_strategies.py`, `session_service.py` internal matches, `session_orchestrator.py` internal matches, and `cli_helpers.py` overlap with `diff.py`.
-- [ ] Code Duplication (jscpd): Resolve new clones in `session_cli_handlers.py`, `__main__.py`, and test setups in `test_ai_telemetry.py` and `test_session_resume_robustness.py` introduced during Turn Loop fix.
-- [ ] Code Duplication (jscpd): Resolve clones in `test_planning_service.py`, `test_ai_telemetry.py`, and `test_planning_service_logging.py` introduced/exposed by `input.md` artifact standardized.
-- [ ] Code Duplication (jscpd): Resolve turn-loop duplication in `session_cli_handlers.py`, `__main__.py`, and `session_orchestrator.py` introduced by Instruction Bridge wiring.
-- [ ] Code Duplication (jscpd): Resolve clones in `tests/suites/unit/core/services/test_session_orchestrator_resume.py` and `tests/suites/unit/core/services/test_session_planner.py` introduced during tiered message resolution logic implementation.
-- [ ] Code Quality (vulture): Investigate and resolve false-positive "unused variable" warnings in `IRunPlanUseCase` port.
-- [ ] Documentation Debt: Reconcile `ARCHITECTURE.md` setup descriptions with the actual fixture-based pattern in `composition.py`.
-- [ ] **Debt** - Resolve Test Pyramid Violation (Acceptance: 101, Integration: 101, Unit: 296) to satisfy 'Acceptance < Integration < Unit' rule.
-- [ ] **Code Quality (File Length):** `textual_plan_reviewer.py` has grown to 380 lines. Needs splitting.
-- [ ] **Code Duplication (jscpd):** Resolve clones in `test_reviewer_app_create_workflow.py`, `test_reviewer_app_modifications.py`, `test_reviewer_app_previews.py`, and `test_textual_plan_reviewer.py`.
-- [ ] **Code Quality (vulture):** Resolve unused variables in `test_reviewer_app_previews.py` and `textual_plan_reviewer.py` (`agent_name`).
-- [ ] **Debt** - Resolve Test Pyramid Violation (Acceptance: 101, Integration: 101, Unit: 296) to satisfy 'Acceptance < Integration < Unit' rule.
-- [ ] **Code Quality:** Refactor `TEDDY_TEST_MOCK_EDITOR_OUTPUT` testing hook to use an explicit dependency or a dedicated test-only adapter instead of an environment variable to improve isolation and type safety.
-- [ ] **Code Duplication (jscpd):** Resolve TUI pilot interaction clones in `tests/suites/unit/adapters/inbound/test_textual_plan_reviewer.py`.
-- [ ] **Code Duplication (jscpd):** Resolve setup clones in `tests/suites/unit/core/services/test_validator_edit.py`.
-- [ ] **Debt:** Resolve Test Pyramid Violation (Acceptance 101, Integration 101, Unit 304) to satisfy 'Acceptance < Integration < Unit' rule.
-- [ ] **Code Quality (File Length):** `src/teddy_executor/adapters/outbound/console_interactor.py` has reached 305 lines (Limit 300).
-- [ ] **Code Quality (File Length):** `src/teddy_executor/adapters/inbound/textual_plan_reviewer.py` has reached 398 lines (Limit 300).
-- [ ] **Code Duplication (jscpd):** High duplication (15%) in `tests/suites/acceptance/test_change_preview_feature.py` after recovery.
-- [ ] **Code Duplication (jscpd):** Internal clones in `src/teddy_executor/registries/infrastructure.py` around lines 54-88.
-- [ ] **Debt:** Resolve Test Pyramid Violation (Acceptance 101, Integration 101, Unit 305) to satisfy 'Acceptance < Integration < Unit' rule.
-- [ ] **Code Quality (File Length):** `src/teddy_executor/adapters/inbound/cli_helpers.py` exceeds 300 lines.
-- [ ] **Code Quality (vulture):** Unused variables in `test_reviewer_app_previews.py`.
-- [ ] **Code Duplication (jscpd):** Resolve clones in `test_reviewer_app_confirmations.py`, `test_textual_plan_reviewer.py`, `infrastructure.py`, `test_reviewer_app_core.py`, `cli_helpers.py`, `test_reviewer_app_previews.py`, and `test_reviewer_app_prune.py`.
+### Architectural Debt
+- [ ] **Test Pyramid Violation:** Resolve the structural imbalance (Acceptance: 101, Integration: 101, Unit: 305) to satisfy the 'Acceptance < Integration < Unit' rule.
+- [ ] **DI & Test Harness:**
+    - Refactor the `TEDDY_TEST_MOCK_EDITOR_OUTPUT` hook to use a dedicated test adapter instead of an environment variable.
+    - Improve DI isolation by resolving container locations dynamically instead of using hardcoded module paths.
+- [ ] **Serialization Safety:** Replace `scrub_dict_for_serialization` with a schema-based approach (e.g., Pydantic) to prevent serialization hangs.
+- [ ] **Domain Model Validation:** Enforce strict primitive validation in domain models to prevent `MagicMock` leakage.
+- [ ] **Documentation:** Reconcile `ARCHITECTURE.md` setup descriptions with the fixture-based pattern in `composition.py`.
+
+### Security
+- [ ] **Bandit:** Resolve `subprocess` security warning in `system_environment_inspector.py`.
+- [ ] **Dependency:** Monitor `pygments` for a patch to resolve GHSA-5239-wwwm-4pmq (ReDoS).

@@ -61,24 +61,12 @@ repos:
         types: [python]
         files: ^(src|tests)/
 
-    -   id: test-pyramid
-        name: Test Pyramid Verification
-        entry: poetry run python scripts/verify_test_pyramid.py
-        language: system
-        always_run: true
-        pass_filenames: false
-
     -   id: clean-spikes
         name: Clean Spikes Directory
         entry: bash -c 'rm -rf spikes/*'
         language: system
         always_run: true
         pass_filenames: false
-
-    -   id: jscpd
-        name: Code Duplication Detection (jscpd)
-        entry: npx jscpd --min-tokens 25 --threshold 0 --ignore "**/ports/**,**/prompts/**"
-        language: system
 
     -   id: pip-audit
         name: Vulnerability Scanning (pip-audit)
