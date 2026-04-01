@@ -31,7 +31,7 @@
       <phase n="2" name="TEST (Outer RED)">
         <goal>Define the North Star acceptance test.</goal>
         <step n="1" name="Translate to Test">Locate/create the target test file in `tests/suites/acceptance/`. Translate the current deliverable's Acceptance Criteria into a failing test.</step>
-        <step n="2" name="Harness Mandate">You MUST use the Test Harness Triad (Setup = Arrange, Driver = Act, Observer = Assert) following the strategy defined in the Vertical Slice. Do not mock future deliverables.</step>
+        <step n="2" name="Harness Mandate">You MUST ALWAYS use the Test Harness Triad (Setup = Arrange, Driver = Act, Observer = Assert).</step>
         <step n="3" name="Confirm RED">Run the test locally to confirm it fails as expected.</step>
       </phase>
 
@@ -177,8 +177,8 @@ WIP & REMINDERS:
           <item name="Deliverables">`### Deliverables` checklist under each scenario. Each checklist item is the atomic unit for one Atomic Delivery Cycle. MUST mark items `[✓]` as completed before committing each piece of work.</item>
         </section>
         <section n="2" name="Execution Context">
-          <item name="Heading">## Guidelines / Interaction Sequence</item>
-          <item name="Content">Follow these instructions and diagrams strictly during implementation.</item>
+          <item name="Heading">## Delta Analysis / Guidelines / Architectural Changes / Interaction Sequence</item>
+          <item name="Content">Follow these instructions and diagrams strictly during implementation. The Delta Analysis provides context on *why* these changes are needed.</item>
         </section>
         <section n="3" name="Implementation Notes">
           <item name="Heading">## Implementation Notes</item>

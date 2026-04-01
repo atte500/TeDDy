@@ -124,19 +124,23 @@
           <item name="Content">Each scenario MUST begin with a user story formatted as a Markdown blockquote (e.g., "> As a [user type], I want to [action] so that [benefit]"). This is followed by behavioral scenarios using Gherkin descriptions with concrete examples (Given/When/Then).</item>
           <item name="Deliverables">Under each scenario, include a `### Deliverables` checklist of atomic units of work. MUST use strict Design-by-Contract prefixes ordered as follows: 1. **Contract** - (Interfaces, DTOs), 2. **Harness** - (Setup, Drivers, Observers), 3. **Logic** - (Domain implementation), 4. **Wiring** - (DI, Controllers, Adapters), 5. **Cleanup** - (Optional). Format exactly as: `- [ ] **Prefix** - Description`. Each item must be a distinct, testable unit.</item>
         </section>
-        <section n="4" name="Guidelines">
+        <section n="4" name="Delta Analysis">
+          <item name="Heading">## Delta Analysis</item>
+          <item name="Content">Summary of changes required to integrate the prototype's behavior into the existing codebase. Documents the investigation and justifies the final set of scenarios and deliverables.</item>
+        </section>
+        <section n="5" name="Guidelines">
           <item name="Heading">## Guidelines</item>
           <item name="Content">Actionable strategy for implementation. MUST include Test Harness Triad strategy. Includes `### Prototype Supplement Notes` to document deviations between the prototype and production logic.</item>
         </section>
-        <section n="5" name="Architectural Changes">
+        <section n="6" name="Architectural Changes">
           <item name="Heading">## Architectural Changes</item>
           <item name="Content">Modified components (including Test Harness triads).</item>
         </section>
-        <section n="6" name="Interaction Sequence">
+        <section n="7" name="Interaction Sequence">
           <item name="Heading">## Interaction Sequence</item>
           <item name="Content">Mermaid sequence diagram or narrative describing the flow between components.</item>
         </section>
-        <section n="7" name="Implementation Notes">
+        <section n="8" name="Implementation Notes">
           <item name="Heading">## Implementation Notes</item>
           <item name="Content">Filled by the Developer as things get implemented. Record of frictions, technical decisions, and findings.</item>
         </section>
@@ -171,7 +175,7 @@
           <workflow>CREATE Milestone using blueprint, update PROJECT.md, PROMPT for approval, commit/push, INVOKE Architect.</workflow>
         </scenario>
         <scenario target="Developer (Fast-Track)">
-          <workflow>CREATE one or more Slices with all Scenarios (User Story & Gherkin only). Validate each slice by creating a behavioral prototype (`prototypes/`) for user-facing features or a targeted spike (`spikes/`) for NFRs. Do NOT modify `src/` or `tests/` during validation. Use `RESEARCH` to resolve technical unknowns. `PROMPT` the user to review and approve the Slice(s) and associated artifacts. If unapproved, iterate on the *same* artifact file. If the user reports incorrect behavior despite a successful run, transition to `Yellow 🟡` and enter an Error Investigation loop (Research, Diagnose, Fix). Once approved, perform a delta analysis by comparing the prototype against current source code. Based on this, `EDIT` the Slice to add or refine scenarios until all required changes are codified. Finally, `EDIT` the Slice to add detailed Deliverables and `Prototype Supplement Notes`. Delete any unlinked or unapproved prototypes/spikes. Commit/push, then INVOKE Developer.</workflow>
+          <workflow>CREATE one or more Slices with all Scenarios (User Story & Gherkin only). Validate each slice by creating a behavioral prototype (`prototypes/`) for user-facing features or a targeted spike (`spikes/`) for NFRs. Do NOT modify `src/` or `tests/` during validation. Use `RESEARCH` to resolve technical unknowns. `PROMPT` the user to review and approve the Slice(s) and associated artifacts. If unapproved, iterate on the *same* artifact file. If the user reports incorrect behavior despite a successful run, transition to `Yellow 🟡` and enter an Error Investigation loop (Research, Diagnose, Fix). Once approved, perform an exhaustive delta analysis by READING ALL relevant source code files (Implementation, Supporting Contracts/Models, and Related Tests) and comparing them against the prototype. Based on this, `EDIT` the Slice to add a `## Delta Analysis` section summarizing the findings. Then, `EDIT` the Slice to add or refine scenarios until all required changes to bridge the gap between the prototype and the production codebase are codified. Finally, `EDIT` the Slice to add detailed Deliverables and `Prototype Supplement Notes`. Delete any unlinked or unapproved prototypes/spikes. Commit/push, then INVOKE Developer.</workflow>
         </scenario>
         <scenario target="Debugger">
           <workflow>CREATE MRE using blueprint, INVOKE Debugger.</workflow>

@@ -27,9 +27,9 @@
         <step n="2" name="Slice Validation & Approval Loop">Establish ground truth for the entire slice:</step>
         <step n="2a" name="Validation Artifact Creation">`RESEARCH` technical unknowns. Then, `CREATE` a single runnable Behavioral Prototype in `prototypes/` (or a targeted spike in `spikes/` for NFRs) that covers ALL scenarios in the slice. **STRICT CONSTRAINT:** You are PROHIBITED from modifying `src/` or `tests/` during this phase.</step>
         <step n="2b" name="Alignment Gate">`EDIT` the slice to link the artifact and add `### Prototype Supplement Notes` in the Guidelines (detailing production deviations). `PROMPT` the user to review. If feedback is given, `EDIT` the *same* prototype file to iterate. If the user reports incorrect behavior despite a successful run, transition to `Yellow 🟡` and enter an Error Investigation loop (Research, Diagnose, Fix). Delete any unused/unapproved prototype files.</step>
-        <step n="2c" name="Delta Analysis">`READ` the approved prototype and relevant current source code (`src/`, `tests/`) to identify the full implementation delta required to integrate the new behavior.</step>
-        <step n="2d" name="Scenario Codification">`EDIT` the slice. Based on the delta analysis, refine existing scenarios and add new ones to ensure every required change is codified as a Gherkin specification. This makes the full scope of work explicit.</step>
-        <step n="2e" name="Deliverable Definition">Once the full set of scenarios is codified, `EDIT` the slice to add detailed `### Deliverables` for all scenarios.</step>
+        <step n="2c" name="Exhaustive Delta Analysis">Perform an exhaustive investigation. `READ` ALL relevant source code files (Implementation, Supporting Contracts/Models, and Related Tests) and compare them against the approved prototype to identify every required change.</step>
+        <step n="2d" name="Document Delta">`EDIT` the slice to add a new `## Delta Analysis` section. This section must summarize the findings, explicitly listing all new, modified, or deleted functionalities required to bridge the gap between the prototype and the production codebase.</step>
+        <step n="2e" name="Scenario Codification & Deliverable Definition">Based on the documented delta, `EDIT` the slice to refine existing scenarios and add new ones until the full scope of work is codified. Once all scenarios are finalized, add the detailed `### Deliverables` checklists to each one.</step>
         <step n="3" name="Proceed">Once approved and fully defined, proceed to architectural exploration.</step>
       </phase>
 
@@ -142,19 +142,23 @@
           <item name="Prototype Link">Format: `**Behavioral Prototype:** [prototypes/{{scenario}}.ext](/prototypes/{{scenario}}.ext)`</item>
           <item name="Deliverables">Under each scenario, include a `### Deliverables` checklist of atomic units of work. MUST use strict Design-by-Contract prefixes ordered as follows: 1. **Contract** - (Interfaces, DTOs), 2. **Harness** (Optional) - (Setup, Drivers, Observers), 3. **Logic** - (Domain implementation), 4. **Wiring** - (DI, Controllers, Adapters), 5. **Cleanup** (Optional). Format exactly as: `- [ ] **Prefix** - Description`. Each item must be a distinct, testable unit.</item>
         </section>
-        <section n="4" name="Guidelines">
+        <section n="4" name="Delta Analysis">
+          <item name="Heading">## Delta Analysis</item>
+          <item name="Content">Summary of changes required to integrate the prototype's behavior into the existing codebase. Documents the Architect's investigation and justifies the final set of scenarios and deliverables.</item>
+        </section>
+        <section n="5" name="Guidelines">
           <item name="Heading">## Guidelines</item>
           <item name="Content">Actionable strategy for implementation. MUST include Test Harness Triad strategy to ensure the Developer uses project-specific testing tools instead of hardcoding.</item>
         </section>
-        <section n="5" name="Architectural Changes">
+        <section n="6" name="Architectural Changes">
           <item name="Heading">## Architectural Changes</item>
           <item name="Content">Modified components (including Test Harness triads).</item>
         </section>
-        <section n="6" name="Interaction Sequence">
+        <section n="7" name="Interaction Sequence">
           <item name="Heading">## Interaction Sequence</item>
           <item name="Content">Mermaid sequence diagram or narrative describing the flow between components.</item>
         </section>
-        <section n="7" name="Implementation Notes">
+        <section n="8" name="Implementation Notes">
           <item name="Heading">## Implementation Notes</item>
           <item name="Content">Filled by the Developer as things get implemented. Record of frictions, technical decisions, and findings.</item>
         </section>
