@@ -419,8 +419,13 @@ class ReviewerApp(App):
         """
         Format the label for a tree node based on action state.
         """
+        summary = self._get_action_summary(action)
+        if action.executed:
+            color = "green" if action.state == "SUCCESS" else "red"
+            return f"[{color}][{action.state.value}] {action.type}: {summary}[/]"
+
         prefix = "[✓]" if action.selected else "[ ]"
-        label = f"{prefix} {action.type}: {self._get_action_summary(action)}"
+        label = f"{prefix} {action.type}: {summary}"
         if action.modified:
             label += " *modified"
         return label

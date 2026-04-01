@@ -78,6 +78,7 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
     - `src/teddy_executor/adapters/outbound/console_interactor.py`
     - `src/teddy_executor/adapters/inbound/textual_plan_reviewer.py`
     - `src/teddy_executor/adapters/inbound/cli_helpers.py`
+- [ ] **ReviewerApp Mypy/Vulture:** Resolve incompatible override and unused `mode` variable in `push_screen_wait` in `textual_plan_reviewer.py`.
 - [ ] **Code Duplication (jscpd):** Resolve code duplication across multiple files to meet the 0% threshold.
 - [ ] **Dead Code (Vulture):** Resolve all dead code warnings, investigating potential false positives in ports.
 - [ ] **Duplicated Logic:** Refactor `ReviewerApp._launch_editor` in `textual_plan_reviewer.py` to use a central editor/diffing utility.

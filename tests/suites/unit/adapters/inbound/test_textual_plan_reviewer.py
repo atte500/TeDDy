@@ -6,6 +6,7 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer import (
     TextualPlanReviewer,
     ReviewerApp,
 )
+from teddy_executor.core.domain.models.plan import ExecutionStatus
 from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 
@@ -125,3 +126,30 @@ async def test_reviewer_app_preview_readonly_actions(env, action_type):
     # 4. Assert NO modification occurred
     assert action.modified is False
     fs.read_file.assert_called_with("README.md")
+
+
+def test_format_node_label_with_execution_state(container):
+    """Verify that node labels reflect SUCCESS/FAILURE states with colors."""
+    # Arrange
+    action = ActionData(
+        type="EXECUTE", params={"command": "ls"}, description="test", selected=True
+    )
+    plan = Plan(title="T", rationale="R", actions=[action])
+    app = ReviewerApp(
+        plan=plan,
+        system_env=container.resolve(ISystemEnvironment),
+        console_tooling=MagicMock(),
+    )
+
+    # 1. Test SUCCESS
+    action.executed = True
+    action.state = ExecutionStatus.SUCCESS
+    label = app._format_node_label(action)
+    assert "[green][SUCCESS]" in label
+    assert "EXECUTE: ls" in label
+
+    # 2. Test FAILURE
+    action.state = ExecutionStatus.FAILURE
+    label = app._format_node_label(action)
+    assert "[red][FAILURE]" in label
+    assert "EXECUTE: ls" in label
