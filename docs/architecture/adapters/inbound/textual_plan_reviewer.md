@@ -26,7 +26,7 @@ Refer to the [IPlanReviewer](/docs/architecture/core/ports/inbound/plan_reviewer
 - **Keyboard Bindings:**
   - `s`: Submit the plan and return the results.
   - `a`: Toggle selection for all actions.
-  - `e`: Edit/Details (Context-Aware Editing).
+  - `e`: Edit (Context-Aware Editing).
     - **CREATE:** Launches the external editor for content, followed by a `PathInputScreen` modal for path adjustment and a `ConfirmScreen`.
     - **EDIT:** Launches the external editor showing the proposed final state (simulated), followed by a `ConfirmScreen`.
     - **EXECUTE/RESEARCH:** Uses a `ParameterEditModal` for simple value changes.

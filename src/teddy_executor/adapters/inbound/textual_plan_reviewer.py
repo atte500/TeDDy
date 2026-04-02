@@ -82,7 +82,7 @@ class ReviewerApp(App):
     BINDINGS = [
         ("s", "submit", "Submit"),
         ("a", "toggle_all", "Toggle All"),
-        ("e", "edit_details", "Edit/Details"),
+        ("e", "edit_details", "Edit"),
         ("r", "revert", "Revert"),
         ("v", "view_plan", "View Plan"),
         ("x", "execute_step", "Execute Step"),

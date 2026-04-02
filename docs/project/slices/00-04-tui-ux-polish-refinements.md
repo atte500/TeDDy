@@ -47,7 +47,7 @@ To refine the plan review TUI by implementing a more robust interaction model ba
 > As a user, I want a single, intuitive key to edit any action, which uses a simple modal for quick changes and my full editor for complex content.
 
 - **Given** an action is highlighted in the `ActionTree`.
-- **When** I press `e` (edit/details).
+- **When** I press `e` (Edit).
 - **Then** the system MUST open a `ParameterEditModal` for simple text-based actions (`EXECUTE`, `RESEARCH`).
 - **And** the system MUST open my external editor for content-heavy actions (`CREATE`, `EDIT`).
 - **And** after confirming any changes, the action MUST be marked as `*modified`.
@@ -62,7 +62,7 @@ To refine the plan review TUI by implementing a more robust interaction model ba
 > As a user, when I see a `PROMPT` action, I want to provide my answer directly within the TUI, so I don't have to be prompted again during execution.
 
 - **Given** a `PROMPT` action is highlighted.
-- **When** I press `e` (edit/details).
+- **When** I press `e` (Edit).
 - **Then** my external editor MUST open, populated with the AI's question as context.
 - **And** after I provide my answer in the editor, save, and confirm in the TUI.
 - **Then** my response MUST be stored with the action, to be used automatically during execution.
@@ -152,7 +152,7 @@ This slice should be implemented by a Developer, using the reference prototype a
 - **Architecture:** The main screen MUST use a `Horizontal` layout containing the `ActionTree` and a new read-only `ParameterList`. Highlighting a node in the `ActionTree` MUST update the `ParameterList` to show all available parameters for that action type, including defaults.
 - **Visuals:** Actions MUST be added to the `ActionTree` as leaf nodes to prevent the expander icon from showing. The `StatusBar` must be docked at the bottom and used for all event logging.
 - **Keybindings:**
-    - `e` (Edit/Details): Consolidate `(e)` and `(p)` bindings. This key should open a **modal** for simple parameters (`EXECUTE`, `RESEARCH`) or an **external editor** for complex content (`CREATE`, `EDIT`, `PROMPT`).
+    - `e` (Edit): Consolidate `(e)` and `(p)` bindings. This key should open a **modal** for simple parameters (`EXECUTE`, `RESEARCH`) or an **external editor** for complex content (`CREATE`, `EDIT`, `PROMPT`).
     - `x` (Execute Step): Triggers the **real execution** of the highlighted action, with UI updates for `RUNNING`, `SUCCESS`, and `FAILURE` states.
     - `v` (View Plan): Opens the original, unmodified plan file.
     - `space` / `enter`: Toggles selection of the highlighted action.

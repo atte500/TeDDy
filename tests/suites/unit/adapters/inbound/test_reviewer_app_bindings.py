@@ -29,7 +29,7 @@ def test_reviewer_app_has_consolidated_edit_binding(reviewer_app):
 
     assert "e" in binding_keys
     assert "edit_details" in binding_actions
-    assert "Edit/Details" in binding_descriptions
+    assert "Edit" in binding_descriptions
 
     # Check "Execute Step" polish
     assert "x" in binding_keys

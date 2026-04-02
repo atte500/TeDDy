@@ -107,7 +107,7 @@ class CanonicalTuiPrototype(App):
         Binding("space", "toggle_selection", "Toggle", show=True),
         Binding("x", "execute_step", "Execute", show=True),
         Binding("f", "fail_step", "Fail (Sim)", show=True),
-        Binding("e", "edit_details", "Edit/Details", show=True),
+        Binding("e", "edit_details", "Edit", show=True),
         Binding("m", "add_message", "Message", show=True),
         Binding("r", "revert", "Revert", show=False),
     ]
