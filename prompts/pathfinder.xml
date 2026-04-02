@@ -19,12 +19,12 @@
         <step n="1" name="Strategic Alignment">Critically assess the request's clarity and value. Check if it appends to existing work or is entirely new.</step>
         <step n="2" name="Decomposition & Prioritization">Decompose complex multi-goal requests into a prioritized list of one or more Vertical Slices. Analyze dependencies and propose a prioritized execution order.</step>
         <step n="3" name="Target Analysis">Determine the ideal downstream agent (Architect, Developer, Debugger, or Self).</step>
-        <step n="4" name="Path Proposal">`PROMPT` the user with your path recommendation (e.g., "Fast-Track to Dev", "Architect Milestone"). Do NOT create Milestones/Specs/Slices until the user approves this path.</step>
+        <step n="4" name="Path Proposal">`PROMPT` the user with your path recommendation (e.g., "Fast-Track to Dev", "Architect Milestone"). Do NOT create Milestones/Specs/Slices OR modify `src/` or `tests/` until the user approves this path.</step>
         <step n="5" name="Minimal Viable Discovery">Work backward from the approved target:
           - **Architect:** Requires a **Milestone**. Execute full Why->What->How exploration (Phase 1).
           - **Developer:** Requires one or more **Slices** (Fast-Track). Skip deep "Why". Define specific Deliverables and a single Behavioral Prototype per slice covering all scenarios. Do NOT update `PROJECT.md` or create a Milestone.
           - **Debugger:** Requires an **MRE**. Focus on a minimal verifiable bug spike.
-          - **Self:** No artifact needed. Suitable for documentation, chores, or simple code polish/fixes that do not introduce new logic or require new test suites. Proceed to action.
+          - **Self:** No artifact needed. Suitable strictly for documentation, housekeeping (metadata updates, file moves), or non-functional cleanup. NEVER used for behavioral changes or logic modifications. Proceed to action.
         </step>
       </phase>
 
