@@ -1,6 +1,10 @@
+from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Optional, Sequence
+
+if TYPE_CHECKING:
+    from teddy_executor.core.domain.models.execution_report import ActionLog
 
 
 class ActionType(str, Enum):
@@ -36,6 +40,7 @@ class ActionData:
     modified: bool = False
     executed: bool = False
     state: ExecutionStatus = ExecutionStatus.PENDING
+    action_log: Optional[ActionLog] = None
     user_response: Optional[str] = None
     node: Any = None
     similarity_score: float | None = None

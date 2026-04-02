@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from teddy_executor.core.domain.models.plan import Plan, ActionData, ExecutionStatus
+from teddy_executor.core.domain.models.execution_report import ActionLog, ActionStatus
 from teddy_executor.adapters.inbound.textual_plan_reviewer import ReviewerApp
 from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
     format_node_label,
@@ -21,14 +22,20 @@ def test_format_node_label_with_execution_state():
 async def test_reviewer_app_execute_key(env):
     action = ActionData(type="EXECUTE", params={"command": "ls"}, selected=True)
     plan = Plan(title="T", rationale="R", actions=[action])
+    mock_dispatcher = MagicMock()
+    mock_dispatcher.dispatch_and_execute.return_value = ActionLog(
+        status=ActionStatus.SUCCESS, action_type="EXECUTE", params={}
+    )
     app = ReviewerApp(
         plan=plan,
         system_env=env.get_service(ISystemEnvironment),
         console_tooling=MagicMock(),
+        action_dispatcher=mock_dispatcher,
     )
     async with app.run_test() as pilot:
         await pilot.press("down")
         await pilot.press("x")
         await pilot.wait_for_scheduled_animations()
+        await app.workers.wait_for_complete()
         assert action.executed is True
         assert action.state == ExecutionStatus.SUCCESS

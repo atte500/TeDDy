@@ -38,6 +38,7 @@ async def test_preview_create_is_concurrent(env, monkeypatch):
         system_env=MagicMock(spec=ISystemEnvironment),
         file_system=env.get_mock_filesystem(),
         console_tooling=MagicMock(),
+        action_dispatcher=MagicMock(),
     )
 
     async with app.run_test() as pilot:

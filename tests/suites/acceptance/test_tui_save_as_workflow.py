@@ -32,6 +32,7 @@ async def test_tui_create_action_save_as_workflow(env, monkeypatch):
         system_env=sys_env,
         file_system=env.get_mock_filesystem(),
         console_tooling=MagicMock(),
+        action_dispatcher=MagicMock(),
     )
 
     async with app.run_test() as pilot:

@@ -19,7 +19,12 @@ def test_tui_view_plan_binding_exists(env):
     plan = parser.parse(plan_content, plan_path="my_plan.md")
 
     system_env = env.get_service(ISystemEnvironment)
-    app = ReviewerApp(plan=plan, system_env=system_env, console_tooling=MagicMock())
+    app = ReviewerApp(
+        plan=plan,
+        system_env=system_env,
+        console_tooling=MagicMock(),
+        action_dispatcher=MagicMock(),
+    )
 
     # Assert
     # Bindings are defined as list of tuples: (key, action, description)

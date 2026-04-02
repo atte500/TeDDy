@@ -22,7 +22,12 @@ async def test_reviewer_app_has_dual_pane_layout():
     system_env = MagicMock()
     console_tooling = MagicMock()
 
-    app = ReviewerApp(plan=plan, system_env=system_env, console_tooling=console_tooling)
+    app = ReviewerApp(
+        plan=plan,
+        system_env=system_env,
+        console_tooling=console_tooling,
+        action_dispatcher=MagicMock(),
+    )
 
     # Act & Assert
     async with app.run_test() as pilot:

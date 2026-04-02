@@ -13,6 +13,7 @@ async def test_reviewer_app_prune_filtered_in_non_session(env):
         plan=plan,
         system_env=env.get_service(ISystemEnvironment),
         console_tooling=MagicMock(),
+        action_dispatcher=MagicMock(),
     )
     async with app.run_test():
         from textual.widgets import Tree

@@ -43,6 +43,7 @@ def register_reviewer(container: punq.Container, ui_mode: str | None = None) -> 
         from teddy_executor.adapters.outbound.console_tooling import (
             ConsoleToolingHelper,
         )
+        from teddy_executor.core.services.action_dispatcher import ActionDispatcher
 
         container.register(
             IPlanReviewer,
@@ -50,5 +51,6 @@ def register_reviewer(container: punq.Container, ui_mode: str | None = None) -> 
                 system_env=container.resolve(ISystemEnvironment),
                 file_system=container.resolve(IFileSystemManager),
                 console_tooling=container.resolve(ConsoleToolingHelper),
+                action_dispatcher=container.resolve(ActionDispatcher),
             ),
         )

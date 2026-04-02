@@ -13,6 +13,7 @@ async def test_reviewer_app_status_bar_notification(env):
         plan=plan,
         system_env=env.get_service(ISystemEnvironment),
         console_tooling=MagicMock(),
+        action_dispatcher=MagicMock(),
     )
     async with app.run_test() as pilot:
         status_bar = app.query_one(StatusBar)
@@ -28,6 +29,7 @@ async def test_reviewer_app_message_deferral_and_stripping(env, monkeypatch):
         plan=plan,
         system_env=env.get_service(ISystemEnvironment),
         console_tooling=MagicMock(),
+        action_dispatcher=MagicMock(),
     )
     marker = "\n\n<!-- Please enter your message above this line. -->"
     mock_content = f"Real user message{marker}\nStrip this."

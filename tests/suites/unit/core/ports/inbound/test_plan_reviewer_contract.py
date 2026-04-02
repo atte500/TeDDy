@@ -22,7 +22,10 @@ def test_textual_plan_reviewer_implements_contract():
 
     # We don't need real dependencies for a contract check
     reviewer = TextualPlanReviewer(
-        system_env=MagicMock(), file_system=MagicMock(), console_tooling=MagicMock()
+        system_env=MagicMock(),
+        file_system=MagicMock(),
+        console_tooling=MagicMock(),
+        action_dispatcher=MagicMock(),
     )
 
     assert isinstance(reviewer, IPlanReviewer), (

@@ -17,6 +17,7 @@ class TuiDriver:
             system_env=system_env,
             file_system=file_system,
             console_tooling=console_tooling or MagicMock(),
+            action_dispatcher=MagicMock(),
         )
 
     async def run_interaction(self, keys: Sequence[str]) -> Optional[Plan]:

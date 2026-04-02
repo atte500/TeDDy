@@ -16,6 +16,7 @@ def reviewer_app():
         system_env=MagicMock(),
         console_tooling=MagicMock(),
         file_system=MagicMock(),
+        action_dispatcher=MagicMock(),
     )
 
 

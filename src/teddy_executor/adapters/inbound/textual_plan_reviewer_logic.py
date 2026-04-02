@@ -201,6 +201,7 @@ def revert_logic(app: "ReviewerApp", node: Any) -> None:
 async def execute_step_logic(app: "ReviewerApp", node: Any) -> None:
     """Executes the action with real-time state transitions and feedback."""
     from teddy_executor.core.domain.models.plan import ExecutionStatus
+    from teddy_executor.core.domain.models.execution_report import ActionStatus
     import anyio
 
     action: Optional["ActionData"] = node.data
@@ -215,16 +216,24 @@ async def execute_step_logic(app: "ReviewerApp", node: Any) -> None:
     status_bar.update_status(f"RUNNING: {action.type}")
 
     try:
-        # Phase 2: Simulate execution
-        # TODO: Replace with real call to ActionDispatcher or RunPlanUseCase
-        await anyio.sleep(0.5)
+        # Phase 2: Real execution via ActionDispatcher
+        # Use anyio.to_thread for potentially blocking filesystem/shell operations
+        log = await anyio.to_thread.run_sync(
+            app._action_dispatcher.dispatch_and_execute, action
+        )
 
-        # Phase 3: Finalize success
+        # Phase 3: Finalize state based on result
         action.executed = True
-        action.state = ExecutionStatus.SUCCESS
-        status_bar.update_status(f"SUCCESS: {action.type}")
+        action.action_log = log
+        if log.status == ActionStatus.SUCCESS:
+            action.state = ExecutionStatus.SUCCESS
+            status_bar.update_status(f"SUCCESS: {action.type}")
+        else:
+            action.state = ExecutionStatus.FAILURE
+            error_msg = str(log.details) if log.details else "Unknown error"
+            status_bar.update_status(f"FAILURE: {action.type} - {error_msg}")
     except Exception as e:
-        # Phase 3: Finalize failure
+        # Phase 3: Catch-all for dispatch errors
         action.executed = True
         action.state = ExecutionStatus.FAILURE
         status_bar.update_status(f"FAILURE: {action.type} - {str(e)}")

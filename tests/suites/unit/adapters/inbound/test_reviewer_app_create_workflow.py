@@ -18,6 +18,7 @@ async def test_reviewer_app_create_workflow(env, monkeypatch):
         system_env=sys_env,
         file_system=env.get_mock_filesystem(),
         console_tooling=MagicMock(),
+        action_dispatcher=MagicMock(),
     )
     async with app.run_test() as pilot:
         await pilot.press("down")

@@ -36,6 +36,7 @@ async def test_preview_edit_is_concurrent(env, monkeypatch):
         system_env=MagicMock(spec=ISystemEnvironment),
         file_system=env.get_mock_filesystem(),
         console_tooling=MagicMock(),
+        action_dispatcher=MagicMock(),
     )
     # Ensure console_tooling.get_diff_viewer_command returns None to force launch_editor
     app._console_tooling.get_diff_viewer_command.return_value = None

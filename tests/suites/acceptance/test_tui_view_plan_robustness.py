@@ -49,6 +49,7 @@ async def test_view_plan_works_with_no_path_but_in_memory_content(env):
         system_env=mock_env,
         file_system=mock_fs,
         console_tooling=mock_tooling,
+        action_dispatcher=MagicMock(),
     )
 
     # 4. Act: Trigger 'view_plan', patching the suspend method

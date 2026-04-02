@@ -94,6 +94,7 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 - [ ] **Serialization Safety:** Replace `scrub_dict_for_serialization` with a schema-based approach (e.g., Pydantic) to prevent serialization hangs.
 - [ ] **Domain Model Validation:** Enforce strict primitive validation in domain models to prevent `MagicMock` leakage.
 - [ ] **Documentation:** Reconcile `ARCHITECTURE.md` setup descriptions with the fixture-based pattern in `composition.py`.
+- [ ] **Test Harness Fragility:** Refactor TUI test fixtures to use centralized dependency injection (via `punq`) for mocks to avoid systemic `TypeError` regressions when constructor signatures change.
 
 ### Security
 - [ ] **Bandit:** Resolve `subprocess` security warning in `system_environment_inspector.py`.

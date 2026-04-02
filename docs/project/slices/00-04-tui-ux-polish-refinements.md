@@ -121,6 +121,7 @@ To refine the plan review TUI by implementing a more robust interaction model ba
 - [✓] **Logic** - Refactor the `action_execute_step` handler to be a `worker` that updates the UI state to `RUNNING` *before* delegating to a real execution service.
 - [✓] **Wiring** - The `action_execute_step` worker must update the UI with `SUCCESS` or `FAILURE` based on the execution result.
 - [✓] **Wiring** - The handler must update the `StatusBar` at each stage of the execution lifecycle.
+- [✓] **Orchestration** - Refactor `ExecutionOrchestrator` to support manual execution persistence and sequential skipping. Verified with integration tests.
 
 ### Scenario: Improved Instruction Template & Auto-Save
 > As a user, I want a clear instruction template and a fluid editing experience when adding messages.
@@ -172,7 +173,10 @@ This slice should be implemented by a Developer, using the reference prototype a
 - **Flat Visual Hierarchy**: Migrated `ActionTree` population to use `add_leaf` to remove expander icons from a traditionally flat list of actions.
 -   **Interactive PROMPT Handling**: Extended the `ActionData` domain model with a `user_response` field. Implemented `preview_prompt` in the previews adapter to allow answering questions via an external editor. This response is stored in the domain model and is intended to be used by the executor to bypass redundant prompts.
 -   **Concurrent "Save As" Workflow**: Refactored `preview_create` and `preview_edit` to use `asyncio.gather` for launching the modification tool (editor or diff viewer) and the confirmation/path prompt concurrently. This ensures the TUI remains interactive and prompts the user while they are making changes, satisfying the "Unified, Context-Aware Action Modification" requirements. Verified the non-blocking behavior with dedicated concurrency unit tests for both `CREATE` and `EDIT` actions.
--   **Step-by-Step Execution Worker**: Refactored the TUI execution handler into a background worker using Textual's `@work` decorator. Introduced the `RUNNING` state in the domain model to allow for immediate visual feedback (blue label) and persistent status updates during simulated or real execution.
+-   **Step-by-Step Execution Worker**: Refactored the TUI execution handler into a background worker using Textual's `@work` decorator. Introduced the `RUNNING` state in the domain model to allow for immediate visual feedback (blue label) and persistent status updates.
+- **Real Execution Wiring**: Integrated the `ActionDispatcher` service into the TUI adapter. The execution worker now performs real filesystem and shell operations in a separate thread using `anyio.to_thread.run_sync`, ensuring the TUI remains responsive while providing real-time feedback on action outcomes.
+- **Manual Execution Persistence**: Enhanced `ExecutionOrchestrator` to recognize and preserve `ActionLog`s from actions already executed in the TUI. This ensures that the final `ExecutionReport` accurately reflects the outcome of a mixed manual/automatic execution session.
+- **Sequential Halt for Manual Failures**: Implemented logic in `ExecutionOrchestrator` to automatically skip subsequent actions if a previous action (whether manual or automatic) failed, maintaining state consistency.
 
 **Delta Analysis Summary:**
 This slice has been updated based on a delta analysis between the reference prototype, the original slice, and the current source code (`textual_plan_reviewer.py`, `plan.py`). Key gaps identified include:

@@ -13,6 +13,7 @@ async def test_reviewer_app_edit_execute_parameter(env):
         plan=plan,
         system_env=env.get_service(ISystemEnvironment),
         console_tooling=MagicMock(),
+        action_dispatcher=MagicMock(),
     )
     async with app.run_test() as pilot:
         await pilot.press("down")
@@ -33,6 +34,7 @@ async def test_reviewer_app_revert_binding_visibility(env):
         plan=plan,
         system_env=env.get_service(ISystemEnvironment),
         console_tooling=MagicMock(),
+        action_dispatcher=MagicMock(),
     )
     async with app.run_test() as pilot:
         await pilot.press("down")

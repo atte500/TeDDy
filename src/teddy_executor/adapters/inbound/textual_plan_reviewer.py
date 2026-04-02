@@ -29,6 +29,7 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
     StatusBar,
 )
 from teddy_executor.core.domain.models.plan import Plan
+from teddy_executor.core.services.action_dispatcher import ActionDispatcher
 from teddy_executor.core.services.edit_simulator import EditSimulator
 
 if TYPE_CHECKING:
@@ -94,12 +95,14 @@ class ReviewerApp(App):
         plan: Plan,
         system_env: ISystemEnvironment,
         console_tooling: ConsoleToolingHelper,
+        action_dispatcher: ActionDispatcher,
         file_system: Optional[IFileSystemManager] = None,
     ):
         super().__init__()
         self.plan = plan
         self._system_env = system_env
         self._console_tooling = console_tooling
+        self._action_dispatcher = action_dispatcher
         self._file_system = file_system
         self._edit_simulator = EditSimulator()
         self._user_message_cache: Optional[str] = None
@@ -245,10 +248,12 @@ class TextualPlanReviewer(IPlanReviewer):
         system_env: ISystemEnvironment,
         file_system: IFileSystemManager,
         console_tooling: ConsoleToolingHelper,
+        action_dispatcher: ActionDispatcher,
     ):
         self._system_env = system_env
         self._file_system = file_system
         self._console_tooling = console_tooling
+        self._action_dispatcher = action_dispatcher
 
     def review(self, plan: Plan) -> Optional[Plan]:
         """
@@ -278,6 +283,7 @@ class TextualPlanReviewer(IPlanReviewer):
             plan=plan,
             system_env=self._system_env,
             console_tooling=self._console_tooling,
+            action_dispatcher=self._action_dispatcher,
             file_system=self._file_system,
         )
         result = app.run()

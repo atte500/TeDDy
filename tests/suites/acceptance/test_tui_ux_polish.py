@@ -26,6 +26,7 @@ async def test_tui_header_configuration(env):
         plan=plan,
         system_env=env.get_service(ISystemEnvironment),
         console_tooling=MagicMock(),
+        action_dispatcher=MagicMock(),
     )
 
     # Driver & Observer

@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Any, Optional, Sequence
 
 from teddy_executor.core.domain.models import (
+    ActionData,
     ActionLog,
     ExecutionReport,
     Plan,
@@ -69,34 +70,52 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         action_logs = []
         halt_execution = False
         for action in plan.actions:
-            if halt_execution:
-                reason = "Skipped because a previous action failed."
-                action_logs.append(
-                    self._action_executor.handle_skipped_action(action, reason)
-                )
-                continue
+            action_log, should_halt = self._handle_action_in_loop(
+                action, plan, interactive, halt_execution
+            )
+            action_logs.append(action_log)
+            if should_halt:
+                halt_execution = True
+        return action_logs
 
-            if not action.selected:
-                reason = "User deselected this action in the plan reviewer."
-                action_logs.append(
-                    self._action_executor.handle_skipped_action(action, reason)
-                )
-                continue
-
-            action_log, captured_message = self._dispatch_single_action(
-                action, plan, interactive
+    def _handle_action_in_loop(
+        self, action: ActionData, plan: Plan, interactive: bool, halt_execution: bool
+    ) -> tuple[ActionLog, bool]:
+        """Logic for processing a single action within the execution loop."""
+        if halt_execution:
+            return (
+                self._action_executor.handle_skipped_action(
+                    action, "Skipped because a previous action failed."
+                ),
+                True,
             )
 
-            if captured_message:
-                plan.metadata["user_request"] = captured_message
+        if action.executed and action.action_log:
+            should_halt = (
+                action.action_log.status == ActionStatus.FAILURE
+                and not action.params.get("allow_failure")
+            )
+            return action.action_log, should_halt
 
-            action_logs.append(action_log)
+        if not action.selected:
+            return (
+                self._action_executor.handle_skipped_action(
+                    action, "User deselected this action in the plan reviewer."
+                ),
+                False,
+            )
 
-            if action_log.status == ActionStatus.FAILURE:
-                allow_failure = action.params.get("allow_failure")
-                if not allow_failure:
-                    halt_execution = True
-        return action_logs
+        action_log, captured_message = self._dispatch_single_action(
+            action, plan, interactive
+        )
+        if captured_message:
+            plan.metadata["user_request"] = captured_message
+
+        should_halt = (
+            action_log.status == ActionStatus.FAILURE
+            and not action.params.get("allow_failure")
+        )
+        return action_log, should_halt
 
     def _dispatch_single_action(
         self, action: Any, plan: Plan, interactive: bool
