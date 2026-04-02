@@ -1,7 +1,7 @@
 # Slice 00-04: TUI UX Polish and Refinements
 - **Status:** Planned
 - **Milestone:** [Milestone 10: Interactive Session Workflow & LLM Integration](/docs/project/milestones/10-interactive-session-and-config.md)
-- **Reference Prototype:** [prototypes/tui_canonical_final.py](/prototypes/tui_canonical_final.py)
+- **Reference Prototype:** [prototypes/tui_deferred_harvest.py](/prototypes/tui_deferred_harvest.py)
 
 ## 1. Business Goal
 To refine the plan review TUI by implementing a more robust interaction model based on user feedback. The goal is to provide clear visual feedback for action status (pending, modified, executed) and a streamlined editing workflow that uses the user's external editor.
@@ -24,14 +24,17 @@ To refine the plan review TUI by implementing a more robust interaction model ba
 > As a user, I want to see all available parameters for an action, including defaults, so I understand the full range of options.
 
 - **Given** an action is highlighted in the `ActionTree`.
-- **When** the `ParameterList` panel on the right is populated.
+- **When** the `ParameterDetail` panel on the right is populated.
 - **Then** it MUST display all possible parameters for that action type, showing the actual value if present, or the system's default value if not.
+- **And** long parameters MUST wrap within the panel instead of causing horizontal scroll.
 
 #### Deliverables
-- [✓] **Layout** - Refactor `ReviewerApp.compose` to use a `Horizontal` layout containing the `ActionTree` and a new `ParameterList` widget.
-- [✓] **Widget** - Create a new `ParameterList(Tree)` widget for the right pane, similar to the prototype.
+- [✓] **Layout** - Refactor `ReviewerApp.compose` to use a `Horizontal` layout (65/35 split).
+- [ ] **Widget** - Replace `ParameterList(Tree)` with `ParameterDetail(ListView)` in `textual_plan_reviewer_widgets.py` to enable scrolling and focus.
+- [ ] **Widget** - Implement `DetailItem(ListItem)` using a single `Label` to allow same-line text wrapping for long parameters.
 - [✓] **Logic** - Create a service or helper to resolve the full parameter set (including defaults) for any given `ActionType`.
-- [✓] **Wiring** - The `on_tree_node_highlighted` handler must use this service to populate the `ParameterList`.
+- [ ] **Wiring** - Update `on_mount_logic` and `_update_detail_view` in `textual_plan_reviewer_logic.py` to populate the `ParameterDetail` (ListView) instead of the old Tree.
+- [ ] **Wiring** - Implement `on_focus` in `ReviewerApp` to automatically highlight the first item in the list when the user tabs into the right pane.
 
 ### Scenario: Clean Visual Hierarchy
 > As a user, I want to see a flat list of actions without expander icons, so the interface is clean and simple.
@@ -43,20 +46,41 @@ To refine the plan review TUI by implementing a more robust interaction model ba
 #### Deliverables
 - [✓] **Wiring** - In `ReviewerApp.on_mount`, use `tree.root.add_leaf` instead of `tree.root.add` for each action.
 
-### Scenario: Unified, Context-Aware Action Modification
-> As a user, I want a single, intuitive key to edit any action, which uses a simple modal for quick changes and my full editor for complex content.
+### Scenario: Non-Blocking Deferred Editing (Deferred Harvest)
+> As a user, I want my editor to open instantly and non-blockingly, so I can continue browsing the plan while I make changes.
 
 - **Given** an action is highlighted in the `ActionTree`.
 - **When** I press `e` (Edit).
-- **Then** the system MUST open a `ParameterEditModal` for simple text-based actions (`EXECUTE`, `RESEARCH`).
-- **And** the system MUST open my external editor for content-heavy actions (`CREATE`, `EDIT`).
-- **And** after confirming any changes, the action MUST be marked as `*modified`.
+- **Then** the system MUST launch my external editor without `--wait` (for GUIs) and without suspending the TUI.
+- **And** it MUST NOT prompt for confirmation or wait for the editor to close.
+- **When** I click `(s) Submit`.
+- **Then** the system MUST harvest (read) the content from all open temporary files created during the session and apply them to the plan before exiting.
 
 #### Deliverables
-- [x] **Refactor** - Consolidate the functionality of `action_edit_action` (`e`) and `action_preview` (`p`) into a single `action_edit_details` method bound to `e`. Remove the `p` binding.
-- [x] **Logic** - Implement branching logic within `action_edit_details` to show a modal for simple types and launch an external editor for complex types, as seen in the prototype.
-- [✓] **Logic** - Ensure the external editor workflow for `CREATE` prompts for a file path ("Save As" model).
-- [✓] **Logic** - Ensure confirmation prompts are used to finalize changes and set the `modified` state on the `ActionData` object.
+- [ ] **Logic** - Refactor `ConsoleToolingHelper` to remove `--wait` and blocking heuristics for `code` and other GUI editors.
+- [ ] **Domain** - Add `pending_temp_file: Optional[str]` to `ActionData` to track temporary files for deferred harvesting.
+- [ ] **Logic** - Implement branched editing in `action_edit_details`: Use `ParameterEditModal` (TUI Input) for simple parameters (e.g., `timeout`, `match_all`) and `launch_editor` (External) only for content-heavy fields (`command`, `content`, `message`).
+- [ ] **Logic** - Ensure `*modified` tag is applied as a suffix only after user confirmation for external edits, or immediately for TUI modal edits.
+- [ ] **Logic** - Update `action_submit` to iterate through all actions and the user message cache, reading and applying any `pending_temp_file` content before deletion.
+
+### Scenario: High-Density UI & Post-Execution Feedback
+> As a user, I want a clear summary of actions in the tree and a detailed parameter view that shows defaults and execution results.
+
+- **Given** the TUI is active.
+- **Then** the `ActionTree` labels MUST be formatted as `TYPE: description`.
+- **And** for `PROMPT` actions, the label MUST show the first 60 characters of the message.
+- **When** an action is highlighted.
+- **Then** the `ParameterList` (right pane) MUST display all valid parameters for that action type, populated with current values or fallbacks from the `IConfigService` (e.g., `timeout` defaults to 30.0).
+- **When** an action has been executed.
+- **Then** the `ParameterList` MUST switch to displaying the `ActionLog` (Status, Details, Failed Command) for that action.
+
+#### Deliverables
+- [ ] **Logic** - Update `format_node_label` to use the `TYPE: description` format and truncated `PROMPT` messages.
+- [ ] **Wiring** - Update `_update_detail_view` to populate the `ParameterList` from a canonical map of action keys per type.
+- [ ] **Wiring** - Update `_update_detail_view` to render the `ActionLog` instead of parameters if `action.executed` is true.
+- [ ] **Style** - Replace the `ParameterList(Tree)` in the right pane with a `VerticalScroll` container. Mount parameters as `Static` widgets with `height: auto;` to enable native Textual text wrapping for long paths and commands.
+- [ ] **Standardization** - Implement a standardized `StatusBar` notification format: `[TIME] ACTION: STATUS - DETAIL` (e.g., `[09:42] EXECUTE: SUCCESS - poetry install`).
+- [ ] **Logic** - Ensure that manual execution of a `PROMPT` action via the `(x)` key triggers the "Reply in Editor" workflow (identical to the console mode's `(e)` reply loop) instead of hanging. This should capture the response and mark the action as `SUCCESS`.
 
 ### Scenario: Interactive `PROMPT` Action [✓] Verified
 > As a user, when I see a `PROMPT` action, I want to provide my answer directly within the TUI, so I don't have to be prompted again during execution.
@@ -179,10 +203,22 @@ This slice should be implemented by a Developer, using the reference prototype a
 - **Sequential Halt for Manual Failures**: Implemented logic in `ExecutionOrchestrator` to automatically skip subsequent actions if a previous action (whether manual or automatic) failed, maintaining state consistency.
 
 **Delta Analysis Summary:**
-This slice has been updated based on a delta analysis between the reference prototype, the original slice, and the current source code (`textual_plan_reviewer.py`, `plan.py`). Key gaps identified include:
+The following technical gaps were identified between the production code and the finalized prototype:
 
-1.  **Major Layout Difference:** The current implementation is a single-pane tree. It needs to be refactored into the dual-pane (ActionTree, ParameterList) layout specified in the prototype.
-2.  **Consolidate Edit/Preview:** The current `(e)` and `(p)` keybindings are confusing and overlap. They must be consolidated into a single, context-aware `(e)` binding as specified in the prototype and scenarios.
-3.  **Missing `PROMPT` Workflow:** The ability to answer `PROMPT` actions interactively is not implemented and requires changes to the domain model (`ActionData`) and the TUI handler.
-4.  **Incomplete Execution Feedback:** The real-time `[RUNNING]` status for executing actions is missing. This requires adding a new state to the `ExecutionStatus` enum and refactoring the execution handler into a `worker`.
-5.  **Minor Gaps:** The dynamic header, use of `add_leaf`, `spacebar` binding, and comprehensive status bar notifications are also missing and have been added as explicit deliverables.
+1.  **Domain Expansion (`plan.py`):**
+    - [ ] **Contract** - Add `pending_temp_file: Optional[str] = None` to `ActionData` to track deferred content.
+2.  **Deadlock Resolution (`textual_plan_reviewer.py`):**
+    - [ ] **Logic** - Refactor `ReviewerApp.push_screen_wait`. The current `asyncio.Future` implementation deadlocks. It MUST use the native Textual `await self.push_screen(screen)` wait mechanism (or a thread-safe callback) ensuring it is only awaited from within `@work` handlers.
+3.  **Layout & Wrapping (`textual_plan_reviewer_widgets.py` & `logic.py`):**
+    - [ ] **Wiring** - Replace `ParameterList(Tree)` with `ParameterDetail(ListView)`.
+    - [ ] **Logic** - Implement `DetailItem(ListItem)` using a single `Label` for native text wrapping.
+    - [ ] **Logic** - Update `format_node_label` in `logic.py` to truncate summaries to 60 characters to maintain density in the dual-pane view.
+4.  **Focus & Modals (`textual_plan_reviewer_widgets.py` & `textual_plan_reviewer.py`):**
+    - [ ] **Logic** - Add `on_mount` focus logic to `ConfirmScreen`, `PathInputScreen`, and `ParameterEditModal`.
+    - [ ] **Wiring** - Add `EnterConfirmOverlay` for the `PROMPT` workflow to allow intuitive `enter` confirmation.
+    - [ ] **Wiring** - Update `ReviewerApp.on_focus` to correctly use `event.control` (not `event.node`) to trigger auto-selection in the right pane.
+5.  **Deferred Harvesting Implementation (`textual_plan_reviewer.py` & `previews.py`):**
+    - [ ] **Logic** - Refactor `launch_editor` in `logic.py` to return the temp path for `ActionData.pending_temp_file` rather than just the content, enabling the deferred harvest on `submit`.
+    - [ ] **Wiring** - Update `action_submit` to iterate through all actions and harvest any `pending_temp_file` content before exiting.
+6.  **Action Handlers (`textual_plan_reviewer_logic.py`):**
+    - [ ] **Logic** - Update `execute_step_logic` to trigger the editor-reply loop when a `PROMPT` action is executed manually.
