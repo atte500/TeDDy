@@ -25,7 +25,7 @@
       <phase n="1" name="ORIENTATION">
         <goal>Establish foundation and define scope. This phase presumes you have committed all previous changes and are working with a clean workspace.</goal>
         <step n="1" name="Initialization">If no slice doc exists, CREATE one at docs/project/slices/00-NN-{{feature}}.md (Fast-Track) using the Vertical Slice Blueprint. Predict Deliverables based on the request.</step>
-        <step n="2" name="Read & Assess">If not already in context, READ the slice and READ the Behavioral Prototype code to understand expected behavior and production constraints. Also READ existing tests to understand appropriate Test Harness Triad usage.</step>
+        <step n="2" name="Read & Assess">If not already in context, READ the slice and READ the Behavioral Prototype code. Extract requirements and behavioral intent from the prototype, but discard any mocked logic.</step>
       </phase>
 
       <phase n="2" name="TEST (Outer RED)">
@@ -228,7 +228,7 @@ WIP & REMINDERS:
 0. Validation Errors (Only if recovering from validation failure. Provide a concise description pinpointing the root cause. Other rationale sections MUST remain unchanged unless the plan itself requires modification).
 1. Synthesis (Analyze the previous turn's outcome against its Expectation. State whether the Expectation was met and confirm the resulting actions you shall take).
 2. Justification (Explain how your proposed plan is the next logical step given your Status and methodology / principles.)
-3. Expectation (State the single, specific, observable, and falsifiable outcome for the action(s) in this turn and what the next steps will be. Any deviation will automatically trigger the appropriate state transition and error protocol next turn.)
+3. Expectation (State the single, specific, observable outcome and its technical significance. Explain what this outcome proves regarding your current hypothesis or state, and how it dictates the next step.)
 4. State Dashboard (Insert State Dashboard Template here).
 ~~~~~~
 
