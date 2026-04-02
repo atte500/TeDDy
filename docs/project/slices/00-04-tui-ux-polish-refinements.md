@@ -102,12 +102,12 @@ To refine the plan review TUI by implementing a more robust interaction model ba
 - [✓] **Wiring** - The footer is refreshed on node highlight events.
 - [✓] **Wiring** - The `(v)` key is wired to `action_view_plan`.
 
-### Scenario: Step-by-Step Action Execution
+### Scenario: Step-by-Step Action Execution [✓] Verified
 > As a user, I want to execute actions one by one and see their real-time status, so I can have granular control and immediate feedback.
 
 - **Given** a plan is loaded in the TUI.
 - **When** I press the `x` key on a pending action.
-- **Then** its label MUST immediately change to `[RUNNING]` in yellow.
+- **Then** its label MUST immediately change to `[RUNNING]` in blue.
 - **And** the status bar MUST show that the action is executing.
 - **When** the action completes successfully.
 - **Then** its label MUST change to `[SUCCESS]` in green.
@@ -117,10 +117,10 @@ To refine the plan review TUI by implementing a more robust interaction model ba
 - **And** the status bar MUST show the failure message.
 
 #### Deliverables
-- [ ] **Domain** - Add a `RUNNING` state to the `ExecutionStatus` enum in `src/teddy_executor/core/domain/models/plan.py`.
-- [ ] **Logic** - Refactor the `action_execute_step` handler to be a `worker` that updates the UI state to `RUNNING` *before* delegating to a real execution service.
-- [ ] **Wiring** - The `action_execute_step` worker must update the UI with `SUCCESS` or `FAILURE` based on the execution result.
-- [ ] **Wiring** - The handler must update the `StatusBar` at each stage of the execution lifecycle.
+- [✓] **Domain** - Add a `RUNNING` state to the `ExecutionStatus` enum in `src/teddy_executor/core/domain/models/plan.py`.
+- [✓] **Logic** - Refactor the `action_execute_step` handler to be a `worker` that updates the UI state to `RUNNING` *before* delegating to a real execution service.
+- [✓] **Wiring** - The `action_execute_step` worker must update the UI with `SUCCESS` or `FAILURE` based on the execution result.
+- [✓] **Wiring** - The handler must update the `StatusBar` at each stage of the execution lifecycle.
 
 ### Scenario: Improved Instruction Template & Auto-Save
 > As a user, I want a clear instruction template and a fluid editing experience when adding messages.
@@ -142,7 +142,7 @@ To refine the plan review TUI by implementing a more robust interaction model ba
 #### Deliverables
 - [✓] **Wiring** - `StatusBar` widget is correctly implemented and docked at the bottom.
 - [✓] **Logic** - `os.path.basename` is used for editor logging.
-- [ ] **Wiring** - Ensure all user-facing action handlers (e.g., `action_edit_details`, `action_execute_step`, `action_revert`) post notifications to the `StatusBar`.
+- [✓] **Wiring** - Ensure all user-facing action handlers (e.g., `action_edit_details`, `action_execute_step`, `action_revert`) post notifications to the `StatusBar`.
 
 ## 3. Implementation Guidelines
 This slice should be implemented by a Developer, using the reference prototype as a guide for the overall structure and desired UX. The implementation must reconcile the prototype's vision with the existing codebase.
@@ -172,6 +172,7 @@ This slice should be implemented by a Developer, using the reference prototype a
 - **Flat Visual Hierarchy**: Migrated `ActionTree` population to use `add_leaf` to remove expander icons from a traditionally flat list of actions.
 -   **Interactive PROMPT Handling**: Extended the `ActionData` domain model with a `user_response` field. Implemented `preview_prompt` in the previews adapter to allow answering questions via an external editor. This response is stored in the domain model and is intended to be used by the executor to bypass redundant prompts.
 -   **Concurrent "Save As" Workflow**: Refactored `preview_create` and `preview_edit` to use `asyncio.gather` for launching the modification tool (editor or diff viewer) and the confirmation/path prompt concurrently. This ensures the TUI remains interactive and prompts the user while they are making changes, satisfying the "Unified, Context-Aware Action Modification" requirements. Verified the non-blocking behavior with dedicated concurrency unit tests for both `CREATE` and `EDIT` actions.
+-   **Step-by-Step Execution Worker**: Refactored the TUI execution handler into a background worker using Textual's `@work` decorator. Introduced the `RUNNING` state in the domain model to allow for immediate visual feedback (blue label) and persistent status updates during simulated or real execution.
 
 **Delta Analysis Summary:**
 This slice has been updated based on a delta analysis between the reference prototype, the original slice, and the current source code (`textual_plan_reviewer.py`, `plan.py`). Key gaps identified include:

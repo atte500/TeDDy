@@ -168,11 +168,12 @@ class ReviewerApp(App):
         if tree.cursor_node:
             revert_logic(self, tree.cursor_node)
 
-    def action_execute_step(self) -> None:
-        """Mark the currently highlighted action as executed and successful."""
+    @work(exclusive=True)
+    async def action_execute_step(self) -> None:
+        """Executes the currently highlighted action as a background worker."""
         tree = self.query_one(Tree)
         if tree.cursor_node:
-            execute_step_logic(self, tree.cursor_node)
+            await execute_step_logic(self, tree.cursor_node)
 
     def action_submit(self) -> None:
         """Exit the app and return the modified plan."""

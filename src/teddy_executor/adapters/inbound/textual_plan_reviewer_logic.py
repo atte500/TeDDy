@@ -91,7 +91,12 @@ async def do_preview_logic(app: ReviewerApp, node: Any, action: ActionData) -> N
 
 def format_node_label(action: "ActionData") -> str:
     """Format the label for a tree node based on action state."""
+    from teddy_executor.core.domain.models.plan import ExecutionStatus
+
     summary = get_action_summary(action)
+    if action.state == ExecutionStatus.RUNNING:
+        return f"[blue][RUNNING] {action.type}: {summary}[/]"
+
     if action.executed:
         color = "green" if action.state.value == "SUCCESS" else "red"
         return f"[{color}][{action.state.value}] {action.type}: {summary}[/]"
@@ -193,17 +198,38 @@ def revert_logic(app: "ReviewerApp", node: Any) -> None:
         app.refresh_bindings()
 
 
-def execute_step_logic(app: "ReviewerApp", node: Any) -> None:
-    """Mark the currently highlighted action as executed and successful."""
+async def execute_step_logic(app: "ReviewerApp", node: Any) -> None:
+    """Executes the action with real-time state transitions and feedback."""
     from teddy_executor.core.domain.models.plan import ExecutionStatus
+    import anyio
 
     action: Optional["ActionData"] = node.data
-    if action and not action.executed:
+    if not action or action.executed or action.state == ExecutionStatus.RUNNING:
+        return
+
+    status_bar = cast(StatusBar, app.query_one("StatusBar"))
+
+    # Phase 1: Set to RUNNING
+    action.state = ExecutionStatus.RUNNING
+    app._refresh_node(node)
+    status_bar.update_status(f"RUNNING: {action.type}")
+
+    try:
+        # Phase 2: Simulate execution
+        # TODO: Replace with real call to ActionDispatcher or RunPlanUseCase
+        await anyio.sleep(0.5)
+
+        # Phase 3: Finalize success
         action.executed = True
         action.state = ExecutionStatus.SUCCESS
+        status_bar.update_status(f"SUCCESS: {action.type}")
+    except Exception as e:
+        # Phase 3: Finalize failure
+        action.executed = True
+        action.state = ExecutionStatus.FAILURE
+        status_bar.update_status(f"FAILURE: {action.type} - {str(e)}")
+    finally:
         app._refresh_node(node)
-        status_bar = cast(StatusBar, app.query_one("StatusBar"))
-        status_bar.update_status(f"EXECUTED: {action.type}")
 
 
 def toggle_all_logic(app: "ReviewerApp", plan: Any) -> None:

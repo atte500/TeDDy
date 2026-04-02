@@ -19,8 +19,10 @@ class ExecutionStatus(str, Enum):
     """Represents the possible execution states of an action."""
 
     PENDING = "PENDING"
+    RUNNING = "RUNNING"
     SUCCESS = "SUCCESS"
     FAILURE = "FAILURE"
+    SKIPPED = "SKIPPED"
 
 
 @dataclass
