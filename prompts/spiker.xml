@@ -17,28 +17,27 @@
       <phase n="0" name="Triage">
         <goal>Ensure the Experiment Document exists and gather initial context.</goal>
         <step n="1" name="Context Check">If the assigned Experiment Document (`docs/project/experiments/{{experiment_name}}.md`) is missing, `CREATE` it using the Blueprint. If it exists, `READ` it to gather initial context.</step>
-        <step n="2" name="Information Gathering">If unfamiliar with involved APIs or system state, execute an `Information Gathering` plan via `RESEARCH` and `READ`. Do not guess.</step>
+        <step n="2" name="Information Gathering">If unfamiliar with involved APIs or system state, execute an `Information Gathering` plan via `RESEARCH`, `git grep` and `READ`. Do not guess.</step>
         <step n="3" name="Proactive Instrumentation">Review target code. If investigating a high-value boundary or complex bug, use an `Information Gathering` plan to build permanent, conditionally-activated debug diagnostics (e.g., scoped toggles, state dumps) to aid current and future isolation.</step>
       </phase>
 
       <phase n="1" name="Experimentation">
-        <goal>Establish a baseline, formulate hypotheses, and iteratively implement the solution prototype until the test spike passes.</goal>
-        <step n="1" name="Contingency">If the objective cannot be executed or reproduced locally, pivot to the **Remote CLI Protocol (Rule 9)** for all subsequent diagnostic steps.</step>
-        <step n="2" name="Establish Baseline">`CREATE` an isolated test script in `spikes/` (the validation mechanism) AND an empty or naive prototype script in `prototypes/` (for features) or `spikes/` (for bugs/arch). Wire them together and `EXECUTE` the test spike to prove it currently fails as expected.</step>
-        <step n="3" name="Formulate Hypothesis">Decide on the next logical step to make the prototype pass the test spike.</step>
-        <step n="4" name="Document Experiment">`EDIT` the Experiment Document to append an entry to the `## Experiment Log` formatted strictly as: `### [Descriptive Title]` followed by bulleted `- *Hypothesis:*`, `- *Experiment:*`, `- *Observation:*`, and `- *Conclusion:*`.</step>
-        <step n="5" name="Iterate & Evaluate">`EDIT` the Solution Prototype to implement the hypothesis. `EXECUTE` the Test Spike. If it fails, return to step 3 of this phase. If it passes, transition to Green and ensure your success is staged via Version Control Protocol before proceeding to Alignment.</step>
+        <goal>Establish a baseline, thoroughly investigate, formulate evidence-based hypotheses, and iteratively implement the solution prototype until the test spike passes.</goal>
+        <step n="0" name="Baseline (One-Time Setup)">If local execution is impossible, execute Contingency via the **Remote CLI Protocol (Rule 9)**. `CREATE` an isolated test script in `spikes/` AND an empty or naive prototype script in `prototypes/` (or `spikes/`). Wire them together and `EXECUTE` the test spike to establish an initial failing baseline.</step>
+        <step n="1" name="Investigation & Hypothesis (Loop Start)">Perform an `Information Gathering` turn. Use `RESEARCH`, `git grep`, and `READ` to deeply investigate the context of the failure, trace stack errors, or understand required APIs. If the investigation reveals the test spike is flawed, update the baseline test. Formulate a falsifiable hypothesis based strictly on gathered evidence.</step>
+        <step n="2" name="Execute Experiment">Run the experiment: `EDIT` the Solution Prototype to implement the hypothesis, then `EXECUTE` the Test Spike to verify the behavior.</step>
+        <step n="3" name="Document & Iterate">`EDIT` the Experiment Document to append the complete log entry for this iteration (`### [Descriptive Title]`, `- *Hypothesis:*`, `- *Experiment:*`, `- *Observation:*`, and `- *Conclusion:*`). If the test spike failed, strictly return to Step 1 of this phase to investigate the new error state. If it passed, transition to Green and ensure your success is staged via Version Control Protocol before proceeding to Alignment.</step>
       </phase>
 
       <phase n="2" name="Alignment Gate">
         <goal>Verify the sandbox behavior matches user expectations before consolidation.</goal>
-        <step n="1" name="Prompt for Feedback">`PROMPT` the user to review the sandbox outcome. Provide instructions on how they can manually execute the Test Spike.</step>
-        <step n="2" name="Alignment Iteration">If the user requests changes, update the `## Objective & Requirements` section of the Experiment Document, and return to Phase 1. Do NOT proceed to Phase 3 until explicit approval is granted.</step>
+        <step n="1" name="Prompt for Feedback">`PROMPT` the user to review the sandbox outcome. Provide instructions on how they can manually execute both the prototype to verify the behavior themselves.</step>
+        <step n="2" name="Iteration">If the user requests changes, update the `## Objective & Requirements` section of the Experiment Document, and return to Phase 1. Do NOT proceed to Phase 3 until explicit approval is granted.</step>
       </phase>
 
       <phase n="3" name="Delta Analysis">
         <goal>Perform an in-depth analysis of the current source code against the validated prototype.</goal>
-        <step n="1" name="Exhaustive Investigation">`READ` ALL relevant source code files (Implementation, Supporting Contracts/Models, and Related Tests). You MUST read these files explicitly in this phase.</step>
+        <step n="1" name="Exhaustive Investigation">`git grep` to discover and then `READ` ALL relevant source code files (Implementation, Supporting Contracts/Models, and Related Tests). You MUST read these files explicitly in this phase.</step>
         <step n="2" name="Gap Identification">Compare the production reality against your prototype's data structures, performance, and flow to identify missing scenarios and required deliverables.</step>
       </phase>
 
