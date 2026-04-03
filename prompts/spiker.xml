@@ -38,12 +38,12 @@
       <phase n="3" name="Delta Analysis">
         <goal>Perform an in-depth analysis of the current source code against the validated prototype.</goal>
         <step n="1" name="Exhaustive Investigation">`git grep` to discover and then `READ` ALL relevant source code files (Implementation, Supporting Contracts/Models, and Related Tests). You MUST read these files explicitly in this phase.</step>
-        <step n="2" name="Gap Identification">Compare the production reality against your prototype's data structures, performance, and flow to identify missing scenarios and required deliverables.</step>
+        <step n="2" name="Gap Identification">Compare the production reality against your prototype. Explicitly identify: 1) Exact API/Port signature requirements (or the Root Cause state mismatch for bugs), 2) Specific exceptions or edge cases encountered, 3) Testability constraints, and 4) Flow/performance bottlenecks.</step>
       </phase>
 
       <phase n="4" name="Synthesis">
         <goal>Translate the investigation findings into comprehensive documentation within the Experiment Document.</goal>
-        <step n="1" name="Document Findings & Recommendations">`EDIT` the Experiment Document's `## Delta Analysis & Recommendations` section (or RCA section for bugs). Record the gap between the isolated solution and production, root cause of bugs, and provide actionable instructions/deliverables for the downstream agent.</step>
+        <step n="1" name="Document Findings & Recommendations">`EDIT` the Experiment Document's `## Analysis & Recommendations` section (or RCA section for bugs). Record the gap between the isolated solution and production, root cause of bugs, and provide actionable instructions/deliverables for the downstream agent.</step>
       </phase>
 
       <phase n="5" name="Handoff">
@@ -56,18 +56,18 @@
     <general_rules>
       <rule n="1" name="State Transition Protocol">
         <description>State transitions are strictly bound to the outcome of the previous turn's Expectation.</description>
-        <state name="Green 🟢" trigger="Outcome matched the Success condition.">
+        <state name="Green 🟢" trigger="Outcome successfully met the Expectation.">
           <action>Proceed with planned workflow. Execute `git add spikes/ prototypes/ docs/project/experiments/` if a test spike passed, securing progress before the next phase.</action>
         </state>
-        <state name="Yellow 🟡" trigger="Current Status is Green AND Outcome matched the Failure condition.">
+        <state name="Yellow 🟡" trigger="Current Status is Green AND Outcome failed to meet the Expectation.">
           <action>Halt main workflow. Enter Error Investigation: 1. Research, 2. Diagnose, 3. Fix.</action>
           <dos_donts>
             <do>Iterate on the prototype script. Add diagnostics (logging, state dumps) to expose internal workings.</do>
             <dont>Proceed with the primary mission or exit Phase 1 until the Test Spike passes or alignment is achieved.</dont>
           </dos_donts>
-          <circuit_breaker>You have EXACTLY ONE attempt to fix. If the subsequent Outcome matches the Failure condition again, you MUST transition to Red 🔴 next turn.</circuit_breaker>
+          <circuit_breaker>You have EXACTLY ONE attempt to fix. If the subsequent Outcome fails to meet the Expectation again, you MUST transition to Red 🔴 next turn.</circuit_breaker>
         </state>
-        <state name="Red 🔴" trigger="Current Status is Yellow AND Outcome matched the Failure condition.">
+        <state name="Red 🔴" trigger="Current Status is Yellow AND Outcome failed to meet the Expectation.">
           <action>Restart required: 1. Update Experiment Document with holistic learnings. 2. Stage documentation (`git add docs/`). 3. Reset unstaged changes to the prototype (`git restore .` / `git clean -fd`). 4. Reassess hypothesis and restart from Phase 1.</action>
         </state>
       </rule>
@@ -159,9 +159,14 @@ WIP & REMINDERS:
 - *Conclusion:* ...
           </item>
         </section>
-        <section n="4" name="Delta Analysis & Recommendations">
-          <item name="Heading">## Delta Analysis & Recommendations</item>
-          <item name="Content">Summary of architectural viability, performance metrics, integration gaps (or Root Cause Analysis for bugs), AND the proposed deliverables detailing the exact steps to implement the validated solution in production.</item>
+        <section n="4" name="Analysis & Recommendations">
+          <item name="Heading">## Analysis & Recommendations</item>
+          <item name="Content">Summary of architectural viability, performance metrics, integration gaps, or Root Cause Analysis (for bugs). MUST explicitly list:
+1. **Contracts & State:** Actual data shapes and required arguments for the boundary, OR the specific state mismatch that caused the bug.
+2. **Failure Modes:** Specific exceptions, HTTP codes, or edge cases the downstream code must handle (or the specific error trace isolated in the bug).
+3. **Testability:** Frictions encountered in isolating the technology.
+4. **Deliverables:** Proposed atomic steps to implement the validated solution or bug fix in production.
+          </item>
         </section>
       </blueprint>
     </blueprints>

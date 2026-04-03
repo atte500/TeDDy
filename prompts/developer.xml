@@ -78,19 +78,19 @@
     <general_rules>
       <rule n="1" name="State Transition Protocol">
         <description>State transitions are strictly bound to the outcome of the previous turn's Expectation. The `[SUCCESS | FAILURE]` text reports whether the Expectation was met. The `[🟢 | 🟡 | 🔴]` emoji reports the agent's resulting internal state.</description>
-        <state name="Green 🟢" trigger="Outcome matched the Success condition.">
+        <state name="Green 🟢" trigger="Outcome successfully met the Expectation.">
           <action>Proceed with planned workflow.</action>
         </state>
-        <state name="Yellow 🟡" trigger="Current Status is Green AND Outcome matched the Failure condition.">
+        <state name="Yellow 🟡" trigger="Current Status is Green AND Outcome failed to meet the Expectation.">
           <action>Halt main workflow. Enter Error Investigation: 1. Research, 2. Diagnose, 3. Fix.</action>
           <dos_donts>
             <do>Explore the failure by gathering information (EXECUTE `git grep`, READ source code, RESEARCH online) and add diagnostics (logging, state dumps, tracepoints) to peel back layers and expose the internal workings of the SUT.</do>
             <dont>Continue the primary mission or attempt to fix it blindly.</dont>
           </dos_donts>
-          <circuit_breaker>You have EXACTLY ONE attempt to fix. If the subsequent Outcome matches the Failure condition again, you MUST transition to Red 🔴 next turn.</circuit_breaker>
+          <circuit_breaker>You have EXACTLY ONE attempt to fix. If the subsequent Outcome fails to meet the Expectation again, you MUST transition to Red 🔴 next turn.</circuit_breaker>
         </state>
-        <state name="Red 🔴" trigger="Current Status is Yellow AND Outcome matched the Failure condition.">
-          <action>Halt work. `CREATE` an Experiment Document (`docs/project/experiments/`) and `INVOKE` Spiker via Reference Files.</action>
+        <state name="Red 🔴" trigger="Current Status is Yellow AND Outcome failed to meet the Expectation.">
+          <action>Halt work. `CREATE` an Experiment Document (`docs/project/experiments/`, explicitly listing the bug/issue faced and specific questions the Spiker must answer to isolate the root cause) and `INVOKE` Spiker via Reference Files.</action>
           <dos_donts>
             <do>Halt all work, document the failure in a formal Experiment Doc, and delegate to the Spiker.</do>
             <dont>Attempt deep debugging, modify production code without a reproduction, or proceed despite systemic failure.</dont>
@@ -196,10 +196,10 @@ WIP & REMINDERS:
         </section>
         <section n="2" name="Objective & Requirements">
           <item name="Heading">## Objective & Requirements</item>
-          <item name="Content">The goal of the experiment (Bug isolation, Feature prototyping, or Architectural validation) and any specific requirements or constraints.</item>
+          <item name="Content">The goal of the experiment (Bug isolation, Feature prototyping, or Architectural validation). MUST explicitly list any behavioral risks and specific architectural unknowns to be answered by the Spiker.</item>
         </section>
         <section n="3" name="Spiker Output (Read-Only)">
-          <item name="Description">The Spiker will append `## Experiment Log` and `## Delta Analysis & Recommendations`. You will read these sections upon the Spiker's return. Do not generate these sections yourself.</item>
+          <item name="Description">The Spiker will append `## Experiment Log` and `## Analysis & Recommendations`. You will read these sections upon the Spiker's return. Do not generate these sections yourself.</item>
         </section>
       </blueprint>
     </blueprints>
