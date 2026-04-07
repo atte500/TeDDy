@@ -60,12 +60,13 @@ def test_interactive_skip_with_reason(tmp_path, monkeypatch):
         .build()
     )
 
-    # n for CREATE, then "Manual check needed" as reason
-    report = adapter.execute_plan(
-        plan, user_input="n\nManual check needed\n", interactive=True
-    )
+    # n for CREATE (no reason prompt expected in streamlined UI)
+    report = adapter.execute_plan(plan, user_input="n\n", interactive=True)
 
     assert report.action_logs[0].status == "SKIPPED"
-    # Reason is parsed into params by ReportParser
-    assert "Manual check needed" in report.action_logs[0].params["Skip Reason"]
+    # The default reason prefix remains, but specific reason is now empty
+    assert (
+        "User skipped this action. Reason:"
+        in report.action_logs[0].params["Skip Reason"]
+    )
     assert not (tmp_path / "test.txt").exists()

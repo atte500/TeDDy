@@ -17,6 +17,8 @@ class SystemEnvironmentAdapter(ISystemEnvironment):
         self, args: List[str], check: bool = True, background: bool = False
     ) -> None:
         """Wraps subprocess.run (synchronous) or subprocess.Popen (background)."""
+        import sys
+
         if background:
             # We don't wait for the result
             subprocess.Popen(  # nosec B603
@@ -27,7 +29,21 @@ class SystemEnvironmentAdapter(ISystemEnvironment):
             )
             return
 
-        subprocess.run(args, check=check)  # nosec B603
+        try:
+            subprocess.run(args, check=check)  # nosec B603
+        finally:
+            # Emergency TTY restore for Darwin/Linux.
+            if sys.platform != "win32" and sys.stdin.isatty():
+                try:
+                    import termios
+
+                    fd = sys.stdin.fileno()
+                    attrs = termios.tcgetattr(fd)
+                    attrs[0] |= termios.ICRNL
+                    attrs[3] |= termios.ICANON | termios.ECHO
+                    termios.tcsetattr(fd, termios.TCSAFLUSH, attrs)
+                except Exception:  # nosec B110
+                    pass
 
     def create_temp_file(self, suffix: str = "", mode: str = "w") -> str:
         with tempfile.NamedTemporaryFile(mode=mode, suffix=suffix, delete=False) as tf:

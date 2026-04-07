@@ -113,13 +113,13 @@ class TestConsoleInteractorAdapter:
         assert reason == ""
         # Prompting logic is now handled by typer.prompt and not asserted here.
 
-    def test_confirm_action_denies_on_n_and_captures_reason(
+    def test_confirm_action_denies_on_n_and_immediately_skips(
         self, adapter: ConsoleInteractorAdapter, monkeypatch
     ):
-        """Test that 'n' input denies and captures a reason."""
+        """Test that 'n' input denies and skips immediately without prompting for reason."""
         # Arrange
-        inputs = iter(["n", "User denied."])
-        monkeypatch.setattr("typer.prompt", lambda *args, **kwargs: next(inputs))
+        inputs = iter(["n"])
+        monkeypatch.setattr("typer.prompt", lambda *_args, **_kwargs: next(inputs))
 
         # Act
         dummy_action = ActionData(type="test", params={})
@@ -129,7 +129,7 @@ class TestConsoleInteractorAdapter:
 
         # Assert
         assert approved is False
-        assert reason == "User denied."
+        assert reason == ""
 
         # Assert that both prompts were shown, regardless of other writes
         # Prompting logic is now handled by typer.prompt and not asserted here.

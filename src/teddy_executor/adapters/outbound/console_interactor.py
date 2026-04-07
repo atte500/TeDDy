@@ -6,8 +6,6 @@ from rich.console import Console
 
 from teddy_executor.adapters.inbound.cli_helpers import (
     echo_diff_preview,
-    echo_handoff_details,
-    echo_skipped_action,
     echo_plan_summary,
 )
 from teddy_executor.core.domain.models.change_set import ChangeSet
@@ -16,6 +14,12 @@ from teddy_executor.core.ports.outbound.system_environment import ISystemEnviron
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 from teddy_executor.adapters.outbound.console_tooling import ConsoleToolingHelper
+from teddy_executor.adapters.outbound.console_interactor_helpers import (
+    restore_terminal_mode,
+    prepare_external_preview_files,
+    display_handoff_and_confirm,
+    print_skipped_action,
+)
 
 
 class ConsoleInteractorAdapter(IUserInteractor):
@@ -26,6 +30,10 @@ class ConsoleInteractorAdapter(IUserInteractor):
         self._console = Console(stderr=True)
         self._active_editor_path: Optional[str] = None
         self._active_editor_marker: Optional[str] = None
+
+    def _restore_terminal(self):
+        """Restores stdin to canonical/echo mode (Unix only)."""
+        restore_terminal_mode()
 
     def prompt(self, text: str, default: str = "") -> str:
         """Prompts the user using typer.prompt."""
@@ -189,6 +197,7 @@ class ConsoleInteractorAdapter(IUserInteractor):
 
             cmd = editor_cmd + [temp_path]
             self._system_env.run_command(cmd)
+            self._restore_terminal()
 
             with open(temp_path, "r", encoding="utf-8") as f:
                 return f.read().strip()
@@ -232,25 +241,14 @@ class ConsoleInteractorAdapter(IUserInteractor):
     def _handle_external_preview(
         self, change_set: ChangeSet, diff_command: List[str], temp_files: List[str]
     ) -> None:
-        """Sets up temp files and launches external diff/editor."""
-        ext = "".join(change_set.path.suffixes)
+        """Sets up temp files and launches external diff/editor (Non-blocking)."""
+        paths = prepare_external_preview_files(self._system_env, change_set, temp_files)
+
         if change_set.action_type == "CREATE":
-            preview_path = self._system_env.create_temp_file(suffix=f".preview{ext}")
-            temp_files.append(preview_path)
-            with open(preview_path, "w", encoding="utf-8") as f:
-                f.write(change_set.after_content)
-            # Strip diff flags to open as a regular file
             cmd = [c for c in diff_command if c.lower() not in ("--diff", "-d")]
-            self._system_env.run_command(cmd + [preview_path])
+            self._system_env.run_command(cmd + paths, background=True)
         else:
-            before_path = self._system_env.create_temp_file(suffix=f".before{ext}")
-            after_path = self._system_env.create_temp_file(suffix=f".after{ext}")
-            temp_files.extend([before_path, after_path])
-            with open(before_path, "w", encoding="utf-8") as f:
-                f.write(change_set.before_content)
-            with open(after_path, "w", encoding="utf-8") as f:
-                f.write(change_set.after_content)
-            self._system_env.run_command(diff_command + [before_path, after_path])
+            self._system_env.run_command(diff_command + paths, background=True)
 
     def confirm_action(
         self,
@@ -258,6 +256,8 @@ class ConsoleInteractorAdapter(IUserInteractor):
         action_prompt: str,
         change_set: Optional[ChangeSet] = None,
     ) -> tuple[bool, str]:
+        # Always restore TTY before starting an interaction block
+        self._restore_terminal()
         temp_files: List[str] = []
         try:
             if change_set:
@@ -275,6 +275,7 @@ class ConsoleInteractorAdapter(IUserInteractor):
                     echo_diff_preview(change_set)
                 else:
                     self._handle_external_preview(change_set, diff_command, temp_files)
+                    self._restore_terminal()
 
             message = ""
             while True:
@@ -293,11 +294,7 @@ class ConsoleInteractorAdapter(IUserInteractor):
                     message = self._launch_editor_synchronous("")
                     continue
 
-                reason_prompt = "Reason for skipping (optional): "
-                reason = typer.prompt(
-                    reason_prompt, default="", show_default=False, err=True
-                )
-                return False, reason
+                return False, ""
         except (EOFError, typer.Abort):
             # If input stream is closed (e.g., in non-interactive script),
             # default to denying the action.
@@ -309,7 +306,7 @@ class ConsoleInteractorAdapter(IUserInteractor):
 
     def notify_skipped_action(self, action: ActionData, reason: str) -> None:
         """Prints a colorized warning that an action was skipped."""
-        echo_skipped_action(action, reason)
+        print_skipped_action(action, reason)
 
     def confirm_manual_handoff(
         self,
@@ -319,18 +316,6 @@ class ConsoleInteractorAdapter(IUserInteractor):
         message: str,
     ) -> tuple[bool, str]:
         """Displays a handoff request and asks for confirmation."""
-        echo_handoff_details(action_type, target_agent, resources, message)
-        try:
-            response = typer.prompt(
-                "Press [Enter] to approve, or type a reason for rejection",
-                default="",
-                show_default=False,
-                err=True,
-            )
-
-            if response:
-                return False, response  # Rejected
-            return True, ""  # Approved
-        except (EOFError, typer.Abort):
-            typer.echo("\nAborted.", err=True)
-            return False, "Skipped due to non-interactive session."
+        return display_handoff_and_confirm(
+            action_type, target_agent, resources, message
+        )
