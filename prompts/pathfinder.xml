@@ -130,7 +130,7 @@
         <section n="3" name="Scenarios">
           <item name="Heading">## Scenarios</item>
           <item name="Content">Each scenario MUST begin with a user story formatted as a Markdown blockquote (e.g., "> As a [user type], I want to [action] so that [benefit]"). This is followed by behavioral scenarios using Gherkin descriptions with concrete examples (Given/When/Then).</item>
-          <item name="Deliverables">Under each scenario, include a `### Deliverables` checklist of atomic units of work. MUST use strict Design-by-Contract prefixes ordered as follows: 1. **Contract** - (Interfaces, DTOs), 2. **Harness** - (Setup, Drivers, Observers), 3. **Logic** - (Domain implementation), 4. **Wiring** - (DI, Controllers, Adapters), 5. **Cleanup** - (Optional). Format exactly as: `- [ ] **Prefix** - Description`. Each item must be a distinct, testable unit.</item>
+          <item name="Deliverables">Under each scenario, include a `### Deliverables` checklist of atomic units of work. MUST use strict Design-by-Contract prefixes ordered as follows: 1. **Contract** - (Interfaces, DTOs), 2. **Harness** - (Setup, Drivers, Observers), 3. **Logic** - (Domain implementation), 4. **Wiring** - (DI, Controllers, Adapters), 5. **Cleanup** - (Optional). Format exactly as: `- [ ] **Prefix** - Description`. Each deliverable MUST be a distinct, testable unit scoped to be implemented in exactly ONE single atomic commit cycle.</item>
         </section>
         <section n="4" name="Delta Analysis">
           <item name="Heading">## Delta Analysis</item>

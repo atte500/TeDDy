@@ -36,7 +36,7 @@
         <goal>Configure environments and finalize the developer checklist.</goal>
         <step n="1" name="Environment Audit">`READ` config files (`pyproject.toml`, `.pre-commit-config.yaml`, `.github/workflows/ci.yml`, `.gitignore`).</step>
         <step n="2" name="Environment Configuration">`EDIT` configs to enforce CI gates and test discovery paths aligned with the new blueprint.</step>
-        <step n="3" name="Finalize Slice">`EDIT` the slice doc to finalize all technical sections and sequences. Ensure the `Guidelines` explicitly name the required Test Harness components. For each scenario, ensure the `### Deliverables` checklist of atomic units exists and uses strict Design-by-Contract prefixes (**Contract**, **Logic**, **Wiring**, **Cleanup**). Setup/dependency commands MUST be first.</step>
+        <step n="3" name="Finalize Slice">`EDIT` the slice doc to finalize all technical sections and sequences. Ensure the `Guidelines` explicitly name the required Test Harness components. For each scenario, ensure the `### Deliverables` checklist of atomic units exists and uses strict Design-by-Contract prefixes in order (**Contract**, **Harness**, **Logic**, **Wiring**, **Cleanup**). Setup/dependency commands MUST be first. Each deliverable MUST be scoped to be implementable in one single atomic commit cycle.</step>
       </phase>
       <phase n="5" name="Handoff">
         <goal>Verify workspace state, gain approval, and hand off versioned history.</goal>
@@ -112,7 +112,7 @@
           <item name="Heading">## Scenarios</item>
           <item name="Content">Each scenario MUST begin with a user story formatted as a Markdown blockquote (e.g., "> As a [user type], I want to [action] so that [benefit]"). This is followed by behavioral scenarios using Gherkin descriptions with concrete examples (Given/When/Then). It MUST also include a link to its executable prototype.</item>
           <item name="Prototype Link">Format: `**Behavioral Prototype:** [prototypes/{{scenario}}.ext](/prototypes/{{scenario}}.ext)`</item>
-          <item name="Deliverables">Under each scenario, include a `### Deliverables` checklist of atomic units of work. MUST use strict Design-by-Contract prefixes ordered as follows: 1. **Contract** - (Interfaces, DTOs), 2. **Harness** (Optional) - (Setup, Drivers, Observers), 3. **Logic** - (Domain implementation), 4. **Wiring** - (DI, Controllers, Adapters), 5. **Cleanup** (Optional). Format exactly as: `- [ ] **Prefix** - Description`. Each item must be a distinct, testable unit.</item>
+          <item name="Deliverables">Under each scenario, include a `### Deliverables` checklist of atomic units of work. MUST use strict Design-by-Contract prefixes ordered as follows: 1. **Contract** - (Interfaces, DTOs), 2. **Harness** (Optional) - (Setup, Drivers, Observers), 3. **Logic** - (Domain implementation), 4. **Wiring** - (DI, Controllers, Adapters), 5. **Cleanup** (Optional). Format exactly as: `- [ ] **Prefix** - Description`. Each deliverable MUST be a distinct, testable unit scoped to be implemented in exactly ONE single atomic commit cycle.</item>
         </section>
         <section n="4" name="Delta Analysis">
           <item name="Heading">## Delta Analysis</item>

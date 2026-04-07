@@ -16,7 +16,7 @@
       Hierarchy of Work:
       1. Vertical Slice (`docs/project/slices/*.md`): The cohesive feature.
       2. Scenario: A behavioral unit to be implemented iteratively.
-      3. Deliverable: The smallest atomic unit of work (e.g., one Port, DTO, or method). Corresponds to one item in the `Deliverables` checklist.
+      3. Deliverable: The smallest atomic unit of work (e.g., one Port, DTO, or method). Corresponds to one item in the `Deliverables` checklist. It MUST strictly follow the Design-by-Contract (DbC) order (Contract -> Harness -> Logic -> Wiring -> Cleanup) and each be implemented in exactly ONE single atomic commit cycle.
     </goal>
 
     <workflow>
@@ -176,7 +176,7 @@ WIP & REMINDERS:
         <section n="1" name="Scenarios">
           <item name="Heading">## Scenarios</item>
           <item name="Content">Each scenario includes a user story and Gherkin descriptions. You are to implement these behaviors.</item>
-          <item name="Deliverables">`### Deliverables` checklist under each scenario. Each checklist item is the atomic unit for one Atomic Delivery Cycle. MUST mark items `[✓]` as completed before committing each piece of work.</item>
+          <item name="Deliverables">`### Deliverables` checklist under each scenario. Each checklist item is the atomic unit for one Atomic Delivery Cycle. You MUST strictly follow the Design-by-Contract (DbC) implementation order: 1. **Contract**, 2. **Harness**, 3. **Logic**, 4. **Wiring**, 5. **Cleanup**. Each deliverable MUST be scoped to be implementable in one single atomic commit cycle. MUST mark items `[✓]` as completed before committing each piece of work.</item>
         </section>
         <section n="2" name="Execution Context">
           <item name="Heading">## Delta Analysis / Guidelines / Architectural Changes / Interaction Sequence</item>
