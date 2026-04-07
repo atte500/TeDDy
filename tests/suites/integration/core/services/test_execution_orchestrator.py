@@ -63,7 +63,7 @@ def test_orchestrator_skips_terminal_action_in_multi_action_plan_integration(env
     # Second action (PROMPT) should be SKIPPED by orchestrator logic
     assert report.action_logs[1].action_type == "PROMPT"
     assert report.action_logs[1].status == ActionStatus.SKIPPED
-    assert "User deselected this action" in str(report.action_logs[1].details)
+    assert "executed in isolation" in str(report.action_logs[1].details)
 
 
 def test_orchestrator_skips_invoke_in_multi_action_plan_integration(env):
@@ -88,4 +88,4 @@ def test_orchestrator_skips_invoke_in_multi_action_plan_integration(env):
     # Second action (INVOKE) should be SKIPPED
     assert report.action_logs[1].action_type == "INVOKE"
     assert report.action_logs[1].status == ActionStatus.SKIPPED
-    assert "User deselected this action" in str(report.action_logs[1].details)
+    assert "executed in isolation" in str(report.action_logs[1].details)

@@ -105,7 +105,7 @@ class ActionExecutor:
         if action.is_terminal and total_actions > 1 and not interactive:
             return self._handle_skipped_action(
                 action,
-                "Action skipped to ensure state isolation; must be executed as a single-action plan.",
+                "these actions should be executed in isolation",
             )
 
         return None

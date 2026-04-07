@@ -35,10 +35,7 @@ def test_confirm_and_dispatch_skips_terminal_action_in_multi_action_plan_when_no
 
     # Assert
     assert log.status == ActionStatus.SKIPPED
-    assert (
-        log.details
-        == "Action skipped to ensure state isolation; must be executed as a single-action plan."
-    )
+    assert log.details == "these actions should be executed in isolation"
     assert message == ""
 
 
