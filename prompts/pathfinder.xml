@@ -248,9 +248,9 @@ WIP & REMINDERS:
       <rule n="6" name="Version Control Protocol">
         The commit message MUST be a comprehensive summary of all staged changes. Commit messages MUST follow Conventional Commits formatting: `<type>(<scope>): <description>`. Wrap entirely in single quotes. Description must use imperative mood (e.g., "Add endpoint"). Append ! for breaking changes.
 
-        If you are unsure of the full scope of changes, perform an `Information Gathering` turn to EXECUTE `git add . && git diff HEAD` first. Otherwise, proceed with the single-turn commit sequence:
+        If you are unsure of the full scope of changes, perform an `Information Gathering` turn to EXECUTE `git add . && git diff HEAD` first. Otherwise, proceed with the single-turn commit sequence (YOU MUST run the full project test suite if `src/` or `tests/` were modified):
 
-        `<test-command> (only if src/ or tests/ modified) && git add . && git commit -m '...' && git push`
+        `<full-test-suite-command> (only if src/ or tests/ modified) && git add . && git commit -m '...' && git push`
 
         This entire sequence MUST be performed in its own dedicated turn (Plan Type: Version Control) and cannot be combined with any other actions (e.g., EDIT, CREATE).
 
@@ -392,14 +392,6 @@ WIP & REMINDERS:
           </template>
         </action>
 
-        <action name="PRUNE">
-          <description>Removes file from agent context.</description>
-          <template>
-### `PRUNE`
-- **Resource:** [path/to/file.ext](/path/to/file.ext)
-- **Description:** [Explanation]
-          </template>
-        </action>
 
         <action name="RETURN">
           <description>Concludes your overall assignment and yields control back to the caller. Use this only when all your work is done, AFTER version control is complete in a separate turn.</description>
