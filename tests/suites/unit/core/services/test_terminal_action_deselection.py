@@ -22,7 +22,7 @@ def test_deselected_terminal_action_uses_isolation_reason():
 
     # Assert
     executor.handle_skipped_action.assert_called_with(
-        action, "these actions should be executed in isolation"
+        action, "This action must be performed in isolation."
     )
 
 

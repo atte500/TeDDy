@@ -28,7 +28,7 @@ class PrototypeActionExecutor(ActionExecutor):
         if action.is_terminal and total_actions > 1 and not interactive:
             return self._handle_skipped_action(
                 action,
-                "these actions should be executed in isolation",
+                "This action must be performed in isolation.",
             )
 
         return None

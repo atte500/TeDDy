@@ -15,7 +15,7 @@ def test_terminal_action_skipped_in_multi_action_non_interactive_plan(
     AND the execution mode is non-interactive
     WHEN I execute the plan
     THEN the "PROMPT" action should be skipped
-    AND the reason should be "these actions should be executed in isolation"
+    AND the reason should be "This action must be performed in isolation."
     """
     # 1. Setup (Arrange)
     assert real_env.workspace
@@ -40,7 +40,7 @@ def test_terminal_action_skipped_in_multi_action_non_interactive_plan(
     # Skip Reason is captured in params by the ReportParser
     assert (
         prompt_log.params.get("Skip Reason")
-        == "these actions should be executed in isolation"
+        == "This action must be performed in isolation."
     )
 
     # Secondary Guard: Verify no debris in the ACTUAL project root
@@ -74,7 +74,7 @@ def test_other_terminal_actions_follow_isolation_rule(
     assert terminal_log.status == "SKIPPED"
     assert (
         terminal_log.params.get("Skip Reason")
-        == "these actions should be executed in isolation"
+        == "This action must be performed in isolation."
     )
 
     # Secondary Guard: Verify no debris in the ACTUAL project root
