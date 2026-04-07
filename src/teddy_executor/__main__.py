@@ -62,9 +62,30 @@ def bootstrap():
 
     root = str(find_project_root())
     c = get_container()
-    c.register(IFileSystemManager, LocalFileSystemAdapter, root_dir=root)
-    c.register(IRepoTreeGenerator, LocalRepoTreeGenerator, root_dir=root)
-    c.register(IConfigService, YamlConfigAdapter, root_dir=root)
+
+    # Defensive Guard: Only register if not already configured as an override (e.g. by a test).
+    # We allow overwriting default (transient) registrations to ensure project anchoring,
+    # but we protect Singletons/Instances (which are typically Mocks or test-specific setups).
+    from punq import Scope
+
+    regs = getattr(c.registrations, "_Registry__registrations", {})
+
+    def is_override(service_type) -> bool:
+        reg_list = regs.get(service_type)
+        if not reg_list:
+            return False
+        # If any registration is a singleton or has an explicit instance, it's an override
+        return any(
+            reg.scope == Scope.singleton or hasattr(reg, "instance") for reg in reg_list
+        )
+
+    if not is_override(IFileSystemManager):
+        c.register(IFileSystemManager, LocalFileSystemAdapter, root_dir=root)
+    if not is_override(IRepoTreeGenerator):
+        c.register(IRepoTreeGenerator, LocalRepoTreeGenerator, root_dir=root)
+    if not is_override(IConfigService):
+        c.register(IConfigService, YamlConfigAdapter, root_dir=root)
+
     c.resolve(IInitUseCase).ensure_initialized()
 
 

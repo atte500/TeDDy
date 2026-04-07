@@ -87,6 +87,7 @@ class RealAdapterMixin:
         return self
 
     def with_real_filesystem(self: Any) -> Any:
+        from punq import Scope
         from teddy_executor.core.ports.outbound import (
             IFileSystemManager,
             IRepoTreeGenerator,
@@ -100,11 +101,26 @@ class RealAdapterMixin:
 
         if not self.workspace:
             raise RuntimeError("Cannot anchor real filesystem without a workspace.")
+
+        # DEEP SWAP: Create a fresh container to bypass shadowing
+        from teddy_executor.container import create_container
+
+        self.container = create_container()
+        self._register_default_mocks()
+        self._deep_swap_container()
+
+        # Register as singletons so that bootstrap() in __main__.py respects them
         self._container.register(
-            IFileSystemManager, LocalFileSystemAdapter, root_dir=str(self.workspace)
+            IFileSystemManager,
+            LocalFileSystemAdapter,
+            root_dir=str(self.workspace),
+            scope=Scope.singleton,
         )
         self._container.register(
-            IRepoTreeGenerator, LocalRepoTreeGenerator, root_dir=str(self.workspace)
+            IRepoTreeGenerator,
+            LocalRepoTreeGenerator,
+            root_dir=str(self.workspace),
+            scope=Scope.singleton,
         )
         return self
 

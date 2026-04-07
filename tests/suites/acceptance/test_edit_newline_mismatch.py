@@ -3,13 +3,14 @@ from tests.harness.drivers.cli_adapter import CliTestAdapter
 
 
 def test_edit_validation_achieves_perfect_match_with_trailing_newlines(
-    env, monkeypatch, tmp_path
+    env, monkeypatch
 ):
     """
     REGRESSION: Validates that an EDIT action achieves a 1.0 similarity score
     even if the FIND block in the plan doesn't match the file's trailing newline.
     """
     env.setup().with_real_filesystem()
+    workspace = env.workspace
 
     # 1. ARRANGE: Create a file with a standard trailing newline
     # Using the exact content from the MRE report to ensure high fidelity
@@ -21,7 +22,7 @@ def test_edit_validation_achieves_perfect_match_with_trailing_newlines(
         "    # And foo.py MUST NOT exist\n"
         '    assert not (tmp_path / "foo.py").exists()\n'
     )
-    repro_file = tmp_path / "src" / "repro.py"
+    repro_file = workspace / "src" / "repro.py"
     repro_file.parent.mkdir(parents=True, exist_ok=True)
     repro_file.write_text(content, encoding="utf-8")
 
@@ -50,7 +51,7 @@ def test_edit_validation_achieves_perfect_match_with_trailing_newlines(
         .build()
     )
 
-    cli = CliTestAdapter(monkeypatch, tmp_path)
+    cli = CliTestAdapter(monkeypatch, workspace)
 
     # Execute (non-interactive, auto-approve)
     report = cli.execute_plan(plan)

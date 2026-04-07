@@ -1,10 +1,9 @@
+from pathlib import Path
+
 import pytest
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
 from tests.harness.drivers.cli_adapter import CliTestAdapter
 from tests.harness.setup.test_environment import TestEnvironment
-
-
-import os
 
 
 def test_terminal_action_skipped_in_multi_action_non_interactive_plan(
@@ -23,6 +22,12 @@ def test_terminal_action_skipped_in_multi_action_non_interactive_plan(
     adapter = CliTestAdapter(monkeypatch, real_env.workspace)
 
     unique_file = "test_data/iso_test_primary.txt"
+
+    # Cleanup stale debris from previous failed runs
+    real_project_root = Path(__file__).resolve().parents[3]
+    stale_file = real_project_root / unique_file
+    if stale_file.exists():
+        stale_file.unlink()
     plan_content = (
         MarkdownPlanBuilder(title="Mixed Plan")
         .add_create(path=unique_file, content="hello", overwrite=True)
@@ -34,6 +39,13 @@ def test_terminal_action_skipped_in_multi_action_non_interactive_plan(
     report = adapter.execute_plan(plan_content=plan_content)
 
     # 3. Observer (Assert)
+    # CRITICAL: Verify the non-terminal action actually occurred in the real workspace.
+    # If this fails, the system is using the Mock FS instead of the Real FS.
+    absolute_file_path = real_env.workspace / unique_file
+    assert absolute_file_path.exists(), (
+        f"File should have been created at {absolute_file_path}"
+    )
+
     prompt_log = next(log for log in report.action_logs if log.type == "PROMPT")
 
     assert prompt_log.status == "SKIPPED"
@@ -43,8 +55,13 @@ def test_terminal_action_skipped_in_multi_action_non_interactive_plan(
         == "This action must be performed in isolation."
     )
 
-    # Secondary Guard: Verify no debris in the ACTUAL project root
-    assert not os.path.exists(unique_file), "Debris detected in project root!"
+    # Secondary Guard: Verify no debris in the DEVELOPER'S project root
+    # We find the real project root relative to this test file to avoid workspace confusion.
+    real_project_root = Path(__file__).resolve().parents[3]
+    project_root_file = (real_project_root / unique_file).resolve()
+    assert not project_root_file.exists(), (
+        f"Debris detected in project root: {project_root_file}"
+    )
 
 
 @pytest.mark.parametrize("action_type", ["INVOKE", "RETURN"])
@@ -57,6 +74,13 @@ def test_other_terminal_actions_follow_isolation_rule(
     adapter = CliTestAdapter(monkeypatch, real_env.workspace)
 
     unique_file = f"test_data/iso_test_{action_type.lower()}.py"
+
+    # Cleanup stale debris from previous failed runs
+    real_project_root = Path(__file__).resolve().parents[3]
+    stale_file = real_project_root / unique_file
+    if stale_file.exists():
+        stale_file.unlink()
+
     builder = MarkdownPlanBuilder(title="Handoff Plan").add_create(
         path=unique_file, content="# foo", overwrite=True
     )
@@ -77,8 +101,13 @@ def test_other_terminal_actions_follow_isolation_rule(
         == "This action must be performed in isolation."
     )
 
-    # Secondary Guard: Verify no debris in the ACTUAL project root
-    assert not os.path.exists(unique_file), "Debris detected in project root!"
+    # Secondary Guard: Verify no debris in the DEVELOPER'S project root
+    # We find the real project root relative to this test file to avoid workspace confusion.
+    real_project_root = Path(__file__).resolve().parents[3]
+    project_root_file = (real_project_root / unique_file).resolve()
+    assert not project_root_file.exists(), (
+        f"Debris detected in project root: {project_root_file}"
+    )
 
 
 # NOTE: Deselection reason is verified at the Unit level in:

@@ -90,12 +90,7 @@ class TestEnvironment(RealAdapterMixin):
             self.container = create_container()
         self._register_default_mocks()
 
-        # Monkeypatch the global container instance used by the CLI
-        import teddy_executor.container
-
-        self._monkeypatch.setattr(
-            teddy_executor.container, "_container", self.container
-        )
+        self._deep_swap_container()
 
         # Legacy Compatibility: If a workspace was EXPLICITLY provided, anchor real adapters.
         # For managed workspaces (automated), we stay with mocks by default.
@@ -103,6 +98,26 @@ class TestEnvironment(RealAdapterMixin):
             self._anchor_workspace()
 
         return self
+
+    def _deep_swap_container(self) -> None:
+        """
+        Forcefully replaces the global container singleton.
+        This bypasses punq's internal shadowing (where an 'instance' registration
+        prevents subsequent re-registration of the same key).
+        """
+        import teddy_executor.container
+
+        # 1. Update the local container reference
+        # 2. Monkeypatch the global container used by the CLI
+        self._monkeypatch.setattr(
+            teddy_executor.container, "_container", self.container
+        )
+
+        # 3. Ensure the getter returns the correctly patched container
+        # Note: This is redundant but ensures maximum visibility
+        self._monkeypatch.setattr(
+            teddy_executor.container, "get_container", lambda: self.container
+        )
 
     def _register_default_mocks(self) -> None:
         """Registers mocks for side-effect-prone outbound ports (PLR0915)."""
