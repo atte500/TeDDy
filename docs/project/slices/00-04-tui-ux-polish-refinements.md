@@ -208,7 +208,12 @@ This slice should be implemented by a Developer, using the reference prototype a
 The following technical gaps were identified between the production code and the finalized prototype:
 
 1.  **Domain Expansion (`plan.py`):**
-    - [ ] **Contract** - Add `pending_temp_file: Optional[str] = None` to `ActionData` to track deferred content.
+    - [✓] **Contract** - Add `pending_temp_file: Optional[str] = None` to `ActionData` to track deferred content.
+
+## ## Implementation Notes
+### Deliverable: Domain Expansion (plan.py)
+- Added `pending_temp_file: Optional[str] = None` to the `ActionData` dataclass to support the deferred harvesting workflow.
+- Verified with unit tests (since deleted as part of the atomic cleanup).
 2.  **Deadlock Resolution (`textual_plan_reviewer.py`):**
     - [ ] **Logic** - Refactor `ReviewerApp.push_screen_wait`. The current `asyncio.Future` implementation deadlocks. It MUST use the native Textual `await self.push_screen(screen)` wait mechanism (or a thread-safe callback) ensuring it is only awaited from within `@work` handlers.
 3.  **Layout & Wrapping (`textual_plan_reviewer_widgets.py` & `logic.py`):**

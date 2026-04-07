@@ -42,6 +42,7 @@ class ActionData:
     state: ExecutionStatus = ExecutionStatus.PENDING
     action_log: Optional[ActionLog] = None
     user_response: Optional[str] = None
+    pending_temp_file: Optional[str] = None
     node: Any = None
     similarity_score: float | None = None
     similarity_scores: list[float] | None = None
