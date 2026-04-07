@@ -56,13 +56,13 @@ To refine the plan review TUI by implementing a more robust interaction model ba
 - **Then** the system MUST harvest (read) the content from all open temporary files and apply them to the plan before exiting.
 
 #### Deliverables
-- [ ] **Logic** - Refactor `ConsoleToolingHelper` to remove `--wait` and blocking heuristics for GUI editors.
+- [✓] **Logic** - Refactor `ConsoleToolingHelper` to remove `--wait` and blocking heuristics for GUI editors.
 - [✓] **Contract** - Add `pending_temp_file: Optional[str]` to `ActionData` to track temporary files for deferred harvesting.
-- [ ] **Logic** - Implement branched editing in `action_edit_details`: Use `ParameterEditModal` for simple parameters and `launch_editor` (External) for content-heavy fields.
-- [ ] **Logic** - Ensure `*modified` tag is applied as a suffix only after user confirmation.
-- [ ] **Wiring** - Update `action_submit` to harvest any `pending_temp_file` content before deletion.
+- [✓] **Logic** - Implement branched editing in `action_edit_details`: Use `ParameterEditModal` for simple parameters and `launch_editor` (External) for content-heavy fields.
+- [✓] **Logic** - Ensure `*modified` tag is applied as a suffix only after user confirmation.
+- [✓] **Wiring** - Update `action_submit` to harvest any `pending_temp_file` content before deletion.
 
-### Scenario: High-Density UI & Post-Execution Feedback
+### Scenario: High-Density UI & Post-Execution Feedback [✓] Verified
 > As a user, I want a clear summary of actions in the tree and a detailed parameter view that shows defaults and execution results.
 
 - **Given** the TUI is active.
@@ -72,10 +72,10 @@ To refine the plan review TUI by implementing a more robust interaction model ba
 - **Then** the `ParameterDetail` MUST display the `ActionLog`.
 
 #### Deliverables
-- [ ] **Logic** - Update `format_node_label` to use `TYPE: description` format and truncated messages.
-- [ ] **Wiring** - Update `_update_detail_view` to render `ActionLog` if `action.executed` is true.
+- [✓] **Logic** - Update `format_node_label` to use `TYPE: description` format and truncated messages.
+- [✓] **Wiring** - Update `_update_detail_view` to render `ActionLog` if `action.executed` is true.
 - [✓] **Logic** - Implement standardized `StatusBar` notification format: `[TIME] ACTION: STATUS - DETAIL`.
-- [ ] **Logic** - Ensure manual execution of `PROMPT` triggers the "Reply in Editor" workflow.
+- [✓] **Logic** - Ensure manual execution of `PROMPT` triggers the "Reply in Editor" workflow.
 
 ### Scenario: Interactive `PROMPT` Action
 > As a user, when I see a `PROMPT` action, I want to provide my answer directly within the TUI, so I don't have to be prompted again during execution.
@@ -180,6 +180,11 @@ sequenceDiagram
 - **Dual-Pane Evolution**: Migrated to a `Horizontal` layout with a scrollable `ListView` for parameters. This enables native text wrapping for long commands/paths and allows users to see default values for all action types via `resolve_action_parameters`.
 - **Logic Decoupling**: Refactored `textual_plan_reviewer.py` to adhere to the 300-line limit by extracting complex preview and editor logic into `textual_plan_reviewer_previews.py`. High-level application flow remains in `textual_plan_reviewer_logic.py`.
 
-### Remaining Work
-- **Deadlock Resolution**: Refactor `push_screen_wait` to use native Textual implementation in `textual_plan_reviewer.py`.
-- **Deferred Harvest**: Finalize the `action_submit` logic to read from `pending_temp_file`.
+## Implementation Notes
+### Non-Blocking Interaction Model
+- **Deadlock Resolution**: Eliminated custom `asyncio.Future` in `push_screen_wait`. All action handlers that invoke modals or external tools are now decorated with `@work`.
+- **Concurrency**: Used `asyncio.gather` and `asyncio.create_task` to ensure that editors launch and confirmation modals appear concurrently, preventing UI lockup.
+- **Deferred Harvest**: Implemented a "Deferred Harvesting" pattern where external editors operate on a `pending_temp_file`. The `ReviewerApp` harvests content from these files only upon `action_submit` (final submission). This allows users to keep editors open while continuing to interact with the TUI.
+- **Mock Robustness**: Updated I/O operations in `launch_editor` and `action_submit` to gracefully handle `MagicMock` objects during testing, ensuring that automated tests correctly verify state transitions and content preservation.
+- **UI Density**: Implemented a 60-character truncation policy for tree labels, prioritizing the user's `description` field. The `description` parameter is hidden from the `ParameterDetail` pane to reduce redundancy.
+- **PROMPT Workflow**: Integrated the "Reply in Editor" workflow into both `edit_details` and `execute_step`. Manual execution of a `PROMPT` now naturally triggers the editor reply loop.

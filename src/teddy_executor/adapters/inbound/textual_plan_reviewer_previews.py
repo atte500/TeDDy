@@ -19,17 +19,39 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
 
 
 async def launch_editor(
-    app: "ReviewerApp", initial_content: str, suffix: str = ".txt"
+    app: "ReviewerApp",
+    initial_content: str,
+    suffix: str = ".txt",
+    persistent_path: Optional[str] = None,
 ) -> Optional[str]:
     """Suspends the TUI and launches an external editor."""
     mock_output = os.environ.get("TEDDY_TEST_MOCK_EDITOR_OUTPUT")
     if mock_output:
+        if persistent_path and isinstance(persistent_path, (str, os.PathLike)):
+            with open(persistent_path, "w", encoding="utf-8") as f:
+                f.write(mock_output)
         return mock_output
 
-    temp_file = app._system_env.create_temp_file(suffix=suffix)
+    temp_file = persistent_path or app._system_env.create_temp_file(suffix=suffix)
+    is_temporary = persistent_path is None
+
+    # Type guard for Mocks in tests
+    is_valid_path = isinstance(temp_file, (str, os.PathLike))
+
     try:
-        with open(temp_file, "w", encoding="utf-8") as f:
-            f.write(initial_content)
+        # Write if file is new (temp), doesn't exist, or is empty (initial setup)
+        should_write = (
+            is_temporary
+            or (is_valid_path and not os.path.exists(temp_file))
+            or (
+                is_valid_path
+                and os.path.exists(temp_file)
+                and os.path.getsize(temp_file) == 0
+            )
+        )
+        if should_write:
+            with open(temp_file, "w", encoding="utf-8") as f:
+                f.write(str(initial_content))
 
         editor_cmd = app._console_tooling.find_editor()
         if not editor_cmd:
@@ -57,7 +79,8 @@ async def launch_editor(
     except Exception:
         return None
     finally:
-        app._system_env.delete_file(temp_file)
+        if is_temporary:
+            app._system_env.delete_file(temp_file)
 
 
 def extract_status_emoji(raw_status: str) -> str:
@@ -83,103 +106,142 @@ async def do_preview_logic(app: ReviewerApp, node: Any, action: ActionData) -> N
 
 
 async def preview_edit(app: ReviewerApp, action: ActionData, node: Any) -> None:
-    """Handle preview for EDIT."""
+    """Handle non-blocking preview for EDIT."""
     import asyncio
 
     if not app._file_system:
         return
     path_str = cast(str, action.params.get("path", ""))
     suffix = pathlib.Path(path_str).suffix or ".txt"
+
     try:
-        original = app._file_system.read_file(path_str)
+        original = str(app._file_system.read_file(path_str))
     except Exception:
         original = ""
     proposed, _ = app._edit_simulator.simulate_edits(
         original, action.params.get("edits", [])
     )
+
+    # 1. Check for Diff Viewer
     diff_viewer = app._console_tooling.get_diff_viewer_command()
 
-    async def _run_diff_viewer() -> str | None:
-        if not diff_viewer:
-            return None
+    # 2. Ensure a persistent path exists for the harvest
+    is_mock_path = (
+        not isinstance(action.pending_temp_file, (str, os.PathLike))
+        and action.pending_temp_file is not None
+    )
+    if not action.pending_temp_file or (
+        not is_mock_path and not os.path.exists(action.pending_temp_file)
+    ):
+        action.pending_temp_file = app._system_env.create_temp_file(suffix=suffix)
+
+    # 3. Choose Task
+    if diff_viewer and not is_mock_path:
+        # Create ephemeral 'before' file
         before = app._system_env.create_temp_file(suffix=f".before{suffix}")
-        after = app._system_env.create_temp_file(suffix=f".after{suffix}")
-        try:
-            with open(before, "w", encoding="utf-8") as f:
-                f.write(original)
-            with open(after, "w", encoding="utf-8") as f:
-                f.write(proposed)
-            import anyio
+        with open(before, "w", encoding="utf-8") as f:
+            f.write(original)
 
+        # Prepare 'after' (persistent)
+        if (
+            not os.path.exists(action.pending_temp_file)
+            or os.path.getsize(action.pending_temp_file) == 0
+        ):
+            with open(action.pending_temp_file, "w", encoding="utf-8") as f:
+                f.write(str(proposed))
+
+        # Non-blocking diff viewer
+        async def _run_diff():
             await anyio.to_thread.run_sync(
-                app._system_env.run_command, diff_viewer + [before, after]
+                app._system_env.run_command,
+                diff_viewer + [before, action.pending_temp_file],
             )
-            with open(after, "r", encoding="utf-8") as f:
-                return f.read()
-        except Exception:
-            return None
-        finally:
             app._system_env.delete_file(before)
-            app._system_env.delete_file(after)
 
-    # Launch tool and confirmation concurrently
-    if diff_viewer:
-        tool_task = _run_diff_viewer()
+        editor_task = asyncio.create_task(_run_diff())
     else:
-        tool_task = launch_editor(app, proposed, suffix=suffix)
+        editor_task = asyncio.create_task(
+            launch_editor(
+                app,
+                str(proposed),
+                suffix=suffix,
+                persistent_path=action.pending_temp_file,
+            )
+        )
 
+    # 4. Synchronize via Modal
     confirm_task = app.push_screen_wait(ConfirmScreen())
+    final, confirmed = await asyncio.gather(editor_task, confirm_task)
 
-    final, confirmed = await asyncio.gather(tool_task, confirm_task)
-
-    if final is not None and confirmed:
-        if final != proposed:
-            action.params["content"] = final
-            action.modified = True
-            app._refresh_node(node)
+    if confirmed:
+        action.modified = True
+        if final is not None and str(final) != str(proposed):
+            action.params["content"] = str(final)
+        app._refresh_node(node)
 
 
 async def preview_create(app: ReviewerApp, action: ActionData, node: Any) -> None:
-    """Handle preview for CREATE."""
+    """Handle non-blocking preview for CREATE."""
     import asyncio
 
     path_str = cast(str, action.params.get("path", ""))
     content = cast(str, action.params.get("content", ""))
+    suffix = pathlib.Path(path_str).suffix or ".txt"
 
-    # Launch editor and path input concurrently
-    editor_task = launch_editor(
-        app, content, suffix=pathlib.Path(path_str).suffix or ".txt"
+    # Ensure a persistent path exists for the harvest
+    if not action.pending_temp_file:
+        action.pending_temp_file = app._system_env.create_temp_file(suffix=suffix)
+
+    # Concurrently launch editor and path input
+    editor_task = asyncio.create_task(
+        launch_editor(
+            app, str(content), suffix=suffix, persistent_path=action.pending_temp_file
+        )
     )
     path_task = app.push_screen_wait(cast(Any, PathInputScreen(path_str)))
 
     new_content, new_path_val = await asyncio.gather(editor_task, path_task)
 
-    if new_content is not None and new_path_val is not None:
+    if new_path_val is not None:
         if await app.push_screen_wait(ConfirmScreen()):
-            action.params["content"] = cast(str, new_content)
             action.params["path"] = cast(str, new_path_val)
             action.modified = True
+            if new_content is not None and str(new_content) != str(content):
+                action.params["content"] = str(new_content)
             app._refresh_node(node)
 
 
 async def preview_text_action(app: ReviewerApp, action: ActionData, node: Any) -> None:
-    """Handle preview for EXECUTE/RESEARCH."""
+    """Handle non-blocking preview for EXECUTE/RESEARCH."""
+    import asyncio
 
     key = "command" if action.type == "EXECUTE" else "queries"
     content = action.params.get(key, "")
-    new_content = await launch_editor(
-        app, content, suffix=".sh" if action.type == "EXECUTE" else ".txt"
+    suffix = ".sh" if action.type == "EXECUTE" else ".txt"
+
+    # Ensure a persistent path exists for the harvest
+    if not action.pending_temp_file:
+        action.pending_temp_file = app._system_env.create_temp_file(suffix=suffix)
+
+    # Concurrently launch editor and prompt
+    editor_task = asyncio.create_task(
+        launch_editor(
+            app, str(content), suffix=suffix, persistent_path=action.pending_temp_file
+        )
     )
-    if new_content is not None and await app.push_screen_wait(ConfirmScreen()):
-        if new_content.strip() != content.strip():
-            action.params[key] = new_content.strip()
-            action.modified = True
-            app._refresh_node(node)
+    confirm_task = app.push_screen_wait(ConfirmScreen())
+
+    final, confirmed = await asyncio.gather(editor_task, confirm_task)
+
+    if confirmed:
+        action.modified = True
+        if final is not None and str(final) != str(content):
+            action.params[key] = str(final)
+        app._refresh_node(node)
 
 
 async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
-    """Handle preview for READ/PRUNE."""
-
+    """Handle non-blocking preview for READ/PRUNE (read-only)."""
     if not app._file_system:
         return
     resource = action.params.get("resource") or action.params.get("path", "")
@@ -187,17 +249,47 @@ async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
         content = app._file_system.read_file(resource)
     except Exception:
         content = f"--- Content for {resource} could not be retrieved ---"
-    await launch_editor(app, content, suffix=pathlib.Path(resource).suffix or ".txt")
+
+    temp_file = app._system_env.create_temp_file(
+        suffix=pathlib.Path(resource).suffix or ".txt"
+    )
+    try:
+        with open(temp_file, "w", encoding="utf-8") as f:
+            f.write(content)
+        editor_cmd = app._console_tooling.find_editor()
+        if editor_cmd:
+            # We don't use the deferred harvest pattern for READ/PRUNE as they are truly read-only
+            await anyio.to_thread.run_sync(
+                app._system_env.run_command, editor_cmd + [temp_file]
+            )
+            # Short wait for user to finish reading before we delete
+            await app.push_screen_wait(ConfirmScreen("Finished viewing?"))
+    finally:
+        app._system_env.delete_file(temp_file)
 
 
 async def preview_prompt(app: ReviewerApp, action: ActionData, node: Any) -> None:
-    """Handle interactive answering for PROMPT."""
+    """Handle non-blocking interactive answering for PROMPT."""
+    import asyncio
 
     message = cast(str, action.params.get("message", ""))
-    response = await launch_editor(app, message, suffix=".md")
 
-    if response is not None and await app.push_screen_wait(ConfirmScreen()):
-        if response.strip() != message.strip():
-            action.user_response = response.strip()
-            action.modified = True
-            app._refresh_node(node)
+    # Ensure a persistent path exists for the harvest
+    if not action.pending_temp_file:
+        action.pending_temp_file = app._system_env.create_temp_file(suffix=".md")
+
+    # Concurrently launch editor and prompt
+    editor_task = asyncio.create_task(
+        launch_editor(
+            app, str(message), suffix=".md", persistent_path=action.pending_temp_file
+        )
+    )
+    confirm_task = app.push_screen_wait(ConfirmScreen("Finished replying?"))
+
+    final, confirmed = await asyncio.gather(editor_task, confirm_task)
+
+    if confirmed:
+        action.modified = True
+        if final is not None and str(final) != str(message):
+            action.user_response = str(final)
+        app._refresh_node(node)

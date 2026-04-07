@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-import asyncio
-from collections.abc import Coroutine
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
+import os
+from typing import TYPE_CHECKING, Any, Optional, TypeVar
 
 from textual import work
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal
-from textual.screen import Screen
 from textual.widgets import Footer, Header, Tree
 
 from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
@@ -128,21 +126,6 @@ class ReviewerApp(App):
         yield StatusBar("System Ready", id="status_bar")
         yield Footer()
 
-    def push_screen_wait(
-        self, screen: Union[Screen[T], str], *, mode: Optional[str] = None
-    ) -> Coroutine[Any, Any, T]:
-        """Push a screen and wait for its dismissal result."""
-        _ = mode
-        loop = asyncio.get_event_loop()
-        future: asyncio.Future[T] = loop.create_future()
-
-        def _callback(result: Optional[T]) -> None:
-            if not future.done():
-                future.set_result(result)  # type: ignore[arg-type]
-
-        self.push_screen(screen, callback=_callback)  # type: ignore[arg-type]
-        return future  # type: ignore[return-value]
-
     def on_mount(self) -> None:
         """Populate the action tree when the app is mounted."""
         on_mount_logic(self)
@@ -183,6 +166,34 @@ class ReviewerApp(App):
 
     def action_submit(self) -> None:
         """Exit the app and return the modified plan."""
+        # Harvest deferred changes from pending_temp_files
+        for action in self.plan.actions:
+            # Type guard for Mocks in tests
+            is_valid_path = isinstance(action.pending_temp_file, (str, os.PathLike))
+            if (
+                action.pending_temp_file
+                and is_valid_path
+                and os.path.exists(action.pending_temp_file)
+            ):
+                try:
+                    with open(action.pending_temp_file, "r", encoding="utf-8") as f:
+                        new_content = f.read()
+
+                    # Map the content back to the appropriate parameter
+                    if action.type in ("CREATE", "EDIT"):
+                        action.params["content"] = new_content
+                    elif action.type == "EXECUTE":
+                        action.params["command"] = new_content
+                    elif action.type == "RESEARCH":
+                        action.params["queries"] = new_content
+                    elif action.type == "PROMPT":
+                        action.user_response = new_content
+
+                    os.remove(action.pending_temp_file)
+                    action.pending_temp_file = None
+                except Exception:  # nosec B110
+                    pass
+
         if self._user_message_cache is not None:
             final_message: str = self._user_message_cache.split(
                 self.INSTRUCTION_MARKER
@@ -192,6 +203,20 @@ class ReviewerApp(App):
 
     def action_cancel(self) -> None:
         """Exit the app and return None (cancellation)."""
+        # Cleanup any pending temp files
+        for action in self.plan.actions:
+            # Type guard for Mocks in tests
+            is_valid_path = isinstance(action.pending_temp_file, (str, os.PathLike))
+            if (
+                action.pending_temp_file
+                and is_valid_path
+                and os.path.exists(action.pending_temp_file)
+            ):
+                try:
+                    os.remove(action.pending_temp_file)
+                    action.pending_temp_file = None
+                except Exception:  # nosec B110
+                    pass
         self.exit(None)
 
     @work

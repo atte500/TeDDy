@@ -48,11 +48,6 @@ class ConsoleToolingHelper:
             return None
         parts = shlex.split(editor_str)
 
-        # Heuristic: Append --wait to 'code' if no arguments are provided.
-        # This prevents the editor from returning immediately and the temp file being deleted.
-        if parts == ["code"]:
-            parts.append("--wait")
-
         if tool_path := self._system_env.which(parts[0]):
             parts[0] = tool_path
             return parts

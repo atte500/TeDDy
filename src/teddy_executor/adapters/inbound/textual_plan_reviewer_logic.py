@@ -10,6 +10,10 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_previews import (
     do_preview_logic,
     extract_status_emoji,
 )
+from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+    get_action_summary,
+    resolve_action_parameters,
+)
 
 if TYPE_CHECKING:
     from teddy_executor.adapters.inbound.textual_plan_reviewer_app import ReviewerApp
@@ -35,10 +39,7 @@ def format_node_label(action: "ActionData") -> str:
     return label
 
 
-def get_action_summary(action: "ActionData") -> str:
-    """Extract a concise summary for the action."""
-    params = action.params
-    return params.get("path") or params.get("resource") or params.get("command", "")
+# Summary logic moved to textual_plan_reviewer_helpers.py
 
 
 def on_tree_node_highlighted(app: "ReviewerApp", event: Any) -> None:
@@ -82,54 +83,7 @@ def _update_detail_view(app: "ReviewerApp", action: Optional["ActionData"]):
         pane.append(DetailItem(key, val))
 
 
-def resolve_action_parameters(action: "ActionData") -> dict[str, Any]:
-    """Resolves the full set of parameters for an action, including defaults."""
-    from teddy_executor.core.domain.models.plan import (
-        ActionType,
-        DEFAULT_SIMILARITY_THRESHOLD,
-    )
-
-    # Base defaults for all actions
-    defaults: dict[str, Any] = {
-        "overwrite": False,
-        "match_all": False,
-        "allow_failure": False,
-        "background": False,
-        "timeout": 30.0,
-        "similarity_threshold": DEFAULT_SIMILARITY_THRESHOLD,
-    }
-
-    # Type-specific relevant parameters
-    param_map = {
-        ActionType.CREATE: ["path", "overwrite", "description"],
-        ActionType.EDIT: ["path", "match_all", "similarity_threshold", "description"],
-        ActionType.EXECUTE: [
-            "command",
-            "allow_failure",
-            "background",
-            "timeout",
-            "description",
-        ],
-        ActionType.READ: ["resource", "description"],
-        ActionType.PRUNE: ["resource", "description"],
-        ActionType.RESEARCH: ["queries", "description"],
-        ActionType.PROMPT: ["message", "description"],
-        ActionType.INVOKE: ["agent", "description"],
-        ActionType.RETURN: ["description"],
-    }
-
-    keys = param_map.get(cast(ActionType, action.type), [])
-    resolved = {}
-    for key in keys:
-        # Use provided value if exists, else fallback to default (if one exists for that key)
-        if key in action.params:
-            resolved[key] = action.params[key]
-        elif key in defaults:
-            resolved[key] = defaults[key]
-        else:
-            resolved[key] = None
-
-    return resolved
+# Parameter resolution logic moved to textual_plan_reviewer_helpers.py
 
 
 async def edit_action_logic(
@@ -218,11 +172,36 @@ def revert_logic(app: "ReviewerApp", node: Any) -> None:
 async def execute_step_logic(app: "ReviewerApp", node: Any) -> None:
     """Executes the action with real-time state transitions and feedback."""
     from teddy_executor.core.domain.models.plan import ExecutionStatus
-    from teddy_executor.core.domain.models.execution_report import ActionStatus
+    from teddy_executor.core.domain.models.execution_report import (
+        ActionStatus,
+        ActionLog,
+    )
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_previews import (
+        preview_prompt,
+    )
     import anyio
 
     action: Optional["ActionData"] = node.data
     if not action or action.executed or action.state == ExecutionStatus.RUNNING:
+        return
+
+    # Special Case: Manual PROMPT execution triggers the editor reply loop
+    if action.type == "PROMPT":
+        await preview_prompt(app, action, node)
+        if action.modified:
+            action.executed = True
+            action.state = ExecutionStatus.SUCCESS
+            action.action_log = ActionLog(
+                action_type=action.type,
+                params=action.params,
+                status=ActionStatus.SUCCESS,
+                details="Response captured.",
+                failed_command=None,
+            )
+            app._refresh_node(node)
+        else:
+            action.state = ExecutionStatus.PENDING
+            app._refresh_node(node)
         return
 
     status_bar = cast(StatusBar, app.query_one("StatusBar"))

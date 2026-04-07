@@ -99,4 +99,9 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 
 ### Security
 - [ ] **Bandit:** Resolve `subprocess` security warning in `system_environment_inspector.py`.
-- [ ] **Dependency:** Monitor `pygments` for a patch to resolve GHSA-5239-wwwm-4pmq (ReDoS).
+- [ ] **Dependency:** Update `aiohttp` to 3.13.4+, `litellm` to 1.83.0+, and `pygments` to 2.20.0+ to resolve multiple vulnerabilities found by `pip-audit`.
+
+### New Technical Debt (Discovered during TUI Refinement)
+- [ ] **File Length:** Refactor `src/teddy_executor/adapters/outbound/console_interactor.py` (>300 lines).
+- [ ] **File Length:** Refactor `src/teddy_executor/adapters/inbound/cli_helpers.py` (>300 lines).
+- [ ] **Vulture:** Configure `.vulture_whitelist` or pragmas for abstract Port definitions to resolve 40+ false positives.
