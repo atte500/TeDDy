@@ -1,4 +1,4 @@
-**Status:** Planned
+**Status:** [✓] Verified
 
 ## 1. Purpose / Responsibility
 Implements the `IPlanReviewer` port using the `Textual` TUI framework. It provides a rich, interactive terminal experience for reviewing and modifying plans.
@@ -9,10 +9,13 @@ Implements the `IPlanReviewer` port using the `Textual` TUI framework. It provid
   - `ISystemEnvironment`: For launching external editors for "Context-Aware Editing".
 
 ## 3. Implementation Details / Logic
-1. **App Structure:** A `textual.app.App` containing a `TreeView` (or `ListView`) of actions.
+1. **App Structure:** A `textual.app.App` using a **dual-pane layout** for optimal information density:
+   - **Left Pane (ActionTree):** A 65% width tree displaying a flat list of actions (leaf nodes).
+   - **Right Pane (ParameterDetail):** A 35% width list view that dynamically displays all parameters (including system defaults) for the highlighted action.
 2. **Tiered Interaction:**
    - **Tier 1:** Summary view (Header/Footer).
-   - **Tier 2:** Detail view/Checklist (Tree).
+   - **Tier 2:** Detail view/Checklist (Tree) with side-by-side parameter inspection.
+3. **Focus Management:** Navigation between panes is handled via `Tab`. Tabbing into the right pane automatically highlights the first parameter.
 3. **Modification Logic:**
    - When a user selects "Modify/Preview" (key `p`), the adapter uses the `ISystemEnvironment` to open a temporary file in the user's editor.
    - Upon editor close, the adapter parses the temporary file (or uses the returned path) to update the `ActionData` in-memory.

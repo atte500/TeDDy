@@ -33,6 +33,7 @@ class ActionLog:
     params: dict[str, Any]
     details: Any | None = None
     modified: bool = False
+    failed_command: str | None = None
 
 
 @dataclass(frozen=True)

@@ -20,7 +20,7 @@ To refine the plan review TUI by implementing a more robust interaction model ba
 - [✓] **Logic** - In `ReviewerApp.on_mount`, dynamically set `self.title` from `self.plan.title` and `self.plan.metadata["Status"]`.
 - [✓] **Wiring** - In `ReviewerApp.compose`, the Header widget must be configured with `show_clock=True`.
 
-### Scenario: Dual-Pane Layout with Comprehensive Parameter Inspection
+### Scenario: Dual-Pane Layout with Comprehensive Parameter Inspection [✓] Verified
 > As a user, I want to see all available parameters for an action, including defaults, so I understand the full range of options.
 
 - **Given** an action is highlighted in the `ActionTree`.
@@ -33,8 +33,8 @@ To refine the plan review TUI by implementing a more robust interaction model ba
 - [✓] **Contract** - Replace `ParameterList(Tree)` with `ParameterDetail(ListView)` in `textual_plan_reviewer_widgets.py`.
 - [✓] **Contract** - Implement `DetailItem(ListItem)` using a single `Label` for native text wrapping.
 - [✓] **Logic** - Create a helper to resolve the full parameter set (including defaults) for any given `ActionType`.
-- [ ] **Wiring** - Update `on_mount_logic` and `_update_detail_view` in `textual_plan_reviewer_logic.py` to populate `ParameterDetail`.
-- [ ] **Wiring** - Implement `on_focus` in `ReviewerApp` to automatically highlight the first item in the list when the user tabs into the right pane.
+- [✓] **Wiring** - Update `on_mount_logic` and `_update_detail_view` in `textual_plan_reviewer_logic.py` to populate `ParameterDetail`.
+- [✓] **Wiring** - Implement `on_focus` in `ReviewerApp` to automatically highlight the first item in the list when the user tabs into the right pane.
 
 ### Scenario: Clean Visual Hierarchy
 > As a user, I want to see a flat list of actions without expander icons, so the interface is clean and simple.
@@ -177,8 +177,9 @@ sequenceDiagram
 - **Domain Expansion**: Added `pending_temp_file` and `user_response` to `ActionData`.
 - **Status Bar**: Implemented `StatusBar` for real-time event logging.
 - **Header Refinement**: Title and clock integration complete.
+- **Dual-Pane Evolution**: Migrated to a `Horizontal` layout with a scrollable `ListView` for parameters. This enables native text wrapping for long commands/paths and allows users to see default values for all action types via `resolve_action_parameters`.
+- **Logic Decoupling**: Refactored `textual_plan_reviewer.py` to adhere to the 300-line limit by extracting complex preview and editor logic into `textual_plan_reviewer_previews.py`. High-level application flow remains in `textual_plan_reviewer_logic.py`.
 
 ### Remaining Work
 - **Deadlock Resolution**: Refactor `push_screen_wait` to use native Textual implementation in `textual_plan_reviewer.py`.
-- **ListView Migration**: Complete the transition from `ParameterList(Tree)` to `ParameterDetail(ListView)`.
 - **Deferred Harvest**: Finalize the `action_submit` logic to read from `pending_temp_file`.

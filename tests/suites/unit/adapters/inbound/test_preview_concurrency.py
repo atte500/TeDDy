@@ -29,7 +29,7 @@ async def test_preview_create_is_concurrent(env, monkeypatch):
         return "new content"
 
     monkeypatch.setattr(
-        "teddy_executor.adapters.inbound.textual_plan_reviewer_logic.launch_editor",
+        "teddy_executor.adapters.inbound.textual_plan_reviewer_previews.launch_editor",
         slow_launch_editor,
     )
 

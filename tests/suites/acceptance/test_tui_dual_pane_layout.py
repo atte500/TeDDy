@@ -53,6 +53,7 @@ async def test_reviewer_app_has_dual_pane_layout():
         await pilot.press("down")
         await pilot.wait_for_scheduled_animations()
 
-        # Verify right pane (ParameterDetail) is updated/cleared
-        # (Logic for populating it is in the next deliverable)
-        assert len(right_pane.children) == 0
+        # Verify right pane (ParameterDetail) is updated with resolved parameters
+        # EXECUTE type should have 5 parameters (command, allow_failure, background, timeout, description)
+        expected_param_count = 5
+        assert len(right_pane.children) == expected_param_count

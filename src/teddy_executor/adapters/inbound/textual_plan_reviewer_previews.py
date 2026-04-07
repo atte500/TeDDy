@@ -1,28 +1,90 @@
 from __future__ import annotations
 
+import os
 import pathlib
-from typing import TYPE_CHECKING, Any, cast
+import re
+from typing import TYPE_CHECKING, Any, Optional, cast
+
+import anyio
 
 if TYPE_CHECKING:
-    from teddy_executor.adapters.inbound.textual_plan_reviewer import ReviewerApp
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_app import ReviewerApp
     from teddy_executor.core.domain.models.plan import ActionData
-    from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
-        ConfirmScreen,
-    )
 
 from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
     ConfirmScreen,
     PathInputScreen,
+    StatusBar,
 )
+
+
+async def launch_editor(
+    app: "ReviewerApp", initial_content: str, suffix: str = ".txt"
+) -> Optional[str]:
+    """Suspends the TUI and launches an external editor."""
+    mock_output = os.environ.get("TEDDY_TEST_MOCK_EDITOR_OUTPUT")
+    if mock_output:
+        return mock_output
+
+    temp_file = app._system_env.create_temp_file(suffix=suffix)
+    try:
+        with open(temp_file, "w", encoding="utf-8") as f:
+            f.write(initial_content)
+
+        editor_cmd = app._console_tooling.find_editor()
+        if not editor_cmd:
+            return None
+
+        editor_name = os.path.basename(editor_cmd[0])
+        status_bar = cast(StatusBar, app.query_one("StatusBar"))
+        status_bar.update_status(f"LAUNCHING: {editor_name} {temp_file}")
+
+        editor_exe = editor_cmd[0].lower()
+        is_gui = any(gui in editor_exe for gui in ["code", "zed", "subl", "cursor"])
+
+        if is_gui:
+            await anyio.to_thread.run_sync(
+                app._system_env.run_command, editor_cmd + [temp_file]
+            )
+        else:
+            with app.suspend():
+                await anyio.to_thread.run_sync(
+                    app._system_env.run_command, editor_cmd + [temp_file]
+                )
+
+        with open(temp_file, "r", encoding="utf-8") as f:
+            return f.read()
+    except Exception:
+        return None
+    finally:
+        app._system_env.delete_file(temp_file)
+
+
+def extract_status_emoji(raw_status: str) -> str:
+    """Extracts the last emoji from a status string."""
+    # A simple regex to find common status emojis.
+    # This is not exhaustive but covers the expected cases.
+    emojis = re.findall(r"[🟢🟡🔴]", raw_status)
+    return emojis[-1] if emojis else ""
+
+
+async def do_preview_logic(app: ReviewerApp, node: Any, action: ActionData) -> None:
+    """Internal logic for previewing/modifying complex actions."""
+    if action.type == "CREATE":
+        await preview_create(app, action, node)
+    elif action.type == "EDIT":
+        await preview_edit(app, action, node)
+    elif action.type == "PROMPT":
+        await preview_prompt(app, action, node)
+    elif action.type in ("EXECUTE", "RESEARCH"):
+        await preview_text_action(app, action, node)
+    elif action.type in ("READ", "PRUNE"):
+        await preview_readonly(app, action)
 
 
 async def preview_edit(app: ReviewerApp, action: ActionData, node: Any) -> None:
     """Handle preview for EDIT."""
     import asyncio
-
-    from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
-        launch_editor,
-    )
 
     if not app._file_system:
         return
@@ -80,9 +142,6 @@ async def preview_edit(app: ReviewerApp, action: ActionData, node: Any) -> None:
 async def preview_create(app: ReviewerApp, action: ActionData, node: Any) -> None:
     """Handle preview for CREATE."""
     import asyncio
-    from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
-        launch_editor,
-    )
 
     path_str = cast(str, action.params.get("path", ""))
     content = cast(str, action.params.get("content", ""))
@@ -105,9 +164,6 @@ async def preview_create(app: ReviewerApp, action: ActionData, node: Any) -> Non
 
 async def preview_text_action(app: ReviewerApp, action: ActionData, node: Any) -> None:
     """Handle preview for EXECUTE/RESEARCH."""
-    from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
-        launch_editor,
-    )
 
     key = "command" if action.type == "EXECUTE" else "queries"
     content = action.params.get(key, "")
@@ -123,9 +179,6 @@ async def preview_text_action(app: ReviewerApp, action: ActionData, node: Any) -
 
 async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
     """Handle preview for READ/PRUNE."""
-    from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
-        launch_editor,
-    )
 
     if not app._file_system:
         return
@@ -139,9 +192,6 @@ async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
 
 async def preview_prompt(app: ReviewerApp, action: ActionData, node: Any) -> None:
     """Handle interactive answering for PROMPT."""
-    from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
-        launch_editor,
-    )
 
     message = cast(str, action.params.get("message", ""))
     response = await launch_editor(app, message, suffix=".md")

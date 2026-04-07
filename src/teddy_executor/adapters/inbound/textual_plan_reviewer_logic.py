@@ -1,92 +1,19 @@
 from __future__ import annotations
 
-import os
-import re
 from typing import TYPE_CHECKING, Any, Optional, cast
-
-import anyio
 
 from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
     ParameterEditModal,
     StatusBar,
 )
+from teddy_executor.adapters.inbound.textual_plan_reviewer_previews import (
+    do_preview_logic,
+    extract_status_emoji,
+)
 
 if TYPE_CHECKING:
-    from teddy_executor.adapters.inbound.textual_plan_reviewer import ReviewerApp
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_app import ReviewerApp
     from teddy_executor.core.domain.models.plan import ActionData
-
-
-async def launch_editor(
-    app: "ReviewerApp", initial_content: str, suffix: str = ".txt"
-) -> Optional[str]:
-    """Suspends the TUI and launches an external editor."""
-    mock_output = os.environ.get("TEDDY_TEST_MOCK_EDITOR_OUTPUT")
-    if mock_output:
-        return mock_output
-
-    temp_file = app._system_env.create_temp_file(suffix=suffix)
-    try:
-        with open(temp_file, "w", encoding="utf-8") as f:
-            f.write(initial_content)
-
-        editor_cmd = app._console_tooling.find_editor()
-        if not editor_cmd:
-            return None
-
-        editor_name = os.path.basename(editor_cmd[0])
-        status_bar = cast(StatusBar, app.query_one("StatusBar"))
-        status_bar.update_status(f"LAUNCHING: {editor_name} {temp_file}")
-
-        editor_exe = editor_cmd[0].lower()
-        is_gui = any(gui in editor_exe for gui in ["code", "zed", "subl", "cursor"])
-
-        if is_gui:
-            await anyio.to_thread.run_sync(
-                app._system_env.run_command, editor_cmd + [temp_file]
-            )
-        else:
-            with app.suspend():
-                await anyio.to_thread.run_sync(
-                    app._system_env.run_command, editor_cmd + [temp_file]
-                )
-
-        with open(temp_file, "r", encoding="utf-8") as f:
-            return f.read()
-    except Exception:
-        return None
-    finally:
-        app._system_env.delete_file(temp_file)
-
-
-# Functions preview_edit, preview_create, preview_text_action, preview_readonly
-def extract_status_emoji(raw_status: str) -> str:
-    """Extracts the last emoji from a status string."""
-    # A simple regex to find common status emojis.
-    # This is not exhaustive but covers the expected cases.
-    emojis = re.findall(r"[🟢🟡🔴]", raw_status)
-    return emojis[-1] if emojis else ""
-
-
-async def do_preview_logic(app: ReviewerApp, node: Any, action: ActionData) -> None:
-    """Internal logic for previewing/modifying complex actions."""
-    from teddy_executor.adapters.inbound.textual_plan_reviewer_previews import (
-        preview_create,
-        preview_edit,
-        preview_prompt,
-        preview_readonly,
-        preview_text_action,
-    )
-
-    if action.type == "CREATE":
-        await preview_create(app, action, node)
-    elif action.type == "EDIT":
-        await preview_edit(app, action, node)
-    elif action.type == "PROMPT":
-        await preview_prompt(app, action, node)
-    elif action.type in ("EXECUTE", "RESEARCH"):
-        await preview_text_action(app, action, node)
-    elif action.type in ("READ", "PRUNE"):
-        await preview_readonly(app, action)
 
 
 def format_node_label(action: "ActionData") -> str:
@@ -112,6 +39,97 @@ def get_action_summary(action: "ActionData") -> str:
     """Extract a concise summary for the action."""
     params = action.params
     return params.get("path") or params.get("resource") or params.get("command", "")
+
+
+def on_tree_node_highlighted(app: "ReviewerApp", event: Any) -> None:
+    """Handle node highlighting to update the detail view."""
+    # event is Tree.NodeHighlighted
+    if event.node and getattr(event.node.tree, "id", None) == "left-pane":
+        action = event.node.data if not event.node.is_root else None
+        _update_detail_view(app, action)
+    app.refresh_bindings()
+
+
+def _update_detail_view(app: "ReviewerApp", action: Optional["ActionData"]):
+    """Populate the ParameterDetail view with action parameters or log."""
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
+        ParameterDetail,
+        DetailItem,
+    )
+    from textual.widgets import Label, ListItem
+
+    pane = app.query_one(ParameterDetail)
+    pane.clear()
+
+    if not action:
+        pane.mount(ListItem(Label("Select an action to view details")))
+        return
+
+    # If executed, show the log
+    if action.executed and action.action_log:
+        log = action.action_log
+        pane.mount(ListItem(Label(f"[bold]LOG:[/] {action.type}")))
+        pane.mount(ListItem(Label(f"[bold]status:[/] {log.status}")))
+        if log.details:
+            pane.mount(ListItem(Label(f"[bold]details:[/] {log.details}")))
+        if log.failed_command:
+            pane.mount(ListItem(Label(f"[bold]failed_cmd:[/] {log.failed_command}")))
+        return
+
+    # Show resolved parameters
+    resolved = resolve_action_parameters(action)
+    for key, val in resolved.items():
+        pane.append(DetailItem(key, val))
+
+
+def resolve_action_parameters(action: "ActionData") -> dict[str, Any]:
+    """Resolves the full set of parameters for an action, including defaults."""
+    from teddy_executor.core.domain.models.plan import (
+        ActionType,
+        DEFAULT_SIMILARITY_THRESHOLD,
+    )
+
+    # Base defaults for all actions
+    defaults: dict[str, Any] = {
+        "overwrite": False,
+        "match_all": False,
+        "allow_failure": False,
+        "background": False,
+        "timeout": 30.0,
+        "similarity_threshold": DEFAULT_SIMILARITY_THRESHOLD,
+    }
+
+    # Type-specific relevant parameters
+    param_map = {
+        ActionType.CREATE: ["path", "overwrite", "description"],
+        ActionType.EDIT: ["path", "match_all", "similarity_threshold", "description"],
+        ActionType.EXECUTE: [
+            "command",
+            "allow_failure",
+            "background",
+            "timeout",
+            "description",
+        ],
+        ActionType.READ: ["resource", "description"],
+        ActionType.PRUNE: ["resource", "description"],
+        ActionType.RESEARCH: ["queries", "description"],
+        ActionType.PROMPT: ["message", "description"],
+        ActionType.INVOKE: ["agent", "description"],
+        ActionType.RETURN: ["description"],
+    }
+
+    keys = param_map.get(cast(ActionType, action.type), [])
+    resolved = {}
+    for key in keys:
+        # Use provided value if exists, else fallback to default (if one exists for that key)
+        if key in action.params:
+            resolved[key] = action.params[key]
+        elif key in defaults:
+            resolved[key] = defaults[key]
+        else:
+            resolved[key] = None
+
+    return resolved
 
 
 async def edit_action_logic(
@@ -161,7 +179,9 @@ def on_mount_logic(app: Any) -> None:
         if action.type == "PRUNE" and not app.plan.is_session:
             continue
         tree.root.add_leaf(format_node_label(action), data=action)
+
     tree.focus()
+    _update_detail_view(app, None)
 
 
 def check_action_logic(app: ReviewerApp, action_name: str) -> bool:

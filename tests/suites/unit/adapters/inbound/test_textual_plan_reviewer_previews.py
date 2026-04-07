@@ -19,7 +19,7 @@ async def test_preview_prompt_updates_user_response():
 
     # Mock launch_editor to return a response
     with patch(
-        "teddy_executor.adapters.inbound.textual_plan_reviewer_logic.launch_editor",
+        "teddy_executor.adapters.inbound.textual_plan_reviewer_previews.launch_editor",
         AsyncMock(return_value="Yes, it is."),
     ):
         # Driver
@@ -46,7 +46,7 @@ async def test_preview_create_updates_path_and_content():
 
     # Mock launch_editor
     with patch(
-        "teddy_executor.adapters.inbound.textual_plan_reviewer_logic.launch_editor",
+        "teddy_executor.adapters.inbound.textual_plan_reviewer_previews.launch_editor",
         AsyncMock(return_value="new content"),
     ):
         # Driver
