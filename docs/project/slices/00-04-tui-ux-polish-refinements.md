@@ -30,8 +30,8 @@ To refine the plan review TUI by implementing a more robust interaction model ba
 
 #### Deliverables
 - [✓] **Layout** - Refactor `ReviewerApp.compose` to use a `Horizontal` layout (65/35 split).
-- [ ] **Widget** - Replace `ParameterList(Tree)` with `ParameterDetail(ListView)` in `textual_plan_reviewer_widgets.py` to enable scrolling and focus.
-- [ ] **Widget** - Implement `DetailItem(ListItem)` using a single `Label` to allow same-line text wrapping for long parameters.
+- [✓] **Widget** - Replace `ParameterList(Tree)` with `ParameterDetail(ListView)` in `textual_plan_reviewer_widgets.py` to enable scrolling and focus.
+- [✓] **Widget** - Implement `DetailItem(ListItem)` using a single `Label` to allow same-line text wrapping for long parameters.
 - [✓] **Logic** - Create a service or helper to resolve the full parameter set (including defaults) for any given `ActionType`.
 - [ ] **Wiring** - Update `on_mount_logic` and `_update_detail_view` in `textual_plan_reviewer_logic.py` to populate the `ParameterDetail` (ListView) instead of the old Tree.
 - [ ] **Wiring** - Implement `on_focus` in `ReviewerApp` to automatically highlight the first item in the list when the user tabs into the right pane.
@@ -190,6 +190,8 @@ This slice should be implemented by a Developer, using the reference prototype a
 
 ## 4. Implementation Notes
 
+-   **ListView Migration**: Replaced the Tree-based `ParameterList` with a `ParameterDetail` widget inheriting from `ListView`. This change enables better focus management and simplifies the logic for rendering complex, wrapping text.
+-   **Text Wrapping**: Implemented `DetailItem` using a single `Label` within a `ListItem`. By setting `width: 100%` and `height: auto` on the `Label` via CSS, Textual handles multi-line wrapping for long paths or commands automatically.
 -   **Header Title Logic**: Implemented dynamic title setting in `ReviewerApp.on_mount`. Refactored the logic for extracting the status emoji into a new, unit-tested helper function `extract_status_emoji` in `textual_plan_reviewer_logic.py` to improve robustness and testability.
 -   **Header Clock Implementation**: Configured the `Header` widget with `show_clock=True` in `ReviewerApp.compose`. Verified its presence in acceptance tests by querying for the internal `HeaderClock` widget (imported from `textual.widgets._header`).
 -   **Dual-Pane TUI Layout**: Refactored the single-pane tree into a dual-pane layout using `Horizontal` layout and `65%/35%` proportions. Introduced `ActionTree` and `ParameterList` specialized widgets.

@@ -152,12 +152,9 @@ def on_mount_logic(app: Any) -> None:
 
     from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
         ActionTree,
-        ParameterList,
     )
 
     tree = app.query_one(ActionTree)
-    param_tree = app.query_one(ParameterList)
-    param_tree.show_root = False
 
     tree.root.expand()
     for action in app.plan.actions:

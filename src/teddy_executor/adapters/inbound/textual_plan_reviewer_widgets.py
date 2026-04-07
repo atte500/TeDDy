@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from typing import Any
 from textual.binding import Binding
 from textual.screen import ModalScreen
-from textual.widgets import Input, Label, Static, Tree
+from textual.widgets import Input, Label, ListItem, ListView, Static, Tree
 
 if TYPE_CHECKING:
     from textual.app import ComposeResult
@@ -80,5 +81,19 @@ class ActionTree(Tree):
     ]
 
 
-class ParameterList(Tree):
-    """A simple tree for displaying parameters."""
+class ParameterDetail(ListView):
+    """A focusable list that wraps parameters."""
+
+
+class DetailItem(ListItem):
+    """A focusable item in the parameter list."""
+
+    def __init__(self, key: str, val: Any):
+        super().__init__()
+        self.data = {"key": key, "val": val}
+
+    def compose(self) -> ComposeResult:
+        """Compose the list item with a wrapping label."""
+        from textual.widgets import Label
+
+        yield Label(f"[bold]{self.data['key']}:[/] {self.data['val']}")

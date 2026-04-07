@@ -29,6 +29,10 @@ async def test_reviewer_app_has_dual_pane_layout():
         action_dispatcher=MagicMock(),
     )
 
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
+        ParameterDetail,
+    )
+
     # Act & Assert
     async with app.run_test() as pilot:
         # Check for the left pane (ActionTree)
@@ -38,22 +42,17 @@ async def test_reviewer_app_has_dual_pane_layout():
         except Exception:
             pytest.fail("ReviewerApp missing #left-pane (ActionTree)")
 
-        # Check for the right pane (ParameterList)
+        # Check for the right pane (ParameterDetail)
         try:
             right_pane = app.query_one("#right-pane")
-            assert isinstance(right_pane, Tree)
+            assert isinstance(right_pane, ParameterDetail)
         except Exception:
-            pytest.fail("ReviewerApp missing #right-pane (ParameterList)")
+            pytest.fail("ReviewerApp missing #right-pane (ParameterDetail)")
 
         # Simulate highlighting the first action
-        left_pane = app.query_one("#left-pane")
         await pilot.press("down")
         await pilot.wait_for_scheduled_animations()
 
-        # Verify right pane root label updated
-        assert str(right_pane.root.label) == "Parameters for EXECUTE"
-
-        # Verify right pane contains parameter leaf
-        # We expect at least "command: ls" based on our Arrange block
-        leaf_labels = [str(node.label) for node in right_pane.root.children]
-        assert any("command: ls" in label for label in leaf_labels)
+        # Verify right pane (ParameterDetail) is updated/cleared
+        # (Logic for populating it is in the next deliverable)
+        assert len(right_pane.children) == 0
