@@ -184,7 +184,7 @@
       </blueprint>
 
       <blueprint name="MRE (Living Case File)">
-        <description>The formal document created to report a failure and invoke the Debugger.</description>
+        <description>The formal state snapshot for tracking the bug. Used to invoke the Debugger.</description>
         <section n="1" name="Metadata">
           <item name="Heading"># Bug: {{bug_title}}</item>
           <item name="Status">- **Status:** Unresolved</item>
@@ -192,9 +192,14 @@
           <item name="Vertical Slice">- **Vertical Slice:** [link or N/A]</item>
           <item name="Specs">- **Specs:** [links or N/A]</item>
         </section>
-        <section n="2" name="Primary Symptoms">
-          <item name="Heading">## Primary Symptoms</item>
-          <item name="Content">Failure context, reproduction steps, Expected vs. Actual behavior, and Relevant Code. (The Debugger will append investigation logs and RCA).</item>
+        <section n="2" name="Symptoms">
+          <item name="Heading">## Symptoms</item>
+          <item name="Content">Expected vs. Actual behavior and minimal reproduction steps.</item>
+        </section>
+        <section n="3" name="System Model">
+          <item name="Heading">## System Model</item>
+          <item name="Content">**Understanding:** A concise, living description of how the relevant internal components interact.</item>
+          <item name="Content">**Conflicts:** Bullet points of what is currently unexplained, broken, or contradicting the Understanding.</item>
         </section>
       </blueprint>
 
