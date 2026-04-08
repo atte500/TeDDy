@@ -43,7 +43,7 @@
         <step n="1" name="Baseline & Stage">`EXECUTE git status` and `git diff`. Then `EXECUTE git add .` to securely separate preexisting developer WIP.</step>
         <step n="2" name="Spike-Guided Fix">Apply the minimal fix to `src/` guided by the real-environment probe, NOT the test harness. Iterate until the probe passes.</step>
         <step n="3" name="Formalize Tests">ONLY AFTER the fix works in the real environment, align the formal Test Harness Triad (`tests/harness/`) accordingly and write the regression test in `tests/suites/`. Clean up code.</step>
-        <step n="4" name="Finalize System Model">`EDIT` the MRE. Update the `**Understanding:**` to reflect the newly implemented code changes. Ensure `**Conflicts:**` is completely empty. Change `- **Status:** Unresolved` to `- **Status:** Resolved`.</step>
+        <step n="4" name="Finalize System Model">`EDIT` the MRE. Update the `**Understanding:**` to reflect the newly implemented code changes. Populate `**Implemented:**` under `## Solution` with the applied fixes. Ensure `**Conflicts:**` is completely empty. Change `- **Status:** Unresolved` to `- **Status:** Resolved`.</step>
         <step n="5" name="Technical Debt">Log any discovered frictions or architectural improvement opportunities to the active Milestone's (in `docs/project/milestones/`) `## Technical Debt` section as checkmark items.</step>
       </phase>
 
@@ -152,6 +152,11 @@ WIP & REMINDERS:
           <item name="Heading">## System Model</item>
           <item name="Content">**Understanding:** A concise, living description of how the relevant internal components interact. Continuously updated as new layers are peeled back or as code changes are implemented.</item>
           <item name="Content">**Conflicts:** Bullet points of what is currently unexplained, broken, or contradicting the Understanding. When empty, the issue is resolved.</item>
+        </section>
+        <section n="4" name="Solution">
+          <item name="Heading">## Solution</item>
+          <item name="Content">**Implemented:** Bullet points of the applied fixes.</item>
+          <item name="Content">**Planned:** Bullet points of the intended fixes (if in progress).</item>
         </section>
       </blueprint>
     </blueprints>
