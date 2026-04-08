@@ -51,7 +51,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
 line-length = 88
-exclude = ["spikes/"]
+exclude = ["spikes/", "prototypes/"]
 
 [tool.ruff.lint]
 # Enable Pyflakes (F), Pycodestyle (E, W), Pylint Refactor (PLR), and McCabe complexity (C90)
@@ -67,17 +67,17 @@ max-complexity = 9
 max-statements = 40
 
 [tool.vulture]
-exclude = ["spikes/"]
+exclude = ["spikes/", "prototypes/"]
 min_confidence = 80
 paths = ["src", "tests"]
 sort_by_size = true
 
 [tool.mypy]
 ignore_missing_imports = true
-exclude = ["spikes/"]
+exclude = ["spikes/", "prototypes/"]
 
 [tool.bandit]
-exclude_dirs = ["spikes"]
+exclude_dirs = ["spikes", "prototypes"]
 # Exclude specific patterns in tests that look like secrets but are test data
 skips = ["B101"]
 

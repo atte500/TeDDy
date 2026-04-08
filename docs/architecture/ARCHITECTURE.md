@@ -68,7 +68,7 @@ This document outlines the technical standards, conventions, and setup process f
 - **Included Checks:**
     -   **Quality Gate:**
         - `ruff-complexity`: Enforces a **precise Cyclomatic Complexity** limit of **9** per function (Rule `C901`) and a **precise Statement Limit** of **40** per function (Rule `PLR0915`) for ALL code.
-        - `file-length-python`: Enforces a strict **300 line limit** for all Python files (excluding spikes).
+        - `file-length-python`: Enforces a strict **300 line limit** for all Python files (excluding `spikes/` and `prototypes/`). The check reports the actual file length on failure for quick assessment.
     - **Style & Formatting:**
         - `ruff`: For linting and formatting. **Note:** `E501` (Line too long) is explicitly ignored to favor readability of long URLs and comments.
     - **Correctness:**
@@ -85,11 +85,11 @@ This document outlines the technical standards, conventions, and setup process f
 - **Goal:** To provide a comprehensive, automated quality gate that protects the main branch.
 - **Principle:** The CI pipeline runs checks in two categories:
     1. The full `pre-commit` suite (using `--all-files`) to verify global compatibility and system health.
-    2. Slower, repository-wide checks that are not suitable for local pre-commit hooks, such as Test Pyramid verification and copy-paste detection.
+    2. Slower, repository-wide checks that are not suitable for local pre-commit hooks, such as Test Pyramid verification and copy-paste detection. These checks MUST exclude experimental directories like `prototypes/` and `spikes/`.
 
-### Spike Directory Exclusion
-The `spikes/` directory is intentionally excluded from `ruff` and `mypy` checks in `.pre-commit-config.yaml`.
-- **Rationale:** Spikes are for rapid, isolated experimentation. The code within them is temporary and not expected to meet production quality standards. Enforcing linting would hinder their exploratory purpose.
+### Experimental Code Exclusion
+The `spikes/` and `prototypes/` directories are intentionally excluded from all quality gates (`ruff`, `mypy`, `vulture`, `jscpd`, etc.).
+- **Rationale:** These directories are for rapid, isolated experimentation. The code within them is temporary and not expected to meet production quality standards. Enforcing linting and other checks would hinder their exploratory purpose.
 
 ### Handling of Secrets
 - **Scanning:** Managed via `detect-secrets`.
