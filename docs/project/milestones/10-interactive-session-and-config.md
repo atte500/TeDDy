@@ -85,7 +85,7 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 
 ### Architectural Debt
 - [x] **Windows CI Stability:** Fixed "Not properly terminated" worker crashes caused by CWD state leakage in integration tests.
-- [ ] **TUI Asynchronous Deadlocks:** The production `textual_plan_reviewer.py` currently uses a custom, flawed `asyncio.Future` based `push_screen_wait` implementation that causes deadlocks during modal interactions. This MUST be refactored to use Textual's native `await app.push_screen_wait()` along with `@work` decorators on action handlers, mirroring the verified fixes in the `tui_deferred_harvest` prototype.
+- [x] **TUI Asynchronous Deadlocks:** The production `textual_plan_reviewer.py` currently uses a custom, flawed `asyncio.Future` based `push_screen_wait` implementation that causes deadlocks during modal interactions. This MUST be refactored to use Textual's native `await app.push_screen_wait()` along with `@work` decorators on action handlers, mirroring the verified fixes in the `tui_deferred_harvest` prototype.
 - [ ] **Test Pyramid Violation:** Resolve the structural imbalance (Acceptance: 101, Integration: 101, Unit: 305) to satisfy the 'Acceptance < Integration < Unit' rule.
 - [ ] **File Length (TUI Refactor):** Refactor `console_interactor.py` and `cli_helpers.py` to meet 300-line limit.
 - [ ] **Pygments Vulnerability:** Update `pygments` to 2.20.0+ to resolve GHSA-5239-wwwm-4pmq.

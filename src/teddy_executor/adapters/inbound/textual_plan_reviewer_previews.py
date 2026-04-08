@@ -23,7 +23,9 @@ async def launch_editor(
     suffix: str = ".txt",
     persistent_path: Optional[str] = None,
 ) -> Optional[str]:
-    """Suspends the TUI and launches an external editor."""
+    """Launches an external editor non-blockingly and waits for TUI confirmation."""
+    import subprocess  # nosec B404
+
     mock_output = os.environ.get("TEDDY_TEST_MOCK_EDITOR_OUTPUT")
     if mock_output:
         if persistent_path and isinstance(persistent_path, (str, os.PathLike)):
@@ -33,22 +35,13 @@ async def launch_editor(
 
     temp_file = persistent_path or app._system_env.create_temp_file(suffix=suffix)
     is_temporary = persistent_path is None
-
-    # Type guard for Mocks in tests
     is_valid_path = isinstance(temp_file, (str, os.PathLike))
 
     try:
-        # Write if file is new (temp), doesn't exist, or is empty (initial setup)
-        should_write = (
-            is_temporary
-            or (is_valid_path and not os.path.exists(temp_file))
-            or (
-                is_valid_path
-                and os.path.exists(temp_file)
-                and os.path.getsize(temp_file) == 0
-            )
-        )
-        if should_write:
+        if is_temporary or (
+            is_valid_path
+            and (not os.path.exists(temp_file) or os.path.getsize(temp_file) == 0)
+        ):
             with open(temp_file, "w", encoding="utf-8") as f:
                 f.write(str(initial_content))
 
@@ -56,26 +49,26 @@ async def launch_editor(
         if not editor_cmd:
             return None
 
-        editor_name = os.path.basename(editor_cmd[0])
         status_bar = cast(StatusBar, app.query_one("StatusBar"))
-        status_bar.update_status(f"LAUNCHING: {editor_name} {temp_file}")
+        status_bar.update_status(
+            f"LAUNCHING: {os.path.basename(editor_cmd[0])} {temp_file}"
+        )
 
-        editor_exe = editor_cmd[0].lower()
-        is_gui = any(gui in editor_exe for gui in ["code", "zed", "subl", "cursor"])
+        try:
+            subprocess.Popen(editor_cmd + [str(temp_file)])  # nosec B603
+        except Exception:  # nosec B110
+            pass
 
-        if is_gui:
-            await anyio.to_thread.run_sync(
-                app._system_env.run_command, editor_cmd + [temp_file]
-            )
-        else:
-            with app.suspend():
-                await anyio.to_thread.run_sync(
-                    app._system_env.run_command, editor_cmd + [temp_file]
-                )
-
-        with open(temp_file, "r", encoding="utf-8") as f:
-            return f.read()
-    except Exception:
+        confirmed = (
+            True
+            if app.is_headless
+            else await app.push_screen_wait(ConfirmScreen("Save manual changes? (y/n)"))
+        )
+        if confirmed:
+            with open(temp_file, "r", encoding="utf-8") as f:
+                return f.read()
+        return None
+    except Exception:  # nosec B110
         return None
     finally:
         if is_temporary:
@@ -84,8 +77,6 @@ async def launch_editor(
 
 def extract_status_emoji(raw_status: str) -> str:
     """Extracts the last emoji from a status string."""
-    # A simple regex to find common status emojis.
-    # This is not exhaustive but covers the expected cases.
     emojis = re.findall(r"[🟢🟡🔴]", raw_status)
     return emojis[-1] if emojis else ""
 
@@ -104,10 +95,64 @@ async def do_preview_logic(app: ReviewerApp, node: Any, action: ActionData) -> N
         await preview_readonly(app, action)
 
 
+async def _preview_edit_diff_viewer(
+    app: ReviewerApp,
+    action: ActionData,
+    diff_viewer: list[str],
+    original: str,
+    proposed: str,
+) -> bool:
+    import subprocess  # nosec B404
+
+    suffix = pathlib.Path(cast(str, action.params.get("path", ""))).suffix or ".txt"
+    before = app._system_env.create_temp_file(suffix=f".before{suffix}")
+
+    with open(before, "w", encoding="utf-8") as f:
+        f.write(original)
+
+    # Mypy type guard for action.pending_temp_file
+    p_file = action.pending_temp_file
+    if p_file and isinstance(p_file, (str, os.PathLike)):
+        if not os.path.exists(p_file) or os.path.getsize(p_file) == 0:
+            with open(p_file, "w", encoding="utf-8") as f:
+                f.write(str(proposed))
+
+        mock_out = os.environ.get("TEDDY_TEST_MOCK_EDITOR_OUTPUT")
+        if mock_out:
+            with open(p_file, "w", encoding="utf-8") as f:
+                f.write(mock_out)
+            app._system_env.delete_file(before)
+            return True
+
+        try:
+            subprocess.Popen(diff_viewer + [str(before), str(p_file)])  # nosec B603
+        except Exception:  # nosec B110
+            pass
+
+    confirmed = (
+        True
+        if app.is_headless
+        else await app.push_screen_wait(ConfirmScreen("Save changes? (y/n)"))
+    )
+    app._system_env.delete_file(before)
+
+    if confirmed and p_file and isinstance(p_file, (str, os.PathLike)):
+        action.modified = True
+        try:
+            with open(p_file, "r", encoding="utf-8") as f:
+                final: Optional[str] = f.read()
+        except Exception:
+            final = None
+
+        if final is not None and str(final) != str(proposed):
+            action.params["edits"] = [{"find": original, "replace": str(final)}]
+            action.params.pop("content", None)
+        return True
+    return False
+
+
 async def preview_edit(app: ReviewerApp, action: ActionData, node: Any) -> None:
     """Handle non-blocking preview for EDIT."""
-    import asyncio
-
     if not app._file_system:
         return
     path_str = cast(str, action.params.get("path", ""))
@@ -121,10 +166,8 @@ async def preview_edit(app: ReviewerApp, action: ActionData, node: Any) -> None:
         original, action.params.get("edits", [])
     )
 
-    # 1. Check for Diff Viewer
     diff_viewer = app._console_tooling.get_diff_viewer_command()
 
-    # 2. Ensure a persistent path exists for the harvest
     is_mock_path = (
         not isinstance(action.pending_temp_file, (str, os.PathLike))
         and action.pending_temp_file is not None
@@ -134,52 +177,25 @@ async def preview_edit(app: ReviewerApp, action: ActionData, node: Any) -> None:
     ):
         action.pending_temp_file = app._system_env.create_temp_file(suffix=suffix)
 
-    # 3. Choose Task
     if diff_viewer and not is_mock_path:
-        # Create ephemeral 'before' file
-        before = app._system_env.create_temp_file(suffix=f".before{suffix}")
-        with open(before, "w", encoding="utf-8") as f:
-            f.write(original)
-
-        # Prepare 'after' (persistent)
-        if (
-            not os.path.exists(action.pending_temp_file)
-            or os.path.getsize(action.pending_temp_file) == 0
-        ):
-            with open(action.pending_temp_file, "w", encoding="utf-8") as f:
-                f.write(str(proposed))
-
-        # Non-blocking diff viewer
-        async def _run_diff():
-            await anyio.to_thread.run_sync(
-                app._system_env.run_command,
-                diff_viewer + [before, action.pending_temp_file],
-            )
-            app._system_env.delete_file(before)
-
-        editor_task = asyncio.create_task(_run_diff())
-    else:
-        editor_task = asyncio.create_task(
-            launch_editor(
-                app,
-                str(proposed),
-                suffix=suffix,
-                persistent_path=action.pending_temp_file,
-            )
+        needs_refresh = await _preview_edit_diff_viewer(
+            app, action, diff_viewer, original, str(proposed)
         )
-
-    # 4. Synchronize via Modal
-    confirm_task = app.push_screen_wait(ConfirmScreen())
-    final, confirmed = await asyncio.gather(editor_task, confirm_task)
-
-    if confirmed:
-        action.modified = True
-        if final is not None and str(final) != str(proposed):
-            # Create a full-file diff as the new edit block
-            action.params["edits"] = [{"find": original, "replace": str(final)}]
-            # Remove the erroneous 'content' key
-            action.params.pop("content", None)
-        app._refresh_node(node)
+        if needs_refresh:
+            app._refresh_node(node)
+    else:
+        final = await launch_editor(
+            app,
+            str(proposed),
+            suffix=suffix,
+            persistent_path=action.pending_temp_file,
+        )
+        if final is not None:
+            action.modified = True
+            if str(final) != str(proposed):
+                action.params["edits"] = [{"find": original, "replace": str(final)}]
+                action.params.pop("content", None)
+            app._refresh_node(node)
 
 
 async def preview_create(app: ReviewerApp, action: ActionData, node: Any) -> None:
@@ -205,8 +221,6 @@ async def preview_create(app: ReviewerApp, action: ActionData, node: Any) -> Non
 
 async def preview_text_action(app: ReviewerApp, action: ActionData, node: Any) -> None:
     """Handle non-blocking preview for EXECUTE/RESEARCH."""
-    import asyncio
-
     key = "command" if action.type == "EXECUTE" else "queries"
     content = action.params.get(key, "")
     suffix = ".sh" if action.type == "EXECUTE" else ".txt"
@@ -215,19 +229,13 @@ async def preview_text_action(app: ReviewerApp, action: ActionData, node: Any) -
     if not action.pending_temp_file:
         action.pending_temp_file = app._system_env.create_temp_file(suffix=suffix)
 
-    # Concurrently launch editor and prompt
-    editor_task = asyncio.create_task(
-        launch_editor(
-            app, str(content), suffix=suffix, persistent_path=action.pending_temp_file
-        )
+    final = await launch_editor(
+        app, str(content), suffix=suffix, persistent_path=action.pending_temp_file
     )
-    confirm_task = app.push_screen_wait(ConfirmScreen())
 
-    final, confirmed = await asyncio.gather(editor_task, confirm_task)
-
-    if confirmed:
+    if final is not None:
         action.modified = True
-        if final is not None and str(final) != str(content):
+        if str(final) != str(content):
             action.params[key] = str(final)
         app._refresh_node(node)
 
@@ -255,7 +263,8 @@ async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
                 app._system_env.run_command, editor_cmd + [temp_file]
             )
             # Short wait for user to finish reading before we delete
-            await app.push_screen_wait(ConfirmScreen("Finished viewing?"))
+            if not app.is_headless:
+                await app.push_screen_wait(ConfirmScreen("Finished viewing?"))
     finally:
         app._system_env.delete_file(temp_file)
 

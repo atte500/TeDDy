@@ -52,14 +52,12 @@ async def test_view_plan_works_with_no_path_but_in_memory_content(env):
         action_dispatcher=MagicMock(),
     )
 
-    # 4. Act: Trigger 'view_plan', patching the suspend method
-    # suspend() returns a context manager, so the mock must return one
-    with patch.object(app, "suspend", return_value=no_op_suspend_cm()):
+    # 4. Act: Trigger 'view_plan', patching Popen since we now use Deferred Harvest
+    with patch("subprocess.Popen") as mock_popen:
         async with app.run_test() as pilot:
             await pilot.pause()
             # Trigger via keypress
             await pilot.press("v")
-            # Give the thread-based worker more time to start and reach the mock
             await asyncio.sleep(0.5)
             await app.workers.wait_for_complete()
 
@@ -71,6 +69,6 @@ async def test_view_plan_works_with_no_path_but_in_memory_content(env):
         "The temp file should contain the plan content"
     )
 
-    # The application code calls run_command and then delete_file
-    mock_env.run_command.assert_called_once_with(["mock-editor", str(temp_file_path)])
+    # The application code calls Popen and then delete_file
+    mock_popen.assert_called_once_with(["mock-editor", str(temp_file_path)])
     mock_env.delete_file.assert_called_once_with(str(temp_file_path))
