@@ -24,6 +24,9 @@ async def test_tui_create_action_save_as_workflow(env, monkeypatch):
 
     # Setup mocks
     sys_env = env.get_service(ISystemEnvironment)
+    sys_env.create_temp_file.side_effect = lambda suffix=".txt": str(
+        env.workspace / f"temp{suffix}"
+    )
     # Mock editor output via environment variable (if supported by implementation)
     monkeypatch.setenv("TEDDY_TEST_MOCK_EDITOR_OUTPUT", "modified content")
 
@@ -39,15 +42,18 @@ async def test_tui_create_action_save_as_workflow(env, monkeypatch):
         # 1. Highlight the CREATE action
         await pilot.press("down")
 
-        # 2. Trigger edit
-        await pilot.press("e")
-
-        # 3. Handle the path input screen (PathInputScreen)
-        # In our implementation, we want this to happen while the editor is 'open'
+        # 2. Edit path via right pane
+        await pilot.press("tab")
+        await pilot.press("enter")
+        await pilot.wait_for_scheduled_animations()
         await pilot.press(*"new/path.py")
         await pilot.press("enter")
+        await pilot.wait_for_scheduled_animations()
 
-        # 4. Handle the confirmation screen (ConfirmScreen)
+        # 3. Edit content via tree key 'e'
+        await pilot.press("shift+tab")
+        await pilot.press("e")
+        await pilot.wait_for_scheduled_animations()
         await pilot.press("y")
 
         # 5. Submit the plan

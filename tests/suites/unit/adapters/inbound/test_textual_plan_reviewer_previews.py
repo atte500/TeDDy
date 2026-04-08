@@ -9,10 +9,10 @@ from teddy_executor.core.domain.models.plan import ActionData
 
 @pytest.mark.anyio
 async def test_preview_prompt_updates_user_response():
-    """Verify that preview_prompt updates the action's user_response after confirmation."""
+    """Verify that preview_prompt updates the action's user_response without confirmation modal."""
     # Setup
     app = MagicMock()
-    app.push_screen_wait = AsyncMock(side_effect=[True])  # ConfirmScreen returns True
+    app.push_screen_wait = AsyncMock()
 
     node = MagicMock()
     action = ActionData(type="PROMPT", params={"message": "Is this correct?"})
@@ -28,16 +28,16 @@ async def test_preview_prompt_updates_user_response():
         # Observer
         assert action.user_response == "Yes, it is."
         assert action.modified is True
+        app.push_screen_wait.assert_not_called()
         app._refresh_node.assert_called_once_with(node)
 
 
 @pytest.mark.anyio
-async def test_preview_create_updates_path_and_content():
-    """Verify that preview_create updates both path and content after confirmation."""
+async def test_preview_create_updates_content_only():
+    """Verify that preview_create updates content without path or confirmation modals."""
     # Setup
     app = MagicMock()
-    # 1. New Path, 2. Confirmation
-    app.push_screen_wait = AsyncMock(side_effect=["src/new_path.py", True])
+    app.push_screen_wait = AsyncMock()
 
     node = MagicMock()
     action = ActionData(
@@ -53,7 +53,7 @@ async def test_preview_create_updates_path_and_content():
         await preview_create(app, action, node)
 
         # Observer
-        assert action.params["path"] == "src/new_path.py"
-        assert action.params["content"] == "new content"
+        assert action.params["path"] == "src/old_path.py"
         assert action.modified is True
+        app.push_screen_wait.assert_not_called()
         app._refresh_node.assert_called_once_with(node)

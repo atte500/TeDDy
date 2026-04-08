@@ -160,6 +160,42 @@ def toggle_selection_logic(app: ReviewerApp, node: Any) -> None:
         app._refresh_node(node)
 
 
+async def on_list_view_selected_logic(app: "ReviewerApp", item: Any) -> None:
+    """Handle parameter editing when a DetailItem is selected in the right pane."""
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
+        ActionTree,
+        PathInputScreen,
+        ParameterEditModal,
+    )
+
+    tree = app.query_one(ActionTree)
+    node = tree.cursor_node
+    if not node or not node.data or not hasattr(item, "data"):
+        return
+
+    action: ActionData = node.data
+    key = item.data.get("key")
+    val = item.data.get("val")
+
+    # Only allow editing if the action hasn't been executed yet
+    if action.executed:
+        return
+
+    if key == "path":
+        new_val = await app.push_screen_wait(cast(Any, PathInputScreen(str(val))))
+    else:
+        # Don't allow editing complex/derived params via simple modal (e.g. 'edits')
+        if not isinstance(val, (str, int, float, bool)) and val is not None:
+            return
+        new_val = await app.push_screen_wait(ParameterEditModal(f"{key}:", str(val)))
+
+    if new_val is not None and str(new_val) != str(val):
+        action.params[key] = str(new_val)
+        action.modified = True
+        app._refresh_node(node)
+        _update_detail_view(app, action)
+
+
 def revert_logic(app: "ReviewerApp", node: Any) -> None:
     """Revert manual modifications for the currently highlighted action."""
     action: Optional["ActionData"] = node.data

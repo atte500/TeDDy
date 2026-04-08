@@ -13,7 +13,6 @@ if TYPE_CHECKING:
 
 from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
     ConfirmScreen,
-    PathInputScreen,
     StatusBar,
 )
 
@@ -176,39 +175,32 @@ async def preview_edit(app: ReviewerApp, action: ActionData, node: Any) -> None:
     if confirmed:
         action.modified = True
         if final is not None and str(final) != str(proposed):
-            action.params["content"] = str(final)
+            # Create a full-file diff as the new edit block
+            action.params["edits"] = [{"find": original, "replace": str(final)}]
+            # Remove the erroneous 'content' key
+            action.params.pop("content", None)
         app._refresh_node(node)
 
 
 async def preview_create(app: ReviewerApp, action: ActionData, node: Any) -> None:
     """Handle non-blocking preview for CREATE."""
-    import asyncio
-
     path_str = cast(str, action.params.get("path", ""))
     content = cast(str, action.params.get("content", ""))
     suffix = pathlib.Path(path_str).suffix or ".txt"
 
-    # Ensure a persistent path exists for the harvest
+    # Only trigger content editor for CREATE to avoid path-input deadlock.
+    # Users edit the path via the parameter list in the right pane.
     if not action.pending_temp_file:
         action.pending_temp_file = app._system_env.create_temp_file(suffix=suffix)
 
-    # Concurrently launch editor and path input
-    editor_task = asyncio.create_task(
-        launch_editor(
-            app, str(content), suffix=suffix, persistent_path=action.pending_temp_file
-        )
+    new_content = await launch_editor(
+        app, str(content), suffix=suffix, persistent_path=action.pending_temp_file
     )
-    path_task = app.push_screen_wait(cast(Any, PathInputScreen(path_str)))
 
-    new_content, new_path_val = await asyncio.gather(editor_task, path_task)
-
-    if new_path_val is not None:
-        if await app.push_screen_wait(ConfirmScreen()):
-            action.params["path"] = cast(str, new_path_val)
-            action.modified = True
-            if new_content is not None and str(new_content) != str(content):
-                action.params["content"] = str(new_content)
-            app._refresh_node(node)
+    if new_content is not None and str(new_content) != str(content):
+        action.modified = True
+        # Content will be harvested from pending_temp_file on submit
+        app._refresh_node(node)
 
 
 async def preview_text_action(app: ReviewerApp, action: ActionData, node: Any) -> None:
@@ -270,7 +262,6 @@ async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
 
 async def preview_prompt(app: ReviewerApp, action: ActionData, node: Any) -> None:
     """Handle non-blocking interactive answering for PROMPT."""
-    import asyncio
 
     message = cast(str, action.params.get("message", ""))
 
@@ -278,18 +269,12 @@ async def preview_prompt(app: ReviewerApp, action: ActionData, node: Any) -> Non
     if not action.pending_temp_file:
         action.pending_temp_file = app._system_env.create_temp_file(suffix=".md")
 
-    # Concurrently launch editor and prompt
-    editor_task = asyncio.create_task(
-        launch_editor(
-            app, str(message), suffix=".md", persistent_path=action.pending_temp_file
-        )
+    # For PROMPT, closing the editor is the submission intent
+    final = await launch_editor(
+        app, str(message), suffix=".md", persistent_path=action.pending_temp_file
     )
-    confirm_task = app.push_screen_wait(ConfirmScreen("Finished replying?"))
 
-    final, confirmed = await asyncio.gather(editor_task, confirm_task)
-
-    if confirmed:
+    if final is not None and str(final) != str(message):
         action.modified = True
-        if final is not None and str(final) != str(message):
-            action.user_response = str(final)
+        action.user_response = str(final)
         app._refresh_node(node)

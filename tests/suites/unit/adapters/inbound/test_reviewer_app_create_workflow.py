@@ -12,6 +12,9 @@ async def test_reviewer_app_create_workflow(env, monkeypatch):
     )
     plan = Plan(title="T", rationale="R", actions=[action])
     sys_env = env.get_service(ISystemEnvironment)
+    sys_env.create_temp_file.side_effect = lambda suffix=".txt": str(
+        env.workspace / f"temp{suffix}"
+    )
     monkeypatch.setenv("TEDDY_TEST_MOCK_EDITOR_OUTPUT", "new content")
     app = ReviewerApp(
         plan=plan,
@@ -22,11 +25,21 @@ async def test_reviewer_app_create_workflow(env, monkeypatch):
     )
     async with app.run_test() as pilot:
         await pilot.press("down")
-        await pilot.press("e")
+        # Edit path via right pane
+        await pilot.press("tab")
+        await pilot.press("enter")
         await pilot.wait_for_scheduled_animations()
         await pilot.press(*"new.py")
         await pilot.press("enter")
         await pilot.wait_for_scheduled_animations()
+
+        # Edit content via tree key 'e'
+        await pilot.press("shift+tab")
+        await pilot.press("e")
+        await pilot.wait_for_scheduled_animations()
         await pilot.press("y")
+
+        # Submit to harvest content
+        await pilot.press("s")
     assert action.params["path"] == "new.py"
     assert action.params["content"] == "new content"

@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, Optional, TypeVar
 from textual import work
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal
-from textual.widgets import Footer, Header, Tree
+from textual.widgets import Footer, Header, ListView, Tree
 
 from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
     check_action_logic,
@@ -24,7 +24,6 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_previews import (
 )
 from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
     ActionTree,
-    ConfirmScreen,
     ParameterDetail,
     StatusBar,
 )
@@ -138,7 +137,16 @@ class ReviewerApp(App):
         """Refresh footer bindings when a new node is highlighted."""
         on_tree_node_highlighted(self, event)
 
-    def on_focus(self, event: Any) -> None:
+    @work
+    async def on_list_view_selected(self, event: ListView.Selected) -> None:
+        """Handle parameter editing when an item is selected in the right pane."""
+        from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
+            on_list_view_selected_logic,
+        )
+
+        await on_list_view_selected_logic(self, event.item)
+
+    def on_descendant_focus(self, event: Any) -> None:
         """Auto-focus first param when right pane gets focus via Tab."""
         control = getattr(event, "control", None)
         if control and getattr(control, "id", None) == "right-pane":
@@ -168,31 +176,7 @@ class ReviewerApp(App):
         """Exit the app and return the modified plan."""
         # Harvest deferred changes from pending_temp_files
         for action in self.plan.actions:
-            # Type guard for Mocks in tests
-            is_valid_path = isinstance(action.pending_temp_file, (str, os.PathLike))
-            if (
-                action.pending_temp_file
-                and is_valid_path
-                and os.path.exists(action.pending_temp_file)
-            ):
-                try:
-                    with open(action.pending_temp_file, "r", encoding="utf-8") as f:
-                        new_content = f.read()
-
-                    # Map the content back to the appropriate parameter
-                    if action.type in ("CREATE", "EDIT"):
-                        action.params["content"] = new_content
-                    elif action.type == "EXECUTE":
-                        action.params["command"] = new_content
-                    elif action.type == "RESEARCH":
-                        action.params["queries"] = new_content
-                    elif action.type == "PROMPT":
-                        action.user_response = new_content
-
-                    os.remove(action.pending_temp_file)
-                    action.pending_temp_file = None
-                except Exception:  # nosec B110
-                    pass
+            self._harvest_action_content(action)
 
         if self._user_message_cache is not None:
             final_message: str = self._user_message_cache.split(
@@ -253,9 +237,8 @@ class ReviewerApp(App):
             if self.INSTRUCTION_MARKER not in current_message:
                 current_message += self.INSTRUCTION_MARKER
         new_message = await launch_editor(self, current_message, suffix=".md")
-        if new_message is not None:
-            if await self.push_screen_wait(ConfirmScreen()):
-                self._user_message_cache = new_message
+        if new_message is not None and new_message != current_message:
+            self._user_message_cache = new_message
 
     def action_toggle_all(self) -> None:
         """Toggle selection for all actions."""
@@ -264,3 +247,33 @@ class ReviewerApp(App):
     def _refresh_node(self, node: Any) -> None:
         """Refresh the label and state of a single tree node."""
         refresh_node_logic(self, node)
+
+    def _harvest_action_content(self, action: Any) -> None:
+        """Harvest modified content from a pending temporary file back to the action."""
+        # Type guard for Mocks in tests
+        is_valid_path = isinstance(action.pending_temp_file, (str, os.PathLike))
+        if not (
+            action.pending_temp_file
+            and is_valid_path
+            and os.path.exists(action.pending_temp_file)
+        ):
+            return
+
+        try:
+            with open(action.pending_temp_file, "r", encoding="utf-8") as f:
+                new_content = f.read()
+
+            mapping = {
+                "CREATE": "content",
+                "EXECUTE": "command",
+                "RESEARCH": "queries",
+            }
+            if action.type in mapping:
+                action.params[mapping[action.type]] = new_content
+            elif action.type == "PROMPT":
+                action.user_response = new_content
+
+            os.remove(action.pending_temp_file)
+            action.pending_temp_file = None
+        except Exception:  # nosec B110
+            pass

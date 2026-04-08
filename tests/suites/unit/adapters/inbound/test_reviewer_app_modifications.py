@@ -15,6 +15,9 @@ async def test_reviewer_app_edit_execute_parameter(env):
         console_tooling=MagicMock(),
         action_dispatcher=MagicMock(),
     )
+    # Mock the refresh method to check if it's called
+    app._refresh_node = MagicMock()
+
     async with app.run_test() as pilot:
         await pilot.press("down")
         await pilot.press("e")
@@ -24,6 +27,9 @@ async def test_reviewer_app_edit_execute_parameter(env):
         await pilot.wait_for_scheduled_animations()
     assert action.modified is True
     assert action.params["command"] == "modified command"
+
+    # Assert that the UI was told to refresh
+    app._refresh_node.assert_called_once()
 
 
 @pytest.mark.anyio
