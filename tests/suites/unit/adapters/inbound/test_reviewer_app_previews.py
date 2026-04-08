@@ -31,5 +31,7 @@ async def test_reviewer_app_preview_text_actions(
         # In ParameterEditModal, we type the new value and press enter
         await pilot.press(*"new")
         await pilot.press("enter")
-    assert action.params[param_key] == "new"
+
+    expected = ["new"] if action_type == "RESEARCH" else "new"
+    assert action.params[param_key] == expected
     assert action.modified is True

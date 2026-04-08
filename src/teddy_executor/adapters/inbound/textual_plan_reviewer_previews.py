@@ -13,7 +13,6 @@ if TYPE_CHECKING:
 
 from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
     ConfirmScreen,
-    StatusBar,
 )
 
 
@@ -48,11 +47,6 @@ async def launch_editor(
         editor_cmd = app._console_tooling.find_editor()
         if not editor_cmd:
             return None
-
-        status_bar = cast(StatusBar, app.query_one("StatusBar"))
-        status_bar.update_status(
-            f"LAUNCHING: {os.path.basename(editor_cmd[0])} {temp_file}"
-        )
 
         try:
             subprocess.Popen(editor_cmd + [str(temp_file)])  # nosec B603
@@ -259,9 +253,10 @@ async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
         editor_cmd = app._console_tooling.find_editor()
         if editor_cmd:
             # We don't use the deferred harvest pattern for READ/PRUNE as they are truly read-only
-            await anyio.to_thread.run_sync(
-                app._system_env.run_command, editor_cmd + [temp_file]
-            )
+            with app.suspend():
+                await anyio.to_thread.run_sync(
+                    app._system_env.run_command, editor_cmd + [temp_file]
+                )
             # Short wait for user to finish reading before we delete
             if not app.is_headless:
                 await app.push_screen_wait(ConfirmScreen("Finished viewing?"))
@@ -272,7 +267,9 @@ async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
 async def preview_prompt(app: ReviewerApp, action: ActionData, node: Any) -> None:
     """Handle non-blocking interactive answering for PROMPT."""
 
-    message = cast(str, action.params.get("message", ""))
+    message = cast(str, action.params.get("prompt", ""))
+    marker = "<!-- Please enter your response above this line. -->"
+    initial_content = f"\n\n{marker}\n\n{message}\n"
 
     # Ensure a persistent path exists for the harvest
     if not action.pending_temp_file:
@@ -280,10 +277,16 @@ async def preview_prompt(app: ReviewerApp, action: ActionData, node: Any) -> Non
 
     # For PROMPT, closing the editor is the submission intent
     final = await launch_editor(
-        app, str(message), suffix=".md", persistent_path=action.pending_temp_file
+        app, initial_content, suffix=".md", persistent_path=action.pending_temp_file
     )
 
-    if final is not None and str(final) != str(message):
-        action.modified = True
-        action.user_response = str(final)
-        app._refresh_node(node)
+    if final is not None:
+        if marker in final:
+            final = final.split(marker)[0].strip()
+        else:
+            final = final.strip()
+
+        if final and final != message.strip():
+            action.modified = True
+            action.user_response = final
+            app._refresh_node(node)

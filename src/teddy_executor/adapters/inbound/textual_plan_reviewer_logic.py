@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Any, Optional, cast
 
 from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
     ParameterEditModal,
-    StatusBar,
 )
 from teddy_executor.adapters.inbound.textual_plan_reviewer_previews import (
     do_preview_logic,
@@ -61,26 +60,11 @@ def _update_detail_view(app: "ReviewerApp", action: Optional["ActionData"]):
 
     pane = app.query_one(ParameterDetail)
     pane.clear()
-
     if not action:
         pane.mount(ListItem(Label("Select an action to view details")))
-        return
-
-    # If executed, show the log
-    if action.executed and action.action_log:
-        log = action.action_log
-        pane.mount(ListItem(Label(f"[bold]LOG:[/] {action.type}")))
-        pane.mount(ListItem(Label(f"[bold]status:[/] {log.status}")))
-        if log.details:
-            pane.mount(ListItem(Label(f"[bold]details:[/] {log.details}")))
-        if log.failed_command:
-            pane.mount(ListItem(Label(f"[bold]failed_cmd:[/] {log.failed_command}")))
-        return
-
-    # Show resolved parameters
-    resolved = resolve_action_parameters(action)
-    for key, val in resolved.items():
-        pane.append(DetailItem(key, val))
+    else:
+        for key, val in resolve_action_parameters(action).items():
+            pane.append(DetailItem(key, val))
 
 
 # Parameter resolution logic moved to textual_plan_reviewer_helpers.py
@@ -97,16 +81,25 @@ async def edit_action_logic(
             action.params["command"] = new_val
             action.modified = True
             app._refresh_node(node)
+            _update_detail_view(app, action)
     elif action.type == "RESEARCH":
-        val = action.params.get("queries", "")
-        new_val = await app.push_screen_wait(ParameterEditModal("Queries:", val))
-        if new_val is not None and new_val != val:
-            action.params["queries"] = new_val
+        val = action.params.get("queries", [])
+        if isinstance(val, list):
+            val_str = " | ".join(val)
+        else:
+            val_str = str(val)
+        new_val = await app.push_screen_wait(ParameterEditModal("Queries:", val_str))
+        if new_val is not None and new_val != val_str:
+            action.params["queries"] = [
+                q.strip() for q in new_val.split("|") if q.strip()
+            ]
             action.modified = True
             app._refresh_node(node)
+            _update_detail_view(app, action)
     # Fallback to existing preview logic for complex types
     else:
         await do_preview_logic(app, node, action)
+        _update_detail_view(app, action)
 
 
 def refresh_node_logic(app: ReviewerApp, node: Any) -> None:
@@ -130,6 +123,8 @@ def on_mount_logic(app: Any) -> None:
 
     tree.root.expand()
     for action in app.plan.actions:
+        if not hasattr(action, "_original_params"):
+            action._original_params = action.params.copy()
         if action.type == "PRUNE" and not app.plan.is_session:
             continue
         tree.root.add_leaf(format_node_label(action), data=action)
@@ -168,8 +163,7 @@ async def on_list_view_selected_logic(app: "ReviewerApp", item: Any) -> None:
         ParameterEditModal,
     )
 
-    tree = app.query_one(ActionTree)
-    node = tree.cursor_node
+    node = app.query_one(ActionTree).cursor_node
     if not node or not node.data or not hasattr(item, "data"):
         return
 
@@ -181,6 +175,10 @@ async def on_list_view_selected_logic(app: "ReviewerApp", item: Any) -> None:
     if action.executed:
         return
 
+    # Prompt text should not be directly editable
+    if action.type == "PROMPT" and key == "prompt":
+        return
+
     if key == "path":
         new_val = await app.push_screen_wait(cast(Any, PathInputScreen(str(val))))
     else:
@@ -190,7 +188,10 @@ async def on_list_view_selected_logic(app: "ReviewerApp", item: Any) -> None:
         new_val = await app.push_screen_wait(ParameterEditModal(f"{key}:", str(val)))
 
     if new_val is not None and str(new_val) != str(val):
-        action.params[key] = str(new_val)
+        if action.type == "PROMPT" and key == "response":
+            action.user_response = str(new_val)
+        else:
+            action.params[key] = str(new_val)
         action.modified = True
         app._refresh_node(node)
         _update_detail_view(app, action)
@@ -201,7 +202,18 @@ def revert_logic(app: "ReviewerApp", node: Any) -> None:
     action: Optional["ActionData"] = node.data
     if action and action.modified:
         action.modified = False
+        if hasattr(action, "_original_params"):
+            action.params = action._original_params.copy()
+        if action.type == "PROMPT":
+            action.user_response = None
+
+        ptf = getattr(action, "pending_temp_file", None)
+        if isinstance(ptf, str):
+            app._system_env.delete_file(ptf)
+        action.pending_temp_file = None
+
         app._refresh_node(node)
+        _update_detail_view(app, action)
         app.refresh_bindings()
 
 
@@ -238,20 +250,26 @@ async def execute_step_logic(app: "ReviewerApp", node: Any) -> None:
         else:
             action.state = ExecutionStatus.PENDING
             app._refresh_node(node)
+        _update_detail_view(app, action)
         return
-
-    status_bar = cast(StatusBar, app.query_one("StatusBar"))
 
     # Phase 1: Set to RUNNING
     action.state = ExecutionStatus.RUNNING
     app._refresh_node(node)
-    status_bar.update_status(f"RUNNING: {action.type}")
+
+    def _execute_silently(dispatcher, act):
+        import contextlib
+        import io
+
+        f = io.StringIO()
+        with contextlib.redirect_stdout(f), contextlib.redirect_stderr(f):
+            return dispatcher.dispatch_and_execute(act)
 
     try:
         # Phase 2: Real execution via ActionDispatcher
         # Use anyio.to_thread for potentially blocking filesystem/shell operations
         log = await anyio.to_thread.run_sync(
-            app._action_dispatcher.dispatch_and_execute, action
+            _execute_silently, app._action_dispatcher, action
         )
 
         # Phase 3: Finalize state based on result
@@ -259,31 +277,24 @@ async def execute_step_logic(app: "ReviewerApp", node: Any) -> None:
         action.action_log = log
         if log.status == ActionStatus.SUCCESS:
             action.state = ExecutionStatus.SUCCESS
-            status_bar.update_status(f"SUCCESS: {action.type}")
         else:
             action.state = ExecutionStatus.FAILURE
-            error_msg = str(log.details) if log.details else "Unknown error"
-            status_bar.update_status(f"FAILURE: {action.type} - {error_msg}")
-    except Exception as e:
+    except Exception:
         # Phase 3: Catch-all for dispatch errors
         action.executed = True
         action.state = ExecutionStatus.FAILURE
-        status_bar.update_status(f"FAILURE: {action.type} - {str(e)}")
     finally:
         app._refresh_node(node)
+        _update_detail_view(app, action)
 
 
 def toggle_all_logic(app: "ReviewerApp", plan: Any) -> None:
     """Toggle selection for all actions."""
-    any_unselected = any(not action.selected for action in plan.actions)
-    new_state = any_unselected
-
+    new_state = any(not action.selected for action in plan.actions)
     for action in plan.actions:
         action.selected = new_state
 
-    # Refresh all child nodes in the tree
     from textual.widgets import Tree
 
-    tree = app.query_one(Tree)
-    for node in tree.root.children:
+    for node in app.query_one(Tree).root.children:
         app._refresh_node(node)

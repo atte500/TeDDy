@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from typing import Any
 from textual.binding import Binding
 from textual.screen import ModalScreen
-from textual.widgets import Input, Label, ListItem, ListView, Static, Tree
+from textual.widgets import Input, Label, ListItem, ListView, Tree
 
 if TYPE_CHECKING:
     from textual.app import ComposeResult
@@ -62,14 +62,6 @@ class ParameterEditModal(ModalScreen[str]):
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         self.dismiss(event.value)
-
-
-class StatusBar(Static):
-    """A simple status bar for event logging."""
-
-    def update_status(self, message: str) -> None:
-        """Update the status bar content."""
-        self.update(message)
 
 
 class ActionTree(Tree):

@@ -25,7 +25,6 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_previews import (
 from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
     ActionTree,
     ParameterDetail,
-    StatusBar,
 )
 from teddy_executor.core.services.edit_simulator import EditSimulator
 
@@ -72,13 +71,6 @@ class ReviewerApp(App):
         border-left: vkey $foreground 15%;
         padding: 0;
     }
-    #status_bar {
-        background: $boost;
-        color: $text;
-        height: 1;
-        padding: 0 1;
-        dock: bottom;
-    }
     Tree {
         height: 1fr;
     }
@@ -122,7 +114,6 @@ class ReviewerApp(App):
         with Horizontal(id="main-container"):
             yield ActionTree("Action Plan", id="left-pane")
             yield ParameterDetail(id="right-pane")
-        yield StatusBar("System Ready", id="status_bar")
         yield Footer()
 
     def on_mount(self) -> None:
@@ -205,7 +196,21 @@ class ReviewerApp(App):
 
     @work
     async def action_edit_details(self) -> None:
-        """Edit or preview the currently highlighted action."""
+        """Edit or preview the currently highlighted action or parameter."""
+        # Check if the right pane or any of its children has focus
+        right_pane = self.query_one(ParameterDetail)
+        is_right_pane_focused = right_pane.has_focus or (
+            self.focused and self.focused in right_pane.query("*")
+        )
+
+        if is_right_pane_focused and right_pane.highlighted_child:
+            from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
+                on_list_view_selected_logic,
+            )
+
+            await on_list_view_selected_logic(self, right_pane.highlighted_child)
+            return
+
         tree = self.query_one(Tree)
         node = tree.cursor_node
         if not node or not node.data:

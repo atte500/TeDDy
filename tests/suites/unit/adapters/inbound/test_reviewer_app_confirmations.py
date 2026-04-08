@@ -2,24 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 from teddy_executor.core.domain.models.plan import Plan, ActionData
 from teddy_executor.adapters.inbound.textual_plan_reviewer import ReviewerApp
-from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import StatusBar
 from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
-
-
-@pytest.mark.anyio
-async def test_reviewer_app_status_bar_notification(env):
-    plan = Plan(title="T", rationale="R", actions=[ActionData(type="READ", params={})])
-    app = ReviewerApp(
-        plan=plan,
-        system_env=env.get_service(ISystemEnvironment),
-        console_tooling=MagicMock(),
-        action_dispatcher=MagicMock(),
-    )
-    async with app.run_test() as pilot:
-        status_bar = app.query_one(StatusBar)
-        status_bar.update_status("TEST MESSAGE")
-        await pilot.wait_for_scheduled_animations()
-        assert "TEST MESSAGE" in str(status_bar.render())
 
 
 @pytest.mark.anyio
