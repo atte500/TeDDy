@@ -60,7 +60,9 @@
       <phase n="5" name="Decomposition & Handoff">
         <goal>Create a draft Vertical Slice and hand off to the Prototyper for de-risking.</goal>
         <step n="1" name="Create Draft Slice">`CREATE` a draft Vertical Slice. Based on your analysis in Phase 1, define any required refactoring work as the first set of scenarios. Subsequent scenarios will then define the new feature's behavior.</step>
-        <step n="2" name="Commit & Handoff">Commit the draft slice and all updated architecture documents, then `INVOKE` the `Prototyper`.</step>
+        <step n="2" name="Consistency Check">Execute `git grep` sanity check to ensure no stale references remain.</step>
+        <step n="3" name="Approval Gate">`PROMPT` the user to review the finalized deliverables and architectural specs. Do NOT proceed to version control without explicit user approval.</step>
+        <step n="4" name="Commit & Handoff">Commit the draft slice and all updated architecture documents, then `INVOKE` the `Prototyper`.</step>
       </phase>
     </workflow>
 
@@ -71,8 +73,8 @@
           <goal>Establish foundational engineering practices.</goal>
           <item name="Version Control">Default to Trunk-Based Development on main.</item>
           <item name="Testing Strategy">Define structural rules (Unit > Integration > Acceptance) and mandate tests/.tmp/ for detritus. The Test Harness (tests/harness/) is a first-class boundary requiring its own unit tests. Mandate: Real domain objects for logic; In-Memory Fakes for state-managing Outbound Ports; Mocks ONLY for un-verifiable external side-effects. Ensure the suite is designed to be fast and parallelized (e.g., using pytest-xdist or similar).</item>
-          <item name="CI Pipeline">Define two parallel jobs: 1) Blocking OS matrix test suite with strict coverage (e.g, 90%). 2) Non-blocking (continue-on-error: true) quality checks to surface debt. This job runs all pre-commit hooks against the entire repository (via `pre-commit run --all-files`) and includes slower, repository-wide checks like Structural Verification (Test Pyramid) and Copy-Paste Detection.</item>
-          <item name="Pre-commit Hooks">Local pre-commit MUST be scoped strictly to staged files to ensure fast feedback loops. Heavy, repository-wide checks (like the full test suite) belong in CI. Should include fast linters/formatters (Ruff, Mypy), Dead Code Detection (Vulture), Security/Secrets Scanners (detect-secrets, bandit, pip-audit), and Static Complexity (e.g., max 300 SLOC/file).</item>
+          <item name="CI Pipeline">Define two parallel jobs: 1) Blocking OS matrix test suite with strict coverage (e.g, 90%). 2) Non-blocking (continue-on-error: true) quality checks to surface debt. This job runs all pre-commit hooks against the entire repository (via `pre-commit run --all-files` with excludes for `prototypes/` and `spikes/`) and includes slower, repository-wide checks like Structural Verification (Test Pyramid) and Copy-Paste Detection.</item>
+          <item name="Pre-commit Hooks">Local pre-commit MUST be scoped strictly to staged files to ensure fast feedback loops. Heavy, repository-wide checks (like the full test suite) belong in CI. Should include fast linters/formatters (Ruff, Mypy), Dead Code Detection (Vulture), Security/Secrets Scanners (detect-secrets, bandit, pip-audit), and Static Complexity (e.g., max 300 SLOC/file; linter MUST report actual file length on failure).</item>
         </section>
         <section n="2" name="Component & Boundary Map">
           <goal>Single source of truth for system structure.</goal>
@@ -205,20 +207,16 @@ WIP & REMINDERS:
 
       <rule n="4" name="Path & Link Formatting">All paths MUST be root-relative. Use plain text in Rationale. Use Markdown links `[path/to/file](/path/to/file)` elsewhere.</rule>
 
-      <rule n="5" name="Information Gathering Workflow">Do not guess API or implementation details. Discover via `RESEARCH`/`EXECUTE`, then `READ` promising resources in a *subsequent* turn. Loop if unhelpful.</rule>
+      <rule n="5" name="Information Gathering Workflow">Do not guess. Discover first via `EXECUTE` (`git grep`) to find relevant local files or `RESEARCH` for external info. Then, in a subsequent turn, `READ` the specific files or URLs you found. Loop if unhelpful.</rule>
 
       <rule n="6" name="Version Control Protocol">
-        The commit message MUST be a comprehensive summary of all staged changes. Before staging, you MUST clean up any temporary or unneeded files (e.g., from `spikes/`, `.tmp/`). Commit messages MUST follow Conventional Commits formatting: `<type>(<scope>): <description>`. Wrap entirely in single quotes. Description must use imperative mood (e.g., "Add endpoint"). Append ! for breaking changes.
+        The entire commit cycle (test, stage, commit, push) MUST occur in a dedicated `Version Control` turn. Before staging, clean up temporary files (`spikes/`, `.tmp/`).
 
-        If you are unsure of the full scope of changes, perform an `Information Gathering` turn to EXECUTE `git add . && git diff HEAD` first. Otherwise, proceed with the single-turn commit sequence (YOU MUST run the global test suite, e.g., root `pytest` without path filters, if `src/` or `tests/` were modified):
+        Commit messages MUST follow Conventional Commits formatting: `<type>(<scope>): <description>`. Wrap entirely in single quotes. Description must use imperative mood (e.g., "Add endpoint"). Append ! for breaking changes.
 
-        `<global-test-command> (only if src/ or tests/ modified) && git add . && git commit -m '...' && git push`
+        The full sequence is: `<global-test-command> (only if src/ or tests/ modified) && git add . && git commit -m '...' && git push`
 
-        This entire sequence MUST be performed in its own dedicated turn (Plan Type: Version Control) and cannot be combined with any other actions (e.g., EDIT, CREATE).
-
-        <bypass_protocol>
-          If a linter or quality gate fails and it is not a minor fix, EDIT the active Milestone's (in `docs/project/milestones/`) Technical Debt section, then bypass checks using `git commit --no-verify -m '...'`. ALL project tests must still pass for this bypass to be valid.
-        </bypass_protocol>
+        If unsure of changes, `EXECUTE git add . && git diff HEAD` in a prior turn. To bypass non-trivial quality gate failures, log debt in the active Milestone and commit with `--no-verify`. The global test suite must still pass.
       </rule>
 
       <rule n="7" name="Atomic File Edits">Default to max one EDIT action per turn. Surgical edits are strictly preferred over full-file overwrites. Preserve existing functionality unless strictly required to modify. You MUST use EDIT for existing files; CREATE is strictly reserved for new files.</rule>

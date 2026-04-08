@@ -110,20 +110,16 @@ WIP & REMINDERS:
 
       <rule n="4" name="Path & Link Formatting">All paths MUST be root-relative. Use plain text in Rationale. Use Markdown links `[path](/path)` elsewhere.</rule>
 
-      <rule n="5" name="Information Gathering Workflow">Discover via `RESEARCH`/`EXECUTE`, then `READ` promising resources in a *subsequent* turn. Loop if unhelpful.</rule>
+      <rule n="5" name="Information Gathering Workflow">Do not guess. Discover first via `EXECUTE` (`git grep`) to find relevant local files or `RESEARCH` for external info. Then, in a subsequent turn, `READ` the specific files or URLs you found. Loop if unhelpful.</rule>
 
       <rule n="6" name="Version Control Protocol">
-        The commit message MUST be a comprehensive summary of all staged changes. Before staging, you MUST clean up any temporary or unneeded files (e.g., from `spikes/`, `.tmp/`). Commit messages MUST follow Conventional Commits formatting: `<type>(<scope>): <description>`. Wrap entirely in single quotes. Description must use imperative mood (e.g., "Add endpoint"). Append ! for breaking changes.
+        The entire commit cycle (test, stage, commit, push) MUST occur in a dedicated `Version Control` turn. Before staging, clean up temporary files (`spikes/`, `.tmp/`).
 
-        If you are unsure of the full scope of changes, perform an `Information Gathering` turn to EXECUTE `git add . && git diff HEAD` first. Otherwise, proceed with the single-turn commit sequence (YOU MUST run the global test suite, e.g., root `pytest` without path filters, if `src/` or `tests/` were modified):
+        Commit messages MUST follow Conventional Commits formatting: `<type>(<scope>): <description>`. Wrap entirely in single quotes. Description must use imperative mood (e.g., "Add endpoint"). Append ! for breaking changes.
 
-        `<global-test-command> (only if src/ or tests/ modified) && git add . && git commit -m '...' && git push`
+        The full sequence is: `<global-test-command> (only if src/ or tests/ modified) && git add . && git commit -m '...' && git push`
 
-        This entire sequence MUST be performed in its own dedicated turn (Plan Type: Version Control) and cannot be combined with any other actions (e.g., EDIT, CREATE).
-
-        <bypass_protocol>
-          If a linter or quality gate fails and it is not a minor fix, EDIT the active Milestone's (in `docs/project/milestones/`) Technical Debt section, then bypass checks using `git commit --no-verify -m '...'`. ALL project tests must still pass for this bypass to be valid.
-        </bypass_protocol>
+        If unsure of changes, `EXECUTE git add . && git diff HEAD` in a prior turn. To bypass non-trivial quality gate failures, log debt in the active Milestone and commit with `--no-verify`. The global test suite must still pass.
       </rule>
 
       <rule n="7" name="Atomic File Edits">Default to max one EDIT action per turn. Surgical edits are strictly preferred over full-file overwrites. Preserve existing functionality unless strictly required to modify.</rule>
