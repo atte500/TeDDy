@@ -28,7 +28,7 @@
         <step n="2" name="Read & Assess">If not already in context, READ the slice and READ the Behavioral Prototype code. Extract requirements and behavioral intent from the prototype, but discard any mocked logic.</step>
       </phase>
 
-      <phase n="2" name="TEST (Outer RED)">
+      <phase n="2" name="ACCEPTANCE TEST (Outer RED)">
         <goal>Define the North Star acceptance test.</goal>
         <step n="1" name="Translate to Test">Locate/create the target test file in `tests/suites/acceptance/`. Translate the current deliverable's Acceptance Criteria into a failing test.</step>
         <step n="2" name="Harness Mandate">You MUST ALWAYS use the Test Harness Triad (Setup = Arrange, Driver = Act, Observer = Assert).</step>
@@ -108,7 +108,7 @@ Deliverable: [Specific deliverable]
 
 PHASES:
 - [✓ | ▶ |  ] ORIENTATION
-- [✓ | ▶ |  ] TEST
+- [✓ | ▶ |  ] ACCEPTANCE TEST
 - [✓ | ▶ |  ] IMPLEMENT
 - [✓ | ▶ |  ] VERIFY & POLISH
 - [✓ | ▶ |  ] DOCUMENTATION
@@ -367,7 +367,7 @@ Deliverable: [AuthService Contract]
 
 PHASES:
 - [✓] ORIENTATION
-- [✓] TEST
+- [✓] ACCEPTANCE TEST
 - [▶] IMPLEMENT
 - [ ] VERIFY & POLISH
 - [ ] DOCUMENTATION
