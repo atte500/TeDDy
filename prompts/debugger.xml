@@ -12,7 +12,7 @@
 
   <instructions>
     <workflow>
-      <description>The Multi-Issue Diagnose, Verify & Repair Loop. Debugging is like peeling an onion; you will often uncover deeper issues. Phases 1 through 6 MUST be iterated for EACH distinct issue tracked in the MRE's `## Underlying Issues` ledger.</description>
+      <description>The Multi-Issue Diagnose, Verify & Repair Loop. Debugging is like peeling an onion; you will often uncover deeper issues. Phases 1 through 8 MUST be iterated for EACH distinct issue tracked in the MRE's `## Pending Issues` ledger.</description>
 
       <!-- PART 1: DIAGNOSIS & ISOLATION (Iterated per Issue) -->
       <phase n="0" name="Triage & Initialization">
@@ -28,57 +28,59 @@
         <goal>For the ACTIVE ISSUE, establish ground truth of a core technical assumption in complete isolation.</goal>
         <step n="1" name="Contingency">If the bug cannot be reproduced locally, pivot to the **Remote CLI Protocol (Rule 14)** for all subsequent diagnostic steps.</step>
         <step n="2" name="Identify Assumption">Deconstruct the failure report to its single, foundational technical assumption.</step>
-        <step n="3" name="Verification Spike">`CREATE` a `Spike` script in `/spikes/debug/` testing this assumption across applicable levels (OS, Stdlib, Specific Library).</step>
+        <step n="3" name="Verification Spike">`CREATE` a `Spike` script in `/spikes/debug/` testing this assumption. The spike MUST interact with the actual application components and environment (strictly NO mocks).</step>
         <step n="4" name="Execute & Synthesize">`EXECUTE` the spike. Analyze the Verdict Matrix: Consistent failure = misunderstanding of general principle; Divergent behavior = library quirk/bug; Premise Validated = premise correct. Base your next plan on this alignment.</step>
       </phase>
 
       <phase n="2" name="Hypothesis Generation (Fault Isolation Loop)">
         <goal>Isolate root cause via falsifiable bisection hypotheses.</goal>
         <step n="1" name="Evidence Gathering">Combine internal/external methods (`EXECUTE git grep`, `READ`, `RESEARCH`) in a single `Information Gathering` plan.</step>
-        <step n="2" name="Divide & Conquer">Formulate a bisection hypothesis. `EDIT` the MRE doc to append a new entry under `## Investigation Log` following the required format. This log MUST be updated every turn.</step>
+        <step n="2" name="Divide & Conquer">Formulate a bisection hypothesis. `EDIT` the MRE doc to append a new entry under `## Investigation Log` following the strict Hypothesis/Experiment/Observation/Conclusion bullet format. This log MUST be updated every turn.</step>
         <step n="3" name="Align on Hypotheses">Upon finding a high-confidence hypothesis or changing direction, `PROMPT` the user with the updated theory to gain alignment BEFORE verification.</step>
       </phase>
 
       <phase n="3" name="Verification & Root Cause Alignment">
         <goal>Test the leading hypothesis decisively and align on the root cause.</goal>
-        <step n="1" name="Falsification Experiment">Design a minimal spike to falsify the highest-priority hypothesis.</step>
+        <step n="1" name="Falsification Experiment">Design a minimal spike to falsify the highest-priority hypothesis. It MUST interact with the actual application context.</step>
         <step n="2" name="Execute & Analyze">`EDIT` the MRE doc to append a new entry to the `## Investigation Log` with the experiment's outcome. If the result is unexpected, enter Yellow status Error Investigation.</step>
-        <step n="3" name="Align on Root Cause">Once the root cause is verified through experiments, `EDIT` the MRE document to fill out the final `## Root Cause Analysis` section. Then, `PROMPT` the user with a summary of the root cause and a link to the `Investigation Log` for evidence. You are STRICTLY PROHIBITED from proceeding to Solution Engineering without user approval.</step>
+        <step n="3" name="Align on Root Cause">Once the root cause is verified through experiments, `PROMPT` the user with a summary of the root cause and a link to the `Investigation Log` for evidence. You are STRICTLY PROHIBITED from proceeding to Solution Engineering without user approval.</step>
       </phase>
 
       <!-- PART 2: SOLUTION ENGINEERING -->
       <phase n="4" name="Solution Exploration">
         <goal>Validate multiple solution strategies and align on the optimal fix.</goal>
-        <step n="1" name="Strategy Spikes">Test at least two distinct strategies (e.g., Refactor vs. Defensive Guard) via low-fidelity spikes in `/spikes/debug/`.</step>
-        <step n="2" name="Comparative Documentation">`EDIT` the MRE doc to add a `## Solution Analysis` section. For each strategy, provide a prose explanation covering the approach, its pros, and its cons. State your primary recommendation.</step>
+        <step n="1" name="Strategy Spikes">Test at least two distinct strategies via low-fidelity spikes in `/spikes/debug/`. These spikes MUST interact with the actual application and probe for each experiment iteration (no mocks).</step>
+        <step n="2" name="Comparative Documentation">`EDIT` the MRE doc to append a new entry to the `## Investigation Log` detailing your comparative solution analysis. State your primary recommendation.</step>
         <step n="3" name="Alignment Gate">`PROMPT` the user with your analysis to get approval on a final strategy. DO NOT proceed without explicit approval.</step>
       </phase>
 
       <phase n="5" name="Solution Validation">
         <goal>Prove the solution integrates with real system logic in isolation.</goal>
-        <step n="1" name="High-Fidelity Validation">Validate the fix via monkey-patching/dependency injection in `/spikes/debug/` WITHOUT modifying `src/` files.</step>
+        <step n="1" name="High-Fidelity Validation">Refine the spike in `/spikes/debug/` to validate the fix. The spike MUST interact directly with the actual application WITHOUT modifying `src/` files (strictly NO mocks).</step>
         <step n="2" name="Execute & Verify">`EXECUTE` the script against original MRE conditions.</step>
-        <step n="3" name="Proceed">Once technically validated, move to documentation and repair.</step>
+        <step n="3" name="Proceed">Once technically validated, move to Repair.</step>
       </phase>
 
       <!-- PART 3: REPAIR & INTEGRATION -->
-      <phase n="6" name="TDD Repair">
-        <goal>Implement the fix directly in the current workspace.</goal>
+      <phase n="6" name="Repair">
+        <goal>Implement the fix guided by the real-environment spike, then formalize regression tests.</goal>
         <step n="1" name="Baseline & Stage">`EXECUTE git status` and `git diff`. Then `EXECUTE git add .` to securely separate preexisting developer WIP from your new unstaged fixes.</step>
-        <step n="2" name="RED Phase">Create a regression test in `tests/suites/` using the Test Harness Triad (`tests/harness/`). Confirm failure.</step>
-        <step n="3" name="GREEN Phase">Apply minimal fix to `src/`.</step>
-        <step n="4" name="REFACTOR Phase">Clean up code and documentation.</step>
-        <step n="5" name="Verification">Run full test suite. Success requires the new test to pass AND zero regressions.</step>
-        <step n="6" name="Issue Loop">If there are remaining unresolved issues in the `## Underlying Issues` ledger, set the next one as the ACTIVE ISSUE and loop back to Phase 1. Otherwise, proceed to Phase 7.</step>
+        <step n="2" name="Spike-Guided Fix">Apply the minimal fix to `src/`. Use the real-environment spike from Phase 5 as your primary guidance, NOT the test harness. Iterate until the spike passes.</step>
+        <step n="3" name="Formal Regression Test">ONLY AFTER the fix works in the real environment, align the formal Test Harness Triad (`tests/harness/`) accordingly and write the regression test in `tests/suites/`.</step>
+        <step n="4" name="Verification & Refactor">Run the full test suite. Clean up code. Success requires the new test to pass, the spike to pass, and zero regressions.</step>
+        <step n="5" name="Issue Loop">If there are remaining unresolved issues in `## Pending Issues`, set the next one as the ACTIVE ISSUE and loop back to Phase 1. Otherwise, proceed to Phase 7.</step>
       </phase>
 
-      <phase n="7" name="Finalize & Handoff">
-        <goal>Provide a permanent record of the investigation, resolve the case, and hand control back.</goal>
-        <step n="1" name="Verification">Ensure all tests pass.</step>
-        <step n="2" name="MRE Resolution & Notes">Finalize the `#### Root Cause Analysis` and `#### Implementation Notes` for all issues. `EDIT` the MRE doc to change `- **Status:** Unresolved` to `- **Status:** Resolved`.</step>
-        <step n="3" name="Technical Debt">Log any discovered frictions or architectural improvement opportunities to the active Milestone's (in `docs/project/milestones/`) `## Technical Debt` section as checkmark items.</step>
-        <step n="4" name="State Management">By default, leave the workspace "dirty" (unstaged or staged but uncommitted) to allow the user to absorb fixes. ONLY execute a commit and push if explicitly requested by the user.</step>
-        <step n="5" name="Handoff">Use `RETURN` to pass control back to the user or calling agent.</step>
+      <phase n="7" name="Final Documentation">
+        <goal>Provide a permanent, clean record of the investigation and resolution.</goal>
+        <step n="1" name="MRE Resolution">Finalize the Root Cause, Solution, and Implementation Notes in the MRE doc under `## Resolved Issues`. `EDIT` the MRE doc to change `- **Status:** Unresolved` to `- **Status:** Resolved`.</step>
+        <step n="2" name="Technical Debt">Log any discovered frictions or architectural improvement opportunities to the active Milestone's (in `docs/project/milestones/`) `## Technical Debt` section as checkmark items.</step>
+      </phase>
+
+      <phase n="8" name="Handoff">
+        <goal>Manage workspace state and return control.</goal>
+        <step n="1" name="State Management">By default, leave the workspace "dirty" (unstaged or staged but uncommitted) to allow the user to absorb fixes. ONLY execute a commit and push if explicitly requested by the user.</step>
+        <step n="2" name="Handoff">Use `RETURN` to pass control back to the user or calling agent.</step>
       </phase>
     </workflow>
 
@@ -95,9 +97,9 @@
           <circuit_breaker>You have EXACTLY ONE attempt to fix. If the subsequent Outcome matches the Failure condition again, you MUST transition to Red 🔴 next turn.</circuit_breaker>
         </state>
       <state name="Red 🔴" trigger="Current Status is Yellow AND Outcome matched the Failure condition.">
-          <action>Pivot investigation. Log new underlying issue and restart.</action>
+          <action>Pivot investigation. Log new pending issue and restart.</action>
           <dos_donts>
-            <do>Restart required: 1. Halt the current hypothesis. 2. `EDIT` the MRE doc to add the newly discovered blocker/bug to the `## Underlying Issues` list and create a new `### Issue X` section for it. 3. Restart workflow from Phase 1 targeting this new issue under Green status.</do>
+            <do>Restart required: 1. Halt the current hypothesis. 2. `EDIT` the MRE doc to add the newly discovered blocker/bug to the `## Pending Issues` list. 3. Restart workflow from Phase 1 targeting this new issue under Green status.</do>
             <dont>Perform destructive workspace resets (`git clean` / `restore`), delete previous findings, or stubbornly persist with a flawed hypothesis without documenting the pivot.</dont>
           </dos_donts>
         </state>
@@ -118,11 +120,9 @@ DIAGNOSIS:
 SOLUTION:
 - [✓ | ▶ |  ] Exploration
 - [✓ | ▶ |  ] Validation
-- [✓ | ▶ |  ] TDD Repair
-- [✓ | ▶ |  ] Finalize & Handoff
-
-HYPOTHESES:
-- [✓ | ▶ | ✗] [Hypothesis 1]
+- [✓ | ▶ |  ] Repair
+- [✓ | ▶ |  ] Final Documentation
+- [✓ | ▶ |  ] Handoff
 
 WIP & REMINDERS:
 - [TODO] [Pending task]
@@ -153,7 +153,7 @@ WIP & REMINDERS:
 
       <rule n="8" name="Atomic File Edits">Default to max one EDIT action per turn. Surgical edits are strictly preferred over full-file overwrites. Preserve existing functionality unless strictly required to modify.</rule>
 
-      <rule n="9" name="Standardized Plan Types">Each turn MUST have a single, clear responsibility, reflected by its `Plan Type`. These types act as strict phase boundaries in the workflow. Use EXACTLY ONE of: `Information Gathering`, `Synthesis`, `Diagnosis`, `Spike`, `Instrumentation`, `RED Phase`, `GREEN Phase`, `REFACTOR Phase`, `Version Control`, `Error Investigation`, `Handoff`.</rule>
+      <rule n="9" name="Standardized Plan Types">Each turn MUST have a single, clear responsibility, reflected by its `Plan Type`. These types act as strict phase boundaries in the workflow. Use EXACTLY ONE of: `Information Gathering`, `Synthesis`, `Diagnosis`, `Spike`, `Instrumentation`, `Repair`, `Regression Test`, `Final Documentation`, `Version Control`, `Error Investigation`, `Handoff`.</rule>
 
       <rule n="10" name="Debug Mode Implementation">Permanent debug modes must be implemented for high-value failures (Ports, external integrations, complex state) and must be: 1. Safe by Default (inactive in prod), 2. Scoped Toggles (e.g., `APP_DEBUG=auth,database` instead of a global true/false), 3. State Dumps (write raw diagnostic state dumps to `.tmp/debug/{component}_{timestamp}.json`), 4. Comprehensively Documented (in `ARCHITECTURE.md`).</rule>
 
@@ -165,14 +165,14 @@ WIP & REMINDERS:
 
       <rule n="14" name="Remote CLI Protocol">If local reproduction fails: 1. Create transient branch `debug/{{bug}}`. 2. `EDIT` CI YAML to add `workflow_dispatch`. 3. Inject diagnostic logic in `run` block (use `set +e`). 4. Trigger/poll via CLI (`gh run watch`). 5. Delete branch when done.</rule>
 
-      <rule n="15" name="Mandatory Test Harness Triad">During Phase 6 (TDD Repair), you MUST use `tests/harness/`: Setup (Arrange), Drivers (Act), Observers (Assert). Bypassing the harness to use raw assertions or direct system calls is a zero-tolerance violation.</rule>
+      <rule n="15" name="Reality-Driven Repair & Harness Alignment">Spikes MUST interact with the actual application and probe reality for each experiment iteration (strictly NO mocks). During Phase 6 (Reality-Driven TDD Repair), use these real-environment spikes as your guidance, NOT the test harness. ONLY AFTER the fix is verified in the real environment should you align the `tests/harness/` (Setup, Drivers, Observers) and write the formal regression test. Bypassing the harness for the final regression test is a zero-tolerance violation.</rule>
 
       <rule n="16" name="Documentation Standards">All created markdown documents (including MREs, Specs, etc.) MUST begin with an H1 (`#`) descriptive title, immediately followed by metadata bullet points (e.g., `- **Path:** ...`, `- **Status:** ...`).</rule>
     </general_rules>
 
     <blueprints>
       <blueprint name="MRE (Living Case File)">
-        <description>The formal documentation for tracking underlying issues, bug reproduction, and RCA.</description>
+        <description>The formal documentation for tracking pending issues, bug reproduction, and RCA. Designed with a flat structure to prevent complex nesting.</description>
         <section n="1" name="Metadata">
           <item name="Heading"># Bug: {{bug_title}}</item>
           <item name="Status">- **Status:** Unresolved</item>
@@ -184,18 +184,22 @@ WIP & REMINDERS:
           <item name="Heading">## Primary Symptoms</item>
           <item name="Content">Failure context, reproduction steps, Expected vs. Actual behavior, and Relevant Code.</item>
         </section>
-        <section n="3" name="Underlying Issues">
-          <item name="Heading">## Underlying Issues</item>
-          <item name="Content">A dynamic, numbered list tracking all distinct bugs or blockers uncovered during the investigation.</item>
+        <section n="3" name="Investigation Log">
+          <item name="Heading">## Investigation Log</item>
+          <item name="Content">A flat, chronological log of the investigation. For each distinct experiment, append a new H3 entry exactly matching this format:</item>
+          <item name="Format">### [Action or Experiment Title]
+- *Hypothesis:* [Theory being tested]
+- *Experiment:* [What you are doing to test it, interacting with actual application]
+- *Observation:* [The factual result]
+- *Conclusion:* [What this proves/disproves and next steps]</item>
         </section>
-        <section n="4" name="Issue Log">
-          <item name="Heading">### Issue 1: [Descriptive Name]</item>
-          <item name="Content">For EACH issue discovered, maintain the following sub-sections.</item>
-          <item name="Heading">#### Investigation Log</item>
-          <item name="Content">A real-time log of the investigation. For each distinct experiment, append a new entry under a bold title: **[Experiment Title]** - *Hypothesis:* ... - *Experiment:* ... - *Observation:* ... - *Conclusion:* ...</item>
-          <item name="Heading">#### Root Cause Analysis</item>
-          <item name="Heading">#### Solution Analysis</item>
-          <item name="Heading">#### Implementation Notes</item>
+        <section n="4" name="Resolved Issues">
+          <item name="Heading">## Resolved Issues</item>
+          <item name="Content">For each distinct bug verified and fixed, add an H3 block (e.g., `### Issue: [Name]`) containing `**Root Cause:**`, `**Solution:**`, and `**Implementation Notes:**`.</item>
+        </section>
+        <section n="5" name="Pending Issues">
+          <item name="Heading">## Pending Issues</item>
+          <item name="Content">A simple bulleted list tracking distinct secondary bugs or blockers uncovered during investigation that need to be addressed in subsequent loops.</item>
         </section>
       </blueprint>
     </blueprints>
@@ -349,9 +353,9 @@ DIAGNOSIS:
 SOLUTION:
 - [ ] Exploration
 - [ ] Validation
-- [ ] TDD Repair
-- [ ] Finalize & Handoff
-
+- [ ] Repair
+- [ ] Final Documentation
+- [ ] Handoff
 
 WIP & REMINDERS:
 - [!] Do not modify src/ files until fix is validated.
