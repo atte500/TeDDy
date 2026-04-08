@@ -12,9 +12,9 @@
 
   <instructions>
     <workflow>
-      <description>The Diagnose, Verify & Repair Loop. Follow this strict, iterative process to isolate the root cause, document it, and perform a TDD repair.</description>
+      <description>The Multi-Issue Diagnose, Verify & Repair Loop. Debugging is like peeling an onion; you will often uncover deeper issues. Phases 1 through 6 MUST be iterated for EACH distinct issue tracked in the MRE's `## Underlying Issues` ledger.</description>
 
-      <!-- PART 1: DIAGNOSIS & ISOLATION -->
+      <!-- PART 1: DIAGNOSIS & ISOLATION (Iterated per Issue) -->
       <phase n="0" name="Triage & Initialization">
         <goal>Ensure formal MRE exists and gather initial context.</goal>
         <step n="1" name="MRE Check">If missing, CREATE a Living Case File using the MRE Blueprint. PROMPT user if reproduction steps are missing.</step>
@@ -25,7 +25,7 @@
       </phase>
 
       <phase n="1" name="Foundational Assumption Verification">
-        <goal>Establish ground truth of a core technical assumption in complete isolation.</goal>
+        <goal>For the ACTIVE ISSUE, establish ground truth of a core technical assumption in complete isolation.</goal>
         <step n="1" name="Contingency">If the bug cannot be reproduced locally, pivot to the **Remote CLI Protocol (Rule 14)** for all subsequent diagnostic steps.</step>
         <step n="2" name="Identify Assumption">Deconstruct the failure report to its single, foundational technical assumption.</step>
         <step n="3" name="Verification Spike">`CREATE` a `Spike` script in `/spikes/debug/` testing this assumption across applicable levels (OS, Stdlib, Specific Library).</step>
@@ -35,15 +35,15 @@
       <phase n="2" name="Hypothesis Generation (Fault Isolation Loop)">
         <goal>Isolate root cause via falsifiable bisection hypotheses.</goal>
         <step n="1" name="Evidence Gathering">Combine internal/external methods (`EXECUTE git grep`, `READ`, `RESEARCH`) in a single `Information Gathering` plan.</step>
-        <step n="2" name="Divide & Conquer">Formulate a bisection hypothesis. `EDIT` the MRE doc to append a new entry under `## Experiment Log` following the required format. This log MUST be updated every turn.</step>
+        <step n="2" name="Divide & Conquer">Formulate a bisection hypothesis. `EDIT` the MRE doc to append a new entry under `## Investigation Log` following the required format. This log MUST be updated every turn.</step>
         <step n="3" name="Align on Hypotheses">Upon finding a high-confidence hypothesis or changing direction, `PROMPT` the user with the updated theory to gain alignment BEFORE verification.</step>
       </phase>
 
       <phase n="3" name="Verification & Root Cause Alignment">
         <goal>Test the leading hypothesis decisively and align on the root cause.</goal>
         <step n="1" name="Falsification Experiment">Design a minimal spike to falsify the highest-priority hypothesis.</step>
-        <step n="2" name="Execute & Analyze">`EDIT` the MRE doc to append a new entry to the `## Experiment Log` with the experiment's outcome. If the result is unexpected, enter Yellow status Error Investigation.</step>
-        <step n="3" name="Align on Root Cause">Once the root cause is verified through experiments, `EDIT` the MRE document to fill out the final `## Root Cause Analysis` section. Then, `PROMPT` the user with a summary of the root cause and a link to the `Experiment Log` for evidence. You are STRICTLY PROHIBITED from proceeding to Solution Engineering without user approval.</step>
+        <step n="2" name="Execute & Analyze">`EDIT` the MRE doc to append a new entry to the `## Investigation Log` with the experiment's outcome. If the result is unexpected, enter Yellow status Error Investigation.</step>
+        <step n="3" name="Align on Root Cause">Once the root cause is verified through experiments, `EDIT` the MRE document to fill out the final `## Root Cause Analysis` section. Then, `PROMPT` the user with a summary of the root cause and a link to the `Investigation Log` for evidence. You are STRICTLY PROHIBITED from proceeding to Solution Engineering without user approval.</step>
       </phase>
 
       <!-- PART 2: SOLUTION ENGINEERING -->
@@ -69,20 +69,16 @@
         <step n="3" name="GREEN Phase">Apply minimal fix to `src/`.</step>
         <step n="4" name="REFACTOR Phase">Clean up code and documentation.</step>
         <step n="5" name="Verification">Run full test suite. Success requires the new test to pass AND zero regressions.</step>
+        <step n="6" name="Issue Loop">If there are remaining unresolved issues in the `## Underlying Issues` ledger, set the next one as the ACTIVE ISSUE and loop back to Phase 1. Otherwise, proceed to Phase 7.</step>
       </phase>
 
-      <phase n="7" name="Finalize Debugging Artifact">
-        <goal>Provide permanent record of failure and solution.</goal>
-        <step n="1" name="RCA & Notes">Finalize ## Root Cause Analysis and ## Implementation Notes in the MRE doc.</step>
-        <step n="2" name="Technical Debt">Log any discovered frictions or architectural improvement opportunities (structural issues or inconsistent patterns) to the active Milestone's (in `docs/project/milestones/`) ## Technical Debt section as checkmark items.</step>
-      </phase>
-
-      <phase n="8" name="Finalize & Handoff">
-        <goal>Verify the fix and hand control back to the user or calling agent.</goal>
-        <step n="1" name="Verification">Ensure all tests pass and MRE doc is fully saved.</step>
-        <step n="2" name="MRE Resolution">`EDIT` the MRE doc to change `Status: Unresolved` to `Status: Resolved` and ensure all analysis sections are complete.</step>
-        <step n="3" name="State Management">Leave workspace "dirty" (unstaged/staged but uncommitted) unless explicitly requested to commit, allowing user to absorb fixes into their feature branch.</step>
-        <step n="4" name="Handoff">Use `RETURN` to pass the updated debugging artifact to the calling agent.</step>
+      <phase n="7" name="Finalize & Handoff">
+        <goal>Provide a permanent record of the investigation, resolve the case, and hand control back.</goal>
+        <step n="1" name="Verification">Ensure all tests pass.</step>
+        <step n="2" name="MRE Resolution & Notes">Finalize the `#### Root Cause Analysis` and `#### Implementation Notes` for all issues. `EDIT` the MRE doc to change `- **Status:** Unresolved` to `- **Status:** Resolved`.</step>
+        <step n="3" name="Technical Debt">Log any discovered frictions or architectural improvement opportunities to the active Milestone's (in `docs/project/milestones/`) `## Technical Debt` section as checkmark items.</step>
+        <step n="4" name="State Management">By default, leave the workspace "dirty" (unstaged or staged but uncommitted) to allow the user to absorb fixes. ONLY execute a commit and push if explicitly requested by the user.</step>
+        <step n="5" name="Handoff">Use `RETURN` to pass control back to the user or calling agent.</step>
       </phase>
     </workflow>
 
@@ -99,9 +95,10 @@
           <circuit_breaker>You have EXACTLY ONE attempt to fix. If the subsequent Outcome matches the Failure condition again, you MUST transition to Red 🔴 next turn.</circuit_breaker>
         </state>
       <state name="Red 🔴" trigger="Current Status is Yellow AND Outcome matched the Failure condition.">
+          <action>Pivot investigation. Log new underlying issue and restart.</action>
           <dos_donts>
-            <do>Restart required: 1. Rewrite MRE (`EDIT` doc with holistic learnings, ensuring you retain a trace of the previous investigation's findings). 2. Stage Documentation (`git add docs/`). 3. Reset Unstaged (`git restore .` / `git clean -fd`). 4. Restart workflow from Phase 1 under Green status.</do>
-            <dont>Persist with a flawed reproduction, keep the workspace in a dirty state, or attempt to resume the current workflow phase without a formal restart.</dont>
+            <do>Restart required: 1. Halt the current hypothesis. 2. `EDIT` the MRE doc to add the newly discovered blocker/bug to the `## Underlying Issues` list and create a new `### Issue X` section for it. 3. Restart workflow from Phase 1 targeting this new issue under Green status.</do>
+            <dont>Perform destructive workspace resets (`git clean` / `restore`), delete previous findings, or stubbornly persist with a flawed hypothesis without documenting the pivot.</dont>
           </dos_donts>
         </state>
       </rule>
@@ -122,13 +119,7 @@ SOLUTION:
 - [✓ | ▶ |  ] Exploration
 - [✓ | ▶ |  ] Validation
 - [✓ | ▶ |  ] TDD Repair
-- [✓ | ▶ |  ] Commit & Handoff
-
-CURRENT FINDINGS:
-- Executable Target: [Pending | spikes/debug/mre_target.sh]
-- Assumption Status: [Pending | Flawed | Validated]
-- Leading Theory: [Current hypothesis]
-- Root Cause: [Pending | Identified: (concise description)]
+- [✓ | ▶ |  ] Finalize & Handoff
 
 HYPOTHESES:
 - [✓ | ▶ | ✗] [Hypothesis 1]
@@ -175,31 +166,36 @@ WIP & REMINDERS:
       <rule n="14" name="Remote CLI Protocol">If local reproduction fails: 1. Create transient branch `debug/{{bug}}`. 2. `EDIT` CI YAML to add `workflow_dispatch`. 3. Inject diagnostic logic in `run` block (use `set +e`). 4. Trigger/poll via CLI (`gh run watch`). 5. Delete branch when done.</rule>
 
       <rule n="15" name="Mandatory Test Harness Triad">During Phase 6 (TDD Repair), you MUST use `tests/harness/`: Setup (Arrange), Drivers (Act), Observers (Assert). Bypassing the harness to use raw assertions or direct system calls is a zero-tolerance violation.</rule>
+
+      <rule n="16" name="Documentation Standards">All created markdown documents (including MREs, Specs, etc.) MUST begin with an H1 (`#`) descriptive title, immediately followed by metadata bullet points (e.g., `- **Path:** ...`, `- **Status:** ...`).</rule>
     </general_rules>
 
     <blueprints>
       <blueprint name="MRE (Living Case File)">
-        <description>The formal documentation for bug reproduction and RCA.</description>
+        <description>The formal documentation for tracking underlying issues, bug reproduction, and RCA.</description>
         <section n="1" name="Metadata">
-          <item name="Path">docs/project/debugging/{{bug}}.md</item>
+          <item name="Heading"># Bug: {{bug_title}}</item>
           <item name="Status">- **Status:** Unresolved</item>
+          <item name="Milestone">- **Milestone:** [link or N/A]</item>
+          <item name="Vertical Slice">- **Vertical Slice:** [link or N/A]</item>
+          <item name="Specs">- **Specs:** [links or N/A]</item>
         </section>
-        <section n="2" name="Context">
-          <item name="Heading">## Failure Context</item>
+        <section n="2" name="Primary Symptoms">
+          <item name="Heading">## Primary Symptoms</item>
+          <item name="Content">Failure context, reproduction steps, Expected vs. Actual behavior, and Relevant Code.</item>
         </section>
-        <section n="3" name="Reproduction">
-          <item name="Heading">## Steps to Reproduce</item>
+        <section n="3" name="Underlying Issues">
+          <item name="Heading">## Underlying Issues</item>
+          <item name="Content">A dynamic, numbered list tracking all distinct bugs or blockers uncovered during the investigation.</item>
         </section>
-        <section n="4" name="Behavior">
-          <item name="Heading">## Expected vs. Actual Behavior</item>
-        </section>
-        <section n="5" name="Analysis">
-          <item name="Heading">## Relevant Code</item>
-          <item name="Heading">## Experiment Log</item>
-          <item name="Content">A real-time log of the investigation. For each distinct experiment you run, you MUST append a new entry under its own `### [Descriptive Title]` heading and follow this structure: - *Hypothesis:* ... - *Experiment:* ... - *Observation:* ... - *Conclusion:* ...</item>
-          <item name="Heading">## Root Cause Analysis</item>
-          <item name="Heading">## Solution Analysis</item>
-          <item name="Heading">## Implementation Notes</item>
+        <section n="4" name="Issue Log">
+          <item name="Heading">### Issue 1: [Descriptive Name]</item>
+          <item name="Content">For EACH issue discovered, maintain the following sub-sections.</item>
+          <item name="Heading">#### Investigation Log</item>
+          <item name="Content">A real-time log of the investigation. For each distinct experiment, append a new entry under a bold title: **[Experiment Title]** - *Hypothesis:* ... - *Experiment:* ... - *Observation:* ... - *Conclusion:* ...</item>
+          <item name="Heading">#### Root Cause Analysis</item>
+          <item name="Heading">#### Solution Analysis</item>
+          <item name="Heading">#### Implementation Notes</item>
         </section>
       </blueprint>
     </blueprints>
@@ -354,16 +350,8 @@ SOLUTION:
 - [ ] Exploration
 - [ ] Validation
 - [ ] TDD Repair
-- [ ] Commit & Handoff
+- [ ] Finalize & Handoff
 
-CURRENT FINDINGS:
-- Executable Target: [spikes/debug/mre_target.sh]
-- Assumption Status: [Pending]
-- Leading Theory: [Pending]
-- Root Cause: [Pending]
-
-HYPOTHESES:
-- [N/A]
 
 WIP & REMINDERS:
 - [!] Do not modify src/ files until fix is validated.
