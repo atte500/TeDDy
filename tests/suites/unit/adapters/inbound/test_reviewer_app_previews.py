@@ -35,3 +35,36 @@ async def test_reviewer_app_preview_text_actions(
     expected = ["new"] if action_type == "RESEARCH" else "new"
     assert action.params[param_key] == expected
     assert action.modified is True
+
+
+@pytest.mark.anyio
+async def test_reviewer_app_prompt_response_edit_routing(env):
+    """Regression test ensuring PROMPT response edits route to user_response."""
+    action = ActionData(type="PROMPT", params={"prompt": "Hello?"}, selected=True)
+    plan = Plan(title="T", rationale="R", actions=[action])
+    app = ReviewerApp(
+        plan=plan,
+        system_env=env.get_service(ISystemEnvironment),
+        console_tooling=MagicMock(),
+        action_dispatcher=MagicMock(),
+    )
+    async with app.run_test() as pilot:
+        # Highlight action in left tree
+        await pilot.press("down")
+
+        # Focus right pane ParameterDetail list
+        await pilot.press("tab")
+        # Go down to select the 'response' parameter item
+        await pilot.press("down")
+        # Trigger edit binding (which dynamically routes to right pane)
+        await pilot.press("e")
+
+        # Type the response in the modal
+        await pilot.press(*"My Answer")
+        await pilot.press("enter")
+
+    # The 'response' key should NOT be injected into the params dictionary
+    assert "response" not in action.params
+    # Instead, it strictly sets the class attribute
+    assert action.user_response == "My Answer"
+    assert action.modified is True

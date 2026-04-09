@@ -51,3 +51,29 @@ async def test_reviewer_app_revert_binding_visibility(env):
         await pilot.press("r")
         await pilot.wait_for_scheduled_animations()
     assert action.modified is False
+
+
+@pytest.mark.anyio
+async def test_reviewer_app_revert_restores_shallow_copy(env):
+    """Regression test ensuring revert accurately restores original parsed lists."""
+    action = ActionData(type="RESEARCH", params={"queries": ["original query"]})
+    plan = Plan(title="T", rationale="R", actions=[action])
+    app = ReviewerApp(
+        plan=plan,
+        system_env=env.get_service(ISystemEnvironment),
+        console_tooling=MagicMock(),
+        action_dispatcher=MagicMock(),
+    )
+    async with app.run_test() as pilot:
+        await pilot.press("down")
+
+        # Simulate an edit mutation
+        action.params["queries"] = ["mutated query"]
+        action.modified = True
+
+        # Trigger revert
+        await pilot.press("r")
+        await pilot.wait_for_scheduled_animations()
+
+    assert action.modified is False
+    assert action.params["queries"] == ["original query"]
