@@ -36,3 +36,9 @@
   - Added `with app.suspend():` context block when running `preview_readonly` to prevent terminal corruption.
   - Injected `<!-- Please enter your response above this line. -->` template structure into `preview_prompt` to match `console_plan_reviewer.py` formatting and UX.
 - `textual_plan_reviewer_helpers.py`: Fixed `resolve_action_parameters` dictionary keys to match string `action.type` directly (fixing `None` values) and explicitly appended the `user_response` value for PROMPT actions.
+
+**Prevention & Generalization:**
+- **State Reversion Resilience:** Replaced `copy.deepcopy` with safe, shallow `dict.copy()` to handle AST-polluted parsed properties without crashing when users trigger `r` (Revert).
+- **UI Reactivity Standardization:** Enforced explicit `_update_detail_view` synchronizations on all state-mutating actions across the TUI logic (`EXECUTE`, `RESEARCH` modals, and `revert`) so the right panel never shows stale data.
+- **Strict I/O Isolation:** Wrapped background text-rendering tools in `contextlib.redirect_stdout` and interactive editors in `app.suspend()` to guarantee TUI layout integrity and prevent execution output garbling.
+- **Formal Regression Suite:** Created `tests/suites/unit/adapters/inbound/test_tui_regressions.py` directly mapping the 7 observed real-world edge cases (READ deadlock, list crashes, prompt mapping, overlapping logs, and UI reactivity) to automated tests. This prevents future drifts and strictly validates the TUI-to-Parser interactions.
