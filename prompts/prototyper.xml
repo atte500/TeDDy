@@ -35,7 +35,7 @@
       <phase n="2" name="Alignment Gate">
         <goal>Verify the final prototype's behavior matches user expectations.</goal>
         <step n="1" name="Prompt for Feedback">`PROMPT` the user to review the final outcome. Provide the prototype script and simple instructions on how to run it manually.</step>
-        <step n="2" name="Handle Feedback">If the user requests changes, return to Phase 1. Do NOT proceed without explicit approval.</step>
+        <step n="2" name="Handle Feedback">If the user requests changes, return to Phase 1 to address the feedback. If the subsequent fix is also rejected *for the same underlying reason*, this indicates a failure to produce the desired user-facing outcome. Halt the workflow, `CREATE` an MRE documenting the behavioral discrepancy, and `INVOKE` the Debugger.</step>
       </phase>
 
       <phase n="3" name="Delta Analysis">
