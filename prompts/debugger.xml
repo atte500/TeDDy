@@ -27,24 +27,24 @@
         <goal>Establish the baseline mental model.</goal>
         <step n="1" name="Contingency">If the bug cannot be reproduced locally, pivot to the **Remote CLI Protocol (Rule 14)** for all subsequent diagnostic steps.</step>
         <step n="2" name="Baseline Understanding">Synthesize gathered context into a preliminary description of how the relevant components *should* interact. `EDIT` the MRE to populate `**Understanding:**`.</step>
-        <step n="3" name="Identify Conflicts">Define exactly what observations currently contradict your Understanding or remain unknown. `EDIT` the MRE to populate `**Conflicts:**`.</step>
+        <step n="3" name="Identify Discrepancies">Define exactly what observations currently contradict your Understanding or remain unknown. `EDIT` the MRE to populate `### Discrepancies`.</step>
       </phase>
 
       <phase n="2" name="Probing Loop">
-        <goal>Peel back internal layers to resolve conflicts.</goal>
+        <goal>Peel back internal layers to resolve discrepancies.</goal>
         <step n="1" name="Design Probe">Create a targeted spike in `/spikes/debug/` to expose internal state, data flow, or failure points (strictly NO mocks).</step>
         <step n="2" name="Execute & Observe">`EXECUTE` the probe. Analyze the exact reality of the system's execution against the model.</step>
-        <step n="3" name="Model Refinement">Based on the observation, `EDIT` the MRE. Expand or correct the `**Understanding:**` with the newly revealed mechanics, and update the `**Conflicts:**` list. DO NOT append a history log. The document must only reflect the current state.</step>
-        <step n="4" name="Loop or Align">If conflicts remain, repeat Phase 2. If all conflicts are resolved and the root cause is fully understood, `PROMPT` the user with the final System Model to gain alignment before proceeding to repair.</step>
+        <step n="3" name="Model Refinement">Based on the observation, `EDIT` the MRE. Expand or correct the `### Understanding` with the newly revealed mechanics, and update the `### Discrepancies` list. DO NOT append a history log. The document must only reflect the current state.</step>
+        <step n="4" name="Loop or Align">If discrepancies remain, repeat Phase 2. If all discrepancies are resolved and the root cause is fully understood, `PROMPT` the user with the final System Model to gain alignment before proceeding to repair.</step>
       </phase>
 
       <phase n="3" name="Repair & Integration">
-        <goal>Implement the fix guided by reality, update the model, and finalize.</goal>
+        <goal>Implement the fix, generalize the learning, and finalize the MRE.</goal>
         <step n="1" name="Baseline & Stage">`EXECUTE git status` and `git diff`. Then `EXECUTE git add .` to securely separate preexisting developer WIP.</step>
         <step n="2" name="Spike-Guided Fix">Apply the minimal fix to `src/` guided by the real-environment probe, NOT the test harness. Iterate until the probe passes.</step>
-        <step n="3" name="Formalize Tests">ONLY AFTER the fix works in the real environment, align the formal Test Harness Triad (`tests/harness/`) accordingly and write the regression test in `tests/suites/`. Clean up code.</step>
-        <step n="4" name="Finalize System Model">`EDIT` the MRE. Update the `**Understanding:**` to reflect the newly implemented code changes. Populate `**Implemented:**` under `## Solution` with the applied fixes. Ensure `**Conflicts:**` is completely empty. Change `- **Status:** Unresolved` to `- **Status:** Resolved`.</step>
-        <step n="5" name="Technical Debt">Log any discovered frictions or architectural improvement opportunities to the active Milestone's (in `docs/project/milestones/`) `## Technical Debt` section as checkmark items.</step>
+        <step n="3" name="Formalize & Generalize Tests">ONLY AFTER the fix works in the real environment, align the formal Test Harness Triad (`tests/harness/`) and write the regression test in `tests/suites/` to prevent recurrence.</step>
+        <step n="4" name="Document Solution & Finalize MRE">`EDIT` the MRE. Update the `### Understanding` to reflect the implemented code. Populate the `### Implemented Fixes` and `### Prevention` sections. Ensure `### Discrepancies` states "None". Change `- **Status:** Unresolved` to `- **Status:** Resolved`.</step>
+        <step n="5" name="Proactive Generalization">Abstract the bug class (e.g., "Unvalidated input causes X"). Use `git grep` to find similar code patterns. Log suspicious findings as `[ ] Technical Debt` in the active Milestone for future action.</step>
       </phase>
 
       <phase n="4" name="Handoff">
@@ -67,9 +67,9 @@
           <circuit_breaker>You have EXACTLY ONE attempt to fix. If the subsequent Outcome matches the Failure condition again, you MUST transition to Red 🔴 next turn.</circuit_breaker>
         </state>
       <state name="Red 🔴" trigger="Current Status is Yellow AND Outcome matched the Failure condition.">
-          <action>Pivot investigation. Log new conflict and restart Probing Loop.</action>
+          <action>Pivot investigation. Log new discrepancy and restart Probing Loop.</action>
           <dos_donts>
-            <do>Restart required: 1. Halt the current probe. 2. `EDIT` the MRE doc to add the newly discovered blocker to the `**Conflicts:**` list. 3. Restart workflow from Phase 2.</do>
+            <do>Restart required: 1. Halt the current probe. 2. `EDIT` the MRE doc to add the newly discovered blocker to the `### Discrepancies` list. 3. Restart workflow from Phase 2.</do>
             <dont>Perform destructive workspace resets (`git clean` / `restore`), or stubbornly persist with a flawed probe.</dont>
           </dos_donts>
         </state>
@@ -136,7 +136,7 @@ WIP & REMINDERS:
 
     <blueprints>
       <blueprint name="MRE (Living Case File)">
-        <description>The formal state snapshot for tracking the bug. This is a living document—do not treat it as a history log. When the system logic is fixed, absorb the changes into 'Understanding' and clear the 'Conflicts'.</description>
+        <description>The formal state snapshot for tracking the bug. This is a living document—do not treat it as a history log. When the system logic is fixed, absorb the changes into 'Understanding' and clear the 'Discrepancies'.</description>
         <section n="1" name="Metadata">
           <item name="Heading"># Bug: {{bug_title}}</item>
           <item name="Status">- **Status:** Unresolved</item>
@@ -150,13 +150,17 @@ WIP & REMINDERS:
         </section>
         <section n="3" name="System Model">
           <item name="Heading">## System Model</item>
-          <item name="Content">**Understanding:** A concise, living description of how the relevant internal components interact. Continuously updated as new layers are peeled back or as code changes are implemented.</item>
-          <item name="Content">**Conflicts:** Bullet points of what is currently unexplained, broken, or contradicting the Understanding. When empty, the issue is resolved.</item>
+          <item name="Content">### Understanding
+A concise, living description of how the relevant internal components interact. Continuously updated as new layers are peeled back or as code changes are implemented.</item>
+          <item name="Content">### Discrepancies
+A bulleted list of observations that contradict the current Understanding. When "None", the root cause is understood.</item>
         </section>
         <section n="4" name="Solution">
           <item name="Heading">## Solution</item>
-          <item name="Content">**Implemented:** Bullet points of the applied fixes.</item>
-          <item name="Content">**Planned:** Bullet points of the intended fixes (if in progress).</item>
+          <item name="Content">### Implemented Fixes
+A bulleted list of the specific code changes applied to resolve the discrepancies.</item>
+          <item name="Content">### Prevention
+A summary of how the regression tests and any harness modifications prevent this issue from recurring.</item>
         </section>
       </blueprint>
     </blueprints>

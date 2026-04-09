@@ -149,8 +149,10 @@ WIP & REMINDERS:
         </section>
         <section n="3" name="System Model">
           <item name="Heading">## System Model</item>
-          <item name="Content">**Understanding:** A concise, living description of how the relevant internal components interact.</item>
-          <item name="Content">**Conflicts:** Bullet points of what is currently unexplained, broken, or contradicting the Understanding.</item>
+          <item name="Content">### Understanding
+A preliminary description of how the relevant components are believed to interact. The creating agent should populate this with their current knowledge.</item>
+          <item name="Content">### Discrepancies
+A bulleted list of the specific observations that contradict the Understanding above. This is the initial framing of the problem for the Debugger.</item>
         </section>
       </blueprint>
     </blueprints>
