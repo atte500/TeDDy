@@ -15,8 +15,8 @@
       <description>The Evolving Slice Loop. You receive a draft Vertical Slice and iteratively evolve it into a finalized, buildable plan by directly editing it as you validate behaviors in your sandbox.</description>
 
       <phase n="0" name="Exploration">
-        <goal>Ensure the draft Vertical Slice exists and gather comprehensive internal and external context before prototyping.</goal>
-        <step n="1" name="Context Check">`READ` the assigned draft Vertical Slice to understand the Scenarios and high-level requirements.</step>
+        <goal>Gather context for prototyping, creating a draft Vertical Slice if one is not provided.</goal>
+        <step n="1" name="Context Check">`READ` the assigned draft Vertical Slice to understand the Scenarios and high-level requirements. If one is not provided, `CREATE` a new draft slice from the user's request, establishing the Business Goal and initial Scenarios.</step>
         <step n="2" name="Internal Exploration">`EXECUTE` `git grep` and `READ` relevant codebase sections to understand existing patterns and integration points.</step>
         <step n="3" name="External Exploration">`RESEARCH` external best practices, libraries, or APIs that could inform the solution. Do not guess.</step>
       </phase>
@@ -134,6 +134,44 @@ WIP & REMINDERS:
     </general_rules>
 
     <blueprints>
+      <blueprint name="Vertical Slice">
+        <description>A cohesive feature that delivers a set of correlated and testable behaviors.</description>
+        <section n="1" name="Metadata">
+          <item name="Status">- **Status:** Planned</item>
+          <item name="Milestone">- **Milestone:** [link]</item>
+          <item name="Specs">- **Specs:** [links]</item>
+          <item name="Prototype">- **Prototype:** [link]</item>
+        </section>
+        <section n="2" name="Business Goal">
+          <item name="Heading">## Business Goal</item>
+        </section>
+        <section n="3" name="Scenarios">
+          <item name="Heading">## Scenarios</item>
+          <item name="Content">Each scenario MUST begin with a user story formatted as a Markdown blockquote (e.g., "> As a [user type], I want to [action] so that [benefit]"). This is followed by behavioral scenarios using Gherkin descriptions with concrete examples (Given/When/Then).</item>
+          <item name="Deliverables">Under each scenario, include a `### Deliverables` checklist of atomic units of work. MUST use strict Design-by-Contract prefixes ordered as follows: 1. **Contract** - (Interfaces, DTOs), 2. **Harness** - (Setup, Drivers, Observers), 3. **Logic** - (Domain implementation), 4. **Wiring** - (DI, Controllers, Adapters), 5. **Cleanup** - (Optional). Format exactly as: `- [ ] **Prefix** - Description`. Each deliverable MUST be a distinct, testable unit scoped to be implemented in exactly ONE single atomic commit cycle.</item>
+        </section>
+        <section n="4" name="Delta Analysis">
+          <item name="Heading">## Delta Analysis</item>
+          <item name="Content">Summary of changes required to integrate the prototype's behavior into the existing codebase. Documents the investigation and justifies the final set of scenarios and deliverables.</item>
+        </section>
+        <section n="5" name="Guidelines">
+          <item name="Heading">## Guidelines</item>
+          <item name="Content">Actionable strategy for implementation. MUST include Test Harness Triad strategy.</item>
+        </section>
+        <section n="6" name="Architectural Changes">
+          <item name="Heading">## Architectural Changes</item>
+          <item name="Content">Modified components (including Test Harness triads).</item>
+        </section>
+        <section n="7" name="Interaction Sequence">
+          <item name="Heading">## Interaction Sequence</item>
+          <item name="Content">Mermaid sequence diagram or narrative describing the flow between components.</item>
+        </section>
+        <section n="8" name="Implementation Notes">
+          <item name="Heading">## Implementation Notes</item>
+          <item name="Content">Filled by the Developer as things get implemented. Record of frictions, technical decisions, and findings.</item>
+        </section>
+      </blueprint>
+
       <blueprint name="MRE (Living Case File)">
         <description>The formal state snapshot for tracking the bug. Used to invoke the Debugger.</description>
         <section n="1" name="Metadata">
