@@ -1,6 +1,5 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch, mock_open
-from textual.widgets import Label
 from teddy_executor.core.domain.models.plan import Plan, ActionData
 from teddy_executor.core.domain.models.execution_report import ActionLog, ActionStatus
 from teddy_executor.adapters.inbound.textual_plan_reviewer import ReviewerApp
@@ -101,14 +100,17 @@ async def test_regression_execution_log_removed(env):
         await pilot.pause()
 
         pane = app.query_one(ParameterDetail)
-        labels = [str(label_widget.render()) for label_widget in pane.query(Label)]
+        from textual.widgets import Static
+
+        labels = [str(label_widget.render()) for label_widget in pane.query(Static)]
 
         # Verify the legacy "LOG:" section is gone
         assert not any("LOG:" in label for label in labels)
 
         # Verify parameters are still rendered natively
         detail_items = list(pane.query(DetailItem))
-        assert any(item.data.get("key") == "command" for item in detail_items)
+        # After execution, 'command' is hidden; we verify 'status' instead
+        assert any(item.data.get("key") == "status" for item in detail_items)
 
 
 @pytest.mark.anyio

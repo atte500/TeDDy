@@ -19,7 +19,7 @@ async def test_reviewer_app_edit_execute_parameter(env):
     app._refresh_node = MagicMock()
 
     async with app.run_test() as pilot:
-        await pilot.press("down")
+        await pilot.press("down", "down", "down")
         await pilot.press("e")
         await pilot.wait_for_scheduled_animations()
         await pilot.press(*"modified command")
@@ -43,7 +43,7 @@ async def test_reviewer_app_revert_binding_visibility(env):
         action_dispatcher=MagicMock(),
     )
     async with app.run_test() as pilot:
-        await pilot.press("down")
+        await pilot.press("down", "down", "down")
         assert app.check_action("revert", ()) is False
         action.modified = True
         await pilot.wait_for_scheduled_animations()
@@ -65,7 +65,7 @@ async def test_reviewer_app_revert_restores_shallow_copy(env):
         action_dispatcher=MagicMock(),
     )
     async with app.run_test() as pilot:
-        await pilot.press("down")
+        await pilot.press("down", "down", "down")
 
         # Simulate an edit mutation
         action.params["queries"] = ["mutated query"]

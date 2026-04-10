@@ -132,34 +132,41 @@ def resolve_action_parameters(action: "ActionData") -> dict[str, Any]:
         "READ": ["resource", "description"],
         "PRUNE": ["resource", "description"],
         "RESEARCH": ["queries", "description"],
-        "PROMPT": ["prompt"],
-        "INVOKE": ["agent", "description"],
-        "RETURN": ["description"],
+        "PROMPT": ["prompt", "reference_files"],
+        "INVOKE": ["agent", "reference_files", "description"],
+        "RETURN": ["reference_files", "description"],
     }
 
     keys = param_map.get(action.type, [])
     # Hide description from the detail view to reduce clutter
     keys = [k for k in keys if k != "description"]
-    resolved = {}
+    resolved: dict[str, Any] = {}
     for key in keys:
         # Use provided value if exists, else fallback to default (if one exists for that key)
-        if key in action.params:
-            resolved[key] = action.params[key]
-        elif key in defaults:
-            resolved[key] = defaults[key]
-        else:
-            resolved[key] = None
+        val = action.params.get(key)
+        if val is None and key in defaults:
+            val = defaults[key]
+
+        # Format lists as comma-separated strings for clean UI display
+        if isinstance(val, list):
+            val = ", ".join(map(str, val))
+
+        resolved[key] = val
 
     if action.type == "PROMPT":
         resolved["response"] = getattr(action, "user_response", None) or ""
 
-    # Include execution results if available
-    if action.executed and action.action_log:
+    # After execution, some parameters are hidden from the preview to reduce clutter
+    if action.executed:
+        # Hide large content/queries/commands once executed; view via 'd'
+        for hidden_key in ["content", "queries", "command", "edits"]:
+            resolved.pop(hidden_key, None)
+
         log = action.action_log
-        resolved["status"] = log.status.value
-        if log.details:
-            resolved["details"] = log.details
-        if log.failed_command:
-            resolved["failed_command"] = log.failed_command
+        if log:
+            resolved["status"] = log.status.value
+            if log.failed_command:
+                resolved["failed_command"] = log.failed_command
+            # Details are intentionally omitted here; they are viewed via 'd' binding
 
     return resolved

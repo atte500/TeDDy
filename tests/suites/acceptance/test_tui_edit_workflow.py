@@ -77,7 +77,7 @@ async def test_tui_modifying_edit_action_content_succeeds(env, monkeypatch):
 
     # Act
     async with app.run_test() as pilot:
-        await pilot.press("down")  # Highlight the action
+        await pilot.press("down", "down", "down")  # Highlight the action
         await pilot.press("e")  # Trigger edit/preview
         await pilot.wait_for_scheduled_animations()
         # Confirm the changes by pressing 'y' as per ConfirmScreen.on_key

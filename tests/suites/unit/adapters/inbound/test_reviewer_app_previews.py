@@ -26,7 +26,7 @@ async def test_reviewer_app_preview_text_actions(
         action_dispatcher=MagicMock(),
     )
     async with app.run_test() as pilot:
-        await pilot.press("down")
+        await pilot.press("down", "down", "down")
         await pilot.press("e")
         # In ParameterEditModal, we type the new value and press enter
         await pilot.press(*"new")
@@ -50,12 +50,12 @@ async def test_reviewer_app_prompt_response_edit_routing(env):
     )
     async with app.run_test() as pilot:
         # Highlight action in left tree
-        await pilot.press("down")
+        await pilot.press("down", "down", "down")
 
         # Focus right pane ParameterDetail list
         await pilot.press("tab")
-        # Go down to select the 'response' parameter item
-        await pilot.press("down")
+        # Go down to select the 'response' parameter item (Index 2: prompt, reference_files, response)
+        await pilot.press("down", "down")
         # Trigger edit binding (which dynamically routes to right pane)
         await pilot.press("e")
 

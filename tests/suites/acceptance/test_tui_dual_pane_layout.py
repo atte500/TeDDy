@@ -49,12 +49,13 @@ async def test_reviewer_app_has_dual_pane_layout():
         except Exception:
             pytest.fail("ReviewerApp missing #right-pane (ParameterDetail)")
 
-        # Simulate highlighting the first action
-        await pilot.press("down")
-        await pilot.wait_for_scheduled_animations()
+            # Simulate highlighting the first action
+            # Down(1): Rationale Root, Down(2): Action Plan Root, Down(3): First Action
+            await pilot.press("down", "down", "down")
+            await pilot.wait_for_scheduled_animations()
 
-        # Verify right pane (ParameterDetail) is updated with resolved parameters
-        # EXECUTE type should have 4 parameters (command, allow_failure, background, timeout)
-        # 'description' is hidden from the detail view to reduce clutter.
-        expected_param_count = 4
-        assert len(right_pane.children) == expected_param_count
+            # Verify right pane (ParameterDetail) is updated with resolved parameters
+            # EXECUTE type should have 4 parameters (command, allow_failure, background, timeout)
+            # 'description' is hidden from the detail view to reduce clutter.
+            expected_param_count = 4
+            assert len(right_pane.children) == expected_param_count

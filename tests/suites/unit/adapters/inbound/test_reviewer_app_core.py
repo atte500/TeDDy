@@ -33,7 +33,7 @@ async def test_reviewer_app_execute_key(env):
         action_dispatcher=mock_dispatcher,
     )
     async with app.run_test() as pilot:
-        await pilot.press("down")
+        await pilot.press("down", "down", "down")
         await pilot.press("x")
         await pilot.wait_for_scheduled_animations()
         await app.workers.wait_for_complete()

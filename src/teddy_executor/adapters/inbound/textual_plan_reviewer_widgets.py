@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from typing import Any
 from textual.binding import Binding
 from textual.screen import ModalScreen
-from textual.widgets import Input, Label, ListItem, ListView, Tree
+from textual.widgets import Input, Label, ListItem, ListView, Tree, Static
 
 if TYPE_CHECKING:
     from textual.app import ComposeResult
@@ -91,10 +91,52 @@ class DetailItem(ListItem):
 
     def __init__(self, key: str, val: Any):
         super().__init__()
-        self.data = {"key": key, "val": val}
+        # Truncate extremely large values to prevent TUI freeze during layout
+        display_val = str(val)
+        if len(display_val) > 20000:
+            display_val = (
+                display_val[:10000]
+                + "\n\n... [TRUNCATED FOR PREVIEW] ...\n\n"
+                + display_val[-10000:]
+            )
+        self.data = {"key": key, "val": val, "display_val": display_val}
 
     def compose(self) -> ComposeResult:
-        """Compose the list item with a wrapping label."""
-        from textual.widgets import Label
+        """Compose the list item with a wrapping static widget."""
+        # Use Static instead of Label for performance on large content
+        content = self.data["display_val"]
+        if self.data["key"]:
+            content = f"[bold]{self.data['key']}:[/] {content}"
+        yield Static(content, expand=True)
 
-        yield Label(f"[bold]{self.data['key']}:[/] {self.data['val']}")
+
+TUI_CSS = """
+#main-container {
+    layout: horizontal;
+    height: 1fr;
+}
+#left-pane {
+    width: 65%;
+}
+#right-pane {
+    width: 35%;
+    border-left: vkey $foreground 15%;
+    padding: 0;
+}
+Tree {
+    height: 1fr;
+}
+ListView {
+    background: $surface;
+    height: 1fr;
+    border: none;
+}
+ListItem {
+    height: auto;
+    padding: 0 1;
+}
+Static {
+    width: 100%;
+    height: auto;
+}
+"""

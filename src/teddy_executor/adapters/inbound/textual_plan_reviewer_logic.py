@@ -28,13 +28,13 @@ def on_tree_node_highlighted(app: "ReviewerApp", event: Any) -> None:
     """Handle node highlighting to update the detail view."""
     # event is Tree.NodeHighlighted
     if event.node and getattr(event.node.tree, "id", None) == "left-pane":
-        action = event.node.data if not event.node.is_root else None
-        _update_detail_view(app, action)
+        # Root node has no data usually, but our virtual roots do
+        _update_detail_view(app, event.node.data)
     app.refresh_bindings()
 
 
-def _update_detail_view(app: "ReviewerApp", action: Optional["ActionData"]):
-    """Populate the ParameterDetail view with action parameters or log."""
+def _update_detail_view(app: "ReviewerApp", data: Any):
+    """Populate the ParameterDetail view with action parameters, log, or rationale."""
     from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
         ParameterDetail,
         DetailItem,
@@ -43,11 +43,43 @@ def _update_detail_view(app: "ReviewerApp", action: Optional["ActionData"]):
 
     pane = app.query_one(ParameterDetail)
     pane.clear()
-    if not action:
-        pane.mount(ListItem(Label("Select an action to view details")))
+
+    if not data:
+        pane.mount(ListItem(Label("Select an item to view details")))
+        return
+
+    if isinstance(data, dict) and data.get("type") == "RATIONALE_SECTION":
+        # Don't repeat the section key for rationale sections
+        pane.append(DetailItem("", data["content"]))
+    elif data == "RATIONALE_ROOT":
+        # Check both cases as metadata keys can vary
+        agent = (
+            app.plan.metadata.get("Agent")
+            or app.plan.metadata.get("agent")
+            or "Unknown"
+        )
+        plan_type = (
+            app.plan.metadata.get("Plan Type")
+            or app.plan.metadata.get("plan_type")
+            or "Development"
+        )
+        status = (
+            app.plan.metadata.get("Status") or app.plan.metadata.get("status") or "N/A"
+        )
+        pane.append(DetailItem("Agent", agent))
+        pane.append(DetailItem("Plan Type", plan_type))
+        pane.append(DetailItem("Status", status))
+    elif data == "ACTION_PLAN_ROOT":
+        pane.mount(ListItem(Label("Select an action below to view details")))
     else:
-        for key, val in resolve_action_parameters(action).items():
-            pane.append(DetailItem(key, val))
+        # data is likely ActionData
+        from teddy_executor.core.domain.models.plan import ActionData
+
+        if isinstance(data, ActionData):
+            for key, val in resolve_action_parameters(data).items():
+                pane.append(DetailItem(key, val))
+        else:
+            pane.mount(ListItem(Label("Select an item to view details")))
 
 
 # Parameter resolution logic moved to textual_plan_reviewer_helpers.py
@@ -89,13 +121,17 @@ async def edit_action_logic(
 
 def refresh_node_logic(app: ReviewerApp, node: Any) -> None:
     """Refresh the label and state of a single tree node."""
-    if node.data:
+    from teddy_executor.core.domain.models.plan import ActionData
+
+    if isinstance(node.data, ActionData):
         node.label = format_node_label(node.data)
 
 
 def on_mount_logic(app: Any) -> None:
     """Populate the action tree and set title when the app is mounted."""
-    status_raw = app.plan.metadata.get("Status", "")
+    status_raw = (
+        app.plan.metadata.get("Status") or app.plan.metadata.get("status") or ""
+    )
     status_emoji = extract_status_emoji(status_raw)
     title_parts = [part for part in [status_emoji, app.plan.title] if part]
     app.title = " ".join(title_parts)
@@ -105,37 +141,78 @@ def on_mount_logic(app: Any) -> None:
     )
 
     tree = app.query_one(ActionTree)
-
+    tree.show_root = False
     tree.root.expand()
+
+    # 1. Rationale Section
+    rat_root = tree.root.add("[bold]Rationale[/]", data="RATIONALE_ROOT", expand=True)
+    import re
+
+    sections = re.split(r"\n(?=### )", "\n" + app.plan.rationale)
+    for section in sections:
+        section = section.strip()
+        if not section:
+            continue
+        lines = section.split("\n")
+        title = lines[0].replace("###", "").strip()
+        content = "\n".join(lines[1:]).strip()
+        rat_root.add_leaf(
+            title,
+            data={"type": "RATIONALE_SECTION", "title": title, "content": content},
+        )
+
+    # 2. Action Plan Section
+    act_root = tree.root.add(
+        "[bold]Action Plan[/]", data="ACTION_PLAN_ROOT", expand=True
+    )
     for action in app.plan.actions:
         if not hasattr(action, "_original_params"):
             action._original_params = action.params.copy()
         if action.type == "PRUNE" and not app.plan.is_session:
             continue
-        tree.root.add_leaf(format_node_label(action), data=action)
+        act_root.add_leaf(format_node_label(action), data=action)
 
     tree.focus()
-    _update_detail_view(app, None)
+    # Initialize with the Rationale root details
+    _update_detail_view(app, "RATIONALE_ROOT")
 
 
 def check_action_logic(app: ReviewerApp, action_name: str) -> bool:
     """Gate for enabling/disabling bindings based on state."""
-    if action_name == "revert":
-        from textual.widgets import Tree
+    from textual.widgets import Tree
+    from teddy_executor.core.domain.models.plan import ActionData
 
-        tree = app.query_one(Tree)
-        node = tree.cursor_node
-        if not node:
+    tree = app.query_one(Tree)
+    node = tree.cursor_node
+    if not node:
+        return False
+
+    data = node.data
+    is_action = isinstance(data, ActionData)
+
+    # Disable action-specific bindings for non-action nodes (Rationale)
+    if action_name in ("execute_step", "edit_details", "revert", "view_details"):
+        if not is_action:
             return False
-        data: ActionData | None = node.data
-        return bool(data and data.modified)
+
+        if action_name == "execute_step":
+            return not data.executed
+        if action_name == "edit_details":
+            return not data.executed
+        if action_name == "view_details":
+            return bool(data.executed)
+        if action_name == "revert":
+            return bool(data.modified) and not data.executed
+
     return True
 
 
 def toggle_selection_logic(app: ReviewerApp, node: Any) -> None:
     """Toggle action selection when a node is selected."""
-    action: Optional["ActionData"] = node.data
-    if action is not None and not action.executed:
+    from teddy_executor.core.domain.models.plan import ActionData
+
+    action: Any = node.data
+    if isinstance(action, ActionData) and not action.executed:
         action.selected = not action.selected
         app._refresh_node(node)
 
@@ -153,6 +230,11 @@ async def on_list_view_selected_logic(app: "ReviewerApp", item: Any) -> None:
         return
 
     action, key, val = node.data, item.data.get("key"), item.data.get("val")
+    from teddy_executor.core.domain.models.plan import ActionData
+
+    if not isinstance(action, ActionData):
+        return
+
     if action.executed or (action.type == "PROMPT" and key == "prompt"):
         return
 
@@ -175,7 +257,11 @@ def _apply_param_edit(action: Any, key: str, old_val: Any, new_val: str) -> None
     """Helper to apply parameter edits back to the action."""
     if action.type == "PROMPT" and key == "response":
         action.user_response = str(new_val)
-    elif isinstance(old_val, list):
+        return
+
+    # Check if the parameter should be a list based on action type/key
+    list_keys = {"queries", "reference_files"}
+    if key in list_keys:
         action.params[key] = [v.strip() for v in str(new_val).split(",") if v.strip()]
     else:
         action.params[key] = str(new_val)
@@ -203,10 +289,14 @@ def revert_logic(app: "ReviewerApp", node: Any) -> None:
 
 async def execute_step_logic(app: "ReviewerApp", node: Any) -> None:
     """Executes the action with real-time state transitions and feedback."""
-    from teddy_executor.core.domain.models.plan import ExecutionStatus
+    from teddy_executor.core.domain.models.plan import ActionData, ExecutionStatus
 
-    action: Optional["ActionData"] = node.data
-    if not action or action.executed or action.state == ExecutionStatus.RUNNING:
+    action: Any = node.data
+    if (
+        not isinstance(action, ActionData)
+        or action.executed
+        or action.state == ExecutionStatus.RUNNING
+    ):
         return
 
     if action.type == "PROMPT":
@@ -289,5 +379,12 @@ def toggle_all_logic(app: "ReviewerApp", plan: Any) -> None:
 
     from textual.widgets import Tree
 
-    for node in app.query_one(Tree).root.children:
+    tree = app.query_one(Tree)
+
+    # Recursively refresh all nodes that contain ActionData
+    def refresh_recursive(node: Any):
         app._refresh_node(node)
+        for child in node.children:
+            refresh_recursive(child)
+
+    refresh_recursive(tree.root)

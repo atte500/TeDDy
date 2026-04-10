@@ -25,6 +25,7 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_previews import (
 from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
     ActionTree,
     ParameterDetail,
+    TUI_CSS,
 )
 from teddy_executor.core.services.edit_simulator import EditSimulator
 
@@ -50,7 +51,8 @@ class ReviewerApp(App):
     BINDINGS = [
         ("s", "submit", "Submit"),
         ("a", "toggle_all", "Toggle All"),
-        ("e", "edit_details", "Edit"),
+        ("e", "edit_details", "Edit/Preview"),
+        ("d", "view_details", "Details"),
         ("r", "revert", "Revert"),
         ("v", "view_plan", "View Plan"),
         ("x", "execute_step", "Execute Step"),
@@ -60,36 +62,7 @@ class ReviewerApp(App):
         ("right", "focus_right", "Focus Right"),
     ]
 
-    CSS = """
-    #main-container {
-        layout: horizontal;
-        height: 1fr;
-    }
-    #left-pane {
-        width: 65%;
-    }
-    #right-pane {
-        width: 35%;
-        border-left: vkey $foreground 15%;
-        padding: 0;
-    }
-    Tree {
-        height: 1fr;
-    }
-    ListView {
-        background: $surface;
-        height: 1fr;
-        border: none;
-    }
-    ListItem {
-        height: auto;
-        padding: 0 1;
-    }
-    ListItem Label {
-        width: 100%;
-        height: auto;
-    }
-    """
+    CSS = TUI_CSS
 
     def __init__(
         self,
@@ -201,6 +174,18 @@ class ReviewerApp(App):
     @work
     async def action_edit_details(self) -> None:
         """Edit or preview the currently highlighted action or parameter."""
+        tree = self.query_one(Tree)
+        node = tree.cursor_node
+        if not node or not node.data:
+            return
+
+        from teddy_executor.core.domain.models.plan import ActionData
+
+        if isinstance(node.data, ActionData) and node.data.executed:
+            # Edit is disabled for executed actions; redirect to view_details
+            await self.action_view_details()
+            return
+
         # Check if the right pane or any of its children has focus
         right_pane = self.query_one(ParameterDetail)
         is_right_pane_focused = right_pane.has_focus or (
@@ -215,11 +200,32 @@ class ReviewerApp(App):
             await on_list_view_selected_logic(self, right_pane.highlighted_child)
             return
 
+        await edit_action_logic(self, node, node.data)
+
+    @work
+    async def action_view_details(self) -> None:
+        """View full execution logs or complex action details in an editor."""
         tree = self.query_one(Tree)
         node = tree.cursor_node
         if not node or not node.data:
             return
-        await edit_action_logic(self, node, node.data)
+
+        from teddy_executor.core.domain.models.plan import ActionData
+
+        action = node.data
+        if not isinstance(action, ActionData) or not action.executed:
+            return
+
+        log_content = ""
+        if action.action_log:
+            log = action.action_log
+            log_content = f"STATUS: {log.status.value}\n"
+            if log.failed_command:
+                log_content += f"FAILED COMMAND: {log.failed_command}\n"
+            log_content += f"\nDETAILS:\n{log.details}"
+
+        if log_content:
+            await launch_editor(self, log_content, suffix=".log")
 
     @work
     async def action_view_plan(self) -> None:

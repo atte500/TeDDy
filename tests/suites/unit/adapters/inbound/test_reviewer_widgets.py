@@ -1,6 +1,6 @@
 import pytest
 from textual.app import App, ComposeResult
-from textual.widgets import ListView, ListItem, Label
+from textual.widgets import ListView, ListItem
 from teddy_executor.adapters.inbound.textual_plan_reviewer import ReviewerApp
 from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
     ParameterDetail,
@@ -57,7 +57,9 @@ async def test_detail_item_contains_label_for_wrapping():
         item = app.query_one(DetailItem)
         assert isinstance(item, ListItem)
 
-        label = item.query_one(Label)
+        from textual.widgets import Static
+
+        label = item.query_one(Static)
         # In Textual, .render() returns the content for Static/Label widgets
         content = str(label.render())
         assert "path" in content.lower()

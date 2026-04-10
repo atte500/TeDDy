@@ -19,4 +19,6 @@ async def test_reviewer_app_prune_filtered_in_non_session(env):
         from textual.widgets import Tree
 
         tree = app.query_one(Tree)
-        assert len(tree.root.children) == 0
+        # Tree Root (hidden) -> [Rationale, Action Plan]
+        action_root = tree.root.children[1]
+        assert len(action_root.children) == 0

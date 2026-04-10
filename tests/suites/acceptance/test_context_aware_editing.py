@@ -22,17 +22,6 @@ def test_tui_context_aware_editing_marks_action_as_modified(env):
     )
     env.with_real_filesystem().with_real_system_environment()
 
-    # 2. Arrange: Create a plan with a CREATE action
-    plan_content = (
-        MarkdownPlanBuilder("TUI Modification Test")
-        .add_create(
-            path="new_file.py",
-            description="Create a new script",
-            content="print('original')",
-        )
-        .build()
-    )
-
     # 3. Parse Plan
     parser = MarkdownPlanParser()
     plan = parser.parse(plan_content)
@@ -48,8 +37,14 @@ def test_tui_context_aware_editing_marks_action_as_modified(env):
             file_system=env.get_service(IFileSystemManager),
         )
 
-        # Run interaction (down, e, then modal sequence: y, then submit: s)
-        modified_plan = asyncio.run(driver.run_interaction(["down", "e", "y", "s"]))
+        # Run interaction:
+        # 1-4. down (4 Rationale Sections)
+        # 5. down (Action Plan Root)
+        # 6. down (Action 1: CREATE)
+        # 7. e (Edit) - Mock editor returns immediately
+        # 8. s (Submit)
+        keys = ["down"] * 6 + ["e", "s"]
+        modified_plan = asyncio.run(driver.run_interaction(keys))
         assert modified_plan is not None
 
         # 6. Execute modified plan through orchestrator

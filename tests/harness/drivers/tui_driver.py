@@ -27,6 +27,7 @@ class TuiDriver:
         async with self.app.run_test() as pilot:
             # Ensure the Tree has focus
             pilot.app.query_one(Tree).focus()
+
             for key in keys:
                 await pilot.press(key)
                 # If a worker is running (e.g. action_preview), we must not block

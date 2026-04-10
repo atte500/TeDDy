@@ -104,5 +104,10 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 ### New Technical Debt (Discovered during TUI Refinement)
 - [ ] **File Length:** Refactor `src/teddy_executor/adapters/outbound/console_interactor.py` (>300 lines).
 - [ ] **File Length:** Refactor `src/teddy_executor/adapters/inbound/cli_helpers.py` (>300 lines).
+- [ ] **File Length:** Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_app.py` (306 lines).
+- [ ] **File Length:** Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py` (390 lines).
+- [ ] **Complexity:** Refactor `check_action_logic` (PLR0911: 7 return statements).
+- [ ] **Typing:** Resolve `Mypy` union-attr errors and `Worker` awaitable mismatch in TUI logic/app.
 - [ ] **Vulture:** Configure `.vulture_whitelist` or pragmas for abstract Port definitions to resolve 40+ false positives.
 - [ ] **Vulture (Console Interactor Tests):** Resolve unused `args`/`kwargs` in `test_console_interactor.py`.
+- [ ] **Vulture:** Resolve unused `old_val` in `_apply_param_edit`.

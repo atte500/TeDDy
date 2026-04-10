@@ -248,9 +248,6 @@ async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
                 await anyio.to_thread.run_sync(
                     app._system_env.run_command, editor_cmd + [temp_file]
                 )
-            # Short wait for user to finish reading before we delete
-            if not app.is_headless:
-                await app.push_screen_wait(ConfirmScreen("Finished viewing?"))
     finally:
         app._system_env.delete_file(temp_file)
 
