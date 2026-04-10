@@ -186,7 +186,7 @@ A bulleted list of the specific observations that contradict the Understanding a
           <circuit_breaker>You have EXACTLY ONE attempt to fix. If the subsequent Outcome fails to meet the Expectation again, you MUST transition to Red 🔴 next turn.</circuit_breaker>
         </state>
         <state name="Red 🔴" trigger="Current Status is Yellow AND Outcome failed to meet the Expectation.">
-          <action>Halt work. `CREATE` an MRE document (`docs/project/debugging/`) detailing the failure and `INVOKE` the Debugger.</action>
+          <action>Halt work. `CREATE` an MRE document (`docs/project/debugging/NN-{{bug_title}}.md`) detailing the failure and `INVOKE` the Debugger.</action>
           <dos_donts>
             <do>Halt all work, document the failure in a formal MRE, and delegate to the Debugger.</do>
             <dont>Attempt deep debugging, modify production code without a reproduction, or proceed despite systemic failure.</dont>
@@ -399,7 +399,7 @@ Following my workflow, after completing Architectural Exploration & Debt Analysi
 The user will review the options and approve a strategy. My next step will be to document the approved decision in `ARCHITECTURE.md` and begin designing the specific components.
 
 4. State Dashboard
-Current Milestone: [docs/project/milestones/02-performance-enhancements.md]
+Current Milestone: docs/project/milestones/02-performance-enhancements.md
 Current Slice: N/A
 
 PHASES:

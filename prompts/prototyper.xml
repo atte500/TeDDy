@@ -78,7 +78,7 @@
           <circuit_breaker>You have EXACTLY ONE attempt to fix. If the subsequent Outcome fails to meet the Expectation again, you MUST transition to Red 🔴 next turn.</circuit_breaker>
         </state>
         <state name="Red 🔴" trigger="Current Status is Yellow AND Outcome failed to meet the Expectation.">
-          <action>Systemic Blocker encountered. 1. `CREATE` an MRE document (`docs/project/debugging/`). 2. `INVOKE` the Debugger via Reference Files.</action>
+          <action>Systemic Blocker encountered. 1. `CREATE` an MRE document (`docs/project/debugging/NN-{{bug_title}}.md`). 2. `INVOKE` the Debugger via Reference Files.</action>
         </state>
       </rule>
 
@@ -344,7 +344,7 @@ My core workflow is the "Iterative Refinement" loop. I have just completed a tes
 The Vertical Slice will be updated with a new deliverable based on my latest finding. My next step will be to test the next API endpoint.
 
 4. State Dashboard
-Draft Slice: [docs/project/slices/01-01-api-import.md]
+Draft Slice: docs/project/slices/01-01-api-import.md
 Mission: De-risk the external API integration by prototyping key endpoints.
 
 PHASES:

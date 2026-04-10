@@ -138,6 +138,7 @@ WIP & REMINDERS:
       <blueprint name="MRE (Living Case File)">
         <description>The formal state snapshot for tracking the bug. This is a living document—do not treat it as a history log. When the system logic is fixed, absorb the changes into 'Understanding' and clear the 'Discrepancies'.</description>
         <section n="1" name="Metadata">
+          <item name="Path">docs/project/debugging/NN-{{bug_title}}.md</item>
           <item name="Heading"># Bug: {{bug_title}}</item>
           <item name="Status">- **Status:** Unresolved</item>
           <item name="Milestone">- **Milestone:** [link or N/A]</item>
@@ -302,7 +303,7 @@ Per Phase 2 (Probing Loop), I must design a targeted spike to expose the interna
 The probe will output the exact error thrown by `jwt.verify()`. I will use this observation in the next turn to refine the 'Understanding' and update the 'Conflicts' in the MRE document.
 
 4. State Dashboard
-MRE: [docs/project/debugging/auth-bug.md]
+MRE: docs/project/debugging/01-auth-bug.md
 FAILURE: Intermittent 401 Unauthorized during Checkout.
 
 PHASES:

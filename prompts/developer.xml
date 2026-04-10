@@ -91,7 +91,7 @@
           <circuit_breaker>You have EXACTLY ONE attempt to fix. If the subsequent Outcome fails to meet the Expectation again, you MUST transition to Red 🔴 next turn.</circuit_breaker>
         </state>
         <state name="Red 🔴" trigger="Current Status is Yellow AND Outcome failed to meet the Expectation.">
-          <action>Halt work. `CREATE` an MRE document (`docs/project/debugging/`) detailing the failure and `INVOKE` the Debugger.</action>
+          <action>Halt work. `CREATE` an MRE document (`docs/project/debugging/NN-{{bug_title}}.md`) detailing the failure and `INVOKE` the Debugger.</action>
           <dos_donts>
             <do>Halt all work, document the failure in a formal MRE, and delegate to the Debugger.</do>
             <dont>Attempt deep debugging, modify production code without a reproduction, or proceed despite systemic failure.</dont>
@@ -376,9 +376,9 @@ This plan follows the Inner Loop TDD workflow (Phase 3). The next step is to wri
 The `pytest` command will fail with a targeted `AssertionError`, and my next step will be to proceed to the GREEN phase.
 
 4. State Dashboard
-Vertical Slice: [docs/project/slices/01-01-auth.md]
-Scenario: [User Login]
-Deliverable: [AuthService Contract]
+Vertical Slice: docs/project/slices/01-01-auth.md
+Scenario: User Login
+Deliverable: AuthService Contract
 
 PHASES:
 - [✓] ORIENTATION
