@@ -14,7 +14,7 @@ async def test_reviewer_app_message_deferral_and_stripping(env, monkeypatch):
         console_tooling=MagicMock(),
         action_dispatcher=MagicMock(),
     )
-    marker = "\n\n<!-- Please enter your message above this line. -->"
+    marker = "\n\n<!-- Please enter your response above this line. -->"
     mock_content = f"Real user message{marker}\nStrip this."
     monkeypatch.setenv("TEDDY_TEST_MOCK_EDITOR_OUTPUT", mock_content)
     async with app.run_test() as pilot:

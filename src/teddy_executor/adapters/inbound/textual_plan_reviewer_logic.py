@@ -7,35 +7,18 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
 )
 from teddy_executor.adapters.inbound.textual_plan_reviewer_previews import (
     do_preview_logic,
+)
+from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
     extract_status_emoji,
 )
 from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
-    get_action_summary,
+    format_node_label,
     resolve_action_parameters,
 )
 
 if TYPE_CHECKING:
     from teddy_executor.adapters.inbound.textual_plan_reviewer_app import ReviewerApp
     from teddy_executor.core.domain.models.plan import ActionData
-
-
-def format_node_label(action: "ActionData") -> str:
-    """Format the label for a tree node based on action state."""
-    from teddy_executor.core.domain.models.plan import ExecutionStatus
-
-    summary = get_action_summary(action)
-    if action.state == ExecutionStatus.RUNNING:
-        return f"[blue][RUNNING] {action.type}: {summary}[/]"
-
-    if action.executed:
-        color = "green" if action.state.value == "SUCCESS" else "red"
-        return f"[{color}][{action.state.value}] {action.type}: {summary}[/]"
-
-    prefix = "[✓]" if action.selected else "[ ]"
-    label = f"{prefix} {action.type}: {summary}"
-    if action.modified:
-        label += " *modified"
-    return label
 
 
 # Summary logic moved to textual_plan_reviewer_helpers.py
@@ -85,13 +68,15 @@ async def edit_action_logic(
     elif action.type == "RESEARCH":
         val = action.params.get("queries", [])
         if isinstance(val, list):
-            val_str = " | ".join(val)
+            val_str = ", ".join(val)
         else:
             val_str = str(val)
-        new_val = await app.push_screen_wait(ParameterEditModal("Queries:", val_str))
+        new_val = await app.push_screen_wait(
+            ParameterEditModal("Queries (comma separated):", val_str)
+        )
         if new_val is not None and new_val != val_str:
             action.params["queries"] = [
-                q.strip() for q in new_val.split("|") if q.strip()
+                q.strip() for q in new_val.split(",") if q.strip()
             ]
             action.modified = True
             app._refresh_node(node)
@@ -167,34 +152,33 @@ async def on_list_view_selected_logic(app: "ReviewerApp", item: Any) -> None:
     if not node or not node.data or not hasattr(item, "data"):
         return
 
-    action: ActionData = node.data
-    key = item.data.get("key")
-    val = item.data.get("val")
-
-    # Only allow editing if the action hasn't been executed yet
-    if action.executed:
-        return
-
-    # Prompt text should not be directly editable
-    if action.type == "PROMPT" and key == "prompt":
+    action, key, val = node.data, item.data.get("key"), item.data.get("val")
+    if action.executed or (action.type == "PROMPT" and key == "prompt"):
         return
 
     if key == "path":
         new_val = await app.push_screen_wait(cast(Any, PathInputScreen(str(val))))
     else:
-        # Don't allow editing complex/derived params via simple modal (e.g. 'edits')
-        if not isinstance(val, (str, int, float, bool)) and val is not None:
+        if not isinstance(val, (str, int, float, bool, list)) and val is not None:
             return
-        new_val = await app.push_screen_wait(ParameterEditModal(f"{key}:", str(val)))
+        v_str = ", ".join(map(str, val)) if isinstance(val, list) else str(val)
+        new_val = await app.push_screen_wait(ParameterEditModal(f"{key}:", v_str))
 
     if new_val is not None and str(new_val) != str(val):
-        if action.type == "PROMPT" and key == "response":
-            action.user_response = str(new_val)
-        else:
-            action.params[key] = str(new_val)
+        _apply_param_edit(action, key, val, new_val)
         action.modified = True
         app._refresh_node(node)
         _update_detail_view(app, action)
+
+
+def _apply_param_edit(action: Any, key: str, old_val: Any, new_val: str) -> None:
+    """Helper to apply parameter edits back to the action."""
+    if action.type == "PROMPT" and key == "response":
+        action.user_response = str(new_val)
+    elif isinstance(old_val, list):
+        action.params[key] = [v.strip() for v in str(new_val).split(",") if v.strip()]
+    else:
+        action.params[key] = str(new_val)
 
 
 def revert_logic(app: "ReviewerApp", node: Any) -> None:
@@ -220,6 +204,42 @@ def revert_logic(app: "ReviewerApp", node: Any) -> None:
 async def execute_step_logic(app: "ReviewerApp", node: Any) -> None:
     """Executes the action with real-time state transitions and feedback."""
     from teddy_executor.core.domain.models.plan import ExecutionStatus
+
+    action: Optional["ActionData"] = node.data
+    if not action or action.executed or action.state == ExecutionStatus.RUNNING:
+        return
+
+    if action.type == "PROMPT":
+        await _execute_prompt_step(app, action, node)
+        return
+
+    action.state = ExecutionStatus.RUNNING
+    app._refresh_node(node)
+
+    try:
+        import anyio
+
+        log = await anyio.to_thread.run_sync(
+            _execute_silently, app._action_dispatcher, action
+        )
+        action.executed, action.action_log = True, log
+        from teddy_executor.core.domain.models.execution_report import ActionStatus
+
+        action.state = (
+            ExecutionStatus.SUCCESS
+            if log.status == ActionStatus.SUCCESS
+            else ExecutionStatus.FAILURE
+        )
+    except Exception:
+        action.executed, action.state = True, ExecutionStatus.FAILURE
+    finally:
+        app._refresh_node(node)
+        _update_detail_view(app, action)
+
+
+async def _execute_prompt_step(app: ReviewerApp, action: ActionData, node: Any) -> None:
+    """Special execution logic for PROMPT actions."""
+    from teddy_executor.core.domain.models.plan import ExecutionStatus
     from teddy_executor.core.domain.models.execution_report import (
         ActionStatus,
         ActionLog,
@@ -227,65 +247,38 @@ async def execute_step_logic(app: "ReviewerApp", node: Any) -> None:
     from teddy_executor.adapters.inbound.textual_plan_reviewer_previews import (
         preview_prompt,
     )
-    import anyio
 
-    action: Optional["ActionData"] = node.data
-    if not action or action.executed or action.state == ExecutionStatus.RUNNING:
-        return
-
-    # Special Case: Manual PROMPT execution triggers the editor reply loop
-    if action.type == "PROMPT":
-        await preview_prompt(app, action, node)
-        if action.modified:
-            action.executed = True
-            action.state = ExecutionStatus.SUCCESS
-            action.action_log = ActionLog(
-                action_type=action.type,
-                params=action.params,
-                status=ActionStatus.SUCCESS,
-                details="Response captured.",
-                failed_command=None,
-            )
-            app._refresh_node(node)
-        else:
-            action.state = ExecutionStatus.PENDING
-            app._refresh_node(node)
-        _update_detail_view(app, action)
-        return
-
-    # Phase 1: Set to RUNNING
-    action.state = ExecutionStatus.RUNNING
+    await preview_prompt(app, action, node)
+    if action.modified:
+        action.executed, action.state = True, ExecutionStatus.SUCCESS
+        action.action_log = ActionLog(
+            action_type=action.type,
+            params=action.params,
+            status=ActionStatus.SUCCESS,
+            details="Response captured.",
+            failed_command=None,
+        )
+    else:
+        action.state = ExecutionStatus.PENDING
     app._refresh_node(node)
+    _update_detail_view(app, action)
 
-    def _execute_silently(dispatcher, act):
-        import contextlib
-        import io
 
-        f = io.StringIO()
+def _execute_silently(dispatcher: Any, act: Any) -> Any:
+    """Helper to run dispatcher silently."""
+    import contextlib
+    import io
+    import logging
+
+    logger = logging.getLogger("teddy_executor.core.services.action_dispatcher")
+    old_level = logger.level
+    logger.setLevel(logging.WARNING)
+    f = io.StringIO()
+    try:
         with contextlib.redirect_stdout(f), contextlib.redirect_stderr(f):
             return dispatcher.dispatch_and_execute(act)
-
-    try:
-        # Phase 2: Real execution via ActionDispatcher
-        # Use anyio.to_thread for potentially blocking filesystem/shell operations
-        log = await anyio.to_thread.run_sync(
-            _execute_silently, app._action_dispatcher, action
-        )
-
-        # Phase 3: Finalize state based on result
-        action.executed = True
-        action.action_log = log
-        if log.status == ActionStatus.SUCCESS:
-            action.state = ExecutionStatus.SUCCESS
-        else:
-            action.state = ExecutionStatus.FAILURE
-    except Exception:
-        # Phase 3: Catch-all for dispatch errors
-        action.executed = True
-        action.state = ExecutionStatus.FAILURE
     finally:
-        app._refresh_node(node)
-        _update_detail_view(app, action)
+        logger.setLevel(old_level)
 
 
 def toggle_all_logic(app: "ReviewerApp", plan: Any) -> None:

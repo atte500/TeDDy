@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import pathlib
-import re
 from typing import TYPE_CHECKING, Any, Optional, cast
 
 import anyio
@@ -11,6 +10,13 @@ if TYPE_CHECKING:
     from teddy_executor.adapters.inbound.textual_plan_reviewer_app import ReviewerApp
     from teddy_executor.core.domain.models.plan import ActionData
 
+from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+    handle_mock_editor,
+    spawn_editor,
+    handle_mock_diff,
+    prepare_after_file,
+    harvest_edit_diff,
+)
 from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
     ConfirmScreen,
 )
@@ -23,23 +29,15 @@ async def launch_editor(
     persistent_path: Optional[str] = None,
 ) -> Optional[str]:
     """Launches an external editor non-blockingly and waits for TUI confirmation."""
-    import subprocess  # nosec B404
-
-    mock_output = os.environ.get("TEDDY_TEST_MOCK_EDITOR_OUTPUT")
-    if mock_output:
-        if persistent_path and isinstance(persistent_path, (str, os.PathLike)):
-            with open(persistent_path, "w", encoding="utf-8") as f:
-                f.write(mock_output)
-        return mock_output
+    mock_out = os.environ.get("TEDDY_TEST_MOCK_EDITOR_OUTPUT")
+    if mock_out:
+        return handle_mock_editor(persistent_path, mock_out)
 
     temp_file = persistent_path or app._system_env.create_temp_file(suffix=suffix)
-    is_temporary = persistent_path is None
-    is_valid_path = isinstance(temp_file, (str, os.PathLike))
-
+    is_temp = persistent_path is None
     try:
-        if is_temporary or (
-            is_valid_path
-            and (not os.path.exists(temp_file) or os.path.getsize(temp_file) == 0)
+        if is_temp or (
+            not os.path.exists(temp_file) or os.path.getsize(temp_file) == 0
         ):
             with open(temp_file, "w", encoding="utf-8") as f:
                 f.write(str(initial_content))
@@ -48,31 +46,29 @@ async def launch_editor(
         if not editor_cmd:
             return None
 
-        try:
-            subprocess.Popen(editor_cmd + [str(temp_file)])  # nosec B603
-        except Exception:  # nosec B110
-            pass
+        if os.path.exists(temp_file):
+            os.chmod(temp_file, 0o644)
 
-        confirmed = (
-            True
-            if app.is_headless
-            else await app.push_screen_wait(ConfirmScreen("Save manual changes? (y/n)"))
-        )
-        if confirmed:
-            with open(temp_file, "r", encoding="utf-8") as f:
-                return f.read()
-        return None
+        spawn_editor(editor_cmd, temp_file)
+        return await _confirm_and_harvest(app, temp_file, initial_content, is_temp)
     except Exception:  # nosec B110
         return None
     finally:
-        if is_temporary:
+        if is_temp:
             app._system_env.delete_file(temp_file)
 
 
-def extract_status_emoji(raw_status: str) -> str:
-    """Extracts the last emoji from a status string."""
-    emojis = re.findall(r"[🟢🟡🔴]", raw_status)
-    return emojis[-1] if emojis else ""
+async def _confirm_and_harvest(
+    app: ReviewerApp, path: Any, initial: str, is_temp: bool
+) -> Optional[str]:
+    confirmed = True if app.is_headless else await app.push_screen_wait(ConfirmScreen())
+    if confirmed:
+        with open(path, "r", encoding="utf-8") as f:
+            return f.read()
+    if not is_temp:
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(str(initial))
+    return None
 
 
 async def do_preview_logic(app: ReviewerApp, node: Any, action: ActionData) -> None:
@@ -98,50 +94,43 @@ async def _preview_edit_diff_viewer(
 ) -> bool:
     import subprocess  # nosec B404
 
-    suffix = pathlib.Path(cast(str, action.params.get("path", ""))).suffix or ".txt"
-    before = app._system_env.create_temp_file(suffix=f".before{suffix}")
-
-    with open(before, "w", encoding="utf-8") as f:
-        f.write(original)
-
-    # Mypy type guard for action.pending_temp_file
+    path_str = cast(str, action.params.get("path", ""))
+    before = _setup_before_file(app, path_str, original)
     p_file = action.pending_temp_file
+
     if p_file and isinstance(p_file, (str, os.PathLike)):
-        if not os.path.exists(p_file) or os.path.getsize(p_file) == 0:
-            with open(p_file, "w", encoding="utf-8") as f:
-                f.write(str(proposed))
-
-        mock_out = os.environ.get("TEDDY_TEST_MOCK_EDITOR_OUTPUT")
-        if mock_out:
-            with open(p_file, "w", encoding="utf-8") as f:
-                f.write(mock_out)
-            app._system_env.delete_file(before)
+        if handle_mock_diff(p_file, before, app._system_env.delete_file):
             return True
-
+        prepare_after_file(p_file, proposed)
         try:
             subprocess.Popen(diff_viewer + [str(before), str(p_file)])  # nosec B603
         except Exception:  # nosec B110
             pass
 
-    confirmed = (
-        True
-        if app.is_headless
-        else await app.push_screen_wait(ConfirmScreen("Save changes? (y/n)"))
-    )
+    confirmed = True if app.is_headless else await app.push_screen_wait(ConfirmScreen())
     app._system_env.delete_file(before)
+    return _process_diff_result(confirmed, action, p_file, original, proposed)
 
+
+def _setup_before_file(app: ReviewerApp, path: str, content: str) -> str:
+    suffix = pathlib.Path(path).suffix or ".txt"
+    before = app._system_env.create_temp_file(suffix=f".before{suffix}")
+    with open(before, "w", encoding="utf-8") as f:
+        f.write(content)
+    os.chmod(before, 0o444)
+    return before
+
+
+def _process_diff_result(
+    confirmed: bool, action: ActionData, p_file: Any, original: str, proposed: str
+) -> bool:
     if confirmed and p_file and isinstance(p_file, (str, os.PathLike)):
         action.modified = True
-        try:
-            with open(p_file, "r", encoding="utf-8") as f:
-                final: Optional[str] = f.read()
-        except Exception:
-            final = None
-
-        if final is not None and str(final) != str(proposed):
-            action.params["edits"] = [{"find": original, "replace": str(final)}]
-            action.params.pop("content", None)
+        harvest_edit_diff(action, p_file, original, proposed)
         return True
+    if not confirmed and p_file and isinstance(p_file, (str, os.PathLike)):
+        with open(p_file, "w", encoding="utf-8") as f:
+            f.write(str(proposed))
     return False
 
 
@@ -250,6 +239,8 @@ async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
     try:
         with open(temp_file, "w", encoding="utf-8") as f:
             f.write(content)
+        # Lock file as read-only
+        os.chmod(temp_file, 0o444)
         editor_cmd = app._console_tooling.find_editor()
         if editor_cmd:
             # We don't use the deferred harvest pattern for READ/PRUNE as they are truly read-only
@@ -268,8 +259,9 @@ async def preview_prompt(app: ReviewerApp, action: ActionData, node: Any) -> Non
     """Handle non-blocking interactive answering for PROMPT."""
 
     message = cast(str, action.params.get("prompt", ""))
-    marker = "<!-- Please enter your response above this line. -->"
-    initial_content = f"\n\n{marker}\n\n{message}\n"
+    marker = app.INSTRUCTION_MARKER
+    response = getattr(action, "user_response", None) or ""
+    initial_content = f"{response}{marker}\n\n{message}\n"
 
     # Ensure a persistent path exists for the harvest
     if not action.pending_temp_file:
@@ -281,8 +273,9 @@ async def preview_prompt(app: ReviewerApp, action: ActionData, node: Any) -> Non
     )
 
     if final is not None:
-        if marker in final:
-            final = final.split(marker)[0].strip()
+        marker_clean = marker.strip()
+        if marker_clean in final:
+            final = final.split(marker_clean)[0].strip()
         else:
             final = final.strip()
 

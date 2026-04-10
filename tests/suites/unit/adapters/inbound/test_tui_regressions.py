@@ -30,7 +30,7 @@ async def test_regression_research_list_parsing(env):
         console_tooling=MagicMock(),
         action_dispatcher=MagicMock(),
     )
-    app.push_screen_wait = AsyncMock(return_value="q3 | q4")
+    app.push_screen_wait = AsyncMock(return_value="q3, q4")
     app._refresh_node = MagicMock()
 
     with patch(
@@ -71,7 +71,8 @@ async def test_regression_read_action_suspend(env):
         with patch.object(app, "suspend", MagicMock()) as mock_suspend:
             with patch("anyio.to_thread.run_sync", new_callable=AsyncMock):
                 with patch("builtins.open", mock_open()):
-                    await preview_readonly(app, action)
+                    with patch("os.chmod", MagicMock()):
+                        await preview_readonly(app, action)
                     mock_suspend.assert_called_once()
 
 

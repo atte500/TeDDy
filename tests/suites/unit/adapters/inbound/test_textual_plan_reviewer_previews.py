@@ -12,6 +12,7 @@ async def test_preview_prompt_updates_user_response():
     """Verify that preview_prompt updates the action's user_response without confirmation modal."""
     # Setup
     app = MagicMock()
+    app.INSTRUCTION_MARKER = "<!-- marker -->"
     app.push_screen_wait = AsyncMock()
 
     node = MagicMock()
@@ -37,6 +38,7 @@ async def test_preview_create_updates_content_only():
     """Verify that preview_create updates content without path or confirmation modals."""
     # Setup
     app = MagicMock()
+    app.INSTRUCTION_MARKER = "<!-- marker -->"
     app.push_screen_wait = AsyncMock()
 
     node = MagicMock()

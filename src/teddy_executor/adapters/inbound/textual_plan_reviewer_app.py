@@ -45,7 +45,7 @@ class ReviewerApp(App):
     The Textual application for reviewing and modifying plans.
     """
 
-    INSTRUCTION_MARKER = "\n\n<!-- Please enter your message above this line. -->"
+    INSTRUCTION_MARKER = "\n\n<!-- Please enter your response above this line. -->"
 
     BINDINGS = [
         ("s", "submit", "Submit"),
@@ -56,6 +56,8 @@ class ReviewerApp(App):
         ("x", "execute_step", "Execute Step"),
         ("m", "add_message", "Add Message"),
         ("q", "cancel", "Cancel"),
+        ("left", "focus_left", "Focus Left"),
+        ("right", "focus_right", "Focus Right"),
     ]
 
     CSS = """
@@ -170,9 +172,11 @@ class ReviewerApp(App):
             self._harvest_action_content(action)
 
         if self._user_message_cache is not None:
-            final_message: str = self._user_message_cache.split(
-                self.INSTRUCTION_MARKER
-            )[0].strip()
+            marker = self.INSTRUCTION_MARKER.strip()
+            if marker in self._user_message_cache:
+                final_message: str = self._user_message_cache.split(marker)[0].strip()
+            else:
+                final_message = self._user_message_cache.strip()
             self.plan.metadata["user_request"] = final_message
         self.exit(self.plan)
 
@@ -245,6 +249,14 @@ class ReviewerApp(App):
         if new_message is not None and new_message != current_message:
             self._user_message_cache = new_message
 
+    def action_focus_left(self) -> None:
+        """Switch focus to the Action Tree."""
+        self.query_one("#left-pane").focus()
+
+    def action_focus_right(self) -> None:
+        """Switch focus to the Parameter Detail pane."""
+        self.query_one("#right-pane").focus()
+
     def action_toggle_all(self) -> None:
         """Toggle selection for all actions."""
         toggle_all_logic(self, self.plan)
@@ -276,7 +288,11 @@ class ReviewerApp(App):
             if action.type in mapping:
                 action.params[mapping[action.type]] = new_content
             elif action.type == "PROMPT":
-                action.user_response = new_content
+                marker = self.INSTRUCTION_MARKER.strip()
+                if marker in new_content:
+                    action.user_response = new_content.split(marker)[0].strip()
+                else:
+                    action.user_response = new_content.strip()
 
             os.remove(action.pending_temp_file)
             action.pending_temp_file = None
