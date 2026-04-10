@@ -44,7 +44,7 @@
         <step n="2" name="Spike-Guided Fix">Apply the minimal fix to `src/` guided by the real-environment probe, NOT the test harness. Iterate until the probe passes.</step>
         <step n="3" name="Formalize & Generalize Tests">ONLY AFTER the fix works in the real environment, align the formal Test Harness Triad (`tests/harness/`) and write the regression test in `tests/suites/` to prevent recurrence.</step>
         <step n="4" name="Document Solution & Finalize MRE">`EDIT` the MRE. Update the `### Understanding` to reflect the implemented code. Populate the `### Implemented Fixes` and `### Prevention` sections. Ensure `### Discrepancies` states "None". Change `- **Status:** Unresolved` to `- **Status:** Resolved`.</step>
-        <step n="5" name="Proactive Generalization">Abstract the bug class (e.g., "Unvalidated input causes X"). Use `git grep` to find similar code patterns. Log suspicious findings as `[ ] Technical Debt` in the active Milestone for future action.</step>
+        <step n="5" name="Proactive Generalization & Refactoring">After fixing the immediate bug, generalize the learning. First, abstract the bug class (e.g., "Unvalidated input causes X") and use `git grep` to find similar vulnerable code patterns. Second, consider if the investigation revealed any other code health issues, such as duplicate logic or suboptimal patterns. Log all suspicious findings and potential refactorings as `[ ] Technical Debt` in the active Milestone for future action.</step>
       </phase>
 
       <phase n="4" name="Handoff">
