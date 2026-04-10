@@ -151,7 +151,9 @@
         <section n="1" name="Metadata">
           <item name="Status">- **Status:** Planned</item>
           <item name="Milestone">- **Milestone:** [link]</item>
+          <item name="Specs">- **Specs:** [links]</item>
           <item name="Prototype">- **Prototype:** [link]</item>
+          <item name="Component Docs">- **Component Docs:** [links]</item>
         </section>
         <section n="2" name="Business Goal">
           <item name="Heading">## Business Goal</item>
@@ -165,21 +167,13 @@
           <item name="Heading">## Delta Analysis</item>
           <item name="Content">Summary of changes required to integrate the prototype's behavior into the existing codebase. Documents the investigation and justifies the final set of scenarios and deliverables.</item>
         </section>
-        <section n="5" name="Guidelines">
-          <item name="Heading">## Guidelines</item>
-          <item name="Content">Actionable strategy for implementation. MUST include Test Harness Triad strategy.</item>
+        <section n="5" name="Guidelines for Implementation">
+          <item name="Heading">## Guidelines for Implementation</item>
+          <item name="Content">Actionable strategy for implementation from the Prototyper. MAY include Test Harness Triad strategy and Mermaid diagrams for complex interactions.</item>
         </section>
-        <section n="6" name="Architectural Changes">
-          <item name="Heading">## Architectural Changes</item>
-          <item name="Content">Modified components (including Test Harness triads).</item>
-        </section>
-        <section n="7" name="Interaction Sequence">
-          <item name="Heading">## Interaction Sequence</item>
-          <item name="Content">Mermaid sequence diagram or narrative describing the flow between components.</item>
-        </section>
-        <section n="8" name="Implementation Notes">
+        <section n="6" name="Implementation Notes">
           <item name="Heading">## Implementation Notes</item>
-          <item name="Content">Filled by the Developer as things get implemented. Record of frictions, technical decisions, and findings.</item>
+          <item name="Content">Filled by the Developer as things get implemented. Record of frictions, technical decisions, and findings. Used for the as-built update of Component Docs.</item>
         </section>
       </blueprint>
 

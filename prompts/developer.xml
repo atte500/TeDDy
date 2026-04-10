@@ -25,7 +25,7 @@
       <phase n="1" name="ORIENTATION">
         <goal>Establish foundation and define scope. This phase presumes you have committed all previous changes and are working with a clean workspace.</goal>
         <step n="1" name="Initialization">If no slice doc exists, CREATE one at docs/project/slices/00-NN-{{feature}}.md (Fast-Track) using the Vertical Slice Blueprint. Predict Deliverables based on the request.</step>
-        <step n="2" name="Read & Assess">If not already in context, READ the slice and READ the Behavioral Prototype code. Extract requirements and behavioral intent from the prototype, but discard any mocked logic.</step>
+        <step n="2" name="Read & Assess">If not already in context, READ the slice, the Behavioral Prototype code, and all linked `Component Design Docs` from the metadata. Extract requirements and behavioral intent.</step>
       </phase>
 
       <phase n="2" name="ACCEPTANCE TEST (Outer RED)">
@@ -63,10 +63,10 @@
       </phase>
 
       <phase n="5" name="DOCUMENTATION">
-        <goal>Synchronize technical documentation and architectural contracts.</goal>
+        <goal>Record implementation findings and perform the final "as-built" documentation update.</goal>
         <step n="1" name="Sync Slice Notes">`EDIT` the vertical slice doc to append technical findings for this deliverable under the `## Implementation Notes` section. If this section does not exist, you MUST create it at the end of the file.</step>
-        <step n="2" name="Harvest Debt">If any `[DEBT]` (frictions or architectural opportunities) was logged during this turn, `EDIT` the active Milestone's (in `docs/project/milestones/`) `## Technical Debt` section to append it as a checkmarkable [ ] task.</step>
-        <step n="3" name="Align Architecture">`READ` the documentation of all modified components (`docs/architecture/**/*.md`) and `ARCHITECTURE.md`. Then, `EDIT` them to ensure strict alignment with your implementation. Ensure contracts (DTOs, Pre/Post-conditions) strictly match your code, but keep all narrative implementation notes centralized in the vertical slice doc.</step>
+        <step n="2" name="Harvest Debt">If any `[DEBT]` was logged, `EDIT` the active Milestone's (`docs/project/milestones/`) `## Technical Debt` section to append it as a checkmarkable [ ] task.</step>
+        <step n="3" name="Perform As-Built Update">Before finishing the last deliverable of the slice, perform a final `EDIT` on the `Component Design Docs`. Use the `Implementation Notes` you have gathered to make final, minor corrections, ensuring the docs perfectly reflect the as-built reality of the code.</step>
       </phase>
 
       <phase n="6" name="COMMIT (Mandatory)">
@@ -175,6 +175,7 @@ WIP & REMINDERS:
           <item name="Milestone">- **Milestone:** [link]</item>
           <item name="Specs">- **Specs:** [links]</item>
           <item name="Prototype">- **Prototype:** [link]</item>
+          <item name="Component Docs">- **Component Docs:** [links]</item>
         </section>
         <section n="2" name="Business Goal">
           <item name="Heading">## Business Goal</item>
@@ -188,21 +189,13 @@ WIP & REMINDERS:
           <item name="Heading">## Delta Analysis</item>
           <item name="Content">Summary of changes required to integrate the prototype's behavior into the existing codebase. Documents the investigation and justifies the final set of scenarios and deliverables.</item>
         </section>
-        <section n="5" name="Guidelines">
-          <item name="Heading">## Guidelines</item>
-          <item name="Content">Actionable strategy for implementation. MUST include Test Harness Triad strategy.</item>
+        <section n="5" name="Guidelines for Implementation">
+          <item name="Heading">## Guidelines for Implementation</item>
+          <item name="Content">Actionable strategy for implementation from the Prototyper. MAY include Test Harness Triad strategy and Mermaid diagrams for complex interactions.</item>
         </section>
-        <section n="6" name="Architectural Changes">
-          <item name="Heading">## Architectural Changes</item>
-          <item name="Content">Modified components (including Test Harness triads).</item>
-        </section>
-        <section n="7" name="Interaction Sequence">
-          <item name="Heading">## Interaction Sequence</item>
-          <item name="Content">Mermaid sequence diagram or narrative describing the flow between components.</item>
-        </section>
-        <section n="8" name="Implementation Notes">
+        <section n="6" name="Implementation Notes">
           <item name="Heading">## Implementation Notes</item>
-          <item name="Content">Filled by the Developer as things get implemented. Record of frictions, technical decisions, and findings.</item>
+          <item name="Content">Filled by the Developer as things get implemented. Record of frictions, technical decisions, and findings. Used for the as-built update of Component Docs.</item>
         </section>
       </blueprint>
 

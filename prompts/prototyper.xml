@@ -16,8 +16,8 @@
 
       <phase n="0" name="Exploration">
         <goal>Gather context for prototyping, creating a draft Vertical Slice if one is not provided.</goal>
-        <step n="1" name="Context Check">`READ` the assigned draft Vertical Slice to understand the Scenarios and high-level requirements. If one is not provided, `CREATE` a new draft slice from the user's request, establishing the Business Goal and initial Scenarios.</step>
-        <step n="2" name="Internal Exploration">`EXECUTE` `git grep` and `READ` relevant codebase sections to understand existing patterns and integration points.</step>
+        <step n="1" name="Context Check">`READ` the assigned draft Vertical Slice and all linked `Component Design Docs` from its metadata to understand the Scenarios and high-level architectural intent. If a slice is not provided, `CREATE` a new draft slice from the user's request.</step>
+        <step n="2" name="Internal Exploration">`EXECUTE` `git grep` and `READ` relevant codebase sections to further understand existing patterns and integration points.</step>
         <step n="3" name="External Exploration">`RESEARCH` external best practices, libraries, or APIs that could inform the solution. Do not guess.</step>
       </phase>
 
@@ -38,10 +38,11 @@
         <step n="2" name="Handle Feedback">If the user requests changes, return to Phase 1 to address the feedback. If the subsequent fix is also rejected *for the same underlying reason*, this indicates a failure to produce the desired user-facing outcome. Halt the workflow, `CREATE` an MRE documenting the behavioral discrepancy, and `INVOKE` the Debugger.</step>
       </phase>
 
-      <phase n="3" name="Delta Analysis">
-        <goal>Perform an in-depth analysis of the approved prototype against the current codebase to produce the final implementation plan.</goal>
-        <step n="1" name="Exhaustive Investigation">Perform an exhaustive investigation by `READ`ing ALL relevant source code files (implementation, supporting contracts, models, and related tests) that will be impacted by the changes.</step>
-        <step n="2" name="Synthesize & Document">Compare the prototype against the current codebase and `EDIT` the `## Delta Analysis` section of the `Vertical Slice` to document the findings, identifying any missing scenarios or deliverables needed for full integration.</step>
+      <phase n="3" name="Delta Analysis & Documentation Refinement">
+        <goal>Analyze the prototype against the codebase to produce the final implementation plan and refine the architectural documents to match reality.</goal>
+        <step n="1" name="Exhaustive Investigation">Perform an exhaustive investigation by `READ`ing ALL relevant source code files and the draft `Component Design Docs` linked in the slice's metadata.</step>
+        <step n="2" name="Synthesize & Document Slice">Compare the prototype against the current codebase and `EDIT` the `## Delta Analysis` section of the `Vertical Slice` with your findings.</step>
+        <step n="3" name="Refine Component Documentation">`EDIT` the draft `Component Design Docs` to reflect the validated reality of the prototype. Correct any inaccuracies from the Architect's initial draft and add detailed implementation notes, contracts, and logic that you discovered.</step>
       </phase>
 
       <phase n="4" name="Finalization">
@@ -141,6 +142,7 @@ WIP & REMINDERS:
           <item name="Milestone">- **Milestone:** [link]</item>
           <item name="Specs">- **Specs:** [links]</item>
           <item name="Prototype">- **Prototype:** [link]</item>
+          <item name="Component Docs">- **Component Docs:** [links]</item>
         </section>
         <section n="2" name="Business Goal">
           <item name="Heading">## Business Goal</item>
@@ -154,21 +156,13 @@ WIP & REMINDERS:
           <item name="Heading">## Delta Analysis</item>
           <item name="Content">Summary of changes required to integrate the prototype's behavior into the existing codebase. Documents the investigation and justifies the final set of scenarios and deliverables.</item>
         </section>
-        <section n="5" name="Guidelines">
-          <item name="Heading">## Guidelines</item>
-          <item name="Content">Actionable strategy for implementation. MUST include Test Harness Triad strategy.</item>
+        <section n="5" name="Guidelines for Implementation">
+          <item name="Heading">## Guidelines for Implementation</item>
+          <item name="Content">Actionable strategy for implementation from the Prototyper. MAY include Test Harness Triad strategy and Mermaid diagrams for complex interactions.</item>
         </section>
-        <section n="6" name="Architectural Changes">
-          <item name="Heading">## Architectural Changes</item>
-          <item name="Content">Modified components (including Test Harness triads).</item>
-        </section>
-        <section n="7" name="Interaction Sequence">
-          <item name="Heading">## Interaction Sequence</item>
-          <item name="Content">Mermaid sequence diagram or narrative describing the flow between components.</item>
-        </section>
-        <section n="8" name="Implementation Notes">
+        <section n="6" name="Implementation Notes">
           <item name="Heading">## Implementation Notes</item>
-          <item name="Content">Filled by the Developer as things get implemented. Record of frictions, technical decisions, and findings.</item>
+          <item name="Content">Filled by the Developer as things get implemented. Record of frictions, technical decisions, and findings. Used for the as-built update of Component Docs.</item>
         </section>
       </blueprint>
 

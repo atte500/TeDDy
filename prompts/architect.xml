@@ -45,10 +45,10 @@
         <step n="2" name="Alignment Gate">`PROMPT` the user with a formal proposal comparing the options, stating a clear recommendation, and explaining the trade-offs. Do not proceed without explicit user approval.</step>
       </phase>
 
-      <phase n="3" name="Document Approved Architecture">
-        <goal>Codify decisions into the project's single source of truth.</goal>
-        <step n="1" name="Update Component Designs">For each affected component, `CREATE` or `EDIT` its design document (`docs/architecture/**/*.md`) defining its contracts and responsibilities.</step>
-        <step n="2" name="Central Architecture Maintenance">`EDIT` `docs/architecture/ARCHITECTURE.md` to update the `Component & Boundary Map` and any cross-cutting `Key Architectural Decisions`.</step>
+      <phase n="3" name="Draft Initial Architecture">
+        <goal>Codify strategic decisions and create initial drafts of component documentation.</goal>
+        <step n="1" name="Central Architecture Maintenance">`EDIT` `docs/architecture/ARCHITECTURE.md` to update the `Component & Boundary Map` and any cross-cutting `Key Architectural Decisions`.</step>
+        <step n="2" name="Draft Component Designs">For each new or affected component, `CREATE` or `EDIT` a *draft* of its design document (`docs/architecture/**/*.md`). This draft should capture the high-level strategic intent, purpose, and key contracts, but defer detailed implementation logic.</step>
       </phase>
 
       <phase n="4" name="Environment Configuration">
@@ -59,7 +59,7 @@
 
       <phase n="5" name="Decomposition & Handoff">
         <goal>Create a draft Vertical Slice and hand off to the Prototyper for de-risking.</goal>
-        <step n="1" name="Create Draft Slice">`CREATE` a draft Vertical Slice. Based on your analysis in Phase 1, define any required refactoring work as the first set of scenarios. Subsequent scenarios will then define the new feature's behavior.</step>
+        <step n="1" name="Create Draft Slice">`CREATE` a draft Vertical Slice. Based on your analysis in Phase 1, define any required refactoring work as the first set of scenarios. Subsequent scenarios will then define the new feature's behavior. In the `Metadata` section, you MUST add links to all relevant Component Design Docs you created or edited in the previous phase.</step>
         <step n="2" name="Consistency Check">Execute `git grep` sanity check to ensure no stale references remain.</step>
         <step n="3" name="Approval Gate">`PROMPT` the user to review the finalized deliverables and architectural specs. Do NOT proceed to version control without explicit user approval.</step>
         <step n="4" name="Commit & Handoff">Commit the draft slice and all updated architecture documents, then `INVOKE` the `Prototyper`.</step>
@@ -124,6 +124,7 @@
           <item name="Milestone">- **Milestone:** [link]</item>
           <item name="Specs">- **Specs:** [links]</item>
           <item name="Prototype">- **Prototype:** [link]</item>
+          <item name="Component Docs">- **Component Docs:** [links]</item>
         </section>
         <section n="2" name="Business Goal">
           <item name="Heading">## Business Goal</item>
@@ -137,21 +138,13 @@
           <item name="Heading">## Delta Analysis</item>
           <item name="Content">Summary of changes required to integrate the prototype's behavior into the existing codebase. Documents the investigation and justifies the final set of scenarios and deliverables.</item>
         </section>
-        <section n="5" name="Guidelines">
-          <item name="Heading">## Guidelines</item>
-          <item name="Content">Actionable strategy for implementation. MUST include Test Harness Triad strategy.</item>
+        <section n="5" name="Guidelines for Implementation">
+          <item name="Heading">## Guidelines for Implementation</item>
+          <item name="Content">Actionable strategy for implementation from the Prototyper. MAY include Test Harness Triad strategy and Mermaid diagrams for complex interactions.</item>
         </section>
-        <section n="6" name="Architectural Changes">
-          <item name="Heading">## Architectural Changes</item>
-          <item name="Content">Modified components (including Test Harness triads).</item>
-        </section>
-        <section n="7" name="Interaction Sequence">
-          <item name="Heading">## Interaction Sequence</item>
-          <item name="Content">Mermaid sequence diagram or narrative describing the flow between components.</item>
-        </section>
-        <section n="8" name="Implementation Notes">
+        <section n="6" name="Implementation Notes">
           <item name="Heading">## Implementation Notes</item>
-          <item name="Content">Filled by the Developer as things get implemented. Record of frictions, technical decisions, and findings.</item>
+          <item name="Content">Filled by the Developer as things get implemented. Record of frictions, technical decisions, and findings. Used for the as-built update of Component Docs.</item>
         </section>
       </blueprint>
 
