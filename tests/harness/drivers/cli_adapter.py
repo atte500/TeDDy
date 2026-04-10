@@ -12,7 +12,7 @@ class CliTestAdapter:
     """
 
     def __init__(self, monkeypatch, cwd: Path):
-        self._runner = CliRunner()
+        self._runner = CliRunner(mix_stderr=False)
         self._monkeypatch = monkeypatch
         self._cwd = cwd
         self._mock_editor_output: Optional[str] = None
@@ -33,8 +33,6 @@ class CliTestAdapter:
         with self._monkeypatch.context() as m:
             m.chdir(target_cwd)
             result = self._runner.invoke(app, args, input=input, env=env)
-            if result.stderr is None:
-                result.stderr = ""
             return result
 
     def run_execute_with_plan(
