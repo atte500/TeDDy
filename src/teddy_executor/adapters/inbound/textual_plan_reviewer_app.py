@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Any, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
 from textual import work
 from textual.app import App, ComposeResult
@@ -183,7 +183,7 @@ class ReviewerApp(App):
 
         if isinstance(node.data, ActionData) and node.data.executed:
             # Edit is disabled for executed actions; redirect to view_details
-            await self.action_view_details()
+            await cast(Any, self.action_view_details())
             return
 
         # Check if the right pane or any of its children has focus
@@ -273,34 +273,8 @@ class ReviewerApp(App):
 
     def _harvest_action_content(self, action: Any) -> None:
         """Harvest modified content from a pending temporary file back to the action."""
-        # Type guard for Mocks in tests
-        is_valid_path = isinstance(action.pending_temp_file, (str, os.PathLike))
-        if not (
-            action.pending_temp_file
-            and is_valid_path
-            and os.path.exists(action.pending_temp_file)
-        ):
-            return
+        from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+            harvest_action_content,
+        )
 
-        try:
-            with open(action.pending_temp_file, "r", encoding="utf-8") as f:
-                new_content = f.read()
-
-            mapping = {
-                "CREATE": "content",
-                "EXECUTE": "command",
-                "RESEARCH": "queries",
-            }
-            if action.type in mapping:
-                action.params[mapping[action.type]] = new_content
-            elif action.type == "PROMPT":
-                marker = self.INSTRUCTION_MARKER.strip()
-                if marker in new_content:
-                    action.user_response = new_content.split(marker)[0].strip()
-                else:
-                    action.user_response = new_content.strip()
-
-            os.remove(action.pending_temp_file)
-            action.pending_temp_file = None
-        except Exception:  # nosec B110
-            pass
+        harvest_action_content(action, self.INSTRUCTION_MARKER)

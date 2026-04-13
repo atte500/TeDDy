@@ -2,7 +2,7 @@ from textwrap import dedent
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
 
 
-def test_builder_supports_all_nine_specialized_methods(container):
+def test_builder_supports_all_nine_specialized_methods():
     """
     Ensures the builder has specialized methods for all 9 actions.
     This test defines the target API for the refactored builder.
@@ -42,7 +42,7 @@ def test_builder_supports_all_nine_specialized_methods(container):
     assert "### `PRUNE`" in plan
 
 
-def test_builder_path_normalization(container):
+def test_builder_path_normalization():
     """Ensures paths are always formatted as root-relative links [path](/path)."""
     builder = MarkdownPlanBuilder("Path Test")
     builder.add_create("docs/architecture/README.md", "content")
@@ -54,7 +54,7 @@ def test_builder_path_normalization(container):
     )
 
 
-def test_builder_edit_multi_block(container):
+def test_builder_edit_multi_block():
     """Ensures add_edit supports multiple find/replace pairs."""
     builder = MarkdownPlanBuilder("Multi-Edit Test")
     # Using a list of tuples for multiple edits
@@ -68,7 +68,7 @@ def test_builder_edit_multi_block(container):
     assert "#### REPLACE:\n`````text\nreplace2\n`````" in plan
 
 
-def test_builder_execute_options(container):
+def test_builder_execute_options():
     """Verifies that EXECUTE protocol flags are correctly rendered in backticks."""
     builder = MarkdownPlanBuilder("Execute Flags")
     builder.add_execute("exit 1", allow_failure=True, background=True)
@@ -103,16 +103,16 @@ def test_builder_execute_options(container):
 
         ## Rationale
         ````text
-        ### 1. Synthesis
+        1. Synthesis
         This is a test plan.
 
-        ### 2. Justification
+        2. Justification
         This plan is for testing purposes.
 
-        ### 3. Expected Outcome
+        3. Expected Outcome
         The test should pass.
 
-        ### 4. State Dashboard
+        4. State Dashboard
         **Vertical Slice:** `docs/slices/test.md`
         **Development Workflow:**
         - [ ] Phase 1
@@ -164,16 +164,16 @@ def test_plan_builder_create_plan_with_edit_action():
 
         ## Rationale
         ````text
-        ### 1. Synthesis
+        1. Synthesis
         This is a test plan.
 
-        ### 2. Justification
+        2. Justification
         This plan is for testing purposes.
 
-        ### 3. Expected Outcome
+        3. Expected Outcome
         The test should pass.
 
-        ### 4. State Dashboard
+        4. State Dashboard
         **Vertical Slice:** `docs/slices/test.md`
         **Development Workflow:**
         - [ ] Phase 1

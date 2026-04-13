@@ -3,7 +3,7 @@
 ## Metadata
 - **Status:** Planned
 - **Milestone:** [10-interactive-session-and-config.md](../milestones/10-interactive-session-and-config.md)
-- **Prototype:** [prototypes/tui_polish_spike.py]
+- **Prototype:** [prototypes/tui_polish_spike.py](/prototypes/tui_polish_spike.py)
 - **Component Docs:** [textual_plan_reviewer.md](../../architecture/adapters/inbound/textual_plan_reviewer.md)
 
 ## Business Goal
@@ -11,12 +11,12 @@ Improve the TUI user experience by adopting a more robust rationale format, ensu
 
 ## Scenarios
 
-### Scenario 1: Robust Rationale Parsing
+### Scenario 1: Robust Rationale Parsing [✓] Verified
 > As a user, I want the TUI to parse rationale sections formatted as "1. Section" so that I don't have to use Markdown headings in the rationale block.
 
-- [ ] **Harness** - Update `MarkdownPlanBuilder` to generate rationale without `###` headings.
-- [ ] **Logic** - Update `on_mount_logic` regex in `textual_plan_reviewer_logic.py` to `r"\n(?=### |\d+\.\s+)"`.
-- [ ] **Logic** - Update the title extraction regex to `r"^(###\s*|\d+\.\s*)"`.
+- [✓] **Harness** - Update `MarkdownPlanBuilder` to generate rationale without `###` headings.
+- [✓] **Logic** - Update `on_mount_logic` regex in `textual_plan_reviewer_logic.py` to `r"\n(?=### |\d+\.\s+)"`.
+- [✓] **Logic** - Update the title extraction regex to `r"^(###\s*|\d+\.\s*)"`.
 
 ### Scenario 2: Right Panel Initialization
 > As a user, I want the right panel to show the plan's metadata (Rationale root) immediately upon launch so that I don't see a generic placeholder.
@@ -56,3 +56,10 @@ The current `action_view_details` constructs a primitive string.
     - Include `Failed Command`, `Return Code`, `stdout`, `stderr`, and `diff` sections with appropriate Markdown fencing (````text`` or ````diff``).
     - Ensure `stderr` is only shown if it contains content.
 - **Confirmation Bypass**: Ensure `_confirm_and_harvest` defaults `confirmed = True` when `skip_confirm` is set, bypassing the `ConfirmScreen` modal.
+
+## Implementation Notes
+
+### Scenario 1: Robust Rationale Parsing
+- **Regex Update**: The regex for splitting rationale sections in `textual_plan_reviewer_logic.py` was updated to `r"\n(?=### |\d+\.\s+)"`. This uses a positive lookahead to split between sections without consuming the markers, supporting both legacy Markdown headings and numeric lists.
+- **Title Extraction**: The title cleaning logic was refined to `re.sub(r"^(?:###\s*|\d+\.\s*)+", "", lines[0]).strip()`. This ensures that any combination of markers at the start of a line (e.g., `### 1. `) is completely stripped, leaving only the descriptive title.
+- **Harness Alignment**: The `MarkdownPlanBuilder` was updated to use the numeric rationale format by default. Corresponding unit tests in `test_plan_builder.py` were updated to reflect this new default output.

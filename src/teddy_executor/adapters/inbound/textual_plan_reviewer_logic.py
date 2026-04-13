@@ -1,13 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, cast
+import re
+from typing import TYPE_CHECKING, Any, cast
 
-from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
-    ParameterEditModal,
-)
-from teddy_executor.adapters.inbound.textual_plan_reviewer_previews import (
-    do_preview_logic,
-)
 from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
     extract_status_emoji,
 )
@@ -33,7 +28,7 @@ def on_tree_node_highlighted(app: "ReviewerApp", event: Any) -> None:
     app.refresh_bindings()
 
 
-def _update_detail_view(app: "ReviewerApp", data: Any):
+def _update_detail_view(app: ReviewerApp, data: Any):
     """Populate the ParameterDetail view with action parameters, log, or rationale."""
     from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
         ParameterDetail,
@@ -82,41 +77,13 @@ def _update_detail_view(app: "ReviewerApp", data: Any):
             pane.mount(ListItem(Label("Select an item to view details")))
 
 
-# Parameter resolution logic moved to textual_plan_reviewer_helpers.py
-
-
-async def edit_action_logic(
-    app: "ReviewerApp", node: Any, action: "ActionData"
-) -> None:
+async def edit_action_logic(app: ReviewerApp, node: Any, action: ActionData) -> None:
     """Handles the (e)dit key logic by branching to modals or external editor."""
-    if action.type == "EXECUTE":
-        val = action.params.get("command", "")
-        new_val = await app.push_screen_wait(ParameterEditModal("Command:", val))
-        if new_val is not None and new_val != val:
-            action.params["command"] = new_val
-            action.modified = True
-            app._refresh_node(node)
-            _update_detail_view(app, action)
-    elif action.type == "RESEARCH":
-        val = action.params.get("queries", [])
-        if isinstance(val, list):
-            val_str = ", ".join(val)
-        else:
-            val_str = str(val)
-        new_val = await app.push_screen_wait(
-            ParameterEditModal("Queries (comma separated):", val_str)
-        )
-        if new_val is not None and new_val != val_str:
-            action.params["queries"] = [
-                q.strip() for q in new_val.split(",") if q.strip()
-            ]
-            action.modified = True
-            app._refresh_node(node)
-            _update_detail_view(app, action)
-    # Fallback to existing preview logic for complex types
-    else:
-        await do_preview_logic(app, node, action)
-        _update_detail_view(app, action)
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+        handle_edit_action,
+    )
+
+    await handle_edit_action(app, node, action, _update_detail_view)
 
 
 def refresh_node_logic(app: ReviewerApp, node: Any) -> None:
@@ -146,15 +113,16 @@ def on_mount_logic(app: Any) -> None:
 
     # 1. Rationale Section
     rat_root = tree.root.add("[bold]Rationale[/]", data="RATIONALE_ROOT", expand=True)
-    import re
 
-    sections = re.split(r"\n(?=### )", "\n" + app.plan.rationale)
+    # Split on '### ' OR '1. ' (numeric lists at start of line)
+    sections = re.split(r"\n(?=### |\d+\.\s+)", "\n" + app.plan.rationale)
     for section in sections:
         section = section.strip()
         if not section:
             continue
         lines = section.split("\n")
-        title = lines[0].replace("###", "").strip()
+        # Strip markers (### or numeric prefix) from title, allowing for multiples
+        title = re.sub(r"^(?:###\s*|\d+\.\s*)+", "", lines[0]).strip()
         content = "\n".join(lines[1:]).strip()
         rat_root.add_leaf(
             title,
@@ -184,27 +152,22 @@ def check_action_logic(app: ReviewerApp, action_name: str) -> bool:
 
     tree = app.query_one(Tree)
     node = tree.cursor_node
-    if not node:
-        return False
+    if not node or not isinstance(node.data, ActionData):
+        return action_name not in (
+            "execute_step",
+            "edit_details",
+            "revert",
+            "view_details",
+        )
 
-    data = node.data
-    is_action = isinstance(data, ActionData)
-
-    # Disable action-specific bindings for non-action nodes (Rationale)
-    if action_name in ("execute_step", "edit_details", "revert", "view_details"):
-        if not is_action:
-            return False
-
-        if action_name == "execute_step":
-            return not data.executed
-        if action_name == "edit_details":
-            return not data.executed
-        if action_name == "view_details":
-            return bool(data.executed)
-        if action_name == "revert":
-            return bool(data.modified) and not data.executed
-
-    return True
+    data = cast(ActionData, node.data)
+    results = {
+        "execute_step": not data.executed,
+        "edit_details": not data.executed,
+        "view_details": bool(data.executed),
+        "revert": bool(data.modified) and not data.executed,
+    }
+    return results.get(action_name, True)
 
 
 def toggle_selection_logic(app: ReviewerApp, node: Any) -> None:
@@ -217,158 +180,31 @@ def toggle_selection_logic(app: ReviewerApp, node: Any) -> None:
         app._refresh_node(node)
 
 
-async def on_list_view_selected_logic(app: "ReviewerApp", item: Any) -> None:
+async def on_list_view_selected_logic(app: ReviewerApp, item: Any) -> None:
     """Handle parameter editing when a DetailItem is selected in the right pane."""
-    from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
-        ActionTree,
-        PathInputScreen,
-        ParameterEditModal,
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+        handle_list_view_selected,
     )
 
-    node = app.query_one(ActionTree).cursor_node
-    if not node or not node.data or not hasattr(item, "data"):
-        return
-
-    action, key, val = node.data, item.data.get("key"), item.data.get("val")
-    from teddy_executor.core.domain.models.plan import ActionData
-
-    if not isinstance(action, ActionData):
-        return
-
-    if action.executed or (action.type == "PROMPT" and key == "prompt"):
-        return
-
-    if key == "path":
-        new_val = await app.push_screen_wait(cast(Any, PathInputScreen(str(val))))
-    else:
-        if not isinstance(val, (str, int, float, bool, list)) and val is not None:
-            return
-        v_str = ", ".join(map(str, val)) if isinstance(val, list) else str(val)
-        new_val = await app.push_screen_wait(ParameterEditModal(f"{key}:", v_str))
-
-    if new_val is not None and str(new_val) != str(val):
-        _apply_param_edit(action, key, val, new_val)
-        action.modified = True
-        app._refresh_node(node)
-        _update_detail_view(app, action)
+    await handle_list_view_selected(app, item, _update_detail_view)
 
 
-def _apply_param_edit(action: Any, key: str, old_val: Any, new_val: str) -> None:
-    """Helper to apply parameter edits back to the action."""
-    if action.type == "PROMPT" and key == "response":
-        action.user_response = str(new_val)
-        return
-
-    # Check if the parameter should be a list based on action type/key
-    list_keys = {"queries", "reference_files"}
-    if key in list_keys:
-        action.params[key] = [v.strip() for v in str(new_val).split(",") if v.strip()]
-    else:
-        action.params[key] = str(new_val)
-
-
-def revert_logic(app: "ReviewerApp", node: Any) -> None:
+def revert_logic(app: ReviewerApp, node: Any) -> None:
     """Revert manual modifications for the currently highlighted action."""
-    action: Optional["ActionData"] = node.data
-    if action and action.modified:
-        action.modified = False
-        if hasattr(action, "_original_params"):
-            action.params = action._original_params.copy()
-        if action.type == "PROMPT":
-            action.user_response = None
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+        handle_revert,
+    )
 
-        ptf = getattr(action, "pending_temp_file", None)
-        if isinstance(ptf, str):
-            app._system_env.delete_file(ptf)
-        action.pending_temp_file = None
-
-        app._refresh_node(node)
-        _update_detail_view(app, action)
-        app.refresh_bindings()
+    handle_revert(app, node, _update_detail_view)
 
 
-async def execute_step_logic(app: "ReviewerApp", node: Any) -> None:
+async def execute_step_logic(app: ReviewerApp, node: Any) -> None:
     """Executes the action with real-time state transitions and feedback."""
-    from teddy_executor.core.domain.models.plan import ActionData, ExecutionStatus
-
-    action: Any = node.data
-    if (
-        not isinstance(action, ActionData)
-        or action.executed
-        or action.state == ExecutionStatus.RUNNING
-    ):
-        return
-
-    if action.type == "PROMPT":
-        await _execute_prompt_step(app, action, node)
-        return
-
-    action.state = ExecutionStatus.RUNNING
-    app._refresh_node(node)
-
-    try:
-        import anyio
-
-        log = await anyio.to_thread.run_sync(
-            _execute_silently, app._action_dispatcher, action
-        )
-        action.executed, action.action_log = True, log
-        from teddy_executor.core.domain.models.execution_report import ActionStatus
-
-        action.state = (
-            ExecutionStatus.SUCCESS
-            if log.status == ActionStatus.SUCCESS
-            else ExecutionStatus.FAILURE
-        )
-    except Exception:
-        action.executed, action.state = True, ExecutionStatus.FAILURE
-    finally:
-        app._refresh_node(node)
-        _update_detail_view(app, action)
-
-
-async def _execute_prompt_step(app: ReviewerApp, action: ActionData, node: Any) -> None:
-    """Special execution logic for PROMPT actions."""
-    from teddy_executor.core.domain.models.plan import ExecutionStatus
-    from teddy_executor.core.domain.models.execution_report import (
-        ActionStatus,
-        ActionLog,
-    )
-    from teddy_executor.adapters.inbound.textual_plan_reviewer_previews import (
-        preview_prompt,
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+        orchestrate_execution,
     )
 
-    await preview_prompt(app, action, node)
-    if action.modified:
-        action.executed, action.state = True, ExecutionStatus.SUCCESS
-        action.action_log = ActionLog(
-            action_type=action.type,
-            params=action.params,
-            status=ActionStatus.SUCCESS,
-            details="Response captured.",
-            failed_command=None,
-        )
-    else:
-        action.state = ExecutionStatus.PENDING
-    app._refresh_node(node)
-    _update_detail_view(app, action)
-
-
-def _execute_silently(dispatcher: Any, act: Any) -> Any:
-    """Helper to run dispatcher silently."""
-    import contextlib
-    import io
-    import logging
-
-    logger = logging.getLogger("teddy_executor.core.services.action_dispatcher")
-    old_level = logger.level
-    logger.setLevel(logging.WARNING)
-    f = io.StringIO()
-    try:
-        with contextlib.redirect_stdout(f), contextlib.redirect_stderr(f):
-            return dispatcher.dispatch_and_execute(act)
-    finally:
-        logger.setLevel(old_level)
+    await orchestrate_execution(app, node, _update_detail_view)
 
 
 def toggle_all_logic(app: "ReviewerApp", plan: Any) -> None:

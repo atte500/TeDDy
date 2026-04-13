@@ -239,16 +239,16 @@ class MarkdownPlanBuilder:
             """\
             ## Rationale
             ````text
-            ### 1. Synthesis
+            1. Synthesis
             This is a test plan.
 
-            ### 2. Justification
+            2. Justification
             This plan is for testing purposes.
 
-            ### 3. Expected Outcome
+            3. Expected Outcome
             The test should pass.
 
-            ### 4. State Dashboard
+            4. State Dashboard
             **Vertical Slice:** `docs/slices/test.md`
             **Development Workflow:**
             - [ ] Phase 1
