@@ -5,7 +5,6 @@ from teddy_executor.core.domain.models.execution_report import ActionLog, Action
 from teddy_executor.adapters.inbound.textual_plan_reviewer import ReviewerApp
 from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
 from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
-    _update_detail_view,
     edit_action_logic,
 )
 from teddy_executor.adapters.inbound.textual_plan_reviewer_previews import (
@@ -78,7 +77,10 @@ async def test_regression_read_action_suspend(env):
 @pytest.mark.anyio
 async def test_regression_execution_log_removed(env):
     """Issue 5 & 7: Redundant execution log UI overlaps and freezes right panel on large output."""
-    from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import DetailItem
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
+        DetailItem,
+        ActionTree,
+    )
 
     action = ActionData(type="EXECUTE", params={"command": "ls"})
     action.executed = True
@@ -96,9 +98,32 @@ async def test_regression_execution_log_removed(env):
     )
 
     async with app.run_test() as pilot:
-        # Wait for on_mount_logic's scheduled rationale update to finish
+        # Settle initial mount logic
         await pilot.pause()
+
+        # Find the node for our action to ensure the tree is correct
+        tree = app.query_one(ActionTree)
+        action_node = None
+        for node in tree.root.children:
+            if node.data == "ACTION_PLAN_ROOT":
+                for leaf in node.children:
+                    if leaf.data == action:
+                        action_node = leaf
+                        break
+        assert action_node is not None
+
+        # Ensure cursor is on action so our logic guard allows the update
+        tree.move_cursor(action_node)
+
+        # Directly invoke update logic for the action
+        from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
+            _update_detail_view,
+        )
+
         _update_detail_view(app, action)
+
+        # Give the ListView DOM time to process appends
+        await pilot.pause()
         await pilot.pause()
 
         pane = app.query_one(ParameterDetail)

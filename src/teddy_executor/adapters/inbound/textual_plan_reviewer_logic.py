@@ -47,6 +47,13 @@ def _update_detail_view(app: ReviewerApp, data: Any):
         # Don't repeat the section key for rationale sections
         pane.append(DetailItem("", data["content"]))
     elif data == "RATIONALE_ROOT":
+        # Prevent race condition: don't update metadata if user has already moved cursor
+        from textual.widgets import Tree
+
+        tree = app.query_one(Tree)
+        if tree.cursor_node and tree.cursor_node.data != "RATIONALE_ROOT":
+            return
+
         # Check both cases as metadata keys can vary
         agent = (
             app.plan.metadata.get("Agent")
