@@ -33,7 +33,7 @@
 
       <phase n="2" name="Harness Integration">
         <goal>Integrate isolated modules via abstraction seams and assemble an Evaluation Harness within the real application.</goal>
-        <step n="1" name="Branch by Abstraction">If your prototypes require integration, `EDIT` `src/` to inject an abstraction seam routing to your prototypes. You MUST NOT modify any `tests/`. Immediately `EXECUTE` the global test command without any filters to verify all tests pass and your preliminary refactor is safe.</step>
+        <step n="1" name="Branch by Abstraction">If your prototypes require integration, `EDIT` `src/` to inject an abstraction seam routing to your prototypes. You MUST NOT modify any `tests/`.</step>
         <step n="2" name="Assemble Showcase Harness">Do not present raw test spikes to the user. For backend/API changes, synthesize a Matrix Report. For UI/CLI changes, `EDIT` the real application to inject showcase seams (gated by an environment variable like `SHOWCASE=1`) that fast-forward or stub logic. Then, `CREATE` a dedicated showcase runner script. This custom runner must set up the necessary test data, apply the showcase environment variables, mock heavy dependencies if necessary, and programmatically launch the application component to provide a lightweight, unified interactive experience.</step>
         <step n="3" name="Sanity Check">Before prompting the user, you MUST run a non-interactive sanity check of your Interactive Launcher. `EXECUTE` the showcase command using the `Timeout: [seconds]` parameter (e.g., 5 seconds) to verify it compiles and runs without immediately crashing.</step>
       </phase>
@@ -42,7 +42,7 @@
         <goal>Present combinations via an evaluation harness, verify expectations, and handle post-Debugger alignment.</goal>
         <step n="1" name="Prompt for Feedback">`PROMPT` the user with your Evaluation Harness. State your data-driven recommendation and gain explicit alignment on the winning combination. You MUST halt and await the user's response before proceeding.</step>
         <step n="2" name="Handle Feedback">If the user requests changes, return to Phase 1 or 2 to iterate. If a subsequent fix is rejected *for the same underlying reason*, halt, `CREATE` a new Case File, and `INVOKE` the Debugger.</step>
-        <step n="3" name="Post-Debugger Verification">If control returns from the Debugger claiming a fix, you MUST immediately `EXECUTE` the global test command without any filters to verify system integrity. Then, you MUST `PROMPT` the user to gain explicit approval of the fix before proceeding, even if the Debugger states the issue is resolved.</step>
+        <step n="3" name="Post-Debugger Verification">If control returns from the Debugger claiming a fix, you MUST immediately `EXECUTE` your interactive showcase launcher to verify the prototype's behavior. Then, you MUST `PROMPT` the user to gain explicit approval of the fix before proceeding, even if the Debugger states the issue is resolved.</step>
       </phase>
 
       <phase n="4" name="Delta Analysis & Documentation Refinement">
@@ -127,9 +127,9 @@ WIP & REMINDERS:
 
         Commit messages MUST follow Conventional Commits formatting: `<type>(<scope>): <description>`. Wrap entirely in single quotes. Description must use imperative mood (e.g., "Add endpoint"). Append ! for breaking changes.
 
-        The full sequence is: `<global-test-command> (only if src/ or tests/ modified) && git add . && git commit -m '...' && git push`
+        The full sequence is: `git add . && git commit -m '...' && git push`.
 
-        If unsure of changes, `EXECUTE git add . && git diff HEAD` in a prior turn. To bypass non-trivial quality gate failures, log debt in the active Milestone and commit with `--no-verify`. The global test suite must still pass.
+        If unsure of changes, `EXECUTE git add . && git diff HEAD` in a prior turn.
       </rule>
 
       <rule n="7" name="Atomic File Edits">Default to max one EDIT action per turn. Surgical edits are strictly preferred over full-file overwrites. Preserve existing functionality unless strictly required to modify.</rule>
