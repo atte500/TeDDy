@@ -140,9 +140,10 @@ def on_mount_logic(app: Any) -> None:
             continue
         act_root.add_leaf(format_node_label(action), data=action)
 
+    # Initialize with the Rationale root details highlighted
+    tree.move_cursor(rat_root)
     tree.focus()
-    # Initialize with the Rationale root details
-    _update_detail_view(app, "RATIONALE_ROOT")
+    app.call_after_refresh(_update_detail_view, app, "RATIONALE_ROOT")
 
 
 def check_action_logic(app: ReviewerApp, action_name: str) -> bool:

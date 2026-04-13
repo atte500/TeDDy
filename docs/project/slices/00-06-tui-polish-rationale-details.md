@@ -18,10 +18,10 @@ Improve the TUI user experience by adopting a more robust rationale format, ensu
 - [✓] **Logic** - Update `on_mount_logic` regex in `textual_plan_reviewer_logic.py` to `r"\n(?=### |\d+\.\s+)"`.
 - [✓] **Logic** - Update the title extraction regex to `r"^(###\s*|\d+\.\s*)"`.
 
-### Scenario 2: Right Panel Initialization
+### Scenario 2: Right Panel Initialization [✓] Verified
 > As a user, I want the right panel to show the plan's metadata (Rationale root) immediately upon launch so that I don't see a generic placeholder.
 
-- [ ] **Logic** - Update `on_mount_logic` to explicitly set `tree.cursor_node = rat_root` before calling `_update_detail_view`.
+- [✓] **Logic** - Update `on_mount_logic` to explicitly set `tree.cursor_node = rat_root` before calling `_update_detail_view`.
 
 ### Scenario 3: Action Log Formatting
 > As a user, I want the "Action Log" view (triggered by 'd') to match the format of the final Execution Report so that the experience is consistent.
@@ -63,3 +63,6 @@ The current `action_view_details` constructs a primitive string.
 - **Regex Update**: The regex for splitting rationale sections in `textual_plan_reviewer_logic.py` was updated to `r"\n(?=### |\d+\.\s+)"`. This uses a positive lookahead to split between sections without consuming the markers, supporting both legacy Markdown headings and numeric lists.
 - **Title Extraction**: The title cleaning logic was refined to `re.sub(r"^(?:###\s*|\d+\.\s*)+", "", lines[0]).strip()`. This ensures that any combination of markers at the start of a line (e.g., `### 1. `) is completely stripped, leaving only the descriptive title.
 - **Harness Alignment**: The `MarkdownPlanBuilder` was updated to use the numeric rationale format by default. Corresponding unit tests in `test_plan_builder.py` were updated to reflect this new default output.
+
+### Scenario 2: Right Panel Initialization
+- **Initialization Race Condition**: To ensure the right panel displays metadata immediately, `on_mount_logic` was updated to use `tree.move_cursor(rat_root)` followed by `app.call_after_refresh(_update_detail_view, app, "RATIONALE_ROOT")`. `move_cursor` ensures the visual highlight and internal tree state are synchronized, while `call_after_refresh` ensures the detail view update happens after Textual's initial layout/event cycle, preventing the "Select an item" placeholder from flashing or persisting.

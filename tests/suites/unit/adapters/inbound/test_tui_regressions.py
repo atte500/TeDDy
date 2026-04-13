@@ -96,6 +96,8 @@ async def test_regression_execution_log_removed(env):
     )
 
     async with app.run_test() as pilot:
+        # Wait for on_mount_logic's scheduled rationale update to finish
+        await pilot.pause()
         _update_detail_view(app, action)
         await pilot.pause()
 
