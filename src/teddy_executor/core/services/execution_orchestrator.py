@@ -100,7 +100,9 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         if not action.selected:
             reason = "User deselected this action in the plan reviewer."
             if action.is_terminal:
-                reason = "This action must be performed in isolation."
+                reason = (
+                    "Automatically skipped: This action must be performed in isolation."
+                )
             return (
                 self._action_executor.handle_skipped_action(action, reason),
                 False,
@@ -140,7 +142,9 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         if not should_dispatch:
             reason = "User skipped this action in the plan reviewer."
             if action.is_terminal:
-                reason = "This action must be performed in isolation."
+                reason = (
+                    "Automatically skipped: This action must be performed in isolation."
+                )
             return (
                 self._action_executor.handle_skipped_action(action, reason),
                 "",
