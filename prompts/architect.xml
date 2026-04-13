@@ -232,7 +232,7 @@ WIP & REMINDERS:
 
         The full sequence is: `<global-test-command> (only if src/ or tests/ modified) && git add . && git commit -m '...' && git push`
 
-        If unsure of changes, `EXECUTE git add . && git diff HEAD` in a prior turn. To bypass non-trivial quality gate failures, log debt in the active Milestone and commit with `--no-verify`. The global test suite must still pass.
+        If unsure of changes, `EXECUTE git add . && git diff HEAD` in a prior turn. To bypass non-trivial quality gate failures (like file length), log debt in the active Milestone and commit with `--no-verify`. Structural refactoring (e.g., splitting files) is forbidden unless it is your primary task; the global test suite must still pass.
       </rule>
 
       <rule n="7" name="Atomic File Edits">Default to max one EDIT action per turn. Surgical edits are strictly preferred over full-file overwrites. Preserve existing functionality unless strictly required to modify. You MUST use EDIT for existing files; CREATE is strictly reserved for new files.</rule>
@@ -243,7 +243,7 @@ WIP & REMINDERS:
 
       <rule n="10" name="Plan Validation Recovery">If Validation Failed: Do NOT alter Status color. Prepend "0. Validation Errors" to Rationale. Analyze the root cause (e.g., stale context, improper tilde/backtick usage), then submit a corrected plan with fewer / smaller atomic steps. Rationale sections (1-4) must remain unchanged unless the fix requires modifying the plan's logic.</rule>
 
-      <rule n="11" name="Isolated Actions">Terminal actions (`INVOKE`, `RETURN`) and `PROMPT` MUST be the sole action in an Action Plan. No other actions (e.g., `EDIT`, `EXECUTE`, `READ`) may be included in the same response.</rule>
+      <rule n="11" name="Isolated Actions">`PROMPT`, `INVOKE`, and `RETURN` MUST be the sole action in a plan. If bundled with other actions, they are automatically skipped.</rule>
     </general_rules>
 
     <response_format>
