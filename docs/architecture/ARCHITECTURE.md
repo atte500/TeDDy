@@ -43,7 +43,7 @@ This document outlines the technical standards, conventions, and setup process f
   ```
 
 ### Testing Strategy
-- **Framework:** `pytest`.
+- **Framework:** `pytest` with the `anyio` plugin for asynchronous testing.
 - **Location of Tests:** Tests are organized into two primary top-level directories:
     - **`tests/suites/`**: Contains the test pyramid validating system intent.
         - `tests/suites/acceptance/`: End-to-end tests validating full user workflows.
@@ -53,7 +53,7 @@ This document outlines the technical standards, conventions, and setup process f
         - `tests/harness/setup/`: Workspace management and DI isolation.
         - `tests/harness/drivers/`: DSLs and adapters for driving the system.
         - `tests/harness/observers/`: Parsers for verifying system output.
-- **Execution:** Tests are run from the **project root** using `poetry run pytest`.
+- **Execution:** Tests are run from the **project root** using `poetry run pytest`. All asynchronous tests MUST be decorated with `@pytest.mark.anyio`.
     - **Run all tests:** `poetry run pytest` (Runs in parallel by default via `-n auto` in `pyproject.toml`)
     - **Run all tests with coverage:** `poetry run pytest --cov=src --cov-report=term-missing`
     - **Run all tests (Force Sequential):** `poetry run pytest -n 0`
@@ -163,20 +163,20 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 
 #### Primary Adapters
 
-| Component                      | Description                                                                                             | Contract                                                                          |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| **CLI Adapter**                | The primary inbound adapter that drives the application via the `Typer` CLI framework.                  | [CLI Adapter](./adapters/inbound/cli.md)                                          |
-| **TextualPlanReviewer**        | Implements `IPlanReviewer` using a dual-pane `Textual` TUI (ActionTree/ParameterDetail) for interactive plan review.               | [TextualPlanReviewer](./adapters/inbound/textual_plan_reviewer.md)                |
-| **ConsoleInteractor**          | Implements `IUserInteractor` for the console, providing diff previews for file operations.              | [ConsoleInteractorAdapter](./adapters/outbound/console_interactor.md)             |
-| **ConsoleTooling**             | A utility for centralized discovery of editors and diff viewers, respecting configuration and system environment.                                   | [ConsoleTooling](./adapters/outbound/console_tooling.md)                       |
-| **LiteLLMAdapter**             | Implements `ILlmClient` using the `litellm` library for multi-provider LLM communication.               | [LiteLLMAdapter](./adapters/outbound/litellm_adapter.md)                          |
-| **LocalFileSystemAdapter**     | Implements `IFileSystemManager` for the local disk using Python's `pathlib`.                            | [LocalFileSystemAdapter](./adapters/outbound/local_file_system_adapter.md)        |
-| **LocalRepoTreeGenerator**     | Implements `IRepoTreeGenerator` using the `pathspec` library to handle ignore files.                    | [LocalRepoTreeGenerator](./adapters/outbound/local_repo_tree_generator.md)        |
-| **ShellAdapter**               | Implements `IShellExecutor` using Python's `subprocess` module.                                         | [ShellAdapter](./adapters/outbound/shell_adapter.md)                              |
-| **SystemEnvironmentInspector** | Implements `IEnvironmentInspector` using Python's `os`, `platform`, and `sys` modules.                  | [SystemEnvironmentInspector](./adapters/outbound/system_environment_inspector.md) |
-| **WebScraperAdapter**          | Implements `IWebScraper` using `trafilatura` for content extraction and a direct-fetch for GitHub URLs. | [WebScraperAdapter](./adapters/outbound/web_scraper_adapter.md)                   |
-| **WebSearcherAdapter**         | Implements `IWebSearcher` using the `ddgs` library for keyless DuckDuckGo searches.                     | [WebSearcherAdapter](./adapters/outbound/web_searcher_adapter.md)                 |
-| **YamlConfigAdapter**          | Implements `IConfigService` by reading configuration from a `.teddy/config.yaml` file.                  | [YamlConfigAdapter](./adapters/outbound/yaml_config_adapter.md)                   |
+| Component                      | Description                                                                                                          | Contract                                                                          |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| **CLI Adapter**                | The primary inbound adapter that drives the application via the `Typer` CLI framework.                               | [CLI Adapter](./adapters/inbound/cli.md)                                          |
+| **TextualPlanReviewer**        | Implements `IPlanReviewer` using a dual-pane `Textual` TUI (ActionTree/ParameterDetail) for interactive plan review. | [TextualPlanReviewer](./adapters/inbound/textual_plan_reviewer.md)                |
+| **ConsoleInteractor**          | Implements `IUserInteractor` for the console, providing diff previews for file operations.                           | [ConsoleInteractorAdapter](./adapters/outbound/console_interactor.md)             |
+| **ConsoleTooling**             | A utility for centralized discovery of editors and diff viewers, respecting configuration and system environment.    | [ConsoleTooling](./adapters/outbound/console_tooling.md)                          |
+| **LiteLLMAdapter**             | Implements `ILlmClient` using the `litellm` library for multi-provider LLM communication.                            | [LiteLLMAdapter](./adapters/outbound/litellm_adapter.md)                          |
+| **LocalFileSystemAdapter**     | Implements `IFileSystemManager` for the local disk using Python's `pathlib`.                                         | [LocalFileSystemAdapter](./adapters/outbound/local_file_system_adapter.md)        |
+| **LocalRepoTreeGenerator**     | Implements `IRepoTreeGenerator` using the `pathspec` library to handle ignore files.                                 | [LocalRepoTreeGenerator](./adapters/outbound/local_repo_tree_generator.md)        |
+| **ShellAdapter**               | Implements `IShellExecutor` using Python's `subprocess` module.                                                      | [ShellAdapter](./adapters/outbound/shell_adapter.md)                              |
+| **SystemEnvironmentInspector** | Implements `IEnvironmentInspector` using Python's `os`, `platform`, and `sys` modules.                               | [SystemEnvironmentInspector](./adapters/outbound/system_environment_inspector.md) |
+| **WebScraperAdapter**          | Implements `IWebScraper` using `trafilatura` for content extraction and a direct-fetch for GitHub URLs.              | [WebScraperAdapter](./adapters/outbound/web_scraper_adapter.md)                   |
+| **WebSearcherAdapter**         | Implements `IWebSearcher` using the `ddgs` library for keyless DuckDuckGo searches.                                  | [WebSearcherAdapter](./adapters/outbound/web_searcher_adapter.md)                 |
+| **YamlConfigAdapter**          | Implements `IConfigService` by reading configuration from a `.teddy/config.yaml` file.                               | [YamlConfigAdapter](./adapters/outbound/yaml_config_adapter.md)                   |
 
 #### Test Harness Triad (Setup, Driver, Observer)
 
@@ -218,7 +218,8 @@ This section serves as the "System Law" (Poka-Yoke) for TeDDy. It defines the pr
 -   **Rule:** Any diagnostic logic involving sequence matching (like fuzzy `EDIT` matching) MUST use tiered heuristics (Exact Anchors -> Incremental Fuzzy -> Sub-sampling) combined with **Priority Capping** and a default `Similarity Threshold`. **Rationale:** "Priority Capping" limits the number of expensive evaluations to the top-scoring candidates to maintain sub-second response times. The threshold provides a high-fidelity default that balances resilience to AI formatting with protection against accidental over-matching.
 -   **Rule:** All TUI action handlers that invoke modal screens or external tools MUST be decorated with the `@work` decorator. **Rationale:** To ensure the main UI event loop remains responsive and to prevent asynchronous deadlocks during modal interactions.
 -   **Rule:** The TUI interaction model MUST follow a "Non-Blocking Deferred Harvest" pattern for external editing. **Rationale:** This allows the user to continue using the TUI while editors are open. Changes are synchronized via a confirmation modal and harvested from persistent temporary files only upon final submission.
--   **Rule:** The local pre-commit workflow MUST run checks only against staged files, delegating full test suites and global analysis to the CI pipeline. **Rationale:** To ensure lightning-fast commits that encourage small, atomic version control steps without forcing a boil-the-ocean refactor of legacy code during active development.
+- **Rule:** The local pre-commit workflow MUST run checks only against staged files, delegating full test suites and global analysis to the CI pipeline. **Rationale:** To ensure lightning-fast commits that encourage small, atomic version control steps without forcing a boil-the-ocean refactor of legacy code during active development.
+
 
 ---
 
