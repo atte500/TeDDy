@@ -11,7 +11,7 @@
 
   <instructions>
     <goal>
-      Execute an **Atomic Delivery Cycle**: implement, commit, and push exactly ONE **Deliverable** at a time. This process is strictly sequential and non-batching. Do not load context for or begin the next deliverable until the current one is pushed.
+      Execute an **Atomic Delivery Cycle**: implement, commit, and push exactly ONE **Deliverable** at a time.
 
       Hierarchy of Work:
       1. Vertical Slice (`docs/project/slices/*.md`): The cohesive feature.
@@ -29,8 +29,8 @@
       </phase>
 
       <phase n="2" name="ACCEPTANCE TEST (Outer RED)">
-        <goal>Define the North Star acceptance test.</goal>
-        <step n="1" name="Translate to Test">Locate/create the target test file in `tests/suites/acceptance/`. Translate the current deliverable's Acceptance Criteria into a failing test.</step>
+        <goal>Iteratively build the acceptance test to drive the current deliverable.</goal>
+        <step n="1" name="Rachet the Test">Locate/create the target test file in `tests/suites/acceptance/`. Write or expand the test ONLY enough to demand the current deliverable. Do NOT write the full scenario upfront. The global suite must pass once this single deliverable is complete.</step>
         <step n="2" name="Harness Mandate">You MUST ALWAYS use the Test Harness Triad (Setup = Arrange, Driver = Act, Observer = Assert).</step>
         <step n="3" name="Confirm RED">Run the test locally to confirm it fails as expected.</step>
       </phase>
@@ -48,31 +48,25 @@
             Clean up code/tests and Audit Frictions: Identify what made this deliverable difficult (frictions) or identify architectural improvement opportunities (e.g., awkward mocks, rigid interfaces) and either fix it now or log it in the `[DEBT]` dashboard.
             - DRY/Harness: Extract test setup duplication into the Test Harness Triad.
             - DI Purity: No concrete defaults in constructors. Inject dependencies via Ports to ensure Harness 'Setup' remains the sole state authority.
-            - Clean Code: Apply SRP. Remove stale comments; ensure remaining comments explain "why".
+            - Clean Code: Apply SRP. Remove stale comments; ensure remaining comments explain "why". Prune detailed assertions from Acceptance/Integration tests, ensuring complex edge cases are validated at the Unit layer.
             - Verify: Run the global test suite (e.g., root `pytest` without path filters) to ensure zero regressions.
             - Interrupt Check: If non-local tests fail, transition to `Red 🔴` and follow the standard protocol (create a Case File document and delegate to the Debugger). If new requirements arrive, mark goal `[HOLD]`, `EDIT` the Slice, Milestone, Specs, and ARCHITECTURE.md to ensure absolute alignment, and then resume once Debugger has solved the issue.
           </tdd_phase>
         </inner_loop>
       </phase>
 
-      <phase n="4" name="VERIFY & POLISH">
-        <goal>Ensure high-quality delivery through manual verification and code polishing.</goal>
-        <step n="1" name="Mark Deliverable Complete">`EDIT` the vertical slice doc to mark the current deliverable as `[✓]`.</step>
-        <step n="2" name="Scenario Verification Gate">If this is the final deliverable for the Scenario, run a real-world test (e.g., `curl` or CLI) against the live app to guard against "mock poisoning". Analyze output formatting and performance. Once manual verification is successful, `EDIT` the slice doc again to mark the entire Scenario as `[✓] Verified`.</step>
-        <step n="3" name="Polish & Prune">Apply polish. Prune detailed assertions from Acceptance/Integration tests, ensuring complex edge cases are validated at the Unit layer.</step>
+      <phase n="4" name="DOCUMENTATION">
+        <goal>Update tracking documents and record implementation findings.</goal>
+        <step n="1" name="Mark Progress">`EDIT` the vertical slice doc to mark the current deliverable as `[✓]`.</step>
+        <step n="2" name="Sync Slice Notes">`EDIT` the vertical slice doc to append technical findings for this deliverable under the `## Implementation Notes` section. If this section does not exist, you MUST create it at the end of the file.</step>
+        <step n="3" name="Harvest Debt">If any `[DEBT]` was logged, `EDIT` the active Milestone's (`docs/project/milestones/`) `## Technical Debt` section to append it as a checkmarkable [ ] task.</step>
+        <step n="4" name="Perform As-Built Update">Before finishing the last deliverable of the slice, perform a final `EDIT` on the `Component Design Docs`. Use the `Implementation Notes` you have gathered to make final, minor corrections, ensuring the docs perfectly reflect the as-built reality of the code.</step>
       </phase>
 
-      <phase n="5" name="DOCUMENTATION">
-        <goal>Record implementation findings and perform the final "as-built" documentation update.</goal>
-        <step n="1" name="Sync Slice Notes">`EDIT` the vertical slice doc to append technical findings for this deliverable under the `## Implementation Notes` section. If this section does not exist, you MUST create it at the end of the file.</step>
-        <step n="2" name="Harvest Debt">If any `[DEBT]` was logged, `EDIT` the active Milestone's (`docs/project/milestones/`) `## Technical Debt` section to append it as a checkmarkable [ ] task.</step>
-        <step n="3" name="Perform As-Built Update">Before finishing the last deliverable of the slice, perform a final `EDIT` on the `Component Design Docs`. Use the `Implementation Notes` you have gathered to make final, minor corrections, ensuring the docs perfectly reflect the as-built reality of the code.</step>
-      </phase>
-
-      <phase n="6" name="COMMIT (Mandatory)">
+      <phase n="5" name="COMMIT">
         <goal>Verify workspace state and hand off versioned history.</goal>
         <step n="1" name="Commit">Execute the Version Control Protocol for the **current deliverable only** in its own turn.</step>
-        <step n="2" name="Cleanup & Transition">If deliverables remain in the slice, return to Phase 1 for the next atomic unit. If the Vertical Slice is fully complete (all scenarios verified and all deliverables committed), you may use `RETURN`.</step>
+        <step n="2" name="Loop">If deliverables remain in the slice, return to Phase 1 (ORIENTATION) for the next deliverable. If the Vertical Slice is fully complete (all deliverables committed), you may `RETURN`.</step>
       </phase>
     </workflow>
 
@@ -110,7 +104,6 @@ PHASES:
 - [✓ | ▶ |  ] ORIENTATION
 - [✓ | ▶ |  ] ACCEPTANCE TEST
 - [✓ | ▶ |  ] IMPLEMENT
-- [✓ | ▶ |  ] VERIFY & POLISH
 - [✓ | ▶ |  ] DOCUMENTATION
 - [✓ | ▶ |  ] COMMIT
 
@@ -385,7 +378,6 @@ PHASES:
 - [✓] ORIENTATION
 - [✓] ACCEPTANCE TEST
 - [▶] IMPLEMENT
-- [ ] VERIFY & POLISH
 - [ ] DOCUMENTATION
 - [ ] COMMIT
 
