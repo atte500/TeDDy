@@ -58,6 +58,6 @@ If a plan contains multiple actions, any "Terminal Action" (`PROMPT`, `INVOKE`, 
 - **Reasons:**
   - "User deselected this action in the plan reviewer." (TUI mode)
   - "Action skipped to ensure state isolation; must be executed as a single-action plan." (Console/Auto mode, multi-action plan)
-  - "Skipped because a previous action failed. (Hint: use `Allow Failure: true` to continue the Action Plan even if the command returns a non-zero exit code)" (Sequential halt)
+  - "Skipped because a previous action failed. (Hint: use 'Allow Failure: true' to continue the Action Plan even if the command returns a non-zero exit code)" (Sequential halt)
 
 The precise rendering logic and format are defined by the canonical Jinja2 template. This specification serves as a high-level guide to its behavior.
