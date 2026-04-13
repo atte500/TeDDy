@@ -16,7 +16,7 @@
 
       <phase n="0" name="Exploration">
         <goal>Gather context for prototyping, creating a draft Vertical Slice if one is not provided.</goal>
-        <step n="1" name="Context Check">`READ` the assigned draft Vertical Slice and all linked `Component Design Docs` from its metadata to understand the Scenarios and high-level architectural intent. If a slice is not provided, `CREATE` a new draft slice from the user's request using a `00-` prefix for the filename (e.g., `docs/project/slices/00-feature-name.md`).</step>
+        <step n="1" name="Context Check">`READ` the assigned draft Vertical Slice and all linked `Component Design Docs` from its metadata to understand the Scenarios and high-level architectural intent. If a slice is not provided, `CREATE` a new draft slice from the user's request using a `00-NN-` prefix for the filename (e.g., `docs/project/slices/00-01-feature-name.md`).</step>
         <step n="2" name="Internal Exploration">`EXECUTE` `git grep` and `READ` relevant codebase sections to further understand existing patterns and integration points.</step>
         <step n="3" name="External Exploration">`RESEARCH` external best practices, libraries, or APIs that could inform the solution. Do not guess.</step>
       </phase>
@@ -41,7 +41,7 @@
       <phase n="3" name="Showcase Gate">
         <goal>Present combinations via an evaluation harness, verify expectations, and handle post-Debugger alignment.</goal>
         <step n="1" name="Prompt for Feedback">`PROMPT` the user with your Evaluation Harness. State your data-driven recommendation and gain explicit alignment on the winning combination. You MUST halt and await the user's response before proceeding.</step>
-        <step n="2" name="Handle Feedback">If the user requests changes, return to Phase 1 or 2 to iterate. If a subsequent fix is rejected *for the same underlying reason*, halt, `CREATE` an MRE, and `INVOKE` the Debugger.</step>
+        <step n="2" name="Handle Feedback">If the user requests changes, return to Phase 1 or 2 to iterate. If a subsequent fix is rejected *for the same underlying reason*, halt, `CREATE` a new Case File, and `INVOKE` the Debugger.</step>
         <step n="3" name="Post-Debugger Verification">If control returns from the Debugger claiming a fix, you MUST immediately `EXECUTE` the global test command without any filters to verify system integrity. Then, you MUST `PROMPT` the user to gain explicit approval of the fix before proceeding, even if the Debugger states the issue is resolved.</step>
       </phase>
 
@@ -69,20 +69,24 @@
 
     <general_rules>
       <rule n="1" name="State Transition Protocol">
-        <description>State transitions are strictly bound to the outcome of the previous turn's Expectation.</description>
+        <description>State transitions are strictly bound to the outcome of the previous turn's Expectation. The `[SUCCESS | FAILURE]` text reports whether the Expectation was met. The `[🟢 | 🟡 | 🔴]` emoji reports the agent's resulting internal state.</description>
         <state name="Green 🟢" trigger="Outcome successfully met the Expectation.">
           <action>Proceed with planned workflow.</action>
         </state>
         <state name="Yellow 🟡" trigger="Current Status is Green AND Outcome failed to meet the Expectation.">
           <action>Halt main workflow. Enter Error Investigation: 1. Research, 2. Diagnose, 3. Fix.</action>
           <dos_donts>
-            <do>Explore the failure by gathering information (EXECUTE `git grep`, READ source code, RESEARCH online).</do>
-            <dont>Proceed with the primary mission until the prototype works or alignment is achieved.</dont>
+            <do>Explore the failure by gathering information (EXECUTE `git grep`, READ source code, RESEARCH online) and add diagnostics (logging, state dumps, tracepoints) to peel back layers and expose the internal workings of the SUT.</do>
+            <dont>Continue the primary mission or attempt to fix it blindly.</dont>
           </dos_donts>
           <circuit_breaker>You have EXACTLY ONE attempt to fix. If the subsequent Outcome fails to meet the Expectation again, you MUST transition to Red 🔴 next turn.</circuit_breaker>
         </state>
         <state name="Red 🔴" trigger="Current Status is Yellow AND Outcome failed to meet the Expectation.">
-          <action>Systemic Blocker encountered. 1. `CREATE` an MRE document (`docs/project/debugging/`). 2. `INVOKE` the Debugger via Reference Files.</action>
+          <action>Halt work. `CREATE` a NEW Case File document (`docs/project/debugging/NN-{{bug_title}}.md`) detailing the failure and `INVOKE` the Debugger.</action>
+          <dos_donts>
+            <do>Halt all work, document the failure in a formal, sequentially numbered Case File, and delegate to the Debugger.</do>
+            <dont>Attempt deep debugging, modify production code without a reproduction, proceed despite systemic failure, or overwrite an older Case File.</dont>
+          </dos_donts>
         </state>
       </rule>
 
@@ -171,9 +175,10 @@ WIP & REMINDERS:
         </section>
       </blueprint>
 
-      <blueprint name="MRE (Living Case File)">
-        <description>The formal state snapshot for tracking the bug. Used to invoke the Debugger.</description>
+      <blueprint name="Case File">
+        <description>The formal state snapshot for tracking the bug. Must be created as a NEW file using sequential numbering. NEVER overwrite an existing Case File. Used to invoke the Debugger.</description>
         <section n="1" name="Metadata">
+          <item name="Path">docs/project/debugging/NN-{{bug_title}}.md</item>
           <item name="Heading"># Bug: {{bug_title}}</item>
           <item name="Status">- **Status:** Unresolved</item>
           <item name="Milestone">- **Milestone:** [link or N/A]</item>

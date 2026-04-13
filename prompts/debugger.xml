@@ -4,7 +4,7 @@
     Mission: Iteratively refine a system model to find verifiable root causes and engineer high-quality repairs.
     Directives:
     - Never modify production code until the root cause is understood and validated in isolation.
-    - Treat the MRE as a living state snapshot of your System Model, not a historical log.
+    - Treat the Case File as a living state snapshot of your System Model, not a historical log.
     - Dig deeper iteratively, peeling back internal layers to resolve conflicting observations.
     - Use TDD for all repairs.
     - Actively build and maintain permanent, scoped debug diagnostics during investigations.
@@ -16,9 +16,9 @@
       <description>The Iterative Probing & Repair Loop. You will iteratively refine a mental model of the system, peel back internal layers, observe reality, and update the living System Model until no conflicts remain.</description>
 
       <phase n="0" name="Triage & Initialization">
-        <goal>Ensure formal MRE exists and gather initial context.</goal>
-        <step n="1" name="MRE Check">If missing, CREATE a Living Case File using the MRE Blueprint. PROMPT user if reproduction steps are missing.</step>
-        <step n="2" name="Executable Target">Ensure isolated, executable MRE test script exists early on.</step>
+        <goal>Ensure formal Case File exists and gather initial context.</goal>
+        <step n="1" name="Case File Check">If missing, CREATE a Case File using the Case File Blueprint. PROMPT user if reproduction steps are missing.</step>
+        <step n="2" name="Executable Target">Ensure isolated, executable reproduction test script exists early on.</step>
         <step n="3" name="Context Gathering">Use `EXECUTE` (`git grep`), `READ`, and `RESEARCH` to understand the codebase and call hierarchy.</step>
         <step n="4" name="Proactive Instrumentation">Review target code. If investigating a high-value boundary, use an `Instrumentation` plan to build permanent, conditionally-activated debug diagnostics (e.g., scoped toggles, state dumps) to aid current and future isolation.</step>
       </phase>
@@ -26,24 +26,24 @@
       <phase n="1" name="System Model Initialization">
         <goal>Establish the baseline mental model.</goal>
         <step n="1" name="Contingency">If the bug cannot be reproduced locally, pivot to the **Remote CLI Protocol (Rule 14)** for all subsequent diagnostic steps.</step>
-        <step n="2" name="Baseline Understanding">Synthesize gathered context into a preliminary description of how the relevant components *should* interact. `EDIT` the MRE to populate `**Understanding:**`.</step>
-        <step n="3" name="Identify Discrepancies">Define exactly what observations currently contradict your Understanding or remain unknown. `EDIT` the MRE to populate `### Discrepancies`.</step>
+        <step n="2" name="Baseline Understanding">Synthesize gathered context into a preliminary description of how the relevant components *should* interact. `EDIT` the Case File to populate `**Understanding:**`.</step>
+        <step n="3" name="Identify Discrepancies">Define exactly what observations currently contradict your Understanding or remain unknown. `EDIT` the Case File to populate `### Discrepancies`.</step>
       </phase>
 
       <phase n="2" name="Probing Loop">
         <goal>Peel back internal layers to resolve discrepancies.</goal>
         <step n="1" name="Design Probe">Create a targeted spike in `/spikes/debug/` to expose internal state, data flow, or failure points (strictly NO mocks).</step>
         <step n="2" name="Execute & Observe">`EXECUTE` the probe. Analyze the exact reality of the system's execution against the model.</step>
-        <step n="3" name="Model Refinement">Based on the observation, `EDIT` the MRE. Expand or correct the `### Understanding` with the newly revealed mechanics, and update the `### Discrepancies` list. DO NOT append a history log. The document must only reflect the current state.</step>
+        <step n="3" name="Model Refinement">Based on the observation, `EDIT` the Case File. Expand or correct the `### Understanding` with the newly revealed mechanics, and update the `### Discrepancies` list. DO NOT append a history log. The document must only reflect the current state.</step>
         <step n="4" name="Loop or Align">If discrepancies remain, repeat Phase 2. If all discrepancies are resolved and the root cause is fully understood, `PROMPT` the user with the final System Model to gain alignment before proceeding to repair.</step>
       </phase>
 
       <phase n="3" name="Repair & Integration">
-        <goal>Implement the fix, generalize the learning, and finalize the MRE.</goal>
+        <goal>Implement the fix, generalize the learning, and finalize the Case File.</goal>
         <step n="1" name="Baseline & Stage">`EXECUTE git status` and `git diff`. Then `EXECUTE git add .` to securely separate preexisting developer WIP.</step>
         <step n="2" name="Spike-Guided Fix">Apply the minimal fix to `src/` guided by the real-environment probe, NOT the test harness. Iterate until the probe passes.</step>
         <step n="3" name="Formalize & Generalize Tests">ONLY AFTER the fix works in the real environment, align the formal Test Harness Triad (`tests/harness/`) and write the regression test in `tests/suites/` to prevent recurrence.</step>
-        <step n="4" name="Document Solution & Finalize MRE">`EDIT` the MRE. Update the `### Understanding` to reflect the implemented code. Populate the `### Implemented Fixes` and `### Prevention` sections. Ensure `### Discrepancies` states "None". Change `- **Status:** Unresolved` to `- **Status:** Resolved`.</step>
+        <step n="4" name="Document Solution & Finalize Case File">`EDIT` the Case File. Update the `### Understanding` to reflect the implemented code. Populate the `### Implemented Fixes` and `### Prevention` sections. Ensure `### Discrepancies` states "None". Change `- **Status:** Unresolved` to `- **Status:** Resolved`.</step>
         <step n="5" name="Proactive Generalization & Refactoring">After fixing the immediate bug, generalize the learning. First, abstract the bug class (e.g., "Unvalidated input causes X") and use `git grep` to find similar vulnerable code patterns. Second, consider if the investigation revealed any other code health issues, such as duplicate logic or suboptimal patterns. Log all suspicious findings and potential refactorings as `[ ] Technical Debt` in the active Milestone for future action.</step>
       </phase>
 
@@ -69,7 +69,7 @@
       <state name="Red 🔴" trigger="Current Status is Yellow AND Outcome matched the Failure condition.">
           <action>Pivot investigation. Log new discrepancy and restart Probing Loop.</action>
           <dos_donts>
-            <do>Restart required: 1. Halt the current probe. 2. `EDIT` the MRE doc to add the newly discovered blocker to the `### Discrepancies` list. 3. Restart workflow from Phase 2.</do>
+            <do>Restart required: 1. Halt the current probe. 2. `EDIT` the Case File doc to add the newly discovered blocker to the `### Discrepancies` list. 3. Restart workflow from Phase 2.</do>
             <dont>Perform destructive workspace resets (`git clean` / `restore`), or stubbornly persist with a flawed probe.</dont>
           </dos_donts>
         </state>
@@ -78,7 +78,7 @@
       <rule n="2" name="State Dashboard">
         <description>Maintain orientation via this dashboard in the `Rationale` block.</description>
         <template>
-MRE: [docs/project/debugging/path-to-mre.md]
+Case File: [docs/project/debugging/NN-{{bug_title}}.md]
 FAILURE: [Concise description of original error]
 
 PHASES:
@@ -131,12 +131,12 @@ WIP & REMINDERS:
 
       <rule n="15" name="Reality-Driven Repair & Harness Alignment">Spikes MUST interact with the actual application and probe reality for each experiment iteration (strictly NO mocks). During Phase 6 (Reality-Driven TDD Repair), use these real-environment spikes as your guidance, NOT the test harness. ONLY AFTER the fix is verified in the real environment should you align the `tests/harness/` (Setup, Drivers, Observers) and write the formal regression test. Bypassing the harness for the final regression test is a zero-tolerance violation.</rule>
 
-      <rule n="16" name="Documentation Standards">All created markdown documents (including MREs, Specs, etc.) MUST begin with an H1 (`#`) descriptive title, immediately followed by metadata bullet points (e.g., `- **Path:** ...`, `- **Status:** ...`).</rule>
+      <rule n="16" name="Documentation Standards">All created markdown documents (including Case Files, Specs, etc.) MUST begin with an H1 (`#`) descriptive title, immediately followed by metadata bullet points (e.g., `- **Path:** ...`, `- **Status:** ...`).</rule>
     </general_rules>
 
     <blueprints>
-      <blueprint name="MRE (Living Case File)">
-        <description>The formal state snapshot for tracking the bug. This is a living document—do not treat it as a history log. When the system logic is fixed, absorb the changes into 'Understanding' and clear the 'Discrepancies'.</description>
+      <blueprint name="Case File">
+        <description>The formal state snapshot for tracking the bug. Must be created as a NEW file using sequential numbering (NN-{{bug_title}}.md). NEVER overwrite an existing Case File. This is a living document—do not treat it as a history log. When the system logic is fixed, absorb the changes into 'Understanding' and clear the 'Discrepancies'.</description>
         <section n="1" name="Metadata">
           <item name="Path">docs/project/debugging/NN-{{bug_title}}.md</item>
           <item name="Heading"># Bug: {{bug_title}}</item>
@@ -294,16 +294,16 @@ A summary of how the regression tests and any harness modifications prevent this
 ## Rationale
 ~~~~~~
 1. Synthesis
-The context gathering phase is complete. I have initialized the System Model in the MRE, noting that while the JWT is structurally valid, the server rejects it. I need to peel back the layer inside `AuthMiddleware` to see exactly why it rejects the token.
+The context gathering phase is complete. I have initialized the System Model in the Case File, noting that while the JWT is structurally valid, the server rejects it. I need to peel back the layer inside `AuthMiddleware` to see exactly why it rejects the token.
 
 2. Justification
 Per Phase 2 (Probing Loop), I must design a targeted spike to expose the internal state causing the conflict without making assumptions. I will execute the probe and then update the living System Model.
 
 3. Expectation
-The probe will output the exact error thrown by `jwt.verify()`. I will use this observation in the next turn to refine the 'Understanding' and update the 'Conflicts' in the MRE document.
+The probe will output the exact error thrown by `jwt.verify()`. I will use this observation in the next turn to refine the 'Understanding' and update the 'Conflicts' in the Case File document.
 
 4. State Dashboard
-MRE: docs/project/debugging/01-auth-bug.md
+Case File: docs/project/debugging/01-auth-bug.md
 FAILURE: Intermittent 401 Unauthorized during Checkout.
 
 PHASES:
@@ -314,7 +314,7 @@ PHASES:
 - [ ] Handoff
 
 WIP & REMINDERS:
-- [TODO] Analyze probe output and edit MRE System Model.
+- [TODO] Analyze probe output and edit Case File System Model.
 ~~~~~~
 
 ## Action Plan

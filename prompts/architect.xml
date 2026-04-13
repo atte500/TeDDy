@@ -148,9 +148,10 @@
         </section>
       </blueprint>
 
-      <blueprint name="MRE (Living Case File)">
-        <description>The formal state snapshot for tracking the bug. Used to invoke the Debugger.</description>
+      <blueprint name="Case File">
+        <description>The formal state snapshot for tracking the bug. Must be created as a NEW file using sequential numbering. NEVER overwrite an existing Case File. Used to invoke the Debugger.</description>
         <section n="1" name="Metadata">
+          <item name="Path">docs/project/debugging/NN-{{bug_title}}.md</item>
           <item name="Heading"># Bug: {{bug_title}}</item>
           <item name="Status">- **Status:** Unresolved</item>
           <item name="Milestone">- **Milestone:** [link or N/A]</item>
@@ -186,10 +187,10 @@ A bulleted list of the specific observations that contradict the Understanding a
           <circuit_breaker>You have EXACTLY ONE attempt to fix. If the subsequent Outcome fails to meet the Expectation again, you MUST transition to Red 🔴 next turn.</circuit_breaker>
         </state>
         <state name="Red 🔴" trigger="Current Status is Yellow AND Outcome failed to meet the Expectation.">
-          <action>Halt work. `CREATE` an MRE document (`docs/project/debugging/NN-{{bug_title}}.md`) detailing the failure and `INVOKE` the Debugger.</action>
+          <action>Halt work. `CREATE` a NEW Case File document (`docs/project/debugging/NN-{{bug_title}}.md`) detailing the failure and `INVOKE` the Debugger.</action>
           <dos_donts>
-            <do>Halt all work, document the failure in a formal MRE, and delegate to the Debugger.</do>
-            <dont>Attempt deep debugging, modify production code without a reproduction, or proceed despite systemic failure.</dont>
+            <do>Halt all work, document the failure in a formal, sequentially numbered Case File, and delegate to the Debugger.</do>
+            <dont>Attempt deep debugging, modify production code without a reproduction, proceed despite systemic failure, or overwrite an older Case File.</dont>
           </dos_donts>
         </state>
       </rule>
