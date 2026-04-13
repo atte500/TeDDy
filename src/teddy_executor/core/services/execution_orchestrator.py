@@ -85,7 +85,8 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         if halt_execution:
             return (
                 self._action_executor.handle_skipped_action(
-                    action, "Skipped because a previous action failed."
+                    action,
+                    "Skipped because a previous action failed. (Hint: use `Allow Failure: true` to continue the Action Plan even if the command returns a non-zero exit code)",
                 ),
                 True,
             )
