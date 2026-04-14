@@ -268,7 +268,9 @@ A summary of how the regression tests and any harness modifications prevent this
           <description>Asks user for decisions. No conversational FYI.</description>
           <template>
 ### `PROMPT`
-- **Reference Files:** (Optional) [path](/path)
+- **Reference Files:** (Optional)
+  [path1](/path1)
+  [path2](/path2)
 
 [Message text. CRITICAL: NO Markdown headings or fenced code blocks.]
           </template>
@@ -279,7 +281,9 @@ A summary of how the regression tests and any harness modifications prevent this
           <template>
 ### `RETURN`
 - **Description:** [Explanation]
-- **Reference Files:** (Optional) [path](/path)
+- **Reference Files:** (Optional)
+  [path1](/path1)
+  [path2](/path2)
           </template>
         </action>
       </action_formats>

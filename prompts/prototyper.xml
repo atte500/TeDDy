@@ -301,7 +301,9 @@ A bulleted list of the specific observations that contradict the Understanding a
           <description>Asks user for decisions. No conversational FYI.</description>
           <template>
 ### `PROMPT`
-- **Reference Files:** (Optional) [path](/path)
+- **Reference Files:** (Optional)
+  [path1](/path1)
+  [path2](/path2)
 
 [Message text. CRITICAL: NO Markdown headings or fenced code blocks.]
           </template>
@@ -313,7 +315,9 @@ A bulleted list of the specific observations that contradict the Understanding a
 ### `INVOKE`
 - **Agent:** [Target Agent Name]
 - **Description:** [Explanation]
-- **Reference Files:** (Optional) [path](/path)
+- **Reference Files:** (Optional)
+  [path1](/path1)
+  [path2](/path2)
           </template>
         </action>
 
