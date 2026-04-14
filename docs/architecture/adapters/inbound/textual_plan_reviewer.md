@@ -21,7 +21,7 @@ Implements the `IPlanReviewer` port using the `Textual` TUI framework. It provid
 4. **Action Log Formatting Contract:** When viewing execution logs (hotkey `d`), the TUI MUST format the `ActionLog` as a structured Markdown document:
    - **Header:** `### {ACTION_TYPE}: {SUMMARY}`
    - **Status:** `- **Status:** {STATUS}`
-   - **Fenced Blocks:** `stdout`, `stderr`, and `diff` MUST be wrapped in triple-backtick fences with appropriate language markers (`text` or `diff`).
+   - **Fenced Blocks:** `stdout`, `stderr`, and `diff` MUST be wrapped in quadruple-backtick fences (````) to allow embedded triple-backtick blocks within the content.
    - **UX:** Viewing the log is a read-only operation and MUST bypass the "apply changes" confirmation prompt.
 5. **Tiered Interaction:**
    - **Tier 1:** Summary view (Header/Footer).
