@@ -13,6 +13,12 @@ class WebScraperAdapter(WebScraper):
     An adapter that implements the WebScraper port using requests and trafilatura.
     """
 
+    def _get_trafilatura(self):
+        """Lazy-load trafilatura to keep CLI startup fast."""
+        import trafilatura
+
+        return trafilatura
+
     def get_content(self, url: str) -> str:
         """
         Fetches the content from the given URL.
@@ -40,7 +46,7 @@ class WebScraperAdapter(WebScraper):
             response.raise_for_status()
             return response.text
 
-        import trafilatura
+        trafilatura = self._get_trafilatura()
 
         html_content = None
         try:

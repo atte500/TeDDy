@@ -39,12 +39,13 @@ def handle_new_session(  # noqa: PLR0913
 
         current_session_name = actual_name
         while True:
+            # Safeguard: prevent infinite loops in non-interactive CI environments
             report = orchestrator.resume(
                 session_name=current_session_name,
                 interactive=interactive,
                 message=message,
             )
-            if not report:
+            if report is None:
                 break
 
             handle_report_output(container, report, no_copy)

@@ -98,4 +98,7 @@ def clean_test_env():
 
     # Systemic Fix for Windows CI worker crashes: ensure CWD is restored
     # to the project root after every test, preventing state leakage.
-    os.chdir(project_root)
+    try:
+        os.chdir(project_root)
+    except Exception:
+        pass
