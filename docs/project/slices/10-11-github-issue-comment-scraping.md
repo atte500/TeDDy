@@ -9,7 +9,7 @@ As a developer using TeDDy, I want the `context` and `research` commands to capt
 
 ### Deliverables
 - [x] **Contract** - Update `WebScraper` port to accept optional extraction hints (Internal).
-- [ ] **Harness** - Add integration test for GitHub Issue/PR scraping in `tests/integration/adapters/outbound/test_web_scraper_adapter.py`.
+- [x] **Harness** - Add integration test for GitHub Issue/PR scraping in `tests/integration/adapters/outbound/test_web_scraper_github_scraping.py`.
 - [ ] **Logic** - Implement `_extract_github_conversation` in `WebScraperAdapter` using the hybrid JSON/HTML strategy.
 - [ ] **Wiring** - Add routing logic in `get_content` to detect `/issues/` or `/pull/` URLs and invoke the specialized extractor.
 
@@ -74,3 +74,7 @@ The current `WebScraperAdapter` uses `trafilatura` for all non-blob URLs. `trafi
 - Updated `WebScraper` protocol to include `@runtime_checkable` and accept `**kwargs` in `get_content`.
 - Updated `WebScraperAdapter` implementation signature.
 - Added signature verification unit tests in `tests/suites/unit/adapters/outbound/test_web_scraper_contract.py`.
+
+### Deliverable: Harness
+- Created integration test suite `tests/integration/adapters/outbound/test_web_scraper_github_scraping.py`.
+- Verified RED state: current scraper fails to extract description/comments from GitHub JSON-embedded payloads.
