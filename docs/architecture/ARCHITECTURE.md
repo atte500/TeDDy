@@ -44,6 +44,7 @@ This document outlines the technical standards, conventions, and setup process f
 
 ### Testing Strategy
 - **Framework:** `pytest` with the `anyio` plugin for asynchronous testing.
+- **Mocking Strategy:** This project uses the standard `unittest.mock` library (specifically the `patch` decorator and context manager) for all mocking needs.
 - **Location of Tests:** Tests are organized into two primary top-level directories:
     - **`tests/suites/`**: Contains the test pyramid validating system intent.
         - `tests/suites/acceptance/`: End-to-end tests validating full user workflows.
