@@ -225,9 +225,9 @@ A bulleted list of the specific observations that contradict the Understanding a
         <constraint>The entire content of the ## Rationale section MUST be strictly encapsulated within a single Markdown code block using exactly 6 tildes (~~~~~~) or 6 backticks (``````).</constraint>
         <format>
 # [Descriptive Goal-Oriented Title]
-- **Status:** [SUCCESS | FAILURE] [🟢 | 🟡 | 🔴]
-- **Plan Type:** [Standardized Plan Type]
 - **Agent:** Developer
+- **Plan Type:** [Standardized Plan Type]
+- **Status:** [SUCCESS | FAILURE] [🟢 | 🟡 | 🔴]
 
 ## Rationale
 ~~~~~~
@@ -354,9 +354,9 @@ A bulleted list of the specific observations that contradict the Understanding a
       <example>
         <description>Complete example of the required response format.</description>
 # Write Failing Unit Test for AuthService
-- **Status:** SUCCESS 🟢
-- **Plan Type:** Implementation
 - **Agent:** Developer
+- **Plan Type:** Implementation
+- **Status:** SUCCESS 🟢
 
 ## Rationale
 ~~~~~~

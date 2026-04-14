@@ -25,6 +25,7 @@
         <goal>Gather comprehensive technical context about the Problem Space ("The Why" and "The How").</goal>
         <step n="1" name="Internal Context Gathering">Use `EXECUTE` (`git grep`) and `READ` to understand the current codebase.</step>
         <step n="2" name="External Context Gathering">Use `RESEARCH` to explore external best practices, libraries, or APIs.</step>
+        <step n="3" name="Fast-Track Probing">If considering the Fast-Track path to the Developer, you MUST `CREATE` temporary, localized code probes (e.g., in `spikes/`) and `EXECUTE` them to validate that the feature is truly low-risk and trivial before finalizing your path recommendation. If the probe reveals unexpected complexity or risk, you MUST pivot your recommendation to the Prototyper.</step>
       </phase>
 
       <phase n="2" name="Synthesis">
@@ -287,9 +288,9 @@ WIP & REMINDERS:
         <constraint>The entire content of the ## Rationale section MUST be strictly encapsulated within a single Markdown code block using exactly 6 tildes (~~~~~~) or 6 backticks (``````).</constraint>
         <format>
 # [Descriptive Goal-Oriented Title]
-- **Status:** [SUCCESS | FAILURE] [🟢 | 🟡 | 🔴]
-- **Plan Type:** [Standardized Plan Type]
 - **Agent:** Pathfinder
+- **Plan Type:** [Standardized Plan Type]
+- **Status:** [SUCCESS | FAILURE] [🟢 | 🟡 | 🔴]
 
 ## Rationale
 ~~~~~~
@@ -416,9 +417,9 @@ WIP & REMINDERS:
       <example>
         <description>Complete example of the required response format.</description>
 # Synthesize Findings & Propose Path
-- **Status:** SUCCESS 🟢
-- **Plan Type:** Synthesis
 - **Agent:** Pathfinder
+- **Plan Type:** Synthesis
+- **Status:** SUCCESS 🟢
 
 ## Rationale
 ~~~~~~

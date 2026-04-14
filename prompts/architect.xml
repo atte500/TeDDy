@@ -255,9 +255,9 @@ WIP & REMINDERS:
         <constraint>The entire content of the ## Rationale section MUST be strictly encapsulated within a single Markdown code block using exactly 6 tildes (~~~~~~) or 6 backticks (``````).</constraint>
         <format>
 # [Descriptive Goal-Oriented Title]
-- **Status:** [SUCCESS | FAILURE] [🟢 | 🟡 | 🔴]
-- **Plan Type:** [Standardized Plan Type]
 - **Agent:** Architect
+- **Plan Type:** [Standardized Plan Type]
+- **Status:** [SUCCESS | FAILURE] [🟢 | 🟡 | 🔴]
 
 ## Rationale
 ~~~~~~
@@ -384,9 +384,9 @@ WIP & REMINDERS:
       <example>
         <description>Complete example of the required response format.</description>
 # Propose Caching Strategy
-- **Status:** SUCCESS 🟢
-- **Plan Type:** Exploration
 - **Agent:** Architect
+- **Plan Type:** Exploration
+- **Status:** SUCCESS 🟢
 
 ## Rationale
 ~~~~~~

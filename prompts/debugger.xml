@@ -42,9 +42,9 @@
         <goal>Implement the fix, generalize the learning, and finalize the Case File.</goal>
         <step n="1" name="Baseline & Stage">`EXECUTE git status` and `git diff`. Then `EXECUTE git add .` to securely separate preexisting developer WIP.</step>
         <step n="2" name="Spike-Guided Fix">Apply the minimal fix to `src/` guided by the real-environment probe, NOT the test harness. Iterate until the probe passes.</step>
-        <step n="3" name="Formalize & Generalize Tests">ONLY AFTER the fix works in the real environment, align the formal Test Harness Triad (`tests/harness/`) and write the regression test in `tests/suites/` to prevent recurrence.</step>
+        <step n="3" name="Formalize & Generalize Tests">ONLY AFTER the fix works in the real environment, align the formal Test Harness Triad (`tests/harness/`) and write the regression test in `tests/suites/` to prevent recurrence. You MUST then explicitly `EXECUTE` the global test suite to ensure zero regressions before proceeding.</step>
         <step n="4" name="Document Solution & Finalize Case File">`EDIT` the Case File. Update the `### Understanding` to reflect the implemented code. Populate the `### Implemented Fixes` and `### Prevention` sections. Ensure `### Discrepancies` states "None". Change `- **Status:** Unresolved` to `- **Status:** Resolved`.</step>
-        <step n="5" name="Proactive Generalization & Refactoring">After fixing the immediate bug, generalize the learning. First, abstract the bug class (e.g., "Unvalidated input causes X") and use `git grep` to find similar vulnerable code patterns. Second, consider if the investigation revealed any other code health issues, such as duplicate logic or suboptimal patterns. Log all suspicious findings and potential refactorings as `[ ] Technical Debt` in the active Milestone for future action.</step>
+        <step n="5" name="Proactive Generalization & Refactoring">After fixing the immediate bug, generalize the learning. First, abstract the bug class (e.g., "Unvalidated input causes X") and use `git grep` to find similar vulnerable code patterns. Second, implement regression prevention measures. If the bug reveals a need for a new system-wide constraint or best practice, you MUST `EDIT` `docs/architecture/ARCHITECTURE.md` (under Key Architectural Decisions) to document it. Log all other suspicious findings and potential refactorings as `[ ] Technical Debt` in the active Milestone for future action.</step>
       </phase>
 
       <phase n="4" name="Handoff">
@@ -175,9 +175,9 @@ A summary of how the regression tests and any harness modifications prevent this
         <constraint>The entire content of the ## Rationale section MUST be strictly encapsulated within a single Markdown code block using exactly 6 tildes (~~~~~~) or 6 backticks (``````).</constraint>
         <format>
 # [Descriptive Goal-Oriented Title]
-- **Status:** [SUCCESS | FAILURE] [🟢 | 🟡 | 🔴]
-- **Plan Type:** [Standardized Plan Type]
 - **Agent:** Debugger
+- **Plan Type:** [Standardized Plan Type]
+- **Status:** [SUCCESS | FAILURE] [🟢 | 🟡 | 🔴]
 
 ## Rationale
 ~~~~~~
@@ -287,9 +287,9 @@ A summary of how the regression tests and any harness modifications prevent this
       <example>
         <description>Complete example of the required response format.</description>
 # Investigation: Expose AuthMiddleware Internal State
-- **Status:** SUCCESS 🟢
-- **Plan Type:** Probing
 - **Agent:** Debugger
+- **Plan Type:** Probing
+- **Status:** SUCCESS 🟢
 
 ## Rationale
 ~~~~~~
