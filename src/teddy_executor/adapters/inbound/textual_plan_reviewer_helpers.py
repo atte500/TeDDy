@@ -297,13 +297,21 @@ async def orchestrate_execution(app: ReviewerApp, node: Any, update_fn: Any) -> 
 
     try:
         import anyio
-
-        log = await anyio.to_thread.run_sync(
-            _execute_silently, app._action_dispatcher, action
-        )
-        action.executed, action.action_log = True, log
         from teddy_executor.core.domain.models.execution_report import ActionStatus
 
+        # Suspend the TUI to allow the subprocess (EXECUTE) to own the terminal.
+        # Note: App.suspend is not supported in headless environments (e.g., run_test).
+        if not getattr(app, "is_headless", False):
+            with app.suspend():
+                log = await anyio.to_thread.run_sync(
+                    _execute_silently, app._action_dispatcher, action
+                )
+        else:
+            log = await anyio.to_thread.run_sync(
+                _execute_silently, app._action_dispatcher, action
+            )
+
+        action.executed, action.action_log = True, log
         action.state = (
             ExecutionStatus.SUCCESS
             if log.status == ActionStatus.SUCCESS

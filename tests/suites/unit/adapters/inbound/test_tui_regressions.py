@@ -1,6 +1,10 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch, mock_open
-from teddy_executor.core.domain.models.plan import Plan, ActionData
+from teddy_executor.core.domain.models.plan import (
+    Plan,
+    ActionData,
+    ExecutionStatus,
+)
 from teddy_executor.core.domain.models.execution_report import ActionLog, ActionStatus
 from teddy_executor.adapters.inbound.textual_plan_reviewer import ReviewerApp
 from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
@@ -158,3 +162,71 @@ async def test_regression_reactivity_on_edit(mock_update, env):
 
     await edit_action_logic(app, MagicMock(), action)
     mock_update.assert_called_once_with(app, action)
+
+
+@pytest.mark.anyio
+async def test_regression_orchestrate_execution_suspends_app():
+    """
+    Ensures that orchestrate_execution suspends the TUI
+    during non-PROMPT actions to prevent terminal state corruption.
+    """
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+        orchestrate_execution,
+    )
+
+    # Setup
+    action = ActionData(type="EXECUTE", params={"command": "ls"}, selected=True)
+    node = MagicMock()
+    node.data = action
+
+    mock_dispatcher = MagicMock()
+    mock_dispatcher.dispatch_and_execute.return_value = ActionLog(
+        status=ActionStatus.SUCCESS, action_type="EXECUTE", params={}
+    )
+
+    # Mock App with suspension tracking
+    app = MagicMock()
+    app._action_dispatcher = mock_dispatcher
+    app.is_headless = False  # Ensure we hit the suspension logic
+
+    # Track context manager entry/exit
+    suspend_cm = MagicMock()
+    app.suspend.return_value = suspend_cm
+
+    # Execute
+    await orchestrate_execution(app, node, lambda a, b: None)
+
+    # Assert
+    assert app.suspend.called, "app.suspend() was not called for EXECUTE action"
+    assert suspend_cm.__enter__.called, "app.suspend() context manager was not entered"
+    assert suspend_cm.__exit__.called, "app.suspend() context manager was not exited"
+    assert action.executed is True
+    assert action.state == ExecutionStatus.SUCCESS
+
+
+@pytest.mark.anyio
+async def test_regression_orchestrate_execution_bypasses_suspend_in_headless():
+    """
+    Ensures suspension is bypassed in headless environments (like unit tests)
+    to avoid 'App.suspend is not supported' errors.
+    """
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+        orchestrate_execution,
+    )
+
+    action = ActionData(type="EXECUTE", params={"command": "ls"}, selected=True)
+    node = MagicMock()
+    node.data = action
+
+    mock_dispatcher = MagicMock()
+    mock_dispatcher.dispatch_and_execute.return_value = ActionLog(
+        status=ActionStatus.SUCCESS, action_type="EXECUTE", params={}
+    )
+
+    app = MagicMock()
+    app._action_dispatcher = mock_dispatcher
+    app.is_headless = True
+
+    await orchestrate_execution(app, node, lambda a, b: None)
+
+    assert not app.suspend.called, "app.suspend() should not be called in headless mode"
