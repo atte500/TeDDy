@@ -11,12 +11,7 @@
 
   <instructions>
     <goal>
-      Execute an **Atomic Delivery Cycle**: implement, commit, and push exactly ONE **Deliverable** at a time.
-
-      Hierarchy of Work:
-      1. Vertical Slice (`docs/project/slices/*.md`): The cohesive feature.
-      2. Scenario: A behavioral unit to be implemented iteratively.
-      3. Deliverable: The smallest atomic unit of work (e.g., one Port, DTO, or method). Corresponds to one item in the `Deliverables` checklist. It MUST strictly follow the Design-by-Contract (DbC) order (Contract -> Harness -> Logic -> Wiring -> Cleanup) and each be implemented in exactly ONE single atomic commit cycle.
+      Execute an Atomic Delivery Cycle: implement, commit, and push exactly ONE `Deliverables` item at a time.
     </goal>
 
     <workflow>
@@ -97,7 +92,6 @@
         <description>Maintain orientation via this dashboard in the `Rationale` block.</description>
         <template>
 Vertical Slice: [Current feature]
-Scenario: [Current behavioral scenario]
 Deliverable: [Specific deliverable]
 
 PHASES:
@@ -176,17 +170,20 @@ WIP & REMINDERS:
         <section n="3" name="Scenarios">
           <item name="Heading">## Scenarios</item>
           <item name="Content">Each scenario MUST begin with a user story formatted as a Markdown blockquote (e.g., "> As a [user type], I want to [action] so that [benefit]"). This is followed by behavioral scenarios using Gherkin descriptions with concrete examples (Given/When/Then).</item>
-          <item name="Deliverables">Under each scenario, include a `### Deliverables` checklist of atomic units of work. MUST use strict Design-by-Contract prefixes ordered as follows: 1. **Contract** - (Interfaces, DTOs), 2. **Harness** - (Setup, Drivers, Observers), 3. **Logic** - (Domain implementation), 4. **Wiring** - (DI, Controllers, Adapters), 5. **Cleanup** - (Optional). Format exactly as: `- [ ] **Prefix** - Description`. Each deliverable MUST be a distinct, testable unit scoped to be implemented in exactly ONE single atomic commit cycle.</item>
         </section>
-        <section n="4" name="Delta Analysis">
+        <section n="4" name="Deliverables">
+          <item name="Heading">## Deliverables</item>
+          <item name="Content">A unified checklist of atomic units of work for the entire slice. MUST use strict Design-by-Contract prefixes ordered as follows: 1. **Contract** - (Interfaces, DTOs), 2. **Harness** - (Extend test infrastructure: Setup builders, Driver methods, Observer assertions, Fakes. Do NOT write specific test cases here), 3. **Logic** - (Domain implementation), 4. **Wiring** - (DI, Controllers, Adapters), 5. **Cleanup** - (Optional). Format exactly as: `- [ ] **Prefix** - Description`. Each deliverable MUST be a distinct, testable unit scoped to be implemented in exactly ONE single atomic commit cycle.</item>
+        </section>
+        <section n="5" name="Delta Analysis">
           <item name="Heading">## Delta Analysis</item>
           <item name="Content">Summary of changes required to integrate the prototype's behavior into the existing codebase. Documents the investigation and justifies the final set of scenarios and deliverables.</item>
         </section>
-        <section n="5" name="Guidelines for Implementation">
+        <section n="6" name="Guidelines for Implementation">
           <item name="Heading">## Guidelines for Implementation</item>
           <item name="Content">Actionable strategy for implementation from the Prototyper. MAY include Test Harness Triad strategy and Mermaid diagrams for complex interactions.</item>
         </section>
-        <section n="6" name="Implementation Notes">
+        <section n="7" name="Implementation Notes">
           <item name="Heading">## Implementation Notes</item>
           <item name="Content">Filled by the Developer as things get implemented. Record of frictions, technical decisions, and findings. Used for the as-built update of Component Docs.</item>
         </section>
@@ -371,7 +368,6 @@ The `pytest` command will fail with a targeted `AssertionError`, and my next ste
 
 4. State Dashboard
 Vertical Slice: docs/project/slices/01-01-auth.md
-Scenario: User Login
 Deliverable: AuthService Contract
 
 PHASES:
