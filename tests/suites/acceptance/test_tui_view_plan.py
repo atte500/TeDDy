@@ -27,8 +27,13 @@ def test_tui_view_plan_binding_exists(env):
     )
 
     # Assert
-    # Bindings are defined as list of tuples: (key, action, description)
-    bindings = {b[0]: b[1] for b in app.BINDINGS}
+    # Bindings are defined as list of tuples or Binding objects
+    bindings = {
+        (b.key if hasattr(b, "key") else b[0]): (
+            b.action if hasattr(b, "action") else b[1]
+        )
+        for b in app.BINDINGS
+    }
     assert "v" in bindings, "ReviewerApp should have a 'v' binding"
     assert bindings["v"] == "view_plan", (
         "The 'v' binding should trigger 'view_plan' action"

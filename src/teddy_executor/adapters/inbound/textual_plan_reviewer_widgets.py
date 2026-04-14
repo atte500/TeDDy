@@ -76,10 +76,25 @@ class ParameterEditModal(ModalScreen[str]):
 class ActionTree(Tree):
     """A tree that allows both space and enter to toggle selection."""
 
+    RATIONALE_ROOT = "RATIONALE_ROOT"
+    ACTION_PLAN_ROOT = "ACTION_PLAN_ROOT"
+
     BINDINGS = [
         Binding("enter", "select_cursor", "Toggle", show=False),
         Binding("space", "select_cursor", "Toggle", show=False),
     ]
+
+    def jump_to_section(self, section_id: str) -> None:
+        """
+        Jump focus to a major section node.
+
+        Args:
+            section_id: The identifier for the section (e.g., RATIONALE_ROOT).
+        """
+        for child in self.root.children:
+            if child.data == section_id:
+                self.move_cursor(child)
+                return
 
 
 class ParameterDetail(ListView):
@@ -89,15 +104,18 @@ class ParameterDetail(ListView):
 class DetailItem(ListItem):
     """A focusable item in the parameter list."""
 
+    MAX_PREVIEW_LENGTH = 20000
+    TRUNCATE_HALFWAY = 10000
+
     def __init__(self, key: str, val: Any):
         super().__init__()
         # Truncate extremely large values to prevent TUI freeze during layout
         display_val = str(val)
-        if len(display_val) > 20000:
+        if len(display_val) > self.MAX_PREVIEW_LENGTH:
             display_val = (
-                display_val[:10000]
+                display_val[: self.TRUNCATE_HALFWAY]
                 + "\n\n... [TRUNCATED FOR PREVIEW] ...\n\n"
-                + display_val[-10000:]
+                + display_val[-self.TRUNCATE_HALFWAY :]
             )
         self.data = {"key": key, "val": val, "display_val": display_val}
 

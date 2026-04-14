@@ -25,10 +25,10 @@ Improve the efficiency of the TUI by allowing users to quickly jump between high
 - Then the focus jumps back to the Rationale text area
 
 ### Deliverables
-- [ ] **Contract** - Define `jump_to_section(section_id)` interface in `TextualPlanReviewer`.
-- [ ] **Harness** - Create `prototypes/tui_section_nav_spike.py` to test focus management between disparate widgets.
-- [ ] **Logic** - Implement section focus-finding logic in `textual_plan_reviewer_app.py`.
-- [ ] **Wiring** - Bind `ctrl+up/down` and `alt+up/down` in `ReviewerApp`.
+- [x] **Contract** - Define `jump_to_section(section_id)` interface in `TextualPlanReviewer`.
+- [x] **Harness** - Create `prototypes/tui_section_nav_spike.py` to test focus management between disparate widgets.
+- [x] **Logic** - Implement section focus-finding logic in `textual_plan_reviewer_app.py`.
+- [x] **Wiring** - Bind `ctrl+up/down` and `alt+up/down` in `ReviewerApp`.
 
 ## Guidelines for Implementation
 
@@ -54,4 +54,6 @@ Improve the efficiency of the TUI by allowing users to quickly jump between high
 - This pattern is consistent with "Section Navigation" found in IDEs and document readers.
 
 ## Implementation Notes
-(To be populated by Developer)
+- **Focus Management:** Navigation is performed on the `ActionTree` by iterating over the top-level children of the hidden root. The `move_cursor` method is used to reposition the focus, followed by an explicit `tree.focus()` call in the app action handlers to ensure the keyboard focus remains on the tree.
+- **Cross-Platform Compatibility:** macOS often intercepts `Ctrl+Arrow` keys for mission control. To provide a robust experience, three sets of modifiers were bound: `Ctrl`, `Alt`, and `Shift`.
+- **Validation:** Both Unit (widget level) and Acceptance (app/pilot level) tests were implemented to verify the wiring and the logic independently.

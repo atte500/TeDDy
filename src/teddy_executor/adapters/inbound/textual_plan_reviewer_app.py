@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
 from textual import work
 from textual.app import App, ComposeResult
+from textual.binding import Binding
 from textual.containers import Horizontal
 from textual.widgets import Footer, Header, ListView, Tree
 
@@ -51,6 +52,12 @@ class ReviewerApp(App):
     BINDINGS = [
         ("s", "submit", "Submit"),
         ("a", "toggle_all", "Toggle All"),
+        Binding("ctrl+down", "jump_next", "Next Section", show=False),
+        Binding("alt+down", "jump_next", "Next Section", show=False),
+        Binding("shift+down", "jump_next", "Next Section", show=False),
+        Binding("ctrl+up", "jump_prev", "Prev Section", show=False),
+        Binding("alt+up", "jump_prev", "Prev Section", show=False),
+        Binding("shift+up", "jump_prev", "Prev Section", show=False),
         ("e", "edit_details", "Edit/Preview"),
         ("d", "view_details", "Details"),
         ("r", "revert", "Revert"),
@@ -258,6 +265,18 @@ class ReviewerApp(App):
     def action_focus_right(self) -> None:
         """Switch focus to the Parameter Detail pane."""
         self.query_one("#right-pane").focus()
+
+    def action_jump_next(self) -> None:
+        """Jump to the Action Plan section."""
+        tree = self.query_one(ActionTree)
+        tree.jump_to_section(ActionTree.ACTION_PLAN_ROOT)
+        tree.focus()
+
+    def action_jump_prev(self) -> None:
+        """Jump to the Rationale section."""
+        tree = self.query_one(ActionTree)
+        tree.jump_to_section(ActionTree.RATIONALE_ROOT)
+        tree.focus()
 
     def action_toggle_all(self) -> None:
         """Toggle selection for all actions."""

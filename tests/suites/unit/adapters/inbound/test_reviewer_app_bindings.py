@@ -22,10 +22,15 @@ def reviewer_app():
 
 def test_reviewer_app_has_consolidated_edit_binding(reviewer_app):
     """Verify that 'e' is bound to edit_details and 'p' is removed."""
-    # Check bindings (currently defined as tuples in ReviewerApp)
-    binding_keys = [b[0] for b in reviewer_app.BINDINGS]
-    binding_actions = [b[1] for b in reviewer_app.BINDINGS]
-    binding_descriptions = [b[2] for b in reviewer_app.BINDINGS]
+    # Check bindings (can be tuples or Binding objects)
+    binding_keys = [b.key if hasattr(b, "key") else b[0] for b in reviewer_app.BINDINGS]
+    binding_actions = [
+        b.action if hasattr(b, "action") else b[1] for b in reviewer_app.BINDINGS
+    ]
+    binding_descriptions = [
+        b.description if hasattr(b, "description") else b[2]
+        for b in reviewer_app.BINDINGS
+    ]
 
     assert "e" in binding_keys
     assert "edit_details" in binding_actions
