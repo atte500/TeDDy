@@ -26,7 +26,7 @@ def test_find_best_match_ignores_trailing_whitespace_on_intermediate_lines():
         "    return True"
     )
 
-    match_str, score, is_ambiguous = find_best_match(file_content, find_block)
+    match_str, score, is_ambiguous, offset = find_best_match(file_content, find_block)
 
     # Assertions
     # Current behavior: score is approx 0.93-0.95
@@ -37,21 +37,30 @@ def test_find_best_match_ignores_trailing_whitespace_on_intermediate_lines():
     assert not is_ambiguous
 
 
-def test_find_best_match_preserves_indentation_significance():
+def test_find_best_match_allows_relative_indentation():
     """
-    Ensures that while trailing whitespace is ignored, leading whitespace
-    (indentation) is still considered significant.
-    Uses a multi-line block to avoid the single-line Substring Boost.
+    Ensures that relative indentation (constant offset) is treated as a perfect match.
     """
     file_content = "    print('hello')\n    print('world')"
     find_block = "print('hello')\nprint('world')"
 
-    _, score, _ = find_best_match(file_content, find_block)
+    _, score, _, offset = find_best_match(file_content, find_block)
 
-    # Score should be < 1.0 because indentation differs
-    assert score < 1.0, (
-        f"Indentation mismatch should not receive 1.0 bonus. Got {score}"
-    )
+    # Score should be 1.0 because the offset (+4) is constant
+    assert score == 1.0
+    assert offset == 4  # noqa: PLR2004
+
+
+def test_find_best_match_rejects_inconsistent_relative_indentation():
+    """
+    Ensures that if relative indentation is NOT constant, it is not boosted to 1.0.
+    """
+    file_content = "    print('hello')\n    print('world')"
+    find_block = "  print('hello')\nprint('world')"  # Offsets: 2 and 4
+
+    _, score, _, _ = find_best_match(file_content, find_block)
+
+    assert score < 1.0
 
 
 def test_find_best_match_respects_logic_differences():
@@ -61,6 +70,6 @@ def test_find_best_match_respects_logic_differences():
     file_content = "def func():\n    return False"
     find_block = "def func():\n    return True"
 
-    _, score, _ = find_best_match(file_content, find_block)
+    _, score, _, _ = find_best_match(file_content, find_block)
 
     assert score < 1.0, f"Logic change should not receive 1.0 bonus. Got {score}"

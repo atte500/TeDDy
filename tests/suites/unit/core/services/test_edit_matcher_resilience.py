@@ -7,7 +7,7 @@ def test_matcher_returns_score_and_ambiguity():
     content = "def hello():\n    print('world')\n"
     # Exact match should have score 1.0 and not be ambiguous
     find_block = "def hello():\n    print('world')\n"
-    diff, score, is_ambiguous = find_best_match_and_diff(
+    diff, score, is_ambiguous, offset = find_best_match_and_diff(
         content, find_block, threshold=0.8
     )
 
@@ -22,7 +22,7 @@ def test_matcher_detects_ambiguity_on_tie():
     content = "block\nblock\n"
     find_block = "block\n"
     # Both 'block\n' instances are identical, so it should be ambiguous
-    diff, score, is_ambiguous = find_best_match_and_diff(
+    diff, score, is_ambiguous, offset = find_best_match_and_diff(
         content, find_block, threshold=0.8
     )
 
@@ -38,7 +38,7 @@ def test_matcher_respects_custom_threshold():
     # Threshold 0.99 should fail validation, but find_best_match_and_diff
     # should still provide a diff to aid the user in debugging.
     high_threshold = 0.99
-    diff, score, is_ambiguous = find_best_match_and_diff(
+    diff, score, is_ambiguous, offset = find_best_match_and_diff(
         content, find_block, threshold=high_threshold
     )
     assert score < high_threshold
@@ -46,7 +46,7 @@ def test_matcher_respects_custom_threshold():
 
     # Threshold 0.8 should succeed
     low_threshold = 0.8
-    diff, score, is_ambiguous = find_best_match_and_diff(
+    diff, score, is_ambiguous, offset = find_best_match_and_diff(
         content, find_block, threshold=low_threshold
     )
     assert score >= low_threshold
@@ -62,7 +62,7 @@ def test_matcher_surgical_substring_boost():
     content = "The quick brown fox jumps over the lazy dog."
     find_block = "brown fox"
 
-    match_str, score, is_ambiguous = find_best_match(content, find_block)
+    match_str, score, is_ambiguous, offset = find_best_match(content, find_block)
 
     assert score == 1.0
     assert match_str == "brown fox"
@@ -81,7 +81,7 @@ def test_matcher_rounds_score_to_two_decimal_places():
     content = "The quick brown fox"
     find_block = "The quick brown fix"
 
-    _, score, _ = find_best_match(content, find_block)
+    _, score, _, _ = find_best_match(content, find_block)
 
     # Should be rounded to 0.95
     expected_rounded_score = 0.95

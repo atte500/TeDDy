@@ -14,10 +14,10 @@ class IEditSimulator(Protocol):
 
     def simulate_edits(
         self,
-        content: str,
-        edits: List[EditPair],
-        threshold: float = 0.95,
-        match_all: bool = False,
+        _content: str,
+        _edits: List[EditPair],
+        threshold: float = 1.00,
+        _match_all: bool = False,
     ) -> tuple[str, list[float]]:
         """
         Applies each FIND/REPLACE pair in sequence to the provided content.

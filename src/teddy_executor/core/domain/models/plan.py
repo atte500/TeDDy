@@ -63,7 +63,7 @@ class ValidationError:
     offending_node: Any = None
 
 
-DEFAULT_SIMILARITY_THRESHOLD = 0.95
+DEFAULT_SIMILARITY_THRESHOLD = 1.00
 
 
 @dataclass

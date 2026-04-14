@@ -25,7 +25,9 @@ class EditSimulator(IEditSimulator):
         """
         Applies a single find/replace operation to content with domain logic.
         """
-        best_match, score, is_ambiguous = find_best_match(content, find, threshold)
+        best_match, score, is_ambiguous, offset = find_best_match(
+            content, find, threshold
+        )
 
         if is_ambiguous and not match_all:
             count = content.count(find) if score == 1.0 else 2
@@ -40,6 +42,10 @@ class EditSimulator(IEditSimulator):
                 message=f"Search text {find!r} not found in file (Best Score: {score:.2f}, Threshold: {threshold:.2f}).",
                 content=content,
             )
+
+        # Apply indentation offset to the replacement block
+        if offset != 0:
+            replace = self._apply_indent_offset(replace, offset)
 
         # Align replacement newline with original match to prevent concatenation
         final_replace = replace
@@ -64,6 +70,24 @@ class EditSimulator(IEditSimulator):
             # Replaces all occurrences of the found block
             return content.replace(best_match, final_replace), score
         return content.replace(best_match, final_replace, 1), score
+
+    def _apply_indent_offset(self, replace_block: str, offset: int) -> str:
+        """Applies a constant indentation offset to every non-empty line."""
+        lines = replace_block.splitlines(keepends=True)
+        result = []
+        for line in lines:
+            stripped = line.lstrip()
+            if not stripped:
+                result.append(line)
+            elif offset > 0:
+                result.append(" " * offset + line)
+            elif offset < 0:
+                current_indent = len(line) - len(stripped)
+                to_remove = min(abs(offset), current_indent)
+                result.append(line[to_remove:])
+            else:
+                result.append(line)
+        return "".join(result)
 
     def simulate_edits(
         self,

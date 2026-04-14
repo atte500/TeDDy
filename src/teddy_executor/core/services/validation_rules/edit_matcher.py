@@ -23,50 +23,50 @@ def find_best_match(
     file_content: str,
     find_block: str,
     threshold: float = DEFAULT_SIMILARITY_THRESHOLD,
-) -> tuple[str, float, bool]:
+) -> tuple[str, float, bool, int]:
     """
     Finds the most similar block of text in the file content.
 
     Returns:
-        tuple[str, float, bool]: (best_match_string, best_score, is_ambiguous)
+        tuple[str, float, bool, int]: (best_match_string, best_score, is_ambiguous, offset)
     """
     file_lines = file_content.splitlines(keepends=True)
     find_lines = find_block.splitlines(keepends=True)
     num_find_lines = len(find_lines)
 
     if not file_lines or not find_lines:
-        return "", 0.0, False
+        return "", 0.0, False, 0
 
     # If the file is smaller than the find block, just compare against the whole file
     if len(file_lines) < num_find_lines:
         matcher = difflib.SequenceMatcher(None, find_lines, file_lines)
         score = matcher.ratio()
-        return "".join(file_lines), round(score, 2), False
+        return "".join(file_lines), round(score, 2), False, 0
 
     candidate_starts = gather_candidate_starts(file_lines, find_lines, threshold)
-    best_match_lines, score, is_ambiguous = _evaluate_candidates(
+    best_match_lines, score, is_ambiguous, offset = _evaluate_candidates(
         file_lines, find_lines, candidate_starts, find_block
     )
 
-    return "".join(best_match_lines), round(score, 2), is_ambiguous
+    return "".join(best_match_lines), round(score, 2), is_ambiguous, offset
 
 
 def find_best_match_and_diff(
     file_content: str,
     find_block: str,
     threshold: float = DEFAULT_SIMILARITY_THRESHOLD,
-) -> tuple[str, float, bool]:
+) -> tuple[str, float, bool, int]:
     """
     Finds the most similar block of text in the file content and generates a diff.
     Uses character-level ndiff (with ? markers) for fuzzy matches.
 
     Returns:
-        tuple[str, float, bool]: (diff_text, best_score, is_ambiguous)
+        tuple[str, float, bool, int]: (diff_text, best_score, is_ambiguous, offset)
     """
     debug = os.environ.get("TEDDY_DEBUG")
     start_total = time.perf_counter()
 
-    best_match_str, score, is_ambiguous = find_best_match(
+    best_match_str, score, is_ambiguous, offset = find_best_match(
         file_content, find_block, threshold
     )
 
@@ -86,7 +86,7 @@ def find_best_match_and_diff(
             print(f"Total:  {time.perf_counter() - start_total:.4f}s")
             print("-------------------------")
 
-    return res, score, is_ambiguous
+    return res, score, is_ambiguous, offset
 
 
 def _evaluate_candidates(
@@ -94,7 +94,7 @@ def _evaluate_candidates(
     find_lines: List[str],
     candidate_starts: Set[int],
     find_block: str,
-) -> tuple[List[str], float, bool]:
+) -> tuple[List[str], float, bool, int]:
     """Evaluates candidates using difflib ratio, with sub-sampling and priority capping."""
     num_find_lines = len(find_lines)
     scored_candidates = []
@@ -129,11 +129,12 @@ def _refine_and_select_best(
     find_lines: List[str],
     num_find_lines: int,
     find_block: str,
-) -> tuple[List[str], float, bool]:
+) -> tuple[List[str], float, bool, int]:
     """Refines top candidates and returns the best match with ambiguity info."""
     best_ratio = -1.0
     best_match_lines: List[str] = []
     is_ambiguous = False
+    best_offset = 0
     ratio_calls = 0
 
     for score, window in candidates:
@@ -143,18 +144,8 @@ def _refine_and_select_best(
         else:
             ratio = score
 
-        # Whitespace Indifference Bonus:
-        # If the strings are identical except for trailing whitespace on any line
-        # (including newlines), we treat it as a perfect 1.0 match. This solves
-        # cases where the file has "dirty" trailing spaces/tabs or mismatched
-        # line endings (\n vs \r\n), while still requiring exact code logic.
-        if ratio < 1.0:
-
-            def norm(s: str) -> str:
-                return "\n".join(line.rstrip() for line in s.splitlines())
-
-            if norm("".join(window)) == norm(find_block):
-                ratio = 1.0
+        # Whitespace Indifference Bonus & Indentation Offset
+        ratio, current_offset = _apply_indentation_bonus(window, find_block, ratio)
 
         current_match_lines, ratio, current_is_ambiguous = _apply_substring_boost(
             window, find_lines, ratio
@@ -165,6 +156,7 @@ def _refine_and_select_best(
             best_ratio = ratio
             best_match_lines = current_match_lines
             is_ambiguous = current_is_ambiguous
+            best_offset = current_offset
         elif ratio == best_ratio and ratio > 0:
             is_ambiguous = True
 
@@ -172,7 +164,43 @@ def _refine_and_select_best(
         print(f"Top Candidates Refined: {len(candidates)}")
         print(f"Ratio Calls: {ratio_calls}")
 
-    return best_match_lines, best_ratio, is_ambiguous
+    return best_match_lines, best_ratio, is_ambiguous, best_offset
+
+
+def _apply_indentation_bonus(
+    window: List[str], find_block: str, current_ratio: float
+) -> tuple[float, int]:
+    """
+    Applies 1.0 score boost if window matches find_block logic exactly,
+    ignoring trailing whitespace and constant relative indentation.
+    """
+    ratio = current_ratio
+    offset = 0
+    if ratio >= 1.0:
+        return ratio, offset
+
+    w_lines = [line.rstrip() for line in window]
+    f_lines = [line.rstrip() for line in find_block.splitlines(keepends=True)]
+
+    if len(w_lines) != len(f_lines):
+        return ratio, offset
+
+    offsets = []
+    for w_line, f_line in zip(w_lines, f_lines):
+        w_stripped = w_line.lstrip()
+        f_stripped = f_line.lstrip()
+        if w_stripped != f_stripped:
+            return ratio, offset
+        if w_stripped:  # Only calculate offset for non-empty lines
+            offsets.append(
+                len(w_line) - len(w_stripped) - (len(f_line) - len(f_stripped))
+            )
+
+    if offsets and len(set(offsets)) == 1:
+        ratio = 1.0
+        offset = offsets[0]
+
+    return ratio, offset
 
 
 def _apply_substring_boost(

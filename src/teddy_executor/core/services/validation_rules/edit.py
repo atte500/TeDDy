@@ -150,7 +150,7 @@ def _validate_single_edit(
         if threshold is not None:
             matcher_kwargs["threshold"] = threshold
 
-        diff_text, score, is_ambiguous = find_best_match_and_diff(
+        diff_text, score, is_ambiguous, offset = find_best_match_and_diff(
             content, find_block, **matcher_kwargs
         )
 
@@ -208,7 +208,7 @@ def _get_already_applied_hint(
     """Detects if the REPLACE block is already present in the content."""
     replace_score = 0.0
     if isinstance(replace_block, str):
-        _, replace_score, _ = find_best_match_and_diff(
+        _, replace_score, _, _ = find_best_match_and_diff(
             content, replace_block, **matcher_kwargs
         )
 

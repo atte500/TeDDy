@@ -12,7 +12,7 @@ def test_matcher_gives_indifference_bonus_for_small_blocks_missing_newline():
     content = "print('hello')\n"
     find_block = "print('hello')"  # Missing newline
 
-    match_str, score, is_ambiguous = find_best_match(content, find_block)
+    match_str, score, is_ambiguous, offset = find_best_match(content, find_block)
 
     assert score == 1.0
     assert match_str == "print('hello')\n"
@@ -26,7 +26,7 @@ def test_matcher_gives_indifference_bonus_for_small_blocks_with_crlf():
     content = "print('hello')\r\n"
     find_block = "print('hello')"  # Missing CRLF
 
-    match_str, score, is_ambiguous = find_best_match(content, find_block)
+    match_str, score, is_ambiguous, offset = find_best_match(content, find_block)
 
     assert score == 1.0
     assert match_str == "print('hello')\r\n"
@@ -42,7 +42,7 @@ def test_matcher_gives_indifference_bonus_for_large_blocks_missing_newline():
     content = "\n".join(lines) + "\n"
     find_block = "\n".join(lines)  # Missing the final newline
 
-    match_str, score, is_ambiguous = find_best_match(content, find_block)
+    match_str, score, is_ambiguous, offset = find_best_match(content, find_block)
 
     # This is expected to FAIL until Scenario 2 is implemented
     assert score == 1.0

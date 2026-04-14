@@ -27,10 +27,16 @@ Given the improved indentation handling
 Then the default similarity threshold should be 1.00 (exact content match, ignoring relative indentation).
 
 ### Deliverables
-- [ ] **Logic** - Implement relative indentation detection and normalization in `EditMatcher.find_best_match`.
-- [ ] **Logic** - Ensure `EditSimulator` receives and applies the detected indentation offset to the `REPLACE` block.
-- [ ] **Logic** - Set `DEFAULT_SIMILARITY_THRESHOLD` to 1.00 in `src/teddy_executor/core/domain/models/plan.py`.
-- [ ] **Harness** - Add unit tests in `tests/suites/unit/core/services/test_edit_matcher_indentation.py` (new file) to verify relative indentation handling.
+- [x] **Logic** - Implement relative indentation detection and normalization in `EditMatcher.find_best_match`.
+- [x] **Logic** - Ensure `EditSimulator` receives and applies the detected indentation offset to the `REPLACE` block.
+- [x] **Logic** - Set `DEFAULT_SIMILARITY_THRESHOLD` to 1.00 in `src/teddy_executor/core/domain/models/plan.py`.
+- [x] **Harness** - Add unit tests in `tests/suites/unit/core/services/test_edit_matcher_indentation.py` (new file) to verify relative indentation handling.
+
+## Implementation Notes
+- **Contract Change:** `find_best_match` and `find_best_match_and_diff` now return a 4-tuple: `(match_str, score, is_ambiguous, offset)`.
+- **Indentation Offset:** The `offset` is calculated as `file_indent - find_indent`. A positive offset means the file is more indented than the AI's FIND block.
+- **Simulator Adjustment:** `EditSimulator` now applies this `offset` to every non-empty line of the `REPLACE` block before substitution. This maintains logical structure even if the AI provides 0-indexed blocks.
+- **Strictness:** Threshold increased to 1.00 globally. This is safe because indentation and trailing whitespace are now handled as 1.0 matches via normalization and offset detection.
 
 ## Guidelines for Implementation
 

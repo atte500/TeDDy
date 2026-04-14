@@ -11,6 +11,10 @@ def test_fuzzy_edit_success_with_diff_in_report(tmp_path, monkeypatch):
     """
     monkeypatch.chdir(tmp_path)
     (tmp_path / ".teddy").mkdir()
+    # Override global 1.00 threshold to allow fuzzy verification in this test
+    (tmp_path / ".teddy" / "config.yaml").write_text(
+        "execution:\n  similarity_threshold: 0.90", encoding="utf-8"
+    )
     target_file = tmp_path / "app.py"
     # Use content that differs from the FIND block by one character
     target_file.write_text("def hello():\n    print('hello worLd')\n", encoding="utf-8")
