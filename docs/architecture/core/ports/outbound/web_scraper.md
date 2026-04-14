@@ -10,11 +10,15 @@ This port defines the contract for fetching the content of a remote URL. It abst
 
 An adapter implementing this port **must** provide the following method:
 
-### `get_content(url: str) -> str`
+### `get_content(url: str, **_kwargs) -> str`
 **Status:** Implemented
 
 *   **Description:**
     Retrieves the primary textual content from the given URL. If the content is HTML, it should be converted to a clean, readable Markdown format.
+
+*   **Parameters:**
+    *   `url` (str): The URL to fetch content from.
+    *   `**_kwargs`: Optional extraction hints (e.g., `include_comments=True`).
 
 *   **Preconditions:**
     *   `url` must be a well-formed, absolute URL string (e.g., "https://example.com").

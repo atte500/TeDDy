@@ -8,7 +8,7 @@
 As a developer using TeDDy, I want the `context` and `research` commands to capture the full conversation of a GitHub issue or pull request, so that the AI has the complete context of bug reports and discussions.
 
 ### Deliverables
-- [ ] **Contract** - Update `WebScraper` port to accept optional extraction hints (Internal).
+- [x] **Contract** - Update `WebScraper` port to accept optional extraction hints (Internal).
 - [ ] **Harness** - Add integration test for GitHub Issue/PR scraping in `tests/integration/adapters/outbound/test_web_scraper_adapter.py`.
 - [ ] **Logic** - Implement `_extract_github_conversation` in `WebScraperAdapter` using the hybrid JSON/HTML strategy.
 - [ ] **Wiring** - Add routing logic in `get_content` to detect `/issues/` or `/pull/` URLs and invoke the specialized extractor.
@@ -67,3 +67,10 @@ The current `WebScraperAdapter` uses `trafilatura` for all non-blob URLs. `trafi
 -   Keep the logic purely text-based (no browser automation).
 -   Reuse the `DEFAULT_USER_AGENT` defined in the adapter.
 -   Set a reasonable timeout (15-30s) for the initial `requests.get` call.
+
+## Implementation Notes
+
+### Deliverable: Contract Update
+- Updated `WebScraper` protocol to include `@runtime_checkable` and accept `**kwargs` in `get_content`.
+- Updated `WebScraperAdapter` implementation signature.
+- Added signature verification unit tests in `tests/suites/unit/adapters/outbound/test_web_scraper_contract.py`.

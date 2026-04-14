@@ -19,7 +19,7 @@ class WebScraperAdapter(WebScraper):
 
         return trafilatura
 
-    def get_content(self, url: str) -> str:
+    def get_content(self, url: str, **_kwargs) -> str:
         """
         Fetches the content from the given URL.
 
@@ -28,6 +28,7 @@ class WebScraperAdapter(WebScraper):
 
         Args:
             url: The URL to fetch content from.
+            **_kwargs: Optional extraction hints.
 
         Returns:
             The text content of the page.
