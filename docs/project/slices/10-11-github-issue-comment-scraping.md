@@ -10,8 +10,8 @@ As a developer using TeDDy, I want the `context` and `research` commands to capt
 ### Deliverables
 - [x] **Contract** - Update `WebScraper` port to accept optional extraction hints (Internal).
 - [x] **Harness** - Add integration test for GitHub Issue/PR scraping in `tests/integration/adapters/outbound/test_web_scraper_github_scraping.py`.
-- [ ] **Logic** - Implement `_extract_github_conversation` in `WebScraperAdapter` using the hybrid JSON/HTML strategy.
-- [ ] **Wiring** - Add routing logic in `get_content` to detect `/issues/` or `/pull/` URLs and invoke the specialized extractor.
+- [x] **Logic** - Implement `_extract_github_conversation` in `WebScraperAdapter` using the hybrid JSON/HTML strategy.
+- [x] **Wiring** - Add routing logic in `get_content` to detect `/issues/` or `/pull/` URLs and invoke the specialized extractor.
 
 ## Scenarios
 
@@ -78,3 +78,9 @@ The current `WebScraperAdapter` uses `trafilatura` for all non-blob URLs. `trafi
 ### Deliverable: Harness
 - Created integration test suite `tests/integration/adapters/outbound/test_web_scraper_github_scraping.py`.
 - Verified RED state: current scraper fails to extract description/comments from GitHub JSON-embedded payloads.
+
+### Deliverable: Logic & Wiring
+- Implemented `_extract_github_conversation` with a hybrid JSON/CSS strategy.
+- Implemented recursive JSON search to handle deep/varied GitHub React hydration payloads.
+- Wired routing in `get_content` to detect `/issues/` and `/pull/` paths.
+- Relaxed domain check in routing to support `localhost` for integration testing.

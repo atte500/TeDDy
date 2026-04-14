@@ -6,6 +6,7 @@ from teddy_executor.core.ports.outbound.web_scraper import WebScraper
 
 
 DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36"
+MIN_GITHUB_CONTENT_LENGTH = 10
 
 
 class WebScraperAdapter(WebScraper):
@@ -18,6 +19,120 @@ class WebScraperAdapter(WebScraper):
         import trafilatura
 
         return trafilatura
+
+    def _get_bs4(self):
+        """Lazy-load BeautifulSoup to keep CLI startup fast."""
+        from bs4 import BeautifulSoup
+
+        return BeautifulSoup
+
+    def _extract_github_conversation(self, html: str) -> str:
+        """
+        Extracts issue or pull request content and comments from GitHub HTML.
+        Uses a hybrid strategy: JSON-embedded data (primary) and CSS selectors (fallback).
+        """
+        import json
+
+        soup = self._get_bs4()(html, "html.parser")
+
+        # 1. Primary: Try high-fidelity extraction from embedded JSON data
+        scripts = soup.find_all("script", type="application/json")
+        for script in scripts:
+            if not script.string:
+                continue
+            try:
+                data = json.loads(script.string)
+                result = self._parse_github_json(data)
+                if result:
+                    return result
+            except (json.JSONDecodeError, TypeError, AttributeError):
+                continue
+
+        # 2. Fallback: CSS-based scraping
+        return self._scrape_github_html(soup)
+
+    def _find_key_recursive(self, obj, target_key):
+        """Recursively search for a key in a nested dictionary/list."""
+        if isinstance(obj, dict):
+            if target_key in obj:
+                return obj[target_key]
+            for v in obj.values():
+                res = self._find_key_recursive(v, target_key)
+                if res:
+                    return res
+        elif isinstance(obj, list):
+            for item in obj:
+                res = self._find_key_recursive(item, target_key)
+                if res:
+                    return res
+        return None
+
+    def _gather_edges_recursive(self, obj, edges_out: list):
+        """Recursively gather all 'edges' lists into the output list."""
+        if isinstance(obj, dict):
+            if "edges" in obj and isinstance(obj["edges"], list):
+                edges_out.extend(obj["edges"])
+            for v in obj.values():
+                self._gather_edges_recursive(v, edges_out)
+        elif isinstance(obj, list):
+            for i in obj:
+                self._gather_edges_recursive(i, edges_out)
+
+    def _parse_github_json(self, data: dict) -> str | None:
+        """Helper to recursively find and parse issue/PR data from JSON."""
+        container = self._find_key_recursive(data, "issue") or self._find_key_recursive(
+            data, "pullRequest"
+        )
+        if not container or not isinstance(container, dict):
+            return None
+
+        title = (
+            container.get("title")
+            or container.get("titleHtml")
+            or container.get("titleText")
+            or "Unknown Title"
+        )
+        body = container.get("body") or container.get("bodyHTML", "")
+
+        all_edges: list[dict] = []
+        self._gather_edges_recursive(data, all_edges)
+
+        comments = []
+        seen_ids = set()
+        for edge in all_edges:
+            node = edge.get("node", {}) if isinstance(edge, dict) else {}
+            node_id = node.get("id")
+            if node_id and node_id not in seen_ids:
+                if node.get("__typename") in [
+                    "IssueComment",
+                    "PullRequestReview",
+                    "PullRequestReviewComment",
+                ]:
+                    seen_ids.add(node_id)
+                    author = node.get("author", {}).get("login", "unknown")
+                    c_body = node.get("body") or node.get("bodyHTML") or ""
+                    comments.append(
+                        f"### {node.get('__typename')} by {author}\n{c_body}\n\n"
+                    )
+
+        return f"# {title}\n\n## Description\n{body}\n\n" + "".join(comments)
+
+    def _scrape_github_html(self, soup) -> str:
+        """Helper for CSS-based fallback scraping."""
+        title_elem = soup.select_one(".markdown-title") or soup.select_one(
+            ".gh-header-title"
+        )
+        title = title_elem.get_text(strip=True) if title_elem else "GitHub Content"
+
+        bodies = soup.select(".markdown-body")
+        content_blocks = []
+        for i, block in enumerate(bodies):
+            text = block.get_text(separator="\n", strip=True)
+            if len(text) > MIN_GITHUB_CONTENT_LENGTH:
+                label = "Description" if i == 0 else f"Comment {i}"
+                content_blocks.append(f"## {label}\n{text}\n\n")
+
+        return f"# {title}\n\n" + "".join(content_blocks)
 
     def get_content(self, url: str, **_kwargs) -> str:
         """
@@ -66,6 +181,15 @@ class WebScraperAdapter(WebScraper):
 
         if not html_content:
             return ""
+
+        # Routing: Use specialized extractor for GitHub Issues and Pull Requests
+        is_github_domain = (
+            "github.com" in url or "localhost" in url or "127.0.0.1" in url
+        )
+        if is_github_domain and ("/issues/" in url or "/pull/" in url):
+            github_content = self._extract_github_conversation(html_content)
+            if github_content:
+                return github_content
 
         markdown_content = trafilatura.extract(
             html_content,
