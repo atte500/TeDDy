@@ -27,6 +27,7 @@ async def launch_editor(
     initial_content: str,
     suffix: str = ".txt",
     persistent_path: Optional[str] = None,
+    skip_confirm: bool = False,
 ) -> Optional[str]:
     """Launches an external editor non-blockingly and waits for TUI confirmation."""
     mock_out = os.environ.get("TEDDY_TEST_MOCK_EDITOR_OUTPUT")
@@ -50,7 +51,9 @@ async def launch_editor(
             os.chmod(temp_file, 0o644)
 
         spawn_editor(editor_cmd, temp_file)
-        return await _confirm_and_harvest(app, temp_file, initial_content, is_temp)
+        return await _confirm_and_harvest(
+            app, temp_file, initial_content, is_temp, skip_confirm=skip_confirm
+        )
     except Exception:  # nosec B110
         return None
     finally:
@@ -59,9 +62,13 @@ async def launch_editor(
 
 
 async def _confirm_and_harvest(
-    app: ReviewerApp, path: Any, initial: str, is_temp: bool
+    app: ReviewerApp, path: Any, initial: str, is_temp: bool, skip_confirm: bool = False
 ) -> Optional[str]:
-    confirmed = True if app.is_headless else await app.push_screen_wait(ConfirmScreen())
+    confirmed = (
+        True
+        if app.is_headless or skip_confirm
+        else await app.push_screen_wait(ConfirmScreen())
+    )
     if confirmed:
         with open(path, "r", encoding="utf-8") as f:
             return f.read()

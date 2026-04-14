@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch, mock_open
 from teddy_executor.adapters.inbound.textual_plan_reviewer_previews import (
     preview_create,
     preview_prompt,
@@ -59,3 +59,31 @@ async def test_preview_create_updates_content_only():
         assert action.modified is True
         app.push_screen_wait.assert_not_called()
         app._refresh_node.assert_called_once_with(node)
+
+
+@pytest.mark.anyio
+async def test_launch_editor_skips_confirmation():
+    """Tests that skip_confirm=True bypasses the ConfirmScreen modal."""
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_previews import (
+        launch_editor,
+    )
+
+    # Setup local app mock to match file pattern
+    app = MagicMock()
+    app.is_headless = False
+    app.push_screen_wait = AsyncMock()
+
+    # Mock system_env and console_tooling
+    app._system_env = MagicMock()
+    app._console_tooling = MagicMock()
+    app._system_env.create_temp_file.return_value = "test.log"
+    app._console_tooling.find_editor.return_value = ["code"]
+
+    # We mock the 'open' to avoid side effects and 'spawn_editor' to avoid real processes
+    with patch("builtins.open", mock_open(read_data="formatted log")), \
+         patch("teddy_executor.adapters.inbound.textual_plan_reviewer_previews.spawn_editor") as mock_spawn:
+        result = await launch_editor(app, "initial", skip_confirm=True)
+
+    assert result == "formatted log"
+    mock_spawn.assert_called_once()
+    app.push_screen_wait.assert_not_called()

@@ -27,9 +27,9 @@ Improve the TUI user experience by adopting a more robust rationale format, ensu
 > As a user, I want the "Action Log" view (triggered by 'd') to match the format of the final Execution Report so that the experience is consistent.
 
 - [✓] **Contract** - Implement `format_action_log(log: ActionLog) -> str` in `textual_plan_reviewer_helpers.py` to replicate the Jinja2 `render_action_details` macro.
-- [ ] **Logic** - Update `action_view_details` in `textual_plan_reviewer_app.py` to use the new formatter.
-- [ ] **Wiring** - Add a `skip_confirm: bool = False` parameter to `launch_editor` and `_confirm_and_harvest` in `textual_plan_reviewer_previews.py`.
-- [ ] **Wiring** - Pass `skip_confirm=True` when calling `launch_editor` from `action_view_details`.
+- [✓] **Logic** - Update `action_view_details` in `textual_plan_reviewer_app.py` to use the new formatter.
+- [✓] **Wiring** - Add a `skip_confirm: bool = False` parameter to `launch_editor` and `_confirm_and_harvest` in `textual_plan_reviewer_previews.py`.
+- [✓] **Wiring** - Pass `skip_confirm=True` when calling `launch_editor` from `action_view_details`.
 
 ## Delta Analysis
 

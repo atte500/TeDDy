@@ -211,21 +211,17 @@ class ReviewerApp(App):
             return
 
         from teddy_executor.core.domain.models.plan import ActionData
+        from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+            format_action_log,
+        )
 
         action = node.data
         if not isinstance(action, ActionData) or not action.executed:
             return
 
-        log_content = ""
         if action.action_log:
-            log = action.action_log
-            log_content = f"STATUS: {log.status.value}\n"
-            if log.failed_command:
-                log_content += f"FAILED COMMAND: {log.failed_command}\n"
-            log_content += f"\nDETAILS:\n{log.details}"
-
-        if log_content:
-            await launch_editor(self, log_content, suffix=".log")
+            log_content = format_action_log(action.action_log)
+            await launch_editor(self, log_content, suffix=".md", skip_confirm=True)
 
     @work
     async def action_view_plan(self) -> None:

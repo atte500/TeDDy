@@ -106,7 +106,7 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 - [ ] **Editor Sync:** Generalize the `code --wait` logic to handle other GUI editors that return before the file is released.
 - [ ] **File Length:** Refactor `src/teddy_executor/adapters/outbound/console_interactor.py` (>300 lines).
 - [ ] **File Length:** Refactor `src/teddy_executor/adapters/inbound/cli_helpers.py` (>300 lines).
-- [ ] **File Length:** Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_app.py` (306 lines).
+- [ ] **File Length:** Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_app.py` (310 lines).
 - [ ] **File Length:** Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_helpers.py` (455 lines).
 - [ ] **Complexity:** Refactor `check_action_logic` (PLR0911: 7 return statements).
 - [ ] **Typing:** Resolve `Mypy` union-attr errors and `Worker` awaitable mismatch in TUI logic/app.
