@@ -195,33 +195,31 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 
 This section serves as the "System Law" (Poka-Yoke) for TeDDy. It defines the prescriptive standards that all development work MUST follow.
 
--   **Rule:** The Test Harness (DSLs, Builders, Contexts) MUST reside exclusively within the `tests/` directory. **Rationale:** To maintain strict isolation between production and test-related code, preventing test dependencies from leaking into the core application.
--   **Rule:** All temporary test files and workspaces MUST be created within the standardized `tests/.tmp/` directory and explicitly cleaned up during test teardown. This is managed automatically by the `TestEnvironment` harness and the global `env` fixture. **Rationale:** To prevent filesystem pollution, ensure a consistent environment for all tests, and simplify CI detritus management.
--   **Rule:** All test fixtures and global configuration MUST be unified into the root `tests/conftest.py` entry point, which exports utilities from `tests/harness/setup/composition.py`. Specialized conftests in subdirectories are forbidden unless explicitly justified. **Rationale:** To maintain a clean, predictable "Primary Driving Adapter" layer for the test suite.
-
-
--   **Rule:** Use Hexagonal Architecture (Ports & Adapters) to isolate core business logic from external frameworks and I/O. **Rationale:** To enable independent testing and allow for easy swapping of infrastructure technologies.
--   **Rule:** Use the `punq` library for Dependency Injection in the `main.py` composition root. **Rationale:** To decouple services from concrete implementations, facilitating testability and modularity.
--   **Rule:** All tests requiring a Dependency Injection container MUST use the centralized `container` fixture in `tests/conftest.py`. **Rationale:** To ensure test isolation, reduce setup boilerplate, and correctly patch the global container used by the CLI. **Note:** This fixture must replace the entire global container instance with a fresh one to bypass `punq`'s type-locking behavior.
--   **Rule:** Orchestration, planning, service, and infrastructure adapter classes MUST be registered with `punq.Scope.transient`. **Rationale:** To prevent state leakage and ensure that services always use the most recently registered dependencies. This is critical in CLI tools where the environment (root directory) can change via bootstrapping or in sequential test runs where mocks must be isolated.
--   **Rule:** Use `typer.testing.CliRunner` to execute acceptance tests in-process. **Rationale:** This pattern is faster than `subprocess`, more reliable, and ensures that mocks are correctly respected during test execution.
--   **Rule:** Rely on static type checking via `mypy` for contract enforcement; do not enforce type hints at runtime. **Rationale:** Static analysis as a mandatory pre-commit hook provides sufficient safety without the overhead and complexity of runtime validation.
--   **Rule:** Acceptance tests verifying structured output (e.g., YAML) MUST parse the output into a data structure before assertion. **Rationale:** To make tests resilient to minor formatting changes that don't affect the data payload.
--   **Rule:** Use positional arguments for file I/O and reserve `stdin` exclusively for interactive user prompts. **Rationale:** To prevent conflicts between reading plan data and receiving user confirmation or free-text input.
--   **Rule:** Use the `--plan-content` option in the `execute` command for providing plans within acceptance tests. The content for this option MUST be generated using the `MarkdownPlanBuilder` DSL rather than hardcoded raw Markdown strings. **Rationale:** To ensure test plans remain valid against the evolving protocol and to provide a readable, maintainable DSL for test scenarios.
--   **Rule:** The `EXECUTE` action allows shell chaining and inline directives. **Rationale:** To simplify the protocol and shift responsibility for clean commands to the agent's prompting. This adheres to the "small, sharp tools" philosophy while maintaining statelessness between blocks.
--   **Rule:** For Windows granular failure reporting, use `cmd /c` to isolate commands that terminate the shell context (e.g., `exit`), while using `call` for others to avoid quoting regressions. **Rationale:** Based on the RCA for Windows exit code isolation, `exit /b` terminates the parent context when used with `call` inside a grouped command, bypassing error handlers. Spawning a sub-shell ensures the parent survives to report the failure.
--   **Rule:** Use Jinja2 Macros for modular reporting. **Rationale:** To ensure consistency across different report formats (Concise CLI vs. Session) and facilitate robust extraction of specific sections (e.g., Action Log) for aggregated views.
--   **Rule:** Explicitly specify `encoding="utf-8"` for all operations that read from or write to text files. **Rationale:** To ensure predictable, platform-agnostic behavior across different operating systems and avoid encoding errors when handling non-ASCII characters.
--   **Rule:** Domain boundaries MUST enforce strict primitive validation and casting before serialization operations (e.g., `yaml.dump`). **Rationale:** To prevent dynamic objects (like `MagicMock` in unit tests) from leaking into infrastructure adapters, preventing infinite recursion or silent hangs during serialization.
--   **Rule:** Heavy third-party libraries (e.g., `litellm`, `trafilatura`) MUST be imported lazily within the methods where they are used. **Rationale:** To ensure the CLI remains responsive and initializes in under 500ms (excluding shell overhead). Module-level imports of heavy libraries significantly degrade the user experience.
--   **Rule:** To prevent worker crashes in distributed testing environments (e.g., `pytest-xdist` on Windows), heavy third-party libraries with binary extensions MUST be abstracted into a private getter method (e.g., `_get_trafilatura()`) within their adapters. Tests MUST mock this getter using `monkeypatch` instead of using the `@patch` decorator on the library directly. **Rationale:** This prevents the library from being imported during test collection, isolating the worker from potential binary instability or segfaults during the collection phase.
--   **Rule:** Validation rules for plan actions MUST be optimized for performance on large inputs (e.g., 500+ line prompt files). **Rationale:** To prevent high-latency feedback loops during plan pre-flight checks.
--   **Rule:** Any diagnostic logic involving sequence matching (like fuzzy `EDIT` matching) MUST use tiered heuristics (Exact Anchors -> Incremental Fuzzy -> Sub-sampling) combined with **Priority Capping** and a default `Similarity Threshold`. **Rationale:** "Priority Capping" limits the number of expensive evaluations to the top-scoring candidates to maintain sub-second response times. The threshold provides a high-fidelity default that balances resilience to AI formatting with protection against accidental over-matching.
-- **Rule:** All TUI action handlers that invoke modal screens or external tools MUST be decorated with the `@work` decorator. **Rationale:** To ensure the main UI event loop remains responsive and to prevent asynchronous deadlocks during modal interactions.
-- **Rule:** The TUI interaction model MUST follow a "Non-Blocking Deferred Harvest" pattern for external editing. **Rationale:** This allows the user to continue using the TUI while editors are open. Changes are synchronized via a confirmation modal and harvested from persistent temporary files only upon final submission.
-- **Rule:** TUI tests involving text entry MUST use the `TuiDriver.set_input` method or direct `Input.value` assignment instead of `pilot.press(*str)`. **Rationale:** Textual's character-by-character simulation introduces a mandatory event-loop delay for every character (approx. 67ms/char), causing significant slowness in tests involving paths or commands. Direct assignment is ~50x faster.
-- **Rule:** The local pre-commit workflow MUST run checks only against staged files, delegating full test suites and global analysis to the CI pipeline. **Rationale:** To ensure lightning-fast commits that encourage small, atomic version control steps without forcing a boil-the-ocean refactor of legacy code during active development.
+- **Test Harness:** Reside exclusively in `tests/`. (Ensures strict isolation between production and test code.)
+- **Temp Files:** Create in `tests/.tmp/` and clean up during teardown. (Prevents filesystem pollution and simplifies CI management.)
+- **Global Config:** Unify in `tests/conftest.py` exporting from `tests/harness/setup/composition.py`. (Maintains a clean Primary Driving Adapter layer.)
+- **Architecture:** Use Hexagonal Architecture (Ports & Adapters). (Enables independent testing and technology swapping.)
+- **DI Implementation:** Use the `punq` library. (Decouples services from concrete implementations.)
+- **DI Testing:** All tests requiring DI MUST use the centralized `container` fixture. (Ensures isolation and correct patching.)
+- **DI Scopes:** Use `punq.Scope.transient` for services and adapters. (Prevents state leakage across CLI turns or tests.)
+- **Acceptance Testing:** Use `typer.testing.CliRunner` for in-process execution. (Ensures speed, reliability, and mock respect.)
+- **Type Enforcement:** Rely on static checking (Mypy) in pre-commit; do not enforce at runtime. (Balances safety with low overhead.)
+- **Structured Output:** Parse output into data structures before assertion. (Ensures resilience to minor formatting changes.)
+- **CLI I/O:** Use positional arguments for files; reserve `stdin` for prompts. (Prevents input stream conflicts.)
+- **Execution Testing:** Use `--plan-content` with `MarkdownPlanBuilder`. (Maintains protocol validity and test readability.)
+- **Execute Action:** Allow shell chaining and inline directives. (Simplifies protocol and maintains statelessness.)
+- **Windows Failure:** Use `cmd /c` to isolate terminating commands. (Ensures parent process can report failures.)
+- **Reporting:** Use Jinja2 Macros for modularity. (Ensures consistency and facilitates section extraction.)
+- **Encoding:** Explicitly specify `utf-8` for all file operations. (Ensures predictable platform-agnostic behavior.)
+- **Serialization:** Enforce strict primitive validation before serialization. (Prevents infinite recursion or hangs from dynamic objects.)
+- **Initialization:** Import heavy libraries (`litellm`, `trafilatura`) lazily. (Ensures CLI initializes under 500ms.)
+- **Binary Stability:** Abstract heavy binary libs into private getters and mock the getter. (Prevents worker crashes in distributed tests.)
+- **Validation:** Optimize plan rules for performance on large inputs. (Ensures low-latency feedback loops.)
+- **Sequence Matching:** Use tiered heuristics with Priority Capping. (Balances AI resilience with sub-second performance.)
+- **TUI Responsiveness:** Decorate modal/external tool handlers with `@work`. (Prevents UI deadlocks.)
+- **TUI Editing:** Use Non-Blocking Deferred Harvest for external editors. (Maintains TUI responsiveness during editing.)
+- **TUI Test Speed:** Use `TuiDriver.set_input` or direct assignment. (~50x faster than character-by-character simulation.)
+- **Pre-commit Workflow:** Scope local checks strictly to staged files. (Ensures fast feedback loops while delegating global checks to CI.)
 
 
 ---

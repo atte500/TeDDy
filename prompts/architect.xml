@@ -83,7 +83,7 @@
         </section>
         <section n="3" name="Key Architectural Decisions">
           <goal>A living "System Law" document.</goal>
-          <item name="Format">Bulleted list. Formulated as strict, actionable rules followed by rationale.</item>
+          <item name="Format">Concise bulleted list. Format: `**[Subject]:** [Strict Rule]. ([Rationale])`.</item>
         </section>
         <section n="4" name="Debug Mode">
           <goal>Document diagnostic capabilities and enforce debug standards.</goal>
