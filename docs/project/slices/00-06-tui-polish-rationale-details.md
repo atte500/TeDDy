@@ -26,7 +26,7 @@ Improve the TUI user experience by adopting a more robust rationale format, ensu
 ### Scenario 3: Action Log Formatting
 > As a user, I want the "Action Log" view (triggered by 'd') to match the format of the final Execution Report so that the experience is consistent.
 
-- [ ] **Contract** - Implement `format_action_log(log: ActionLog) -> str` in `textual_plan_reviewer_helpers.py` to replicate the Jinja2 `render_action_details` macro.
+- [✓] **Contract** - Implement `format_action_log(log: ActionLog) -> str` in `textual_plan_reviewer_helpers.py` to replicate the Jinja2 `render_action_details` macro.
 - [ ] **Logic** - Update `action_view_details` in `textual_plan_reviewer_app.py` to use the new formatter.
 - [ ] **Wiring** - Add a `skip_confirm: bool = False` parameter to `launch_editor` and `_confirm_and_harvest` in `textual_plan_reviewer_previews.py`.
 - [ ] **Wiring** - Pass `skip_confirm=True` when calling `launch_editor` from `action_view_details`.
@@ -66,3 +66,7 @@ The current `action_view_details` constructs a primitive string.
 
 ### Scenario 2: Right Panel Initialization
 - **Initialization Race Condition**: To ensure the right panel displays metadata immediately, `on_mount_logic` was updated to use `tree.move_cursor(rat_root)` followed by `app.call_after_refresh(_update_detail_view, app, "RATIONALE_ROOT")`. `move_cursor` ensures the visual highlight and internal tree state are synchronized, while `call_after_refresh` ensures the detail view update happens after Textual's initial layout/event cycle, preventing the "Select an item" placeholder from flashing or persisting.
+
+### Scenario 3: Action Log Formatting
+- **Contract Porting**: The `format_action_log` helper was ported from the `tui_polish_spike.py` prototype into `textual_plan_reviewer_helpers.py`. It uses 4-backtick code fences to ensure that 3-backtick blocks within `stdout` or `diff` payloads are rendered correctly in the external editor.
+- **[DEBT] File Length**: `textual_plan_reviewer_helpers.py` is now 413 lines, exceeding the 300-line quality gate. This should be refactored into smaller, domain-focused modules (e.g., `labels.py`, `log_formatting.py`, `editing.py`).

@@ -6,8 +6,57 @@ from typing import TYPE_CHECKING, Any, Optional, cast
 if TYPE_CHECKING:
     from teddy_executor.adapters.inbound.textual_plan_reviewer_app import ReviewerApp
     from teddy_executor.core.domain.models.plan import ActionData
+    from teddy_executor.core.domain.models.execution_report import ActionLog
 
 MAX_LABEL_LENGTH = 60
+
+
+def format_action_log(log: "ActionLog") -> str:
+    """
+    Formats an ActionLog entry to match the Jinja2 template style for TUI viewing.
+    """
+    lines = [f"### `OUTCOME`: {log.status.value}"]
+
+    if log.failed_command:
+        lines.append(f"- **Failed Command:** `{log.failed_command}`")
+
+    if isinstance(log.details, dict):
+        details_dict = cast(dict[str, Any], log.details)
+        if details_dict.get("return_code") is not None:
+            lines.append(f"- **Return Code:** `{details_dict['return_code']}`")
+
+        # Map keys to their Markdown code fence type
+        fenced_sections = [
+            ("stdout", "text"),
+            ("stderr", "text"),
+            ("diff", "diff"),
+            ("content", "text"),
+        ]
+
+        for key, lang in fenced_sections:
+            val = details_dict.get(key)
+            if val:
+                lines.append(f"\n#### `{key}`")
+                lines.append("````" + lang)
+                lines.append(str(val).strip())
+                lines.append("````")
+
+        # Fallback for generic details if no standard keys are present
+        standard_keys = {
+            "error",
+            "return_code",
+            "stdout",
+            "stderr",
+            "content",
+            "diff",
+            "failed_command",
+        }
+        if not any(details_dict.get(k) for k in standard_keys):
+            lines.append(f"- **Details:** `{log.details}`")
+    else:
+        lines.append(f"- **Details:** `{log.details}`")
+
+    return "\n".join(lines)
 
 
 def extract_status_emoji(raw_status: str) -> str:
