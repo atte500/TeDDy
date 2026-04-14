@@ -28,20 +28,6 @@ This document outlines the technical standards, conventions, and setup process f
 - **Dependency Attributes:** Injected dependencies in the core application services (`src/teddy_executor/core/services/`) MUST be private.
 - **Rationale:** This enforces a consistent pattern across the service layer, clearly distinguishing injected dependencies from public methods or other attributes.
 
-### Command Execution with Poetry
-- **Principle:** Commands are executed from the **project root**.
-- **Rule:** All file paths provided to such commands **MUST be relative to the project root**.
-- **Correct Pattern:**
-  ```bash
-  # Correctly provides a path relative to the project root
-  poetry run pytest tests/acceptance/test_prompt_action.py
-  ```
-- **Incorrect Pattern:**
-  ```bash
-  # Incorrectly assumes a different CWD; paths must always be from project root.
-  poetry run pytest src/teddy_executor/tests/acceptance/test_quality_of_life_improvements.py
-  ```
-
 ### Testing Strategy
 - **Framework:** `pytest` with the `anyio` plugin for asynchronous testing.
 - **Mocking Strategy:** This project uses the standard `unittest.mock` library (specifically the `patch` decorator and context manager) for all mocking needs.
@@ -89,12 +75,7 @@ This document outlines the technical standards, conventions, and setup process f
     2. Slower, repository-wide checks that are not suitable for local pre-commit hooks, such as Test Pyramid verification and copy-paste detection. These checks MUST exclude experimental directories like `prototypes/` and `spikes/`.
 
 ### Experimental Code Exclusion
-The `spikes/` and `prototypes/` directories are intentionally excluded from all quality gates (`ruff`, `mypy`, `vulture`, `jscpd`, etc.).
-- **Rationale:** These directories are for rapid, isolated experimentation. The code within them is temporary and not expected to meet production quality standards. Enforcing linting and other checks would hinder their exploratory purpose.
-
-### Handling of Secrets
-- **Scanning:** Managed via `detect-secrets`.
-- **False Positives:** MUST be handled by updating `.secrets.baseline`. **Do not use inline pragmas.**
+The `spikes/` and `prototypes/` directories are intentionally excluded from all quality gates (`ruff`, `mypy`, `vulture`, `jscpd`, etc.). These directories are for rapid, isolated experimentation. The code within them is temporary and not expected to meet production quality standards. Enforcing linting and other checks would hinder their exploratory purpose.
 
 ### Configuration Hierarchy
 - **Principle:** The system follows a "Safe-by-Default" configuration strategy.
@@ -103,11 +84,6 @@ The `spikes/` and `prototypes/` directories are intentionally excluded from all 
     2. **Project Template:** `config/config.yaml` (Reference defaults, committed).
     3. **Hardcoded Fallbacks:** Defined within the services (e.g., `ActionFactory`, `PlanValidator`).
 - **Guideline:** Services MUST provide hardcoded fallbacks to the `IConfigService.get_setting` method to ensure stability in uninitialized environments.
-
-### Third-Party Dependency Vetting
-- **Strategy:** Mandate a "Verify, Then Document" Spike for new dependencies.
-- **Rationale:** Based on the RCA for a failure involving the `gitwalk` library ([see RCA](./rca/unreliable-third-party-library-gitwalk.md)), new third-party dependencies must be de-risked before integration.
-- **Process:** Before a new dependency is used, a minimal technical spike must prove its core functionality. The successful spike script should be referenced in the final adapter design document.
 
 ---
 
