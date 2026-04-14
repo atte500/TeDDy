@@ -5,6 +5,8 @@ standard conftest.py instead of a pyproject.toml plugin, we ensure that
 pytest-cov starts tracking coverage BEFORE our core modules are imported.
 """
 
+from unittest.mock import patch
+
 import pytest
 
 from tests.harness.setup.composition import (
@@ -63,6 +65,17 @@ __all__ = [
     "env",
     "real_env",
 ]
+
+
+@pytest.fixture(scope="session", autouse=True)
+def patch_socket_getfqdn():
+    """
+    Systemic Fix for macOS CI: socket.getfqdn('127.0.0.1') hangs on some runners.
+    By patching it session-wide to return 'localhost', we bypass the DNS lookup
+    bottleneck for pytest-httpserver and other networking utilities.
+    """
+    with patch("socket.getfqdn", return_value="localhost"):
+        yield
 
 
 @pytest.fixture(autouse=True)
