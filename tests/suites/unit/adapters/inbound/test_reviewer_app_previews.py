@@ -28,9 +28,12 @@ async def test_reviewer_app_preview_text_actions(
     async with app.run_test() as pilot:
         await pilot.press("down", "down", "down")
         await pilot.press("e")
-        # In ParameterEditModal, we type the new value and press enter
-        await pilot.press(*"new")
+        await pilot.pause()
+        from textual.widgets import Input
+
+        pilot.app.screen.query_one("#param_input", Input).value = "new"
         await pilot.press("enter")
+        await pilot.pause()
 
     expected = ["new"] if action_type == "RESEARCH" else "new"
     assert action.params[param_key] == expected
@@ -60,8 +63,12 @@ async def test_reviewer_app_prompt_response_edit_routing(env):
         await pilot.press("e")
 
         # Type the response in the modal
-        await pilot.press(*"My Answer")
+        await pilot.pause()
+        from textual.widgets import Input
+
+        pilot.app.screen.query_one("#param_input", Input).value = "My Answer"
         await pilot.press("enter")
+        await pilot.pause()
 
     # The 'response' key should NOT be injected into the params dictionary
     assert "response" not in action.params

@@ -21,10 +21,12 @@ async def test_reviewer_app_edit_execute_parameter(env):
     async with app.run_test() as pilot:
         await pilot.press("down", "down", "down")
         await pilot.press("e")
-        await pilot.wait_for_scheduled_animations()
-        await pilot.press(*"modified command")
+        await pilot.pause()
+        from textual.widgets import Input
+
+        pilot.app.screen.query_one("#param_input", Input).value = "modified command"
         await pilot.press("enter")
-        await pilot.wait_for_scheduled_animations()
+        await pilot.pause()
     assert action.modified is True
     assert action.params["command"] == "modified command"
 

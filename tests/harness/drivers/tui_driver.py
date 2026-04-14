@@ -42,3 +42,17 @@ class TuiDriver:
                     await pilot.pause()
 
             return self.app.plan
+
+    async def set_input(self, pilot, selector: str, value: str):
+        """
+        Sets the value of an Input widget directly and submits it.
+        This is significantly faster than pilot.press(*chars).
+        """
+        from textual.widgets import Input
+
+        # Use app.screen to ensure we target the active (possibly modal) screen
+        target = pilot.app.screen.query_one(selector, Input)
+        target.value = value
+        await pilot.press("enter")
+        # Allow dismissal/callback processing
+        await pilot.pause()

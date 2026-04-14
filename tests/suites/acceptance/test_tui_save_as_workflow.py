@@ -45,10 +45,12 @@ async def test_tui_create_action_save_as_workflow(env, monkeypatch):
         # 2. Edit path via right pane
         await pilot.press("tab")
         await pilot.press("enter")
-        await pilot.wait_for_scheduled_animations()
-        await pilot.press(*"new/path.py")
+        await pilot.pause()
+        from textual.widgets import Input
+
+        pilot.app.screen.query_one("#path_input", Input).value = "new/path.py"
         await pilot.press("enter")
-        await pilot.wait_for_scheduled_animations()
+        await pilot.pause()
 
         # 3. Edit content via tree key 'e'
         await pilot.press("shift+tab")

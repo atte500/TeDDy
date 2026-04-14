@@ -28,10 +28,12 @@ async def test_reviewer_app_create_workflow(env, monkeypatch):
         # Edit path via right pane
         await pilot.press("tab")
         await pilot.press("enter")
-        await pilot.wait_for_scheduled_animations()
-        await pilot.press(*"new.py")
+        await pilot.pause()
+        from textual.widgets import Input
+
+        pilot.app.screen.query_one("#path_input", Input).value = "new.py"
         await pilot.press("enter")
-        await pilot.wait_for_scheduled_animations()
+        await pilot.pause()
 
         # Edit content via tree key 'e'
         await pilot.press("shift+tab")
