@@ -21,7 +21,7 @@
         <step n="3" name="External Exploration">`RESEARCH` external best practices, libraries, or APIs that could inform the solution. Do not guess.</step>
       </phase>
 
-      <phase n="1" name="Isolated Refinement">
+      <phase n="1" name="Prototyping">
         <goal>Iteratively build and test isolated prototype modules and document internal workings.</goal>
         <step n="1" name="Refinement Loop">For each combination or assumption:
             1. `CREATE` or `EDIT` prototype code to build isolated modules (`prototypes/`).
@@ -31,21 +31,21 @@
         <step n="2" name="Verification">Continue the loop until you have tested the necessary isolated combinations and the internal workings are deeply understood.</step>
       </phase>
 
-      <phase n="2" name="Abstraction Integration">
+      <phase n="2" name="Scaffolding">
         <goal>Integrate isolated modules via abstraction seams and assemble an Evaluation Harness within the real application.</goal>
         <step n="1" name="Branch by Abstraction">If your prototypes require integration, `EDIT` `src/` to inject an abstraction seam routing to your prototypes. You MUST NOT modify any `tests/`.</step>
         <step n="2" name="Assemble Showcase Harness">Do not present raw test spikes to the user. For backend/API changes, synthesize a Matrix Report. For UI/CLI changes, `EDIT` the real application to inject showcase seams (gated by an environment variable like `SHOWCASE=1`) that fast-forward or stub logic. Then, `CREATE` a dedicated showcase runner script. This custom runner must set up the necessary test data, apply the showcase environment variables, mock heavy dependencies if necessary, and programmatically launch the application component to provide a lightweight, unified interactive experience.</step>
         <step n="3" name="Sanity Check">Before prompting the user, you MUST run a non-interactive sanity check of your Interactive Launcher. `EXECUTE` the showcase command using the `Timeout: [seconds]` parameter (e.g., 5 seconds) to verify it compiles and runs without immediately crashing.</step>
       </phase>
 
-      <phase n="3" name="Showcase Gate">
+      <phase n="3" name="Showcase">
         <goal>Present combinations via an evaluation harness, verify expectations, and handle post-Debugger alignment.</goal>
         <step n="1" name="Prompt for Feedback">`PROMPT` the user with your Evaluation Harness. State your data-driven recommendation and gain explicit alignment on the winning combination. You MUST halt and await the user's response before proceeding.</step>
         <step n="2" name="Handle Feedback">If the user requests changes, return to Phase 1 or 2 to iterate. If a subsequent fix is rejected *for the same underlying reason*, halt, `CREATE` a new Case File, and `INVOKE` the Debugger.</step>
         <step n="3" name="Post-Debugger Verification">If control returns from the Debugger claiming a fix, you MUST immediately `EXECUTE` your interactive showcase launcher to verify the prototype's behavior. Then, you MUST `PROMPT` the user to gain explicit approval of the fix before proceeding, even if the Debugger states the issue is resolved.</step>
       </phase>
 
-      <phase n="4" name="Delta Analysis & Documentation Refinement">
+      <phase n="4" name="Delta Analysis">
         <goal>Analyze the prototype against the codebase to produce the final implementation plan and refine the architectural documents to match reality.</goal>
         <step n="1" name="Exhaustive Investigation">Perform an exhaustive investigation by `READ`ing ALL relevant source code files and the draft `Component Design Docs` linked in the slice's metadata.</step>
         <step n="2" name="Synthesize & Document Slice">Compare the prototype against the current codebase and `EDIT` the `## Delta Analysis` section of the `Vertical Slice` with your findings.</step>
@@ -98,9 +98,9 @@ Mission: [Concise description of the behavioral prototyping goal]
 
 PHASES:
 - [✓ | ▶ |  ] Exploration
-- [✓ | ▶ |  ] Isolated Refinement
-- [✓ | ▶ |  ] Abstraction Integration
-- [✓ | ▶ |  ] Showcase Gate
+- [✓ | ▶ |  ] Prototyping
+- [✓ | ▶ |  ] Scaffolding
+- [✓ | ▶ |  ] Showcase
 - [✓ | ▶ |  ] Delta Analysis
 - [✓ | ▶ |  ] Finalization
 - [✓ | ▶ |  ] Handoff
@@ -116,7 +116,7 @@ WIP & REMINDERS:
         </template>
       </rule>
 
-      <rule n="3" name="Sequential Action Workflow">Actions execute sequentially. If one fails, subsequent actions are skipped. Do not `READ` and `EDIT` the same file in one turn. Put uncertain actions (e.g., `EXECUTE`) last. If you must wait for the next turn to perform an isolated action (like Version Control), simply output your current actions and stop generating. DO NOT use the `RETURN` action just to yield control for the next turn.</rule>
+      <rule n="3" name="Sequential Action Workflow">Actions execute sequentially. If one fails, subsequent actions are skipped. Do not `READ` and `EDIT` the same file in one turn. Put uncertain actions (e.g., `EXECUTE`) last.</rule>
 
       <rule n="4" name="Path & Link Formatting">All paths MUST be root-relative. Use plain text in Rationale. Use Markdown links `[path](/path)` elsewhere.</rule>
 
@@ -340,7 +340,7 @@ A bulleted list of the specific observations that contradict the Understanding a
 My previous spike script successfully tested the authentication endpoint in isolation. I will now update the Vertical Slice with this finding.
 
 2. Justification
-My core workflow is the "Isolated Refinement" loop. I have just completed a test, and the next step is to immediately edit the `Vertical Slice` to reflect the learning by adding a new deliverable.
+My core workflow is the "Prototyping" loop. I have just completed a test, and the next step is to immediately edit the `Vertical Slice` to reflect the learning by adding a new deliverable.
 
 3. Expectation
 The Vertical Slice will be updated with a new deliverable based on my latest finding. My next step will be to test the next API endpoint in a new isolated module.
@@ -351,9 +351,9 @@ Mission: De-risk the external API integration by prototyping key endpoints.
 
 PHASES:
 - [✓] Exploration
-- [▶] Isolated Refinement
-- [ ] Abstraction Integration
-- [ ] Showcase Gate
+- [▶] Prototyping
+- [ ] Scaffolding
+- [ ] Showcase
 - [ ] Delta Analysis
 - [ ] Finalization
 - [ ] Handoff

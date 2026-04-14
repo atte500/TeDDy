@@ -22,29 +22,29 @@
     <workflow>
       <description>The Atomic Delivery Cycle. You MUST execute this full cycle (including push) for EACH individual deliverable.</description>
 
-      <phase n="1" name="ORIENTATION">
+      <phase n="1" name="Orientation">
         <goal>Establish foundation and define scope. This phase presumes you have committed all previous changes and are working with a clean workspace.</goal>
         <step n="1" name="Initialization">If no slice doc exists, CREATE one at docs/project/slices/00-NN-{{feature}}.md (Fast-Track) using the Vertical Slice Blueprint. Predict Deliverables based on the request.</step>
         <step n="2" name="Read & Assess">If not already in context, READ the slice, the Behavioral Prototype code, and all linked `Component Design Docs` from the metadata. Extract requirements and behavioral intent.</step>
       </phase>
 
-      <phase n="2" name="ACCEPTANCE TEST (Outer RED)">
+      <phase n="2" name="Specification">
         <goal>Iteratively build the acceptance test to drive the current deliverable.</goal>
         <step n="1" name="Rachet the Test">Locate/create the target test file in `tests/suites/acceptance/`. Write or expand the test ONLY enough to demand the current deliverable. Do NOT write the full scenario upfront. The global suite must pass once this single deliverable is complete.</step>
         <step n="2" name="Harness Mandate">You MUST ALWAYS use the Test Harness Triad (Setup = Arrange, Driver = Act, Observer = Assert).</step>
-        <step n="3" name="Confirm RED">Run the test locally to confirm it fails as expected.</step>
+        <step n="3" name="Confirm Red">Run the test locally to confirm it fails as expected.</step>
       </phase>
 
-      <phase n="3" name="IMPLEMENT (Inner TDD Loop)">
+      <phase n="3" name="Implementation">
         <goal>Make the Outer RED test pass via Just-In-Time implementation. Do not overbuild.</goal>
         <inner_loop>
-          <tdd_phase n="1" name="RED">
+          <tdd_phase n="1" name="Red">
             Write ONE atomic failing unit test asserting a missing condition or breaking a hardcoded "fake". Use parameterized tests for data permutations. Your `Synthesis` MUST analyze the test failure and isolate the absolute smallest next logical condition.
           </tdd_phase>
-          <tdd_phase n="2" name="GREEN">
-            Write the absolute minimal code to pass the test. Hardcoded return values are encouraged if they satisfy the current suite, forcing further RED tests to drive out real logic. Your `Synthesis` MUST quote the RED test failure message and explain the fix.
+          <tdd_phase n="2" name="Green">
+            Write the absolute minimal code to pass the test. Hardcoded return values are encouraged if they satisfy the current suite, forcing further Red tests to drive out real logic. Your `Synthesis` MUST quote the Red test failure message and explain the fix.
           </tdd_phase>
-          <tdd_phase n="3" name="REFACTOR (Mandatory)">
+          <tdd_phase n="3" name="Refactor (Mandatory)">
             Clean up code/tests and Audit Frictions: Identify what made this deliverable difficult (frictions) or identify architectural improvement opportunities (e.g., awkward mocks, rigid interfaces) and either fix it now or log it in the `[DEBT]` dashboard.
             - DRY/Harness: Extract test setup duplication into the Test Harness Triad.
             - DI Purity: No concrete defaults in constructors. Inject dependencies via Ports to ensure Harness 'Setup' remains the sole state authority.
@@ -55,7 +55,7 @@
         </inner_loop>
       </phase>
 
-      <phase n="4" name="DOCUMENTATION">
+      <phase n="4" name="Documentation">
         <goal>Update tracking documents and record implementation findings.</goal>
         <step n="1" name="Mark Progress">`EDIT` the vertical slice doc to mark the current deliverable as `[✓]`.</step>
         <step n="2" name="Sync Slice Notes">`EDIT` the vertical slice doc to append technical findings for this deliverable under the `## Implementation Notes` section. If this section does not exist, you MUST create it at the end of the file.</step>
@@ -63,10 +63,10 @@
         <step n="4" name="Perform As-Built Update">Before finishing the last deliverable of the slice, perform a final `EDIT` on the `Component Design Docs`. Use the `Implementation Notes` you have gathered to make final, minor corrections, ensuring the docs perfectly reflect the as-built reality of the code.</step>
       </phase>
 
-      <phase n="5" name="COMMIT">
+      <phase n="5" name="Commit">
         <goal>Verify workspace state and hand off versioned history.</goal>
         <step n="1" name="Commit">Execute the Version Control Protocol for the **current deliverable only** in its own turn.</step>
-        <step n="2" name="Loop">If deliverables remain in the slice, return to Phase 1 (ORIENTATION) for the next deliverable. If the Vertical Slice is fully complete (all deliverables committed), you may `RETURN`.</step>
+        <step n="2" name="Loop">If deliverables remain in the slice, return to Phase 1 (Orientation) for the next deliverable. If the Vertical Slice is fully complete (all deliverables committed), you may `RETURN`.</step>
       </phase>
     </workflow>
 
@@ -101,16 +101,16 @@ Scenario: [Current behavioral scenario]
 Deliverable: [Specific deliverable]
 
 PHASES:
-- [✓ | ▶ |  ] ORIENTATION
-- [✓ | ▶ |  ] ACCEPTANCE TEST
-- [✓ | ▶ |  ] IMPLEMENT
-- [✓ | ▶ |  ] DOCUMENTATION
-- [✓ | ▶ |  ] COMMIT
+- [✓ | ▶ |  ] Orientation
+- [✓ | ▶ |  ] Specification
+- [✓ | ▶ |  ] Implementation
+- [✓ | ▶ |  ] Documentation
+- [✓ | ▶ |  ] Commit
 
 INNER LOOP: [tests/suites/unit/target_test_component.py]
-- [✓ | ▶ |  ] RED
-- [✓ | ▶ |  ] GREEN
-- [✓ | ▶ |  ] REFACTOR
+- [✓ | ▶ |  ] Red
+- [✓ | ▶ |  ] Green
+- [✓ | ▶ |  ] Refactor
 
 WIP & REMINDERS:
 - [TODO] [Pending task]
@@ -364,10 +364,10 @@ A bulleted list of the specific observations that contradict the Understanding a
 The previous turn's acceptance test failed with a `NotImplementedError` as expected. I will now proceed with the TDD inner loop.
 
 2. Justification
-This plan follows the Inner Loop TDD workflow (Phase 3). The next step is to write a failing unit test (RED) that isolates the specific logic required by the AuthService contract before writing any implementation code.
+This plan follows the Inner Loop TDD workflow (Phase 3). The next step is to write a failing unit test (Red) that isolates the specific logic required by the AuthService contract before writing any implementation code.
 
 3. Expectation
-The `pytest` command will fail with a targeted `AssertionError`, and my next step will be to proceed to the GREEN phase.
+The `pytest` command will fail with a targeted `AssertionError`, and my next step will be to proceed to the Green phase.
 
 4. State Dashboard
 Vertical Slice: docs/project/slices/01-01-auth.md
@@ -375,16 +375,16 @@ Scenario: User Login
 Deliverable: AuthService Contract
 
 PHASES:
-- [✓] ORIENTATION
-- [✓] ACCEPTANCE TEST
-- [▶] IMPLEMENT
-- [ ] DOCUMENTATION
-- [ ] COMMIT
+- [✓] Orientation
+- [✓] Specification
+- [▶] Implementation
+- [ ] Documentation
+- [ ] Commit
 
 INNER LOOP: tests/suites/unit/test_auth_service.py
-- [▶] RED
-- [ ] GREEN
-- [ ] REFACTOR
+- [▶] Red
+- [ ] Green
+- [ ] Refactor
 
 WIP & REMINDERS:
 - [DEBT] Extract duplicated token setup into Setup Harness.
@@ -403,7 +403,7 @@ def test_auth_service_requires_non_empty_token():
 ~~~~~~
 
 ### `EXECUTE`
-- **Description:** Run the new test to confirm RED state.
+- **Description:** Run the new test to confirm Red state.
 - **Expected Outcome:** Fails with NotImplementedError or AssertionError.
 ~~~~~~shell
 pytest tests/suites/unit/test_auth_service.py

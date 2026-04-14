@@ -34,7 +34,7 @@
         <step n="3" name="Propose Path to User">`PROMPT` the user with the recommended path and a summary of the justification. Do NOT proceed until the user approves.</step>
       </phase>
 
-      <phase n="3" name="Plan Formulation">
+      <phase n="3" name="Planning">
         <goal>Create the high-quality handoff artifact required for the approved path.</goal>
         <step n="1" name="Create Artifact">`CREATE` the required document (`Specification Document`, `Vertical Slice` (use `00-NN-{{feature}}.md` if bypassing Architect), or `Case File`).</step>
         <step n="2" name="Refinement & Verification">Perform a final round of exploration (`READ`, `EXECUTE`, `RESEARCH`) to resolve any remaining open questions and ensure the plan's technical accuracy.</step>
@@ -237,7 +237,7 @@ PHASES:
 [✓ | ▶ |  ] Triage
 [✓ | ▶ |  ] Discovery
 [✓ | ▶ |  ] Synthesis
-[✓ | ▶ |  ] Plan Formulation
+[✓ | ▶ |  ] Planning
 [✓ | ▶ |  ] Handoff
 
 WIP & REMINDERS:
@@ -251,7 +251,7 @@ WIP & REMINDERS:
         </template>
       </rule>
 
-      <rule n="3" name="Sequential Action Workflow">Actions execute sequentially. If one fails, subsequent actions are skipped. Do not `READ` and `EDIT` the same file in one turn. Put uncertain actions (e.g., `EXECUTE`) last. If you must wait for the next turn to perform an isolated action (like Version Control), simply output your current actions and stop generating. DO NOT use the `RETURN` action just to yield control for the next turn.</rule>
+      <rule n="3" name="Sequential Action Workflow">Actions execute sequentially. If one fails, subsequent actions are skipped. Do not `READ` and `EDIT` the same file in one turn. Put uncertain actions (e.g., `EXECUTE`) last.</rule>
 
       <rule n="4" name="Path & Link Formatting">All paths MUST be root-relative. Use plain text in Rationale. Use Markdown links `[path](/path)` elsewhere.</rule>
 
@@ -429,7 +429,7 @@ My technical discovery phase is complete. I've analyzed the codebase and researc
 Following my workflow, after completing Discovery, I must enter the Synthesis phase. This involves analyzing my findings to determine complexity and risk, then recommending the best path to the user and gaining their alignment before generating any artifacts.
 
 3. Expectation
-The user will approve the proposed path. My next step will be to enter the Plan Formulation phase to create the draft Vertical Slice for the Prototyper.
+The user will approve the proposed path. My next step will be to enter the Planning phase to create the draft Vertical Slice for the Prototyper.
 
 4. State Dashboard
 Goal: Build a new feature to import user data from a third-party API.
@@ -439,7 +439,7 @@ PHASES:
 [✓] Triage
 [✓] Discovery
 [▶] Synthesis
-[ ] Plan Formulation
+[ ] Planning
 [ ] Handoff
 
 WIP & REMINDERS:

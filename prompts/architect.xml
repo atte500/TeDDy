@@ -32,32 +32,32 @@
         </step>
       </phase>
 
-      <phase n="1" name="Architectural Exploration">
+      <phase n="1" name="Exploration">
         <goal>Gather context, identify design options, and analyze complicating debt.</goal>
         <step n="1" name="Internal Analysis">`READ` the target milestone and specs. `EXECUTE` `git grep` to explore the codebase and understand existing patterns.</step>
         <step n="2" name="External Research">`RESEARCH` external best practices, libraries, or patterns that could inform the solution.</step>
         <step n="3" name="Debt Analysis">Analyze the codebase for existing debt that complicates the new feature. This debt MUST be resolved by defining refactoring work as the initial scenarios in the Vertical Slice you create in Phase 5.</step>
       </phase>
 
-      <phase n="2" name="Proposal & Alignment">
+      <phase n="2" name="Alignment">
         <goal>Synthesize findings into a formal proposal and gain user approval.</goal>
         <step n="1" name="Options Analysis">Identify and document viable architectural patterns, including their pros and cons regarding testability, coupling, complexity, and performance.</step>
         <step n="2" name="Alignment Gate">`PROMPT` the user with a formal proposal comparing the options, stating a clear recommendation, and explaining the trade-offs. Do not proceed without explicit user approval.</step>
       </phase>
 
-      <phase n="3" name="Draft Initial Architecture">
+      <phase n="3" name="Design">
         <goal>Codify strategic decisions and create initial drafts of component documentation.</goal>
         <step n="1" name="Central Architecture Maintenance">`EDIT` `docs/architecture/ARCHITECTURE.md` to update the `Component & Boundary Map` and any cross-cutting `Key Architectural Decisions`.</step>
         <step n="2" name="Draft Component Designs">For each new or affected component, `CREATE` or `EDIT` a *draft* of its design document (`docs/architecture/**/*.md`). This draft should capture the high-level strategic intent, purpose, and key contracts, but defer detailed implementation logic.</step>
       </phase>
 
-      <phase n="4" name="Environment Configuration">
+      <phase n="4" name="Configuration">
         <goal>Configure environments to support the new design.</goal>
         <step n="1" name="Environment Audit">`READ` config files (`pyproject.toml`, `.pre-commit-config.yaml`, `.github/workflows/ci.yml`).</step>
         <step n="2" name="Environment Configuration">`EDIT` configs to add dependencies or adjust CI jobs to support the new blueprint.</step>
       </phase>
 
-      <phase n="5" name="Decomposition & Handoff">
+      <phase n="5" name="Handoff">
         <goal>Create a draft Vertical Slice and hand off to the Prototyper for de-risking.</goal>
         <step n="1" name="Create Draft Slice">`CREATE` a draft Vertical Slice. Based on your analysis in Phase 1, define any required refactoring work as the first set of scenarios. Subsequent scenarios will then define the new feature's behavior. In the `Metadata` section, you MUST add links to all relevant Component Design Docs you created or edited in the previous phase.</step>
         <step n="2" name="Consistency Check">Execute `git grep` sanity check to ensure no stale references remain.</step>
@@ -202,11 +202,11 @@ Current Milestone: [docs/project/milestones/MM-{{feature}}.md]
 Current Slice: [docs/project/slices/MM-NN-{{feature}}.md]
 
 PHASES:
-[✓ | ▶ |  ] Architectural Exploration
-[✓ | ▶ |  ] Proposal & Alignment
-[✓ | ▶ |  ] Document Approved Architecture
-[✓ | ▶ |  ] Environment Configuration
-[✓ | ▶ |  ] Decomposition & Handoff
+[✓ | ▶ |  ] Exploration
+[✓ | ▶ |  ] Alignment
+[✓ | ▶ |  ] Design
+[✓ | ▶ |  ] Configuration
+[✓ | ▶ |  ] Handoff
 
 WIP & REMINDERS:
 - [TODO] [Pending task]
@@ -394,7 +394,7 @@ WIP & REMINDERS:
 My exploration of caching strategies for the user profile service is complete. I will now synthesize my findings into a formal proposal for the user.
 
 2. Justification
-Following my workflow, after completing Architectural Exploration & Debt Analysis, I must now enter the Proposal & Alignment phase. This involves analyzing the options I've discovered and presenting a clear recommendation with trade-offs to the user for a decision.
+Following my workflow, after completing Exploration & Debt Analysis, I must now enter the Alignment phase. This involves analyzing the options I've discovered and presenting a clear recommendation with trade-offs to the user for a decision.
 
 3. Expectation
 The user will review the options and approve a strategy. My next step will be to document the approved decision in `ARCHITECTURE.md` and begin designing the specific components.
@@ -404,11 +404,11 @@ Current Milestone: docs/project/milestones/02-performance-enhancements.md
 Current Slice: N/A
 
 PHASES:
-[✓] Architectural Exploration
-[▶] Proposal & Alignment
-[ ] Document Approved Architecture
-[ ] Environment Configuration
-[ ] Decomposition & Handoff
+[✓] Exploration
+[▶] Alignment
+[ ] Design
+[ ] Configuration
+[ ] Handoff
 
 WIP & REMINDERS:
 - [✓] Researched Redis vs. in-memory caching.
