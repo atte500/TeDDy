@@ -1,5 +1,5 @@
 import subprocess
-from unittest.mock import patch, Mock, MagicMock
+from unittest.mock import patch, MagicMock
 from teddy_executor.adapters.outbound.shell_adapter import ShellAdapter
 from teddy_executor.core.ports.outbound.shell_executor import IShellExecutor
 
@@ -42,21 +42,24 @@ def test_execute_works_without_timeout(container):
 
 def test_execute_handles_timeout_with_partial_output(container):
     """
-    Verifies that ShellAdapter catches TimeoutExpired during communicate, 
+    Verifies that ShellAdapter catches TimeoutExpired during communicate,
     terminates the process group, fetches partial output, and returns 124.
     """
     adapter = container.resolve(IShellExecutor)
 
     with patch("subprocess.Popen") as mock_popen:
         mock_process = MagicMock()
-        
+
         mock_process.communicate.side_effect = [
             subprocess.TimeoutExpired(cmd="sleep 10", timeout=0.1),
-            ("partial stdout", "partial stderr")
+            ("partial stdout", "partial stderr"),
         ]
         mock_popen.return_value = mock_process
 
-        with patch("os.killpg"), patch.object(adapter, "_restore_terminal_state") as mock_restore:
+        with (
+            patch("os.killpg", create=True),
+            patch.object(adapter, "_restore_terminal_state") as mock_restore,
+        ):
             result = adapter.execute("sleep 10", timeout=0.1)
 
     assert result["return_code"] == ShellAdapter.TIMEOUT_EXIT_CODE
@@ -75,11 +78,14 @@ def test_execute_handles_timeout_without_output(container):
         mock_process = MagicMock()
         mock_process.communicate.side_effect = [
             subprocess.TimeoutExpired(cmd="sleep 10", timeout=0.5),
-            ("", "")
+            ("", ""),
         ]
         mock_popen.return_value = mock_process
 
-        with patch("os.killpg"), patch.object(adapter, "_restore_terminal_state"):
+        with (
+            patch("os.killpg", create=True),
+            patch.object(adapter, "_restore_terminal_state"),
+        ):
             result = adapter.execute("sleep 10", timeout=0.5)
 
     assert result["return_code"] == ShellAdapter.TIMEOUT_EXIT_CODE
