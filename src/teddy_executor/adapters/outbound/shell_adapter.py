@@ -136,6 +136,28 @@ class ShellAdapter(IShellExecutor):
             print(f"Error: {error}", file=sys.stderr)
             print("--------------------------", file=sys.stderr)
 
+    def _restore_terminal_state(self):
+        """Hard-resets terminal state to clear corruption from killed TUIs."""
+        if "PYTEST_CURRENT_TEST" in os.environ:
+            return  # Prevent terminal corruption during test suite execution
+
+        reset_seq = "\x1b[?1000l\x1b[?1003l\x1b[?1049l\x1b[?25h"
+        # 1. Attempt to write directly to the controlling terminal (bypasses pipes)
+        try:
+            with open("/dev/tty", "w") as tty:
+                tty.write(reset_seq)
+                tty.flush()
+        except OSError:
+            pass
+        
+        # 2. Fallback to stdout/stderr if /dev/tty is unavailable but they are TTYs
+        if sys.stdout.isatty():
+            sys.stdout.write(reset_seq)
+            sys.stdout.flush()
+        elif sys.stderr.isatty():
+            sys.stderr.write(reset_seq)
+            sys.stderr.flush()
+
     def _run_subprocess(  # noqa: PLR0913
         self,
         command_args: str | List[str],
@@ -146,6 +168,7 @@ class ShellAdapter(IShellExecutor):
         background: bool = False,
     ) -> ShellOutput:
         """Executes the command in a subprocess and handles errors."""
+        is_posix = sys.platform != "win32"
         try:
             if background:
                 process = subprocess.Popen(  # nosec B602
@@ -163,54 +186,80 @@ class ShellAdapter(IShellExecutor):
                     "return_code": 0,
                 }
 
-            result = subprocess.run(  # nosec B602
-                command_args,
-                shell=use_shell,
-                capture_output=True,
-                text=True,
-                check=False,
-                cwd=cwd,
-                env=env,
-                timeout=timeout,
-            )
+            kwargs = {
+                "shell": use_shell,
+                "stdout": subprocess.PIPE,
+                "stderr": subprocess.PIPE,
+                "text": True,
+                "cwd": cwd,
+                "env": env,
+            }
+            if is_posix:
+                import signal
+
+                def preexec_fn():
+                    os.setpgrp()
+                    # Prevent OS from suspending background process group when querying TTY
+                    signal.signal(signal.SIGTTOU, signal.SIG_IGN)
+                    signal.signal(signal.SIGTTIN, signal.SIG_IGN)
+
+                kwargs["preexec_fn"] = preexec_fn
+
+            process = subprocess.Popen(command_args, **kwargs)  # nosec B602
+
+            try:
+                stdout, stderr = process.communicate(timeout=timeout)
+            except subprocess.TimeoutExpired:
+                if is_posix:
+                    import signal
+                    try:
+                        # Use SIGKILL to guarantee no zombies/orphans survive,
+                        # matching the original subprocess.run behavior.
+                        os.killpg(process.pid, signal.SIGKILL)
+                    except OSError:
+                        pass
+                else:
+                    process.kill()
+
+                self._restore_terminal_state()
+
+                try:
+                    # Give the OS a moment to close pipes naturally after SIGKILL.
+                    stdout, stderr = process.communicate(timeout=0.5)
+                except subprocess.TimeoutExpired:
+                    stdout, stderr = "", ""
+
+                self._log_debug_error(Exception(f"TimeoutExpired: {timeout} seconds"))
+                warning = f"[ERROR: Command timed out after {timeout} seconds]"
+                return {
+                    "stdout": f"{warning}\n{stdout}".strip() if stdout else warning,
+                    "stderr": stderr or "",
+                    "return_code": self.TIMEOUT_EXIT_CODE,
+                }
+
+            class MockCompletedProcess:
+                pass
+            result = MockCompletedProcess()
+            result.returncode = process.returncode
+            result.stdout = stdout
+            result.stderr = stderr
             self._log_debug_result(result)
 
             output: ShellOutput = {
-                "stdout": result.stdout,
-                "stderr": result.stderr,
-                "return_code": result.returncode,
+                "stdout": stdout,
+                "stderr": stderr,
+                "return_code": process.returncode,
             }
 
             # Extract granular failure info if present in stderr
             marker = "FAILED_COMMAND: "
-            if marker in result.stderr:
-                for line in result.stderr.splitlines():
+            if marker in stderr:
+                for line in stderr.splitlines():
                     if marker in line:
                         output["failed_command"] = line.split(marker)[1].strip()
                         break
 
             return output
-        except subprocess.TimeoutExpired as e:
-            self._log_debug_error(e)
-            # Decode partial output. While often bytes even with text=True,
-            # we handle both for robustness across Python versions.
-            stdout = (
-                e.stdout.decode("utf-8", errors="replace")
-                if isinstance(e.stdout, bytes)
-                else (e.stdout or "")
-            )
-            stderr = (
-                e.stderr.decode("utf-8", errors="replace")
-                if isinstance(e.stderr, bytes)
-                else (e.stderr or "")
-            )
-
-            warning = f"[ERROR: Command timed out after {e.timeout} seconds]"
-            return {
-                "stdout": f"{warning}\n{stdout}".strip() if stdout else warning,
-                "stderr": stderr,
-                "return_code": self.TIMEOUT_EXIT_CODE,
-            }
         except (FileNotFoundError, OSError) as e:
             self._log_debug_error(e)
             return {
