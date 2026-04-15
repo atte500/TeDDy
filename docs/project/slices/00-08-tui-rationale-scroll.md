@@ -4,7 +4,7 @@
 - **Status:** Planned
 - **Milestone:** [10-interactive-session-and-config](../milestones/10-interactive-session-and-config.md)
 - **Specs:** N/A
-- **Prototype:** [To be created by Prototyper]
+- **Prototype:** [prototypes/tui_ui_integration_spike.py](../../../prototypes/tui_ui_integration_spike.py)
 - **Component Docs:** N/A
 
 ## 2. Business Goal
@@ -29,10 +29,18 @@ Then the right panel should instantly swap to a scrollable text viewer (e.g., `V
 And the user can scroll smoothly through the entire text block natively.
 
 ## 4. Deliverables
-*To be filled by the Pathfinder after prototype validation.*
+- [ ] **Contract** - Define `ALLOWED_RATIONALE_SECTIONS` constant in `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py`.
+- [ ] **Harness** - Update `TuiDriver` to support `ContentSwitcher` state verification and `Markdown` content inspection.
+- [ ] **Logic** - Update `on_mount_logic` in `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py` to filter rationale sections by `ALLOWED_RATIONALE_SECTIONS` and append non-standard sections to the preceding standard section.
+- [ ] **Wiring** - Replace `ParameterDetail` with a `ContentSwitcher` containing both `ParameterDetail` and a `VerticalScroll` in `ReviewerApp.compose`. Preserve `#right-pane` ID for CSS compatibility.
+- [ ] **Logic** - Refactor `_update_detail_view` in `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py` to toggle the `ContentSwitcher` and update the `Markdown` widget for rationales without redundant headers.
+- [ ] **Logic** - Update `format_node_label` and `DetailItem` to correctly stringify Enum values (e.g., `ActionType.CREATE` -> `CREATE`).
+- [ ] **Cleanup** - Harmonize `VerticalScroll` background with `ListView` using `$surface` in `TUI_CSS`.
 
 ## 5. Delta Analysis
-*To be filled by the Prototyper/Pathfinder based on prototype findings.*
+- **Current State:** The right panel is a single `ListView` (`ParameterDetail`). Large rationale blocks are split into `ListItem`s, which prevents native scrolling of the entire block and limits the display to plain text.
+- **Proposed Change:** Wrap the right panel in a `ContentSwitcher`. One branch remains the `ParameterDetail` (for actions), and the other becomes a `VerticalScroll` containing a `Markdown` widget (for rationales). This allows for rich text rendering and native scrolling.
+- **Constraints:** The rationale parser has been validated to correctly filter for "Synthesis", "Justification", "Expectation", and "State Dashboard", ignoring any other H3/list headers.
 
 ## 6. Guidelines for Implementation
 **For the Prototyper:**
