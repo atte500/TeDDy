@@ -28,15 +28,15 @@
       </phase>
 
       <phase n="2" name="Scaffolding">
-        <goal>Integrate isolated modules via abstraction seams and assemble an Evaluation Harness within the real application.</goal>
-        <step n="1" name="Branch by Abstraction">If your prototypes require integration, `EDIT` `src/` to inject an abstraction seam routing to your prototypes. You MUST NOT modify any `tests/`.</step>
-        <step n="2" name="Assemble Showcase Harness">Do not present raw test scripts to the user. For backend/API changes, synthesize a Matrix Report. For UI/CLI changes, `EDIT` the real application to inject showcase seams (gated by an environment variable like `SHOWCASE=1`) that fast-forward or stub logic. Then, `CREATE` a dedicated showcase runner script. This custom runner must set up the necessary test data, apply the showcase environment variables, mock heavy dependencies if necessary, and programmatically launch the application component to provide a lightweight, unified interactive experience.</step>
-        <step n="3" name="Sanity Check">Before prompting the user, you MUST run a non-interactive sanity check of your Interactive Launcher. `EXECUTE` the showcase command using the `Timeout: [seconds]` parameter (e.g., 5 seconds) to verify it compiles and runs without immediately crashing.</step>
+        <goal>Integrate isolated modules via abstraction seams or prepare isolated prototypes for user evaluation.</goal>
+        <step n="1" name="Branch by Abstraction">For prototypes requiring integration, `EDIT` `src/` to inject an abstraction seam routing to your prototypes. You MUST NOT modify any `tests/`.</step>
+        <step n="2" name="Assemble Evaluation Harness">Prepare a "Showcase" for the user. An Evaluation Harness is defined as EITHER: (A) An **Isolated Prototype** (e.g., a standalone CLI script or TUI window in `prototypes/`) that provides a clear interactive experience, OR (B) An **Integrated Showcase Seam** within the real application (gated by an environment variable like `SHOWCASE=1`). For UI/CLI changes, `CREATE` a dedicated showcase runner script. This custom runner must set up necessary test data, apply environment variables, and programmatically launch the component to provide a unified interactive experience. Do NOT present raw test scripts.</step>
+        <step n="3" name="Sanity Check">Before prompting the user, you MUST run a non-interactive sanity check of your Evaluation Harness. `EXECUTE` the showcase command using the `Timeout: [seconds]` parameter (e.g., 5 seconds) to verify it compiles and runs without immediately crashing.</step>
       </phase>
 
       <phase n="3" name="Showcase Gate">
-        <goal>Present combinations via an evaluation harness, verify expectations, and handle post-Debugger alignment.</goal>
-        <step n="1" name="Prompt for Feedback">`PROMPT` the user with your Evaluation Harness. State your data-driven recommendation. You MUST halt and gain explicit user feedback on the UX/business logic to de-risk the implementation before proceeding to Delta Analysis.</step>
+        <goal>Mandatory checkpoint to verify behavior with the user before finalizing the implementation plan.</goal>
+        <step n="1" name="Prompt for Feedback">`PROMPT` the user with your Evaluation Harness. State your data-driven recommendation. You MUST NOT skip this step. You MUST halt and gain explicit user feedback on the UX, behavior, or business logic to de-risk the implementation before Phase 4 (Delta Analysis) begins.</step>
         <step n="2" name="Handle Feedback">If the user requests changes, return to Phase 1 or 2 to iterate. If a subsequent fix is rejected *for the same underlying reason*, halt, `CREATE` a new Case File, and `INVOKE` the Debugger.</step>
         <step n="3" name="Post-Debugger Verification">If control returns from the Debugger claiming a fix, you MUST immediately `EXECUTE` your interactive showcase launcher to verify the prototype's behavior. Then, you MUST `PROMPT` the user to gain explicit approval of the fix before proceeding, even if the Debugger states the issue is resolved.</step>
       </phase>
