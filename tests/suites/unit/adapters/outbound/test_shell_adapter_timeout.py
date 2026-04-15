@@ -1,8 +1,37 @@
 import subprocess
 import sys
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 from teddy_executor.adapters.outbound.shell_adapter import ShellAdapter
+
+
+@pytest.mark.anyio
+async def test_execute_timeout_does_not_reset_terminal():
+    """
+    Regression test for Bug: TUI corruption on timeout.
+    Ensures that ShellAdapter does NOT call _restore_terminal_state on timeout,
+    as this corrupts the active TUI session.
+    """
+    adapter = ShellAdapter()
+
+    with patch("subprocess.Popen") as mock_popen:
+        process = MagicMock()
+        import subprocess
+
+        process.communicate.side_effect = subprocess.TimeoutExpired(
+            cmd="test", timeout=0.1
+        )
+        mock_popen.return_value = process
+
+        with patch.object(adapter, "_restore_terminal_state") as mock_reset:
+            # We don't care about the result, just that the reset wasn't called
+            adapter.execute("sleep 5", timeout=0.1)
+
+            assert not mock_reset.called, (
+                "_restore_terminal_state was called on timeout!"
+            )
+
+
 from teddy_executor.core.ports.outbound.shell_executor import IShellExecutor
 
 
@@ -71,8 +100,8 @@ def test_execute_handles_timeout_with_partial_output(container):
     assert "partial stdout" in result["stdout"]
     assert "partial stderr" in result["stderr"]
     assert "[ERROR: Command timed out after 0.1 seconds]" in result["stdout"]
-    # Verify terminal restore was triggered
-    assert mock_restore.called
+    # Verify terminal restore was NOT triggered (TUI safety)
+    assert not mock_restore.called
 
 
 def test_execute_handles_timeout_without_output(container):

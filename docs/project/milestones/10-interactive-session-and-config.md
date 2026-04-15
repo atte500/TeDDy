@@ -102,15 +102,17 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 - [ ] **Dependency:** Update `aiohttp` to 3.13.4+, `litellm` to 1.83.0+, and `pygments` to 2.20.0+ to resolve multiple vulnerabilities found by `pip-audit`.
 
 ### New Technical Debt (Discovered during TUI Refinement)
-- [ ] **ShellAdapter Maintenance:** Refactor `ShellAdapter` (>300 lines, C901, PLR0915) after terminal reset sanitization additions.
+- [ ] **ShellAdapter Maintenance:** Refactor `ShellAdapter` (>300 lines, C901, PLR0915) after terminal reset sanitization additions. Also fix `Mypy` bytes vs str errors in `_run_subprocess`.
 - [ ] **TUI Suspension:** Investigate `app.suspend()` instability in certain terminal environments during external tool execution.
 - [ ] **Editor Sync:** Generalize the `code --wait` logic to handle other GUI editors that return before the file is released.
 - [ ] **File Length:** Refactor `src/teddy_executor/adapters/outbound/console_interactor.py` (>300 lines).
 - [ ] **File Length:** Refactor `src/teddy_executor/adapters/inbound/cli_helpers.py` (>300 lines).
-- [ ] **File Length:** Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_app.py` (310 lines).
+- [ ] **File Length:** Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_app.py` (>300 lines).
 - [ ] **File Length:** Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_helpers.py` (455 lines).
 - [ ] **Complexity:** Refactor `check_action_logic` (PLR0911: 7 return statements).
+- [ ] **Complexity:** Refactor `ExecutionOrchestrator.execute` (C901, PLR0912, PLR0915) after adding aborted action mapping logic.
 - [ ] **Typing:** Resolve `Mypy` union-attr errors and `Worker` awaitable mismatch in TUI logic/app.
 - [ ] **Vulture:** Configure `.vulture_whitelist` or pragmas for abstract Port definitions to resolve 40+ false positives.
 - [ ] **Vulture (Console Interactor Tests):** Resolve unused `args`/`kwargs` in `test_console_interactor.py`.
 - [ ] **Vulture:** Resolve unused `old_val` in `_apply_param_edit`.
+- [ ] **Linter (Tests):** Clean up unused `mock_preview` (F841) in `test_tui_regressions.py` and fix module-level import (E402) in `test_shell_adapter_timeout.py`.

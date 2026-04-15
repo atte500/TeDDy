@@ -13,50 +13,38 @@ MAX_LABEL_LENGTH = 60
 
 def format_action_log(log: "ActionLog") -> str:
     """
-    Formats an ActionLog entry to match the Jinja2 template style for TUI viewing.
+    Formats an ActionLog entry using the global MarkdownReportFormatter to ensure
+    exact formatting consistency with the final execution report.
     """
-    lines = [f"### `OUTCOME`: {log.status.value}"]
+    from datetime import datetime, timezone
+    from teddy_executor.core.domain.models.execution_report import (
+        ExecutionReport,
+        RunSummary,
+        RunStatus,
+    )
+    from teddy_executor.core.services.markdown_report_formatter import (
+        MarkdownReportFormatter,
+    )
 
-    if log.failed_command:
-        lines.append(f"- **Failed Command:** `{log.failed_command}`")
+    now = datetime.now(timezone.utc)
+    # Map the action status to a run status for the synthetic report summary
+    run_status = RunStatus.SUCCESS
+    if log.status.value in ["FAILURE", "SKIPPED"]:
+        # Fallback mapping if ActionStatus enum string matches RunStatus
+        run_status = getattr(RunStatus, log.status.value, RunStatus.FAILURE)
 
-    if isinstance(log.details, dict):
-        details_dict = cast(dict[str, Any], log.details)
-        if details_dict.get("return_code") is not None:
-            lines.append(f"- **Return Code:** `{details_dict['return_code']}`")
+    synthetic_report = ExecutionReport(
+        plan_title=f"{log.action_type} Details",
+        run_summary=RunSummary(
+            status=run_status,
+            start_time=now,
+            end_time=now,
+        ),
+        action_logs=[log],
+    )
 
-        # Map keys to their Markdown code fence type
-        fenced_sections = [
-            ("stdout", "text"),
-            ("stderr", "text"),
-            ("diff", "diff"),
-            ("content", "text"),
-        ]
-
-        for key, lang in fenced_sections:
-            val = details_dict.get(key)
-            if val:
-                lines.append(f"\n#### `{key}`")
-                lines.append("````" + lang)
-                lines.append(str(val).strip())
-                lines.append("````")
-
-        # Fallback for generic details if no standard keys are present
-        standard_keys = {
-            "error",
-            "return_code",
-            "stdout",
-            "stderr",
-            "content",
-            "diff",
-            "failed_command",
-        }
-        if not any(details_dict.get(k) for k in standard_keys):
-            lines.append(f"- **Details:** `{log.details}`")
-    else:
-        lines.append(f"- **Details:** `{log.details}`")
-
-    return "\n".join(lines)
+    formatter = MarkdownReportFormatter()
+    return formatter.format(synthetic_report, is_concise=True)
 
 
 def extract_status_emoji(raw_status: str) -> str:
@@ -299,17 +287,9 @@ async def orchestrate_execution(app: ReviewerApp, node: Any, update_fn: Any) -> 
         import anyio
         from teddy_executor.core.domain.models.execution_report import ActionStatus
 
-        # Suspend the TUI to allow the subprocess (EXECUTE) to own the terminal.
-        # Note: App.suspend is not supported in headless environments (e.g., run_test).
-        if not getattr(app, "is_headless", False):
-            with app.suspend():
-                log = await anyio.to_thread.run_sync(
-                    _execute_silently, app._action_dispatcher, action
-                )
-        else:
-            log = await anyio.to_thread.run_sync(
-                _execute_silently, app._action_dispatcher, action
-            )
+        log = await anyio.to_thread.run_sync(
+            _execute_silently, app._action_dispatcher, action
+        )
 
         action.executed, action.action_log = True, log
         action.state = (
@@ -322,6 +302,7 @@ async def orchestrate_execution(app: ReviewerApp, node: Any, update_fn: Any) -> 
     finally:
         app._refresh_node(node)
         update_fn(app, action)
+        app.refresh_bindings()
 
 
 async def _execute_prompt_step(
@@ -344,13 +325,14 @@ async def _execute_prompt_step(
             action_type=action.type,
             params=action.params,
             status=ActionStatus.SUCCESS,
-            details="Response captured.",
+            details={"response": action.user_response},
             failed_command=None,
         )
     else:
         action.state = ExecutionStatus.PENDING
     app._refresh_node(node)
     update_fn(app, action)
+    app.refresh_bindings()
 
 
 def _execute_silently(dispatcher: Any, act: Any) -> Any:

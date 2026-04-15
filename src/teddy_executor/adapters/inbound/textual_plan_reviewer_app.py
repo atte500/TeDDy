@@ -64,7 +64,7 @@ class ReviewerApp(App):
         ("v", "view_plan", "View Plan"),
         ("x", "execute_step", "Execute Step"),
         ("m", "add_message", "Add Message"),
-        ("q", "cancel", "Cancel"),
+        ("q", "cancel", "Quit"),
         ("left", "focus_left", "Focus Left"),
         ("right", "focus_right", "Focus Right"),
     ]
@@ -87,6 +87,7 @@ class ReviewerApp(App):
         self._file_system = file_system
         self._edit_simulator = EditSimulator()
         self._user_message_cache: Optional[str] = None
+        self._log_preview_files: list[str] = []
 
     def compose(self) -> ComposeResult:
         """
@@ -158,6 +159,13 @@ class ReviewerApp(App):
             else:
                 final_message = self._user_message_cache.strip()
             self.plan.metadata["user_request"] = final_message
+
+        for f in getattr(self, "_log_preview_files", []):
+            try:
+                self._system_env.delete_file(f)
+            except Exception:  # nosec B110
+                pass
+
         self.exit(self.plan)
 
     def action_cancel(self) -> None:
@@ -176,6 +184,13 @@ class ReviewerApp(App):
                     action.pending_temp_file = None
                 except Exception:  # nosec B110
                     pass
+
+        for f in getattr(self, "_log_preview_files", []):
+            try:
+                self._system_env.delete_file(f)
+            except Exception:  # nosec B110
+                pass
+
         self.exit(None)
 
     @work
@@ -228,7 +243,15 @@ class ReviewerApp(App):
 
         if action.action_log:
             log_content = format_action_log(action.action_log)
-            await launch_editor(self, log_content, suffix=".md", skip_confirm=True)
+            temp_file = self._system_env.create_temp_file(suffix=".md")
+            self._log_preview_files.append(temp_file)
+            await launch_editor(
+                self,
+                log_content,
+                suffix=".md",
+                persistent_path=temp_file,
+                skip_confirm=True,
+            )
 
     @work
     async def action_view_plan(self) -> None:

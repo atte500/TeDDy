@@ -224,20 +224,35 @@ class ExecutionOrchestrator(IRunPlanUseCase):
                     validation_errors=validation_errors,
                 )
 
-            plan = self._perform_interactive_review(plan, interactive)
-            if plan is None:
+            reviewed_plan = self._perform_interactive_review(plan, interactive)
+            if reviewed_plan is None:
+                action_logs = []
+                for a in plan.actions:
+                    if a.executed and a.action_log:
+                        action_logs.append(a.action_log)
+                    else:
+                        action_logs.append(
+                            self._action_executor.handle_skipped_action(
+                                a, "Execution aborted by user."
+                            )
+                        )
+
+                status = self._determine_overall_status(action_logs)
                 return ExecutionReport(
                     run_summary=RunSummary(
-                        status=RunStatus.SKIPPED,
+                        status=status,
                         start_time=start_time,
                         end_time=datetime.now(),
                     ),
-                    plan_title="",
-                    rationale="",
-                    metadata={},
-                    original_actions=[],
-                    action_logs=[],
+                    plan_title=plan.title,
+                    rationale=plan.rationale,
+                    user_request=plan.metadata.get("user_request") or message,
+                    metadata=plan.metadata,
+                    original_actions=plan.actions,
+                    action_logs=action_logs,
                 )
+
+            plan = reviewed_plan
 
             action_logs = self._process_plan_actions(plan, interactive)
 

@@ -186,3 +186,47 @@ def test_execute_happy_path_non_interactive(
         action1, agent_name=None
     )
     mock_user_interactor.confirm_action.assert_not_called()
+
+
+def test_aborted_plan_preserves_manually_executed_logs(env, mock_plan_reviewer):
+    """
+    Given a plan reviewed interactively (via TUI),
+    When the user manually executes one action (e.g. via 'x') but then quits/aborts ('q'),
+    Then the ExecutionReport should preserve the ActionLog of the executed action,
+    And the final status should reflect the executed action instead of defaulting to SKIPPED.
+    """
+    # Arrange
+    orchestrator = env.get_service(ExecutionOrchestrator)
+    orchestrator._plan_reviewer = mock_plan_reviewer
+
+    action1 = ActionData(type="READ", params={"file": "foo.txt"}, description="Act 1")
+    action2 = ActionData(type="READ", params={"file": "bar.txt"}, description="Act 2")
+    plan = Plan(title="Test Plan", rationale="Test", actions=[action1, action2])
+
+    def mock_review_side_effect(p: Plan) -> None:
+        # Simulate manual execution of action 1 before quitting
+        act = p.actions[0]
+        act.executed = True
+        act.action_log = ActionLog(
+            status=ActionStatus.SUCCESS,
+            action_type="READ",
+            params=act.params,
+            details="Manually harvested log",
+        )
+
+    mock_plan_reviewer.review.side_effect = mock_review_side_effect
+
+    # Act
+    report = orchestrator.execute(plan=plan, interactive=True)
+
+    # Assert
+    assert len(report.action_logs) == 2
+    assert report.action_logs[0].status == ActionStatus.SUCCESS
+    assert report.action_logs[0].details == "Manually harvested log"
+
+    assert report.action_logs[1].status == ActionStatus.SKIPPED
+    assert "Execution aborted by user." in report.action_logs[1].details
+
+    # Even though aborted, because one action succeeded, the run is considered a SUCCESS overall
+    assert report.run_summary.status == RunStatus.SUCCESS
+    assert report.plan_title == "Test Plan"

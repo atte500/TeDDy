@@ -165,10 +165,10 @@ async def test_regression_reactivity_on_edit(mock_update, env):
 
 
 @pytest.mark.anyio
-async def test_regression_orchestrate_execution_suspends_app():
+async def test_regression_orchestrate_execution_does_not_suspend_unnecessarily():
     """
-    Ensures that orchestrate_execution suspends the TUI
-    during non-PROMPT actions to prevent terminal state corruption.
+    Ensures that orchestrate_execution does NOT suspend the TUI
+    during non-interactive execution (which captures IO silently).
     """
     from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
         orchestrate_execution,
@@ -184,49 +184,87 @@ async def test_regression_orchestrate_execution_suspends_app():
         status=ActionStatus.SUCCESS, action_type="EXECUTE", params={}
     )
 
-    # Mock App with suspension tracking
+    # Mock App
     app = MagicMock()
     app._action_dispatcher = mock_dispatcher
-    app.is_headless = False  # Ensure we hit the suspension logic
-
-    # Track context manager entry/exit
-    suspend_cm = MagicMock()
-    app.suspend.return_value = suspend_cm
+    app.is_headless = False
 
     # Execute
     await orchestrate_execution(app, node, lambda a, b: None)
 
     # Assert
-    assert app.suspend.called, "app.suspend() was not called for EXECUTE action"
-    assert suspend_cm.__enter__.called, "app.suspend() context manager was not entered"
-    assert suspend_cm.__exit__.called, "app.suspend() context manager was not exited"
+    assert not app.suspend.called, (
+        "app.suspend() should not be called for silent EXECUTE"
+    )
     assert action.executed is True
-    assert action.state == ExecutionStatus.SUCCESS
 
 
 @pytest.mark.anyio
-async def test_regression_orchestrate_execution_bypasses_suspend_in_headless():
+async def test_regression_execute_prompt_step_populates_correct_log_details():
     """
-    Ensures suspension is bypassed in headless environments (like unit tests)
-    to avoid 'App.suspend is not supported' errors.
+    Regression test for Bug: PROMPT response missing from report.
+    Ensures that manual PROMPT execution via TUI creates a dict-based log.
+    """
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+        _execute_prompt_step,
+    )
+
+    # Setup
+    app = MagicMock()
+    app.INSTRUCTION_MARKER = "--- marker ---"
+    action = ActionData(
+        type="PROMPT", params={"prompt": "Confirm?"}, description="Test Prompt"
+    )
+    action.user_response = "Confirmed by user."
+    action.modified = True  # Simulate user having edited the prompt in the editor
+
+    node = MagicMock()
+    node.data = action
+    update_fn = MagicMock()
+
+    # Mock preview_prompt to simulate completion
+    with patch(
+        "teddy_executor.adapters.inbound.textual_plan_reviewer_previews.preview_prompt"
+    ) as mock_preview:
+        # Execute
+        await _execute_prompt_step(app, action, node, update_fn)
+
+        # Verify
+        assert action.executed is True
+        assert action.state == ExecutionStatus.SUCCESS
+        assert isinstance(action.action_log.details, dict)
+        assert action.action_log.details["response"] == "Confirmed by user."
+
+        # Verify UI was refreshed
+        app._refresh_node.assert_called_with(node)
+        update_fn.assert_called_with(app, action)
+
+
+@pytest.mark.anyio
+async def test_regression_prompt_execution_does_not_suspend_unnecessarily():
+    """
+    Regression test for Bug: TUI Stutter on manual PROMPT execution.
+    Ensures that prompt execution path does NOT suspend, as it relies on modals.
     """
     from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
         orchestrate_execution,
     )
 
-    action = ActionData(type="EXECUTE", params={"command": "ls"}, selected=True)
+    # Setup
+    action = ActionData(type="PROMPT", params={"prompt": "Confirm?"})
     node = MagicMock()
     node.data = action
-
-    mock_dispatcher = MagicMock()
-    mock_dispatcher.dispatch_and_execute.return_value = ActionLog(
-        status=ActionStatus.SUCCESS, action_type="EXECUTE", params={}
-    )
+    update_fn = MagicMock()
 
     app = MagicMock()
-    app._action_dispatcher = mock_dispatcher
-    app.is_headless = True
+    app.is_headless = False
 
-    await orchestrate_execution(app, node, lambda a, b: None)
+    with patch(
+        "teddy_executor.adapters.inbound.textual_plan_reviewer_helpers._execute_prompt_step",
+        new_callable=AsyncMock,
+    ):
+        # Execute
+        await orchestrate_execution(app, node, update_fn)
 
-    assert not app.suspend.called, "app.suspend() should not be called in headless mode"
+    # Assert
+    assert not app.suspend.called, "app.suspend() should not be called for PROMPT"

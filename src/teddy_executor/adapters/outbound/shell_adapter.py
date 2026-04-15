@@ -239,8 +239,6 @@ class ShellAdapter(IShellExecutor):
                 else:
                     process.kill()
 
-                self._restore_terminal_state()
-
                 try:
                     # Give the OS a moment to close pipes naturally after SIGKILL.
                     stdout, stderr = process.communicate(timeout=0.5)

@@ -15,7 +15,9 @@ def test_format_action_log_success():
 
     formatted = format_action_log(log)
 
-    assert "### `OUTCOME`: SUCCESS" in formatted
+    assert "- **Overall Status:** SUCCESS" in formatted
+    assert "### `CREATE`: [test.txt](/test.txt)" in formatted
+    assert "- **Status:** SUCCESS" in formatted
     assert "- **Details:** `File created successfully.`" in formatted
 
 
@@ -31,17 +33,16 @@ def test_format_action_log_failure_with_output():
             "stdout": "out",
             "stderr": "err",
             "diff": "--- a\n+++ b",
+            "failed_command": "ls non_existent",
         },
     )
 
     formatted = format_action_log(log)
 
-    assert "### `OUTCOME`: FAILURE" in formatted
+    assert "- **Overall Status:** FAILURE" in formatted
+    assert "- **Status:** FAILURE" in formatted
     assert "- **Failed Command:** `ls non_existent`" in formatted
     assert "- **Return Code:** `1`" in formatted
-    assert "#### `stdout`" in formatted
-    assert "````text\nout\n````" in formatted
-    assert "#### `stderr`" in formatted
-    assert "````text\nerr\n````" in formatted
-    assert "#### `diff`" in formatted
-    assert "````diff\n--- a\n+++ b\n````" in formatted
+    assert "#### `stdout`\n```text\nout\n```" in formatted
+    assert "#### `stderr`\n```text\nerr\n```" in formatted
+    assert "#### `diff`\n```diff\n--- a\n+++ b\n```" in formatted
