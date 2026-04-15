@@ -19,7 +19,7 @@
       <phase n="0" name="Triage">
         <goal>Ensure formal Case File exists, build MRE, and gather initial context.</goal>
         <step n="1" name="Case File Check">If missing, CREATE a Case File using the Case File Blueprint. PROMPT user if reproduction steps are missing.</step>
-        <step n="2" name="Diagnostic MRE">First, CREATE a diagnostic-heavy Minimal Reproducible Example (MRE) script (e.g., `/spikes/debug/mre.js`) that captures insight and internal state leading to the fault. Link the exact execution command in the Case File.</step>
+        <step n="2" name="Diagnostic MRE">First, CREATE a diagnostic-heavy Minimal Reproducible Example (MRE) script (e.g., `debug/mre.js`) that captures insight and internal state leading to the fault. Link the exact execution command in the Case File.</step>
         <step n="3" name="Context Gathering">Use `EXECUTE` (`git grep`), `READ`, and `RESEARCH` to understand the codebase and call hierarchy.</step>
         <step n="4" name="Proactive Instrumentation">Review target code. If investigating a high-value boundary, use an `Instrumentation` plan to build permanent, conditionally-activated debug diagnostics (e.g., scoped toggles, state dumps) to aid current and future isolation.</step>
       </phase>
@@ -33,7 +33,7 @@
 
       <phase n="2" name="Investigation">
         <goal>Peel back internal layers to resolve discrepancies.</goal>
-        <step n="1" name="Design Probe">Refine the MRE or create a targeted spike in `/spikes/debug/` to expose internal state, data flow, or failure points (strictly NO mocks).</step>
+        <step n="1" name="Design Probe">Refine the MRE or create a targeted probe in `debug/` to expose internal state, data flow, or failure points (strictly NO mocks).</step>
         <step n="2" name="Execute & Observe">`EXECUTE` the probe. Analyze the exact reality of the system's execution against the model.</step>
         <step n="3" name="Model Refinement">Based on the observation, `EDIT` the Case File. Expand or correct the `### Causal Model` with the newly revealed fault mechanics, and update the `### Discrepancies` list.</step>
         <step n="4" name="Loop or Align">If discrepancies remain, repeat Phase 2. If all discrepancies are resolved and the root cause is fully understood, `PROMPT` the user with the final System Model to gain alignment before proceeding to repair.</step>
@@ -107,7 +107,7 @@ WIP & REMINDERS:
       <rule n="5" name="Information Gathering Workflow">Do not guess. Discover first via `EXECUTE` (`git grep`) to find relevant local files or `RESEARCH` for external info. Then, in a subsequent turn, `READ` the specific files or URLs you found. Loop if unhelpful.</rule>
 
       <rule n="6" name="Version Control Protocol">
-        The entire commit cycle (test, stage, commit, push) MUST occur in a dedicated `Version Control` turn. Before staging, clean up temporary files (`spikes/`, `.tmp/`).
+        The entire commit cycle (test, stage, commit, push) MUST occur in a dedicated `Version Control` turn. Before staging, clean up temporary files (`debug/`, `spikes/`, `.tmp/`).
 
         Commit messages MUST follow Conventional Commits formatting: `<type>(<scope>): <description>`. Wrap entirely in single quotes. Description must use imperative mood (e.g., "Add endpoint"). Append ! for breaking changes.
 
@@ -328,10 +328,10 @@ WIP & REMINDERS:
 ## Action Plan
 
 ### `CREATE`
-- **File Path:** [spikes/debug/probe_auth.js](/spikes/debug/probe_auth.js)
+- **File Path:** [debug/probe_auth.js](/debug/probe_auth.js)
 - **Description:** Probe to inject a state dump inside the AuthMiddleware to expose the verify error.
 ~~~~~~javascript
-const { AuthMiddleware } = require('../../src/auth');
+const { AuthMiddleware } = require('../src/auth');
 // Setup minimal reality-based probe...
 ~~~~~~
 
@@ -339,7 +339,7 @@ const { AuthMiddleware } = require('../../src/auth');
 - **Description:** Run the probe to observe internal reality.
 - **Expected Outcome:** Executes and prints the exact inner exception causing the 401.
 ~~~~~~shell
-node spikes/debug/probe_auth.js
+node debug/probe_auth.js
 ~~~~~~
       </example>
     </response_format>
