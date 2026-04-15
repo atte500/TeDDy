@@ -11,19 +11,24 @@ repos:
     hooks:
     -   id: bandit
         args: ["-c", "pyproject.toml"]
-        # Exclude tests from bandit checks as they might contain test data that looks like secrets
-        exclude: ^tests/
+        # Exclude tests and experimental code from bandit checks
+        exclude: ^(tests|spikes|prototypes)/
 
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
     -   id: trailing-whitespace
+        exclude: ^(spikes|prototypes)/
     -   id: end-of-file-fixer
+        exclude: ^(spikes|prototypes)/
     -   id: check-toml
     -   id: check-added-large-files
         args: ['--maxkb=500']
+        exclude: ^(spikes|prototypes)/
     -   id: check-case-conflict
+        exclude: ^(spikes|prototypes)/
     -   id: check-merge-conflict
+        exclude: ^(spikes|prototypes)/
 
 -   repo: local
     hooks:
