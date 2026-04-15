@@ -14,7 +14,7 @@
         <step n="1" name="Case File Check">If missing, CREATE a Case File using the Case File Blueprint. PROMPT user if reproduction steps are missing.</step>
         <step n="2" name="Context Gathering">Use `EXECUTE` (`git grep`), `READ`, and `RESEARCH` to understand the codebase and call hierarchy.</step>
         <step n="3" name="Diagnostic MRE">CREATE an MRE script (e.g., `debug/mre.js`) that reproduces the end-to-end bug. You MUST verify it fails as expected. Do not use toy versions or mock-heavy assumptions. Do not proceed until this E2E MRE is correct.</step>
-        <step n="4" name="Contingency">If the bug cannot be reproduced locally due to the local system, pivot to the Remote CLI Protocol for all subsequent diagnostic steps.</step>
+        <step n="4" name="Contingency">If the bug cannot be reproduced locally due to the local system environment, pivot to the Remote CLI Protocol for all subsequent diagnostic steps.</step>
       </phase>
 
       <phase n="2" name="Investigation">
