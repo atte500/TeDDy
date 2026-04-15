@@ -28,7 +28,8 @@
             2. `EXECUTE` isolated test scripts (`prototypes/`) to expose and inspect internal workings without integrating into the main application.
             3. `EDIT` the `Vertical Slice` immediately. Detail the exposed internal workings heavily under `## Guidelines for Implementation`, refine scenarios, and add deliverables to the `## Deliverables` section.
         </step>
-        <step n="2" name="Verification">Continue the loop until you have tested the necessary isolated combinations and the internal workings are deeply understood.</step>
+        <step n="2" name="Technical Roadblocks">If a prototype fails due to technical limitations, explicitly use `RESEARCH` to hunt for alternative APIs, libraries, or approaches.</step>
+        <step n="3" name="Verification">Continue the loop until you have tested the necessary isolated combinations and the internal workings are deeply understood.</step>
       </phase>
 
       <phase n="2" name="Scaffolding">
@@ -38,9 +39,9 @@
         <step n="3" name="Sanity Check">Before prompting the user, you MUST run a non-interactive sanity check of your Interactive Launcher. `EXECUTE` the showcase command using the `Timeout: [seconds]` parameter (e.g., 5 seconds) to verify it compiles and runs without immediately crashing.</step>
       </phase>
 
-      <phase n="3" name="Showcase">
+      <phase n="3" name="Showcase Gate">
         <goal>Present combinations via an evaluation harness, verify expectations, and handle post-Debugger alignment.</goal>
-        <step n="1" name="Prompt for Feedback">`PROMPT` the user with your Evaluation Harness. State your data-driven recommendation and gain explicit alignment on the winning combination. You MUST halt and await the user's response before proceeding.</step>
+        <step n="1" name="Prompt for Feedback">`PROMPT` the user with your Evaluation Harness. State your data-driven recommendation. You MUST halt and gain explicit user feedback on the UX/business logic to de-risk the implementation before proceeding to Delta Analysis.</step>
         <step n="2" name="Handle Feedback">If the user requests changes, return to Phase 1 or 2 to iterate. If a subsequent fix is rejected *for the same underlying reason*, halt, `CREATE` a new Case File, and `INVOKE` the Debugger.</step>
         <step n="3" name="Post-Debugger Verification">If control returns from the Debugger claiming a fix, you MUST immediately `EXECUTE` your interactive showcase launcher to verify the prototype's behavior. Then, you MUST `PROMPT` the user to gain explicit approval of the fix before proceeding, even if the Debugger states the issue is resolved.</step>
       </phase>
@@ -181,7 +182,6 @@ WIP & REMINDERS:
       <blueprint name="Case File">
         <description>The formal state snapshot for tracking the bug. Must be created as a NEW file using sequential numbering. NEVER overwrite an existing Case File. Used to invoke the Debugger.</description>
         <section n="1" name="Metadata">
-          <item name="Path">docs/project/debugging/NN-{{bug_title}}.md</item>
           <item name="Heading"># Bug: {{bug_title}}</item>
           <item name="Status">- **Status:** Unresolved</item>
           <item name="Milestone">- **Milestone:** [link or N/A]</item>
@@ -193,8 +193,8 @@ WIP & REMINDERS:
           <item name="Content">Expected vs. Actual behavior and minimal reproduction steps.</item>
           <item name="Content">**MRE:** `[Exact MRE execution command]`</item>
         </section>
-        <section n="3" name="System Model">
-          <item name="Heading">## System Model</item>
+        <section n="3" name="Diagnostic Analysis">
+          <item name="Heading">## Diagnostic Analysis</item>
           <item name="Content">### Causal Model
 A preliminary description of how the faulty components are believed to interact. The creating agent should populate this with their current knowledge of the failure's mechanics.</item>
           <item name="Content">### Discrepancies
@@ -219,7 +219,7 @@ A bulleted list of the specific observations that contradict the Causal Model ab
 ## Rationale
 ~~~~~~
 0. Validation Errors (Only if recovering from validation failure).
-1. Synthesis (Analyze the previous turn's outcome against its Expectation).
+1. Synthesis (Rubber Ducking: Talk through the previous turn's outcome, trace the logic, and reason aloud about what it implies before formulating the next step. State whether the Expectation was met).
 2. Justification (Explain how your proposed plan is the next logical step).
 3. Expectation (State the single, specific, observable outcome and its technical significance).
 4. State Dashboard (Insert State Dashboard Template here).
@@ -353,7 +353,7 @@ PHASES:
 - [✓] Exploration
 - [▶] Prototyping
 - [ ] Scaffolding
-- [ ] Showcase
+- [ ] Showcase Gate
 - [ ] Delta Analysis
 - [ ] Finalization
 - [ ] Handoff

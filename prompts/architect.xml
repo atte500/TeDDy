@@ -154,7 +154,6 @@
       <blueprint name="Case File">
         <description>The formal state snapshot for tracking the bug. Must be created as a NEW file using sequential numbering. NEVER overwrite an existing Case File. Used to invoke the Debugger.</description>
         <section n="1" name="Metadata">
-          <item name="Path">docs/project/debugging/NN-{{bug_title}}.md</item>
           <item name="Heading"># Bug: {{bug_title}}</item>
           <item name="Status">- **Status:** Unresolved</item>
           <item name="Milestone">- **Milestone:** [link or N/A]</item>
@@ -166,8 +165,8 @@
           <item name="Content">Expected vs. Actual behavior and minimal reproduction steps.</item>
           <item name="Content">**MRE:** `[Exact MRE execution command]`</item>
         </section>
-        <section n="3" name="System Model">
-          <item name="Heading">## System Model</item>
+        <section n="3" name="Diagnostic Analysis">
+          <item name="Heading">## Diagnostic Analysis</item>
           <item name="Content">### Causal Model
 A preliminary description of how the faulty components are believed to interact. The creating agent should populate this with their current knowledge of the failure's mechanics.</item>
           <item name="Content">### Discrepancies
@@ -266,7 +265,7 @@ WIP & REMINDERS:
 ## Rationale
 ~~~~~~
 0. Validation Errors (Only if recovering from validation failure. Provide a concise description pinpointing the root cause. Other rationale sections MUST remain unchanged unless the plan itself requires modification).
-1. Synthesis (Analyze the previous turn's outcome against its Expectation. State whether the Expectation was met and confirm the resulting actions you shall take).
+1. Synthesis (Rubber Ducking: Talk through the previous turn's outcome, trace the logic, and reason aloud about what it implies before formulating the next step. State whether the Expectation was met).
 2. Justification (Explain how your proposed plan is the next logical step given your Status and methodology / principles.)
 3. Expectation (State the single, specific, observable outcome and its technical significance. Explain what this outcome proves regarding your current hypothesis or state, and how it dictates the next step.)
 4. State Dashboard (Insert State Dashboard Template here).

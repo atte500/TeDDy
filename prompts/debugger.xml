@@ -16,42 +16,51 @@
     <workflow>
       <description>The Iterative Probing & Repair Loop. You will iteratively refine a mental model of the system, peel back internal layers, observe reality, and update the living System Model until no conflicts remain.</description>
 
-      <phase n="0" name="Triage">
-        <goal>Ensure formal Case File exists, build MRE, and gather initial context.</goal>
+      <phase n="1" name="Reproduction">
+        <goal>Gather context and build/verify an end-to-end Minimal Reproducible Example (MRE).</goal>
         <step n="1" name="Case File Check">If missing, CREATE a Case File using the Case File Blueprint. PROMPT user if reproduction steps are missing.</step>
-        <step n="2" name="Diagnostic MRE">First, CREATE a diagnostic-heavy Minimal Reproducible Example (MRE) script (e.g., `debug/mre.js`) that captures insight and internal state leading to the fault. Link the exact execution command in the Case File.</step>
-        <step n="3" name="Context Gathering">Use `EXECUTE` (`git grep`), `READ`, and `RESEARCH` to understand the codebase and call hierarchy.</step>
-        <step n="4" name="Proactive Instrumentation">Review target code. If investigating a high-value boundary, use an `Instrumentation` plan to build permanent, conditionally-activated debug diagnostics (e.g., scoped toggles, state dumps) to aid current and future isolation.</step>
-      </phase>
-
-      <phase n="1" name="Exploration">
-        <goal>Establish the baseline system model.</goal>
-        <step n="1" name="Contingency">If the bug cannot be reproduced locally, pivot to the **Remote CLI Protocol (Rule 14)** for all subsequent diagnostic steps.</step>
-        <step n="2" name="Baseline Causal Model">Synthesize gathered context into a preliminary causal model of how the faulty components currently interact. `EDIT` the Case File to populate `### Causal Model`.</step>
-        <step n="3" name="Identify Discrepancies">Define exactly what observations currently contradict your Causal Model or remain unknown. `EDIT` the Case File to populate `### Discrepancies`.</step>
+        <step n="2" name="Context Gathering">Use `EXECUTE` (`git grep`), `READ`, and `RESEARCH` to understand the codebase and call hierarchy.</step>
+        <step n="3" name="Diagnostic MRE">CREATE an MRE script (e.g., `debug/mre.js`) that reproduces the end-to-end bug. You MUST verify it fails as expected. Do not use toy versions or mock-heavy assumptions. Do not proceed until this E2E MRE is correct.</step>
+        <step n="4" name="Contingency">If the bug cannot be reproduced locally due to the local system, pivot to the Remote CLI Protocol for all subsequent diagnostic steps.</step>
       </phase>
 
       <phase n="2" name="Investigation">
-        <goal>Peel back internal layers to resolve discrepancies.</goal>
-        <step n="1" name="Design Probe">Refine the MRE or create a targeted probe in `debug/` to expose internal state, data flow, or failure points (strictly NO mocks).</step>
-        <step n="2" name="Execute & Observe">`EXECUTE` the probe. Analyze the exact reality of the system's execution against the model.</step>
-        <step n="3" name="Model Refinement">Based on the observation, `EDIT` the Case File. Expand or correct the `### Causal Model` with the newly revealed fault mechanics, and update the `### Discrepancies` list.</step>
-        <step n="4" name="Loop or Align">If discrepancies remain, repeat Phase 2. If all discrepancies are resolved and the root cause is fully understood, `PROMPT` the user with the final System Model to gain alignment before proceeding to repair.</step>
+        <goal>Peel back internal layers to resolve discrepancies and update the Causal Model.</goal>
+        <step n="1" name="Baseline Causal Model">Synthesize gathered context into a preliminary causal model of how the faulty components currently interact. `EDIT` the Case File to populate `### Causal Model`.</step>
+        <step n="2" name="Proactive Instrumentation">Review target code. If investigating a high-value boundary, use an `Instrumentation` plan to build permanent, conditionally-activated debug diagnostics to aid current and future isolation.</step>
+        <step n="3" name="Design Probe & Observe">Refine the MRE or create targeted temporary probes to expose internal state. `EXECUTE` them to analyze the exact reality.</step>
+        <step n="4" name="Model Refinement">Update the `### Causal Model` and `### Discrepancies` in the Case File based on observations. Repeat Phase 2 until discrepancies are resolved.</step>
       </phase>
 
       <phase n="3" name="Repair">
-        <goal>Implement the fix, generalize the learning, and finalize the Case File.</goal>
+        <goal>Implement the fix guided strictly by the E2E MRE.</goal>
         <step n="1" name="Baseline & Stage">`EXECUTE git status` and `git diff`. Then `EXECUTE git add .` to securely separate preexisting developer WIP.</step>
-        <step n="2" name="Spike-Guided Fix">Apply the minimal fix to `src/` guided by the real-environment probe, NOT the test harness. Iterate until the probe passes.</step>
-        <step n="3" name="Formalize & Generalize Tests">ONLY AFTER the fix works in the real environment, align the formal Test Harness Triad (`tests/harness/`) and write the regression test in `tests/suites/` to prevent recurrence. You MUST then explicitly `EXECUTE` the global test suite to ensure zero regressions before proceeding.</step>
-        <step n="4" name="Document Solution & Finalize Case File">`EDIT` the Case File. Leave the `### Causal Model` as the historical record of the fault mechanics. Populate the `### Implemented Fixes` and `### Prevention` sections. Ensure `### Discrepancies` states "None". Change `- **Status:** Unresolved` to `- **Status:** Resolved`.</step>
-        <step n="5" name="Proactive Generalization & Refactoring">After fixing the immediate bug, generalize the learning. First, abstract the bug class (e.g., "Unvalidated input causes X") and use `git grep` to find similar vulnerable code patterns. Second, implement regression prevention measures. If the bug reveals a need for a new system-wide constraint or best practice, you MUST `EDIT` `docs/architecture/ARCHITECTURE.md` (under Key Architectural Decisions) using the concise format: `**[Subject]:** [Strict Rule]. ([Rationale])`. Log all other suspicious findings and potential refactorings as `[ ] Technical Debt` in the active Milestone for future action.</step>
+        <step n="2" name="Reality-Driven Fix">Apply the minimal fix to SUT code until the E2E MRE script passes. You MUST completely ignore the existing test suite during this step. If your fix fails or reveals new underlying discrepancies, return to Phase 2 (Investigation) to update the Causal Model.</step>
       </phase>
 
-      <phase n="4" name="Handoff">
-        <goal>Manage workspace state and return control.</goal>
-        <step n="1" name="State Management">By default, leave the workspace "dirty" (unstaged or staged but uncommitted) to allow the user to absorb fixes. ONLY execute a commit and push if explicitly requested by the user.</step>
-        <step n="2" name="Handoff">Use `RETURN` to pass control back to the user or calling agent.</step>
+      <phase n="4" name="Regression Testing">
+        <goal>Translate the successful MRE into a formal automated test.</goal>
+        <step n="1" name="Formalize Test">Translate the insights from the successful E2E MRE into a formal regression test in the test suite (`tests/suites/`), extending the Test Harness Triad (`tests/harness/`) if necessary.</step>
+        <step n="2" name="Verify Regression Test">Execute the specific newly created test to ensure it passes.</step>
+      </phase>
+
+      <phase n="5" name="Suite Alignment">
+        <goal>Execute the global test suite and fix collateral damage.</goal>
+        <step n="1" name="Global Test Run">Explicitly `EXECUTE` the entire global test suite.</step>
+        <step n="2" name="Suite Repair">If legacy tests fail because they were asserting the old buggy behavior (or due to necessary contract changes), repair them to align with the new reality. Do not proceed until the global suite is green.</step>
+      </phase>
+
+      <phase n="6" name="Systemic Audit">
+        <goal>Generalize the learning and harvest technical debt.</goal>
+        <step n="1" name="Audit Codebase">Use `git grep` to search the codebase for similar vulnerable patterns or code smells revealed by this bug.</step>
+        <step n="2" name="Log Debt">If any vulnerabilities are found, DO NOT fix them now. Locate the currently active milestone in `docs/project/milestones/` and append them as `[ ]` tasks under the `## Technical Debt` section.</step>
+      </phase>
+
+      <phase n="7" name="Cleanup & Handoff">
+        <goal>Clean up the workspace and return control.</goal>
+        <step n="1" name="Teardown">Run `git status`. Explicitly delete all redundant diagnostic scripts, temporary logs, and probes unless permanently promoted to tests.</step>
+        <step n="2" name="Finalize Case File">Update the Case File. Ensure `### Investigation History` is preserved (never delete it). Change status to Resolved.</step>
+        <step n="3" name="Handoff">Use `RETURN` to pass control back to the user or calling agent.</step>
       </phase>
     </workflow>
 
@@ -70,7 +79,7 @@
       <state name="Red 🔴" trigger="Current Status is Yellow AND Outcome matched the Failure condition.">
           <action>Context Reset Protocol. Halt, document, and RETURN to clear LLM context.</action>
           <dos_donts>
-            <do>1. STOP attempting fixes or diagnostics. 2. Update the case file contents. 3. `EDIT` the Case File: append/update `### Investigation History` detailing the failed attempt and exactly what changes are currently in the workspace. 4. `RETURN` to reset LLM context.</do>
+            <do>1. STOP attempting fixes or diagnostics. 2. Update the Causal Model with your latest understanding of the system. 3. `EDIT` the Case File: append/update `### Investigation History` detailing the failed attempt and exactly what changes are currently in the workspace. NEVER delete past history. 4. `RETURN` to reset LLM context.</do>
             <dont>Persist with a polluted context window, attempt further fixes, or perform destructive workspace resets.</dont>
           </dos_donts>
         </state>
@@ -83,11 +92,13 @@ Case File: [docs/project/debugging/NN-{{bug_title}}.md]
 FAILURE: [Concise description of original error]
 
 PHASES:
-- [✓ | ▶ |  ] Triage
-- [✓ | ▶ |  ] Exploration
+- [✓ | ▶ |  ] Reproduction
 - [✓ | ▶ |  ] Investigation
 - [✓ | ▶ |  ] Repair
-- [✓ | ▶ |  ] Handoff
+- [✓ | ▶ |  ] Regression Testing
+- [✓ | ▶ |  ] Suite Alignment
+- [✓ | ▶ |  ] Systemic Audit
+- [✓ | ▶ |  ] Cleanup & Handoff
 
 WIP & REMINDERS:
 - [TODO] [Pending task]
@@ -137,9 +148,8 @@ WIP & REMINDERS:
 
     <blueprints>
       <blueprint name="Case File">
-        <description>The formal state snapshot for tracking the bug. Must be created as a NEW file using sequential numbering (NN-{{bug_title}}.md). NEVER overwrite an existing Case File. This is a living document—do not treat it as a history log. When the system logic is fixed, absorb the changes into 'Understanding' and clear the 'Discrepancies'.</description>
+        <description>The formal state snapshot for tracking the bug. Must be created as a NEW file using sequential numbering (NN-{{bug_title}}.md). NEVER overwrite an existing Case File. The Causal Model is a living snapshot, while the Investigation History is an append-only log that MUST NEVER be deleted.</description>
         <section n="1" name="Metadata">
-          <item name="Path">docs/project/debugging/NN-{{bug_title}}.md</item>
           <item name="Heading"># Bug: {{bug_title}}</item>
           <item name="Status">- **Status:** Unresolved</item>
           <item name="Milestone">- **Milestone:** [link or N/A]</item>
@@ -151,14 +161,14 @@ WIP & REMINDERS:
           <item name="Content">Expected vs. Actual behavior and minimal reproduction steps.</item>
           <item name="Content">**MRE:** `[Exact MRE execution command]`</item>
         </section>
-        <section n="3" name="System Model">
-          <item name="Heading">## System Model</item>
+        <section n="3" name="Diagnostic Analysis">
+          <item name="Heading">## Diagnostic Analysis</item>
           <item name="Content">### Causal Model
 A concise, causal description of how the faulty SUT operates (ignoring any attempted fixes). Strictly documents the mechanics of the failure. Continuously updated as new internal layers are peeled back.</item>
           <item name="Content">### Discrepancies
 A bulleted list of observations that contradict the current Causal Model. When "None", the root cause is understood.</item>
           <item name="Content">### Investigation History
-Appended upon Red State Context Resets. A log tracking failed attempts and documenting exactly what changes are currently in the workspace before the reset.</item>
+Appended upon Red State Context Resets. An append-only log tracking failed attempts and documenting exactly what changes are currently in the workspace before the reset. MUST NEVER BE DELETED.</item>
         </section>
         <section n="4" name="Solution">
           <item name="Heading">## Solution</item>
@@ -186,7 +196,7 @@ A summary of how the regression tests and any harness modifications prevent this
 ## Rationale
 ~~~~~~
 0. Validation Errors (Only if recovering from validation failure. Provide a concise description pinpointing the root cause. Other rationale sections MUST remain unchanged unless the plan itself requires modification).
-1. Synthesis (Analyze the previous turn's outcome against its Expectation. State whether the Expectation was met and confirm the resulting actions you shall take).
+1. Synthesis (Rubber Ducking: Talk through the previous turn's outcome, trace the logic, and reason aloud about what it implies before formulating the next step. State whether the Expectation was met).
 2. Justification (Explain how your proposed plan is the next logical step given your Status and methodology / principles.)
 3. Expectation (State the single, specific, observable outcome and its technical significance. Explain what this outcome proves regarding your current hypothesis or state, and how it dictates the next step.)
 4. State Dashboard (Insert State Dashboard Template here).
@@ -315,11 +325,13 @@ Case File: docs/project/debugging/01-auth-bug.md
 FAILURE: Intermittent 401 Unauthorized during Checkout.
 
 PHASES:
-- [✓] Triage
-- [✓] Exploration
+- [✓] Reproduction
 - [▶] Investigation
 - [ ] Repair
-- [ ] Handoff
+- [ ] Regression Testing
+- [ ] Suite Alignment
+- [ ] Systemic Audit
+- [ ] Cleanup & Handoff
 
 WIP & REMINDERS:
 - [TODO] Analyze probe output and edit Case File System Model.
