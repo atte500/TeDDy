@@ -17,7 +17,15 @@ When an `EXECUTE` action fails due to a timeout, the parent terminal is left in 
 4. **The `SIG_DFL` Override:** TeDDy attempted to prevent suspension by applying `signal.SIG_IGN` to `SIGTTIN` before executing the child. However, tools like `pytest` explicitly reset signal handlers back to `SIG_DFL` upon initialization. Once reset, their attempt to query the inherited `stdin` triggers `SIGTTIN` and indefinitely suspends them.
 
 ### Discrepancies
-- None. The root cause is fully understood. We must apply `signal.SIG_IGN` to `SIGTTIN` and `SIGTTOU` within the `preexec_fn` to prevent the OS from suspending the background process group.
+- **Playback Corruption Vector:** Reinstating `stdin=subprocess.DEVNULL` to fix the POSIX `pytest` hang caused Textual TUI prototypes to write their initialization sequences (`\x1b[?1049h`, etc.) to `stderr` instead of directly to the TTY.
+- TeDDy captured these bytes via `subprocess.PIPE`. Although TeDDy correctly restored the terminal via `_restore_terminal_state`, it then returned the poisoned `stderr` string.
+- The TeDDy CLI printed this string to the user's screen in the Execution Report, inadvertently executing the escape sequences and re-corrupting the terminal *after* cleanup.
+- **Test Blindspot:** Unit tests missed this because they run headlessly and do not simulate the final rendering of the `ShellOutput` to a physical terminal.
+
+### The True Causal Model (Refined)
+1. **Isolation vs Suspension:** Child processes in a new process group must have `stdin` redirected to `DEVNULL` to prevent `SIGTTIN` OS suspension (the `pytest` hang).
+2. **Fallback Output:** TUIs lacking a valid `stdin` TTY fall back to emitting terminal control sequences to `stdout/stderr`.
+3. **Capture & Playback:** TeDDy captures these control sequences. If not sanitized, printing the resulting execution report replays the state-modifying sequences, reversing any `_restore_terminal_state` cleanup.
 
 ### Investigation History
 - **Initial Attempt:** Used `start_new_session=True` to enable process group termination. *Result:* Stripped the controlling terminal, breaking the Textual TUI completely.
@@ -46,9 +54,10 @@ When an `EXECUTE` action fails due to a timeout, the parent terminal is left in 
 
 ## Solution
 ### Implemented Fixes
-- Modified `src/teddy_executor/adapters/outbound/shell_adapter.py` to correctly kill process groups using `subprocess.Popen(preexec_fn=...)` and `os.killpg(..., signal.SIGKILL)`. This prevents grandchild processes from being orphaned and corrupting the terminal mouse tracking state.
-- Replaced the flawed `signal.SIG_IGN` inheritance strategy with a robust physical isolation approach by explicitly passing `stdin=subprocess.DEVNULL` to all `subprocess.Popen` calls in the `ShellAdapter`. This physically prevents background child processes (like `pytest`) from querying the TeDDy CLI's controlling terminal, entirely eliminating the `SIGTTIN` suspension vector regardless of how the child manages its signal handlers.
-- Updated unit tests in `tests/suites/unit/adapters/outbound/test_shell_adapter_timeout.py` to correctly mock and assert against `subprocess.Popen.communicate`.
+- Modified `src/teddy_executor/adapters/outbound/shell_adapter.py` to correctly kill process groups using `subprocess.Popen(preexec_fn=...)` and `os.killpg(..., signal.SIGKILL)`.
+- Implemented robust `stdin=subprocess.DEVNULL` isolation for POSIX to entirely eliminate the `SIGTTIN` suspension vector for background processes (e.g., `pytest`).
+- **Sanitization Engine:** Implemented `_sanitize_output` in `ShellAdapter` using robust regular expressions to strip state-modifying CSI sequences (e.g., `h`, `l`, `H`, `J`) and OSC sequences from all captured output, while strictly preserving color sequences (`m`). This entirely eliminates the Playback Corruption vector.
+- **Robust Restoration:** Expanded `_restore_terminal_state` to include comprehensive SGR mouse resets and implemented `termios` capture/restore.
 
 ### Prevention
 - The regression suite (`test_shell_adapter_timeout.py`) has been aligned to strictly assert the new `Popen` and `communicate` logic, verifying that timeouts trigger terminal restoration and the appropriate return codes.

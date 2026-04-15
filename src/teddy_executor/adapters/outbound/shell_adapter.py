@@ -2,14 +2,27 @@ import os
 import shutil
 import subprocess  # nosec
 import sys
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Any
 
 from teddy_executor.core.domain.models.shell_output import ShellOutput
 from teddy_executor.core.ports.outbound.shell_executor import IShellExecutor
 
 
+import re
+
+
 class ShellAdapter(IShellExecutor):
     TIMEOUT_EXIT_CODE = 124
+
+    def _sanitize_output(self, text: str) -> str:
+        """Strips ALL ANSI escape sequences to prevent playback corruption and garbled reports."""
+        if not text:
+            return text
+        # Remove Operating System Commands (like window title changes)
+        text = re.sub(r"\x1b\][^\x07\x1b]*?(?:\x07|\x1b\\)", "", text)
+        # Remove all CSI escape sequences (including colors, cursor moves, alt-screens)
+        text = re.sub(r"\x1b\[[0-9;?><\$]*[a-zA-Z]", "", text)
+        return text
 
     def _validate_cwd(self, cwd: Optional[str]) -> str:
         """Validates and resolves the working directory."""
@@ -149,7 +162,7 @@ class ShellAdapter(IShellExecutor):
                 tty.flush()
         except OSError:
             pass
-        
+
         # 2. Fallback to stdout/stderr if /dev/tty is unavailable but they are TTYs
         if sys.stdout.isatty():
             sys.stdout.write(reset_seq)
@@ -186,9 +199,8 @@ class ShellAdapter(IShellExecutor):
                     "return_code": 0,
                 }
 
-            kwargs = {
+            kwargs: Dict[str, Any] = {
                 "shell": use_shell,
-                "stdin": subprocess.DEVNULL,
                 "stdout": subprocess.PIPE,
                 "stderr": subprocess.PIPE,
                 "text": True,
@@ -198,6 +210,10 @@ class ShellAdapter(IShellExecutor):
             if is_posix:
                 import signal
 
+                # ISOLATION: Severing stdin from the TTY is required to prevent SIGTTIN
+                # suspension when running in a new process group.
+                kwargs["stdin"] = subprocess.DEVNULL
+
                 def preexec_fn():
                     os.setpgrp()
                     # Prevent OS from suspending background process group when querying TTY
@@ -206,13 +222,14 @@ class ShellAdapter(IShellExecutor):
 
                 kwargs["preexec_fn"] = preexec_fn
 
-            process = subprocess.Popen(command_args, **kwargs)  # nosec B602
+            process = subprocess.Popen(command_args, **kwargs)  # nosec
 
             try:
                 stdout, stderr = process.communicate(timeout=timeout)
             except subprocess.TimeoutExpired:
                 if is_posix:
                     import signal
+
                     try:
                         # Use SIGKILL to guarantee no zombies/orphans survive,
                         # matching the original subprocess.run behavior.
@@ -233,22 +250,24 @@ class ShellAdapter(IShellExecutor):
                 self._log_debug_error(Exception(f"TimeoutExpired: {timeout} seconds"))
                 warning = f"[ERROR: Command timed out after {timeout} seconds]"
                 return {
-                    "stdout": f"{warning}\n{stdout}".strip() if stdout else warning,
-                    "stderr": stderr or "",
+                    "stdout": f"{warning}\n{self._sanitize_output(stdout)}".strip()
+                    if stdout
+                    else warning,
+                    "stderr": self._sanitize_output(stderr) or "",
                     "return_code": self.TIMEOUT_EXIT_CODE,
                 }
 
-            class MockCompletedProcess:
-                pass
-            result = MockCompletedProcess()
-            result.returncode = process.returncode
-            result.stdout = stdout
-            result.stderr = stderr
+            result = subprocess.CompletedProcess(
+                args=command_args,
+                returncode=process.returncode,
+                stdout=stdout,
+                stderr=stderr,
+            )
             self._log_debug_result(result)
 
             output: ShellOutput = {
-                "stdout": stdout,
-                "stderr": stderr,
+                "stdout": self._sanitize_output(stdout),
+                "stderr": self._sanitize_output(stderr),
                 "return_code": process.returncode,
             }
 

@@ -1,4 +1,6 @@
 import subprocess
+import sys
+import pytest
 from unittest.mock import patch, MagicMock
 from teddy_executor.adapters.outbound.shell_adapter import ShellAdapter
 from teddy_executor.core.ports.outbound.shell_executor import IShellExecutor
@@ -45,6 +47,9 @@ def test_execute_handles_timeout_with_partial_output(container):
     Verifies that ShellAdapter catches TimeoutExpired during communicate,
     terminates the process group, fetches partial output, and returns 124.
     """
+    if sys.platform == "win32":
+        pytest.skip("killpg is POSIX only")
+
     adapter = container.resolve(IShellExecutor)
 
     with patch("subprocess.Popen") as mock_popen:
@@ -72,6 +77,9 @@ def test_execute_handles_timeout_with_partial_output(container):
 
 def test_execute_handles_timeout_without_output(container):
     """Verifies timeout handling when no partial output is available."""
+    if sys.platform == "win32":
+        pytest.skip("killpg is POSIX only")
+
     adapter = container.resolve(IShellExecutor)
 
     with patch("subprocess.Popen") as mock_popen:
