@@ -188,6 +188,7 @@ class ShellAdapter(IShellExecutor):
 
             kwargs = {
                 "shell": use_shell,
+                "stdin": subprocess.DEVNULL,
                 "stdout": subprocess.PIPE,
                 "stderr": subprocess.PIPE,
                 "text": True,

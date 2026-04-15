@@ -14,6 +14,7 @@ When an `EXECUTE` action fails due to a timeout, the parent terminal is left in 
 1. **Terminal Corruption on Timeout:** When TeDDy executes a command that times out, it must kill the process. `subprocess.run` defaults to `SIGTERM` on the immediate process ID. Grandchildren (like the Textual TUI) are orphaned, remain connected to `/dev/tty`, and leak escape sequences that visibly corrupt terminal mouse tracking.
 2. **The `os.setpgrp` Regression:** To fix the corruption, `ShellAdapter` was modified to use `subprocess.Popen(preexec_fn=os.setpgrp)` and `os.killpg()`. This successfully guarantees process tree destruction. However, it introduced a severe regression: commands like `pytest` now hang indefinitely.
 3. **The `SIGTTIN` Suspension:** The hang is not a leaked pipe. When `os.setpgrp` is used, the child process is placed in a new "background" process group. However, it still inherits `stdin` from the TeDDy CLI. When `pytest` (or a dependency like `rich`) attempts to query the terminal size via `stdin`, the OS kernel detects a background process interacting with the controlling terminal and instantly sends a `SIGTTIN` (Terminal Input) signal. This signal does not kill the process; it *suspends* it indefinitely. Because the process is suspended, it never exits, and TeDDy blocks forever waiting for EOF on `process.communicate()`.
+4. **The `SIG_DFL` Override:** TeDDy attempted to prevent suspension by applying `signal.SIG_IGN` to `SIGTTIN` before executing the child. However, tools like `pytest` explicitly reset signal handlers back to `SIG_DFL` upon initialization. Once reset, their attempt to query the inherited `stdin` triggers `SIGTTIN` and indefinitely suspends them.
 
 ### Discrepancies
 - None. The root cause is fully understood. We must apply `signal.SIG_IGN` to `SIGTTIN` and `SIGTTOU` within the `preexec_fn` to prevent the OS from suspending the background process group.
@@ -39,12 +40,15 @@ When an `EXECUTE` action fails due to a timeout, the parent terminal is left in 
   - The theory is solid: an acceptance test is spawning a grandchild process (e.g., `bash` or `python -c`) that inherits the pipe and never closes it.
   - Need to test execution of smaller test subsets (e.g., `pytest tests/suites/acceptance/`) to isolate the specific file causing the leak without running the entire suite.
 
+**2026-04-15: Final Resolution (Green State)**
+- **Discovery:** Probes revealed that `pytest` itself resets `SIGTTIN` to `SIG_DFL` (`0`), stripping the `SIG_IGN` protection provided by TeDDy. Consequently, when `pytest` (or its `xdist` workers) queries the inherited terminal `stdin` while in a background process group, the OS kernel suspends it. The suspension prevents pipes from closing, causing TeDDy to hang indefinitely.
+- **Fix:** By explicitly mapping `stdin=subprocess.DEVNULL` for all non-interactive background process executions, the child process is physically severed from the controlling terminal. Queries against `/dev/null` immediately return EOF or ENOTTY instead of triggering OS-level signals.
+
 ## Solution
 ### Implemented Fixes
-- Modified `src/teddy_executor/adapters/outbound/shell_adapter.py` to correctly kill process groups using `subprocess.Popen(preexec_fn=...)` and `os.killpg(..., signal.SIGKILL)`. This prevents grandchild processes (like Textual TUIs) from being orphaned and corrupting the terminal mouse tracking state.
-- Crucially, applied `signal.signal(signal.SIGTTOU, signal.SIG_IGN)` and `signal.signal(signal.SIGTTIN, signal.SIG_IGN)` inside the `preexec_fn` immediately after `os.setpgrp()`. This prevents the OS from suspending the background process group when a command like `pytest` or `rich` attempts to query the terminal size from the inherited `stdin`.
-- Removed unnecessary process pipe-closing fallbacks, replacing them with a simple 0.5s grace period for the OS to naturally flush buffers after `SIGKILL`.
-- Updated unit tests in `tests/suites/unit/adapters/outbound/test_shell_adapter_timeout.py` to correctly mock and assert against `subprocess.Popen.communicate` instead of `subprocess.run`.
+- Modified `src/teddy_executor/adapters/outbound/shell_adapter.py` to correctly kill process groups using `subprocess.Popen(preexec_fn=...)` and `os.killpg(..., signal.SIGKILL)`. This prevents grandchild processes from being orphaned and corrupting the terminal mouse tracking state.
+- Replaced the flawed `signal.SIG_IGN` inheritance strategy with a robust physical isolation approach by explicitly passing `stdin=subprocess.DEVNULL` to all `subprocess.Popen` calls in the `ShellAdapter`. This physically prevents background child processes (like `pytest`) from querying the TeDDy CLI's controlling terminal, entirely eliminating the `SIGTTIN` suspension vector regardless of how the child manages its signal handlers.
+- Updated unit tests in `tests/suites/unit/adapters/outbound/test_shell_adapter_timeout.py` to correctly mock and assert against `subprocess.Popen.communicate`.
 
 ### Prevention
 - The regression suite (`test_shell_adapter_timeout.py`) has been aligned to strictly assert the new `Popen` and `communicate` logic, verifying that timeouts trigger terminal restoration and the appropriate return codes.
