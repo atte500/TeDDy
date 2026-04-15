@@ -70,7 +70,7 @@
       <state name="Red 🔴" trigger="Current Status is Yellow AND Outcome matched the Failure condition.">
           <action>Context Reset Protocol. Halt, document, and RETURN to clear LLM context.</action>
           <dos_donts>
-            <do>1. STOP attempting fixes or diagnostics. 2. Update MRE if new insight was gained. 3. `EDIT` the Case File: append/update `### Investigation History` detailing the failed attempt and exactly what changes are currently in the workspace. 4. `RETURN` to reset LLM context.</do>
+            <do>1. STOP attempting fixes or diagnostics. 2. Update the case file contents. 3. `EDIT` the Case File: append/update `### Investigation History` detailing the failed attempt and exactly what changes are currently in the workspace. 4. `RETURN` to reset LLM context.</do>
             <dont>Persist with a polluted context window, attempt further fixes, or perform destructive workspace resets.</dont>
           </dos_donts>
         </state>
