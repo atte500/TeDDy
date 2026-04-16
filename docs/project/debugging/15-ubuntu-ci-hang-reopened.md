@@ -1,6 +1,6 @@
 # Bug: Ubuntu CI Test Suite Hang (Reopened)
 
-- **Status:** Unresolved
+- **Status:** Resolved
 - **Milestone:** [10-interactive-session-and-config](../milestones/10-interactive-session-and-config.md)
 - **Vertical Slice:** N/A
 - **Specs:** N/A
@@ -43,3 +43,12 @@
 - [2026-04-16] Since the hang occurs even with `xdist` disabled (`-n 0`), it is likely caused by a leaked background thread or `asyncio`/`anyio` event loop from a previous test (suspected: Textual `App` instances leaving unresolved worker threads) deadlocking Pytest's fixture teardown/setup on Ubuntu workers. (resolved: False diagnosis on which tests were responsible. The actual leaked instantiations were found in `test_tui_ux_regressions.py`, `test_reviewer_app_bindings.py`, and `test_tui_view_plan.py`. These tests instantiate `ReviewerApp` to check static class attributes but fail to call `app.run_test()`, leaking `anyio` threads that hold open file descriptors and deadlock Pytest's teardown loop).
 - [2026-04-16] **Secondary Failure:** A commit attempting to fix the `os.killpg` issue accidentally included `tests/harness/test_mock_pid_kill.py`. This script executed `os.killpg(1, signal.SIGKILL)` at the module level. Pytest collected this file by matching the `test_*.py` pattern and imported it, executing the code during test collection. This instantly killed the Ubuntu CI worker process before it could output any test logs, leading to a silent failure.
 - **Current Workspace State:** Spikes deleted. Workspace clean.
+
+## Solution
+### Implemented Fixes
+- Removed rogue `tests/harness/test_mock_pid*.py` scratchpad scripts that executed `os.killpg(1)` on module import.
+- Assigned explicit dummy PIDs (`process.pid = 999999`) in `test_shell_adapter_timeout.py` to prevent `MagicMock` instances from defaulting to `1` when passed to C-extensions.
+
+### Prevention
+- **Application-Level Guard (Poka-Yoke):** Added a validation check in `ShellAdapter` before invoking `os.killpg`. If `process.pid` is not an integer or is `<= 1`, it logs a critical warning and falls back to `.kill()`, protecting the host environment (PID 1) from corrupted state.
+- **Test Infrastructure Guard (Defense in Depth):** Implemented a global `autouse` fixture (`guard_os_killpg`) in `tests/harness/setup/composition.py`. This intercepts `os.killpg` across the entire test suite and raises a clear `RuntimeError` if a test attempts to kill a protected PID (PID 1 or the test runner's own PGID) or passes a non-integer like a `MagicMock`.
