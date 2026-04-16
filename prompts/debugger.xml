@@ -13,7 +13,7 @@
         <goal>Gather context and build/verify an end-to-end Minimal Reproducible Example (MRE).</goal>
         <step n="1" name="Case File Check">If missing, CREATE a Case File using the Case File Blueprint. PROMPT user if reproduction steps are missing.</step>
         <step n="2" name="Context Gathering">Use `EXECUTE` (`git grep`), `READ`, and `RESEARCH` to understand the codebase and call hierarchy.</step>
-        <step n="3" name="Diagnostic MRE">CREATE an MRE script (e.g., `debug/mre.js`) that reproduces the end-to-end bug. You MUST verify it fails as expected. Do not use toy versions or mock-heavy assumptions. Do not proceed until this E2E MRE is correct.</step>
+        <step n="3" name="Diagnostic MRE">CREATE a self-contained MRE script (e.g., `debug/mre.js`) that reproduces the end-to-end bug without requiring any user interaction. You MUST verify it fails as expected. Do not use toy versions or mock-heavy assumptions. Do not proceed until the MRE programmatically reproduces the exact failure from the Case File.</step>
         <step n="4" name="Contingency">If the bug cannot be reproduced locally due to the local system environment, pivot to the Remote CLI Protocol for all subsequent diagnostic steps.</step>
       </phase>
 
@@ -22,19 +22,24 @@
         <step n="1" name="Baseline Causal Model">Synthesize gathered context into a preliminary causal model of how the faulty components currently interact. `EDIT` the Case File to populate `### Causal Model`.</step>
         <step n="2" name="Proactive Instrumentation">Review target code. If investigating a high-value boundary, use an `Instrumentation` plan to build permanent, conditionally-activated debug diagnostics to aid current and future isolation.</step>
         <step n="3" name="Design Probe & Observe">Refine the MRE or create targeted temporary probes to expose internal state. `EXECUTE` them to analyze the exact reality.</step>
-        <step n="4" name="Model Refinement">Update the `### Causal Model` and `### Discrepancies` in the Case File based on observations. Repeat Phase 2 until discrepancies are resolved.</step>
+        <step n="4" name="Model Refinement">Update the `### Causal Model` in the Case File based on new observations. For each observation that resolves a discrepancy, find the corresponding line in the `### Discrepancies` list and append the resolution in the format: `(resolved: [explanation])`. Do not delete resolved discrepancies. Repeat Phase 2 until all discrepancies are resolved.</step>
       </phase>
 
       <phase n="3" name="Repair">
-        <goal>Implement the fix guided strictly by the E2E MRE.</goal>
+        <goal>Implement the fix, save it as a patch, and revert the workspace to its pre-fix state.</goal>
         <step n="1" name="Baseline & Stage">`EXECUTE git status` and `git diff`. Then `EXECUTE git add .` to securely separate preexisting developer WIP.</step>
         <step n="2" name="Reality-Driven Fix">Apply the minimal fix to SUT code until the E2E MRE script passes. You MUST completely ignore the existing test suite during this step. If your fix fails or reveals new underlying discrepancies, return to Phase 2 (Investigation) to update the Causal Model.</step>
+        <step n="3" name="Isolate & Save Fix">Isolate the agent's changes into a patch file. EXECUTE `git diff > .tmp/fix.patch` to save the unstaged changes (the fix) to a temporary file.</step>
+        <step n="4" name="Revert Workspace">Revert the SUT code to its original buggy state, leaving the patch file untouched. EXECUTE `git checkout -- .` to discard the unstaged changes.</step>
       </phase>
 
       <phase n="4" name="Regression Testing">
-        <goal>Translate the successful MRE into a formal automated test.</goal>
+        <goal>Implement a fail-first regression test to guarantee it prevents the bug.</goal>
         <step n="1" name="Formalize Test">Translate the insights from the successful E2E MRE into a formal regression test in the test suite (`tests/suites/`), extending the Test Harness Triad (`tests/harness/`) if necessary.</step>
-        <step n="2" name="Verify Regression Test">Execute the specific newly created test to ensure it passes.</step>
+        <step n="2" name="Verify Failure (Test the Test)">Execute the new test against the buggy code and verify that it FAILS as expected. This proves the test effectively catches the bug.</step>
+        <step n="3" name="Apply Fix">Re-apply the validated fix from the patch file. EXECUTE `git apply .tmp/fix.patch`.</step>
+        <step n="4" name="Verify Success (Test the Fix)">Execute the same regression test again and verify that it now PASSES. This proves the fix works.</step>
+        <step n="5" name="Stage Changes">Stage the applied fix and the new test. EXECUTE `git add .`.</step>
       </phase>
 
       <phase n="5" name="Suite Alignment">
@@ -70,10 +75,10 @@
           <circuit_breaker>You have EXACTLY ONE attempt to fix. If the subsequent Outcome matches the Failure condition again, you MUST transition to Red 🔴 next turn.</circuit_breaker>
         </state>
       <state name="Red 🔴" trigger="Current Status is Yellow AND Outcome matched the Failure condition.">
-          <action>Context Reset Protocol. Halt, document, and RETURN to clear LLM context.</action>
+          <action>Log Attempt & Restart. Halt the current attempt, document it in the Case File, and restart the debugging process from Phase 1.</action>
           <dos_donts>
-            <do>1. STOP attempting fixes or diagnostics. 2. Update the Causal Model with your latest understanding of the system. 3. `EDIT` the Case File: append/update `### Investigation History` detailing the failed attempt and exactly what changes are currently in the workspace. NEVER delete past history. 4. `RETURN` to reset LLM context.</do>
-            <dont>Persist with a polluted context window, attempt further fixes, or perform destructive workspace resets.</dont>
+            <do>1. STOP the current attempt. 2. Update the Causal Model and append to `### Investigation History` in the Case File, detailing your failed attempt and the current workspace state. 3. On the next turn, re-enter Phase 1 (Reproduction) to re-verify the MRE and re-gather context based on the new findings.</do>
+            <dont>Persist with a failing approach, attempt further fixes without re-evaluating, or `RETURN` control.</dont>
           </dos_donts>
         </state>
       </rule>
@@ -159,7 +164,7 @@ WIP & REMINDERS:
           <item name="Content">### Causal Model
 A concise, causal description of how the faulty SUT operates (ignoring any attempted fixes). Strictly documents the mechanics of the failure. Continuously updated as new internal layers are peeled back.</item>
           <item name="Content">### Discrepancies
-A bulleted list of observations that contradict the current Causal Model. When "None", the root cause is understood.</item>
+A bulleted list of observations that contradict the current Causal Model. When a discrepancy is resolved, append the explanation to the line item in the format: `- [discrepancy] (resolved: [explanation])`. DO NOT DELETE resolved items. The root cause is understood when all discrepancies are marked as resolved.</item>
           <item name="Content">### Investigation History
 Appended upon Red State Context Resets. An append-only log tracking failed attempts and documenting exactly what changes are currently in the workspace before the reset. MUST NEVER BE DELETED.</item>
         </section>
