@@ -70,5 +70,12 @@ async def test_view_plan_works_with_no_path_but_in_memory_content(env):
     )
 
     # The application code calls Popen and then delete_file
-    mock_popen.assert_called_once_with(["mock-editor", str(temp_file_path)])
+    import subprocess
+
+    mock_popen.assert_called_once_with(
+        ["mock-editor", str(temp_file_path)],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
     mock_env.delete_file.assert_called_once_with(str(temp_file_path))

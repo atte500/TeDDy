@@ -16,6 +16,9 @@
 - `pytest` captures `stdout` and `stderr` using OS-level pipes during test execution.
 - If a test indirectly spawns a background process via `subprocess.Popen` (e.g., `spawn_editor` for TUI previews, or `ShellAdapter` executing a background action) without explicitly redirecting `stdin`, `stdout`, and `stderr` to `subprocess.DEVNULL`, the child process inherits Pytest's capture file descriptors.
 - If the child process outlives the test (e.g., a headless editor waiting for input), Pytest's teardown mechanism hangs infinitely waiting for an EOF on the capture pipe. This blocks the main thread from completing test setup/teardown, resulting in the non-deterministic `[ 24%]` deadlock on Ubuntu CI workers.
+- **Verified Discovered Leaks:**
+  1. `ReviewerApp` thread leaks in unit tests.
+  2. `subprocess.Popen` file descriptor leaks in `spawn_editor` (helpers) and `diff_viewer` (previews) where `stdout/stderr/stdin` were not routed to `DEVNULL`.
 
 ### Discrepancies
 - The previous TTY guard fix did not resolve the hang.

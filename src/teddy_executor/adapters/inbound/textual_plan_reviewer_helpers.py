@@ -66,7 +66,12 @@ def spawn_editor(cmd: list[str], path: Any) -> None:
     import subprocess  # nosec B404
 
     try:
-        subprocess.Popen(cmd + [str(path)])  # nosec B603
+        subprocess.Popen(  # nosec B603
+            cmd + [str(path)],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
     except Exception:  # nosec B110
         pass
 

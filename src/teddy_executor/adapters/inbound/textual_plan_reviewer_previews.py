@@ -110,7 +110,12 @@ async def _preview_edit_diff_viewer(
             return True
         prepare_after_file(p_file, proposed)
         try:
-            subprocess.Popen(diff_viewer + [str(before), str(p_file)])  # nosec B603
+            subprocess.Popen(  # nosec B603
+                diff_viewer + [str(before), str(p_file)],
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
         except Exception:  # nosec B110
             pass
 
