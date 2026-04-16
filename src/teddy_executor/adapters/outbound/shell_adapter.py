@@ -231,9 +231,19 @@ class ShellAdapter(IShellExecutor):
                     import signal
 
                     try:
-                        # Use SIGKILL to guarantee no zombies/orphans survive,
-                        # matching the original subprocess.run behavior.
-                        os.killpg(process.pid, signal.SIGKILL)
+                        # Jidoka/Poka-Yoke: Anti-Suicide Guard.
+                        # Prevent MagicMock or corrupted state from killing PID 1 (Init/Docker Host)
+                        if not isinstance(process.pid, int) or process.pid <= 1:
+                            self._log_debug_error(
+                                ValueError(
+                                    f"CRITICAL: Attempted to killpg on protected/invalid PID: {process.pid}"
+                                )
+                            )
+                            process.kill()
+                        else:
+                            # Use SIGKILL to guarantee no zombies/orphans survive,
+                            # matching the original subprocess.run behavior.
+                            os.killpg(process.pid, signal.SIGKILL)
                     except OSError:
                         pass
                 else:

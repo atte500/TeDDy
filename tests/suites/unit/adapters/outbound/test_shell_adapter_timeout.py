@@ -3,6 +3,7 @@ import sys
 import pytest
 from unittest.mock import MagicMock, patch
 from teddy_executor.adapters.outbound.shell_adapter import ShellAdapter
+from teddy_executor.core.ports.outbound.shell_executor import IShellExecutor
 
 
 @pytest.mark.anyio
@@ -17,7 +18,6 @@ async def test_execute_timeout_does_not_reset_terminal():
     with patch("subprocess.Popen") as mock_popen:
         process = MagicMock()
         process.pid = 999999  # Prevent os.killpg(MagicMock(), ...) which resolves to PID 1 and kills the CI worker
-        import subprocess
 
         process.communicate.side_effect = subprocess.TimeoutExpired(
             cmd="test", timeout=0.1
@@ -33,15 +33,13 @@ async def test_execute_timeout_does_not_reset_terminal():
             )
 
 
-from teddy_executor.core.ports.outbound.shell_executor import IShellExecutor
-
-
 def test_execute_respects_timeout(container):
     """
     Asserts that the timeout parameter is passed correctly to process.communicate.
     """
     with patch("subprocess.Popen") as mock_popen:
         mock_process = MagicMock()
+        mock_process.pid = 999999
         mock_process.communicate.return_value = ("stdout data", "stderr data")
         mock_process.returncode = 0
         mock_popen.return_value = mock_process
@@ -62,6 +60,7 @@ def test_execute_works_without_timeout(container):
     """
     with patch("subprocess.Popen") as mock_popen:
         mock_process = MagicMock()
+        mock_process.pid = 999999
         mock_process.communicate.return_value = ("stdout data", "stderr data")
         mock_process.returncode = 0
         mock_popen.return_value = mock_process
@@ -84,6 +83,7 @@ def test_execute_handles_timeout_with_partial_output(container):
 
     with patch("subprocess.Popen") as mock_popen:
         mock_process = MagicMock()
+        mock_process.pid = 999999
 
         mock_process.communicate.side_effect = [
             subprocess.TimeoutExpired(cmd="sleep 10", timeout=0.1),
@@ -114,6 +114,7 @@ def test_execute_handles_timeout_without_output(container):
 
     with patch("subprocess.Popen") as mock_popen:
         mock_process = MagicMock()
+        mock_process.pid = 999999
         mock_process.communicate.side_effect = [
             subprocess.TimeoutExpired(cmd="sleep 10", timeout=0.5),
             ("", ""),

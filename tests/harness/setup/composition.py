@@ -47,6 +47,40 @@ from tests.harness.setup.mocks import (
 )
 
 
+@pytest.fixture(autouse=True)
+def guard_os_killpg(monkeypatch):
+    """
+    Poka-Yoke: Prevents poorly mocked processes (e.g., MagicMock which casts to 1)
+    from sending SIGKILL to PID 1 or the test runner itself, which causes silent
+    CI worker crashes.
+    """
+    import os
+
+    original_killpg = getattr(os, "killpg", None)
+
+    if original_killpg:
+        my_pgid = os.getpgid(os.getpid())
+
+        def safe_killpg(pgid, sig):
+            if not isinstance(pgid, int):
+                raise RuntimeError(
+                    f"[Poka-Yoke] Blocked os.killpg with non-int PGID type: {type(pgid)}. Did you pass a MagicMock?"
+                )
+            if pgid <= 1:
+                raise RuntimeError(
+                    f"[Poka-Yoke] Blocked os.killpg on protected PGID: {pgid}. This would kill the container!"
+                )
+            if pgid == my_pgid:
+                raise RuntimeError(
+                    f"[Poka-Yoke] Blocked os.killpg on Test Runner's own PGID: {pgid}. This would kill pytest!"
+                )
+            return original_killpg(pgid, sig)
+
+        monkeypatch.setattr(os, "killpg", safe_killpg)
+
+    yield
+
+
 @pytest.fixture
 def container(monkeypatch):
     """
