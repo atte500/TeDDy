@@ -16,6 +16,7 @@ async def test_execute_timeout_does_not_reset_terminal():
 
     with patch("subprocess.Popen") as mock_popen:
         process = MagicMock()
+        process.pid = 999999  # Prevent os.killpg(MagicMock(), ...) which resolves to PID 1 and kills the CI worker
         import subprocess
 
         process.communicate.side_effect = subprocess.TimeoutExpired(

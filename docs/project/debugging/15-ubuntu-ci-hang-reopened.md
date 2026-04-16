@@ -19,6 +19,7 @@
 - **Verified Discovered Leaks:**
   1. `ReviewerApp` thread leaks in unit tests.
   2. `subprocess.Popen` file descriptor leaks in `spawn_editor` (helpers) and `diff_viewer` (previews) where `stdout/stderr/stdin` were not routed to `DEVNULL`.
+  3. `test_execute_timeout_does_not_reset_terminal` mocked `subprocess.Popen` but left `process.pid` as a `MagicMock`. `MagicMock` natively casts to `1` when passed to C-extensions like `os.killpg`. This caused `os.killpg(1, signal.SIGKILL)` on Ubuntu CI workers, instantly terminating the test runner's container/process-group and causing an abrupt job hang.
 
 ### Discrepancies
 - The previous TTY guard fix did not resolve the hang.
