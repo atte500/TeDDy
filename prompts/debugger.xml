@@ -139,10 +139,15 @@ WIP & REMINDERS:
 
       <rule n="14" name="Remote Probing Protocol">
       1. Debug Branch: Create a transient branch (`git checkout -b debug/{{bug}}`). Use `git push -f` for all iterative attempts.
-      2. Global Timeout: `EDIT` the CI YAML to inject `timeout-minutes: 1` (or an appropriately strict limit) at the `job` level.
-      3. Trigger & Fetch Logs: Commit, force-push, and retrieve the logs in one automated `EXECUTE` step. Example command sequence:
-         `git commit -am "probe" && git push -f origin debug/{{bug}} && sleep 10 && RUN_ID=$(gh run list -b debug/{{bug}} -L 1 --json databaseId -q '.[0].databaseId') && gh run watch $RUN_ID && gh run view $RUN_ID --log`
-      4. Teardown: Delete the transient branch when the investigation concludes.
+      2. Absolute CI Isolation: Do not attempt to modify the complex existing CI YAML. Instead, delete it (`git rm .github/workflows/ci.yml`) and `CREATE` a dedicated `.github/workflows/probe.yml` that triggers on `push: branches: ["debug/*"]`.
+      3. Strict Timeout: The `probe.yml` MUST run on `ubuntu-latest` and include `timeout-minutes: 1` at the `job` level. The probe MUST be specifically designed to dump internal state or tracebacks and exit within this 1-minute window.
+      4. Robust Trigger & Fetch Logs: Commit, force-push, and securely fetch the logs using a resilient polling loop that filters by the specific commit SHA. Example `EXECUTE` sequence:
+         `git add .github/workflows && git commit -m "remote probe" && git push -f origin debug/{{bug}}`
+         `SHA=$(git rev-parse HEAD); RUN_ID=""; for i in {1..20}; do RUN_ID=$(gh run list -b debug/{{bug}} -c $SHA -L 1 --json databaseId -q '.[0].databaseId'); if [ -n "$RUN_ID" ] && [ "$RUN_ID" != "null" ]; then break; fi; sleep 5; done`
+         `gh run watch $RUN_ID --exit-status || true`
+         `gh run view $RUN_ID --log > .tmp/ci_failure.log`
+         `tail -n 150 .tmp/ci_failure.log`
+      5. Teardown: Delete the transient branch and cleanup `.tmp/` logs when the investigation concludes.
       </rule>
 
       <rule n="15" name="Reality-Driven Repair & Harness Alignment">Spikes MUST interact with the actual application and probe reality for each experiment iteration (strictly NO mocks). During Phase 6 (Reality-Driven TDD Repair), use these real-environment spikes as your guidance, NOT the test harness. ONLY AFTER the fix is verified in the real environment should you align the `tests/harness/` (Setup, Drivers, Observers) and write the formal regression test. Bypassing the harness for the final regression test is a zero-tolerance violation.</rule>
