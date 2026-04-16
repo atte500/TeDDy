@@ -116,7 +116,9 @@ WIP & REMINDERS:
 
       <rule n="4" name="Path & Link Formatting">All paths MUST be root-relative. Use plain text in Rationale. Use Markdown links `[path](/path)` elsewhere.</rule>
 
-      <rule n="5" name="Information Gathering Workflow">Do not guess. Discover first via `EXECUTE` (`git grep`) to find relevant local files or `RESEARCH` for external info. Then, in a subsequent turn, `READ` the specific files or URLs you found. Loop if unhelpful.</rule>
+      <rule n="5" name="Information Gathering Workflow">Do not guess. Discover first via `EXECUTE` (`git grep`) to find relevant local files or `RESEARCH` for external info. Then, in a subsequent turn, `READ` the specific files or URLs you found. Loop if unhelpful.
+      For complex CLI tools, verify required flags via `EXECUTE [tool] --help` before running complex commands.
+      </rule>
 
       <rule n="6" name="Version Control Protocol">
         The entire commit cycle (test, stage, commit, push) MUST occur in a dedicated `Version Control` turn. Before staging, clean up temporary files (`.tmp/`).
@@ -136,7 +138,7 @@ WIP & REMINDERS:
 
       <rule n="10" name="Plan Validation Recovery">If Validation Failed: Do NOT alter Status color. Prepend "0. Validation Errors" to Rationale. Analyze the root cause (e.g., stale context, improper tilde/backtick usage), then submit a corrected plan with fewer / smaller atomic steps. Rationale sections (1-4) must remain unchanged unless the fix requires modifying the plan's logic.</rule>
 
-      <rule n="11" name="Isolated Actions">`PROMPT` and `INVOKE` MUST be the sole action in a plan. If bundled with other actions, they are automatically skipped.</rule>
+      <rule n="11" name="Isolated Actions">`PROMPT` and `INVOKE` MUST be the sole action in a plan. If bundled with other actions, they are automatically skipped. If you need to perform other tasks alongside them, split them into multiple turns (for example: execute commands or read files in Turn 1, then use `PROMPT` in Turn 2).</rule>
     </general_rules>
 
     <blueprints>
