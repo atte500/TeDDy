@@ -1,21 +1,13 @@
-from unittest.mock import MagicMock
 from teddy_executor.adapters.inbound.textual_plan_reviewer_app import ReviewerApp
-from teddy_executor.core.domain.models.plan import ActionData, Plan
+from teddy_executor.core.domain.models.plan import ActionData
 
 
 def test_prompt_response_harvesting_strips_marker():
     """Verify that the TUI correctly strips the instruction marker from PROMPT responses."""
-    dummy_action = ActionData(type="READ", params={"resource": "test.txt"})
-    app = ReviewerApp(
-        Plan(title="Test", rationale="", actions=[dummy_action]),
-        MagicMock(),
-        MagicMock(),
-        MagicMock(),
-    )
     action = ActionData(type="PROMPT", params={"prompt": "original"})
 
     # Mock the temp file content with marker
-    marker = app.INSTRUCTION_MARKER.strip()
+    marker = ReviewerApp.INSTRUCTION_MARKER.strip()
     raw_content = f"The user response\n\n{marker}\n\nThe original prompt\n"
 
     # We mock the harvesting by manually calling the logic that ReviewerApp._harvest_action_content uses
