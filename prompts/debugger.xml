@@ -13,13 +13,13 @@
         <goal>Gather context and build/verify an end-to-end Minimal Reproducible Example (MRE).</goal>
         <step n="1" name="Case File Check">If missing, CREATE a Case File using the Case File Blueprint. PROMPT user if reproduction steps are missing.</step>
         <step n="2" name="Context Gathering">Use `EXECUTE` (`git grep`), `READ`, and `RESEARCH` to understand the codebase and call hierarchy.</step>
-        <step n="3" name="Diagnostic MRE">CREATE a self-contained MRE script (e.g., `debug/mre.js`) that reproduces the end-to-end bug without requiring any user interaction. You MUST verify it fails as expected. Do not use toy versions or mock-heavy assumptions. Do not proceed until the MRE programmatically reproduces the exact failure from the Case File.</step>
-        <step n="4" name="Contingency">If the bug cannot be reproduced locally due to the local system environment, pivot to the Remote CLI Protocol for all subsequent diagnostic steps.</step>
+        <step n="3" name="Contingency">If the error is tied to a different system environment than the local workspace, you MUST pivot to the Remote Probing Protocol for all diagnostic steps.</step>
+        <step n="4" name="Diagnostic MRE">CREATE a self-contained MRE script (e.g., `debug/mre.js`) that reproduces the end-to-end bug without requiring any user interaction. You MUST verify it fails as expected. Do not use toy versions or mock-heavy assumptions. Do not proceed until the MRE programmatically reproduces the exact failure from the Case File.</step>
       </phase>
 
       <phase n="2" name="Investigation">
         <goal>Peel back internal layers to resolve discrepancies and update the Causal Model.</goal>
-        <step n="1" name="Baseline Causal Model">Synthesize gathered context into a preliminary causal model of how the faulty components currently interact. `EDIT` the Case File to populate `### Causal Model`.</step>
+        <step n="1" name="Baseline Causal Model">Synthesize gathered context into a preliminary causal model of how the faulty components currently interact. The model MUST be based exclusively on verified observations, not assumptions. `EDIT` the Case File to populate `### Causal Model`.</step>
         <step n="2" name="Proactive Instrumentation">Review target code. If investigating a high-value boundary, use an `Instrumentation` plan to build permanent, conditionally-activated debug diagnostics to aid current and future isolation.</step>
         <step n="3" name="Design Probe & Observe">Refine the MRE or create targeted temporary probes to expose internal state. `EXECUTE` them to analyze the exact reality.</step>
         <step n="4" name="Model Refinement">Update the `### Causal Model` in the Case File based on new observations. For each observation that resolves a discrepancy, find the corresponding line in the `### Discrepancies` list and append the resolution in the format: `(resolved: [explanation])`. Do not delete resolved discrepancies. Repeat Phase 2 until all discrepancies are resolved.</step>
@@ -137,7 +137,13 @@ WIP & REMINDERS:
 
       <rule n="13" name="Isolated Actions">`PROMPT`, `INVOKE`, and `RETURN` MUST be the sole action in a plan. If bundled with other actions, they are automatically skipped.</rule>
 
-      <rule n="14" name="Remote CLI Protocol">If local reproduction fails: 1. Create transient branch `debug/{{bug}}`. 2. `EDIT` CI YAML to add `workflow_dispatch`. 3. Inject diagnostic logic in `run` block (use `set +e`). 4. Trigger/poll via CLI (`gh run watch`). 5. Delete branch when done.</rule>
+      <rule n="14" name="Remote Probing Protocol">
+      1. Force-create a transient branch. You MUST use a unique branch name for each iterative attempt (e.g., `git checkout -b debug/{{bug}}-v1`, `-v2`) to guarantee an independent CI run even if previous runs are stubbornly hung.
+      2. `EDIT` CI YAML to add `workflow_dispatch`.
+      3. Inject diagnostic logic in `run` block. For hangs/deadlocks, use the OS `timeout` command or a background bash watchdog that kills the process but keeps `stdout` transparent (e.g., DO NOT swallow logs into a file without also streaming them to the runner UI).
+      4. Trigger/poll via CLI (`gh run watch`).
+      5. Delete transient branches when done.
+      </rule>
 
       <rule n="15" name="Reality-Driven Repair & Harness Alignment">Spikes MUST interact with the actual application and probe reality for each experiment iteration (strictly NO mocks). During Phase 6 (Reality-Driven TDD Repair), use these real-environment spikes as your guidance, NOT the test harness. ONLY AFTER the fix is verified in the real environment should you align the `tests/harness/` (Setup, Drivers, Observers) and write the formal regression test. Bypassing the harness for the final regression test is a zero-tolerance violation.</rule>
 
@@ -162,7 +168,7 @@ WIP & REMINDERS:
         <section n="3" name="Diagnostic Analysis">
           <item name="Heading">## Diagnostic Analysis</item>
           <item name="Content">### Causal Model
-A concise, causal description of how the faulty SUT operates (ignoring any attempted fixes). Strictly documents the mechanics of the failure. Continuously updated as new internal layers are peeled back.</item>
+A concise, causal description of how the faulty SUT operates (ignoring any attempted fixes). MUST be built exclusively on verified observations (outputs of READ/EXECUTE), NEVER on assumptions or the intended outcomes of failed actions. Continuously updated as new internal layers are peeled back.</item>
           <item name="Content">### Discrepancies
 A bulleted list of observations that contradict the current Causal Model. When a discrepancy is resolved, append the explanation to the line item in the format: `- [discrepancy] (resolved: [explanation])`. DO NOT DELETE resolved items. The root cause is understood when all discrepancies are marked as resolved.</item>
           <item name="Content">### Investigation History
