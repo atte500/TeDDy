@@ -125,7 +125,7 @@ WIP & REMINDERS:
 
         The full sequence is: `<global-test-command> (only if src/ or tests/ modified) && git add . && git commit -m '...' && git push`
 
-        If unsure of changes, `EXECUTE git add . && git diff HEAD` in a prior turn. To bypass non-trivial quality gate failures (like file length), log debt in the active Milestone and commit with `--no-verify`. Structural refactoring (e.g., splitting files) is forbidden unless it is your primary task; the global test suite must still pass.
+        If unsure of changes, `EXECUTE git add . && git diff HEAD` in a prior turn. To bypass non-trivial quality gate failures (like file length), or when committing temporary diagnostic probes, log debt in the active Milestone and commit with `--no-verify`. Structural refactoring (e.g., splitting files) is forbidden unless it is your primary task; the global test suite must still pass.
       </rule>
 
       <rule n="8" name="Atomic File Edits">Default to max one EDIT action per turn. Surgical edits are strictly preferred over full-file overwrites. Preserve existing functionality unless strictly required to modify.</rule>
@@ -141,8 +141,14 @@ WIP & REMINDERS:
       <rule n="13" name="Isolated Actions">`PROMPT`, `INVOKE`, and `RETURN` MUST be the sole action in a plan. If bundled with other actions, they are automatically skipped. If you need to perform other tasks alongside them, split them into multiple turns (for example: execute commands or read files in Turn 1, then use `PROMPT` in Turn 2).</rule>
 
       <rule n="14" name="Platform-Specific Probing Protocol">
-      <description>When a bug is platform-specific, you MUST use Direct Remote Probing.</description>
-      <protocol name="Direct Remote Probing">Trigger a minimal CI job on a temporary branch and fetch the results. Note: Remote jobs are asynchronous. You MUST execute this sequence across multiple turns: 1. Push the diagnostic branch. 2. Wait for completion (e.g., `gh run watch`). 3. Retrieve the data (`gh run view --log` for console logs, or `gh run download` for uploaded artifacts).</protocol>
+        <description>When a bug is platform-specific, you MUST use Direct Remote Probing.</description>
+        <protocol name="Direct Remote Probing">
+          Trigger a minimal CI job on a temporary branch and fetch the results. Remote jobs are asynchronous. You MUST adhere to these strict constraints to avoid CLI errors and context window exhaustion:
+          1. Infer Repository: Do NOT hardcode the `--repo` flag in `gh` commands. Rely on the local `.git` configuration so the CLI infers the correct remote origin automatically.
+          2. Obtain Run ID: Wait briefly for GitHub to register the run, then dynamically fetch the ID. Example: `sleep 5 && gh run list --branch <your-branch> --limit 1 --json databaseId -q ".[0].databaseId"`
+          3. Monitor: You MUST provide the Run ID to watch the job in non-interactive environments. Example: `gh run watch <run-id> --exit-status`
+          4. Minimize Log Payload: NEVER execute `gh run view <run-id> --log` directly to standard output. It will dump thousands of lines and destroy your context window. You MUST filter the output. Use `--log-failed` to get only errors, or redirect to a file and read the tail (e.g., `gh run view <run-id> --log > .tmp/ci_logs.txt && tail -n 250 .tmp/ci_logs.txt`).
+        </protocol>
       </rule>
 
       <rule n="15" name="Reality-Driven Repair & Harness Alignment">Spikes MUST interact with the actual application and probe reality for each experiment iteration (strictly NO mocks). During Phase 6 (Reality-Driven TDD Repair), use these real-environment spikes as your guidance, NOT the test harness. ONLY AFTER the fix is verified in the real environment should you align the `tests/harness/` (Setup, Drivers, Observers) and write the formal regression test. Bypassing the harness for the final regression test is a zero-tolerance violation.</rule>
