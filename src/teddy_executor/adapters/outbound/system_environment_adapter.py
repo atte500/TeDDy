@@ -33,7 +33,12 @@ class SystemEnvironmentAdapter(ISystemEnvironment):
             subprocess.run(args, check=check)  # nosec B603
         finally:
             # Emergency TTY restore for Darwin/Linux.
-            if sys.platform != "win32" and sys.stdin.isatty():
+            # We guard against running during tests to prevent SIGTTOU hangs in CI workers.
+            if (
+                sys.platform != "win32"
+                and sys.stdin.isatty()
+                and "PYTEST_CURRENT_TEST" not in os.environ
+            ):
                 try:
                     import termios
 

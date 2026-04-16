@@ -12,7 +12,9 @@ from teddy_executor.core.domain.models.change_set import ChangeSet
 
 def restore_terminal_mode():
     """Restores stdin to canonical/echo mode (Unix only)."""
-    if sys.platform == "win32":
+    import os
+
+    if sys.platform == "win32" or "PYTEST_CURRENT_TEST" in os.environ:
         return
 
     try:
