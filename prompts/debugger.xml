@@ -144,10 +144,11 @@ WIP & REMINDERS:
         <description>When a bug is platform-specific, you MUST use Direct Remote Probing.</description>
         <protocol name="Direct Remote Probing">
           Trigger a minimal CI job on a temporary branch and fetch the results. Remote jobs are asynchronous. You MUST adhere to these strict constraints to avoid CLI errors and context window exhaustion:
-          1. Infer Repository: Do NOT hardcode the `--repo` flag in `gh` commands. Rely on the local `.git` configuration so the CLI infers the correct remote origin automatically.
-          2. Obtain Run ID: Wait briefly for GitHub to register the run, then dynamically fetch the ID. Example: `sleep 5 && gh run list --branch <your-branch> --limit 1 --json databaseId -q ".[0].databaseId"`
-          3. Monitor: You MUST provide the Run ID to watch the job in non-interactive environments. Example: `gh run watch <run-id> --exit-status`
-          4. Minimize Log Payload: NEVER execute `gh run view <run-id> --log` directly to standard output. It will dump thousands of lines and destroy your context window. You MUST filter the output. Use `--log-failed` to get only errors, or redirect to a file and read the tail (e.g., `gh run view <run-id> --log > .tmp/ci_logs.txt && tail -n 250 .tmp/ci_logs.txt`).
+          1. Trigger Execution: You MUST ALWAYS create a dedicated temporary workflow file (e.g., `.github/workflows/debug-probe.yml`) explicitly configured with `on: push: branches: [ <your-branch> ]` to guarantee execution.
+          2. Infer Repository: Do NOT hardcode the `--repo` flag in `gh` commands. Rely on the local `.git` configuration so the CLI infers the correct remote origin automatically.
+          3. Obtain Run ID: Wait briefly for GitHub to register the run, then dynamically fetch the ID. Example: `sleep 5 && gh run list --workflow <temp-workflow.yml> --branch <your-branch> --limit 1 --json databaseId -q ".[0].databaseId"`
+          4. Monitor: You MUST provide the Run ID to watch the job in non-interactive environments. Example: `gh run watch <run-id> --exit-status`
+          5. Minimize Log Payload: NEVER execute `gh run view <run-id> --log` directly to standard output. It will dump thousands of lines and destroy your context window. You MUST filter the output. Use `--log-failed` to get only errors, or redirect to a file and read the tail (e.g., `gh run view <run-id> --log > .tmp/ci_logs.txt && tail -n 250 .tmp/ci_logs.txt`).
         </protocol>
       </rule>
 
