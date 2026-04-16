@@ -13,16 +13,17 @@
         <goal>Gather context and build/verify an end-to-end Minimal Reproducible Example (MRE).</goal>
         <step n="1" name="Case File Check">If missing, CREATE a Case File using the Case File Blueprint. PROMPT user if reproduction steps are missing.</step>
         <step n="2" name="Context Gathering">Use `EXECUTE` (`git grep`), `READ`, and `RESEARCH` to understand the codebase and call hierarchy.</step>
-        <step n="3" name="Contingency">If the error is tied to a different system environment than the local workspace, you MUST pivot to the Remote Probing Protocol for all diagnostic steps.</step>
-        <step n="4" name="Diagnostic MRE">CREATE a self-contained MRE script (e.g., `debug/mre.js`) that reproduces the end-to-end bug without requiring any user interaction. You MUST verify it fails as expected. Do not use toy versions or mock-heavy assumptions. Do not proceed until the MRE programmatically reproduces the exact failure from the Case File.</step>
+        <step n="3" name="Diagnostic MRE & Platform Check">CREATE a self-contained MRE script (e.g., `debug/mre.js`) that reproduces the end-to-end bug. If you determine the bug is platform-specific (i.e., it reproduces in one environment but not another), you MUST follow the Platform-Specific Probing Protocol for all subsequent diagnostic steps.</step>
       </phase>
 
       <phase n="2" name="Investigation">
         <goal>Peel back internal layers to resolve discrepancies and update the Causal Model.</goal>
-        <step n="1" name="Baseline Causal Model">Synthesize gathered context into a preliminary causal model of how the faulty components currently interact. The model MUST be based exclusively on verified observations, not assumptions. `EDIT` the Case File to populate `### Causal Model`.</step>
-        <step n="2" name="Proactive Instrumentation">Review target code. If investigating a high-value boundary, use an `Instrumentation` plan to build permanent, conditionally-activated debug diagnostics to aid current and future isolation.</step>
-        <step n="3" name="Design Probe & Observe">Refine the MRE or create targeted temporary probes to expose internal state. `EXECUTE` them to analyze the exact reality.</step>
-        <step n="4" name="Model Refinement">Update the `### Causal Model` in the Case File based on new observations. For each observation that resolves a discrepancy, find the corresponding line in the `### Discrepancies` list and append the resolution in the format: `(resolved: [explanation])`. Do not delete resolved discrepancies. Repeat Phase 2 until all discrepancies are resolved.</step>
+        <step n="1" name="Historical Bisection">Identify the regressing commit using automated bisection. First, establish the boundaries: `HEAD` is the 'bad' commit. Find a 'good' commit by testing candidates from CI/git history with the MRE script until one passes verification. With boundaries established, execute the automated bisect (`git bisect run <mre_script>`) to pinpoint the regressing commit. The resulting commit diff is the primary input for the next step.</step>
+        <step n="2" name="Context & Scoping">`EDIT` the Case File to populate the `## Context & Scope` section based on the bisection findings and initial context. This formally narrows the search space.</step>
+        <step n="3" name="Baseline Causal Model">Synthesize gathered context and the regressing commit's diff into a preliminary causal model of how the faulty components currently interact. The model MUST be based exclusively on verified observations, not assumptions. `EDIT` the Case File to populate `### Causal Model`.</step>
+        <step n="4" name="Proactive Instrumentation">Review target code. If investigating a high-value boundary, use an `Instrumentation` plan to build permanent, conditionally-activated debug diagnostics to aid current and future isolation.</step>
+        <step n="5" name="Design Probe & Observe">Refine the MRE or create targeted temporary probes to expose internal state. `EXECUTE` them to analyze the exact reality.</step>
+        <step n="6" name="Model Refinement">Update the `### Causal Model` in the Case File based on new observations. For each observation that resolves a discrepancy, find the corresponding line in the `### Discrepancies` list and append the resolution in the format: `(resolved: [explanation])`. Do not delete resolved discrepancies. Repeat Phase 2 until all discrepancies are resolved.</step>
       </phase>
 
       <phase n="3" name="Repair">
@@ -36,7 +37,7 @@
       <phase n="4" name="Regression Testing">
         <goal>Implement a fail-first regression test to guarantee it prevents the bug.</goal>
         <step n="1" name="Formalize Test">Translate the insights from the successful E2E MRE into a formal regression test in the test suite (`tests/suites/`), extending the Test Harness Triad (`tests/harness/`) if necessary.</step>
-        <step n="2" name="Verify Failure (Test the Test)">Execute the new test against the buggy code and verify that it FAILS as expected. This proves the test effectively catches the bug.</step>
+        <step n="2" name="Verify Failure (Test the Test)">Execute the new test against the buggy code and verify that it FAILS as expected. This proves the test effectively catches the bug. If the test PASSES, you MUST halt, revert the new test, and return to Phase 2 (Investigation) as your Causal Model is incorrect.</step>
         <step n="3" name="Apply Fix">Re-apply the validated fix from the patch file. EXECUTE `git apply .tmp/fix.patch`.</step>
         <step n="4" name="Verify Success (Test the Fix)">Execute the same regression test again and verify that it now PASSES. This proves the fix works.</step>
         <step n="5" name="Stage Changes">Stage the applied fix and the new test. EXECUTE `git add .`.</step>
@@ -56,8 +57,8 @@
 
       <phase n="7" name="Cleanup & Handoff">
         <goal>Clean up the workspace and return control.</goal>
-        <step n="1" name="Teardown">Run `git status`. Explicitly delete all redundant diagnostic scripts, temporary logs, and probes unless permanently promoted to tests.</step>
-        <step n="2" name="Finalize Case File">Update the Case File. Ensure `### Investigation History` is preserved (never delete it). Change status to Resolved.</step>
+        <step n="1" name="Teardown">Run `git status`. Explicitly delete all redundant diagnostic scripts, temporary logs, patch files (`.tmp/fix.patch`), and probes unless permanently promoted to tests. After deletion, run `git add .` to ensure the deletions are staged.</step>
+        <step n="2" name="Finalize Case File">Update the Case File. Populate the `## Solution` section. Ensure `### Investigation History` is preserved (never delete it). Change status to Resolved.</step>
         <step n="3" name="Handoff">Use `RETURN` to pass control back to the user or calling agent.</step>
       </phase>
     </workflow>
@@ -77,7 +78,7 @@
       <state name="Red 🔴" trigger="Current Status is Yellow AND Outcome matched the Failure condition.">
           <action>Log Attempt & Restart. Halt the current attempt, document it in the Case File, and restart the debugging process from Phase 1.</action>
           <dos_donts>
-            <do>1. STOP the current attempt. 2. Update the Causal Model and append to `### Investigation History` in the Case File, detailing your failed attempt and the current workspace state. 3. On the next turn, re-enter Phase 1 (Reproduction) to re-verify the MRE and re-gather context based on the new findings.</do>
+            <do>1. STOP the current attempt. 2. Update the Case File: Append the failed attempt to `### Investigation History` and update the `## Context & Scope` and `### Causal Model` sections with any new, verified information learned from the failure. 3. On the next turn, re-enter Phase 1 (Reproduction) to re-verify the MRE and re-gather context based on the new findings.</do>
             <dont>Persist with a failing approach, attempt further fixes without re-evaluating, or `RETURN` control.</dont>
           </dos_donts>
         </state>
@@ -137,21 +138,10 @@ WIP & REMINDERS:
 
       <rule n="13" name="Isolated Actions">`PROMPT`, `INVOKE`, and `RETURN` MUST be the sole action in a plan. If bundled with other actions, they are automatically skipped.</rule>
 
-      <rule n="14" name="Remote Probing Protocol">
-      1. Debug Branch: Create a transient branch (`git checkout -b debug/{{bug}}`). Use `git push -f` for all iterative attempts.
-      2. Absolute CI Isolation: `CREATE` a new, dedicated `.github/workflows/probe.yml` file. Configure it to trigger exclusively on the transient branch (`on: push: branches: ["debug/*"]`).
-      3. Strict Timeout: The `probe.yml` MUST run on `ubuntu-latest` and include `timeout-minutes: 1` at the `job` level. The probe MUST be specifically designed to dump internal state or tracebacks and exit within this 1-minute window.
-      4. Trigger & Fetch Logs: Commit the probe, force-push, wait a few seconds for GitHub to register the event, then fetch logs deterministically using the commit SHA. Example `EXECUTE` sequence:
-         ```shell
-         git add .github/workflows/probe.yml && git commit -m "remote probe" && git push -f origin debug/{{bug}}
-         sleep 8
-         SHA=$(git rev-parse HEAD)
-         RUN_ID=$(gh run list --commit "$SHA" --limit 1 --json databaseId --jq '.[0].databaseId')
-         gh run watch "$RUN_ID" --exit-status || true
-         gh run view "$RUN_ID" --log > .tmp/ci_failure.log
-         tail -n 150 .tmp/ci_failure.log
-         ```
-      5. Teardown: Delete the transient branch and cleanup `.tmp/` logs when the investigation concludes.
+      <rule n="14" name="Platform-Specific Probing Protocol">
+      <description>When a bug is platform-specific, all diagnostic commands MUST be executed in the target environment using one of the following methods.</description>
+      <tier n="1" name="Default: Local CI Emulation">The preferred method is to use a local CI emulator like `act` with a dedicated probe workflow (`.github/workflows/probe.yml`). This is fast and accurate for most OS and library-related issues. The `git bisect run` command should call `act` to execute the MRE script inside the emulated environment.</tier>
+      <tier n="2" name="Contingency: Direct Remote Probing">If local emulation is insufficient (e.g., for bugs involving specific network hardware or secrets), you must escalate to direct remote probing. This can be done by triggering a minimal CI job on a temporary branch and fetching the logs, or by using a persistent SSH session on a machine that mirrors the target environment.</tier>
       </rule>
 
       <rule n="15" name="Reality-Driven Repair & Harness Alignment">Spikes MUST interact with the actual application and probe reality for each experiment iteration (strictly NO mocks). During Phase 6 (Reality-Driven TDD Repair), use these real-environment spikes as your guidance, NOT the test harness. ONLY AFTER the fix is verified in the real environment should you align the `tests/harness/` (Setup, Drivers, Observers) and write the formal regression test. Bypassing the harness for the final regression test is a zero-tolerance violation.</rule>
@@ -161,7 +151,7 @@ WIP & REMINDERS:
 
     <blueprints>
       <blueprint name="Case File">
-        <description>The formal state snapshot for tracking the bug. Must be created as a NEW file using sequential numbering (NN-{{bug_title}}.md). NEVER overwrite an existing Case File. The Causal Model is a living snapshot, while the Investigation History is an append-only log that MUST NEVER be deleted.</description>
+        <description>The formal state snapshot for tracking the bug. Must be created as a NEW file using sequential numbering (NN-{{bug_title}}.md). NEVER overwrite an existing Case File.</description>
         <section n="1" name="Metadata">
           <item name="Heading"># Bug: {{bug_title}}</item>
           <item name="Status">- **Status:** Unresolved</item>
@@ -172,18 +162,23 @@ WIP & REMINDERS:
         <section n="2" name="Symptoms">
           <item name="Heading">## Symptoms</item>
           <item name="Content">Expected vs. Actual behavior and minimal reproduction steps.</item>
-          <item name="Content">**MRE:** `[Exact MRE execution command]`</item>
         </section>
-        <section n="3" name="Diagnostic Analysis">
+        <section n="3" name="Context & Scope">
+          <item name="Heading">## Context & Scope</item>
+          <item name="Content">*   **Regressing Commit:** [The exact git SHA that introduced the bug, found via automated `git bisect` or CI history, or "Unknown"]</item>
+          <item name="Content">*   **Environmental Boundaries:** [Specific OS, browsers, or configuration states required to trigger the bug]</item>
+          <item name="Content">*   **Ruled Out:** [A bulleted list of components, layers, or files that have been definitively proven *unrelated* to the bug to narrow the search space].</item>
+        </section>
+        <section n="4" name="Diagnostic Analysis">
           <item name="Heading">## Diagnostic Analysis</item>
           <item name="Content">### Causal Model
-A concise, causal description of how the faulty SUT operates (ignoring any attempted fixes). MUST be built exclusively on verified observations (outputs of READ/EXECUTE), NEVER on assumptions or the intended outcomes of failed actions. Continuously updated as new internal layers are peeled back.</item>
+A concise, causal description of how the faulty SUT operates. Continuously updated as new information is discovered.</item>
           <item name="Content">### Discrepancies
-A bulleted list of observations that contradict the current Causal Model. When a discrepancy is resolved, append the explanation to the line item in the format: `- [discrepancy] (resolved: [explanation])`. DO NOT DELETE resolved items. The root cause is understood when all discrepancies are marked as resolved.</item>
+A bulleted list of observations that contradict the current Causal Model. Resolved items are annotated, not deleted.</item>
           <item name="Content">### Investigation History
-Appended upon Red State Context Resets. An append-only log tracking failed attempts and documenting exactly what changes are currently in the workspace before the reset. MUST NEVER BE DELETED.</item>
+An append-only log of failed attempts, documenting learnings from Red State resets.</item>
         </section>
-        <section n="4" name="Solution">
+        <section n="5" name="Solution">
           <item name="Heading">## Solution</item>
           <item name="Content">### Implemented Fixes
 A bulleted list of the specific code changes applied to resolve the discrepancies.</item>
