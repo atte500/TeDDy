@@ -13,16 +13,20 @@
 ## Diagnostic Analysis
 
 ### Causal Model
-- `pytest` is executing with `xdist` (`-n auto`) and `pytest-timeout`.
-- Ubuntu uses `fork` by default for multiprocessing.
-- A background thread, lock, external syscall, or sub-process within one of the tests is deadlocking or preventing the worker from progressing.
+- `pytest` captures `stdout` and `stderr` using OS-level pipes during test execution.
+- If a test indirectly spawns a background process via `subprocess.Popen` (e.g., `spawn_editor` for TUI previews, or `ShellAdapter` executing a background action) without explicitly redirecting `stdin`, `stdout`, and `stderr` to `subprocess.DEVNULL`, the child process inherits Pytest's capture file descriptors.
+- If the child process outlives the test (e.g., a headless editor waiting for input), Pytest's teardown mechanism hangs infinitely waiting for an EOF on the capture pipe. This blocks the main thread from completing test setup/teardown, resulting in the non-deterministic `[ 24%]` deadlock on Ubuntu CI workers.
 
 ### Discrepancies
 - The previous TTY guard fix did not resolve the hang.
 - [2026-04-16] Wiring regression: `IPlanReviewer` resolved to `ConsolePlanReviewer` in tests. (resolved: Aggressive `PYTEST_CURRENT_TEST` guard in `reviewer.py` removed, but then reinstated and dynamically patched via `monkeypatch.delenv` to safely bypass).
 - `ShellAdapter` uses `preexec_fn` which causes deadlocks. (resolved: Checked `src/teddy_executor/adapters/outbound/shell_adapter.py`. It uses `start_new_session=True`, NOT `preexec_fn`.)
+- [2026-04-16] Since the hang occurs even with `xdist` disabled (`-n 0`), it is likely caused by a leaked background thread or `asyncio`/`anyio` event loop from a previous test. (resolved: It is not a thread leak, but an OS-level file descriptor leak. `subprocess.Popen` in `spawn_editor` and `ShellAdapter` inherits Pytest's capture pipes. Background processes keep these pipes open, deadlocking Pytest's teardown loop waiting for EOF).
 
 ### Investigation History
+- [2026-04-16] **RED STATE RESET:** Attempted to fix the hang by replacing naked Textual `ReviewerApp` instances with `MagicMock` in unit tests, suspecting an `anyio` thread leak. Pushed to remote CI, but the suite still deadlocked at exactly the same spot (~24% progress).
+- [2026-04-16] Re-analyzed the architecture and Pytest mechanics. Discovered that `spawn_editor` in `textual_plan_reviewer_helpers.py` and background execution in `shell_adapter.py` use `subprocess.Popen` without explicitly routing standard I/O to `DEVNULL`.
+- [2026-04-16] Identified the verifiable root cause: Pytest's output capture mechanism deadlocks infinitely waiting for an EOF from background child processes that inherited its stdout/stderr pipes.
 - [2026-04-16] Case reopened. Issue persists in CI environment. Preparing Remote CLI Protocol.
 - [2026-04-16] Attempted remote monitoring via `gh run view`. Encountered `null` job IDs during early workflow initialization. Resetting and retrying with robust polling.
 - [2026-04-16] Identified `preexec_fn` in `ShellAdapter` as the likely cause of Ubuntu deadlock due to `fork()` semantics in `pytest-xdist`.
