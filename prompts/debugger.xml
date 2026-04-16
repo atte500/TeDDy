@@ -138,11 +138,11 @@ WIP & REMINDERS:
       <rule n="13" name="Isolated Actions">`PROMPT`, `INVOKE`, and `RETURN` MUST be the sole action in a plan. If bundled with other actions, they are automatically skipped.</rule>
 
       <rule n="14" name="Remote Probing Protocol">
-      1. Force-create a transient branch. You MUST use a unique branch name for each iterative attempt (e.g., `git checkout -b debug/{{bug}}-v1`, `-v2`) to guarantee an independent CI run even if previous runs are stubbornly hung.
-      2. `EDIT` CI YAML to add `workflow_dispatch`.
-      3. Inject diagnostic logic in `run` block. For hangs/deadlocks, use the OS `timeout` command or a background bash watchdog that kills the process but keeps `stdout` transparent (e.g., DO NOT swallow logs into a file without also streaming them to the runner UI).
-      4. Trigger/poll via CLI (`gh run watch`).
-      5. Delete transient branches when done.
+      1. Debug Branch: Create a transient branch (`git checkout -b debug/{{bug}}`). Use `git push -f` for all iterative attempts.
+      2. Global Timeout: `EDIT` the CI YAML to inject `timeout-minutes: 1` (or an appropriately strict limit) at the `job` level.
+      3. Trigger & Fetch Logs: Commit, force-push, and retrieve the logs in one automated `EXECUTE` step. Example command sequence:
+         `git commit -am "probe" && git push -f origin debug/{{bug}} && sleep 10 && RUN_ID=$(gh run list -b debug/{{bug}} -L 1 --json databaseId -q '.[0].databaseId') && gh run watch $RUN_ID && gh run view $RUN_ID --log`
+      4. Teardown: Delete the transient branch when the investigation concludes.
       </rule>
 
       <rule n="15" name="Reality-Driven Repair & Harness Alignment">Spikes MUST interact with the actual application and probe reality for each experiment iteration (strictly NO mocks). During Phase 6 (Reality-Driven TDD Repair), use these real-environment spikes as your guidance, NOT the test harness. ONLY AFTER the fix is verified in the real environment should you align the `tests/harness/` (Setup, Drivers, Observers) and write the formal regression test. Bypassing the harness for the final regression test is a zero-tolerance violation.</rule>
