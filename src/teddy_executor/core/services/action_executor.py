@@ -51,7 +51,7 @@ class ActionExecutor:
         return ActionLog(
             status=status,
             action_type=action.type,
-            params=action.params,
+            params=log_params,
             details=details,
             modified=action.modified,
         )

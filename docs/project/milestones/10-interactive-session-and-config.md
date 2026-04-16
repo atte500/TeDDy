@@ -102,6 +102,7 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 - [ ] **Dependency:** Update `aiohttp` to 3.13.4+, `litellm` to 1.83.0+, and `pygments` to 2.20.0+ to resolve multiple vulnerabilities found by `pip-audit`.
 
 ### New Technical Debt (Discovered during TUI Refinement)
+- [ ] **ActionLog Parameters:** Audit other services (beyond `ActionExecutor`) for potential parameter loss when creating `ActionLog` objects from `ActionData`.
 - [ ] **ShellAdapter Maintenance:** Refactor `ShellAdapter` (>300 lines, C901, PLR0915) after terminal reset sanitization additions. Also fix `Mypy` bytes vs str errors in `_run_subprocess`.
 - [ ] **TUI Suspension:** Investigate `app.suspend()` instability in certain terminal environments during external tool execution.
 - [ ] **Editor Sync:** Generalize the `code --wait` logic to handle other GUI editors that return before the file is released.
