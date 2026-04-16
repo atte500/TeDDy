@@ -104,7 +104,7 @@ private/
 temp_*
 
 # Test detritus
-tests/.tmp/
+.tmp
 test_data/
 hello.txt
 
