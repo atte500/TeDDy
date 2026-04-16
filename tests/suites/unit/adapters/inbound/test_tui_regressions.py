@@ -26,12 +26,7 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
 async def test_regression_research_list_parsing(env):
     """Issue 2: RESEARCH modal expects a string but receives a list."""
     action = ActionData(type="RESEARCH", params={"queries": ["q1", "q2"]})
-    app = ReviewerApp(
-        plan=Plan(title="T", rationale="R", actions=[action]),
-        system_env=env.get_service(ISystemEnvironment),
-        console_tooling=MagicMock(),
-        action_dispatcher=MagicMock(),
-    )
+    app = MagicMock()
     app.push_screen_wait = AsyncMock(return_value="q3, q4")
     app._refresh_node = MagicMock()
 
@@ -151,12 +146,7 @@ async def test_regression_execution_log_removed(env):
 async def test_regression_reactivity_on_edit(mock_update, env):
     """Issue 6: Editing a main action from the modal must immediately update the right pane."""
     action = ActionData(type="EXECUTE", params={"command": "ls"})
-    app = ReviewerApp(
-        plan=Plan(title="T", rationale="R", actions=[action]),
-        system_env=env.get_service(ISystemEnvironment),
-        console_tooling=MagicMock(),
-        action_dispatcher=MagicMock(),
-    )
+    app = MagicMock()
     app.push_screen_wait = AsyncMock(return_value="pwd")
     app._refresh_node = MagicMock()
 
@@ -190,7 +180,7 @@ async def test_regression_orchestrate_execution_does_not_suspend_unnecessarily()
     app.is_headless = False
 
     # Execute
-    await orchestrate_execution(app, node, lambda a, b: None)
+    await orchestrate_execution(app, node, lambda *_, **__: None)
 
     # Assert
     assert not app.suspend.called, (
@@ -225,7 +215,7 @@ async def test_regression_execute_prompt_step_populates_correct_log_details():
     # Mock preview_prompt to simulate completion
     with patch(
         "teddy_executor.adapters.inbound.textual_plan_reviewer_previews.preview_prompt"
-    ) as mock_preview:
+    ):
         # Execute
         await _execute_prompt_step(app, action, node, update_fn)
 
