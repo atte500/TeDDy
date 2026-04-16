@@ -24,15 +24,17 @@ class _IndentedListFormatter:
         """Recursively builds the tree string."""
         children = sorted(
             [p for p in directory.iterdir() if p in self.included_paths],
-            key=lambda p: (not p.is_dir(), p.name.lower()),
+            key=lambda p: (not p.is_dir() or p.is_symlink(), p.name.lower()),
         )
 
         indent = "  " * level
         for path in children:
-            entry = f"{path.name}/" if path.is_dir() else path.name
+            # We treat symlinks as files even if they point to directories to avoid circularities
+            is_real_dir = path.is_dir() and not path.is_symlink()
+            entry = f"{path.name}/" if is_real_dir else path.name
             tree_lines.append(f"{indent}{entry}")
 
-            if path.is_dir():
+            if is_real_dir:
                 self._format_recursive(path, level + 1, tree_lines)
 
 
@@ -77,10 +79,11 @@ class LocalRepoTreeGenerator(IRepoTreeGenerator):
         """
         for entry in current_dir.iterdir():
             relative_path_str = str(entry.relative_to(self.root_dir))
+            # We treat symlinks as files to avoid infinite recursion
+            is_real_dir = entry.is_dir() and not entry.is_symlink()
+
             # For directories, add a trailing slash to match gitignore behavior
-            match_path = (
-                relative_path_str + "/" if entry.is_dir() else relative_path_str
-            )
+            match_path = relative_path_str + "/" if is_real_dir else relative_path_str
 
             if self.ignore_spec.match_file(match_path):
                 continue
@@ -95,7 +98,7 @@ class LocalRepoTreeGenerator(IRepoTreeGenerator):
                 included_paths.add(parent)
 
             # Recurse if it's a directory
-            if entry.is_dir():
+            if is_real_dir:
                 self._walk(entry, included_paths)
 
     def generate_tree(self) -> str:

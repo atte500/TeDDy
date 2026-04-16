@@ -1,3 +1,4 @@
+import sys
 import pytest
 from pathlib import Path
 from textwrap import dedent
@@ -75,3 +76,32 @@ def test_tree_generator_handles_nested_ignore(env, tmp_path):
 
     assert "main.py" in tree
     assert "debug.log" not in tree
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Symlinks require admin on Windows")
+@pytest.mark.timeout(5)
+def test_tree_generator_handles_circular_symlinks_without_hanging(env, tmp_path):
+    """
+    Regression test for infinite recursion hang (Case File 14).
+    Verifies that circular symlinks are treated as files and do not cause hangs.
+    """
+    import os
+
+    # ARRANGE
+    # root/subdir/link -> root
+    subdir = tmp_path / "subdir"
+    subdir.mkdir()
+    link = subdir / "circular_link"
+    os.symlink(tmp_path, link)
+
+    generator = env.get_service(IRepoTreeGenerator)
+
+    # ACT
+    # If the bug is present, this will hang and be killed by the 5s timeout
+    tree_output = generator.generate_tree()
+
+    # ASSERT
+    assert "subdir/" in tree_output
+    assert "circular_link" in tree_output
+    # The fix treats symlinks as files, so it shouldn't recurse into 'circular_link/'
+    assert "circular_link/" not in tree_output
