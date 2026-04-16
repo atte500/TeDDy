@@ -141,12 +141,16 @@ WIP & REMINDERS:
       1. Debug Branch: Create a transient branch (`git checkout -b debug/{{bug}}`). Use `git push -f` for all iterative attempts.
       2. Absolute CI Isolation: `CREATE` a new, dedicated `.github/workflows/probe.yml` file. Configure it to trigger exclusively on the transient branch (`on: push: branches: ["debug/*"]`).
       3. Strict Timeout: The `probe.yml` MUST run on `ubuntu-latest` and include `timeout-minutes: 1` at the `job` level. The probe MUST be specifically designed to dump internal state or tracebacks and exit within this 1-minute window.
-      4. Robust Trigger & Fetch Logs: Commit the new probe file, force-push, and securely fetch the logs using a resilient polling loop filtered by the exact commit SHA. Example `EXECUTE` sequence:
-         `git add .github/workflows/probe.yml && git commit -m "remote probe" && git push -f origin debug/{{bug}}`
-         `SHA=$(git rev-parse HEAD); RUN_ID=""; for i in {1..20}; do RUN_ID=$(gh run list -b debug/{{bug}} -c $SHA -L 1 --json databaseId -q '.[0].databaseId'); if [ -n "$RUN_ID" ] && [ "$RUN_ID" != "null" ]; then break; fi; sleep 5; done`
-         `gh run watch $RUN_ID --exit-status || true`
-         `gh run view $RUN_ID --log > .tmp/ci_failure.log`
-         `tail -n 150 .tmp/ci_failure.log`
+      4. Trigger & Fetch Logs: Commit the probe, force-push, wait a few seconds for GitHub to register the event, then fetch logs deterministically using the commit SHA. Example `EXECUTE` sequence:
+         ```shell
+         git add .github/workflows/probe.yml && git commit -m "remote probe" && git push -f origin debug/{{bug}}
+         sleep 8
+         SHA=$(git rev-parse HEAD)
+         RUN_ID=$(gh run list --commit "$SHA" --limit 1 --json databaseId --jq '.[0].databaseId')
+         gh run watch "$RUN_ID" --exit-status || true
+         gh run view "$RUN_ID" --log > .tmp/ci_failure.log
+         tail -n 150 .tmp/ci_failure.log
+         ```
       5. Teardown: Delete the transient branch and cleanup `.tmp/` logs when the investigation concludes.
       </rule>
 
