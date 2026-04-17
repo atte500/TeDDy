@@ -33,6 +33,20 @@ class PlanningService(IPlanningUseCase):
         turn_dir: str,
         context_files: Optional[Dict[str, Sequence[str]]] = None,
     ) -> tuple[str, float]:
+        import os
+        if os.getenv("TEDDY_SHOWCASE_MOCK_LLM") == "1":
+            from prototypes.slice_00_05_logic import generate_plan_sequenced
+            # Recursion guard: generate_plan_sequenced calls this method.
+            # We use a context-local flag to skip the mock on the inner call.
+            if not getattr(self, "_in_showcase_mock", False):
+                self._in_showcase_mock = True
+                try:
+                    return generate_plan_sequenced(
+                        self, self._user_interactor, user_message, turn_dir, context_files, "pathfinder"
+                    )
+                finally:
+                    self._in_showcase_mock = False
+
         import yaml
         from teddy_executor.core.utils.markdown import extract_markdown_section
 

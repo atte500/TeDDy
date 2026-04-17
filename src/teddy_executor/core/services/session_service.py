@@ -33,6 +33,11 @@ class SessionService(ISessionManager):
         """
         Initializes a new session directory and bootstraps it for Turn 1.
         """
+        import os
+        if os.getenv("TEDDY_SHOWCASE") == "1":
+            from prototypes.slice_00_05_logic import create_session_prefixed
+            return create_session_prefixed(self, name, agent_name)
+
         session_root = f".teddy/sessions/{name}"
         turn_dir = f"{session_root}/01"
 

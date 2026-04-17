@@ -53,14 +53,26 @@ class SessionPlanner:
                 agent_name = meta.get("agent_name", agent_name)
 
         # Display progress right before generating plan
-        msg = f"[cyan][{turn_p.name}] Planning Turn with {agent_name}...[/cyan]"
-        self._user_interactor.display_message(msg)
+        import os
+        if os.getenv("TEDDY_SHOWCASE") == "1":
+            from prototypes.slice_00_05_logic import generate_plan_sequenced
+            plan_path, turn_cost = generate_plan_sequenced(
+                self._planning_service,
+                self._user_interactor,
+                resolved_message,
+                turn_dir,
+                context_files,
+                agent_name
+            )
+        else:
+            msg = f"[cyan][{turn_p.name}] Planning Turn with {agent_name}...[/cyan]"
+            self._user_interactor.display_message(msg)
 
-        plan_path, turn_cost = self._planning_service.generate_plan(
-            user_message=resolved_message,
-            turn_dir=turn_dir,
-            context_files=context_files,
-        )
+            plan_path, turn_cost = self._planning_service.generate_plan(
+                user_message=resolved_message,
+                turn_dir=turn_dir,
+                context_files=context_files,
+            )
 
         # Handle planning cancellation/empty input
         if plan_path is None:
@@ -80,6 +92,8 @@ class SessionPlanner:
     def _display_planning_telemetry(
         self, turn_dir: str, plan_path: str, turn_cost: float
     ):
+        import os
+        dim_style = "dim" if os.getenv("TEDDY_SHOWCASE") != "1" else "bright_black"
         def safe_float(v: Any, default: float = 0.0) -> float:
             try:
                 if hasattr(v, "__float__"):
@@ -101,12 +115,12 @@ class SessionPlanner:
             turn_cost
         )
 
-        self._user_interactor.display_message(f"[dim]  Model: {model}[/dim]")
+        self._user_interactor.display_message(f"[{dim_style}]  Model: {model}[/{dim_style}]")
         self._user_interactor.display_message(
-            f"[dim]  Context: {raw_token_count / 1000:.1f}k tokens[/dim]"
+            f"[{dim_style}]  Context: {raw_token_count / 1000:.1f}k tokens[/{dim_style}]"
         )
         self._user_interactor.display_message(
-            f"[dim]  Session Cost: ${cumulative_cost:.4f}[/dim]\n"
+            f"[{dim_style}]  Session Cost: ${cumulative_cost:.4f}[/{dim_style}]\n"
         )
 
     def _resolve_message_from_previous_turn(self, turn_dir: str) -> Optional[str]:
