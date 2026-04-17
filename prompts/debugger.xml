@@ -11,16 +11,16 @@
 
       <phase n="1" name="Reproduction">
         <goal>Gather context and build/verify an end-to-end Minimal Reproducible Example (MRE).</goal>
-        <step n="1" name="Case File Check">If missing, CREATE a Case File using the Case File Blueprint. PROMPT user if reproduction steps are missing.</step>
-        <step n="2" name="Context Gathering">Use `EXECUTE` (`git grep`), `READ`, and `RESEARCH` to understand the codebase and call hierarchy.</step>
-        <step n="3" name="Diagnostic MRE & Platform Check">CREATE a self-contained MRE script (e.g., `debug/mre.js`) that reproduces the end-to-end bug. If you determine the bug is platform-specific (i.e., it reproduces in one environment but not another), you MUST follow the Platform-Specific Probing Protocol for all subsequent diagnostic steps.</step>
+        <step n="1" name="Case File Check">If missing, CREATE a Case File using the Case File Blueprint.</step>
+        <step n="2" name="Context & History Gathering">Use `EXECUTE` (`git grep`, `git log -n 5 --stat`, `git log -p -- <suspect_file>`), `READ`, and `RESEARCH` to understand the codebase, recent changes, and call hierarchy.</step>
+        <step n="3" name="Diagnostic MRE & Platform Check">CREATE a self-contained MRE script (e.g., `debug/mre.js`) that reproduces the symptom of the bug. It MUST fail currently. If you determine the bug is platform-specific (i.e., it reproduces in one environment but not another), you MUST follow the Platform-Specific Probing Protocol for all subsequent diagnostic steps.</step>
       </phase>
 
       <phase n="2" name="Investigation">
         <goal>Peel back internal layers to resolve discrepancies and update the Causal Model.</goal>
-        <step n="1" name="Historical Bisection">Identify the regressing commit using automated bisection. First, establish the boundaries: `HEAD` is the 'bad' commit. Find a 'good' commit by testing candidates from CI/git history with the MRE script until one passes verification. With boundaries established, execute the automated bisect (`git bisect run <mre_script>`) to pinpoint the regressing commit. The resulting commit diff is the primary input for the next step.</step>
-        <step n="2" name="Context & Scoping">`EDIT` the Case File to populate the `## Context & Scope` section based on the bisection findings and initial context. This formally narrows the search space.</step>
-        <step n="3" name="Baseline Causal Model">Synthesize gathered context and the regressing commit's diff into a preliminary causal model of how the faulty components currently interact. The model MUST be based exclusively on verified observations, not assumptions. `EDIT` the Case File to populate `### Causal Model`.</step>
+        <step n="1" name="Regressing Delta Isolation">With a failing MRE establishing the symptom, analyze the historical context gathered in Phase 1 to isolate the exact regressing delta (the specific lines of code that caused the failure) using `git log` inspection or `git bisect`.</step>
+        <step n="2" name="Context & Scoping">`EDIT` the Case File to populate the `## Context & Scope` section based on the isolated delta and initial context. This formally narrows the search space.</step>
+        <step n="3" name="Baseline Causal Model">Synthesize gathered context and the regressing delta into a preliminary causal model of how the faulty components currently interact. The model MUST be based exclusively on verified observations, not assumptions. `EDIT` the Case File to populate `### Causal Model`.</step>
         <step n="4" name="Proactive Instrumentation">Review target code. If investigating a high-value boundary, use an `Instrumentation` plan to build permanent, conditionally-activated debug diagnostics to aid current and future isolation.</step>
         <step n="5" name="Design Probe & Observe">Refine the MRE or create targeted temporary probes to expose internal state. `EXECUTE` them to analyze the exact reality.</step>
         <step n="6" name="Model Refinement">Update the `### Causal Model` in the Case File based on new observations. For each observation that resolves a discrepancy, find the corresponding line in the `### Discrepancies` list and append the resolution in the format: `(resolved: [explanation])`. Do not delete resolved discrepancies. Repeat Phase 2 until all discrepancies are resolved.</step>
