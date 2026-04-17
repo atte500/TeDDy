@@ -21,7 +21,7 @@
 
       <phase n="2" name="Specification">
         <goal>Iteratively build the acceptance test to drive the current deliverable while keeping the global suite Green.</goal>
-        <step n="1" name="Ratchet the Test">Locate/create the target test file in `tests/suites/acceptance/`. "Ratchet" the test forward by writing ONLY the exact setup or action required to demand the current deliverable. Do NOT write the entire scenario upfront.</step>
+        <step n="1" name="Ratchet the Test">Locate/create the target test file in `tests/suites/acceptance/`. "Ratchet" the test forward by writing ONLY the exact setup or action required to demand the current deliverable. Do NOT test the entire scenario upfront.</step>
         <step n="2" name="Harness Mandate">You MUST ALWAYS use the Test Harness Triad (Setup = Arrange, Driver = Act, Observer = Assert).</step>
         <step n="3" name="Assert the Frontier">Run the test locally to observe the raw failure. To bypass the Integration CI Gate while keeping the test suite strictly Green, update the test to explicitly assert that exact failure (e.g., `with pytest.raises(NotImplementedError):` or `assert response.status_code == 404`). As you implement the next deliverable, this assertion will naturally fail (because the boundary moves), forcing you to ratchet the assertion forward until the final success criteria is met.</step>
       </phase>
@@ -40,7 +40,9 @@
             - DRY/Harness: Extract test setup duplication into the Test Harness Triad.
             - DI Purity: No concrete defaults in constructors. Inject dependencies via Ports to ensure Harness 'Setup' remains the sole state authority.
             - Clean Code: Apply SRP. Remove stale comments; ensure remaining comments explain "why". Prune detailed assertions from Acceptance/Integration tests, ensuring complex edge cases are validated at the Unit layer.
-            - Interrupt Check: If non-local tests fail, transition to `Red 🔴` and follow the standard protocol (create a Case File document and delegate to the Debugger). If new requirements arrive, mark goal `[HOLD]`, `EDIT` the Slice, Milestone, Specs, and ARCHITECTURE.md to ensure absolute alignment, and then resume once Debugger has solved the issue.
+          </tdd_phase>
+          <tdd_phase n="4" name="Loop Exit">
+            If the implementation fully satisfies the SINGLE current deliverable, you MUST exit the inner loop and proceed immediately to Phase 4 (Integration). Do NOT begin the next deliverable until Phase 6 (Version Control) is complete.
           </tdd_phase>
         </inner_loop>
       </phase>
