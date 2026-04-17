@@ -7,11 +7,11 @@
 
   <instructions>
     <goal>
-      Execute a Single Deliverable Cycle: implement, verify, and version-control exactly ONE `Deliverables` item at a time.
+      Execute the Iterative Delivery Cycle: orient, specify, implement, integrate, document, and version-control exactly ONE `Deliverables` item at a time, instead of batching the entire feature.
     </goal>
 
     <workflow>
-      <description>The Single Deliverable Cycle. You MUST execute this full cycle (including push) for EACH individual deliverable.</description>
+      <description>The Iterative Delivery Cycle. You MUST execute this full cycle (including push) for EACH individual deliverable separately.</description>
 
       <phase n="1" name="Orientation">
         <goal>Establish foundation and define scope. This phase presumes you have committed all previous changes and are working with a clean workspace.</goal>
@@ -36,7 +36,7 @@
             Write the absolute minimal code to pass the test. Hardcoded return values are encouraged if they satisfy the current suite, forcing further Red tests to drive out real logic. Your `Synthesis` MUST quote the Red test failure message and explain the fix.
           </tdd_phase>
           <tdd_phase n="3" name="Refactor (Mandatory)">
-            Clean up code/tests and Audit Frictions: Identify what made this deliverable difficult (frictions) or identify architectural improvement opportunities (e.g., awkward mocks, rigid interfaces) and either fix it now or log it in the `[DEBT]` dashboard.
+            Clean up code/tests and Audit Frictions. Apply the Scope Heuristic: Fix local, file-scoped frictions (e.g., extracting a method, renaming) immediately. For structural or multi-file frictions (e.g., file length limits, splitting classes, awkward mocks), you MUST log them in the `[DEBT]` dashboard. Do NOT perform structural refactoring during a feature deliverable.
             - DRY/Harness: Extract test setup duplication into the Test Harness Triad.
             - DI Purity: No concrete defaults in constructors. Inject dependencies via Ports to ensure Harness 'Setup' remains the sole state authority.
             - Clean Code: Apply SRP. Remove stale comments; ensure remaining comments explain "why". Prune detailed assertions from Acceptance/Integration tests, ensuring complex edge cases are validated at the Unit layer.
@@ -46,14 +46,14 @@
       </phase>
 
       <phase n="4" name="Integration">
-        <goal>Act as a Local Continuous Integration (CI) Gate to ensure system integrity before moving on.</goal>
+        <goal>Act as a Local Continuous Integration (CI) Gate to ensure system integrity. This MUST be done for each deliverable independently, even if the overall feature functionality is not yet finalized.</goal>
         <step n="1" name="Global Run">Execute the root test suite with ZERO path filters to verify the entire system.</step>
         <step n="2" name="Verify Ratchet">Confirm the acceptance test that was ratcheted in Phase 2 is now strictly Green.</step>
         <step n="3" name="Regression Fix">If ANY test fails, treat it as a hard stop. Diagnose and fix the integration issues or regressions immediately before proceeding to Documentation.</step>
       </phase>
 
       <phase n="5" name="Documentation">
-        <goal>Update tracking documents and record implementation findings.</goal>
+        <goal>Update tracking documents and record implementation findings for this deliverable item.</goal>
         <step n="1" name="Mark Progress">`EDIT` the vertical slice doc to mark the current deliverable as `[✓]`.</step>
         <step n="2" name="Sync Slice Notes">`EDIT` the vertical slice doc to append technical findings for this deliverable under the `## Implementation Notes` section. If this section does not exist, you MUST create it at the end of the file.</step>
         <step n="3" name="Harvest Debt">If any `[DEBT]` was logged, `EDIT` the active Milestone's (`docs/project/milestones/`) `## Technical Debt` section to append it as a checkmarkable [ ] task.</step>
@@ -61,9 +61,9 @@
       </phase>
 
       <phase n="6" name="Version Control">
-        <goal>Verify workspace state and hand off versioned history.</goal>
-        <step n="1" name="Commit">Execute the Version Control Protocol for the **current deliverable only** in its own turn.</step>
-        <step n="2" name="Loop">If deliverables remain in the slice, return to Phase 1 (Orientation) for the next deliverable. If the Vertical Slice is fully complete (all deliverables committed), you may `RETURN`.</step>
+        <goal>Verify workspace state and hand off versioned history for this deliverable item.</goal>
+        <step n="1" name="Commit">Execute the Version Control Protocol for the current deliverable in its own turn.</step>
+        <step n="2" name="Loop">If deliverables remain in the slice, return to Phase 1 (Orientation) for the next deliverable. If this is the last deliverable item you may `RETURN`.</step>
       </phase>
     </workflow>
 
@@ -135,7 +135,7 @@ WIP & REMINDERS:
 
         The full sequence is: `<global-test-command> (only if src/ or tests/ modified) && git add . && git commit -m '...' && git push`
 
-        If unsure of changes, `EXECUTE git add . && git diff HEAD` in a prior turn. To bypass non-trivial quality gate failures (like file length), log debt in the active Milestone and commit with `--no-verify`. Structural refactoring (e.g., splitting files) is forbidden unless it is your primary task; the global test suite must still pass.
+        If unsure of changes, `EXECUTE git add . && git diff HEAD` in a prior turn. Structural refactoring (e.g., moving functions across files to satisfy linters) is strictly forbidden during feature work. If a commit fails a structural quality gate (like max file length), you MUST immediately log the debt and commit using `--no-verify`. The global test suite must still pass.
       </rule>
 
       <rule n="7" name="Atomic File Edits">Default to max one EDIT action per turn. Surgical edits are strictly preferred over full-file overwrites. Preserve existing functionality unless strictly required to modify.</rule>
@@ -178,7 +178,7 @@ WIP & REMINDERS:
         </section>
         <section n="4" name="Deliverables">
           <item name="Heading">## Deliverables</item>
-          <item name="Content">A unified checklist of atomic units of work for the entire slice. MUST use strict Design-by-Contract prefixes ordered as follows: 1. **Contract** - (Interfaces, DTOs), 2. **Harness** - (Extend test infrastructure: Setup builders, Driver methods, Observer assertions, Fakes. Do NOT write specific test cases here), 3. **Logic** - (Domain implementation), 4. **Wiring** - (DI, Controllers, Adapters), 5. **Cleanup** - (Optional). Format exactly as: `- [ ] **Prefix** - Description`. Each deliverable MUST be a distinct, testable unit scoped to be implemented in exactly ONE single atomic commit cycle.</item>
+          <item name="Content">A unified checklist of atomic units of work for the entire slice using strict Design-by-Contract prefixes: 1. **Contract** - (Interfaces, DTOs), 2. **Harness** - (Extend test infrastructure: Setup builders, Driver methods, Observer assertions, Fakes), 3. **Logic** - (Domain implementation), 4. **Wiring** - (DI, Controllers, Adapters), 5. **Cleanup** - (Optional). Format exactly as: `- [ ] **Prefix** - Description`. You MUST successfully integrate and push each deliverable before starting the next item on the checklist.</item>
         </section>
         <section n="5" name="Delta Analysis">
           <item name="Heading">## Delta Analysis</item>
