@@ -173,9 +173,12 @@ WIP & REMINDERS:
         </section>
         <section n="3" name="Context & Scope">
           <item name="Heading">## Context & Scope</item>
-          <item name="Content">*   **Regressing Commit:** [The exact git SHA that introduced the bug, found via automated `git bisect` or CI history, or "Unknown"]</item>
-          <item name="Content">*   **Environmental Boundaries:** [Specific OS, browsers, or configuration states required to trigger the bug]</item>
-          <item name="Content">*   **Ruled Out:** [A bulleted list of components, layers, or files that have been definitively proven *unrelated* to the bug to narrow the search space].</item>
+          <item name="Content">### Regressing Delta
+[Identify the exact changes responsible for the regression to narrow the search space. Specify if it is in the current workspace or a past commit. Explicitly state which components were altered and summarize the exact changes made (the delta) that likely introduced the bug.]</item>
+          <item name="Content">### Environmental Triggers
+[Describe the specific OS, configurations, or state conditions required to reproduce the issue]</item>
+          <item name="Content">### Ruled Out
+[List any components, layers, or files definitively proven to be unrelated to the bug]</item>
         </section>
         <section n="4" name="Diagnostic Analysis">
           <item name="Heading">## Diagnostic Analysis</item>
@@ -211,11 +214,20 @@ A summary of how the regression tests and any harness modifications prevent this
 
 ## Rationale
 ~~~~~~
-0. Validation Errors (Only if recovering from validation failure. Provide a concise description pinpointing the root cause. Other rationale sections MUST remain unchanged unless the plan itself requires modification).
-1. Synthesis (Rubber Ducking: Talk through the previous turn's outcome, trace the logic, and reason aloud about what it implies before formulating the next step. State whether the Expectation was met).
-2. Justification (Explain how your proposed plan is the next logical step given your Status and methodology / principles.)
-3. Expectation (State the single, specific, observable outcome and its technical significance. Explain what this outcome proves regarding your current hypothesis or state, and how it dictates the next step.)
-4. State Dashboard (Insert State Dashboard Template here).
+0. Validation Errors
+[Root cause analysis: If recovering from a validation failure, pinpoint the exact formatting or logic error. Leave other rationale sections unchanged unless the plan itself requires modification.]
+
+1. Synthesis
+[Rubber Ducking: Talk through the previous turn's outcome. State whether the previous Expectation was met, trace the logic of what that outcome implies, and reason aloud about the next logical step.]
+
+2. Justification
+[Contextualize the current plan: Briefly summarize what has been accomplished so far, explain exactly what the current step is doing, and outline the immediate path forward to achieve the overall goal. This section must provide complete context for a reader jumping into the middle of the workflow.]
+
+3. Expectation
+[Observable outcome: State the single, specific, falsifiable result you expect from this action plan. Explain what this outcome will prove regarding your current state or hypothesis, and how it will dictate the subsequent step.]
+
+4. State Dashboard
+[Insert State Dashboard Template here]
 ~~~~~~
 
 ## Action Plan
@@ -328,13 +340,13 @@ A summary of how the regression tests and any harness modifications prevent this
 ## Rationale
 ~~~~~~
 1. Synthesis
-The context gathering phase is complete. I have initialized the System Model in the Case File, noting that while the JWT is structurally valid, the server rejects it. I need to peel back the layer inside `AuthMiddleware` to see exactly why it rejects the token.
+The Expectation to initialize the Case File was met. I have noted that while the JWT is structurally valid, the server rejects it. I now need to peel back the layer inside `AuthMiddleware` to see exactly why it rejects the token.
 
 2. Justification
-Per Phase 2 (Investigation), I must design a targeted spike to expose the internal state causing the conflict without making assumptions. I will execute the probe and then update the living System Model.
+I have gathered initial context and built the baseline System Model. I am now creating a targeted probe to expose the internal state causing the token rejection. This will provide verified facts so we can isolate the fault and formulate a fix.
 
 3. Expectation
-The probe will output the exact error thrown by `jwt.verify()`. I will use this observation in the next turn to refine the 'Understanding' and update the 'Conflicts' in the Case File document.
+The probe will execute and output the exact error thrown by `jwt.verify()`. I will use this observation to refine the Causal Model and resolve discrepancies in the Case File.
 
 4. State Dashboard
 Case File: docs/project/debugging/01-auth-bug.md

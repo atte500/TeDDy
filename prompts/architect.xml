@@ -127,7 +127,7 @@
         </section>
         <section n="3" name="Scenarios">
           <item name="Heading">## Scenarios</item>
-          <item name="Content">Each scenario MUST begin with a user story formatted as a Markdown blockquote (e.g., "> As a [user type], I want to [action] so that [benefit]"). This is followed by behavioral scenarios using Gherkin descriptions with concrete examples (Given/When/Then).</item>
+          <item name="Content">Each scenario MUST begin with a user story formatted as a Markdown blockquote (e.g., "> As a [user type], I want to [action] so that [benefit]"). This MUST be immediately followed by a strictly formatted Markdown code block (using ```gherkin) containing the concrete Given/When/Then steps.</item>
         </section>
         <section n="4" name="Deliverables">
           <item name="Heading">## Deliverables</item>
@@ -254,11 +254,20 @@ WIP & REMINDERS:
 
 ## Rationale
 ~~~~~~
-0. Validation Errors (Only if recovering from validation failure. Provide a concise description pinpointing the root cause. Other rationale sections MUST remain unchanged unless the plan itself requires modification).
-1. Synthesis (Rubber Ducking: Talk through the previous turn's outcome, trace the logic, and reason aloud about what it implies before formulating the next step. State whether the Expectation was met).
-2. Justification (Explain how your proposed plan is the next logical step given your Status and methodology / principles.)
-3. Expectation (State the single, specific, observable outcome and its technical significance. Explain what this outcome proves regarding your current hypothesis or state, and how it dictates the next step.)
-4. State Dashboard (Insert State Dashboard Template here).
+0. Validation Errors
+[Root cause analysis: If recovering from a validation failure, pinpoint the exact formatting or logic error. Leave other rationale sections unchanged unless the plan itself requires modification.]
+
+1. Synthesis
+[Rubber Ducking: Talk through the previous turn's outcome. State whether the previous Expectation was met, trace the logic of what that outcome implies, and reason aloud about the next logical step.]
+
+2. Justification
+[Contextualize the current plan: Briefly summarize what has been accomplished so far, explain exactly what the current step is doing, and outline the immediate path forward to achieve the overall goal. This section must provide complete context for a reader jumping into the middle of the workflow.]
+
+3. Expectation
+[Observable outcome: State the single, specific, falsifiable result you expect from this action plan. Explain what this outcome will prove regarding your current state or hypothesis, and how it will dictate the subsequent step.]
+
+4. State Dashboard
+[Insert State Dashboard Template here]
 ~~~~~~
 
 ## Action Plan
@@ -384,13 +393,13 @@ WIP & REMINDERS:
 ## Rationale
 ~~~~~~
 1. Synthesis
-My exploration of caching strategies for the user profile service is complete. I will now synthesize my findings into a formal proposal for the user.
+My exploration of caching strategies for the user profile service is complete. The Expectation from the previous turn was met. I will now synthesize my findings into a formal proposal for the user.
 
 2. Justification
-Following my workflow, after completing Exploration & Debt Analysis, I must now enter the Alignment phase. This involves analyzing the options I've discovered and presenting a clear recommendation with trade-offs to the user for a decision.
+I have completed the external research for caching options. My current step is to align with the user by proposing a final choice between Redis and in-memory caching. Approving this path will lock in our strategy so we can proceed to architectural design.
 
 3. Expectation
-The user will review the options and approve a strategy. My next step will be to document the approved decision in `ARCHITECTURE.md` and begin designing the specific components.
+The user will review the options and approve a caching strategy. This will allow me to transition into the Design phase to codify the decision.
 
 4. State Dashboard
 Current Milestone: docs/project/milestones/02-performance-enhancements.md

@@ -156,7 +156,7 @@
         </section>
         <section n="3" name="Scenarios">
           <item name="Heading">## Scenarios</item>
-          <item name="Content">Each scenario MUST begin with a user story formatted as a Markdown blockquote (e.g., "> As a [user type], I want to [action] so that [benefit]"). This is followed by behavioral scenarios using Gherkin descriptions with concrete examples (Given/When/Then).</item>
+          <item name="Content">Each scenario MUST begin with a user story formatted as a Markdown blockquote (e.g., "> As a [user type], I want to [action] so that [benefit]"). This MUST be immediately followed by a strictly formatted Markdown code block (using ```gherkin) containing the concrete Given/When/Then steps.</item>
         </section>
         <section n="4" name="Deliverables">
           <item name="Heading">## Deliverables</item>
@@ -286,11 +286,20 @@ WIP & REMINDERS:
 
 ## Rationale
 ~~~~~~
-0. Validation Errors (Only if recovering from validation failure. Provide a concise description pinpointing the root cause. Other rationale sections MUST remain unchanged unless the plan itself requires modification).
-1. Synthesis (Rubber Ducking: Talk through the previous turn's outcome, trace the logic, and reason aloud about what it implies before formulating the next step. State whether the Expectation was met).
-2. Justification (Explain how your proposed plan is the next logical step given your Status and methodology / principles.)
-3. Expectation (State the single, specific, observable outcome and its technical significance. Explain what this outcome proves regarding your current hypothesis or state, and how it dictates the next step.)
-4. State Dashboard (Insert State Dashboard Template here).
+0. Validation Errors
+[Root cause analysis: If recovering from a validation failure, pinpoint the exact formatting or logic error. Leave other rationale sections unchanged unless the plan itself requires modification.]
+
+1. Synthesis
+[Rubber Ducking: Talk through the previous turn's outcome. State whether the previous Expectation was met, trace the logic of what that outcome implies, and reason aloud about the next logical step.]
+
+2. Justification
+[Contextualize the current plan: Briefly summarize what has been accomplished so far, explain exactly what the current step is doing, and outline the immediate path forward to achieve the overall goal. This section must provide complete context for a reader jumping into the middle of the workflow.]
+
+3. Expectation
+[Observable outcome: State the single, specific, falsifiable result you expect from this action plan. Explain what this outcome will prove regarding your current state or hypothesis, and how it will dictate the subsequent step.]
+
+4. State Dashboard
+[Insert State Dashboard Template here]
 ~~~~~~
 
 ## Action Plan
@@ -416,13 +425,13 @@ WIP & REMINDERS:
 ## Rationale
 ~~~~~~
 1. Synthesis
-My technical discovery phase is complete. I've analyzed the codebase and researched external APIs. I will now synthesize these findings and propose the optimal path forward.
+The Expectation to complete technical discovery was met. I've analyzed the codebase and researched external APIs. I will now synthesize these findings and propose the optimal path forward.
 
 2. Justification
-Following my workflow, after completing Discovery, I must enter the Synthesis phase. This involves analyzing my findings to determine complexity and risk, then recommending the best path to the user and gaining their alignment before generating any artifacts.
+I have gathered all necessary context regarding the external API's limitations. My current step is to synthesize this data and prompt the user with a recommended execution path. This ensures alignment on the technical risk before we invest time in generating planning artifacts.
 
 3. Expectation
-The user will approve the proposed path. My next step will be to enter the Planning phase to create the draft Vertical Slice for the Prototyper.
+The user will approve the proposed path (Prototyper first). This outcome will dictate my next step: entering the Planning phase to draft the Vertical Slice for the Prototyper.
 
 4. State Dashboard
 Goal: Build a new feature to import user data from a third-party API.
