@@ -74,10 +74,15 @@ class MarkdownPlanParser(IPlanParser):
             Document,
         )
 
-        if not plan_content.strip():
+        # R-10-12: Trim trailing whitespace to prevent mistletoe from
+        # interpreting trailing indentation as an unexpected code block.
+        # We keep leading whitespace for potential Markdown significance (though rare at top-level).
+        clean_content = plan_content.rstrip()
+
+        if not clean_content:
             raise InvalidPlanError("Plan content cannot be empty.")
 
-        processed_content = self._preprocessor.process(plan_content)
+        processed_content = self._preprocessor.process(clean_content)
         doc = Document(processed_content)
 
         if os.environ.get("TEDDY_DEBUG"):
