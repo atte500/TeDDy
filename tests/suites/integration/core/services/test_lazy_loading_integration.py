@@ -1,6 +1,7 @@
 import subprocess
 import sys
 
+import pytest
 from typer.testing import CliRunner
 
 runner = CliRunner()
@@ -50,4 +51,52 @@ def test_heavy_libraries_are_not_loaded_on_startup():
     )
     assert outputs[3] == "False", (
         f"mistletoe should be lazy-loaded, but was found in sys.modules: {outputs[3]}"
+    )
+
+
+def test_web_scraper_github_url_does_not_import_trafilatura():
+    """
+    Regression Test: Ensures that scraping a GitHub URL does NOT trigger
+    the import of trafilatura (and its native lxml dependency).
+    """
+    # We use a subprocess to ensure a clean sys.modules state
+    code = """
+import sys
+import responses
+from teddy_executor.adapters.outbound.web_scraper_adapter import WebScraperAdapter
+
+@responses.activate
+def run():
+    scraper = WebScraperAdapter()
+    url = "https://github.com/octocat/Spoon-Knife/issues/1"
+    responses.add(responses.GET, url, body="<html></html>", status=200)
+
+    # Pre-check
+    if "trafilatura" in sys.modules:
+        sys.exit(2)
+
+    scraper.get_content(url)
+
+    if "trafilatura" in sys.modules:
+        sys.exit(1)
+    sys.exit(0)
+
+if __name__ == "__main__":
+    run()
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        capture_output=True,
+        text=True,
+        env={"PYTHONPATH": "src"},
+    )
+
+    exit_code_already_imported = 2
+    exit_code_success = 0
+
+    if result.returncode == exit_code_already_imported:
+        pytest.fail("trafilatura was already in sys.modules before the test started.")
+
+    assert result.returncode == exit_code_success, (
+        "trafilatura was imported prematurely for a GitHub URL!"
     )

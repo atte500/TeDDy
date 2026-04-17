@@ -162,8 +162,6 @@ class WebScraperAdapter(WebScraper):
             response.raise_for_status()
             return response.text
 
-        trafilatura = self._get_trafilatura()
-
         html_content = None
         try:
             response = requests.get(url, headers=headers, timeout=30)
@@ -175,6 +173,7 @@ class WebScraperAdapter(WebScraper):
                 and e.response.status_code == HTTPStatus.FORBIDDEN
             ):
                 # Fallback for 403 Forbidden errors
+                trafilatura = self._get_trafilatura()
                 html_content = trafilatura.fetch_url(url)
             else:
                 raise
@@ -191,6 +190,7 @@ class WebScraperAdapter(WebScraper):
             if github_content:
                 return github_content
 
+        trafilatura = self._get_trafilatura()
         markdown_content = trafilatura.extract(
             html_content,
             output_format="markdown",
