@@ -1,6 +1,6 @@
 # Bug: Windows CI Worker Crash in GitHub Scraping Test
 
-- **Status:** Unresolved
+- **Status:** Resolved
 - **Milestone:** [10-interactive-session-and-config](../milestones/10-interactive-session-and-config.md)
 - **Vertical Slice:** N/A
 - **Specs:** N/A
@@ -42,3 +42,4 @@ Even though the crashing test (`test_github_issue_scraping_extracts_description_
 
 ### Prevention
 - Added a formal regression test `test_web_scraper_github_url_does_not_import_trafilatura` in `tests/suites/integration/core/services/test_lazy_loading_integration.py` which uses a subprocess to verify that `trafilatura` is NOT present in `sys.modules` after a GitHub scrape.
+- Performed a systemic audit to ensure no other "heavy" libraries are imported at the module level in `src/`.
