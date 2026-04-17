@@ -12,11 +12,17 @@ class MarkdownPlanBuilder:
         """Initializes the builder with a plan title."""
         self._title = title
         self._agent: Optional[str] = "Developer"
+        self._rationale: Optional[str] = None
         self._actions: List[Dict[str, Any]] = []
 
     def with_agent(self, agent: Optional[str]) -> "MarkdownPlanBuilder":
         """Sets the agent name for the plan header. Use None for no agent."""
         self._agent = agent
+        return self
+
+    def with_rationale(self, rationale: str) -> "MarkdownPlanBuilder":
+        """Sets a custom rationale block."""
+        self._rationale = rationale
         return self
 
     def _path_link(self, path: str) -> str:
@@ -235,30 +241,31 @@ class MarkdownPlanBuilder:
             {agent_line}"""
         )
 
-        rationale = dedent(
-            """\
-            ## Rationale
-            ````text
-            1. Synthesis
-            This is a test plan.
+        if self._rationale:
+            rationale_content = self._rationale
+        else:
+            rationale_content = dedent(
+                """\
+                1. Synthesis
+                This is a test plan.
 
-            2. Justification
-            This plan is for testing purposes.
+                2. Justification
+                This plan is for testing purposes.
 
-            3. Expected Outcome
-            The test should pass.
+                3. Expected Outcome
+                The test should pass.
 
-            4. State Dashboard
-            **Vertical Slice:** `docs/slices/test.md`
-            **Development Workflow:**
-            - [ ] Phase 1
-            **Active Phase Details:**
-            *   **Test**
-            **Architectural Notes:**
-            - None
-            ````
-            """
-        )
+                4. State Dashboard
+                **Vertical Slice:** `docs/slices/test.md`
+                **Development Workflow:**
+                - [ ] Phase 1
+                **Active Phase Details:**
+                *   **Test**
+                **Architectural Notes:**
+                - None"""
+            )
+
+        rationale = f"## Rationale\n````text\n{rationale_content.strip()}\n````"
 
         action_plan_parts = ["## Action Plan"]
         for action in self._actions:

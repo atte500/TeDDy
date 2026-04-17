@@ -56,3 +56,15 @@ class TuiDriver:
         await pilot.press("enter")
         # Allow dismissal/callback processing
         await pilot.pause()
+
+    def get_active_view_id(self, pilot) -> str:
+        """Returns the current ID from the ContentSwitcher."""
+        from textual.widgets import ContentSwitcher
+
+        return pilot.app.query_one(ContentSwitcher).current
+
+    def get_markdown_content(self, pilot) -> str:
+        """Returns the text content of the Markdown widget."""
+        from textual.widgets import Markdown
+
+        return str(pilot.app.query_one(Markdown).document)
