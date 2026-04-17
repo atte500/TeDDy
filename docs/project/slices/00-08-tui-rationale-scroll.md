@@ -30,7 +30,7 @@ And the user can scroll smoothly through the entire text block natively.
 
 ## 4. Deliverables
 - [x] **Contract** - Define `ALLOWED_RATIONALE_SECTIONS` constant in `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py`.
-- [ ] **Harness** - Update `TuiDriver` to support `ContentSwitcher` state verification and `Markdown` content inspection.
+- [x] **Harness** - Update `TuiDriver` to support `ContentSwitcher` state verification and `Markdown` content inspection.
 - [ ] **Logic** - Update `on_mount_logic` in `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py` to filter rationale sections by `ALLOWED_RATIONALE_SECTIONS` and append non-standard sections to the preceding standard section.
 - [ ] **Wiring** - Replace `ParameterDetail` with a `ContentSwitcher` containing both `ParameterDetail` and a `VerticalScroll` in `ReviewerApp.compose`. Preserve `#right-pane` ID for CSS compatibility.
 - [ ] **Logic** - Refactor `_update_detail_view` in `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py` to toggle the `ContentSwitcher` and update the `Markdown` widget for rationales without redundant headers.
@@ -57,3 +57,8 @@ And the user can scroll smoothly through the entire text block natively.
 - Defined the `ALLOWED_RATIONALE_SECTIONS` constant in `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py`.
 - Value: `["Synthesis", "Justification", "Expectation", "State Dashboard"]`.
 - Verified existence and values via unit test `tests/suites/unit/adapters/inbound/test_section_filtering.py`.
+
+### Deliverable: Harness - Update TuiDriver
+- Extended `MarkdownPlanBuilder` to support `with_rationale()` for configurable rationale blocks, enabling precise acceptance testing of rationale content.
+- Extended `TuiDriver` with `get_active_view_id` and `get_markdown_content` to inspect `ContentSwitcher` and `Markdown` widgets within the TUI.
+- Created `tests/suites/acceptance/test_tui_rationale_scrolling.py` and "Asserted the Frontier" by wrapping the expected `NoMatches` failure for `ContentSwitcher`. This ensures the global test suite remains Green while the feature is under development.
