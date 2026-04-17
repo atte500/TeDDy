@@ -292,3 +292,61 @@ async def preview_prompt(app: ReviewerApp, action: ActionData, node: Any) -> Non
             action.modified = True
             action.user_response = final
             app._refresh_node(node)
+
+
+async def view_details_handler(app: "ReviewerApp") -> None:
+    """Implementation for viewing action logs."""
+    from textual.widgets import Tree
+    from teddy_executor.core.domain.models.plan import ActionData
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+        format_action_log,
+    )
+
+    tree = app.query_one(Tree)
+    node = tree.cursor_node
+    if not node or not node.data:
+        return
+
+    action = node.data
+    if not isinstance(action, ActionData) or not action.executed:
+        return
+
+    if action.action_log:
+        log_content = format_action_log(action.action_log)
+        temp_file = app._system_env.create_temp_file(suffix=".md")
+        app._log_preview_files.append(temp_file)
+        await launch_editor(
+            app,
+            log_content,
+            suffix=".md",
+            persistent_path=temp_file,
+            skip_confirm=True,
+        )
+
+
+async def view_plan_handler(app: "ReviewerApp") -> None:
+    """Implementation for viewing the full plan."""
+    content: Optional[str] = None
+    if app.plan.plan_path and app._file_system:
+        try:
+            content = app._file_system.read_file(app.plan.plan_path)
+        except Exception:  # nosec B110
+            pass
+    if not content:
+        content = app.plan.raw_content
+    if not content:
+        content = f"# Plan: {app.plan.title}\n\n{app.plan.rationale}\n\n"
+    if content:
+        await launch_editor(app, content, suffix=".md")
+
+
+async def add_message_handler(app: "ReviewerApp") -> None:
+    """Implementation for adding user instruction message."""
+    current_message = app._user_message_cache
+    if current_message is None:
+        current_message = app.plan.metadata.get("user_request") or ""
+        if app.INSTRUCTION_MARKER not in current_message:
+            current_message += app.INSTRUCTION_MARKER
+    new_message = await launch_editor(app, current_message, suffix=".md")
+    if new_message is not None and new_message != current_message:
+        app._user_message_cache = new_message

@@ -1,5 +1,4 @@
 import pytest
-from textual.css.query import NoMatches
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
 from tests.harness.drivers.tui_driver import TuiDriver
 
@@ -28,11 +27,15 @@ async def test_tui_swaps_to_markdown_view_for_rationale(env):
     )
 
     # When we navigate to the Rationale section in the TUI
-    # (Assuming 'down' navigates from root to Rationale root/section)
     async with driver.app.run_test() as pilot:
-        await pilot.press("down", "enter")  # Move to Rationale and expand/select
+        # 0. Focus the tree
+        driver.app.query_one("#left-pane").focus()
         await pilot.pause()
 
-        # Assert the Frontier: Currently fails because ContentSwitcher is missing
-        with pytest.raises(NoMatches, match="ContentSwitcher"):
-            driver.get_active_view_id(pilot)
+        # 1. Move from Rationale root (expanded by default) to first child (Synthesis)
+        await pilot.press("down")
+        await pilot.pause()
+
+        # Assert the Frontier: Switcher should be on rationale-view
+        assert driver.get_active_view_id(pilot) == "rationale-view"
+        assert "The logic is sound." in driver.get_markdown_content(pilot)

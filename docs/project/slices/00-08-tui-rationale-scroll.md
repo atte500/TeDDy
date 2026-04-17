@@ -31,11 +31,11 @@ And the user can scroll smoothly through the entire text block natively.
 ## 4. Deliverables
 - [x] **Contract** - Define `ALLOWED_RATIONALE_SECTIONS` constant in `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py`.
 - [x] **Harness** - Update `TuiDriver` to support `ContentSwitcher` state verification and `Markdown` content inspection.
-- [ ] **Logic** - Update `on_mount_logic` in `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py` to filter rationale sections by `ALLOWED_RATIONALE_SECTIONS` and append non-standard sections to the preceding standard section.
-- [ ] **Wiring** - Replace `ParameterDetail` with a `ContentSwitcher` containing both `ParameterDetail` and a `VerticalScroll` in `ReviewerApp.compose`. Preserve `#right-pane` ID for CSS compatibility.
-- [ ] **Logic** - Refactor `_update_detail_view` in `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py` to toggle the `ContentSwitcher` and update the `Markdown` widget for rationales without redundant headers.
-- [ ] **Logic** - Update `format_node_label` and `DetailItem` to correctly stringify Enum values (e.g., `ActionType.CREATE` -> `CREATE`).
-- [ ] **Cleanup** - Harmonize `VerticalScroll` background with `ListView` using `$surface` in `TUI_CSS`.
+- [x] **Logic** - Update `on_mount_logic` in `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py` to filter rationale sections by `ALLOWED_RATIONALE_SECTIONS` and append non-standard sections to the preceding standard section.
+- [x] **Wiring** - Replace `ParameterDetail` with a `ContentSwitcher` containing both `ParameterDetail` and a `VerticalScroll` in `ReviewerApp.compose`. Preserve `#right-pane` ID for CSS compatibility.
+- [x] **Logic** - Refactor `_update_detail_view` in `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py` to toggle the `ContentSwitcher` and update the `Markdown` widget for rationales without redundant headers.
+- [x] **Logic** - Update `format_node_label` and `DetailItem` to correctly stringify Enum values (e.g., `ActionType.CREATE` -> `CREATE`).
+- [x] **Cleanup** - Harmonize `VerticalScroll` background with `ListView` using `$surface` in `TUI_CSS`.
 
 ## 5. Delta Analysis
 - **Current State:** The right panel is a single `ListView` (`ParameterDetail`). Large rationale blocks are split into `ListItem`s, which prevents native scrolling of the entire block and limits the display to plain text.
@@ -62,3 +62,9 @@ And the user can scroll smoothly through the entire text block natively.
 - Extended `MarkdownPlanBuilder` to support `with_rationale()` for configurable rationale blocks, enabling precise acceptance testing of rationale content.
 - Extended `TuiDriver` with `get_active_view_id` and `get_markdown_content` to inspect `ContentSwitcher` and `Markdown` widgets within the TUI.
 - Created `tests/suites/acceptance/test_tui_rationale_scrolling.py` and "Asserted the Frontier" by wrapping the expected `NoMatches` failure for `ContentSwitcher`. This ensures the global test suite remains Green while the feature is under development.
+
+### Deliverable: Logic - Update on_mount_logic
+- Refactored the rationale splitting logic in `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py` to use a stateful iteration.
+- Sections are now only created as tree nodes if their title exists in `ALLOWED_RATIONALE_SECTIONS`.
+- Any content or sections appearing before the first standard section, or any non-standard sections following a standard one, are merged into the `content` of the `current_node`.
+- Verified via unit test `tests/suites/unit/adapters/inbound/test_rationale_filtering.py`.

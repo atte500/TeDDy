@@ -31,9 +31,15 @@ async def test_reviewer_app_contains_parameter_detail_listview(container):
     async with app.run_test():
         # Check for the new widget
         try:
-            param_detail = app.query_one("#right-pane")
+            # Right pane is now a ContentSwitcher
+            from textual.widgets import ContentSwitcher
+
+            switcher = app.query_one("#right-pane")
+            assert isinstance(switcher, ContentSwitcher)
+
+            param_detail = app.query_one("#params-view")
             assert isinstance(param_detail, ParameterDetail), (
-                "Right pane should be a ParameterDetail widget"
+                "Right pane should contain a ParameterDetail widget"
             )
             assert isinstance(param_detail, ListView), (
                 "ParameterDetail should be a ListView"

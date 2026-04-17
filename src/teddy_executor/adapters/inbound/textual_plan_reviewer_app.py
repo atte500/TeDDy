@@ -6,10 +6,11 @@ from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 from textual import work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Horizontal
-from textual.widgets import Footer, Header, ListView, Tree
+from textual.containers import Horizontal, VerticalScroll
+from textual.widgets import ContentSwitcher, Footer, Header, ListView, Markdown, Tree
 
 from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
+    add_message_logic,
     check_action_logic,
     edit_action_logic,
     execute_step_logic,
@@ -19,9 +20,8 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
     revert_logic,
     toggle_all_logic,
     toggle_selection_logic,
-)
-from teddy_executor.adapters.inbound.textual_plan_reviewer_previews import (
-    launch_editor,
+    view_details_logic,
+    view_plan_logic,
 )
 from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
     ActionTree,
@@ -96,7 +96,12 @@ class ReviewerApp(App):
         yield Header(show_clock=True)
         with Horizontal(id="main-container"):
             yield ActionTree("Action Plan", id="left-pane")
-            yield ParameterDetail(id="right-pane")
+            with ContentSwitcher(id="right-pane", initial="params-view"):
+                yield ParameterDetail(id="params-view")
+                rationale_view = VerticalScroll(id="rationale-view")
+                rationale_view.can_focus = True
+                with rationale_view:
+                    yield Markdown(id="rationale-content")
         yield Footer()
 
     def on_mount(self) -> None:
@@ -123,7 +128,8 @@ class ReviewerApp(App):
     def on_descendant_focus(self, event: Any) -> None:
         """Auto-focus first param when right pane gets focus via Tab."""
         control = getattr(event, "control", None)
-        if control and getattr(control, "id", None) == "right-pane":
+        # Check for the ParameterDetail widget or its container
+        if control and getattr(control, "id", None) in ("right-pane", "params-view"):
             list_view = self.query_one(ParameterDetail)
             if list_view.children:
                 list_view.index = 0
@@ -227,59 +233,17 @@ class ReviewerApp(App):
     @work
     async def action_view_details(self) -> None:
         """View full execution logs or complex action details in an editor."""
-        tree = self.query_one(Tree)
-        node = tree.cursor_node
-        if not node or not node.data:
-            return
-
-        from teddy_executor.core.domain.models.plan import ActionData
-        from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
-            format_action_log,
-        )
-
-        action = node.data
-        if not isinstance(action, ActionData) or not action.executed:
-            return
-
-        if action.action_log:
-            log_content = format_action_log(action.action_log)
-            temp_file = self._system_env.create_temp_file(suffix=".md")
-            self._log_preview_files.append(temp_file)
-            await launch_editor(
-                self,
-                log_content,
-                suffix=".md",
-                persistent_path=temp_file,
-                skip_confirm=True,
-            )
+        await view_details_logic(self)
 
     @work
     async def action_view_plan(self) -> None:
         """Open the full plan.md in an external editor."""
-        content: Optional[str] = None
-        if self.plan.plan_path and self._file_system:
-            try:
-                content = self._file_system.read_file(self.plan.plan_path)
-            except Exception:  # nosec B110
-                pass
-        if not content:
-            content = self.plan.raw_content
-        if not content:
-            content = f"# Plan: {self.plan.title}\n\n{self.plan.rationale}\n\n"
-        if content:
-            await launch_editor(self, content, suffix=".md")
+        await view_plan_logic(self)
 
     @work
     async def action_add_message(self) -> None:
         """Open the external editor to add/edit the user instruction message."""
-        current_message = self._user_message_cache
-        if current_message is None:
-            current_message = self.plan.metadata.get("user_request") or ""
-            if self.INSTRUCTION_MARKER not in current_message:
-                current_message += self.INSTRUCTION_MARKER
-        new_message = await launch_editor(self, current_message, suffix=".md")
-        if new_message is not None and new_message != current_message:
-            self._user_message_cache = new_message
+        await add_message_logic(self)
 
     def action_focus_left(self) -> None:
         """Switch focus to the Action Tree."""

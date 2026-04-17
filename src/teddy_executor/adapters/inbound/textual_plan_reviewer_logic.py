@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
     extract_status_emoji,
@@ -9,6 +9,9 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
 from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
     format_node_label,
     resolve_action_parameters,
+)
+from teddy_executor.adapters.inbound.textual_plan_reviewer_previews import (
+    launch_editor,
 )
 
 if TYPE_CHECKING:
@@ -37,24 +40,30 @@ def on_tree_node_highlighted(app: "ReviewerApp", event: Any) -> None:
 
 
 def _update_detail_view(app: ReviewerApp, data: Any):
-    """Populate the ParameterDetail view with action parameters, log, or rationale."""
+    """Populate the ParameterDetail view or Rationale view."""
     from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
         ParameterDetail,
         DetailItem,
     )
-    from textual.widgets import Label, ListItem
+    from textual.widgets import Label, ListItem, ContentSwitcher, Markdown
 
+    switcher = app.query_one(ContentSwitcher)
     pane = app.query_one(ParameterDetail)
+
+    if isinstance(data, dict) and data.get("type") == "RATIONALE_SECTION":
+        switcher.current = "rationale-view"
+        app.query_one("#rationale-content", Markdown).update(data["content"])
+        return
+
+    # Default to parameter view for everything else
+    switcher.current = "params-view"
     pane.clear()
 
     if not data:
         pane.mount(ListItem(Label("Select an item to view details")))
         return
 
-    if isinstance(data, dict) and data.get("type") == "RATIONALE_SECTION":
-        # Don't repeat the section key for rationale sections
-        pane.append(DetailItem("", data["content"]))
-    elif data == "RATIONALE_ROOT":
+    if data == "RATIONALE_ROOT":
         # Prevent race condition: don't update metadata if user has already moved cursor
         from textual.widgets import Tree
 
@@ -87,7 +96,9 @@ def _update_detail_view(app: ReviewerApp, data: Any):
 
         if isinstance(data, ActionData):
             for key, val in resolve_action_parameters(data).items():
-                pane.append(DetailItem(key, val))
+                # Stringify Enum values for clean display
+                val_str = val.value if hasattr(val, "value") else str(val)
+                pane.append(DetailItem(key, val_str))
         else:
             pane.mount(ListItem(Label("Select an item to view details")))
 
@@ -131,6 +142,7 @@ def on_mount_logic(app: Any) -> None:
 
     # Split on '### ' OR '1. ' (numeric lists at start of line)
     sections = re.split(r"\n(?=### |\d+\.\s+)", "\n" + app.plan.rationale)
+    current_node = None
     for section in sections:
         section = section.strip()
         if not section:
@@ -138,11 +150,15 @@ def on_mount_logic(app: Any) -> None:
         lines = section.split("\n")
         # Strip markers (### or numeric prefix) from title, allowing for multiples
         title = re.sub(r"^(?:###\s*|\d+\.\s*)+", "", lines[0]).strip()
-        content = "\n".join(lines[1:]).strip()
-        rat_root.add_leaf(
-            title,
-            data={"type": "RATIONALE_SECTION", "title": title, "content": content},
-        )
+        if title in ALLOWED_RATIONALE_SECTIONS:
+            content = "\n".join(lines[1:]).strip()
+            current_node = rat_root.add_leaf(
+                title,
+                data={"type": "RATIONALE_SECTION", "title": title, "content": content},
+            )
+        elif current_node:
+            # Merge non-standard section into preceding standard node
+            current_node.data["content"] += "\n\n" + section
 
     # 2. Action Plan Section
     act_root = tree.root.add(
@@ -221,6 +237,33 @@ async def execute_step_logic(app: ReviewerApp, node: Any) -> None:
     )
 
     await orchestrate_execution(app, node, _update_detail_view)
+
+
+async def view_details_logic(app: "ReviewerApp") -> None:
+    """View full execution logs for the currently highlighted action."""
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_previews import (
+        view_details_handler,
+    )
+
+    await view_details_handler(app)
+
+
+async def view_plan_logic(app: "ReviewerApp") -> None:
+    """Open the full plan.md in an external editor."""
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_previews import (
+        view_plan_handler,
+    )
+
+    await view_plan_handler(app)
+
+
+async def add_message_logic(app: "ReviewerApp") -> None:
+    """Open the external editor to add/edit the user instruction message."""
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_previews import (
+        add_message_handler,
+    )
+
+    await add_message_handler(app)
 
 
 def toggle_all_logic(app: "ReviewerApp", plan: Any) -> None:

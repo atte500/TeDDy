@@ -65,6 +65,13 @@ class TuiDriver:
 
     def get_markdown_content(self, pilot) -> str:
         """Returns the text content of the Markdown widget."""
+        # Use a more robust check for Markdown content in Textual
         from textual.widgets import Markdown
 
-        return str(pilot.app.query_one(Markdown).document)
+        widget = pilot.app.query_one(Markdown)
+        # Try 'source' first as seen in dir(), then fallbacks
+        for attr in ["source", "markup", "_markdown"]:
+            val = getattr(widget, attr, None)
+            if val:
+                return str(val)
+        return ""

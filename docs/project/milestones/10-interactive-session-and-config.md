@@ -102,6 +102,10 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 - [ ] **Dependency:** Update `aiohttp` to 3.13.4+, `litellm` to 1.83.0+, and `pygments` to 2.20.0+ to resolve multiple vulnerabilities found by `pip-audit`.
 
 ### New Technical Debt (Discovered during TUI Refinement)
+- [ ] **File Length (TUI Adapters):** Refactor TUI adapter components to satisfy the 300-line limit:
+    - `src/teddy_executor/adapters/inbound/textual_plan_reviewer_app.py`
+    - `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py`
+    - `src/teddy_executor/adapters/inbound/textual_plan_reviewer_helpers.py`
 - [ ] **ActionLog Parameters:** Audit other services (beyond `ActionExecutor`) for potential parameter loss when creating `ActionLog` objects from `ActionData`.
 - [ ] **ShellAdapter Maintenance:** Refactor `ShellAdapter` (>300 lines, C901, PLR0915) after terminal reset sanitization additions. Also fix `Mypy` bytes vs str errors in `_run_subprocess`.
 - [ ] **TUI Suspension:** Investigate `app.suspend()` instability in certain terminal environments during external tool execution.

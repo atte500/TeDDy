@@ -42,12 +42,17 @@ async def test_reviewer_app_has_dual_pane_layout():
         except Exception:
             pytest.fail("ReviewerApp missing #left-pane (ActionTree)")
 
-        # Check for the right pane (ParameterDetail)
+        # Check for the right pane (ContentSwitcher containing ParameterDetail)
         try:
             right_pane = app.query_one("#right-pane")
-            assert isinstance(right_pane, ParameterDetail)
+            from textual.widgets import ContentSwitcher
+
+            assert isinstance(right_pane, ContentSwitcher)
+            assert isinstance(app.query_one("#params-view"), ParameterDetail)
         except Exception:
-            pytest.fail("ReviewerApp missing #right-pane (ParameterDetail)")
+            pytest.fail(
+                "ReviewerApp missing #right-pane (ContentSwitcher) or #params-view"
+            )
 
             # Simulate highlighting the first action
             # Down(1): Rationale Root, Down(2): Action Plan Root, Down(3): First Action

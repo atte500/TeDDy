@@ -149,6 +149,23 @@ ListView {
     height: 1fr;
     border: none;
 }
+
+ListView:focus {
+    background: $surface-lighten-1;
+}
+
+VerticalScroll {
+    background: $surface;
+}
+
+VerticalScroll:focus {
+    background: $surface-lighten-1;
+}
+
+#rationale-content {
+    padding: 1 2;
+    background: transparent;
+}
 ListItem {
     height: auto;
     padding: 0 1;

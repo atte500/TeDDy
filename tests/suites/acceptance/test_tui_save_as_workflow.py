@@ -40,6 +40,7 @@ async def test_tui_create_action_save_as_workflow(env, monkeypatch):
 
     async with app.run_test() as pilot:
         # 1. Highlight the CREATE action
+        # Root (hidden) -> Rationale (down) -> Action Plan (down) -> Action 1 (down)
         await pilot.press("down", "down", "down")
 
         # 2. Edit path via right pane

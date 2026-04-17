@@ -113,15 +113,18 @@ def format_node_label(action: "ActionData") -> str:
     from teddy_executor.core.domain.models.plan import ExecutionStatus
 
     summary = get_action_summary(action)
+    # Ensure Enum types are stringified (e.g. ActionType.CREATE -> "CREATE")
+    type_str = action.type.value if hasattr(action.type, "value") else str(action.type)
+
     if action.state == ExecutionStatus.RUNNING:
-        return f"[blue][RUNNING] {action.type}: {summary}[/]"
+        return f"[blue][RUNNING] {type_str}: {summary}[/]"
 
     if action.executed:
         color = "green" if action.state.value == "SUCCESS" else "red"
-        return f"[{color}][{action.state.value}] {action.type}: {summary}[/]"
+        return f"[{color}][{action.state.value}] {type_str}: {summary}[/]"
 
     prefix = "[✓]" if action.selected else "[ ]"
-    label = f"{prefix} {action.type}: {summary}"
+    label = f"{prefix} {type_str}: {summary}"
     if action.modified:
         label += " *modified"
     return label

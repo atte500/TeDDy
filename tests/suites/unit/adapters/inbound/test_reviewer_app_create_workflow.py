@@ -24,6 +24,7 @@ async def test_reviewer_app_create_workflow(env, monkeypatch):
         action_dispatcher=MagicMock(),
     )
     async with app.run_test() as pilot:
+        # Select first action
         await pilot.press("down", "down", "down")
         # Edit path via right pane
         await pilot.press("tab")
