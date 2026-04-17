@@ -59,23 +59,30 @@ def test_web_scraper_github_url_does_not_import_trafilatura():
     Regression Test: Ensures that scraping a GitHub URL does NOT trigger
     the import of trafilatura (and its native lxml dependency).
     """
-    # We use a subprocess to ensure a clean sys.modules state
+    # We use a subprocess to ensure a clean sys.modules state.
+    # We use unittest.mock instead of 'responses' to avoid triggering
+    # Windows network stack initialization (Winsock) which causes
+    # WinError 10106 / _overlapped import crashes on some Windows CI runners.
     code = """
 import sys
-import responses
+from unittest.mock import patch, MagicMock
 from teddy_executor.adapters.outbound.web_scraper_adapter import WebScraperAdapter
 
-@responses.activate
 def run():
     scraper = WebScraperAdapter()
     url = "https://github.com/octocat/Spoon-Knife/issues/1"
-    responses.add(responses.GET, url, body="<html></html>", status=200)
+
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.text = "<html><body>GitHub Content</body></html>"
+    mock_response.raise_for_status = MagicMock()
 
     # Pre-check
     if "trafilatura" in sys.modules:
         sys.exit(2)
 
-    scraper.get_content(url)
+    with patch("requests.get", return_value=mock_response):
+        scraper.get_content(url)
 
     if "trafilatura" in sys.modules:
         sys.exit(1)
@@ -91,12 +98,16 @@ if __name__ == "__main__":
         env={"PYTHONPATH": "src"},
     )
 
+    # Help diagnose crashes (like WinError 10106) if they still occur
     exit_code_already_imported = 2
-    exit_code_success = 0
+    if result.returncode not in [0, 1, exit_code_already_imported]:
+        pytest.fail(
+            f"Subprocess crashed with exit code {result.returncode}\nStderr: {result.stderr}"
+        )
 
     if result.returncode == exit_code_already_imported:
         pytest.fail("trafilatura was already in sys.modules before the test started.")
 
-    assert result.returncode == exit_code_success, (
-        "trafilatura was imported prematurely for a GitHub URL!"
+    assert result.returncode == 0, (
+        f"trafilatura was imported prematurely for a GitHub URL!\nStderr: {result.stderr}"
     )
