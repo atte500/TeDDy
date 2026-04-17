@@ -195,7 +195,9 @@
 {% if report.user_request %}
 
 ## User Request
+{{ report.user_request | fence }}text
 {{ report.user_request }}
+{{ report.user_request | fence }}
 {% endif %}
 
 {# Extract logs that should display resource content #}

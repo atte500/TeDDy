@@ -30,8 +30,9 @@ def test_resume_with_message_captures_user_request(tmp_path: Path, monkeypatch):
     # -y is auto-approve
     cli.run_cli_command(["resume", session_name, "-m", message, "-y"])
 
-    # Then the execution report MUST include the user request
+    # Then the execution report MUST include the user request (wrapped in fences)
     report_file = turn_dir / "report.md"
     assert report_file.exists()
     report_content = report_file.read_text()
-    assert f"## User Request\n{message}" in report_content
+    expected_fragment = f"## User Request\n```text\n{message}\n```"
+    assert expected_fragment in report_content
