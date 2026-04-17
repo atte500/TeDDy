@@ -20,15 +20,16 @@ Changes in `src/teddy_executor/adapters/outbound/web_scraper_adapter.py` and the
 
 ## Diagnostic Analysis
 ### Causal Model
-The regression test `test_web_scraper_github_url_does_not_import_trafilatura` used a subprocess to verify that `trafilatura` was not imported during a GitHub scrape.
-Inside the subprocess, it used the `responses` library to mock network requests.
-On Windows CI runners, importing `responses` or invoking `requests` can trigger the initialization of the Windows network stack (Winsock), which involves importing the `_overlapped` C extension.
-In certain CI environments, this initialization fails with `OSError: [WinError 10106]`.
-The subprocess crashed, and the test incorrectly interpreted the crash as a logic failure.
+The regression test `test_web_scraper_github_url_does_not_import_trafilatura` uses a subprocess to verify that `trafilatura` is not imported during a GitHub scrape.
+Investigation of CI failures shows that `import unittest.mock` (used in the fix) transitively imports `asyncio` (for `AsyncMock` support). On Windows, `asyncio` imports `asyncio.windows_events`, which imports the `_overlapped` C extension.
+In restricted Windows CI environments, this chain triggers `OSError: [WinError 10106]`.
+
+Therefore, any library that imports `asyncio` (including `unittest.mock` and potentially `responses`) can cause this crash in the subprocess.
 
 ### Discrepancies
-- [x] Subprocess returns 1, but logs show an OSError rather than a logic failure. (resolved: Verified that exit code 1 was caused by the crash during `_overlapped` import).
-- [x] Is `responses` necessary for the lazy-loading test? (resolved: No, `unittest.mock.patch` can be used to avoid network stack initialization).
+- [x] Subprocess returns 1, but logs show an OSError rather than a logic failure. (resolved: Verified that exit code 1 is caused by the crash during `_overlapped` import).
+- [x] Is `responses` necessary for the lazy-loading test? (resolved: No, but its replacement `unittest.mock` also triggers the same issue).
+- [ ] Can we test lazy-loading without `asyncio`? (resolved: Yes, by using manual monkeypatching instead of high-level mocking libraries).
 
 ## Solution
 ### Implemented Fixes

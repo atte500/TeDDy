@@ -60,29 +60,36 @@ def test_web_scraper_github_url_does_not_import_trafilatura():
     the import of trafilatura (and its native lxml dependency).
     """
     # We use a subprocess to ensure a clean sys.modules state.
-    # We use unittest.mock instead of 'responses' to avoid triggering
-    # Windows network stack initialization (Winsock) which causes
-    # WinError 10106 / _overlapped import crashes on some Windows CI runners.
+    # We avoid 'unittest.mock' and 'responses' because they transitively
+    # import 'asyncio', which triggers Windows network stack initialization
+    # (Winsock) and causes WinError 10106 / _overlapped import crashes
+    # on some Windows CI runners. Manual monkeypatching is used instead.
     code = """
 import sys
-from unittest.mock import patch, MagicMock
+import requests
 from teddy_executor.adapters.outbound.web_scraper_adapter import WebScraperAdapter
+
+class MockResponse:
+    def __init__(self):
+        self.status_code = 200
+        self.text = "<html><body>GitHub Content</body></html>"
+    def raise_for_status(self):
+        pass
 
 def run():
     scraper = WebScraperAdapter()
     url = "https://github.com/octocat/Spoon-Knife/issues/1"
 
-    mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.text = "<html><body>GitHub Content</body></html>"
-    mock_response.raise_for_status = MagicMock()
-
     # Pre-check
     if "trafilatura" in sys.modules:
         sys.exit(2)
 
-    with patch("requests.get", return_value=mock_response):
+    original_get = requests.get
+    requests.get = lambda *args, **kwargs: MockResponse()
+    try:
         scraper.get_content(url)
+    finally:
+        requests.get = original_get
 
     if "trafilatura" in sys.modules:
         sys.exit(1)
