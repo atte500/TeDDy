@@ -16,6 +16,14 @@ if TYPE_CHECKING:
     from teddy_executor.core.domain.models.plan import ActionData
 
 
+ALLOWED_RATIONALE_SECTIONS = [
+    "Synthesis",
+    "Justification",
+    "Expectation",
+    "State Dashboard",
+]
+
+
 # Summary logic moved to textual_plan_reviewer_helpers.py
 
 

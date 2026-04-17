@@ -29,7 +29,7 @@ Then the right panel should instantly swap to a scrollable text viewer (e.g., `V
 And the user can scroll smoothly through the entire text block natively.
 
 ## 4. Deliverables
-- [ ] **Contract** - Define `ALLOWED_RATIONALE_SECTIONS` constant in `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py`.
+- [x] **Contract** - Define `ALLOWED_RATIONALE_SECTIONS` constant in `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py`.
 - [ ] **Harness** - Update `TuiDriver` to support `ContentSwitcher` state verification and `Markdown` content inspection.
 - [ ] **Logic** - Update `on_mount_logic` in `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py` to filter rationale sections by `ALLOWED_RATIONALE_SECTIONS` and append non-standard sections to the preceding standard section.
 - [ ] **Wiring** - Replace `ParameterDetail` with a `ContentSwitcher` containing both `ParameterDetail` and a `VerticalScroll` in `ReviewerApp.compose`. Preserve `#right-pane` ID for CSS compatibility.
@@ -53,4 +53,7 @@ And the user can scroll smoothly through the entire text block natively.
 - Demonstrate that toggling the left-hand tree correctly flips the `ContentSwitcher` state and that the long text scrolls naturally.
 
 ## 7. Implementation Notes
-*To be filled by the Developer.*
+### Deliverable: Contract - Define ALLOWED_RATIONALE_SECTIONS
+- Defined the `ALLOWED_RATIONALE_SECTIONS` constant in `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py`.
+- Value: `["Synthesis", "Justification", "Expectation", "State Dashboard"]`.
+- Verified existence and values via unit test `tests/suites/unit/adapters/inbound/test_section_filtering.py`.
