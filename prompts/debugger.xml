@@ -13,7 +13,7 @@
         <goal>Gather context and build/verify an end-to-end Minimal Reproducible Example (MRE).</goal>
         <step n="1" name="Case File Check">If missing, CREATE a Case File using the Case File Blueprint.</step>
         <step n="2" name="Context & History Gathering">Use `EXECUTE` (`git grep`, `git log -n 5 --stat`, `git log -p -- <suspect_file>`), `READ`, and `RESEARCH` to understand the codebase, recent changes, and call hierarchy.</step>
-        <step n="3" name="Diagnostic MRE & Platform Check">CREATE a self-contained MRE script (e.g., `debug/mre.js`) that reproduces the symptom of the bug. It MUST fail currently. If you determine the bug is platform-specific (i.e., it reproduces in one environment but not another), you MUST follow the Platform-Specific Probing Protocol for all subsequent diagnostic steps.</step>
+        <step n="3" name="Diagnostic MRE & Platform Check">CREATE a self-contained MRE script (e.g., `debug/mre.js`) that reproduces the symptom of the bug. It MUST fail currently. If you determine the bug is platform-specific (i.e., it reproduces in CI/Linux but not locally), you MUST NOT execute the MRE locally. Instead, you MUST use the Platform-Specific Probing Protocol to execute the MRE and all subsequent checks in the target remote environment.</step>
       </phase>
 
       <phase n="2" name="Investigation">
@@ -29,7 +29,7 @@
       <phase n="3" name="Repair">
         <goal>Implement the fix, save it as a patch, and revert the workspace to its pre-fix state.</goal>
         <step n="1" name="Baseline & Stage">`EXECUTE git status` and `git diff`. Then `EXECUTE git add .` to securely separate preexisting developer WIP.</step>
-        <step n="2" name="Reality-Driven Fix">Apply the minimal fix to SUT code until the E2E MRE script passes. You MUST completely ignore the existing test suite during this step. If your fix fails or reveals new underlying discrepancies, return to Phase 2 (Investigation) to update the Causal Model.</step>
+        <step n="2" name="Reality-Driven Fix">Apply the minimal fix to SUT code until the E2E MRE script passes. If the bug is platform-specific, you MUST verify the fix by pushing to the temporary remote branch and observing the CI workflow, avoiding local execution. You MUST completely ignore the existing test suite during this step. If your fix fails or reveals new underlying discrepancies, return to Phase 2 (Investigation) to update the Causal Model.</step>
         <step n="3" name="Isolate & Save Fix">Isolate the agent's changes into a patch file. EXECUTE `git diff > .tmp/fix.patch` to save the unstaged changes (the fix) to a temporary file.</step>
         <step n="4" name="Revert Workspace">Revert the SUT code to its original buggy state, leaving the patch file untouched. EXECUTE `git checkout -- .` to discard the unstaged changes.</step>
       </phase>
@@ -141,9 +141,9 @@ WIP & REMINDERS:
       <rule n="13" name="Isolated Actions">`PROMPT`, `INVOKE`, and `RETURN` MUST be the sole action in a plan. If bundled with other actions, they are automatically skipped. If you need to perform other tasks alongside them, split them into multiple turns (for example: execute commands or read files in Turn 1, then use `PROMPT` in Turn 2).</rule>
 
       <rule n="14" name="Platform-Specific Probing Protocol">
-        <description>When a bug is platform-specific, you MUST use Direct Remote Probing.</description>
+        <description>When a bug is platform-specific, you MUST NOT rely on local execution for Reproduction, Investigation, or Repair verification. You MUST use Direct Remote Probing.</description>
         <protocol name="Direct Remote Probing">
-          Trigger a minimal CI job on a temporary branch and fetch the results. Remote jobs are asynchronous. You MUST adhere to these strict constraints to avoid CLI errors and context window exhaustion:
+          Trigger a minimal CI job on a temporary branch and fetch the results to execute your MRE, probes, and fix verifications. Remote jobs are asynchronous. You MUST adhere to these strict constraints to avoid CLI errors and context window exhaustion:
           1. Trigger Execution: You MUST ALWAYS create a dedicated temporary workflow file (e.g., `.github/workflows/debug-probe.yml`) explicitly configured with `on: push: branches: [ <your-branch> ]` to guarantee execution.
           2. Infer Repository: Do NOT hardcode the `--repo` flag in `gh` commands. Rely on the local `.git` configuration so the CLI infers the correct remote origin automatically.
           3. Obtain Run ID: Wait briefly for GitHub to register the run, then dynamically fetch the ID. Example: `sleep 5 && gh run list --workflow <temp-workflow.yml> --branch <your-branch> --limit 1 --json databaseId -q ".[0].databaseId"`
