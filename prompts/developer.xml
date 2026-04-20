@@ -16,13 +16,13 @@
       <phase n="1" name="Orientation">
         <goal>Foundation and scope verification.</goal>
         <step n="1" name="Initialization">If missing, CREATE slice at `docs/project/slices/00-NN-{{feature}}.md`.</step>
-        <step n="2" name="Impact Audit">
-          `EXECUTE` `git grep -c` on any target for modification.
-          - Shared Contract (>1 consumer): Modify in-place FORBIDDEN. Pivot to Branch by Abstraction.
-          - Collision/Overlap: Pivot if name exists or logic overlaps without a planned Refactor/Cleanup.
+        <step n="2" name="Plan Validation">
+          Perform a dual-audit of the current plan.
+          1. External (Impact): EXECUTE git grep -c on targets. If shared contract (>1 consumer) or logic collision, you must pivot to Branch by Abstraction.
+          2. Internal (Atomicity): If an item is too broad, contains multiple logical changes, or lacks necessary Seam/Refactor items, decompose it into smaller, atomic items. If items are logically dependent or redundant, merge them into a single atomic unit.
         </step>
-        <step n="3" name="Pivot (Branch by Abstraction)">
-          If Audit fails, modify the slice's `## Deliverables` to add deliverable items (Seam, Refactor, Cleanup) following Branch by Abstraction principles. Document justification in `Delta Analysis` and commit before starting to work on the first item.
+        <step n="3" name="Plan Update (Contingency)">
+          If validation revealed necessary changes (decomposition, re-sorting, or abstraction), EDIT the slice and EXECUTE the Version Control Protocol to commit the updated plan before starting to work on the first item.
         </step>
       </phase>
 
@@ -56,10 +56,12 @@
       </phase>
 
       <phase n="4" name="Integration">
-        <goal>Local CI Gate. Verify system integrity for the current deliverable.</goal>
-        <step n="1" name="Global Run">Run full test suite (no filters). Confirm acceptance ratchet is Green.</step>
+        <goal>Mandatory Global CI Gate. Verify system integrity for every deliverable.</goal>
+        <step n="1" name="Global Test Run">
+          Run the full test suite (no filters) for every deliverable, including logic and refactor items. Confirm the acceptance ratchet is green and no regressions exist.
+        </step>
         <step n="2" name="Hard Abort (Regression)">
-          When integration reveals a systemic regression (breaking existing components):
+          This phase is a strict blocker for Version Control. If integration reveals a systemic regression:
           1. Revert: `git checkout -- src/ tests/` to restore Green trunk.
           2. Pivot: Modify the slice's `## Deliverables` to add deliverable items (Seam, Refactor, Cleanup) following Branch by Abstraction principles.
           3. Commit: Log friction in `Delta Analysis` and commit slice update before starting to work on the first item.
@@ -75,7 +77,7 @@
       </phase>
 
       <phase n="6" name="Version Control">
-        <goal>Verify workspace state and hand off versioned history for this deliverable item.</goal>
+        <goal>Verify workspace state and hand off versioned history. Prerequisite: Successful integration verified by global test run.</goal>
         <step n="1" name="Consistency Check">If this is the last deliverable, execute `git grep` for deleted/renamed components and resolve stale hits in documentation/comments.</step>
         <step n="2" name="Commit">Execute the Version Control Protocol for the current deliverable in its own turn.</step>
         <step n="3" name="Loop">If deliverables remain in the slice, return to Phase 1 (Orientation) for the next deliverable. If this is the last deliverable item you may `RETURN`.</step>
