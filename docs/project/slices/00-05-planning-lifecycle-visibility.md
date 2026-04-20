@@ -69,8 +69,8 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 - [x] **Seam** - Add `async_generate_plan` to `IPlanningUseCase` and implement in `PlanningService`.
 - [x] **Seam** - Add async counterparts to `ISessionManager` and `IRunPlanUseCase`.
 - [x] **Refactor** - Progressively migrate `SessionOrchestrator` to async methods.
-- [ ] **Logic** - Chronological session sorting (date prefixing) in `SessionService`.
-- [ ] **Logic** - Natural session name resolution (prefix stripping) in `SessionRepository`.
+- [✓] **Logic** - Chronological session sorting (date prefixing) in `SessionService`.
+- [✓] **Logic** - Natural session name resolution (prefix stripping) in `SessionRepository`.
 - [ ] **Refactor** - Migrate `PlanningService` and `SessionOrchestrator` to `async`.
 - [ ] **Refactor** - Update `SessionOrchestrator` and `PlanningService` to use `anyio.to_thread.run_sync` for synchronous FileSystem operations.
 - [ ] **Logic** - Sequenced planning logs & "Proceed on Empty" in `PlanningService`.
@@ -162,3 +162,9 @@ The Developer MUST NOT implement simulation-only logs found in the prototype:
 - Ratcheted acceptance test `test_run_plan_use_case_has_async_counterparts` to use a valid plan and session, pushing the failure frontier to the next unimplemented layer.
 - Verified `SessionOrchestrator.async_execute` and `async_resume` correctly orchestrate the `async_generate_plan` and `async_execute` (stub) pipeline.
 - Confirmed that the `MarkdownPlanParser` and `PlanningService` work correctly within the async event loop.
+
+### Deliverable: Chronological Sorting & Natural Name Resolution
+- Verified `SessionService.create_session` implements `YYYYMMDD_HHMMSS-` prefixing.
+- Implemented `SessionRepository._strip_prefix` and updated `resolve_session_from_path` and `get_latest_session_name` to return Natural Names.
+- Added unit tests in `tests/suites/unit/core/services/test_session_repository.py`.
+- Verified via `tests/suites/acceptance/test_session_prefixing.py`.

@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 from typing import Set
 
@@ -12,8 +13,12 @@ class SessionRepository:
     def __init__(self, file_system_manager: IFileSystemManager):
         self._file_system_manager = file_system_manager
 
+    def _strip_prefix(self, name: str) -> str:
+        """Strips the YYYYMMDD_HHMMSS- prefix from a session folder name."""
+        return re.sub(r"^\d{8}_\d{6}-", "", name)
+
     def get_latest_session_name(self) -> str:
-        """Identifies the most recently modified session."""
+        """Identifies the most recently modified session (returns Natural Name)."""
         sessions_root = ".teddy/sessions"
         if not self._file_system_manager.path_exists(sessions_root):
             raise ValueError("No sessions found.")
@@ -35,10 +40,10 @@ class SessionRepository:
             raise ValueError("No valid sessions found.")
 
         session_stats.sort(key=lambda x: x[1], reverse=True)
-        return session_stats[0][0]
+        return self._strip_prefix(session_stats[0][0])
 
     def resolve_session_from_path(self, path: str) -> str:
-        """Climbs the directory tree to find the session name."""
+        """Climbs the directory tree to find the session (returns Natural Name)."""
         # Convert to relative path if absolute, relative to CWD
         try:
             p = Path(path).resolve().relative_to(Path.cwd())
@@ -47,10 +52,10 @@ class SessionRepository:
 
         for parent in [p] + list(p.parents):
             if parent.parent.name == "sessions" and ".teddy" in parent.parts:
-                return parent.name
+                return self._strip_prefix(parent.name)
 
         if self._file_system_manager.path_exists(f".teddy/sessions/{path}"):
-            return path
+            return self._strip_prefix(path)
 
         raise ValueError(f"Could not resolve session from path: {path}")
 
