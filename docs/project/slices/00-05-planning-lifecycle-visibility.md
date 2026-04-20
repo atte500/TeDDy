@@ -67,7 +67,7 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 - [x] **Harness** - Async infrastructure (Global `anyio_backend` fixture).
 - [x] **Seam** - Add `async_get_completion` to `ILlmClient` and implement in `LiteLLMAdapter`.
 - [x] **Seam** - Add `async_generate_plan` to `IPlanningUseCase` and implement in `PlanningService`.
-- [ ] **Seam** - Add async counterparts to `ISessionManager` and `IRunPlanUseCase`.
+- [x] **Seam** - Add async counterparts to `ISessionManager` and `IRunPlanUseCase`.
 - [ ] **Refactor** - Progressively migrate `SessionOrchestrator` to async methods.
 - [ ] **Cleanup** - Remove synchronous port methods once migration is complete.
 - [ ] **Logic** - Chronological session sorting (date prefixing) in `SessionService`.
@@ -149,3 +149,8 @@ The Developer MUST NOT implement simulation-only logs found in the prototype:
 - Introduced `async_generate_plan` to `IPlanningUseCase` and `PlanningService`.
 - Implementation is a `NotImplementedError` to allow for incremental migration (Branch by Abstraction).
 - Verified that adding the abstract method did not break existing DI or mocks in the test suite.
+
+### Deliverable: Async counterparts for ISessionManager and IRunPlanUseCase
+- Expanded `IRunPlanUseCase` (inbound) and `ISessionManager` (outbound) ports with `async_` prefixed methods.
+- Implemented `NotImplementedError` stubs in `ExecutionOrchestrator`, `SessionOrchestrator`, and `SessionService`.
+- Verified via `tests/suites/acceptance/test_async_port_migration.py` and global suite run.

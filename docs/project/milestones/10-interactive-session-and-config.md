@@ -76,6 +76,7 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 ### Code Quality
 - [ ] **File Length:** Refactor oversized files to adhere to the 300-line limit:
     - `src/teddy_executor/core/services/markdown_plan_parser.py` (304 lines)
+    - `src/teddy_executor/core/services/session_orchestrator.py` (319 lines)
     - `src/teddy_executor/adapters/outbound/console_interactor.py`
     - `src/teddy_executor/adapters/inbound/textual_plan_reviewer.py`
     - `src/teddy_executor/adapters/inbound/cli_helpers.py`

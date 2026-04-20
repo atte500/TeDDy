@@ -292,6 +292,18 @@ class SessionService(ISessionManager):
         """Identifies and returns the name of the latest session."""
         return self._repository.get_latest_session_name()
 
+    async def async_transition_to_next_turn(
+        self,
+        plan_path: str,
+        execution_report: Optional[ExecutionReport] = None,
+        turn_cost: float = 0.0,
+        is_validation_failure: bool = False,
+    ) -> str:
+        """
+        Asynchronously calculates and creates the next turn directory.
+        """
+        raise NotImplementedError("Async transition not yet implemented.")
+
     def resolve_session_from_path(self, path: str) -> str:
         """Resolves a session name from a given path."""
         return self._repository.resolve_session_from_path(path)
