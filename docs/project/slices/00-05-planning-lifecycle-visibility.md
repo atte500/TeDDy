@@ -64,27 +64,26 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 ```
 
 ## Deliverables
-- [ ] **Seam** - Create `IFileSystemManagerAsync` and `LocalFileSystemAdapterAsync`.
-- [ ] **Seam** - Create `IGetContextUseCaseAsync` and `ContextServiceAsync`.
-- [ ] **Contract** - Async versions of `ILlmClient` and `IPlanningUseCase`.
-- [ ] **Contract** - Async versions of `ISessionManager` and `IRunPlanUseCase`.
 - [ ] **Harness** - Async-ready `TestEnvironment` & `CliTestAdapter` (Support `@pytest.mark.anyio`).
+- [ ] **Contract** - Convert `ILlmClient` and `IPlanningUseCase` to `async`.
+- [ ] **Contract** - Convert `ISessionManager` (SessionService) and `IRunPlanUseCase` to `async`.
 - [ ] **Logic** - Chronological session sorting (date prefixing) in `SessionService`.
 - [ ] **Logic** - Natural session name resolution (prefix stripping) in `SessionRepository`.
-- [ ] **Refactor** - Migrate `PlanningService` and `SessionOrchestrator` to async core.
+- [ ] **Refactor** - Migrate `PlanningService` and `SessionOrchestrator` to `async`.
+- [ ] **Refactor** - Update `SessionOrchestrator` and `PlanningService` to use `anyio.to_thread.run_sync` for synchronous FileSystem operations.
 - [ ] **Logic** - Sequenced planning logs & "Proceed on Empty" in `PlanningService`.
 - [ ] **Logic** - Telemetry color refinements in `SessionPlanner`.
 - [ ] **Logic** - Terminal action soft isolation in `ExecutionOrchestrator`.
-- [ ] **Wiring** - Async CLI integration & loop resolution in `session_cli_handlers.py`.
-- [ ] **Cleanup** - Prune synchronous `IFileSystemManager` and `IGetContextUseCase` (once fully migrated).
+- [ ] **Wiring** - Async CLI integration (anyio runner) in `session_cli_handlers.py`.
 
 ## Delta Analysis
 
-### 1. Async Transformation (Architectural Shift)
-To support the TUI's non-blocking requirements and long-running LLM/Shell operations, the core must be migrated from synchronous to asynchronous execution.
-- **Foundation Ports:** `IFileSystemManager` and `IEnvironmentInspector` must become async to avoid blocking the event loop during I/O.
-- **Service Layer:** `PlanningService`, `ExecutionOrchestrator`, and `SessionOrchestrator` must be refactored to `async def` to propagate the transformation.
-- **CLI Adapters:** The `Typer` handlers in `session_cli_handlers.py` must be wrapped in `anyio.run` or converted to an async-compatible structure to drive the core.
+### 1. Hybrid Async Transformation
+To support the TUI's stability requirements (native `push_screen_wait`) and non-blocking LLM calls, we are adopting a "Hybrid Async" model.
+- **Core Services (Async):** `PlanningService`, `SessionOrchestrator`, and `ExecutionOrchestrator` will be migrated to `async def`. This allows the TUI to `await` the high-level orchestration turns.
+- **Outbound Ports (Async):** `ILlmClient` (LiteLLM) and `IUserInteractor` (for TUI modals) will become async.
+- **Synchronous Foundation:** `IFileSystemManager` and `IEnvironmentInspector` will **remain synchronous**. They are high-performance and low-risk. Services will bridge them using `anyio.to_thread.run_sync` when necessary to prevent blocking the event loop during heavy I/O.
+- **CLI Adapters:** The `Typer` handlers in `session_cli_handlers.py` will be wrapped in `anyio.run` to drive the new async core.
 
 ### 2. Session Management (`SessionService` & `SessionRepository`)
 - **Sorting:** `SessionService.create_session` must inject `datetime.now().strftime("%Y%m%d_%H%M%S")` prefixing.
