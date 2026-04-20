@@ -55,6 +55,25 @@ class ConsoleInteractorAdapter(IUserInteractor):
         """Displays a message using Rich console to ensure consistent coloring."""
         self._console.print(message)
 
+    async def async_display_message(self, message: str) -> None:
+        """Asynchronously displays an informational message."""
+        import anyio
+
+        await anyio.to_thread.run_sync(self.display_message, message)
+
+    async def async_ask_question(
+        self,
+        prompt: str,
+        resources: list[str] | None = None,
+        agent_name: Optional[str] = None,
+    ) -> str:
+        """Asynchronously asks the user a question."""
+        import anyio
+
+        return await anyio.to_thread.run_sync(
+            self.ask_question, prompt, resources, agent_name
+        )
+
     def ask_question(
         self,
         prompt: str,

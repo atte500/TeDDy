@@ -41,12 +41,31 @@ class IUserInteractor(ABC):
         pass
 
     @abstractmethod
+    async def async_ask_question(
+        self,
+        prompt: str,
+        resources: list[str] | None = None,
+        agent_name: Optional[str] = None,
+    ) -> str:
+        """
+        Asynchronously asks the user a question.
+        """
+        pass
+
+    @abstractmethod
     def display_message(self, message: str) -> None:
         """
         Displays an informational message to the user.
 
         Args:
             message: The message to display.
+        """
+        pass
+
+    @abstractmethod
+    async def async_display_message(self, message: str) -> None:
+        """
+        Asynchronously displays an informational message.
         """
         pass
 

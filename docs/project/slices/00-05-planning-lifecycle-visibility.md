@@ -160,3 +160,5 @@ The Developer MUST NOT implement simulation-only logs found in the prototype:
 - Implemented `SessionPlanner.async_trigger_new_plan` to support async planning turns.
 - Adopted "Hybrid Async" model: wrapping synchronous filesystem and service calls in `anyio.to_thread.run_sync` to prevent event loop blocking.
 - Ratcheted acceptance test `test_run_plan_use_case_has_async_counterparts` to use a valid plan and session, pushing the failure frontier to the next unimplemented layer.
+- Verified `SessionOrchestrator.async_execute` and `async_resume` correctly orchestrate the `async_generate_plan` and `async_execute` (stub) pipeline.
+- Confirmed that the `MarkdownPlanParser` and `PlanningService` work correctly within the async event loop.

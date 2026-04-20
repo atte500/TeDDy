@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Dict, Optional, Sequence, cast
+from typing import Any, Dict, Optional, Sequence
 from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
 from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
 from teddy_executor.core.ports.outbound.config_service import IConfigService
@@ -36,7 +36,131 @@ class PlanningService(IPlanningUseCase):
         """
         Asynchronously generates a new plan.md file.
         """
-        raise NotImplementedError("async_generate_plan is not yet implemented.")
+        import anyio
+        import yaml
+        from teddy_executor.core.utils.markdown import extract_markdown_section
+
+        turn_path = Path(turn_dir)
+        resolved_message = user_message
+
+        # 0. Message Resolution
+        if not resolved_message:
+            report_path = (turn_path / "report.md").as_posix()
+            exists = await anyio.to_thread.run_sync(
+                self._file_system_manager.path_exists, report_path
+            )
+            if exists:
+                report_content = await anyio.to_thread.run_sync(
+                    self._file_system_manager.read_file, report_path
+                )
+                resolved_message = extract_markdown_section(
+                    report_content, "User Request"
+                )
+
+        if not resolved_message and self._user_interactor:
+            resolved_message = await self._user_interactor.async_ask_question(
+                "Enter your instructions for the AI"
+            )
+
+        if not resolved_message or not resolved_message.strip():
+            return None, 0.0  # type: ignore
+
+        hint = "\n\n*(Stop to reply to this user request and ensure alignment before proceeding)*"
+        if hint not in resolved_message:
+            resolved_message += hint
+
+        # 1. Gather context
+        context = await self._context_service.async_get_context(
+            context_files=context_files
+        )
+
+        # 2. Fetch system prompt
+        meta_file_path = (turn_path / "meta.yaml").as_posix()
+        meta_content = ""
+        exists = await anyio.to_thread.run_sync(
+            self._file_system_manager.path_exists, meta_file_path
+        )
+        if exists:
+            meta_content = await anyio.to_thread.run_sync(
+                self._file_system_manager.read_file, meta_file_path
+            )
+
+        meta = yaml.safe_load(str(meta_content))
+        if not isinstance(meta, dict):
+            meta = {}
+        agent_name = meta.get("agent_name", "pathfinder")
+
+        prompt_file_path = (turn_path / f"{agent_name}.xml").as_posix()
+        system_prompt = ""
+        exists = await anyio.to_thread.run_sync(
+            self._file_system_manager.path_exists, prompt_file_path
+        )
+        if exists:
+            system_prompt = await anyio.to_thread.run_sync(
+                self._file_system_manager.read_file, prompt_file_path
+            )
+
+        # 3. Call LLM
+        full_context = f"{context.header}\n{context.content}"
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {
+                "role": "user",
+                "content": f"Context:\n{full_context}\n\nUser Message: {resolved_message}",
+            },
+        ]
+
+        log_path = (turn_path / "input.md").as_posix()
+        await anyio.to_thread.run_sync(
+            self._file_system_manager.write_file, log_path, full_context
+        )
+
+        model = self._config_service.get_setting("planning_model", "gpt-4o") or "gpt-4o"
+        token_count = self._llm_client.get_token_count(model, messages)
+        response = await self._llm_client.async_get_completion(
+            model=model, messages=messages
+        )
+        plan_content = self._extract_plan_content(response)
+        turn_cost = self._llm_client.get_completion_cost(response)
+
+        # 4. Telemetry (Ported to use async_display_message)
+        cost_val = await self._async_log_telemetry(token_count, turn_cost)
+
+        # 5. Persistence
+        plan_path = (turn_path / "plan.md").as_posix()
+        await anyio.to_thread.run_sync(
+            self._file_system_manager.write_file, plan_path, plan_content
+        )
+
+        # 6. Update meta.yaml
+        await anyio.to_thread.run_sync(
+            self._update_meta, meta, response, token_count, turn_cost, meta_file_path
+        )
+
+        return plan_path, cost_val
+
+    async def _async_log_telemetry(self, token_count: Any, turn_cost: Any) -> float:
+        """Logs planning telemetry asynchronously."""
+
+        def safe_float(v: Any, default: float = 0.0) -> float:
+            try:
+                return float(v)
+            except (TypeError, ValueError):
+                return default
+
+        cost_val = safe_float(turn_cost)
+        count_val = int(safe_float(token_count))
+        msg_tokens, msg_cost = f"Tokens: {count_val}", f"Cost: ${cost_val:.4f}"
+
+        if self._user_interactor:
+            await self._user_interactor.async_display_message(msg_tokens)
+            await self._user_interactor.async_display_message(msg_cost)
+        else:
+            import sys
+
+            sys.stdout.write(f"{msg_tokens}\n{msg_cost}\n")
+            sys.stdout.flush()
+        return cost_val
 
     def generate_plan(
         self,
@@ -108,7 +232,9 @@ class PlanningService(IPlanningUseCase):
             meta_content = self._file_system_manager.read_file(meta_file_path)
 
         # Defensive: cast content to str to prevent yaml.safe_load hanging on MagicMocks
-        meta = cast(Dict[str, Any], yaml.safe_load(str(meta_content)) or {})
+        meta = yaml.safe_load(str(meta_content))
+        if not isinstance(meta, dict):
+            meta = {}
         agent_name = meta.get("agent_name", "pathfinder")
 
         prompt_file_path = (turn_path / f"{agent_name}.xml").as_posix()

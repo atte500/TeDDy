@@ -38,8 +38,42 @@ echo 1
     session_path = session_manager.create_session("test-session", "pathfinder")
     actual_session_name = session_path.split("/")[-1]
 
-    with pytest.raises(NotImplementedError):
-        await orchestrator.async_resume(session_name=actual_session_name)
+    # Mock user interaction and LLM to reach the frontier
+    from unittest.mock import patch, MagicMock
+
+    valid_plan = """# Plan: Test
+- **Agent:** pathfinder
+- **Status:** SUCCESS
+
+## Rationale
+~~~~~~
+Test
+~~~~~~
+
+## Action Plan
+### `EXECUTE`
+- **Description:** Test
+~~~~~~shell
+echo 1
+~~~~~~
+"""
+    mock_response = MagicMock()
+    mock_response.choices = [MagicMock()]
+    mock_response.choices[0].message.content = valid_plan
+    mock_response.model = "gpt-4o"
+
+    with (
+        patch(
+            "teddy_executor.adapters.outbound.console_interactor.ConsoleInteractorAdapter.async_ask_question",
+            return_value="Test instructions",
+        ),
+        patch(
+            "teddy_executor.adapters.outbound.litellm_adapter.LiteLLMAdapter.async_get_completion",
+            return_value=mock_response,
+        ),
+    ):
+        with pytest.raises(NotImplementedError):
+            await orchestrator.async_resume(session_name=actual_session_name)
 
 
 @pytest.mark.anyio
