@@ -18,13 +18,14 @@
         <step n="1" name="Initialization">If no slice doc exists, CREATE one at docs/project/slices/00-NN-{{feature}}.md (Fast-Track) using the Vertical Slice Blueprint. Predict Deliverables based on the request.</step>
         <step n="2" name="Read & Assess">
           If not already in context, READ the slice and linked design docs.
-          Strategic Assessment: Before coding, you MUST `EXECUTE` a `git grep` audit. If the plan is insufficient or risky (e.g., a shared Port requires a `Seam`, or a remaining consumer exists), you MUST halt, `EDIT` the slice to add preliminary deliverable items to comply with Branch by Abstraction, and proceed to Phase 6 to commit before starting to work on the first item.
-          - Contract: Check for name collisions. Count consumers for shared Ports.
-          - Harness: Check for existing helpers in `tests/harness/`.
-          - Seam: Check for existing environment flags or abstraction layers.
-          - Refactor/Logic: Check for existing domain terms or service methods.
-          - Wiring: Check for existing entry points, routes, or DI registrations.
-          - Cleanup: Perform a final check for remaining consumers before deleting.
+          Strategic Assessment: Before coding, you MUST `EXECUTE` a `git grep` audit to prevent collisions and duplication:
+          - Contract: Audit name/consumers. Pivot if name exists or shared (>1).
+          - Harness: Audit `tests/harness/`. Pivot if helper logic already exists.
+          - Seam: Audit flags/abstractions. Pivot if reusable logic found.
+          - Refactor/Logic: Audit domain terms/methods. Pivot if duplication found.
+          - Wiring: Audit registrations/entry points. Pivot if conflict found.
+          - Cleanup: Audit final consumers. Pivot if code still referenced.
+          If any audit indicates the plan is insufficient or risky, you MUST Pivot: halt, `EDIT` the slice to add preliminary deliverable items, and proceed immediately to Phase 6 to commit the update before starting work on the first item.
         </step>
       </phase>
 
