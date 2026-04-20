@@ -56,6 +56,29 @@ class LiteLLMAdapter(ILlmClient):
         except Exception as e:
             raise LlmApiError(f"LLM Completion failed: {str(e)}") from e
 
+    async def async_get_completion(
+        self, model: str, messages: List[Dict[str, str]], **kwargs: Any
+    ) -> Any:
+        """
+        Asynchronously sends a request to an LLM via litellm and returns the raw response object.
+        """
+        import litellm
+        from typing import cast
+
+        llm_config = cast(Dict[str, Any], self._config_service.get_setting("llm", {}))
+
+        if model:
+            kwargs["model"] = model
+
+        for key, value in llm_config.items():
+            kwargs[key] = value
+
+        self._ensure_silence(litellm)
+        try:
+            return await litellm.acompletion(messages=messages, **kwargs)
+        except Exception as e:
+            raise LlmApiError(f"Async LLM Completion failed: {str(e)}") from e
+
     def get_token_count(self, model: str, messages: List[Dict[str, str]]) -> int:
         """Calculates the number of tokens in the payload."""
         import litellm

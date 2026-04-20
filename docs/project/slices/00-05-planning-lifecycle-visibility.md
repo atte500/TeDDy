@@ -64,8 +64,8 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 ```
 
 ## Deliverables
-- [ ] **Harness** - Async infrastructure (Global `anyio_backend` fixture).
-- [ ] **Seam** - Add `async_get_completion` to `ILlmClient` and implement in `LiteLLMAdapter`.
+- [x] **Harness** - Async infrastructure (Global `anyio_backend` fixture).
+- [x] **Seam** - Add `async_get_completion` to `ILlmClient` and implement in `LiteLLMAdapter`.
 - [ ] **Seam** - Add `async_generate_plan` to `IPlanningUseCase` and implement in `PlanningService`.
 - [ ] **Seam** - Add async counterparts to `ISessionManager` and `IRunPlanUseCase`.
 - [ ] **Refactor** - Progressively migrate `SessionOrchestrator` to async methods.

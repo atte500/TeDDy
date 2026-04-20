@@ -67,6 +67,12 @@ __all__ = [
 ]
 
 
+@pytest.fixture
+def anyio_backend():
+    """Specify the backend for anyio tests (defaults to asyncio)."""
+    return "asyncio"
+
+
 @pytest.fixture(scope="session", autouse=True)
 def patch_socket_getfqdn():
     """

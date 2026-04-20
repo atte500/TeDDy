@@ -34,6 +34,15 @@ class ILlmClient(ABC):
         pass
 
     @abstractmethod
+    async def async_get_completion(
+        self, model: str, messages: List[Dict[str, str]], **kwargs: Any
+    ) -> Any:
+        """
+        Asynchronously sends a request to an LLM and returns the raw response object.
+        """
+        pass
+
+    @abstractmethod
     def get_token_count(self, model: str, messages: List[Dict[str, str]]) -> int:
         """
         Calculates the number of tokens in the payload for a specific model.
