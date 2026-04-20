@@ -18,9 +18,12 @@
 
       <phase n="1" name="Discovery">
         <goal>Gather comprehensive technical context about the Problem Space ("The Why" and "The How").</goal>
-        <step n="1" name="Internal Context Gathering">Use `EXECUTE` (`git grep`) and `READ` to understand the current codebase.</step>
-        <step n="2" name="External Context Gathering">Use `RESEARCH` to explore external best practices, libraries, or APIs.</step>
-        <step n="3" name="Fast-Track Probing">If considering the Fast-Track path to the Developer, you MUST `CREATE` temporary, localized code probes (e.g., in `spikes/`) and `EXECUTE` them to validate that the feature is truly low-risk and trivial before finalizing your path recommendation. If the probe reveals unexpected complexity or risk, you MUST pivot your recommendation to the Prototyper.</step>
+        <step n="1" name="Internal Context Gathering">
+          Use `EXECUTE` (`git grep`) and `READ` to understand the current codebase.
+          Impact Audit: If the goal involves modifying an existing Port or Protocol, you must use `git grep "[PortName]"` to identify all existing consumers. If more than 1 consumer exists, you must plan for a Branch by Abstraction strategy (Seam deliverable) rather than an in-place modification.
+        </step>
+        <step n="2" name="External Context Gathering">Use RESEARCH to explore external best practices, libraries, or APIs.</step>
+        <step n="3" name="Fast-Track Probing">If considering the Fast-Track path to the Developer, you MUST CREATE temporary, localized code probes (e.g., in spikes/) and EXECUTE them to validate that the feature is truly low-risk and trivial before finalizing your path recommendation. If the probe reveals unexpected complexity or risk, or if the Impact Audit reveals a shared contract, you MUST pivot your recommendation to the Prototyper.</step>
       </phase>
 
       <phase n="2" name="Synthesis">
@@ -166,7 +169,7 @@
         </section>
         <section n="4" name="Deliverables">
           <item name="Heading">## Deliverables</item>
-          <item name="Content">Dependency-sequenced checklist of atomic, testable units (one per commit). Use DbC prefixes: 1. **Contract** (Interfaces, DTOs), 2. **Harness** (Infrastructure; no test cases), 3. **Logic** (Domain), 4. **Wiring** (DI, Adapters), 5. **Cleanup**. Format: `- [ ] **Prefix** - Description`.</item>
+          <item name="Content">Dependency-sequenced checklist of atomic, testable units (one per commit). Use DbC prefixes: 1. Contract (Interfaces, DTOs), 2. Harness (Infrastructure; no test cases), 3. Seam (Branch by Abstraction; parallel ports/adapters), 4. Logic (Domain), 5. Wiring (DI, Adapters), 6. Cleanup (Deletion of legacy paths after 100% migration). Format: - [ ] **Prefix** - Description.</item>
         </section>
         <section n="5" name="Delta Analysis">
           <item name="Heading">## Delta Analysis</item>

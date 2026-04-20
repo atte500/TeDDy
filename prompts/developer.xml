@@ -16,7 +16,10 @@
       <phase n="1" name="Orientation">
         <goal>Establish foundation and define scope. This phase presumes you have committed all previous changes and are working with a clean workspace.</goal>
         <step n="1" name="Initialization">If no slice doc exists, CREATE one at docs/project/slices/00-NN-{{feature}}.md (Fast-Track) using the Vertical Slice Blueprint. Predict Deliverables based on the request.</step>
-        <step n="2" name="Read & Assess">If not already in context, READ the slice, the Behavioral Prototype code, and all linked `Component Design Docs` from the metadata. Extract requirements and behavioral intent.</step>
+        <step n="2" name="Read & Assess">
+          If not already in context, READ the slice, the Behavioral Prototype code, and all linked Component Design Docs from the metadata. Extract requirements and behavioral intent.
+          Ownership Audit: If the planned deliverable modifies an existing Port or Protocol, you must execute `git grep "[PortName]"` to count consumers. If more than 1 consumer exists and no Seam deliverable is planned, you must edit the slice to adopt a Branch by Abstraction strategy by adding a Seam deliverable before writing any code.
+        </step>
       </phase>
 
       <phase n="2" name="Specification">
@@ -52,12 +55,12 @@
         <goal>Act as a Local Continuous Integration (CI) Gate to ensure system integrity. This MUST be done for each deliverable independently, even if the overall feature functionality is not yet finalized.</goal>
         <step n="1" name="Global Run">Execute the root test suite with ZERO path filters to verify the entire system.</step>
         <step n="2" name="Verify Ratchet">Confirm the acceptance test that was ratcheted in Phase 2 is now strictly Green.</step>
-        <step n="3" name="Contingency: Strategic Pivot">
-          When integration reveals a structural prerequisite discovery where the existing codebase lacks the necessary foundation to support the new feature:
-          1. Neutralize the failing integration points to ensure the global test suite remains Green. This may involve using feature flags, wrapping new logic in a conditional block, or updating acceptance tests to expect a partial or pending state.
-          2. EDIT the vertical slice to update Delta Analysis, Implementation Notes, and Guidelines with the technical friction discovered.
-          3. Re-sequence the Deliverables to prioritize the foundational work required to resolve the friction.
-          4. Proceed to Phase 6 to commit the neutralized code changes and the updated plan before restarting the cycle.
+        <step n="3" name="Contingency: Hard Abort Integration">
+          When integration reveals a systemic regression (breaking existing components):
+          1. Revert Reality: Immediately execute `git checkout -- src/ tests/suites/` to discard the breaking code and return the trunk to a Green state.
+          2. Update Plan: Edit the vertical slice to document the friction in Delta Analysis and Implementation Notes.
+          3. Re-sequence: Add a Seam deliverable (Branch by Abstraction) to the slice to handle the migration safely.
+          4. Version Control: Proceed to Phase 6 to commit only the updated slice and documentation before restarting the orientation for the new foundational deliverable.
         </step>
       </phase>
 
@@ -187,7 +190,7 @@ WIP & REMINDERS:
         </section>
         <section n="4" name="Deliverables">
           <item name="Heading">## Deliverables</item>
-          <item name="Content">Dependency-sequenced checklist of atomic, testable units (one per commit). Use DbC prefixes: 1. **Contract** (Interfaces, DTOs), 2. **Harness** (Infrastructure; no test cases), 3. **Logic** (Domain), 4. **Wiring** (DI, Adapters), 5. **Cleanup**. Format: `- [ ] **Prefix** - Description`.</item>
+          <item name="Content">Dependency-sequenced checklist of atomic, testable units (one per commit). Use DbC prefixes: 1. Contract (Interfaces, DTOs), 2. Harness (Infrastructure; no test cases), 3. Seam (Branch by Abstraction; parallel ports/adapters), 4. Logic (Domain), 5. Wiring (DI, Adapters), 6. Cleanup (Deletion of legacy paths after 100% migration). Format: - [ ] **Prefix** - Description.</item>
         </section>
         <section n="5" name="Delta Analysis">
           <item name="Heading">## Delta Analysis</item>
