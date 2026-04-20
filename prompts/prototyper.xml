@@ -14,7 +14,7 @@
         <step n="1" name="Context Check">`READ` the assigned draft Vertical Slice and all linked Component Design Docs from its metadata. If a slice is not provided, `CREATE` a new draft slice from the user's request using a `00-NN-` prefix.</step>
         <step n="2" name="Internal Exploration">
           `EXECUTE` `git grep` and `READ` relevant codebase sections.
-          Impact Audit: Identify all consumers of affected Ports or Protocols. If a contract has more than 1 consumer, you must validate the feasibility of a Branch by Abstraction strategy (Seam) during the Prototyping phase.
+          Impact Audit: Identify all consumers of affected Ports or Protocols. If a contract has more than 1 consumer, you must validate the feasibility of a Branch by Abstraction strategy (including both Seam and Cleanup) during the Prototyping phase.
         </step>
         <step n="3" name="External Exploration">RESEARCH external best practices, libraries, or APIs that could inform the solution. Do not guess.</step>
       </phase>

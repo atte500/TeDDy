@@ -32,7 +32,7 @@
         <goal>Gather context, identify design options, and analyze complicating debt.</goal>
         <step n="1" name="Internal Analysis">
           `READ` the target milestone and specs.
-          Impact Audit: Execute `git grep` to identify all consumers of affected Ports or Protocols. If a contract is shared (more than 1 consumer), you are strictly forbidden from planning or specifying an in-place modification. You must design a Branch by Abstraction strategy using the Seam prefix in the Vertical Slice in Phase 5.
+          Impact Audit: Execute `git grep` to identify all consumers of affected Ports or Protocols. If a contract is shared (more than 1 consumer), you are strictly forbidden from planning or specifying an in-place modification. You must design a Branch by Abstraction strategy using both the Seam and Cleanup prefixes in the Vertical Slice in Phase 5.
         </step>
         <step n="2" name="External Research">RESEARCH external best practices, libraries, or patterns that could inform the solution.</step>
         <step n="3" name="Debt Analysis">Analyze the codebase for existing debt that complicates the new feature. This debt MUST be resolved by defining refactoring work as the initial scenarios in the Vertical Slice you create in Phase 5.</step>

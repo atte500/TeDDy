@@ -18,7 +18,7 @@
         <step n="1" name="Initialization">If no slice doc exists, CREATE one at docs/project/slices/00-NN-{{feature}}.md (Fast-Track) using the Vertical Slice Blueprint. Predict Deliverables based on the request.</step>
         <step n="2" name="Read & Assess">
           If not already in context, READ the slice, the Behavioral Prototype code, and all linked Component Design Docs from the metadata. Extract requirements and behavioral intent.
-          Ownership Audit: If the planned deliverable modifies an existing Port or Protocol, you must execute `git grep "[PortName]"` to count consumers. If more than 1 consumer exists and no Seam deliverable is planned, you must edit the slice to adopt a Branch by Abstraction strategy by adding a Seam deliverable before writing any code.
+          Ownership Audit: If the planned deliverable modifies an existing Port or Protocol, you must execute `git grep "[PortName]"` to count consumers. If more than 1 consumer exists and no Seam deliverable is planned, you must edit the slice to adopt a Branch by Abstraction strategy by adding both a Seam and a Cleanup deliverable before writing any code.
         </step>
       </phase>
 

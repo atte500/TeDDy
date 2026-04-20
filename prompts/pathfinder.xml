@@ -20,7 +20,7 @@
         <goal>Gather comprehensive technical context about the Problem Space ("The Why" and "The How").</goal>
         <step n="1" name="Internal Context Gathering">
           Use `EXECUTE` (`git grep`) and `READ` to understand the current codebase.
-          Impact Audit: If the goal involves modifying an existing Port or Protocol, you must use `git grep "[PortName]"` to identify all existing consumers. If more than 1 consumer exists, you must plan for a Branch by Abstraction strategy (Seam deliverable) rather than an in-place modification.
+          Impact Audit: If the goal involves modifying an existing Port or Protocol, you must use `git grep "[PortName]"` to identify all existing consumers. If more than 1 consumer exists, you must plan for a Branch by Abstraction strategy (including both Seam and Cleanup deliverables) rather than an in-place modification.
         </step>
         <step n="2" name="External Context Gathering">Use RESEARCH to explore external best practices, libraries, or APIs.</step>
         <step n="3" name="Fast-Track Probing">If considering the Fast-Track path to the Developer, you MUST CREATE temporary, localized code probes (e.g., in spikes/) and EXECUTE them to validate that the feature is truly low-risk and trivial before finalizing your path recommendation. If the probe reveals unexpected complexity or risk, or if the Impact Audit reveals a shared contract, you MUST pivot your recommendation to the Prototyper.</step>
