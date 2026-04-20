@@ -93,7 +93,7 @@ def test_execute_auto_skips_after_failure(env, mock_action_dispatcher):
     # Second action should be skipped
     assert report.action_logs[1].status == ActionStatus.SKIPPED
     assert (
-        "Skipped because a previous action failed. (Hint: use 'Allow Failure: true' to continue the Action Plan even if the command returns a non-zero exit code)"
+        "Skipped because a previous action failed. (Hint: use 'Allow Failure: true' in EXECUTE actions to proceed even with non-zero exit codes.)"
         in str(report.action_logs[1].details)
     )
 
