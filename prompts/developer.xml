@@ -61,7 +61,7 @@
         <step n="2" name="Hard Abort (Regression)">
           When integration reveals a systemic regression (breaking existing components):
           1. Revert: `git checkout -- src/ tests/` to restore Green trunk.
-          2. Pivot: Modify the slice's `## Deliverables` to add deliverable items following Branch by Abstraction principles.
+          2. Pivot: Modify the slice's `## Deliverables` to add deliverable items (Seam, Refactor, Cleanup) following Branch by Abstraction principles.
           3. Commit: Log friction in `Delta Analysis` and commit slice update before starting to work on the first item.
         </step>
       </phase>
