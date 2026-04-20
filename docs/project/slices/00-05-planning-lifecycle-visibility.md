@@ -66,7 +66,7 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 ## Deliverables
 - [x] **Harness** - Async infrastructure (Global `anyio_backend` fixture).
 - [x] **Seam** - Add `async_get_completion` to `ILlmClient` and implement in `LiteLLMAdapter`.
-- [ ] **Seam** - Add `async_generate_plan` to `IPlanningUseCase` and implement in `PlanningService`.
+- [x] **Seam** - Add `async_generate_plan` to `IPlanningUseCase` and implement in `PlanningService`.
 - [ ] **Seam** - Add async counterparts to `ISessionManager` and `IRunPlanUseCase`.
 - [ ] **Refactor** - Progressively migrate `SessionOrchestrator` to async methods.
 - [ ] **Cleanup** - Remove synchronous port methods once migration is complete.
@@ -144,3 +144,8 @@ The Developer MUST NOT implement simulation-only logs found in the prototype:
 - **Friction (Path Resolution):** Introduction of the date-time prefix caused regressions in `resolve_session_from_path` and `SessionService.get_latest_turn` because they relied on exact string matches for session names.
 - **Friction (Log Sequencing):** The "Waiting for agent..." log was appearing before the user instruction prompt in Turn 1 due to the sequencing in `SessionOrchestrator`. It must be moved inside `PlanningService` to trigger only after the instruction is resolved.
 - **Decision:** Shifted from a broad "Infrastructure" task to atomic DbC-prefixed deliverables to de-risk the async transformation and prefix implementation.
+
+### Deliverable: async_generate_plan Seam
+- Introduced `async_generate_plan` to `IPlanningUseCase` and `PlanningService`.
+- Implementation is a `NotImplementedError` to allow for incremental migration (Branch by Abstraction).
+- Verified that adding the abstract method did not break existing DI or mocks in the test suite.

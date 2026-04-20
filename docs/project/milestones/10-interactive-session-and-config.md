@@ -117,6 +117,7 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 - [ ] **File Length:** Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_helpers.py` (455 lines).
 - [ ] **Complexity:** Refactor `check_action_logic` (PLR0911: 7 return statements).
 - [ ] **Complexity:** Refactor `ExecutionOrchestrator.execute` (C901, PLR0912, PLR0915) after adding aborted action mapping logic.
+- [ ] **Complexity:** Refactor `PlanningService.generate_plan` (C901, PLR0915) to meet complexity and statement limits.
 - [ ] **Typing:** Resolve `Mypy` union-attr errors and `Worker` awaitable mismatch in TUI logic/app.
 - [ ] **Vulture:** Configure `.vulture_whitelist` or pragmas for abstract Port definitions to resolve 40+ false positives.
 - [ ] **Vulture (Console Interactor Tests):** Resolve unused `args`/`kwargs` in `test_console_interactor.py`.
