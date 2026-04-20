@@ -64,9 +64,12 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 ```
 
 ## Deliverables
-- [ ] **Harness** - Async-ready `TestEnvironment` & `CliTestAdapter` (Support `@pytest.mark.anyio`).
-- [ ] **Contract** - Convert `ILlmClient` and `IPlanningUseCase` to `async`.
-- [ ] **Contract** - Convert `ISessionManager` (SessionService) and `IRunPlanUseCase` to `async`.
+- [ ] **Harness** - Async infrastructure (Global `anyio_backend` fixture).
+- [ ] **Seam** - Add `async_get_completion` to `ILlmClient` and implement in `LiteLLMAdapter`.
+- [ ] **Seam** - Add `async_generate_plan` to `IPlanningUseCase` and implement in `PlanningService`.
+- [ ] **Seam** - Add async counterparts to `ISessionManager` and `IRunPlanUseCase`.
+- [ ] **Refactor** - Progressively migrate `SessionOrchestrator` to async methods.
+- [ ] **Cleanup** - Remove synchronous port methods once migration is complete.
 - [ ] **Logic** - Chronological session sorting (date prefixing) in `SessionService`.
 - [ ] **Logic** - Natural session name resolution (prefix stripping) in `SessionRepository`.
 - [ ] **Refactor** - Migrate `PlanningService` and `SessionOrchestrator` to `async`.
@@ -77,6 +80,13 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 - [ ] **Wiring** - Async CLI integration (anyio runner) in `session_cli_handlers.py`.
 
 ## Delta Analysis
+
+### 0. Migration Strategy (Correction)
+The initial attempt to convert ports to `async` in-place caused a systemic regression of 150+ test failures. We are pivoting to **Branch by Abstraction**:
+1. Introduce async methods in parallel to existing sync methods in core ports.
+2. Update implementations to support both.
+3. Migrate high-level orchestrators turn-by-turn.
+4. Prune sync paths once full coverage is achieved.
 
 ### 1. Hybrid Async Transformation
 To support the TUI's stability requirements (native `push_screen_wait`) and non-blocking LLM calls, we are adopting a "Hybrid Async" model.
