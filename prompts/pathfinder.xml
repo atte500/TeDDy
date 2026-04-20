@@ -19,8 +19,8 @@
       <phase n="1" name="Discovery">
         <goal>Gather comprehensive technical context about the Problem Space ("The Why" and "The How").</goal>
         <step n="1" name="Internal Context Gathering">
-          Use `EXECUTE` (`git grep`) and `READ` to understand the current codebase.
-          Impact Audit: If the goal involves modifying an existing Port or Protocol, you must use `git grep "[PortName]"` to identify all existing consumers. If more than 1 consumer exists, you must plan for a Branch by Abstraction strategy (including both Seam and Cleanup deliverables) rather than an in-place modification.
+          Use `EXECUTE` (`git grep`) and `READ` to understand the codebase.
+          Impact Audit: If modifying an existing component, execute `git grep` to identify all consumers and quantify risk. If a contract has > 1 consumer, plan for Branch by Abstraction (Seam, Refactor items, and Cleanup).
         </step>
         <step n="2" name="External Context Gathering">Use RESEARCH to explore external best practices, libraries, or APIs.</step>
         <step n="3" name="Fast-Track Probing">If considering the Fast-Track path to the Developer, you MUST CREATE temporary, localized code probes (e.g., in spikes/) and EXECUTE them to validate that the feature is truly low-risk and trivial before finalizing your path recommendation. If the probe reveals unexpected complexity or risk, or if the Impact Audit reveals a shared contract, you MUST pivot your recommendation to the Prototyper.</step>
@@ -42,7 +42,7 @@
 
       <phase n="4" name="Handoff">
         <goal>Gain final approval, commit the artifact, and invoke the next agent.</goal>
-        <step n="1" name="Consistency Check">Execute `git grep` sanity check to ensure no stale references remain.</step>
+        <step n="1" name="Consistency Check">`EXECUTE` `git grep` for deleted/renamed components and resolve hits in documentation or comments before handoff.</step>
         <step n="2" name="Approval Gate">`PROMPT` the user to review the finalized deliverables and architectural specs. Do NOT proceed to version control without explicit user approval.</step>
         <step n="3" name="Commit & Invoke">Commit the finalized artifact and `INVOKE` the approved agent, or `RETURN` for Self assignments.</step>
       </phase>
@@ -169,7 +169,7 @@
         </section>
         <section n="4" name="Deliverables">
           <item name="Heading">## Deliverables</item>
-          <item name="Content">Dependency-sequenced checklist of atomic, testable units (one per commit). Use DbC prefixes: 1. Contract (Interfaces, DTOs), 2. Harness (Infrastructure; no test cases), 3. Seam (Branch by Abstraction; parallel ports/adapters), 4. Logic (Domain), 5. Wiring (DI, Adapters), 6. Cleanup (Deletion of legacy paths after 100% migration). Format: - [ ] **Prefix** - Description.</item>
+          <item name="Content">Dependency-sequenced checklist of atomic, testable units (one per commit). Use DbC prefixes: 1. Contract (Interfaces, DTOs), 2. Harness (Infrastructure; no test cases), 3. Seam (Parallel adapter; Abstraction layer), 4. Refactor (Modification; Migration), 5. Logic (Domain logic; Implementation), 6. Wiring (Assembly; Entry point), 7. Cleanup (Deletion; Pruning). Format: `- [ ] **Prefix** - Description`.</item>
         </section>
         <section n="5" name="Delta Analysis">
           <item name="Heading">## Delta Analysis</item>

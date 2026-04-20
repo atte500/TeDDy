@@ -31,8 +31,8 @@
       <phase n="1" name="Exploration">
         <goal>Gather context, identify design options, and analyze complicating debt.</goal>
         <step n="1" name="Internal Analysis">
-          `READ` the target milestone and specs.
-          Impact Audit: Execute `git grep` to identify all consumers of affected Ports or Protocols. If a contract is shared (more than 1 consumer), you are strictly forbidden from planning or specifying an in-place modification. You must design a Branch by Abstraction strategy using both the Seam and Cleanup prefixes in the Vertical Slice in Phase 5.
+          `READ` the target milestone/specs.
+          Impact Audit: Execute `git grep` for all affected Ports or Protocols to quantify risk. If a contract is shared (> 1 consumer), you are forbidden from planning in-place modifications. You must design a Branch by Abstraction strategy (Seam, Refactor items, and Cleanup) in the Phase 5 Vertical Slice.
         </step>
         <step n="2" name="External Research">RESEARCH external best practices, libraries, or patterns that could inform the solution.</step>
         <step n="3" name="Debt Analysis">Analyze the codebase for existing debt that complicates the new feature. This debt MUST be resolved by defining refactoring work as the initial scenarios in the Vertical Slice you create in Phase 5.</step>
@@ -59,7 +59,7 @@
       <phase n="5" name="Handoff">
         <goal>Create a draft Vertical Slice and hand off to the Prototyper for de-risking.</goal>
         <step n="1" name="Create Draft Slice">`CREATE` a draft Vertical Slice. Based on your analysis in Phase 1, define any required refactoring work as the first set of scenarios. Subsequent scenarios will then define the new feature's behavior. In the `Metadata` section, you MUST add links to all relevant Component Design Docs you created or edited in the previous phase.</step>
-        <step n="2" name="Consistency Check">Execute `git grep` sanity check to ensure no stale references remain.</step>
+        <step n="2" name="Consistency Check">`EXECUTE` `git grep` for deleted/renamed components and resolve hits in documentation or comments before handoff.</step>
         <step n="3" name="Approval Gate">`PROMPT` the user to review the finalized deliverables and architectural specs. Do NOT proceed to version control without explicit user approval.</step>
         <step n="4" name="Commit & Handoff">Commit the draft slice and all updated architecture documents, then `INVOKE` the `Prototyper`.</step>
       </phase>
@@ -134,7 +134,7 @@
         </section>
         <section n="4" name="Deliverables">
           <item name="Heading">## Deliverables</item>
-          <item name="Content">Dependency-sequenced checklist of atomic, testable units (one per commit). Use DbC prefixes: 1. Contract (Interfaces, DTOs), 2. Harness (Infrastructure; no test cases), 3. Seam (Branch by Abstraction; parallel ports/adapters), 4. Logic (Domain), 5. Wiring (DI, Adapters), 6. Cleanup (Deletion of legacy paths after 100% migration). Format: - [ ] **Prefix** - Description.</item>
+          <item name="Content">Dependency-sequenced checklist of atomic, testable units (one per commit). Use DbC prefixes: 1. Contract (Interfaces, DTOs), 2. Harness (Infrastructure; no test cases), 3. Seam (Parallel adapter; Abstraction layer), 4. Refactor (Modification; Migration), 5. Logic (Domain logic; Implementation), 6. Wiring (Assembly; Entry point), 7. Cleanup (Deletion; Pruning). Format: - [ ] **Prefix** - Description.</item>
         </section>
         <section n="5" name="Delta Analysis">
           <item name="Heading">## Delta Analysis</item>
