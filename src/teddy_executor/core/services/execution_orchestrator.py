@@ -308,7 +308,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
 
     async def async_resume(
         self,
-        _session_name: str,
+        session_name: str,
         interactive: bool = True,
         message: Optional[str] = None,
     ) -> Optional[ExecutionReport]:

@@ -45,3 +45,29 @@ class IRunPlanUseCase(ABC):
             message: Optional user instruction to bridge to the next turn.
         """
         pass
+
+    @abstractmethod
+    async def async_execute(
+        self,
+        plan: Optional[Plan] = None,
+        plan_content: Optional[str] = None,
+        plan_path: Optional[str] = None,
+        interactive: bool = True,
+        message: Optional[str] = None,
+    ) -> ExecutionReport:
+        """
+        Asynchronously executes a plan and returns a report.
+        """
+        pass
+
+    @abstractmethod
+    async def async_resume(
+        self,
+        session_name: str,
+        interactive: bool = True,
+        message: Optional[str] = None,
+    ) -> Optional[ExecutionReport]:
+        """
+        Asynchronously resumes the session based on its state.
+        """
+        pass

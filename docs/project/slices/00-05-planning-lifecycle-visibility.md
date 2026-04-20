@@ -68,7 +68,7 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 - [x] **Seam** - Add `async_get_completion` to `ILlmClient` and implement in `LiteLLMAdapter`.
 - [x] **Seam** - Add `async_generate_plan` to `IPlanningUseCase` and implement in `PlanningService`.
 - [x] **Seam** - Add async counterparts to `ISessionManager` and `IRunPlanUseCase`.
-- [ ] **Refactor** - Progressively migrate `SessionOrchestrator` to async methods.
+- [x] **Refactor** - Progressively migrate `SessionOrchestrator` to async methods.
 - [ ] **Cleanup** - Remove synchronous port methods once migration is complete.
 - [ ] **Logic** - Chronological session sorting (date prefixing) in `SessionService`.
 - [ ] **Logic** - Natural session name resolution (prefix stripping) in `SessionRepository`.
@@ -154,3 +154,9 @@ The Developer MUST NOT implement simulation-only logs found in the prototype:
 - Expanded `IRunPlanUseCase` (inbound) and `ISessionManager` (outbound) ports with `async_` prefixed methods.
 - Implemented `NotImplementedError` stubs in `ExecutionOrchestrator`, `SessionOrchestrator`, and `SessionService`.
 - Verified via `tests/suites/acceptance/test_async_port_migration.py` and global suite run.
+
+### Deliverable: Refactor SessionOrchestrator Async Migration
+- Migrated `SessionOrchestrator.async_execute` and `async_resume` to functional async implementations.
+- Implemented `SessionPlanner.async_trigger_new_plan` to support async planning turns.
+- Adopted "Hybrid Async" model: wrapping synchronous filesystem and service calls in `anyio.to_thread.run_sync` to prevent event loop blocking.
+- Ratcheted acceptance test `test_run_plan_use_case_has_async_counterparts` to use a valid plan and session, pushing the failure frontier to the next unimplemented layer.

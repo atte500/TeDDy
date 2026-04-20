@@ -49,6 +49,18 @@ class ISessionManager(Protocol):
         """
         ...
 
+    async def async_transition_to_next_turn(
+        self,
+        plan_path: str,
+        execution_report: Optional[ExecutionReport] = None,
+        turn_cost: float = 0.0,
+        is_validation_failure: bool = False,
+    ) -> str:
+        """
+        Asynchronously calculates and creates the next turn directory.
+        """
+        ...
+
     def resolve_context_paths(self, plan_path: str) -> dict[str, list[str]]:
         """
         Locates context files relative to the plan path and returns their contents.

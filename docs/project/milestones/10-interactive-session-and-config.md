@@ -104,6 +104,9 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 - [ ] **Dependency:** Update `aiohttp` to 3.13.4+, `litellm` to 1.83.0+, and `pygments` to 2.20.0+ to resolve multiple vulnerabilities found by `pip-audit`.
 
 ### New Technical Debt (Discovered during TUI Refinement)
+- [ ] **File Length:** Refactor `src/teddy_executor/core/services/execution_orchestrator.py` (329 lines).
+- [ ] **File Length:** Refactor `src/teddy_executor/core/services/session_orchestrator.py` (414 lines).
+- [ ] **Complexity:** Refactor `ExecutionOrchestrator.execute` (C901, PLR0912, PLR0915).
 - [ ] **File Length (TUI Adapters):** Refactor TUI adapter components to satisfy the 300-line limit:
     - `src/teddy_executor/adapters/inbound/textual_plan_reviewer_app.py`
     - `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py`

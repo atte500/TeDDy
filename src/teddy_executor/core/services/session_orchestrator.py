@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Any, Optional, Sequence
 
+import anyio
 import yaml
 from teddy_executor.core.domain.models.execution_report import (
     ExecutionReport,
@@ -60,7 +61,58 @@ class SessionOrchestrator(IRunPlanUseCase):
         """
         Asynchronously executes a plan and returns a report.
         """
-        raise NotImplementedError("Async execution not yet implemented.")
+        # 0. Detect Session Mode
+        is_session = await anyio.to_thread.run_sync(self._is_session_mode, plan_path)
+
+        # 1. Parsing
+        if not plan:
+            content = plan_content or (
+                await anyio.to_thread.run_sync(
+                    self._file_system_manager.read_file, plan_path
+                )
+                if plan_path
+                else ""
+            )
+            plan = await anyio.to_thread.run_sync(
+                self._parse_and_handle_structural_errors, content, plan_path, is_session
+            )
+
+        # 2. Validation
+        context_paths = None
+        if is_session:
+            context_paths = await anyio.to_thread.run_sync(
+                self._session_service.resolve_context_paths, plan_path
+            )
+
+        errors = await anyio.to_thread.run_sync(
+            self._plan_validator.validate, plan, context_paths
+        )
+        if errors:
+            # Note: _handle_logical_validation_errors is synchronous and performs I/O.
+            # In a full migration, this would be awaited or wrapped.
+            return await anyio.to_thread.run_sync(
+                self._handle_logical_validation_errors,
+                plan,
+                errors,
+                getattr(plan, "raw_content", "") or "",
+                plan_path,
+                is_session,
+            )
+
+        # 3. Execution
+        report = await self._execution_orchestrator.async_execute(
+            plan=plan,
+            plan_content=plan_content,
+            plan_path=plan_path,
+            interactive=interactive,
+            message=message,
+        )
+
+        # 4. Turn Transition
+        if is_session and plan_path:
+            await anyio.to_thread.run_sync(self._finalize_turn, plan_path, report)
+
+        return report
 
     async def async_resume(
         self,
@@ -71,7 +123,50 @@ class SessionOrchestrator(IRunPlanUseCase):
         """
         Asynchronously resumes the session based on its state.
         """
-        raise NotImplementedError("Async resume not yet implemented.")
+        state, turn_path = await anyio.to_thread.run_sync(
+            self._session_service.get_session_state, session_name
+        )
+
+        if state == SessionState.PENDING_PLAN:
+            plan_path = f"{turn_path}/plan.md"
+            return await self.async_execute(
+                plan_path=plan_path, interactive=interactive, message=message
+            )
+
+        if state == SessionState.EMPTY:
+            return await self._async_handle_planning_and_execution(
+                turn_path, interactive, message=message
+            )
+
+        if state == SessionState.COMPLETE_TURN:
+            next_turn_dir = await anyio.to_thread.run_sync(
+                self._session_service.transition_to_next_turn,
+                plan_path=f"{turn_path}/plan.md",
+            )
+            return await self._async_handle_planning_and_execution(
+                next_turn_dir, interactive, message=message
+            )
+
+        return None
+
+    async def _async_handle_planning_and_execution(
+        self, turn_dir: str, interactive: bool, message: Optional[str] = None
+    ) -> Optional[ExecutionReport]:
+        """Triggers planning for a turn and then executes the resulting plan."""
+        new_name = await self._session_planner.async_trigger_new_plan(
+            turn_dir, message=message
+        )
+        if not new_name or new_name == "CANCELLED":
+            return None
+
+        _, actual_turn_path = await anyio.to_thread.run_sync(
+            self._session_service.get_session_state, new_name
+        )
+        return await self.async_execute(
+            plan_path=f"{actual_turn_path}/plan.md",
+            interactive=interactive,
+            message=message,
+        )
 
     def resume(
         self,
