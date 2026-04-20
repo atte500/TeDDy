@@ -7,7 +7,8 @@
 - **Prototypes:**
     - [Logic Prototype](/prototypes/slice_00_05_logic.py)
     - [Visual UX Prototype](/prototypes/final_session_ux_showcase.py)
-- **Component Docs:** [SessionService](/docs/architecture/core/services/session_service.md), [SessionOrchestrator](/docs/architecture/core/services/session_orchestrator.md)
+    - [Telemetry Color Matrix](/prototypes/telemetry_color_matrix.py)
+- **Component Docs:** [SessionService](/docs/architecture/core/services/session_service.md), [SessionOrchestrator](/docs/architecture/core/services/session_orchestrator.md), [SessionRepository](/docs/architecture/core/services/session_repository.md)
 
 ## Business Goal
 To refine the interactive planning lifecycle and improve visibility into system state, ensuring that logs reflect the actual sequence of user events and the TUI provides high-clarity context at a glance.
@@ -63,30 +64,51 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 ```
 
 ## Deliverables
-- [ ] **Logic** - Update `SessionService.create_session` to prefix the session directory name with `YYYYMMDD_HHMMSS-`.
-- [ ] **Logic** - Update `SessionService.rename_session` to preserve the prefix during folder moves.
-- [ ] **Logic** - Update `SessionRepository.resolve_session_from_path` to handle prefixed folder names.
-- [ ] **Logic** - Refactor `PlanningService.generate_plan` to capture and display the progress message `[{turn_id}] {session_name} | Waiting for {agent_name} to respond...` after input resolution.
-- [ ] **Logic** - Update `PlanningService.generate_plan` to return a `CONTINUE` signal (non-None) on empty input to trigger planning with current context.
-- [ ] **Logic** - Update `SessionPlanner._display_planning_telemetry` to use `bright_black` for labels.
-- [ ] **Logic** - Update `ExecutionOrchestrator._handle_action_in_loop` to record the specific "isolation" skip reason for terminal actions in multi-step plans.
-- [ ] **Wiring** - Remove progress display calls from `SessionOrchestrator` and `SessionPlanner` (now handled by `PlanningService`).
+- [ ] **Logic** - Update `SessionService.create_session` to prefix session directories with `datetime.now().strftime("%Y%m%d_%H%M%S")`.
+- [ ] **Logic** - Update `SessionService.rename_session` to preserve the prefix using `re.match(r"^\d{8}_\d{6}-", old_name)`.
+- [ ] **Logic** - Update `SessionRepository.resolve_session_from_path` to strip the `YYYYMMDD_HHMMSS-` prefix when resolving the session name.
+- [ ] **Logic** - Refactor `PlanningService.generate_plan` to capture the session name and log the `[cyan]` planning header ONLY after user instruction is resolved.
+- [ ] **Logic** - Update `PlanningService.generate_plan` to treat empty/whitespace-only input as a signal to proceed using the current context as instruction.
+- [ ] **Logic** - Update `SessionPlanner._display_planning_telemetry` to use `blue` for labels/bullets and `magenta` for values.
+- [ ] **Logic** - Update `ActionExecutor._check_action_isolation` to auto-skip terminal actions in non-interactive mode when `total_actions > 1`.
+- [ ] **Wiring** - Consolidate planning logs by removing redundant calls in `SessionOrchestrator` and `SessionPlanner`.
 
 ## Delta Analysis
-The current implementation of `SessionService` uses a simple name for session directories. Adding a date-time prefix requires updating `create_session` and ensuring that session resolution (via `resolve_session_from_path`) correctly handles the prefix. The display logic for planning turns is currently fragmented between `SessionOrchestrator` and `SessionPlanner`, providing an opportunity for consolidation and refinement.
+
+### Session Management (`SessionService` & `SessionRepository`)
+- `SessionService.create_session`: Needs to inject `datetime.now().strftime("%Y%m%d_%H%M%S")` prefixing.
+- `SessionService.rename_session`: Needs to regex-split the current name into `(prefix, name)` to preserve the prefix while updating the name slug.
+- `SessionRepository.resolve_session_from_path`: Currently resolves the folder name directly. Needs to strip the `YYYYMMDD_HHMMSS-` prefix if present to return the natural session name for UI display.
+
+### Planning Lifecycle (`PlanningService` & `SessionPlanner`)
+- `PlanningService.generate_plan`:
+    - Refactor to capture the session name (via `Path(turn_dir).parent.name`) and strip the prefix.
+    - Centralize the `[cyan][{turn_id}] {session_name} | Waiting for {agent_name} to respond...` log here, immediately after the user message is resolved and before LLM invocation.
+- `SessionPlanner._display_planning_telemetry`:
+    - Update color styles: Bullets/Keys to `blue`, Values to `magenta`.
+    - Replace `dim` with these specific colors for Model, Context, and Cost.
+
+### Action Isolation (`ExecutionOrchestrator`)
+- `ExecutionOrchestrator._handle_action_in_loop`:
+    - Add logic to automatically skip terminal actions (PROMPT, INVOKE, RETURN) when `not interactive` and `len(plan.actions) > 1`.
+    - Set skip reason to: `"Automatically skipped: This action must be performed in isolation."`
 
 ## UI Style Guide & Implementation Guidelines
 
 ### 1. Colors & Styles
 - **Turn Header:** `[{turn_id}] {session_name} | Waiting for {agent} to respond...` MUST use **`cyan`**.
-- **Telemetry Labels:** `• Model:`, `• Context:`, `• Session Cost:` MUST use **`bright_black`** (grey). Do not use `dim`.
+- **Telemetry Labels:** The bullet and key (e.g., `• Model:`) MUST use **`blue`**.
+- **Telemetry Values:** The actual data (e.g., `gpt-4o`) MUST use **`magenta`**.
 - **Instruction Prompt:** `Initial instructions for the session (type 'e' for editor)` MUST use **`bold white`**.
 
 ### 2. Logic & Sequencing
 - **Prompt Frequency:** The manual instruction prompt MUST ONLY appear on **Turn 01**. Subsequent turns (Turn 02+) MUST proceed automatically using the context from the previous turn's execution report (User Request section).
 - **Log Sequencing:** The `cyan` progress header MUST ONLY appear AFTER user instructions are captured (on Turn 1) or AFTER the lookback resolution (on Turn 2+).
 - **Date Formatting:** Use `datetime.now().strftime("%Y%m%d_%H%M%S")` for session folder prefixes.
-- **Prefix Handling:** `SessionService.rename_session` MUST preserve the existing `YYYYMMDD_HHMMSS-` prefix when renaming.
+- **Prefix Handling:** `SessionService.rename_session` MUST preserve the existing `YYYYMMDD_HHMMSS-` prefix. Use `re.sub(r"^\d{8}_\d{6}-", "", old_name)` to get the slug and prepend the captured prefix to the new slug.
+
+### 3. Terminal Action Isolation
+- **Non-Interactive Mode:** If `interactive` is `False` (e.g., `execute -y`) and the plan contains multiple actions, terminal actions (`PROMPT`, `INVOKE`, `RETURN`) MUST be automatically skipped with the standard isolation reason: `"Automatically skipped: This action must be performed in isolation."`
 
 ### 3. Production vs. Prototype Mapping
 The Developer MUST NOT implement simulation-only logs found in the prototype:
