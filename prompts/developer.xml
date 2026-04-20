@@ -18,7 +18,7 @@
         <step n="1" name="Initialization">If missing, CREATE slice at `docs/project/slices/00-NN-{{feature}}.md`.</step>
         <step n="2" name="Plan Validation">
           Perform a dual-audit of the current plan.
-          1. External (Impact): EXECUTE git grep -c on targets. If shared contract (>1 consumer) or logic collision, you must pivot to Branch by Abstraction.
+          1. External (Impact): EXECUTE git grep on targets. If shared contract (>1 consumer) or logic collision, you must pivot to Branch by Abstraction.
           2. Internal (Atomicity): If an item is too broad, contains multiple logical changes, or lacks necessary Seam/Refactor items, decompose it into smaller, atomic items. If items are logically dependent or redundant, merge them into a single atomic unit.
         </step>
         <step n="3" name="Plan Update (Contingency)">
