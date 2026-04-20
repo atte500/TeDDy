@@ -162,7 +162,7 @@ WIP & REMINDERS:
         </section>
         <section n="4" name="Deliverables">
           <item name="Heading">## Deliverables</item>
-          <item name="Content">A unified checklist of atomic units of work for the entire slice. MUST use strict Design-by-Contract prefixes ordered as follows: 1. **Contract** - (Interfaces, DTOs), 2. **Harness** - (Extend test infrastructure: Setup builders, Driver methods, Observer assertions, Fakes. Do NOT write specific test cases here), 3. **Logic** - (Domain implementation), 4. **Wiring** - (DI, Controllers, Adapters), 5. **Cleanup** - (Optional). Format exactly as: `- [ ] **Prefix** - Description`. Each deliverable MUST be a distinct, testable unit scoped to be implemented in exactly ONE single atomic commit cycle.</item>
+          <item name="Content">Dependency-sequenced checklist of atomic, testable units (one per commit). Use DbC prefixes: 1. **Contract** (Interfaces, DTOs), 2. **Harness** (Infrastructure; no test cases), 3. **Logic** (Domain), 4. **Wiring** (DI, Adapters), 5. **Cleanup**. Format: `- [ ] **Prefix** - Description`.</item>
         </section>
         <section n="5" name="Delta Analysis">
           <item name="Heading">## Delta Analysis</item>
