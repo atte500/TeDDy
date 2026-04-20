@@ -52,7 +52,14 @@
         <goal>Act as a Local Continuous Integration (CI) Gate to ensure system integrity. This MUST be done for each deliverable independently, even if the overall feature functionality is not yet finalized.</goal>
         <step n="1" name="Global Run">Execute the root test suite with ZERO path filters to verify the entire system.</step>
         <step n="2" name="Verify Ratchet">Confirm the acceptance test that was ratcheted in Phase 2 is now strictly Green.</step>
-        <step n="3" name="Regression Fix">If ANY test fails, treat it as a hard stop. Diagnose and fix the integration issues or regressions immediately before proceeding to Documentation.</step>
+        <step n="3" name="Regression Fix / Replanning">
+          If ANY test fails, treat it as a hard stop. If the issue is localized, fix it immediately. However, if systemic issues arise (e.g., architectural friction), you MUST:
+          1. Execute `git diff HEAD` to analyze the current changes and identify the friction.
+          2. `EDIT` the Vertical Slice doc to update `## Implementation Notes` and `## Guidelines for Implementation` with your findings.
+          3. Re-plan the remaining `Deliverables` into smaller, more atomic pieces according to the Vertical Slice blueprint. Do NOT override already completed deliverables or implementation notes that were not reverted.
+          4. Reset the workspace by discarding uncommitted/non-essential changes that were part of the failed implementation (ensuring documentation updates are preserved).
+          5. Proceed immediately to Phase 6 (Version Control) to commit and push the updated documentation before restarting the cycle.
+        </step>
       </phase>
 
       <phase n="5" name="Documentation">
@@ -181,7 +188,7 @@ WIP & REMINDERS:
         </section>
         <section n="4" name="Deliverables">
           <item name="Heading">## Deliverables</item>
-          <item name="Content">A unified checklist of atomic units of work for the entire slice using strict Design-by-Contract prefixes: 1. **Contract** - (Interfaces, DTOs), 2. **Harness** - (Extend test infrastructure: Setup builders, Driver methods, Observer assertions, Fakes), 3. **Logic** - (Domain implementation), 4. **Wiring** - (DI, Controllers, Adapters), 5. **Cleanup** - (Optional). Format exactly as: `- [ ] **Prefix** - Description`. You MUST successfully integrate and push each deliverable before starting the next item on the checklist.</item>
+          <item name="Content">A unified checklist of atomic units of work for the entire slice using strict Design-by-Contract prefixes: 1. **Contract** - (Interfaces, DTOs), 2. **Harness** - (Extend test infrastructure: Setup builders, Driver methods, Observer assertions, Fakes. Do NOT write specific test cases here), 3. **Logic** - (Domain implementation), 4. **Wiring** - (DI, Controllers, Adapters), 5. **Cleanup** - (Optional). Format exactly as: `- [ ] **Prefix** - Description`. Each deliverable MUST be a distinct, testable unit scoped to be implemented in exactly ONE single atomic commit cycle. You MUST successfully integrate and push each deliverable before starting the next item.</item>
         </section>
         <section n="5" name="Delta Analysis">
           <item name="Heading">## Delta Analysis</item>
