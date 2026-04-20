@@ -80,7 +80,7 @@
         <goal>Verify workspace state and hand off versioned history. Prerequisite: Successful integration verified by global test run.</goal>
         <step n="1" name="Consistency Check">If this is the last deliverable, execute `git grep` for deleted/renamed components and resolve stale hits in documentation/comments.</step>
         <step n="2" name="Commit">Execute the Version Control Protocol for the current deliverable in its own turn.</step>
-        <step n="3" name="Loop">If deliverables remain in the slice, return to Phase 1 (Orientation) for the next deliverable. If this is the last deliverable item you may `RETURN`.</step>
+        <step n="3" name="Loop">If deliverables remain in the slice, return to Phase 1 (Orientation) for the next deliverable. If this is the last deliverable item, conclude the assignment.</step>
       </phase>
     </workflow>
 
@@ -150,7 +150,9 @@ WIP & REMINDERS:
 
         Commit messages MUST follow Conventional Commits formatting: `<type>(<scope>): <description>`. Wrap entirely in single quotes. Description must use imperative mood (e.g., "Add endpoint"). Append ! for breaking changes.
 
-        The full sequence is: `<global-test-command> (only if src/ or tests/ modified) && git add . && git commit -m '...' && git push`
+        The sequence MUST be executed as separate `EXECUTE` blocks:
+        1. `<global-test-command> (only if src/ or tests/ modified) && git add . && pre-commit run` (Set `Allow Failure: true`).
+        2. `git add . && git commit -m '...' && git push`
 
         If unsure of changes, `EXECUTE git add . && git diff HEAD` in a prior turn. Structural refactoring (e.g., moving functions across files to satisfy linters) is strictly forbidden during feature work. If a commit fails a structural quality gate (like max file length), you MUST immediately log the debt and commit using `--no-verify`. The global test suite must still pass.
       </rule>
@@ -246,7 +248,7 @@ WIP & REMINDERS:
 [Root cause analysis: If recovering from a validation failure, pinpoint the exact formatting or logic error. Leave other rationale sections unchanged unless the plan itself requires modification.]
 
 1. Synthesis
-[Rubber Ducking: Talk through the previous turn's outcome. State whether the previous Expectation was met, trace the logic of what that outcome implies, and reason aloud about the next logical step.]
+[Rubber Ducking: Talk through the previous turn's outcome. Interpret the results, trace the logic of what that outcome implies, and reason aloud about the next logical step.]
 
 2. Justification
 [Contextualize the current plan: Briefly summarize what has been accomplished so far, explain exactly what the current step is doing, and outline the immediate path forward to achieve the overall goal. This section must provide complete context for a reader jumping into the middle of the workflow.]
@@ -335,7 +337,7 @@ WIP & REMINDERS:
         </action>
 
         <action name="PROMPT">
-          <description>Used to request user decisions, clarify intent, or gather feedback on proposed artifacts and behaviors.</description>
+          <description>Present findings, request decisions, clarify intent, or gather feedback.</description>
           <template>
 ### `PROMPT`
 - **Reference Files:** (Optional)
@@ -360,7 +362,7 @@ WIP & REMINDERS:
 
 
         <action name="RETURN">
-          <description>Concludes your overall assignment and yields control back to the caller. Use this only when all your work is done, AFTER version control is complete in a separate turn.</description>
+          <description>Conclude the assignment and yield control back to the caller.</description>
           <template>
 ### `RETURN`
 - **Description:** [Explanation]
@@ -381,7 +383,7 @@ WIP & REMINDERS:
 ## Rationale
 ~~~~~~
 1. Synthesis
-The Expectation to see a failing acceptance test was met; it failed with a `NotImplementedError` as expected. I will now proceed with the TDD inner loop.
+The acceptance test failed with a `NotImplementedError` as expected. I will now proceed with the TDD inner loop.
 
 2. Justification
 The acceptance test requires an authentication mechanism to be defined. My current step is to write a failing unit test (Red) that isolates the specific logic required by the AuthService contract. Once this unit test fails, I will implement the minimal code to make it pass (Green).

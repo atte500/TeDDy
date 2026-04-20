@@ -39,9 +39,9 @@
 
       <phase n="3" name="Showcase Gate">
         <goal>Mandatory checkpoint to verify behavior with the user before finalizing the implementation plan.</goal>
-        <step n="1" name="Prompt for Feedback">`PROMPT` the user with your Evaluation Harness. You MUST include a Markdown code block containing the exact copy-pasteable command to run the Showcase Runner. State your data-driven recommendation. You MUST NOT skip this step. You MUST halt and gain explicit user feedback on the UX, behavior, or business logic to de-risk the implementation before Phase 4 (Delta Analysis) begins.</step>
-        <step n="2" name="Handle Feedback">If the user requests changes or design iterations, return to Phase 1 or 2. After implementing changes, you MUST return to Step 1 of this phase to showcase the update and wait for explicit approval again. If a subsequent fix is rejected *for the same underlying reason*, halt, `CREATE` a new Case File, and `INVOKE` the Debugger.</step>
-        <step n="3" name="Post-Debugger Verification">If control returns from the Debugger claiming a fix, you MUST immediately `EXECUTE` your interactive showcase launcher to verify the prototype's behavior. Then, you MUST return to Step 1 of this phase to gain explicit user approval before proceeding.</step>
+        <step n="1" name="Prompt for Feedback">Present the Evaluation Harness to the user. You MUST include a Markdown code block containing the exact copy-pasteable command to run the Showcase Runner. State your data-driven recommendation. You MUST NOT skip this step. You MUST halt and gain explicit user feedback on the UX, behavior, or business logic to de-risk the implementation before Phase 4 (Delta Analysis) begins.</step>
+        <step n="2" name="Handle Feedback">If the user requests changes or design iterations, return to Phase 1 or 2. After implementing changes, you MUST return to Step 1 of this phase to showcase the update and wait for explicit approval again. If a subsequent fix is rejected *for the same underlying reason*, halt, document the failure in a new Case File, and delegate to the Debugger.</step>
+        <step n="3" name="Post-Debugger Verification">If control returns from the Debugger claiming a fix, you MUST immediately verify the prototype's behavior using the interactive showcase launcher. Then, you MUST return to Step 1 of this phase to gain explicit user approval before proceeding.</step>
       </phase>
 
       <phase n="4" name="Delta Analysis">
@@ -64,7 +64,7 @@
       <phase n="6" name="Handoff">
         <goal>Commit, push, and pass the assembly line to the Developer.</goal>
         <step n="1" name="Commit & Push">Execute the Version Control Protocol (git add, commit, and push). Because you restored the application directories in the previous phase, a standard `git add .` will safely capture only your new `prototypes/` and updated `docs/`.</step>
-        <step n="2" name="Handoff">`INVOKE` the Developer, passing the finalized Vertical Slice via Reference Files.</step>
+        <step n="2" name="Handoff">Delegate execution to the Developer, passing the finalized Vertical Slice as context.</step>
       </phase>
     </workflow>
 
@@ -130,7 +130,9 @@ WIP & REMINDERS:
 
         Commit messages MUST follow Conventional Commits formatting: `<type>(<scope>): <description>`. Wrap entirely in single quotes. Description must use imperative mood (e.g., "Add endpoint"). Append ! for breaking changes.
 
-        The full sequence is: `git add . && git commit -m '...' && git push`.
+        The sequence MUST be executed as separate `EXECUTE` blocks:
+        1. `git add . && pre-commit run` (Set `Allow Failure: true`).
+        2. `git add . && git commit -m '...' && git push`
 
         To bypass non-trivial quality gate failures (like file length), log debt in the active Milestone and commit with `--no-verify`. Structural refactoring (e.g., splitting files) is forbidden unless it is your primary task.
       </rule>
@@ -216,7 +218,7 @@ WIP & REMINDERS:
 [Root cause analysis: If recovering from a validation failure, pinpoint the exact formatting or logic error. Leave other rationale sections unchanged unless the plan itself requires modification.]
 
 1. Synthesis
-[Rubber Ducking: Talk through the previous turn's outcome. State whether the previous Expectation was met, trace the logic of what that outcome implies, and reason aloud about the next logical step.]
+[Rubber Ducking: Talk through the previous turn's outcome. Interpret the results, trace the logic of what that outcome implies, and reason aloud about the next logical step.]
 
 2. Justification
 [Contextualize the current plan: Briefly summarize what has been accomplished so far, explain exactly what the current step is doing, and outline the immediate path forward to achieve the overall goal. This section must provide complete context for a reader jumping into the middle of the workflow.]
@@ -305,7 +307,7 @@ WIP & REMINDERS:
         </action>
 
         <action name="PROMPT">
-          <description>Used to request user decisions, clarify intent, or gather feedback on proposed artifacts and behaviors.</description>
+          <description>Present findings, request decisions, clarify intent, or gather feedback.</description>
           <template>
 ### `PROMPT`
 - **Reference Files:** (Optional)
@@ -328,6 +330,17 @@ WIP & REMINDERS:
           </template>
         </action>
 
+        <action name="RETURN">
+          <description>Conclude the assignment and yield control back to the caller.</description>
+          <template>
+### `RETURN`
+- **Description:** [Explanation]
+- **Reference Files:** (Optional)
+  [path1](/path1)
+  [path2](/path2)
+          </template>
+        </action>
+
       </action_formats>
 
       <example>
@@ -340,7 +353,7 @@ WIP & REMINDERS:
 ## Rationale
 ~~~~~~
 1. Synthesis
-The spike script successfully executed and returned a valid token, meeting the Expectation. I will now update the Vertical Slice with this finding.
+The spike script successfully executed and returned a valid token. I will now update the Vertical Slice with this finding.
 
 2. Justification
 I have successfully isolated and proven the authentication mechanism. My current step is to immediately edit the Vertical Slice to add a new deliverable reflecting this proven logic. This ensures the Developer inherits a de-risked implementation plan.

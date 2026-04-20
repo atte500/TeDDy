@@ -56,10 +56,10 @@
       </phase>
 
       <phase n="7" name="Cleanup & Handoff">
-        <goal>Clean up the workspace and return control.</goal>
+        <goal>Clean up the workspace and conclude the assignment.</goal>
         <step n="1" name="Teardown">Run `git status`. Explicitly delete all redundant diagnostic scripts, temporary logs, patch files (`.tmp/fix.patch`), and probes unless permanently promoted to tests. After deletion, run `git add .` to ensure the deletions are staged.</step>
         <step n="2" name="Finalize Case File">Update the Case File. Populate the `## Solution` section. Ensure `### Investigation History` is preserved (never delete it). Change status to Resolved.</step>
-        <step n="3" name="Handoff">Use `RETURN` to pass control back to the user or calling agent.</step>
+        <step n="3" name="Handoff">Yield control back to the user or calling agent.</step>
       </phase>
     </workflow>
 
@@ -125,7 +125,9 @@ WIP & REMINDERS:
 
         Commit messages MUST follow Conventional Commits formatting: `<type>(<scope>): <description>`. Wrap entirely in single quotes. Description must use imperative mood (e.g., "Add endpoint"). Append ! for breaking changes.
 
-        The full sequence is: `<global-test-command> (only if src/ or tests/ modified) && git add . && git commit -m '...' && git push`
+        The sequence MUST be executed as separate `EXECUTE` blocks:
+        1. `<global-test-command> (only if src/ or tests/ modified) && git add . && pre-commit run` (Set `Allow Failure: true`).
+        2. `git add . && git commit -m '...' && git push`
 
         If unsure of changes, `EXECUTE git add . && git diff HEAD` in a prior turn. To bypass non-trivial quality gate failures (like file length), or when committing temporary diagnostic probes, log debt in the active Milestone and commit with `--no-verify`. Structural refactoring (e.g., splitting files) is forbidden unless it is your primary task; the global test suite must still pass.
       </rule>
@@ -218,7 +220,7 @@ A summary of how the regression tests and any harness modifications prevent this
 [Root cause analysis: If recovering from a validation failure, pinpoint the exact formatting or logic error. Leave other rationale sections unchanged unless the plan itself requires modification.]
 
 1. Synthesis
-[Rubber Ducking: Talk through the previous turn's outcome. State whether the previous Expectation was met, trace the logic of what that outcome implies, and reason aloud about the next logical step.]
+[Rubber Ducking: Talk through the previous turn's outcome. Interpret the results, trace the logic of what that outcome implies, and reason aloud about the next logical step.]
 
 2. Justification
 [Contextualize the current plan: Briefly summarize what has been accomplished so far, explain exactly what the current step is doing, and outline the immediate path forward to achieve the overall goal. This section must provide complete context for a reader jumping into the middle of the workflow.]
@@ -307,7 +309,7 @@ A summary of how the regression tests and any harness modifications prevent this
         </action>
 
         <action name="PROMPT">
-          <description>Used to request user decisions, clarify intent, or gather feedback on proposed artifacts and behaviors.</description>
+          <description>Present findings, request decisions, clarify intent, or gather feedback.</description>
           <template>
 ### `PROMPT`
 - **Reference Files:** (Optional)
@@ -319,7 +321,7 @@ A summary of how the regression tests and any harness modifications prevent this
         </action>
 
         <action name="RETURN">
-          <description>Concludes your overall assignment and yields control back to the caller. Use this only when all your work is done.</description>
+          <description>Conclude the assignment and yield control back to the caller.</description>
           <template>
 ### `RETURN`
 - **Description:** [Explanation]
@@ -340,7 +342,7 @@ A summary of how the regression tests and any harness modifications prevent this
 ## Rationale
 ~~~~~~
 1. Synthesis
-The Expectation to initialize the Case File was met. I have noted that while the JWT is structurally valid, the server rejects it. I now need to peel back the layer inside `AuthMiddleware` to see exactly why it rejects the token.
+The Case File has been initialized. I have observed that while the JWT is structurally valid, the server rejects it. I now need to peel back the layer inside `AuthMiddleware` to see exactly why it rejects the token.
 
 2. Justification
 I have gathered initial context and built the baseline System Model. I am now creating a targeted probe to expose the internal state causing the token rejection. This will provide verified facts so we can isolate the fault and formulate a fix.
