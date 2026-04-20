@@ -34,6 +34,9 @@ echo 1
         await orchestrator.async_execute(plan_content=valid_plan)
 
     # We create the session so async_resume can resolve the state and hit the next frontier
+    from teddy_executor.core.ports.inbound.init import IInitUseCase
+
+    container.resolve(IInitUseCase).ensure_initialized()
     session_manager = container.resolve(ISessionManager)
     session_path = session_manager.create_session("test-session", "pathfinder")
     actual_session_name = session_path.split("/")[-1]
