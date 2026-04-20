@@ -307,14 +307,14 @@ A summary of how the regression tests and any harness modifications prevent this
         </action>
 
         <action name="PROMPT">
-          <description>Asks user for decisions. No conversational FYI.</description>
+          <description>Used to request user decisions, clarify intent, or gather feedback on proposed artifacts and behaviors.</description>
           <template>
 ### `PROMPT`
 - **Reference Files:** (Optional)
   [path1](/path1)
   [path2](/path2)
 
-[Message text. CRITICAL: NO Markdown headings or fenced code blocks.]
+[Message text.]
           </template>
         </action>
 

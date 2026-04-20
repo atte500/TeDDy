@@ -36,9 +36,9 @@
 
       <phase n="3" name="Showcase Gate">
         <goal>Mandatory checkpoint to verify behavior with the user before finalizing the implementation plan.</goal>
-        <step n="1" name="Prompt for Feedback">`PROMPT` the user with your Evaluation Harness. State your data-driven recommendation. You MUST NOT skip this step. You MUST halt and gain explicit user feedback on the UX, behavior, or business logic to de-risk the implementation before Phase 4 (Delta Analysis) begins.</step>
-        <step n="2" name="Handle Feedback">If the user requests changes, return to Phase 1 or 2 to iterate. If a subsequent fix is rejected *for the same underlying reason*, halt, `CREATE` a new Case File, and `INVOKE` the Debugger.</step>
-        <step n="3" name="Post-Debugger Verification">If control returns from the Debugger claiming a fix, you MUST immediately `EXECUTE` your interactive showcase launcher to verify the prototype's behavior. Then, you MUST `PROMPT` the user to gain explicit approval of the fix before proceeding, even if the Debugger states the issue is resolved.</step>
+        <step n="1" name="Prompt for Feedback">`PROMPT` the user with your Evaluation Harness. You MUST include a Markdown code block containing the exact copy-pasteable command to run the Showcase Runner. State your data-driven recommendation. You MUST NOT skip this step. You MUST halt and gain explicit user feedback on the UX, behavior, or business logic to de-risk the implementation before Phase 4 (Delta Analysis) begins.</step>
+        <step n="2" name="Handle Feedback">If the user requests changes or design iterations, return to Phase 1 or 2. After implementing changes, you MUST return to Step 1 of this phase to showcase the update and wait for explicit approval again. If a subsequent fix is rejected *for the same underlying reason*, halt, `CREATE` a new Case File, and `INVOKE` the Debugger.</step>
+        <step n="3" name="Post-Debugger Verification">If control returns from the Debugger claiming a fix, you MUST immediately `EXECUTE` your interactive showcase launcher to verify the prototype's behavior. Then, you MUST return to Step 1 of this phase to gain explicit user approval before proceeding.</step>
       </phase>
 
       <phase n="4" name="Delta Analysis">
@@ -59,8 +59,8 @@
       </phase>
 
       <phase n="6" name="Handoff">
-        <goal>Stage approved artifacts and pass the assembly line to the Developer.</goal>
-        <step n="1" name="Commit">Execute the Version Control Protocol. Because you restored the application directories, a standard `git add .` will safely capture only your new `prototypes/` and updated `docs/`.</step>
+        <goal>Commit, push, and pass the assembly line to the Developer.</goal>
+        <step n="1" name="Commit & Push">Execute the Version Control Protocol (git add, commit, and push). Because you restored the application directories in the previous phase, a standard `git add .` will safely capture only your new `prototypes/` and updated `docs/`.</step>
         <step n="2" name="Handoff">`INVOKE` the Developer, passing the finalized Vertical Slice via Reference Files.</step>
       </phase>
     </workflow>
@@ -302,14 +302,14 @@ WIP & REMINDERS:
         </action>
 
         <action name="PROMPT">
-          <description>Asks user for decisions. No conversational FYI.</description>
+          <description>Used to request user decisions, clarify intent, or gather feedback on proposed artifacts and behaviors.</description>
           <template>
 ### `PROMPT`
 - **Reference Files:** (Optional)
   [path1](/path1)
   [path2](/path2)
 
-[Message text. CRITICAL: NO Markdown headings or fenced code blocks.]
+[Message text.]
           </template>
         </action>
 
