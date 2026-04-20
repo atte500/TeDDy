@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 from teddy_executor.core.services.session_repository import SessionRepository
 
 
-def test_resolve_session_from_path_strips_timestamp_prefix():
+def test_resolve_session_from_path_returns_full_folder_name():
     # Setup
     mock_fs = MagicMock()
     repo = SessionRepository(mock_fs)
@@ -14,10 +14,10 @@ def test_resolve_session_from_path_strips_timestamp_prefix():
     session_name = repo.resolve_session_from_path(path)
 
     # Assert
-    assert session_name == "my-feature"
+    assert session_name == "20260417_120000-my-feature"
 
 
-def test_get_latest_session_name_strips_timestamp_prefix():
+def test_get_latest_session_name_returns_full_folder_name():
     # Setup
     mock_fs = MagicMock()
     mock_fs.path_exists.return_value = True
@@ -33,4 +33,4 @@ def test_get_latest_session_name_strips_timestamp_prefix():
     session_name = repo.get_latest_session_name()
 
     # Assert
-    assert session_name == "feat-b"
+    assert session_name == "20260417_120001-feat-b"

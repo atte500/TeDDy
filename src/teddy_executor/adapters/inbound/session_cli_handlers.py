@@ -109,6 +109,7 @@ def handle_resume_session(
     message: Optional[str] = None,
 ):
     """Logic for the 'resume' command."""
+    import re
     from teddy_executor.adapters.inbound.cli_helpers import handle_report_output
 
     session_manager = container.resolve(ISessionManager)
@@ -126,7 +127,9 @@ def handle_resume_session(
                 # If not inside a session, auto-detect the latest session
                 session_name = session_manager.get_latest_session_name()
 
-        typer.echo(f"Resuming session: {session_name}")
+        # Natural Name for display
+        display_name = re.sub(r"^\d{8}_\d{6}-", "", session_name)
+        typer.echo(f"Resuming session: {display_name}")
 
         orchestrator = container.resolve(IRunPlanUseCase)
         while True:
