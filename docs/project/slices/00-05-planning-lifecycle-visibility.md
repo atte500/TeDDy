@@ -64,14 +64,16 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 ```
 
 ## Deliverables
-- [ ] **Contract** - Update `ISessionManager` and `IPlanningUseCase` definitions for session name resolution.
-- [ ] **Harness** - Extend `CliTestAdapter` to capture `stderr` logs for planning visibility assertions.
-- [ ] **Logic** - Implement chronological session sorting (date prefixing) in `SessionService`.
-- [ ] **Logic** - Implement natural session name resolution in `SessionRepository`.
-- [ ] **Logic** - Implement sequenced planning logs and "Proceed on Empty" in `PlanningService`.
-- [ ] **Logic** - Implement telemetry color refinements in `SessionPlanner`.
-- [ ] **Logic** - Implement terminal action soft isolation in `ExecutionOrchestrator`.
-- [ ] **Wiring** - Resolve CLI infinite loops and consolidate planning logs in handlers.
+- [ ] **Contract** - Async `IFileSystemManager` & `IGetContextUseCase` (Foundation).
+- [ ] **Contract** - Async `ILlmClient` & `IPlanningUseCase`.
+- [ ] **Contract** - Async `ISessionManager` & `IRunPlanUseCase`.
+- [ ] **Harness** - Async-ready `TestEnvironment` & `CliTestAdapter` (Support `@pytest.mark.anyio`).
+- [ ] **Logic** - Chronological session sorting (date prefixing) in `SessionService`.
+- [ ] **Logic** - Natural session name resolution (prefix stripping) in `SessionRepository`.
+- [ ] **Logic** - Sequenced planning logs & "Proceed on Empty" in `PlanningService`.
+- [ ] **Logic** - Telemetry color refinements in `SessionPlanner`.
+- [ ] **Logic** - Terminal action soft isolation in `ExecutionOrchestrator`.
+- [ ] **Wiring** - Async CLI integration & loop resolution in `session_cli_handlers.py`.
 
 ## Delta Analysis
 
