@@ -14,22 +14,19 @@
       <description>The Iterative Delivery Cycle. You MUST execute this full cycle (including push) for EACH individual deliverable separately.</description>
 
       <phase n="1" name="Orientation">
-        <goal>Establish foundation and define scope. This phase presumes you have committed all previous changes and are working with a clean workspace.</goal>
-        <step n="1" name="Initialization">If no slice doc exists, CREATE one at docs/project/slices/00-NN-{{feature}}.md (Fast-Track) using the Vertical Slice Blueprint. Predict Deliverables based on the request.</step>
-        <step n="2" name="Read & Assess">
-          If not already in context, READ the slice and linked design docs.
-
-          Strategic Assessment: Before coding, you MUST `EXECUTE` a `git grep` audit to prevent collisions and duplication.
-          - Contract: Audit name/consumers. Pivot if name exists or shared (>1) and no `Seam` is planned.
-          - Harness: Audit `tests/harness/`. Pivot if logic exists and no `Wiring` (reuse) is planned.
-          - Seam: Audit flags/abstractions. Pivot if logic exists and no `Refactor` is planned.
-          - Refactor/Logic: Audit domain terms/methods. Pivot if duplication found and no `Cleanup` is planned.
-          - Wiring: Audit registrations/entry points. Pivot if conflict found and no `Refactor` is planned.
-          - Cleanup: Audit final consumers. Pivot if referenced and no `Refactor` is planned.
-
-          Pivot Protocol: If any audit indicates the plan is insufficient or risky, you MUST Pivot:
-          1. `EDIT` the slice to add preliminary deliverable items,
-          2. Proceed immediately to Phase 6 to commit the update before starting work on the first item.
+        <goal>Foundation and scope verification.</goal>
+        <step n="1" name="Initialization">If missing, CREATE slice at `docs/project/slices/00-NN-{{feature}}.md`.</step>
+        <step n="2" name="Impact Audit">
+          `EXECUTE` `git grep -c` on any target for modification.
+          - Shared Contract (>1 consumer): Modify in-place FORBIDDEN. Pivot to Branch by Abstraction (BBA).
+          - Collision/Overlap: Pivot if name exists or logic overlaps without a planned `Refactor`/`Cleanup`.
+        </step>
+        <step n="3" name="Pivot (BBA)">
+          If Audit fails, `EDIT` slice to insert the BBA Sequence:
+          1. Seam (Parallel impl)
+          2. Refactor (Consumer migration)
+          3. Cleanup (Prune old).
+          Document in `Delta Analysis` and commit immediately (Phase 6).
         </step>
       </phase>
 
@@ -63,15 +60,13 @@
       </phase>
 
       <phase n="4" name="Integration">
-        <goal>Act as a Local Continuous Integration (CI) Gate to ensure system integrity. This MUST be done for each deliverable independently, even if the overall feature functionality is not yet finalized.</goal>
-        <step n="1" name="Global Run">Execute the root test suite with ZERO path filters to verify the entire system.</step>
-        <step n="2" name="Verify Ratchet">Confirm the acceptance test that was ratcheted in Phase 2 is now strictly Green.</step>
-        <step n="3" name="Contingency: Hard Abort Integration">
+        <goal>Local CI Gate. Verify system integrity for the current deliverable.</goal>
+        <step n="1" name="Global Run">Run full test suite (no filters). Confirm acceptance ratchet is Green.</step>
+        <step n="2" name="Hard Abort (Regression)">
           When integration reveals a systemic regression (breaking existing components):
-          1. Revert Reality: Immediately execute `git checkout -- src/ tests/` to discard the breaking code and return the trunk to a Green state.
-          2. Update Plan: `EDIT` the vertical slice to document the friction in `Delta Analysis` and `Implementation Notes`.
-          3. Re-sequence: Add necessary `Seam`, `Refactor`, and `Cleanup` deliverables to the slice to handle the Branch by Abstraction migration safely.
-          4. Version Control: Proceed immediately to Phase 6 to commit ONLY the updated slice and documentation before restarting the orientation for the first uncompleted deliverable.
+          1. Revert: `git checkout -- src/ tests/` to restore Green trunk.
+          2. Pivot: `EDIT` slice to apply the BBA Sequence (Seam -> Refactor -> Cleanup).
+          3. Commit: Log friction in `Delta Analysis` and commit slice update immediately (Phase 6).
         </step>
       </phase>
 
