@@ -69,7 +69,6 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 - [x] **Seam** - Add `async_generate_plan` to `IPlanningUseCase` and implement in `PlanningService`.
 - [x] **Seam** - Add async counterparts to `ISessionManager` and `IRunPlanUseCase`.
 - [x] **Refactor** - Progressively migrate `SessionOrchestrator` to async methods.
-- [ ] **Cleanup** - Remove synchronous port methods once migration is complete.
 - [ ] **Logic** - Chronological session sorting (date prefixing) in `SessionService`.
 - [ ] **Logic** - Natural session name resolution (prefix stripping) in `SessionRepository`.
 - [ ] **Refactor** - Migrate `PlanningService` and `SessionOrchestrator` to `async`.
@@ -78,6 +77,7 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 - [ ] **Logic** - Telemetry color refinements in `SessionPlanner`.
 - [ ] **Logic** - Terminal action soft isolation in `ExecutionOrchestrator`.
 - [ ] **Wiring** - Async CLI integration (anyio runner) in `session_cli_handlers.py`.
+- [ ] **Cleanup** - Remove synchronous port methods once migration is complete.
 
 ## Delta Analysis
 
