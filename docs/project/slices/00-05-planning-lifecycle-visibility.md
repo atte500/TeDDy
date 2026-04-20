@@ -64,14 +64,14 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 ```
 
 ## Deliverables
-- [x] **Logic** - Update `SessionService.create_session` to prefix session directories with `datetime.now().strftime("%Y%m%d_%H%M%S")`.
-- [x] **Logic** - Update `SessionService.rename_session` to preserve the prefix using `re.match(r"^\d{8}_\d{6}-", old_name)`.
-- [x] **Logic** - Update `SessionRepository.resolve_session_from_path` to strip the `YYYYMMDD_HHMMSS-` prefix when resolving the session name.
-- [ ] **Logic** - Refactor `PlanningService.generate_plan` to capture the session name and log the `[cyan]` planning header ONLY after user instruction is resolved.
-- [ ] **Logic** - Update `PlanningService.generate_plan` to treat empty/whitespace-only input as a signal to proceed using the current context as instruction.
-- [ ] **Logic** - Update `SessionPlanner._display_planning_telemetry` to use `blue` for labels/bullets and `magenta` for values.
-- [ ] **Logic** - Update `ActionExecutor._check_action_isolation` to auto-skip terminal actions in non-interactive mode when `total_actions > 1`.
-- [ ] **Wiring** - Consolidate planning logs by removing redundant calls in `SessionOrchestrator` and `SessionPlanner`.
+- [ ] **Contract** - Update `ISessionManager` and `IPlanningUseCase` definitions for session name resolution.
+- [ ] **Harness** - Extend `CliTestAdapter` to capture `stderr` logs for planning visibility assertions.
+- [ ] **Logic** - Implement chronological session sorting (date prefixing) in `SessionService`.
+- [ ] **Logic** - Implement natural session name resolution in `SessionRepository`.
+- [ ] **Logic** - Implement sequenced planning logs and "Proceed on Empty" in `PlanningService`.
+- [ ] **Logic** - Implement telemetry color refinements in `SessionPlanner`.
+- [ ] **Logic** - Implement terminal action soft isolation in `ExecutionOrchestrator`.
+- [ ] **Wiring** - Resolve CLI infinite loops and consolidate planning logs in handlers.
 
 ## Delta Analysis
 
@@ -93,9 +93,9 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
     - Add logic to automatically skip terminal actions (PROMPT, INVOKE, RETURN) when `not interactive` and `len(plan.actions) > 1`.
     - Set skip reason to: `"Automatically skipped: This action must be performed in isolation."`
 
-## UI Style Guide & Implementation Guidelines
+## Guidelines for Implementation
 
-### 1. Colors & Styles
+### 1. UI Style Guide (Colors & Styles)
 - **Turn Header:** `[{turn_id}] {session_name} | Waiting for {agent} to respond...` MUST use **`cyan`**.
 - **Telemetry Labels:** The bullet and key (e.g., `• Model:`) MUST use **`blue`**.
 - **Telemetry Values:** The actual data (e.g., `gpt-4o`) MUST use **`magenta`**.
@@ -116,13 +116,15 @@ The Developer MUST NOT implement simulation-only logs found in the prototype:
 - **DO NOT** show "Turn XX: Proceeding with context..." status messages.
 - **DO** show the bulleted telemetry immediately after the LLM response is received.
 
-## Session Resolution
-- Ensure `SessionRepository.resolve_session_from_path` remains the source of truth for the folder name, accounting for the new prefix.
+## Session Resolution & Prefix Handling
+- **Source of Truth:** `SessionRepository.resolve_session_from_path` MUST remain the source of truth for resolving folder names.
+- **Prefix Stripping:** Use the regex `re.sub(r"^\d{8}_\d{6}-", "", folder_name)` for all UI display logic to ensure the "Natural Name" is shown while preserving the filesystem prefix.
+- **Path Resolution:** All internal path builders MUST account for the `YYYYMMDD_HHMMSS-` prefix when looking for turn directories.
 
 ## Implementation Notes
 
-### Chronological Session Sorting
-- **Date Prefixing:** Implemented `YYYYMMDD_HHMMSS-` prefixing in `SessionService.create_session`. This ensures sessions are naturally sorted by creation time on the filesystem.
-- **Prefix Preservation:** Updated `SessionService.rename_session` with regex logic (`r"^\d{8}_\d{6}-"`) to preserve the original timestamp prefix while allowing the session slug to be updated (e.g., during auto-naming).
-- **Name Resolution:** Updated `SessionRepository.resolve_session_from_path` to strip the timestamp prefix when returning the "natural" session name for display in the UI.
-- **Regression Fixes:** Updated `test_ai_telemetry.py`, `test_session_resume_robustness.py`, and `test_streamlined_init.py` to mock `datetime.now()` in `SessionService` and use prefixed paths in assertions.
+### Deliverable: Infrastructure & Logic (Attempt 1 Findings)
+- **Friction (Recursion):** Found that calling `resume` within `execute` (or vice-versa) in the CLI handlers leads to infinite recursion loops if state guards are not strictly defined.
+- **Friction (Path Resolution):** Introduction of the date-time prefix caused regressions in `resolve_session_from_path` and `SessionService.get_latest_turn` because they relied on exact string matches for session names.
+- **Friction (Log Sequencing):** The "Waiting for agent..." log was appearing before the user instruction prompt in Turn 1 due to the sequencing in `SessionOrchestrator`. It must be moved inside `PlanningService` to trigger only after the instruction is resolved.
+- **Decision:** Shifted from a broad "Infrastructure" task to atomic DbC-prefixed deliverables to de-risk the async transformation and prefix implementation.
