@@ -64,16 +64,19 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 ```
 
 ## Deliverables
-- [ ] **Contract** - Async `IFileSystemManager` & `IGetContextUseCase` (Foundation).
-- [ ] **Contract** - Async `ILlmClient` & `IPlanningUseCase`.
-- [ ] **Contract** - Async `ISessionManager` & `IRunPlanUseCase`.
+- [ ] **Seam** - Create `IFileSystemManagerAsync` and `LocalFileSystemAdapterAsync`.
+- [ ] **Seam** - Create `IGetContextUseCaseAsync` and `ContextServiceAsync`.
+- [ ] **Contract** - Async versions of `ILlmClient` and `IPlanningUseCase`.
+- [ ] **Contract** - Async versions of `ISessionManager` and `IRunPlanUseCase`.
 - [ ] **Harness** - Async-ready `TestEnvironment` & `CliTestAdapter` (Support `@pytest.mark.anyio`).
 - [ ] **Logic** - Chronological session sorting (date prefixing) in `SessionService`.
 - [ ] **Logic** - Natural session name resolution (prefix stripping) in `SessionRepository`.
+- [ ] **Refactor** - Migrate `PlanningService` and `SessionOrchestrator` to async core.
 - [ ] **Logic** - Sequenced planning logs & "Proceed on Empty" in `PlanningService`.
 - [ ] **Logic** - Telemetry color refinements in `SessionPlanner`.
 - [ ] **Logic** - Terminal action soft isolation in `ExecutionOrchestrator`.
 - [ ] **Wiring** - Async CLI integration & loop resolution in `session_cli_handlers.py`.
+- [ ] **Cleanup** - Prune synchronous `IFileSystemManager` and `IGetContextUseCase` (once fully migrated).
 
 ## Delta Analysis
 
