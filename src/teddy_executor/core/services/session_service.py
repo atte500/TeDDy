@@ -34,11 +34,15 @@ class SessionService(ISessionManager):
         Initializes a new session directory and bootstraps it for Turn 1.
         """
         import os
+
         if os.getenv("TEDDY_SHOWCASE") == "1":
             from prototypes.slice_00_05_logic import create_session_prefixed
+
             return create_session_prefixed(self, name, agent_name)
 
-        session_root = f".teddy/sessions/{name}"
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        prefixed_name = f"{timestamp}-{name}"
+        session_root = f".teddy/sessions/{prefixed_name}"
         turn_dir = f"{session_root}/01"
 
         self._file_system_manager.create_directory(turn_dir)
@@ -135,6 +139,7 @@ class SessionService(ISessionManager):
         Calculates and creates the next turn directory based on the current turn
         and the outcome of its plan.
         """
+        _ = is_validation_failure
         cur_dir = Path(plan_path).parent
         session_dir = cur_dir.parent.as_posix()
 
@@ -246,8 +251,15 @@ class SessionService(ISessionManager):
         """
         Safely renames a session directory on the filesystem.
         """
+        # Preserve date prefix if present
+        prefix_match = re.match(r"^(\d{8}_\d{6}-)", old_name)
+        prefix = prefix_match.group(1) if prefix_match else ""
+
+        # Ensure new name doesn't double-prefix
+        clean_new_name = re.sub(r"^\d{8}_\d{6}-", "", new_name)
+
         old_path = f".teddy/sessions/{old_name}"
-        new_path = f".teddy/sessions/{new_name}"
+        new_path = f".teddy/sessions/{prefix}{clean_new_name}"
 
         if not self._file_system_manager.path_exists(old_path):
             raise ValueError(f"Session '{old_name}' not found.")

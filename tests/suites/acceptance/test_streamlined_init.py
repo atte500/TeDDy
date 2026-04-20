@@ -1,4 +1,5 @@
-from unittest.mock import MagicMock
+from datetime import datetime
+from unittest.mock import MagicMock, patch
 from tests.harness.setup.test_environment import TestEnvironment
 from tests.harness.drivers.cli_adapter import CliTestAdapter
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
@@ -39,10 +40,20 @@ def test_teddy_start_triggers_planning(tmp_path, monkeypatch):
     mock_llm.get_completion.return_value = make_mock_response(plan)
 
     # Input: instructions -> confirmation for plan execution (y)
-    result = adapter.run_start(["my-feature"], input="Initial instructions\ny\n")
+    fixed_now = datetime(2026, 4, 17, 12, 0, 0)
+    with patch("teddy_executor.core.services.session_service.datetime") as mock_dt:
+        mock_dt.now.return_value = fixed_now
+        result = adapter.run_start(["my-feature"], input="Initial instructions\ny\n")
 
     assert result.exit_code == 0
-    plan_file = tmp_path / ".teddy" / "sessions" / "my-feature" / "01" / "plan.md"
+    plan_file = (
+        tmp_path
+        / ".teddy"
+        / "sessions"
+        / "20260417_120000-my-feature"
+        / "01"
+        / "plan.md"
+    )
     assert plan_file.exists()
 
     # Verify instructions were sent to LLM

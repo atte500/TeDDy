@@ -1,6 +1,6 @@
-import time
 import pytest
-from unittest.mock import MagicMock
+from datetime import datetime
+from unittest.mock import MagicMock, patch
 from tests.harness.setup.test_environment import TestEnvironment
 from tests.harness.drivers.cli_adapter import CliTestAdapter
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
@@ -40,9 +40,16 @@ def test_resume_auto_detects_latest_session(tmp_path, monkeypatch):
     mock_llm = env.get_service(ILlmClient)
     mock_llm.get_completion.return_value = make_mock_response(plan)
 
-    adapter.run_start(["older-session"], input="prompt\ny\n")
-    time.sleep(0.1)
-    adapter.run_start(["newer-session"], input="prompt\ny\n")
+    # Use explicit timestamps to ensure older/newer order
+    dt_older = datetime(2026, 4, 17, 12, 0, 0)
+    dt_newer = datetime(2026, 4, 17, 13, 0, 0)
+
+    with patch("teddy_executor.core.services.session_service.datetime") as mock_dt:
+        mock_dt.now.return_value = dt_older
+        adapter.run_start(["older-session"], input="prompt\ny\n")
+
+        mock_dt.now.return_value = dt_newer
+        adapter.run_start(["newer-session"], input="prompt\ny\n")
 
     result = adapter.run_cli_command(["resume"], input="prompt\ny\ny\ny\n")
 
@@ -60,10 +67,13 @@ def test_resume_with_session_path(tmp_path, monkeypatch):
     plan = MarkdownPlanBuilder("Test").add_execute("echo 1").build()
     env.get_service(ILlmClient).get_completion.return_value = make_mock_response(plan)
 
-    adapter.run_start(["my-session"], input="prompt\ny\n")
+    fixed_now = datetime(2026, 4, 17, 12, 0, 0)
+    with patch("teddy_executor.core.services.session_service.datetime") as mock_dt:
+        mock_dt.now.return_value = fixed_now
+        adapter.run_start(["my-session"], input="prompt\ny\n")
 
     result = adapter.run_cli_command(
-        ["resume", ".teddy/sessions/my-session"], input="prompt\ny\n"
+        ["resume", ".teddy/sessions/20260417_120000-my-session"], input="prompt\ny\n"
     )
 
     assert result.exit_code == 0
@@ -79,10 +89,13 @@ def test_resume_with_turn_path(tmp_path, monkeypatch):
     plan = MarkdownPlanBuilder("Test").add_execute("echo 1").build()
     env.get_service(ILlmClient).get_completion.return_value = make_mock_response(plan)
 
-    adapter.run_start(["my-session"], input="prompt\ny\n")
+    fixed_now = datetime(2026, 4, 17, 12, 0, 0)
+    with patch("teddy_executor.core.services.session_service.datetime") as mock_dt:
+        mock_dt.now.return_value = fixed_now
+        adapter.run_start(["my-session"], input="prompt\ny\n")
 
     result = adapter.run_cli_command(
-        ["resume", ".teddy/sessions/my-session/01"], input="prompt\ny\n"
+        ["resume", ".teddy/sessions/20260417_120000-my-session/01"], input="prompt\ny\n"
     )
 
     assert result.exit_code == 0
@@ -100,17 +113,21 @@ def test_start_enters_continuous_loop(tmp_path, monkeypatch):
     mock_llm = env.get_service(ILlmClient)
     mock_llm.get_completion.return_value = make_mock_response(plan)
 
-    # Provide input for TWO turns:
-    # Turn 1: "first prompt\n", then "y\n" to approve execution
-    # Turn 2: "second prompt\n", then "y\n" to approve execution
-    # Then EOF (or we just let it exit if it runs out of input)
-    adapter.run_start(["my-loop-session"], input="first prompt\ny\nsecond prompt\ny\n")
+    # Provide input for TWO turns
+    fixed_now = datetime(2026, 4, 17, 12, 0, 0)
+    with patch("teddy_executor.core.services.session_service.datetime") as mock_dt:
+        mock_dt.now.return_value = fixed_now
+        adapter.run_start(
+            ["my-loop-session"], input="first prompt\ny\nsecond prompt\ny\n"
+        )
 
     # The session folder name might be auto-renamed to "test-plan" based on H1.
     # We will check if "02" was created in the session directory.
-    session_dir = tmp_path / ".teddy" / "sessions" / "test-plan"
+    session_dir = tmp_path / ".teddy" / "sessions" / "20260417_120000-test-plan"
     if not session_dir.exists():
-        session_dir = tmp_path / ".teddy" / "sessions" / "my-loop-session"
+        session_dir = (
+            tmp_path / ".teddy" / "sessions" / "20260417_120000-my-loop-session"
+        )
 
     assert (session_dir / "01" / "report.md").exists()
     assert (session_dir / "02" / "report.md").exists(), (
@@ -127,10 +144,14 @@ def test_resume_with_file_path(tmp_path, monkeypatch):
     plan = MarkdownPlanBuilder("Test").add_execute("echo 1").build()
     env.get_service(ILlmClient).get_completion.return_value = make_mock_response(plan)
 
-    adapter.run_start(["my-session"], input="prompt\ny\n")
+    fixed_now = datetime(2026, 4, 17, 12, 0, 0)
+    with patch("teddy_executor.core.services.session_service.datetime") as mock_dt:
+        mock_dt.now.return_value = fixed_now
+        adapter.run_start(["my-session"], input="prompt\ny\n")
 
     result = adapter.run_cli_command(
-        ["resume", ".teddy/sessions/my-session/01/meta.yaml"], input="prompt\ny\n"
+        ["resume", ".teddy/sessions/20260417_120000-my-session/01/meta.yaml"],
+        input="prompt\ny\n",
     )
 
     assert result.exit_code == 0

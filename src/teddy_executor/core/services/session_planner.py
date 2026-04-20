@@ -54,15 +54,17 @@ class SessionPlanner:
 
         # Display progress right before generating plan
         import os
+
         if os.getenv("TEDDY_SHOWCASE") == "1":
             from prototypes.slice_00_05_logic import generate_plan_sequenced
+
             plan_path, turn_cost = generate_plan_sequenced(
                 self._planning_service,
                 self._user_interactor,
                 resolved_message,
                 turn_dir,
                 context_files,
-                agent_name
+                agent_name,
             )
         else:
             msg = f"[cyan][{turn_p.name}] Planning Turn with {agent_name}...[/cyan]"
@@ -82,18 +84,24 @@ class SessionPlanner:
 
         # Dynamic Renaming Logic for Turn 1
         turn_p = Path(turn_dir)
-        session_name = turn_p.parent.name
-        if turn_p.name == "01" and session_name.startswith("session-"):
-            renamed = self._handle_dynamic_rename(plan_path)
-            return renamed or session_name
+        session_folder_name = turn_p.parent.name
 
-        return session_name
+        # Strip prefix to check if it's an auto-generated session name
+        clean_name = re.sub(r"^\d{8}_\d{6}-", "", session_folder_name)
+
+        if turn_p.name == "01" and clean_name.startswith("session-"):
+            renamed = self._handle_dynamic_rename(plan_path)
+            return renamed or session_folder_name
+
+        return session_folder_name
 
     def _display_planning_telemetry(
         self, turn_dir: str, plan_path: str, turn_cost: float
     ):
         import os
+
         dim_style = "dim" if os.getenv("TEDDY_SHOWCASE") != "1" else "bright_black"
+
         def safe_float(v: Any, default: float = 0.0) -> float:
             try:
                 if hasattr(v, "__float__"):
@@ -115,7 +123,9 @@ class SessionPlanner:
             turn_cost
         )
 
-        self._user_interactor.display_message(f"[{dim_style}]  Model: {model}[/{dim_style}]")
+        self._user_interactor.display_message(
+            f"[{dim_style}]  Model: {model}[/{dim_style}]"
+        )
         self._user_interactor.display_message(
             f"[{dim_style}]  Context: {raw_token_count / 1000:.1f}k tokens[/{dim_style}]"
         )
@@ -153,8 +163,8 @@ class SessionPlanner:
             if new_name:
                 old_name = Path(plan_path).parent.parent.name
                 try:
-                    self._session_service.rename_session(old_name, new_name)
-                    return new_name
+                    new_path = self._session_service.rename_session(old_name, new_name)
+                    return Path(new_path).name
                 except ValueError:
                     pass
         return None

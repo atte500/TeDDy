@@ -4,6 +4,7 @@ from pathlib import Path
 import re
 import tempfile
 from typing import Any, Dict, Generator, Optional
+from unittest.mock import MagicMock
 
 from typer.testing import CliRunner, Result
 
@@ -220,3 +221,27 @@ def create_plan_file(
     finally:
         if plan_path.exists():
             plan_path.unlink()
+
+
+def mock_response(content):
+    """Creates a mock LLM response."""
+    res = MagicMock()
+    res.choices = [MagicMock()]
+    res.choices[0].message.content = content
+    res.model = "gpt-4o"
+    res.usage = MagicMock(prompt_tokens=100, completion_tokens=50, total_tokens=150)
+    return res
+
+
+def setup_project(tmp_path: Path):
+    """Initializes a standard project structure for acceptance tests."""
+    (tmp_path / ".git").mkdir(exist_ok=True)
+    teddy = tmp_path / ".teddy"
+    teddy.mkdir(exist_ok=True)
+    (teddy / "init.context").write_text("README.md", encoding="utf-8")
+    (tmp_path / "README.md").write_text("README", encoding="utf-8")
+    prompts = tmp_path / "prompts"
+    prompts.mkdir(exist_ok=True)
+    (prompts / "pathfinder.xml").write_text(
+        "<prompt>Pathfinder</prompt>", encoding="utf-8"
+    )

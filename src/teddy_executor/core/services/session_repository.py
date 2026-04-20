@@ -39,12 +39,14 @@ class SessionRepository:
 
     def resolve_session_from_path(self, path: str) -> str:
         """Climbs the directory tree to find the session name."""
-        p = Path(path).resolve()
+        # Convert to relative path if absolute, relative to CWD
+        try:
+            p = Path(path).resolve().relative_to(Path.cwd())
+        except ValueError:
+            p = Path(path)
+
         for parent in [p] + list(p.parents):
-            if (
-                parent.parent.name == "sessions"
-                and parent.parent.parent.name == ".teddy"
-            ):
+            if parent.parent.name == "sessions" and ".teddy" in parent.parts:
                 return parent.name
 
         if self._file_system_manager.path_exists(f".teddy/sessions/{path}"):

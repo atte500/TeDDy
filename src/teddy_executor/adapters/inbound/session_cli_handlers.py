@@ -22,13 +22,12 @@ def handle_new_session(  # noqa: PLR0913
     message: Optional[str] = None,
 ):
     """Logic for the 'start' command."""
-    from datetime import datetime
     from teddy_executor.adapters.inbound.cli_helpers import handle_report_output
 
     session_manager: ISessionManager = container.resolve(ISessionManager)
 
-    # Generate timestamped name if none provided
-    actual_name = name or f"session-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+    # Generate placeholder name if none provided; SessionService adds timestamp prefix
+    actual_name = name or "session-auto"
 
     try:
         session_dir = session_manager.create_session(name=actual_name, agent_name=agent)
@@ -37,7 +36,8 @@ def handle_new_session(  # noqa: PLR0913
         # Streamlined Initialization: Trigger resume (which triggers planning for EMPTY state)
         orchestrator = container.resolve(IRunPlanUseCase)
 
-        current_session_name = actual_name
+        # Use the actual folder name for session orchestration
+        current_session_name = Path(session_dir).name
         while True:
             # Safeguard: prevent infinite loops in non-interactive CI environments
             report = orchestrator.resume(

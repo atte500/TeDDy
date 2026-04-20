@@ -1,6 +1,7 @@
 import yaml
 from pathlib import Path
-from unittest.mock import MagicMock
+from datetime import datetime
+from unittest.mock import MagicMock, patch
 from tests.harness.setup.test_environment import TestEnvironment
 from tests.harness.drivers.cli_adapter import CliTestAdapter
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
@@ -49,10 +50,13 @@ def test_ai_telemetry_and_logging(tmp_path, monkeypatch):
 
     # Input: Goal prompt -> Confirmation for plan execution (y)
     # Using -y to prevent the loop from consuming inputs meant for other checks
-    result = adapter.run_start(["--agent", "pathfinder", "-y"], input="My Goal\n")
+    fixed_now = datetime(2026, 4, 17, 12, 0, 0)
+    with patch("teddy_executor.core.services.session_service.datetime") as mock_dt:
+        mock_dt.now.return_value = fixed_now
+        result = adapter.run_start(["--agent", "pathfinder", "-y"], input="My Goal\n")
 
     assert result.exit_code == 0
-    turn_dir = Path(".teddy/sessions/new-feature/01")
+    turn_dir = Path(".teddy/sessions/20260417_120000-new-feature/01")
     assert (tmp_path / turn_dir / "input.md").exists()
     assert (tmp_path / turn_dir / "pathfinder.xml").exists()
     import re
@@ -84,11 +88,14 @@ def test_telemetry_persistence_across_turns(tmp_path, monkeypatch):
 
     mock_llm_client = env.get_service(ILlmClient)
     # Turn 1
+    fixed_now = datetime(2026, 4, 17, 12, 0, 0)
     plan_1 = MarkdownPlanBuilder("Turn 1").add_execute("echo 1").build()
     mock_llm_client.get_completion.return_value = make_mock_response(plan_1)
     mock_llm_client.get_completion_cost.return_value = 0.01
     # Use -y to ensure Turn 1 finishes before we manually trigger Turn 2 via resume
-    adapter.run_start(["turn-1", "--agent", "pathfinder", "-y"], input="yes\n")
+    with patch("teddy_executor.core.services.session_service.datetime") as mock_dt:
+        mock_dt.now.return_value = fixed_now
+        adapter.run_start(["turn-1", "--agent", "pathfinder", "-y"], input="yes\n")
 
     # Turn 2
     plan_2 = MarkdownPlanBuilder("Turn 2").add_execute("echo 2").build()
@@ -101,11 +108,13 @@ def test_telemetry_persistence_across_turns(tmp_path, monkeypatch):
     # To reach a Session Cost of $0.0300, Turn 2 must add $0.02 to Turn 1's $0.01.
     mock_llm_client.get_completion_cost.side_effect = [0.02]
 
-    result = adapter.run_resume(".teddy/sessions/turn-1", interactive=True)
+    result = adapter.run_resume(
+        ".teddy/sessions/20260417_120000-turn-1", interactive=True
+    )
 
     assert result.exit_code == 0
     meta_2 = yaml.safe_load(
-        (tmp_path / ".teddy/sessions/turn-1/02/meta.yaml").read_text()
+        (tmp_path / ".teddy/sessions/20260417_120000-turn-1/02/meta.yaml").read_text()
     )
     # Turn 2 meta.yaml inherits the cumulative cost of Turn 1 (0.01)
     # before its own cost (0.02) is added in the next turn transition.
@@ -137,6 +146,12 @@ def test_input_log_during_replan(tmp_path, monkeypatch):
         make_mock_response(good_plan),
     ]
 
-    result = adapter.run_start(["replan-test", "-y"], input="Go\n")
+    fixed_now = datetime(2026, 4, 17, 12, 0, 0)
+    with patch("teddy_executor.core.services.session_service.datetime") as mock_dt:
+        mock_dt.now.return_value = fixed_now
+        result = adapter.run_start(["replan-test", "-y"], input="Go\n")
+
     assert result.exit_code == 1
-    assert (tmp_path / ".teddy/sessions/replan-test/02/input.md").exists()
+    assert (
+        tmp_path / ".teddy/sessions/20260417_120000-replan-test/02/input.md"
+    ).exists()

@@ -64,9 +64,9 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 ```
 
 ## Deliverables
-- [ ] **Logic** - Update `SessionService.create_session` to prefix session directories with `datetime.now().strftime("%Y%m%d_%H%M%S")`.
-- [ ] **Logic** - Update `SessionService.rename_session` to preserve the prefix using `re.match(r"^\d{8}_\d{6}-", old_name)`.
-- [ ] **Logic** - Update `SessionRepository.resolve_session_from_path` to strip the `YYYYMMDD_HHMMSS-` prefix when resolving the session name.
+- [x] **Logic** - Update `SessionService.create_session` to prefix session directories with `datetime.now().strftime("%Y%m%d_%H%M%S")`.
+- [x] **Logic** - Update `SessionService.rename_session` to preserve the prefix using `re.match(r"^\d{8}_\d{6}-", old_name)`.
+- [x] **Logic** - Update `SessionRepository.resolve_session_from_path` to strip the `YYYYMMDD_HHMMSS-` prefix when resolving the session name.
 - [ ] **Logic** - Refactor `PlanningService.generate_plan` to capture the session name and log the `[cyan]` planning header ONLY after user instruction is resolved.
 - [ ] **Logic** - Update `PlanningService.generate_plan` to treat empty/whitespace-only input as a signal to proceed using the current context as instruction.
 - [ ] **Logic** - Update `SessionPlanner._display_planning_telemetry` to use `blue` for labels/bullets and `magenta` for values.
@@ -120,4 +120,9 @@ The Developer MUST NOT implement simulation-only logs found in the prototype:
 - Ensure `SessionRepository.resolve_session_from_path` remains the source of truth for the folder name, accounting for the new prefix.
 
 ## Implementation Notes
-(To be filled by Developer)
+
+### Chronological Session Sorting
+- **Date Prefixing:** Implemented `YYYYMMDD_HHMMSS-` prefixing in `SessionService.create_session`. This ensures sessions are naturally sorted by creation time on the filesystem.
+- **Prefix Preservation:** Updated `SessionService.rename_session` with regex logic (`r"^\d{8}_\d{6}-"`) to preserve the original timestamp prefix while allowing the session slug to be updated (e.g., during auto-naming).
+- **Name Resolution:** Updated `SessionRepository.resolve_session_from_path` to strip the timestamp prefix when returning the "natural" session name for display in the UI.
+- **Regression Fixes:** Updated `test_ai_telemetry.py`, `test_session_resume_robustness.py`, and `test_streamlined_init.py` to mock `datetime.now()` in `SessionService` and use prefixed paths in assertions.

@@ -1,30 +1,11 @@
 from pathlib import Path
-from unittest.mock import MagicMock
+from datetime import datetime
+from unittest.mock import patch
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
 from tests.harness.drivers.cli_adapter import CliTestAdapter
 from tests.harness.setup.test_environment import TestEnvironment
 from teddy_executor.core.ports.outbound import ILlmClient
-
-
-def mock_response(content):
-    res = MagicMock()
-    res.choices = [MagicMock()]
-    res.choices[0].message.content = content
-    res.model = "gpt-4"
-    return res
-
-
-def setup_project(tmp_path: Path):
-    (tmp_path / ".git").mkdir()
-    teddy = tmp_path / ".teddy"
-    teddy.mkdir()
-    (teddy / "init.context").write_text("README.md", encoding="utf-8")
-    (tmp_path / "README.md").write_text("README", encoding="utf-8")
-    prompts = tmp_path / "prompts"
-    prompts.mkdir()
-    (prompts / "pathfinder.xml").write_text(
-        "<prompt>Pathfinder</prompt>", encoding="utf-8"
-    )
+from tests.suites.acceptance.helpers import setup_project, mock_response
 
 
 def test_teddy_start_bootstraps_session(tmp_path: Path, monkeypatch):
@@ -42,10 +23,14 @@ def test_teddy_start_bootstraps_session(tmp_path: Path, monkeypatch):
     plan = MarkdownPlanBuilder("Init").add_execute("echo 1").build()
     llm.get_completion.return_value = mock_response(plan)  # type: ignore[attr-defined]
 
-    result = adapter.run_cli_command(["start", "feat-x"], input="instructions\ny\n")
+    fixed_now = datetime(2026, 4, 17, 12, 0, 0)
+    with patch("teddy_executor.core.services.session_service.datetime") as mock_dt:
+        mock_dt.now.return_value = fixed_now
+        result = adapter.run_cli_command(["start", "feat-x"], input="instructions\ny\n")
+
     assert result.exit_code == 0
 
-    session_dir = tmp_path / ".teddy" / "sessions" / "feat-x"
+    session_dir = tmp_path / ".teddy" / "sessions" / "20260417_120000-feat-x"
     assert (session_dir / "01" / "meta.yaml").exists()
     assert (session_dir / "session.context").read_text().strip() == "README.md"
     assert "Pathfinder" in (session_dir / "01" / "pathfinder.xml").read_text()
@@ -115,11 +100,20 @@ def test_teddy_start_dynamic_renaming_and_flow(tmp_path: Path, monkeypatch):
     plan = MarkdownPlanBuilder("Auth Feature").add_execute("echo 'auth'").build()
     llm.get_completion.return_value = mock_response(plan)  # type: ignore[attr-defined]
 
-    result = adapter.run_cli_command(["start"], input="My prompt\ny\n")
+    fixed_now = datetime(2026, 4, 17, 12, 0, 0)
+    with patch("teddy_executor.core.services.session_service.datetime") as mock_dt:
+        mock_dt.now.return_value = fixed_now
+        result = adapter.run_cli_command(["start"], input="My prompt\ny\n")
+
     assert result.exit_code == 0
 
     assert (
-        tmp_path / ".teddy" / "sessions" / "auth-feature" / "01" / "report.md"
+        tmp_path
+        / ".teddy"
+        / "sessions"
+        / "20260417_120000-auth-feature"
+        / "01"
+        / "report.md"
     ).exists()
 
 
@@ -182,8 +176,12 @@ def test_teddy_start_with_explicit_name(tmp_path: Path, monkeypatch):
     plan = MarkdownPlanBuilder("Other").add_execute("echo '1'").build()
     llm.get_completion.return_value = mock_response(plan)  # type: ignore[attr-defined]
 
-    result = adapter.run_cli_command(["start", "fixed-name"], input="prompt\ny\n")
+    fixed_now = datetime(2026, 4, 17, 12, 0, 0)
+    with patch("teddy_executor.core.services.session_service.datetime") as mock_dt:
+        mock_dt.now.return_value = fixed_now
+        result = adapter.run_cli_command(["start", "fixed-name"], input="prompt\ny\n")
+
     assert result.exit_code == 0
 
-    assert (tmp_path / ".teddy" / "sessions" / "fixed-name").exists()
-    assert not (tmp_path / ".teddy" / "sessions" / "other").exists()
+    assert (tmp_path / ".teddy" / "sessions" / "20260417_120000-fixed-name").exists()
+    assert not (tmp_path / ".teddy" / "sessions" / "20260417_120000-other").exists()
