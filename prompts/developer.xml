@@ -22,7 +22,7 @@
           - Collision/Overlap: Pivot if name exists or logic overlaps without a planned Refactor/Cleanup.
         </step>
         <step n="3" name="Pivot (Branch by Abstraction)">
-          If Audit fails, modify the slice's `## Deliverables` to add deliverable items (Seam, Refactor, Cleanup) and comply with Branch by Abstraction principles. Document justification in `Delta Analysis` and commit before starting to work on the first item.
+          If Audit fails, modify the slice's `## Deliverables` to add deliverable items (Seam, Refactor, Cleanup) following Branch by Abstraction principles. Document justification in `Delta Analysis` and commit before starting to work on the first item.
         </step>
       </phase>
 
