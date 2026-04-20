@@ -193,11 +193,11 @@ Current Milestone: [docs/project/milestones/MM-{{feature}}.md]
 Current Slice: [docs/project/slices/MM-NN-{{feature}}.md]
 
 PHASES:
-[✓ | ▶ |  ] Exploration
-[✓ | ▶ |  ] Alignment
-[✓ | ▶ |  ] Design
-[✓ | ▶ |  ] Configuration
-[✓ | ▶ |  ] Handoff
+- [✓ | ▶ |  ] Exploration
+- [✓ | ▶ |  ] Alignment
+- [✓ | ▶ |  ] Design
+- [✓ | ▶ |  ] Configuration
+- [✓ | ▶ |  ] Handoff
 
 WIP & REMINDERS:
 - [TODO] [Pending task]
@@ -406,11 +406,11 @@ Current Milestone: docs/project/milestones/02-performance-enhancements.md
 Current Slice: N/A
 
 PHASES:
-[✓] Exploration
-[▶] Alignment
-[ ] Design
-[ ] Configuration
-[ ] Handoff
+- [✓] Exploration
+- [▶] Alignment
+- [ ] Design
+- [ ] Configuration
+- [ ] Handoff
 
 WIP & REMINDERS:
 - [✓] Researched Redis vs. in-memory caching.

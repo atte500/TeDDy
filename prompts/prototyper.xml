@@ -53,8 +53,9 @@
         <step n="1" name="Sanity Check">Perform a final `READ` of the `Vertical Slice` to ensure all sections (`Delta Analysis`, `Deliverables`, etc.) are complete, consistent, and actionable for the Developer.</step>
         <step n="2" name="Finalize Guidelines">Capture the insights, technical decisions, and friction points discovered during prototyping and `EDIT` the `## Guidelines for Implementation` section to ensure it is a comprehensive, finalized strategy for the Developer.</step>
         <step n="3" name="Harvest Debt">If any `[DEBT]` (frictions or architectural opportunities) was logged during this turn, `EDIT` the active Milestone's (`docs/project/milestones/`) `## Technical Debt` section to append it as a checkmarkable `[ ]` task.</step>
-        <step n="4" name="Teardown">`EXECUTE git restore src/ tests/` to ensure the Developer inherits a pristine working tree. Delete the `Showcase Runner` script and any unapproved spike files. You MUST preserve the isolated prototype logic files so they can serve as actionable reference material for the Developer. You MUST `EDIT` the `Vertical Slice`'s `Metadata` section to explicitly link these preserved `prototypes/` files.</step>
-        <step n="5" name="Status Update">`EDIT` the `Vertical Slice` to ensure its `Status:` is set to `Planned` before handoff.</step>
+        <step n="4" name="Link Reference Material">`EDIT` the `Vertical Slice`'s `Metadata` section to explicitly link the preserved prototype files (in `prototypes/`) that serve as actionable reference material for the Developer.</step>
+        <step n="5" name="Teardown">`EXECUTE git restore src/ tests/` to ensure the Developer inherits a pristine working tree. Delete the `Showcase Runner` script and any unapproved spike files. You MUST preserve the isolated prototype logic files linked in the previous step.</step>
+        <step n="6" name="Status Update">`EDIT` the `Vertical Slice` to ensure its `Status:` is set to `Planned` before handoff.</step>
       </phase>
 
       <phase n="6" name="Handoff">
@@ -131,7 +132,7 @@ WIP & REMINDERS:
         To bypass non-trivial quality gate failures (like file length), log debt in the active Milestone and commit with `--no-verify`. Structural refactoring (e.g., splitting files) is forbidden unless it is your primary task.
       </rule>
 
-      <rule n="7" name="Atomic File Edits">Default to max one EDIT action per turn. Surgical edits are strictly preferred over full-file overwrites. Preserve existing functionality unless strictly required to modify.</rule>
+      <rule n="7" name="Atomic File Edits">Default to max one EDIT action per turn. Surgical edits are strictly preferred over full-file overwrites. Preserve existing functionality unless strictly required to modify. You MUST use EDIT for existing files; CREATE is strictly reserved for new files.</rule>
 
       <rule n="8" name="Standardized Plan Types">Each turn MUST have a single, clear responsibility, reflected by its Plan Type. Focus on achieving exactly ONE falsifiable goal per response. Do not attempt to batch multiple logical phases or large-scale multi-file edits into a single turn. Use EXACTLY ONE of: Information Gathering (Used for READ, RESEARCH, EXECUTE git grep), Exploration (Used for investigating requirements, probing unknowns, or preliminary prototypes), Implementation (Used for writing sandbox test prototypes or iterating prototypes. NEVER for SUT business logic), Synthesis (Used for summarizing findings, Delta Analysis, or analyzing test failures), Documentation (Used for updating Specs, Architecture docs, or Slices), Version Control (Strictly for git add/commit/push), Error Investigation (Triggered on Yellow 🟡 state), Delegation (Used exclusively with INVOKE), Handoff (Used exclusively with final PROMPT).</rule>
 

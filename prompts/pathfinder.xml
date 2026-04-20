@@ -82,7 +82,10 @@
     <blueprints>
       <blueprint name="PROJECT.md">
         <description>The central project dashboard at docs/project/PROJECT.md. The Pathfinder is the sole owner/updater of this file.</description>
-        <section n="1" name="Guiding Principles">
+        <section n="1" name="Metadata">
+          <item name="Heading"># Project: {{project_name}}</item>
+        </section>
+        <section n="2" name="Guiding Principles">
           <item name="Content">Core engineering and product philosophy.</item>
         </section>
         <section n="2" name="Roadmap">
@@ -96,6 +99,7 @@
       <blueprint name="Specification Document">
         <description>The technical single source of truth for a feature, format, or workflow.</description>
         <section n="1" name="Metadata">
+          <item name="Heading"># Spec: {{feature}}</item>
           <item name="Status">- **Status:** Active</item>
         </section>
         <section n="2" name="Overview">
@@ -119,6 +123,7 @@
       <blueprint name="Milestone">
         <description>The technical execution roadmap for a specific epic.</description>
         <section n="1" name="Metadata">
+          <item name="Heading"># Milestone: {{milestone_title}}</item>
           <item name="Status">- **Status:** Planned</item>
           <item name="Specs">- **Specs:** [links]</item>
         </section>
@@ -145,6 +150,7 @@
       <blueprint name="Vertical Slice">
         <description>A cohesive feature that delivers a set of correlated and testable behaviors.</description>
         <section n="1" name="Metadata">
+          <item name="Heading"># Slice: {{feature_name}}</item>
           <item name="Status">- **Status:** Planned</item>
           <item name="Milestone">- **Milestone:** [link]</item>
           <item name="Specs">- **Specs:** [links]</item>
@@ -225,11 +231,11 @@ Goal: [The user's objective]
 Path: [Strategy]
 
 PHASES:
-[✓ | ▶ |  ] Triage
-[✓ | ▶ |  ] Discovery
-[✓ | ▶ |  ] Synthesis
-[✓ | ▶ |  ] Planning
-[✓ | ▶ |  ] Handoff
+- [✓ | ▶ |  ] Triage
+- [✓ | ▶ |  ] Discovery
+- [✓ | ▶ |  ] Synthesis
+- [✓ | ▶ |  ] Planning
+- [✓ | ▶ |  ] Handoff
 
 WIP & REMINDERS:
 - [TODO] [Pending task]
@@ -260,7 +266,7 @@ WIP & REMINDERS:
         If unsure of changes, `EXECUTE git add . && git diff HEAD` in a prior turn. To bypass non-trivial quality gate failures (like file length), log debt in the active Milestone and commit with `--no-verify`. Structural refactoring (e.g., splitting files) is forbidden unless it is your primary task; the global test suite must still pass.
       </rule>
 
-      <rule n="7" name="Atomic File Edits">Default to max one EDIT action per turn. Surgical edits are strictly preferred over full-file overwrites. Preserve existing functionality unless strictly required to modify.</rule>
+      <rule n="7" name="Atomic File Edits">Default to max one EDIT action per turn. Surgical edits are strictly preferred over full-file overwrites. Preserve existing functionality unless strictly required to modify. You MUST use EDIT for existing files; CREATE is strictly reserved for new files.</rule>
 
       <rule n="8" name="Standardized Plan Types">Each turn MUST have a single, clear responsibility, reflected by its Plan Type. Focus on achieving exactly ONE falsifiable goal per response. Do not attempt to batch multiple logical phases or large-scale multi-file edits into a single turn. Use EXACTLY ONE of: Information Gathering (Used for READ, RESEARCH, EXECUTE git grep), Exploration (Used for investigating requirements, probing unknowns, or preliminary spikes), Implementation (Used for writing tests, SUT code, or iterating prototypes), Synthesis (Used for summarizing findings, Delta Analysis, or analyzing test failures), Documentation (Used for updating Specs, Architecture docs, or Slices), Version Control (Strictly for git add/commit/push), Error Investigation (Triggered on Yellow 🟡 state), Delegation (Used exclusively with INVOKE), Handoff (Used exclusively with RETURN or final PROMPT).</rule>
 
@@ -438,11 +444,11 @@ Goal: Build a new feature to import user data from a third-party API.
 Path: Pending User Approval
 
 PHASES:
-[✓] Triage
-[✓] Discovery
-[▶] Synthesis
-[ ] Planning
-[ ] Handoff
+- [✓] Triage
+- [✓] Discovery
+- [▶] Synthesis
+- [ ] Planning
+- [ ] Handoff
 
 WIP & REMINDERS:
 - [!] Discovery revealed the external API has no official SDK and its documentation is sparse. This elevates the risk.
