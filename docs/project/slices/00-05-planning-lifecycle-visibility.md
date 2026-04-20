@@ -77,23 +77,25 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 
 ## Delta Analysis
 
-### Session Management (`SessionService` & `SessionRepository`)
-- `SessionService.create_session`: Needs to inject `datetime.now().strftime("%Y%m%d_%H%M%S")` prefixing.
-- `SessionService.rename_session`: Needs to regex-split the current name into `(prefix, name)` to preserve the prefix while updating the name slug.
-- `SessionRepository.resolve_session_from_path`: Currently resolves the folder name directly. Needs to strip the `YYYYMMDD_HHMMSS-` prefix if present to return the natural session name for UI display.
+### 1. Async Transformation (Architectural Shift)
+To support the TUI's non-blocking requirements and long-running LLM/Shell operations, the core must be migrated from synchronous to asynchronous execution.
+- **Foundation Ports:** `IFileSystemManager` and `IEnvironmentInspector` must become async to avoid blocking the event loop during I/O.
+- **Service Layer:** `PlanningService`, `ExecutionOrchestrator`, and `SessionOrchestrator` must be refactored to `async def` to propagate the transformation.
+- **CLI Adapters:** The `Typer` handlers in `session_cli_handlers.py` must be wrapped in `anyio.run` or converted to an async-compatible structure to drive the core.
 
-### Planning Lifecycle (`PlanningService` & `SessionPlanner`)
-- `PlanningService.generate_plan`:
-    - Refactor to capture the session name (via `Path(turn_dir).parent.name`) and strip the prefix.
-    - Centralize the `[cyan][{turn_id}] {session_name} | Waiting for {agent_name} to respond...` log here, immediately after the user message is resolved and before LLM invocation.
-- `SessionPlanner._display_planning_telemetry`:
-    - Update color styles: Bullets/Keys to `blue`, Values to `magenta`.
-    - Replace `dim` with these specific colors for Model, Context, and Cost.
+### 2. Session Management (`SessionService` & `SessionRepository`)
+- **Sorting:** `SessionService.create_session` must inject `datetime.now().strftime("%Y%m%d_%H%M%S")` prefixing.
+- **Renaming:** `SessionService.rename_session` must use regex to preserve the prefix while updating the name slug.
+- **Resolution:** `SessionRepository.resolve_session_from_path` must strip the prefix to return the "Natural Name" for UI display, ensuring components like the Turn Header remain clean.
 
-### Action Isolation (`ExecutionOrchestrator`)
-- `ExecutionOrchestrator._handle_action_in_loop`:
-    - Add logic to automatically skip terminal actions (PROMPT, INVOKE, RETURN) when `not interactive` and `len(plan.actions) > 1`.
-    - Set skip reason to: `"Automatically skipped: This action must be performed in isolation."`
+### 3. Planning Lifecycle (`PlanningService` & `SessionPlanner`)
+- **Sequencing:** `PlanningService.generate_plan` is the new home for the `[cyan]` progress log. It must trigger *after* user instructions are resolved but *before* LLM invocation.
+- **Continuity:** Implement "Proceed on Empty" logic to ensure the AI continues planning based on context if the user provides a null response.
+- **Telemetry:** `SessionPlanner` telemetry styles must move from `dim` to `blue` (bullets/keys) and `magenta` (values) for higher visibility.
+
+### 4. Action Isolation (`ExecutionOrchestrator`)
+- **Soft Isolation:** Update `_handle_action_in_loop` to automatically skip terminal actions (`PROMPT`, `INVOKE`, `RETURN`) in non-interactive, multi-action plans.
+- **Reasoning:** Ensure the skip reason clearly states: `"Automatically skipped: This action must be performed in isolation."`
 
 ## Guidelines for Implementation
 
