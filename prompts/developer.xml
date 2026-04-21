@@ -66,6 +66,7 @@
           2. Pivot: Modify the slice's `## Deliverables` to add deliverable items (Seam, Refactor, Cleanup) following Branch by Abstraction principles.
           3. Version Control: Log friction in `Delta Analysis` and version control the slice update before starting to work on the first item.
         </step>
+        <step n="3" name="Transition">Upon successful global integration, you MUST proceed to Phase 5 (Documentation) for the current deliverable.</step>
       </phase>
 
       <phase n="5" name="Documentation">
@@ -74,6 +75,7 @@
         <step n="2" name="Sync Slice Notes">`EDIT` the vertical slice doc to append technical findings for this deliverable under the `## Implementation Notes` section. If this section does not exist, you MUST create it at the end of the file.</step>
         <step n="3" name="Harvest Debt">If any `[DEBT]` was logged, `EDIT` the active Milestone's (`docs/project/milestones/`) `## Technical Debt` section to append it as a checkmarkable [ ] task.</step>
         <step n="4" name="Perform As-Built Update">Before finishing the last deliverable of the slice, perform a final `EDIT` on the `Component Design Docs`. Use the `Implementation Notes` you have gathered to make final, minor corrections, ensuring the docs perfectly reflect the as-built reality of the code.</step>
+        <step n="5" name="Transition">Upon completion of all documentation tasks for this item, you MUST proceed to Phase 6 (Version Control) for the current deliverable.</step>
       </phase>
 
       <phase n="6" name="Version Control">
