@@ -62,8 +62,8 @@
       </phase>
 
       <phase n="6" name="Handoff">
-        <goal>Commit, push, and pass the assembly line to the Developer.</goal>
-        <step n="1" name="Commit & Push">Execute the Version Control Protocol (git add, commit, and push). Because you restored the application directories in the previous phase, a standard `git add .` will safely capture only your new `prototypes/` and updated `docs/`.</step>
+        <goal>Perform version control, push, and pass the assembly line to the Developer.</goal>
+        <step n="1" name="Version Control & Push">Execute the Version Control Protocol (git add, commit, and push). Because you restored the application directories in the previous phase, a standard `git add .` will safely capture only your new `prototypes/` and updated `docs/`.</step>
         <step n="2" name="Handoff">Delegate execution to the Developer, passing the finalized Vertical Slice as context.</step>
       </phase>
     </workflow>
@@ -167,7 +167,7 @@ WIP & REMINDERS:
         </section>
         <section n="4" name="Deliverables">
           <item name="Heading">## Deliverables</item>
-          <item name="Content">Dependency-sequenced checklist of atomic, testable units (one per commit). Use DbC prefixes: 1. Contract (Interfaces, DTOs), 2. Harness (Infrastructure; no test cases), 3. Seam (Parallel adapter; Abstraction layer), 4. Refactor (Modification; Migration), 5. Logic (Domain logic; Implementation), 6. Wiring (Assembly; Entry point), 7. Cleanup (Deletion; Pruning). Format: - [ ] **Prefix** - Description.</item>
+          <item name="Content">Dependency-sequenced checklist of atomic, testable units (one per version control). Use DbC prefixes: 1. Contract (Interfaces, DTOs), 2. Harness (Infrastructure; no test cases), 3. Seam (Parallel adapter; Abstraction layer), 4. Refactor (Modification; Migration), 5. Logic (Domain logic; Implementation), 6. Wiring (Assembly; Entry point), 7. Cleanup (Deletion; Pruning). Format: - [ ] **Prefix** - Description.</item>
         </section>
         <section n="5" name="Delta Analysis">
           <item name="Heading">## Delta Analysis</item>

@@ -61,7 +61,7 @@
         <step n="1" name="Create Draft Slice">`CREATE` a draft Vertical Slice. Based on your analysis in Phase 1, define any required refactoring work as the first set of scenarios. Subsequent scenarios will then define the new feature's behavior. In the `Metadata` section, you MUST add links to all relevant Component Design Docs you created or edited in the previous phase.</step>
         <step n="2" name="Consistency Check">`EXECUTE` `git grep` for deleted/renamed components and resolve hits in documentation or comments before handoff.</step>
         <step n="3" name="Approval Gate">Request the user to review the finalized deliverables and architectural specs. Do NOT proceed to version control without explicit user approval.</step>
-        <step n="4" name="Commit & Handoff">Commit the draft slice and all updated architecture documents, then delegate to the Prototyper.</step>
+        <step n="4" name="Version Control & Handoff">Perform version control for the draft slice and all updated architecture documents, then delegate to the Prototyper.</step>
       </phase>
     </workflow>
 
@@ -134,7 +134,7 @@
         </section>
         <section n="4" name="Deliverables">
           <item name="Heading">## Deliverables</item>
-          <item name="Content">Dependency-sequenced checklist of atomic, testable units (one per commit). Use DbC prefixes: 1. Contract (Interfaces, DTOs), 2. Harness (Infrastructure; no test cases), 3. Seam (Parallel adapter; Abstraction layer), 4. Refactor (Modification; Migration), 5. Logic (Domain logic; Implementation), 6. Wiring (Assembly; Entry point), 7. Cleanup (Deletion; Pruning). Format: - [ ] **Prefix** - Description.</item>
+          <item name="Content">Dependency-sequenced checklist of atomic, testable units (one per version control). Use DbC prefixes: 1. Contract (Interfaces, DTOs), 2. Harness (Infrastructure; no test cases), 3. Seam (Parallel adapter; Abstraction layer), 4. Refactor (Modification; Migration), 5. Logic (Domain logic; Implementation), 6. Wiring (Assembly; Entry point), 7. Cleanup (Deletion; Pruning). Format: - [ ] **Prefix** - Description.</item>
         </section>
         <section n="5" name="Delta Analysis">
           <item name="Heading">## Delta Analysis</item>

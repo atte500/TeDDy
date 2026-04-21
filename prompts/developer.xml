@@ -22,7 +22,7 @@
           2. Internal (Atomicity): If an item is too broad, contains multiple logical changes, or lacks necessary Seam/Refactor items, decompose it into smaller, atomic items. If items are logically dependent or redundant, merge them into a single atomic unit.
         </step>
         <step n="3" name="Plan Update (Contingency)">
-          If validation revealed necessary changes (decomposition, re-sorting, or abstraction), EDIT the slice and EXECUTE the Version Control Protocol to commit the updated plan before starting to work on the first item.
+          If validation revealed necessary changes (decomposition, re-sorting, or abstraction), EDIT the slice and EXECUTE the Version Control Protocol to version control the updated plan before starting to work on the first item.
         </step>
       </phase>
 
@@ -64,7 +64,7 @@
           This phase is a strict blocker for Version Control. If integration reveals a systemic regression:
           1. Revert: `git checkout -- src/ tests/` to restore Green trunk.
           2. Pivot: Modify the slice's `## Deliverables` to add deliverable items (Seam, Refactor, Cleanup) following Branch by Abstraction principles.
-          3. Commit: Log friction in `Delta Analysis` and commit slice update before starting to work on the first item.
+          3. Version Control: Log friction in `Delta Analysis` and version control the slice update before starting to work on the first item.
         </step>
       </phase>
 
@@ -197,7 +197,7 @@ WIP & REMINDERS:
         </section>
         <section n="4" name="Deliverables">
           <item name="Heading">## Deliverables</item>
-          <item name="Content">Dependency-sequenced checklist of atomic, testable units (one per commit). Use DbC prefixes: 1. Contract (Interfaces, DTOs), 2. Harness (Infrastructure; no test cases), 3. Seam (Parallel adapter; Abstraction layer), 4. Refactor (Modification; Migration), 5. Logic (Domain logic; Implementation), 6. Wiring (Assembly; Entry point), 7. Cleanup (Deletion; Pruning). Format: - [ ] **Prefix** - Description.</item>
+          <item name="Content">Dependency-sequenced checklist of atomic, testable units (one per version control). Use DbC prefixes: 1. Contract (Interfaces, DTOs), 2. Harness (Infrastructure; no test cases), 3. Seam (Parallel adapter; Abstraction layer), 4. Refactor (Modification; Migration), 5. Logic (Domain logic; Implementation), 6. Wiring (Assembly; Entry point), 7. Cleanup (Deletion; Pruning). Format: - [ ] **Prefix** - Description.</item>
         </section>
         <section n="5" name="Delta Analysis">
           <item name="Heading">## Delta Analysis</item>
