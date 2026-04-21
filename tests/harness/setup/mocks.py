@@ -222,6 +222,9 @@ def mock_llm_client(container):
     mock_response.model = "test-model"
 
     mock.get_completion.return_value = mock_response
+    # Ensure the async version also returns the structured response
+    mock.async_get_completion.return_value = mock_response
+
     mock.get_token_count.return_value = 100
     mock.get_completion_cost.return_value = 0.01
 
