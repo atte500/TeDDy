@@ -31,9 +31,7 @@ def test_start_session_creates_prefixed_directory(tmp_path: Path, monkeypatch):
     ) as mock_datetime:
         mock_datetime.now.return_value = fixed_now
         # Input sequence: instructions, then approve the plan (y)
-        adapter.run_cli_command(
-            ["start", session_name], input="instructions\ny\n"
-        )
+        adapter.run_cli_command(["start", session_name], input="instructions\ny\n")
 
     # THEN: The session directory must be created with the timestamp prefix
     session_path = tmp_path / ".teddy" / "sessions" / expected_folder

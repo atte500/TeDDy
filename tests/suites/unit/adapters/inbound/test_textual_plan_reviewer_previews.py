@@ -80,8 +80,12 @@ async def test_launch_editor_skips_confirmation():
     app._console_tooling.find_editor.return_value = ["code"]
 
     # We mock the 'open' to avoid side effects and 'spawn_editor' to avoid real processes
-    with patch("builtins.open", mock_open(read_data="formatted log")), \
-         patch("teddy_executor.adapters.inbound.textual_plan_reviewer_previews.spawn_editor") as mock_spawn:
+    with (
+        patch("builtins.open", mock_open(read_data="formatted log")),
+        patch(
+            "teddy_executor.adapters.inbound.textual_plan_reviewer_previews.spawn_editor"
+        ) as mock_spawn,
+    ):
         result = await launch_editor(app, "initial", skip_confirm=True)
 
     assert result == "formatted log"

@@ -195,7 +195,9 @@ def test_shell_adapter_preserves_env_across_chained_commands(adapter):
     assert "chained" in result["stdout"].strip()
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="POSIX-specific SIGTTIN/SIGTTOU fix")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="POSIX-specific SIGTTIN/SIGTTOU fix"
+)
 def test_posix_sigttin_suspension_prevention(adapter):
     """
     Regression test for the SIGTTIN suspension bug (Case File 11).
@@ -207,10 +209,10 @@ def test_posix_sigttin_suspension_prevention(adapter):
     """
     # Querying isatty() on an inherited stdin from a background group triggers SIGTTIN
     script = "import sys; print(f'TTY={sys.stdin.isatty()}')"
-    cmd = f"{sys.executable} -c \"{script}\""
-    
+    cmd = f'{sys.executable} -c "{script}"'
+
     # A 2-second timeout is plenty. If the fix is absent, this will hang and time out.
     result = adapter.execute(cmd, timeout=2)
-    
+
     assert result["return_code"] == 0
     assert "TTY=" in result["stdout"]

@@ -304,11 +304,20 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         """
         Asynchronously executes a plan and returns a report.
         """
-        raise NotImplementedError("Async execution not yet implemented.")
+        import anyio
+
+        return await anyio.to_thread.run_sync(
+            self.execute,
+            plan,
+            plan_content,
+            plan_path,
+            interactive,
+            message,
+        )
 
     async def async_resume(
         self,
-        session_name: str,
+        _session_name: str,
         interactive: bool = True,
         message: Optional[str] = None,
     ) -> Optional[ExecutionReport]:

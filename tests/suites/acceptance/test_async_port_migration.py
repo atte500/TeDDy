@@ -28,10 +28,8 @@ Test
 echo 1
 ~~~~~~
 """
-    with pytest.raises(
-        NotImplementedError, match="Async execution not yet implemented."
-    ):
-        await orchestrator.async_execute(plan_content=valid_plan)
+    report = await orchestrator.async_execute(plan_content=valid_plan)
+    assert report.run_summary.status == "SUCCESS"
 
     # We create the session so async_resume can resolve the state and hit the next frontier
     from teddy_executor.core.ports.inbound.init import IInitUseCase
@@ -75,8 +73,10 @@ echo 1
             return_value=mock_response,
         ),
     ):
-        with pytest.raises(NotImplementedError):
-            await orchestrator.async_resume(session_name=actual_session_name)
+        resume_report = await orchestrator.async_resume(
+            session_name=actual_session_name
+        )
+        assert resume_report.run_summary.status == "SUCCESS"
 
 
 @pytest.mark.anyio

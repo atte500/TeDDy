@@ -71,7 +71,7 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 - [x] **Refactor** - Progressively migrate `SessionOrchestrator` to async methods.
 - [✓] **Logic** - Chronological session sorting (date prefixing) in `SessionService`.
 - [✓] **Logic** - Natural session name resolution (prefix stripping) in `SessionRepository`.
-- [ ] **Seam** - Implement `ExecutionOrchestrator.async_execute` (wrapper around sync logic).
+- [✓] **Seam** - Implement `ExecutionOrchestrator.async_execute` (wrapper around sync logic).
 - [ ] **Seam** - Implement async wrappers for `SessionReplanner` logic in `SessionOrchestrator`.
 - [ ] **Logic** - Sequenced planning logs & "Proceed on Empty" in `PlanningService.async_generate_plan`.
 - [ ] **Logic** - Blue/Magenta telemetry color refinements in `SessionPlanner`.
@@ -168,3 +168,8 @@ The Developer MUST NOT implement simulation-only logs found in the prototype:
 - Implemented `SessionRepository._strip_prefix` and updated `resolve_session_from_path` and `get_latest_session_name` to return Natural Names.
 - Added unit tests in `tests/suites/unit/core/services/test_session_repository.py`.
 - Verified via `tests/suites/acceptance/test_session_prefixing.py`.
+
+### Deliverable: async_execute Seam
+- Implemented `ExecutionOrchestrator.async_execute` using `anyio.to_thread.run_sync`.
+- Verified that `SessionOrchestrator.async_resume` now correctly executes via the async thread wrapper.
+- Ratcheted `tests/suites/acceptance/test_async_port_migration.py` to assert success for `IRunPlanUseCase` async methods.

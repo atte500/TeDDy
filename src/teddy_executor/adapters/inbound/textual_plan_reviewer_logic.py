@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Any, Optional, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
     extract_status_emoji,
@@ -9,9 +9,6 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
 from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
     format_node_label,
     resolve_action_parameters,
-)
-from teddy_executor.adapters.inbound.textual_plan_reviewer_previews import (
-    launch_editor,
 )
 
 if TYPE_CHECKING:

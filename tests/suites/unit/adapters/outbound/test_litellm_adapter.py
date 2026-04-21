@@ -138,7 +138,7 @@ async def test_async_get_completion_calls_litellm_acompletion(mock_config):
     # LiteLLM acompletion is an async function
     async def mock_acompletion(*_args, **_kwargs):
         return mock_response
-    
+
     litellm.acompletion = MagicMock(side_effect=mock_acompletion)
     mock_config.get_setting.return_value = {}
 
