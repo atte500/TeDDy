@@ -71,13 +71,13 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 - [x] **Refactor** - Progressively migrate `SessionOrchestrator` to async methods.
 - [✓] **Logic** - Chronological session sorting (date prefixing) in `SessionService`.
 - [✓] **Logic** - Natural session name resolution (prefix stripping) in `SessionRepository`.
-- [ ] **Refactor** - Migrate `PlanningService` and `SessionOrchestrator` to `async`.
-- [ ] **Refactor** - Update `SessionOrchestrator` and `PlanningService` to use `anyio.to_thread.run_sync` for synchronous FileSystem operations.
-- [ ] **Logic** - Sequenced planning logs & "Proceed on Empty" in `PlanningService`.
-- [ ] **Logic** - Telemetry color refinements in `SessionPlanner`.
-- [ ] **Logic** - Terminal action soft isolation in `ExecutionOrchestrator`.
+- [ ] **Seam** - Implement `ExecutionOrchestrator.async_execute` (wrapper around sync logic).
+- [ ] **Seam** - Implement async wrappers for `SessionReplanner` logic in `SessionOrchestrator`.
+- [ ] **Logic** - Sequenced planning logs & "Proceed on Empty" in `PlanningService.async_generate_plan`.
+- [ ] **Logic** - Blue/Magenta telemetry color refinements in `SessionPlanner`.
+- [ ] **Logic** - Terminal action soft isolation in `ExecutionOrchestrator.async_execute`.
 - [ ] **Wiring** - Async CLI integration (anyio runner) in `session_cli_handlers.py`.
-- [ ] **Cleanup** - Remove synchronous port methods once migration is complete.
+- [ ] **Cleanup** - Prune recursion guards and synchronous methods in `PlanningService`.
 
 ## Delta Analysis
 
