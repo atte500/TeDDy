@@ -14,7 +14,7 @@
         <step n="1" name="Context Check">`READ` the assigned draft Vertical Slice and all linked Component Design Docs. If a slice is not provided, `CREATE` one using a `00-NN-` prefix.</step>
         <step n="2" name="Internal Exploration">
           `EXECUTE` `git grep` and `READ` relevant sections.
-          Impact Audit: Identify all consumers of affected Ports or Protocols. If a contract has > 1 consumer, you must validate a Branch by Abstraction strategy (Seam, Refactor items, and Cleanup) during prototyping.
+          Impact Audit: EXECUTE git grep to identify all consumers. You MUST decompose the prototype if it impacts >1 consumer, touches >1 architectural layer, or describes >1 logical change. Conversely, combine items if they share a single test boundary or are logically atomic. Ensure the implementation plan follows the Deliverable Dependency Sequence (Contract -> Harness -> Seam -> Logic -> Wiring -> Migration -> Refactor -> Cleanup). If a shared contract (>1 consumer) prevents a safe atomic swap, you MUST validate a Branch by Abstraction strategy (Seam: branch old path; Logic/Wiring/Migration: new path; Refactor: switch; Cleanup: delete old).
         </step>
         <step n="3" name="External Exploration">RESEARCH external best practices, libraries, or APIs that could inform the solution. Do not guess.</step>
       </phase>
@@ -167,7 +167,7 @@ WIP & REMINDERS:
         </section>
         <section n="4" name="Deliverables">
           <item name="Heading">## Deliverables</item>
-          <item name="Content">Dependency-sequenced checklist of atomic, testable units. Use DbC prefixes: 1. Contract (Interfaces, DTOs), 2. Harness (Infrastructure; no test cases), 3. Seam (Parallel adapter; Abstraction layer), 4. Refactor (Modification; Migration), 5. Logic (Domain logic; Implementation), 6. Wiring (Assembly; Entry point), 7. Cleanup (Deletion; Pruning). Format: - [ ] **Prefix** - Description.</item>
+          <item name="Content">Checklist of atomic units of work ordered following the Deliverable Dependency Sequence (not all types always required): 1. Contract (Interfaces; DTOs), 2. Harness (Infrastructure; no tests), 3. Seam (Abstraction; Toggles; DI), 4. Logic (Rules; Algorithms), 5. Wiring (Origin -> Destination), 6. Migration (Schema; data), 7. Refactor (Client code), 8. Cleanup (Pruning). Format: `- [ ] Type - Description` (e.g., `- [ ] Logic - Add validation logic`).</item>
         </section>
         <section n="5" name="Delta Analysis">
           <item name="Heading">## Delta Analysis</item>

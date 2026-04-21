@@ -16,10 +16,8 @@
       <phase n="1" name="Orientation">
         <goal>Foundation and scope verification.</goal>
         <step n="1" name="Initialization">If missing, CREATE slice at `docs/project/slices/00-NN-{{feature}}.md`.</step>
-        <step n="2" name="Plan Validation">
-          Perform a dual-audit of the current plan.
-          1. External (Impact): EXECUTE git grep on targets. If shared contract (>1 consumer) or logic collision, you must pivot to Branch by Abstraction.
-          2. Internal (Atomicity): If an item is too broad, contains multiple logical changes, or lacks necessary Seam/Refactor items, decompose it into smaller, atomic items. If items are logically dependent or redundant, merge them into a single atomic unit.
+        <step n="2" name="Plan Audit">
+          EXECUTE git grep on targets. You MUST decompose items that impact >1 consumer, touch >1 architectural layer, or describe >1 logical change. Conversely, combine items if they share a single test boundary, cannot pass verification independently, or are logically atomic. You MUST re-sort or append items to strictly follow the Deliverable Dependency Sequence (Contract -> Harness -> Seam -> Logic -> Wiring -> Migration -> Refactor -> Cleanup). If a shared contract (>1 consumer) prevents a safe atomic swap, use Branch by Abstraction (Seam: branch old path; Logic/Wiring/Migration: new path; Refactor: switch; Cleanup: delete old) to transition safely.
         </step>
         <step n="3" name="Plan Update (Contingency)">
           If validation revealed necessary changes (decomposition, re-sorting, or abstraction), EDIT the slice and EXECUTE the Version Control Protocol to version control the updated plan before starting to work on the first item.
@@ -62,16 +60,17 @@
         </step>
         <step n="2" name="Hard Abort (Regression)">
           This phase is a strict blocker for Version Control. If integration reveals a systemic regression:
-          1. Revert: `git checkout -- src/ tests/` to restore Green trunk.
-          2. Pivot: Modify the slice's `## Deliverables` to add deliverable items (Seam, Refactor, Cleanup) following Branch by Abstraction principles.
-          3. Version Control: Log friction in `Delta Analysis` and version control the slice update before starting to work on the first item.
+          1. Revert: EXECUTE `git checkout HEAD -- src/ tests/` to restore Green trunk while preserving documentation.
+          2. Pivot: Modify the slice's `## Delta Analysis` to log the required changes and `## Deliverables` to add the preliminary deliverable items following Branch by Abstraction if appropriate.
+          3. Version Control: EXECUTE Version Control Protocol to commit the slice update BEFORE restarting.
+          4. Restart: Return to Phase 1 (Orientation) to begin implementation of the revised plan.
         </step>
         <step n="3" name="Transition">Upon successful global integration, you MUST proceed to Phase 5 (Documentation) for the current deliverable.</step>
       </phase>
 
       <phase n="5" name="Documentation">
         <goal>Update tracking documents and record implementation findings for this deliverable item.</goal>
-        <step n="1" name="Mark Progress">`EDIT` the vertical slice doc to mark the current deliverable as `[✓]`.</step>
+        <step n="1" name="Mark Progress">`EDIT` the vertical slice doc to mark the current deliverable as `[x]`.</step>
         <step n="2" name="Sync Slice Notes">`EDIT` the vertical slice doc to append technical findings for this deliverable under the `## Implementation Notes` section. If this section does not exist, you MUST create it at the end of the file.</step>
         <step n="3" name="Harvest Debt">If any `[DEBT]` was logged, `EDIT` the active Milestone's (`docs/project/milestones/`) `## Technical Debt` section to append it as a checkmarkable [ ] task.</step>
         <step n="4" name="Perform As-Built Update">Before finishing the last deliverable of the slice, perform a final `EDIT` on the `Component Design Docs`. Use the `Implementation Notes` you have gathered to make final, minor corrections, ensuring the docs perfectly reflect the as-built reality of the code.</step>
@@ -199,7 +198,7 @@ WIP & REMINDERS:
         </section>
         <section n="4" name="Deliverables">
           <item name="Heading">## Deliverables</item>
-          <item name="Content">Dependency-sequenced checklist of atomic, testable units. Use DbC prefixes: 1. Contract (Interfaces, DTOs), 2. Harness (Infrastructure; no test cases), 3. Seam (Parallel adapter; Abstraction layer), 4. Refactor (Modification; Migration), 5. Logic (Domain logic; Implementation), 6. Wiring (Assembly; Entry point), 7. Cleanup (Deletion; Pruning). Format: - [ ] **Prefix** - Description.</item>
+          <item name="Content">Checklist of atomic units of work ordered following the Deliverable Dependency Sequence (not all types always required): 1. Contract (Interfaces; DTOs), 2. Harness (Infrastructure; no tests), 3. Seam (Abstraction; Toggles; DI), 4. Logic (Rules; Algorithms), 5. Wiring (Origin -> Destination), 6. Migration (Schema; data), 7. Refactor (Client code), 8. Cleanup (Pruning). Format: `- [ ] Type - Description` (e.g., `- [ ] Logic - Add validation logic`).</item>
         </section>
         <section n="5" name="Delta Analysis">
           <item name="Heading">## Delta Analysis</item>

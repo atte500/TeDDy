@@ -20,7 +20,7 @@
         <goal>Gather comprehensive technical context about the Problem Space ("The Why" and "The How").</goal>
         <step n="1" name="Internal Context Gathering">
           Use `EXECUTE` (`git grep`) and `READ` to understand the codebase.
-          Impact Audit: If modifying an existing component, execute `git grep` to identify all consumers and quantify risk. If a contract has > 1 consumer, plan for Branch by Abstraction (Seam, Refactor items, and Cleanup).
+          Impact Audit: If modifying an existing component, EXECUTE `git grep` to identify all consumers. You MUST recommend decomposition if the change impacts >1 consumer, touches >1 architectural layer, or describes >1 logical change. If a shared contract (>1 consumer) prevents a safe atomic swap, plan for Branch by Abstraction (Seam: branch old path; Logic/Wiring/Migration: new path; Refactor: switch; Cleanup: delete old).
         </step>
         <step n="2" name="External Context Gathering">Use RESEARCH to explore external best practices, libraries, or APIs.</step>
         <step n="3" name="Fast-Track Probing">If considering the Fast-Track path to the Developer, you MUST CREATE temporary, localized code probes (e.g., in spikes/) and EXECUTE them to validate that the feature is truly low-risk and trivial before finalizing your path recommendation. If the probe reveals unexpected complexity or risk, or if the Impact Audit reveals a shared contract, you MUST pivot your recommendation to the Prototyper.</step>
@@ -169,7 +169,7 @@
         </section>
         <section n="4" name="Deliverables">
           <item name="Heading">## Deliverables</item>
-          <item name="Content">Dependency-sequenced checklist of atomic, testable units. Use DbC prefixes: 1. Contract (Interfaces, DTOs), 2. Harness (Infrastructure; no test cases), 3. Seam (Parallel adapter; Abstraction layer), 4. Refactor (Modification; Migration), 5. Logic (Domain logic; Implementation), 6. Wiring (Assembly; Entry point), 7. Cleanup (Deletion; Pruning). Format: `- [ ] **Prefix** - Description`.</item>
+          <item name="Content">Checklist of atomic units of work ordered following the Deliverable Dependency Sequence (not all types always required): 1. Contract (Interfaces; DTOs), 2. Harness (Infrastructure; no tests), 3. Seam (Abstraction; Toggles; DI), 4. Logic (Rules; Algorithms), 5. Wiring (Origin -> Destination), 6. Migration (Schema; data), 7. Refactor (Client code), 8. Cleanup (Pruning). Format: `- [ ] Type - Description` (e.g., `- [ ] Logic - Add validation logic`).</item>
         </section>
         <section n="5" name="Delta Analysis">
           <item name="Heading">## Delta Analysis</item>
