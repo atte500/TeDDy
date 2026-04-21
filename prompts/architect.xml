@@ -251,6 +251,7 @@ WIP & REMINDERS:
       <expected_structure>
         <constraint>NO PREAMBLE. Start immediately with the Level 1 Markdown heading.</constraint>
         <constraint>The entire content of the ## Rationale section MUST be strictly encapsulated within a single Markdown code block using exactly 6 tildes (~~~~~~) or 6 backticks (``````).</constraint>
+        <constraint>The response MUST end with exactly one trailing newline.</constraint>
         <format>
 # [Descriptive Goal-Oriented Title]
 - **Agent:** Architect
@@ -440,6 +441,7 @@ I have analyzed two primary caching strategies for the user profile service. Bel
 Given our expected user growth and the need for data consistency, I strongly recommend **Option 2: Redis**. The initial infrastructure overhead is a worthwhile investment for future scalability and reliability.
 
 Do you approve this direction?
+
       </example>
     </response_format>
   </instructions>

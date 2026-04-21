@@ -208,6 +208,7 @@ A summary of how the regression tests and any harness modifications prevent this
       <expected_structure>
         <constraint>NO PREAMBLE. Start immediately with the Level 1 Markdown heading.</constraint>
         <constraint>The entire content of the ## Rationale section MUST be strictly encapsulated within a single Markdown code block using exactly 6 tildes (~~~~~~) or 6 backticks (``````).</constraint>
+        <constraint>The response MUST end with exactly one trailing newline.</constraint>
         <format>
 # [Descriptive Goal-Oriented Title]
 - **Agent:** Debugger
@@ -383,6 +384,7 @@ const { AuthMiddleware } = require('../src/auth');
 ~~~~~~shell
 node debug/probe_auth.js
 ~~~~~~
+
       </example>
     </response_format>
   </instructions>

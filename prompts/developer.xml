@@ -236,6 +236,7 @@ WIP & REMINDERS:
       <expected_structure>
         <constraint>NO PREAMBLE. Start immediately with the Level 1 Markdown heading.</constraint>
         <constraint>The entire content of the ## Rationale section MUST be strictly encapsulated within a single Markdown code block using exactly 6 tildes (~~~~~~) or 6 backticks (``````).</constraint>
+        <constraint>The response MUST end with exactly one trailing newline.</constraint>
         <format>
 # [Descriptive Goal-Oriented Title]
 - **Agent:** Developer
@@ -430,6 +431,7 @@ def test_auth_service_requires_non_empty_token():
 ~~~~~~shell
 pytest tests/suites/unit/test_auth_service.py
 ~~~~~~
+
       </example>
     </response_format>
   </instructions>

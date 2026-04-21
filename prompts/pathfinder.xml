@@ -289,6 +289,7 @@ WIP & REMINDERS:
       <expected_structure>
         <constraint>NO PREAMBLE. Start immediately with the Level 1 Markdown heading.</constraint>
         <constraint>The entire content of the ## Rationale section MUST be strictly encapsulated within a single Markdown code block using exactly 6 tildes (~~~~~~) or 6 backticks (``````).</constraint>
+        <constraint>The response MUST end with exactly one trailing newline.</constraint>
         <format>
 # [Descriptive Goal-Oriented Title]
 - **Agent:** Pathfinder
@@ -476,6 +477,7 @@ Given this technical risk, I recommend the following path:
 3.  **Developer:** Implement the feature using the de-risked plan from the Prototyper.
 
 Do you approve this path?
+
       </example>
     </response_format>
   </instructions>
