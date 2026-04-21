@@ -65,6 +65,7 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 
 ## Deliverables
 - [x] **Harness** - Async infrastructure (Global `anyio_backend` fixture).
+- [ ] **Harness** - Async mock support in `mocks.py`.
 - [x] **Seam** - Add `async_get_completion` to `ILlmClient` and implement in `LiteLLMAdapter`.
 - [x] **Seam** - Add `async_generate_plan` to `IPlanningUseCase` and implement in `PlanningService`.
 - [x] **Seam** - Add async counterparts to `ISessionManager` and `IRunPlanUseCase`.
