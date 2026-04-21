@@ -16,11 +16,14 @@
       <phase n="1" name="Orientation">
         <goal>Foundation and scope verification.</goal>
         <step n="1" name="Initialization">If missing, CREATE slice at `docs/project/slices/00-NN-{{feature}}.md`.</step>
-        <step n="2" name="Plan Audit">
-          EXECUTE git grep on targets. You MUST decompose items that impact >1 consumer, touch >1 architectural layer, describe >1 logical change, or establish >1 connection between components. Conversely, combine items if they share a single test boundary, cannot pass verification independently, or are logically atomic. You MUST re-sort or append items to strictly follow the Deliverable Dependency Sequence (Contract -> Harness -> Seam -> Logic -> Wiring -> Migration -> Refactor -> Cleanup). If a shared contract (>1 consumer) prevents a safe atomic swap, use Branch by Abstraction (Seam: branch old path; Logic/Wiring/Migration: new path; Refactor: switch; Cleanup: delete old) to transition safely.
+        <step n="2" name="Discovery">
+          Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context and prior agent artifacts required for a thorough plan audit.
         </step>
-        <step n="3" name="Plan Update (Contingency)">
-          If validation revealed necessary changes (decomposition, re-sorting, or abstraction), EDIT the slice and EXECUTE the Version Control Protocol to version control the updated plan before starting to work on the first item.
+        <step n="3" name="Plan Audit">
+          Audit the target components of the first deliverable item via `EXECUTE git grep`. You MUST decompose any item touching >1 consumer, layer, or logical change into a prioritized list of smaller, atomic deliverables. Conversely, combine items sharing a test boundary. Strictly follow the Deliverable Dependency Sequence (Contract -> Harness -> Seam -> Logic -> Wiring -> Migration -> Refactor -> Cleanup). For shared contracts, use Branch by Abstraction.
+        </step>
+        <step n="4" name="Plan Update (Contingency)">
+          If validation revealed necessary changes (decomposition, re-sorting, or abstraction), EDIT the slice and EXECUTE the Version Control Protocol to version control the updated plan before starting to work on the first unresolved item.
         </step>
       </phase>
 

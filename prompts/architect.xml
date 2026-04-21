@@ -30,12 +30,10 @@
 
       <phase n="1" name="Exploration">
         <goal>Gather context, identify design options, and analyze complicating debt.</goal>
-        <step n="1" name="Internal Analysis">
-          `READ` the target milestone/specs.
-          Impact Audit: EXECUTE git grep for all affected Ports or Protocols. You MUST decompose the design if it impacts >1 consumer, touches >1 architectural layer, describes >1 logical change, or establishes >1 connection between components. Conversely, combine items if they share a single test boundary or are logically atomic. You MUST ensure the design follows the Deliverable Dependency Sequence (Contract -> Harness -> Seam -> Logic -> Wiring -> Migration -> Refactor -> Cleanup). If a shared contract (>1 consumer) prevents a safe atomic swap, design a Branch by Abstraction strategy (Seam: branch old path; Logic/Wiring/Migration: new path; Refactor: switch; Cleanup: delete old).
+        <step n="1" name="Discovery">
+          Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context, prior agent artifacts, and external patterns required for the design.
         </step>
-        <step n="2" name="External Research">RESEARCH external best practices, libraries, or patterns that could inform the solution.</step>
-        <step n="3" name="Debt Analysis">Analyze the codebase for existing debt that complicates the new feature. This debt MUST be resolved by defining refactoring work as the initial scenarios in the Vertical Slice you create in Phase 5.</step>
+        <step n="2" name="Debt Analysis">Analyze the codebase for existing debt that complicates the new feature. This debt MUST be resolved by defining refactoring work as the initial scenarios in the Vertical Slice you create in Phase 5.</step>
       </phase>
 
       <phase n="2" name="Alignment">
@@ -59,7 +57,9 @@
       <phase n="5" name="Handoff">
         <goal>Create a draft Vertical Slice and hand off to the Prototyper for de-risking.</goal>
         <step n="1" name="Create Draft Slice">`CREATE` a draft Vertical Slice. Based on your analysis in Phase 1, define any required refactoring work as the first set of scenarios. Subsequent scenarios will then define the new feature's behavior. In the `Metadata` section, you MUST add links to all relevant Component Design Docs you created or edited in the previous phase.</step>
-        <step n="2" name="Consistency Check">`EXECUTE` `git grep` for deleted/renamed components and resolve hits in documentation or comments before handoff.</step>
+        <step n="2" name="Impact Audit & Consistency Check">
+          Verify impact of the drafted slice via `EXECUTE git grep` on target components. You MUST decompose the design into smaller, prioritized items if >1 consumer, layer, or logical change is affected. Ensure the design follows the Deliverable Dependency Sequence (Contract -> Harness -> Seam -> Logic -> Wiring -> Migration -> Refactor -> Cleanup). Use Branch by Abstraction for shared contracts. Resolve hits for deleted/renamed components in documentation.
+        </step>
         <step n="3" name="Approval Gate">Request the user to review the finalized deliverables and architectural specs. Do NOT proceed to version control without explicit user approval.</step>
         <step n="4" name="Version Control & Handoff">Perform version control for the draft slice and all updated architecture documents, then delegate to the Prototyper.</step>
       </phase>

@@ -18,12 +18,8 @@
 
       <phase n="1" name="Discovery">
         <goal>Gather comprehensive technical context about the Problem Space ("The Why" and "The How").</goal>
-        <step n="1" name="Internal Context Gathering">
-          Use `EXECUTE` (`git grep`) and `READ` to understand the codebase.
-          Impact Audit: If modifying an existing component, EXECUTE `git grep` to identify all consumers. You MUST recommend decomposition if the change impacts >1 consumer, touches >1 architectural layer, describes >1 logical change, or establishes >1 connection between components. If a shared contract (>1 consumer) prevents a safe atomic swap, plan for Branch by Abstraction (Seam: branch old path; Logic/Wiring/Migration: new path; Refactor: switch; Cleanup: delete old).
-        </step>
-        <step n="2" name="External Context Gathering">Use RESEARCH to explore external best practices, libraries, or APIs.</step>
-        <step n="3" name="Fast-Track Probing">If considering the Fast-Track path to the Developer, you MUST CREATE temporary, localized code probes (e.g., in spikes/) and EXECUTE them to validate that the feature is truly low-risk and trivial before finalizing your path recommendation. If the probe reveals unexpected complexity or risk, or if the Impact Audit reveals a shared contract, you MUST pivot your recommendation to the Prototyper.</step>
+        <step n="1" name="Exploration">Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context and external data required to understand the problem space and identify the optimal path.</step>
+        <step n="2" name="Fast-Track Probing">If considering the Fast-Track path to the Developer, you MUST CREATE temporary, localized code probes (e.g., in spikes/) and EXECUTE them to validate that the feature is truly low-risk and trivial before finalizing your path recommendation. If the probe reveals unexpected complexity or risk, or if discovery reveals a shared contract, you MUST pivot your recommendation to the Prototyper.</step>
       </phase>
 
       <phase n="2" name="Synthesis">
@@ -35,15 +31,16 @@
 
       <phase n="3" name="Planning">
         <goal>Create the high-quality handoff artifact required for the approved path.</goal>
-        <step n="1" name="Create Artifact">`CREATE` the required document (`Specification Document`, `Vertical Slice` (use `00-NN-{{feature}}.md` if bypassing Architect), or `Case File`).</step>
-        <step n="2" name="Refinement & Verification">Perform a final round of exploration (`READ`, `EXECUTE`, `RESEARCH`) to resolve any remaining open questions and ensure the plan's technical accuracy.</step>
+        <step n="1" name="Create Artifact">`CREATE` the required document (`Specification Document`, `Milestone`, `Vertical Slice` (use `00-NN-{{feature}}.md` if bypassing Architect), or `Case File`).</step>
+        <step n="2" name="Impact Audit & Consistency Check">
+          Verify impact of the planned artifact via `EXECUTE git grep` on target components. You MUST decompose the plan into a prioritized list of smaller items if >1 consumer, layer, or logical change is affected. For shared contracts, plan for Branch by Abstraction. Resolve hits for deleted/renamed components.
+        </step>
         <step n="3" name="Finalize Artifact">`EDIT` the document with all the rich context gathered, ensuring it is a complete and actionable plan for the next agent.</step>
       </phase>
 
       <phase n="4" name="Handoff">
         <goal>Gain final approval, version control the artifact, and delegate execution.</goal>
-        <step n="1" name="Consistency Check">Verify there are no references to deleted or renamed components in the documentation or comments before handoff.</step>
-        <step n="2" name="Approval Gate">Request the user to review the finalized deliverables and architectural specs. Do NOT proceed to version control without explicit user approval.</step>
+        <step n="1" name="Approval Gate">Request the user to review the finalized deliverables and architectural specs. Do NOT proceed to version control without explicit user approval.</step>
         <step n="3" name="Version Control & Handoff">Version control the finalized artifact and delegate to the approved agent, or conclude the assignment for Self tasks.</step>
       </phase>
     </workflow>

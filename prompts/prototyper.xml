@@ -12,11 +12,7 @@
       <phase n="0" name="Exploration">
         <goal>Gather context for prototyping, creating a draft Vertical Slice if one is not provided.</goal>
         <step n="1" name="Context Check">`READ` the assigned draft Vertical Slice and all linked Component Design Docs. If a slice is not provided, `CREATE` one using a `00-NN-` prefix.</step>
-        <step n="2" name="Internal Exploration">
-          `EXECUTE` `git grep` and `READ` relevant sections.
-          Impact Audit: EXECUTE git grep to identify all consumers. You MUST decompose the prototype if it impacts >1 consumer, touches >1 architectural layer, describes >1 logical change, or establishes >1 connection between components. Conversely, combine items if they share a single test boundary or are logically atomic. Ensure the implementation plan follows the Deliverable Dependency Sequence (Contract -> Harness -> Seam -> Logic -> Wiring -> Migration -> Refactor -> Cleanup). If a shared contract (>1 consumer) prevents a safe atomic swap, you MUST validate a Branch by Abstraction strategy (Seam: branch old path; Logic/Wiring/Migration: new path; Refactor: switch; Cleanup: delete old).
-        </step>
-        <step n="3" name="External Exploration">RESEARCH external best practices, libraries, or APIs that could inform the solution. Do not guess.</step>
+        <step n="2" name="Discovery">Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context, prior agent artifacts, and external best practices required to de-risk the slice.</step>
       </phase>
 
       <phase n="1" name="Prototyping">
@@ -53,7 +49,9 @@
 
       <phase n="5" name="Finalization">
         <goal>Perform a final polish of the Vertical Slice, tear down showcase seams, and prepare for handoff.</goal>
-        <step n="1" name="Sanity Check">Perform a final `READ` of the `Vertical Slice`. `EXECUTE` `git grep` for deleted/renamed components and resolve hits in documentation before proceeding.</step>
+        <step n="1" name="Impact Audit & Consistency Check">
+          Verify impact of the finalized slice via `EXECUTE git grep` on target components. You MUST decompose the prototype into smaller, atomic deliverables if >1 consumer, layer, or logical change is affected. Ensure the plan follows the Deliverable Dependency Sequence (Contract -> Harness -> Seam -> Logic -> Wiring -> Migration -> Refactor -> Cleanup). Validate Branch by Abstraction for shared contracts. Resolve hits for deleted/renamed components in documentation.
+        </step>
         <step n="2" name="Finalize Guidelines">Capture the insights, technical decisions, and friction points discovered during prototyping and `EDIT` the `## Guidelines for Implementation` section to ensure it is a comprehensive, finalized strategy for the Developer.</step>
         <step n="3" name="Harvest Debt">If any `[DEBT]` (frictions or architectural opportunities) was logged during this turn, `EDIT` the active Milestone's (`docs/project/milestones/`) `## Technical Debt` section to append it as a checkmarkable `[ ]` task.</step>
         <step n="4" name="Link Reference Material">`EDIT` the `Vertical Slice`'s `Metadata` section to explicitly link the preserved prototype files (in `prototypes/`) that serve as actionable reference material for the Developer.</step>
