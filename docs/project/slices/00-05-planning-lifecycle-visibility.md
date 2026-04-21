@@ -77,8 +77,10 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 - [x] Logic - Sequenced planning logs & "Proceed on Empty" in `PlanningService.async_generate_plan`.
 - [x] Logic - Blue/Magenta telemetry color refinements in `SessionPlanner`.
 - [x] Logic - Terminal action soft isolation in `ExecutionOrchestrator.async_execute`.
-- [ ] Wiring - Async CLI integration (anyio runner) in `session_cli_handlers.py`.
-- [ ] Cleanup - Prune recursion guards and synchronous methods in `PlanningService`.
+- [ ] Logic - Functional async wrappers for SessionService (ISessionManager).
+- [ ] Harness - Unified Sync/Async mock bridging in TestEnvironment.
+- [ ] Wiring - Async CLI integration (anyio runner) in session_cli_handlers.py.
+- [ ] Cleanup - Prune recursion guards and synchronous methods in PlanningService.
 
 ## Implementation Notes
 
