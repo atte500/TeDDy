@@ -4,7 +4,7 @@ from tests.harness.setup.test_environment import POSIXPathMock
 
 
 class IAsyncPort:
-    def sync_method(self, path: str): ...
+    def method(self, path: str): ...
     async def async_method(self, path: str): ...
 
 
@@ -29,5 +29,40 @@ async def test_unified_mock_is_async_aware():
 
     # Should still normalize paths
     mock.async_method.assert_called_with("test")
-    mock.sync_method("C:\\test")
-    mock.sync_method.assert_called_with("C:/test")
+    mock.method("C:\\test")
+    mock.method.assert_called_with("C:/test")
+
+
+def test_unified_mock_synchronizes_sync_and_async_return_values():
+    """
+    Harness: Setting return_value on a sync method MUST update its async counterpart.
+    """
+    from tests.harness.setup.test_environment import UnifiedMock
+
+    mock = UnifiedMock(spec=IAsyncPort)
+
+    # 1. Set on sync
+    mock.method.return_value = "synced"
+
+    # 2. Check async (Should be synced)
+    assert mock.async_method.return_value == "synced"
+
+
+@pytest.mark.anyio
+async def test_unified_mock_synchronizes_sync_and_async_side_effects():
+    """
+    Harness: Setting side_effect on a sync method MUST update its async counterpart.
+    """
+    from tests.harness.setup.test_environment import UnifiedMock
+
+    mock = UnifiedMock(spec=IAsyncPort)
+
+    def effect(*args, **kwargs):
+        return "effect-result"
+
+    # 1. Set on sync
+    mock.method.side_effect = effect
+
+    # 2. Check async call
+    result = await mock.async_method("test")
+    assert result == "effect-result"

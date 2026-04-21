@@ -78,7 +78,7 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 - [x] Logic - Blue/Magenta telemetry color refinements in `SessionPlanner`.
 - [x] Logic - Terminal action soft isolation in `ExecutionOrchestrator.async_execute`.
 - [x] Logic - Functional async wrappers for SessionService (ISessionManager).
-- [ ] Harness - Unified Sync/Async mock bridging in TestEnvironment.
+- [x] Harness - Unified Sync/Async mock bridging in TestEnvironment.
 - [ ] Wiring - Async CLI integration (anyio runner) in session_cli_handlers.py.
 - [ ] Cleanup - Prune recursion guards and synchronous methods in PlanningService.
 
@@ -206,3 +206,9 @@ The Developer MUST NOT implement simulation-only logs found in the prototype:
 - Implemented `ExecutionOrchestrator.async_execute` using `anyio.to_thread.run_sync`.
 - Verified that `SessionOrchestrator.async_resume` now correctly executes via the async thread wrapper.
 - Ratcheted `tests/suites/acceptance/test_async_port_migration.py` to assert success for `IRunPlanUseCase` async methods.
+
+### Deliverable: Harness - Unified Sync/Async mock bridging
+- Implemented automatic `return_value` and `side_effect` synchronization between sync/async method pairs (e.g., `get_completion` <-> `async_get_completion`).
+- Used `POSIXPathMock.__setattr__` with explicit `_synced_partner` linking.
+- Implemented recursion guards using `object.__setattr__` and `self.__dict__.get()` to prevent infinite loops during cross-mock propagation and avoid triggering `Mock` auto-attribute creation.
+- Verified behavior via dedicated unit tests in `tests/suites/unit/test_unified_mock.py`.

@@ -22,6 +22,22 @@ class POSIXPathMock(MagicMock):
         # Always return a UnifiedMock for children to preserve async-awareness
         return UnifiedMock(**kw)
 
+    def __setattr__(self, name, value):
+        # 1. Propagation logic for sync/async pairing
+        # Use __dict__ to avoid triggering Mock's auto-attribute creation
+        if name in ("return_value", "side_effect"):
+            partner = self.__dict__.get("_synced_partner")
+            if partner and not self.__dict__.get("_syncing", False):
+                try:
+                    # Set the syncing flag on the PARTNER to prevent it from calling us back
+                    object.__setattr__(partner, "_syncing", True)
+                    setattr(partner, name, value)
+                finally:
+                    object.__setattr__(partner, "_syncing", False)
+
+        # 2. Apply to self using standard Mock setter
+        super().__setattr__(name, value)
+
     def _normalize_args(self, args, kwargs):
         new_args = list(args)
         if new_args and isinstance(new_args[0], str):
@@ -69,21 +85,30 @@ class UnifiedMock(POSIXPathMock):
 
     def _promote_async_methods(self, spec: Any) -> None:
         """Identifies and replaces async methods with AsyncMock instances."""
-        for name in dir(spec):
+        all_methods = set(dir(spec))
+        for name in all_methods:
             if name.startswith("_"):
                 continue
 
             attr = getattr(spec, name, None)
-            # Detect by prefix or by inspect (for concrete classes/functions)
             if name.startswith("async_") or inspect.iscoroutinefunction(attr):
-                # Only promote if not already an AsyncMock
                 if not isinstance(getattr(self, name), AsyncMock):
-                    # We create an AsyncAsyncPOSIXMock that inherits from POSIXPathMock's
-                    # behavior so that its calls are also normalized.
                     setattr(self, name, AsyncAsyncPOSIXMock())
 
+                sync_name = name.removeprefix("async_")
+                if sync_name in all_methods and sync_name != name:
+                    sync_mock = getattr(self, sync_name)
+                    async_mock = getattr(self, name)
 
-class AsyncAsyncPOSIXMock(AsyncMock, POSIXPathMock):
+                    # Link the mocks for return_value/side_effect synchronization
+                    # Use object.__setattr__ to ensure these don't become Mocks
+                    object.__setattr__(sync_mock, "_synced_partner", async_mock)
+                    object.__setattr__(async_mock, "_synced_partner", sync_mock)
+                    object.__setattr__(sync_mock, "_syncing", False)
+                    object.__setattr__(async_mock, "_syncing", False)
+
+
+class AsyncAsyncPOSIXMock(POSIXPathMock, AsyncMock):
     """Bridge for async methods that need POSIX normalization."""
 
     pass
