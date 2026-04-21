@@ -79,8 +79,23 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 - [x] Logic - Terminal action soft isolation in `ExecutionOrchestrator.async_execute`.
 - [x] Logic - Functional async wrappers for SessionService (ISessionManager).
 - [x] Harness - Unified Sync/Async mock bridging in TestEnvironment.
+- [ ] Refactor - Audit and update Integration/Acceptance tests to use `UnifiedMock` or `AsyncMock` for UseCase ports.
 - [ ] Wiring - Async CLI integration (anyio runner) in session_cli_handlers.py.
 - [ ] Cleanup - Prune recursion guards and synchronous methods in PlanningService.
+
+## Implementation Notes
+
+### Deliverable: Logic - Sequenced planning logs & "Proceed on Empty"
+... (previous notes) ...
+
+### Deliverable: Harness - Unified Sync/Async mock bridging
+... (previous notes) ...
+
+### Deliverable: Integration Failure & Pivot (2026-04-21)
+- Attempted to wire CLI to async core using `anyio.run`.
+- **Finding:** Systemic failure (17 tests) occurred because existing tests use standard `MagicMock` for `IRunPlanUseCase` and `IPlanningUseCase`.
+- **Root Cause:** `anyio.run` hangs when attempting to await a non-awaitable `MagicMock`.
+- **Decision:** Reverted code changes. Added a preliminary refactoring deliverable to ensure all test-registered mocks for primary ports are async-aware.
 
 ## Implementation Notes
 
@@ -108,6 +123,10 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 
 ### 0. Harness Repair: Mock Bridging
 The systemic failure in integration tests revealed that existing mocks for synchronous ports (e.g., `ILlmClient.get_completion`) do not automatically apply to their async counterparts. We must update `UnifiedMock` in `test_environment.py` to synchronize `return_value` and `side_effect` between sync and async methods by default. This allows the SUT to transition to async calls without breaking the massive existing test suite.
+
+### 5. Regression Audit: Async Mocking
+The integration of `anyio.run` into the CLI handlers (the primary driving boundary) exposed that many tests manually register `MagicMock` instances for ports like `IRunPlanUseCase`. These mocks do not support `await` and cause `anyio.run` to hang.
+- **Strategy:** All tests manually registering mocks for `IRunPlanUseCase`, `IPlanningUseCase`, or `IGetContextUseCase` MUST be updated to use `AsyncMock` or the `UnifiedMock` factory.
 
 ### 1. Migration Strategy (Correction)
 The initial attempt to convert ports to `async` in-place caused a systemic regression of 150+ test failures. We are pivoting to **Branch by Abstraction**:
