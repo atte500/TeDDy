@@ -78,7 +78,7 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 - [x] Logic - Blue/Magenta telemetry color refinements in `SessionPlanner`.
 - [x] Logic - Terminal action soft isolation in `ExecutionOrchestrator.async_execute`.
 - [x] Logic - Functional async wrappers for SessionService (ISessionManager).
-- [x] Harness - Unified Sync/Async mock bridging in TestEnvironment.
+- [ ] Harness - Unified Sync/Async mock bridging in TestEnvironment.
 - [ ] Wiring - Async CLI integration (anyio runner) in session_cli_handlers.py.
 - [ ] Cleanup - Prune recursion guards and synchronous methods in PlanningService.
 
@@ -106,7 +106,10 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 
 ## Delta Analysis
 
-### 0. Migration Strategy (Correction)
+### 0. Harness Repair: Mock Bridging
+The systemic failure in integration tests revealed that existing mocks for synchronous ports (e.g., `ILlmClient.get_completion`) do not automatically apply to their async counterparts. We must update `UnifiedMock` in `test_environment.py` to synchronize `return_value` and `side_effect` between sync and async methods by default. This allows the SUT to transition to async calls without breaking the massive existing test suite.
+
+### 1. Migration Strategy (Correction)
 The initial attempt to convert ports to `async` in-place caused a systemic regression of 150+ test failures. We are pivoting to **Branch by Abstraction**:
 1. Introduce async methods in parallel to existing sync methods in core ports.
 2. Update implementations to support both.
