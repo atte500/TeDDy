@@ -230,3 +230,43 @@ def test_aborted_plan_preserves_manually_executed_logs(env, mock_plan_reviewer):
     # Even though aborted, because one action succeeded, the run is considered a SUCCESS overall
     assert report.run_summary.status == RunStatus.SUCCESS
     assert report.plan_title == "Test Plan"
+
+
+def test_execute_skips_terminal_action_in_multi_action_non_interactive_plan(
+    env, mock_action_dispatcher
+):
+    """
+    Scenario: Soft Isolation Reporting
+    Given a plan contains multiple actions, including a PROMPT
+    When I execute the plan in non-interactive mode
+    Then the PROMPT action MUST be automatically skipped
+    And the report MUST state: "Automatically skipped: This action must be performed in isolation."
+    """
+    # Arrange
+    orchestrator = env.get_service(ExecutionOrchestrator)
+
+    action1 = ActionData(type="READ", params={"file": "foo.txt"})
+    action2 = ActionData(type="PROMPT", params={"message": "continue?"})
+    plan = Plan(title="Test Plan", rationale="Test", actions=[action1, action2])
+
+    success_log = ActionLog(
+        status=ActionStatus.SUCCESS,
+        action_type="READ",
+        params=action1.params,
+        details="Read success",
+    )
+    mock_action_dispatcher.dispatch_and_execute.return_value = success_log
+
+    # Act
+    report = orchestrator.execute(plan=plan, interactive=False)
+
+    # Assert
+    assert len(report.action_logs) == 2
+    assert report.action_logs[0].status == ActionStatus.SUCCESS
+
+    # The PROMPT action should be skipped due to soft isolation
+    assert report.action_logs[1].status == ActionStatus.SKIPPED
+    assert (
+        report.action_logs[1].details
+        == "Automatically skipped: This action must be performed in isolation."
+    )

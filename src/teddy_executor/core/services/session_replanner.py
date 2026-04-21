@@ -53,10 +53,36 @@ class SessionReplanner:
         validation_ast: str | None = None,
     ) -> None:
         """Generates the feedback message and triggers the planning phase."""
+        feedback = self._build_feedback_message(
+            errors, original_content, validation_ast
+        )
+        self._planning_service.generate_plan(
+            user_message=feedback, turn_dir=next_turn_dir
+        )
+
+    async def async_trigger_replan_turn(
+        self,
+        next_turn_dir: str,
+        errors: list[str],
+        original_content: str,
+        validation_ast: str | None = None,
+    ) -> None:
+        """Asynchronously triggers the planning phase."""
+        feedback = self._build_feedback_message(
+            errors, original_content, validation_ast
+        )
+        await self._planning_service.async_generate_plan(
+            user_message=feedback, turn_dir=next_turn_dir
+        )
+
+    def _build_feedback_message(
+        self, errors: list[str], original_content: str, validation_ast: str | None
+    ) -> str:
+        """Constructs the feedback message for the AI."""
         error_msgs = [e.strip() for e in errors]
         ast_section = f"\n{validation_ast}\n" if validation_ast else ""
 
-        feedback = (
+        return (
             "The previous plan failed validation. Please review the errors and "
             "the original plan, then generate a corrected version.\n\n"
             "## Validation Errors:\n"
@@ -66,9 +92,6 @@ class SessionReplanner:
             + "\n"
             f"## Original Faulty Plan:\n"
             f"````````````markdown\n{original_content}\n````````````"
-        )
-        self._planning_service.generate_plan(
-            user_message=feedback, turn_dir=next_turn_dir
         )
 
     def gather_failed_resources(self, errors: list) -> dict[str, str]:
@@ -85,5 +108,27 @@ class SessionReplanner:
                         )
                 except Exception:  # nosec B112
                     # Best effort resource gathering; skip if file is unreadable
+                    continue
+        return resources
+
+    async def async_gather_failed_resources(self, errors: list) -> dict[str, str]:
+        """Asynchronously collects the contents of files that caused validation errors."""
+        import anyio
+
+        resources = {}
+        for error in errors:
+            path = getattr(error, "file_path", None)
+            if path:
+                try:
+                    clean_path = path.lstrip("/")
+                    exists = await anyio.to_thread.run_sync(
+                        self._file_system_manager.path_exists, clean_path
+                    )
+                    if exists:
+                        content = await anyio.to_thread.run_sync(
+                            self._file_system_manager.read_file, clean_path
+                        )
+                        resources[path] = content
+                except Exception:  # nosec B112
                     continue
         return resources

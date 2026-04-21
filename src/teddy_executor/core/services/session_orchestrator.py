@@ -88,10 +88,7 @@ class SessionOrchestrator(IRunPlanUseCase):
             self._plan_validator.validate, plan, context_paths
         )
         if errors:
-            # Note: _handle_logical_validation_errors is synchronous and performs I/O.
-            # In a full migration, this would be awaited or wrapped.
-            return await anyio.to_thread.run_sync(
-                self._handle_logical_validation_errors,
+            return await self.async_handle_logical_validation_errors(
                 plan,
                 errors,
                 getattr(plan, "raw_content", "") or "",
@@ -298,6 +295,43 @@ class SessionOrchestrator(IRunPlanUseCase):
                 ) from e
             raise
 
+    async def async_handle_logical_validation_errors(  # noqa: PLR0913
+        self,
+        plan: Plan,
+        errors: list[Any],
+        content: str,
+        plan_path: Optional[str],
+        is_session: bool,
+    ) -> ExecutionReport:
+        """Asynchronously formats logical errors and handles the failure report/replan."""
+        rich_ast = (
+            format_hybrid_ast_view(plan.source_doc, errors) if plan.source_doc else ""
+        )
+        error_messages = [e.message for e in errors]
+
+        failed_resources = await self._replanner.async_gather_failed_resources(errors)
+
+        if is_session and plan_path:
+            return await self.async_trigger_replan(
+                plan_path=plan_path,
+                errors=error_messages,
+                original_plan_content=content,
+                title=plan.title,
+                rationale=plan.rationale,
+                failed_resources=failed_resources,
+                validation_ast=rich_ast,
+                original_actions=plan.actions,
+            )
+
+        return self._replanner.build_failure_report(
+            errors=error_messages,
+            title=plan.title,
+            rationale=plan.rationale,
+            failed_resources=failed_resources,
+            validation_ast=rich_ast,
+            original_actions=plan.actions,
+        )
+
     def _handle_logical_validation_errors(  # noqa: PLR0913
         self,
         plan: Plan,
@@ -382,6 +416,38 @@ class SessionOrchestrator(IRunPlanUseCase):
 
         msg = f"[cyan][{turn_id}] Planning Turn with {agent_name}...[/cyan]"
         self._user_interactor.display_message(msg)
+
+    async def async_trigger_replan(  # noqa: PLR0913
+        self,
+        plan_path: str,
+        errors: list[str],
+        original_plan_content: str,
+        title: str = "Unknown Plan",
+        rationale: str = "Structural Error",
+        failed_resources: Optional[dict[str, str]] = None,
+        validation_ast: Optional[str] = None,
+        original_actions: Optional[Sequence[Any]] = None,
+    ) -> ExecutionReport:
+        """Asynchronously triggers the Automated Re-plan Loop."""
+        import anyio
+
+        report = self._replanner.build_failure_report(
+            errors,
+            title,
+            rationale,
+            failed_resources or {},
+            validation_ast=validation_ast,
+            original_actions=original_actions,
+        )
+        next_turn_dir = await anyio.to_thread.run_sync(
+            self._finalize_turn, plan_path, report, True
+        )
+
+        await anyio.to_thread.run_sync(self._display_planning_progress, next_turn_dir)
+        await self._replanner.async_trigger_replan_turn(
+            next_turn_dir, errors, original_plan_content, validation_ast=validation_ast
+        )
+        return report
 
     def _trigger_replan(  # noqa: PLR0913
         self,

@@ -161,10 +161,6 @@ class SessionPlanner:
     def _display_planning_telemetry(
         self, turn_dir: str, plan_path: str, turn_cost: float
     ):
-        import os
-
-        dim_style = "dim" if os.getenv("TEDDY_SHOWCASE") != "1" else "bright_black"
-
         def safe_float(v: Any, default: float = 0.0) -> float:
             try:
                 if hasattr(v, "__float__"):
@@ -186,14 +182,15 @@ class SessionPlanner:
             turn_cost
         )
 
+        # Scenario: Session Visibility & Natural Language (Blue/Magenta Telemetry)
         self._user_interactor.display_message(
-            f"[{dim_style}]  Model: {model}[/{dim_style}]"
+            f"[blue]• Model:[/blue] [magenta]{model}[/magenta]"
         )
         self._user_interactor.display_message(
-            f"[{dim_style}]  Context: {raw_token_count / 1000:.1f}k tokens[/{dim_style}]"
+            f"[blue]• Context:[/blue] [magenta]{raw_token_count / 1000:.1f}k tokens[/magenta]"
         )
         self._user_interactor.display_message(
-            f"[{dim_style}]  Session Cost: ${cumulative_cost:.4f}[/{dim_style}]\n"
+            f"[blue]• Session Cost:[/blue] [magenta]${cumulative_cost:.4f}[/magenta]\n"
         )
 
     def _resolve_message_from_previous_turn(self, turn_dir: str) -> Optional[str]:

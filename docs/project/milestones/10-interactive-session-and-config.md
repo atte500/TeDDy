@@ -130,3 +130,8 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 - [ ] **Vulture (Console Interactor Tests):** Resolve unused `args`/`kwargs` in `test_console_interactor.py`.
 - [ ] **Vulture:** Resolve unused `old_val` in `_apply_param_edit`.
 - [ ] **Linter (Tests):** Clean up unused `mock_preview` (F841) in `test_tui_regressions.py` and fix module-level import (E402) in `test_shell_adapter_timeout.py`.
+- [ ] **Duplicated Logic:** Refactor prefix-stripping regex `r"^\d{8}_\d{6}-"` into a shared utility (e.g., `SessionRepository` or a string util) to avoid duplication across `PlanningService`, `SessionPlanner`, and `SessionRepository`.
+- [ ] **File Length:** Refactor `src/teddy_executor/core/services/planning_service.py` (351 lines).
+- [ ] **Complexity:** Refactor `PlanningService.async_generate_plan` and `generate_plan` (C901, PLR0915).
+- [ ] **Typing:** Resolve Mypy type mismatches in `SessionOrchestrator` async methods (`run_sync` argument types and `Plan | None` handling).
+- [ ] **Magic Values:** Remove magic values from `test_execution_orchestrator.py` and `test_planning_service_async.py` (PLR2004).

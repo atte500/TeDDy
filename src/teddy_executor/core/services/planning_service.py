@@ -37,6 +37,7 @@ class PlanningService(IPlanningUseCase):
         Asynchronously generates a new plan.md file.
         """
         import anyio
+        import re
         import yaml
         from teddy_executor.core.utils.markdown import extract_markdown_section
 
@@ -62,19 +63,18 @@ class PlanningService(IPlanningUseCase):
                 "Enter your instructions for the AI"
             )
 
+        # Scenario: AI-Driven Continuity (Proceed on Empty)
         if not resolved_message or not resolved_message.strip():
-            return None, 0.0  # type: ignore
+            resolved_message = "(No instructions provided; proceeding with current context as primary instruction)"
 
         hint = "\n\n*(Stop to reply to this user request and ensure alignment before proceeding)*"
-        if hint not in resolved_message:
+        if (
+            hint not in resolved_message
+            and "(No instructions provided" not in resolved_message
+        ):
             resolved_message += hint
 
-        # 1. Gather context
-        context = await self._context_service.async_get_context(
-            context_files=context_files
-        )
-
-        # 2. Fetch system prompt
+        # 1. Fetch metadata and agent name for progress log
         meta_file_path = (turn_path / "meta.yaml").as_posix()
         meta_content = ""
         exists = await anyio.to_thread.run_sync(
@@ -90,6 +90,21 @@ class PlanningService(IPlanningUseCase):
             meta = {}
         agent_name = meta.get("agent_name", "pathfinder")
 
+        # Scenario: Logical Log Sequencing & Natural Language
+        if self._user_interactor:
+            # Resolve Natural Name from turn_dir (parent is session)
+            session_folder = turn_path.parent.name
+            natural_name = re.sub(r"^\d{8}_\d{6}-", "", session_folder)
+            turn_id = turn_path.name
+            msg = f"[cyan][{turn_id}] {natural_name} | Waiting for {agent_name} to respond...[/cyan]"
+            await self._user_interactor.async_display_message(msg)
+
+        # 2. Gather context
+        context = await self._context_service.async_get_context(
+            context_files=context_files
+        )
+
+        # 3. Fetch system prompt
         prompt_file_path = (turn_path / f"{agent_name}.xml").as_posix()
         system_prompt = ""
         exists = await anyio.to_thread.run_sync(

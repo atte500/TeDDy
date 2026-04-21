@@ -72,12 +72,34 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 - [✓] **Logic** - Chronological session sorting (date prefixing) in `SessionService`.
 - [✓] **Logic** - Natural session name resolution (prefix stripping) in `SessionRepository`.
 - [✓] **Seam** - Implement `ExecutionOrchestrator.async_execute` (wrapper around sync logic).
-- [ ] **Seam** - Implement async wrappers for `SessionReplanner` logic in `SessionOrchestrator`.
-- [ ] **Logic** - Sequenced planning logs & "Proceed on Empty" in `PlanningService.async_generate_plan`.
-- [ ] **Logic** - Blue/Magenta telemetry color refinements in `SessionPlanner`.
-- [ ] **Logic** - Terminal action soft isolation in `ExecutionOrchestrator.async_execute`.
+- [✓] **Seam** - Implement async wrappers for `SessionReplanner` logic in `SessionOrchestrator`.
+- [✓] **Logic** - Sequenced planning logs & "Proceed on Empty" in `PlanningService.async_generate_plan`.
+- [✓] **Logic** - Blue/Magenta telemetry color refinements in `SessionPlanner`.
+- [✓] **Logic** - Terminal action soft isolation in `ExecutionOrchestrator.async_execute`.
 - [ ] **Wiring** - Async CLI integration (anyio runner) in `session_cli_handlers.py`.
 - [ ] **Cleanup** - Prune recursion guards and synchronous methods in `PlanningService`.
+
+## Implementation Notes
+
+### Deliverable: Logic - Sequenced planning logs & "Proceed on Empty"
+- Implemented `async_generate_plan` in `PlanningService`.
+- Added logic to substitute an empty user message with a default context-centric instruction.
+- Sequenced the `[cyan]` progress log to appear after message resolution (Prompt/Lookback) but before context gathering/LLM call.
+- Integrated prefix-stripping (Natural Name) resolution for session folders in the log message.
+
+### Deliverable: Logic - Blue/Magenta Telemetry
+- Refined `SessionPlanner._display_planning_telemetry` with new color scheme.
+- Bullet and Key: `blue`.
+- Value: `magenta`.
+- Verified via unit tests in `test_session_planner.py`.
+
+### Deliverable: Seam - SessionReplanner Async Wrappers
+- Added `async_gather_failed_resources` and `async_trigger_replan_turn` to `SessionReplanner`.
+- Updated `SessionOrchestrator` with `async_handle_logical_validation_errors` and `async_trigger_replan` to complete the async validation loop.
+
+### Deliverable: Logic - Terminal Action Soft Isolation
+- Verified that `ActionExecutor._check_action_isolation` already implements the soft isolation rule (skip if multi-action and non-interactive).
+- Added unit test in `test_execution_orchestrator.py` to confirm the behavior.
 
 ## Delta Analysis
 

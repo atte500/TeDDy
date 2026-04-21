@@ -104,3 +104,24 @@ def test_trigger_new_plan_delegates_to_planning_if_report_request_section_is_emp
         "user_message"
     ]
     assert actual_message is None
+
+
+def test_display_planning_telemetry_styles(planner, mock_deps):
+    """Scenario: Session Visibility & Natural Language (Blue/Magenta Telemetry)"""
+    from unittest.mock import call
+    import yaml
+
+    mock_deps["fs"].read_file.return_value = yaml.dump(
+        {"model": "gpt-4o", "token_count": 12400, "cumulative_cost": 0.02}
+    )
+
+    # Act
+    planner._display_planning_telemetry("turn_dir", "plan.md", 0.01)
+
+    # Assert: Blue keys/bullets, Magenta values
+    expected_calls = [
+        call("[blue]• Model:[/blue] [magenta]gpt-4o[/magenta]"),
+        call("[blue]• Context:[/blue] [magenta]12.4k tokens[/magenta]"),
+        call("[blue]• Session Cost:[/blue] [magenta]$0.0300[/magenta]\n"),
+    ]
+    mock_deps["interactor"].display_message.assert_has_calls(expected_calls)
