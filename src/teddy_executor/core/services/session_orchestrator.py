@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Optional, Sequence
+from typing import Any, Optional, Sequence, cast
 
 import anyio
 import yaml
@@ -66,22 +66,30 @@ class SessionOrchestrator(IRunPlanUseCase):
 
         # 1. Parsing
         if not plan:
-            content = plan_content or (
+            # Type hint content as str to satisfy subsequent calls
+            content: str = plan_content or (
                 await anyio.to_thread.run_sync(
                     self._file_system_manager.read_file, plan_path
                 )
                 if plan_path
                 else ""
             )
-            plan = await anyio.to_thread.run_sync(
-                self._parse_and_handle_structural_errors, content, plan_path, is_session
+            # Cast or hint plan as non-Optional Plan for logical validation
+            plan = cast(
+                Plan,
+                await anyio.to_thread.run_sync(
+                    self._parse_and_handle_structural_errors,
+                    content,
+                    plan_path,
+                    is_session,
+                ),
             )
 
         # 2. Validation
         context_paths = None
         if is_session:
-            context_paths = await anyio.to_thread.run_sync(
-                self._session_service.resolve_context_paths, plan_path
+            context_paths = await self._session_service.async_resolve_context_paths(
+                plan_path
             )
 
         errors = await anyio.to_thread.run_sync(
@@ -120,8 +128,8 @@ class SessionOrchestrator(IRunPlanUseCase):
         """
         Asynchronously resumes the session based on its state.
         """
-        state, turn_path = await anyio.to_thread.run_sync(
-            self._session_service.get_session_state, session_name
+        state, turn_path = await self._session_service.async_get_session_state(
+            session_name
         )
 
         if state == SessionState.PENDING_PLAN:
@@ -136,8 +144,7 @@ class SessionOrchestrator(IRunPlanUseCase):
             )
 
         if state == SessionState.COMPLETE_TURN:
-            next_turn_dir = await anyio.to_thread.run_sync(
-                self._session_service.transition_to_next_turn,
+            next_turn_dir = await self._session_service.async_transition_to_next_turn(
                 plan_path=f"{turn_path}/plan.md",
             )
             return await self._async_handle_planning_and_execution(
@@ -156,8 +163,8 @@ class SessionOrchestrator(IRunPlanUseCase):
         if not new_name or new_name == "CANCELLED":
             return None
 
-        _, actual_turn_path = await anyio.to_thread.run_sync(
-            self._session_service.get_session_state, new_name
+        _, actual_turn_path = await self._session_service.async_get_session_state(
+            new_name
         )
         return await self.async_execute(
             plan_path=f"{actual_turn_path}/plan.md",

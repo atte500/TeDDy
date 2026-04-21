@@ -1,25 +1,40 @@
 import pytest
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import AsyncMock
 from datetime import datetime
 from teddy_executor.core.services.session_orchestrator import SessionOrchestrator
 from teddy_executor.core.domain.models import ExecutionReport, Plan
 from teddy_executor.core.domain.models.execution_report import RunSummary, RunStatus
-from teddy_executor.core.ports.outbound.session_manager import SessionState
+from teddy_executor.core.ports.outbound.session_manager import (
+    ISessionManager,
+    SessionState,
+)
+from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
+from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
+from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
+from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
+from teddy_executor.core.ports.outbound import (
+    IFileSystemManager,
+    IMarkdownReportFormatter,
+    IUserInteractor,
+)
+from teddy_executor.core.services.session_planner import SessionPlanner
+from teddy_executor.core.services.session_replanner import SessionReplanner
+from tests.harness.setup.test_environment import UnifiedMock
 
 
 @pytest.fixture
 def orchestrator_deps():
     return {
-        "execution_orchestrator": MagicMock(),
-        "session_service": MagicMock(),
-        "file_system_manager": MagicMock(),
-        "report_formatter": MagicMock(),
-        "plan_validator": MagicMock(),
-        "planning_service": MagicMock(),
-        "plan_parser": MagicMock(),
-        "user_interactor": MagicMock(),
-        "replanner": MagicMock(),
-        "session_planner": MagicMock(),
+        "execution_orchestrator": UnifiedMock(spec=IRunPlanUseCase),
+        "session_service": UnifiedMock(spec=ISessionManager),
+        "file_system_manager": UnifiedMock(spec=IFileSystemManager),
+        "report_formatter": UnifiedMock(spec=IMarkdownReportFormatter),
+        "plan_validator": UnifiedMock(spec=IPlanValidator),
+        "planning_service": UnifiedMock(spec=IPlanningUseCase),
+        "plan_parser": UnifiedMock(spec=IPlanParser),
+        "user_interactor": UnifiedMock(spec=IUserInteractor),
+        "replanner": UnifiedMock(spec=SessionReplanner),
+        "session_planner": UnifiedMock(spec=SessionPlanner),
     }
 
 
@@ -77,10 +92,14 @@ async def test_async_resume_pending_plan_calls_async_execute(
     report = ExecutionReport(run_summary=summary, plan_title="Test Plan")
 
     # Mock dependencies
-    orchestrator_deps["session_service"].get_session_state.return_value = (
+    orchestrator_deps["session_service"].async_get_session_state.return_value = (
         SessionState.PENDING_PLAN,
         turn_path,
     )
+    orchestrator_deps["session_service"].async_resolve_context_paths.return_value = {
+        "Session": [],
+        "Turn": [],
+    }
     orchestrator_deps[
         "file_system_manager"
     ].path_exists.return_value = True  # For session mode detection inside execute
@@ -118,7 +137,7 @@ async def test_async_resume_empty_calls_planning_then_execute(
     plan = Plan(title="Planned", rationale="Test", actions=[{"type": "EXECUTE"}])
 
     # Mock dependencies
-    orchestrator_deps["session_service"].get_session_state.return_value = (
+    orchestrator_deps["session_service"].async_get_session_state.return_value = (
         SessionState.EMPTY,
         turn_path,
     )

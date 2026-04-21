@@ -77,8 +77,8 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 - [x] Logic - Sequenced planning logs & "Proceed on Empty" in `PlanningService.async_generate_plan`.
 - [x] Logic - Blue/Magenta telemetry color refinements in `SessionPlanner`.
 - [x] Logic - Terminal action soft isolation in `ExecutionOrchestrator.async_execute`.
-- [ ] Logic - Functional async wrappers for SessionService (ISessionManager).
-- [ ] Harness - Unified Sync/Async mock bridging in TestEnvironment.
+- [x] Logic - Functional async wrappers for SessionService (ISessionManager).
+- [x] Harness - Unified Sync/Async mock bridging in TestEnvironment.
 - [ ] Wiring - Async CLI integration (anyio runner) in session_cli_handlers.py.
 - [ ] Cleanup - Prune recursion guards and synchronous methods in PlanningService.
 
@@ -163,6 +163,11 @@ The Developer MUST NOT implement simulation-only logs found in the prototype:
 - **Path Resolution:** All internal path builders MUST account for the `YYYYMMDD_HHMMSS-` prefix when looking for turn directories.
 
 ## Implementation Notes
+
+### Technical Debt
+- [ ] **File Length:** Refactor `src/teddy_executor/core/services/session_service.py` to meet 300-line limit (currently 343 lines).
+- [ ] **Static Analysis:** Configure `.vulture_whitelist` to silence Protocol false positives in `ISessionManager`.
+- [ ] **Typing:** Resolve pre-existing `bytes` vs `str` Mypy errors in `shell_adapter.py`.
 
 ### Deliverable: Infrastructure & Logic (Attempt 1 Findings)
 - **Friction (Recursion):** Found that calling `resume` within `execute` (or vice-versa) in the CLI handlers leads to infinite recursion loops if state guards are not strictly defined.

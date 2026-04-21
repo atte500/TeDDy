@@ -61,6 +61,26 @@ class ISessionManager(Protocol):
         """
         ...
 
+    async def async_get_session_state(
+        self, session_name: str
+    ) -> tuple[SessionState, str]:
+        """
+        Asynchronously determines the state of the session.
+        """
+        ...
+
+    async def async_create_session(self, name: str, agent_name: str) -> str:
+        """
+        Asynchronously initializes a new session directory.
+        """
+        ...
+
+    async def async_resolve_context_paths(self, plan_path: str) -> dict[str, list[str]]:
+        """
+        Asynchronously locates context files and returns their contents.
+        """
+        ...
+
     def resolve_context_paths(self, plan_path: str) -> dict[str, list[str]]:
         """
         Locates context files relative to the plan path and returns their contents.

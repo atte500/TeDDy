@@ -1,14 +1,14 @@
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 import pytest
 import pyperclip
-from tests.harness.setup.test_environment import POSIXPathMock
+from tests.harness.setup.test_environment import UnifiedMock
 
 
 @pytest.fixture
 def mock_config(container):
     from teddy_executor.core.ports.outbound import IConfigService
 
-    mock = Mock(spec=IConfigService)
+    mock = UnifiedMock(spec=IConfigService)
     container.register(IConfigService, instance=mock)
     return mock
 
@@ -17,7 +17,7 @@ def mock_config(container):
 def mock_user_interactor(container):
     from teddy_executor.core.ports.outbound import IUserInteractor
 
-    mock = Mock(spec=IUserInteractor)
+    mock = UnifiedMock(spec=IUserInteractor)
     container.register(IUserInteractor, instance=mock)
     return mock
 
@@ -26,7 +26,7 @@ def mock_user_interactor(container):
 def mock_fs(container):
     from teddy_executor.core.ports.outbound import IFileSystemManager
 
-    mock = POSIXPathMock(spec=IFileSystemManager)
+    mock = UnifiedMock(spec=IFileSystemManager)
     mock.get_context_paths.return_value = {}
     mock.read_files_in_vault.return_value = {}
     container.register(IFileSystemManager, instance=mock)
@@ -37,7 +37,7 @@ def mock_fs(container):
 def mock_env(container):
     from teddy_executor.core.ports.outbound import ISystemEnvironment
 
-    mock = Mock(spec=ISystemEnvironment)
+    mock = UnifiedMock(spec=ISystemEnvironment)
     container.register(ISystemEnvironment, instance=mock)
     return mock
 
@@ -46,7 +46,7 @@ def mock_env(container):
 def mock_shell(container):
     from teddy_executor.core.ports.outbound import IShellExecutor
 
-    mock = Mock(spec=IShellExecutor)
+    mock = UnifiedMock(spec=IShellExecutor)
     container.register(IShellExecutor, instance=mock)
     return mock
 
@@ -55,7 +55,7 @@ def mock_shell(container):
 def mock_scraper(container):
     from teddy_executor.core.ports.outbound import IWebScraper
 
-    mock = Mock(spec=IWebScraper)
+    mock = UnifiedMock(spec=IWebScraper)
     container.register(IWebScraper, instance=mock)
     return mock
 
@@ -64,7 +64,7 @@ def mock_scraper(container):
 def mock_searcher(container):
     from teddy_executor.core.ports.outbound import IWebSearcher
 
-    mock = Mock(spec=IWebSearcher)
+    mock = UnifiedMock(spec=IWebSearcher)
     container.register(IWebSearcher, instance=mock)
     return mock
 
@@ -73,7 +73,7 @@ def mock_searcher(container):
 def mock_session_manager(container):
     from teddy_executor.core.ports.outbound import ISessionManager
 
-    mock = Mock(spec=ISessionManager)
+    mock = UnifiedMock(spec=ISessionManager)
     container.register(ISessionManager, instance=mock)
     return mock
 
@@ -84,7 +84,7 @@ def mock_planning_service(container):
         IPlanningUseCase,
     )
 
-    mock = Mock(spec=IPlanningUseCase)
+    mock = UnifiedMock(spec=IPlanningUseCase)
     container.register(IPlanningUseCase, instance=mock)
     return mock
 
@@ -93,7 +93,7 @@ def mock_planning_service(container):
 def mock_tree_gen(container):
     from teddy_executor.core.ports.outbound import IRepoTreeGenerator
 
-    mock = Mock(spec=IRepoTreeGenerator)
+    mock = UnifiedMock(spec=IRepoTreeGenerator)
     mock.generate_tree.return_value = ""
     container.register(IRepoTreeGenerator, instance=mock)
     return mock
@@ -103,7 +103,7 @@ def mock_tree_gen(container):
 def mock_action_factory(container):
     from teddy_executor.core.services.action_factory import IActionFactory
 
-    mock = Mock(spec=IActionFactory)
+    mock = UnifiedMock(spec=IActionFactory)
     container.register(IActionFactory, instance=mock)
     return mock
 
@@ -112,7 +112,7 @@ def mock_action_factory(container):
 def mock_plan_parser(container):
     from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
 
-    mock = Mock(spec=IPlanParser)
+    mock = UnifiedMock(spec=IPlanParser)
     container.register(IPlanParser, instance=mock)
     return mock
 
@@ -121,7 +121,7 @@ def mock_plan_parser(container):
 def mock_plan_validator(container):
     from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
 
-    mock = Mock(spec=IPlanValidator)
+    mock = UnifiedMock(spec=IPlanValidator)
     container.register(IPlanValidator, instance=mock)
     return mock
 
@@ -130,7 +130,7 @@ def mock_plan_validator(container):
 def mock_plan_reviewer(container):
     from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
 
-    mock = Mock(spec=IPlanReviewer)
+    mock = UnifiedMock(spec=IPlanReviewer)
     # Default pass-through behavior for review methods
     mock.review.side_effect = lambda p: p
     # Default to auto-approving in tests with an empty captured message
@@ -144,7 +144,7 @@ def mock_plan_reviewer(container):
 def mock_action_dispatcher(container):
     from teddy_executor.core.services.action_dispatcher import ActionDispatcher
 
-    mock = Mock(spec=ActionDispatcher)
+    mock = UnifiedMock(spec=ActionDispatcher)
     container.register(ActionDispatcher, instance=mock)
     return mock
 
@@ -156,7 +156,7 @@ def mock_run_plan(container):
         ExecutionOrchestrator,
     )
 
-    mock = Mock(spec=IRunPlanUseCase)
+    mock = UnifiedMock(spec=IRunPlanUseCase)
     # The CLI resolves concrete ExecutionOrchestrator directly
     container.register(IRunPlanUseCase, instance=mock)
     container.register(ExecutionOrchestrator, instance=mock)
@@ -170,7 +170,7 @@ def mock_context_service(container):
     )
     from teddy_executor.core.services.context_service import ContextService
 
-    mock = Mock(spec=IGetContextUseCase)
+    mock = UnifiedMock(spec=IGetContextUseCase)
     container.register(IGetContextUseCase, instance=mock)
     # The CLI resolves concrete ContextService directly in some places
     container.register(ContextService, instance=mock)
@@ -181,7 +181,7 @@ def mock_context_service(container):
 def mock_edit_simulator(container):
     from teddy_executor.core.services.edit_simulator import EditSimulator
 
-    mock = Mock(spec=EditSimulator)
+    mock = UnifiedMock(spec=EditSimulator)
     container.register(EditSimulator, instance=mock)
     return mock
 
@@ -190,7 +190,7 @@ def mock_edit_simulator(container):
 def mock_inspector(container):
     from teddy_executor.core.ports.outbound import IEnvironmentInspector
 
-    mock = Mock(spec=IEnvironmentInspector)
+    mock = UnifiedMock(spec=IEnvironmentInspector)
     mock.get_git_status.return_value = None
     container.register(IEnvironmentInspector, instance=mock)
     return mock
@@ -200,7 +200,7 @@ def mock_inspector(container):
 def mock_report_formatter(container):
     from teddy_executor.core.ports.outbound import IMarkdownReportFormatter
 
-    mock = Mock(spec=IMarkdownReportFormatter)
+    mock = UnifiedMock(spec=IMarkdownReportFormatter)
     container.register(IMarkdownReportFormatter, instance=mock)
     return mock
 
@@ -209,10 +209,10 @@ def mock_report_formatter(container):
 def mock_llm_client(container):
     from teddy_executor.core.ports.outbound import ILlmClient
 
-    mock = Mock(spec=ILlmClient)
+    mock = UnifiedMock(spec=ILlmClient)
 
     # Create a structured ModelResponse mock
-    mock_response = MagicMock()
+    mock_response = UnifiedMock()
     mock_choice = MagicMock()
 
     # CRITICAL: Ensure the mock content is a real string to prevent
