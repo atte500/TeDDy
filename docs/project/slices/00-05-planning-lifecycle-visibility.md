@@ -64,21 +64,21 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 ```
 
 ## Deliverables
-- [x] **Harness** - Async infrastructure (Global `anyio_backend` fixture).
-- [x] **Harness** - Async mock support in `mocks.py`.
-- [x] **Seam** - Add `async_get_completion` to `ILlmClient` and implement in `LiteLLMAdapter`.
-- [x] **Seam** - Add `async_generate_plan` to `IPlanningUseCase` and implement in `PlanningService`.
-- [x] **Seam** - Add async counterparts to `ISessionManager` and `IRunPlanUseCase`.
-- [x] **Refactor** - Progressively migrate `SessionOrchestrator` to async methods.
-- [✓] **Logic** - Chronological session sorting (date prefixing) in `SessionService`.
-- [✓] **Logic** - Natural session name resolution (prefix stripping) in `SessionRepository`.
-- [✓] **Seam** - Implement `ExecutionOrchestrator.async_execute` (wrapper around sync logic).
-- [✓] **Seam** - Implement async wrappers for `SessionReplanner` logic in `SessionOrchestrator`.
-- [✓] **Logic** - Sequenced planning logs & "Proceed on Empty" in `PlanningService.async_generate_plan`.
-- [✓] **Logic** - Blue/Magenta telemetry color refinements in `SessionPlanner`.
-- [✓] **Logic** - Terminal action soft isolation in `ExecutionOrchestrator.async_execute`.
-- [ ] **Wiring** - Async CLI integration (anyio runner) in `session_cli_handlers.py`.
-- [ ] **Cleanup** - Prune recursion guards and synchronous methods in `PlanningService`.
+- [x] Harness - Async infrastructure (Global `anyio_backend` fixture).
+- [x] Harness - Async mock support in `mocks.py`.
+- [x] Seam - Add `async_get_completion` to `ILlmClient` and implement in `LiteLLMAdapter`.
+- [x] Seam - Add `async_generate_plan` to `IPlanningUseCase` and implement in `PlanningService`.
+- [x] Seam - Add async counterparts to `ISessionManager` and `IRunPlanUseCase`.
+- [x] Refactor - Progressively migrate `SessionOrchestrator` to async methods.
+- [x] Logic - Chronological session sorting (date prefixing) in `SessionService`.
+- [x] Logic - Natural session name resolution (prefix stripping) in `SessionRepository`.
+- [x] Seam - Implement `ExecutionOrchestrator.async_execute` (wrapper around sync logic).
+- [x] Seam - Implement async wrappers for `SessionReplanner` logic in `SessionOrchestrator`.
+- [x] Logic - Sequenced planning logs & "Proceed on Empty" in `PlanningService.async_generate_plan`.
+- [x] Logic - Blue/Magenta telemetry color refinements in `SessionPlanner`.
+- [x] Logic - Terminal action soft isolation in `ExecutionOrchestrator.async_execute`.
+- [ ] Wiring - Async CLI integration (anyio runner) in `session_cli_handlers.py`.
+- [ ] Cleanup - Prune recursion guards and synchronous methods in `PlanningService`.
 
 ## Implementation Notes
 
