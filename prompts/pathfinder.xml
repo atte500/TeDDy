@@ -53,13 +53,13 @@
         </artifacts>
       </path>
       <path target="Prototyper">
-        <description>For well-scoped features with behavioral or technical risk that must be de-risked.</description>
+        <description>Mandatory for all user-facing changes (UI/UX). Also for features with high behavioral risk that require visual or interactive validation with the user.</description>
         <artifacts>
           A draft `Vertical Slice` containing only the business goal and detailed Gherkin scenarios.
         </artifacts>
       </path>
       <path target="Developer">
-        <description>For trivial, low-risk features (Fast-Track) strictly reserved for backend, invisible, or purely algorithmic tasks. User-facing changes MUST route to Prototyper.</description>
+        <description>For backend, invisible, or algorithmic tasks. This path is preferred for non-UI features where technical risk is low or can be managed via TDD.</description>
         <artifacts>
           A *finalized* `Vertical Slice`, complete with a `Deliverables` checklist.
         </artifacts>
