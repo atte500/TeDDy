@@ -171,27 +171,11 @@ class SessionService(ISessionManager):
 
     def _to_root_relative(self, turn_dir: Path, filename: str) -> str:
         """Calculates a root-relative path for a file within a turn directory."""
-        file_path = turn_dir.joinpath(filename)
-        path_parts = list(file_path.parts)
-
-        # Primary: find the hidden .teddy directory
-        if ".teddy" in path_parts:
-            idx = path_parts.index(".teddy")
-            return "/".join(path_parts[idx:])
-
-        # Secondary (Tests): find the sessions/ folder
-        if "sessions" in path_parts:
-            idx = path_parts.index("sessions")
-            return ".teddy/" + "/".join(path_parts[idx:])
-
-        # Fallback to local turn name
-        return f"{turn_dir.name}/{filename}"
+        return self._repository.to_root_relative(turn_dir, filename)
 
     def _load_meta(self, turn_dir: str) -> Dict[str, Any]:
         """Loads and parses meta.yaml for a turn."""
-        content = self._file_system_manager.read_file(f"{turn_dir}/meta.yaml")
-        meta = yaml.safe_load(str(content))
-        return meta if isinstance(meta, dict) else {}
+        return self._repository.load_meta(turn_dir)
 
     def _copy_prompt(self, src_dir: str, dest_dir: str, agent: str) -> None:
         """Copies the agent prompt file if it exists."""

@@ -3,6 +3,7 @@ from .environment_inspector import IEnvironmentInspector
 from .file_system_manager import IFileSystemManager
 from .llm_client import ILlmClient, LlmApiError
 from .markdown_report_formatter import IMarkdownReportFormatter
+from .prompt_manager import IPromptManager
 from .repo_tree_generator import IRepoTreeGenerator
 from .session_manager import ISessionManager
 from .shell_executor import IShellExecutor
@@ -17,6 +18,7 @@ __all__ = [
     "IFileSystemManager",
     "ILlmClient",
     "IMarkdownReportFormatter",
+    "IPromptManager",
     "IRepoTreeGenerator",
     "ISessionManager",
     "IShellExecutor",

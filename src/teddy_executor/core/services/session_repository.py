@@ -1,6 +1,7 @@
 import re
+import yaml
 from pathlib import Path
-from typing import Set
+from typing import Set, Dict, Any
 
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 
@@ -87,3 +88,24 @@ class SessionRepository:
             return {line for line in lines if self.is_valid_path(line)}
         except (FileNotFoundError, OSError):
             return set()
+
+    def to_root_relative(self, turn_dir: Path, filename: str) -> str:
+        """Calculates a root-relative path for a file within a turn directory."""
+        file_path = turn_dir.joinpath(filename)
+        path_parts = list(file_path.parts)
+
+        if ".teddy" in path_parts:
+            idx = path_parts.index(".teddy")
+            return "/".join(path_parts[idx:])
+
+        if "sessions" in path_parts:
+            idx = path_parts.index("sessions")
+            return ".teddy/" + "/".join(path_parts[idx:])
+
+        return f"{turn_dir.name}/{filename}"
+
+    def load_meta(self, turn_dir: str) -> Dict[str, Any]:
+        """Loads and parses meta.yaml for a turn."""
+        content = self._file_system_manager.read_file(f"{turn_dir}/meta.yaml")
+        meta = yaml.safe_load(str(content))
+        return meta if isinstance(meta, dict) else {}

@@ -16,21 +16,13 @@ class SessionLifecycleManager:
     resume state machine, and automated re-plan coordination.
     """
 
-    def __init__(
-        self,
-        session_service,
-        file_system_manager,
-        report_formatter,
-        user_interactor,
-        session_planner,
-        replanner,
-    ):
-        self._session_service = session_service
-        self._file_system_manager = file_system_manager
-        self._report_formatter = report_formatter
-        self._user_interactor = user_interactor
-        self._session_planner = session_planner
-        self._replanner = replanner
+    def __init__(self, ports: "SessionPorts"):
+        self._session_service = ports.session_service
+        self._file_system_manager = ports.file_system_manager
+        self._report_formatter = ports.report_formatter
+        self._user_interactor = ports.user_interactor
+        self._session_planner = ports.session_planner
+        self._replanner = ports.replanner
 
     def resume(
         self,

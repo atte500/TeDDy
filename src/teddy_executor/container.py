@@ -112,8 +112,11 @@ def _register_orchestration_services(container: punq.Container) -> None:
     from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
     from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
     from teddy_executor.core.ports.outbound import (
+        IConfigService,
         IFileSystemManager,
+        ILlmClient,
         ISessionManager,
+        IUserInteractor,
     )
     from teddy_executor.core.ports.outbound.execution_report_assembler import (
         IExecutionReportAssembler,
@@ -127,6 +130,8 @@ def _register_orchestration_services(container: punq.Container) -> None:
         ExecutionReportAssembler,
     )
     from teddy_executor.core.services.init_service import InitService
+    from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
+    from teddy_executor.core.services.prompt_manager import PromptManager
     from teddy_executor.core.services.planning_service import PlanningService
     from teddy_executor.core.services.session_service import SessionService
 
@@ -147,6 +152,28 @@ def _register_orchestration_services(container: punq.Container) -> None:
     )
     container.register(ContextService, scope=punq.Scope.transient)
     container.register(IGetContextUseCase, ContextService, scope=punq.Scope.transient)
+    container.register(
+        IPromptManager,
+        factory=lambda: PromptManager(
+            file_system_manager=container.resolve(IFileSystemManager),
+            user_interactor=container.resolve(IUserInteractor),
+        ),
+        scope=punq.Scope.transient,
+    )
+    from teddy_executor.core.domain.models.planning_ports import PlanningPorts
+
+    container.register(
+        PlanningPorts,
+        factory=lambda: PlanningPorts(
+            context=container.resolve(IGetContextUseCase),
+            llm=container.resolve(ILlmClient),
+            fs=container.resolve(IFileSystemManager),
+            config=container.resolve(IConfigService),
+            prompts=container.resolve(IPromptManager),
+            ui=container.resolve(IUserInteractor),
+        ),
+        scope=punq.Scope.transient,
+    )
     container.register(PlanningService, scope=punq.Scope.transient)
     container.register(IPlanningUseCase, PlanningService, scope=punq.Scope.transient)
     container.register(
@@ -197,15 +224,24 @@ def _register_orchestration(container: punq.Container) -> None:
         ),
         scope=punq.Scope.transient,
     )
+    from teddy_executor.core.domain.models.planning_ports import SessionPorts
+
     container.register(
-        SessionLifecycleManager,
-        factory=lambda: SessionLifecycleManager(
+        SessionPorts,
+        factory=lambda: SessionPorts(
             session_service=container.resolve(ISessionManager),
             file_system_manager=container.resolve(IFileSystemManager),
             report_formatter=container.resolve(IMarkdownReportFormatter),
             user_interactor=container.resolve(IUserInteractor),
             session_planner=container.resolve(SessionPlanner),
             replanner=container.resolve(SessionReplanner),
+        ),
+        scope=punq.Scope.transient,
+    )
+    container.register(
+        SessionLifecycleManager,
+        factory=lambda: SessionLifecycleManager(
+            ports=container.resolve(SessionPorts),
         ),
         scope=punq.Scope.transient,
     )

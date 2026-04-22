@@ -17,16 +17,16 @@ To harden the system's architecture by resolving systemic technical debt that co
 ## 4. Vertical Slices
 - [x] [Slice 09-01: DI Boundary Enforcement](../slices/09-01-di-boundary-enforcement.md)
 - [x] [Slice 09-02: Structural Hardening & Security](../slices/09-02-structural-hardening-and-security.md)
-- [ ] [Slice 09-03: File Length Debt Reconciliation](../slices/09-03-file-length-debt-reconciliation.md)
+- [x] [Slice 09-03: File Length Debt Reconciliation](../slices/09-03-file-length-debt-reconciliation.md)
 
 ## 5. Technical Debt
 - [x] [Code Quality] Refactor `src/teddy_executor/core/services/session_orchestrator.py` to meet 300-line limit (currently 487 lines -> 286 lines).
-- [ ] [Code Quality] Refactor `src/teddy_executor/adapters/outbound/shell_adapter.py` to meet 300-line limit (currently 340 lines).
+- [x] [Code Quality] Refactor `src/teddy_executor/adapters/outbound/shell_adapter.py` to meet 300-line limit (currently 340 lines).
 - [ ] [Code Quality] Refactor `src/teddy_executor/core/services/markdown_plan_parser.py` to meet 300-line limit (currently 304 lines).
 - [ ] [Code Quality] Refactor `src/teddy_executor/adapters/inbound/cli_helpers.py` to meet 300-line limit (currently 316 lines).
 - [ ] [Code Quality] Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_previews.py` to meet 300-line limit (currently 352 lines).
-- [ ] [Code Quality] Refactor `src/teddy_executor/core/services/execution_orchestrator.py` to meet 300-line limit (currently 332 lines).
-- [ ] [Code Quality] Refactor `src/teddy_executor/core/services/planning_service.py` to meet 300-line limit (currently 335 lines).
+- [x] [Code Quality] Refactor `src/teddy_executor/core/services/execution_orchestrator.py` to meet 300-line limit (currently 332 lines).
+- [x] [Code Quality] Refactor `src/teddy_executor/core/services/planning_service.py` to meet 300-line limit (currently 335 lines).
 - [ ] [Code Quality] Resolve Mypy duplicate module error for `slice_00_05_logic` vs `prototypes/slice_00_05_logic`.
 - [ ] [Code Quality] Configure Vulture whitelist or pragmas for abstract Port definitions (40+ false positives).
 - [ ] [Code Quality] Resolve Ruff magic value (PLR2004) warnings in core service unit tests.

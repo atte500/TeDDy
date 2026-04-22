@@ -35,6 +35,7 @@ from tests.harness.setup.mocks import (
     mock_plan_reviewer as mock_plan_reviewer,
     mock_plan_validator as mock_plan_validator,
     mock_planning_service as mock_planning_service,
+    mock_prompt_manager as mock_prompt_manager,
     mock_pyperclip as mock_pyperclip,
     mock_report_formatter as mock_report_formatter,
     mock_run_plan as mock_run_plan,

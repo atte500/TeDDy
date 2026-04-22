@@ -36,8 +36,12 @@ And the system MUST continue to function correctly on all OS matrices
 - [x] **Cleanup** - Verify `SessionOrchestrator` passes the `file-length-python` quality gate (282 lines).
 - [x] **Logic** - Extract OS-specific command preparation from `ShellAdapter` to `ShellCommandBuilder`.
 - [x] **Logic** - Extract report assembly and status determination from `ExecutionOrchestrator` to `ExecutionReportAssembler`.
-- [ ] **Logic** - Extract prompt resolution and alignment logic from `PlanningService` to a `PromptManager` or internal helper.
-- [ ] **Cleanup** - Verify `ShellAdapter`, `ExecutionOrchestrator`, and `PlanningService` pass the `file-length-python` quality gate.
+- [x] **Logic** - Extract prompt resolution and alignment logic from `PlanningService` to a `PromptManager` or internal helper.
+- [x] **Cleanup** - Verify `ShellAdapter`, `ExecutionOrchestrator`, and `PlanningService` pass the `file-length-python` quality gate.
+- [ ] **Logic** - Extract session migration and path management logic from `SessionService` to `SessionRepository`.
+- [ ] **Logic** - Extract Markdown block parsing strategies from `MarkdownPlanParser` to a strategy registry or internal helpers.
+- [ ] **Logic** - Extract TUI preview formatting from `textual_plan_reviewer_previews.py`.
+- [ ] **Cleanup** - Final verification of `file-length-python` gate.
 
 ## Delta Analysis
 - **SessionOrchestrator:** This is the most complex decomposition. It currently handles turn transitions, auto-naming, content fetching, and file persistence. These should be split using the **Strategy** or **Service** patterns.
@@ -72,3 +76,11 @@ And the system MUST continue to function correctly on all OS matrices
 - All tests (unit, integration, and global) passed, confirming behavioral parity.
 - Registered the new port `IExecutionReportAssembler` and service in `container.py`.
 - Fixed 6 test regressions caused by the orchestrator's signature change.
+
+### Deliverable: Extract PromptManager from PlanningService
+- Extracted `PromptManager` (and `IPromptManager` port) to handle prompt resolution, agent metadata lookups, and telemetry logging.
+- `PlanningService` now acts as a pure orchestrator of context and LLM flow.
+- Verified line count: `PlanningService.py` is now 184 lines.
+- Updated the test harness with a safe-by-default `mock_prompt_manager` fixture.
+- Migrated 9 unit tests to verify orchestration with `PromptManager` instead of low-level side effects on adapters.
+- Final global integration verified: 644 tests green.

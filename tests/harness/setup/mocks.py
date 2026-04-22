@@ -169,6 +169,23 @@ def mock_context_service(container):
 
 
 @pytest.fixture
+def mock_prompt_manager(container):
+    from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
+
+    mock = UnifiedMock(spec=IPromptManager)
+    # Default for unpacking
+    mock.resolve_agent_metadata.return_value = ("pathfinder", {}, "meta.yaml")
+    # Default for strings
+    mock.resolve_message.return_value = "default message"
+    mock.async_resolve_message.return_value = "default message"
+    mock.async_fetch_system_prompt.return_value = "system prompt"
+    mock.async_log_telemetry.return_value = 0.01
+
+    container.register(IPromptManager, instance=mock)
+    return mock
+
+
+@pytest.fixture
 def mock_edit_simulator(container):
     from teddy_executor.core.services.edit_simulator import EditSimulator
 

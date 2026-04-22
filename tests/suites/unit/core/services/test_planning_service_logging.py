@@ -3,18 +3,16 @@ from teddy_executor.core.services.planning_service import PlanningService
 from teddy_executor.core.ports.outbound import (
     ILlmClient,
     IConfigService,
-    IUserInteractor,
     IFileSystemManager,
 )
 
 
-def test_generate_plan_logs_token_usage_if_available(env):
+def test_generate_plan_logs_token_usage_if_available(env, mock_prompt_manager):
     """Verifies that telemetry is logged via interactor."""
     # Arrange
     service = env.get_service(PlanningService)
     mock_config = env.get_service(IConfigService)
     mock_llm_client = env.get_service(ILlmClient)
-    mock_user_interactor = env.get_service(IUserInteractor)
     mock_fs = env.get_service(IFileSystemManager)
 
     mock_config.get_setting.return_value = "gpt-4"
@@ -27,17 +25,15 @@ def test_generate_plan_logs_token_usage_if_available(env):
     service.generate_plan(user_message="test", turn_dir="01")
 
     # Assert
-    mock_user_interactor.display_message.assert_any_call("Tokens: 100")
-    mock_user_interactor.display_message.assert_any_call("Cost: $0.0150")
+    mock_prompt_manager.log_telemetry.assert_called_once_with(100, 0.015)
 
 
-def test_generate_plan_handles_zero_usage_gracefully(env):
+def test_generate_plan_handles_zero_usage_gracefully(env, mock_prompt_manager):
     """Verifies graceful handling of zero telemetry."""
     # Arrange
     service = env.get_service(PlanningService)
     mock_config = env.get_service(IConfigService)
     mock_llm_client = env.get_service(ILlmClient)
-    mock_user_interactor = env.get_service(IUserInteractor)
     mock_fs = env.get_service(IFileSystemManager)
 
     mock_config.get_setting.return_value = "gpt-4"
@@ -50,11 +46,10 @@ def test_generate_plan_handles_zero_usage_gracefully(env):
     service.generate_plan(user_message="test", turn_dir="01")
 
     # Assert
-    mock_user_interactor.display_message.assert_any_call("Tokens: 0")
-    mock_user_interactor.display_message.assert_any_call("Cost: $0.0000")
+    mock_prompt_manager.log_telemetry.assert_called_once_with(0, 0.0)
 
 
-def test_generate_plan_logs_input_and_uses_agent_prompt(env):
+def test_generate_plan_logs_input_and_uses_agent_prompt(env, mock_prompt_manager):
     """Verifies that the correct prompt file is read and logged."""
     # Arrange
     service = env.get_service(PlanningService)
@@ -71,16 +66,8 @@ def test_generate_plan_logs_input_and_uses_agent_prompt(env):
     service.generate_plan("Hello", turn_dir)
 
     # Assert
-    # 1. Verify pathfinder.xml was read
     from pathlib import Path
 
-    mock_fs.read_file.assert_any_call(str(Path("session/01/pathfinder.xml")))
-
-    # 2. Verify input.md was written
-    log_call = [
-        call for call in mock_fs.write_file.call_args_list if "input.md" in call[0][0]
-    ]
-    assert len(log_call) == 1
-    # Verify input.md contains the context (Deliverable: input.md artifact)
-    # The context header contains "Project Context"
-    assert "Project Context" in log_call[0][0][1]
+    # Verify PlanningService delegated message resolution and metadata lookup
+    mock_prompt_manager.resolve_message.assert_called_once_with("Hello", Path(turn_dir))
+    mock_prompt_manager.resolve_agent_metadata.assert_called_once_with(Path(turn_dir))
