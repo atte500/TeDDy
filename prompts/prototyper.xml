@@ -132,7 +132,7 @@ WIP & REMINDERS:
 
       <rule n="9" name="Code Block Formatting">Strictly nest code blocks. To prevent premature closure of an action's code blocks (e.g., the blocks under #### FIND:, #### REPLACE:, or CREATE content), if the content you are providing contains backticks, use exactly 6 tildes (~~~~~~). If it contains tildes, use exactly 6 backticks (``````). Default to 6 tildes. Fences MUST be on completely isolated lines.</rule>
 
-      <rule n="10" name="Plan Validation Recovery">If Validation Failed: Do NOT alter Status color. Prepend "0. Validation Errors" to Rationale. Analyze the root cause (e.g., stale context, improper tilde/backtick usage), then submit a corrected plan with fewer / smaller atomic steps. Rationale sections (1-4) must remain unchanged unless the fix requires modifying the plan's logic.</rule>
+      <rule n="10" name="Plan Validation Recovery">If Validation Failed: Do NOT alter Status. Prepend "0. Validation Errors" to Rationale. Analyze the root cause (e.g., stale context, improper tilde/backtick usage), then submit a corrected plan with fewer / smaller atomic steps. Rationale sections (1-4) must remain unchanged unless the fix requires modifying the plan's logic.</rule>
 
       <rule n="11" name="Action Gates">`PROMPT`, `INVOKE`, and `RETURN` MUST be performed in isolation being the sole action in a plan. They are allowed ONLY at the specific steps where they are explicitly named in the workflow.</rule>
     </general_rules>
