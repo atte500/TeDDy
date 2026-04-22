@@ -54,6 +54,7 @@ This document outlines the technical standards, conventions, and setup process f
 - **Principle:** Pre-commit hooks MUST be scoped strictly to **staged files** to provide a fast, local feedback loop. Heavy, repository-wide checks (like the full test suite, copy-paste detection, or test pyramid verification) belong in the Continuous Integration (CI) pipeline, not on the developer's local machine pre-commit.
 - **Included Checks:**
     -   **Quality Gate:**
+        - `check-core-di-boundary`: Enforces Hexagonal isolation by physically preventing `punq` or other DI framework imports within `src/teddy_executor/core/`.
         - `ruff-complexity`: Enforces a **precise Cyclomatic Complexity** limit of **9** per function (Rule `C901`) and a **precise Statement Limit** of **40** per function (Rule `PLR0915`) for ALL code.
         - `file-length-python`: Enforces a strict **300 line limit** for all Python files (excluding `spikes/` and `prototypes/`). The check reports the actual file length on failure for quick assessment.
     - **Style & Formatting:**
@@ -84,6 +85,18 @@ The `spikes/` and `prototypes/` directories are intentionally excluded from all 
     2. **Project Template:** `config/config.yaml` (Reference defaults, committed).
     3. **Hardcoded Fallbacks:** Defined within the services (e.g., `ActionFactory`, `PlanValidator`).
 - **Guideline:** Services MUST provide hardcoded fallbacks to the `IConfigService.get_setting` method to ensure stability in uninitialized environments.
+
+### Dependency Injection (DI)
+- **Framework:** `punq`.
+- **Implementation Strategy:** TeDDy uses a **Constructor Injection** pattern to ensure transparency and testability.
+- **Boundary Rules:**
+    1. **Hexagonal Isolation:** The `src/teddy_executor/core/` directory MUST NOT import or depend on the DI framework (`punq`). This is physically enforced by a pre-commit hook.
+    2. **Mandatory Constructor Injection:** All core services MUST receive their dependencies via `__init__`. The use of the DI container as a Service Locator within core logic is strictly forbidden.
+    3. **Composition Root:** The `src/teddy_executor/container.py` file serves as the centralized Composition Root where all dependencies are wired.
+- **DI Scopes:** Services and adapters are registered with `punq.Scope.transient` to prevent state leakage between CLI turns or test runs.
+- **Testing:**
+    - Tests requiring DI MUST use the centralized `container` fixture.
+    - The `TestEnvironment` (Harness) provides a declarative `mock_port(PortClass)` API to hide the underlying container registration logic and ensure `UnifiedMock` (async-safe) synchronization.
 
 ---
 
