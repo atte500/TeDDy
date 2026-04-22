@@ -98,11 +98,6 @@ class PlanningService(IPlanningUseCase):
         context_files: Optional[Dict[str, Sequence[str]]] = None,
     ) -> tuple[str, float]:
         """Generates a new plan.md file."""
-        import os
-
-        if os.getenv("TEDDY_SHOWCASE_MOCK_LLM") == "1":
-            return self._handle_showcase_mock(user_message, turn_dir, context_files)
-
         turn_path = Path(turn_dir)
         resolved_message = self._prompt_manager.resolve_message(user_message, turn_path)
 
@@ -142,30 +137,6 @@ class PlanningService(IPlanningUseCase):
         )
 
         return plan_path, cost_val
-
-    def _handle_showcase_mock(
-        self,
-        user_message: Optional[str],
-        turn_dir: str,
-        context_files: Optional[Dict[str, Sequence[str]]],
-    ) -> tuple[str, float]:
-        """Handles the TEDDY_SHOWCASE_MOCK_LLM recursion guard."""
-        from prototypes.slice_00_05_logic import generate_plan_sequenced
-
-        if not getattr(self, "_in_showcase_mock", False):
-            self._in_showcase_mock = True
-            try:
-                return generate_plan_sequenced(
-                    self,
-                    self._user_interactor,
-                    user_message,
-                    turn_dir,
-                    context_files,
-                    "pathfinder",
-                )
-            finally:
-                self._in_showcase_mock = False
-        return "", 0.0
 
     def _extract_plan_content(self, response: Any) -> str:
         """Robustly extracts content from the LLM response object."""

@@ -34,8 +34,11 @@ Then Ruff MUST NOT report magic value violations in tests
 ```
 
 ## Deliverables
-- [ ] **Refactor** - Remove all imports from `prototypes/` in `src/teddy_executor/core/services/`.
+- [x] **Refactor** - Remove all imports from `prototypes/` in `src/teddy_executor/core/services/`.
 - [ ] **Configuration** - Update `[tool.vulture]` in `pyproject.toml` with expanded `ignore_names` for Ports and Textual.
 - [ ] **Configuration** - Update `[tool.ruff.lint.per-file-ignores]` in `pyproject.toml` to ignore `PLR2004` in `tests/**/*`.
 - [ ] **Cleanup** - Remove manual `# noqa: PLR2004` markers from test files.
 - [ ] **Cleanup** - Final verification of all quality gates.
+
+## Implementation Notes
+- **Refactor (Prototype Decoupling):** Removed `TEDDY_SHOWCASE` and `TEDDY_SHOWCASE_MOCK_LLM` logic from `PlanningService`, `SessionPlanner`, and `SessionService`. These blocks were redundant as production logic now handles interactive prompts and timestamped sessions. Verified via `mypy` (resolving duplicate module errors) and global `pytest` run.

@@ -116,28 +116,14 @@ class SessionPlanner:
                 agent_name = meta.get("agent_name", agent_name)
 
         # Display progress right before generating plan
-        import os
+        msg = f"[cyan][{turn_p.name}] Planning Turn with {agent_name}...[/cyan]"
+        self._user_interactor.display_message(msg)
 
-        if os.getenv("TEDDY_SHOWCASE") == "1":
-            from prototypes.slice_00_05_logic import generate_plan_sequenced
-
-            plan_path, turn_cost = generate_plan_sequenced(
-                self._planning_service,
-                self._user_interactor,
-                resolved_message,
-                turn_dir,
-                context_files,
-                agent_name,
-            )
-        else:
-            msg = f"[cyan][{turn_p.name}] Planning Turn with {agent_name}...[/cyan]"
-            self._user_interactor.display_message(msg)
-
-            plan_path, turn_cost = self._planning_service.generate_plan(
-                user_message=resolved_message,
-                turn_dir=turn_dir,
-                context_files=context_files,
-            )
+        plan_path, turn_cost = self._planning_service.generate_plan(
+            user_message=resolved_message,
+            turn_dir=turn_dir,
+            context_files=context_files,
+        )
 
         # Handle planning cancellation/empty input
         if plan_path is None:
