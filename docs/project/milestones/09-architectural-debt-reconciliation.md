@@ -19,6 +19,7 @@ To harden the system's architecture by resolving systemic technical debt that co
 - [ ] [Slice 09-02: Structural Hardening & Security](../slices/09-02-structural-hardening-and-security.md)
 
 ## 5. Technical Debt
+- [ ] [Code Quality] Refactor `src/teddy_executor/adapters/outbound/shell_adapter.py` to meet 300-line limit (currently 335 lines).
 - [x] [Code Quality] Refactor `tests/harness/setup/test_environment.py` to meet 300-line limit (currently 308 lines).
 - [ ] [Architectural] Refactor `ActionFactory` to group port dependencies and reduce argument count (PLR0913).
 - [x] [Architectural] Refactor `ActionFactory` to remove `punq` dependency.

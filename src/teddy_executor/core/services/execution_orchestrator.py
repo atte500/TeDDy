@@ -172,6 +172,80 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             is_session=plan.is_session,
         )
 
+    def _resolve_plan(
+        self,
+        plan: Optional[Plan],
+        plan_content: Optional[str],
+        plan_path: Optional[str],
+    ) -> tuple[Plan, Optional[str]]:
+        """Resolves the plan from content, path, or object, creating a temp file if needed."""
+        import tempfile
+
+        if plan:
+            return plan, None
+
+        temp_path = None
+        if plan_content is not None:
+            if not plan_path:
+                import os
+
+                fd, temp_path = tempfile.mkstemp(
+                    prefix="teddy_manual_plan_", suffix=".md"
+                )
+                os.close(fd)
+                self._file_system_manager.write_file(temp_path, plan_content)
+                plan_path = temp_path
+            return (
+                self._plan_parser.parse(plan_content, plan_path=plan_path),
+                temp_path,
+            )
+
+        if plan_path is not None:
+            content = self._file_system_manager.read_file(plan_path)
+            return self._plan_parser.parse(content, plan_path=plan_path), None
+
+        raise ValueError("Must provide either plan, plan_content, or plan_path")
+
+    def _handle_aborted_execution(
+        self, plan: Plan, start_time: datetime, message: Optional[str]
+    ) -> ExecutionReport:
+        """Generates a report for an execution aborted by the user."""
+        action_logs = []
+        for a in plan.actions:
+            if a.executed and a.action_log:
+                action_logs.append(a.action_log)
+            else:
+                action_logs.append(
+                    self._action_executor.handle_skipped_action(
+                        a, "Execution aborted by user."
+                    )
+                )
+
+        return self._create_execution_report(plan, action_logs, start_time, message)
+
+    def _create_execution_report(
+        self,
+        plan: Plan,
+        action_logs: Sequence[ActionLog],
+        start_time: datetime,
+        message: Optional[str],
+    ) -> ExecutionReport:
+        """Encapsulates the creation of the final ExecutionReport."""
+        summary = RunSummary(
+            status=self._determine_overall_status(action_logs),
+            start_time=start_time,
+            end_time=datetime.now(),
+        )
+        return ExecutionReport(
+            run_summary=summary,
+            plan_title=plan.title,
+            rationale=plan.rationale,
+            user_request=plan.metadata.get("user_request") or message,
+            metadata=plan.metadata,
+            original_actions=plan.actions,
+            action_logs=action_logs,
+        )
+
     def execute(
         self,
         plan: Optional[Plan] = None,
@@ -181,38 +255,12 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         message: Optional[str] = None,
     ) -> ExecutionReport:
         import os
-        import tempfile
 
         temp_plan_path = None
         try:
-            if plan is None:
-                if plan_content is not None:
-                    # Scenario: TUI "View Plan" Workflow
-                    # If content is provided without a path, persist it to a temporary file
-                    # so the TUI has a physical file to open for previewing.
-                    if not plan_path:
-                        # We use a known prefix to help identify it as a TeDDy manual plan
-                        temp_fd, temp_plan_path = tempfile.mkstemp(
-                            prefix="teddy_manual_plan_", suffix=".md"
-                        )
-                        os.close(temp_fd)
-                        self._file_system_manager.write_file(
-                            temp_plan_path, plan_content
-                        )
-                        plan_path = temp_plan_path
-
-                    plan = self._plan_parser.parse(plan_content, plan_path=plan_path)
-                elif plan_path is not None:
-                    content = self._file_system_manager.read_file(plan_path)
-                    plan = self._plan_parser.parse(content, plan_path=plan_path)
-                else:
-                    raise ValueError(
-                        "Must provide either plan, plan_content, or plan_path"
-                    )
-
+            plan, temp_plan_path = self._resolve_plan(plan, plan_content, plan_path)
             start_time = datetime.now()
 
-            # Pre-flight logical validation
             validation_errors = self._plan_validator.validate(plan)
             if validation_errors:
                 error_msgs = "\n---\n".join(e.message for e in validation_errors)
@@ -226,60 +274,17 @@ class ExecutionOrchestrator(IRunPlanUseCase):
 
             reviewed_plan = self._perform_interactive_review(plan, interactive)
             if reviewed_plan is None:
-                action_logs = []
-                for a in plan.actions:
-                    if a.executed and a.action_log:
-                        action_logs.append(a.action_log)
-                    else:
-                        action_logs.append(
-                            self._action_executor.handle_skipped_action(
-                                a, "Execution aborted by user."
-                            )
-                        )
+                return self._handle_aborted_execution(plan, start_time, message)
 
-                status = self._determine_overall_status(action_logs)
-                return ExecutionReport(
-                    run_summary=RunSummary(
-                        status=status,
-                        start_time=start_time,
-                        end_time=datetime.now(),
-                    ),
-                    plan_title=plan.title,
-                    rationale=plan.rationale,
-                    user_request=plan.metadata.get("user_request") or message,
-                    metadata=plan.metadata,
-                    original_actions=plan.actions,
-                    action_logs=action_logs,
-                )
-
-            plan = reviewed_plan
-
-            action_logs = self._process_plan_actions(plan, interactive)
-
-            summary = RunSummary(
-                status=self._determine_overall_status(action_logs),
-                start_time=start_time,
-                end_time=datetime.now(),
-            )
-
-            # Capture any message added during the execution loop or passed from CLI
-            final_user_request = plan.metadata.get("user_request") or message
-
-            return ExecutionReport(
-                run_summary=summary,
-                plan_title=plan.title,
-                rationale=plan.rationale,
-                user_request=final_user_request,
-                metadata=plan.metadata,
-                original_actions=plan.actions,
-                action_logs=action_logs,
+            action_logs = self._process_plan_actions(reviewed_plan, interactive)
+            return self._create_execution_report(
+                reviewed_plan, action_logs, start_time, message
             )
         finally:
             if temp_plan_path and os.path.exists(temp_plan_path):
                 try:
                     os.remove(temp_plan_path)
                 except Exception:  # nosec B110
-                    # Silently fail on cleanup errors (e.g. file busy)
                     pass
 
     def resume(

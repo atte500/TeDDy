@@ -171,6 +171,84 @@ class ShellAdapter(IShellExecutor):
             sys.stderr.write(reset_seq)
             sys.stderr.flush()
 
+    def _prepare_subprocess_kwargs(
+        self, use_shell: bool, cwd: str, env: Dict[str, str]
+    ) -> Dict[str, Any]:
+        """Prepares the keyword arguments for subprocess.Popen."""
+        kwargs: Dict[str, Any] = {
+            "shell": use_shell,
+            "stdout": subprocess.PIPE,
+            "stderr": subprocess.PIPE,
+            "text": True,
+            "cwd": cwd,
+            "env": env,
+        }
+        if sys.platform != "win32":
+            import signal
+
+            # ISOLATION: Severing stdin from the TTY is required to prevent SIGTTIN
+            # suspension when running in a new process group.
+            kwargs["stdin"] = subprocess.DEVNULL
+
+            def preexec_fn():
+                os.setpgrp()
+                # Prevent OS from suspending background process group when querying TTY
+                signal.signal(signal.SIGTTOU, signal.SIG_IGN)
+                signal.signal(signal.SIGTTIN, signal.SIG_IGN)
+
+            kwargs["preexec_fn"] = preexec_fn
+        return kwargs
+
+    def _handle_timeout(self, process: subprocess.Popen, timeout: float) -> ShellOutput:
+        """Handles a subprocess timeout by terminating the process and gathering output."""
+        if sys.platform != "win32":
+            import signal
+
+            try:
+                # Jidoka/Poka-Yoke: Anti-Suicide Guard.
+                if not isinstance(process.pid, int) or process.pid <= 1:
+                    process.kill()
+                else:
+                    os.killpg(process.pid, signal.SIGKILL)
+            except OSError:
+                pass
+        else:
+            process.kill()
+
+        try:
+            # Give the OS a moment to close pipes naturally after SIGKILL.
+            stdout, stderr = process.communicate(timeout=0.5)
+        except subprocess.TimeoutExpired:
+            stdout, stderr = "", ""
+
+        self._log_debug_error(Exception(f"TimeoutExpired: {timeout} seconds"))
+        warning = f"[ERROR: Command timed out after {timeout} seconds]"
+        return {
+            "stdout": f"{warning}\n{self._sanitize_output(stdout)}".strip()
+            if stdout
+            else warning,
+            "stderr": self._sanitize_output(stderr) or "",
+            "return_code": self.TIMEOUT_EXIT_CODE,
+        }
+
+    def _process_execution_results(
+        self, stdout: str, stderr: str, return_code: int
+    ) -> ShellOutput:
+        """Processes the raw execution results into a structured ShellOutput."""
+        output: ShellOutput = {
+            "stdout": self._sanitize_output(stdout),
+            "stderr": self._sanitize_output(stderr),
+            "return_code": return_code,
+        }
+
+        marker = "FAILED_COMMAND: "
+        if marker in stderr:
+            for line in stderr.splitlines():
+                if marker in line:
+                    output["failed_command"] = line.split(marker)[1].strip()
+                    break
+        return output
+
     def _run_subprocess(  # noqa: PLR0913
         self,
         command_args: str | List[str],
@@ -181,7 +259,6 @@ class ShellAdapter(IShellExecutor):
         background: bool = False,
     ) -> ShellOutput:
         """Executes the command in a subprocess and handles errors."""
-        is_posix = sys.platform != "win32"
         try:
             if background:
                 process = subprocess.Popen(  # nosec B602
@@ -199,95 +276,28 @@ class ShellAdapter(IShellExecutor):
                     "return_code": 0,
                 }
 
-            kwargs: Dict[str, Any] = {
-                "shell": use_shell,
-                "stdout": subprocess.PIPE,
-                "stderr": subprocess.PIPE,
-                "text": True,
-                "cwd": cwd,
-                "env": env,
-            }
-            if is_posix:
-                import signal
-
-                # ISOLATION: Severing stdin from the TTY is required to prevent SIGTTIN
-                # suspension when running in a new process group.
-                kwargs["stdin"] = subprocess.DEVNULL
-
-                def preexec_fn():
-                    os.setpgrp()
-                    # Prevent OS from suspending background process group when querying TTY
-                    signal.signal(signal.SIGTTOU, signal.SIG_IGN)
-                    signal.signal(signal.SIGTTIN, signal.SIG_IGN)
-
-                kwargs["preexec_fn"] = preexec_fn
-
+            kwargs = self._prepare_subprocess_kwargs(use_shell, cwd, env)
             process = subprocess.Popen(command_args, **kwargs)  # nosec
 
             try:
-                stdout, stderr = process.communicate(timeout=timeout)
+                # Type cast is required because Mypy cannot infer str types when
+                # text=True is passed via **kwargs.
+                from typing import cast
+                comm_res = process.communicate(timeout=timeout)
+                stdout, stderr = cast(tuple[str, str], comm_res)
             except subprocess.TimeoutExpired:
-                if is_posix:
-                    import signal
+                return self._handle_timeout(process, timeout or 0)
 
-                    try:
-                        # Jidoka/Poka-Yoke: Anti-Suicide Guard.
-                        # Prevent MagicMock or corrupted state from killing PID 1 (Init/Docker Host)
-                        if not isinstance(process.pid, int) or process.pid <= 1:
-                            self._log_debug_error(
-                                ValueError(
-                                    f"CRITICAL: Attempted to killpg on protected/invalid PID: {process.pid}"
-                                )
-                            )
-                            process.kill()
-                        else:
-                            # Use SIGKILL to guarantee no zombies/orphans survive,
-                            # matching the original subprocess.run behavior.
-                            os.killpg(process.pid, signal.SIGKILL)
-                    except OSError:
-                        pass
-                else:
-                    process.kill()
-
-                try:
-                    # Give the OS a moment to close pipes naturally after SIGKILL.
-                    stdout, stderr = process.communicate(timeout=0.5)
-                except subprocess.TimeoutExpired:
-                    stdout, stderr = "", ""
-
-                self._log_debug_error(Exception(f"TimeoutExpired: {timeout} seconds"))
-                warning = f"[ERROR: Command timed out after {timeout} seconds]"
-                return {
-                    "stdout": f"{warning}\n{self._sanitize_output(stdout)}".strip()
-                    if stdout
-                    else warning,
-                    "stderr": self._sanitize_output(stderr) or "",
-                    "return_code": self.TIMEOUT_EXIT_CODE,
-                }
-
-            result = subprocess.CompletedProcess(
-                args=command_args,
-                returncode=process.returncode,
-                stdout=stdout,
-                stderr=stderr,
+            self._log_debug_result(
+                subprocess.CompletedProcess(
+                    args=command_args,
+                    returncode=process.returncode,
+                    stdout=stdout,
+                    stderr=stderr,
+                )
             )
-            self._log_debug_result(result)
 
-            output: ShellOutput = {
-                "stdout": self._sanitize_output(stdout),
-                "stderr": self._sanitize_output(stderr),
-                "return_code": process.returncode,
-            }
-
-            # Extract granular failure info if present in stderr
-            marker = "FAILED_COMMAND: "
-            if marker in stderr:
-                for line in stderr.splitlines():
-                    if marker in line:
-                        output["failed_command"] = line.split(marker)[1].strip()
-                        break
-
-            return output
+            return self._process_execution_results(stdout, stderr, process.returncode)
         except (FileNotFoundError, OSError) as e:
             self._log_debug_error(e)
             return {

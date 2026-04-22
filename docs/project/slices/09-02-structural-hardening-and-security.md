@@ -53,9 +53,9 @@ And no "duplicate module" errors MUST be reported for "test_unified_mock.py"
 - [x] **Seam** - Fix `IEditSimulator.simulate_edits` signature in `src/teddy_executor/core/ports/inbound/edit_simulator.py` to match implementation.
 - [x] **Logic** - Refactor `ActionFactory` constructor to use `ActionPorts`.
 - [x] **Wiring** - Update `src/teddy_executor/container.py` to construct `ActionPorts` and inject it into `ActionFactory`.
-- [ ] **Logic** - Decompose `ShellAdapter._run_subprocess` to resolve C901/PLR0915/PLR0912.
-- [ ] **Logic** - Decompose `ExecutionOrchestrator.execute` to resolve C901/PLR0915/PLR0912.
-- [ ] **Logic** - Decompose `PlanningService` generation methods to resolve C901/PLR0915.
+- [x] **Logic** - Decompose `ShellAdapter._run_subprocess` to resolve C901/PLR0915/PLR0912.
+- [x] **Logic** - Decompose `ExecutionOrchestrator.execute` to resolve C901/PLR0915/PLR0912.
+- [x] **Logic** - Decompose `PlanningService` generation methods to resolve C901/PLR0915.
 - [ ] **Harness** - Refactor `UnifiedMock` in `tests/harness/setup/mocking.py` to satisfy Mypy type-checking for abstract ports.
 - [ ] **Refactor** - Resolve duplicate module conflict for `test_unified_mock.py`.
 - [ ] **Cleanup** - Prune any leftover debt markers (# noqa) from refactored files.
@@ -90,3 +90,20 @@ And no "duplicate module" errors MUST be reported for "test_unified_mock.py"
 - Updated `container.py` to instantiate `ActionPorts` and inject it into the factory.
 - Updated unit tests in `test_action_factory.py` and `test_action_factory_timeout.py` to match the new signature.
 - Verified system-wide restoration of Green state via global test suite.
+
+### Deliverable: PlanningService Decomposition
+- Decomposed `async_generate_plan` and `generate_plan` by extracting `_ensure_alignment_hint`, `_async_resolve_message`, `_async_fetch_system_prompt`, and `_resolve_message`.
+- Resolved C901 (Complexity 10/11 -> 5/6) and PLR0915 (Statements 54/50 -> 22/24) violations.
+- Verified with unit and async tests and the global integration gate.
+
+### Deliverable: ShellAdapter Decomposition
+- Decomposed `_run_subprocess` into `_prepare_subprocess_kwargs`, `_handle_timeout`, and `_process_execution_results`.
+- Resolved C901 (Complexity 13 -> 5), PLR0912 (Branches 13 -> 2), and PLR0915 (Statements 46 -> 19) violations.
+- Maintained process group isolation (SIGTTIN/SIGTTOU) and the "Anti-Suicide Guard" during extraction.
+- Verified with unit tests, integration tests, and global integration gate.
+
+### Deliverable: ExecutionOrchestrator Decomposition
+- Decomposed `execute` into `_resolve_plan`, `_handle_aborted_execution`, and `_create_execution_report`.
+- Resolved C901 (Complexity 11 -> 4), PLR0912 (Branches 13 -> 1), and PLR0915 (Statements 41 -> 15) violations.
+- Maintained temporary plan file lifecycle management (creation/cleanup) during extraction.
+- Verified with unit tests, integration tests, and global integration gate.

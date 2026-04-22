@@ -27,95 +27,101 @@ class PlanningService(IPlanningUseCase):
         self._config_service = config_service
         self._user_interactor = user_interactor
 
+    def _resolve_agent_metadata(
+        self, turn_path: Path
+    ) -> tuple[str, Dict[str, Any], str]:
+        """Resolves agent name and metadata from meta.yaml."""
+        import yaml
+
+        meta_file_path = (turn_path / "meta.yaml").as_posix()
+        meta_content = ""
+        if self._file_system_manager.path_exists(meta_file_path):
+            meta_content = self._file_system_manager.read_file(meta_file_path)
+
+        meta = yaml.safe_load(str(meta_content))
+        if not isinstance(meta, dict):
+            meta = {}
+        return meta.get("agent_name", "pathfinder"), meta, meta_file_path
+
+    def _ensure_alignment_hint(
+        self, message: str, default: Optional[str] = None
+    ) -> str:
+        """Appends the alignment hint or returns a default if empty."""
+        if not message or not message.strip():
+            return default or ""
+
+        hint = "\n\n*(Stop to reply to this user request and ensure alignment before proceeding)*"
+        if hint not in message and "(No instructions provided" not in message:
+            return message + hint
+        return message
+
+    async def _async_resolve_message(
+        self, user_message: Optional[str], turn_path: Path
+    ) -> str:
+        """Asynchronously resolves the user message."""
+        import anyio
+        from teddy_executor.core.utils.markdown import extract_markdown_section
+
+        resolved = user_message
+        if not resolved:
+            report_path = (turn_path / "report.md").as_posix()
+            if await anyio.to_thread.run_sync(
+                self._file_system_manager.path_exists, report_path
+            ):
+                report_content = await anyio.to_thread.run_sync(
+                    self._file_system_manager.read_file, report_path
+                )
+                resolved = extract_markdown_section(report_content, "User Request")
+
+        if not resolved and self._user_interactor:
+            resolved = await self._user_interactor.async_ask_question(
+                "Enter your instructions for the AI"
+            )
+
+        default = "(No instructions provided; proceeding with current context as primary instruction)"
+        return self._ensure_alignment_hint(resolved or "", default=default)
+
+    async def _async_fetch_system_prompt(self, agent_name: str, turn_path: Path) -> str:
+        """Asynchronously fetches the system prompt."""
+        import anyio
+
+        prompt_file_path = (turn_path / f"{agent_name}.xml").as_posix()
+        if await anyio.to_thread.run_sync(
+            self._file_system_manager.path_exists, prompt_file_path
+        ):
+            return await anyio.to_thread.run_sync(
+                self._file_system_manager.read_file, prompt_file_path
+            )
+        return ""
+
     async def async_generate_plan(
         self,
         user_message: Optional[str],
         turn_dir: str,
         context_files: Optional[Dict[str, Sequence[str]]] = None,
     ) -> tuple[str, float]:
-        """
-        Asynchronously generates a new plan.md file.
-        """
+        """Asynchronously generates a new plan.md file."""
         import anyio
         import re
-        import yaml
-        from teddy_executor.core.utils.markdown import extract_markdown_section
 
         turn_path = Path(turn_dir)
-        resolved_message = user_message
+        resolved_message = await self._async_resolve_message(user_message, turn_path)
 
-        # 0. Message Resolution
-        if not resolved_message:
-            report_path = (turn_path / "report.md").as_posix()
-            exists = await anyio.to_thread.run_sync(
-                self._file_system_manager.path_exists, report_path
-            )
-            if exists:
-                report_content = await anyio.to_thread.run_sync(
-                    self._file_system_manager.read_file, report_path
-                )
-                resolved_message = extract_markdown_section(
-                    report_content, "User Request"
-                )
-
-        if not resolved_message and self._user_interactor:
-            resolved_message = await self._user_interactor.async_ask_question(
-                "Enter your instructions for the AI"
-            )
-
-        # Scenario: AI-Driven Continuity (Proceed on Empty)
-        if not resolved_message or not resolved_message.strip():
-            resolved_message = "(No instructions provided; proceeding with current context as primary instruction)"
-
-        hint = "\n\n*(Stop to reply to this user request and ensure alignment before proceeding)*"
-        if (
-            hint not in resolved_message
-            and "(No instructions provided" not in resolved_message
-        ):
-            resolved_message += hint
-
-        # 1. Fetch metadata and agent name for progress log
-        meta_file_path = (turn_path / "meta.yaml").as_posix()
-        meta_content = ""
-        exists = await anyio.to_thread.run_sync(
-            self._file_system_manager.path_exists, meta_file_path
+        agent_name, meta, meta_file_path = await anyio.to_thread.run_sync(
+            self._resolve_agent_metadata, turn_path
         )
-        if exists:
-            meta_content = await anyio.to_thread.run_sync(
-                self._file_system_manager.read_file, meta_file_path
-            )
 
-        meta = yaml.safe_load(str(meta_content))
-        if not isinstance(meta, dict):
-            meta = {}
-        agent_name = meta.get("agent_name", "pathfinder")
-
-        # Scenario: Logical Log Sequencing & Natural Language
         if self._user_interactor:
-            # Resolve Natural Name from turn_dir (parent is session)
             session_folder = turn_path.parent.name
             natural_name = re.sub(r"^\d{8}_\d{6}-", "", session_folder)
-            turn_id = turn_path.name
-            msg = f"[cyan][{turn_id}] {natural_name} | Waiting for {agent_name} to respond...[/cyan]"
+            msg = f"[cyan][{turn_path.name}] {natural_name} | Waiting for {agent_name} to respond...[/cyan]"
             await self._user_interactor.async_display_message(msg)
 
-        # 2. Gather context
         context = await self._context_service.async_get_context(
             context_files=context_files
         )
+        system_prompt = await self._async_fetch_system_prompt(agent_name, turn_path)
 
-        # 3. Fetch system prompt
-        prompt_file_path = (turn_path / f"{agent_name}.xml").as_posix()
-        system_prompt = ""
-        exists = await anyio.to_thread.run_sync(
-            self._file_system_manager.path_exists, prompt_file_path
-        )
-        if exists:
-            system_prompt = await anyio.to_thread.run_sync(
-                self._file_system_manager.read_file, prompt_file_path
-            )
-
-        # 3. Call LLM
         full_context = f"{context.header}\n{context.content}"
         messages = [
             {"role": "system", "content": system_prompt},
@@ -125,9 +131,10 @@ class PlanningService(IPlanningUseCase):
             },
         ]
 
-        log_path = (turn_path / "input.md").as_posix()
         await anyio.to_thread.run_sync(
-            self._file_system_manager.write_file, log_path, full_context
+            self._file_system_manager.write_file,
+            (turn_path / "input.md").as_posix(),
+            full_context,
         )
 
         model = self._config_service.get_setting("planning_model", "gpt-4o") or "gpt-4o"
@@ -138,16 +145,11 @@ class PlanningService(IPlanningUseCase):
         plan_content = self._extract_plan_content(response)
         turn_cost = self._llm_client.get_completion_cost(response)
 
-        # 4. Telemetry (Ported to use async_display_message)
         cost_val = await self._async_log_telemetry(token_count, turn_cost)
-
-        # 5. Persistence
         plan_path = (turn_path / "plan.md").as_posix()
         await anyio.to_thread.run_sync(
             self._file_system_manager.write_file, plan_path, plan_content
         )
-
-        # 6. Update meta.yaml
         await anyio.to_thread.run_sync(
             self._update_meta, meta, response, token_count, turn_cost, meta_file_path
         )
@@ -177,90 +179,57 @@ class PlanningService(IPlanningUseCase):
             sys.stdout.flush()
         return cost_val
 
+    def _resolve_message(
+        self, user_message: Optional[str], turn_path: Path
+    ) -> Optional[str]:
+        """Synchronously resolves the user message."""
+        from teddy_executor.core.utils.markdown import extract_markdown_section
+
+        resolved = user_message
+
+        if not resolved:
+            report_path = (turn_path / "report.md").as_posix()
+            if self._file_system_manager.path_exists(report_path):
+                report_content = self._file_system_manager.read_file(report_path)
+                resolved = extract_markdown_section(report_content, "User Request")
+
+        if not resolved and self._user_interactor:
+            resolved = self._user_interactor.ask_question(
+                "Enter your instructions for the AI"
+            )
+
+        if not resolved or not resolved.strip():
+            return None
+
+        return self._ensure_alignment_hint(resolved)
+
     def generate_plan(
         self,
         user_message: Optional[str],
         turn_dir: str,
         context_files: Optional[Dict[str, Sequence[str]]] = None,
     ) -> tuple[str, float]:
+        """Generates a new plan.md file."""
         import os
 
         if os.getenv("TEDDY_SHOWCASE_MOCK_LLM") == "1":
-            from prototypes.slice_00_05_logic import generate_plan_sequenced
-
-            # Recursion guard: generate_plan_sequenced calls this method.
-            # We use a context-local flag to skip the mock on the inner call.
-            if not getattr(self, "_in_showcase_mock", False):
-                self._in_showcase_mock = True
-                try:
-                    return generate_plan_sequenced(
-                        self,
-                        self._user_interactor,
-                        user_message,
-                        turn_dir,
-                        context_files,
-                        "pathfinder",
-                    )
-                finally:
-                    self._in_showcase_mock = False
-
-        import yaml
-        from teddy_executor.core.utils.markdown import extract_markdown_section
+            return self._handle_showcase_mock(user_message, turn_dir, context_files)
 
         turn_path = Path(turn_dir)
+        resolved_message = self._resolve_message(user_message, turn_path)
 
-        # 0. Message Resolution (CLI/Lookback -> local report.md -> Prompt)
-        resolved_message = user_message
-
-        # If no explicit message (CLI or lookback), try local report.md (for manual plan loops)
-        if not resolved_message:
-            report_path = (turn_path / "report.md").as_posix()
-            if self._file_system_manager.path_exists(report_path):
-                report_content = self._file_system_manager.read_file(report_path)
-                resolved_message = extract_markdown_section(
-                    report_content, "User Request"
-                )
-
-        # Finally, prompt if in interactive mode
-        if not resolved_message and self._user_interactor:
-            resolved_message = self._user_interactor.ask_question(
-                "Enter your instructions for the AI"
-            )
-
-        # Handle exit signal for empty input (Scenario: Unified Instruction Bridge)
-        if not resolved_message or not resolved_message.strip():
+        if resolved_message is None:
             return None, 0.0  # type: ignore
 
-        # Ensure alignment hint is present to prevent drift (Scenario: Message Consumption)
-        hint = "\n\n*(Stop to reply to this user request and ensure alignment before proceeding)*"
-        if hint not in resolved_message:
-            resolved_message += hint
-
-        # 1. Gather context
         context = self._context_service.get_context(context_files=context_files)
-
-        # 2. Fetch system prompt
-        # Read meta.yaml to find the agent name
-        meta_file_path = (turn_path / "meta.yaml").as_posix()
-        meta_content = ""
-        if self._file_system_manager.path_exists(meta_file_path):
-            meta_content = self._file_system_manager.read_file(meta_file_path)
-
-        # Defensive: cast content to str to prevent yaml.safe_load hanging on MagicMocks
-        meta = yaml.safe_load(str(meta_content))
-        if not isinstance(meta, dict):
-            meta = {}
-        agent_name = meta.get("agent_name", "pathfinder")
+        agent_name, meta, meta_file_path = self._resolve_agent_metadata(turn_path)
 
         prompt_file_path = (turn_path / f"{agent_name}.xml").as_posix()
         system_prompt = ""
         if self._file_system_manager.path_exists(prompt_file_path):
             system_prompt = self._file_system_manager.read_file(prompt_file_path)
 
-        # 3. Call LLM
-        # Combine header and content for the LLM
         full_context = f"{context.header}\n{context.content}"
-
         messages = [
             {"role": "system", "content": system_prompt},
             {
@@ -269,30 +238,45 @@ class PlanningService(IPlanningUseCase):
             },
         ]
 
-        # Log exact raw payload as standardized artifact (Deliverable: input.md artifact)
-        log_path = (turn_path / "input.md").as_posix()
-        self._file_system_manager.write_file(log_path, full_context)
-
-        # Resolve model from config with fallback
+        self._file_system_manager.write_file(
+            (turn_path / "input.md").as_posix(), full_context
+        )
         model = self._config_service.get_setting("planning_model", "gpt-4o") or "gpt-4o"
-
-        # Call LLM and gather telemetry
         token_count = self._llm_client.get_token_count(model, messages)
         response = self._llm_client.get_completion(model=model, messages=messages)
         plan_content = self._extract_plan_content(response)
         turn_cost = self._llm_client.get_completion_cost(response)
 
-        # Log telemetry to console (harden against MagicMocks)
         cost_val = self._log_telemetry(token_count, turn_cost)
-
-        # 5. Persistence
         plan_path = (turn_path / "plan.md").as_posix()
         self._file_system_manager.write_file(plan_path, plan_content)
-
-        # 6. Update meta.yaml
         self._update_meta(meta, response, token_count, turn_cost, meta_file_path)
 
         return plan_path, cost_val
+
+    def _handle_showcase_mock(
+        self,
+        user_message: Optional[str],
+        turn_dir: str,
+        context_files: Optional[Dict[str, Sequence[str]]],
+    ) -> tuple[str, float]:
+        """Handles the TEDDY_SHOWCASE_MOCK_LLM recursion guard."""
+        from prototypes.slice_00_05_logic import generate_plan_sequenced
+
+        if not getattr(self, "_in_showcase_mock", False):
+            self._in_showcase_mock = True
+            try:
+                return generate_plan_sequenced(
+                    self,
+                    self._user_interactor,
+                    user_message,
+                    turn_dir,
+                    context_files,
+                    "pathfinder",
+                )
+            finally:
+                self._in_showcase_mock = False
+        return "", 0.0
 
     def _log_telemetry(self, token_count: Any, turn_cost: Any) -> float:
         """Logs planning telemetry to the appropriate output stream."""
