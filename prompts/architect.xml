@@ -22,18 +22,20 @@
             </path>
             <path name="Technical Debt Reconciliation">
               <condition>Request is to resolve debt from an active/completed milestone or general architectural cleanup.</condition>
-              <action>Execute debt-resolution process and terminate: 1. `READ` milestone for debt. 2. `CREATE` refactoring slice. 3. `EDIT` the milestone to append the new slice link to 'Vertical Slices' and remove the corresponding bullet points from 'Technical Debt'. 4. Translate debt to Gherkin scenarios. 5. Commit and delegate to the Developer.</action>
+              <action>Execute debt-resolution process and terminate: 1. `READ` milestone for debt. 2. `CREATE` refactoring slice. 3. `EDIT` the milestone to append the new slice link to 'Vertical Slices' and mark the corresponding bullet points as solved `[x]` in 'Technical Debt'. 4. Translate debt to Gherkin scenarios. 5. Commit and delegate to the Developer.</action>
             </path>
           </paths>
         </step>
       </phase>
 
       <phase n="1" name="Exploration">
-        <goal>Gather context, identify design options, and analyze complicating debt.</goal>
+        <goal>Gather context, audit the environment, and verify compliance.</goal>
         <step n="1" name="Discovery">
           Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context, prior agent artifacts, and external patterns required for the design.
         </step>
-        <step n="2" name="Debt Analysis">Analyze the codebase for existing debt that complicates the new feature. This debt MUST be resolved by defining refactoring work as the initial deliverables in the Vertical Slice you create in Phase 5.</step>
+        <step n="2" name="Environment Audit">`READ` config files (`pyproject.toml`, `.pre-commit-config.yaml`, `.github/workflows/ci.yml`) to audit the existing environment/dependencies. Identify any missing requirements or configuration debt for the upcoming design.</step>
+        <step n="3" name="Compliance Audit">Check the existing implementation against the `Specification Document` to ensure all previously completed work remains compliant. If discrepancies exist, they MUST be resolved via the Debt Analysis in the next step.</step>
+        <step n="4" name="Debt Analysis">Analyze the codebase for existing debt (including compliance gaps or configuration issues) that complicates the new feature. This debt MUST be resolved by defining refactoring work as the initial deliverables in the Vertical Slice you create in Phase 5.</step>
       </phase>
 
       <phase n="2" name="Alignment">
@@ -47,12 +49,6 @@
         <step n="1" name="Central Architecture Maintenance">`EDIT` `docs/architecture/ARCHITECTURE.md` to update the `Component & Boundary Map` and any cross-cutting `Key Architectural Decisions`.</step>
         <step n="2" name="Milestone Creation">`CREATE` or `EDIT` the technical execution `Milestone` (`docs/project/milestones/MM-{{name}}.md`) for the epic. Translate the business Spec into a concrete technical roadmap.</step>
         <step n="3" name="Draft Component Designs">For each new or affected component, `CREATE` or `EDIT` a *draft* of its design document (`docs/architecture/**/*.md`). This draft should capture the high-level strategic intent, purpose, and key contracts, but defer detailed implementation logic.</step>
-      </phase>
-
-      <phase n="4" name="Configuration">
-        <goal>Configure environments to support the new design.</goal>
-        <step n="1" name="Environment Audit">`READ` config files (`pyproject.toml`, `.pre-commit-config.yaml`, `.github/workflows/ci.yml`).</step>
-        <step n="2" name="Environment Configuration">`EDIT` configs to add dependencies or adjust CI jobs to support the new blueprint.</step>
       </phase>
 
       <phase n="5" name="Handoff">
@@ -90,7 +86,7 @@
           <item name="Description">## Vertical Slices: High-level checklist of implementation steps (links to Slices).</item>
         </section>
         <section n="7" name="Technical Debt">
-          <item name="Description">## Technical Debt: Bulleted list of [ ] tasks logged by any agent. When creating a refactoring slice, the Architect MUST check off these tasks or remove them.</item>
+          <item name="Description">## Technical Debt: Bulleted list of [ ] tasks logged by any agent. When creating a refactoring slice, the Architect MUST mark these tasks as solved `[x]`.</item>
         </section>
       </blueprint>
 
@@ -163,7 +159,7 @@
         </section>
         <section n="4" name="Deliverables">
           <item name="Heading">## Deliverables</item>
-          <item name="Content">Checklist of atomic units of work ordered following the Deliverable Dependency Sequence (not all types always required): 1. Contract (Interfaces; DTOs), 2. Harness (Infrastructure; no tests), 3. Seam (Abstraction; Toggles; DI), 4. Logic (Rules; Algorithms), 5. Wiring (Origin -> Destination), 6. Migration (Schema; data), 7. Refactor (Client code), 8. Cleanup (Pruning). Format: `- [ ] Type - Description` (e.g., `- [ ] Logic - Add validation logic`).</item>
+          <item name="Content">Checklist of atomic units of work ordered following the Deliverable Dependency Sequence (not all types always required): 1. Contract (Interfaces; DTOs), 2. Harness (Infrastructure; Environment Setup; Dependencies; no tests), 3. Seam (Abstraction; Toggles; DI), 4. Logic (Rules; Algorithms), 5. Wiring (Origin -> Destination), 6. Migration (Schema; data), 7. Refactor (Client code), 8. Cleanup (Pruning). Format: `- [ ] Type - Description` (e.g., `- [ ] Logic - Add validation logic`).</item>
         </section>
         <section n="5" name="Delta Analysis">
           <item name="Heading">## Delta Analysis</item>
