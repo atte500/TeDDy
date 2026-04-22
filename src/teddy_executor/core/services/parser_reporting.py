@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Any, List, TYPE_CHECKING
 from teddy_executor.core.domain.models.plan import Plan
 from teddy_executor.core.ports.inbound.plan_parser import InvalidPlanError
@@ -80,7 +81,7 @@ def format_node_name(node: Any) -> str:
 
 
 def _render_ast_view(
-    doc: "Document",
+    doc: Document,
     error_ids: set[int],
     error_map: dict[int, str],
     cutoff_idx: float = float("inf"),
@@ -128,7 +129,7 @@ def _render_ast_view(
 
 
 def format_hybrid_ast_view(
-    doc: "Document",
+    doc: Document,
     errors: List[Any],  # List[ValidationError]
 ) -> str:
     """
@@ -167,7 +168,7 @@ def get_action_type_from_node(plan: Plan, offending_node: Any) -> str:
     return get_child_text(offending_node).strip().replace("`", "")
 
 
-def validate_plan_structure(doc: "Document", start_idx: int):
+def validate_plan_structure(doc: Document, start_idx: int):
     """Validates the structural schema of the top-level nodes."""
     from mistletoe.block_token import (
         BlockCode,
@@ -226,7 +227,7 @@ def validate_plan_structure(doc: "Document", start_idx: int):
 
 
 def format_structural_mismatch_msg(
-    doc: "Document",
+    doc: Document,
     expected: str,
     mismatch_idx: int,
     offending_nodes: List[Any],

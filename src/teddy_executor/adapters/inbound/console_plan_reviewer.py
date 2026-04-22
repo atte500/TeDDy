@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
 
@@ -26,10 +27,10 @@ class ConsolePlanReviewer(IPlanReviewer):
 
     def __init__(
         self,
-        user_interactor: "IUserInteractor",
-        file_system_manager: "IFileSystemManager",
-        config_service: "IConfigService",
-        edit_simulator: "IEditSimulator",
+        user_interactor: IUserInteractor,
+        file_system_manager: IFileSystemManager,
+        config_service: IConfigService,
+        edit_simulator: IEditSimulator,
     ):
         self._user_interactor = user_interactor
         self._changeset_builder = ActionChangeSetBuilder(

@@ -96,4 +96,5 @@ class IFileSystemManager(Protocol):
         """
         Moves or renames a directory.
         """
+        _ = old_path
         ...

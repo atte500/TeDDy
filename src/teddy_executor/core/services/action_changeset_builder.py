@@ -1,3 +1,4 @@
+from __future__ import annotations
 from pathlib import Path
 from typing import Optional, TYPE_CHECKING
 from teddy_executor.core.domain.models.change_set import ChangeSet
@@ -39,9 +40,9 @@ class ActionChangeSetBuilder:
 
     def __init__(
         self,
-        file_system_manager: "IFileSystemManager",
-        config_service: "IConfigService",
-        edit_simulator: "IEditSimulator",
+        file_system_manager: IFileSystemManager,
+        config_service: IConfigService,
+        edit_simulator: IEditSimulator,
     ):
         self._file_system_manager = file_system_manager
         self._config_service = config_service

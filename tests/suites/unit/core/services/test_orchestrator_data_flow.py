@@ -6,9 +6,7 @@ from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
 
 
 @pytest.fixture
-def orchestrator(
-    container, mock_action_dispatcher, mock_report_formatter, mock_user_interactor
-):
+def orchestrator(container, mock_action_dispatcher):
     # Register core components needed for orchestrator
     container.register(ExecutionOrchestrator)
     # We mock the validator to skip pre-flight checks in this logic test

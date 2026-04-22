@@ -1,3 +1,4 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Optional
 
@@ -70,7 +71,7 @@ class IUserInteractor(ABC):
         pass
 
     @abstractmethod
-    def confirm_plan_review(self, plan: "Plan") -> bool:
+    def confirm_plan_review(self, plan: Plan) -> bool:
         """
         Displays a summary of the plan and asks for bulk confirmation.
 
@@ -85,9 +86,9 @@ class IUserInteractor(ABC):
     @abstractmethod
     def confirm_action(
         self,
-        action: "ActionData",
+        action: ActionData,
         action_prompt: str,
-        change_set: Optional["ChangeSet"] = None,
+        change_set: Optional[ChangeSet] = None,
     ) -> tuple[bool, str]:
         """
         Displays a prompt describing an action and asks the user for y/n confirmation.
@@ -103,10 +104,10 @@ class IUserInteractor(ABC):
             - bool: True if the user approved, False otherwise.
             - str: The user's reason for denial, or an empty string.
         """
-        pass
+        ...
 
     @abstractmethod
-    def notify_skipped_action(self, action: "ActionData", reason: str) -> None:
+    def notify_skipped_action(self, action: ActionData, reason: str) -> None:
         """
         Notifies the user that an action was skipped.
 

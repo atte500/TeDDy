@@ -1,3 +1,4 @@
+from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional, TYPE_CHECKING
 
@@ -19,9 +20,9 @@ class ActionPorts:
     required by the ActionFactory.
     """
 
-    shell_executor: "IShellExecutor"
-    file_system_manager: "IFileSystemManager"
-    user_interactor: "IUserInteractor"
-    web_scraper: "IWebScraper"
-    web_searcher: "IWebSearcher"
-    config_service: Optional["IConfigService"] = None
+    shell_executor: IShellExecutor
+    file_system_manager: IFileSystemManager
+    user_interactor: IUserInteractor
+    web_scraper: IWebScraper
+    web_searcher: IWebSearcher
+    config_service: Optional[IConfigService] = None

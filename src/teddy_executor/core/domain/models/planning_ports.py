@@ -1,3 +1,4 @@
+from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -33,9 +34,9 @@ class PlanningPorts:
 class SessionPorts:
     """Ports required by the SessionLifecycleManager."""
 
-    session_service: "ISessionManager"
-    file_system_manager: "IFileSystemManager"
-    report_formatter: "IMarkdownReportFormatter"
-    user_interactor: "IUserInteractor"
-    session_planner: "SessionPlanner"
-    replanner: "SessionReplanner"
+    session_service: ISessionManager
+    file_system_manager: IFileSystemManager
+    report_formatter: IMarkdownReportFormatter
+    user_interactor: IUserInteractor
+    session_planner: SessionPlanner
+    replanner: SessionReplanner
