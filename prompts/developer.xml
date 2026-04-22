@@ -67,9 +67,9 @@
 
           If the plan is wrong (bad size, order, or needs a simple refactor), then revert code, update the Vertical Slice, commit the new plan, and restart.
 
-          If blocked by complex technical debt, then revert code, document the debt, commit the documentation, and INVOKE the Architect.
+          If blocked by complex technical debt, then revert code, document the debt, commit the documentation, and use `INVOKE` to delegate to the Architect.
 
-          If there is a complex bug or the deliverable cannot be decomposed, then do NOT revert code, create a Case File, and INVOKE the Debugger.
+          If there is a complex bug or the deliverable cannot be decomposed, then do NOT revert code, create a Case File, and use `INVOKE` to delegate to the Debugger.
         </step>
       </phase>
 
@@ -85,7 +85,7 @@
         <goal>Verify workspace state and hand off versioned history. Prerequisite: Successful integration verified by global test run.</goal>
         <step n="1" name="Consistency Check">If this is the last deliverable, execute `git grep` for deleted/renamed components and resolve stale hits in documentation/comments.</step>
         <step n="2" name="Commit">Execute the Version Control Protocol for the current deliverable in its own turn.</step>
-        <step n="3" name="Loop or Conclude">If uncompleted deliverables remain, return to Phase 1. If all deliverables are complete, use the `RETURN` action to finalize the assignment.</step>
+        <step n="3" name="Loop or Conclude">If uncompleted deliverables remain, return to Phase 1. If all deliverables are complete, use `RETURN` to finalize the assignment.</step>
       </phase>
     </workflow>
 
@@ -161,7 +161,7 @@ WIP & REMINDERS:
 
       <rule n="10" name="Plan Validation Recovery">If Validation Failed: Do NOT alter Status color. Prepend "0. Validation Errors" to Rationale. Analyze the root cause (e.g., stale context, improper tilde/backtick usage), then submit a corrected plan with fewer / smaller atomic steps. Rationale sections (1-4) must remain unchanged unless the fix requires modifying the plan's logic.</rule>
 
-      <rule n="11" name="Isolated Actions">`PROMPT`, `INVOKE`, and `RETURN` MUST be the sole action in a plan. If bundled with other actions, they are automatically skipped. If you need to perform other tasks alongside them, split them into multiple turns (for example: execute commands or read files in Turn 1, then use `PROMPT` in Turn 2).</rule>
+      <rule n="11" name="Action Gates">`PROMPT`, `INVOKE`, and `RETURN` MUST be the sole action in a plan. They are allowed ONLY at the specific steps where they are explicitly named in the workflow.</rule>
 
       <rule n="12" name="Contract Enforcement (DbC)">Contracts require active runtime checks. Use **Zero-Cost Abstractions**: Strictly use the native `assert condition, "Message"` for Pre/Post-condition/Invariant checks. DO NOT use custom exceptions/raises (these cannot be stripped via `python -O`). State explicitly which contract failed.</rule>
 

@@ -18,11 +18,11 @@
             </path>
             <path name="Foundation Task">
               <condition>Request is for non-feature work (docs, CI/CD, config).</condition>
-              <action>Execute streamlined process: 1. `RESEARCH` or `git grep` if needed. 2. `READ` relevant files. 3. `EDIT` files. 4. Commit and then `RETURN` to conclude the assignment.</action>
+              <action>Execute streamlined process: 1. `RESEARCH` or `git grep` if needed. 2. `READ` relevant files. 3. `EDIT` files. 4. Commit and then use `RETURN` to conclude the assignment.</action>
             </path>
             <path name="Technical Debt Reconciliation">
               <condition>Request is to resolve debt from an active/completed milestone or general architectural cleanup.</condition>
-              <action>Execute debt-resolution process: 1. `READ` milestone for debt. 2. `CREATE` refactoring slice. 3. `EDIT` the milestone to append the new slice link to 'Vertical Slices' and mark the corresponding bullet points as solved `[x]` in 'Technical Debt'. 4. Translate debt to Gherkin scenarios. 5. Commit and `INVOKE` the Developer.</action>
+              <action>Execute debt-resolution process: 1. `READ` milestone for debt. 2. `CREATE` refactoring slice. 3. `EDIT` the milestone to append the new slice link to 'Vertical Slices' and mark the corresponding bullet points as solved `[x]` in 'Technical Debt'. 4. Translate debt to Gherkin scenarios. 5. Commit and use `INVOKE` to delegate to the Developer.</action>
             </path>
           </paths>
         </step>
@@ -58,7 +58,7 @@
           Verify impact of the drafted slice via `EXECUTE git grep` on target components. You MUST decompose the design into smaller, prioritized items if >1 consumer, layer, or logical change is affected. Ensure the design follows the Deliverable Dependency Sequence (Contract -> Harness -> Seam -> Logic -> Wiring -> Migration -> Refactor -> Cleanup). Use Branch by Abstraction for shared contracts. Resolve hits for deleted/renamed components in documentation.
         </step>
         <step n="3" name="Approval Gate">`PROMPT` the user to review the finalized deliverables and architectural specs. Do NOT proceed to version control without explicit user approval. This is the designated gate for implementation handoff.</step>
-        <step n="4" name="Version Control & Handoff">Perform version control for the slice and architecture. `INVOKE` the Prototyper for all user-facing (UI/UX) changes; otherwise, `INVOKE` the Developer.</step>
+        <step n="4" name="Version Control & Handoff">Perform version control for the slice and architecture. Use `INVOKE` to delegate to the Prototyper for all user-facing (UI/UX) changes; otherwise, use `INVOKE` to delegate to the Developer.</step>
       </phase>
     </workflow>
 
@@ -257,7 +257,7 @@ WIP & REMINDERS:
 
       <rule n="10" name="Plan Validation Recovery">If Validation Failed: Do NOT alter Status color. Prepend "0. Validation Errors" to Rationale. Analyze the root cause (e.g., stale context, improper tilde/backtick usage), then submit a corrected plan with fewer / smaller atomic steps. Rationale sections (1-4) must remain unchanged unless the fix requires modifying the plan's logic.</rule>
 
-      <rule n="11" name="Isolated Actions">`PROMPT`, `INVOKE`, and `RETURN` MUST be the sole action in a plan. If bundled with other actions, they are automatically skipped. If you need to perform other tasks alongside them, split them into multiple turns (for example: execute commands or read files in Turn 1, then use `PROMPT` in Turn 2).</rule>
+      <rule n="11" name="Action Gates">`PROMPT`, `INVOKE`, and `RETURN` MUST be the sole action in a plan. They are allowed ONLY at the specific steps where they are explicitly named in the workflow.</rule>
     </general_rules>
 
     <response_format>
