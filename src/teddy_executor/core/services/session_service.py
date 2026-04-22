@@ -2,7 +2,6 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
-import yaml
 from teddy_executor.core.domain.models.execution_report import ExecutionReport
 from teddy_executor.core.domain.models.plan import ActionType
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
@@ -10,10 +9,8 @@ from teddy_executor.core.ports.outbound.session_manager import (
     ISessionManager,
     SessionState,
 )
+from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
 from teddy_executor.prompts import find_prompt_content
-
-
-from teddy_executor.core.services.session_repository import SessionRepository
 
 
 class SessionService(ISessionManager):
@@ -24,7 +21,7 @@ class SessionService(ISessionManager):
     def __init__(
         self,
         file_system_manager: IFileSystemManager,
-        repository: SessionRepository,
+        repository: ISessionRepository,
     ):
         self._file_system_manager = file_system_manager
         self._repository = repository
@@ -45,7 +42,7 @@ class SessionService(ISessionManager):
         session_root = f".teddy/sessions/{prefixed_name}"
         turn_dir = f"{session_root}/01"
 
-        self._file_system_manager.create_directory(turn_dir)
+        self._repository.create_turn_directory(turn_dir)
 
         # 1. Seed session.context from init.context
         init_context = self._file_system_manager.read_file(".teddy/init.context")
@@ -77,7 +74,7 @@ class SessionService(ISessionManager):
             "turn_cost": 0.0,
             "creation_timestamp": datetime.now(timezone.utc).isoformat(),
         }
-        self._write_meta(f"{turn_dir}/meta.yaml", meta_data)
+        self._repository.save_meta(f"{turn_dir}/meta.yaml", meta_data)
 
         return session_root
 
@@ -85,19 +82,7 @@ class SessionService(ISessionManager):
         """
         Identifies and returns the latest turn directory in the specified session.
         """
-        session_root = f".teddy/sessions/{session_name}"
-        try:
-            items = self._file_system_manager.list_directory(session_root)
-        except FileNotFoundError:
-            raise ValueError(f"Session '{session_name}' not found.")
-
-        # Filter for zero-padded numeric directories (e.g., '01', '02')
-        turns = [item for item in items if item.isdigit()]
-        if not turns:
-            raise ValueError(f"No turns found in session '{session_name}'.")
-
-        latest_turn_id = sorted(turns)[-1]
-        return f"{session_root}/{latest_turn_id}"
+        return self._repository.get_latest_turn(session_name)
 
     def get_session_state(self, session_name: str) -> tuple[SessionState, str]:
         """
@@ -144,13 +129,15 @@ class SessionService(ISessionManager):
         session_dir = cur_dir.parent.as_posix()
 
         # 1. Resolve current state
-        meta = self._load_meta(cur_dir.as_posix())
+        meta = self._repository.load_meta(cur_dir.as_posix())
         next_id = f"{int(cur_dir.name) + 1:02d}"
         next_dir = f"{session_dir}/{next_id}"
 
         # 2. Setup next directory
-        self._file_system_manager.create_directory(next_dir)
-        self._copy_prompt(cur_dir.as_posix(), next_dir, meta.get("agent_name", "pf"))
+        self._repository.create_turn_directory(next_dir)
+        self._repository.copy_prompt(
+            cur_dir.as_posix(), next_dir, meta.get("agent_name", "pf")
+        )
 
         # 3. Persist metadata
         self._persist_next_meta(next_dir, next_id, meta, turn_cost)
@@ -172,17 +159,6 @@ class SessionService(ISessionManager):
     def _to_root_relative(self, turn_dir: Path, filename: str) -> str:
         """Calculates a root-relative path for a file within a turn directory."""
         return self._repository.to_root_relative(turn_dir, filename)
-
-    def _load_meta(self, turn_dir: str) -> Dict[str, Any]:
-        """Loads and parses meta.yaml for a turn."""
-        return self._repository.load_meta(turn_dir)
-
-    def _copy_prompt(self, src_dir: str, dest_dir: str, agent: str) -> None:
-        """Copies the agent prompt file if it exists."""
-        prompt_path = f"{src_dir}/{agent}.xml"
-        if self._file_system_manager.path_exists(prompt_path):
-            content = self._file_system_manager.read_file(prompt_path)
-            self._file_system_manager.write_file(f"{dest_dir}/{agent}.xml", content)
 
     def _apply_execution_effects(
         self, paths: set[str], report: Optional[ExecutionReport]
@@ -222,55 +198,20 @@ class SessionService(ISessionManager):
             "parent_turn_id": current_meta.get("turn_id", "00"),
             "creation_timestamp": datetime.now(timezone.utc).isoformat(),
         }
-        self._write_meta(f"{next_dir}/meta.yaml", meta)
-
-    def _write_meta(self, path: str, data: Dict[str, Any]) -> None:
-        """Serializes and writes meta.yaml."""
-        from teddy_executor.core.utils.serialization import scrub_dict_for_serialization
-
-        serializable = scrub_dict_for_serialization(data)
-        self._file_system_manager.write_file(path, yaml.dump(serializable))
+        self._repository.save_meta(f"{next_dir}/meta.yaml", meta)
 
     def rename_session(self, old_name: str, new_name: str) -> str:
         """
         Safely renames a session directory on the filesystem.
         """
-        # Preserve date prefix if present
-        prefix_match = re.match(r"^(\d{8}_\d{6}-)", old_name)
-        prefix = prefix_match.group(1) if prefix_match else ""
-
-        # Ensure new name doesn't double-prefix
-        clean_new_name = re.sub(r"^\d{8}_\d{6}-", "", new_name)
-
-        old_path = f".teddy/sessions/{old_name}"
-        new_path = f".teddy/sessions/{prefix}{clean_new_name}"
-
-        if not self._file_system_manager.path_exists(old_path):
-            raise ValueError(f"Session '{old_name}' not found.")
-        if self._file_system_manager.path_exists(new_path):
-            raise ValueError(f"Session '{new_name}' already exists.")
-
-        self._file_system_manager.move_directory(old_path, new_path)
-        return new_path
+        return self._repository.rename_session(old_name, new_name)
 
     def resolve_context_paths(self, plan_path: str) -> dict[str, list[str]]:
         """
         Locates session.context and turn.context relative to plan_path
         and returns their contents.
         """
-        plan_p = Path(plan_path)
-        turn_dir = plan_p.parent
-        session_dir = turn_dir.parent
-
-        session_context_path = (session_dir / "session.context").as_posix()
-        turn_context_path = (turn_dir / "turn.context").as_posix()
-
-        return {
-            "Session": sorted(
-                list(self._repository.read_context_file(session_context_path))
-            ),
-            "Turn": sorted(list(self._repository.read_context_file(turn_context_path))),
-        }
+        return self._repository.resolve_context_paths(plan_path)
 
     def get_latest_session_name(self) -> str:
         """Identifies and returns the name of the latest session."""

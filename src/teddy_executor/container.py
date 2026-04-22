@@ -46,6 +46,9 @@ def _register_services(container: punq.Container) -> None:
     from teddy_executor.core.services.action_executor import ActionExecutor
     from teddy_executor.core.services.action_factory import ActionFactory
     from teddy_executor.core.services.edit_simulator import EditSimulator
+    from teddy_executor.core.ports.outbound.session_repository import (
+        ISessionRepository,
+    )
     from teddy_executor.core.services.session_repository import SessionRepository
     from teddy_executor.core.services.markdown_plan_parser import MarkdownPlanParser
     from teddy_executor.core.services.markdown_report_formatter import (
@@ -54,7 +57,7 @@ def _register_services(container: punq.Container) -> None:
     from teddy_executor.core.domain.models.action_ports import ActionPorts
 
     container.register(
-        SessionRepository,
+        ISessionRepository,
         factory=lambda: SessionRepository(container.resolve(IFileSystemManager)),
         scope=punq.Scope.transient,
     )

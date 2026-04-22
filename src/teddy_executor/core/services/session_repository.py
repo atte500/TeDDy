@@ -4,15 +4,28 @@ from pathlib import Path
 from typing import Set, Dict, Any
 
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
+from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
 
 
-class SessionRepository:
+class SessionRepository(ISessionRepository):
     """
     Handles low-level filesystem lookups and path resolution for TeDDy sessions.
     """
 
     def __init__(self, file_system_manager: IFileSystemManager):
         self._file_system_manager = file_system_manager
+
+    def path_exists(self, path: str) -> bool:
+        """Checks if a path exists on the filesystem."""
+        return self._file_system_manager.path_exists(path)
+
+    def list_directory(self, path: str) -> list[str]:
+        """Lists the contents of a directory."""
+        return self._file_system_manager.list_directory(path)
+
+    def create_turn_directory(self, turn_dir: str) -> None:
+        """Ensures a turn directory exists."""
+        self._file_system_manager.create_directory(turn_dir)
 
     def _strip_prefix(self, name: str) -> str:
         """Strips the YYYYMMDD_HHMMSS- prefix from a session folder name."""
@@ -109,3 +122,67 @@ class SessionRepository:
         content = self._file_system_manager.read_file(f"{turn_dir}/meta.yaml")
         meta = yaml.safe_load(str(content))
         return meta if isinstance(meta, dict) else {}
+
+    def save_meta(self, path: str, data: Dict[str, Any]) -> None:
+        """Serializes and persists metadata to the filesystem."""
+        from teddy_executor.core.utils.serialization import scrub_dict_for_serialization
+
+        serializable = scrub_dict_for_serialization(data)
+        self._file_system_manager.write_file(path, yaml.dump(serializable))
+
+    def copy_prompt(self, src_dir: str, dest_dir: str, agent: str) -> None:
+        """Copies an agent prompt file between turn directories."""
+        prompt_path = f"{src_dir}/{agent}.xml"
+        if self._file_system_manager.path_exists(prompt_path):
+            content = self._file_system_manager.read_file(prompt_path)
+            self._file_system_manager.write_file(f"{dest_dir}/{agent}.xml", content)
+
+    def get_latest_turn(self, session_name: str) -> str:
+        """Identifies and returns the path to the latest turn in a session."""
+        session_root = f".teddy/sessions/{session_name}"
+        try:
+            items = self._file_system_manager.list_directory(session_root)
+        except FileNotFoundError:
+            raise ValueError(f"Session '{session_name}' not found.")
+
+        # Filter for zero-padded numeric directories (e.g., '01', '02')
+        turns = [item for item in items if item.isdigit()]
+        if not turns:
+            raise ValueError(f"No turns found in session '{session_name}'.")
+
+        latest_turn_id = sorted(turns)[-1]
+        return f"{session_root}/{latest_turn_id}"
+
+    def rename_session(self, old_name: str, new_name: str) -> str:
+        """Renames a session directory on the filesystem."""
+        # Preserve date prefix if present
+        prefix_match = re.match(r"^(\d{8}_\d{6}-)", old_name)
+        prefix = prefix_match.group(1) if prefix_match else ""
+
+        # Ensure new name doesn't double-prefix
+        clean_new_name = re.sub(r"^\d{8}_\d{6}-", "", new_name)
+
+        old_path = f".teddy/sessions/{old_name}"
+        new_path = f".teddy/sessions/{prefix}{clean_new_name}"
+
+        if not self._file_system_manager.path_exists(old_path):
+            raise ValueError(f"Session '{old_name}' not found.")
+        if self._file_system_manager.path_exists(new_path):
+            raise ValueError(f"Session '{new_name}' already exists.")
+
+        self._file_system_manager.move_directory(old_path, new_path)
+        return new_path
+
+    def resolve_context_paths(self, plan_path: str) -> Dict[str, list[str]]:
+        """Locates and returns the contents of session and turn context files."""
+        plan_p = Path(plan_path)
+        turn_dir = plan_p.parent
+        session_dir = turn_dir.parent
+
+        session_context_path = (session_dir / "session.context").as_posix()
+        turn_context_path = (turn_dir / "turn.context").as_posix()
+
+        return {
+            "Session": sorted(list(self.read_context_file(session_context_path))),
+            "Turn": sorted(list(self.read_context_file(turn_context_path))),
+        }

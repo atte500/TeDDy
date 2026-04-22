@@ -38,7 +38,7 @@ And the system MUST continue to function correctly on all OS matrices
 - [x] **Logic** - Extract report assembly and status determination from `ExecutionOrchestrator` to `ExecutionReportAssembler`.
 - [x] **Logic** - Extract prompt resolution and alignment logic from `PlanningService` to a `PromptManager` or internal helper.
 - [x] **Cleanup** - Verify `ShellAdapter`, `ExecutionOrchestrator`, and `PlanningService` pass the `file-length-python` quality gate.
-- [ ] **Logic** - Extract session migration and path management logic from `SessionService` to `SessionRepository`.
+- [x] **Logic** - Extract session migration and path management logic from `SessionService` to `SessionRepository`.
 - [ ] **Logic** - Extract Markdown block parsing strategies from `MarkdownPlanParser` to a strategy registry or internal helpers.
 - [ ] **Logic** - Extract TUI preview formatting from `textual_plan_reviewer_previews.py`.
 - [ ] **Cleanup** - Final verification of `file-length-python` gate.
@@ -84,3 +84,10 @@ And the system MUST continue to function correctly on all OS matrices
 - Updated the test harness with a safe-by-default `mock_prompt_manager` fixture.
 - Migrated 9 unit tests to verify orchestration with `PromptManager` instead of low-level side effects on adapters.
 - Final global integration verified: 644 tests green.
+
+### Deliverable: Extract SessionRepository from SessionService
+- Extracted low-level filesystem and path management logic from `SessionService` into `SessionRepository`.
+- Defined `ISessionRepository` outbound port to satisfy DI boundary rules.
+- `SessionService` now depends on `ISessionRepository` via constructor injection.
+- Verified line count: `SessionService.py` is now 269 lines (under the 300-line limit).
+- Global integration verified: 644 tests green.
