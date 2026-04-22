@@ -93,4 +93,3 @@ repos:
         language: system
         types: [python]
         files: ^src/teddy_executor/core/
-        exclude: src/teddy_executor/core/services/action_factory\.py

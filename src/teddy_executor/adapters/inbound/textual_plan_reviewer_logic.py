@@ -6,9 +6,11 @@ from typing import TYPE_CHECKING, Any, cast
 from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
     extract_status_emoji,
 )
+from teddy_executor.adapters.inbound.textual_plan_reviewer_execution import (
+    resolve_action_parameters,
+)
 from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
     format_node_label,
-    resolve_action_parameters,
 )
 
 if TYPE_CHECKING:
@@ -229,11 +231,11 @@ def revert_logic(app: ReviewerApp, node: Any) -> None:
 
 async def execute_step_logic(app: ReviewerApp, node: Any) -> None:
     """Executes the action with real-time state transitions and feedback."""
-    from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
-        orchestrate_execution,
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_execution import (
+        execute_step_logic as exec_logic,
     )
 
-    await orchestrate_execution(app, node, _update_detail_view)
+    await exec_logic(app, node, _update_detail_view)
 
 
 async def view_details_logic(app: "ReviewerApp") -> None:

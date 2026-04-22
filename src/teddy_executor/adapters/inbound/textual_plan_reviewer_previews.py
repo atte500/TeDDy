@@ -185,7 +185,7 @@ async def view_details_handler(app: "ReviewerApp") -> None:
     """Implementation for viewing action logs."""
     from textual.widgets import Tree
     from teddy_executor.core.domain.models.plan import ActionData
-    from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_execution import (
         format_action_log,
     )
 

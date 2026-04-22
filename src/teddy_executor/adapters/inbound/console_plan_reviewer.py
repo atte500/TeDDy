@@ -2,13 +2,18 @@ from typing import Optional, TYPE_CHECKING
 from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
 
 if TYPE_CHECKING:
-    from teddy_executor.core.domain.models.plan import Plan, ActionData
+    from teddy_executor.core.domain.models.plan import (
+        Plan,
+        ActionData,
+    )
     from teddy_executor.core.ports.outbound import (
         IUserInteractor,
         IFileSystemManager,
         IConfigService,
     )
-    from teddy_executor.core.ports.inbound.edit_simulator import IEditSimulator
+    from teddy_executor.core.ports.inbound.edit_simulator import (
+        IEditSimulator,
+    )
 
 
 from teddy_executor.core.services.action_changeset_builder import ActionChangeSetBuilder
@@ -47,6 +52,8 @@ class ConsolePlanReviewer(IPlanReviewer):
         total_actions: int,
         agent_name: Optional[str] = None,
     ) -> tuple[bool, str]:
+        _ = total_actions
+        _ = agent_name
         prompt = ActionChangeSetBuilder.format_action_prompt(action)
 
         change_set = self._changeset_builder.create_change_set(action)

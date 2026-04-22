@@ -70,6 +70,18 @@ max-statements = 40
 
 [tool.vulture]
 exclude = ["spikes/", "prototypes/"]
+ignore_names = [
+    "Plan",
+    "ActionData",
+    "IUserInteractor",
+    "IFileSystemManager",
+    "IConfigService",
+    "IEditSimulator",
+    "total_actions",
+    "agent_name",
+    "Document",
+    "SessionPorts",
+]
 min_confidence = 80
 paths = ["src", "tests"]
 sort_by_size = true

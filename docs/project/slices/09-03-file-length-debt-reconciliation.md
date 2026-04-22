@@ -41,7 +41,9 @@ And the system MUST continue to function correctly on all OS matrices
 - [x] **Logic** - Extract session migration and path management logic from `SessionService` to `SessionRepository`.
 - [x] **Logic** - Extract Markdown block parsing strategies from `MarkdownPlanParser` to a strategy registry or internal helpers.
 - [x] **Logic** - Extract TUI preview formatting from `textual_plan_reviewer_previews.py`.
-- [ ] **Cleanup** - Final verification of `file-length-python` gate.
+- [x] **Logic** - Decompose `cli_helpers.py` (316 lines) by extracting presentation logic to `cli_formatter.py`.
+- [x] **Logic** - Decompose `textual_plan_reviewer_helpers.py` (401 lines) by extracting execution logic to `textual_plan_reviewer_execution.py`.
+- [x] **Cleanup** - Final verification of `file-length-python` gate.
 
 ## Delta Analysis
 - **SessionOrchestrator:** This is the most complex decomposition. It currently handles turn transitions, auto-naming, content fetching, and file persistence. These should be split using the **Strategy** or **Service** patterns.
@@ -104,3 +106,19 @@ And the system MUST continue to function correctly on all OS matrices
 - Relocated low-level editor helpers from `helpers.py` to `editor.py` to improve cohesion and reduce debt.
 - Verified line count: `textual_plan_reviewer_previews.py` is now 239 lines (under the 300-line limit).
 - Updated unit test namespaces and confirmed 55/55 TUI-related tests pass.
+
+### Deliverable: Decompose cli_helpers.py
+- Extracted terminal presentation and echoing logic (`echo_handoff_details`, `echo_diff_preview`, `echo_plan_summary`, `echo_skipped_action`, `style_text`) to `src/teddy_executor/adapters/inbound/cli_formatter.py`.
+- `cli_helpers.py` reduced from 316 lines to 237 lines, successfully clearing the quality gate.
+- Verified behavior via `test_cli_formatter.py`.
+
+### Final Audit
+- All target files verified under 300 lines:
+  - `markdown_plan_parser.py`: 244 lines
+  - `cli_helpers.py`: 237 lines
+  - `textual_plan_reviewer_previews.py`: 239 lines
+  - `session_orchestrator.py`: 282 lines
+  - `shell_adapter.py`: 261 lines
+  - `execution_orchestrator.py`: 293 lines
+  - `planning_service.py`: 174 lines
+  - `session_service.py`: 269 lines

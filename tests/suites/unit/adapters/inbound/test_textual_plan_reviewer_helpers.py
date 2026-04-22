@@ -1,5 +1,5 @@
 from teddy_executor.core.domain.models.execution_report import ActionLog, ActionStatus
-from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+from teddy_executor.adapters.inbound.textual_plan_reviewer_execution import (
     format_action_log,
 )
 

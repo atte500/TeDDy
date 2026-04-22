@@ -14,7 +14,7 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
 from teddy_executor.adapters.inbound.textual_plan_reviewer_previews import (
     preview_readonly,
 )
-from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+from teddy_executor.adapters.inbound.textual_plan_reviewer_execution import (
     resolve_action_parameters,
 )
 from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
@@ -160,7 +160,7 @@ async def test_regression_orchestrate_execution_does_not_suspend_unnecessarily()
     Ensures that orchestrate_execution does NOT suspend the TUI
     during non-interactive execution (which captures IO silently).
     """
-    from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_execution import (
         orchestrate_execution,
     )
 
@@ -195,7 +195,7 @@ async def test_regression_execute_prompt_step_populates_correct_log_details():
     Regression test for Bug: PROMPT response missing from report.
     Ensures that manual PROMPT execution via TUI creates a dict-based log.
     """
-    from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_execution import (
         _execute_prompt_step,
     )
 
@@ -236,7 +236,7 @@ async def test_regression_prompt_execution_does_not_suspend_unnecessarily():
     Regression test for Bug: TUI Stutter on manual PROMPT execution.
     Ensures that prompt execution path does NOT suspend, as it relies on modals.
     """
-    from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_execution import (
         orchestrate_execution,
     )
 
@@ -250,7 +250,7 @@ async def test_regression_prompt_execution_does_not_suspend_unnecessarily():
     app.is_headless = False
 
     with patch(
-        "teddy_executor.adapters.inbound.textual_plan_reviewer_helpers._execute_prompt_step",
+        "teddy_executor.adapters.inbound.textual_plan_reviewer_execution._execute_prompt_step",
         new_callable=AsyncMock,
     ):
         # Execute

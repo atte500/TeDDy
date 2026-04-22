@@ -4,7 +4,7 @@ from typing import List, Optional
 import typer
 from rich.console import Console
 
-from teddy_executor.adapters.inbound.cli_helpers import (
+from teddy_executor.adapters.inbound.cli_formatter import (
     echo_diff_preview,
     echo_plan_summary,
 )
@@ -14,11 +14,14 @@ from teddy_executor.core.ports.outbound.system_environment import ISystemEnviron
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 from teddy_executor.adapters.outbound.console_tooling import ConsoleToolingHelper
+from teddy_executor.adapters.outbound.console_interactor_ask_loop import (
+    ConsoleAskLoop,
+)
 from teddy_executor.adapters.outbound.console_interactor_helpers import (
-    restore_terminal_mode,
-    prepare_external_preview_files,
     display_handoff_and_confirm,
+    prepare_external_preview_files,
     print_skipped_action,
+    restore_terminal_mode,
 )
 
 
@@ -28,8 +31,7 @@ class ConsoleInteractorAdapter(IUserInteractor):
         self._config_service = config_service
         self._tooling = ConsoleToolingHelper(system_env, config_service)
         self._console = Console(stderr=True)
-        self._active_editor_path: Optional[str] = None
-        self._active_editor_marker: Optional[str] = None
+        self._ask_loop = ConsoleAskLoop(self._system_env, self._tooling)
 
     def _restore_terminal(self):
         """Restores stdin to canonical/echo mode (Unix only)."""
@@ -85,11 +87,8 @@ class ConsoleInteractorAdapter(IUserInteractor):
         Allows falling back to an external editor for multi-line text.
         """
         self._display_ask_header(prompt, resources, agent_name)
-
-        self._active_editor_path = None
-        self._active_editor_marker = None
-
-        return self._run_prompt_loop(prompt)
+        self._ask_loop.cleanup()
+        return self._ask_loop.run(prompt)
 
     def _display_ask_header(
         self, prompt: str, resources: list[str] | None, agent_name: Optional[str]
@@ -105,101 +104,10 @@ class ConsoleInteractorAdapter(IUserInteractor):
             typer.echo("\n".join(resources), err=True)
         typer.echo("", err=True)  # Spacer
 
-    def _run_prompt_loop(self, prompt: str) -> str:
-        """Orchestrates the interactive loop for capturing user response."""
-        while True:
-            prompt_label = "Response (type 'e' for editor) › "
-            if self._active_editor_path:
-                prompt_label = (
-                    "Editor opened. Terminal reply or [Enter] to confirm editor › "
-                )
-
-            typer.echo(prompt_label, nl=False, err=True)
-            try:
-                user_input = input().strip()
-            except EOFError:
-                self._cleanup_editor()
-                return ""
-
-            # 1. Trigger Editor
-            if user_input.lower() == "e":
-                self._launch_editor_background(prompt)
-                continue
-
-            # 2. Terminal Reply (Non-empty)
-            if user_input:
-                self._cleanup_editor()
-                return user_input
-
-            # 3. Empty Input
-            response = self._handle_empty_input(prompt)
-            if response is not None:
-                return response
-
-    def _handle_empty_input(self, prompt: str) -> Optional[str]:
-        """Handles logic when Enter is pressed without terminal input."""
-        # If editor was open, [Enter] confirms and reads it.
-        if self._active_editor_path:
-            return self._read_editor_result()
-
-        # Otherwise, confirm empty response to prevent accidental submission
-        typer.echo(
-            "Press [Enter] again to confirm empty response › ",
-            nl=False,
-            err=True,
-        )
-        try:
-            confirm = input().strip()
-        except EOFError:
-            return ""
-
-        if not confirm:
-            return ""
-
-        # Recursive-like behavior for 'e' in confirm prompt
-        if confirm.lower() == "e":
-            self._launch_editor_background(prompt)
-            return None
-
-        return confirm
-
-    def _cleanup_editor(self):
-        """Removes the temp file and resets active state."""
-        if self._active_editor_path:
-            self._system_env.delete_file(self._active_editor_path)
-            self._active_editor_path = None
-            self._active_editor_marker = None
-
-    def _launch_editor_background(self, prompt: str) -> None:
-        """Opens a temporary file in a non-blocking external editor."""
-        marker = "<!-- Please enter your response above this line. -->"
-        initial_content = f"\n\n{marker}\n\n{prompt}\n"
-
-        temp_path = self._system_env.create_temp_file(suffix=".md")
-        with open(temp_path, "w", encoding="utf-8") as f:
-            f.write(initial_content)
-
-        editor_cmd = self._tooling.find_editor()
-        if not editor_cmd:
-            typer.echo("Error: No suitable editor found.", err=True)
-            self._system_env.delete_file(temp_path)
-            return
-
-        try:
-            cmd = editor_cmd + [temp_path]
-            self._system_env.run_command(cmd, background=True)
-            self._active_editor_path = temp_path
-            self._active_editor_marker = marker
-            typer.echo("Editor opened in background.", err=True)
-        except Exception as e:
-            typer.echo(f"Error: Editor launch failed: {e}", err=True)
-            self._system_env.delete_file(temp_path)
-
     def _launch_editor_synchronous(self, initial_content: str) -> str:
         """Opens a temporary file in an external editor and waits for it to close."""
         import os
 
-        # Testing Hook
         mock_output = os.environ.get("TEDDY_TEST_MOCK_EDITOR_OUTPUT")
         if mock_output:
             return mock_output
@@ -225,27 +133,6 @@ class ConsoleInteractorAdapter(IUserInteractor):
             return ""
         finally:
             self._system_env.delete_file(temp_path)
-
-    def _read_editor_result(self) -> str:
-        """Reads the content of the background editor's temp file."""
-        if not self._active_editor_path:
-            return ""
-
-        try:
-            with open(self._active_editor_path, "r", encoding="utf-8") as f:
-                content = f.read()
-
-            marker = self._active_editor_marker or ""
-            if marker in content:
-                content = content.split(marker)[0]
-
-            return content.strip()
-
-        except Exception as e:
-            typer.echo(f"Error: Reading editor result failed: {e}", err=True)
-            return ""
-        finally:
-            self._cleanup_editor()
 
     def confirm_plan_review(self, plan: Plan) -> bool:
         """Displays a summary of the plan and asks for bulk confirmation."""

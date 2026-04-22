@@ -3,7 +3,7 @@ from typing import List, Optional
 
 import typer
 
-from teddy_executor.adapters.inbound.cli_helpers import (
+from teddy_executor.adapters.inbound.cli_formatter import (
     echo_handoff_details,
     echo_skipped_action,
 )
