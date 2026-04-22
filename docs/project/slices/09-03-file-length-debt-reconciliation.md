@@ -33,11 +33,11 @@ And the system MUST continue to function correctly on all OS matrices
 
 ## Deliverables
 - [x] **Logic** - Extract turn transition and state management from `SessionOrchestrator` to `SessionLifecycleManager`.
-- [ ] **Logic** - Extract auto-naming and summary generation from `SessionOrchestrator` to `SessionMetadataService`.
+- [x] **Cleanup** - Verify `SessionOrchestrator` passes the `file-length-python` quality gate (282 lines).
 - [ ] **Logic** - Extract OS-specific command preparation from `ShellAdapter` to `ShellCommandBuilder`.
-- [ ] **Logic** - Extract report assembly logic from `ExecutionOrchestrator` to a specialized internal formatter or service.
-- [ ] **Logic** - Decompose `PlanningService` by extracting prompt resolution or alignment logic into a `PromptManager`.
-- [ ] **Cleanup** - Verify all four target files pass the `file-length-python` quality gate.
+- [ ] **Logic** - Extract report assembly and status determination from `ExecutionOrchestrator` to a specialized service or internal helper.
+- [ ] **Logic** - Extract prompt resolution and alignment logic from `PlanningService` to a `PromptManager` or internal helper.
+- [ ] **Cleanup** - Verify `ShellAdapter`, `ExecutionOrchestrator`, and `PlanningService` pass the `file-length-python` quality gate.
 
 ## Delta Analysis
 - **SessionOrchestrator:** This is the most complex decomposition. It currently handles turn transitions, auto-naming, content fetching, and file persistence. These should be split using the **Strategy** or **Service** patterns.
