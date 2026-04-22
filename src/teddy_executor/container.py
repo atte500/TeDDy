@@ -115,15 +115,24 @@ def _register_orchestration_services(container: punq.Container) -> None:
         IFileSystemManager,
         ISessionManager,
     )
+    from teddy_executor.core.ports.outbound.execution_report_assembler import (
+        IExecutionReportAssembler,
+    )
     from teddy_executor.core.services.action_executor import ActionExecutor
     from teddy_executor.core.services.context_service import ContextService
     from teddy_executor.core.services.execution_orchestrator import (
         ExecutionOrchestrator,
     )
+    from teddy_executor.core.services.execution_report_assembler import (
+        ExecutionReportAssembler,
+    )
     from teddy_executor.core.services.init_service import InitService
     from teddy_executor.core.services.planning_service import PlanningService
     from teddy_executor.core.services.session_service import SessionService
 
+    container.register(
+        IExecutionReportAssembler, ExecutionReportAssembler, scope=punq.Scope.transient
+    )
     container.register(
         ExecutionOrchestrator,
         factory=lambda: ExecutionOrchestrator(
@@ -131,6 +140,7 @@ def _register_orchestration_services(container: punq.Container) -> None:
             plan_validator=container.resolve(IPlanValidator),
             action_executor=container.resolve(ActionExecutor),
             file_system_manager=container.resolve(IFileSystemManager),
+            report_assembler=container.resolve(IExecutionReportAssembler),
             plan_reviewer=container.resolve(IPlanReviewer),
         ),
         scope=punq.Scope.transient,

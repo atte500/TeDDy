@@ -2,6 +2,9 @@ from unittest.mock import MagicMock
 from teddy_executor.core.domain.models.plan import Plan, ActionData, ExecutionStatus
 from teddy_executor.core.domain.models.execution_report import ActionLog, ActionStatus
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
+from teddy_executor.core.services.execution_report_assembler import (
+    ExecutionReportAssembler,
+)
 
 
 def test_orchestrator_skips_manually_executed_actions():
@@ -17,6 +20,7 @@ def test_orchestrator_skips_manually_executed_actions():
         plan_validator=mock_validator,
         action_executor=mock_executor,
         file_system_manager=mock_fs,
+        report_assembler=ExecutionReportAssembler(),
     )
 
     # Create an action that was ALREADY executed
@@ -69,7 +73,11 @@ def test_orchestrator_halts_on_manual_failure():
     mock_validator = MagicMock()
     mock_validator.validate.return_value = []
     orchestrator = ExecutionOrchestrator(
-        MagicMock(), mock_validator, mock_executor, MagicMock()
+        MagicMock(),
+        mock_validator,
+        mock_executor,
+        MagicMock(),
+        ExecutionReportAssembler(),
     )
 
     report = orchestrator.execute(plan=plan, interactive=False)

@@ -59,12 +59,16 @@ def test_orchestrator_falls_back_to_legacy_interaction_if_no_reviewer(
     from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
     from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
     from teddy_executor.core.ports.outbound import IFileSystemManager
+    from teddy_executor.core.ports.outbound.execution_report_assembler import (
+        IExecutionReportAssembler,
+    )
 
     orchestrator = ExecutionOrchestrator(
         plan_parser=env.container.resolve(IPlanParser),
         plan_validator=env.container.resolve(IPlanValidator),
         action_executor=env.container.resolve(ActionExecutor),
         file_system_manager=env.container.resolve(IFileSystemManager),
+        report_assembler=env.container.resolve(IExecutionReportAssembler),
         plan_reviewer=None,
     )
 

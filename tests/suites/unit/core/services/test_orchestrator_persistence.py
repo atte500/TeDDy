@@ -1,5 +1,8 @@
 from unittest.mock import MagicMock
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
+from teddy_executor.core.services.execution_report_assembler import (
+    ExecutionReportAssembler,
+)
 from teddy_executor.core.domain.models import Plan
 
 
@@ -31,6 +34,7 @@ def test_execute_persists_manual_plan_content_to_temp_file():
         plan_validator=mock_validator,
         action_executor=mock_executor,
         file_system_manager=mock_fs,
+        report_assembler=ExecutionReportAssembler(),
     )
 
     plan_content = "# Test Plan\n## Rationale\n..."

@@ -220,7 +220,7 @@ def test_aborted_plan_preserves_manually_executed_logs(env, mock_plan_reviewer):
     report = orchestrator.execute(plan=plan, interactive=True)
 
     # Assert
-    assert len(report.action_logs) == 2
+    assert len(report.action_logs) == 2  # noqa: PLR2004
     assert report.action_logs[0].status == ActionStatus.SUCCESS
     assert report.action_logs[0].details == "Manually harvested log"
 
@@ -261,7 +261,7 @@ def test_execute_skips_terminal_action_in_multi_action_non_interactive_plan(
     report = orchestrator.execute(plan=plan, interactive=False)
 
     # Assert
-    assert len(report.action_logs) == 2
+    assert len(report.action_logs) == 2  # noqa: PLR2004
     assert report.action_logs[0].status == ActionStatus.SUCCESS
 
     # The PROMPT action should be skipped due to soft isolation

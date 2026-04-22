@@ -1,14 +1,12 @@
 from datetime import datetime
 
-from typing import Any, Optional, Sequence
+from typing import Any, Optional
 
 from teddy_executor.core.domain.models import (
     ActionData,
     ActionLog,
     ExecutionReport,
     Plan,
-    RunSummary,
-    RunStatus,
     ActionStatus,
 )
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser, InvalidPlanError
@@ -16,42 +14,28 @@ from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
 from teddy_executor.core.ports.outbound import IFileSystemManager
+from teddy_executor.core.ports.outbound.execution_report_assembler import (
+    IExecutionReportAssembler,
+)
 from teddy_executor.core.services.action_executor import ActionExecutor
 
 
 class ExecutionOrchestrator(IRunPlanUseCase):
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         plan_parser: IPlanParser,
         plan_validator: IPlanValidator,
         action_executor: ActionExecutor,
         file_system_manager: IFileSystemManager,
+        report_assembler: IExecutionReportAssembler,
         plan_reviewer: IPlanReviewer = None,  # type: ignore
     ):
         self._plan_parser = plan_parser
         self._plan_validator = plan_validator
         self._action_executor = action_executor
         self._file_system_manager = file_system_manager
+        self._report_assembler = report_assembler
         self._plan_reviewer = plan_reviewer
-
-    def _determine_overall_status(self, action_logs: Sequence[ActionLog]) -> RunStatus:
-        """Determines the final run status based on the hierarchy of action outcomes."""
-        if not action_logs:
-            return RunStatus.SUCCESS
-
-        statuses = [log.status for log in action_logs]
-        if ActionStatus.FAILURE in statuses:
-            return RunStatus.FAILURE
-
-        # Success takes precedence: if any action succeeded, the run is a success.
-        if ActionStatus.SUCCESS in statuses:
-            return RunStatus.SUCCESS
-
-        # If every single action was skipped, the run is skipped.
-        if statuses and all(s == ActionStatus.SKIPPED for s in statuses):
-            return RunStatus.SKIPPED
-
-        return RunStatus.SUCCESS
 
     def _perform_interactive_review(self, plan: Plan, interactive: bool) -> Plan | None:
         """Allows the user to review and modify the plan before execution."""
@@ -221,30 +205,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
                     )
                 )
 
-        return self._create_execution_report(plan, action_logs, start_time, message)
-
-    def _create_execution_report(
-        self,
-        plan: Plan,
-        action_logs: Sequence[ActionLog],
-        start_time: datetime,
-        message: Optional[str],
-    ) -> ExecutionReport:
-        """Encapsulates the creation of the final ExecutionReport."""
-        summary = RunSummary(
-            status=self._determine_overall_status(action_logs),
-            start_time=start_time,
-            end_time=datetime.now(),
-        )
-        return ExecutionReport(
-            run_summary=summary,
-            plan_title=plan.title,
-            rationale=plan.rationale,
-            user_request=plan.metadata.get("user_request") or message,
-            metadata=plan.metadata,
-            original_actions=plan.actions,
-            action_logs=action_logs,
-        )
+        return self._report_assembler.assemble(plan, action_logs, start_time, message)
 
     def execute(
         self,
@@ -277,7 +238,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
                 return self._handle_aborted_execution(plan, start_time, message)
 
             action_logs = self._process_plan_actions(reviewed_plan, interactive)
-            return self._create_execution_report(
+            return self._report_assembler.assemble(
                 reviewed_plan, action_logs, start_time, message
             )
         finally:
