@@ -10,72 +10,10 @@ if TYPE_CHECKING:
     from teddy_executor.adapters.inbound.textual_plan_reviewer_app import ReviewerApp
     from teddy_executor.core.domain.models.plan import ActionData
 
-from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
-    handle_mock_editor,
-    spawn_editor,
-    handle_mock_diff,
-    prepare_after_file,
-    harvest_edit_diff,
+from teddy_executor.adapters.inbound.textual_plan_reviewer_editor import (
+    launch_editor,
+    preview_edit_diff_viewer,
 )
-from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
-    ConfirmScreen,
-)
-
-
-async def launch_editor(
-    app: "ReviewerApp",
-    initial_content: str,
-    suffix: str = ".txt",
-    persistent_path: Optional[str] = None,
-    skip_confirm: bool = False,
-) -> Optional[str]:
-    """Launches an external editor non-blockingly and waits for TUI confirmation."""
-    mock_out = os.environ.get("TEDDY_TEST_MOCK_EDITOR_OUTPUT")
-    if mock_out:
-        return handle_mock_editor(persistent_path, mock_out)
-
-    temp_file = persistent_path or app._system_env.create_temp_file(suffix=suffix)
-    is_temp = persistent_path is None
-    try:
-        if is_temp or (
-            not os.path.exists(temp_file) or os.path.getsize(temp_file) == 0
-        ):
-            with open(temp_file, "w", encoding="utf-8") as f:
-                f.write(str(initial_content))
-
-        editor_cmd = app._console_tooling.find_editor()
-        if not editor_cmd:
-            return None
-
-        if os.path.exists(temp_file):
-            os.chmod(temp_file, 0o644)
-
-        spawn_editor(editor_cmd, temp_file)
-        return await _confirm_and_harvest(
-            app, temp_file, initial_content, is_temp, skip_confirm=skip_confirm
-        )
-    except Exception:  # nosec B110
-        return None
-    finally:
-        if is_temp:
-            app._system_env.delete_file(temp_file)
-
-
-async def _confirm_and_harvest(
-    app: ReviewerApp, path: Any, initial: str, is_temp: bool, skip_confirm: bool = False
-) -> Optional[str]:
-    confirmed = (
-        True
-        if app.is_headless or skip_confirm
-        else await app.push_screen_wait(ConfirmScreen())
-    )
-    if confirmed:
-        with open(path, "r", encoding="utf-8") as f:
-            return f.read()
-    if not is_temp:
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(str(initial))
-    return None
 
 
 async def do_preview_logic(app: ReviewerApp, node: Any, action: ActionData) -> None:
@@ -92,58 +30,7 @@ async def do_preview_logic(app: ReviewerApp, node: Any, action: ActionData) -> N
         await preview_readonly(app, action)
 
 
-async def _preview_edit_diff_viewer(
-    app: ReviewerApp,
-    action: ActionData,
-    diff_viewer: list[str],
-    original: str,
-    proposed: str,
-) -> bool:
-    import subprocess  # nosec B404
-
-    path_str = cast(str, action.params.get("path", ""))
-    before = _setup_before_file(app, path_str, original)
-    p_file = action.pending_temp_file
-
-    if p_file and isinstance(p_file, (str, os.PathLike)):
-        if handle_mock_diff(p_file, before, app._system_env.delete_file):
-            return True
-        prepare_after_file(p_file, proposed)
-        try:
-            subprocess.Popen(  # nosec B603
-                diff_viewer + [str(before), str(p_file)],
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
-        except Exception:  # nosec B110
-            pass
-
-    confirmed = True if app.is_headless else await app.push_screen_wait(ConfirmScreen())
-    app._system_env.delete_file(before)
-    return _process_diff_result(confirmed, action, p_file, original, proposed)
-
-
-def _setup_before_file(app: ReviewerApp, path: str, content: str) -> str:
-    suffix = pathlib.Path(path).suffix or ".txt"
-    before = app._system_env.create_temp_file(suffix=f".before{suffix}")
-    with open(before, "w", encoding="utf-8") as f:
-        f.write(content)
-    os.chmod(before, 0o444)
-    return before
-
-
-def _process_diff_result(
-    confirmed: bool, action: ActionData, p_file: Any, original: str, proposed: str
-) -> bool:
-    if confirmed and p_file and isinstance(p_file, (str, os.PathLike)):
-        action.modified = True
-        harvest_edit_diff(action, p_file, original, proposed)
-        return True
-    if not confirmed and p_file and isinstance(p_file, (str, os.PathLike)):
-        with open(p_file, "w", encoding="utf-8") as f:
-            f.write(str(proposed))
-    return False
+# Diff viewer orchestration moved to textual_plan_reviewer_editor.py
 
 
 async def preview_edit(app: ReviewerApp, action: ActionData, node: Any) -> None:
@@ -173,7 +60,7 @@ async def preview_edit(app: ReviewerApp, action: ActionData, node: Any) -> None:
         action.pending_temp_file = app._system_env.create_temp_file(suffix=suffix)
 
     if diff_viewer and not is_mock_path:
-        needs_refresh = await _preview_edit_diff_viewer(
+        needs_refresh = await preview_edit_diff_viewer(
             app, action, diff_viewer, original, str(proposed)
         )
         if needs_refresh:

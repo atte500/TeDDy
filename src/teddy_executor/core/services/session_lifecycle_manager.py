@@ -1,10 +1,13 @@
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, TYPE_CHECKING
 import yaml
 import anyio
 from teddy_executor.core.domain.models.execution_report import ExecutionReport
 
 from typing import Sequence
+
+if TYPE_CHECKING:
+    from teddy_executor.core.domain.models.planning_ports import SessionPorts
 
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.session_manager import SessionState

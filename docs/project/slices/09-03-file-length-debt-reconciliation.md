@@ -40,7 +40,7 @@ And the system MUST continue to function correctly on all OS matrices
 - [x] **Cleanup** - Verify `ShellAdapter`, `ExecutionOrchestrator`, and `PlanningService` pass the `file-length-python` quality gate.
 - [x] **Logic** - Extract session migration and path management logic from `SessionService` to `SessionRepository`.
 - [x] **Logic** - Extract Markdown block parsing strategies from `MarkdownPlanParser` to a strategy registry or internal helpers.
-- [ ] **Logic** - Extract TUI preview formatting from `textual_plan_reviewer_previews.py`.
+- [x] **Logic** - Extract TUI preview formatting from `textual_plan_reviewer_previews.py`.
 - [ ] **Cleanup** - Final verification of `file-length-python` gate.
 
 ## Delta Analysis
@@ -98,3 +98,9 @@ And the system MUST continue to function correctly on all OS matrices
 - `MarkdownPlanParser` now coordinates top-level flow using these helpers.
 - Verified line count: `MarkdownPlanParser.py` is now 243 lines (under the 300-line limit).
 - Global integration verified: 644 tests green.
+
+### Deliverable: Extract TUI preview formatting from textual_plan_reviewer_previews.py
+- Created `textual_plan_reviewer_editor.py` to house editor and diff orchestration logic.
+- Relocated low-level editor helpers from `helpers.py` to `editor.py` to improve cohesion and reduce debt.
+- Verified line count: `textual_plan_reviewer_previews.py` is now 239 lines (under the 300-line limit).
+- Updated unit test namespaces and confirmed 55/55 TUI-related tests pass.

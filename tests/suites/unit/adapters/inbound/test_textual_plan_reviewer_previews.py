@@ -64,7 +64,7 @@ async def test_preview_create_updates_content_only():
 @pytest.mark.anyio
 async def test_launch_editor_skips_confirmation():
     """Tests that skip_confirm=True bypasses the ConfirmScreen modal."""
-    from teddy_executor.adapters.inbound.textual_plan_reviewer_previews import (
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_editor import (
         launch_editor,
     )
 
@@ -83,7 +83,7 @@ async def test_launch_editor_skips_confirmation():
     with (
         patch("builtins.open", mock_open(read_data="formatted log")),
         patch(
-            "teddy_executor.adapters.inbound.textual_plan_reviewer_previews.spawn_editor"
+            "teddy_executor.adapters.inbound.textual_plan_reviewer_editor.spawn_editor"
         ) as mock_spawn,
     ):
         result = await launch_editor(app, "initial", skip_confirm=True)
