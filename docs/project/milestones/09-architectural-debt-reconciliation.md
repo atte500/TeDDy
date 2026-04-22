@@ -19,6 +19,7 @@ To harden the system's architecture by resolving systemic technical debt that co
 
 ## 5. Technical Debt
 - [ ] [Code Quality] Refactor `tests/harness/setup/test_environment.py` to meet 300-line limit (currently 308 lines).
+- [ ] [Architectural] Refactor `ActionFactory` to group port dependencies and reduce argument count (PLR0913).
 - [ ] [Architectural] Refactor `ActionFactory` to remove `punq` dependency.
 - [ ] [Architectural] Refactor `TestEnvironment` to hide `punq` registration logic.
 - [ ] [Security] Resolve pip-audit vulnerabilities: lxml (6.1.0), pytest (9.0.3), python-dotenv (1.2.2).

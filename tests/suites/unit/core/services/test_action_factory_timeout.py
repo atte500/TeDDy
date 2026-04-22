@@ -1,8 +1,5 @@
-from teddy_executor.core.services.action_factory import IActionFactory
-
-
-def test_action_factory_injects_global_timeout_into_shell_execution(
-    container, mock_config, mock_shell
+def test_action_factory_injects_global_timeout_into_shell_execution(  # noqa: PLR0913
+    mock_shell, mock_fs, mock_user_interactor, mock_scraper, mock_searcher, mock_config
 ):
     """
     Asserts that ActionFactory retrieves the global default timeout
@@ -18,7 +15,16 @@ def test_action_factory_injects_global_timeout_into_shell_execution(
     # Capture the mock method before ActionFactory monkeypatches it
     original_execute = mock_shell.execute
 
-    factory = container.resolve(IActionFactory)
+    from teddy_executor.core.services.action_factory import ActionFactory
+
+    factory = ActionFactory(
+        shell_executor=mock_shell,
+        file_system_manager=mock_fs,
+        user_interactor=mock_user_interactor,
+        web_scraper=mock_scraper,
+        web_searcher=mock_searcher,
+        config_service=mock_config,
+    )
     action = factory.create_action("EXECUTE", params={"command": "echo test"})
 
     # Act

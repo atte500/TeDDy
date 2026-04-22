@@ -62,10 +62,21 @@ def _register_services(container: punq.Container) -> None:
 
     register_reviewer(container)
 
+    from teddy_executor.core.ports.outbound import (
+        IShellExecutor,
+        IWebScraper,
+        IWebSearcher,
+    )
+
     container.register(
         IActionFactory,
         factory=lambda: ActionFactory(
-            container=container, config_service=container.resolve(IConfigService)
+            shell_executor=container.resolve(IShellExecutor),
+            file_system_manager=container.resolve(IFileSystemManager),
+            user_interactor=container.resolve(IUserInteractor),
+            web_scraper=container.resolve(IWebScraper),
+            web_searcher=container.resolve(IWebSearcher),
+            config_service=container.resolve(IConfigService),
         ),
         scope=punq.Scope.transient,
     )

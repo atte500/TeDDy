@@ -24,7 +24,7 @@ def orchestrator_no_config(container):
 
 
 def test_execute_action_uses_hardcoded_timeout_fallback_when_config_is_missing(
-    orchestrator_no_config, mock_shell
+    mock_shell, orchestrator_no_config
 ):
     """
     Given a Plan with an EXECUTE action and a missing .teddy/config.yaml,
@@ -55,7 +55,7 @@ def test_execute_action_uses_hardcoded_timeout_fallback_when_config_is_missing(
 
 
 def test_edit_action_uses_hardcoded_similarity_fallback_when_config_is_missing(
-    container, mock_fs
+    mock_fs, container
 ):
     """
     Given a Plan with an EDIT action and a missing .teddy/config.yaml,

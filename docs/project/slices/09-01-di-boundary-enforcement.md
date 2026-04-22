@@ -40,10 +40,10 @@ And the method MUST return the mock instance for further configuration
 ## Deliverables
 1. [x] **Harness** - Implement `check-core-di-boundary` local pre-commit hook in `.pre-commit-config.yaml`.
 2. [x] **Seam** - Add `mock_port` method to `TestEnvironment` in `tests/harness/setup/test_environment.py`.
-3. [ ] **Logic** - Refactor `ActionFactory` in `src/teddy_executor/core/services/action_factory.py` to use constructor injection.
-4. [ ] **Wiring** - Update `src/teddy_executor/container.py` to resolve and inject dependencies into `ActionFactory`.
+3. [x] **Logic** - Refactor `ActionFactory` in `src/teddy_executor/core/services/action_factory.py` to use constructor injection.
+4. [x] **Wiring** - Update `src/teddy_executor/container.py` to resolve and inject dependencies into `ActionFactory`.
 5. [ ] **Refactor** - Update `tests/harness/setup/test_environment.py` and existing tests to use `env.mock_port()`.
-6. [ ] **Cleanup** - Remove `punq` import from `src/teddy_executor/core/services/action_factory.py`.
+6. [x] **Cleanup** - Remove `punq` import from `src/teddy_executor/core/services/action_factory.py`.
 
 ## Delta Analysis
 - The `ActionFactory` currently resolves handlers on-the-fly from the container. After refactoring, it will use stored references to the injected ports.
@@ -63,3 +63,8 @@ And the method MUST return the mock instance for further configuration
 - **Portability:** The method uses `type[T]` and `cast(T, mock)` to provide full type safety for callers, allowing IDEs to resolve the mock's interface.
 - **Consistency:** By centralizing the registration logic, we ensure that every mock registered through `TestEnvironment` is a `UnifiedMock` (async-aware and POSIX-normalizing).
 - **[DEBT]:** `tests/harness/setup/test_environment.py` has grown to 308 lines, exceeding the 300-line limit. This is a structural friction that requires moving the mock helper classes (`POSIXPathMock`, `UnifiedMock`) to a dedicated file. This refactor is deferred to avoid out-of-scope work during this feature slice.
+
+### Deliverable 3 & 4 & 6: ActionFactory Refactor
+- **Side-Effect Elimination:** Discovered that monkeypatching shared adapter instances (e.g., `mock_shell`) in `ActionFactory` caused state leakage and brittle failures in integration tests. Refactored to a **Decorator pattern** using an `ActionWrapper` class to keep port instances pristine.
+- **Fixture Ordering:** Found that integration tests using `container.resolve()` are sensitive to fixture resolution order. Mocks MUST be requested/injected into the test function before the orchestrator is resolved to ensure the container contains the mocks when the orchestrator's dependencies (like `ActionFactory`) are instantiated.
+- **Boundary Verification:** The removal of `punq` from `ActionFactory` was verified using the `check-core-di-boundary` hook.

@@ -1,5 +1,4 @@
-from typing import Any, Dict, Type, Optional
-import punq
+from typing import Any, Dict, Optional
 from teddy_executor.core.ports.outbound import (
     IShellExecutor,
     IFileSystemManager,
@@ -48,21 +47,29 @@ class ActionFactory(IActionFactory):
         "RETURN": "return",
     }
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
-        container: punq.Container,
+        shell_executor: IShellExecutor,
+        file_system_manager: IFileSystemManager,
+        user_interactor: IUserInteractor,
+        web_scraper: IWebScraper,
+        web_searcher: IWebSearcher,
         config_service: Optional[IConfigService] = None,
     ):
-        self._container = container
+        self._shell_executor = shell_executor
+        self._file_system_manager = file_system_manager
+        self._user_interactor = user_interactor
+        self._web_scraper = web_scraper
+        self._web_searcher = web_searcher
         self._config_service = config_service
         self._standalone_actions = {InvokeAction, PruneAction, ConcludeAction}
-        self._action_map: Dict[str, Type] = {
-            "execute": IShellExecutor,
-            "create_file": IFileSystemManager,
-            "edit": IFileSystemManager,
-            "read_file": IFileSystemManager,
-            "prompt": IUserInteractor,
-            "research": IWebSearcher,
+        self._action_map: Dict[str, Any] = {
+            "execute": self._shell_executor,
+            "create_file": self._file_system_manager,
+            "edit": self._file_system_manager,
+            "read_file": self._file_system_manager,
+            "prompt": self._user_interactor,
+            "research": self._web_searcher,
             "invoke": InvokeAction,
             "prune": PruneAction,
             "return": ConcludeAction,
@@ -83,33 +90,40 @@ class ActionFactory(IActionFactory):
         safe_params = params or {}
         resource = safe_params.get("resource", safe_params.get("path", ""))
         if resource.startswith("http"):
-            action_handler = self._container.resolve(IWebScraper)
-            setattr(
-                action_handler,
-                "execute",
-                lambda **kwargs: action_handler.get_content(url=kwargs["path"]),
-            )
-            return action_handler
+            # Return a wrapper instead of monkeypatching the adapter
+            class WebReadAction:
+                def __init__(self, scraper):
+                    self._scraper = scraper
+
+                def execute(self, **kwargs: Any) -> Any:
+                    return self._scraper.get_content(url=kwargs["path"])
+
+            return WebReadAction(self._web_scraper)
         # Fall through to the standard file system handler for local files
         return self._create_standard_action("read_file", params)
 
-    def _wrap_method_as_execute(self, handler: Any, method_name: str) -> None:
-        """Binds an adapter method to the 'execute' protocol."""
+    def _get_action_wrapper(self, handler: Any, method_name: str) -> IAction:
+        """Returns an IAction wrapper around an adapter method."""
         original_method = getattr(handler, method_name)
 
-        def execute_wrapper(**kwargs: Any) -> Any:
-            if "resource" in kwargs and "path" not in kwargs:
-                kwargs["path"] = kwargs.pop("resource")
+        class ActionWrapper:
+            def __init__(self, factory, method):
+                self._factory = factory
+                self._method = method
 
-            if method_name == "execute":
-                return self._handle_execute_protocol(original_method, kwargs)
-            if method_name == "edit_file":
-                return self._handle_edit_protocol(original_method, kwargs)
-            if method_name == "ask_question":
-                return self._handle_prompt_protocol(original_method, kwargs)
-            return original_method(**kwargs)
+            def execute(self, **kwargs: Any) -> Any:
+                if "resource" in kwargs and "path" not in kwargs:
+                    kwargs["path"] = kwargs.pop("resource")
 
-        setattr(handler, "execute", execute_wrapper)
+                if method_name == "execute":
+                    return self._factory._handle_execute_protocol(self._method, kwargs)
+                if method_name == "edit_file":
+                    return self._factory._handle_edit_protocol(self._method, kwargs)
+                if method_name == "ask_question":
+                    return self._factory._handle_prompt_protocol(self._method, kwargs)
+                return self._method(**kwargs)
+
+        return ActionWrapper(self, original_method)
 
     def _handle_execute_protocol(self, method: Any, kwargs: dict) -> Any:
         """Handles the complex parameter injection for the EXECUTE action."""
@@ -160,11 +174,9 @@ class ActionFactory(IActionFactory):
         if action_type_key not in self._action_map:
             raise ValueError(f"Unknown action type: '{action_type}'")
 
-        adapter_protocol = self._action_map[action_type_key]
-        if adapter_protocol in self._standalone_actions:
-            return adapter_protocol()
-
-        action_handler = self._container.resolve(adapter_protocol)
+        action_handler = self._action_map[action_type_key]
+        if action_handler in self._standalone_actions:
+            return action_handler()
 
         method_map = {
             "create_file": "create_file",
@@ -183,8 +195,7 @@ class ActionFactory(IActionFactory):
                 )
             return action_handler
 
-        self._wrap_method_as_execute(action_handler, method_map[action_type_key])
-        return action_handler
+        return self._get_action_wrapper(action_handler, method_map[action_type_key])
 
     def create_action(self, action_type: str, params: Optional[dict] = None) -> IAction:
         """
