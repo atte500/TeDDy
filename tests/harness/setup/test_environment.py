@@ -159,7 +159,7 @@ class TestEnvironment(RealAdapterMixin):
         self.with_real_filesystem()
         self.with_real_init_service()
 
-    def mock_port(self, port_type: type[T]) -> T:
+    def mock_port(self, port_type: Any) -> Any:
         """
         Creates, registers, and returns a UnifiedMock for a specific port.
         This is the preferred way to mock dependencies in tests.

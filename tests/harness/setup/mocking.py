@@ -1,8 +1,11 @@
 import inspect
-from typing import Any, TypeVar, cast
+from typing import Any, TypeVar
 from unittest.mock import AsyncMock, MagicMock, _Call
 
 T = TypeVar("T")
+
+# Type alias to satisfy Mypy when accessing return_value/side_effect on mocked ports
+Mocked = Any  # fallback for complex proxying, but we'll try to cast specifically
 
 
 class POSIXPathMock(MagicMock):
@@ -108,11 +111,11 @@ class AsyncAsyncPOSIXMock(POSIXPathMock, AsyncMock):
     pass
 
 
-def register_mock(container: Any, port_type: type[T]) -> T:
+def register_mock(container: Any, port_type: Any) -> Any:
     """
     Creates, registers, and returns a UnifiedMock for a specific port.
     This is the preferred way to mock dependencies in tests.
     """
     mock = UnifiedMock(spec=port_type)
     container.register(port_type, instance=mock)
-    return cast(T, mock)
+    return mock

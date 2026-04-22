@@ -66,14 +66,14 @@ class SessionOrchestrator(IRunPlanUseCase):
 
         # 1. Parsing
         if not plan:
-            # Type hint content as str to satisfy subsequent calls
-            content: str = plan_content or (
-                await anyio.to_thread.run_sync(
+            # Ensure content is always a string to satisfy subsequent calls
+            fetched_content = ""
+            if plan_path:
+                fetched_content = await anyio.to_thread.run_sync(
                     self._file_system_manager.read_file, plan_path
                 )
-                if plan_path
-                else ""
-            )
+
+            content: str = plan_content if plan_content is not None else fetched_content
             # Cast or hint plan as non-Optional Plan for logical validation
             plan = cast(
                 Plan,
