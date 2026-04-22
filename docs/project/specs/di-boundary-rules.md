@@ -18,11 +18,11 @@ To make the TeDDy workflow anti-fragile, we enforce the following rules:
 
 ## Technical Specification
 
-### 1. The CI Poka-Yoke (Physical Boundary)
-A pre-commit hook must be implemented to enforce the boundary.
-- **Trigger:** Any change to files in `src/teddy_executor/core/`.
-- **Validation:** Scan for `import punq` or `from punq`.
-- **Action:** Fail the commit if an import is found.
+### 1. The Pre-commit Boundary Gate (Physical Enforcement)
+The Architect MUST implement a custom pre-commit hook as part of the foundational pre-commit suite to physically enforce the boundary.
+- **Scope:** Strictly enforced on all files within `src/teddy_executor/core/`.
+- **Validation Rule:** Use a regex-based scanner (or `import-linter`) to detect any occurrence of `import punq` or `from punq`.
+- **Action:** Halt the commit process and report the violation with a clear explanation of the DI Boundary Rule.
 
 ### 2. ActionFactory Refactoring
 The `ActionFactory` must be refactored to remove the `punq.Container` dependency.
