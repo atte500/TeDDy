@@ -1,6 +1,6 @@
 # Milestone 09: Architectural Debt Reconciliation
 
-- **Status:** In Progress
+- **Status:** Completed
 
 ## 1. Goal (The "Why")
 To harden the system's architecture by resolving systemic technical debt that compromises testability, isolation, and maintenance. This milestone focuses on enforcing strict boundaries and improving the developer experience within the test harness.
@@ -19,10 +19,10 @@ To harden the system's architecture by resolving systemic technical debt that co
 - [x] [Slice 09-02: Structural Hardening & Security](../slices/09-02-structural-hardening-and-security.md)
 - [x] [Slice 09-03: File Length Debt Reconciliation](../slices/09-03-file-length-debt-reconciliation.md)
 - [x] [Slice 09-04: Final Debt Cleanup](../slices/09-04-final-debt-cleanup.md)
-- [▶] [Slice 09-05: Type-Safe Dead Code Whitelisting](../slices/09-05-type-safe-vulture-whitelist.md)
+- [x] [Slice 09-05: Type-Safe Dead Code Whitelisting](../slices/09-05-type-safe-vulture-whitelist.md)
 
 ## 5. Technical Debt
-- [▶] [Code Quality] Transition to type-safe Vulture whitelist (Slice 09-05).
+- [x] [Code Quality] Transition to type-safe Vulture whitelist (Slice 09-05).
 - [x] [Code Quality] Refactor `src/teddy_executor/core/services/session_orchestrator.py` to meet 300-line limit (currently 487 lines -> 286 lines).
 - [x] [Code Quality] Refactor `src/teddy_executor/adapters/outbound/shell_adapter.py` to meet 300-line limit (currently 340 lines).
 - [x] [Code Quality] Refactor `src/teddy_executor/core/services/markdown_plan_parser.py` to meet 300-line limit (currently 244 lines).

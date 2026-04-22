@@ -1,26 +1,18 @@
 # Component: Vulture Whitelist
-- **Status:** Planned
+- **Status:** Implemented
 
 ## Purpose / Responsibility
-The Vulture Whitelist module (`tests/harness/vulture_whitelist.py`) is a first-class citizen of the test harness. Its sole responsibility is to provide static usage of code that is called dynamically or implicitly by frameworks (like Textual or DI containers) to prevent false-positive "dead code" reports from Vulture.
+The `vulture_whitelist` is a specialized test harness component designed to suppress false positives in dead-code detection while maintaining type-safe verification. It solves the problem of dynamic framework callbacks (like Textual's `on_mount` or Typer's CLI handlers) and abstract method parameters that appear "unused" to static analysis.
 
-## Ports
-### Inbound
-- **Vulture Runner:** Reads this file as part of its scanning paths.
+## Logic / Implementation
+This component uses a **Hybrid Whitelist Strategy**:
+1. **Python Whitelist:** A dedicated module (`tests/harness/vulture_whitelist.py`) that simulates usage of domain types, interfaces, and framework patterns. Because it uses actual imports and type-hints, `mypy` and `ruff` verify that the whitelist itself remains accurate as the codebase evolves. It uses `from __future__ import annotations` to ensure Vulture can track usage within type hints.
+2. **TOML Suppression:** Generic, noisy parameter names (e.g., `path`, `text`, `reason`, `old_path`) are suppressed in `pyproject.toml` to avoid polluting the Python manifest with non-architectural noise.
 
-### Outbound
-- **Core Ports:** The whitelist imports and "calls" methods on these interfaces.
-- **TUI Adapters:** The whitelist "uses" Textual message handlers (e.g., `on_mount`).
+## Usage in Quality Gates
+- **Vulture:** Reads the whitelist to see "usage" of dynamic names.
+- **Mypy:** Verifies that all types referenced in the whitelist exist and are correctly imported.
+- **Ruff:** Exempts the whitelist from complexity rules (C901, PLR0915) to allow it to serve as a flat manifest of references.
 
-## Implementation Details / Logic
-The module should be structured as a collection of "Usage Simulators". Each simulator function should take a relevant interface as an argument and invoke the methods that Vulture otherwise considers unused.
-
-### Rules
-1. **Valid Python:** The file MUST be valid Python and pass `mypy` and `ruff`.
-2. **No Execution:** This file is never executed at runtime or during tests; it exists only for static analysis.
-3. **Interface-Driven:** Favor using actual Port interfaces to protect abstract methods.
-4. **Framework Handlers:** For Textual handlers, use a dummy class that inherits from the relevant base class to protect the standard handler names (`on_mount`, `compose`, etc.).
-
-## Data Contracts / Methods
-- `whitelist_textual_handlers()`: Simulates usage of standard Textual lifecycle methods.
-- `whitelist_core_ports(ports: ActionPorts)`: Simulates usage of all methods across the core outbound ports.
+## Maintenance Rule
+When adding a new dynamic callback (e.g., a new Textual `action_*` method or a new Port interface), the Developer MUST add a corresponding simulation entry in `tests/harness/vulture_whitelist.py`.
