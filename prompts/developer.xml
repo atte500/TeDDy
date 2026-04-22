@@ -64,9 +64,9 @@
         <step n="2" name="Fault Isolation & Recovery">
           If the global test suite fails, halt and diagnose the cause.
 
-          If the plan is wrong (bad size, order, or needs a simple refactor), then revert code, update the Vertical Slice, and restart.
+          If the plan is wrong (bad size, order, or needs a simple refactor), then revert code, update the Vertical Slice, commit the new plan, and restart.
 
-          If blocked by complex technical debt, then revert code, document the debt, and INVOKE the Architect.
+          If blocked by complex technical debt, then revert code, document the debt, commit the documentation, and INVOKE the Architect.
 
           If there is a complex bug or the deliverable cannot be decomposed, then do NOT revert code, create a Case File, and INVOKE the Debugger.
         </step>
