@@ -39,7 +39,7 @@ And the system MUST continue to function correctly on all OS matrices
 - [x] **Logic** - Extract prompt resolution and alignment logic from `PlanningService` to a `PromptManager` or internal helper.
 - [x] **Cleanup** - Verify `ShellAdapter`, `ExecutionOrchestrator`, and `PlanningService` pass the `file-length-python` quality gate.
 - [x] **Logic** - Extract session migration and path management logic from `SessionService` to `SessionRepository`.
-- [ ] **Logic** - Extract Markdown block parsing strategies from `MarkdownPlanParser` to a strategy registry or internal helpers.
+- [x] **Logic** - Extract Markdown block parsing strategies from `MarkdownPlanParser` to a strategy registry or internal helpers.
 - [ ] **Logic** - Extract TUI preview formatting from `textual_plan_reviewer_previews.py`.
 - [ ] **Cleanup** - Final verification of `file-length-python` gate.
 
@@ -90,4 +90,11 @@ And the system MUST continue to function correctly on all OS matrices
 - Defined `ISessionRepository` outbound port to satisfy DI boundary rules.
 - `SessionService` now depends on `ISessionRepository` via constructor injection.
 - Verified line count: `SessionService.py` is now 269 lines (under the 300-line limit).
+- Global integration verified: 644 tests green.
+
+### Deliverable: Extract Markdown block parsing strategies from `MarkdownPlanParser`
+- Extracted `validate_plan_structure` to `parser_reporting.py` and `parse_plan_metadata` to `parser_metadata.py`.
+- Resolved a circular import between `infrastructure` and `reporting` by keeping the structural validator in the reporting module (which already depended on infrastructure).
+- `MarkdownPlanParser` now coordinates top-level flow using these helpers.
+- Verified line count: `MarkdownPlanParser.py` is now 243 lines (under the 300-line limit).
 - Global integration verified: 644 tests green.

@@ -12,14 +12,17 @@ from teddy_executor.core.domain.models import ActionData, Plan, ActionType
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser, InvalidPlanError
 from teddy_executor.core.services.parser_infrastructure import (
     H1_LEVEL,
-    H2_LEVEL,
     _FencePreProcessor,
     _PeekableStream,
     get_child_text,
     get_action_heading,
     print_ast,
 )
-from teddy_executor.core.services.parser_reporting import format_structural_mismatch_msg
+from teddy_executor.core.services.parser_reporting import (
+    format_structural_mismatch_msg,
+    validate_plan_structure,
+)
+from teddy_executor.core.services.parser_metadata import parse_plan_metadata
 from teddy_executor.core.services.action_parser_strategies import (
     parse_create_action,
     parse_read_action,
@@ -169,7 +172,7 @@ class MarkdownPlanParser(IPlanParser):
 
         title = get_child_text(node).strip()
 
-        self._validate_top_level_schema(doc, start_idx)
+        validate_plan_structure(doc, start_idx)
 
         # If we got here, the structure is correct. Consume nodes and extract data.
         stream.next()  # Title (already used)
@@ -179,13 +182,7 @@ class MarkdownPlanParser(IPlanParser):
                 "Plan parsing failed: Expected metadata list missing."
             )
 
-        metadata = {}
-        list_children = getattr(metadata_list_node, "children", [])
-        for item in list_children if list_children is not None else []:
-            text = get_child_text(item).strip()
-            if ":" in text:
-                key, value = text.split(":", 1)
-                metadata[key.strip("* ")] = value.strip()
+        metadata = parse_plan_metadata(metadata_list_node)
 
         stream.next()  # H2 Rationale
         rationale_node = stream.next()
@@ -193,63 +190,6 @@ class MarkdownPlanParser(IPlanParser):
         stream.next()  # H2 Action Plan
 
         return title, rationale, metadata
-
-    def _validate_top_level_schema(self, doc: Document, start_idx: int):
-        """Validates the structural schema of the top-level nodes (C901)."""
-        from mistletoe.block_token import (
-            BlockCode,
-            CodeFence,
-            Heading,
-            List as MdList,
-        )
-
-        doc_children = doc.children if doc.children is not None else []
-        children = list(doc_children)
-        expected_schema = [
-            (
-                "a List (Metadata) immediately following the title",
-                lambda n: isinstance(n, MdList),
-            ),
-            (
-                "a Level 2 Heading containing 'Rationale'",
-                lambda n: (
-                    isinstance(n, Heading)
-                    and n.level == H2_LEVEL
-                    and "Rationale" in get_child_text(n)
-                ),
-            ),
-            (
-                "a CodeFence or BlockCode containing the rationale content",
-                lambda n: isinstance(n, (CodeFence, BlockCode)),
-            ),
-            (
-                "a Level 2 Heading containing 'Action Plan'",
-                lambda n: (
-                    isinstance(n, Heading)
-                    and n.level == H2_LEVEL
-                    and "Action Plan" in get_child_text(n)
-                ),
-            ),
-        ]
-
-        offending_nodes = []
-        primary_mismatch = None
-
-        for i, (expected_desc, predicate) in enumerate(expected_schema):
-            target_idx = start_idx + 1 + i
-            actual_node = children[target_idx] if target_idx < len(children) else None
-
-            if not actual_node or not predicate(actual_node):
-                offending_nodes.append(actual_node)
-                if primary_mismatch is None:
-                    primary_mismatch = (expected_desc, target_idx, actual_node)
-
-        if offending_nodes and primary_mismatch is not None:
-            expected_desc, target_idx, actual_node = primary_mismatch
-            error_msg = format_structural_mismatch_msg(
-                doc, expected_desc, target_idx, offending_nodes
-            )
-            raise InvalidPlanError(error_msg, offending_nodes=offending_nodes)
 
     def _parse_actions(
         self, stream: _PeekableStream, doc: Document

@@ -1,11 +1,8 @@
 import os
-from typing import Any, List, Optional, Iterator
-from typing import TYPE_CHECKING
+from typing import Any, List, Optional, Iterator, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from mistletoe.block_token import (
-        Heading,
-    )
+    from mistletoe.block_token import Heading
 
 # Constants for Markdown structure
 H1_LEVEL = 1

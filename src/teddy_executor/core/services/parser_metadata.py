@@ -47,6 +47,18 @@ def _process_text_key(text: str, key_map: dict[str, str]) -> Optional[tuple[str,
     return None
 
 
+def parse_plan_metadata(metadata_list_node: "MdList") -> dict[str, str]:
+    """Parses top-level plan metadata list."""
+    metadata = {}
+    list_children = getattr(metadata_list_node, "children", [])
+    for item in list_children if list_children is not None else []:
+        text = get_child_text(item).strip()
+        if ":" in text:
+            key, value = text.split(":", 1)
+            metadata[key.strip("* ")] = value.strip()
+    return metadata
+
+
 def parse_action_metadata(
     metadata_list: "MdList",
     link_key_map: Optional[dict[str, str]] = None,

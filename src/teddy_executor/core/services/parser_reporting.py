@@ -1,16 +1,14 @@
-from typing import Any, List
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from mistletoe.block_token import (
-        Document,
-    )
+from typing import Any, List, TYPE_CHECKING
 from teddy_executor.core.domain.models.plan import Plan
+from teddy_executor.core.ports.inbound.plan_parser import InvalidPlanError
 from teddy_executor.core.services.parser_infrastructure import (
     get_child_text,
     H2_LEVEL,
     H3_LEVEL,
 )
+
+if TYPE_CHECKING:
+    from mistletoe.block_token import Document
 from teddy_executor.core.utils.markdown import get_fence_for_content
 
 # Maximum length for AST node previews in error reports
@@ -167,6 +165,64 @@ def get_action_type_from_node(plan: Plan, offending_node: Any) -> str:
                 return get_child_text(nodes[i]).strip().replace("`", "")
 
     return get_child_text(offending_node).strip().replace("`", "")
+
+
+def validate_plan_structure(doc: "Document", start_idx: int):
+    """Validates the structural schema of the top-level nodes."""
+    from mistletoe.block_token import (
+        BlockCode,
+        CodeFence,
+        Heading,
+        List as MdList,
+    )
+
+    doc_children = doc.children if doc.children is not None else []
+    children = list(doc_children)
+    expected_schema = [
+        (
+            "a List (Metadata) immediately following the title",
+            lambda n: isinstance(n, MdList),
+        ),
+        (
+            "a Level 2 Heading containing 'Rationale'",
+            lambda n: (
+                isinstance(n, Heading)
+                and n.level == H2_LEVEL
+                and "Rationale" in get_child_text(n)
+            ),
+        ),
+        (
+            "a CodeFence or BlockCode containing the rationale content",
+            lambda n: isinstance(n, (CodeFence, BlockCode)),
+        ),
+        (
+            "a Level 2 Heading containing 'Action Plan'",
+            lambda n: (
+                isinstance(n, Heading)
+                and n.level == H2_LEVEL
+                and "Action Plan" in get_child_text(n)
+            ),
+        ),
+    ]
+
+    offending_nodes = []
+    primary_mismatch = None
+
+    for i, (expected_desc, predicate) in enumerate(expected_schema):
+        target_idx = start_idx + 1 + i
+        actual_node = children[target_idx] if target_idx < len(children) else None
+
+        if not actual_node or not predicate(actual_node):
+            offending_nodes.append(actual_node)
+            if primary_mismatch is None:
+                primary_mismatch = (expected_desc, target_idx, actual_node)
+
+    if offending_nodes and primary_mismatch is not None:
+        expected_desc, target_idx, actual_node = primary_mismatch
+        error_msg = format_structural_mismatch_msg(
+            doc, expected_desc, target_idx, offending_nodes
+        )
+        raise InvalidPlanError(error_msg, offending_nodes=offending_nodes)
 
 
 def format_structural_mismatch_msg(
