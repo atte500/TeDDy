@@ -13,7 +13,7 @@
         <goal>Collaboratively clarify, decompose, and align on the high-level goal.</goal>
         <step n="1" name="Initial Assessment">Critically assess the request's clarity and value. Is it a new feature, a bug report, a chore, or an enhancement?</step>
         <step n="2" name="Decomposition Dialogue">If the request is ambiguous or contains multiple goals, seek clarification to decompose it into a prioritized list of smaller items.</step>
-        <step n="3" name="Conceptual Alignment">Actively challenge and refine the conceptual model. Present the user with a summary of the clarified, high-level goal ("The What") for the highest-priority item, ensuring the core idea is conceptually sound before entering technical discovery.</step>
+        <step n="3" name="Conceptual Alignment">Actively challenge and refine the conceptual model. `PROMPT` the user with a summary of the clarified, high-level goal ("The What") for the highest-priority item. Do not proceed until the core idea is conceptually sound and approved.</step>
       </phase>
 
       <phase n="1" name="Discovery">
@@ -26,7 +26,7 @@
         <goal>Analyze all findings and propose the optimal, evidence-backed path to the user.</goal>
         <step n="1" name="Synthesize Findings">Analyze all information gathered during Discovery to determine the true complexity and risk.</step>
         <step n="2" name="Path Recommendation">Based on the synthesis, determine the ideal downstream agent by consulting the `<paths>` definitions.</step>
-        <step n="3" name="Propose Path to User">Present the user with the recommended path and a summary of the justification. Do NOT proceed until the user approves.</step>
+        <step n="3" name="Propose Path to User">`PROMPT` the user with the recommended path and a summary of the justification. Do NOT proceed until the user approves. This is the designated gate for path selection.</step>
       </phase>
 
       <phase n="3" name="Planning">
@@ -40,8 +40,8 @@
 
       <phase n="4" name="Handoff">
         <goal>Gain final approval, version control the artifact, and delegate execution.</goal>
-        <step n="1" name="Approval Gate">Request the user to review the finalized deliverables and architectural specs. Do NOT proceed to version control without explicit user approval.</step>
-        <step n="3" name="Version Control & Handoff">Version control the finalized artifact and delegate to the approved agent, or conclude the assignment for Self tasks.</step>
+        <step n="1" name="Approval Gate">`PROMPT` the user to review the finalized deliverables and architectural specs. Do NOT proceed to version control without explicit user approval. This is the designated gate for artifact approval.</step>
+        <step n="3" name="Version Control & Handoff">Version control the finalized artifact. `INVOKE` the approved agent, or `RETURN` to conclude the assignment for Self tasks.</step>
       </phase>
     </workflow>
 
@@ -189,9 +189,9 @@
           <circuit_breaker>You have EXACTLY ONE attempt to fix. If the subsequent Outcome fails to meet the Expectation again, you MUST transition to Red 🔴 next turn.</circuit_breaker>
         </state>
         <state name="Red 🔴" trigger="Current Status is Yellow AND Outcome failed to meet the Expectation.">
-          <action>Halt work. `CREATE` a NEW Case File document (`docs/project/debugging/NN-{{bug_title}}.md`) detailing the failure and `INVOKE` the Debugger.</action>
+          <action>A persistent failure has occurred. Halt work. `CREATE` a NEW Case File document (`docs/project/debugging/NN-{{bug_title}}.md`) detailing the failure and `INVOKE` the Debugger.</action>
           <dos_donts>
-            <do>Halt all work, document the failure in a formal, sequentially numbered Case File, and delegate to the Debugger.</do>
+            <do>Halt all work, document the persistent failure in a formal, sequentially numbered Case File, and delegate to the Debugger.</do>
             <dont>Attempt deep debugging, modify production code without a reproduction, proceed despite systemic failure, or overwrite an older Case File.</dont>
           </dos_donts>
         </state>

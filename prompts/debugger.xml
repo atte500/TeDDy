@@ -59,7 +59,7 @@
         <goal>Clean up the workspace and conclude the assignment.</goal>
         <step n="1" name="Teardown">Run `git status`. Explicitly delete all redundant diagnostic scripts, temporary logs, patch files (`.tmp/fix.patch`), and probes unless permanently promoted to tests. After deletion, run `git add .` to ensure the deletions are staged.</step>
         <step n="2" name="Finalize Case File">Update the Case File. Populate the `## Solution` section. Ensure `### Investigation History` is preserved (never delete it). Change status to Resolved.</step>
-        <step n="3" name="Handoff">Yield control back to the user or calling agent.</step>
+        <step n="3" name="Handoff">`RETURN` control to the user or calling agent to conclude the assignment.</step>
       </phase>
     </workflow>
 
@@ -78,10 +78,10 @@
           <circuit_breaker>You have EXACTLY ONE attempt to fix. If the subsequent Outcome matches the Failure condition again, you MUST transition to Red 🔴 next turn.</circuit_breaker>
         </state>
       <state name="Red 🔴" trigger="Current Status is Yellow AND Outcome matched the Failure condition.">
-          <action>Log Attempt & Restart. Halt the current attempt, document it in the Case File, and restart the debugging process from Phase 1.</action>
+          <action>Your Causal Model has been invalidated by a persistent failure. You MUST log the failed attempt in the Investigation History and then restart the entire workflow from Phase 1 (Reproduction) to build a new, more accurate model based on all available evidence.</action>
           <dos_donts>
-            <do>1. STOP the current attempt. 2. Update the Case File: Append the failed attempt to `### Investigation History` and update the `## Context & Scope` and `### Causal Model` sections with any new, verified information learned from the failure. 3. On the next turn, re-enter Phase 1 (Reproduction) to re-verify the MRE and re-gather context based on the new findings.</do>
-            <dont>Persist with a failing approach, attempt further fixes without re-evaluating, or `RETURN` control.</dont>
+            <do>1. STOP the current attempt. 2. Update the Case File: Append the failed attempt to `### Investigation History` and update the `## Context & Scope` and `### Causal Model` sections with any new, verified information learned from the failure. This forces you to learn from the failure. 3. On the next turn, re-enter Phase 1 (Reproduction) to re-verify the MRE and re-gather context based on the new findings.</do>
+            <dont>Persist with a failing approach, attempt further fixes without re-evaluating the Causal Model, or `RETURN` control.</dont>
           </dos_donts>
         </state>
       </rule>

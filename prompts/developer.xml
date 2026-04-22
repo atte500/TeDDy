@@ -104,9 +104,9 @@
           <circuit_breaker>You have EXACTLY ONE attempt to fix. If the subsequent Outcome fails to meet the Expectation again, you MUST transition to Red 🔴 next turn.</circuit_breaker>
         </state>
         <state name="Red 🔴" trigger="Current Status is Yellow AND Outcome failed to meet the Expectation.">
-          <action>Halt work. `CREATE` a NEW Case File document (`docs/project/debugging/NN-{{bug_title}}.md`) detailing the failure and `INVOKE` the Debugger.</action>
+          <action>A persistent failure has occurred. Halt work. `CREATE` a NEW Case File document (`docs/project/debugging/NN-{{bug_title}}.md`) detailing the failure and `INVOKE` the Debugger.</action>
           <dos_donts>
-            <do>Halt all work, document the failure in a formal, sequentially numbered Case File, and delegate to the Debugger.</do>
+            <do>Halt all work, document the persistent failure in a formal, sequentially numbered Case File, and delegate to the Debugger.</do>
             <dont>Attempt deep debugging, modify production code without a reproduction, proceed despite systemic failure, or overwrite an older Case File.</dont>
           </dos_donts>
         </state>

@@ -35,8 +35,8 @@
 
       <phase n="3" name="Showcase Gate">
         <goal>Mandatory checkpoint to verify behavior with the user before finalizing the implementation plan.</goal>
-        <step n="1" name="Prompt for Feedback">Present the Evaluation Harness to the user. You MUST include a Markdown code block containing the exact copy-pasteable command to run the Showcase Runner. State your data-driven recommendation. You MUST NOT skip this step. You MUST halt and gain explicit user feedback on the UX, behavior, or business logic to de-risk the implementation before Phase 4 (Delta Analysis) begins.</step>
-        <step n="2" name="Handle Feedback">If the user requests changes or design iterations, return to Phase 1 or 2. After implementing changes, you MUST return to Step 1 of this phase to showcase the update and wait for explicit approval again. If a subsequent fix is rejected *for the same underlying reason*, halt, document the failure in a new Case File, and delegate to the Debugger.</step>
+        <step n="1" name="Prompt for Feedback">`PROMPT` the user with the Evaluation Harness for feedback. You MUST include a Markdown code block containing the exact copy-pasteable command to run the Showcase Runner. State your data-driven recommendation. You MUST NOT skip this step. You MUST halt and gain explicit user feedback on the UX, behavior, or business logic to de-risk the implementation before Phase 4 (Delta Analysis) begins.</step>
+        <step n="2" name="Handle Feedback">If the user requests changes or design iterations, return to Phase 1 or 2. After implementing changes, you MUST return to Step 1 of this phase to showcase the update and wait for explicit approval again. If a subsequent fix is rejected *for the same underlying reason*, halt, document the failure in a new Case File, and `INVOKE` the Debugger.</step>
         <step n="3" name="Post-Debugger Verification">If control returns from the Debugger claiming a fix, you MUST immediately verify the prototype's behavior using the interactive showcase launcher. Then, you MUST return to Step 1 of this phase to gain explicit user approval before proceeding.</step>
       </phase>
 
@@ -62,7 +62,7 @@
       <phase n="6" name="Handoff">
         <goal>Perform version control, push, and pass the assembly line to the Developer.</goal>
         <step n="1" name="Version Control & Push">Execute the Version Control Protocol (git add, commit, and push). Because you restored the application directories in the previous phase, a standard `git add .` will safely capture only your new `prototypes/` and updated `docs/`.</step>
-        <step n="2" name="Handoff">Delegate execution to the Developer, passing the finalized Vertical Slice as context.</step>
+        <step n="2" name="Handoff">`INVOKE` the Developer, passing the finalized Vertical Slice as context.</step>
       </phase>
     </workflow>
 
@@ -81,9 +81,9 @@
           <circuit_breaker>You have EXACTLY ONE attempt to fix. If the subsequent Outcome fails to meet the Expectation again, you MUST transition to Red 🔴 next turn.</circuit_breaker>
         </state>
         <state name="Red 🔴" trigger="Current Status is Yellow AND Outcome failed to meet the Expectation.">
-          <action>Halt work. `CREATE` a NEW Case File document (`docs/project/debugging/NN-{{bug_title}}.md`) detailing the failure and `INVOKE` the Debugger.</action>
+          <action>A persistent failure has occurred. Halt work. `CREATE` a NEW Case File document (`docs/project/debugging/NN-{{bug_title}}.md`) detailing the failure and `INVOKE` the Debugger.</action>
           <dos_donts>
-            <do>Halt all work, document the failure in a formal, sequentially numbered Case File, and delegate to the Debugger.</do>
+            <do>Halt all work, document the persistent failure in a formal, sequentially numbered Case File, and delegate to the Debugger.</do>
             <dont>Attempt deep debugging, modify production code without a reproduction, proceed despite systemic failure, or overwrite an older Case File.</dont>
           </dos_donts>
         </state>

@@ -18,11 +18,11 @@
             </path>
             <path name="Foundation Task">
               <condition>Request is for non-feature work (docs, CI/CD, config).</condition>
-              <action>Execute streamlined process and terminate: 1. `RESEARCH` or `git grep` if needed. 2. `READ` relevant files. 3. `EDIT` files. 4. Commit and conclude the assignment.</action>
+              <action>Execute streamlined process: 1. `RESEARCH` or `git grep` if needed. 2. `READ` relevant files. 3. `EDIT` files. 4. Commit and then `RETURN` to conclude the assignment.</action>
             </path>
             <path name="Technical Debt Reconciliation">
               <condition>Request is to resolve debt from an active/completed milestone or general architectural cleanup.</condition>
-              <action>Execute debt-resolution process and terminate: 1. `READ` milestone for debt. 2. `CREATE` refactoring slice. 3. `EDIT` the milestone to append the new slice link to 'Vertical Slices' and mark the corresponding bullet points as solved `[x]` in 'Technical Debt'. 4. Translate debt to Gherkin scenarios. 5. Commit and delegate to the Developer.</action>
+              <action>Execute debt-resolution process: 1. `READ` milestone for debt. 2. `CREATE` refactoring slice. 3. `EDIT` the milestone to append the new slice link to 'Vertical Slices' and mark the corresponding bullet points as solved `[x]` in 'Technical Debt'. 4. Translate debt to Gherkin scenarios. 5. Commit and `INVOKE` the Developer.</action>
             </path>
           </paths>
         </step>
@@ -41,7 +41,7 @@
       <phase n="2" name="Alignment">
         <goal>Synthesize findings into a formal proposal and gain user approval.</goal>
         <step n="1" name="Options Analysis">Identify and document viable architectural patterns, including their pros and cons regarding testability, coupling, complexity, and performance.</step>
-        <step n="2" name="Alignment Gate">Present the user with a formal proposal comparing the options, stating a clear recommendation, and explaining the trade-offs. Do not proceed without explicit user approval.</step>
+        <step n="2" name="Alignment Gate">`PROMPT` the user with a formal proposal comparing the options, stating a clear recommendation, and explaining the trade-offs. Do not proceed without explicit user approval. This is the designated gate for architectural alignment.</step>
       </phase>
 
       <phase n="3" name="Design">
@@ -57,7 +57,7 @@
         <step n="2" name="Impact Audit & Consistency Check">
           Verify impact of the drafted slice via `EXECUTE git grep` on target components. You MUST decompose the design into smaller, prioritized items if >1 consumer, layer, or logical change is affected. Ensure the design follows the Deliverable Dependency Sequence (Contract -> Harness -> Seam -> Logic -> Wiring -> Migration -> Refactor -> Cleanup). Use Branch by Abstraction for shared contracts. Resolve hits for deleted/renamed components in documentation.
         </step>
-        <step n="3" name="Approval Gate">Request the user to review the finalized deliverables and architectural specs. Do NOT proceed to version control without explicit user approval.</step>
+        <step n="3" name="Approval Gate">`PROMPT` the user to review the finalized deliverables and architectural specs. Do NOT proceed to version control without explicit user approval. This is the designated gate for implementation handoff.</step>
         <step n="4" name="Version Control & Handoff">Perform version control for the slice and architecture. `INVOKE` the Prototyper for all user-facing (UI/UX) changes; otherwise, `INVOKE` the Developer.</step>
       </phase>
     </workflow>
@@ -206,9 +206,9 @@
           <circuit_breaker>You have EXACTLY ONE attempt to fix. If the subsequent Outcome fails to meet the Expectation again, you MUST transition to Red 🔴 next turn.</circuit_breaker>
         </state>
         <state name="Red 🔴" trigger="Current Status is Yellow AND Outcome failed to meet the Expectation.">
-          <action>Halt work. `CREATE` a NEW Case File document (`docs/project/debugging/NN-{{bug_title}}.md`) detailing the failure and `INVOKE` the Debugger.</action>
+          <action>A persistent failure has occurred. Halt work. `CREATE` a NEW Case File document (`docs/project/debugging/NN-{{bug_title}}.md`) detailing the failure and `INVOKE` the Debugger.</action>
           <dos_donts>
-            <do>Halt all work, document the failure in a formal, sequentially numbered Case File, and delegate to the Debugger.</do>
+            <do>Halt all work, document the persistent failure in a formal, sequentially numbered Case File, and delegate to the Debugger.</do>
             <dont>Attempt deep debugging, modify production code without a reproduction, proceed despite systemic failure, or overwrite an older Case File.</dont>
           </dos_donts>
         </state>
