@@ -39,7 +39,7 @@ And the method MUST return the mock instance for further configuration
 
 ## Deliverables
 1. [x] **Harness** - Implement `check-core-di-boundary` local pre-commit hook in `.pre-commit-config.yaml`.
-2. [ ] **Seam** - Add `mock_port` method to `TestEnvironment` in `tests/harness/setup/test_environment.py`.
+2. [x] **Seam** - Add `mock_port` method to `TestEnvironment` in `tests/harness/setup/test_environment.py`.
 3. [ ] **Logic** - Refactor `ActionFactory` in `src/teddy_executor/core/services/action_factory.py` to use constructor injection.
 4. [ ] **Wiring** - Update `src/teddy_executor/container.py` to resolve and inject dependencies into `ActionFactory`.
 5. [ ] **Refactor** - Update `tests/harness/setup/test_environment.py` and existing tests to use `env.mock_port()`.
@@ -57,3 +57,9 @@ And the method MUST return the mock instance for further configuration
 - **Solution:** Used a YAML literal block scalar (`|`) for the `entry` field to safely encapsulate the bash script.
 - **Exclusion Rationale:** `src/teddy_executor/core/services/action_factory.py` is temporarily excluded from the hook. This is a "Ratchet" strategy: the hook prevents *new* violations immediately, while the exclusion allows us to commit the refactored code that eventually removes the `punq` dependency from `ActionFactory`. The exclusion will be removed in Deliverable #6.
 - **Verification:** Verified via `tests/suites/acceptance/test_di_boundary_enforcement.py` which uses a temporary `violation_spike.py` to prove the hook correctly rejects `punq` imports.
+
+### Deliverable 2: Harness mock_port
+- **Abstraction:** Implemented `mock_port` in `TestEnvironment` to encapsulate `UnifiedMock` creation and `punq` registration.
+- **Portability:** The method uses `type[T]` and `cast(T, mock)` to provide full type safety for callers, allowing IDEs to resolve the mock's interface.
+- **Consistency:** By centralizing the registration logic, we ensure that every mock registered through `TestEnvironment` is a `UnifiedMock` (async-aware and POSIX-normalizing).
+- **[DEBT]:** `tests/harness/setup/test_environment.py` has grown to 308 lines, exceeding the 300-line limit. This is a structural friction that requires moving the mock helper classes (`POSIXPathMock`, `UnifiedMock`) to a dedicated file. This refactor is deferred to avoid out-of-scope work during this feature slice.

@@ -69,3 +69,23 @@ def test_filesystem_mock_normalizes_paths_systemically(env):
     # This should pass even on non-Windows systems once the fix is applied,
     # as the mock will normalize the call to POSIX.
     mock_fs.read_file.assert_called_with("some/windows/path.txt")
+
+
+def test_test_environment_mock_port_registers_and_returns_unified_mock(monkeypatch):
+    """
+    Harness: mock_port MUST create, register, and return a UnifiedMock.
+    """
+    from teddy_executor.core.ports.outbound import IShellExecutor
+    from tests.harness.setup.test_environment import TestEnvironment, UnifiedMock
+
+    env = TestEnvironment(monkeypatch).setup()
+
+    # 1. Action: Mock a port
+    mock = env.mock_port(IShellExecutor)
+
+    # 2. Assert: It is a UnifiedMock with correct spec
+    assert isinstance(mock, UnifiedMock)
+
+    # 3. Assert: It is registered in the container
+    resolved = env.get_service(IShellExecutor)
+    assert resolved == mock
