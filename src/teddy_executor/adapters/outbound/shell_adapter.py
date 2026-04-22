@@ -283,6 +283,7 @@ class ShellAdapter(IShellExecutor):
                 # Type cast is required because Mypy cannot infer str types when
                 # text=True is passed via **kwargs.
                 from typing import cast
+
                 comm_res = process.communicate(timeout=timeout)
                 stdout, stderr = cast(tuple[str, str], comm_res)
             except subprocess.TimeoutExpired:

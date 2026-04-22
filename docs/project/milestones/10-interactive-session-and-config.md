@@ -92,7 +92,7 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 - [x] **TUI Asynchronous Deadlocks:** The production `textual_plan_reviewer.py` currently uses a custom, flawed `asyncio.Future` based `push_screen_wait` implementation that causes deadlocks during modal interactions. This MUST be refactored to use Textual's native `await app.push_screen_wait()` along with `@work` decorators on action handlers, mirroring the verified fixes in the `tui_deferred_harvest` prototype.
 - [ ] **Test Pyramid Violation:** Resolve the structural imbalance (Acceptance: 101, Integration: 101, Unit: 305) to satisfy the 'Acceptance < Integration < Unit' rule.
 - [ ] **File Length (TUI Refactor):** Refactor `console_interactor.py` and `cli_helpers.py` to meet 300-line limit.
-- [ ] **Pygments Vulnerability:** Update `pygments` to 2.20.0+ to resolve GHSA-5239-wwwm-4pmq.
+- [x] **Pygments Vulnerability:** Update `pygments` to 2.20.0+ to resolve GHSA-5239-wwwm-4pmq.
 - [ ] **DI & Test Harness:**
     - Refactor the `TEDDY_TEST_MOCK_EDITOR_OUTPUT` hook to use a dedicated test adapter instead of an environment variable.
     - Improve DI isolation by resolving container locations dynamically instead of using hardcoded module paths.
@@ -102,19 +102,19 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 - [ ] **Test Harness Fragility:** Refactor TUI test fixtures to use centralized dependency injection (via `punq`) for mocks to avoid systemic `TypeError` regressions when constructor signatures change.
 
 ### Security
-- [ ] **Bandit:** Resolve `subprocess` security warning in `system_environment_inspector.py`.
-- [ ] **Dependency:** Update `aiohttp` to 3.13.4+, `litellm` to 1.83.0+, and `pygments` to 2.20.0+ to resolve multiple vulnerabilities found by `pip-audit`.
+- [x] **Bandit:** Resolve `subprocess` security warning in `system_environment_inspector.py`.
+- [x] **Dependency:** Update `aiohttp` to 3.13.4+, `litellm` to 1.83.0+, and `pygments` to 2.20.0+ to resolve multiple vulnerabilities found by `pip-audit`.
 
 ### New Technical Debt (Discovered during TUI Refinement)
-- [ ] **File Length:** Refactor `src/teddy_executor/core/services/execution_orchestrator.py` (329 lines).
-- [ ] **File Length:** Refactor `src/teddy_executor/core/services/session_orchestrator.py` (414 lines).
-- [ ] **Complexity:** Refactor `ExecutionOrchestrator.execute` (C901, PLR0912, PLR0915).
+- [ ] **File Length:** Refactor `src/teddy_executor/core/services/execution_orchestrator.py` (332 lines).
+- [ ] **File Length:** Refactor `src/teddy_executor/core/services/session_orchestrator.py` (487 lines).
+- [x] **Complexity:** Refactor `ExecutionOrchestrator.execute` (C901, PLR0912, PLR0915).
 - [ ] **File Length (TUI Adapters):** Refactor TUI adapter components to satisfy the 300-line limit:
     - `src/teddy_executor/adapters/inbound/textual_plan_reviewer_app.py`
     - `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py`
     - `src/teddy_executor/adapters/inbound/textual_plan_reviewer_helpers.py`
 - [ ] **ActionLog Parameters:** Audit other services (beyond `ActionExecutor`) for potential parameter loss when creating `ActionLog` objects from `ActionData`.
-- [ ] **ShellAdapter Maintenance:** Refactor `ShellAdapter` (>300 lines, C901, PLR0915) after terminal reset sanitization additions. Also fix `Mypy` bytes vs str errors in `_run_subprocess`.
+- [ ] **ShellAdapter Maintenance:** Refactor `ShellAdapter` (>300 lines) after terminal reset sanitization additions. Complexity (C901, PLR0915) resolved in Milestone 09. Also fix `Mypy` bytes vs str errors in `_run_subprocess`.
 - [ ] **TUI Suspension:** Investigate `app.suspend()` instability in certain terminal environments during external tool execution.
 - [ ] **Editor Sync:** Generalize the `code --wait` logic to handle other GUI editors that return before the file is released.
 - [ ] **File Length:** Refactor `src/teddy_executor/adapters/outbound/console_interactor.py` (>300 lines).
@@ -122,10 +122,10 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 - [ ] **File Length:** Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_app.py` (>300 lines).
 - [ ] **File Length:** Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_helpers.py` (455 lines).
 - [ ] **Complexity:** Refactor `check_action_logic` (PLR0911: 7 return statements).
-- [ ] **Complexity:** Refactor `ExecutionOrchestrator.execute` (C901, PLR0912, PLR0915).
-- [ ] **Complexity:** Refactor `PlanningService.generate_plan` and `PlanningService.async_generate_plan` (C901, PLR0915).
-- [ ] **File Length:** Refactor `ExecutionOrchestrator.py` to meet 300-line limit (currently 327 lines).
-- [ ] **File Length:** Refactor `src/teddy_executor/core/services/planning_service.py` (336 lines).
+- [x] **Complexity:** Refactor `ExecutionOrchestrator.execute` (C901, PLR0912, PLR0915).
+- [x] **Complexity:** Refactor `PlanningService.generate_plan` and `PlanningService.async_generate_plan` (C901, PLR0915).
+- [ ] **File Length:** Refactor `ExecutionOrchestrator.py` to meet 300-line limit (currently 332 lines).
+- [ ] **File Length:** Refactor `src/teddy_executor/core/services/planning_service.py` (335 lines).
 - [ ] **Linter (Tests):** Resolve magic value warning (PLR2004) in `test_planning_service_async.py`.
 - [ ] **Typing:** Resolve `Mypy` union-attr errors and `Worker` awaitable mismatch in TUI logic/app.
 - [ ] **Vulture:** Configure `.vulture_whitelist` or pragmas for abstract Port definitions to resolve 40+ false positives.
@@ -134,6 +134,6 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 - [ ] **Linter (Tests):** Clean up unused `mock_preview` (F841) in `test_tui_regressions.py` and fix module-level import (E402) in `test_shell_adapter_timeout.py`.
 - [ ] **Duplicated Logic:** Refactor prefix-stripping regex `r"^\d{8}_\d{6}-"` into a shared utility (e.g., `SessionRepository` or a string util) to avoid duplication across `PlanningService`, `SessionPlanner`, and `SessionRepository`.
 - [ ] **File Length:** Refactor `src/teddy_executor/core/services/planning_service.py` (351 lines).
-- [ ] **Complexity:** Refactor `PlanningService.async_generate_plan` and `generate_plan` (C901, PLR0915).
+- [x] **Complexity:** Refactor `PlanningService.async_generate_plan` and `generate_plan` (C901, PLR0915).
 - [ ] **Typing:** Resolve Mypy type mismatches in `SessionOrchestrator` async methods (`run_sync` argument types and `Plan | None` handling).
 - [ ] **Magic Values:** Remove magic values from `test_execution_orchestrator.py` and `test_planning_service_async.py` (PLR2004).
