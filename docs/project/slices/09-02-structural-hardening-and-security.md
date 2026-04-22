@@ -50,7 +50,7 @@ And no "duplicate module" errors MUST be reported for "test_unified_mock.py"
 
 ## Deliverables
 - [x] **Contract** - Implement `ActionPorts` DTO in `src/teddy_executor/core/domain/models/action_ports.py`.
-- [ ] **Seam** - Fix `IEditSimulator.simulate_edits` signature in `src/teddy_executor/core/ports/inbound/edit_simulator.py` to match implementation.
+- [x] **Seam** - Fix `IEditSimulator.simulate_edits` signature in `src/teddy_executor/core/ports/inbound/edit_simulator.py` to match implementation.
 - [ ] **Logic** - Refactor `ActionFactory` constructor to use `ActionPorts`.
 - [ ] **Wiring** - Update `src/teddy_executor/container.py` to construct `ActionPorts` and inject it into `ActionFactory`.
 - [ ] **Logic** - Decompose `ShellAdapter._run_subprocess` to resolve C901/PLR0915/PLR0912.
@@ -77,3 +77,9 @@ And no "duplicate module" errors MUST be reported for "test_unified_mock.py"
 - Encountered and resolved a circular import: `models/__init__.py` -> `ActionPorts` -> `ports/outbound/__init__.py` -> `IMarkdownReportFormatter` -> `execution_report` -> `models/__init__.py`.
 - **Resolution:** Used `TYPE_CHECKING` guards and string forward references in `ActionPorts` to break the runtime dependency on the `ports.outbound` package during initialization.
 - Verified with full test suite and `mypy`.
+
+### Deliverable: IEditSimulator Signature Sync
+- Synchronized `IEditSimulator.simulate_edits` parameter names with the concrete `EditSimulator` implementation.
+- Renamed `_content`, `_edits`, and `_match_all` to `content`, `edits`, and `match_all` in the Protocol.
+- Updated the Protocol to use `DEFAULT_SIMILARITY_THRESHOLD` from the domain model instead of a hardcoded float.
+- Added a unit contract test (`tests/suites/unit/ports/inbound/test_edit_simulator_contract.py`) to prevent future signature drifts.

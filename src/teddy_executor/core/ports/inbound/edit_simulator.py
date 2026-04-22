@@ -1,4 +1,5 @@
 from typing import List, Protocol, TypedDict
+from teddy_executor.core.domain.models.plan import DEFAULT_SIMILARITY_THRESHOLD
 
 
 class EditPair(TypedDict, total=False):
@@ -14,10 +15,10 @@ class IEditSimulator(Protocol):
 
     def simulate_edits(
         self,
-        _content: str,
-        _edits: List[EditPair],
-        threshold: float = 1.00,
-        _match_all: bool = False,
+        content: str,
+        edits: List[EditPair],
+        threshold: float = DEFAULT_SIMILARITY_THRESHOLD,
+        match_all: bool = False,
     ) -> tuple[str, list[float]]:
         """
         Applies each FIND/REPLACE pair in sequence to the provided content.
