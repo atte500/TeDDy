@@ -20,3 +20,6 @@ To harden the system's architecture by resolving systemic technical debt that co
 ## 5. Technical Debt
 - [ ] [Architectural] Refactor `ActionFactory` to remove `punq` dependency.
 - [ ] [Architectural] Refactor `TestEnvironment` to hide `punq` registration logic.
+- [ ] [Security] Resolve pip-audit vulnerabilities: lxml (6.1.0), pytest (9.0.3), python-dotenv (1.2.2).
+- [ ] [Code Quality] Resolve existing Ruff complexity/statements errors in `ShellAdapter`, `ExecutionOrchestrator`, and `PlanningService`.
+- [ ] [Code Quality] Resolve Mypy duplicate module error in `test_unified_mock.py`.

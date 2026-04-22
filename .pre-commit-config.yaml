@@ -79,3 +79,17 @@ repos:
         language: system
         pass_filenames: false
         files: ^(pyproject\.toml|poetry\.lock)$
+
+    -   id: check-core-di-boundary
+        name: Check Core DI Boundary (No punq in core)
+        entry: |
+          bash -c 'for f in "$@"; do
+            if grep -qE "import punq|from punq" "$f"; then
+              echo "DI Boundary Violation: punq imported in core service ($f). Core logic must not depend on DI framework."
+              exit 1
+            fi
+          done' --
+        language: system
+        types: [python]
+        files: ^src/teddy_executor/core/
+        exclude: src/teddy_executor/core/services/action_factory\.py

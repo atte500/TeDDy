@@ -38,7 +38,7 @@ And the method MUST return the mock instance for further configuration
 ```
 
 ## Deliverables
-1. [ ] **Harness** - Implement `check-core-di-boundary` local pre-commit hook in `.pre-commit-config.yaml`.
+1. [x] **Harness** - Implement `check-core-di-boundary` local pre-commit hook in `.pre-commit-config.yaml`.
 2. [ ] **Seam** - Add `mock_port` method to `TestEnvironment` in `tests/harness/setup/test_environment.py`.
 3. [ ] **Logic** - Refactor `ActionFactory` in `src/teddy_executor/core/services/action_factory.py` to use constructor injection.
 4. [ ] **Wiring** - Update `src/teddy_executor/container.py` to resolve and inject dependencies into `ActionFactory`.
@@ -49,3 +49,11 @@ And the method MUST return the mock instance for further configuration
 - The `ActionFactory` currently resolves handlers on-the-fly from the container. After refactoring, it will use stored references to the injected ports.
 - The `TestEnvironment` currently has multiple `_register_*_mocks` methods. These will be consolidated/refactored to use the new `mock_port` utility to reduce duplication.
 - The pre-commit hook will use a simple `grep -r` check scoped to `src/teddy_executor/core/`.
+
+## Implementation Notes
+
+### Deliverable 1: DI Boundary Hook
+- **YAML Syntax Trap:** Discovered that complex shell commands in `.pre-commit-config.yaml` containing colons (`:`) followed by spaces (e.g., in `echo` statements) trigger `InvalidConfigError: mapping values are not allowed in this context`.
+- **Solution:** Used a YAML literal block scalar (`|`) for the `entry` field to safely encapsulate the bash script.
+- **Exclusion Rationale:** `src/teddy_executor/core/services/action_factory.py` is temporarily excluded from the hook. This is a "Ratchet" strategy: the hook prevents *new* violations immediately, while the exclusion allows us to commit the refactored code that eventually removes the `punq` dependency from `ActionFactory`. The exclusion will be removed in Deliverable #6.
+- **Verification:** Verified via `tests/suites/acceptance/test_di_boundary_enforcement.py` which uses a temporary `violation_spike.py` to prove the hook correctly rejects `punq` imports.
