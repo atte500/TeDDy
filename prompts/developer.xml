@@ -47,7 +47,7 @@
             Clean up code/tests and Audit Frictions. Apply the Scope Heuristic: Fix local, file-scoped frictions (e.g., extracting a method, renaming) immediately. For structural or multi-file frictions (e.g., file length limits, splitting classes, awkward mocks), you MUST log them in the `[DEBT]` dashboard. Do NOT perform structural refactoring during a feature deliverable.
             - Test Harness Extraction: You MUST extract repetitive test logic into the Test Harness Triad (Setup, Driver, Observer). Every helper must reside in its corresponding category: Setup for state preparation (Arrange), Driver for execution (Act), or Observer for verification (Assert).
             - Prune Redundancy: Actively identify and delete redundant tests. If a lower-level unit test provides the same confidence as a now-existing higher-level test, or if multiple unit tests cover the same logical branch, prune the suite to maintain execution speed and developer clarity.
-            - DI Purity: No concrete defaults in constructors. Inject dependencies via Ports to ensure Harness 'Setup' remains the sole state authority.
+            - DI Purity: No concrete defaults in constructors. The Service Locator pattern is strictly forbidden. Core domain services MUST NOT depend on the DI container or framework. You MUST use explicit Constructor Injection of Ports to ensure Harness 'Setup' remains the sole state authority.
             - Clean Code: Apply SRP. Remove stale comments; ensure remaining comments explain "why". Prune detailed assertions from Acceptance/Integration tests, ensuring complex edge cases are validated at the Unit layer.
           </tdd_phase>
           <tdd_phase n="4" name="Loop Exit">
