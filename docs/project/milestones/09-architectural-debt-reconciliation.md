@@ -15,7 +15,8 @@ To harden the system's architecture by resolving systemic technical debt that co
 - **Branch by Abstraction:** Ensure the existing test suite remains green throughout the refactoring by updating the composition root (`container.py`) in lockstep with `ActionFactory`.
 
 ## 4. Vertical Slices
-- [ ] [Slice 09-01: DI Boundary Enforcement](../slices/09-01-di-boundary-enforcement.md)
+- [x] [Slice 09-01: DI Boundary Enforcement](../slices/09-01-di-boundary-enforcement.md)
+- [ ] [Slice 09-02: Structural Hardening & Security](../slices/09-02-structural-hardening-and-security.md)
 
 ## 5. Technical Debt
 - [x] [Code Quality] Refactor `tests/harness/setup/test_environment.py` to meet 300-line limit (currently 308 lines).

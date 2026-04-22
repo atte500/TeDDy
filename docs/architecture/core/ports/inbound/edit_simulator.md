@@ -8,12 +8,13 @@ The `IEditSimulator` defines the port for a service that can simulate the result
 
 ## 2. Port Contract
 
-### `simulate_edits(content: str, edits: list[dict[str, str]]) -> str`
+### `simulate_edits(content: str, edits: list[dict[str, str]], match_all: bool = False) -> str`
 Applies a sequence of edits to the provided content and returns the modified string.
 
 - **Args:**
     - `content`: The original source string.
     - `edits`: A list of dictionaries, each containing `find` and `replace` keys.
+    - `match_all`: If True, replaces all occurrences of each `find` block.
 - **Returns:** The string after all edits have been applied in sequence.
 - **Raises:**
     - `SearchTextNotFoundError`: If a `find` block is not found in the content.

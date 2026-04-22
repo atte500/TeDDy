@@ -17,7 +17,7 @@ The `ActionFactory` is the central component responsible for translating action 
 ## 3. Implementation Strategy
 
 ### 3.1. Dependency Injection & Method Binding
-The factory uses the `punq` container to resolve concrete adapters for Outbound Ports. For adapters that support multiple operations (e.g., `IFileSystemManager` handles both `CREATE` and `EDIT`), the factory performs **Method Binding**:
+The factory receives its required Outbound Ports via an `ActionPorts` DTO. It is decoupled from the DI container (`punq`). For adapters that support multiple operations (e.g., `IFileSystemManager` handles both `CREATE` and `EDIT`), the factory performs **Method Binding**:
 1.  It resolves the adapter instance from the container.
 2.  It identifies the specific adapter method required for the action (e.g., `create_file` for a `CREATE` action).
 3.  It wraps this method in a closure that implements the `IAction` protocol's `execute(**kwargs)` method.
