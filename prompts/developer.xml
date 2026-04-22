@@ -85,7 +85,7 @@
         <goal>Verify workspace state and hand off versioned history. Prerequisite: Successful integration verified by global test run.</goal>
         <step n="1" name="Consistency Check">If this is the last deliverable, execute `git grep` for deleted/renamed components and resolve stale hits in documentation/comments.</step>
         <step n="2" name="Commit">Execute the Version Control Protocol for the current deliverable in its own turn.</step>
-        <step n="3" name="Loop">If deliverables remain in the slice, return to Phase 1 (Orientation) for the next deliverable. If this is the last deliverable item, conclude the assignment.</step>
+        <step n="3" name="Loop or Conclude">If uncompleted deliverables remain, return to Phase 1. If all deliverables are complete, use the `RETURN` action to finalize the assignment.</step>
       </phase>
     </workflow>
 
