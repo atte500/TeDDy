@@ -19,6 +19,7 @@ To harden the system's architecture by resolving systemic technical debt that co
 - [x] [Slice 09-02: Structural Hardening & Security](../slices/09-02-structural-hardening-and-security.md)
 - [x] [Slice 09-03: File Length Debt Reconciliation](../slices/09-03-file-length-debt-reconciliation.md)
 - [x] [Slice 09-04: Final Debt Cleanup](../slices/09-04-final-debt-cleanup.md)
+- [ ] [Slice 09-05: Type-Safe Dead Code Whitelisting](../slices/09-05-type-safe-vulture-whitelist.md)
 
 ## 5. Technical Debt
 - [x] [Code Quality] Refactor `src/teddy_executor/core/services/session_orchestrator.py` to meet 300-line limit (currently 487 lines -> 286 lines).
