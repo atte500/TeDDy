@@ -16,13 +16,14 @@
       <phase n="1" name="Orientation">
         <goal>Foundation and scope verification.</goal>
         <step n="1" name="Initialization">If missing, CREATE slice at `docs/project/slices/00-NN-{{feature}}.md`.</step>
-        <step n="2" name="Discovery">
+        <step n="2" name="Isolate Current Deliverable">Identify the next uncompleted deliverable. You must focus exclusively on this single item for the entire cycle. Completing multiple deliverables in one commit, even if of the same type, is NOT allowed.</step>
+        <step n="3" name="Discovery">
           Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context and prior agent artifacts required for a thorough plan audit.
         </step>
-        <step n="3" name="Plan Audit">
-          Audit the target components of the first deliverable item via `EXECUTE git grep`. You MUST decompose any item touching >1 consumer, layer, or logical change into a prioritized list of smaller, atomic deliverables. Conversely, combine items sharing a test boundary. Strictly follow the Deliverable Dependency Sequence (Contract -> Harness -> Seam -> Logic -> Wiring -> Migration -> Refactor -> Cleanup). For shared contracts, use Branch by Abstraction.
+        <step n="4" name="Plan Audit">
+          Audit the target components of the current deliverable item via `EXECUTE git grep`. You MUST decompose any item touching >1 consumer, layer, or logical change into a prioritized list of smaller, atomic deliverables. Conversely, combine items sharing a test boundary. Strictly follow the Deliverable Dependency Sequence (Contract -> Harness -> Seam -> Logic -> Wiring -> Migration -> Refactor -> Cleanup). For shared contracts, use Branch by Abstraction.
         </step>
-        <step n="4" name="Plan Update (Contingency)">
+        <step n="5" name="Plan Update (Contingency)">
           If validation revealed necessary changes (decomposition, re-sorting, or abstraction), EDIT the slice and EXECUTE the Version Control Protocol to version control the updated plan before starting to work on the first unresolved item.
         </step>
       </phase>
@@ -70,7 +71,6 @@
 
           If there is a complex bug or the deliverable cannot be decomposed, then do NOT revert code, create a Case File, and INVOKE the Debugger.
         </step>
-        <step n="3" name="Transition">Upon successful global integration, you MUST proceed to Phase 5 (Documentation) for the current deliverable.</step>
       </phase>
 
       <phase n="5" name="Documentation">
@@ -79,7 +79,6 @@
         <step n="2" name="Sync Slice Notes">`EDIT` the vertical slice doc to append technical findings for this deliverable under the `## Implementation Notes` section. If this section does not exist, you MUST create it at the end of the file.</step>
         <step n="3" name="Harvest Debt">If any `[DEBT]` was logged, `EDIT` the active Milestone's (`docs/project/milestones/`) `## Technical Debt` section to append it as a checkmarkable [ ] task.</step>
         <step n="4" name="Perform As-Built Update">Before finishing the last deliverable of the slice, perform a final `EDIT` on the `Component Design Docs`. Use the `Implementation Notes` you have gathered to make final, minor corrections, ensuring the docs perfectly reflect the as-built reality of the code.</step>
-        <step n="5" name="Transition">Upon completion of all documentation tasks for this item, you MUST proceed to Phase 6 (Version Control) for the current deliverable.</step>
       </phase>
 
       <phase n="6" name="Version Control">
