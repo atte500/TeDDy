@@ -49,7 +49,7 @@ And no "duplicate module" errors MUST be reported for "test_unified_mock.py"
 ```
 
 ## Deliverables
-- [ ] **Contract** - Implement `ActionPorts` DTO in `src/teddy_executor/core/domain/models/action_ports.py`.
+- [x] **Contract** - Implement `ActionPorts` DTO in `src/teddy_executor/core/domain/models/action_ports.py`.
 - [ ] **Seam** - Fix `IEditSimulator.simulate_edits` signature in `src/teddy_executor/core/ports/inbound/edit_simulator.py` to match implementation.
 - [ ] **Logic** - Refactor `ActionFactory` constructor to use `ActionPorts`.
 - [ ] **Wiring** - Update `src/teddy_executor/container.py` to construct `ActionPorts` and inject it into `ActionFactory`.
@@ -69,3 +69,11 @@ And no "duplicate module" errors MUST be reported for "test_unified_mock.py"
 - Use **Extract Method** as the primary refactoring pattern.
 - Ensure each extracted method has a single responsibility (e.g., `_prepare_posix_kwargs`, `_handle_windows_scripting`).
 - Verify each atomic deliverable with `ruff` and `mypy` before moving to the next.
+
+## Implementation Notes
+
+### Deliverable: ActionPorts DTO
+- Implemented `ActionPorts` as a frozen dataclass in `src/teddy_executor/core/domain/models/action_ports.py`.
+- Encountered and resolved a circular import: `models/__init__.py` -> `ActionPorts` -> `ports/outbound/__init__.py` -> `IMarkdownReportFormatter` -> `execution_report` -> `models/__init__.py`.
+- **Resolution:** Used `TYPE_CHECKING` guards and string forward references in `ActionPorts` to break the runtime dependency on the `ports.outbound` package during initialization.
+- Verified with full test suite and `mypy`.

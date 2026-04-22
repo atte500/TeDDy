@@ -17,8 +17,10 @@ from .web_search_results import SearchResult
 from .web_search_results import WebSearchResults
 from .change_set import ChangeSet
 from .project_context import ProjectContext
+from .action_ports import ActionPorts
 
 __all__ = [
+    "ActionPorts",
     "ChangeSet",
     "ProjectContext",
     "Plan",
