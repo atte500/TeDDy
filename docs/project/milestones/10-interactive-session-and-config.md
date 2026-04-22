@@ -1,6 +1,6 @@
 # Milestone 10: Interactive Session Workflow & LLM Integration
 
-- **Status:** On Hold
+- **Status:** Planned
 
 ## 1. Goal (The "Why")
 
@@ -76,15 +76,15 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 
 ## 6. Technical Debt
 ### Code Quality
-- [ ] **File Length:** Refactor oversized files to adhere to the 300-line limit:
-    - `src/teddy_executor/core/services/markdown_plan_parser.py` (304 lines)
-    - `src/teddy_executor/core/services/session_orchestrator.py` (319 lines)
-    - `src/teddy_executor/adapters/outbound/console_interactor.py`
-    - `src/teddy_executor/adapters/inbound/textual_plan_reviewer.py`
-    - `src/teddy_executor/adapters/inbound/cli_helpers.py`
+- [x] **File Length:** Refactor oversized files to adhere to the 300-line limit:
+    - [x] `src/teddy_executor/core/services/markdown_plan_parser.py` (304 lines)
+    - [x] `src/teddy_executor/core/services/session_orchestrator.py` (319 lines)
+    - [ ] `src/teddy_executor/adapters/outbound/console_interactor.py`
+    - [ ] `src/teddy_executor/adapters/inbound/textual_plan_reviewer.py`
+    - [ ] `src/teddy_executor/adapters/inbound/cli_helpers.py`
 - [ ] **ReviewerApp Mypy/Vulture:** Resolve incompatible override and unused `mode` variable in `push_screen_wait` in `textual_plan_reviewer.py`.
 - [ ] **Code Duplication (jscpd):** Resolve code duplication across multiple files to meet the 0% threshold.
-- [ ] **Dead Code (Vulture):** Resolve all dead code warnings, investigating potential false positives in ports.
+- [x] **Dead Code (Vulture):** Resolve all dead code warnings, investigating potential false positives in ports.
 - [ ] **Duplicated Logic:** Refactor `ReviewerApp._launch_editor` in `textual_plan_reviewer.py` to use a central editor/diffing utility.
 
 ### Architectural Debt
@@ -128,7 +128,7 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 - [ ] **File Length:** Refactor `src/teddy_executor/core/services/planning_service.py` (335 lines).
 - [ ] **Linter (Tests):** Resolve magic value warning (PLR2004) in `test_planning_service_async.py`.
 - [ ] **Typing:** Resolve `Mypy` union-attr errors and `Worker` awaitable mismatch in TUI logic/app.
-- [ ] **Vulture:** Configure `.vulture_whitelist` or pragmas for abstract Port definitions to resolve 40+ false positives.
+- [x] **Vulture:** Configure `.vulture_whitelist` or pragmas for abstract Port definitions to resolve 40+ false positives.
 - [ ] **Vulture (Console Interactor Tests):** Resolve unused `args`/`kwargs` in `test_console_interactor.py`.
 - [ ] **Vulture:** Resolve unused `old_val` in `_apply_param_edit`.
 - [ ] **Linter (Tests):** Clean up unused `mock_preview` (F841) in `test_tui_regressions.py` and fix module-level import (E402) in `test_shell_adapter_timeout.py`.
