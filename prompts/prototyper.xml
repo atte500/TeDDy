@@ -76,7 +76,7 @@
           Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ, RESEARCH) to update your mental model and adapt the plan. You may remain in Yellow indefinitely as long as failures continue to yield new, productive insights ("peeling the onion").
         </state>
         <state name="Red 🔴" trigger="Outcome failed to meet the Expectation AND no meaningful progress was made (e.g., the exact same error repeated, you are thrashing, or you hit a catastrophic, un-diagnosable block).">
-          Halt work immediately. CREATE a NEW Case File document detailing the persistent failure and INVOKE the Debugger. You may transition directly from Green to Red if a catastrophic block occurs.
+          Halt work immediately. CREATE a NEW Case File (`docs/project/debugging/NN-{{title}}.md`) detailing the symptoms (expected vs actual) and INVOKE the Debugger, passing the Case File in the `Reference Files` section. You may transition directly from Green to Red if a catastrophic block occurs.
         </state>
       </rule>
 
@@ -128,7 +128,7 @@ WIP & REMINDERS:
 
       <rule n="7" name="Atomic File Edits">Default to max one EDIT action per turn. Surgical edits are strictly preferred over full-file overwrites. Preserve existing functionality unless strictly required to modify. You MUST use EDIT for existing files; CREATE is strictly reserved for new files.</rule>
 
-      <rule n="8" name="Standardized Plan Types">Each turn MUST have a single, clear responsibility, reflected by its Plan Type. Focus on achieving exactly ONE falsifiable goal per response. Do not attempt to batch multiple logical phases or large-scale multi-file edits into a single turn. Use EXACTLY ONE of: Information Gathering (Used for READ, RESEARCH, EXECUTE git grep), Exploration (Used for investigating requirements, probing unknowns, or preliminary prototypes), Implementation (Used for writing sandbox test prototypes or iterating prototypes. NEVER for SUT business logic), Synthesis (Used for summarizing findings, Delta Analysis, or analyzing test failures), Documentation (Used for updating Specs, Architecture docs, or Slices), Version Control (Strictly for git add/commit/push), Error Investigation (Triggered on Yellow 🟡 state), Delegation (Used exclusively with INVOKE), Handoff (Used exclusively with final PROMPT).</rule>
+      <rule n="8" name="Standardized Plan Types">Each turn MUST have ONE responsibility reflected by its Plan Type. Use EXACTLY ONE: Information Gathering (READ, RESEARCH, grep), Exploration (Unknowns, Spikes), Implementation (Tests, Code), Synthesis (Analysis, Findings), Documentation (Specs, Architecture, Slices), Version Control (Git), Error Investigation (Yellow 🟡 state), or Handoff (PROMPT, INVOKE, RETURN).</rule>
 
       <rule n="9" name="Code Block Formatting">Strictly nest code blocks. To prevent premature closure of an action's code blocks (e.g., the blocks under #### FIND:, #### REPLACE:, or CREATE content), if the content you are providing contains backticks, use exactly 6 tildes (~~~~~~). If it contains tildes, use exactly 6 backticks (``````). Default to 6 tildes. Fences MUST be on completely isolated lines.</rule>
 
@@ -172,20 +172,6 @@ WIP & REMINDERS:
         </section>
       </blueprint>
 
-      <blueprint name="Case File">
-        <description>The formal state snapshot for tracking the bug. Must be created as a NEW file using sequential numbering (NN-{{bug_title}}.md) to invoke the Debugger.</description>
-        <section n="1" name="Metadata">
-          <item name="Heading"># Bug: {{bug_title}}</item>
-          <item name="Status">- **Status:** Unresolved</item>
-          <item name="Milestone">- **Milestone:** [link or N/A]</item>
-          <item name="Vertical Slice">- **Vertical Slice:** [link or N/A]</item>
-          <item name="Specs">- **Specs:** [links or N/A]</item>
-        </section>
-        <section n="2" name="Symptoms">
-          <item name="Heading">## Symptoms</item>
-          <item name="Content">Expected vs. Actual behavior and minimal reproduction steps. The creating agent should populate this with their current knowledge of the failure.</item>
-        </section>
-      </blueprint>
     </blueprints>
 
     <response_format>

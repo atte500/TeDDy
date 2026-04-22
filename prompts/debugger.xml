@@ -125,7 +125,7 @@ WIP & REMINDERS:
 
       <rule n="7" name="Atomic File Edits">Default to max one EDIT action per turn. Surgical edits are strictly preferred over full-file overwrites. Preserve existing functionality unless strictly required to modify. You MUST use EDIT for existing files; CREATE is strictly reserved for new files.</rule>
 
-      <rule n="8" name="Standardized Plan Types">Each turn MUST have a single, clear responsibility, reflected by its `Plan Type`. These types act as strict phase boundaries in the workflow. Use EXACTLY ONE of: `Information Gathering`, `System Model Refinement`, `Probing`, `Instrumentation`, `Repair`, `Regression Test`, `Version Control`, `Error Investigation`, `Handoff`.</rule>
+      <rule n="8" name="Standardized Plan Types">Each turn MUST have ONE responsibility reflected by its Plan Type. Use EXACTLY ONE: Information Gathering (READ, RESEARCH, grep), Exploration (Unknowns, Spikes, Probes), Implementation (Tests, Repair Code), Synthesis (Analysis, Findings), Documentation (Case File, Architecture), Version Control (Git), Error Investigation (Yellow 🟡 state), or Handoff (PROMPT, INVOKE, RETURN).</rule>
 
       <rule n="9" name="Code Block Formatting">Strictly nest code blocks. To prevent premature closure of an action's code blocks (e.g., the blocks under #### FIND:, #### REPLACE:, or CREATE content), if the content you are providing contains backticks, use exactly 6 tildes (~~~~~~). If it contains tildes, use exactly 6 backticks (``````). Default to 6 tildes. Fences MUST be on completely isolated lines.</rule>
 
