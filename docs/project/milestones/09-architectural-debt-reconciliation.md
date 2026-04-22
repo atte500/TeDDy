@@ -18,7 +18,7 @@ To harden the system's architecture by resolving systemic technical debt that co
 - [x] [Slice 09-01: DI Boundary Enforcement](../slices/09-01-di-boundary-enforcement.md)
 - [x] [Slice 09-02: Structural Hardening & Security](../slices/09-02-structural-hardening-and-security.md)
 - [x] [Slice 09-03: File Length Debt Reconciliation](../slices/09-03-file-length-debt-reconciliation.md)
-- [ ] [Slice 09-04: Final Debt Cleanup](../slices/09-04-final-debt-cleanup.md)
+- [x] [Slice 09-04: Final Debt Cleanup](../slices/09-04-final-debt-cleanup.md)
 
 ## 5. Technical Debt
 - [x] [Code Quality] Refactor `src/teddy_executor/core/services/session_orchestrator.py` to meet 300-line limit (currently 487 lines -> 286 lines).
@@ -28,9 +28,9 @@ To harden the system's architecture by resolving systemic technical debt that co
 - [x] [Code Quality] Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_previews.py` to meet 300-line limit (currently 239 lines).
 - [x] [Code Quality] Refactor `src/teddy_executor/core/services/execution_orchestrator.py` to meet 300-line limit (currently 332 lines).
 - [x] [Code Quality] Refactor `src/teddy_executor/core/services/planning_service.py` to meet 300-line limit (currently 335 lines).
-- [ ] [Code Quality] Resolve Mypy duplicate module error for `slice_00_05_logic` vs `prototypes/slice_00_05_logic`.
-- [ ] [Code Quality] Configure Vulture whitelist or pragmas for abstract Port definitions (40+ false positives).
-- [ ] [Code Quality] Resolve Ruff magic value (PLR2004) warnings in core service unit tests.
+- [x] [Code Quality] Resolve Mypy duplicate module error for `slice_00_05_logic` vs `prototypes/slice_00_05_logic`.
+- [x] [Code Quality] Configure Vulture whitelist or pragmas for abstract Port definitions (40+ false positives).
+- [x] [Code Quality] Resolve Ruff magic value (PLR2004) warnings in core service unit tests.
 - [x] [Code Quality] Refactor `tests/harness/setup/test_environment.py` to meet 300-line limit (currently 308 lines).
 - [x] [Architectural] Refactor `ActionFactory` to group port dependencies and reduce argument count (PLR0913).
 - [x] [Architectural] Refactor `ActionFactory` to remove `punq` dependency.
@@ -38,6 +38,6 @@ To harden the system's architecture by resolving systemic technical debt that co
 - [x] [Security] Resolve pip-audit vulnerabilities: lxml (6.1.0), pytest (9.0.3), python-dotenv (1.2.2).
 - [x] [Code Quality] Resolve existing Ruff complexity/statements errors in `ShellAdapter`, `ExecutionOrchestrator`, and `PlanningService`.
 - [x] [Code Quality] Resolve Mypy duplicate module error in `test_unified_mock.py`.
-- [ ] [Code Quality] Resolve Ruff magic value (PLR2004) warnings in `tests/suites/unit/core/services/test_execution_orchestrator.py`.
-- [ ] [Code Quality] Prune unused variables and imports identified by Vulture in ports and adapters.
-- [ ] [Code Quality] Resolve Mypy duplicate module error for `slice_00_05_logic` in `test_session_orchestrator_resume.py`.
+- [x] [Code Quality] Resolve Ruff magic value (PLR2004) warnings in `tests/suites/unit/core/services/test_execution_orchestrator.py`.
+- [x] [Code Quality] Prune unused variables and imports identified by Vulture in ports and adapters.
+- [x] [Code Quality] Resolve Mypy duplicate module error for `slice_00_05_logic` in `test_session_orchestrator_resume.py`.

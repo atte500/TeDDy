@@ -60,6 +60,10 @@ exclude = ["spikes/", "prototypes/"]
 select = ["F", "E", "W", "C901", "PLR"]
 ignore = ["E501"]
 
+[tool.ruff.lint.per-file-ignores]
+# Ignore magic values in tests
+"tests/**/*" = ["PLR2004"]
+
 [tool.ruff.lint.mccabe]
 # Enforce a maximum cyclomatic complexity of 9
 max-complexity = 9
@@ -81,6 +85,20 @@ ignore_names = [
     "agent_name",
     "Document",
     "SessionPorts",
+    "on_mount",
+    "compose",
+    "on_input_submitted",
+    "on_tree_node_selected",
+    "on_list_view_selected",
+    "on_descendant_focus",
+    "on_key",
+    "action_*",
+    "async_create_session",
+    "create_file",
+    "edit_file",
+    "confirm_plan_review",
+    "notify_skipped_action",
+    "prompt_for_message",
 ]
 min_confidence = 80
 paths = ["src", "tests"]

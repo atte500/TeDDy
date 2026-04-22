@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 
 
-def test_get_token_count_delegates_to_litellm(container, mock_config):
+def test_get_token_count_delegates_to_litellm(container):
     adapter = container.resolve(ILlmClient)
     messages = [{"role": "user", "content": "Hello"}]
     model = "gpt-4"
@@ -11,11 +11,11 @@ def test_get_token_count_delegates_to_litellm(container, mock_config):
         mock_counter.return_value = 10
         count = adapter.get_token_count(model, messages)
 
-        assert count == 10  # noqa: PLR2004
+        assert count == 10
         mock_counter.assert_called_once_with(model=model, messages=messages)
 
 
-def test_get_completion_cost_delegates_to_litellm(container, mock_config):
+def test_get_completion_cost_delegates_to_litellm(container):
     adapter = container.resolve(ILlmClient)
     mock_response = MagicMock()
 
@@ -23,5 +23,5 @@ def test_get_completion_cost_delegates_to_litellm(container, mock_config):
         mock_cost.return_value = 0.05
         cost = adapter.get_completion_cost(mock_response)
 
-        assert cost == 0.05  # noqa: PLR2004
+        assert cost == 0.05
         mock_cost.assert_called_once_with(completion_response=mock_response)

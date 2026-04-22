@@ -48,7 +48,7 @@ def test_find_best_match_allows_relative_indentation():
 
     # Score should be 1.0 because the offset (+4) is constant
     assert score == 1.0
-    assert offset == 4  # noqa: PLR2004
+    assert offset == 4
 
 
 def test_find_best_match_rejects_inconsistent_relative_indentation():

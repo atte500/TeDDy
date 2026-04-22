@@ -24,7 +24,7 @@ def test_matcher_detects_constant_indentation_offset(
     _, score, _, offset = find_best_match(file_content, find_block)
 
     assert score == 1.0
-    assert offset == expected_offset  # noqa: PLR2004
+    assert offset == expected_offset
 
 
 def test_matcher_ignores_empty_lines_for_offset_calculation():
@@ -34,7 +34,7 @@ def test_matcher_ignores_empty_lines_for_offset_calculation():
     _, score, _, offset = find_best_match(file_content, find_block)
 
     assert score == 1.0
-    assert offset == 4  # noqa: PLR2004
+    assert offset == 4
 
 
 def test_matcher_requires_consistent_offset_across_all_code_lines():
