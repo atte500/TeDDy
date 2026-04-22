@@ -37,3 +37,6 @@ To harden the system's architecture by resolving systemic technical debt that co
 - [x] [Security] Resolve pip-audit vulnerabilities: lxml (6.1.0), pytest (9.0.3), python-dotenv (1.2.2).
 - [x] [Code Quality] Resolve existing Ruff complexity/statements errors in `ShellAdapter`, `ExecutionOrchestrator`, and `PlanningService`.
 - [x] [Code Quality] Resolve Mypy duplicate module error in `test_unified_mock.py`.
+- [ ] [Code Quality] Resolve Ruff magic value (PLR2004) warnings in `tests/suites/unit/core/services/test_execution_orchestrator.py`.
+- [ ] [Code Quality] Prune unused variables and imports identified by Vulture in ports and adapters.
+- [ ] [Code Quality] Resolve Mypy duplicate module error for `slice_00_05_logic` in `test_session_orchestrator_resume.py`.

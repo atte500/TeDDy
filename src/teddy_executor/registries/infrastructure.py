@@ -28,6 +28,9 @@ def register_infrastructure(container: punq.Container) -> None:
     )
     from teddy_executor.adapters.outbound.console_tooling import ConsoleToolingHelper
     from teddy_executor.adapters.outbound.shell_adapter import ShellAdapter
+    from teddy_executor.adapters.outbound.shell_command_builder import (
+        ShellCommandBuilder,
+    )
     from teddy_executor.adapters.outbound.system_environment_adapter import (
         SystemEnvironmentAdapter,
     )
@@ -44,7 +47,14 @@ def register_infrastructure(container: punq.Container) -> None:
     container.register(
         IEnvironmentInspector, SystemEnvironmentInspector, scope=punq.Scope.transient
     )
-    container.register(IShellExecutor, ShellAdapter, scope=punq.Scope.transient)
+    container.register(ShellCommandBuilder, scope=punq.Scope.transient)
+    container.register(
+        IShellExecutor,
+        factory=lambda: ShellAdapter(
+            command_builder=container.resolve(ShellCommandBuilder)
+        ),
+        scope=punq.Scope.transient,
+    )
     container.register(
         IFileSystemManager, LocalFileSystemAdapter, scope=punq.Scope.transient
     )

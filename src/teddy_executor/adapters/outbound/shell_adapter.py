@@ -1,18 +1,20 @@
 import os
-import shutil
 import subprocess  # nosec
 import sys
 from typing import Optional, Dict, List, Any
 
 from teddy_executor.core.domain.models.shell_output import ShellOutput
 from teddy_executor.core.ports.outbound.shell_executor import IShellExecutor
-
+from teddy_executor.adapters.outbound.shell_command_builder import ShellCommandBuilder
 
 import re
 
 
 class ShellAdapter(IShellExecutor):
     TIMEOUT_EXIT_CODE = 124
+
+    def __init__(self, command_builder: ShellCommandBuilder = None):  # type: ignore
+        self._command_builder = command_builder or ShellCommandBuilder()
 
     def _sanitize_output(self, text: str) -> str:
         """Strips ALL ANSI escape sequences to prevent playback corruption and garbled reports."""
@@ -41,87 +43,6 @@ class ShellAdapter(IShellExecutor):
                 f"Validation failed: `cwd` path '{cwd}' resolves to '{validated_cwd}', which is outside the project directory '{project_root}'."
             )
         return validated_cwd
-
-    def _prepare_command_for_platform(
-        self, command: str
-    ) -> tuple[str | List[str], bool]:
-        """Determines command arguments and shell usage based on the OS."""
-        command = command.strip()
-        is_multiline = "\n" in command
-        # Check for shell operators to enable granular reporting for single-line chains.
-        # Note: ';' is not a command separator on Windows cmd.exe.
-        ops = (
-            ["&&", "||", ";", "|"]
-            if sys.platform != "win32"
-            else ["&&", "||", "&", "|"]
-        )
-        has_chaining = any(op in command for op in ops)
-        is_complex = is_multiline or has_chaining
-
-        if sys.platform == "win32":
-            # For Windows, we wrap complex commands if they don't look like
-            # a single multiline script (e.g., using triple quotes).
-            is_likely_single_script = "'''" in command or '"""' in command
-            if is_complex and not is_likely_single_script:
-                # Wrap complex commands to fail-fast on Windows.
-                lines = [line.strip() for line in command.split("\n") if line.strip()]
-                wrapped_parts = []
-                for line in lines:
-                    # Escape special characters that break cmd.exe parentheses or redirect output.
-                    # THE FIX: Replace double quotes to prevent breaking the outer "..."
-                    safe_line = (
-                        line.replace('"', "'")
-                        .replace("^", "^^")
-                        .replace("(", "^(")
-                        .replace(")", "^)")
-                        .replace("&", "^&")
-                        .replace("|", "^|")
-                        .replace(">", "^>")
-                        .replace("<", "^<")
-                    )
-                    # Surgical isolation for 'exit' commands. Using 'call' for 'exit /b'
-                    # terminates the parent context; 'cmd /c' allows the parent to survive.
-                    prefix = (
-                        "cmd /c" if line.strip().lower().startswith("exit") else "call"
-                    )
-                    cmd_part = f'"{line}"' if prefix == "cmd /c" else line
-
-                    wrapped_parts.append(
-                        f'({prefix} {cmd_part} || cmd /c "echo FAILED_COMMAND: {safe_line} >&2 & exit 1")'
-                    )
-                wrapped = " && ".join(wrapped_parts)
-                return wrapped, True
-
-            first_word = command.split()[0]
-            if shutil.which(first_word):
-                return command, False  # It's a file, run directly.
-            return command, True  # It's a shell built-in.
-
-        # On POSIX
-        if is_complex and shutil.which("bash"):
-            # Use a high-precision diagnostic script that tracks the specific command.
-            # We use a DEBUG trap to capture the command before it runs and an EXIT trap
-            # to report it. We use a function for the EXIT trap because the DEBUG trap
-            # does not fire for commands executed inside a trap handler function,
-            # ensuring TEDDY_LAST_CMD remains untainted by our cleanup logic.
-            script = (
-                "__teddy_report() { "
-                "RET=$?; "
-                "if [ $RET -ne 0 ]; then "
-                'echo "FAILED_COMMAND: $TEDDY_LAST_CMD" >&2; '
-                "fi; "
-                "exit $RET; "
-                "}\n"
-                "trap 'TEDDY_LAST_CMD=$BASH_COMMAND' DEBUG\n"
-                "trap '__teddy_report' EXIT\n"
-                "set -e\n"
-                f"{command}"
-            )
-            return ["bash", "-c", script], False
-
-        # Fallback for simple single-line or when bash is missing
-        prefix = "set -e; " if is_multiline else ""
-        return f"{prefix}{command}", True
 
     def _log_debug_pre_execution(
         self, command: str, command_args: str | List[str], cwd: str, use_shell: bool
@@ -326,7 +247,7 @@ class ShellAdapter(IShellExecutor):
         # Directives (cd, export) are now pre-processed by the parser.
         # The adapter's responsibility is to execute a single, final command.
 
-        command_args, use_shell = self._prepare_command_for_platform(command)
+        command_args, use_shell = self._command_builder.prepare(command)
         self._log_debug_pre_execution(command, command_args, current_cwd, use_shell)
         result = self._run_subprocess(
             command_args,

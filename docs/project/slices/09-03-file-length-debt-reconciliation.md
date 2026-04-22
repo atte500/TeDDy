@@ -34,7 +34,7 @@ And the system MUST continue to function correctly on all OS matrices
 ## Deliverables
 - [x] **Logic** - Extract turn transition and state management from `SessionOrchestrator` to `SessionLifecycleManager`.
 - [x] **Cleanup** - Verify `SessionOrchestrator` passes the `file-length-python` quality gate (282 lines).
-- [ ] **Logic** - Extract OS-specific command preparation from `ShellAdapter` to `ShellCommandBuilder`.
+- [x] **Logic** - Extract OS-specific command preparation from `ShellAdapter` to `ShellCommandBuilder`.
 - [ ] **Logic** - Extract report assembly and status determination from `ExecutionOrchestrator` to a specialized service or internal helper.
 - [ ] **Logic** - Extract prompt resolution and alignment logic from `PlanningService` to a `PromptManager` or internal helper.
 - [ ] **Cleanup** - Verify `ShellAdapter`, `ExecutionOrchestrator`, and `PlanningService` pass the `file-length-python` quality gate.
@@ -50,6 +50,13 @@ And the system MUST continue to function correctly on all OS matrices
 - Maintain strictly private attributes for any new internal dependencies.
 
 ## Implementation Notes
+
+### Deliverable: Extract ShellCommandBuilder from ShellAdapter
+- Extracted `ShellCommandBuilder` to handle OS-specific command preparation (bash traps and Windows wrapping).
+- `ShellAdapter` now receives the builder via constructor injection.
+- Verified line count: `ShellAdapter.py` is now 263 lines.
+- **Friction:** Broken subcutaneous tests in `test_shell_adapter_windows_logic.py` required migration to the new builder. This confirmed the benefit of isolating this logic as the tests no longer require `sys.platform` mocking.
+- Global integration verified via full shell test suite.
 
 ### Deliverable: Extract SessionLifecycleManager from SessionOrchestrator
 - Extracted `SessionLifecycleManager` to handle `resume`, `finalize_turn`, and `trigger_replan` logic.

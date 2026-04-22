@@ -4,10 +4,11 @@ import yaml
 import anyio
 from teddy_executor.core.domain.models.execution_report import ExecutionReport
 
-from typing import Sequence, Union
+from typing import Sequence
 
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.session_manager import SessionState
+
 
 class SessionLifecycleManager:
     """
@@ -156,7 +157,9 @@ class SessionLifecycleManager:
             validation_ast=validation_ast,
             original_actions=original_actions,
         )
-        next_turn_dir = self.finalize_turn(plan_path, report, is_validation_failure=True)
+        next_turn_dir = self.finalize_turn(
+            plan_path, report, is_validation_failure=True
+        )
 
         self.display_planning_progress(next_turn_dir)
         self._replanner.trigger_replan_turn(
