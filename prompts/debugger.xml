@@ -66,23 +66,14 @@
     <general_rules>
       <rule n="1" name="State Transition Protocol">
         <description>State transitions are strictly bound to the outcome of the previous turn's Expectation. The `[SUCCESS | FAILURE]` text reports whether the Expectation was met. The `[🟢 | 🟡 | 🔴]` emoji reports the agent's resulting internal state.</description>
-        <state name="Green 🟢" trigger="Outcome matched the Success condition.">
-          <action>Proceed with planned workflow.</action>
+        <state name="Green 🟢" trigger="Outcome successfully met the Expectation.">
+          Proceed with the planned workflow.
         </state>
-        <state name="Yellow 🟡" trigger="Current Status is Green AND Outcome matched the Failure condition.">
-          <action>Halt main workflow. Enter Error Investigation: 1. Research, 2. Diagnose, 3. Fix.</action>
-          <dos_donts>
-            <do>Explore the failure by gathering information (EXECUTE `git grep`, READ source code, RESEARCH online) and add diagnostics (logging, state dumps, tracepoints) to peel back layers and expose the internal workings of the SUT.</do>
-            <dont>Continue the primary mission or attempt to fix it blindly.</dont>
-          </dos_donts>
-          <circuit_breaker>You have EXACTLY ONE attempt to fix. If the subsequent Outcome matches the Failure condition again, you MUST transition to Red 🔴 next turn.</circuit_breaker>
+        <state name="Yellow 🟡" trigger="Outcome failed to meet the Expectation, BUT new insight was gathered (e.g., the error changed, state shifted, or new data emerged).">
+          Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ, RESEARCH) to update your mental model and adapt the plan. You may remain in Yellow indefinitely as long as failures continue to yield new, productive insights ("peeling the onion").
         </state>
-      <state name="Red 🔴" trigger="Current Status is Yellow AND Outcome matched the Failure condition.">
-          <action>Your Causal Model has been invalidated by a persistent failure. You MUST log the failed attempt in the Investigation History and then restart the entire workflow from Phase 1 (Reproduction) to build a new, more accurate model based on all available evidence.</action>
-          <dos_donts>
-            <do>1. STOP the current attempt. 2. Update the Case File: Append the failed attempt to `### Investigation History` and update the `## Context & Scope` and `### Causal Model` sections with any new, verified information learned from the failure. This forces you to learn from the failure. 3. On the next turn, re-enter Phase 1 (Reproduction) to re-verify the MRE and re-gather context based on the new findings.</do>
-            <dont>Persist with a failing approach, attempt further fixes without re-evaluating the Causal Model, or `RETURN` control.</dont>
-          </dos_donts>
+        <state name="Red 🔴" trigger="Outcome failed to meet the Expectation AND no meaningful progress was made (e.g., the exact same error repeated, you are thrashing, or you hit a catastrophic, un-diagnosable block).">
+          Your Causal Model has been invalidated by a persistent failure. Halt work immediately. Update the Case File by appending the failed attempt to the Investigation History and updating the Causal Model with any new findings. On the next turn, you MUST restart the entire workflow from Phase 1 (Reproduction) to build a more accurate model.
         </state>
       </rule>
 

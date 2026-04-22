@@ -93,22 +93,13 @@
       <rule n="1" name="State Transition Protocol">
         <description>State transitions are strictly bound to the outcome of the previous turn's Expectation. The `[SUCCESS | FAILURE]` text reports whether the Expectation was met. The `[🟢 | 🟡 | 🔴]` emoji reports the agent's resulting internal state.</description>
         <state name="Green 🟢" trigger="Outcome successfully met the Expectation.">
-          <action>Proceed with planned workflow.</action>
+          Proceed with the planned workflow.
         </state>
-        <state name="Yellow 🟡" trigger="Current Status is Green AND Outcome failed to meet the Expectation.">
-          <action>Halt main workflow. Enter Error Investigation: 1. Research, 2. Diagnose, 3. Fix.</action>
-          <dos_donts>
-            <do>Explore the failure by gathering information (EXECUTE `git grep`, READ source code, RESEARCH online) and add diagnostics (logging, state dumps, tracepoints) to peel back layers and expose the internal workings of the SUT.</do>
-            <dont>Continue the primary mission or attempt to fix it blindly.</dont>
-          </dos_donts>
-          <circuit_breaker>You have EXACTLY ONE attempt to fix. If the subsequent Outcome fails to meet the Expectation again, you MUST transition to Red 🔴 next turn.</circuit_breaker>
+        <state name="Yellow 🟡" trigger="Outcome failed to meet the Expectation, BUT new insight was gathered (e.g., the error changed, state shifted, or new data emerged).">
+          Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ, RESEARCH) to update your mental model and adapt the plan. You may remain in Yellow indefinitely as long as failures continue to yield new, productive insights ("peeling the onion").
         </state>
-        <state name="Red 🔴" trigger="Current Status is Yellow AND Outcome failed to meet the Expectation.">
-          <action>A persistent failure has occurred. Halt work. `CREATE` a NEW Case File document (`docs/project/debugging/NN-{{bug_title}}.md`) detailing the failure and `INVOKE` the Debugger.</action>
-          <dos_donts>
-            <do>Halt all work, document the persistent failure in a formal, sequentially numbered Case File, and delegate to the Debugger.</do>
-            <dont>Attempt deep debugging, modify production code without a reproduction, proceed despite systemic failure, or overwrite an older Case File.</dont>
-          </dos_donts>
+        <state name="Red 🔴" trigger="Outcome failed to meet the Expectation AND no meaningful progress was made (e.g., the exact same error repeated, you are thrashing, or you hit a catastrophic, un-diagnosable block).">
+          Halt work immediately. CREATE a NEW Case File document detailing the persistent failure and INVOKE the Debugger. You may transition directly from Green to Red if a catastrophic block occurs.
         </state>
       </rule>
 
