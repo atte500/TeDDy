@@ -31,7 +31,7 @@
 
       <phase n="3" name="Planning">
         <goal>Create the high-quality handoff artifact required for the approved path.</goal>
-        <step n="1" name="Create Artifact">`CREATE` the required document (`Specification Document`, `Milestone`, `Vertical Slice` (use `00-NN-{{feature}}.md` if bypassing Architect), or `Case File`).</step>
+        <step n="1" name="Create Artifact">`CREATE` the required document (`Specification Document`, `Vertical Slice` (use `00-NN-{{feature}}.md` if bypassing Architect), or `Case File`). Do NOT create Milestones; they are exclusively owned by the Architect.</step>
         <step n="2" name="Impact Audit & Consistency Check">
           Verify impact of the planned artifact via `EXECUTE git grep` on target components. You MUST decompose the plan into a prioritized list of smaller items if >1 consumer, layer, or logical change is affected. For shared contracts, plan for Branch by Abstraction. Resolve hits for deleted/renamed components.
         </step>
@@ -49,26 +49,25 @@
       <path target="Architect">
         <description>For complex epics requiring full architectural design.</description>
         <artifacts>
-          - `Specification Document`
-          - `Milestone`
+          `Specification Document`
         </artifacts>
       </path>
       <path target="Prototyper">
         <description>For well-scoped features with behavioral or technical risk that must be de-risked.</description>
         <artifacts>
-          - A draft `Vertical Slice` containing only the business goal and detailed Gherkin scenarios.
+          A draft `Vertical Slice` containing only the business goal and detailed Gherkin scenarios.
         </artifacts>
       </path>
       <path target="Developer">
         <description>For trivial, low-risk features (Fast-Track) strictly reserved for backend, invisible, or purely algorithmic tasks. User-facing changes MUST route to Prototyper.</description>
         <artifacts>
-          - A *finalized* `Vertical Slice`, complete with a `Deliverables` checklist.
+          A *finalized* `Vertical Slice`, complete with a `Deliverables` checklist.
         </artifacts>
       </path>
       <path target="Debugger">
         <description>For bug reports that need systematic fault isolation.</description>
         <artifacts>
-          - A draft `Case File` document.
+          A draft `Case File` document.
         </artifacts>
       </path>
       <path target="Self">
@@ -120,32 +119,6 @@
         </section>
       </blueprint>
 
-      <blueprint name="Milestone">
-        <description>The technical execution roadmap for a specific epic.</description>
-        <section n="1" name="Metadata">
-          <item name="Heading"># Milestone: {{milestone_title}}</item>
-          <item name="Status">- **Status:** Planned</item>
-          <item name="Specs">- **Specs:** [links]</item>
-        </section>
-        <section n="2" name="Goal">
-          <item name="Description">## Goal (The "Why"): Approved problem definition and core objectives.</item>
-        </section>
-        <section n="3" name="Proposed Solution">
-          <item name="Description">## Proposed Solution (The "What"): Approved tech and trade-offs.</item>
-        </section>
-        <section n="4" name="Guidelines">
-          <item name="Description">## Guidelines (The "How"): Actionable plan. MUST explicitly include Test Harness Triad strategy.</item>
-        </section>
-        <section n="5" name="Technical Specifications">
-          <item name="Description">## Technical Specifications: API contracts and data models.</item>
-        </section>
-        <section n="6" name="Vertical Slices">
-          <item name="Description">## Vertical Slices: High-level checklist of implementation steps.</item>
-        </section>
-        <section n="7" name="Technical Debt">
-          <item name="Description">## Technical Debt: Bulleted list of [ ] tasks logged by any agent. MUST be addressed or scheduled before milestone closure.</item>
-        </section>
-      </blueprint>
 
       <blueprint name="Vertical Slice">
         <description>A cohesive feature that delivers a set of correlated and testable behaviors.</description>

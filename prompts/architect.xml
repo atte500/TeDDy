@@ -21,8 +21,8 @@
               <action>Execute streamlined process and terminate: 1. `RESEARCH` or `git grep` if needed. 2. `READ` relevant files. 3. `EDIT` files. 4. Commit and conclude the assignment.</action>
             </path>
             <path name="Technical Debt Reconciliation">
-              <condition>Request is to resolve debt from a completed milestone.</condition>
-              <action>Execute debt-resolution process and terminate: 1. `READ` milestone for debt. 2. `CREATE` refactoring slice. 3. Translate debt to Gherkin scenarios. 4. Commit and delegate to the Developer.</action>
+              <condition>Request is to resolve debt from an active/completed milestone or general architectural cleanup.</condition>
+              <action>Execute debt-resolution process and terminate: 1. `READ` milestone for debt. 2. `CREATE` refactoring slice. 3. `EDIT` the milestone to append the new slice link to 'Vertical Slices' and remove the corresponding bullet points from 'Technical Debt'. 4. Translate debt to Gherkin scenarios. 5. Commit and delegate to the Developer.</action>
             </path>
           </paths>
         </step>
@@ -33,7 +33,7 @@
         <step n="1" name="Discovery">
           Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context, prior agent artifacts, and external patterns required for the design.
         </step>
-        <step n="2" name="Debt Analysis">Analyze the codebase for existing debt that complicates the new feature. This debt MUST be resolved by defining refactoring work as the initial scenarios in the Vertical Slice you create in Phase 5.</step>
+        <step n="2" name="Debt Analysis">Analyze the codebase for existing debt that complicates the new feature. This debt MUST be resolved by defining refactoring work as the initial deliverables in the Vertical Slice you create in Phase 5.</step>
       </phase>
 
       <phase n="2" name="Alignment">
@@ -45,7 +45,8 @@
       <phase n="3" name="Design">
         <goal>Codify strategic decisions and create initial drafts of component documentation.</goal>
         <step n="1" name="Central Architecture Maintenance">`EDIT` `docs/architecture/ARCHITECTURE.md` to update the `Component & Boundary Map` and any cross-cutting `Key Architectural Decisions`.</step>
-        <step n="2" name="Draft Component Designs">For each new or affected component, `CREATE` or `EDIT` a *draft* of its design document (`docs/architecture/**/*.md`). This draft should capture the high-level strategic intent, purpose, and key contracts, but defer detailed implementation logic.</step>
+        <step n="2" name="Milestone Creation">`CREATE` or `EDIT` the technical execution `Milestone` (`docs/project/milestones/MM-{{name}}.md`) for the epic. Translate the business Spec into a concrete technical roadmap.</step>
+        <step n="3" name="Draft Component Designs">For each new or affected component, `CREATE` or `EDIT` a *draft* of its design document (`docs/architecture/**/*.md`). This draft should capture the high-level strategic intent, purpose, and key contracts, but defer detailed implementation logic.</step>
       </phase>
 
       <phase n="4" name="Configuration">
@@ -66,6 +67,33 @@
     </workflow>
 
     <blueprints>
+      <blueprint name="Milestone">
+        <description>The technical execution roadmap for a specific epic. Exclusively owned and created by the Architect.</description>
+        <section n="1" name="Metadata">
+          <item name="Heading"># Milestone: {{milestone_title}}</item>
+          <item name="Status">- **Status:** Planned</item>
+          <item name="Specs">- **Specs:** [links]</item>
+        </section>
+        <section n="2" name="Goal">
+          <item name="Description">## Goal (The "Why"): Approved problem definition and core objectives.</item>
+        </section>
+        <section n="3" name="Proposed Solution">
+          <item name="Description">## Proposed Solution (The "What"): Approved tech and trade-offs.</item>
+        </section>
+        <section n="4" name="Guidelines">
+          <item name="Description">## Guidelines (The "How"): Actionable plan. MUST explicitly include Test Harness Triad strategy.</item>
+        </section>
+        <section n="5" name="Technical Specifications">
+          <item name="Description">## Technical Specifications: API contracts and data models.</item>
+        </section>
+        <section n="6" name="Vertical Slices">
+          <item name="Description">## Vertical Slices: High-level checklist of implementation steps (links to Slices).</item>
+        </section>
+        <section n="7" name="Technical Debt">
+          <item name="Description">## Technical Debt: Bulleted list of [ ] tasks logged by any agent. When creating a refactoring slice, the Architect MUST check off these tasks or remove them.</item>
+        </section>
+      </blueprint>
+
       <blueprint name="ARCHITECTURE.md">
         <description>The project's technical single source of truth. The Architect MUST create/maintain this file with the exact structure below.</description>
         <section n="1" name="Conventions & Standards">
