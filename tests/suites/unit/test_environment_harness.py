@@ -76,7 +76,8 @@ def test_test_environment_mock_port_registers_and_returns_unified_mock(monkeypat
     Harness: mock_port MUST create, register, and return a UnifiedMock.
     """
     from teddy_executor.core.ports.outbound import IShellExecutor
-    from tests.harness.setup.test_environment import TestEnvironment, UnifiedMock
+    from tests.harness.setup.test_environment import TestEnvironment
+    from tests.harness.setup.mocking import UnifiedMock
 
     env = TestEnvironment(monkeypatch).setup()
 

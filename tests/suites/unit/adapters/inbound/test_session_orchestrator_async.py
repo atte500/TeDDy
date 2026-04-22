@@ -19,7 +19,7 @@ from teddy_executor.core.ports.outbound import (
 )
 from teddy_executor.core.services.session_planner import SessionPlanner
 from teddy_executor.core.services.session_replanner import SessionReplanner
-from tests.harness.setup.test_environment import UnifiedMock
+from tests.harness.setup.mocking import UnifiedMock
 
 
 @pytest.fixture

@@ -42,7 +42,7 @@ And the method MUST return the mock instance for further configuration
 2. [x] **Seam** - Add `mock_port` method to `TestEnvironment` in `tests/harness/setup/test_environment.py`.
 3. [x] **Logic** - Refactor `ActionFactory` in `src/teddy_executor/core/services/action_factory.py` to use constructor injection.
 4. [x] **Wiring** - Update `src/teddy_executor/container.py` to resolve and inject dependencies into `ActionFactory`.
-5. [ ] **Refactor** - Update `tests/harness/setup/test_environment.py` and existing tests to use `env.mock_port()`.
+5. [x] **Refactor** - Update `tests/harness/setup/test_environment.py` and existing tests to use `env.mock_port()`.
 6. [x] **Cleanup** - Remove `punq` import from `src/teddy_executor/core/services/action_factory.py`.
 
 ## Delta Analysis
@@ -68,3 +68,8 @@ And the method MUST return the mock instance for further configuration
 - **Side-Effect Elimination:** Discovered that monkeypatching shared adapter instances (e.g., `mock_shell`) in `ActionFactory` caused state leakage and brittle failures in integration tests. Refactored to a **Decorator pattern** using an `ActionWrapper` class to keep port instances pristine.
 - **Fixture Ordering:** Found that integration tests using `container.resolve()` are sensitive to fixture resolution order. Mocks MUST be requested/injected into the test function before the orchestrator is resolved to ensure the container contains the mocks when the orchestrator's dependencies (like `ActionFactory`) are instantiated.
 - **Boundary Verification:** The removal of `punq` from `ActionFactory` was verified using the `check-core-di-boundary` hook.
+
+### Deliverable 5: Unified Mocking Infrastructure
+- **Extraction:** To resolve file length debt and systemic regressions in adapter unit tests, extracted `UnifiedMock` and `POSIXPathMock` into `tests/harness/setup/mocking.py`.
+- **Unification:** Introduced `register_mock(container, port_type)` utility. This allows standalone fixtures in `mocks.py` to use robust mocking without triggering the full `env.setup()` side-effects.
+- **Debt Reduction:** `tests/harness/setup/test_environment.py` was reduced from 308 to ~200 lines, satisfying the project's quality gates.

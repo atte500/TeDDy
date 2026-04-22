@@ -1,35 +1,30 @@
 from unittest.mock import MagicMock, patch
 import pytest
 import pyperclip
-from tests.harness.setup.test_environment import UnifiedMock
+from tests.harness.setup.mocking import UnifiedMock, register_mock
 
 
 @pytest.fixture
 def mock_config(container):
     from teddy_executor.core.ports.outbound import IConfigService
 
-    mock = UnifiedMock(spec=IConfigService)
-    container.register(IConfigService, instance=mock)
-    return mock
+    return register_mock(container, IConfigService)
 
 
 @pytest.fixture
 def mock_user_interactor(container):
     from teddy_executor.core.ports.outbound import IUserInteractor
 
-    mock = UnifiedMock(spec=IUserInteractor)
-    container.register(IUserInteractor, instance=mock)
-    return mock
+    return register_mock(container, IUserInteractor)
 
 
 @pytest.fixture
 def mock_fs(container):
     from teddy_executor.core.ports.outbound import IFileSystemManager
 
-    mock = UnifiedMock(spec=IFileSystemManager)
+    mock = register_mock(container, IFileSystemManager)
     mock.get_context_paths.return_value = {}
     mock.read_files_in_vault.return_value = {}
-    container.register(IFileSystemManager, instance=mock)
     return mock
 
 
@@ -37,18 +32,14 @@ def mock_fs(container):
 def mock_env(container):
     from teddy_executor.core.ports.outbound import ISystemEnvironment
 
-    mock = UnifiedMock(spec=ISystemEnvironment)
-    container.register(ISystemEnvironment, instance=mock)
-    return mock
+    return register_mock(container, ISystemEnvironment)
 
 
 @pytest.fixture
 def mock_shell(container):
     from teddy_executor.core.ports.outbound import IShellExecutor
 
-    mock = UnifiedMock(spec=IShellExecutor)
-    container.register(IShellExecutor, instance=mock)
-    return mock
+    return register_mock(container, IShellExecutor)
 
 
 @pytest.fixture

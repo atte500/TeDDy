@@ -18,10 +18,10 @@ To harden the system's architecture by resolving systemic technical debt that co
 - [ ] [Slice 09-01: DI Boundary Enforcement](../slices/09-01-di-boundary-enforcement.md)
 
 ## 5. Technical Debt
-- [ ] [Code Quality] Refactor `tests/harness/setup/test_environment.py` to meet 300-line limit (currently 308 lines).
+- [x] [Code Quality] Refactor `tests/harness/setup/test_environment.py` to meet 300-line limit (currently 308 lines).
 - [ ] [Architectural] Refactor `ActionFactory` to group port dependencies and reduce argument count (PLR0913).
-- [ ] [Architectural] Refactor `ActionFactory` to remove `punq` dependency.
-- [ ] [Architectural] Refactor `TestEnvironment` to hide `punq` registration logic.
+- [x] [Architectural] Refactor `ActionFactory` to remove `punq` dependency.
+- [x] [Architectural] Refactor `TestEnvironment` to hide `punq` registration logic.
 - [ ] [Security] Resolve pip-audit vulnerabilities: lxml (6.1.0), pytest (9.0.3), python-dotenv (1.2.2).
 - [ ] [Code Quality] Resolve existing Ruff complexity/statements errors in `ShellAdapter`, `ExecutionOrchestrator`, and `PlanningService`.
 - [ ] [Code Quality] Resolve Mypy duplicate module error in `test_unified_mock.py`.

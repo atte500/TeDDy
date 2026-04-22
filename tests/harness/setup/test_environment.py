@@ -1,117 +1,14 @@
 import shutil
 import uuid
 from pathlib import Path
-import inspect
 from typing import Any, Optional, TypeVar, cast
-from unittest.mock import AsyncMock, MagicMock, Mock, _Call
+from unittest.mock import Mock
 import teddy_executor.__main__
 from teddy_executor.container import create_container
 from tests.harness.setup.real_adapter_mixin import RealAdapterMixin
+from tests.harness.setup.mocking import UnifiedMock, register_mock
 
 T = TypeVar("T")
-
-
-class POSIXPathMock(MagicMock):
-    """
-    A specialized mock that normalizes the first string argument of any call
-    AND any assertion to POSIX format. This ensures that unit tests are
-    cross-platform and consistent with the core's Internal POSIX convention.
-    """
-
-    def _get_child_mock(self, /, **kw):
-        # Always return a UnifiedMock for children to preserve async-awareness
-        return UnifiedMock(**kw)
-
-    def __setattr__(self, name, value):
-        # 1. Propagation logic for sync/async pairing
-        # Use __dict__ to avoid triggering Mock's auto-attribute creation
-        if name in ("return_value", "side_effect"):
-            partner = self.__dict__.get("_synced_partner")
-            if partner and not self.__dict__.get("_syncing", False):
-                try:
-                    # Set the syncing flag on the PARTNER to prevent it from calling us back
-                    object.__setattr__(partner, "_syncing", True)
-                    setattr(partner, name, value)
-                finally:
-                    object.__setattr__(partner, "_syncing", False)
-
-        # 2. Apply to self using standard Mock setter
-        super().__setattr__(name, value)
-
-    def _normalize_args(self, args, kwargs):
-        new_args = list(args)
-        if new_args and isinstance(new_args[0], str):
-            # Systemic normalization: replace \ with /
-            new_args[0] = new_args[0].replace("\\", "/")
-        return tuple(new_args), kwargs
-
-    def __call__(self, /, *args, **kwargs):
-        new_args, new_kwargs = self._normalize_args(args, kwargs)
-        return super().__call__(*new_args, **new_kwargs)
-
-    def assert_called_with(self, /, *args, **kwargs):
-        new_args, new_kwargs = self._normalize_args(args, kwargs)
-        return super().assert_called_with(*new_args, **new_kwargs)
-
-    def assert_any_call(self, /, *args, **kwargs):
-        new_args, new_kwargs = self._normalize_args(args, kwargs)
-        return super().assert_any_call(*new_args, **new_kwargs)
-
-    def assert_called_once_with(self, /, *args, **kwargs):
-        new_args, new_kwargs = self._normalize_args(args, kwargs)
-        return super().assert_called_once_with(*new_args, **new_kwargs)
-
-    def assert_has_calls(self, calls, any_order=False):
-        normalized_calls = []
-        for call in calls:
-            # call is a _Call object (tuple-like: (args, kwargs))
-            args, kwargs = call[1], call[2]
-            new_args, new_kwargs = self._normalize_args(args, kwargs)
-            normalized_calls.append(_Call((new_args, new_kwargs), two=True))
-        return super().assert_has_calls(normalized_calls, any_order=any_order)
-
-
-class UnifiedMock(POSIXPathMock):
-    """
-    A POSIX-normalizing mock that automatically promotes async methods
-    to AsyncMock when a spec is provided.
-    """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        spec = kwargs.get("spec")
-        if spec:
-            self._promote_async_methods(spec)
-
-    def _promote_async_methods(self, spec: Any) -> None:
-        """Identifies and replaces async methods with AsyncMock instances."""
-        all_methods = set(dir(spec))
-        for name in all_methods:
-            if name.startswith("_"):
-                continue
-
-            attr = getattr(spec, name, None)
-            if name.startswith("async_") or inspect.iscoroutinefunction(attr):
-                if not isinstance(getattr(self, name), AsyncMock):
-                    setattr(self, name, AsyncAsyncPOSIXMock())
-
-                sync_name = name.removeprefix("async_")
-                if sync_name in all_methods and sync_name != name:
-                    sync_mock = getattr(self, sync_name)
-                    async_mock = getattr(self, name)
-
-                    # Link the mocks for return_value/side_effect synchronization
-                    # Use object.__setattr__ to ensure these don't become Mocks
-                    object.__setattr__(sync_mock, "_synced_partner", async_mock)
-                    object.__setattr__(async_mock, "_synced_partner", sync_mock)
-                    object.__setattr__(sync_mock, "_syncing", False)
-                    object.__setattr__(async_mock, "_syncing", False)
-
-
-class AsyncAsyncPOSIXMock(POSIXPathMock, AsyncMock):
-    """Bridge for async methods that need POSIX normalization."""
-
-    pass
 
 
 class TestEnvironment(RealAdapterMixin):
@@ -193,24 +90,21 @@ class TestEnvironment(RealAdapterMixin):
             ISystemEnvironment,
         )
 
-        mock_env = UnifiedMock(spec=ISystemEnvironment)
+        mock_env = self.mock_port(ISystemEnvironment)
         mock_env.get_env.return_value = None
         mock_env.which.return_value = None
-        self._container.register(ISystemEnvironment, instance=mock_env)
 
-        mock_shell = UnifiedMock(spec=IShellExecutor)
+        mock_shell = self.mock_port(IShellExecutor)
         mock_shell.execute.return_value = {"stdout": "", "stderr": "", "return_code": 0}
-        self._container.register(IShellExecutor, instance=mock_shell)
 
     def _register_ui_mocks(self) -> None:
         from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
         from teddy_executor.core.ports.outbound import IUserInteractor
 
-        mock_interactor = UnifiedMock(spec=IUserInteractor)
+        mock_interactor = self.mock_port(IUserInteractor)
         mock_interactor.confirm_action.return_value = (True, "")
         mock_interactor.confirm_manual_handoff.return_value = (True, "")
         mock_interactor.ask_question.return_value = ""
-        self._container.register(IUserInteractor, instance=mock_interactor)
         self._container.register(IPlanReviewer, instance=None)
 
     def _register_ai_mocks(self) -> None:
@@ -220,7 +114,7 @@ class TestEnvironment(RealAdapterMixin):
             IWebSearcher,
         )
 
-        mock_llm = UnifiedMock(spec=ILlmClient)
+        mock_llm = self.mock_port(ILlmClient)
         mock_response = UnifiedMock()
         mock_response.choices = [UnifiedMock()]
         mock_response.choices[
@@ -230,9 +124,9 @@ class TestEnvironment(RealAdapterMixin):
         mock_llm.get_completion.return_value = mock_response
         mock_llm.get_completion_cost.return_value = 0.0
         mock_llm.get_token_count.return_value = 0
-        self._container.register(ILlmClient, instance=mock_llm)
-        self._container.register(IWebScraper, instance=UnifiedMock(spec=IWebScraper))
-        self._container.register(IWebSearcher, instance=UnifiedMock(spec=IWebSearcher))
+
+        self.mock_port(IWebScraper)
+        self.mock_port(IWebSearcher)
 
     def _register_io_mocks(self) -> None:
         from teddy_executor.core.ports.outbound import (
@@ -242,25 +136,21 @@ class TestEnvironment(RealAdapterMixin):
             IRepoTreeGenerator,
         )
 
-        mock_fs = UnifiedMock(spec=IFileSystemManager)
+        mock_fs = self.mock_port(IFileSystemManager)
         mock_fs.path_exists.return_value = False
         mock_fs.get_context_paths.return_value = {}
         mock_fs.read_files_in_vault.return_value = {}
-        self._container.register(IFileSystemManager, instance=mock_fs)
 
-        mock_config = UnifiedMock(spec=IConfigService)
+        mock_config = self.mock_port(IConfigService)
         mock_config.get_setting.side_effect = lambda k, d=None: (
             None if k == "ui_mode" else d
         )
-        self._container.register(IConfigService, instance=mock_config)
 
-        mock_tree = UnifiedMock(spec=IRepoTreeGenerator)
+        mock_tree = self.mock_port(IRepoTreeGenerator)
         mock_tree.generate_tree.return_value = ""
-        self._container.register(IRepoTreeGenerator, instance=mock_tree)
 
-        mock_inspector = UnifiedMock(spec=IEnvironmentInspector)
+        mock_inspector = self.mock_port(IEnvironmentInspector)
         mock_inspector.get_git_status.return_value = None
-        self._container.register(IEnvironmentInspector, instance=mock_inspector)
 
     # with_real_filesystem and with_real_init_service moved to RealAdapterMixin
 
@@ -274,9 +164,7 @@ class TestEnvironment(RealAdapterMixin):
         Creates, registers, and returns a UnifiedMock for a specific port.
         This is the preferred way to mock dependencies in tests.
         """
-        mock = UnifiedMock(spec=port_type)
-        self._container.register(port_type, instance=mock)
-        return cast(T, mock)
+        return register_mock(self._container, port_type)
 
     def get_service(self, service_type: Any) -> Any:
         """Resolves a service from the test-configured container."""

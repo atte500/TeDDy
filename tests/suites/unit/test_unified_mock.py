@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock
-from tests.harness.setup.test_environment import POSIXPathMock
+from tests.harness.setup.mocking import POSIXPathMock
 
 
 class IAsyncPort:
@@ -16,7 +16,7 @@ def test_posix_path_mock_is_not_async_aware_by_default():
 
 @pytest.mark.anyio
 async def test_unified_mock_is_async_aware():
-    from tests.harness.setup.test_environment import UnifiedMock
+    from tests.harness.setup.mocking import UnifiedMock
 
     mock = UnifiedMock(spec=IAsyncPort)
 
@@ -37,7 +37,7 @@ def test_unified_mock_synchronizes_sync_and_async_return_values():
     """
     Harness: Setting return_value on a sync method MUST update its async counterpart.
     """
-    from tests.harness.setup.test_environment import UnifiedMock
+    from tests.harness.setup.mocking import UnifiedMock
 
     mock = UnifiedMock(spec=IAsyncPort)
 
@@ -53,7 +53,7 @@ async def test_unified_mock_synchronizes_sync_and_async_side_effects():
     """
     Harness: Setting side_effect on a sync method MUST update its async counterpart.
     """
-    from tests.harness.setup.test_environment import UnifiedMock
+    from tests.harness.setup.mocking import UnifiedMock
 
     mock = UnifiedMock(spec=IAsyncPort)
 
