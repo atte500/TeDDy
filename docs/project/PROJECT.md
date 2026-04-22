@@ -12,7 +12,8 @@ This table tracks the status of active Milestones and provides a high-level summ
 
 | Milestone                                                                              | Status        | Specs                                                                                                                                                               | Features                                                                                                                           |
 | :------------------------------------------------------------------------------------- | :------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :--------------------------------------------------------------------------------------------------------------------------------- |
-| [10-interactive-session-and-config](./milestones/10-interactive-session-and-config.md) | `In Progress` | [Interactive Session](./specs/interactive-session-workflow.md)<br>[Context Payload](./specs/context-payload-format.md)<br>[Report Format](./specs/report-format.md) | Stateful Session Management, TUI Instruction Bridge, LLM Integration (LiteLLM), and UX Polish. |
+| [09-technical-debt-reconciliation](./milestones/09-architectural-debt-reconciliation.md) | `In Progress` | [DI Boundary Rules](./specs/di-boundary-rules.md) | Refactor ActionFactory to Constructor Injection, Enforce Core Isolation, Simplify Test Mocking. |
+| [10-interactive-session-and-config](./milestones/10-interactive-session-and-config.md) | `On Hold` | [Interactive Session](./specs/interactive-session-workflow.md)<br>[Context Payload](./specs/context-payload-format.md)<br>[Report Format](./specs/report-format.md) | Stateful Session Management, TUI Instruction Bridge, LLM Integration (LiteLLM), and UX Polish. |
 
 ## Workflow Standards
 

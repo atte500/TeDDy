@@ -1,4 +1,6 @@
-# Milestone 09: Interactive Session Workflow & LLM Integration
+# Milestone 10: Interactive Session Workflow & LLM Integration
+
+- **Status:** On Hold
 
 ## 1. Goal (The "Why")
 

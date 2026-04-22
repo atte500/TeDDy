@@ -188,6 +188,8 @@ This section serves as the "System Law" (Poka-Yoke) for TeDDy. It defines the pr
 - **Reporting:** Use Jinja2 Macros for modularity. (Ensures consistency and facilitates section extraction.)
 - **Encoding:** Explicitly specify `utf-8` for all file operations. (Ensures predictable platform-agnostic behavior.)
 - **Serialization:** Enforce strict primitive validation before serialization. (Prevents infinite recursion or hangs from dynamic objects.)
+- **DI Boundaries:** The `src/.../core/` directory MUST NOT import or depend on DI frameworks (e.g., `punq`). (Ensures Hexagonal isolation and prevents Service Locator anti-patterns.)
+- **Constructor Injection:** All core services MUST use explicit constructor injection. (Mandates transparency and simplifies testing.)
 - **Initialization:** Import heavy libraries (`litellm`, `trafilatura`) lazily. (Ensures CLI initializes under 500ms.)
 - **Binary Stability:** Abstract heavy binary libs into private getters and mock the getter. (Prevents worker crashes in distributed tests.)
 - **Validation:** Optimize plan rules for performance on large inputs. (Ensures low-latency feedback loops.)
