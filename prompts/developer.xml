@@ -61,12 +61,14 @@
         <step n="1" name="Global Test Run">
           Run the full test suite (no filters) for every deliverable, including logic and refactor items. Confirm the acceptance ratchet is green and no regressions exist.
         </step>
-        <step n="2" name="Hard Abort (Safety Valve)">
-          This phase is a strict blocker for Version Control. If integration reveals a systemic regression, atomicity violation (requires unplanned changes to other components), or out-of-scope work:
-          1. Revert: EXECUTE `git checkout HEAD -- src/ tests/` to restore Green trunk while preserving documentation.
-          2. Pivot: Modify the slice's `## Delta Analysis` to log the additional changes required and `## Deliverables` to add the required preliminary items (Abstractions or Refactors).
-          3. Version Control: EXECUTE Version Control Protocol to commit the slice update BEFORE restarting.
-          4. Restart: Return to Phase 1 (Orientation) to begin implementation of the revised plan.
+        <step n="2" name="Fault Isolation & Recovery">
+          If the global test suite fails, halt and diagnose the cause.
+
+          If the plan is wrong (bad size, order, or needs a simple refactor), then revert code, update the Vertical Slice, and restart.
+
+          If blocked by complex technical debt, then revert code, document the debt, and INVOKE the Architect.
+
+          If there is a complex bug or the deliverable cannot be decomposed, then do NOT revert code, create a Case File, and INVOKE the Debugger.
         </step>
         <step n="3" name="Transition">Upon successful global integration, you MUST proceed to Phase 5 (Documentation) for the current deliverable.</step>
       </phase>
