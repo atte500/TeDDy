@@ -32,7 +32,7 @@ And the system MUST continue to function correctly on all OS matrices
 ```
 
 ## Deliverables
-- [ ] **Logic** - Extract turn transition and state management from `SessionOrchestrator` to `SessionLifecycleManager`.
+- [x] **Logic** - Extract turn transition and state management from `SessionOrchestrator` to `SessionLifecycleManager`.
 - [ ] **Logic** - Extract auto-naming and summary generation from `SessionOrchestrator` to `SessionMetadataService`.
 - [ ] **Logic** - Extract OS-specific command preparation from `ShellAdapter` to `ShellCommandBuilder`.
 - [ ] **Logic** - Extract report assembly logic from `ExecutionOrchestrator` to a specialized internal formatter or service.
@@ -48,3 +48,12 @@ And the system MUST continue to function correctly on all OS matrices
 - Use **Extract Class** for stateful logic and **Extract Method** (moved to new utilities) for stateless logic.
 - Ensure all new components are correctly registered in `container.py`.
 - Maintain strictly private attributes for any new internal dependencies.
+
+## Implementation Notes
+
+### Deliverable: Extract SessionLifecycleManager from SessionOrchestrator
+- Extracted `SessionLifecycleManager` to handle `resume`, `finalize_turn`, and `trigger_replan` logic.
+- `SessionOrchestrator` now acts as a pure entry point, coordinating parsing, validation, and execution.
+- Verified line count: `SessionOrchestrator.py` is now 286 lines (under the 300-line limit).
+- All 632 tests passed, confirming zero functional regressions.
+- Logged pre-existing debt in `PlanningService` and `ExecutionOrchestrator` regarding file length.

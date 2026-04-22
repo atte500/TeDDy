@@ -1,8 +1,7 @@
 from pathlib import Path
-from typing import Any, Optional, Sequence, cast
+from typing import Any, Optional, cast
 
 import anyio
-import yaml
 from teddy_executor.core.domain.models.execution_report import (
     ExecutionReport,
 )
@@ -12,11 +11,6 @@ from teddy_executor.core.services.parser_reporting import (
 from teddy_executor.core.domain.models.plan import Plan
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
-from teddy_executor.core.ports.outbound.markdown_report_formatter import (
-    IMarkdownReportFormatter,
-)
-from teddy_executor.core.ports.outbound.session_manager import SessionState
-from teddy_executor.core.services.session_planner import SessionPlanner
 from teddy_executor.core.services.session_replanner import SessionReplanner
 
 
@@ -31,24 +25,20 @@ class SessionOrchestrator(IRunPlanUseCase):
         execution_orchestrator,
         session_service,
         file_system_manager: IFileSystemManager,
-        report_formatter: IMarkdownReportFormatter,
         plan_validator,
-        planning_service,
         plan_parser,
         user_interactor,
+        lifecycle_manager,
         replanner: SessionReplanner,
-        session_planner: SessionPlanner,
     ):
         self._execution_orchestrator = execution_orchestrator
         self._session_service = session_service
         self._file_system_manager = file_system_manager
-        self._report_formatter = report_formatter
         self._plan_validator = plan_validator
-        self._planning_service = planning_service
         self._plan_parser = plan_parser
         self._user_interactor = user_interactor
+        self._lifecycle_manager = lifecycle_manager
         self._replanner = replanner
-        self._session_planner = session_planner
 
     async def async_execute(
         self,
@@ -115,7 +105,7 @@ class SessionOrchestrator(IRunPlanUseCase):
 
         # 4. Turn Transition
         if is_session and plan_path:
-            await anyio.to_thread.run_sync(self._finalize_turn, plan_path, report)
+            await self._lifecycle_manager.async_finalize_turn(plan_path, report)
 
         return report
 
@@ -128,48 +118,8 @@ class SessionOrchestrator(IRunPlanUseCase):
         """
         Asynchronously resumes the session based on its state.
         """
-        state, turn_path = await self._session_service.async_get_session_state(
-            session_name
-        )
-
-        if state == SessionState.PENDING_PLAN:
-            plan_path = f"{turn_path}/plan.md"
-            return await self.async_execute(
-                plan_path=plan_path, interactive=interactive, message=message
-            )
-
-        if state == SessionState.EMPTY:
-            return await self._async_handle_planning_and_execution(
-                turn_path, interactive, message=message
-            )
-
-        if state == SessionState.COMPLETE_TURN:
-            next_turn_dir = await self._session_service.async_transition_to_next_turn(
-                plan_path=f"{turn_path}/plan.md",
-            )
-            return await self._async_handle_planning_and_execution(
-                next_turn_dir, interactive, message=message
-            )
-
-        return None
-
-    async def _async_handle_planning_and_execution(
-        self, turn_dir: str, interactive: bool, message: Optional[str] = None
-    ) -> Optional[ExecutionReport]:
-        """Triggers planning for a turn and then executes the resulting plan."""
-        new_name = await self._session_planner.async_trigger_new_plan(
-            turn_dir, message=message
-        )
-        if not new_name or new_name == "CANCELLED":
-            return None
-
-        _, actual_turn_path = await self._session_service.async_get_session_state(
-            new_name
-        )
-        return await self.async_execute(
-            plan_path=f"{actual_turn_path}/plan.md",
-            interactive=interactive,
-            message=message,
+        return await self._lifecycle_manager.async_resume(
+            session_name, self, interactive, message
         )
 
     def resume(
@@ -181,52 +131,7 @@ class SessionOrchestrator(IRunPlanUseCase):
         """
         Implements the 'resume' state machine.
         """
-        state, turn_path = self._session_service.get_session_state(session_name)
-
-        if state == SessionState.PENDING_PLAN:
-            plan_path = f"{turn_path}/plan.md"
-            return self.execute(
-                plan_path=plan_path, interactive=interactive, message=message
-            )
-
-        if state == SessionState.EMPTY:
-            return self._handle_planning_and_execution(
-                turn_path, interactive, message=message
-            )
-
-        if state == SessionState.COMPLETE_TURN:
-            # Case C: Start next turn
-            next_turn_dir = self._session_service.transition_to_next_turn(
-                plan_path=f"{turn_path}/plan.md"
-            )
-            return self._handle_planning_and_execution(
-                next_turn_dir, interactive, message=message
-            )
-
-        return None
-
-    def _handle_planning_and_execution(
-        self, turn_dir: str, interactive: bool, message: Optional[str] = None
-    ) -> Optional[ExecutionReport]:
-        """Triggers planning for a turn and then executes the resulting plan."""
-        new_name = self._trigger_new_plan(turn_dir, message=message)
-        # Handle planning cancellation or empty input
-        if not new_name or new_name == "CANCELLED":
-            return None
-        # After planning, the turn is now PENDING_PLAN.
-        # Resolve path again to account for potential renaming.
-        _, actual_turn_path = self._session_service.get_session_state(new_name)
-        return self.execute(
-            plan_path=f"{actual_turn_path}/plan.md",
-            interactive=interactive,
-            message=message,
-        )
-
-    def _trigger_new_plan(
-        self, turn_dir: str, message: Optional[str] = None
-    ) -> Optional[str]:
-        """Orchestrates the planning phase for a new turn."""
-        return self._session_planner.trigger_new_plan(turn_dir, message=message)
+        return self._lifecycle_manager.resume(session_name, self, interactive, message)
 
     def execute(
         self,
@@ -271,7 +176,7 @@ class SessionOrchestrator(IRunPlanUseCase):
 
         # 4. Turn Transition
         if is_session and plan_path:
-            self._finalize_turn(plan_path, report)
+            self._lifecycle_manager.finalize_turn(plan_path, report)
 
         return report
 
@@ -292,7 +197,7 @@ class SessionOrchestrator(IRunPlanUseCase):
             if is_session and plan_path:
                 # Ensure the rich diagnostic is visible to the user
                 self._user_interactor.display_message(str(e))
-                self._trigger_replan(
+                self._lifecycle_manager.trigger_replan(
                     plan_path=plan_path,
                     errors=[f"Structural error: {str(e)}"],
                     original_plan_content=content,
@@ -319,7 +224,7 @@ class SessionOrchestrator(IRunPlanUseCase):
         failed_resources = await self._replanner.async_gather_failed_resources(errors)
 
         if is_session and plan_path:
-            return await self.async_trigger_replan(
+            return await self._lifecycle_manager.async_trigger_replan(
                 plan_path=plan_path,
                 errors=error_messages,
                 original_plan_content=content,
@@ -356,7 +261,7 @@ class SessionOrchestrator(IRunPlanUseCase):
         failed_resources = self._replanner.gather_failed_resources(errors)
 
         if is_session and plan_path:
-            return self._trigger_replan(
+            return self._lifecycle_manager.trigger_replan(
                 plan_path=plan_path,
                 errors=error_messages,
                 original_plan_content=content,
@@ -375,113 +280,3 @@ class SessionOrchestrator(IRunPlanUseCase):
             validation_ast=rich_ast,
             original_actions=plan.actions,
         )
-
-    def _finalize_turn(
-        self,
-        plan_path: str,
-        report: ExecutionReport,
-        is_validation_failure: bool = False,
-    ):
-        """Persists the report and transitions to the next turn."""
-        turn_dir = Path(plan_path).parent
-        meta_path = turn_dir / "meta.yaml"
-
-        # Read current cost from meta.yaml
-        turn_cost = 0.0
-        if self._file_system_manager.path_exists(str(meta_path)):
-            meta_content = self._file_system_manager.read_file(str(meta_path))
-            # Defensive: cast content to str to prevent yaml.safe_load hanging on MagicMocks
-            meta_loaded = yaml.safe_load(str(meta_content))
-            meta = meta_loaded if isinstance(meta_loaded, dict) else {}
-            turn_cost = meta.get("turn_cost", 0.0)
-
-        # 1. Persist the report to the current turn directory
-        formatted_report = self._report_formatter.format(report)
-        report_file_path = str(turn_dir / "report.md")
-        self._file_system_manager.write_file(report_file_path, formatted_report)
-
-        # 2. Transition to next turn
-        return self._session_service.transition_to_next_turn(
-            plan_path=plan_path,
-            execution_report=report,
-            turn_cost=turn_cost,
-            is_validation_failure=is_validation_failure,
-        )
-
-    def _display_planning_progress(self, turn_dir: Any) -> None:
-        """Displays a progress message before planning starts."""
-        turn_dir_str = str(turn_dir)
-        turn_id = Path(turn_dir_str).name
-        meta_path = Path(turn_dir_str) / "meta.yaml"
-
-        agent_name = "pathfinder"
-        if self._file_system_manager.path_exists(str(meta_path)):
-            content = self._file_system_manager.read_file(str(meta_path))
-            meta = yaml.safe_load(str(content)) or {}
-            if isinstance(meta, dict):
-                agent_name = meta.get("agent_name", agent_name)
-
-        msg = f"[cyan][{turn_id}] Planning Turn with {agent_name}...[/cyan]"
-        self._user_interactor.display_message(msg)
-
-    async def async_trigger_replan(  # noqa: PLR0913
-        self,
-        plan_path: str,
-        errors: list[str],
-        original_plan_content: str,
-        title: str = "Unknown Plan",
-        rationale: str = "Structural Error",
-        failed_resources: Optional[dict[str, str]] = None,
-        validation_ast: Optional[str] = None,
-        original_actions: Optional[Sequence[Any]] = None,
-    ) -> ExecutionReport:
-        """Asynchronously triggers the Automated Re-plan Loop."""
-        import anyio
-
-        report = self._replanner.build_failure_report(
-            errors,
-            title,
-            rationale,
-            failed_resources or {},
-            validation_ast=validation_ast,
-            original_actions=original_actions,
-        )
-        next_turn_dir = await anyio.to_thread.run_sync(
-            self._finalize_turn, plan_path, report, True
-        )
-
-        await anyio.to_thread.run_sync(self._display_planning_progress, next_turn_dir)
-        await self._replanner.async_trigger_replan_turn(
-            next_turn_dir, errors, original_plan_content, validation_ast=validation_ast
-        )
-        return report
-
-    def _trigger_replan(  # noqa: PLR0913
-        self,
-        plan_path: str,
-        errors: list[str],
-        original_plan_content: str,
-        title: str = "Unknown Plan",
-        rationale: str = "Structural Error",
-        failed_resources: Optional[dict[str, str]] = None,
-        validation_ast: Optional[str] = None,
-        original_actions: Optional[Sequence[Any]] = None,
-    ) -> ExecutionReport:
-        """Triggers the Automated Re-plan Loop."""
-        report = self._replanner.build_failure_report(
-            errors,
-            title,
-            rationale,
-            failed_resources or {},
-            validation_ast=validation_ast,
-            original_actions=original_actions,
-        )
-        next_turn_dir = self._finalize_turn(
-            plan_path, report, is_validation_failure=True
-        )
-
-        self._display_planning_progress(next_turn_dir)
-        self._replanner.trigger_replan_turn(
-            next_turn_dir, errors, original_plan_content, validation_ast=validation_ast
-        )
-        return report

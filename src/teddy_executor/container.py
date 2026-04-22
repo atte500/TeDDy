@@ -162,6 +162,9 @@ def _register_orchestration(container: punq.Container) -> None:
     from teddy_executor.core.services.execution_orchestrator import (
         ExecutionOrchestrator,
     )
+    from teddy_executor.core.services.session_lifecycle_manager import (
+        SessionLifecycleManager,
+    )
     from teddy_executor.core.services.session_orchestrator import SessionOrchestrator
     from teddy_executor.core.services.session_planner import SessionPlanner
     from teddy_executor.core.services.session_replanner import SessionReplanner
@@ -185,18 +188,28 @@ def _register_orchestration(container: punq.Container) -> None:
         scope=punq.Scope.transient,
     )
     container.register(
+        SessionLifecycleManager,
+        factory=lambda: SessionLifecycleManager(
+            session_service=container.resolve(ISessionManager),
+            file_system_manager=container.resolve(IFileSystemManager),
+            report_formatter=container.resolve(IMarkdownReportFormatter),
+            user_interactor=container.resolve(IUserInteractor),
+            session_planner=container.resolve(SessionPlanner),
+            replanner=container.resolve(SessionReplanner),
+        ),
+        scope=punq.Scope.transient,
+    )
+    container.register(
         IRunPlanUseCase,
         factory=lambda: SessionOrchestrator(
             execution_orchestrator=container.resolve(ExecutionOrchestrator),
             session_service=container.resolve(ISessionManager),
             file_system_manager=container.resolve(IFileSystemManager),
-            report_formatter=container.resolve(IMarkdownReportFormatter),
             plan_validator=container.resolve(IPlanValidator),
-            planning_service=container.resolve(IPlanningUseCase),
             plan_parser=container.resolve(IPlanParser),
             user_interactor=container.resolve(IUserInteractor),
+            lifecycle_manager=container.resolve(SessionLifecycleManager),
             replanner=container.resolve(SessionReplanner),
-            session_planner=container.resolve(SessionPlanner),
         ),
         scope=punq.Scope.transient,
     )

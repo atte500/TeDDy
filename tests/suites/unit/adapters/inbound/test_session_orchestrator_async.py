@@ -6,35 +6,33 @@ from teddy_executor.core.domain.models import ExecutionReport, Plan
 from teddy_executor.core.domain.models.execution_report import RunSummary, RunStatus
 from teddy_executor.core.ports.outbound.session_manager import (
     ISessionManager,
-    SessionState,
 )
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
-from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
 from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
 from teddy_executor.core.ports.outbound import (
     IFileSystemManager,
-    IMarkdownReportFormatter,
     IUserInteractor,
 )
-from teddy_executor.core.services.session_planner import SessionPlanner
 from teddy_executor.core.services.session_replanner import SessionReplanner
 from tests.harness.setup.mocking import UnifiedMock
 
 
 @pytest.fixture
 def orchestrator_deps():
+    from teddy_executor.core.services.session_lifecycle_manager import (
+        SessionLifecycleManager,
+    )
+
     return {
         "execution_orchestrator": UnifiedMock(spec=IRunPlanUseCase),
         "session_service": UnifiedMock(spec=ISessionManager),
         "file_system_manager": UnifiedMock(spec=IFileSystemManager),
-        "report_formatter": UnifiedMock(spec=IMarkdownReportFormatter),
         "plan_validator": UnifiedMock(spec=IPlanValidator),
-        "planning_service": UnifiedMock(spec=IPlanningUseCase),
         "plan_parser": UnifiedMock(spec=IPlanParser),
         "user_interactor": UnifiedMock(spec=IUserInteractor),
+        "lifecycle_manager": UnifiedMock(spec=SessionLifecycleManager),
         "replanner": UnifiedMock(spec=SessionReplanner),
-        "session_planner": UnifiedMock(spec=SessionPlanner),
     }
 
 
@@ -78,87 +76,52 @@ async def test_async_execute_calls_execution_orchestrator(
 
 
 @pytest.mark.anyio
-async def test_async_resume_pending_plan_calls_async_execute(
+async def test_async_resume_delegates_to_lifecycle_manager(
     orchestrator, orchestrator_deps
 ):
     # Setup
     session_name = "test-session"
-    turn_path = "sessions/test-session/01"
-    plan_path = f"{turn_path}/plan.md"
-
     summary = RunSummary(
         status=RunStatus.SUCCESS, start_time=datetime.now(), end_time=datetime.now()
     )
     report = ExecutionReport(run_summary=summary, plan_title="Test Plan")
 
-    # Mock dependencies
-    orchestrator_deps["session_service"].async_get_session_state.return_value = (
-        SessionState.PENDING_PLAN,
-        turn_path,
-    )
-    orchestrator_deps["session_service"].async_resolve_context_paths.return_value = {
-        "Session": [],
-        "Turn": [],
-    }
-    orchestrator_deps[
-        "file_system_manager"
-    ].path_exists.return_value = True  # For session mode detection inside execute
-    orchestrator_deps["execution_orchestrator"].async_execute = AsyncMock(
-        return_value=report
-    )
-    orchestrator_deps["plan_validator"].validate.return_value = []
+    orchestrator_deps["lifecycle_manager"].async_resume.return_value = report
 
     # Act
     result = await orchestrator.async_resume(session_name=session_name)
 
     # Assert
     assert result == report
-    orchestrator_deps["execution_orchestrator"].async_execute.assert_called_once()
-    assert (
-        orchestrator_deps["execution_orchestrator"].async_execute.call_args.kwargs[
-            "plan_path"
-        ]
-        == plan_path
+    orchestrator_deps["lifecycle_manager"].async_resume.assert_called_once_with(
+        session_name, orchestrator, True, None
     )
 
 
 @pytest.mark.anyio
-async def test_async_resume_empty_calls_planning_then_execute(
+async def test_async_execute_finalizes_turn_in_session_mode(
     orchestrator, orchestrator_deps
 ):
     # Setup
-    session_name = "test-session"
-    turn_path = "sessions/test-session/01"
+    plan = Plan(title="Test Plan", rationale="Test", actions=[{"type": "EXECUTE"}])
+    report = ExecutionReport(
+        run_summary=RunSummary(
+            status=RunStatus.SUCCESS, start_time=datetime.now(), end_time=datetime.now()
+        ),
+        plan_title="Test Plan",
+    )
 
-    summary = RunSummary(
-        status=RunStatus.SUCCESS, start_time=datetime.now(), end_time=datetime.now()
-    )
-    report = ExecutionReport(run_summary=summary, plan_title="Planned")
-    plan = Plan(title="Planned", rationale="Test", actions=[{"type": "EXECUTE"}])
-
-    # Mock dependencies
-    orchestrator_deps["session_service"].async_get_session_state.return_value = (
-        SessionState.EMPTY,
-        turn_path,
-    )
-    # Mock SessionPlanner (the service that orchestrates the prompt + PlanningService)
-    orchestrator_deps["session_planner"].async_trigger_new_plan = AsyncMock(
-        return_value=session_name
-    )
-    orchestrator_deps["execution_orchestrator"].async_execute = AsyncMock(
-        return_value=report
-    )
-    orchestrator_deps["file_system_manager"].path_exists.return_value = True
-    orchestrator_deps["file_system_manager"].read_file.return_value = "raw-content"
-    orchestrator_deps["plan_parser"].parse.return_value = plan
+    plan_path = "session/01/plan.md"
+    orchestrator_deps[
+        "file_system_manager"
+    ].path_exists.return_value = True  # session mode
+    orchestrator_deps["execution_orchestrator"].async_execute.return_value = report
     orchestrator_deps["plan_validator"].validate.return_value = []
 
     # Act
-    result = await orchestrator.async_resume(session_name=session_name)
+    await orchestrator.async_execute(plan=plan, plan_path=plan_path)
 
     # Assert
-    assert result == report
-    orchestrator_deps["session_planner"].async_trigger_new_plan.assert_called_once_with(
-        turn_path, message=None
+    orchestrator_deps["lifecycle_manager"].async_finalize_turn.assert_called_once_with(
+        plan_path, report
     )
-    orchestrator_deps["execution_orchestrator"].async_execute.assert_called_once()
