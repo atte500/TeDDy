@@ -19,9 +19,10 @@ To harden the system's architecture by resolving systemic technical debt that co
 - [x] [Slice 09-02: Structural Hardening & Security](../slices/09-02-structural-hardening-and-security.md)
 - [x] [Slice 09-03: File Length Debt Reconciliation](../slices/09-03-file-length-debt-reconciliation.md)
 - [x] [Slice 09-04: Final Debt Cleanup](../slices/09-04-final-debt-cleanup.md)
-- [ ] [Slice 09-05: Type-Safe Dead Code Whitelisting](../slices/09-05-type-safe-vulture-whitelist.md)
+- [▶] [Slice 09-05: Type-Safe Dead Code Whitelisting](../slices/09-05-type-safe-vulture-whitelist.md)
 
 ## 5. Technical Debt
+- [▶] [Code Quality] Transition to type-safe Vulture whitelist (Slice 09-05).
 - [x] [Code Quality] Refactor `src/teddy_executor/core/services/session_orchestrator.py` to meet 300-line limit (currently 487 lines -> 286 lines).
 - [x] [Code Quality] Refactor `src/teddy_executor/adapters/outbound/shell_adapter.py` to meet 300-line limit (currently 340 lines).
 - [x] [Code Quality] Refactor `src/teddy_executor/core/services/markdown_plan_parser.py` to meet 300-line limit (currently 244 lines).
@@ -30,7 +31,7 @@ To harden the system's architecture by resolving systemic technical debt that co
 - [x] [Code Quality] Refactor `src/teddy_executor/core/services/execution_orchestrator.py` to meet 300-line limit (currently 332 lines).
 - [x] [Code Quality] Refactor `src/teddy_executor/core/services/planning_service.py` to meet 300-line limit (currently 335 lines).
 - [x] [Code Quality] Resolve Mypy duplicate module error for `slice_00_05_logic` vs `prototypes/slice_00_05_logic`.
-- [x] [Code Quality] Configure Vulture whitelist or pragmas for abstract Port definitions (40+ false positives).
+- [x] [Code Quality] Prune unused variables and imports identified by Vulture in ports and adapters.
 - [x] [Code Quality] Resolve Ruff magic value (PLR2004) warnings in core service unit tests.
 - [x] [Code Quality] Refactor `tests/harness/setup/test_environment.py` to meet 300-line limit (currently 308 lines).
 - [x] [Architectural] Refactor `ActionFactory` to group port dependencies and reduce argument count (PLR0913).
