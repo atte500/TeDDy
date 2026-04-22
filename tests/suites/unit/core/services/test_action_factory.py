@@ -1,6 +1,7 @@
 import pytest
 
 from teddy_executor.core.services.action_factory import ActionFactory
+from teddy_executor.core.domain.models.action_ports import ActionPorts
 
 # --- Fixtures ---
 
@@ -15,7 +16,7 @@ def factory(  # noqa: PLR0913
     mock_config,
 ) -> ActionFactory:
     """Provides an ActionFactory instance with explicit dependencies."""
-    return ActionFactory(
+    ports = ActionPorts(
         shell_executor=mock_shell,
         file_system_manager=mock_fs,
         user_interactor=mock_user_interactor,
@@ -23,6 +24,7 @@ def factory(  # noqa: PLR0913
         web_searcher=mock_searcher,
         config_service=mock_config,
     )
+    return ActionFactory(ports)
 
 
 # --- Test Cases ---

@@ -16,14 +16,17 @@ def test_action_factory_injects_global_timeout_into_shell_execution(  # noqa: PL
     original_execute = mock_shell.execute
 
     from teddy_executor.core.services.action_factory import ActionFactory
+    from teddy_executor.core.domain.models.action_ports import ActionPorts
 
     factory = ActionFactory(
-        shell_executor=mock_shell,
-        file_system_manager=mock_fs,
-        user_interactor=mock_user_interactor,
-        web_scraper=mock_scraper,
-        web_searcher=mock_searcher,
-        config_service=mock_config,
+        ActionPorts(
+            shell_executor=mock_shell,
+            file_system_manager=mock_fs,
+            user_interactor=mock_user_interactor,
+            web_scraper=mock_scraper,
+            web_searcher=mock_searcher,
+            config_service=mock_config,
+        )
     )
     action = factory.create_action("EXECUTE", params={"command": "echo test"})
 

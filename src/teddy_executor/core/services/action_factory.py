@@ -1,12 +1,5 @@
 from typing import Any, Dict, Optional
-from teddy_executor.core.ports.outbound import (
-    IShellExecutor,
-    IFileSystemManager,
-    IUserInteractor,
-    IWebScraper,
-    IWebSearcher,
-    IConfigService,
-)
+from teddy_executor.core.domain.models.action_ports import ActionPorts
 from teddy_executor.core.domain.models.plan import DEFAULT_SIMILARITY_THRESHOLD
 from teddy_executor.core.services.action_dispatcher import IAction, IActionFactory
 
@@ -47,21 +40,13 @@ class ActionFactory(IActionFactory):
         "RETURN": "return",
     }
 
-    def __init__(  # noqa: PLR0913
-        self,
-        shell_executor: IShellExecutor,
-        file_system_manager: IFileSystemManager,
-        user_interactor: IUserInteractor,
-        web_scraper: IWebScraper,
-        web_searcher: IWebSearcher,
-        config_service: Optional[IConfigService] = None,
-    ):
-        self._shell_executor = shell_executor
-        self._file_system_manager = file_system_manager
-        self._user_interactor = user_interactor
-        self._web_scraper = web_scraper
-        self._web_searcher = web_searcher
-        self._config_service = config_service
+    def __init__(self, ports: ActionPorts):
+        self._shell_executor = ports.shell_executor
+        self._file_system_manager = ports.file_system_manager
+        self._user_interactor = ports.user_interactor
+        self._web_scraper = ports.web_scraper
+        self._web_searcher = ports.web_searcher
+        self._config_service = ports.config_service
         self._standalone_actions = {InvokeAction, PruneAction, ConcludeAction}
         self._action_map: Dict[str, Any] = {
             "execute": self._shell_executor,

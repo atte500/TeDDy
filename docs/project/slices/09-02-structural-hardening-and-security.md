@@ -51,8 +51,8 @@ And no "duplicate module" errors MUST be reported for "test_unified_mock.py"
 ## Deliverables
 - [x] **Contract** - Implement `ActionPorts` DTO in `src/teddy_executor/core/domain/models/action_ports.py`.
 - [x] **Seam** - Fix `IEditSimulator.simulate_edits` signature in `src/teddy_executor/core/ports/inbound/edit_simulator.py` to match implementation.
-- [ ] **Logic** - Refactor `ActionFactory` constructor to use `ActionPorts`.
-- [ ] **Wiring** - Update `src/teddy_executor/container.py` to construct `ActionPorts` and inject it into `ActionFactory`.
+- [x] **Logic** - Refactor `ActionFactory` constructor to use `ActionPorts`.
+- [x] **Wiring** - Update `src/teddy_executor/container.py` to construct `ActionPorts` and inject it into `ActionFactory`.
 - [ ] **Logic** - Decompose `ShellAdapter._run_subprocess` to resolve C901/PLR0915/PLR0912.
 - [ ] **Logic** - Decompose `ExecutionOrchestrator.execute` to resolve C901/PLR0915/PLR0912.
 - [ ] **Logic** - Decompose `PlanningService` generation methods to resolve C901/PLR0915.
@@ -83,3 +83,10 @@ And no "duplicate module" errors MUST be reported for "test_unified_mock.py"
 - Renamed `_content`, `_edits`, and `_match_all` to `content`, `edits`, and `match_all` in the Protocol.
 - Updated the Protocol to use `DEFAULT_SIMILARITY_THRESHOLD` from the domain model instead of a hardcoded float.
 - Added a unit contract test (`tests/suites/unit/ports/inbound/test_edit_simulator_contract.py`) to prevent future signature drifts.
+
+### Deliverable: ActionFactory & Wiring (Logic & Wiring)
+- Refactored `ActionFactory` constructor to accept a single `ActionPorts` DTO.
+- Removed `PLR0913` (too many arguments) suppression in `ActionFactory`.
+- Updated `container.py` to instantiate `ActionPorts` and inject it into the factory.
+- Updated unit tests in `test_action_factory.py` and `test_action_factory_timeout.py` to match the new signature.
+- Verified system-wide restoration of Green state via global test suite.
