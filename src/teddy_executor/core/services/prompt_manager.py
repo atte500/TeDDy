@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import Any, Dict, Optional
 import yaml
-import anyio
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
@@ -46,28 +45,6 @@ class PromptManager(IPromptManager):
             return message + hint
         return message
 
-    async def async_resolve_message(
-        self, user_message: Optional[str], turn_path: Path
-    ) -> str:
-        resolved = user_message
-        if not resolved:
-            report_path = (turn_path / "report.md").as_posix()
-            if await anyio.to_thread.run_sync(
-                self._file_system_manager.path_exists, report_path
-            ):
-                report_content = await anyio.to_thread.run_sync(
-                    self._file_system_manager.read_file, report_path
-                )
-                resolved = extract_markdown_section(report_content, "User Request")
-
-        if not resolved and self._user_interactor:
-            resolved = await self._user_interactor.async_ask_question(
-                "Enter your instructions for the AI"
-            )
-
-        default = "(No instructions provided; proceeding with current context as primary instruction)"
-        return self._ensure_alignment_hint(resolved or "", default=default)
-
     def resolve_message(
         self, user_message: Optional[str], turn_path: Path
     ) -> Optional[str]:
@@ -87,16 +64,6 @@ class PromptManager(IPromptManager):
             return None
 
         return self._ensure_alignment_hint(resolved)
-
-    async def async_fetch_system_prompt(self, agent_name: str, turn_path: Path) -> str:
-        prompt_file_path = (turn_path / f"{agent_name}.xml").as_posix()
-        if await anyio.to_thread.run_sync(
-            self._file_system_manager.path_exists, prompt_file_path
-        ):
-            return await anyio.to_thread.run_sync(
-                self._file_system_manager.read_file, prompt_file_path
-            )
-        return ""
 
     def fetch_system_prompt(self, agent_name: str, turn_path: Path) -> str:
         prompt_file_path = (turn_path / f"{agent_name}.xml").as_posix()
@@ -118,27 +85,6 @@ class PromptManager(IPromptManager):
         if self._user_interactor:
             self._user_interactor.display_message(msg_tokens)
             self._user_interactor.display_message(msg_cost)
-        else:
-            import sys
-
-            sys.stdout.write(f"{msg_tokens}\n{msg_cost}\n")
-            sys.stdout.flush()
-        return cost_val
-
-    async def async_log_telemetry(self, token_count: Any, turn_cost: Any) -> float:
-        def safe_float(v: Any, default: float = 0.0) -> float:
-            try:
-                return float(v)
-            except (TypeError, ValueError):
-                return default
-
-        cost_val = safe_float(turn_cost)
-        count_val = int(safe_float(token_count))
-        msg_tokens, msg_cost = f"Tokens: {count_val}", f"Cost: ${cost_val:.4f}"
-
-        if self._user_interactor:
-            await self._user_interactor.async_display_message(msg_tokens)
-            await self._user_interactor.async_display_message(msg_cost)
         else:
             import sys
 

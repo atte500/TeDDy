@@ -64,12 +64,12 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 ```
 
 ## Deliverables
-- [ ] **Architecture Pivot: Synchronous Reversion**
-  - [ ] Cleanup - Remove all `async_` prefixed methods from core ports (`ILlmClient`, `IPlanningUseCase`, `IRunPlanUseCase`, `ISessionManager`).
-  - [ ] Cleanup - Revert `SessionOrchestrator`, `ExecutionOrchestrator`, and `PlanningService` strictly to synchronous `def` methods. Remove `anyio` dependencies.
-  - [ ] Cleanup - Remove `UnifiedMock` sync/async bridging and async mock support from `tests/harness/setup/mocking.py` and `test_environment.py`.
-  - [ ] Cleanup - Remove global `anyio_backend` fixtures from `conftest.py` and async marks from tests.
-  - [ ] Refactor - Ensure all tests rely on standard synchronous `MagicMock` for ports.
+- [x] **Architecture Pivot: Synchronous Reversion**
+  - [x] Cleanup - Remove all `async_` prefixed methods from core ports (`ILlmClient`, `IPlanningUseCase`, `IRunPlanUseCase`, `ISessionManager`).
+  - [x] Cleanup - Revert `SessionOrchestrator`, `ExecutionOrchestrator`, and `PlanningService` strictly to synchronous `def` methods. Remove `anyio` dependencies.
+  - [x] Cleanup - Remove `UnifiedMock` sync/async bridging and async mock support from `tests/harness/setup/mocking.py` and `test_environment.py`.
+  - [x] Cleanup - Remove global `anyio_backend` fixtures from `conftest.py` and async marks from tests.
+  - [x] Refactor - Ensure all tests rely on standard synchronous `MagicMock` for ports.
 - [x] Logic - Chronological session sorting (date prefixing) in `SessionService`.
 - [x] Logic - Natural session name resolution (prefix stripping) in `SessionRepository`.
 - [x] Logic - Sequenced planning logs & "Proceed on Empty" in `PlanningService.generate_plan`.
@@ -183,3 +183,11 @@ The Developer MUST NOT implement simulation-only logs found in the prototype:
 - Implemented `SessionRepository._strip_prefix` and updated `resolve_session_from_path` and `get_latest_session_name` to return Natural Names.
 - Added unit tests in `tests/suites/unit/core/services/test_session_repository.py`.
 - Verified via `tests/suites/acceptance/test_session_prefixing.py`.
+
+### Deliverable: Architecture Pivot (Synchronous Reversion)
+- Reverted all core ports (`ILlmClient`, `IPlanningUseCase`, `IRunPlanUseCase`, `IPromptManager`) to strictly synchronous methods.
+- Removed `UnifiedMock` from the test harness, transitioning to `POSIXPathMock` via `register_mock`.
+- Cleaned up `anyio` dependencies and `async` logic from core services.
+- Verified that TUI unit tests must remain `async def` to utilize the `Textual` `pilot` driver, but now interact correctly with the synchronous core.
+- Fixed `AttributeError` and `ImportError` regressions in the test harness caused by residual async setups.
+- Verified system integrity with a successful global test run (627 passed).

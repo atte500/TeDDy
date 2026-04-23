@@ -27,16 +27,6 @@ class ContextService(IGetContextUseCase):
         self._repo_tree_generator = repo_tree_generator
         self._environment_inspector = environment_inspector
 
-    async def async_get_context(
-        self, context_files: Optional[Dict[str, Sequence[str]]] = None
-    ) -> ProjectContext:
-        """
-        Asynchronously gathers all project context information.
-        """
-        import anyio
-
-        return await anyio.to_thread.run_sync(self.get_context, context_files)
-
     def get_context(
         self, context_files: Optional[Dict[str, Sequence[str]]] = None
     ) -> ProjectContext:

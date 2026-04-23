@@ -210,52 +210,6 @@ class SessionService(ISessionManager):
         """Identifies and returns the name of the latest session."""
         return self._repository.get_latest_session_name()
 
-    async def async_transition_to_next_turn(
-        self,
-        plan_path: str,
-        execution_report: Optional[ExecutionReport] = None,
-        turn_cost: float = 0.0,
-        is_validation_failure: bool = False,
-    ) -> str:
-        """
-        Asynchronously calculates and creates the next turn directory.
-        """
-        import anyio
-
-        return await anyio.to_thread.run_sync(
-            self.transition_to_next_turn,
-            plan_path,
-            execution_report,
-            turn_cost,
-            is_validation_failure,
-        )
-
-    async def async_get_session_state(
-        self, session_name: str
-    ) -> tuple[SessionState, str]:
-        """
-        Asynchronously determines the state of the session.
-        """
-        import anyio
-
-        return await anyio.to_thread.run_sync(self.get_session_state, session_name)
-
-    async def async_create_session(self, name: str, agent_name: str) -> str:
-        """
-        Asynchronously initializes a new session directory.
-        """
-        import anyio
-
-        return await anyio.to_thread.run_sync(self.create_session, name, agent_name)
-
-    async def async_resolve_context_paths(self, plan_path: str) -> dict[str, list[str]]:
-        """
-        Asynchronously locates context files and returns their contents.
-        """
-        import anyio
-
-        return await anyio.to_thread.run_sync(self.resolve_context_paths, plan_path)
-
     def resolve_session_from_path(self, path: str) -> str:
         """Resolves a session name from a given path."""
         return self._repository.resolve_session_from_path(path)

@@ -258,36 +258,3 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         raise NotImplementedError(
             "Session operations are not supported in stateless ExecutionOrchestrator."
         )
-
-    async def async_execute(
-        self,
-        plan: Optional[Plan] = None,
-        plan_content: Optional[str] = None,
-        plan_path: Optional[str] = None,
-        interactive: bool = True,
-        message: Optional[str] = None,
-    ) -> ExecutionReport:
-        """
-        Asynchronously executes a plan and returns a report.
-        """
-        import anyio
-
-        return await anyio.to_thread.run_sync(
-            self.execute,
-            plan,
-            plan_content,
-            plan_path,
-            interactive,
-            message,
-        )
-
-    async def async_resume(
-        self,
-        _session_name: str,
-        interactive: bool = True,
-        message: Optional[str] = None,
-    ) -> Optional[ExecutionReport]:
-        """
-        Asynchronously resumes the session based on its state.
-        """
-        raise NotImplementedError("Async resume not yet implemented.")

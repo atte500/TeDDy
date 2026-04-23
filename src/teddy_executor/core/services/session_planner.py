@@ -2,7 +2,6 @@ import re
 from pathlib import Path
 from typing import Any, Optional
 
-import anyio
 import yaml
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 
@@ -21,68 +20,6 @@ class SessionPlanner:
         self._planning_service = planning_service
         self._user_interactor = user_interactor
         self._session_service = session_service
-
-    async def async_trigger_new_plan(
-        self, turn_dir: str, message: Optional[str] = None
-    ) -> Optional[str]:
-        """Asynchronously prompts user and triggers planning. Returns session name on success."""
-        # 1. Tiered Message Resolution
-        resolved_message = await anyio.to_thread.run_sync(
-            self._resolve_message_from_previous_turn, turn_dir
-        )
-        if message:
-            resolved_message = message
-
-        # Resolve context files
-        turn_p = Path(turn_dir)
-        session_dir = turn_p.parent
-        context_files = {
-            "Session": [(session_dir / "session.context").as_posix()],
-            "Turn": [(turn_p / "turn.context").as_posix()],
-        }
-
-        # Determine agent name for progress message
-        agent_name = "pathfinder"
-        meta_path = (turn_p / "meta.yaml").as_posix()
-        if await anyio.to_thread.run_sync(
-            self._file_system_manager.path_exists, meta_path
-        ):
-            content = await anyio.to_thread.run_sync(
-                self._file_system_manager.read_file, meta_path
-            )
-            meta = yaml.safe_load(str(content)) or {}
-            if isinstance(meta, dict):
-                agent_name = meta.get("agent_name", agent_name)
-
-        # Display progress
-        msg = f"[cyan][{turn_p.name}] Planning Turn with {agent_name}...[/cyan]"
-        await anyio.to_thread.run_sync(self._user_interactor.display_message, msg)
-
-        plan_path, turn_cost = await self._planning_service.async_generate_plan(
-            user_message=resolved_message,
-            turn_dir=turn_dir,
-            context_files=context_files,
-        )
-
-        # Handle planning cancellation/empty input
-        if plan_path is None:
-            return "CANCELLED"
-
-        await anyio.to_thread.run_sync(
-            self._display_planning_telemetry, turn_dir, plan_path, turn_cost
-        )
-
-        # Dynamic Renaming Logic for Turn 1
-        session_folder_name = turn_p.parent.name
-        clean_name = re.sub(r"^\d{8}_\d{6}-", "", session_folder_name)
-
-        if turn_p.name == "01" and clean_name.startswith("session-"):
-            renamed = await anyio.to_thread.run_sync(
-                self._handle_dynamic_rename, plan_path
-            )
-            return renamed or session_folder_name
-
-        return session_folder_name
 
     def trigger_new_plan(
         self, turn_dir: str, message: Optional[str] = None

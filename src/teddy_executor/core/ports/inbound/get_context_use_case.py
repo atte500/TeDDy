@@ -21,11 +21,3 @@ class IGetContextUseCase(Protocol):
             ProjectContext: A data object containing the aggregated context.
         """
         ...
-
-    async def async_get_context(
-        self, context_files: Optional[Dict[str, Sequence[str]]] = None
-    ) -> ProjectContext:
-        """
-        Asynchronously gathers all project context information.
-        """
-        ...

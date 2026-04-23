@@ -125,30 +125,3 @@ def test_adapter_does_not_import_litellm_on_init(mock_config):
     assert isinstance(litellm.set_verbose, MagicMock)
     assert isinstance(litellm.suppress_debug_info, MagicMock)
     assert not litellm.set_verbose.called
-
-
-@pytest.mark.anyio
-async def test_async_get_completion_calls_litellm_acompletion(mock_config):
-    # Arrange
-    mock_response = MagicMock()
-    mock_choice = MagicMock()
-    mock_choice.message.content = "Async AI response"
-    mock_response.choices = [mock_choice]
-
-    # LiteLLM acompletion is an async function
-    async def mock_acompletion(*_args, **_kwargs):
-        return mock_response
-
-    litellm.acompletion = MagicMock(side_effect=mock_acompletion)
-    mock_config.get_setting.return_value = {}
-
-    adapter = LiteLLMAdapter(mock_config)
-    messages = [{"role": "user", "content": "Hello Async"}]
-    model = "gpt-4"
-
-    # Act
-    result = await adapter.async_get_completion(model=model, messages=messages)
-
-    # Assert
-    assert result.choices[0].message.content == "Async AI response"
-    litellm.acompletion.assert_called_once()

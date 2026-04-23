@@ -6,7 +6,7 @@ from unittest.mock import Mock
 import teddy_executor.__main__
 from teddy_executor.container import create_container
 from tests.harness.setup.real_adapter_mixin import RealAdapterMixin
-from tests.harness.setup.mocking import UnifiedMock, register_mock
+from tests.harness.setup.mocking import POSIXPathMock, register_mock
 
 T = TypeVar("T")
 
@@ -115,8 +115,8 @@ class TestEnvironment(RealAdapterMixin):
         )
 
         mock_llm = self.mock_port(ILlmClient)
-        mock_response = UnifiedMock()
-        mock_response.choices = [UnifiedMock()]
+        mock_response = POSIXPathMock()
+        mock_response.choices = [POSIXPathMock()]
         mock_response.choices[
             0
         ].message.content = "# Plan\n## Action Plan\n### EXECUTE\necho 1"
@@ -161,7 +161,7 @@ class TestEnvironment(RealAdapterMixin):
 
     def mock_port(self, port_type: Any) -> Any:
         """
-        Creates, registers, and returns a UnifiedMock for a specific port.
+        Creates, registers, and returns a POSIXPathMock for a specific port.
         This is the preferred way to mock dependencies in tests.
         """
         return register_mock(self._container, port_type)

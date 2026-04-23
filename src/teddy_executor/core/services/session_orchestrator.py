@@ -1,7 +1,6 @@
 from pathlib import Path
-from typing import Any, Optional, cast
+from typing import Any, Optional
 
-import anyio
 from teddy_executor.core.domain.models.execution_report import (
     ExecutionReport,
 )
@@ -39,88 +38,6 @@ class SessionOrchestrator(IRunPlanUseCase):
         self._user_interactor = user_interactor
         self._lifecycle_manager = lifecycle_manager
         self._replanner = replanner
-
-    async def async_execute(
-        self,
-        plan: Optional[Plan] = None,
-        plan_content: Optional[str] = None,
-        plan_path: Optional[str] = None,
-        interactive: bool = True,
-        message: Optional[str] = None,
-    ) -> ExecutionReport:
-        """
-        Asynchronously executes a plan and returns a report.
-        """
-        # 0. Detect Session Mode
-        is_session = await anyio.to_thread.run_sync(self._is_session_mode, plan_path)
-
-        # 1. Parsing
-        if not plan:
-            # Ensure content is always a string to satisfy subsequent calls
-            fetched_content = ""
-            if plan_path:
-                fetched_content = await anyio.to_thread.run_sync(
-                    self._file_system_manager.read_file, plan_path
-                )
-
-            content: str = plan_content if plan_content is not None else fetched_content
-            # Cast or hint plan as non-Optional Plan for logical validation
-            plan = cast(
-                Plan,
-                await anyio.to_thread.run_sync(
-                    self._parse_and_handle_structural_errors,
-                    content,
-                    plan_path,
-                    is_session,
-                ),
-            )
-
-        # 2. Validation
-        context_paths = None
-        if is_session:
-            context_paths = await self._session_service.async_resolve_context_paths(
-                plan_path
-            )
-
-        errors = await anyio.to_thread.run_sync(
-            self._plan_validator.validate, plan, context_paths
-        )
-        if errors:
-            return await self.async_handle_logical_validation_errors(
-                plan,
-                errors,
-                getattr(plan, "raw_content", "") or "",
-                plan_path,
-                is_session,
-            )
-
-        # 3. Execution
-        report = await self._execution_orchestrator.async_execute(
-            plan=plan,
-            plan_content=plan_content,
-            plan_path=plan_path,
-            interactive=interactive,
-            message=message,
-        )
-
-        # 4. Turn Transition
-        if is_session and plan_path:
-            await self._lifecycle_manager.async_finalize_turn(plan_path, report)
-
-        return report
-
-    async def async_resume(
-        self,
-        session_name: str,
-        interactive: bool = True,
-        message: Optional[str] = None,
-    ) -> Optional[ExecutionReport]:
-        """
-        Asynchronously resumes the session based on its state.
-        """
-        return await self._lifecycle_manager.async_resume(
-            session_name, self, interactive, message
-        )
 
     def resume(
         self,
@@ -206,43 +123,6 @@ class SessionOrchestrator(IRunPlanUseCase):
                     "Structural validation failed. Re-plan triggered."
                 ) from e
             raise
-
-    async def async_handle_logical_validation_errors(  # noqa: PLR0913
-        self,
-        plan: Plan,
-        errors: list[Any],
-        content: str,
-        plan_path: Optional[str],
-        is_session: bool,
-    ) -> ExecutionReport:
-        """Asynchronously formats logical errors and handles the failure report/replan."""
-        rich_ast = (
-            format_hybrid_ast_view(plan.source_doc, errors) if plan.source_doc else ""
-        )
-        error_messages = [e.message for e in errors]
-
-        failed_resources = await self._replanner.async_gather_failed_resources(errors)
-
-        if is_session and plan_path:
-            return await self._lifecycle_manager.async_trigger_replan(
-                plan_path=plan_path,
-                errors=error_messages,
-                original_plan_content=content,
-                title=plan.title,
-                rationale=plan.rationale,
-                failed_resources=failed_resources,
-                validation_ast=rich_ast,
-                original_actions=plan.actions,
-            )
-
-        return self._replanner.build_failure_report(
-            errors=error_messages,
-            title=plan.title,
-            rationale=plan.rationale,
-            failed_resources=failed_resources,
-            validation_ast=rich_ast,
-            original_actions=plan.actions,
-        )
 
     def _handle_logical_validation_errors(  # noqa: PLR0913
         self,

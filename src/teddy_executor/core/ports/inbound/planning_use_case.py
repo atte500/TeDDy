@@ -26,15 +26,3 @@ class IPlanningUseCase(ABC):
             The path to the generated plan.md.
         """
         pass
-
-    @abstractmethod
-    async def async_generate_plan(
-        self,
-        user_message: Optional[str],
-        turn_dir: str,
-        context_files: Optional[Dict[str, Sequence[str]]] = None,
-    ) -> tuple[str, float]:
-        """
-        Asynchronously generates a new plan.md file.
-        """
-        pass

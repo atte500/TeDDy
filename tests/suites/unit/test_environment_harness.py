@@ -71,21 +71,21 @@ def test_filesystem_mock_normalizes_paths_systemically(env):
     mock_fs.read_file.assert_called_with("some/windows/path.txt")
 
 
-def test_test_environment_mock_port_registers_and_returns_unified_mock(monkeypatch):
+def test_test_environment_mock_port_registers_and_returns_posix_path_mock(monkeypatch):
     """
-    Harness: mock_port MUST create, register, and return a UnifiedMock.
+    Harness: mock_port MUST create, register, and return a POSIXPathMock.
     """
     from teddy_executor.core.ports.outbound import IShellExecutor
     from tests.harness.setup.test_environment import TestEnvironment
-    from tests.harness.setup.mocking import UnifiedMock
+    from tests.harness.setup.mocking import POSIXPathMock
 
     env = TestEnvironment(monkeypatch).setup()
 
     # 1. Action: Mock a port
     mock = env.mock_port(IShellExecutor)
 
-    # 2. Assert: It is a UnifiedMock with correct spec
-    assert isinstance(mock, UnifiedMock)
+    # 2. Assert: It is a POSIXPathMock with correct spec
+    assert isinstance(mock, POSIXPathMock)
 
     # 3. Assert: It is registered in the container
     resolved = env.get_service(IShellExecutor)

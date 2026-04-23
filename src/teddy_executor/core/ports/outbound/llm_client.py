@@ -15,7 +15,10 @@ class ILlmClient(ABC):
 
     @abstractmethod
     def get_completion(
-        self, model: str, messages: List[Dict[str, str]], **kwargs: Any
+        self,
+        model: str,
+        messages: List[Dict[str, str]],
+        **kwargs: Any,
     ) -> str:
         """
         Sends a request to an LLM and returns the completed text response.
@@ -30,15 +33,6 @@ class ILlmClient(ABC):
 
         Raises:
             LlmApiError: For any failures during the API call.
-        """
-        pass
-
-    @abstractmethod
-    async def async_get_completion(
-        self, model: str, messages: List[Dict[str, str]], **kwargs: Any
-    ) -> Any:
-        """
-        Asynchronously sends a request to an LLM and returns the raw response object.
         """
         pass
 

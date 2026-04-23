@@ -91,6 +91,7 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 - [ ] **Magic Values (PLR2004):** Resolve remaining magic value warnings in `test_execution_orchestrator.py` and `test_planning_service_async.py`.
 
 ### Architectural & Harness Debt
+- [ ] **Quality Gate Reconciliation:** Resolve Vulture/Mypy friction in `vulture_whitelist.py` and core ports. Current synchronous reversion has triggered project-wide dead code warnings that are temporarily bypassed.
 - [ ] **Harness Refactoring:** Transition `TEDDY_TEST_MOCK_EDITOR_OUTPUT` from an environment variable to a dedicated test adapter.
 - [ ] **DI Isolation:** Improve isolation by resolving container locations dynamically instead of hardcoded module paths.
 - [ ] **Test Pyramid Balance:** Resolve structural imbalance (Acceptance: 101, Integration: 101, Unit: 305) to satisfy 'Acceptance < Integration < Unit'.

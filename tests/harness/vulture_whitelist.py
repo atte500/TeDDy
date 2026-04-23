@@ -16,10 +16,18 @@ from teddy_executor.core.ports.outbound.session_manager import ISessionManager
 from teddy_executor.core.ports.outbound.markdown_report_formatter import (
     IMarkdownReportFormatter,
 )
+from teddy_executor.core.ports.outbound.llm_client import ILlmClient
+from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
+from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.web_scraper import WebScraper
 from teddy_executor.core.ports.outbound.web_searcher import IWebSearcher
 from teddy_executor.core.services.session_planner import SessionPlanner
 from teddy_executor.core.services.session_replanner import SessionReplanner
+
+
+class _PortWhitelister:
+    """Empty shell for future whitelisting."""
+    pass
 
 
 class _TextualPatterns:
@@ -118,7 +126,7 @@ def whitelist_simulation() -> None:
         IUserInteractor.ask_question,
         IFileSystemManager.create_file,
         IFileSystemManager.edit_file,
-        ISessionManager.async_create_session,
+        ISessionManager.create_session,
     ]
 
     # 4. Textual patterns

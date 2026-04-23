@@ -29,7 +29,10 @@ class ISessionManager(Protocol):
         """
         ...
 
-    def get_session_state(self, session_name: str) -> tuple[SessionState, str]:
+    def get_session_state(
+        self,
+        session_name: str,
+    ) -> tuple[SessionState, str]:
         """
         Determines the state of the session and returns the state and the path
         to the latest turn.
@@ -46,38 +49,6 @@ class ISessionManager(Protocol):
         """
         Calculates and creates the next turn directory based on the current turn
         and the outcome of its plan.
-        """
-        ...
-
-    async def async_transition_to_next_turn(
-        self,
-        plan_path: str,
-        execution_report: Optional[ExecutionReport] = None,
-        turn_cost: float = 0.0,
-        is_validation_failure: bool = False,
-    ) -> str:
-        """
-        Asynchronously calculates and creates the next turn directory.
-        """
-        ...
-
-    async def async_get_session_state(
-        self, session_name: str
-    ) -> tuple[SessionState, str]:
-        """
-        Asynchronously determines the state of the session.
-        """
-        ...
-
-    async def async_create_session(self, name: str, agent_name: str) -> str:
-        """
-        Asynchronously initializes a new session directory.
-        """
-        ...
-
-    async def async_resolve_context_paths(self, plan_path: str) -> dict[str, list[str]]:
-        """
-        Asynchronously locates context files and returns their contents.
         """
         ...
 
