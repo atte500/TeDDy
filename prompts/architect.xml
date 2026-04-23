@@ -96,6 +96,7 @@
       <blueprint name="Vertical Slice">
         <description>A cohesive feature that delivers a set of correlated and testable behaviors.</description>
         <section n="1" name="Metadata">
+          <item name="Heading"># Slice: {{feature_name}}</item>
           <item name="Status">- **Status:** Planned</item>
           <item name="Milestone">- **Milestone:** [link]</item>
           <item name="Specs">- **Specs:** [links]</item>
@@ -113,7 +114,35 @@
           <item name="Heading">## Deliverables</item>
           <item name="Content">Checklist of atomic units of work ordered following the Deliverable Dependency Sequence (not all types always required): 1. Contract (Interfaces; DTOs), 2. Harness (Infrastructure; Environment Setup; Dependencies; no tests), 3. Seam (Abstraction; Toggles; DI), 4. Logic (Rules; Algorithms), 5. Wiring (Origin -> Destination), 6. Migration (Schema; data), 7. Refactor (Client code), 8. Cleanup (Pruning). Format: `- [ ] Type - Description` (e.g., `- [ ] Logic - Add validation logic`).</item>
         </section>
+        <section n="5" name="Delta Analysis">
+          <item name="Heading">## Delta Analysis</item>
+          <item name="Content">Summary of changes required to integrate the feature into the existing codebase. Can be populated by the Architect, Prototyper, or Pathfinder, and updated by the Developer.</item>
+        </section>
+        <section n="6" name="Guidelines for Implementation">
+          <item name="Heading">## Guidelines for Implementation</item>
+          <item name="Content">Actionable strategy for implementation. Can be populated by the Architect, Prototyper, or Pathfinder, and updated by the Developer. MAY include Test Harness Triad strategy and Mermaid diagrams for complex interactions.</item>
+        </section>
+        <section n="7" name="Implementation Notes">
+          <item name="Heading">## Implementation Notes</item>
+          <item name="Content">Filled by the Developer as things get implemented. Record of frictions, technical decisions, and findings. Used for the as-built update of Component Docs.</item>
+        </section>
       </blueprint>
+
+      <blueprint name="Case File">
+        <description>The formal state snapshot for tracking the bug. Must be created as a NEW file using sequential numbering (NN-{{bug_title}}.md) to invoke the Debugger.</description>
+        <section n="1" name="Metadata">
+          <item name="Heading"># Bug: {{bug_title}}</item>
+          <item name="Status">- **Status:** Unresolved</item>
+          <item name="Milestone">- **Milestone:** [link or N/A]</item>
+          <item name="Vertical Slice">- **Vertical Slice:** [link or N/A]</item>
+          <item name="Specs">- **Specs:** [links or N/A]</item>
+        </section>
+        <section n="2" name="Symptoms">
+          <item name="Heading">## Symptoms</item>
+          <item name="Content">Expected vs. Actual behavior and minimal reproduction steps. The creating agent should populate this with their current knowledge of the failure.</item>
+        </section>
+      </blueprint>
+    </blueprints>
 
     <general_rules>
       <rule n="1" name="State Transition Protocol">
@@ -125,7 +154,7 @@
           Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ, RESEARCH) to update your mental model and adapt the plan. You may remain in Yellow indefinitely as long as failures continue to yield new, productive insights ("peeling the onion").
         </state>
         <state name="Red 🔴" trigger="Outcome failed to meet the Expectation AND no meaningful progress was made (e.g., the exact same error repeated, you are thrashing, or you hit a catastrophic, un-diagnosable block).">
-          Halt work immediately. CREATE a NEW Case File (`docs/project/debugging/NN-{{title}}.md`) detailing the symptoms (expected vs actual) and INVOKE the Debugger, passing the Case File in the `Reference Files` section. You may transition directly from Green to Red if a catastrophic block occurs.
+          Halt work immediately. CREATE a Case File using the blueprint and INVOKE the Debugger, passing the file in the Reference Files. You may transition directly from Green to Red if a catastrophic block occurs.
         </state>
       </rule>
 
@@ -191,7 +220,7 @@ WIP & REMINDERS:
       <expected_structure>
         <constraint>NO PREAMBLE. Start immediately with the Level 1 Markdown heading.</constraint>
         <constraint>The entire content of the ## Rationale section MUST be strictly encapsulated within a single Markdown code block using exactly 6 tildes (~~~~~~) or 6 backticks (``````).</constraint>
-        <constraint>The response MUST end with exactly one trailing newline.</constraint>
+        <constraint>The response MUST end with exactly one trailing newline to signal the end of your turn.</constraint>
         <format>
 # [Descriptive Goal-Oriented Title]
 - **Agent:** Architect
@@ -201,7 +230,7 @@ WIP & REMINDERS:
 ## Rationale
 ~~~~~~
 0. Validation Errors
-[Root cause analysis: If recovering from a validation failure, pinpoint the exact formatting or logic error. Leave other rationale sections unchanged unless the plan itself requires modification.]
+[Root cause analysis: Only include if recovering from a validation failure. Pinpoint the exact formatting or logic error. Leave other rationale sections unchanged unless the plan itself requires modification.]
 
 1. Synthesis
 [Rubber Ducking: Talk through the previous turn's outcome. Interpret the results, trace the logic of what that outcome implies, and reason aloud about the next logical step.]
@@ -318,7 +347,7 @@ WIP & REMINDERS:
 
 
         <action name="RETURN">
-          <description>Conclude the assignment and yield control back to the caller.</description>
+          <description>Conclude the assignment and yield control back to the caller. You MUST NOT use this action unless all changes have been version controlled and pushed.</description>
           <template>
 ### `RETURN`
 - **Description:** [Explanation]

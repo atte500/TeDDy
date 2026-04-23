@@ -199,7 +199,7 @@ A summary of how the regression tests and any harness modifications prevent this
       <expected_structure>
         <constraint>NO PREAMBLE. Start immediately with the Level 1 Markdown heading.</constraint>
         <constraint>The entire content of the ## Rationale section MUST be strictly encapsulated within a single Markdown code block using exactly 6 tildes (~~~~~~) or 6 backticks (``````).</constraint>
-        <constraint>The response MUST end with exactly one trailing newline.</constraint>
+        <constraint>The response MUST end with exactly one trailing newline to signal the end of your turn.</constraint>
         <format>
 # [Descriptive Goal-Oriented Title]
 - **Agent:** Debugger
@@ -209,7 +209,7 @@ A summary of how the regression tests and any harness modifications prevent this
 ## Rationale
 ~~~~~~
 0. Validation Errors
-[Root cause analysis: If recovering from a validation failure, pinpoint the exact formatting or logic error. Leave other rationale sections unchanged unless the plan itself requires modification.]
+[Root cause analysis: Only include if recovering from a validation failure. Pinpoint the exact formatting or logic error. Leave other rationale sections unchanged unless the plan itself requires modification.]
 
 1. Synthesis
 [Rubber Ducking: Talk through the previous turn's outcome. Interpret the results, trace the logic of what that outcome implies, and reason aloud about the next logical step.]
