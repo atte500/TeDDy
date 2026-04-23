@@ -1,5 +1,4 @@
 from datetime import datetime
-from unittest.mock import MagicMock
 from tests.harness.setup.test_environment import TestEnvironment
 from tests.harness.drivers.cli_adapter import CliTestAdapter
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
@@ -19,8 +18,7 @@ def test_cli_invokes_orchestrator_with_plan_file(monkeypatch, tmp_path):
     env = TestEnvironment(monkeypatch, tmp_path).setup()
     cli = CliTestAdapter(monkeypatch, cwd=tmp_path)
 
-    mock_run_plan = MagicMock(spec=IRunPlanUseCase)
-    env.container.register(IRunPlanUseCase, instance=mock_run_plan)
+    mock_run_plan = env.mock_port(IRunPlanUseCase)
 
     mock_summary = RunSummary(
         status=RunStatus.SUCCESS,
@@ -57,8 +55,7 @@ def test_cli_exits_with_error_code_on_failure(monkeypatch, tmp_path):
     env = TestEnvironment(monkeypatch, tmp_path).setup()
     cli = CliTestAdapter(monkeypatch, cwd=tmp_path)
 
-    mock_run_plan = MagicMock(spec=IRunPlanUseCase)
-    env.container.register(IRunPlanUseCase, instance=mock_run_plan)
+    mock_run_plan = env.mock_port(IRunPlanUseCase)
 
     mock_summary = RunSummary(
         status=RunStatus.FAILURE,
@@ -90,8 +87,7 @@ def test_cli_handles_interactive_mode_flag(monkeypatch, tmp_path):
     env = TestEnvironment(monkeypatch, tmp_path).setup()
     cli = CliTestAdapter(monkeypatch, cwd=tmp_path)
 
-    mock_run_plan = MagicMock(spec=IRunPlanUseCase)
-    env.container.register(IRunPlanUseCase, instance=mock_run_plan)
+    mock_run_plan = env.mock_port(IRunPlanUseCase)
 
     mock_summary = RunSummary(
         status=RunStatus.SUCCESS,

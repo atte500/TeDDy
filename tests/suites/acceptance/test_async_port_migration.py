@@ -43,7 +43,8 @@ echo 1
     actual_session_name = session_path.split("/")[-1]
 
     # Mock user interaction and LLM to reach the frontier
-    from unittest.mock import patch, MagicMock
+    from unittest.mock import patch
+    from tests.harness.setup.mocking import UnifiedMock
 
     valid_plan = """# Plan: Test
 - **Agent:** pathfinder
@@ -61,8 +62,8 @@ Test
 echo 1
 ~~~~~~
 """
-    mock_response = MagicMock()
-    mock_response.choices = [MagicMock()]
+    mock_response = UnifiedMock()
+    mock_response.choices = [UnifiedMock()]
     mock_response.choices[0].message.content = valid_plan
     mock_response.model = "gpt-4o"
 

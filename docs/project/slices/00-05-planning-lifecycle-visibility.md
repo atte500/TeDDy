@@ -79,7 +79,7 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 - [x] Logic - Terminal action soft isolation in `ExecutionOrchestrator.async_execute`.
 - [x] Logic - Functional async wrappers for SessionService (ISessionManager).
 - [x] Harness - Unified Sync/Async mock bridging in TestEnvironment.
-- [ ] Refactor - Audit and update Integration/Acceptance tests to use `UnifiedMock` or `AsyncMock` for UseCase ports.
+- [x] Refactor - Audit and update Integration/Acceptance tests to use `UnifiedMock` or `AsyncMock` for UseCase ports.
 - [ ] Wiring - Async CLI integration (anyio runner) in session_cli_handlers.py.
 - [ ] Cleanup - Prune recursion guards and synchronous methods in PlanningService.
 
@@ -231,3 +231,9 @@ The Developer MUST NOT implement simulation-only logs found in the prototype:
 - Used `POSIXPathMock.__setattr__` with explicit `_synced_partner` linking.
 - Implemented recursion guards using `object.__setattr__` and `self.__dict__.get()` to prevent infinite loops during cross-mock propagation and avoid triggering `Mock` auto-attribute creation.
 - Verified behavior via dedicated unit tests in `tests/suites/unit/test_unified_mock.py`.
+
+### Deliverable: Refactor - Audit and Update Tests for UnifiedMock
+- Audited test suite for manual `MagicMock` registrations of primary UseCase ports (`IRunPlanUseCase`, `IPlanReviewer`, etc.).
+- Refactored `test_cli_adapter.py` and `test_prompt_auto_approval.py` to use `env.mock_port(PortClass)`.
+- This ensures that when the CLI transition to `anyio.run` occurs, the mocks will be awaitable and synchronized with their sync counterparts, preventing hangs.
+- Updated `test_async_port_migration.py` to use `UnifiedMock` for its LLM response simulations.

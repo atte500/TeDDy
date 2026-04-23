@@ -1,4 +1,3 @@
-from unittest.mock import MagicMock
 from tests.harness.setup.test_environment import TestEnvironment
 from tests.harness.drivers.cli_adapter import CliTestAdapter
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
@@ -11,7 +10,7 @@ def _setup_mock_reviewer(monkeypatch, tmp_path):
     env.setup().with_real_interactor()
 
     # Mock the PlanReviewer
-    mock_reviewer = MagicMock(spec=IPlanReviewer)
+    mock_reviewer = env.mock_port(IPlanReviewer)
     mock_reviewer.review.side_effect = lambda p: p
     mock_reviewer.review_action.return_value = (True, "")
 
