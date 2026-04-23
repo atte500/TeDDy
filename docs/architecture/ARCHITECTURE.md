@@ -61,7 +61,9 @@ This document outlines the technical standards, conventions, and setup process f
         - `ruff`: For linting and formatting. **Note:** `E501` (Line too long) is explicitly ignored to favor readability of long URLs and comments.
     - **Correctness:**
         - `mypy`: For static type checking.
-        - `vulture`: For dead code detection. **Standard:** False positives (e.g., dynamic framework handlers or abstract methods) MUST be suppressed via a type-safe whitelist module (`tests/harness/vulture_whitelist.py`) rather than the `ignore_names` list in `pyproject.toml`. This module should contain functions that simulate usage of the identified names using actual type hints to ensure compatibility is verified by `mypy` and `ruff`.
+        - `vulture`: For dead code detection. **Standard:** We employ a two-pronged strategy to handle false positives elegantly:
+            1. **Framework Patterns:** Predictable, dynamic callbacks (e.g., Textual's `on_*`, `action_*`) MUST be ignored globally using wildcards in the `tool.vulture.ignore_names` array in `pyproject.toml`.
+            2. **Reference Whitelist:** Interfaces and Domain Models MUST be suppressed via a simplified reference file (`tests/harness/vulture_whitelist.py`). Do **not** simulate usage or instantiate objects. Simply import the entity and alias it (`_ = MyInterface`) so that `mypy` verifies its existence while Vulture registers the name as used.
     - **Security:**
         - `detect-secrets`: For hardcoded credential prevention.
         - `bandit`: For static security analysis.

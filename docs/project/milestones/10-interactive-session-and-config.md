@@ -86,12 +86,12 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
     - [ ] `src/teddy_executor/core/services/planning_service.py`
 - [ ] **Complexity:** Refactor `check_action_logic` in `textual_plan_reviewer_logic.py` (PLR0911: 7 return statements).
 - [ ] **Typing (Mypy):** Resolve union-attr and Worker awaitable mismatches in TUI components and `SessionOrchestrator` async methods.
-- [ ] **Static Analysis (Vulture):** Resolve remaining unused `args`/`kwargs` in `test_console_interactor.py` and `old_val` in `_apply_param_edit`.
+- [x] **Static Analysis (Vulture):** Resolve remaining unused `args`/`kwargs` in `test_console_interactor.py` and `old_val` in `_apply_param_edit`.
 - [ ] **Code Duplication (jscpd):** Resolve duplication across the codebase to meet the 0% threshold.
 - [ ] **Magic Values (PLR2004):** Resolve remaining magic value warnings in `test_execution_orchestrator.py` and `test_planning_service_async.py`.
 
 ### Architectural & Harness Debt
-- [ ] **Quality Gate Reconciliation:** Resolve Vulture/Mypy friction in `vulture_whitelist.py` and core ports. Current synchronous reversion has triggered project-wide dead code warnings that are temporarily bypassed.
+- [x] **Quality Gate Reconciliation:** Resolve Vulture/Mypy friction in `vulture_whitelist.py` and core ports using a simplified "Import & Alias" strategy and global wildcards in `pyproject.toml`.
 - [ ] **Harness Refactoring:** Transition `TEDDY_TEST_MOCK_EDITOR_OUTPUT` from an environment variable to a dedicated test adapter.
 - [ ] **DI Isolation:** Improve isolation by resolving container locations dynamically instead of hardcoded module paths.
 - [ ] **Test Pyramid Balance:** Resolve structural imbalance (Acceptance: 101, Integration: 101, Unit: 305) to satisfy 'Acceptance < Integration < Unit'.

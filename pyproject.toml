@@ -119,6 +119,17 @@ ignore_names = [
     "reason",
     "text",
     "path",
+    # Textual UI Framework Callbacks
+    "on_*",
+    "action_*",
+    # Interface parameters (Protocols) and Test Fixtures
+    "queries",
+    "start_time",
+    "interactive",
+    "kwargs",
+    "session_name",
+    "cwd",
+    "mock_*",
 ]
 min_confidence = 80
 paths = ["src", "tests"]
