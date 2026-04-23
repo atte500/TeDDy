@@ -155,8 +155,8 @@ def test_teddy_resume_continuous_loop(tmp_path: Path, monkeypatch):
 
     result = adapter.run_cli_command(["resume"], cwd=turn_dir, input=input_sequence)
 
-    # Exit code is 1 because the last executed plan (Turn 02) failed
-    assert result.exit_code == 1
+    # R-10-12: Session mode does NOT exit on failure; it continues the loop.
+    assert result.exit_code == 0
 
     # In sessions, execution report is silent in console. Check files.
     report1 = turn_dir.parent / "01" / "report.md"

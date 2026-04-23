@@ -205,6 +205,7 @@ def handle_report_output(
     report: Optional[ExecutionReport],
     no_copy: bool,
     silent: bool = False,
+    exit_on_failure: bool = True,
 ) -> None:
     """Formats the report, echoes/copies it, and exits with non-zero if failed."""
     if report:
@@ -226,7 +227,7 @@ def handle_report_output(
                 confirmation_message="Execution report copied to clipboard.",
             )
 
-        if report.run_summary.status in (
+        if exit_on_failure and report.run_summary.status in (
             RunStatus.FAILURE,
             RunStatus.VALIDATION_FAILED,
         ):

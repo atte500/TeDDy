@@ -72,9 +72,6 @@ class SessionOrchestrator(IRunPlanUseCase):
                 if is_session and plan_path:
                     # R-10-12: Keep session loop alive by returning the re-plan report
                     # Suppress verbose AST in console; full detail is in report.md
-                    self._user_interactor.display_message(
-                        "[yellow]Validation failed... replanning[/yellow]"
-                    )
                     return self._lifecycle_manager.trigger_replan(
                         plan_path=plan_path,
                         errors=[f"Structural error: {str(e)}"],
@@ -131,6 +128,7 @@ class SessionOrchestrator(IRunPlanUseCase):
                     errors=[f"Structural error: {str(e)}"],
                     original_plan_content=content,
                 )
+                # Re-planning is already handled by trigger_replan
                 raise RuntimeError(
                     "Structural validation failed. Re-plan triggered."
                 ) from e

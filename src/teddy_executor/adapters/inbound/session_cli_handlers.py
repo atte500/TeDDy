@@ -52,7 +52,11 @@ def handle_new_session(  # noqa: PLR0913
             # we clear the initial CLI message so it doesn't get re-used for Turn 2.
             message = None
 
-            handle_report_output(container, report, no_copy, silent=True)
+            # R-10-12: In session mode, we do NOT exit on validation failure
+            # because the orchestrator triggers an automatic re-plan.
+            handle_report_output(
+                container, report, no_copy, silent=True, exit_on_failure=False
+            )
 
             if not interactive:
                 break
@@ -146,7 +150,11 @@ def handle_resume_session(
             # Clear the message so it's not reused in the loop
             message = None
 
-            handle_report_output(container, report, no_copy, silent=True)
+            # R-10-12: In session mode, we do NOT exit on validation failure
+            # because the orchestrator triggers an automatic re-plan.
+            handle_report_output(
+                container, report, no_copy, silent=True, exit_on_failure=False
+            )
 
             if not interactive:
                 break

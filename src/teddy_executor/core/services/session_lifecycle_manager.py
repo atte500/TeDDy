@@ -10,6 +10,8 @@ if TYPE_CHECKING:
         SessionPorts,
     )
 
+    _ = SessionPorts
+
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.session_manager import SessionState
 
@@ -89,6 +91,9 @@ class SessionLifecycleManager:
         original_actions: Optional[Sequence[Any]] = None,
     ) -> ExecutionReport:
         """Triggers the Automated Re-plan Loop."""
+        self._user_interactor.display_message(
+            "\n[yellow]Validation failed... replanning[/yellow]"
+        )
         report = self._replanner.build_failure_report(
             errors,
             title,
