@@ -43,19 +43,6 @@ class SessionPlanner:
             "Turn": [(turn_p / "turn.context").as_posix()],
         }
 
-        # Determine agent name for progress message
-        agent_name = "pathfinder"
-        meta_path = (turn_p / "meta.yaml").as_posix()
-        if self._file_system_manager.path_exists(meta_path):
-            content = self._file_system_manager.read_file(meta_path)
-            meta = yaml.safe_load(str(content)) or {}
-            if isinstance(meta, dict):
-                agent_name = meta.get("agent_name", agent_name)
-
-        # Display progress right before generating plan
-        msg = f"[cyan][{turn_p.name}] Planning Turn with {agent_name}...[/cyan]"
-        self._user_interactor.display_message(msg)
-
         plan_path, turn_cost = self._planning_service.generate_plan(
             user_message=resolved_message,
             turn_dir=turn_dir,
@@ -106,6 +93,7 @@ class SessionPlanner:
         )
 
         # Scenario: Session Visibility & Natural Language (Blue/Magenta Telemetry)
+        # Use sys.stderr for telemetry to ensure it's visible even when stdout is piped/clean
         self._user_interactor.display_message(
             f"[blue]• Model:[/blue] [magenta]{model}[/magenta]"
         )
@@ -126,11 +114,20 @@ class SessionPlanner:
             turn_idx = int(turn_path.name)
             if turn_idx > 1:
                 prev_turn_name = f"{turn_idx - 1:02d}"
-                prev_report_path = turn_path.parent / prev_turn_name / "report.md"
+                prev_turn_dir = turn_path.parent / prev_turn_name
+                prev_report_path = prev_turn_dir / "report.md"
+
                 if self._file_system_manager.path_exists(prev_report_path.as_posix()):
+                    # R-10-12: If successful, return empty string to signal continuation.
+                    # This silences the prompt while keeping the agent running.
                     content = self._file_system_manager.read_file(
                         prev_report_path.as_posix()
                     )
+
+                    is_success = "- **Overall Status:** SUCCESS" in content
+                    if is_success:
+                        return ""
+
                     return extract_markdown_section(content, "User Request")
         except (ValueError, TypeError):
             pass

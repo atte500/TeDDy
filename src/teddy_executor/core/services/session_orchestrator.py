@@ -66,9 +66,21 @@ class SessionOrchestrator(IRunPlanUseCase):
             self._file_system_manager.read_file(plan_path) if plan_path else ""
         )
         if not plan:
-            plan = self._parse_and_handle_structural_errors(
-                content, plan_path, is_session
-            )
+            try:
+                plan = self._plan_parser.parse(content, plan_path=plan_path)
+            except Exception as e:
+                if is_session and plan_path:
+                    # R-10-12: Keep session loop alive by returning the re-plan report
+                    # Suppress verbose AST in console; full detail is in report.md
+                    self._user_interactor.display_message(
+                        "[yellow]Validation failed... replanning[/yellow]"
+                    )
+                    return self._lifecycle_manager.trigger_replan(
+                        plan_path=plan_path,
+                        errors=[f"Structural error: {str(e)}"],
+                        original_plan_content=content,
+                    )
+                raise
 
         # 2. Validation
         context_paths = (

@@ -48,7 +48,11 @@ def handle_new_session(  # noqa: PLR0913
             if report is None:
                 break
 
-            handle_report_output(container, report, no_copy)
+            # After the first successful resumption (which might trigger planning),
+            # we clear the initial CLI message so it doesn't get re-used for Turn 2.
+            message = None
+
+            handle_report_output(container, report, no_copy, silent=True)
 
             if not interactive:
                 break
@@ -138,7 +142,11 @@ def handle_resume_session(
             )
             if not report:
                 break
-            handle_report_output(container, report, no_copy)
+
+            # Clear the message so it's not reused in the loop
+            message = None
+
+            handle_report_output(container, report, no_copy, silent=True)
 
             if not interactive:
                 break

@@ -48,19 +48,27 @@ class PromptManager(IPromptManager):
     def resolve_message(
         self, user_message: Optional[str], turn_path: Path
     ) -> Optional[str]:
+        # R-10-12: If message is an empty string, it's a continuation signal.
+        if user_message == "":
+            return ""
+
         resolved = user_message
-        if not resolved:
+        if resolved is None:
             report_path = (turn_path / "report.md").as_posix()
             if self._file_system_manager.path_exists(report_path):
                 report_content = self._file_system_manager.read_file(report_path)
                 resolved = extract_markdown_section(report_content, "User Request")
 
-        if not resolved and self._user_interactor:
+        if resolved is None and self._user_interactor:
             resolved = self._user_interactor.ask_question(
                 "Enter your instructions for the AI"
             )
 
-        if not resolved or not resolved.strip():
+        if resolved is not None and not resolved.strip():
+            # User provided empty input at the prompt (just hit enter) -> Exit
+            return None
+
+        if resolved is None:
             return None
 
         return self._ensure_alignment_hint(resolved)
@@ -78,19 +86,7 @@ class PromptManager(IPromptManager):
             except (TypeError, ValueError):
                 return default
 
-        cost_val = safe_float(turn_cost)
-        count_val = int(safe_float(token_count))
-        msg_tokens, msg_cost = f"Tokens: {count_val}", f"Cost: ${cost_val:.4f}"
-
-        if self._user_interactor:
-            self._user_interactor.display_message(msg_tokens)
-            self._user_interactor.display_message(msg_cost)
-        else:
-            import sys
-
-            sys.stdout.write(f"{msg_tokens}\n{msg_cost}\n")
-            sys.stdout.flush()
-        return cost_val
+        return safe_float(turn_cost)
 
     def update_meta(
         self,
@@ -108,6 +104,12 @@ class PromptManager(IPromptManager):
             meta["token_count"] = meta.get("token_count", 0)
 
         meta["model"] = str(getattr(response, "model", "unknown"))
+
+        # R-10-12: Capture finish_reason to diagnose empty responses (safety/filter/length)
+        if hasattr(response, "choices") and len(response.choices) > 0:
+            meta["finish_reason"] = getattr(
+                response.choices[0], "finish_reason", "unknown"
+            )
 
         serializable_meta = scrub_dict_for_serialization(meta)
         self._file_system_manager.write_file(

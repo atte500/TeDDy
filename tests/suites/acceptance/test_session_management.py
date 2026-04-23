@@ -57,7 +57,10 @@ def test_teddy_resume_executes_pending_plan(tmp_path: Path, monkeypatch):
 
     result = adapter.run_cli_command(["resume", "-y"], cwd=turn_dir)
     assert result.exit_code == 0
-    assert "hello" in result.stdout
+
+    # In sessions, execution report is silent in console. Check file.
+    report_file = turn_dir / "report.md"
+    assert "hello" in report_file.read_text()
     assert (turn_dir / "report.md").exists()
     assert (turn_dir.parent / "02").exists()
 
@@ -137,24 +140,29 @@ def test_teddy_resume_continuous_loop(tmp_path: Path, monkeypatch):
 
     # First plan
     plan1 = MarkdownPlanBuilder("Plan 1").add_execute("echo turn1").build()
-    # Second plan
-    plan2 = MarkdownPlanBuilder("Plan 2").add_execute("echo turn2").build()
+    # Second plan (Fail to break silent loop and force prompt for Turn 03)
+    plan2 = MarkdownPlanBuilder("Plan 2").add_execute("exit 1").build()
 
     llm.get_completion.side_effect = [mock_response(plan1), mock_response(plan2)]
 
-    # Input sequence:
+    # Input sequence (Silent Flow R-10-12):
     # 1. Provide goal for Turn 01
     # 2. Approve Plan 1 (y)
-    # 3. Provide goal for Turn 02 (because it loops)
+    # 3. Turn 02 starts automatically (no prompt)
     # 4. Approve Plan 2 (y)
-    # 5. Empty input to exit the loop
-    input_sequence = "Goal 1\ny\nGoal 2\ny\n\n"
+    # 5. Empty input to exit the loop (Turn 03 starts and prompts because we provide empty input)
+    input_sequence = "Goal 1\ny\ny\n\n"
 
     result = adapter.run_cli_command(["resume"], cwd=turn_dir, input=input_sequence)
 
-    assert result.exit_code == 0
-    assert "turn1" in result.stdout
-    assert "turn2" in result.stdout
+    # Exit code is 1 because the last executed plan (Turn 02) failed
+    assert result.exit_code == 1
+
+    # In sessions, execution report is silent in console. Check files.
+    report1 = turn_dir.parent / "01" / "report.md"
+    report2 = turn_dir.parent / "02" / "report.md"
+    assert "turn1" in report1.read_text()
+    assert "exit 1" in report2.read_text()
 
     # Verify both turns were executed
     assert (turn_dir.parent / "01" / "report.md").exists()

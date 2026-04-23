@@ -36,13 +36,17 @@ def echo_and_copy(
     content: str,
     no_copy: bool = False,
     confirmation_message: str = "Output copied to clipboard.",
+    content_to_copy: Optional[str] = None,
 ):
     """Prints content to stdout and copies it to the clipboard unless disabled."""
     import threading
     import os
 
-    typer.echo(content)
+    if content:
+        typer.echo(content)
+
     if not no_copy:
+        to_copy = content_to_copy if content_to_copy is not None else content
         if os.getenv("TEDDY_DEBUG"):
             typer.echo("DEBUG: Attempting clipboard copy...", err=True)
         try:
@@ -50,7 +54,7 @@ def echo_and_copy(
             # the main process can exit even if the clipboard provider hangs.
             def _copy():
                 try:
-                    pyperclip.copy(content)
+                    pyperclip.copy(to_copy)
                 except Exception:  # nosec
                     pass
 
@@ -200,17 +204,27 @@ def handle_report_output(
     container: Container,
     report: Optional[ExecutionReport],
     no_copy: bool,
+    silent: bool = False,
 ) -> None:
     """Formats the report, echoes/copies it, and exits with non-zero if failed."""
     if report:
         report_formatter = container.resolve(IMarkdownReportFormatter)
         formatted_report = report_formatter.format(report)
 
-        echo_and_copy(
-            formatted_report,
-            no_copy=no_copy,
-            confirmation_message="Execution report copied to clipboard.",
-        )
+        if silent:
+            # In silent mode (sessions), we don't print to stdout or copy to clipboard
+            # (R-10-12: The report is already saved to file in the session dir)
+            echo_and_copy(
+                "",
+                content_to_copy=formatted_report,
+                no_copy=True,
+            )
+        else:
+            echo_and_copy(
+                formatted_report,
+                no_copy=no_copy,
+                confirmation_message="Execution report copied to clipboard.",
+            )
 
         if report.run_summary.status in (
             RunStatus.FAILURE,

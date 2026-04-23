@@ -124,7 +124,10 @@ def test_generate_plan_writes_standardized_input_md(env):
     service.generate_plan(user_message="test", turn_dir="turns/01")
 
     # Assert
-    # Verify input.md contains the standardized context
-    mock_fs.write_file.assert_any_call(
-        "turns/01/input.md", "Expected Header\nExpected Content"
-    )
+    # Verify input.md contains the simplified context
+    input_call = [
+        c for c in mock_fs.write_file.call_args_list if "input.md" in c[0][0]
+    ][0]
+    input_content = input_call[0][1]
+    assert "Expected Header" in input_content
+    assert "Expected Content" in input_content

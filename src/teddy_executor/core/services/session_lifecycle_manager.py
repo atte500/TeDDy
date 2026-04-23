@@ -101,7 +101,6 @@ class SessionLifecycleManager:
             plan_path, report, is_validation_failure=True
         )
 
-        self.display_planning_progress(next_turn_dir)
         self._replanner.trigger_replan_turn(
             next_turn_dir, errors, original_plan_content, validation_ast=validation_ast
         )
@@ -137,19 +136,3 @@ class SessionLifecycleManager:
             turn_cost=turn_cost,
             is_validation_failure=is_validation_failure,
         )
-
-    def display_planning_progress(self, turn_dir: Any) -> None:
-        """Displays a progress message before planning starts."""
-        turn_dir_str = str(turn_dir)
-        turn_id = Path(turn_dir_str).name
-        meta_path = Path(turn_dir_str) / "meta.yaml"
-
-        agent_name = "pathfinder"
-        if self._file_system_manager.path_exists(str(meta_path)):
-            content = self._file_system_manager.read_file(str(meta_path))
-            meta = yaml.safe_load(str(content)) or {}
-            if isinstance(meta, dict):
-                agent_name = meta.get("agent_name", agent_name)
-
-        msg = f"[cyan][{turn_id}] Planning Turn with {agent_name}...[/cyan]"
-        self._user_interactor.display_message(msg)

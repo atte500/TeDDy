@@ -79,8 +79,10 @@ def test_telemetry_persistence_across_turns(tmp_path, monkeypatch):
     # Mock interactor to approve the resumption
     mock_interactor = env.get_service(IUserInteractor)
     mock_interactor.confirm_action.return_value = (True, "")
-    # Three values: 1 for run_start, 1 for run_resume, then None to terminate.
-    mock_interactor.ask_question.side_effect = ["yes", "yes", None]
+    # In the new silent flow, turn 2 will proceed without asking for a question if turn 1 was SUCCESS.
+    # We only need one 'yes' for the initial start, and then an empty string to terminate
+    # if the loop eventually prompts again.
+    mock_interactor.ask_question.side_effect = ["yes", ""]
     mock_interactor.display_message.side_effect = lambda m: print(m, file=sys.stdout)
 
     adapter = CliTestAdapter(monkeypatch, tmp_path)
@@ -109,7 +111,7 @@ def test_telemetry_persistence_across_turns(tmp_path, monkeypatch):
     mock_llm_client.get_completion_cost.side_effect = [0.02]
 
     result = adapter.run_resume(
-        ".teddy/sessions/20260417_120000-turn-1", interactive=True
+        ".teddy/sessions/20260417_120000-turn-1", interactive=False
     )
 
     assert result.exit_code == 0

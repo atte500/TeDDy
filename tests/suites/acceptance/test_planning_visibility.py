@@ -47,9 +47,8 @@ def test_planning_visibility_includes_turn_id(tmp_path: Path, monkeypatch):
         ["start", "visibility-test"], input="instructions\nn\n"
     )
 
-    # The Turn ID for the first turn is '01'
-    expected_message = "[01] Planning Turn with pathfinder..."
-
-    # CliRunner captures both, but we check combined output to be safe
+    # The Turn ID header is removed in sessions for noise reduction.
+    # We check for the pretty telemetry instead.
     output = result.stdout + (getattr(result, "stderr", ""))
-    assert expected_message in output
+    assert "• Model:" in output
+    assert "• Context:" in output

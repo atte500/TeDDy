@@ -58,11 +58,28 @@ class PlanningService(IPlanningUseCase):
         self._file_system_manager.write_file(
             (turn_path / "input.md").as_posix(), full_context
         )
+
         model = self._config_service.get_setting("planning_model", "gpt-4o") or "gpt-4o"
         token_count = self._llm_client.get_token_count(model, messages)
-        response = self._llm_client.get_completion(model=model, messages=messages)
-        plan_content = self._extract_plan_content(response)
-        turn_cost = self._llm_client.get_completion_cost(response)
+
+        # R-10-12: Implement retry loop for empty content (common with Gemini/LiteLLM safety blocks)
+        max_retries = 3
+        response = None
+        plan_content = ""
+        turn_cost = 0.0
+
+        for attempt in range(max_retries):
+            response = self._llm_client.get_completion(model=model, messages=messages)
+            plan_content = self._extract_plan_content(response)
+            turn_cost = self._llm_client.get_completion_cost(response)
+
+            if plan_content and plan_content.strip():
+                break
+
+            if attempt < max_retries - 1:
+                self._user_interactor.display_message(
+                    f"[yellow]Empty response received (Attempt {attempt + 1}/{max_retries}). Retrying...[/yellow]"
+                )
 
         cost_val = self._prompt_manager.log_telemetry(token_count, turn_cost)
         plan_path = (turn_path / "plan.md").as_posix()
