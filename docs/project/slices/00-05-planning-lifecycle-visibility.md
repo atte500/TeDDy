@@ -64,24 +64,17 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 ```
 
 ## Deliverables
-- [x] Harness - Async infrastructure (Global `anyio_backend` fixture).
-- [x] Harness - Async mock support in `mocks.py`.
-- [x] Seam - Add `async_get_completion` to `ILlmClient` and implement in `LiteLLMAdapter`.
-- [x] Seam - Add `async_generate_plan` to `IPlanningUseCase` and implement in `PlanningService`.
-- [x] Seam - Add async counterparts to `ISessionManager` and `IRunPlanUseCase`.
-- [x] Refactor - Progressively migrate `SessionOrchestrator` to async methods.
+- [ ] **Architecture Pivot: Synchronous Reversion**
+  - [ ] Cleanup - Remove all `async_` prefixed methods from core ports (`ILlmClient`, `IPlanningUseCase`, `IRunPlanUseCase`, `ISessionManager`).
+  - [ ] Cleanup - Revert `SessionOrchestrator`, `ExecutionOrchestrator`, and `PlanningService` strictly to synchronous `def` methods. Remove `anyio` dependencies.
+  - [ ] Cleanup - Remove `UnifiedMock` sync/async bridging and async mock support from `tests/harness/setup/mocking.py` and `test_environment.py`.
+  - [ ] Cleanup - Remove global `anyio_backend` fixtures from `conftest.py` and async marks from tests.
+  - [ ] Refactor - Ensure all tests rely on standard synchronous `MagicMock` for ports.
 - [x] Logic - Chronological session sorting (date prefixing) in `SessionService`.
 - [x] Logic - Natural session name resolution (prefix stripping) in `SessionRepository`.
-- [x] Seam - Implement `ExecutionOrchestrator.async_execute` (wrapper around sync logic).
-- [x] Seam - Implement async wrappers for `SessionReplanner` logic in `SessionOrchestrator`.
-- [x] Logic - Sequenced planning logs & "Proceed on Empty" in `PlanningService.async_generate_plan`.
+- [x] Logic - Sequenced planning logs & "Proceed on Empty" in `PlanningService.generate_plan`.
 - [x] Logic - Blue/Magenta telemetry color refinements in `SessionPlanner`.
-- [x] Logic - Terminal action soft isolation in `ExecutionOrchestrator.async_execute`.
-- [x] Logic - Functional async wrappers for SessionService (ISessionManager).
-- [x] Harness - Unified Sync/Async mock bridging in TestEnvironment.
-- [x] Refactor - Audit and update Integration/Acceptance tests to use `UnifiedMock` or `AsyncMock` for UseCase ports.
-- [ ] Wiring - Async CLI integration (anyio runner) in session_cli_handlers.py.
-- [ ] Cleanup - Prune recursion guards and synchronous methods in PlanningService.
+- [x] Logic - Terminal action soft isolation in `ExecutionOrchestrator._handle_action_in_loop`.
 
 ## Implementation Notes
 
@@ -121,26 +114,10 @@ Then the session directory MUST be named "20260417_120000-refactor-auth"
 
 ## Delta Analysis
 
-### 0. Harness Repair: Mock Bridging
-The systemic failure in integration tests revealed that existing mocks for synchronous ports (e.g., `ILlmClient.get_completion`) do not automatically apply to their async counterparts. We must update `UnifiedMock` in `test_environment.py` to synchronize `return_value` and `side_effect` between sync and async methods by default. This allows the SUT to transition to async calls without breaking the massive existing test suite.
-
-### 5. Regression Audit: Async Mocking
-The integration of `anyio.run` into the CLI handlers (the primary driving boundary) exposed that many tests manually register `MagicMock` instances for ports like `IRunPlanUseCase`. These mocks do not support `await` and cause `anyio.run` to hang.
-- **Strategy:** All tests manually registering mocks for `IRunPlanUseCase`, `IPlanningUseCase`, or `IGetContextUseCase` MUST be updated to use `AsyncMock` or the `UnifiedMock` factory.
-
-### 1. Migration Strategy (Correction)
-The initial attempt to convert ports to `async` in-place caused a systemic regression of 150+ test failures. We are pivoting to **Branch by Abstraction**:
-1. Introduce async methods in parallel to existing sync methods in core ports.
-2. Update implementations to support both.
-3. Migrate high-level orchestrators turn-by-turn.
-4. Prune sync paths once full coverage is achieved.
-
-### 1. Hybrid Async Transformation
-To support the TUI's stability requirements (native `push_screen_wait`) and non-blocking LLM calls, we are adopting a "Hybrid Async" model.
-- **Core Services (Async):** `PlanningService`, `SessionOrchestrator`, and `ExecutionOrchestrator` will be migrated to `async def`. This allows the TUI to `await` the high-level orchestration turns.
-- **Outbound Ports (Async):** `ILlmClient` (LiteLLM) and `IUserInteractor` (for TUI modals) will become async.
-- **Synchronous Foundation:** `IFileSystemManager` and `IEnvironmentInspector` will **remain synchronous**. They are high-performance and low-risk. Services will bridge them using `anyio.to_thread.run_sync` when necessary to prevent blocking the event loop during heavy I/O.
-- **CLI Adapters:** The `Typer` handlers in `session_cli_handlers.py` will be wrapped in `anyio.run` to drive the new async core.
+### 1. Architecture Pivot (Synchronous Reversion)
+The initial attempt to migrate the core orchestration to an asynchronous architecture (`anyio`) caused systemic failures in the test harness (Bug 22) because the test suite fundamentally relies on synchronous `MagicMock` objects.
+Upon architectural review, it was identified that the `Textual` TUI does not require a background event loop from the core application. It is only invoked during the plan review phase, where it manages its own blocking loop (`app.run()`). The LLM wait states are handled via standard synchronous `rich` console prints.
+Therefore, the system MUST be reverted to a purely synchronous architecture. All `async_` prefixed methods, `anyio` dependencies, and complex mock bridging must be entirely stripped. This will permanently resolve Bug 22 and align the codebase with its synchronous test suite.
 
 ### 2. Session Management (`SessionService` & `SessionRepository`)
 - **Sorting:** `SessionService.create_session` must inject `datetime.now().strftime("%Y%m%d_%H%M%S")` prefixing.
@@ -197,43 +174,12 @@ The Developer MUST NOT implement simulation-only logs found in the prototype:
 - **Friction (Log Sequencing):** The "Waiting for agent..." log was appearing before the user instruction prompt in Turn 1 due to the sequencing in `SessionOrchestrator`. It must be moved inside `PlanningService` to trigger only after the instruction is resolved.
 - **Decision:** Shifted from a broad "Infrastructure" task to atomic DbC-prefixed deliverables to de-risk the async transformation and prefix implementation.
 
-### Deliverable: async_generate_plan Seam
-- Introduced `async_generate_plan` to `IPlanningUseCase` and `PlanningService`.
-- Implementation is a `NotImplementedError` to allow for incremental migration (Branch by Abstraction).
-- Verified that adding the abstract method did not break existing DI or mocks in the test suite.
-
-### Deliverable: Async counterparts for ISessionManager and IRunPlanUseCase
-- Expanded `IRunPlanUseCase` (inbound) and `ISessionManager` (outbound) ports with `async_` prefixed methods.
-- Implemented `NotImplementedError` stubs in `ExecutionOrchestrator`, `SessionOrchestrator`, and `SessionService`.
-- Verified via `tests/suites/acceptance/test_async_port_migration.py` and global suite run.
-
-### Deliverable: Refactor SessionOrchestrator Async Migration
-- Migrated `SessionOrchestrator.async_execute` and `async_resume` to functional async implementations.
-- Implemented `SessionPlanner.async_trigger_new_plan` to support async planning turns.
-- Adopted "Hybrid Async" model: wrapping synchronous filesystem and service calls in `anyio.to_thread.run_sync` to prevent event loop blocking.
-- Ratcheted acceptance test `test_run_plan_use_case_has_async_counterparts` to use a valid plan and session, pushing the failure frontier to the next unimplemented layer.
-- Verified `SessionOrchestrator.async_execute` and `async_resume` correctly orchestrate the `async_generate_plan` and `async_execute` (stub) pipeline.
-- Confirmed that the `MarkdownPlanParser` and `PlanningService` work correctly within the async event loop.
+### Deliverable: Architecture Pivot (Sync Reversion)
+- **Friction:** Introduction of `anyio.run` and `async` ports caused infinite loops, `TypeError` exceptions, and 120+ failing tests due to mismatched mock types, leading directly to Bug 22.
+- **Resolution:** The async migration is officially aborted. The immediate next step is to revert all async-related additions across the ports, services, and test harness, returning the system to a clean, synchronous state.
 
 ### Deliverable: Chronological Sorting & Natural Name Resolution
 - Verified `SessionService.create_session` implements `YYYYMMDD_HHMMSS-` prefixing.
 - Implemented `SessionRepository._strip_prefix` and updated `resolve_session_from_path` and `get_latest_session_name` to return Natural Names.
 - Added unit tests in `tests/suites/unit/core/services/test_session_repository.py`.
 - Verified via `tests/suites/acceptance/test_session_prefixing.py`.
-
-### Deliverable: async_execute Seam
-- Implemented `ExecutionOrchestrator.async_execute` using `anyio.to_thread.run_sync`.
-- Verified that `SessionOrchestrator.async_resume` now correctly executes via the async thread wrapper.
-- Ratcheted `tests/suites/acceptance/test_async_port_migration.py` to assert success for `IRunPlanUseCase` async methods.
-
-### Deliverable: Harness - Unified Sync/Async mock bridging
-- Implemented automatic `return_value` and `side_effect` synchronization between sync/async method pairs (e.g., `get_completion` <-> `async_get_completion`).
-- Used `POSIXPathMock.__setattr__` with explicit `_synced_partner` linking.
-- Implemented recursion guards using `object.__setattr__` and `self.__dict__.get()` to prevent infinite loops during cross-mock propagation and avoid triggering `Mock` auto-attribute creation.
-- Verified behavior via dedicated unit tests in `tests/suites/unit/test_unified_mock.py`.
-
-### Deliverable: Refactor - Audit and Update Tests for UnifiedMock
-- Audited test suite for manual `MagicMock` registrations of primary UseCase ports (`IRunPlanUseCase`, `IPlanReviewer`, etc.).
-- Refactored `test_cli_adapter.py` and `test_prompt_auto_approval.py` to use `env.mock_port(PortClass)`.
-- This ensures that when the CLI transition to `anyio.run` occurs, the mocks will be awaitable and synchronized with their sync counterparts, preventing hangs.
-- Updated `test_async_port_migration.py` to use `UnifiedMock` for its LLM response simulations.
