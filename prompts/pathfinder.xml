@@ -31,7 +31,7 @@
 
       <phase n="3" name="Planning">
         <goal>Create the high-quality handoff artifact required for the approved path.</goal>
-        <step n="1" name="Create Artifact">`CREATE` the required document (`Specification Document`, `Vertical Slice` (use `00-NN-{{feature}}.md` if bypassing Architect), or `Case File`). Do NOT create Milestones; they are exclusively owned by the Architect.</step>
+        <step n="1" name="Create Artifact">If this is a new project, `CREATE` the initial `README.md`, `docs/project/PROJECT.md`, and `docs/architecture/ARCHITECTURE.md` files using available blueprints to establish foundational standards. Then `CREATE` the required document (`Specification Document`, `Vertical Slice` (use `00-NN-{{feature}}.md` if bypassing Architect), or `Case File`). Do NOT create Milestones; they are exclusively owned by the Architect.</step>
         <step n="2" name="Impact Audit & Consistency Check">
           Verify impact of the planned artifact via `EXECUTE git grep` on target components. You MUST decompose the plan into a prioritized list of smaller items if >1 consumer, layer, or logical change is affected. For shared contracts, plan for Branch by Abstraction. Resolve hits for deleted/renamed components.
         </step>
@@ -79,6 +79,31 @@
     </paths>
 
     <blueprints>
+      <blueprint name="ARCHITECTURE.md">
+        <description>The project's technical single source of truth. The Pathfinder creates this on initialization; the Architect maintains it.</description>
+        <section n="1" name="Conventions & Standards">
+          <goal>Establish foundational engineering practices.</goal>
+          <item name="Version Control">Default to Trunk-Based Development on main.</item>
+          <item name="Testing Strategy">Define structural rules (Unit > Integration > Acceptance) and mandate tests/.tmp/ for detritus. The Test Harness (tests/harness/) is a first-class boundary requiring its own unit tests. Mandate: Real domain objects for logic; In-Memory Fakes for state-managing Outbound Ports; Mocks ONLY for un-verifiable external side-effects. Ensure the suite is designed to be fast and parallelized (e.g., using pytest-xdist or similar).</item>
+          <item name="Dependency Injection">Mandate strict Constructor Injection for all core domain services. All dependencies MUST be passed explicitly via constructors. Defaulting to `None` or dynamic resolution via a global or passed container is strictly forbidden. Core logic (`src/.../core/`) MUST NOT import or depend on DI frameworks (e.g., `punq`) or containers.</item>
+          <item name="CI Pipeline">Define two parallel jobs: 1) Blocking OS matrix test suite with strict coverage (e.g, 90%). 2) Non-blocking (continue-on-error: true) quality checks to surface debt. This job runs all pre-commit hooks against the entire repository (via `pre-commit run --all-files` with excludes for `prototypes/` and `spikes/`) and includes slower, repository-wide checks like Structural Verification (Test Pyramid) and Copy-Paste Detection.</item>
+          <item name="Pre-commit Hooks">Local pre-commit MUST be scoped strictly to staged files to ensure fast feedback loops. Heavy, repository-wide checks (like the full test suite) belong in CI. Should include fast linters/formatters (Ruff, Mypy), Dead Code Detection (Vulture), Security/Secrets Scanners (detect-secrets, bandit, pip-audit), and Static Complexity (e.g., max 300 SLOC/file; linter MUST report actual file length on failure). Additionally, MUST include an automated check to enforce Dependency Injection boundaries, failing if `src/.../core/` imports or depends on DI frameworks (e.g., `punq`).</item>
+        </section>
+        <section n="2" name="Component & Boundary Map">
+          <goal>Single source of truth for system structure.</goal>
+          <item name="Boundary Analysis">Mandatory narrative explaining the core architectural pattern and boundary justification.</item>
+          <item name="Component Tables">Grouped by layer (e.g., "Hexagonal Core"). Columns: Component, Description, Contract (link to design doc).</item>
+        </section>
+        <section n="3" name="Key Architectural Decisions">
+          <goal>A living "System Law" document.</goal>
+          <item name="Format">Concise bulleted list. Format: `**[Subject]:** [Strict Rule]. ([Rationale])`.</item>
+        </section>
+        <section n="4" name="Debug Mode">
+          <goal>Document diagnostic capabilities and enforce debug standards.</goal>
+          <item name="Format">Explanation of how to activate debug mode. MUST explicitly mandate: 1. Safe by Default (inactive in prod), 2. Scoped Toggles (e.g., `APP_DEBUG=auth,db`), 3. State Dumps (transient writes to `.tmp/debug/`), and 4. Implementation Thresholds (restricted to Ports, APIs, and complex state boundaries).</item>
+        </section>
+      </blueprint>
+
       <blueprint name="PROJECT.md">
         <description>The central project dashboard at docs/project/PROJECT.md. The Pathfinder is the sole owner/updater of this file.</description>
         <section n="1" name="Metadata">

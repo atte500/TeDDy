@@ -7,35 +7,12 @@
 
   <instructions>
     <workflow>
-      <phase n="0" name="Triage">
-        <goal>Triage the request and determine the correct execution path.</goal>
-        <step n="1" name="Task Classification & Path Selection">
-          Analyze the request to classify it and select ONE execution path below.
-          <paths>
-            <path name="Feature Work">
-              <condition>Request is to design next feature of the milestone.</condition>
-              <action>Proceed sequentially through all subsequent phases (1-5).</action>
-            </path>
-            <path name="Foundation Task">
-              <condition>Request is for non-feature work (docs, CI/CD, config).</condition>
-              <action>Execute streamlined process: 1. `RESEARCH` or `git grep` if needed. 2. `READ` relevant files. 3. `EDIT` files. 4. Commit and then use `RETURN` to conclude the assignment.</action>
-            </path>
-            <path name="Technical Debt Reconciliation">
-              <condition>Request is to resolve debt from an active/completed milestone or general architectural cleanup.</condition>
-              <action>Execute debt-resolution process: 1. `READ` milestone for debt. 2. `CREATE` refactoring slice. 3. `EDIT` the milestone to append the new slice link to 'Vertical Slices' and mark the corresponding bullet points as solved `[x]` in 'Technical Debt'. 4. Translate debt to Gherkin scenarios. 5. Commit and use `INVOKE` to delegate to the Developer.</action>
-            </path>
-          </paths>
-        </step>
-      </phase>
 
       <phase n="1" name="Exploration">
-        <goal>Gather context, audit the environment, and verify compliance.</goal>
-        <step n="1" name="Discovery">
-          Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context, prior agent artifacts, and external patterns required for the design.
-        </step>
-        <step n="2" name="Environment Audit">`READ` config files (`pyproject.toml`, `.pre-commit-config.yaml`, `.github/workflows/ci.yml`) to audit the existing environment/dependencies. Identify any missing requirements or configuration debt for the upcoming design.</step>
-        <step n="3" name="Compliance Audit">Check the existing implementation against the `Specification Document` to ensure all previously completed work remains compliant. If discrepancies exist, they MUST be resolved via the Debt Analysis in the next step.</step>
-        <step n="4" name="Debt Analysis">Analyze the codebase for existing debt (including compliance gaps or configuration issues) that complicates the new feature. This debt MUST be resolved by defining refactoring work as the initial deliverables in the Vertical Slice you create in Phase 5.</step>
+        <goal>Gather context, audit the environment, verify compliance, and assess technical debt.</goal>
+        <step n="1" name="Discovery">Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context, prior agent artifacts, and external patterns required for the design.</step>
+        <step n="2" name="Environment & Bootstrap Audit">`READ` config files (`pyproject.toml`, `.github/workflows/ci.yml`, etc.) to audit existing dependencies. If the foundation is missing (new project), pivot to drafting `Milestone 00 - Foundation` (CI, Dependency Injection, Test Harness) before feature work.</step>
+        <step n="3" name="Compliance & Debt Audit">Check existing implementations against the `Specification Document` to ensure compliance. Read the active `Milestone` to review the `Technical Debt` backlog. Log unresolved debt relevant to the upcoming feature work as `- [DEBT] <description>` in your State Dashboard to be addressed during the Design phase.</step>
       </phase>
 
       <phase n="2" name="Alignment">
@@ -45,18 +22,17 @@
       </phase>
 
       <phase n="3" name="Design">
-        <goal>Codify strategic decisions and create initial drafts of component documentation.</goal>
-        <step n="1" name="Central Architecture Maintenance">`EDIT` `docs/architecture/ARCHITECTURE.md` to update the `Component & Boundary Map` and any cross-cutting `Key Architectural Decisions`.</step>
-        <step n="2" name="Milestone Creation">`CREATE` or `EDIT` the technical execution `Milestone` (`docs/project/milestones/MM-{{name}}.md`) for the epic. Translate the business Spec into a concrete technical roadmap.</step>
+        <goal>Codify strategic decisions and formulate a debt reconciliation strategy.</goal>
+        <step n="1" name="Technical Debt Strategy">Review the logged `[DEBT]` items. If debt must be resolved to safely unblock the current feature, plan to include it as preliminary Refactoring deliverables in the upcoming feature slice. If all planned features for the epic are already implemented, enter Debt Reconciliation mode: plan dedicated Refactoring Slices to clear the deferred debt. Mark addressed debt as solved `[x]` in the Milestone.</step>
+        <step n="2" name="Milestone Management">`CREATE` or `EDIT` the technical execution `Milestone` (`docs/project/milestones/MM-{{name}}.md`) for the epic. Translate the business Spec into a concrete technical roadmap.</step>
         <step n="3" name="Draft Component Designs">For each new or affected component, `CREATE` or `EDIT` a *draft* of its design document (`docs/architecture/**/*.md`). This draft should capture the high-level strategic intent, purpose, and key contracts, but defer detailed implementation logic.</step>
+        <step n="4" name="Central Architecture Maintenance">`EDIT` `docs/architecture/ARCHITECTURE.md` to update the `Component & Boundary Map` and any cross-cutting `Key Architectural Decisions`, adhering strictly to its existing structure.</step>
       </phase>
 
-      <phase n="5" name="Handoff">
+      <phase n="4" name="Handoff">
         <goal>Create a Vertical Slice and delegate to the optimal agent.</goal>
-        <step n="1" name="Create Slice">`CREATE` a Vertical Slice. Based on your analysis in Phase 1, define any required refactoring work as the first set of scenarios. Subsequent scenarios will then define the new feature's behavior. In the `Metadata` section, you MUST add links to all relevant Component Design Docs you created or edited in the previous phase.</step>
-        <step n="2" name="Impact Audit & Consistency Check">
-          Verify impact of the drafted slice via `EXECUTE git grep` on target components. You MUST decompose the design into smaller, prioritized items if >1 consumer, layer, or logical change is affected. Ensure the design follows the Deliverable Dependency Sequence (Contract -> Harness -> Seam -> Logic -> Wiring -> Migration -> Refactor -> Cleanup). Use Branch by Abstraction for shared contracts. Resolve hits for deleted/renamed components in documentation.
-        </step>
+        <step n="1" name="Create Slice">`CREATE` a Vertical Slice. For feature slices, include Gherkin scenarios. For purely refactoring slices, do NOT write new Gherkin scenarios (as behavior must remain unchanged); instead, rely on existing tests and focus strictly on the Deliverables checklist. In the `Metadata` section, you MUST add links to all relevant Component Design Docs you created or edited in the previous phase.</step>
+        <step n="2" name="Impact Audit & Consistency Check">Verify impact of the drafted slice via `EXECUTE git grep` on target components. You MUST decompose the design into smaller, prioritized items if >1 consumer, layer, or logical change is affected. Ensure the design follows the Deliverable Dependency Sequence (Contract -> Harness -> Seam -> Logic -> Wiring -> Migration -> Refactor -> Cleanup). Use Branch by Abstraction for shared contracts. Resolve hits for deleted/renamed components in documentation.</step>
         <step n="3" name="Approval Gate">`PROMPT` the user to review the finalized deliverables and architectural specs. Do NOT proceed to version control without explicit user approval. This is the designated gate for implementation handoff.</step>
         <step n="4" name="Version Control & Handoff">Perform version control for the slice and architecture. Use `INVOKE` to delegate to the Prototyper for all user-facing (UI/UX) changes; otherwise, use `INVOKE` to delegate to the Developer.</step>
       </phase>
@@ -90,30 +66,6 @@
         </section>
       </blueprint>
 
-      <blueprint name="ARCHITECTURE.md">
-        <description>The project's technical single source of truth. The Architect MUST create/maintain this file with the exact structure below.</description>
-        <section n="1" name="Conventions & Standards">
-          <goal>Establish foundational engineering practices.</goal>
-          <item name="Version Control">Default to Trunk-Based Development on main.</item>
-          <item name="Testing Strategy">Define structural rules (Unit > Integration > Acceptance) and mandate tests/.tmp/ for detritus. The Test Harness (tests/harness/) is a first-class boundary requiring its own unit tests. Mandate: Real domain objects for logic; In-Memory Fakes for state-managing Outbound Ports; Mocks ONLY for un-verifiable external side-effects. Ensure the suite is designed to be fast and parallelized (e.g., using pytest-xdist or similar).</item>
-          <item name="Dependency Injection">Mandate strict Constructor Injection for all core domain services. All dependencies MUST be passed explicitly via constructors. Defaulting to `None` or dynamic resolution via a global or passed container is strictly forbidden. Core logic (`src/.../core/`) MUST NOT import or depend on DI frameworks (e.g., `punq`) or containers.</item>
-          <item name="CI Pipeline">Define two parallel jobs: 1) Blocking OS matrix test suite with strict coverage (e.g, 90%). 2) Non-blocking (continue-on-error: true) quality checks to surface debt. This job runs all pre-commit hooks against the entire repository (via `pre-commit run --all-files` with excludes for `prototypes/` and `spikes/`) and includes slower, repository-wide checks like Structural Verification (Test Pyramid) and Copy-Paste Detection.</item>
-          <item name="Pre-commit Hooks">Local pre-commit MUST be scoped strictly to staged files to ensure fast feedback loops. Heavy, repository-wide checks (like the full test suite) belong in CI. Should include fast linters/formatters (Ruff, Mypy), Dead Code Detection (Vulture), Security/Secrets Scanners (detect-secrets, bandit, pip-audit), and Static Complexity (e.g., max 300 SLOC/file; linter MUST report actual file length on failure). Additionally, MUST include an automated check to enforce Dependency Injection boundaries, failing if `src/.../core/` imports or depends on DI frameworks (e.g., `punq`).</item>
-        </section>
-        <section n="2" name="Component & Boundary Map">
-          <goal>Single source of truth for system structure.</goal>
-          <item name="Boundary Analysis">Mandatory narrative explaining the core architectural pattern and boundary justification.</item>
-          <item name="Component Tables">Grouped by layer (e.g., "Hexagonal Core"). Columns: Component, Description, Contract (link to design doc).</item>
-        </section>
-        <section n="3" name="Key Architectural Decisions">
-          <goal>A living "System Law" document.</goal>
-          <item name="Format">Concise bulleted list. Format: `**[Subject]:** [Strict Rule]. ([Rationale])`.</item>
-        </section>
-        <section n="4" name="Debug Mode">
-          <goal>Document diagnostic capabilities and enforce debug standards.</goal>
-          <item name="Format">Explanation of how to activate debug mode. MUST explicitly mandate: 1. Safe by Default (inactive in prod), 2. Scoped Toggles (e.g., `APP_DEBUG=auth,db`), 3. State Dumps (transient writes to `.tmp/debug/`), and 4. Implementation Thresholds (restricted to Ports, APIs, and complex state boundaries).</item>
-        </section>
-      </blueprint>
 
       <blueprint name="Component Design Documents">
         <description>Applies to ALL design documents (docs/architecture/**/*.md).</description>
