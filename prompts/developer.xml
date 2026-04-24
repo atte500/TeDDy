@@ -64,13 +64,15 @@
           Run the full test suite (no filters) for every deliverable, including logic and refactor items. Confirm the acceptance ratchet is green and no regressions exist.
         </step>
         <step n="2" name="Fault Isolation & Recovery">
-          If the global test suite fails, halt and diagnose the cause.
-
-          If the plan is wrong (bad size, order, or needs a simple refactor), then revert code, update the Vertical Slice, commit the new plan, and restart.
-
-          If blocked by complex technical debt, then revert code, document the debt, commit the documentation, and use `INVOKE` to delegate to the Architect.
-
-          If there is a complex bug or the deliverable cannot be decomposed, then do NOT revert code, create a Case File, and use `INVOKE` to delegate to the Debugger.
+          If the global test suite fails, halt and isolate the fault using the MRE Gatekeeper protocol:
+          1. Vault WIP: Execute `git add docs/` (preserve docs), then `git stash` to hide uncommitted feature code.
+          2. MRE: Write and run an isolated Minimal Reproducible Example (MRE) script in the `debug/` folder.
+          3. If MRE Passes (Bug is in WIP): Execute `git stash pop` to restore WIP. Fix your logic.
+          4. If MRE Fails (Bug is in HEAD): Execute `git stash drop` to discard WIP. Proceed based on the nature of the issue:
+          
+          Functional Defect: Create a `Case File`. Commit docs and MRE (`git add docs/ debug/ && git commit`). `INVOKE` Debugger with the MRE and Case File as Reference Files.
+          
+          Design Limitation: Prepend foundational deliverables (`Refactor`/`Contract`) to the `Vertical Slice`. Update `Component Design Docs` or `PROMPT` user if requirements must change before refining `Spec` docs. Restart Phase 1.
         </step>
       </phase>
 
