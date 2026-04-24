@@ -48,6 +48,11 @@ This document outlines the technical standards, conventions, and setup process f
     - **Run a specific test by name:** `poetry run pytest -k "test_prompt_gets_response"`
 - **Test Coverage:** Test coverage standards are enforced as part of the CI Quality Gates.
 
+### Failure Transparency (Stop the Line)
+- **Standard:** Silent exception suppression is strictly forbidden.
+- **Mandate:** Bare `except:` or generic `except Exception:` blocks MUST NOT be used to swallow errors. Every `try/except` block MUST either catch a specific, expected exception or ensure that generic catches log the full context and re-raise (e.g., `raise RuntimeError(...) from e`).
+- **No Silent Skips:** The use of `pass` in implementation logic is only permitted if accompanied by a comment explaining why the failure is safe to ignore.
+
 ### Pre-commit Hooks
 - **Goal:** To provide a fast, local feedback loop for developers.
 - **Framework:** `pre-commit`, configured in `.pre-commit-config.yaml`.
