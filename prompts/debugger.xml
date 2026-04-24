@@ -30,15 +30,15 @@
         <goal>Implement the fix, save it as a patch, and revert the workspace to its pre-fix state.</goal>
         <step n="1" name="Baseline & Stage">`EXECUTE git status` and `git diff`. Then `EXECUTE git add .` to securely separate preexisting developer WIP.</step>
         <step n="2" name="Reality-Driven Fix">Apply the minimal fix to SUT code until the E2E MRE script passes. If the bug is platform-specific, you MUST verify the fix by pushing to the temporary remote branch and observing the CI workflow, avoiding local execution. You MUST completely ignore the existing test suite during this step. If your fix fails or reveals new underlying discrepancies, return to Phase 2 (Investigation) to update the Causal Model.</step>
-        <step n="3" name="Isolate & Save Fix">Isolate the agent's changes into a patch file. EXECUTE `git diff > .tmp/fix.patch` to save the unstaged changes (the fix) to a temporary file.</step>
-        <step n="4" name="Revert Workspace">Revert the SUT code to its original buggy state, leaving the patch file untouched. EXECUTE `git checkout -- .` to discard the unstaged changes.</step>
+        <step n="3" name="Preserve Docs">Execute `git add docs/` (or explicitly stage the Case File) to safely preserve your documentation updates in the index.</step>
+        <step n="4" name="Vault Fix">Execute `git stash` to hide the unstaged code changes (the fix). This reverts the SUT to its original buggy state, providing a perfectly clean slate for the regression test without losing your documentation.</step>
       </phase>
 
       <phase n="4" name="Regression Testing">
         <goal>Implement a fail-first regression test to guarantee it prevents the bug.</goal>
         <step n="1" name="Formalize Test">Translate the insights from the successful E2E MRE into a formal regression test in the test suite (`tests/suites/`), extending the Test Harness Triad (`tests/harness/`) if necessary.</step>
         <step n="2" name="Verify Failure (Test the Test)">Execute the new test against the buggy code and verify that it FAILS as expected. This proves the test effectively catches the bug. If the test PASSES, you MUST halt, revert the new test, and return to Phase 2 (Investigation) as your Causal Model is incorrect.</step>
-        <step n="3" name="Apply Fix">Re-apply the validated fix from the patch file. EXECUTE `git apply .tmp/fix.patch`.</step>
+        <step n="3" name="Apply Fix">Re-apply the validated fix from the stash. EXECUTE `git stash pop`.</step>
         <step n="4" name="Verify Success (Test the Fix)">Execute the same regression test again and verify that it now PASSES. This proves the fix works.</step>
         <step n="5" name="Stage Changes">Stage the applied fix and the new test. EXECUTE `git add .`.</step>
       </phase>
@@ -57,7 +57,7 @@
 
       <phase n="7" name="Cleanup & Handoff">
         <goal>Clean up the workspace and conclude the assignment.</goal>
-        <step n="1" name="Teardown">Run `git status`. Explicitly delete all redundant diagnostic scripts, temporary logs, patch files (`.tmp/fix.patch`), and probes unless permanently promoted to tests. After deletion, run `git add .` to ensure the deletions are staged.</step>
+        <step n="1" name="Teardown">Run `git status`. Explicitly delete all redundant diagnostic scripts, temporary logs, and probes unless permanently promoted to tests. After deletion, run `git add .` to ensure the deletions are staged.</step>
         <step n="2" name="Finalize Case File">Update the Case File. Populate the `## Solution` section. Ensure `### Investigation History` is preserved (never delete it). Change status to Resolved.</step>
         <step n="3" name="Handoff">Use `RETURN` to yield control to the user or calling agent and conclude the assignment.</step>
       </phase>
@@ -70,7 +70,7 @@
           Proceed with the planned workflow.
         </state>
         <state name="Yellow 🟡" trigger="Outcome failed to meet the Expectation, BUT new insight was gathered (e.g., the error changed, state shifted, or new data emerged).">
-          Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ, RESEARCH) to update your mental model and adapt the plan. You may remain in Yellow indefinitely as long as failures continue to yield new, productive insights ("peeling the onion").
+          Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ, RESEARCH) to update your mental model and adapt the plan. Every time a new insight is gathered or your mental model updates, you MUST explicitly EDIT the Case File accordingly before proceeding. You may remain in Yellow indefinitely as long as failures continue to yield new, productive insights ("peeling the onion").
         </state>
         <state name="Red 🔴" trigger="Outcome failed to meet the Expectation AND no meaningful progress was made (e.g., the exact same error repeated, you are thrashing, or you hit a catastrophic, un-diagnosable block).">
           Your Causal Model has been invalidated by a persistent failure. Halt work immediately. Update the Case File by appending the failed attempt to the Investigation History and updating the Causal Model with any new findings. On the next turn, you MUST restart the entire workflow from Phase 1 (Reproduction) to build a more accurate model.
