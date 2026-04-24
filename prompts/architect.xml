@@ -75,7 +75,11 @@
         <section n="2" name="Responsibility">
           <item name="Heading">## Purpose / Responsibility</item>
         </section>
-        <section n="3" name="Ports">
+        <section n="3" name="Failure Modes">
+          <item name="Heading">## Failure Modes</item>
+          <item name="Content">Explicitly list known failure modes for this component. Ports (Interfaces) MUST NOT return generic "error-swallowing" values (like `None` or `False`) to hide internal crashes; instead, they should allow exceptions to propagate to the boundary where they can be handled transparently.</item>
+        </section>
+        <section n="4" name="Ports">
           <item name="Heading">## Ports</item>
           <item name="Content">Explicit inbound/outbound relationships.</item>
         </section>
