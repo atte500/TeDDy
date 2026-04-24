@@ -223,10 +223,9 @@ This section serves as the "System Law" (Poka-Yoke) for TeDDy. It defines the pr
 
 ---
 
-## 4. Debug Mode
+## 4. Debug Mode & Branch by Abstraction
 
-To aid in fault isolation, the `teddy` executor includes a debug mode that can be activated via an environment variable.
-
--   **Activation:** Set the `TEDDY_DEBUG` environment variable to any non-empty value (e.g., `export TEDDY_DEBUG=true`).
--   **Behavior:** When active, this mode enables detailed logging for specific, hard-to-diagnose components.
-    -   **`MarkdownPlanParser`:** Prints a detailed Abstract Syntax Tree (AST) of the parsed plan to standard output. This is crucial for debugging parsing logic and issues related to Markdown structure.
+- **Activation:** Use scoped environment toggles (e.g., `APP_DEBUG=auth,parser`).
+- **Zero-Cost Guards:** All debug and prototype logic MUST use language-native dead-code elimination (e.g., `if __debug__:`) to ensure zero performance impact in production.
+- **Branch by Abstraction:** All behavioral alternatives MUST be injected at the Composition Root via Constructor Injection. Mid-logic environment checks are strictly forbidden.
+- **State Dumps:** Diagnostics should write transient state to `.tmp/debug/`.
