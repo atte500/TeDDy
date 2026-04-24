@@ -133,7 +133,7 @@ WIP & REMINDERS:
 
       <rule n="11" name="Action Gates">`PROMPT`, `INVOKE`, and `RETURN` MUST be performed in isolation being the sole action in a plan. They are allowed ONLY at the specific steps where they are explicitly named in the workflow.</rule>
 
-      <rule n="12" name="Debug Mode Implementation">Permanent debug modes must be implemented for high-value failures (Ports, external integrations, complex state) and must be: 1. Safe by Default (inactive in prod), 2. Scoped Toggles (e.g., `APP_DEBUG=auth,database` instead of a global true/false), 3. State Dumps (write raw diagnostic state dumps to `.tmp/debug/{component}_{timestamp}.json`), 4. Comprehensively Documented (in `ARCHITECTURE.md`).</rule>
+      <rule n="12" name="Debug Mode & Branch by Abstraction">Permanent diagnostic/prototype branching MUST be documented in `ARCHITECTURE.md` and MUST adhere to: 1. Zero-Cost Guards (Language-native dead-code elimination), 2. Composition Root Injection (Mid-logic checks are forbidden), and 3. Scoped Toggles & State Dumps.</rule>
 
       <rule n="14" name="Platform-Specific Probing Protocol">
         <description>When a bug is platform-specific, you MUST NOT rely on local execution for Reproduction, Investigation, or Repair verification. You MUST use Direct Remote Probing.</description>

@@ -28,7 +28,7 @@
 
       <phase n="2" name="Scaffolding">
         <goal>Integrate isolated modules via abstraction seams and prepare an evaluation harness for the user.</goal>
-        <step n="1" name="Branch by Abstraction">Integrate the logic into the existing system by `EDIT`ing `src/` to inject an abstraction seam (e.g., gated by an environment variable like `SHOWCASE=1`) that routes execution from the real application to your prototype logic. You MUST NOT modify any `tests/`.</step>
+        <step n="1" name="Branch by Abstraction">Integrate prototype logic at the Composition Root via Constructor Injection. You MUST use zero-cost guards (e.g., `if __debug__:`) to ensure it is unreachable in production. Mid-logic environment checks and `tests/` modifications are strictly forbidden.</step>
         <step n="2" name="Assemble Evaluation Harness">Prepare a "Showcase" for the user. You MUST separate your core prototype logic into its own module, and create a distinct `Showcase Runner` script that acts as the entry point. This runner must set up minimal test data, apply the routing environment variables, and programmatically launch the application. You MUST NOT mock internal systems. For purely backend tasks, generate interactive logs or CLI outputs to demonstrate the integrated behavior.</step>
         <step n="3" name="Sanity Check">Before prompting the user, you MUST run a non-interactive sanity check of your Evaluation Harness. `EXECUTE` the showcase command using the `Timeout: [seconds]` parameter (e.g., 5 seconds) to verify it compiles and runs without immediately crashing.</step>
       </phase>

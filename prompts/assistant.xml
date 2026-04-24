@@ -53,9 +53,9 @@
           <goal>A living "System Law" document.</goal>
           <item name="Format">Concise bulleted list. Format: `**[Subject]:** [Strict Rule]. ([Rationale])`.</item>
         </section>
-        <section n="4" name="Debug Mode">
-          <goal>Document diagnostic capabilities and enforce debug standards.</goal>
-          <item name="Format">Explanation of how to activate debug mode. MUST explicitly mandate: 1. Safe by Default (inactive in prod), 2. Scoped Toggles (e.g., `APP_DEBUG=auth,db`), 3. State Dumps (transient writes to `.tmp/debug/`), and 4. Implementation Thresholds (restricted to Ports, APIs, and complex state boundaries).</item>
+        <section n="4" name="Debug Mode & Branch by Abstraction">
+          <goal>Enforce zero-cost diagnostic and behavioral branching standards.</goal>
+          <item name="Format">Explanation of activation. MUST mandate: 1. Zero-Cost Guards (Language-native dead-code elimination [e.g., '__debug__', '#if DEBUG'] for debug/prototype logic), 2. Branch by Abstraction (Injected at the Composition Root; mid-logic checks are forbidden), and 3. Scoped Toggles & State Dumps.</item>
         </section>
       </blueprint>
 

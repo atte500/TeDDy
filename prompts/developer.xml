@@ -49,7 +49,7 @@
             - Failure Transparency Audit: Eliminate generic `except Exception:` or silent `pass` blocks. Ensure every error path either logs diagnostic data or re-raises with context. Make failures obvious and traceable.
             - Test Harness Extraction: You MUST extract repetitive test logic into the Test Harness Triad (Setup, Driver, Observer). Every helper must reside in its corresponding category: Setup for state preparation (Arrange), Driver for execution (Act), or Observer for verification (Assert).
             - Prune Redundancy: Actively identify and delete redundant tests. If a lower-level unit test provides the same confidence as a now-existing higher-level test, or if multiple unit tests cover the same logical branch, prune the suite to maintain execution speed and developer clarity.
-            - DI Purity: No concrete defaults in constructors. The Service Locator pattern is strictly forbidden. Core domain services MUST NOT depend on the DI container or framework. You MUST use explicit Constructor Injection of Ports to ensure Harness 'Setup' remains the sole state authority.
+            - DI Purity: No concrete defaults. The Service Locator pattern and mid-logic Branch by Abstraction (environment checks) are strictly forbidden. All behavioral alternatives MUST be injected at the Composition Root via Constructor Injection of Ports. Core logic MUST NOT depend on the DI container.
             - Clean Code: Apply SRP. Remove stale comments; ensure remaining comments explain "why". Prune detailed assertions from Acceptance/Integration tests, ensuring complex edge cases are validated at the Unit layer.
           </tdd_phase>
           <tdd_phase n="4" name="Loop Exit">
