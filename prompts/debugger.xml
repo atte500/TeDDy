@@ -30,8 +30,8 @@
         <goal>Implement the fix, save it as a patch, and revert the workspace to its pre-fix state.</goal>
         <step n="1" name="Baseline & Stage">`EXECUTE git status` and `git diff`. Then `EXECUTE git add .` to securely separate preexisting developer WIP.</step>
         <step n="2" name="Reality-Driven Fix">Apply the minimal fix to SUT code until the E2E MRE script passes. If the bug is platform-specific, you MUST verify the fix by pushing to the temporary remote branch and observing the CI workflow, avoiding local execution. You MUST completely ignore the existing test suite during this step. If your fix fails or reveals new underlying discrepancies, return to Phase 2 (Investigation) to update the Causal Model.</step>
-        <step n="3" name="Preserve Docs">Execute `git add docs/` (or explicitly stage the Case File) to safely preserve your documentation updates in the index.</step>
-        <step n="4" name="Vault Fix">Execute `git stash` to hide the unstaged code changes (the fix). This reverts the SUT to its original buggy state, providing a perfectly clean slate for the regression test without losing your documentation.</step>
+        <step n="3" name="Stage Fix">Execute `git add src/ tests/` (or target code directories) to stage only your code changes (the fix).</step>
+        <step n="4" name="Vault Fix">Execute `git stash --staged`. This hides the fix and reverts the SUT to its buggy state, providing a clean slate for the regression test. Because the Case File was not staged, it remains perfectly safe in your workspace.</step>
       </phase>
 
       <phase n="4" name="Regression Testing">
