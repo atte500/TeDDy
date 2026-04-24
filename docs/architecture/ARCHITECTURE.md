@@ -63,7 +63,7 @@ This document outlines the technical standards, conventions, and setup process f
         - `ruff-complexity`: Enforces a **precise Cyclomatic Complexity** limit of **9** per function (Rule `C901`) and a **precise Statement Limit** of **40** per function (Rule `PLR0915`) for ALL code.
         - `file-length-python`: Enforces a strict **300 line limit** for all Python files (excluding `spikes/` and `prototypes/`). The check reports the actual file length on failure for quick assessment.
     - **Style & Formatting:**
-        - `ruff`: For linting and formatting. **Note:** `E501` (Line too long) is explicitly ignored to favor readability of long URLs and comments.
+        - `ruff`: For linting and formatting (mandating rules **BLE001** and **PLW0711** for Failure Transparency). **Note:** `E501` (Line too long) is explicitly ignored to favor readability of long URLs and comments.
     - **Correctness:**
         - `mypy`: For static type checking.
         - `vulture`: For dead code detection. **Standard:** We employ a two-pronged strategy to handle false positives elegantly:
