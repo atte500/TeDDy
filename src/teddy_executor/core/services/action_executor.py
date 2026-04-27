@@ -1,3 +1,4 @@
+import logging
 from typing import Optional
 
 from teddy_executor.core.domain.models import (
@@ -15,6 +16,7 @@ from teddy_executor.core.ports.outbound import (
 )
 from teddy_executor.core.services.action_dispatcher import ActionDispatcher
 
+logger = logging.getLogger(__name__)
 
 # Constant for perfect match detection to avoid floating point noise
 PERFECT_MATCH_THRESHOLD = 0.99999
@@ -83,7 +85,10 @@ class ActionExecutor:
                 params=action_log.params,
                 details=new_details,
             )
-        except Exception:
+        except Exception as e:
+            logger.debug(
+                "Failed to enrich failed log with file content for %s: %s", path, e
+            )
             return action_log
 
     def _check_action_isolation(

@@ -17,7 +17,7 @@ And it MUST log the error or re-raise with context.
 ```
 
 ## Deliverables
-- [ ] Logic - Refactor `src/teddy_executor/core/services/action_executor.py`: Replace `except Exception:` in `_enrich_failed_log` with logging.
+- [x] Logic - Refactor `src/teddy_executor/core/services/action_executor.py`: Replace `except Exception:` in `_enrich_failed_log` with logging.
 - [ ] Logic - Refactor `src/teddy_executor/core/services/execution_orchestrator.py`: Replace silent `pass` with `# nosec` in temp file cleanup with `logger.debug`.
 - [ ] Logic - Refactor `src/teddy_executor/core/services/session_planner.py`: Replace silent `pass` blocks in message/name resolution with diagnostic logging.
 - [ ] Logic - Refactor `src/teddy_executor/adapters/inbound/cli_helpers.py`: Clean up 4+ `nosec` blocks to ensure report formatting errors are visible.
@@ -33,3 +33,6 @@ And it MUST log the error or re-raise with context.
 - Follow the "Context-First" strategy: add informative messages (e.g., `raise RuntimeError(f"Action {name} failed") from e`).
 - Ensure every `try/except` block being modified has a clear justification for its existence or is removed if redundant.
 - Use the project's `logging` system to record errors that are caught for UI stability.
+
+## Implementation Notes
+- `action_executor.py`: Added module-level `logger` and replaced silent `except Exception:` in `_enrich_failed_log` with a `logger.debug` call. Kept the `except Exception:` broad since the operation is explicitly a "best effort" context enrichment that must not block the core execution flow.
