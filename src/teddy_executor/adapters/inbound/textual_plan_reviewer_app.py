@@ -172,8 +172,8 @@ class ReviewerApp(App):
         for f in getattr(self, "_log_preview_files", []):
             try:
                 self._system_env.delete_file(f)
-            except Exception:  # nosec B110
-                logger.debug(f"Failed to delete temporary log preview file: {f}")
+            except Exception as e:
+                logger.debug("Failed to delete temporary log preview file %s: %s", f, e)
 
         self.exit(self.plan)
 
@@ -191,16 +191,18 @@ class ReviewerApp(App):
                 try:
                     os.remove(action.pending_temp_file)
                     action.pending_temp_file = None
-                except Exception:  # nosec B110
+                except Exception as e:
                     logger.debug(
-                        f"Failed to remove pending temp file: {action.pending_temp_file}"
+                        "Failed to remove pending temp file %s: %s",
+                        action.pending_temp_file,
+                        e,
                     )
 
         for f in getattr(self, "_log_preview_files", []):
             try:
                 self._system_env.delete_file(f)
-            except Exception:  # nosec B110
-                logger.debug(f"Failed to delete temporary log preview file: {f}")
+            except Exception as e:
+                logger.debug("Failed to delete temporary log preview file %s: %s", f, e)
 
         self.exit(None)
 

@@ -26,7 +26,7 @@ And it MUST log the error or re-raise with context.
 - [x] Logic - TUI Sweep (Part 3): Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_editor.py` (External editor/diff subprocesses).
 - [x] Logic - TUI Sweep (Part 4): Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_previews.py` and `textual_plan_reviewer_execution.py` (Diff generation and status updates).
 - [x] Logic - TUI Sweep (Part 5): Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_helpers.py` (Formatting and utility failures).
-- [ ] Cleanup - Final validation: Execute `grep -rn "# nosec B110" src/` to ensure all "intentional" silent failures are converted to "transparent" failures.
+- [x] Cleanup - Final validation: Execute `grep -rn "# nosec B110" src/` to ensure all "intentional" silent failures are converted to "transparent" failures.
 
 ## Delta Analysis
 - **action_executor.py**: `except Exception` in log enrichment hides filesystem errors.

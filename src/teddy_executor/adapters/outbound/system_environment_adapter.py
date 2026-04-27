@@ -47,8 +47,10 @@ class SystemEnvironmentAdapter(ISystemEnvironment):
                     attrs[0] |= termios.ICRNL
                     attrs[3] |= termios.ICANON | termios.ECHO
                     termios.tcsetattr(fd, termios.TCSAFLUSH, attrs)
-                except Exception:  # nosec B110
-                    pass
+                except Exception as e:
+                    import logging
+
+                    logging.getLogger(__name__).debug("Failed to restore TTY: %s", e)
 
     def create_temp_file(self, suffix: str = "", mode: str = "w") -> str:
         with tempfile.NamedTemporaryFile(mode=mode, suffix=suffix, delete=False) as tf:
