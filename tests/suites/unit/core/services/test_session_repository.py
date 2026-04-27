@@ -8,13 +8,13 @@ def test_resolve_session_from_path_returns_full_folder_name():
     repo = SessionRepository(mock_fs)
 
     # Path inside a prefixed session folder
-    path = ".teddy/sessions/20260417_120000-my-feature/01/plan.md"
+    path = ".teddy/sessions/20260417_120000-feature/01/plan.md"
 
     # Act
     session_name = repo.resolve_session_from_path(path)
 
     # Assert
-    assert session_name == "20260417_120000-my-feature"
+    assert session_name == "20260417_120000-feature"
 
 
 def test_get_latest_session_name_returns_full_folder_name():

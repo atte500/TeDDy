@@ -1,0 +1,165 @@
+import re
+
+# Exhaustive English stopwords to strip from session names for conciseness
+STOPWORDS = {
+    "a",
+    "about",
+    "above",
+    "after",
+    "again",
+    "all",
+    "also",
+    "am",
+    "an",
+    "and",
+    "any",
+    "are",
+    "as",
+    "at",
+    "be",
+    "because",
+    "been",
+    "before",
+    "being",
+    "below",
+    "between",
+    "both",
+    "but",
+    "by",
+    "can",
+    "could",
+    "did",
+    "do",
+    "does",
+    "doing",
+    "down",
+    "during",
+    "each",
+    "few",
+    "for",
+    "from",
+    "further",
+    "get",
+    "had",
+    "has",
+    "have",
+    "having",
+    "he",
+    "her",
+    "here",
+    "hers",
+    "herself",
+    "him",
+    "himself",
+    "his",
+    "how",
+    "i",
+    "if",
+    "in",
+    "into",
+    "is",
+    "it",
+    "its",
+    "itself",
+    "just",
+    "like",
+    "me",
+    "more",
+    "most",
+    "my",
+    "myself",
+    "no",
+    "nor",
+    "not",
+    "now",
+    "of",
+    "off",
+    "on",
+    "once",
+    "only",
+    "or",
+    "other",
+    "our",
+    "ours",
+    "ourselves",
+    "out",
+    "over",
+    "own",
+    "s",
+    "same",
+    "she",
+    "should",
+    "so",
+    "some",
+    "such",
+    "t",
+    "than",
+    "that",
+    "the",
+    "their",
+    "theirs",
+    "them",
+    "themselves",
+    "then",
+    "there",
+    "these",
+    "they",
+    "this",
+    "those",
+    "through",
+    "to",
+    "too",
+    "under",
+    "until",
+    "up",
+    "very",
+    "want",
+    "was",
+    "we",
+    "were",
+    "what",
+    "when",
+    "where",
+    "which",
+    "while",
+    "who",
+    "whom",
+    "why",
+    "will",
+    "with",
+    "would",
+    "you",
+    "your",
+    "yours",
+    "yourself",
+    "yourselves",
+    "using",
+}
+
+
+def slugify(text: str, max_length: int = 40) -> str:
+    """
+    Converts a string into a URL-friendly slug.
+
+    1. Lowercase.
+    2. Split into words and remove aggressive stopwords.
+    3. Join words with hyphens until max_length is reached (whole-word truncation).
+    """
+    # 1. Lowercase
+    s = text.lower()
+
+    # 2. Split and filter stopwords
+    all_words = [w for w in re.split(r"[^a-z0-9]+", s) if w and w not in STOPWORDS]
+
+    # 3. Build slug word by word to respect max_length
+    slug_words: list[str] = []
+    current_length = 0
+    for word in all_words:
+        # Word length + hyphen (if not first word)
+        added_length = len(word) + (1 if slug_words else 0)
+        if current_length + added_length > max_length:
+            break
+        slug_words.append(word)
+        current_length += added_length
+
+    return "-".join(slug_words)

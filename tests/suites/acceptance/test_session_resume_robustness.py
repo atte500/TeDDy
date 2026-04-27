@@ -73,11 +73,11 @@ def test_resume_with_session_path(tmp_path, monkeypatch):
         adapter.run_start(["my-session"], input="prompt\ny\n")
 
     result = adapter.run_cli_command(
-        ["resume", ".teddy/sessions/20260417_120000-my-session"], input="prompt\ny\n"
+        ["resume", ".teddy/sessions/20260417_120000-session"], input="prompt\ny\n"
     )
 
     assert result.exit_code == 0
-    assert "my-session" in result.stdout
+    assert "session" in result.stdout
 
 
 def test_resume_with_turn_path(tmp_path, monkeypatch):
@@ -95,11 +95,11 @@ def test_resume_with_turn_path(tmp_path, monkeypatch):
         adapter.run_start(["my-session"], input="prompt\ny\n")
 
     result = adapter.run_cli_command(
-        ["resume", ".teddy/sessions/20260417_120000-my-session/01"], input="prompt\ny\n"
+        ["resume", ".teddy/sessions/20260417_120000-session/01"], input="prompt\ny\n"
     )
 
     assert result.exit_code == 0
-    assert "my-session" in result.stdout
+    assert "session" in result.stdout
 
 
 def test_start_enters_continuous_loop(tmp_path, monkeypatch):
@@ -125,9 +125,7 @@ def test_start_enters_continuous_loop(tmp_path, monkeypatch):
     # We will check if "02" was created in the session directory.
     session_dir = tmp_path / ".teddy" / "sessions" / "20260417_120000-test-plan"
     if not session_dir.exists():
-        session_dir = (
-            tmp_path / ".teddy" / "sessions" / "20260417_120000-my-loop-session"
-        )
+        session_dir = tmp_path / ".teddy" / "sessions" / "20260417_120000-loop-session"
 
     assert (session_dir / "01" / "report.md").exists()
     assert (session_dir / "02" / "report.md").exists(), (
@@ -150,9 +148,9 @@ def test_resume_with_file_path(tmp_path, monkeypatch):
         adapter.run_start(["my-session"], input="prompt\ny\n")
 
     result = adapter.run_cli_command(
-        ["resume", ".teddy/sessions/20260417_120000-my-session/01/meta.yaml"],
+        ["resume", ".teddy/sessions/20260417_120000-session/01/meta.yaml"],
         input="prompt\ny\n",
     )
 
     assert result.exit_code == 0
-    assert "my-session" in result.stdout
+    assert "session" in result.stdout

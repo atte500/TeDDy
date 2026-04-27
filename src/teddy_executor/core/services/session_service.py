@@ -10,6 +10,7 @@ from teddy_executor.core.ports.outbound.session_manager import (
     SessionState,
 )
 from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
+from teddy_executor.core.utils.string import slugify
 from teddy_executor.prompts import find_prompt_content
 
 
@@ -31,7 +32,9 @@ class SessionService(ISessionManager):
         Initializes a new session directory and bootstraps it for Turn 1.
         """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        prefixed_name = f"{timestamp}-{name}"
+        # Ensure the user-provided name is also slugified and truncated
+        clean_name = slugify(name)
+        prefixed_name = f"{timestamp}-{clean_name}"
         session_root = f".teddy/sessions/{prefixed_name}"
         turn_dir = f"{session_root}/01"
 

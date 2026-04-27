@@ -5,6 +5,7 @@ from typing import Any, Optional
 
 import yaml
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
+from teddy_executor.core.utils.string import slugify
 
 logger = logging.getLogger(__name__)
 
@@ -144,7 +145,7 @@ class SessionPlanner:
         match = re.search(r"^#\s*(?:Plan:)?\s*(.*)$", content, re.MULTILINE)
         if match:
             title = match.group(1).strip()
-            new_name = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")
+            new_name = slugify(title)
             if new_name:
                 old_name = Path(plan_path).parent.parent.name
                 try:

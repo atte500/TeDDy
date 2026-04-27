@@ -47,12 +47,7 @@ def test_teddy_start_triggers_planning(tmp_path, monkeypatch):
 
     assert result.exit_code == 0
     plan_file = (
-        tmp_path
-        / ".teddy"
-        / "sessions"
-        / "20260417_120000-my-feature"
-        / "01"
-        / "plan.md"
+        tmp_path / ".teddy" / "sessions" / "20260417_120000-feature" / "01" / "plan.md"
     )
     assert plan_file.exists()
 
