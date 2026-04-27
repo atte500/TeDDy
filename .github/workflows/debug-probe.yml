@@ -1,0 +1,20 @@
+name: Debug Windows Path Fix
+on:
+  push:
+    branches: [ debug-windows-fix ]
+
+jobs:
+  test-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Poetry
+        run: pip install poetry
+      - name: Install dependencies
+        run: poetry install
+      - name: Run Targeted Test
+        run: poetry run pytest tests/suites/integration/adapters/outbound/test_tree_generator_performance.py -k test_tree_integrity_with_deep_unignored_file

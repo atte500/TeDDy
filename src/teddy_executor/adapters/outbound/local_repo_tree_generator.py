@@ -1,3 +1,4 @@
+import os
 import pathspec
 from pathlib import Path
 from teddy_executor.core.ports.outbound.repo_tree_generator import IRepoTreeGenerator
@@ -42,7 +43,9 @@ class _RecursiveListFormatter:
         lines = []
         if directory != self.root_dir:
             rel_path = directory.relative_to(self.root_dir)
-            lines.append(f"./{rel_path}:")
+            # Poka-Yoke: Always use forward slashes for the tree protocol
+            posix_rel_path = str(rel_path).replace(os.sep, "/")
+            lines.append(f"./{posix_rel_path}:")
 
         for child in children:
             lines.append(child.name)
