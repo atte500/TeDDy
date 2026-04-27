@@ -28,18 +28,11 @@
         </step>
       </phase>
 
-      <phase n="2" name="Scaffolding">
-        <goal>Prepare the testing environment and verify imports/wiring before writing business logic tests.</goal>
-        <step n="1" name="Layer Constraint">Map the testing layer to the current deliverable: Unit tests for `Contract`/`Harness`/`Seam`, Unit/Integration for `Logic`, and Acceptance for `Wiring`. Do NOT open Acceptance tests prematurely.</step>
-        <step n="2" name="Preparation">Create or locate the appropriate test file. Import necessary dependencies and set up the empty test function using the Test Harness Triad (Setup = Arrange, Driver = Act, Observer = Assert) structure. Do NOT write assertions yet.</step>
-        <step n="3" name="Verification">Execute the test file to verify your scaffolding. The success criteria is that the test runner executes without any `SyntaxError` or `ImportError`. It must successfully run (even if finding 0 tests) before you proceed to Phase 3.</step>
-      </phase>
-
-      <phase n="3" name="Implementation">
+      <phase n="2" name="Implementation">
         <goal>Make the current RED test pass via Just-In-Time implementation. Do not overbuild.</goal>
         <inner_loop>
           <tdd_phase n="1" name="Red">
-            Write ONE atomic failing test at your target layer asserting a missing condition or breaking a hardcoded "fake". Use parameterized tests for data permutations. Execute the test to confirm it fails exactly as expected. Your `Synthesis` MUST analyze the test failure and isolate the absolute smallest next logical condition.
+            Map the testing layer to the current deliverable: Unit tests for `Contract`/`Harness`/`Seam`, Unit/Integration for `Logic`, and Acceptance for `Wiring`. Do NOT open Acceptance tests prematurely. Create or locate the appropriate test file. Set up the test function using the Test Harness Triad (Setup = Arrange, Driver = Act, Observer = Assert). Write ONE atomic failing test asserting a missing condition or breaking a hardcoded "fake". Use parameterized tests for data permutations. Execute the test to confirm it fails exactly as expected (e.g., via `ImportError`, `NameError`, or `AssertionError`). Your `Synthesis` MUST analyze the test failure and isolate the absolute smallest next logical condition.
           </tdd_phase>
           <tdd_phase n="2" name="Green">
             Write the absolute minimal code to pass the test. Hardcoded return values are encouraged if they satisfy the current suite, forcing further Red tests to drive out real logic. Your `Synthesis` MUST quote the Red test failure message and explain the fix.
@@ -53,12 +46,12 @@
             - Clean Code: Apply SRP. Remove stale comments; ensure remaining comments explain "why". Prune detailed assertions from Acceptance/Integration tests, ensuring complex edge cases are validated at the Unit layer.
           </tdd_phase>
           <tdd_phase n="4" name="Loop Exit">
-            If the implementation fully satisfies the SINGLE current deliverable, you MUST exit the inner loop and proceed immediately to Phase 4 (Integration). Do NOT begin the next deliverable until Phase 6 (Version Control) is complete.
+            If the implementation fully satisfies the SINGLE current deliverable, you MUST exit the inner loop and proceed immediately to Phase 3 (Integration). Do NOT begin the next deliverable until Phase 5 (Version Control) is complete.
           </tdd_phase>
         </inner_loop>
       </phase>
 
-      <phase n="4" name="Integration">
+      <phase n="3" name="Integration">
         <goal>Mandatory Global CI Gate. Verify system integrity for every deliverable.</goal>
         <step n="1" name="Global Test Run">
           Run the full test suite (no filters) for every deliverable, including logic and refactor items. Confirm no regressions exist.
@@ -76,7 +69,7 @@
         </step>
       </phase>
 
-      <phase n="5" name="Documentation">
+      <phase n="4" name="Documentation">
         <goal>Update tracking documents and record implementation findings for this deliverable item.</goal>
         <step n="1" name="Mark Progress">`EDIT` the vertical slice doc to mark the current deliverable as `[x]`.</step>
         <step n="2" name="Sync Slice Notes">`EDIT` the vertical slice doc to append technical findings for this deliverable under the `## Implementation Notes` section. If this section does not exist, you MUST create it at the end of the file.</step>
@@ -84,7 +77,7 @@
         <step n="4" name="Perform As-Built Update">Before finishing the last deliverable of the slice, perform a final `EDIT` on the `Component Design Docs`. Use the `Implementation Notes` you have gathered to make final, minor corrections, ensuring the docs perfectly reflect the as-built reality of the code.</step>
       </phase>
 
-      <phase n="6" name="Version Control">
+      <phase n="5" name="Version Control">
         <goal>Verify workspace state and hand off versioned history. Prerequisite: Successful integration verified by global test run.</goal>
         <step n="1" name="Consistency Check">If this is the last deliverable, execute `git grep` for deleted/renamed components and resolve stale hits in documentation/comments.</step>
         <step n="2" name="Commit">Execute the Version Control Protocol for the current deliverable in its own turn.</step>
@@ -114,7 +107,6 @@ Deliverable: [Specific deliverable]
 
 PHASES:
 - [✓ | ▶ |  ] Orientation
-- [✓ | ▶ |  ] Scaffolding
 - [✓ | ▶ |  ] Implementation
 - [✓ | ▶ |  ] Integration
 - [✓ | ▶ |  ] Documentation
@@ -386,13 +378,13 @@ WIP & REMINDERS:
 ## Rationale
 ~~~~~~
 1. Synthesis
-The test environment scaffolding ran successfully with zero import errors. The file is correctly wired to the test runner. I will now enter the Implementation phase and begin the TDD loop.
+I have identified the target deliverable and audited the plan. I will now begin the Implementation phase.
 
 2. Justification
 My current deliverable is the `Contract` for the AuthService. Per the layer constraints, I am working strictly in the Unit test layer. My immediate step is to write the initial failing test (Red) that defines the expected behavior of the contract.
 
 3. Expectation
-The `pytest` command will fail with an `AssertionError` or `NameError` since the AuthService class does not yet exist. This confirms the test is demanding the missing logic and dictates my next step: writing the minimal implementation code to pass it (Green).
+The `pytest` command will fail with an `AssertionError` or `ImportError` since the AuthService class does not yet exist. This confirms the test is demanding the missing logic and dictates my next step: writing the minimal implementation code to pass it (Green).
 
 4. State Dashboard
 Vertical Slice: docs/project/slices/01-01-auth.md
@@ -400,7 +392,6 @@ Deliverable: AuthService Contract
 
 PHASES:
 - [✓] Orientation
-- [✓] Scaffolding
 - [▶] Implementation
 - [ ] Integration
 - [ ] Documentation

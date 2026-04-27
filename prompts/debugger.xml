@@ -21,7 +21,7 @@
         <step n="1" name="Regressing Delta Isolation">With a failing MRE establishing the symptom, analyze the historical context gathered in Phase 1 to isolate the exact regressing delta (the specific lines of code that caused the failure) using `git log` inspection or `git bisect`.</step>
         <step n="2" name="Context & Scoping">`EDIT` the Case File to populate the `## Context & Scope` section based on the isolated delta and initial context. This formally narrows the search space.</step>
         <step n="3" name="Baseline Causal Model">Synthesize gathered context and the regressing delta into a preliminary causal model of how the faulty components currently interact. The model MUST be based exclusively on verified observations, not assumptions. `EDIT` the Case File to populate `### Causal Model`.</step>
-        <step n="4" name="Proactive Instrumentation">Review target code. If investigating a high-value boundary, use an `Instrumentation` plan to build permanent, conditionally-activated debug diagnostics to aid current and future isolation.</step>
+        <step n="4" name="Proactive Instrumentation">Review target code. If investigating a high-value boundary, use an `Instrumentation` plan to build permanent, conditionally-activated debug diagnostics to aid current and future isolation. Instrumentation MUST adhere to core architectural standards: maintain strict Constructor Injection (no global containers/locators) and Failure Transparency (no swallowing errors via bare except blocks).</step>
         <step n="5" name="Design Probe & Observe">Refine the MRE or create targeted temporary probes to expose internal state. `EXECUTE` them to analyze the exact reality.</step>
         <step n="6" name="Model Refinement">Update the `### Causal Model` in the Case File based on new observations. For each observation that resolves a discrepancy, find the corresponding line in the `### Discrepancies` list and append the resolution in the format: `(resolved: [explanation])`. Do not delete resolved discrepancies. Repeat Phase 2 until all discrepancies are resolved.</step>
       </phase>
@@ -57,7 +57,7 @@
 
       <phase n="7" name="Cleanup & Handoff">
         <goal>Clean up the workspace and conclude the assignment.</goal>
-        <step n="1" name="Teardown">Run `git status`. Explicitly delete all redundant diagnostic scripts, temporary logs, and probes unless permanently promoted to tests. After deletion, run `git add .` to ensure the deletions are staged.</step>
+        <step n="1" name="Teardown">Run `git status`. Explicitly delete all redundant diagnostic scripts, temporary logs, and probes unless permanently promoted to tests. After deletion, run `git add .` to ensure the deletions are staged. If a temporary branch was used for remote probing, you MUST checkout the primary integration branch (e.g., `main`), ensure your final fix is committed there, and delete the temporary branch both locally and remotely (e.g., `git checkout main && git merge <debug-branch> && git push origin --delete <debug-branch> && git branch -D <debug-branch>`).</step>
         <step n="2" name="Finalize Case File">Update the Case File. Populate the `## Solution` section. Ensure `### Investigation History` is preserved (never delete it). Change status to Resolved.</step>
         <step n="3" name="Handoff">Use `RETURN` to yield control to the user or calling agent and conclude the assignment.</step>
       </phase>
@@ -144,6 +144,7 @@ WIP & REMINDERS:
           3. Obtain Run ID: Wait briefly for GitHub to register the run, then dynamically fetch the ID. Example: `sleep 5 && gh run list --workflow <temp-workflow.yml> --branch <your-branch> --limit 1 --json databaseId -q ".[0].databaseId"`
           4. Monitor: You MUST provide the Run ID to watch the job in non-interactive environments. Example: `gh run watch <run-id> --exit-status`
           5. Minimize Log Payload: NEVER execute `gh run view <run-id> --log` directly to standard output. It will dump thousands of lines and destroy your context window. You MUST filter the output. Use `--log-failed` to get only errors, or redirect to a file and read the tail (e.g., `gh run view <run-id> --log > .tmp/ci_logs.txt && tail -n 100 .tmp/ci_logs.txt`).
+          6. Verification: A remote probe execution is NEVER considered a SUCCESS until the actual CI logs have been fetched, read, and the output is explicitly observed.
         </protocol>
       </rule>
 
