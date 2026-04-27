@@ -1,4 +1,5 @@
 from __future__ import annotations
+import logging
 import os
 import re
 from typing import TYPE_CHECKING, Any, Optional, cast
@@ -6,6 +7,8 @@ from typing import TYPE_CHECKING, Any, Optional, cast
 if TYPE_CHECKING:
     from teddy_executor.adapters.inbound.textual_plan_reviewer_app import ReviewerApp
     from teddy_executor.core.domain.models.plan import ActionData
+
+logger = logging.getLogger(__name__)
 
 MAX_LABEL_LENGTH = 60
 
@@ -202,5 +205,7 @@ def harvest_action_content(action: Any, instruction_marker: str) -> None:
 
         os.remove(action.pending_temp_file)
         action.pending_temp_file = None
-    except Exception:  # nosec B110
-        pass
+    except Exception as e:
+        logger.debug(
+            "Failed to harvest action content from %s: %s", action.pending_temp_file, e
+        )

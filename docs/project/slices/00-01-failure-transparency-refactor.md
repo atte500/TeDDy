@@ -25,7 +25,7 @@ And it MUST log the error or re-raise with context.
 - [x] Logic - TUI Sweep (Part 2): Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_app.py` (App lifecycle and mounting).
 - [x] Logic - TUI Sweep (Part 3): Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_editor.py` (External editor/diff subprocesses).
 - [x] Logic - TUI Sweep (Part 4): Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_previews.py` and `textual_plan_reviewer_execution.py` (Diff generation and status updates).
-- [ ] Logic - TUI Sweep (Part 5): Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_helpers.py` (Formatting and utility failures).
+- [x] Logic - TUI Sweep (Part 5): Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_helpers.py` (Formatting and utility failures).
 - [ ] Cleanup - Final validation: Execute `grep -rn "# nosec B110" src/` to ensure all "intentional" silent failures are converted to "transparent" failures.
 
 ## Delta Analysis
@@ -48,3 +48,4 @@ And it MUST log the error or re-raise with context.
 - `textual_plan_reviewer_editor.py`: Initialized module-level `logger` and refactored `spawn_editor`, `launch_editor`, and `preview_edit_diff_viewer` to replace silent `except Exception: pass` blocks with `logger.debug` diagnostics. This ensures that failures in spawning external editors or diff viewers are visible during debugging while maintaining TUI resilience.
 - `textual_plan_reviewer_previews.py`: Initialized `logger` and replaced silent `pass` in `view_plan_handler` and opaque exception in `preview_readonly` with diagnostic logging.
 - `textual_plan_reviewer_execution.py`: Added diagnostic logging to `orchestrate_execution` to capture background worker failures before updating the UI state to failure.
+- `textual_plan_reviewer_helpers.py`: Initialized `logger` and replaced silent `pass` in `harvest_action_content` with diagnostic logging. Users will now see logs if plan modifications fail to harvest from temporary files.
