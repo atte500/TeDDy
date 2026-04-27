@@ -54,6 +54,7 @@ class ExecutionReport:
     plan_title: str | None = None
     rationale: str | None = None
     user_request: str | None = None
+    is_session: bool = False
     metadata: dict[str, str] = field(default_factory=dict)
     original_actions: Sequence[ActionData] = field(default_factory=list)
     action_logs: Sequence[ActionLog] = field(default_factory=list)

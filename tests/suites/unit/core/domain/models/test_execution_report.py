@@ -42,8 +42,24 @@ def test_execution_report_creation():
     log = ActionLog(
         status=ActionStatus.FAILURE, action_type="test", params={}, details="error"
     )
-    report = ExecutionReport(run_summary=summary, action_logs=[log])
+    report = ExecutionReport(
+        run_summary=summary,
+        action_logs=[log],
+        is_session=True,
+    )
 
     assert report.run_summary.status == RunStatus.FAILURE
     assert len(report.action_logs) == 1
     assert report.action_logs[0].status == ActionStatus.FAILURE
+    assert report.is_session is True
+
+
+def test_execution_report_defaults_to_non_session():
+    """Test that is_session defaults to False."""
+    summary = RunSummary(
+        status=RunStatus.SUCCESS,
+        start_time=datetime.now(),
+        end_time=datetime.now(),
+    )
+    report = ExecutionReport(run_summary=summary)
+    assert report.is_session is False

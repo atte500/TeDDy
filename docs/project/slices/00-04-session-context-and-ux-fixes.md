@@ -45,7 +45,7 @@ But successful "READ" actions should still be logged in the "Action Log"
 ```
 
 ## Deliverables
-- [ ] **Contract** - Add `is_session` field to `ExecutionReport` domain model.
+- [x] **Contract** - Add `is_session` field to `ExecutionReport` domain model.
 - [ ] **Contract** - Update `IExecutionReportAssembler` to accept `is_session` (or extract from Plan).
 - [ ] **Contract** - Update `IMarkdownReportFormatter` signature to handle session context.
 - [ ] **Harness** - Add regression tests in `tests/suites/unit/core/services/test_session_service.py` to verify that `turn.context` only grows on `SUCCESS` logs.
