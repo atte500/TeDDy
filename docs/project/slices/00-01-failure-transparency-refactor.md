@@ -23,7 +23,7 @@ And it MUST log the error or re-raise with context.
 - [x] Logic - Refactor `src/teddy_executor/adapters/inbound/cli_helpers.py`: Clean up 4+ `nosec` blocks to ensure report formatting errors are visible.
 - [x] Logic - TUI Sweep (Part 1): Refactor `src/teddy_executor/adapters/outbound/console_interactor_helpers.py` (Terminal restoration failures).
 - [x] Logic - TUI Sweep (Part 2): Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_app.py` (App lifecycle and mounting).
-- [ ] Logic - TUI Sweep (Part 3): Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_editor.py` (External editor/diff subprocesses).
+- [x] Logic - TUI Sweep (Part 3): Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_editor.py` (External editor/diff subprocesses).
 - [ ] Logic - TUI Sweep (Part 4): Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_previews.py` and `textual_plan_reviewer_execution.py` (Diff generation and status updates).
 - [ ] Logic - TUI Sweep (Part 5): Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_helpers.py` (Formatting and utility failures).
 - [ ] Cleanup - Final validation: Execute `grep -rn "# nosec B110" src/` to ensure all "intentional" silent failures are converted to "transparent" failures.
@@ -45,3 +45,4 @@ And it MUST log the error or re-raise with context.
 - `cli_helpers.py`: Added module-level `logger` and replaced 4 silent failure points (`# nosec` and `pass`) in `echo_and_copy`, `create_failure_report`, and `handle_validation_failure` with `logger.debug` diagnostics. Verified that adding `logging` to this foundational utility did not regress CLI performance or stability.
 - `console_interactor_helpers.py`: Initialized module-level `logger` and replaced the silent `except Exception: # nosec B110 \n pass` in `restore_terminal_mode` with a `logger.debug` call. This ensures that platform-specific terminal restoration failures are visible in debug logs without crashing the application during cleanup.
 - `textual_plan_reviewer_app.py`: Initialized module-level `logger` and replaced three silent failure points in `action_submit` and `action_cancel`. These points handled cleanup of temporary log preview files and pending action temp files. Failures in these "best-effort" cleanup tasks are now surfaced in debug logs.
+- `textual_plan_reviewer_editor.py`: Initialized module-level `logger` and refactored `spawn_editor`, `launch_editor`, and `preview_edit_diff_viewer` to replace silent `except Exception: pass` blocks with `logger.debug` diagnostics. This ensures that failures in spawning external editors or diff viewers are visible during debugging while maintaining TUI resilience.

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 import pathlib
 from typing import TYPE_CHECKING, Any, Optional, cast
@@ -11,6 +12,8 @@ if TYPE_CHECKING:
 from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
     ConfirmScreen,
 )
+
+logger = logging.getLogger(__name__)
 
 
 # Low-level editor helpers
@@ -33,8 +36,8 @@ def spawn_editor(cmd: list[str], path: Any) -> None:
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
-    except Exception:  # nosec B110
-        pass
+    except Exception as e:
+        logger.debug("Failed to spawn editor: %s", e)
 
 
 def handle_mock_diff(p_file: Any, before: str, delete_fn: Any) -> bool:
@@ -101,7 +104,8 @@ async def launch_editor(
         return await _confirm_and_harvest(
             app, temp_file, initial_content, is_temp, skip_confirm=skip_confirm
         )
-    except Exception:  # nosec B110
+    except Exception as e:
+        logger.debug("Failed to launch editor flow: %s", e)
         return None
     finally:
         if is_temp:
@@ -149,8 +153,8 @@ async def preview_edit_diff_viewer(
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
-        except Exception:  # nosec B110
-            pass
+        except Exception as e:
+            logger.debug("Failed to launch diff viewer: %s", e)
 
     confirmed = True if app.is_headless else await app.push_screen_wait(ConfirmScreen())
     app._system_env.delete_file(before)
