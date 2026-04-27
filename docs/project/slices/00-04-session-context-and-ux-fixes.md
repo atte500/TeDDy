@@ -53,7 +53,7 @@ But successful "READ" actions should still be logged in the "Action Log"
 - [x] **Logic** - Refactor `SessionService._apply_execution_effects` to iterate over `ExecutionReport.action_logs` and only apply `READ`/`PRUNE` effects if `log.status == SUCCESS`.
 - [x] **Wiring** - Update `PlanningService.generate_plan` to inject the `## User Request` block into the `input.md` content. (only for first message in session)
 - [x] **Wiring** - Update `ExecutionReportAssembler` to propagate `is_session` to the report.
-- [ ] **Wiring** - Update `MarkdownReportFormatter` to pass `is_session` flag to the Jinja2 template.
+- [x] **Wiring** - Update `MarkdownReportFormatter` to pass `is_session` flag to the Jinja2 template.
 - [ ] **Cleanup** - Update `execution_report.md.j2` to conditionally hide `Resource Contents` based on the `is_session` flag.
 
 ## Delta Analysis
@@ -81,3 +81,7 @@ But successful "READ" actions should still be logged in the "Action Log"
 ### ExecutionReportAssembler Wiring
 - Verified that `ExecutionReportAssembler` propagates `is_session` from both the explicit `assemble` parameter and the `Plan` model fallback.
 - Added comprehensive unit tests in `tests/suites/unit/core/services/test_execution_report_assembler.py` to cover both propagation paths.
+
+### MarkdownReportFormatter Wiring
+- Updated `MarkdownReportFormatter._prepare_context` to explicitly include `is_session` in the template context.
+- Added verification test in `tests/suites/unit/core/services/test_markdown_report_formatter_enhancements.py` to ensure the flag is correctly passed to the Jinja2 `render` call.

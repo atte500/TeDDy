@@ -68,9 +68,16 @@ class MarkdownReportFormatter(IMarkdownReportFormatter):
         elif isinstance(report, dict):
             plan_title = str(report.get("plan_title", "Untitled Plan"))
 
+        is_session = False
+        if hasattr(report, "is_session"):
+            is_session = bool(getattr(report, "is_session"))
+        elif isinstance(report, dict):
+            is_session = bool(report.get("is_session", False))
+
         return {
             "report": report,
             "is_concise": is_concise,
+            "is_session": is_session,
             "plan_title": plan_title,
             "format_datetime": format_datetime,
         }

@@ -34,6 +34,24 @@ def test_formatter_passes_is_concise_to_template():
     assert context["is_concise"] is True
 
 
+def test_formatter_passes_is_session_to_template():
+    formatter = MarkdownReportFormatter()
+    # Mock the template render method to capture arguments
+    formatter.template.render = MagicMock(return_value="rendered")
+
+    summary = RunSummary(
+        status=RunStatus.SUCCESS, start_time=datetime.now(), end_time=datetime.now()
+    )
+    report = ExecutionReport(run_summary=summary, is_session=True)
+
+    formatter.format(report)
+
+    # Check that is_session was in the context passed to render
+    args, kwargs = formatter.template.render.call_args
+    context = args[0]
+    assert context["is_session"] is True
+
+
 def test_formatter_renders_rationale_only_when_not_concise():
     formatter = MarkdownReportFormatter()
     summary = RunSummary(
