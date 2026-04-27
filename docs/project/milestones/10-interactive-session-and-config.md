@@ -67,7 +67,7 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
     - **Config:** Add `--model`, `--provider`, and `--api-key` overrides to `teddy start`.
 - [x] **Slice 8: TUI & UX Polish**
     - Wire `TextualPlanReviewer` to `IPlanReviewer` in `container.py`. Create a continuous interactive loop in the session orchestrator. Move planning logs to before the LLM call and add Turn N. Fix telemetry coloring and relax terminal action isolation.
-- [ ] **Slice 9: Advanced TUI & UX Polish**
+- [x] **Slice 9: Advanced TUI & UX Polish**
     - Implement `input.md` standardized artifact, TUI instruction bridge, universal previewing, and enhanced diagnostic labels (AST/Diffs).
 - [ ] **Slice 10: Agent Collaboration Model**
     - Implement `meta.yaml` ledgers, turn transition algorithms, and `INVOKE`/`RETURN` capabilities.
