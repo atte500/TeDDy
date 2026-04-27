@@ -1,0 +1,21 @@
+name: Debug Windows Worker Crash
+on:
+  push:
+    branches: [ debug-windows-fix ]
+
+jobs:
+  test-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          pip install poetry
+          poetry install
+      - name: Run Targeted Tests
+        run: |
+          poetry run pytest tests/suites/acceptance/test_session_resume_robustness.py tests/suites/acceptance/test_ai_telemetry.py -n 4

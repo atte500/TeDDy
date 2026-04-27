@@ -17,13 +17,20 @@ def restore_terminal_mode():
     """Restores stdin to canonical/echo mode (Unix only)."""
     import os
 
-    if sys.platform == "win32" or "PYTEST_CURRENT_TEST" in os.environ:
+    if (
+        sys.platform == "win32"
+        or "PYTEST_CURRENT_TEST" in os.environ
+        or not sys.stdin.isatty()
+    ):
         return
 
     try:
         import termios
 
-        fd = sys.stdin.fileno()
+        try:
+            fd = sys.stdin.fileno()
+        except Exception:
+            return
         attrs = termios.tcgetattr(fd)
         # iflags: Ensure ICRNL is set (Map CR to NL on input)
         attrs[0] = attrs[0] | termios.ICRNL

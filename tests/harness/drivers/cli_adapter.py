@@ -67,6 +67,7 @@ class CliTestAdapter:
         no_copy: bool = True,
         interactive: bool = True,
         input: Optional[str] = None,
+        extra_args: Optional[List[str]] = None,
     ) -> Result:
         """Runs the 'resume' command."""
         args = ["resume"]
@@ -76,6 +77,8 @@ class CliTestAdapter:
             args.append("--no-copy")
         if not interactive:
             args.append("--no-interactive")
+        if extra_args:
+            args.extend(extra_args)
         return self.run_cli_command(args, input=input)
 
     def execute_plan(

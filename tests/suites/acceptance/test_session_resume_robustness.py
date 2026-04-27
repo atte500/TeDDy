@@ -121,11 +121,11 @@ def test_start_enters_continuous_loop(tmp_path, monkeypatch):
             ["my-loop-session"], input="first prompt\ny\nsecond prompt\ny\n"
         )
 
-    # The session folder name might be auto-renamed to "test-plan" based on H1.
-    # We will check if "02" was created in the session directory.
-    session_dir = tmp_path / ".teddy" / "sessions" / "20260417_120000-test-plan"
-    if not session_dir.exists():
-        session_dir = tmp_path / ".teddy" / "sessions" / "20260417_120000-loop-session"
+    # Find the session directory dynamically
+    sessions_root = tmp_path / ".teddy" / "sessions"
+    session_dirs = list(sessions_root.glob("20260417_120000-*"))
+    assert session_dirs, f"No session directory found in {sessions_root}"
+    session_dir = session_dirs[0]
 
     assert (session_dir / "01" / "report.md").exists()
     assert (session_dir / "02" / "report.md").exists(), (

@@ -98,6 +98,7 @@ class TestEnvironment(RealAdapterMixin):
         mock_shell.execute.return_value = {"stdout": "", "stderr": "", "return_code": 0}
 
     def _register_ui_mocks(self) -> None:
+        import typer
         from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
         from teddy_executor.core.ports.outbound import IUserInteractor
 
@@ -105,6 +106,8 @@ class TestEnvironment(RealAdapterMixin):
         mock_interactor.confirm_action.return_value = (True, "")
         mock_interactor.confirm_manual_handoff.return_value = (True, "")
         mock_interactor.ask_question.return_value = ""
+        # Ensure messages are visible in CLI output for assertions
+        mock_interactor.display_message.side_effect = lambda m: typer.echo(m)
         self._container.register(IPlanReviewer, instance=None)
 
     def _register_ai_mocks(self) -> None:

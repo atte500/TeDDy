@@ -28,10 +28,10 @@ The failure appears in the run titled "feat(cli): resequence session initializat
 
 ## Diagnostic Analysis
 ### Causal Model
-1. The `teddy` CLI uses `Textual` for its TUI and interacts with `stdin`/`stdout`.
-2. Recent changes resequenced initialization to "prompt before disk creation".
-3. On Windows, `pytest-xdist` workers might be attempting to access shared resources (console/file locks) that are exclusive or not safely isolated.
-4. Interaction with TUI/Prompts in parallel workers on Windows may trigger crashes.
+1. The `teddy` CLI uses `typer.prompt` and `sys.stdin.read` for interactive turns.
+2. Acceptance tests using `.with_real_interactor()` force the `ConsoleInteractor` to bypass mocks and perform real I/O.
+3. On Windows, `pytest-xdist` workers running in parallel crash with `node down: Not properly terminated` when multiple processes attempt to grab or modify terminal state/stdin, especially if `termios` logic (Unix-only) is incorrectly triggered or if `stdin` is not a real TTY.
+4. The crash is a terminal-contention issue exacerbated by parallel test execution on Windows.
 
 ### Discrepancies
 - None yet recorded.

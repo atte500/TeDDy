@@ -34,7 +34,7 @@ def test_ai_telemetry_and_logging(tmp_path, monkeypatch):
     """Scenario: AI Transparency & Telemetry."""
     from teddy_executor.core.ports.outbound import ILlmClient
 
-    env = TestEnvironment(monkeypatch, tmp_path).setup()
+    env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
 
     adapter = CliTestAdapter(monkeypatch, tmp_path)
     setup_telemetry_env(tmp_path)
@@ -115,8 +115,11 @@ def test_telemetry_persistence_across_turns(tmp_path, monkeypatch):
     # To reach a Session Cost of $0.0300, Turn 2 must add $0.02 to Turn 1's $0.01.
     mock_llm_client.get_completion_cost.side_effect = [0.02]
 
+    # Use -y and -m to avoid any interaction in Turn 2
     result = adapter.run_resume(
-        ".teddy/sessions/20260417_120000-turn-1", interactive=False
+        ".teddy/sessions/20260417_120000-turn-1",
+        interactive=False,
+        extra_args=["-y", "-m", "continue"],
     )
 
     assert result.exit_code == 0
