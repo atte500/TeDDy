@@ -185,7 +185,7 @@
 {% if report.validation_ast -%}
 {{ report.validation_ast }}
 {% endif -%}
-{% if report.failed_resources %}
+{% if report.failed_resources and not is_session %}
 
 ## Resource Contents
 {% for path, content in report.failed_resources.items() %}
@@ -215,7 +215,7 @@
   {% endif %}
 {% endfor -%}
 
-{% if report_ns.content_logs %}
+{% if report_ns.content_logs and not is_session %}
 ## Resource Contents
 {% for log in report_ns.content_logs %}
 {% set res_path = log.params.get('File Path') or log.params.get('Resource') or log.params.get('resource') or log.params.get('path') %}

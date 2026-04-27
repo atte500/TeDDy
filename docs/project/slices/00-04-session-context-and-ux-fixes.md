@@ -54,7 +54,7 @@ But successful "READ" actions should still be logged in the "Action Log"
 - [x] **Wiring** - Update `PlanningService.generate_plan` to inject the `## User Request` block into the `input.md` content. (only for first message in session)
 - [x] **Wiring** - Update `ExecutionReportAssembler` to propagate `is_session` to the report.
 - [x] **Wiring** - Update `MarkdownReportFormatter` to pass `is_session` flag to the Jinja2 template.
-- [ ] **Cleanup** - Update `execution_report.md.j2` to conditionally hide `Resource Contents` based on the `is_session` flag.
+- [x] **Cleanup** - Update `execution_report.md.j2` to conditionally hide `Resource Contents` based on the `is_session` flag.
 
 ## Delta Analysis
 1.  `src/teddy_executor/core/services/planning_service.py`: Needs to modify the `full_context` construction in `generate_plan`.
@@ -85,3 +85,7 @@ But successful "READ" actions should still be logged in the "Action Log"
 ### MarkdownReportFormatter Wiring
 - Updated `MarkdownReportFormatter._prepare_context` to explicitly include `is_session` in the template context.
 - Added verification test in `tests/suites/unit/core/services/test_markdown_report_formatter_enhancements.py` to ensure the flag is correctly passed to the Jinja2 `render` call.
+
+### Report Redundancy Pruning
+- Updated `src/teddy_executor/core/services/templates/execution_report.md.j2` to wrap both pre-flight `failed_resources` and execution-time `content_logs` (READ actions) in `{% if not is_session %}` guards.
+- Verified that "Resource Contents" are hidden in session mode while remaining visible in standard mode via unit tests.

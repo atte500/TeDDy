@@ -76,6 +76,10 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 
 ## 6. Technical Debt
 
+### Structural & Security (Found during Deliverables)
+- [ ] **Structural** - Resolve Vulture unused variable hits in `ISessionManager` and `ISessionRepository` ports (requires whitelist update or alias).
+- [ ] **Security** - Update `litellm` to 1.83.7+ and `pip` to resolve GHSA-xqmj-j6mv-4862 and GHSA-58qw-9mgm-455v.
+
 ### Code Quality (Linter & Logic)
 - [ ] **File Length:** Refactor the following components to meet the 300-line limit:
     - [ ] `src/teddy_executor/adapters/outbound/console_interactor.py`

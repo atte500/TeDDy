@@ -7,6 +7,8 @@ from teddy_executor.core.domain.models import (
     RunSummary,
     RunStatus,
     ActionData,
+    ActionLog,
+    ActionStatus,
 )
 from datetime import datetime
 
@@ -123,3 +125,37 @@ def test_formatter_sanitizes_whitespace():
     # Check intermediate parts
     assert "# Header\n\nContent" in formatted
     assert "Content\n\nFooter" in formatted
+
+
+def test_formatter_hides_resource_contents_in_session_mode():
+    formatter = MarkdownReportFormatter()
+    summary = RunSummary(
+        status=RunStatus.SUCCESS, start_time=datetime.now(), end_time=datetime.now()
+    )
+
+    # Log with content (e.g., from a READ action)
+    log = ActionLog(
+        action_type="READ",
+        params={"resource": "test.py"},
+        status=ActionStatus.SUCCESS,
+        details={"content": "print('hello')"},
+    )
+
+    # 1. Non-session mode: Should show Resource Contents
+    report_normal = ExecutionReport(
+        run_summary=summary, action_logs=[log], is_session=False
+    )
+    output_normal = formatter.format(report_normal, is_concise=True)
+    assert "## Resource Contents" in output_normal
+    assert "test.py" in output_normal
+    assert "print('hello')" in output_normal
+
+    # 2. Session mode: Should HIDE Resource Contents
+    report_session = ExecutionReport(
+        run_summary=summary, action_logs=[log], is_session=True
+    )
+    output_session = formatter.format(report_session, is_concise=True)
+    assert "## Resource Contents" not in output_session
+    assert "print('hello')" not in output_session
+    # The action log entry should still exist
+    assert "### `READ`: [test.py](/test.py)" in output_session

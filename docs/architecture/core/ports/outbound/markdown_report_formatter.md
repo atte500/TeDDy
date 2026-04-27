@@ -16,6 +16,7 @@ This port is expected to be implemented by a `MarkdownReportFormatter` service.
 -   **Parameters:**
     -   `report`: The `ExecutionReport` object.
     -   `is_concise`: If `True`, generates a concise CLI report. If `False`, generates a comprehensive Session report.
+    -   `is_session`: If `True`, omits "Resource Contents" (READ results) from the report, as they are already present in the session's `input.md`.
 -   **Preconditions:**
     -   `report` must be a valid `ExecutionReport` domain object.
 -   **Postconditions:**
