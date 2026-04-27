@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
@@ -29,6 +30,8 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
     TUI_CSS,
 )
 from teddy_executor.core.services.edit_simulator import EditSimulator
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from teddy_executor.core.domain.models.plan import Plan
@@ -170,7 +173,7 @@ class ReviewerApp(App):
             try:
                 self._system_env.delete_file(f)
             except Exception:  # nosec B110
-                pass
+                logger.debug(f"Failed to delete temporary log preview file: {f}")
 
         self.exit(self.plan)
 
@@ -189,13 +192,15 @@ class ReviewerApp(App):
                     os.remove(action.pending_temp_file)
                     action.pending_temp_file = None
                 except Exception:  # nosec B110
-                    pass
+                    logger.debug(
+                        f"Failed to remove pending temp file: {action.pending_temp_file}"
+                    )
 
         for f in getattr(self, "_log_preview_files", []):
             try:
                 self._system_env.delete_file(f)
             except Exception:  # nosec B110
-                pass
+                logger.debug(f"Failed to delete temporary log preview file: {f}")
 
         self.exit(None)
 
