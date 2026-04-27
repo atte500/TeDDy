@@ -95,7 +95,7 @@ def parse_edit_action(
 
     if not edits:
         raise InvalidPlanError(
-            "EDIT action found no valid FIND/REPLACE blocks. An Action or Rationale code block may be improperly nested.",
+            "EDIT action found no valid FIND/REPLACE blocks.",
             offending_node=node,
         )
     params["edits"] = edits
