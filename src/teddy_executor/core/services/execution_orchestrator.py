@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 
 from typing import Any, Optional
@@ -18,6 +19,8 @@ from teddy_executor.core.ports.outbound.execution_report_assembler import (
     IExecutionReportAssembler,
 )
 from teddy_executor.core.services.action_executor import ActionExecutor
+
+logger = logging.getLogger(__name__)
 
 
 class ExecutionOrchestrator(IRunPlanUseCase):
@@ -245,8 +248,12 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             if temp_plan_path and os.path.exists(temp_plan_path):
                 try:
                     os.remove(temp_plan_path)
-                except Exception:  # nosec B110
-                    pass
+                except Exception as e:
+                    logger.debug(
+                        "Failed to clean up temporary plan file %s: %s",
+                        temp_plan_path,
+                        e,
+                    )
 
     def resume(
         self,
