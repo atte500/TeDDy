@@ -93,8 +93,8 @@ def test_execute_action_is_dispatched_to_shell(monkeypatch):
 
     # Assert
     assert report.run_summary.status == RunStatus.SUCCESS
-    # We expect the default timeout (30.0)
-    mock_execute.assert_called_once_with(command="echo hello", timeout=30.0)
+    # We expect the default timeout (60.0)
+    mock_execute.assert_called_once_with(command="echo hello", timeout=60.0)
 
 
 def test_read_action_is_dispatched_to_filesystem(monkeypatch):

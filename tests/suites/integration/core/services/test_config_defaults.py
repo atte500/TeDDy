@@ -29,7 +29,7 @@ def test_execute_action_uses_hardcoded_timeout_fallback_when_config_is_missing(
     """
     Given a Plan with an EXECUTE action and a missing .teddy/config.yaml,
     When the plan is executed,
-    Then the ActionFactory should still inject the hardcoded default timeout of 30.0.
+    Then the ActionFactory should still inject the hardcoded default timeout of 60.0.
     """
     # Arrange
     plan = Plan(
@@ -50,8 +50,8 @@ def test_execute_action_uses_hardcoded_timeout_fallback_when_config_is_missing(
 
     # Assert
     assert report.run_summary.status == RunStatus.SUCCESS
-    # This is the failing expectation: it should be 30.0 even without config
-    original_execute.assert_called_once_with(command="echo hello", timeout=30.0)
+    # This is the failing expectation: it should be 60.0 even without config
+    original_execute.assert_called_once_with(command="echo hello", timeout=60.0)
 
 
 def test_edit_action_uses_hardcoded_similarity_fallback_when_config_is_missing(
