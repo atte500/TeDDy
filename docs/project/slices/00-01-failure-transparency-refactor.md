@@ -21,7 +21,7 @@ And it MUST log the error or re-raise with context.
 - [x] Logic - Refactor `src/teddy_executor/core/services/execution_orchestrator.py`: Replace silent `pass` with `# nosec` in temp file cleanup with `logger.debug`.
 - [x] Logic - Refactor `src/teddy_executor/core/services/session_planner.py`: Replace silent `pass` blocks in message/name resolution with diagnostic logging.
 - [x] Logic - Refactor `src/teddy_executor/adapters/inbound/cli_helpers.py`: Clean up 4+ `nosec` blocks to ensure report formatting errors are visible.
-- [ ] Logic - TUI Sweep (Part 1): Refactor `src/teddy_executor/adapters/outbound/console_interactor_helpers.py` (Terminal restoration failures).
+- [x] Logic - TUI Sweep (Part 1): Refactor `src/teddy_executor/adapters/outbound/console_interactor_helpers.py` (Terminal restoration failures).
 - [ ] Logic - TUI Sweep (Part 2): Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_app.py` (App lifecycle and mounting).
 - [ ] Logic - TUI Sweep (Part 3): Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_editor.py` (External editor/diff subprocesses).
 - [ ] Logic - TUI Sweep (Part 4): Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_previews.py` and `textual_plan_reviewer_execution.py` (Diff generation and status updates).
@@ -43,3 +43,4 @@ And it MUST log the error or re-raise with context.
 - `execution_orchestrator.py`: Added module-level `logger` and replaced `except Exception: # nosec B110 \n pass` in the `finally` block of `execute` with `logger.debug("Failed to clean up temporary plan file...")`.
 - `session_planner.py`: Added module-level `logger` and replaced silent `pass` statements in `_resolve_message_from_previous_turn` and `_handle_dynamic_rename` with `logger.debug` calls, surfacing non-fatal file read/parsing errors.
 - `cli_helpers.py`: Added module-level `logger` and replaced 4 silent failure points (`# nosec` and `pass`) in `echo_and_copy`, `create_failure_report`, and `handle_validation_failure` with `logger.debug` diagnostics. Verified that adding `logging` to this foundational utility did not regress CLI performance or stability.
+- `console_interactor_helpers.py`: Initialized module-level `logger` and replaced the silent `except Exception: # nosec B110 \n pass` in `restore_terminal_mode` with a `logger.debug` call. This ensures that platform-specific terminal restoration failures are visible in debug logs without crashing the application during cleanup.

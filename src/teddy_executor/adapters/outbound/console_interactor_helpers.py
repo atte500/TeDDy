@@ -1,3 +1,4 @@
+import logging
 import sys
 from typing import List, Optional
 
@@ -8,6 +9,8 @@ from teddy_executor.adapters.inbound.cli_formatter import (
     echo_skipped_action,
 )
 from teddy_executor.core.domain.models.change_set import ChangeSet
+
+logger = logging.getLogger(__name__)
 
 
 def restore_terminal_mode():
@@ -30,8 +33,8 @@ def restore_terminal_mode():
         )
         # Apply changes and FLUSH the input buffer
         termios.tcsetattr(fd, termios.TCSAFLUSH, attrs)
-    except Exception:  # nosec B110
-        pass
+    except Exception as e:
+        logger.debug("Failed to restore terminal mode: %s", e)
 
 
 def prepare_external_preview_files(
