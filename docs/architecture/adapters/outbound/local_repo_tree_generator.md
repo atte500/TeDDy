@@ -22,7 +22,7 @@ The adapter performs a recursive walk of the project directory. For each file an
 
 ### Output Generation
 **Status:** Implemented
-The adapter builds the tree structure in memory and returns it as a single, multi-line string. It **does not** write to any intermediate files (e.g., `repotree.txt`). The format is a simple, space-indented list of files and directories, which is the canonical format for providing file hierarchy context to an LLM.
+The adapter builds the tree structure in memory and returns it as a single, multi-line string in a recursive "ls -R" style. It **does not** write to any intermediate files. This format provides explicit directory context for every file, making it resilient for LLM parsing.
 
 ### `.teddyignore` Precedence Logic
 **Status:** Implemented

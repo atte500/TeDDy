@@ -3,10 +3,9 @@ from pathlib import Path
 from teddy_executor.core.ports.outbound.repo_tree_generator import IRepoTreeGenerator
 
 
-class _IndentedListFormatter:
+class _RecursiveListFormatter:
     """
-    A helper class to format a set of paths into a simple, indented list
-    that is reliable and easy for an LLM to parse.
+    A helper class to format a set of paths into a recursive "ls -R" style list.
     """
 
     def __init__(self, root_dir: Path, included_paths: set[Path]):
@@ -14,28 +13,41 @@ class _IndentedListFormatter:
         self.included_paths = included_paths
 
     def format(self) -> str:
-        """Generates the indented list string."""
-        tree_lines: list[str] = []
-        # Start the recursion from the root's children at level 0
-        self._format_recursive(self.root_dir, 0, tree_lines)
-        return "\n".join(tree_lines)
-
-    def _format_recursive(self, directory: Path, level: int, tree_lines: list[str]):
-        """Recursively builds the tree string."""
-        children = sorted(
-            [p for p in directory.iterdir() if p in self.included_paths],
-            key=lambda p: (not p.is_dir() or p.is_symlink(), p.name.lower()),
+        """Generates the recursive list string."""
+        sections: list[str] = []
+        # Gather all directories that are included (including root)
+        directories = sorted(
+            [p for p in self.included_paths if p.is_dir() and not p.is_symlink()]
+            + [self.root_dir],
+            key=lambda p: str(p.relative_to(self.root_dir)).lower(),
         )
 
-        indent = "  " * level
-        for path in children:
-            # We treat symlinks as files even if they point to directories to avoid circularities
-            is_real_dir = path.is_dir() and not path.is_symlink()
-            entry = f"{path.name}/" if is_real_dir else path.name
-            tree_lines.append(f"{indent}{entry}")
+        for directory in directories:
+            section_content = self._format_section(directory)
+            if section_content:
+                sections.append(section_content)
 
-            if is_real_dir:
-                self._format_recursive(path, level + 1, tree_lines)
+        return "\n\n".join(sections)
+
+    def _format_section(self, directory: Path) -> str:
+        """Formats a single directory section."""
+        children = sorted(
+            [p for p in directory.iterdir() if p in self.included_paths],
+            key=lambda p: p.name.lower(),
+        )
+
+        if not children:
+            return ""
+
+        lines = []
+        if directory != self.root_dir:
+            rel_path = directory.relative_to(self.root_dir)
+            lines.append(f"./{rel_path}:")
+
+        for child in children:
+            lines.append(child.name)
+
+        return "\n".join(lines)
 
 
 class LocalRepoTreeGenerator(IRepoTreeGenerator):
@@ -107,5 +119,5 @@ class LocalRepoTreeGenerator(IRepoTreeGenerator):
         and then delegating to a formatter.
         """
         included_paths = self._get_included_paths()
-        formatter = _IndentedListFormatter(self.root_dir, included_paths)
+        formatter = _RecursiveListFormatter(self.root_dir, included_paths)
         return formatter.format()

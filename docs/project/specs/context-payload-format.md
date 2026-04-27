@@ -69,17 +69,27 @@ A textual representation of the repository's file tree, using simple indentation
     `````markdown
     ## 3. Project Structure
     ```
-    docs/
-      specs/
-        context-payload-format.md
-        core-philosophy.md
-    src/
-      teddy_executor/
-        main.py
-    prompts/
-      architect.xml
-    pyproject.toml
     README.md
+    docs
+    prompts
+    pyproject.toml
+    src
+
+    ./docs:
+    specs
+
+    ./docs/specs:
+    context-payload-format.md
+    core-philosophy.md
+
+    ./prompts:
+    architect.xml
+
+    ./src:
+    teddy_executor
+
+    ./src/teddy_executor:
+    main.py
     ```
     `````
 

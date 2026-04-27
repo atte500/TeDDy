@@ -61,11 +61,11 @@ Feature: Recursive Repository Tree Generation
 ```
 
 ## Deliverables
-- [ ] **Logic** - Replace `_IndentedListFormatter` with `_RecursiveListFormatter` in `src/teddy_executor/adapters/outbound/local_repo_tree_generator.py`.
-- [ ] **Logic** - Update `LocalRepoTreeGenerator` to utilize the new formatter.
-- [ ] **Refactor** - Update integration tests in `tests/suites/integration/adapters/outbound/test_local_repo_tree_generator.py` to match the new format.
-- [ ] **Doc** - Update `docs/architecture/adapters/outbound/local_repo_tree_generator.md` to reflect the new output format.
-- [ ] **Doc** - Update `docs/project/specs/context-payload-format.md` section 3.3 to match the new format.
+- [x] **Logic** - Replace `_IndentedListFormatter` with `_RecursiveListFormatter` in `src/teddy_executor/adapters/outbound/local_repo_tree_generator.py`.
+- [x] **Logic** - Update `LocalRepoTreeGenerator` to utilize the new formatter.
+- [x] **Refactor** - Update integration tests in `tests/suites/integration/adapters/outbound/test_local_repo_tree_generator.py` to match the new format.
+- [x] **Doc** - Update `docs/architecture/adapters/outbound/local_repo_tree_generator.md` to reflect the new output format.
+- [x] **Doc** - Update `docs/project/specs/context-payload-format.md` section 3.3 to match the new format.
 
 ## Delta Analysis
 - **Current State:** The system uses `_IndentedListFormatter` which produces a space-indented tree with trailing slashes for directories and groups directories at the top.

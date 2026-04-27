@@ -34,7 +34,7 @@ def test_repo_tree_generator_performance_with_large_ignored_dir(
 
     # Assert
     assert ".venv" not in tree_output
-    assert "src/" in tree_output
+    assert "src" in tree_output
     assert "main.py" in tree_output
 
     # Performance: Should be very fast (< 50ms)
@@ -60,7 +60,10 @@ def test_tree_integrity_with_deep_unignored_file(tmp_path: Path, monkeypatch):
     tree_output = generator.generate_tree()
 
     # Assert
-    assert "a/" in tree_output
-    assert "  b/" in tree_output
-    assert "    c/" in tree_output
-    assert "      file.txt" in tree_output
+    assert "a" in tree_output
+    assert "./a:" in tree_output
+    assert "b" in tree_output
+    assert "./a/b:" in tree_output
+    assert "c" in tree_output
+    assert "./a/b/c:" in tree_output
+    assert "file.txt" in tree_output

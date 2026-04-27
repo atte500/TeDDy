@@ -13,7 +13,7 @@ def env(monkeypatch, tmp_path: Path):
 
 
 def test_repo_tree_generator_produces_correct_format(env, tmp_path):
-    """Verify correct tree formatting and indentation."""
+    """Verify correct tree formatting in recursive (ls -R) style."""
     (tmp_path / "src").mkdir()
     (tmp_path / "src" / "main.py").touch()
     (tmp_path / "docs").mkdir()
@@ -23,10 +23,14 @@ def test_repo_tree_generator_produces_correct_format(env, tmp_path):
 
     expected_tree = dedent(
         """
-        docs/
-          guide.md
-        src/
-          main.py
+        docs
+        src
+
+        ./docs:
+        guide.md
+
+        ./src:
+        main.py
         """
     ).strip()
 
@@ -101,7 +105,7 @@ def test_tree_generator_handles_circular_symlinks_without_hanging(env, tmp_path)
     tree_output = generator.generate_tree()
 
     # ASSERT
-    assert "subdir/" in tree_output
+    assert "subdir" in tree_output
     assert "circular_link" in tree_output
     # The fix treats symlinks as files, so it shouldn't recurse into 'circular_link/'
-    assert "circular_link/" not in tree_output
+    assert "./subdir/circular_link:" not in tree_output
