@@ -10,7 +10,7 @@ from tests.suites.acceptance.helpers import setup_project, mock_response
 
 def test_start_session_creates_prefixed_directory(tmp_path: Path, monkeypatch):
     # GIVEN: A fixed time and workspace setup
-    env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
+    env = TestEnvironment(monkeypatch, tmp_path).setup()
     adapter = CliTestAdapter(monkeypatch, tmp_path)
     setup_project(tmp_path)
 
@@ -30,8 +30,8 @@ def test_start_session_creates_prefixed_directory(tmp_path: Path, monkeypatch):
         "teddy_executor.core.services.session_service.datetime"
     ) as mock_datetime:
         mock_datetime.now.return_value = fixed_now
-        # Input sequence: instructions, then approve the plan (y)
-        adapter.run_cli_command(["start", session_name], input="instructions\ny\n")
+        # Use -y and -m to avoid interactive prompts in CI
+        adapter.run_cli_command(["start", session_name, "-y", "-m", "instructions"])
 
     # THEN: The session directory must be created with the timestamp prefix
     session_path = tmp_path / ".teddy" / "sessions" / expected_folder
