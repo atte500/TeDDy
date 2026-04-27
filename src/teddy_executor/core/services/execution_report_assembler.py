@@ -25,6 +25,7 @@ class ExecutionReportAssembler(IExecutionReportAssembler):
         action_logs: Sequence[ActionLog],
         start_time: datetime,
         message: Optional[str] = None,
+        is_session: bool = False,
     ) -> ExecutionReport:
         """
         Calculates the final run status and constructs a complete ExecutionReport.
@@ -39,7 +40,7 @@ class ExecutionReportAssembler(IExecutionReportAssembler):
             plan_title=plan.title,
             rationale=plan.rationale,
             user_request=message or plan.metadata.get("user_request"),
-            is_session=plan.is_session,
+            is_session=is_session or plan.is_session,
             metadata=plan.metadata,
             original_actions=plan.actions,
             action_logs=action_logs,

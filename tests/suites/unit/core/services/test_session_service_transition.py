@@ -91,10 +91,24 @@ def test_transition_to_next_turn_applies_read_and_prune_side_effects(env):
         type=ActionType.PRUNE.value, params={"Resource": "[file_b.py](/file_b.py)"}
     )
 
+    from teddy_executor.core.domain.models import ActionLog, ActionStatus
+
     now = datetime.now(timezone.utc)
     report = ExecutionReport(
         run_summary=RunSummary(status=RunStatus.SUCCESS, start_time=now, end_time=now),
         original_actions=[action_read, action_prune],
+        action_logs=[
+            ActionLog(
+                status=ActionStatus.SUCCESS,
+                action_type=ActionType.READ.value,
+                params=action_read.params,
+            ),
+            ActionLog(
+                status=ActionStatus.SUCCESS,
+                action_type=ActionType.PRUNE.value,
+                params=action_prune.params,
+            ),
+        ],
     )
 
     # Act

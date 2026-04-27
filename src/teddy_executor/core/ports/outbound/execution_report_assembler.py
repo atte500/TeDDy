@@ -16,7 +16,8 @@ class IExecutionReportAssembler(ABC):
         plan: Plan,
         action_logs: Sequence[ActionLog],
         start_time: datetime,
-        _message: Optional[str] = None,
+        message: Optional[str] = None,
+        is_session: bool = False,
     ) -> ExecutionReport:
         """
         Calculates the final run status and constructs a complete ExecutionReport.

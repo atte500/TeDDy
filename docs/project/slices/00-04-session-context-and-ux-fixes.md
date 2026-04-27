@@ -47,10 +47,10 @@ But successful "READ" actions should still be logged in the "Action Log"
 ## Deliverables
 - [x] **Contract** - Add `is_session` field to `ExecutionReport` domain model.
 - [x] **Contract** - Update `IExecutionReportAssembler` to accept `is_session` (or extract from Plan).
-- [ ] **Contract** - Update `IMarkdownReportFormatter` signature to handle session context.
-- [ ] **Harness** - Add regression tests in `tests/suites/unit/core/services/test_session_service.py` to verify that `turn.context` only grows on `SUCCESS` logs.
+- [x] **Contract** - Update `IMarkdownReportFormatter` signature to handle session context.
+- [x] **Harness** - Add regression tests in `tests/suites/unit/core/services/test_session_service.py` to verify that `turn.context` only grows on `SUCCESS` logs.
 - [ ] **Logic** - Update `SessionRepository.read_context_file` to filter lines starting with `#` (Poka-Yoke for manual edits).
-- [ ] **Logic** - Refactor `SessionService._apply_execution_effects` to iterate over `ExecutionReport.action_logs` and only apply `READ`/`PRUNE` effects if `log.status == SUCCESS`.
+- [x] **Logic** - Refactor `SessionService._apply_execution_effects` to iterate over `ExecutionReport.action_logs` and only apply `READ`/`PRUNE` effects if `log.status == SUCCESS`.
 - [ ] **Wiring** - Update `PlanningService.generate_plan` to inject the `## User Request` block into the `input.md` content.
 - [ ] **Wiring** - Update `ExecutionReportAssembler` to propagate `is_session` to the report.
 - [ ] **Wiring** - Update `MarkdownReportFormatter` to pass `is_session` flag to the Jinja2 template.
@@ -62,3 +62,9 @@ But successful "READ" actions should still be logged in the "Action Log"
 3.  `src/teddy_executor/core/services/session_service.py`: Needs to refactor `_apply_execution_effects` to use `action_logs` instead of `original_actions`.
 4.  `src/teddy_executor/core/services/markdown_report_formatter.py`: Needs to detect session mode (likely by checking for presence of `plan_path` or an explicit flag) and pass it to Jinja.
 5.  `src/teddy_executor/core/services/templates/execution_report.md.j2`: Wrap the `Resource Contents` rendering block in an `{% if not is_session %}` guard.
+
+## Implementation Notes
+### Context Leakage Prevention
+- Refactored `SessionService._apply_execution_effects` to use `ExecutionReport.action_logs` instead of `original_actions`.
+- Verified that side effects (READ/PRUNE) are only applied if `log.status == ActionStatus.SUCCESS`.
+- Added unit tests in `tests/suites/unit/core/services/test_session_service.py` covering success, failure, and skip scenarios.

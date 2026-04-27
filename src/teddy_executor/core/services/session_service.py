@@ -160,17 +160,22 @@ class SessionService(ISessionManager):
         self, paths: set[str], report: Optional[ExecutionReport]
     ) -> None:
         """Applies side effects from READ/PRUNE actions to the context set."""
+        from teddy_executor.core.domain.models import ActionStatus
+
         if not report:
             return
-        for action in report.original_actions:
-            resource = action.params.get("resource") or action.params.get("Resource")
+        for log in report.action_logs:
+            if log.status != ActionStatus.SUCCESS:
+                continue
+
+            resource = log.params.get("resource") or log.params.get("Resource")
             if not resource:
                 continue
             path = self._extract_resource_path(resource)
-            if action.type == ActionType.READ.value:
+            if log.action_type == ActionType.READ.value:
                 if self._repository.is_valid_path(path):
                     paths.add(path)
-            elif action.type == ActionType.PRUNE.value:
+            elif log.action_type == ActionType.PRUNE.value:
                 paths.discard(path)
 
     def _persist_next_meta(
