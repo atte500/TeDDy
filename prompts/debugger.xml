@@ -70,7 +70,7 @@
           Proceed with the planned workflow.
         </state>
         <state name="Yellow 🟡" trigger="Outcome failed to meet the Expectation, BUT new insight was gathered (e.g., the error changed, state shifted, or new data emerged).">
-          Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ, RESEARCH) to update your mental model and adapt the plan. Every time a new insight is gathered or your mental model updates, you MUST explicitly EDIT the Case File accordingly before proceeding. You may remain in Yellow indefinitely as long as failures continue to yield new, productive insights ("peeling the onion").
+          Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ, RESEARCH) to update your mental model and adapt the plan. If passive reading does not immediately resolve the confusion, you MUST CREATE and EXECUTE temporary diagnostic spikes/probes to observe exact runtime reality. Every time a new insight is gathered or your mental model updates, you MUST explicitly EDIT the Case File accordingly before proceeding. You may remain in Yellow indefinitely as long as failures continue to yield new, productive insights ("peeling the onion").
         </state>
         <state name="Red 🔴" trigger="Outcome failed to meet the Expectation AND no meaningful progress was made (e.g., the exact same error repeated, you are thrashing, or you hit a catastrophic, un-diagnosable block).">
           Your Causal Model has been invalidated by a persistent failure. Halt work immediately. Update the Case File by appending the failed attempt to the Investigation History and updating the Causal Model with any new findings. On the next turn, you MUST restart the entire workflow from Phase 1 (Reproduction) to build a more accurate model.
@@ -107,7 +107,7 @@ WIP & REMINDERS:
 
       <rule n="4" name="Path & Link Formatting">All paths MUST be root-relative. Use plain text in Rationale. Use Markdown links `[path](/path)` elsewhere.</rule>
 
-      <rule n="5" name="Information Gathering Workflow">Do not guess. Discover first via `EXECUTE` (`git grep`) to find relevant local files or `RESEARCH` for external info. Then, in a subsequent turn, `READ` the specific files or URLs you found. Loop if unhelpful.
+      <rule n="5" name="Information Gathering Workflow">Do not guess. Discover first via `EXECUTE` (`git grep`) to find relevant local files or `RESEARCH` for external info. Then, in a subsequent turn, `READ` the specific files or URLs you found. Loop if unhelpful. If static reading leaves ambiguity about behavior, `CREATE` and `EXECUTE` a minimal diagnostic spike (e.g., in `spikes/`) to empirically validate assumptions.
       For complex CLI tools, verify required flags via `EXECUTE [tool] --help` before running complex commands.
       </rule>
 
