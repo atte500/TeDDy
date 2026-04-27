@@ -46,7 +46,15 @@ class PlanningService(IPlanningUseCase):
         context = self._context_service.get_context(context_files=context_files)
         system_prompt = self._prompt_manager.fetch_system_prompt(agent_name, turn_path)
 
-        full_context = f"{context.header}\n{context.content}"
+        # Scenario 1: Inject User Request into input.md on first turn
+        header = context.header
+        if turn_path.name == "01":
+            user_request_block = (
+                f"\n\n## User Request\n~~~~~~text\n{resolved_message}\n~~~~~~\n"
+            )
+            header = f"{context.header}{user_request_block}"
+
+        full_context = f"{header}\n{context.content}"
         messages = [
             {"role": "system", "content": system_prompt},
             {

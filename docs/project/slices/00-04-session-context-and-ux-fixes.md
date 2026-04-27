@@ -51,8 +51,8 @@ But successful "READ" actions should still be logged in the "Action Log"
 - [x] **Harness** - Add regression tests in `tests/suites/unit/core/services/test_session_service.py` to verify that `turn.context` only grows on `SUCCESS` logs.
 - [x] **Logic** - Update `SessionRepository.read_context_file` to filter lines starting with `#` (Poka-Yoke for manual edits).
 - [x] **Logic** - Refactor `SessionService._apply_execution_effects` to iterate over `ExecutionReport.action_logs` and only apply `READ`/`PRUNE` effects if `log.status == SUCCESS`.
-- [ ] **Wiring** - Update `PlanningService.generate_plan` to inject the `## User Request` block into the `input.md` content. (only for first message in session)
-- [ ] **Wiring** - Update `ExecutionReportAssembler` to propagate `is_session` to the report.
+- [x] **Wiring** - Update `PlanningService.generate_plan` to inject the `## User Request` block into the `input.md` content. (only for first message in session)
+- [x] **Wiring** - Update `ExecutionReportAssembler` to propagate `is_session` to the report.
 - [ ] **Wiring** - Update `MarkdownReportFormatter` to pass `is_session` flag to the Jinja2 template.
 - [ ] **Cleanup** - Update `execution_report.md.j2` to conditionally hide `Resource Contents` based on the `is_session` flag.
 
@@ -72,3 +72,12 @@ But successful "READ" actions should still be logged in the "Action Log"
 ### Comment Filtering in Context Files
 - Updated `SessionRepository.is_valid_path` to return `False` for lines starting with `#`.
 - Verified that `read_context_file` correctly filters comments (even with leading whitespace) and strips whitespace from valid paths via unit tests in `tests/suites/unit/core/services/test_session_repository.py`.
+
+### User Request Injection
+- Updated `PlanningService.generate_plan` to inject a `## User Request` block into `input.md` when `turn_path.name == "01"`.
+- Used a 6-tilde fence (`~~~~~~text`) for the message content to handle complex inputs safely.
+- Verified placement (after System Information header) and conditional logic via unit tests in `tests/suites/unit/core/services/test_planning_service.py`.
+
+### ExecutionReportAssembler Wiring
+- Verified that `ExecutionReportAssembler` propagates `is_session` from both the explicit `assemble` parameter and the `Plan` model fallback.
+- Added comprehensive unit tests in `tests/suites/unit/core/services/test_execution_report_assembler.py` to cover both propagation paths.
