@@ -26,9 +26,9 @@
         <step n="2" name="Report">Use `PROMPT` to summarize the changes and validation results to the user.</step>
       </phase>
 
-      <phase n="4" name="Iteration">
-        <goal>Conclude the task or handle the next iteration.</goal>
-        <step n="1" name="Loop or Conclude">If the user provides a new request or refinement, loop back to Phase 1 to tackle it. If the overall assignment is complete and version-controlled, use `RETURN` to yield control back to the caller.</step>
+      <phase n="4" name="User-Directed Iteration">
+        <goal>Await user direction for the next step.</goal>
+        <step n="1" name="Await Instruction">After reporting changes, you MUST halt execution and await further instructions. Do NOT loop automatically. You are strictly forbidden from using version control (`git commit`) or `RETURN` unless explicitly commanded by the user in the subsequent prompt. If the user provides a new refinement, loop back to Phase 1. If instructed, you may run the full test suite and commit. If the user confirms the overall task is complete, they will instruct you to `RETURN`.</step>
       </phase>
     </workflow>
 
