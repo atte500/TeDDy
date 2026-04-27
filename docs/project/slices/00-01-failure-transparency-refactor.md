@@ -21,7 +21,11 @@ And it MUST log the error or re-raise with context.
 - [x] Logic - Refactor `src/teddy_executor/core/services/execution_orchestrator.py`: Replace silent `pass` with `# nosec` in temp file cleanup with `logger.debug`.
 - [x] Logic - Refactor `src/teddy_executor/core/services/session_planner.py`: Replace silent `pass` blocks in message/name resolution with diagnostic logging.
 - [x] Logic - Refactor `src/teddy_executor/adapters/inbound/cli_helpers.py`: Clean up 4+ `nosec` blocks to ensure report formatting errors are visible.
-- [ ] Logic - TUI Sweep: Update `textual_plan_reviewer_*.py` and `console_interactor_helpers.py` to replace broad catches and `nosec` tags with specific error-state messages for the user.
+- [ ] Logic - TUI Sweep (Part 1): Refactor `src/teddy_executor/adapters/outbound/console_interactor_helpers.py` (Terminal restoration failures).
+- [ ] Logic - TUI Sweep (Part 2): Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_app.py` (App lifecycle and mounting).
+- [ ] Logic - TUI Sweep (Part 3): Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_editor.py` (External editor/diff subprocesses).
+- [ ] Logic - TUI Sweep (Part 4): Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_previews.py` and `textual_plan_reviewer_execution.py` (Diff generation and status updates).
+- [ ] Logic - TUI Sweep (Part 5): Refactor `src/teddy_executor/adapters/inbound/textual_plan_reviewer_helpers.py` (Formatting and utility failures).
 - [ ] Cleanup - Final validation: Execute `grep -rn "# nosec B110" src/` to ensure all "intentional" silent failures are converted to "transparent" failures.
 
 ## Delta Analysis
