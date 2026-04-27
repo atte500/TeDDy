@@ -15,7 +15,7 @@ def test_reviewer_app_has_consolidated_edit_binding():
 
     assert "e" in binding_keys
     assert "edit_details" in binding_actions
-    assert "Edit/Preview" in binding_descriptions
+    assert "Editor" in binding_descriptions
 
     # Check "Execute Step" polish
     assert "x" in binding_keys

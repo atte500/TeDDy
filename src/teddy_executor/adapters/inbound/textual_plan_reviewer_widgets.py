@@ -82,6 +82,16 @@ class ActionTree(Tree):
     BINDINGS = [
         Binding("enter", "select_cursor", "Toggle", show=False),
         Binding("space", "select_cursor", "Toggle", show=False),
+        Binding(
+            "ctrl+down", "app.jump_next", "Next Section", show=False, priority=True
+        ),
+        Binding("alt+down", "app.jump_next", "Next Section", show=False, priority=True),
+        Binding(
+            "shift+down", "app.jump_next", "Next Section", show=False, priority=True
+        ),
+        Binding("ctrl+up", "app.jump_prev", "Prev Section", show=False, priority=True),
+        Binding("alt+up", "app.jump_prev", "Prev Section", show=False, priority=True),
+        Binding("shift+up", "app.jump_prev", "Prev Section", show=False, priority=True),
     ]
 
     def jump_to_section(self, section_id: str) -> None:
@@ -93,12 +103,35 @@ class ActionTree(Tree):
         """
         for child in self.root.children:
             if child.data == section_id:
+                # Ensure the section is expanded and visible before moving cursor
+                child.expand()
                 self.move_cursor(child)
+                # Ensure parent is also expanded (root is usually invisible but its children should be shown)
+                self.root.expand()
                 return
 
 
 class ParameterDetail(ListView):
     """A focusable list that wraps parameters."""
+
+    BINDINGS = [
+        Binding("shift+up", "scroll_to_top", "Top", show=False, priority=True),
+        Binding("shift+down", "scroll_to_bottom", "Bottom", show=False, priority=True),
+        Binding("alt+up", "scroll_to_top", "Top", show=False, priority=True),
+        Binding("alt+down", "scroll_to_bottom", "Bottom", show=False, priority=True),
+        Binding("ctrl+up", "scroll_to_top", "Top", show=False, priority=True),
+        Binding("ctrl+down", "scroll_to_bottom", "Bottom", show=False, priority=True),
+    ]
+
+    def action_scroll_to_top(self) -> None:
+        """Jump focus to the first item."""
+        if self.children:
+            self.index = 0
+
+    def action_scroll_to_bottom(self) -> None:
+        """Jump focus to the last item."""
+        if self.children:
+            self.index = len(self.children) - 1
 
 
 class DetailItem(ListItem):

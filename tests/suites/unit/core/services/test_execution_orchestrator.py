@@ -227,8 +227,8 @@ def test_aborted_plan_preserves_manually_executed_logs(env, mock_plan_reviewer):
     assert report.action_logs[1].status == ActionStatus.SKIPPED
     assert "Execution aborted by user." in report.action_logs[1].details
 
-    # Even though aborted, because one action succeeded, the run is considered a SUCCESS overall
-    assert report.run_summary.status == RunStatus.SUCCESS
+    # The run is now explicitly marked as ABORTED even if some actions were successful
+    assert report.run_summary.status == RunStatus.ABORTED
     assert report.plan_title == "Test Plan"
 
 

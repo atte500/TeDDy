@@ -13,6 +13,7 @@ class RunStatus(str, Enum):
     FAILURE = "FAILURE"
     VALIDATION_FAILED = "VALIDATION_FAILED"
     SKIPPED = "SKIPPED"
+    ABORTED = "ABORTED"
 
 
 class ActionStatus(str, Enum):

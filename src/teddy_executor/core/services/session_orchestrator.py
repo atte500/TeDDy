@@ -61,6 +61,10 @@ class SessionOrchestrator(IRunPlanUseCase):
         # 0. Detect Session Mode (requires plan_path and meta.yaml)
         is_session = self._is_session_mode(plan_path)
 
+        # Ensure plan object is marked if it was already resolved
+        if plan:
+            plan.is_session = is_session
+
         # 1. Parsing
         content = plan_content or (
             self._file_system_manager.read_file(plan_path) if plan_path else ""
@@ -102,9 +106,39 @@ class SessionOrchestrator(IRunPlanUseCase):
 
         # 4. Turn Transition
         if is_session and plan_path:
+            report = self._handle_aborted_session(report, plan)
             self._lifecycle_manager.finalize_turn(plan_path, report)
 
         return report
+
+    def _handle_aborted_session(
+        self, report: ExecutionReport, plan: Optional[Plan]
+    ) -> ExecutionReport:
+        """Handles user interaction and metadata updates when a session is aborted."""
+        from dataclasses import replace
+        from teddy_executor.core.domain.models import RunStatus
+
+        if report.run_summary.status != RunStatus.ABORTED:
+            return report
+
+        import typer
+
+        typer.secho("Plan aborted by user.", fg=typer.colors.YELLOW, err=True)
+        new_message = self._user_interactor.ask_question(
+            "Plan aborted. How do you want to proceed? (Empty response will quit session)"
+        )
+        if not new_message:
+            return report
+
+        # Update metadata (dict is mutable even in frozen dataclass)
+        report.metadata["user_request"] = new_message
+        # Replace report to include user_request so it shows in report.md header
+        updated_report = replace(report, user_request=new_message)
+        # Update plan metadata as well
+        if plan:
+            plan.metadata["user_request"] = new_message
+
+        return updated_report
 
     def _is_session_mode(self, plan_path: Optional[str]) -> bool:
         """Determines if the orchestrator should operate in Session Mode."""

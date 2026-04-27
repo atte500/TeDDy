@@ -197,6 +197,9 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         self, plan: Plan, start_time: datetime, message: Optional[str]
     ) -> ExecutionReport:
         """Generates a report for an execution aborted by the user."""
+        from dataclasses import replace
+        from teddy_executor.core.domain.models import RunStatus
+
         action_logs = []
         for a in plan.actions:
             if a.executed and a.action_log:
@@ -208,7 +211,10 @@ class ExecutionOrchestrator(IRunPlanUseCase):
                     )
                 )
 
-        return self._report_assembler.assemble(plan, action_logs, start_time, message)
+        report = self._report_assembler.assemble(plan, action_logs, start_time, message)
+        return replace(
+            report, run_summary=replace(report.run_summary, status=RunStatus.ABORTED)
+        )
 
     def execute(
         self,

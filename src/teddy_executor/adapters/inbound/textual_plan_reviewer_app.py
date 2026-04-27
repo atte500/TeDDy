@@ -61,7 +61,7 @@ class ReviewerApp(App):
         Binding("ctrl+up", "jump_prev", "Prev Section", show=False),
         Binding("alt+up", "jump_prev", "Prev Section", show=False),
         Binding("shift+up", "jump_prev", "Prev Section", show=False),
-        ("e", "edit_details", "Edit/Preview"),
+        ("e", "edit_details", "Editor"),
         ("d", "view_details", "Details"),
         ("r", "revert", "Revert"),
         ("v", "view_plan", "View Plan"),
