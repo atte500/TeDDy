@@ -28,18 +28,18 @@
         </step>
       </phase>
 
-      <phase n="2" name="Specification">
-        <goal>Iteratively build the acceptance test to drive the current deliverable while keeping the global suite Green.</goal>
-        <step n="1" name="Ratchet the Test">Locate/create the target test file in `tests/suites/acceptance/`. "Ratchet" the test forward by writing ONLY the exact setup or action required to demand the current deliverable. Do NOT test the entire scenario upfront.</step>
-        <step n="2" name="Harness Mandate">You MUST ALWAYS use the Test Harness Triad (Setup = Arrange, Driver = Act, Observer = Assert).</step>
-        <step n="3" name="Assert the Frontier">Run the test locally to observe the raw failure. To bypass the Integration CI Gate while keeping the test suite strictly Green, update the test to explicitly assert that exact failure (e.g., `with pytest.raises(NotImplementedError):` or `assert response.status_code == 404`). As you implement the next deliverable, this assertion will naturally fail (because the boundary moves), forcing you to ratchet the assertion forward until the final success criteria is met.</step>
+      <phase n="2" name="Scaffolding">
+        <goal>Prepare the testing environment and verify imports/wiring before writing business logic tests.</goal>
+        <step n="1" name="Layer Constraint">Map the testing layer to the current deliverable: Unit tests for `Contract`/`Harness`/`Seam`, Unit/Integration for `Logic`, and Acceptance for `Wiring`. Do NOT open Acceptance tests prematurely.</step>
+        <step n="2" name="Preparation">Create or locate the appropriate test file. Import necessary dependencies and set up the empty test function using the Test Harness Triad (Setup = Arrange, Driver = Act, Observer = Assert) structure. Do NOT write assertions yet.</step>
+        <step n="3" name="Verification">Execute the test file to verify your scaffolding. The success criteria is that the test runner executes without any `SyntaxError` or `ImportError`. It must successfully run (even if finding 0 tests) before you proceed to Phase 3.</step>
       </phase>
 
       <phase n="3" name="Implementation">
-        <goal>Make the Outer RED test pass via Just-In-Time implementation. Do not overbuild.</goal>
+        <goal>Make the current RED test pass via Just-In-Time implementation. Do not overbuild.</goal>
         <inner_loop>
           <tdd_phase n="1" name="Red">
-            Write ONE atomic failing unit test asserting a missing condition or breaking a hardcoded "fake". Use parameterized tests for data permutations. Your `Synthesis` MUST analyze the test failure and isolate the absolute smallest next logical condition.
+            Write ONE atomic failing test at your target layer asserting a missing condition or breaking a hardcoded "fake". Use parameterized tests for data permutations. Execute the test to confirm it fails exactly as expected. Your `Synthesis` MUST analyze the test failure and isolate the absolute smallest next logical condition.
           </tdd_phase>
           <tdd_phase n="2" name="Green">
             Write the absolute minimal code to pass the test. Hardcoded return values are encouraged if they satisfy the current suite, forcing further Red tests to drive out real logic. Your `Synthesis` MUST quote the Red test failure message and explain the fix.
@@ -61,7 +61,7 @@
       <phase n="4" name="Integration">
         <goal>Mandatory Global CI Gate. Verify system integrity for every deliverable.</goal>
         <step n="1" name="Global Test Run">
-          Run the full test suite (no filters) for every deliverable, including logic and refactor items. Confirm the acceptance ratchet is green and no regressions exist.
+          Run the full test suite (no filters) for every deliverable, including logic and refactor items. Confirm no regressions exist.
         </step>
         <step n="2" name="Fault Isolation & Recovery">
           If the global test suite fails, halt and isolate the fault using the MRE Gatekeeper protocol:
@@ -114,7 +114,7 @@ Deliverable: [Specific deliverable]
 
 PHASES:
 - [✓ | ▶ |  ] Orientation
-- [✓ | ▶ |  ] Specification
+- [✓ | ▶ |  ] Scaffolding
 - [✓ | ▶ |  ] Implementation
 - [✓ | ▶ |  ] Integration
 - [✓ | ▶ |  ] Documentation
@@ -386,13 +386,13 @@ WIP & REMINDERS:
 ## Rationale
 ~~~~~~
 1. Synthesis
-The acceptance test failed with a `NotImplementedError` as expected. I will now proceed with the TDD inner loop.
+The test environment scaffolding ran successfully with zero import errors. The file is correctly wired to the test runner. I will now enter the Implementation phase and begin the TDD loop.
 
 2. Justification
-The acceptance test requires an authentication mechanism to be defined. My current step is to write a failing unit test (Red) that isolates the specific logic required by the AuthService contract. Once this unit test fails, I will implement the minimal code to make it pass (Green).
+My current deliverable is the `Contract` for the AuthService. Per the layer constraints, I am working strictly in the Unit test layer. My immediate step is to write the initial failing test (Red) that defines the expected behavior of the contract.
 
 3. Expectation
-The `pytest` command will fail with a targeted `AssertionError` for the AuthService contract. This confirms the test is valid and dictates my next step: writing the implementation code to satisfy it.
+The `pytest` command will fail with an `AssertionError` or `NameError` since the AuthService class does not yet exist. This confirms the test is demanding the missing logic and dictates my next step: writing the minimal implementation code to pass it (Green).
 
 4. State Dashboard
 Vertical Slice: docs/project/slices/01-01-auth.md
@@ -400,7 +400,7 @@ Deliverable: AuthService Contract
 
 PHASES:
 - [✓] Orientation
-- [✓] Specification
+- [✓] Scaffolding
 - [▶] Implementation
 - [ ] Integration
 - [ ] Documentation
@@ -412,24 +412,42 @@ INNER LOOP: tests/suites/unit/test_auth_service.py
 - [ ] Refactor
 
 WIP & REMINDERS:
-- [DEBT] Extract duplicated token setup into Setup Harness.
+- [TODO] Implement empty AuthService class after test fails.
 - [DOC] Document AuthService preconditions in architecture doc.
 ~~~~~~
 
 ## Action Plan
 
-### `CREATE`
+### `EDIT`
 - **File Path:** [tests/suites/unit/test_auth_service.py](/tests/suites/unit/test_auth_service.py)
-- **Description:** Create failing unit test for AuthService contract.
+- **Description:** Write the initial failing unit test for the AuthService contract.
+
+#### `FIND:`
 ~~~~~~python
-def test_auth_service_requires_non_empty_token():
-    # Attempting to authenticate with empty token should fail
+def test_auth_service():
+    # Arrange
     pass
+    # Act
+    pass
+    # Assert
+    pass
+~~~~~~
+#### `REPLACE:`
+~~~~~~python
+from src.core.auth import AuthService
+
+def test_auth_service_requires_non_empty_token():
+    # Arrange
+    service = AuthService()
+
+    # Act / Assert
+    with pytest.raises(ValueError, match="Token cannot be empty"):
+        service.authenticate("")
 ~~~~~~
 
 ### `EXECUTE`
-- **Description:** Run the new test to confirm Red state.
-- **Expected Outcome:** Fails with NotImplementedError or AssertionError.
+- **Description:** Run the test to confirm Red state.
+- **Expected Outcome:** Fails with ImportError or AssertionError.
 ~~~~~~shell
 pytest tests/suites/unit/test_auth_service.py
 ~~~~~~
