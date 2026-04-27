@@ -41,7 +41,11 @@ The failure appears in the run titled "feat(cli): resequence session initializat
 
 ## Solution
 ### Implemented Fixes
-- TBD
+- Added comprehensive guards to `restore_terminal_mode` in `console_interactor_helpers.py` to prevent Unix-specific `termios` execution on Windows, in CI environments (`PYTEST_CURRENT_TEST`), or when `stdin` is not a TTY.
+- Updated `CliTestAdapter.run_resume` to support `extra_args`, allowing tests to pass non-interactive flags (`-y`, `-m`) correctly.
+- Hardened `test_session_resume_robustness.py` by using glob-based path resolution for session directories, making it resilient to auto-renaming logic.
+- Ensured the mocked `IUserInteractor` in `TestEnvironment` echoes to `stdout` via `typer.echo` so that telemetry assertions remain valid in mocked environments.
 
 ### Prevention
-- TBD
+- The `restore_terminal_mode` guard now prevents the primary cause of terminal contention on Windows workers.
+- The use of `extra_args` in `CliTestAdapter` ensures that future tests can explicitly trigger non-interactive paths, avoiding blocking prompts in CI.
