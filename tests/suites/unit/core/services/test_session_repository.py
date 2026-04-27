@@ -34,3 +34,33 @@ def test_get_latest_session_name_returns_full_folder_name():
 
     # Assert
     assert session_name == "20260417_120001-feat-b"
+
+
+def test_read_context_file_filters_comments_and_strips_whitespace():
+    # Setup
+    mock_fs = MagicMock()
+    repo = SessionRepository(mock_fs)
+
+    content = (
+        "file1.py\n"
+        "  file2.py  \n"
+        "# commented/path.py\n"
+        "   # another/comment.py\n"
+        "\n"
+        "valid/path.txt"
+    )
+    mock_fs.path_exists.return_value = True
+    mock_fs.read_file.return_value = content
+
+    # Act
+    paths = repo.read_context_file("any.context")
+
+    # Assert
+    assert "file1.py" in paths
+    assert "file2.py" in paths
+    assert "valid/path.txt" in paths
+    assert "# commented/path.py" not in paths
+    assert "commented/path.py" not in paths
+    assert "# another/comment.py" not in paths
+    assert "" not in paths
+    assert paths == {"file1.py", "file2.py", "valid/path.txt"}

@@ -77,6 +77,7 @@ class SessionRepository(ISessionRepository):
         """Heuristic to check if a string is a plausible file path."""
         if (
             not path_str
+            or path_str.startswith("#")
             or "**" in path_str
             or ":" in path_str
             and not path_str.startswith(("http:", "https:"))

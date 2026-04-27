@@ -49,7 +49,7 @@ But successful "READ" actions should still be logged in the "Action Log"
 - [x] **Contract** - Update `IExecutionReportAssembler` to accept `is_session` (or extract from Plan).
 - [x] **Contract** - Update `IMarkdownReportFormatter` signature to handle session context.
 - [x] **Harness** - Add regression tests in `tests/suites/unit/core/services/test_session_service.py` to verify that `turn.context` only grows on `SUCCESS` logs.
-- [ ] **Logic** - Update `SessionRepository.read_context_file` to filter lines starting with `#` (Poka-Yoke for manual edits).
+- [x] **Logic** - Update `SessionRepository.read_context_file` to filter lines starting with `#` (Poka-Yoke for manual edits).
 - [x] **Logic** - Refactor `SessionService._apply_execution_effects` to iterate over `ExecutionReport.action_logs` and only apply `READ`/`PRUNE` effects if `log.status == SUCCESS`.
 - [ ] **Wiring** - Update `PlanningService.generate_plan` to inject the `## User Request` block into the `input.md` content.
 - [ ] **Wiring** - Update `ExecutionReportAssembler` to propagate `is_session` to the report.
@@ -68,3 +68,7 @@ But successful "READ" actions should still be logged in the "Action Log"
 - Refactored `SessionService._apply_execution_effects` to use `ExecutionReport.action_logs` instead of `original_actions`.
 - Verified that side effects (READ/PRUNE) are only applied if `log.status == ActionStatus.SUCCESS`.
 - Added unit tests in `tests/suites/unit/core/services/test_session_service.py` covering success, failure, and skip scenarios.
+
+### Comment Filtering in Context Files
+- Updated `SessionRepository.is_valid_path` to return `False` for lines starting with `#`.
+- Verified that `read_context_file` correctly filters comments (even with leading whitespace) and strips whitespace from valid paths via unit tests in `tests/suites/unit/core/services/test_session_repository.py`.
