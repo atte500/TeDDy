@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 import pathlib
 from typing import TYPE_CHECKING, Any, Optional, cast
@@ -14,6 +15,8 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_editor import (
     launch_editor,
     preview_edit_diff_viewer,
 )
+
+logger = logging.getLogger(__name__)
 
 
 async def do_preview_logic(app: ReviewerApp, node: Any, action: ActionData) -> None:
@@ -129,7 +132,8 @@ async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
     resource = action.params.get("resource") or action.params.get("path", "")
     try:
         content = app._file_system.read_file(resource)
-    except Exception:
+    except Exception as e:
+        logger.debug("Failed to read resource for preview: %s", e)
         content = f"--- Content for {resource} could not be retrieved ---"
 
     temp_file = app._system_env.create_temp_file(
@@ -217,8 +221,8 @@ async def view_plan_handler(app: "ReviewerApp") -> None:
     if app.plan.plan_path and app._file_system:
         try:
             content = app._file_system.read_file(app.plan.plan_path)
-        except Exception:  # nosec B110
-            pass
+        except Exception as e:
+            logger.debug("Failed to read plan file for viewing: %s", e)
     if not content:
         content = app.plan.raw_content
     if not content:

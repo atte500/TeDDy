@@ -152,7 +152,8 @@ async def orchestrate_execution(app: ReviewerApp, node: Any, update_fn: Any) -> 
             if log.status == ActionStatus.SUCCESS
             else ExecutionStatus.FAILURE
         )
-    except Exception:
+    except Exception as e:
+        logging.getLogger(__name__).debug("Background execution failed: %s", e)
         action.executed, action.state = True, ExecutionStatus.FAILURE
     finally:
         app._refresh_node(node)
