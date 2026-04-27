@@ -2,8 +2,8 @@ from teddy_executor.core.utils.string import slugify
 
 
 def test_slugify_basic():
-    """It should lowercase and replace spaces with hyphens."""
-    assert slugify("Hello World") == "hello-world"
+    """It should lowercase and replace spaces with hyphens. Hello is removed due to being conversational filler."""
+    assert slugify("Hello World") == "world"
 
 
 def test_slugify_special_characters():
