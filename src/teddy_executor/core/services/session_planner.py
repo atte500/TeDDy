@@ -1,9 +1,12 @@
+import logging
 import re
 from pathlib import Path
 from typing import Any, Optional
 
 import yaml
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
+
+logger = logging.getLogger(__name__)
 
 
 class SessionPlanner:
@@ -129,8 +132,10 @@ class SessionPlanner:
                         return ""
 
                     return extract_markdown_section(content, "User Request")
-        except (ValueError, TypeError):
-            pass
+        except (ValueError, TypeError) as e:
+            logger.debug(
+                "Failed to resolve message from previous turn in %s: %s", turn_dir, e
+            )
         return None
 
     def _handle_dynamic_rename(self, plan_path: str) -> Optional[str]:
@@ -145,6 +150,11 @@ class SessionPlanner:
                 try:
                     new_path = self._session_service.rename_session(old_name, new_name)
                     return Path(new_path).name
-                except ValueError:
-                    pass
+                except ValueError as e:
+                    logger.debug(
+                        "Failed to dynamically rename session %s to %s: %s",
+                        old_name,
+                        new_name,
+                        e,
+                    )
         return None
