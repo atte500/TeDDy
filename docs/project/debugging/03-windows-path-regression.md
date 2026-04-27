@@ -1,6 +1,6 @@
 # Bug: Windows Path Normalization Regression
 
-- **Status:** Unresolved
+- **Status:** Resolved
 - **Milestone:** [10-interactive-session-and-config](../milestones/10-interactive-session-and-config.md)
 
 ## Symptoms
@@ -21,3 +21,13 @@ The `_RecursiveListFormatter` uses `Path.relative_to()` and converts it to a str
 
 ### Investigation History
 - Attempt 1: Failed to fetch logs using hallucinated ID 1234567890.
+- Attempt 2: Verified fix on Windows via `debug-windows-fix` branch. `test_tree_integrity_with_deep_unignored_file` passed after path normalization.
+
+## Solution
+### Implemented Fixes
+- Modified `_RecursiveListFormatter._format_section` in `src/teddy_executor/adapters/outbound/local_repo_tree_generator.py` to explicitly replace `os.sep` with `/` in directory headers.
+- Added missing `os` import to `local_repo_tree_generator.py`.
+
+### Prevention
+- The fix ensures the `ls-R` tree format maintains a platform-agnostic protocol (forward-slashes only) for cross-platform compatibility.
+- Verified via Windows-specific remote CI probe.
