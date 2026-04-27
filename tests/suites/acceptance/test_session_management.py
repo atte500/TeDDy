@@ -1,6 +1,7 @@
 from pathlib import Path
 from datetime import datetime
 from unittest.mock import patch
+from teddy_executor.core.utils.string import slugify
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
 from tests.harness.drivers.cli_adapter import CliTestAdapter
 from tests.harness.setup.test_environment import TestEnvironment
@@ -103,20 +104,18 @@ def test_teddy_start_dynamic_renaming_and_flow(tmp_path: Path, monkeypatch):
     plan = MarkdownPlanBuilder("Auth Feature").add_execute("echo 'auth'").build()
     llm.get_completion.return_value = mock_response(plan)  # type: ignore[attr-defined]
 
+    user_input = "My prompt"
     fixed_now = datetime(2026, 4, 17, 12, 0, 0)
     with patch("teddy_executor.core.services.session_service.datetime") as mock_dt:
         mock_dt.now.return_value = fixed_now
-        result = adapter.run_cli_command(["start"], input="My prompt\ny\n")
+        result = adapter.run_cli_command(["start"], input=f"{user_input}\ny\n")
 
     assert result.exit_code == 0
+    timestamp = fixed_now.strftime("%Y%m%d_%H%M%S")
+    session_name = f"{timestamp}-{slugify(user_input)}"
 
     assert (
-        tmp_path
-        / ".teddy"
-        / "sessions"
-        / "20260417_120000-auth-feature"
-        / "01"
-        / "report.md"
+        tmp_path / ".teddy" / "sessions" / session_name / "01" / "report.md"
     ).exists()
 
 

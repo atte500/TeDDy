@@ -1,6 +1,7 @@
 import yaml
 from pathlib import Path
 from datetime import datetime
+from teddy_executor.core.utils.string import slugify
 from unittest.mock import MagicMock, patch
 from tests.harness.setup.test_environment import TestEnvironment
 from tests.harness.drivers.cli_adapter import CliTestAdapter
@@ -50,13 +51,17 @@ def test_ai_telemetry_and_logging(tmp_path, monkeypatch):
 
     # Input: Goal prompt -> Confirmation for plan execution (y)
     # Using -y to prevent the loop from consuming inputs meant for other checks
+    user_input = "Developing New Feature"
     fixed_now = datetime(2026, 4, 17, 12, 0, 0)
     with patch("teddy_executor.core.services.session_service.datetime") as mock_dt:
         mock_dt.now.return_value = fixed_now
-        result = adapter.run_start(["--agent", "pathfinder", "-y"], input="My Goal\n")
+        # Pass message via -m to ensure naming works in non-interactive mode (-y)
+        result = adapter.run_start(["--agent", "pathfinder", "-y", "-m", user_input])
 
     assert result.exit_code == 0
-    turn_dir = Path(".teddy/sessions/20260417_120000-new-feature/01")
+    timestamp = fixed_now.strftime("%Y%m%d_%H%M%S")
+    session_name = f"{timestamp}-{slugify(user_input)}"
+    turn_dir = Path(f".teddy/sessions/{session_name}/01")
     assert (tmp_path / turn_dir / "input.md").exists()
     assert (tmp_path / turn_dir / "pathfinder.xml").exists()
     import re

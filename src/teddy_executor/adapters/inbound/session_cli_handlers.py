@@ -7,6 +7,8 @@ from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUs
 from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.session_manager import ISessionManager
+from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
+from teddy_executor.core.utils.string import slugify
 from teddy_executor.adapters.inbound.cli_formatter import format_project_context
 from teddy_executor.adapters.inbound.cli_helpers import (
     echo_and_copy,
@@ -25,9 +27,19 @@ def handle_new_session(  # noqa: PLR0913
     from teddy_executor.adapters.inbound.cli_helpers import handle_report_output
 
     session_manager: ISessionManager = container.resolve(ISessionManager)
+    user_interactor: IUserInteractor = container.resolve(IUserInteractor)
 
-    # Generate placeholder name if none provided; SessionService adds timestamp prefix
-    actual_name = name or "session-auto"
+    # 1. Resolve message first if missing in interactive mode
+    if message is None and interactive:
+        message = user_interactor.ask_question("What are we working on?")
+
+    # 2. Determine session name (slugify message if name is missing)
+    if name:
+        actual_name = name
+    elif message:
+        actual_name = slugify(message)
+    else:
+        actual_name = "session-auto"
 
     try:
         session_dir = session_manager.create_session(name=actual_name, agent_name=agent)

@@ -1,11 +1,9 @@
 import logging
-import re
 from pathlib import Path
 from typing import Any, Optional
 
 import yaml
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
-from teddy_executor.core.utils.string import slugify
 
 logger = logging.getLogger(__name__)
 
@@ -59,18 +57,7 @@ class SessionPlanner:
 
         self._display_planning_telemetry(turn_dir, plan_path, turn_cost)
 
-        # Dynamic Renaming Logic for Turn 1
-        turn_p = Path(turn_dir)
-        session_folder_name = turn_p.parent.name
-
-        # Strip prefix to check if it's an auto-generated session name
-        clean_name = re.sub(r"^\d{8}_\d{6}-", "", session_folder_name)
-
-        if turn_p.name == "01" and clean_name.startswith("session-"):
-            renamed = self._handle_dynamic_rename(plan_path)
-            return renamed or session_folder_name
-
-        return session_folder_name
+        return Path(turn_dir).parent.name
 
     def _display_planning_telemetry(
         self, turn_dir: str, plan_path: str, turn_cost: float
@@ -137,25 +124,4 @@ class SessionPlanner:
             logger.debug(
                 "Failed to resolve message from previous turn in %s: %s", turn_dir, e
             )
-        return None
-
-    def _handle_dynamic_rename(self, plan_path: str) -> Optional[str]:
-        """Renames the session based on the plan title."""
-        content = self._file_system_manager.read_file(plan_path)
-        match = re.search(r"^#\s*(?:Plan:)?\s*(.*)$", content, re.MULTILINE)
-        if match:
-            title = match.group(1).strip()
-            new_name = slugify(title)
-            if new_name:
-                old_name = Path(plan_path).parent.parent.name
-                try:
-                    new_path = self._session_service.rename_session(old_name, new_name)
-                    return Path(new_path).name
-                except ValueError as e:
-                    logger.debug(
-                        "Failed to dynamically rename session %s to %s: %s",
-                        old_name,
-                        new_name,
-                        e,
-                    )
         return None
