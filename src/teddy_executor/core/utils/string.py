@@ -4,6 +4,7 @@ import re
 STOPWORDS = {
     "a",
     "about",
+    "actually",
     "above",
     "after",
     "again",
@@ -45,6 +46,9 @@ STOPWORDS = {
     "have",
     "having",
     "he",
+    "hello",
+    "hey",
+    "hi",
     "her",
     "here",
     "hers",
@@ -62,6 +66,7 @@ STOPWORDS = {
     "its",
     "itself",
     "just",
+    "kindly",
     "like",
     "me",
     "more",
@@ -79,6 +84,7 @@ STOPWORDS = {
     "only",
     "or",
     "other",
+    "please",
     "our",
     "ours",
     "ourselves",
@@ -94,6 +100,8 @@ STOPWORDS = {
     "such",
     "t",
     "than",
+    "thank",
+    "thanks",
     "that",
     "the",
     "their",
@@ -134,6 +142,9 @@ STOPWORDS = {
     "yourself",
     "yourselves",
     "using",
+    "basically",
+    "simply",
+    "really",
 }
 
 
