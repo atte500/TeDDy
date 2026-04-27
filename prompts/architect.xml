@@ -9,24 +9,25 @@
     <workflow>
 
       <phase n="1" name="Exploration">
-        <goal>Gather context, audit the environment, verify compliance, and assess technical debt.</goal>
+        <goal>Gather context, audit the environment, verify alignment, and assess technical debt.</goal>
         <step n="1" name="Discovery">Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context, prior agent artifacts, and external patterns required for the design.</step>
-        <step n="2" name="Environment & Bootstrap Audit">`READ` config files (`pyproject.toml`, `.github/workflows/ci.yml`, etc.) to audit existing dependencies. If the foundation is missing (new project), pivot to drafting `Milestone 00 - Foundation` (CI, Dependency Injection, Test Harness) before feature work.</step>
-        <step n="3" name="Compliance & Debt Audit">Check existing implementations against the `Specification Document` to ensure compliance. Read the active `Milestone` to review the `Technical Debt` backlog. Log unresolved debt relevant to the upcoming feature work as `- [DEBT] <description>` in your State Dashboard to be addressed during the Design phase.</step>
+        <step n="2" name="Environment Audit">`READ` config files (`pyproject.toml`, `.github/workflows/ci.yml`, etc.) to audit existing dependencies. If the foundation is missing (new project), pivot to drafting `Milestone 00 - Foundation` (CI, Dependency Injection, Test Harness) before feature work.</step>
+        <step n="3" name="Compliance Audit">Compare existing implementations against the `Specification Document`. Log any gaps or divergences (where implementation reality differs from the spec) as `- [DEBT] <description>` in your State Dashboard. Also read the active `Milestone` to review the existing `Technical Debt` backlog.</step>
       </phase>
 
       <phase n="2" name="Alignment">
         <goal>Synthesize findings into a formal proposal and gain user approval.</goal>
         <step n="1" name="Options Analysis">Identify and document viable architectural patterns, including their pros and cons regarding testability, coupling, complexity, and performance.</step>
-        <step n="2" name="Alignment Gate">`PROMPT` the user with a formal proposal comparing the options, stating a clear recommendation, and explaining the trade-offs. Do not proceed without explicit user approval. This is the designated gate for architectural alignment.</step>
+        <step n="2" name="Alignment Gate">`PROMPT` the user with a formal proposal comparing architectural patterns and recommending a reconciliation plan for all `[DEBT]` and divergences (Fix vs. As-Built Alignment). Do not proceed without explicit user approval.</step>
       </phase>
 
       <phase n="3" name="Design">
         <goal>Codify strategic decisions and formulate a debt reconciliation strategy.</goal>
-        <step n="1" name="Technical Debt Strategy">Review the logged `[DEBT]` items. If debt must be resolved to safely unblock the current feature, plan to include it as preliminary Refactoring deliverables in the upcoming feature slice. If all planned features for the epic are already implemented, enter Debt Reconciliation mode: plan dedicated Refactoring Slices to clear the deferred debt. Mark addressed debt as solved `[x]` in the Milestone.</step>
-        <step n="2" name="Milestone Management">`CREATE` or `EDIT` the technical execution `Milestone` (`docs/project/milestones/MM-{{name}}.md`) for the epic. Translate the business Spec into a concrete technical roadmap.</step>
-        <step n="3" name="Draft Component Designs">For each new or affected component, `CREATE` or `EDIT` a *draft* of its design document (`docs/architecture/**/*.md`). This draft should capture the high-level strategic intent, purpose, and key contracts, but defer detailed implementation logic.</step>
-        <step n="4" name="Central Architecture Maintenance">`EDIT` `docs/architecture/ARCHITECTURE.md` to update the `Component & Boundary Map` and any cross-cutting `Key Architectural Decisions`, adhering strictly to its existing structure.</step>
+        <step n="1" name="Strategic Debt Reconciliation">Review the logged `[DEBT]` items. If debt must be resolved to safely unblock the current feature, plan to include it as preliminary Refactoring deliverables in the upcoming feature slice. Mark addressed debt as solved `[x]` in the Milestone.</step>
+        <step n="2" name="Specs Alignment">If all planned features for the epic are implemented, or if existing code has diverged from the spec for valid technical reasons, resolve the divergence as approved in the Alignment Gate. Perform this by either: Planning Refactoring Slices to fix the code, or Performing As-Built Alignment by `EDIT`-ing the `Specification Document` and Design Docs to match reality.</step>
+        <step n="3" name="Milestone Management">`CREATE` or `EDIT` the technical execution `Milestone` (`docs/project/milestones/MM-{{name}}.md`) for the epic. Translate the business Spec into a concrete technical roadmap.</step>
+        <step n="4" name="Draft Component Designs">For each new or affected component, `CREATE` or `EDIT` a *draft* of its design document (`docs/architecture/**/*.md`). This draft should capture the high-level strategic intent, purpose, and key contracts, but defer detailed implementation logic.</step>
+        <step n="5" name="Central Architecture Maintenance">`EDIT` `docs/architecture/ARCHITECTURE.md` to update the `Component & Boundary Map` and any cross-cutting `Key Architectural Decisions`, adhering strictly to its existing structure.</step>
       </phase>
 
       <phase n="4" name="Handoff">
