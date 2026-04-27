@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional
@@ -18,6 +19,8 @@ from teddy_executor.core.ports.outbound.markdown_report_formatter import (
     IMarkdownReportFormatter,
 )
 from teddy_executor.core.services.plan_validator import ValidationError
+
+logger = logging.getLogger(__name__)
 
 
 def find_project_root() -> Path:
@@ -55,8 +58,8 @@ def echo_and_copy(
             def _copy():
                 try:
                     pyperclip.copy(to_copy)
-                except Exception:  # nosec
-                    pass
+                except Exception as e:
+                    logger.debug("Background clipboard copy failed: %s", e)
 
             thread = threading.Thread(target=_copy, daemon=True)
             thread.start()
@@ -65,8 +68,8 @@ def echo_and_copy(
             # a noticeable delay for the user.
             thread.join(timeout=0.1)
             typer.echo(confirmation_message, err=True)
-        except Exception:  # nosec
-            pass
+        except Exception as e:
+            logger.debug("Main thread clipboard handler failed: %s", e)
 
 
 def get_plan_content(plan_content_str: Optional[str], plan_file: Optional[Path]) -> str:
@@ -132,8 +135,8 @@ def create_failure_report(
                 ),
                 validation_result=error_messages,
             )
-        except Exception:  # nosec B110
-            pass  # Fallback to basic report
+        except Exception as report_err:
+            logger.debug("Failed to create rich failure report: %s", report_err)
 
     return ExecutionReport(
         plan_title="Execution Error",
@@ -162,8 +165,10 @@ def handle_validation_failure(
                 path = Path(error.file_path)
                 if path.exists():
                     failed_resources[error.file_path] = path.read_text(encoding="utf-8")
-            except OSError:
-                pass  # Ignore if reading fails
+            except OSError as os_err:
+                logger.debug(
+                    "Failed to read failed resource %s: %s", error.file_path, os_err
+                )
 
     return ExecutionReport(
         plan_title=plan.title,

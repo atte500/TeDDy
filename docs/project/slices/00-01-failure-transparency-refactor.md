@@ -20,7 +20,7 @@ And it MUST log the error or re-raise with context.
 - [x] Logic - Refactor `src/teddy_executor/core/services/action_executor.py`: Replace `except Exception:` in `_enrich_failed_log` with logging.
 - [x] Logic - Refactor `src/teddy_executor/core/services/execution_orchestrator.py`: Replace silent `pass` with `# nosec` in temp file cleanup with `logger.debug`.
 - [x] Logic - Refactor `src/teddy_executor/core/services/session_planner.py`: Replace silent `pass` blocks in message/name resolution with diagnostic logging.
-- [ ] Logic - Refactor `src/teddy_executor/adapters/inbound/cli_helpers.py`: Clean up 4+ `nosec` blocks to ensure report formatting errors are visible.
+- [x] Logic - Refactor `src/teddy_executor/adapters/inbound/cli_helpers.py`: Clean up 4+ `nosec` blocks to ensure report formatting errors are visible.
 - [ ] Logic - TUI Sweep: Update `textual_plan_reviewer_*.py` and `console_interactor_helpers.py` to replace broad catches and `nosec` tags with specific error-state messages for the user.
 - [ ] Cleanup - Final validation: Execute `grep -rn "# nosec B110" src/` to ensure all "intentional" silent failures are converted to "transparent" failures.
 
@@ -38,3 +38,4 @@ And it MUST log the error or re-raise with context.
 - `action_executor.py`: Added module-level `logger` and replaced silent `except Exception:` in `_enrich_failed_log` with a `logger.debug` call. Kept the `except Exception:` broad since the operation is explicitly a "best effort" context enrichment that must not block the core execution flow.
 - `execution_orchestrator.py`: Added module-level `logger` and replaced `except Exception: # nosec B110 \n pass` in the `finally` block of `execute` with `logger.debug("Failed to clean up temporary plan file...")`.
 - `session_planner.py`: Added module-level `logger` and replaced silent `pass` statements in `_resolve_message_from_previous_turn` and `_handle_dynamic_rename` with `logger.debug` calls, surfacing non-fatal file read/parsing errors.
+- `cli_helpers.py`: Added module-level `logger` and replaced 4 silent failure points (`# nosec` and `pass`) in `echo_and_copy`, `create_failure_report`, and `handle_validation_failure` with `logger.debug` diagnostics. Verified that adding `logging` to this foundational utility did not regress CLI performance or stability.
