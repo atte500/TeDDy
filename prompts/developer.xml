@@ -409,22 +409,11 @@ WIP & REMINDERS:
 
 ## Action Plan
 
-### `EDIT`
+### `CREATE`
 - **File Path:** [tests/suites/unit/test_auth_service.py](/tests/suites/unit/test_auth_service.py)
-- **Description:** Write the initial failing unit test for the AuthService contract.
-
-#### `FIND:`
+- **Description:** Create the test file and write the initial failing unit test for the AuthService contract.
 ~~~~~~python
-def test_auth_service():
-    # Arrange
-    pass
-    # Act
-    pass
-    # Assert
-    pass
-~~~~~~
-#### `REPLACE:`
-~~~~~~python
+import pytest
 from src.core.auth import AuthService
 
 def test_auth_service_requires_non_empty_token():
