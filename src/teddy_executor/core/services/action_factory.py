@@ -122,9 +122,9 @@ class ActionFactory(IActionFactory):
 
         # Inject global timeout if not already specified in kwargs
         if "timeout" not in execute_params and self._config_service:
-            # Safe-by-Default: Provide hardcoded 30.0 fallback if config is missing
+            # Safe-by-Default: Provide hardcoded 60.0 fallback if config is missing
             default_timeout = self._config_service.get_setting(
-                "execution.default_timeout_seconds", 30.0
+                "execution.default_timeout_seconds", 60.0
             )
             if default_timeout is not None:
                 execute_params["timeout"] = float(default_timeout)

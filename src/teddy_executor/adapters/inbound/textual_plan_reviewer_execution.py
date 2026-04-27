@@ -60,7 +60,7 @@ def resolve_action_parameters(action: ActionData) -> dict[str, Any]:
         "match_all": False,
         "allow_failure": False,
         "background": False,
-        "timeout": 30.0,
+        "timeout": 60.0,
         "similarity_threshold": DEFAULT_SIMILARITY_THRESHOLD,
     }
 
