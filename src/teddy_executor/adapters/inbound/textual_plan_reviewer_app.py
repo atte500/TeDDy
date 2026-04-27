@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 from textual import work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Horizontal, VerticalScroll
+from textual.containers import Horizontal
 from textual.widgets import ContentSwitcher, Footer, Header, ListView, Markdown, Tree
 
 from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
@@ -27,6 +27,7 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
 from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
     ActionTree,
     ParameterDetail,
+    RationaleDetail,
     TUI_CSS,
 )
 from teddy_executor.core.services.edit_simulator import EditSimulator
@@ -101,7 +102,7 @@ class ReviewerApp(App):
             yield ActionTree("Action Plan", id="left-pane")
             with ContentSwitcher(id="right-pane", initial="params-view"):
                 yield ParameterDetail(id="params-view")
-                rationale_view = VerticalScroll(id="rationale-view")
+                rationale_view = RationaleDetail(id="rationale-view")
                 rationale_view.can_focus = True
                 with rationale_view:
                     yield Markdown(id="rationale-content")
@@ -129,12 +130,12 @@ class ReviewerApp(App):
         await on_list_view_selected_logic(self, event.item)
 
     def on_descendant_focus(self, event: Any) -> None:
-        """Auto-focus first param when right pane gets focus via Tab."""
+        """Ensure selection state is maintained or initialized when focus moves."""
         control = getattr(event, "control", None)
-        # Check for the ParameterDetail widget or its container
         if control and getattr(control, "id", None) in ("right-pane", "params-view"):
             list_view = self.query_one(ParameterDetail)
-            if list_view.children:
+            # Only reset to 0 if no item is currently selected (e.g. first focus after clear)
+            if list_view.children and list_view.index is None:
                 list_view.index = 0
 
     def check_action(self, action: str, parameters: tuple[Any, ...]) -> bool:

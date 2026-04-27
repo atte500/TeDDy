@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 from typing import Any
 from textual.binding import Binding
+from textual.containers import VerticalScroll
 from textual.screen import ModalScreen
 from textual.widgets import Input, Label, ListItem, ListView, Tree, Static
 
@@ -111,6 +112,27 @@ class ActionTree(Tree):
                 return
 
 
+class RationaleDetail(VerticalScroll):
+    """A focusable scroll view for rationale."""
+
+    BINDINGS = [
+        Binding("shift+up", "scroll_to_top", "Top", show=False, priority=True),
+        Binding("shift+down", "scroll_to_bottom", "Bottom", show=False, priority=True),
+        Binding("alt+up", "scroll_to_top", "Top", show=False, priority=True),
+        Binding("alt+down", "scroll_to_bottom", "Bottom", show=False, priority=True),
+        Binding("ctrl+up", "scroll_to_top", "Top", show=False, priority=True),
+        Binding("ctrl+down", "scroll_to_bottom", "Bottom", show=False, priority=True),
+    ]
+
+    def action_scroll_to_top(self) -> None:
+        """Scroll to the top of the content."""
+        self.scroll_home(animate=False)
+
+    def action_scroll_to_bottom(self) -> None:
+        """Scroll to the bottom of the content."""
+        self.scroll_end(animate=False)
+
+
 class ParameterDetail(ListView):
     """A focusable list that wraps parameters."""
 
@@ -173,28 +195,22 @@ TUI_CSS = """
     width: 35%;
     border-left: vkey $foreground 15%;
     padding: 0;
+    background: $surface;
+}
+#right-pane:focus-within {
+    background: $surface-lighten-1;
 }
 Tree {
     height: 1fr;
 }
 ListView {
-    background: $surface;
+    background: transparent;
     height: 1fr;
     border: none;
 }
-
-ListView:focus {
-    background: $surface-lighten-1;
-}
-
 VerticalScroll {
-    background: $surface;
+    background: transparent;
 }
-
-VerticalScroll:focus {
-    background: $surface-lighten-1;
-}
-
 #rationale-content {
     padding: 1 2;
     background: transparent;
@@ -202,6 +218,11 @@ VerticalScroll:focus {
 ListItem {
     height: auto;
     padding: 0 1;
+}
+ListItem.--highlight {
+    background: $accent 30%;
+    color: $text;
+    text-style: bold;
 }
 Static {
     width: 100%;
