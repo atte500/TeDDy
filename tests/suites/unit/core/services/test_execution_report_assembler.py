@@ -44,6 +44,18 @@ def test_assemble_success_status(assembler, base_plan):
     assert report.action_logs == logs
 
 
+def test_assemble_propagates_is_session(assembler, base_plan):
+    # Given a plan in session mode
+    base_plan.is_session = True
+    logs = []
+
+    # When
+    report = assembler.assemble(base_plan, logs, datetime.now())
+
+    # Then
+    assert report.is_session is True
+
+
 def test_assemble_failure_status(assembler, base_plan):
     # Given any action failed
     logs = [

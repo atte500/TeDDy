@@ -39,6 +39,7 @@ class ExecutionReportAssembler(IExecutionReportAssembler):
             plan_title=plan.title,
             rationale=plan.rationale,
             user_request=message or plan.metadata.get("user_request"),
+            is_session=plan.is_session,
             metadata=plan.metadata,
             original_actions=plan.actions,
             action_logs=action_logs,
