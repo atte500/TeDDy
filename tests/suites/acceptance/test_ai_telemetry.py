@@ -34,7 +34,7 @@ def test_ai_telemetry_and_logging(tmp_path, monkeypatch):
     """Scenario: AI Transparency & Telemetry."""
     from teddy_executor.core.ports.outbound import ILlmClient
 
-    env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
+    env = TestEnvironment(monkeypatch, tmp_path).setup()
 
     adapter = CliTestAdapter(monkeypatch, tmp_path)
     setup_telemetry_env(tmp_path)
@@ -136,7 +136,7 @@ def test_input_log_during_replan(tmp_path, monkeypatch):
     """Verifies input.md during re-planning."""
     from teddy_executor.core.ports.outbound import ILlmClient
 
-    env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
+    env = TestEnvironment(monkeypatch, tmp_path).setup()
 
     adapter = CliTestAdapter(monkeypatch, tmp_path)
     setup_telemetry_env(tmp_path)
@@ -156,7 +156,7 @@ def test_input_log_during_replan(tmp_path, monkeypatch):
     fixed_now = datetime(2026, 4, 17, 12, 0, 0)
     with patch("teddy_executor.core.services.session_service.datetime") as mock_dt:
         mock_dt.now.return_value = fixed_now
-        result = adapter.run_start(["replan-test", "-y"], input="Go\n")
+        result = adapter.run_start(["replan-test", "-y", "-m", "Go"])
 
     # R-10-12: Session mode does NOT exit on validation failure; it replans.
     assert result.exit_code == 0

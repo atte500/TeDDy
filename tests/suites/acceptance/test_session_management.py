@@ -11,12 +11,7 @@ from tests.suites.acceptance.helpers import setup_project, mock_response
 
 def test_teddy_start_bootstraps_session(tmp_path: Path, monkeypatch):
     """Scenario: 'start' command creates session structure and bootstraps context."""
-    env = (
-        TestEnvironment(monkeypatch, tmp_path)
-        .setup()
-        .with_real_shell()
-        .with_real_interactor()
-    )
+    env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_shell()
     adapter = CliTestAdapter(monkeypatch, tmp_path)
     setup_project(tmp_path)
 
@@ -27,7 +22,9 @@ def test_teddy_start_bootstraps_session(tmp_path: Path, monkeypatch):
     fixed_now = datetime(2026, 4, 17, 12, 0, 0)
     with patch("teddy_executor.core.services.session_service.datetime") as mock_dt:
         mock_dt.now.return_value = fixed_now
-        result = adapter.run_cli_command(["start", "feat-x"], input="instructions\ny\n")
+        result = adapter.run_cli_command(
+            ["start", "feat-x", "-y", "-m", "instructions"]
+        )
 
     assert result.exit_code == 0
 
@@ -39,12 +36,7 @@ def test_teddy_start_bootstraps_session(tmp_path: Path, monkeypatch):
 
 def test_teddy_resume_executes_pending_plan(tmp_path: Path, monkeypatch):
     """Scenario: 'resume' executes an existing plan if one is pending."""
-    (
-        TestEnvironment(monkeypatch, tmp_path)
-        .setup()
-        .with_real_shell()
-        .with_real_interactor()
-    )
+    (TestEnvironment(monkeypatch, tmp_path).setup().with_real_shell())
     adapter = CliTestAdapter(monkeypatch, tmp_path)
     turn_dir = tmp_path / ".teddy" / "sessions" / "resume" / "01"
     turn_dir.mkdir(parents=True)
@@ -68,7 +60,7 @@ def test_teddy_resume_executes_pending_plan(tmp_path: Path, monkeypatch):
 
 def test_teddy_resume_prompts_for_new_plan(tmp_path: Path, monkeypatch):
     """Scenario: 'resume' prompts for input if no plan exists for the current turn."""
-    env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
+    env = TestEnvironment(monkeypatch, tmp_path).setup()
     adapter = CliTestAdapter(monkeypatch, tmp_path)
     turn_dir = tmp_path / ".teddy" / "sessions" / "resume-new" / "02"
     turn_dir.mkdir(parents=True)
@@ -81,7 +73,7 @@ def test_teddy_resume_prompts_for_new_plan(tmp_path: Path, monkeypatch):
     plan = MarkdownPlanBuilder("New").add_execute("echo 1").build()
     llm.get_completion.return_value = mock_response(plan)  # type: ignore[attr-defined]
 
-    result = adapter.run_cli_command(["resume"], cwd=turn_dir, input="My Goal\n")
+    result = adapter.run_cli_command(["resume", "-y", "-m", "My Goal"], cwd=turn_dir)
     assert result.exit_code == 0
 
     assert (turn_dir / "plan.md").exists()
@@ -91,12 +83,7 @@ def test_teddy_resume_prompts_for_new_plan(tmp_path: Path, monkeypatch):
 
 def test_teddy_start_dynamic_renaming_and_flow(tmp_path: Path, monkeypatch):
     """Scenario: Session is dynamically renamed based on the generated plan title."""
-    env = (
-        TestEnvironment(monkeypatch, tmp_path)
-        .setup()
-        .with_real_shell()
-        .with_real_interactor()
-    )
+    env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_shell()
     adapter = CliTestAdapter(monkeypatch, tmp_path)
     setup_project(tmp_path)
 
@@ -108,7 +95,7 @@ def test_teddy_start_dynamic_renaming_and_flow(tmp_path: Path, monkeypatch):
     fixed_now = datetime(2026, 4, 17, 12, 0, 0)
     with patch("teddy_executor.core.services.session_service.datetime") as mock_dt:
         mock_dt.now.return_value = fixed_now
-        result = adapter.run_cli_command(["start"], input=f"{user_input}\ny\n")
+        result = adapter.run_cli_command(["start", "-y", "-m", user_input])
 
     assert result.exit_code == 0
     timestamp = fixed_now.strftime("%Y%m%d_%H%M%S")
