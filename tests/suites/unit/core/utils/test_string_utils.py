@@ -1,4 +1,8 @@
-from teddy_executor.core.utils.string import slugify, truncate_lines
+from teddy_executor.core.utils.string import (
+    slugify,
+    truncate_lines,
+    get_truncation_hint,
+)
 
 
 def test_truncate_lines_tail_preserves_last_lines():
@@ -48,6 +52,21 @@ def test_truncate_lines_invalid_direction():
     with pytest.raises(ValueError, match="Invalid truncation direction"):
         # Must have more lines than max_lines to trigger the validation
         truncate_lines("line1\nline2", 1, direction="middle")
+
+
+def test_get_truncation_hint_execute():
+    expected = "[Output truncated. Use 'command > file.txt' or 'grep' to filter results if needed.]"
+    assert get_truncation_hint("execute") == expected
+
+
+def test_get_truncation_hint_read():
+    expected = "[File content truncated. Use more specific search or 'grep' to find relevant sections.]"
+    assert get_truncation_hint("read") == expected
+
+
+def test_get_truncation_hint_unknown():
+    expected = "[Content truncated due to length limits.]"
+    assert get_truncation_hint("unknown") == expected
 
 
 def test_slugify_basic():

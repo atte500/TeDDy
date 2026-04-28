@@ -5,7 +5,7 @@ from typing import List, Sequence
 from teddy_executor.core.domain.models.plan import DEFAULT_SIMILARITY_THRESHOLD
 from teddy_executor.core.ports.inbound.edit_simulator import EditPair, IEditSimulator
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
-from teddy_executor.core.utils.string import truncate_lines
+from teddy_executor.core.utils.string import truncate_lines, get_truncation_hint
 
 # Configure debug logging
 if os.environ.get("TEDDY_DEBUG"):
@@ -172,7 +172,7 @@ class LocalFileSystemAdapter(IFileSystemManager):
         """
         try:
             content = self._resolve_path(path).read_text(encoding="utf-8")
-            hint = "[File content truncated. Use more specific search or 'grep' to find relevant sections.]"
+            hint = get_truncation_hint("read")
             return truncate_lines(
                 content,
                 max_lines=self.max_read_lines,

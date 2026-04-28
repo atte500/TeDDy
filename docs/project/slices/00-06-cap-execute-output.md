@@ -33,7 +33,7 @@ And it should include a hint: "[File content truncated. Use more specific search
 - [x] **Logic** - Implement `truncate_lines(content, max_lines, direction="tail"|"head")` utility in `string.py`.
 - [x] **Logic** - Apply truncation to `ShellAdapter` (tail).
 - [x] **Logic** - Apply truncation to `LocalFileSystemAdapter` for `READ` (head).
-- [ ] **Logic** - Implement dynamic "hint" generation based on action type.
+- [x] **Logic** - Implement dynamic "hint" generation based on action type.
 - [ ] **Wiring** - Wire config values to the adapters/services.
 - [ ] **Refactor** - Prune any redundant full-output tests.
 
@@ -59,3 +59,9 @@ And it should include a hint: "[File content truncated. Use more specific search
 - Integrated `truncate_lines` into `read_file` to cap output at the head (first X lines).
 - Added specific hint for file content truncation: `[File content truncated. Use more specific search or 'grep' to find relevant sections.]`.
 - Verified with new unit tests in `test_file_system_adapter_capping.py`.
+
+### Logic - Implement dynamic "hint" generation based on action type
+- Implemented `get_truncation_hint(action_type: str)` in `src/teddy_executor/core/utils/string.py`.
+- Centralized hints for "execute" and "read" actions.
+- Refactored `ShellAdapter` and `LocalFileSystemAdapter` to use the new utility.
+- Verified with unit tests in `test_string_utils.py` and updated adapter tests.

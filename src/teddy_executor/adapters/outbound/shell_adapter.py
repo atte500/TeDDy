@@ -6,7 +6,7 @@ from typing import Optional, Dict, List, Any
 from teddy_executor.core.domain.models.shell_output import ShellOutput
 from teddy_executor.core.ports.outbound.shell_executor import IShellExecutor
 from teddy_executor.adapters.outbound.shell_command_builder import ShellCommandBuilder
-from teddy_executor.core.utils.string import truncate_lines
+from teddy_executor.core.utils.string import truncate_lines, get_truncation_hint
 
 import re
 
@@ -163,7 +163,7 @@ class ShellAdapter(IShellExecutor):
     ) -> ShellOutput:
         """Processes the raw execution results into a structured ShellOutput."""
         sanitized_stdout = self._sanitize_output(stdout)
-        hint = "[Output truncated. Use 'command > file.txt' or 'grep' to filter results if needed.]"
+        hint = get_truncation_hint("execute")
 
         truncated_stdout = truncate_lines(
             sanitized_stdout,

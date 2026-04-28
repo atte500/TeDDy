@@ -248,3 +248,14 @@ def truncate_lines(
         return f"{truncated}\n{hint}" if hint else truncated
     else:
         raise ValueError(f"Invalid truncation direction: {direction}")
+
+
+def get_truncation_hint(action_type: str) -> str:
+    """
+    Returns a context-specific hint for truncated output based on the action type.
+    """
+    hints = {
+        "execute": "[Output truncated. Use 'command > file.txt' or 'grep' to filter results if needed.]",
+        "read": "[File content truncated. Use more specific search or 'grep' to find relevant sections.]",
+    }
+    return hints.get(action_type.lower(), "[Content truncated due to length limits.]")
