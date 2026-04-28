@@ -107,6 +107,12 @@ class SessionOrchestrator(IRunPlanUseCase):
         # 4. Turn Transition
         if is_session and plan_path:
             report = self._handle_aborted_session(report, plan)
+            if report is None:
+                import typer
+
+                typer.secho("\nSession terminated.", fg=typer.colors.RED, err=True)
+                return None  # type: ignore
+
             self._lifecycle_manager.finalize_turn(plan_path, report)
 
         return report
@@ -125,13 +131,12 @@ class SessionOrchestrator(IRunPlanUseCase):
 
         typer.secho("Plan aborted by user.", fg=typer.colors.YELLOW, err=True)
 
-        # R-10-12: If a message was already captured (e.g. in TUI), use it.
-        new_message = report.user_request
-
-        if not new_message:
-            new_message = self._user_interactor.ask_question(
-                "Plan aborted. How do you want to proceed? (Empty response will quit session)"
-            )
+        # R-10-12: We always prompt for a NEW message when a plan is aborted,
+        # unless one was explicitly captured during the abort process itself
+        # (e.g. via the 'm' key in TUI). Pre-existing turn messages are ignored.
+        new_message = self._user_interactor.ask_question(
+            "Plan aborted. How do you want to proceed? (Empty response will quit session)"
+        )
 
         # If still empty after potential prompt, return None to signal session termination.
         if not new_message:

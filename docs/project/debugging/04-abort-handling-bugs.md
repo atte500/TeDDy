@@ -4,9 +4,11 @@
 - **Milestone:** [10-interactive-session-and-config](../../milestones/10-interactive-session-and-config.md)
 
 ## Symptoms
-1. Empty response after abort prompts for instructions again instead of quitting.
-2. Messages provided in TUI are ignored if the plan is aborted/rejected.
+1. Empty response after abort prompts for instructions again instead of quitting. (resolved)
+2. Messages provided in TUI are ignored if the plan is aborted/rejected. (resolved)
 3. Empty response does not consistently terminate the session loop.
+4. **NEW**: Jinja error `'dict object' has no attribute 'run_summary'` when quitting via empty response.
+5. **NEW**: Intermittent failure to prompt for abort message (session continues to next turn automatically).
 
 ## Context & Scope
 ### Regressing Delta
@@ -20,17 +22,12 @@ TBD
 
 ## Diagnostic Analysis
 ### Causal Model
-1. User aborts a plan in the TUI or CLI.
-2. `ExecutionOrchestrator.execute` detects the abort and returns an `ABORTED` report.
-3. `SessionOrchestrator.execute` receives the report and calls `_handle_aborted_session`.
-4. `_handle_aborted_session` prompts for instructions. If empty, it returns the report as-is.
-5. `SessionOrchestrator` then calls `lifecycle_manager.finalize_turn(report)`.
-6. `finalize_turn` persists the report and calls `session_service.transition_to_next_turn`.
-7. The session is now in a new turn with state `EMPTY`.
-8. The CLI loop (`session_cli_handlers.py`) sees a report was returned, so it continues.
-9. It calls `orchestrator.resume` again.
-10. `SessionLifecycleManager.resume` sees state `EMPTY` and calls `session_planner.trigger_new_plan`.
-11. Since the CLI loop cleared the `message` after the first turn, the planner prompts "Enter your instructions for the AI".
+1. User aborts a plan. `ExecutionOrchestrator` returns an `ABORTED` report.
+2. `ExecutionReportAssembler` leaked the turn-starting `message` into `report.user_request`. (resolved: Now explicitly ignored in session logic)
+3. `SessionOrchestrator._handle_aborted_session` saw this leaked message and skipped the abort prompt. (resolved: Now always prompts on abort)
+4. If the user provided an empty response, `_handle_aborted_session` returned `None`.
+5. `SessionOrchestrator.execute` passed this `None` to `finalize_turn`.
+6. `MarkdownReportFormatter` crashed because the Jinja template expects a valid report object. (resolved: `execute` now guards against `None` reports)
 
 ### Discrepancies
 - [ ] Observation: Empty response in `_handle_aborted_session` returns report, but CLI loop continues. (resolved: The loop only stops if `resume` returns `None`)
@@ -43,13 +40,10 @@ TBD
 
 ## Solution
 ### Implemented Fixes
-- **TUI Layer**: Updated `ReviewerApp.action_cancel` to harvest the `_user_message_cache` into `plan.metadata["user_request"]` before exiting.
-- **Orchestration Layer**: Updated `ExecutionOrchestrator._handle_aborted_execution` to pull the `user_request` from plan metadata if not provided as an argument.
-- **Session Layer**: Updated `SessionOrchestrator._handle_aborted_session` to bypass the "How do you want to proceed?" prompt if a message already exists in the report.
-- **Termination Logic**: Fixed `SessionOrchestrator._handle_aborted_session` to return `None` if the final message is empty, allowing the CLI loop to terminate gracefully.
+- **TUI Layer**: Updated `ReviewerApp.action_cancel` to harvest messages.
+- **Orchestration Layer**: Updated `ExecutionOrchestrator` to propagate messages on abort.
+- **Session Layer**: Fixed `SessionOrchestrator` to ignore leaked messages and ALWAYS prompt for instructions on abort, ensuring the user can redirect or quit.
+- **Termination Logic**: Added a guard in `SessionOrchestrator.execute` to prevent passing `None` to `finalize_turn`, and added a "Session terminated" log for clarity.
 
 ### Prevention
-- Added `tests/suites/unit/core/services/test_abort_logic_regression.py` containing three unit tests covering:
-    - Session termination on empty abort response.
-    - Respecting existing messages on abort (avoiding re-prompt).
-    - Message propagation from plan metadata in `ExecutionOrchestrator`.
+- Added `tests/suites/unit/core/services/test_abort_handling_regression.py` covering the crash and the prompt logic.
