@@ -34,8 +34,8 @@ And it should include a hint: "[File content truncated. Use more specific search
 - [x] **Logic** - Apply truncation to `ShellAdapter` (tail).
 - [x] **Logic** - Apply truncation to `LocalFileSystemAdapter` for `READ` (head).
 - [x] **Logic** - Implement dynamic "hint" generation based on action type.
-- [ ] **Wiring** - Wire config values to the adapters/services.
-- [ ] **Refactor** - Prune any redundant full-output tests.
+- [x] **Wiring** - Wire config values to the adapters/services.
+- [x] **Refactor** - Prune any redundant full-output tests.
 
 ## Delta Analysis
 - `src/teddy_executor/adapters/outbound/shell_adapter.py`: Add truncation in `_process_execution_results`.
@@ -65,3 +65,13 @@ And it should include a hint: "[File content truncated. Use more specific search
 - Centralized hints for "execute" and "read" actions.
 - Refactored `ShellAdapter` and `LocalFileSystemAdapter` to use the new utility.
 - Verified with unit tests in `test_string_utils.py` and updated adapter tests.
+
+### Wiring - Wire config values to the adapters/services
+- Updated `src/teddy_executor/registries/infrastructure.py` to use factory-based registration for `ShellAdapter` and `LocalFileSystemAdapter`.
+- Resolved `IConfigService` within the factories to inject `max_execute_lines` and `max_read_lines`.
+- Added an integration test (verified and then removed) to ensure the container correctly respects configuration overrides.
+
+### Refactor - Prune any redundant full-output tests
+- Audited the test suite for redundant large-output tests.
+- Confirmed that specialized unit tests in `test_shell_adapter_capping.py` and `test_file_system_adapter_capping.py` provide sufficient coverage.
+- Verified that existing integration tests use small inputs and remain stable under the new default limits.
