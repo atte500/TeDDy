@@ -5,6 +5,7 @@ from typing import List, Sequence
 from teddy_executor.core.domain.models.plan import DEFAULT_SIMILARITY_THRESHOLD
 from teddy_executor.core.ports.inbound.edit_simulator import EditPair, IEditSimulator
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
+from teddy_executor.core.utils.string import truncate_lines
 
 # Configure debug logging
 if os.environ.get("TEDDY_DEBUG"):
@@ -24,9 +25,15 @@ class LocalFileSystemAdapter(IFileSystemManager):
     An adapter that implements file system operations on the local machine.
     """
 
-    def __init__(self, edit_simulator: IEditSimulator, root_dir: str = "."):
+    def __init__(
+        self,
+        edit_simulator: IEditSimulator,
+        root_dir: str = ".",
+        max_read_lines: int = 1000,
+    ):
         self._edit_simulator = edit_simulator
         self.root_dir = Path(root_dir)
+        self.max_read_lines = max_read_lines
 
     def _resolve_path(self, path: str) -> Path:
         """
@@ -164,7 +171,14 @@ class LocalFileSystemAdapter(IFileSystemManager):
         Reads the content of a file from the specified path.
         """
         try:
-            return self._resolve_path(path).read_text(encoding="utf-8")
+            content = self._resolve_path(path).read_text(encoding="utf-8")
+            hint = "[File content truncated. Use more specific search or 'grep' to find relevant sections.]"
+            return truncate_lines(
+                content,
+                max_lines=self.max_read_lines,
+                direction="head",
+                hint=hint,
+            )
         except FileNotFoundError:
             # Re-raise to conform to the port's contract
             raise

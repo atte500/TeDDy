@@ -32,7 +32,7 @@ And it should include a hint: "[File content truncated. Use more specific search
 - [x] **Contract** - Add `max_execute_lines` (default 100) and `max_read_lines` (default 1000) to `IConfigService` and defaults.
 - [x] **Logic** - Implement `truncate_lines(content, max_lines, direction="tail"|"head")` utility in `string.py`.
 - [x] **Logic** - Apply truncation to `ShellAdapter` (tail).
-- [ ] **Logic** - Apply truncation to `LocalFileSystemAdapter` or `ActionDispatcher` for `READ` (head).
+- [x] **Logic** - Apply truncation to `LocalFileSystemAdapter` for `READ` (head).
 - [ ] **Logic** - Implement dynamic "hint" generation based on action type.
 - [ ] **Wiring** - Wire config values to the adapters/services.
 - [ ] **Refactor** - Prune any redundant full-output tests.
@@ -53,3 +53,9 @@ And it should include a hint: "[File content truncated. Use more specific search
 - Integrated `truncate_lines` into `_process_execution_results` to cap `stdout`.
 - Added specific hint for shell output truncation: `[Output truncated. Use 'command > file.txt' or 'grep' to filter results if needed.]`.
 - Verified with new unit tests in `test_shell_adapter_capping.py`.
+
+### Logic - Apply truncation to LocalFileSystemAdapter (head)
+- Modified `LocalFileSystemAdapter` to accept `max_read_lines` in its constructor (default 1000).
+- Integrated `truncate_lines` into `read_file` to cap output at the head (first X lines).
+- Added specific hint for file content truncation: `[File content truncated. Use more specific search or 'grep' to find relevant sections.]`.
+- Verified with new unit tests in `test_file_system_adapter_capping.py`.
