@@ -13,7 +13,7 @@
         <goal>Gather context and build/verify an end-to-end Minimal Reproducible Example (MRE).</goal>
         <step n="1" name="Case File Check">If missing, CREATE a Case File using the Case File Blueprint.</step>
         <step n="2" name="Context & History Gathering">Use `EXECUTE` (`git grep`, `git log -n 5 --stat`, `git log -p -- <suspect_file>`), `READ`, and `RESEARCH` to understand the codebase, recent changes, and call hierarchy.</step>
-        <step n="3" name="Diagnostic MRE & Platform Check">CREATE a self-contained MRE script (e.g., `debug/mre.js`) that reproduces the symptom of the bug. It MUST fail currently. If you determine the bug is platform-specific (i.e., it reproduces in CI/Linux but not locally), you MUST NOT execute the MRE locally. Instead, you MUST use the Platform-Specific Probing Protocol to execute the MRE and all subsequent checks in the target remote environment.</step>
+        <step n="3" name="Diagnostic MRE & Platform Check">CREATE a self-contained MRE script (e.g., `debug/mre.js`) that reproduces the symptom of the bug. It MUST fail currently. If you determine the bug is platform-specific (i.e., it reproduces in CI/Linux but not locally), you MUST NOT execute the MRE locally. Instead, you MUST use the Remote Probing Protocol to execute the MRE and all subsequent checks in the target remote environment.</step>
       </phase>
 
       <phase n="2" name="Investigation">
@@ -135,17 +135,13 @@ WIP & REMINDERS:
 
       <rule n="12" name="Debug Mode & Branch by Abstraction">Permanent diagnostic/prototype branching MUST be documented in `ARCHITECTURE.md` and MUST adhere to: 1. Zero-Cost Guards (Language-native dead-code elimination), 2. Composition Root Injection (Mid-logic checks are forbidden), and 3. Scoped Toggles & State Dumps.</rule>
 
-      <rule n="14" name="Platform-Specific Probing Protocol">
-        <description>When a bug is platform-specific, you MUST NOT rely on local execution for Reproduction, Investigation, or Repair verification. You MUST use Direct Remote Probing.</description>
-        <protocol name="Direct Remote Probing">
-          Trigger a minimal CI job on a temporary branch and fetch the results to execute your MRE, probes, and fix verifications. Remote jobs are asynchronous. You MUST adhere to these strict constraints to avoid CLI errors and context window exhaustion:
-          1. Trigger Execution: You MUST ALWAYS create a dedicated temporary workflow file (e.g., `.github/workflows/debug-probe.yml`) explicitly configured with `on: push: branches: [ <your-branch> ]` to guarantee execution.
-          2. Infer Repository: Do NOT hardcode the `--repo` flag in `gh` commands. Rely on the local `.git` configuration so the CLI infers the correct remote origin automatically.
-          3. Obtain Run ID: Wait briefly for GitHub to register the run, then dynamically fetch the ID. Example: `sleep 5 && gh run list --workflow <temp-workflow.yml> --branch <your-branch> --limit 1 --json databaseId -q ".[0].databaseId"`
-          4. Monitor: You MUST provide the Run ID to watch the job in non-interactive environments. Example: `gh run watch <run-id> --exit-status`
-          5. Minimize Log Payload: NEVER execute `gh run view <run-id> --log` directly to standard output. It will dump thousands of lines and destroy your context window. You MUST filter the output. Use `--log-failed` to get only errors, or redirect to a file and read the tail (e.g., `gh run view <run-id> --log > .tmp/ci_logs.txt && tail -n 100 .tmp/ci_logs.txt`).
-          6. Verification: A remote probe execution is NEVER considered a SUCCESS until the actual CI logs have been fetched, read, and the output is explicitly observed.
-        </protocol>
+      <rule n="14" name="Remote Probing Protocol">
+        <description>For platform-specific bugs, you MUST NOT rely on local execution. Use a temporary branch and CI workflow.</description>
+        1. Trigger: Create a minimal .github/workflows/debug-probe.yml on a temp branch.
+        2. Speed: Aggressively trim the workflow; install ONLY probe-required dependencies, bypassing full project setup and standard CI boilerplate.
+        3. Identity: Infer repo from .git. Fetch Run ID dynamically: sleep 5 && gh run list --workflow [file] --branch [branch] --limit 1 --json databaseId -q ".[0].databaseId".
+        4. Resilience: Use Timeout: 120 for gh run watch [id]. If it times out (queue delay/running), enter Yellow 🟡 and retry until completion; do NOT infer failure until the run explicitly concludes.
+        5. Payload: Filter logs (e.g., --log-failed) or tail redirected output to avoid context window exhaustion. Verification requires observing actual CI logs.
       </rule>
 
       <rule n="15" name="Reality-Driven Repair & Harness Alignment">Spikes MUST interact with the actual application and probe reality for each experiment iteration (strictly NO mocks). During Phase 6 (Reality-Driven TDD Repair), use these real-environment spikes as your guidance, NOT the test harness. ONLY AFTER the fix is verified in the real environment should you align the `tests/harness/` (Setup, Drivers, Observers) and write the formal regression test. Bypassing the harness for the final regression test is a zero-tolerance violation.</rule>
