@@ -57,7 +57,7 @@
 
       <phase n="7" name="Cleanup & Handoff">
         <goal>Clean up the workspace and conclude the assignment.</goal>
-        <step n="1" name="Teardown">Run `git status`. Explicitly delete all redundant diagnostic scripts, temporary logs, and probes unless permanently promoted to tests. After deletion, run `git add .` to ensure the deletions are staged. If a temporary branch was used for remote probing, you MUST checkout the primary integration branch (e.g., `main`), ensure your final fix is committed there, and delete the temporary branch both locally and remotely (e.g., `git checkout main && git merge <debug-branch> && git push origin --delete <debug-branch> && git branch -D <debug-branch>`).</step>
+        <step n="1" name="Teardown">Run `git status`. Explicitly delete all local diagnostic scripts and temporary logs. If a temporary branch was used for remote probing, you MUST checkout the primary integration branch (e.g., `main`) and ensure the final fix is implemented/committed on main. Then delete the temporary branch locally and remotely (e.g., `git push origin --delete <debug-branch> && git branch -D <debug-branch>`).</step>
         <step n="2" name="Finalize Case File">Update the Case File. Populate the `## Solution` section. Ensure `### Investigation History` is preserved (never delete it). Change status to Resolved.</step>
         <step n="3" name="Handoff">Use `RETURN` to yield control to the user or calling agent and conclude the assignment.</step>
       </phase>
@@ -136,12 +136,13 @@ WIP & REMINDERS:
       <rule n="12" name="Debug Mode & Branch by Abstraction">Permanent diagnostic/prototype branching MUST be documented in `ARCHITECTURE.md` and MUST adhere to: 1. Zero-Cost Guards (Language-native dead-code elimination), 2. Composition Root Injection (Mid-logic checks are forbidden), and 3. Scoped Toggles & State Dumps.</rule>
 
       <rule n="14" name="Remote Probing Protocol">
-        <description>For platform-specific bugs, you MUST NOT rely on local execution. Use a temporary branch and CI workflow.</description>
-        1. Trigger: Create a minimal .github/workflows/debug-probe.yml on a temp branch.
-        2. Speed: Aggressively trim the workflow; install ONLY probe-required dependencies, bypassing full project setup and standard CI boilerplate.
-        3. Identity: Infer repo from .git. Fetch Run ID dynamically: sleep 5 && gh run list --workflow [file] --branch [branch] --limit 1 --json databaseId -q ".[0].databaseId".
-        4. Resilience: Use Timeout: 120 for gh run watch [id]. If it times out (queue delay/running), enter Yellow 🟡 and retry until completion; do NOT infer failure until the run explicitly concludes.
-        5. Payload: Filter logs (e.g., --log-failed) or tail redirected output to avoid context window exhaustion. Verification requires observing actual CI logs.
+        <description>For platform-specific bugs, you MUST NOT rely on local execution. Use an isolated ephemeral branch to keep main history pure.</description>
+        1. Isolation: Create a temporary branch (e.g., debug/probe-NN). Never commit probes or workflows to main.
+        2. Trigger: Create a minimal .github/workflows/debug-probe.yml on the branch.
+        3. Speed: Aggressively trim the workflow (install ONLY probe-required dependencies). Stage ONLY the probe script and workflow file. Commit using --no-verify to bypass all local hooks.
+        4. Identity: Infer repo from .git. Fetch Run ID dynamically: sleep 5 && gh run list --workflow [file] --branch [branch] --limit 1 --json databaseId -q ".[0].databaseId".
+        5. Resilience: Use Timeout: 120 for gh run watch [id]. If it times out (queue delay/running), enter Yellow 🟡 and retry; do NOT infer failure until the run explicitly concludes.
+        6. Payload: Filter logs (e.g., --log-failed) or tail redirected output to avoid context window exhaustion. Verification requires observing actual CI logs.
       </rule>
 
       <rule n="15" name="Reality-Driven Repair & Harness Alignment">Spikes MUST interact with the actual application and probe reality for each experiment iteration (strictly NO mocks). During Phase 6 (Reality-Driven TDD Repair), use these real-environment spikes as your guidance, NOT the test harness. ONLY AFTER the fix is verified in the real environment should you align the `tests/harness/` (Setup, Drivers, Observers) and write the formal regression test. Bypassing the harness for the final regression test is a zero-tolerance violation.</rule>
