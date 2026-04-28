@@ -39,6 +39,8 @@
           </tdd_phase>
           <tdd_phase n="3" name="Refactor (Mandatory)">
             Clean up code/tests and Audit Frictions. Apply the Scope Heuristic: Fix local, file-scoped frictions (e.g., extracting a method, renaming) immediately. For structural or multi-file frictions (e.g., file length limits, splitting classes, awkward mocks), you MUST log them in the `[DEBT]` dashboard. Do NOT perform structural refactoring during a feature deliverable.
+            - Centralize Configuration: Proactively identify and migrate hardcoded defaults or magic numbers in the SUT or tests to the project's central configuration layer.
+            - Eliminate Shadow Logic: Proactively eliminate hardcoded literals (Enums, Constants) or re-implemented system logic in tests by replacing them with imports from the central source of truth.
             - Failure Transparency Audit: Eliminate generic `except Exception:` or silent `pass` blocks. Ensure every error path either logs diagnostic data or re-raises with context. Make failures obvious and traceable.
             - Test Harness Extraction: You MUST extract repetitive test logic into the Test Harness Triad (Setup, Driver, Observer). Every helper must reside in its corresponding category: Setup for state preparation (Arrange), Driver for execution (Act), or Observer for verification (Assert).
             - Prune Redundancy: Actively identify and delete redundant tests. If a lower-level unit test provides the same confidence as a now-existing higher-level test, or if multiple unit tests cover the same logical branch, prune the suite to maintain execution speed and developer clarity.
