@@ -31,7 +31,7 @@ And it should include a hint: "[File content truncated. Use more specific search
 ## Deliverables
 - [x] **Contract** - Add `max_execute_lines` (default 100) and `max_read_lines` (default 1000) to `IConfigService` and defaults.
 - [x] **Logic** - Implement `truncate_lines(content, max_lines, direction="tail"|"head")` utility in `string.py`.
-- [ ] **Logic** - Apply truncation to `ShellAdapter` (tail).
+- [x] **Logic** - Apply truncation to `ShellAdapter` (tail).
 - [ ] **Logic** - Apply truncation to `LocalFileSystemAdapter` or `ActionDispatcher` for `READ` (head).
 - [ ] **Logic** - Implement dynamic "hint" generation based on action type.
 - [ ] **Wiring** - Wire config values to the adapters/services.
@@ -46,3 +46,10 @@ And it should include a hint: "[File content truncated. Use more specific search
 - Default cap: 100 lines.
 - Truncation should only happen at the tail (last X lines).
 - The hint should be clearly visible in the Markdown report.
+
+## Implementation Notes
+### Logic - Apply truncation to ShellAdapter (tail)
+- Modified `ShellAdapter` to accept `max_execute_lines` in its constructor (default 100).
+- Integrated `truncate_lines` into `_process_execution_results` to cap `stdout`.
+- Added specific hint for shell output truncation: `[Output truncated. Use 'command > file.txt' or 'grep' to filter results if needed.]`.
+- Verified with new unit tests in `test_shell_adapter_capping.py`.

@@ -6,6 +6,7 @@ from typing import Optional, Dict, List, Any
 from teddy_executor.core.domain.models.shell_output import ShellOutput
 from teddy_executor.core.ports.outbound.shell_executor import IShellExecutor
 from teddy_executor.adapters.outbound.shell_command_builder import ShellCommandBuilder
+from teddy_executor.core.utils.string import truncate_lines
 
 import re
 
@@ -13,8 +14,13 @@ import re
 class ShellAdapter(IShellExecutor):
     TIMEOUT_EXIT_CODE = 124
 
-    def __init__(self, command_builder: ShellCommandBuilder = None):  # type: ignore
+    def __init__(
+        self,
+        command_builder: ShellCommandBuilder = None,  # type: ignore
+        max_execute_lines: int = 100,
+    ):
         self._command_builder = command_builder or ShellCommandBuilder()
+        self.max_execute_lines = max_execute_lines
 
     def _sanitize_output(self, text: str) -> str:
         """Strips ALL ANSI escape sequences to prevent playback corruption and garbled reports."""
@@ -156,8 +162,18 @@ class ShellAdapter(IShellExecutor):
         self, stdout: str, stderr: str, return_code: int
     ) -> ShellOutput:
         """Processes the raw execution results into a structured ShellOutput."""
+        sanitized_stdout = self._sanitize_output(stdout)
+        hint = "[Output truncated. Use 'command > file.txt' or 'grep' to filter results if needed.]"
+
+        truncated_stdout = truncate_lines(
+            sanitized_stdout,
+            max_lines=self.max_execute_lines,
+            direction="tail",
+            hint=hint,
+        )
+
         output: ShellOutput = {
-            "stdout": self._sanitize_output(stdout),
+            "stdout": truncated_stdout,
             "stderr": self._sanitize_output(stderr),
             "return_code": return_code,
         }
