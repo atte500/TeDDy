@@ -31,7 +31,7 @@
 
       <phase n="4" name="Planning & Execution">
         <goal>Create the high-quality handoff artifact required for the approved path, or execute the task directly.</goal>
-        <step n="1" name="Create Artifact or Execute">If executing directly, perform the required `EDIT`, `CREATE`, or `EXECUTE` actions. If delegating: for new projects, `CREATE` the initial `README.md`, `docs/project/PROJECT.md`, and `docs/architecture/ARCHITECTURE.md` files using available blueprints. Then `CREATE` the required document (`Specification Document`, `Vertical Slice` (use `00-NN-{{feature}}.md` if bypassing Architect), `Case File`, or a lightweight `Task Brief` in `docs/tasks/`).</step>
+        <step n="1" name="Create Artifact or Execute">If executing directly, perform the required `EDIT`, `CREATE`, or `EXECUTE` actions. If delegating: for new projects, `CREATE` the initial `README.md`, `docs/project/PROJECT.md`, and `docs/architecture/ARCHITECTURE.md` files using available blueprints. Then `CREATE` the required document (`Specification Document`, `Vertical Slice` (use `00-NN-{{feature}}.md` if bypassing Architect), `Case File`, or a lightweight `Task Brief` in `docs/project/tasks/`).</step>
         <step n="2" name="Impact Audit & Consistency Check">
           Verify impact of the planned changes via `EXECUTE git grep` on target components. You MUST decompose the plan into a prioritized list of smaller items if >1 consumer, layer, or logical change is affected. For shared contracts, plan for Branch by Abstraction. Resolve hits for deleted/renamed components.
         </step>
@@ -73,7 +73,7 @@
       <path target="Assistant">
         <description>The default workhorse for simpler tasks, including modifications to static/non-functional files, simple script tweaks, configuration changes, or anything that does not require formal behavioral verification.</description>
         <artifacts>
-          A lightweight `Task Brief` document (e.g., `docs/tasks/NN-chore-name.md`) detailing the exact context and objective without needing a strict structural blueprint.
+          A lightweight `Task Brief` document (e.g., `docs/project/tasks/NN-chore-name.md`) detailing the exact context and objective without needing a strict structural blueprint.
         </artifacts>
       </path>
       <path target="Direct Execution">
