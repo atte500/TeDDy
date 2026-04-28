@@ -225,7 +225,7 @@
         <description>Maintain orientation via this dashboard in the Rationale block.</description>
         <template>
 Goal: [The user's objective]
-Path: [Strategy]
+Handoff Target: [Target Agent | TBD]
 
 PHASES:
 - [✓ | ▶ |  ] Triage
@@ -441,7 +441,7 @@ The user will approve the proposed path (Prototyper first). This outcome will di
 
 4. State Dashboard
 Goal: Build a new feature to import user data from a third-party API.
-Path: Pending User Approval
+Handoff Target: Prototyper
 
 PHASES:
 - [✓] Triage
