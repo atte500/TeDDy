@@ -139,7 +139,7 @@ WIP & REMINDERS:
         2. Trigger: Create a minimal .github/workflows/debug-probe.yml on the branch.
         3. Speed: Aggressively trim the workflow (install ONLY probe-required dependencies). Stage ONLY the probe script and workflow file. Commit using --no-verify to bypass all local hooks.
         4. Identity: Infer repo from .git. Fetch Run ID dynamically: sleep 5 && gh run list --workflow [file] --branch [branch] --limit 1 --json databaseId -q ".[0].databaseId".
-        5. Resilience: Use Timeout: 120 for gh run watch [id]. If it times out (queue delay/running), enter Yellow 🟡 and retry; do NOT infer failure until the run explicitly concludes.
+        5. Resilience: Use Timeout: 120 for gh run watch [id]. If it times out (queue delay/running) retry; do NOT infer failure until the run explicitly concludes.
         6. Payload: Filter logs (e.g., --log-failed) or tail redirected output to avoid context window exhaustion. Verification requires observing actual CI logs.
       </rule>
 
