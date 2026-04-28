@@ -1,4 +1,53 @@
-from teddy_executor.core.utils.string import slugify
+from teddy_executor.core.utils.string import slugify, truncate_lines
+
+
+def test_truncate_lines_tail_preserves_last_lines():
+    """It should preserve the last N lines and add a hint."""
+    content = "line1\nline2\nline3\nline4\nline5"
+    hint = "[Truncated]"
+
+    # Act
+    result = truncate_lines(content, 3, direction="tail", hint=hint)
+
+    # Assert
+    assert result == "[Truncated]\nline3\nline4\nline5"
+
+
+def test_truncate_lines_head_preserves_first_lines():
+    """It should preserve the first N lines and add a hint."""
+    content = "line1\nline2\nline3\nline4\nline5"
+    hint = "[Truncated]"
+
+    # Act
+    result = truncate_lines(content, 3, direction="head", hint=hint)
+
+    # Assert
+    assert result == "line1\nline2\nline3\n[Truncated]"
+
+
+def test_truncate_lines_no_truncation_needed():
+    """It should return the original content if it's within the limit."""
+    content = "line1\nline2\nline3"
+
+    # Act
+    result = truncate_lines(content, 5, direction="tail")
+
+    # Assert
+    assert result == content
+
+
+def test_truncate_lines_empty_content():
+    """It should handle empty strings gracefully."""
+    assert truncate_lines("", 10) == ""
+
+
+def test_truncate_lines_invalid_direction():
+    """It should raise ValueError for unsupported directions."""
+    import pytest
+
+    with pytest.raises(ValueError, match="Invalid truncation direction"):
+        # Must have more lines than max_lines to trigger the validation
+        truncate_lines("line1\nline2", 1, direction="middle")
 
 
 def test_slugify_basic():

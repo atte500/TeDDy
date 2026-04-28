@@ -30,7 +30,7 @@ And it should include a hint: "[File content truncated. Use more specific search
 
 ## Deliverables
 - [x] **Contract** - Add `max_execute_lines` (default 100) and `max_read_lines` (default 1000) to `IConfigService` and defaults.
-- [ ] **Logic** - Implement `truncate_lines(content, max_lines, direction="tail"|"head")` utility in `string.py`.
+- [x] **Logic** - Implement `truncate_lines(content, max_lines, direction="tail"|"head")` utility in `string.py`.
 - [ ] **Logic** - Apply truncation to `ShellAdapter` (tail).
 - [ ] **Logic** - Apply truncation to `LocalFileSystemAdapter` or `ActionDispatcher` for `READ` (head).
 - [ ] **Logic** - Implement dynamic "hint" generation based on action type.

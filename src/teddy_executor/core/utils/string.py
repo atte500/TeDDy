@@ -219,3 +219,32 @@ def slugify(text: str, max_length: int = 40) -> str:
         current_length += added_length
 
     return "-".join(slug_words)
+
+
+def truncate_lines(
+    content: str, max_lines: int, direction: str = "tail", hint: str = ""
+) -> str:
+    """
+    Truncates a string to a maximum number of lines.
+
+    Args:
+        content: The text to truncate.
+        max_lines: Maximum number of lines to preserve.
+        direction: "head" (preserve first X) or "tail" (preserve last X).
+        hint: An optional message to include when truncation occurs.
+    """
+    if not content or max_lines <= 0:
+        return content
+
+    lines = content.splitlines()
+    if len(lines) <= max_lines:
+        return content
+
+    if direction == "tail":
+        truncated = "\n".join(lines[-max_lines:])
+        return f"{hint}\n{truncated}" if hint else truncated
+    elif direction == "head":
+        truncated = "\n".join(lines[:max_lines])
+        return f"{truncated}\n{hint}" if hint else truncated
+    else:
+        raise ValueError(f"Invalid truncation direction: {direction}")
