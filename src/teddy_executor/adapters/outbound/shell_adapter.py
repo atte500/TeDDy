@@ -182,7 +182,12 @@ class ShellAdapter(IShellExecutor):
         if marker in stderr:
             for line in stderr.splitlines():
                 if marker in line:
-                    output["failed_command"] = line.split(marker)[1].strip()
+                    failed_cmd = line.split(marker)[1].strip()
+                    # On Windows, we sometimes have to unescape carets or handle quote swaps
+                    # that were forced by the cmd /c wrapper.
+                    if sys.platform == "win32":
+                        failed_cmd = failed_cmd.replace("^^", "^")
+                    output["failed_command"] = failed_cmd
                     break
         return output
 

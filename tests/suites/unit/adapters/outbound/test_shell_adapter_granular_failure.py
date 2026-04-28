@@ -32,7 +32,8 @@ def test_execute_multi_line_command_fails_fast_and_reports_command(adapter):
 
     # This is the core requirement of Scenario 4
     assert "failed_command" in result
-    assert "sys.exit(1)" in result["failed_command"]
+    # We use a partial match because Windows wrappers might swap quotes ( " -> ' )
+    assert "sys.exit(1)" in result["failed_command"].replace("'", '"')
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX specific test")
