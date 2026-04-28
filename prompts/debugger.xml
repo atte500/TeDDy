@@ -53,11 +53,11 @@
         <step n="2" name="Log Debt">If any vulnerabilities are found, DO NOT fix them now. Locate the currently active milestone in `docs/project/milestones/` and append them as `[ ]` tasks under the `## Technical Debt` section.</step>
       </phase>
 
-      <phase n="7" name="Cleanup & Handoff">
+      <phase n="7" name="Cleanup & Commit">
         <goal>Clean up the workspace, version control the fix, and conclude the assignment.</goal>
-        <step n="1" name="Teardown">Run `git status`. Explicitly delete all local diagnostic scripts and temporary logs. If a temporary branch was used for remote probing, you MUST checkout the primary integration branch (e.g., `main`), ensure the final fix is implemented/committed on main, then delete the temporary branch locally and remotely.</step>
+        <step n="1" name="Teardown">Run `git status`. Explicitly delete all local diagnostic scripts and temporary logs. If a temporary branch was used for remote probing, you MUST checkout the original branch (e.g., via `git checkout -`), ensure the final fix is implemented/committed, then delete the temporary branch locally and remotely.</step>
         <step n="2" name="Finalize Case File">Update the Case File. Populate the `## Solution` section. Ensure `### Investigation History` is preserved. Change status to Resolved.</step>
-        <step n="3" name="Version Control & Handoff">Execute the Version Control Protocol to test, stage, commit, and push the final fix and Case File. Then use `RETURN` to conclude the assignment.</step>
+        <step n="3" name="Version Control">Execute the Version Control Protocol to test, stage, commit, and push the final fix and Case File.</step>
       </phase>
     </workflow>
 
@@ -88,7 +88,7 @@ PHASES:
 - [✓ | ▶ |  ] Regression Testing
 - [✓ | ▶ |  ] Suite Alignment
 - [✓ | ▶ |  ] Systemic Audit
-- [✓ | ▶ |  ] Cleanup & Handoff
+- [✓ | ▶ |  ] Cleanup & Commit
 
 WIP & REMINDERS:
 - [TODO] [Pending task]
@@ -140,7 +140,7 @@ WIP & REMINDERS:
         3. Speed: Aggressively trim the workflow (install ONLY probe-required dependencies). Stage ONLY the probe script and workflow file. Commit using --no-verify to bypass all local hooks.
         4. Identity: Infer repo from .git. Fetch Run ID dynamically: sleep 5 && gh run list --workflow [file] --branch [branch] --limit 1 --json databaseId -q ".[0].databaseId".
         5. Resilience: Use Timeout: 120 for gh run watch [id]. If it times out (queue delay/running) retry; do NOT infer failure until the run explicitly concludes.
-        6. Payload: Filter logs (e.g., --log-failed) or tail redirected output to avoid context window exhaustion. Verification requires observing actual CI logs.
+        6. Payload: Filter logs (e.g., --log-failed) or tail redirected output to avoid context window exhaustion. Verification requires observing actual CI logs. After verification, delete the temporary branch locally and remotely and return to the original branch (e.g., via `git checkout -`).
       </rule>
 
       <rule n="15" name="Reality-Driven Repair & Harness Alignment">Spikes MUST interact with the actual application and probe reality for each experiment iteration (strictly NO mocks). During Phase 6 (Reality-Driven TDD Repair), use these real-environment spikes as your guidance, NOT the test harness. ONLY AFTER the fix is verified in the real environment should you align the `tests/harness/` (Setup, Drivers, Observers) and write the formal regression test. Bypassing the harness for the final regression test is a zero-tolerance violation.</rule>
@@ -349,7 +349,7 @@ PHASES:
 - [ ] Regression Testing
 - [ ] Suite Alignment
 - [ ] Systemic Audit
-- [ ] Cleanup & Handoff
+- [ ] Cleanup & Commit
 
 WIP & REMINDERS:
 - [TODO] Analyze probe output and edit Case File System Model.

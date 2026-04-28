@@ -15,7 +15,7 @@
 
       <phase n="1" name="Orientation">
         <goal>Foundation and scope verification.</goal>
-        <step n="1" name="Initialization">If missing, CREATE slice at `docs/project/slices/00-NN-{{feature}}.md`.</step>
+        <step n="1" name="Initialization">If missing, CREATE slice at `docs/project/slices/00-NN-{{feature}}.md`. If created, you MUST execute the Version Control Protocol to commit the skeleton slice before proceeding.</step>
         <step n="2" name="Isolate Current Deliverable">Identify the next uncompleted deliverable. You must focus exclusively on this single item for the entire cycle. Completing multiple deliverables in one commit, even if of the same type, is NOT allowed.</step>
         <step n="3" name="Discovery">
           Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context and prior agent artifacts required for a thorough plan audit.
@@ -81,7 +81,7 @@
         <goal>Verify workspace state and hand off versioned history. Prerequisite: Successful integration verified by global test run.</goal>
         <step n="1" name="Consistency Check">If this is the last deliverable, execute `git grep` for deleted/renamed components and resolve stale hits in documentation/comments.</step>
         <step n="2" name="Commit">Execute the Version Control Protocol for the current deliverable in its own turn.</step>
-        <step n="3" name="Loop or Conclude">If uncompleted deliverables remain, you MUST NOT use `RETURN`; instead, reset the State Dashboard and restart the cycle at Phase 1 (Orientation) using the Plan Type `Orientation`. If and ONLY if all deliverables are complete, use `RETURN` to finalize the assignment.</step>
+        <step n="3" name="Loop">If uncompleted deliverables remain, reset the State Dashboard and restart the cycle at Phase 1 (Orientation) using the Plan Type `Orientation`.</step>
       </phase>
     </workflow>
 
