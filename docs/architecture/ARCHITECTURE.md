@@ -86,12 +86,11 @@ This document outlines the technical standards, conventions, and setup process f
 The `spikes/` and `prototypes/` directories are intentionally excluded from all quality gates (`ruff`, `mypy`, `vulture`, `jscpd`, etc.). These directories are for rapid, isolated experimentation. The code within them is temporary and not expected to meet production quality standards. Enforcing linting and other checks would hinder their exploratory purpose.
 
 ### Configuration Hierarchy
-- **Principle:** The system follows a "Safe-by-Default" configuration strategy.
+- **Principle:** The system follows a "Single Source of Truth" configuration strategy.
 - **Hierarchy:**
     1. **Active Config:** `.teddy/config.yaml` (Personal overrides, not committed).
-    2. **Project Template:** `config/config.yaml` (Reference defaults, committed).
-    3. **Hardcoded Fallbacks:** Defined within the services (e.g., `ActionFactory`, `PlanValidator`).
-- **Guideline:** Services MUST provide hardcoded fallbacks to the `IConfigService.get_setting` method to ensure stability in uninitialized environments.
+    2. **Bundled Baseline:** `src/teddy_executor/resources/config/config.yaml` (System defaults, bundled with the package).
+- **Guideline:** All core application settings MUST have a defined entry in the Bundled Baseline. Services should rely on the `IConfigService` to provide these defaults, eliminating "magic number" drift across the codebase.
 
 ### Dependency Injection (DI)
 - **Framework:** `punq`.
