@@ -6,6 +6,8 @@
 
 The `LocalFileSystemAdapter` implements the `FileSystemManager` port to provide concrete file system operations on the local machine where the `teddy` executor is running.
 
+- Truncate large file reads to a configurable maximum number of lines (default 1000), retaining the **head**.
+
 ## 2. Implemented Ports
 
 *   [FileSystemManager](../../core/ports/outbound/file_system_manager.md)
@@ -141,7 +143,11 @@ def read_files_in_vault(self, paths: list[str]) -> dict[str, str | None]:
 
 *   [/spikes/technical/02-exclusive-file-creation/](/spikes/technical/02-exclusive-file-creation/): This spike verified that using `open(path, 'x')` correctly raises a `FileExistsError` if the file already exists, confirming the proposed implementation strategy.
 
-## 6. External Documentation
+## 6. Configuration
+
+- `max_read_lines`: The maximum number of lines to return when reading a file (default: 1000). Truncation occurs at the head.
+
+## 7. External Documentation
 
 *   [Python `open()` function documentation](https://docs.python.org/3/library/functions.html#open)
 *   [Python `pathlib` module documentation](https://docs.python.org/3/library/pathlib.html)

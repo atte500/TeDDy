@@ -26,3 +26,9 @@ This is an interface and contains no implementation logic.
     -   If the key does not exist and a `default` is provided, the `default` value is returned.
     -   If the key does not exist and no `default` is provided, `None` is returned.
 -   **Exception/Error States:** None. The contract guarantees a return value.
+
+## 5. Standard Configuration Keys
+
+- `execution.similarity_threshold`: Float value for fuzzy matching.
+- `max_execute_lines`: Integer limit for `EXECUTE` output truncation (default 100).
+- `max_read_lines`: Integer limit for `READ` output truncation (default 1000).

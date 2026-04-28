@@ -51,12 +51,24 @@ def register_infrastructure(container: punq.Container) -> None:
     container.register(
         IShellExecutor,
         factory=lambda: ShellAdapter(
-            command_builder=container.resolve(ShellCommandBuilder)
+            command_builder=container.resolve(ShellCommandBuilder),
+            max_execute_lines=container.resolve(IConfigService).get_setting(
+                "max_execute_lines", 100
+            ),
         ),
         scope=punq.Scope.transient,
     )
+    from teddy_executor.core.ports.inbound.edit_simulator import IEditSimulator
+
     container.register(
-        IFileSystemManager, LocalFileSystemAdapter, scope=punq.Scope.transient
+        IFileSystemManager,
+        factory=lambda: LocalFileSystemAdapter(
+            edit_simulator=container.resolve(IEditSimulator),
+            max_read_lines=container.resolve(IConfigService).get_setting(
+                "max_read_lines", 1000
+            ),
+        ),
+        scope=punq.Scope.transient,
     )
     container.register(IWebScraper, WebScraperAdapter, scope=punq.Scope.transient)
     container.register(

@@ -8,6 +8,10 @@
 
 The `ShellAdapter` is a "driven" adapter that provides the concrete implementation for running shell commands. It acts as the bridge between the application's core logic and the operating system's shell, handling execution context like working directory and environment variables.
 
+### Responsibilities
+- Sanitize output by stripping ANSI escape sequences.
+- Truncate long `stdout` to a configurable maximum number of lines (default 100), retaining the **tail**.
+
 ## 2. Implemented Ports
 
 *   **Implements Outbound Port:** [`IShellExecutor`](../../contexts/executor/ports/outbound/shell_executor.md)
@@ -31,3 +35,7 @@ The `execute` method runs the command string provided by the core. To ensure con
 5.  **Background Execution (Asynchronous):** If the `background` flag is set, the adapter uses `subprocess.Popen` with `start_new_session=True` to detach the process. It immediately returns a success response containing the new Process ID (PID).
 6.  **Result Mapping & Extraction:** It maps the raw results (or partial results) to a `ShellOutput` DTO. If the execution failed, it parses `stderr` for the `FAILED_COMMAND` marker to populate the `failed_command` field.
 6.  **Debug Mode:** If the `TEDDY_DEBUG` environment variable is set, detailed pre-execution and post-execution logs are printed to `stderr` to aid in diagnostics.
+
+## 4. Configuration
+
+- `max_execute_lines`: The maximum number of lines to retain in the execution report for `stdout` (default: 100). Truncation occurs at the tail.
