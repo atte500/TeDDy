@@ -192,9 +192,9 @@ WIP & REMINDERS:
           <item name="Content">### Causal Model
 A concise, causal description of how the faulty SUT operates. Continuously updated as new information is discovered.</item>
           <item name="Content">### Discrepancies
-A concise list of observations that contradict the current Causal Model. Format: `- [Observation]. [Conflict]. (Resolved: [Explanation (once confirmed)])`.</item>
+A concise list of observations that contradict the current Causal Model. Format: `- Observation. Conflict. (Resolved: Explanation (once resolution is confirmed))`.</item>
           <item name="Content">### Investigation History
-A concise, numbered log of investigation attempts. Format: `N. [Hypothesis]. [Observation]. [Conclusion].`.</item>
+A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Observation. Conclusion.`.</item>
         </section>
       </blueprint>
 
