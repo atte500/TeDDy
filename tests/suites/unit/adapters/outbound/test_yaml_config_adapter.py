@@ -104,3 +104,20 @@ def test_get_setting_ui_mode_defaults_to_tui_at_call_site(fs, container):
     # The adapter itself doesn't have hardcoded defaults,
     # but we verify it respects the default passed by the caller.
     assert adapter.get_setting("ui_mode", default="tui") == "tui"
+
+
+def test_get_setting_output_capping_keys(fs, container):
+    # Arrange
+    config_data = {
+        "execution": {"max_output_lines": 50},
+        "read": {"max_lines": 500},
+    }
+    fs.create_dir(".teddy")
+    fs.create_file(".teddy/config.yaml", contents=yaml.dump(config_data))
+
+    adapter = container.resolve(IConfigService)
+
+    # Act & Assert
+    assert adapter.get_setting("execution.max_output_lines", 100) == 50
+    assert adapter.get_setting("read.max_lines", 1000) == 500
+    assert adapter.get_setting("execution.missing_key", 100) == 100

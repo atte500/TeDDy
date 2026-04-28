@@ -13,6 +13,11 @@ editor: "code"
 execution:
   default_timeout_seconds: 60
   similarity_threshold: 1.00 # 1.00 means exact match required (ignoring relative indentation).
+  max_output_lines: 100 # Caps EXECUTE output to the last X lines.
+
+# File Read Settings
+read:
+  max_lines: 1000 # Caps READ action output to the first X lines.
 
 # LLM Settings
 # LiteLLM Configuration Reference: https://docs.litellm.ai/docs/completion/input
