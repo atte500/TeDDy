@@ -58,7 +58,7 @@
         </step>
         <step n="2" name="Fault Isolation & Recovery">
           If the global test suite fails, halt and isolate the fault using the MRE Gatekeeper protocol:
-          1. Vault WIP: Execute `git add src/ tests/` (or target code directories), then execute `git stash --staged` to hide uncommitted feature code. Your documentation remains safely untouched in the workspace.
+          1. Vault WIP: Execute `git add src/ (or target code directories) && git stash --staged` to hide only the uncommitted implementation code while leaving your new tests in the workspace. Your documentation also remains safely untouched.
           2. MRE: Write and run an isolated Minimal Reproducible Example (MRE) script in the `debug/` folder.
           3. If MRE Passes (Bug is in WIP): Execute `git stash pop` to restore WIP. Fix your logic.
           4. If MRE Fails (Bug is in HEAD): Execute `git stash drop` to discard WIP. Proceed based on the nature of the issue:
@@ -142,8 +142,8 @@ WIP & REMINDERS:
         Commit messages MUST follow Conventional Commits formatting: `<type>(<scope>): <description>`. Wrap entirely in single quotes. Description must use imperative mood (e.g., "Add endpoint"). Append ! for breaking changes.
 
         The sequence MUST be executed as separate `EXECUTE` blocks:
-        1. (Only if `src/` or `tests/` modified) `<global-test-command> && git add . && pre-commit run` (Set `Allow Failure: true`).
-        2. `git add . && git commit -m '...' && git push`
+        1. Validation (Optional: Only if `src/` or `tests/` modified): `<global-test-command> && git add . && pre-commit run` (MUST set `Allow Failure: true` to ensure Step 2 runs).
+        2. Persistence: `git add . && git commit -m '...' && git push`
 
         If unsure of changes, `EXECUTE git add . && git diff HEAD` in a prior turn. Structural refactoring (e.g., moving functions across files to satisfy linters) is strictly forbidden during feature work. If a commit fails a structural quality gate (like max file length), you MUST immediately log the debt and commit using `--no-verify`. The global test suite must still pass.
       </rule>

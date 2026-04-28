@@ -27,19 +27,18 @@
       </phase>
 
       <phase n="3" name="Repair">
-        <goal>Implement the fix, verify it against the MRE, and stage it.</goal>
-        <step n="1" name="Baseline & Stage">`EXECUTE git status` and `git diff`. Then `EXECUTE git add .` to securely separate preexisting developer WIP.</step>
-        <step n="2" name="Reality-Driven Fix">Apply the minimal fix to SUT code until the E2E MRE script passes. If the bug is platform-specific, you MUST verify the fix by pushing to the temporary remote branch and observing the CI workflow, avoiding local execution. You MUST completely ignore the existing test suite during this step. If your fix fails or reveals new underlying discrepancies, return to Phase 2 (Investigation) to update the Causal Model.</step>
-        <step n="3" name="Stage Fix">Execute `git add src/ tests/` (or target code directories) to stage only your code changes (the fix).</step>
+        <goal>Implement the fix and verify it against the MRE.</goal>
+        <step n="1" name="Apply Fix">Apply the minimal fix to SUT code. You MUST completely ignore the existing test suite during this step. If the bug is platform-specific, you MUST verify the fix by pushing to the temporary remote branch and observing the CI workflow, avoiding local execution.</step>
+        <step n="2" name="Verify Fix">Execute the E2E MRE script. It MUST pass. If the fix fails or reveals new underlying discrepancies, return to Phase 2 (Investigation) to update the Causal Model.</step>
       </phase>
 
       <phase n="4" name="Regression Testing">
         <goal>Implement a regression test and verify it via the "Test the Test" sequence.</goal>
         <step n="1" name="Formalize Test">While the fix is active in the workspace, translate the insights from the successful E2E MRE into a formal regression test in the test suite (`tests/suites/`), extending the Test Harness Triad (`tests/harness/`) if necessary.</step>
         <step n="2" name="Verify Success (Test the Test - Part 1)">Execute the new test against the *fixed* code and verify that it PASSES. This proves the test is capable of passing in the corrected state.</step>
-        <step n="3" name="Vault Fix">Execute `git stash --staged`. This hides the fix and reverts the SUT to its buggy state.</step>
+        <step n="3" name="Vault Fix">Execute `git add src/ (or target code directories) && git stash --staged`. This hides only the implementation fix while leaving the new regression test in the workspace, reverting the SUT to its buggy state.</step>
         <step n="4" name="Verify Failure (Test the Test - Part 2)">Execute the same regression test again against the *buggy* code. It MUST FAIL. If the test PASSES here, it has failed to catch the bug; you MUST halt and transition to Red State 🔴 as your Causal Model or test setup is incorrect.</step>
-        <step n="5" name="Restore & Stage">Execute `git stash pop` to re-apply the validated fix. Stage the applied fix and the new test via `git add .`.</step>
+        <step n="5" name="Restore Fix">Execute `git stash pop` to re-apply the validated fix.</step>
       </phase>
 
       <phase n="5" name="Suite Alignment">
@@ -116,8 +115,8 @@ WIP & REMINDERS:
         Commit messages MUST follow Conventional Commits formatting: `<type>(<scope>): <description>`. Wrap entirely in single quotes. Description must use imperative mood (e.g., "Add endpoint"). Append ! for breaking changes.
 
         The sequence MUST be executed as separate `EXECUTE` blocks:
-        1. (Only if `src/` or `tests/` modified) `<global-test-command> && git add . && pre-commit run` (Set `Allow Failure: true`).
-        2. `git add . && git commit -m '...' && git push`
+        1. Validation (Optional: Only if `src/` or `tests/` modified): `<global-test-command> && git add . && pre-commit run` (MUST set `Allow Failure: true` to ensure Step 2 runs).
+        2. Persistence: `git add . && git commit -m '...' && git push`
 
         If unsure of changes, `EXECUTE git add . && git diff HEAD` in a prior turn. To bypass non-trivial quality gate failures (like file length), or when committing temporary diagnostic probes, log debt in the active Milestone and commit with `--no-verify`. Structural refactoring (e.g., splitting files) is forbidden unless it is your primary task; the global test suite must still pass.
       </rule>

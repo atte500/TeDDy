@@ -259,8 +259,8 @@ WIP & REMINDERS:
         Commit messages MUST follow Conventional Commits formatting: `<type>(<scope>): <description>`. Wrap entirely in single quotes. Description must use imperative mood (e.g., "Add endpoint"). Append ! for breaking changes.
 
         The sequence MUST be executed as separate `EXECUTE` blocks:
-        1. (Only if `src/` or `tests/` modified) `<global-test-command> && git add . && pre-commit run` (Set `Allow Failure: true`).
-        2. `git add . && git commit -m '...' && git push`
+        1. Validation (Optional: Only if `src/` or `tests/` modified): `<global-test-command> && git add . && pre-commit run` (MUST set `Allow Failure: true` to ensure Step 2 runs).
+        2. Persistence: `git add . && git commit -m '...' && git push`
 
         If unsure of changes, `EXECUTE git add . && git diff HEAD` in a prior turn. To bypass non-trivial quality gate failures (like file length), log debt in the active Milestone and commit with `--no-verify`. Structural refactoring (e.g., splitting files) is forbidden unless it is your primary task; the global test suite must still pass.
       </rule>
