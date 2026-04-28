@@ -34,6 +34,7 @@ Then I should receive the value "console"
 - [ ] **Seam** - Update `YamlConfigAdapter` to load the bundled baseline YAML using `importlib.resources` as the base layer.
 - [ ] **Refactor** - Update `InitService` to use the new package-relative path for template initialization.
 - [ ] **Refactor** - Prune all hardcoded fallbacks from `ActionFactory`, `PlanningService`, `registries/infrastructure.py`, and `registries/reviewer.py`.
+- [ ] **Refactor** - Eliminate Shadow Logic: Migrate hardcoded test literals (ActionType, paths, constants) and redundant platform logic to central sources of truth.
 - [ ] **Cleanup** - Delete the original `config/` directory at the project root.
 
 ## Delta Analysis
@@ -43,8 +44,10 @@ Then I should receive the value "console"
 - `src/teddy_executor/registries/infrastructure.py`: Remove hardcoded defaults in factory lambdas.
 - `src/teddy_executor/core/services/action_factory.py`: Remove defaults in `_handle_execute_protocol` and `_handle_edit_protocol`.
 - `src/teddy_executor/core/services/planning_service.py`: Remove default for `planning_model`.
+- `tests/suites/`: Global audit and refactor of hardcoded domain literals (`ActionType`), magic constants (`TIMEOUT_EXIT_CODE`), and re-implemented platform/path logic.
 
 ## Guidelines for Implementation
 - Use `importlib.resources.files("teddy_executor.resources.config").joinpath("config.yaml")` for robust resource access.
+- **Eliminate Shadow Logic:** Distinguish between *Test Data* (local literals allowed for readability) and *Domain/Environment Truth*. Tests MUST import and use Enums, Constants, and Harness methods (e.g., `TestEnvironment.tmp_dir`) instead of re-implementing logic or hardcoding values.
 - Ensure the merge logic handles nested dictionaries correctly (deep merge not required for current flat structure, but preferred).
 - The `ARCHITECTURE.md` has already been updated to reflect the new standard: all core settings MUST have a corresponding entry in the baseline YAML.
