@@ -43,3 +43,12 @@ def test_slugify_removes_stopwords():
     # adding "-docs" (5 chars) would make it 42 chars (>40).
     # So it should stop at "approach".
     assert slugify(input_str) == "refactor-auth-service-better-approach"
+
+
+def test_slugify_handles_apostrophes_and_new_stopwords():
+    """It should strip apostrophes and filter new stopwords like 'dont', 'arent', 'yet'."""
+    assert slugify("Don't do that yet") == ""
+    assert slugify("Aren't we done yet?") == "done"
+    assert slugify("It's a beautiful day") == "beautiful-day"
+    assert slugify("I'm going to fix it already") == "fix"
+    assert slugify("We'll surely check it") == "check"

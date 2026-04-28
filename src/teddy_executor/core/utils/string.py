@@ -145,6 +145,51 @@ STOPWORDS = {
     "basically",
     "simply",
     "really",
+    "dont",
+    "arent",
+    "yet",
+    "cant",
+    "wont",
+    "shouldnt",
+    "couldnt",
+    "didnt",
+    "hasnt",
+    "havent",
+    "isnt",
+    "wasnt",
+    "werent",
+    "im",
+    "youre",
+    "hes",
+    "shes",
+    "theyre",
+    "ive",
+    "youve",
+    "weve",
+    "theyve",
+    "ill",
+    "youll",
+    "hell",
+    "shell",
+    "well",
+    "theyll",
+    "id",
+    "youd",
+    "hed",
+    "shed",
+    "wed",
+    "theyd",
+    "going",
+    "gonna",
+    "wanna",
+    "gotta",
+    "ok",
+    "okay",
+    "sure",
+    "surely",
+    "maybe",
+    "perhaps",
+    "already",
 }
 
 
@@ -152,12 +197,12 @@ def slugify(text: str, max_length: int = 40) -> str:
     """
     Converts a string into a URL-friendly slug.
 
-    1. Lowercase.
+    1. Lowercase and strip apostrophes (e.g., don't -> dont).
     2. Split into words and remove aggressive stopwords.
     3. Join words with hyphens until max_length is reached (whole-word truncation).
     """
-    # 1. Lowercase
-    s = text.lower()
+    # 1. Lowercase and strip apostrophes
+    s = text.lower().replace("'", "")
 
     # 2. Split and filter stopwords
     all_words = [w for w in re.split(r"[^a-z0-9]+", s) if w and w not in STOPWORDS]
