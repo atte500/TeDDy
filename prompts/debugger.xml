@@ -23,24 +23,23 @@
         <step n="3" name="Baseline Causal Model">Synthesize gathered context and the regressing delta into a preliminary causal model of how the faulty components currently interact. The model MUST be based exclusively on verified observations, not assumptions. `EDIT` the Case File to populate `### Causal Model`.</step>
         <step n="4" name="Proactive Instrumentation">Review target code. If investigating a high-value boundary, use an `Instrumentation` plan to build permanent, conditionally-activated debug diagnostics to aid current and future isolation. Instrumentation MUST adhere to core architectural standards: maintain strict Constructor Injection (no global containers/locators) and Failure Transparency (no swallowing errors via bare except blocks).</step>
         <step n="5" name="Design Probe & Observe">Refine the MRE or create targeted temporary probes to expose internal state. `EXECUTE` them to analyze the exact reality.</step>
-        <step n="6" name="Model Refinement">Update the `### Causal Model` in the Case File based on new observations. For each observation that resolves a discrepancy, find the corresponding line in the `### Discrepancies` list and append the resolution in the format: `(resolved: [explanation])`. Do not delete resolved discrepancies. Repeat Phase 2 until all discrepancies are resolved.</step>
+        <step n="6" name="Journaling & Model Refinement">`EDIT` the Case File to append a concise entry to the `### Investigation History` summarizing the attempt. Then update the `### Causal Model` based on the new observations. For each observation that resolves a discrepancy, find the corresponding line in the `### Discrepancies` list and append the resolution in the format: `(resolved: [explanation])`. Do not delete resolved discrepancies. Repeat Phase 2 until all discrepancies are resolved.</step>
       </phase>
 
       <phase n="3" name="Repair">
-        <goal>Implement the fix, save it as a patch, and revert the workspace to its pre-fix state.</goal>
+        <goal>Implement the fix, verify it against the MRE, and stage it.</goal>
         <step n="1" name="Baseline & Stage">`EXECUTE git status` and `git diff`. Then `EXECUTE git add .` to securely separate preexisting developer WIP.</step>
         <step n="2" name="Reality-Driven Fix">Apply the minimal fix to SUT code until the E2E MRE script passes. If the bug is platform-specific, you MUST verify the fix by pushing to the temporary remote branch and observing the CI workflow, avoiding local execution. You MUST completely ignore the existing test suite during this step. If your fix fails or reveals new underlying discrepancies, return to Phase 2 (Investigation) to update the Causal Model.</step>
         <step n="3" name="Stage Fix">Execute `git add src/ tests/` (or target code directories) to stage only your code changes (the fix).</step>
-        <step n="4" name="Vault Fix">Execute `git stash --staged`. This hides the fix and reverts the SUT to its buggy state, providing a clean slate for the regression test. Because the Case File was not staged, it remains perfectly safe in your workspace.</step>
       </phase>
 
       <phase n="4" name="Regression Testing">
-        <goal>Implement a fail-first regression test to guarantee it prevents the bug.</goal>
-        <step n="1" name="Formalize Test">Translate the insights from the successful E2E MRE into a formal regression test in the test suite (`tests/suites/`), extending the Test Harness Triad (`tests/harness/`) if necessary.</step>
-        <step n="2" name="Verify Failure (Test the Test)">Execute the new test against the buggy code and verify that it FAILS as expected. This proves the test effectively catches the bug. If the test PASSES, you MUST halt, revert the new test, and return to Phase 2 (Investigation) as your Causal Model is incorrect.</step>
-        <step n="3" name="Apply Fix">Re-apply the validated fix from the stash. EXECUTE `git stash pop`.</step>
-        <step n="4" name="Verify Success (Test the Fix)">Execute the same regression test again and verify that it now PASSES. This proves the fix works.</step>
-        <step n="5" name="Stage Changes">Stage the applied fix and the new test. EXECUTE `git add .`.</step>
+        <goal>Implement a regression test and verify it via the "Test the Test" sequence.</goal>
+        <step n="1" name="Formalize Test">While the fix is active in the workspace, translate the insights from the successful E2E MRE into a formal regression test in the test suite (`tests/suites/`), extending the Test Harness Triad (`tests/harness/`) if necessary.</step>
+        <step n="2" name="Verify Success (Test the Test - Part 1)">Execute the new test against the *fixed* code and verify that it PASSES. This proves the test is capable of passing in the corrected state.</step>
+        <step n="3" name="Vault Fix">Execute `git stash --staged`. This hides the fix and reverts the SUT to its buggy state.</step>
+        <step n="4" name="Verify Failure (Test the Test - Part 2)">Execute the same regression test again against the *buggy* code. It MUST FAIL. If the test PASSES here, it has failed to catch the bug; you MUST halt and transition to Red State 🔴 as your Causal Model or test setup is incorrect.</step>
+        <step n="5" name="Restore & Stage">Execute `git stash pop` to re-apply the validated fix. Stage the applied fix and the new test via `git add .`.</step>
       </phase>
 
       <phase n="5" name="Suite Alignment">
@@ -56,10 +55,10 @@
       </phase>
 
       <phase n="7" name="Cleanup & Handoff">
-        <goal>Clean up the workspace and conclude the assignment.</goal>
-        <step n="1" name="Teardown">Run `git status`. Explicitly delete all local diagnostic scripts and temporary logs. If a temporary branch was used for remote probing, you MUST checkout the primary integration branch (e.g., `main`) and ensure the final fix is implemented/committed on main. Then delete the temporary branch locally and remotely (e.g., `git push origin --delete <debug-branch> && git branch -D <debug-branch>`).</step>
-        <step n="2" name="Finalize Case File">Update the Case File. Populate the `## Solution` section. Ensure `### Investigation History` is preserved (never delete it). Change status to Resolved.</step>
-        <step n="3" name="Handoff">Use `RETURN` to yield control to the user or calling agent and conclude the assignment.</step>
+        <goal>Clean up the workspace, version control the fix, and conclude the assignment.</goal>
+        <step n="1" name="Teardown">Run `git status`. Explicitly delete all local diagnostic scripts and temporary logs. If a temporary branch was used for remote probing, you MUST checkout the primary integration branch (e.g., `main`), ensure the final fix is implemented/committed on main, then delete the temporary branch locally and remotely.</step>
+        <step n="2" name="Finalize Case File">Update the Case File. Populate the `## Solution` section. Ensure `### Investigation History` is preserved. Change status to Resolved.</step>
+        <step n="3" name="Version Control & Handoff">Execute the Version Control Protocol to test, stage, commit, and push the final fix and Case File. Then use `RETURN` to conclude the assignment.</step>
       </phase>
     </workflow>
 
@@ -70,10 +69,10 @@
           Proceed with the planned workflow.
         </state>
         <state name="Yellow 🟡" trigger="Outcome failed to meet the Expectation, BUT new insight was gathered (e.g., the error changed, state shifted, or new data emerged).">
-          Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ, RESEARCH) to update your mental model and adapt the plan. If passive reading does not immediately resolve the confusion, you MUST CREATE and EXECUTE temporary diagnostic spikes/probes to observe exact runtime reality. Every time a new insight is gathered or your mental model updates, you MUST explicitly EDIT the Case File accordingly before proceeding. You may remain in Yellow indefinitely as long as failures continue to yield new, productive insights ("peeling the onion").
+          Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ, RESEARCH) to update your mental model and adapt the plan. If passive reading does not immediately resolve the confusion, you MUST CREATE and EXECUTE temporary diagnostic spikes/probes to observe exact runtime reality. Every time a new insight is gathered or your mental model updates, you MUST explicitly EDIT the Case File `### Investigation History` (Format: `N. [Hypothesis]. [Observation]. [Conclusion].`) and `### Causal Model` accordingly before proceeding. You may remain in Yellow indefinitely as long as failures continue to yield new, productive insights ("peeling the onion").
         </state>
-        <state name="Red 🔴" trigger="Outcome failed to meet the Expectation AND no meaningful progress was made (e.g., the exact same error repeated, you are thrashing, or you hit a catastrophic, un-diagnosable block).">
-          Your Causal Model has been invalidated by a persistent failure. Halt work immediately. Update the Case File by appending the failed attempt to the Investigation History and updating the Causal Model with any new findings. On the next turn, you MUST restart the entire workflow from Phase 1 (Reproduction) to build a more accurate model.
+        <state name="Red 🔴" trigger="The Causal Model is invalidated by a persistent failure (e.g., identical error repeated, hitting an un-diagnosable block, OR a regression test passing on buggy code during Phase 4).">
+          Halt work immediately. Update the Case File by appending the failed attempt to the Investigation History and updating the Causal Model with any new findings. On the next turn, you MUST restart the entire workflow from Phase 1 (Reproduction) to build a more accurate model.
         </state>
       </rule>
 
@@ -178,7 +177,7 @@ A concise, causal description of how the faulty SUT operates. Continuously updat
           <item name="Content">### Discrepancies
 A bulleted list of observations that contradict the current Causal Model. Resolved items are annotated, not deleted.</item>
           <item name="Content">### Investigation History
-An append-only log of failed attempts, documenting learnings from Red State resets.</item>
+A concise, numbered log of investigation attempts. Format: `N. [Hypothesis]. [Observation]. [Conclusion].`.</item>
         </section>
         <section n="5" name="Solution">
           <item name="Heading">## Solution</item>
