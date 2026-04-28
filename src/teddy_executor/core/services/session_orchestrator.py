@@ -124,11 +124,18 @@ class SessionOrchestrator(IRunPlanUseCase):
         import typer
 
         typer.secho("Plan aborted by user.", fg=typer.colors.YELLOW, err=True)
-        new_message = self._user_interactor.ask_question(
-            "Plan aborted. How do you want to proceed? (Empty response will quit session)"
-        )
+
+        # R-10-12: If a message was already captured (e.g. in TUI), use it.
+        new_message = report.user_request
+
         if not new_message:
-            return report
+            new_message = self._user_interactor.ask_question(
+                "Plan aborted. How do you want to proceed? (Empty response will quit session)"
+            )
+
+        # If still empty after potential prompt, return None to signal session termination.
+        if not new_message:
+            return None  # type: ignore
 
         # Update metadata (dict is mutable even in frozen dataclass)
         report.metadata["user_request"] = new_message

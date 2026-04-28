@@ -180,6 +180,15 @@ class ReviewerApp(App):
 
     def action_cancel(self) -> None:
         """Exit the app and return None (cancellation)."""
+        # Harvest message even on cancel so it can be propagated to the abort report
+        if self._user_message_cache is not None:
+            marker = self.INSTRUCTION_MARKER.strip()
+            if marker in self._user_message_cache:
+                final_message: str = self._user_message_cache.split(marker)[0].strip()
+            else:
+                final_message = self._user_message_cache.strip()
+            self.plan.metadata["user_request"] = final_message
+
         # Cleanup any pending temp files
         for action in self.plan.actions:
             # Type guard for Mocks in tests

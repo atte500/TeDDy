@@ -200,6 +200,9 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         from dataclasses import replace
         from teddy_executor.core.domain.models import RunStatus
 
+        # R-10-12: If a message was captured in the TUI (via 'm' key), propagate it.
+        resolved_message = message or plan.metadata.get("user_request")
+
         action_logs = []
         for a in plan.actions:
             if a.executed and a.action_log:
@@ -211,7 +214,9 @@ class ExecutionOrchestrator(IRunPlanUseCase):
                     )
                 )
 
-        report = self._report_assembler.assemble(plan, action_logs, start_time, message)
+        report = self._report_assembler.assemble(
+            plan, action_logs, start_time, resolved_message
+        )
         return replace(
             report, run_summary=replace(report.run_summary, status=RunStatus.ABORTED)
         )
