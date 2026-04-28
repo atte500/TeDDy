@@ -16,6 +16,7 @@ from teddy_executor.core.services.parser_infrastructure import (
     _PeekableStream,
     get_child_text,
     get_action_heading,
+    consume_content_until_next_action,
     print_ast,
 )
 from teddy_executor.core.services.parser_reporting import (
@@ -194,24 +195,34 @@ class MarkdownPlanParser(IPlanParser):
     def _parse_actions(
         self, stream: _PeekableStream, doc: Document
     ) -> List[ActionData]:
+        from mistletoe.block_token import BlockCode
+
         actions: List[ActionData] = []
         # 'Action Plan' heading is already consumed by _parse_strict_top_level.
-
-        offending_nodes = []
-        primary_mismatch = None
 
         # Parse all subsequent actions
         while stream.has_next():
             node = stream.peek()
             action_heading = get_action_heading(node, self._valid_actions)
+
             if not action_heading:
-                # Accumulate offending node and consume it to find the next potential heading
-                offending_nodes.append(node)
-                if primary_mismatch is None:
-                    # Capture index -1 to trigger dynamic lookup in formatter
-                    primary_mismatch = ("a Level 3 Action Heading", -1, node)
-                stream.next()
-                continue
+                # R-10-12: Skip ONLY whitespace-only code blocks (indented spaces)
+                # to fix the user's backtick/trailing space issue.
+                # Other junk (Paragraphs, breaks) must still fail validation.
+                if isinstance(node, BlockCode) and not get_child_text(node).strip():
+                    stream.next()
+                    continue
+
+                # Accumulate offending node and raise structural error
+                offending_nodes = consume_content_until_next_action(
+                    stream, self._valid_actions
+                )
+                raise InvalidPlanError(
+                    format_structural_mismatch_msg(
+                        doc, "a Level 3 Action Heading", -1, offending_nodes
+                    ),
+                    offending_nodes=offending_nodes,
+                )
 
             stream.next()  # Consume action heading
             action_type_str = get_child_text(action_heading).strip().replace("`", "")
@@ -229,15 +240,6 @@ class MarkdownPlanParser(IPlanParser):
             for action in actions:
                 if action.type in ("PROMPT", "INVOKE", "RETURN"):
                     action.selected = False
-
-        if offending_nodes and primary_mismatch is not None:
-            expected_desc, mismatch_idx, actual_node = primary_mismatch
-            raise InvalidPlanError(
-                format_structural_mismatch_msg(
-                    doc, expected_desc, mismatch_idx, offending_nodes
-                ),
-                offending_nodes=offending_nodes,
-            )
 
         return actions
 
