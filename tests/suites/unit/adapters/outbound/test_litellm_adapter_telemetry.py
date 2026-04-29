@@ -9,7 +9,7 @@ def test_get_token_count_delegates_to_litellm(container):
 
     with patch("litellm.token_counter") as mock_counter:
         mock_counter.return_value = 10
-        count = adapter.get_token_count(model, messages)
+        count = adapter.get_token_count(messages, model)
 
         assert count == 10
         mock_counter.assert_called_once_with(model=model, messages=messages)
