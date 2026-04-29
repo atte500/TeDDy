@@ -38,16 +38,16 @@ class LiteLLMAdapter(ILlmClient):
         import litellm
         from typing import cast
 
-        # 1. Start with values from 'llm' config block
-        llm_config = cast(Dict[str, Any], self._config_service.get_setting("llm", {}))
-        final_params = {**llm_config}
+        # 1. Start with caller-provided kwargs
+        final_params = {**kwargs}
 
-        # 2. Layer in caller-provided kwargs
-        final_params.update(kwargs)
-
-        # 3. Explicit model override
+        # 2. Explicit model argument
         if model:
             final_params["model"] = model
+
+        # 3. Layer in 'llm' config block (Config overrides Caller/Args for control)
+        llm_config = cast(Dict[str, Any], self._config_service.get_setting("llm", {}))
+        final_params.update(llm_config)
 
         if "model" not in final_params:
             raise LlmApiError(

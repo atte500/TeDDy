@@ -15,7 +15,7 @@ def test_respects_global_similarity_threshold(tmp_path, monkeypatch):
     teddy_dir = tmp_path / ".teddy"
     teddy_dir.mkdir(exist_ok=True)
     (teddy_dir / "config.yaml").write_text(
-        "similarity_threshold: 0.8\n", encoding="utf-8"
+        "execution:\n  similarity_threshold: 0.8\n", encoding="utf-8"
     )
 
     # 3. Setup target file
