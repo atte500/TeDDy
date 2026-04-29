@@ -360,7 +360,7 @@
 {{ log.details.get('response') | fence }}text
 {{ log.details.get('response') }}
 {{ log.details.get('response') | fence }}
-{% elif action_type != 'RESEARCH' %}
+{% else %}
 {{ render_action_details(log) }}
 {% endif %}
 {% else %}
