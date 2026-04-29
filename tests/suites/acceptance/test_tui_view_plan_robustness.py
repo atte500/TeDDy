@@ -1,4 +1,3 @@
-import asyncio
 import pytest
 from unittest.mock import MagicMock, patch
 from contextlib import contextmanager
@@ -58,7 +57,8 @@ async def test_view_plan_works_with_no_path_but_in_memory_content(env):
             await pilot.pause()
             # Trigger via keypress
             await pilot.press("v")
-            await asyncio.sleep(0.5)
+            # Wait for the view_plan worker to complete
+            await pilot.pause()
             await app.workers.wait_for_complete()
 
     # 5. Assert: Editor was launched and temp file was handled correctly

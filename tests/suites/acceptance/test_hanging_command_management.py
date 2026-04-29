@@ -21,7 +21,7 @@ def test_global_timeout_enforcement(monkeypatch, tmp_path):
     plan = (
         MarkdownPlanBuilder("Hanging Plan")
         .add_execute(
-            'python -c "import time; time.sleep(0.5)"', description="Hanging command"
+            'python -c "import time; time.sleep(0.2)"', description="Hanging command"
         )
         .build()
     )
@@ -44,13 +44,11 @@ def test_timeout_captures_partial_output(monkeypatch, tmp_path):
     teddy_dir.mkdir(parents=True, exist_ok=True)
     config_file = teddy_dir / "config.yaml"
     config_file.write_text(
-        "execution:\n  default_timeout_seconds: 0.5\n", encoding="utf-8"
+        "execution:\n  default_timeout_seconds: 0.2\n", encoding="utf-8"
     )
 
     # 2. Define a plan with a command that prints then hangs
-    script = (
-        "import sys, time; print('Partial progress'); sys.stdout.flush(); time.sleep(2)"
-    )
+    script = "import sys, time; print('Partial progress'); sys.stdout.flush(); time.sleep(0.4)"
     plan = (
         MarkdownPlanBuilder("Partial Output Plan")
         .add_execute(f'python -c "{script}"', description="Prints then hangs")
@@ -63,7 +61,7 @@ def test_timeout_captures_partial_output(monkeypatch, tmp_path):
     # 4. Assertions
     entry = report.action_logs[0]
     assert "Partial progress" in entry.details.get("stdout", "")
-    assert "timed out after 0.5 seconds" in report.stdout.lower()
+    assert "timed out after 0.2 seconds" in report.stdout.lower()
     assert "124" in report.stdout  # The exit code for timeout should be in the report
 
 
@@ -113,7 +111,7 @@ def test_explicit_timeout_override(monkeypatch, tmp_path):
     plan = (
         MarkdownPlanBuilder("Timeout Override Plan")
         .add_execute(
-            "python -c \"import time; time.sleep(1.0); print('Success')\"", timeout=5
+            "python -c \"import time; time.sleep(0.3); print('Success')\"", timeout=5
         )
         .build()
     )

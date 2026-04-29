@@ -34,6 +34,11 @@ class TuiDriver:
                 # but we should allow it to reach its first await (e.g. push_screen_wait).
                 await pilot.pause()
 
+                # Optimization: Skip heavy worker synchronization for navigational keys
+                # that do not trigger background processing.
+                if key in ("up", "down", "left", "right", "tab"):
+                    continue
+
                 # If the current screen is a modal, wait for workers isn't
                 # possible as they are blocked on the screen's dismissal.
                 # Only wait for workers if we are on the main screen.
