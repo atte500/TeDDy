@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 
 class LlmApiError(Exception):
@@ -16,16 +16,16 @@ class ILlmClient(ABC):
     @abstractmethod
     def get_completion(
         self,
-        model: str,
         messages: List[Dict[str, str]],
+        model: Optional[str] = None,
         **kwargs: Any,
-    ) -> str:
+    ) -> Any:
         """
-        Sends a request to an LLM and returns the completed text response.
+        Sends a request to an LLM and returns the completed response object.
 
         Args:
-            model: The identifier for the target model.
             messages: A list of message dictionaries (role/content).
+            model: Optional identifier for the target model (overrides config).
             **kwargs: Additional parameters for the LLM provider.
 
         Returns:
@@ -37,9 +37,11 @@ class ILlmClient(ABC):
         pass
 
     @abstractmethod
-    def get_token_count(self, model: str, messages: List[Dict[str, str]]) -> int:
+    def get_token_count(
+        self, messages: List[Dict[str, str]], model: Optional[str] = None
+    ) -> int:
         """
-        Calculates the number of tokens in the payload for a specific model.
+        Calculates the number of tokens in the payload.
         """
         pass
 

@@ -1,0 +1,28 @@
+# TeDDy Configuration
+
+# UI Settings
+# Supported modes: "tui" (Interactive Terminal UI), "console" (Sequential CLI prompts)
+ui_mode: "tui"
+
+# The preferred external editor for reviewing and modifying plans/messages.
+# Supports arbitrary command strings (e.g., "code --wait", "nvim -R", "zed").
+# Fallback chain: Config -> VISUAL/EDITOR env vars -> code -> nano.
+editor: "code"
+
+# Execution Settings
+execution:
+  default_timeout_seconds: 60
+  similarity_threshold: 1.00 # 1.00 means exact match required (ignoring relative indentation).
+  max_output_lines: 100 # Caps EXECUTE output to the last X lines.
+
+# File Read Settings
+read:
+  max_lines: 1000 # Caps READ action output to the first X lines.
+
+# LLM Settings
+# LiteLLM Configuration Reference: https://docs.litellm.ai/docs/completion/input
+# All keys under 'llm' are passed directly to litellm.completion().
+llm:
+  model: "gemini/gemini-flash-latest"
+  api_key: "your-api-key" # pragma: allowlist secret
+  custom_llm_provider: "gemini"

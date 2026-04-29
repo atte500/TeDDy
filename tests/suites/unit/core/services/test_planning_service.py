@@ -30,47 +30,8 @@ def service(env):
     return env.get_service(PlanningService)
 
 
-def test_generate_plan_uses_model_from_config(env):
-    # Arrange - Configure mocks BEFORE resolving the service
-    mock_config = env.mock_port(IConfigService)
-    mock_prompt_manager = env.mock_port(IPromptManager)
-    mock_llm_client = env.mock_port(ILlmClient)
-    mock_context_service = env.mock_port(IGetContextUseCase)
-
-    # Resolve service AFTER mocking to ensure injection parity
-    from teddy_executor.core.services.planning_service import PlanningService
-
-    service = env.get_service(PlanningService)
-
-    mock_config.get_setting.return_value = "config-specified-model"
-    mock_prompt_manager.resolve_message.return_value = "test"
-    mock_prompt_manager.resolve_agent_metadata.return_value = (
-        "pathfinder",
-        {},
-        "meta.yaml",
-    )
-    mock_prompt_manager.fetch_system_prompt.return_value = "prompt"
-    mock_context_service.get_context.return_value = ProjectContext(
-        header="H", content="C", scoped_paths={}, git_status=""
-    )
-
-    # Act
-    service.generate_plan(user_message="test", turn_dir="01")
-
-    # Assert
-    mock_config.get_setting.assert_called_with("llm.planning_model")
-    assert mock_llm_client.get_completion.called
-    actual_model = mock_llm_client.get_completion.call_args.kwargs["model"]
-    assert actual_model == "config-specified-model"
-
-
-def test_generate_plan_requests_harmonized_model_key(env):
-    """
-    Verifies that the service requests the correct harmonized key.
-    The fallback logic is now centralized in the config baseline.
-    """
+def test_generate_plan_delegates_to_llm_client(env):
     # Arrange
-    mock_config = env.mock_port(IConfigService)
     mock_prompt_manager = env.mock_port(IPromptManager)
     mock_llm_client = env.mock_port(ILlmClient)
     mock_context_service = env.mock_port(IGetContextUseCase)
@@ -79,14 +40,13 @@ def test_generate_plan_requests_harmonized_model_key(env):
 
     service = env.get_service(PlanningService)
 
-    mock_config.get_setting.return_value = "custom-model"
-    mock_prompt_manager.resolve_message.return_value = "test"
+    mock_prompt_manager.resolve_message.return_value = "test-message"
     mock_prompt_manager.resolve_agent_metadata.return_value = (
         "pathfinder",
         {},
         "meta.yaml",
     )
-    mock_prompt_manager.fetch_system_prompt.return_value = "prompt"
+    mock_prompt_manager.fetch_system_prompt.return_value = "system-prompt"
     mock_context_service.get_context.return_value = ProjectContext(
         header="H", content="C", scoped_paths={}, git_status=""
     )
@@ -95,9 +55,15 @@ def test_generate_plan_requests_harmonized_model_key(env):
     service.generate_plan(user_message="test", turn_dir="01")
 
     # Assert
-    mock_config.get_setting.assert_called_with("llm.planning_model")
-    actual_model = mock_llm_client.get_completion.call_args.kwargs["model"]
-    assert actual_model == "custom-model"
+    # Verify the service calls completion with the expected messages,
+    # but NO longer specifies a model (decoupling for pass-through).
+    assert mock_llm_client.get_completion.called
+    args, kwargs = mock_llm_client.get_completion.call_args
+    assert "messages" in kwargs
+    messages = kwargs["messages"]
+    assert messages[0]["content"] == "system-prompt"
+    assert "test-message" in messages[1]["content"]
+    assert "model" not in kwargs  # Handled by Adapter/Config now
 
 
 def test_generate_plan_writes_standardized_input_md(env):

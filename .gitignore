@@ -97,6 +97,7 @@ error_screenshot.png
 !/.github/workflows/ci.yml
 !/src/teddy_executor/resources/config/
 !/src/teddy_executor/resources/config/**
+/src/teddy_executor/resources/config/**/__pycache__/
 
 # Spikes (temporary experimental code) - Located in the executor project
 spikes/

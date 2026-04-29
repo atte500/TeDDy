@@ -71,27 +71,15 @@ class YamlConfigAdapter(IConfigService):
         if not key:
             return default
 
-        # 1. Try exact match
+        # 1. Try exact match (for top-level or previously flattened keys)
         if key in self._config:
             return self._config[key]
 
+        # 2. Try nested resolution
         parts = key.split(".")
-        if len(parts) > 1:
-            # 2. Prefer root-level leaf match for backward compatibility
-            leaf_key = parts[-1]
-            if leaf_key in self._config:
-                return self._config[leaf_key]
-
-        # 3. Try nested resolution
         result = self._resolve_nested(parts)
         if result is not None:
             return result
-
-        # 4. Try path-based fallbacks
-        if len(parts) > 1:
-            second_attempt = ".".join(parts[1:])
-            if second_attempt in self._config:
-                return self._config[second_attempt]
 
         return default
 
