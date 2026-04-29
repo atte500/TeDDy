@@ -1,5 +1,4 @@
 import sys
-from pathlib import Path
 
 import pytest
 from tests.harness.setup.test_environment import TestEnvironment
@@ -7,20 +6,26 @@ from teddy_executor.core.ports.outbound import IShellExecutor
 
 
 @pytest.fixture
-def adapter(monkeypatch, tmp_path):
+def test_env(monkeypatch):
     """
-    Provides a real ShellAdapter resolved via the Test Harness.
+    Provides a TestEnvironment configured with a real shell and system environment.
     """
-    # ShellAdapter needs a real SystemEnvironment to get the PATH
     from teddy_executor.core.ports.outbound import ISystemEnvironment
     from teddy_executor.adapters.outbound.system_environment_adapter import (
         SystemEnvironmentAdapter,
     )
 
-    env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_shell()
+    # Use the default managed workspace (tests/.tmp/test_...)
+    env = TestEnvironment(monkeypatch).setup().with_real_shell()
     env.container.register(ISystemEnvironment, SystemEnvironmentAdapter)
+    yield env
+    env.teardown()
 
-    return env.get_service(IShellExecutor)
+
+@pytest.fixture
+def adapter(test_env):
+    """Provides the ShellExecutor from the test environment."""
+    return test_env.get_service(IShellExecutor)
 
 
 def test_shell_adapter_executes_command_successfully(adapter):
@@ -63,22 +68,21 @@ def test_shell_adapter_handles_failed_command(adapter):
     )
 
 
-def test_shell_adapter_executes_in_specified_cwd(adapter):
+def test_shell_adapter_executes_in_specified_cwd(adapter, test_env):
     """
     Tests that the ShellAdapter correctly executes a command in the specified
     current working directory (cwd).
     """
     # ARRANGE
-    # Since adapter fixture already chdir'd to tmp_path, we use relative paths
-    temp_dir_name = "temp_test_dir_cwd"
-    Path(temp_dir_name).mkdir(exist_ok=True)
-    (Path(temp_dir_name) / "testfile.txt").write_text("hello", encoding="utf-8")
+    temp_dir = test_env.workspace / "temp_test_dir_cwd"
+    temp_dir.mkdir(exist_ok=True)
+    (temp_dir / "testfile.txt").write_text("hello", encoding="utf-8")
 
     # Command to list contents of the directory
     command = "ls" if sys.platform != "win32" else "dir"
 
     # ACT
-    result = adapter.execute(command, cwd=temp_dir_name)
+    result = adapter.execute(command, cwd=str(temp_dir))
 
     # ASSERT
     assert result["return_code"] == 0
@@ -129,17 +133,17 @@ def test_shell_adapter_handles_multiline_command_safely(adapter):
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX specific shell features")
-def test_shell_adapter_handles_wildcards_on_posix(adapter):
+def test_shell_adapter_handles_wildcards_on_posix(adapter, test_env):
     """Verify that the shell adapter can execute commands with wildcards."""
     # ARRANGE
-    temp_dir_name = "temp_test_dir_wildcard"
-    Path(temp_dir_name).mkdir(exist_ok=True)
-    (Path(temp_dir_name) / "test1.py").touch()
-    (Path(temp_dir_name) / "test2.py").touch()
-    (Path(temp_dir_name) / "other.txt").touch()
+    temp_dir = test_env.workspace / "temp_test_dir_wildcard"
+    temp_dir.mkdir(exist_ok=True)
+    (temp_dir / "test1.py").touch()
+    (temp_dir / "test2.py").touch()
+    (temp_dir / "other.txt").touch()
 
     # ACT
-    result = adapter.execute("ls *.py", cwd=temp_dir_name)
+    result = adapter.execute("ls *.py", cwd=str(temp_dir))
 
     # ASSERT
     assert result["return_code"] == 0
