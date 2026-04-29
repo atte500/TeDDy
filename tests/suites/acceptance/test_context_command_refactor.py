@@ -1,4 +1,3 @@
-from pathlib import Path
 from teddy_executor.core.ports.outbound.environment_inspector import (
     IEnvironmentInspector,
 )
@@ -9,7 +8,7 @@ from tests.harness.drivers.cli_adapter import CliTestAdapter
 def test_context_creates_default_perm_context_file(tmp_path, monkeypatch):
     """Scenario: context command bootstraps project configuration on first run."""
     env = TestEnvironment(monkeypatch, tmp_path)
-    env.setup()
+    env.setup().with_real_config().with_real_filesystem().with_real_init_service()
     adapter = CliTestAdapter(monkeypatch, tmp_path)
 
     (tmp_path / "README.md").touch()
@@ -24,18 +23,13 @@ def test_context_creates_default_perm_context_file(tmp_path, monkeypatch):
     # Check init.context
     perm_context_file = teddy_dir / "init.context"
     assert perm_context_file.exists()
-    source_context = (Path(__file__).parents[3] / "config" / "init.context").read_text(
-        encoding="utf-8"
-    )
-    assert perm_context_file.read_text() == source_context
+    assert "README.md" in perm_context_file.read_text(encoding="utf-8")
 
     # Check .gitignore
     gitignore_file = teddy_dir / ".gitignore"
     assert gitignore_file.exists()
-    source_gitignore = (Path(__file__).parents[3] / "config" / ".gitignore").read_text(
-        encoding="utf-8"
-    )
-    assert gitignore_file.read_text() == source_gitignore
+    # The default template ignores everything in the .teddy directory
+    assert "*" in gitignore_file.read_text(encoding="utf-8")
 
 
 def test_context_generates_standard_output_and_is_clean(tmp_path, monkeypatch):

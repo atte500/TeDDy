@@ -53,7 +53,7 @@ def register_infrastructure(container: punq.Container) -> None:
         factory=lambda: ShellAdapter(
             command_builder=container.resolve(ShellCommandBuilder),
             max_execute_lines=container.resolve(IConfigService).get_setting(
-                "max_execute_lines", 100
+                "execution.max_output_lines"
             ),
         ),
         scope=punq.Scope.transient,
@@ -65,12 +65,16 @@ def register_infrastructure(container: punq.Container) -> None:
         factory=lambda: LocalFileSystemAdapter(
             edit_simulator=container.resolve(IEditSimulator),
             max_read_lines=container.resolve(IConfigService).get_setting(
-                "max_read_lines", 1000
+                "read.max_lines"
             ),
         ),
         scope=punq.Scope.transient,
     )
-    container.register(IWebScraper, WebScraperAdapter, scope=punq.Scope.transient)
+    container.register(
+        IWebScraper,
+        factory=lambda: WebScraperAdapter(container.resolve(IConfigService)),
+        scope=punq.Scope.transient,
+    )
     container.register(
         IUserInteractor,
         factory=lambda: ConsoleInteractorAdapter(

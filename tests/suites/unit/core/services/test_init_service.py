@@ -49,3 +49,19 @@ def test_ensure_initialized_does_not_overwrite_existing_files(service, mock_fs):
     # Then
     mock_fs.create_directory.assert_not_called()
     mock_fs.write_file.assert_not_called()
+
+
+def test_init_service_default_path_resolution(mock_fs):
+    """
+    Verifies that the default constructor resolves to the package resources.
+    This test will fail if the relative path is broken.
+    """
+    # Given
+    service = InitService(file_system=mock_fs)
+
+    # Then
+    # The resolved path should now be inside the package structure,
+    # no longer pointing to the root 'config' directory.
+    assert "src/teddy_executor/resources/config" in service._config_dir.replace(
+        "\\", "/"
+    )

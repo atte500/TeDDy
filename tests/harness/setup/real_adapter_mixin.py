@@ -1,4 +1,3 @@
-import os
 from typing import Any
 
 
@@ -129,13 +128,9 @@ class RealAdapterMixin:
         from teddy_executor.core.services.init_service import InitService
         from teddy_executor.core.ports.outbound import IFileSystemManager
 
-        real_config = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "../../../config")
-        )
+        # Allow InitService to use its internal importlib.resources logic
         self._container.register(
             IInitUseCase,
-            lambda: InitService(
-                self.get_service(IFileSystemManager), config_dir=real_config
-            ),
+            lambda: InitService(self.get_service(IFileSystemManager)),
         )
         return self

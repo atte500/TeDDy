@@ -7,7 +7,7 @@ def test_first_time_initialization_creates_teddy_directory_and_files(
 ):
     """Scenario: First-time initialization of the .teddy directory."""
     env = TestEnvironment(monkeypatch, tmp_path)
-    env.setup().with_real_config()
+    env.setup().with_real_config().with_real_filesystem().with_real_init_service()
     adapter = CliTestAdapter(monkeypatch, tmp_path)
 
     # When
@@ -24,6 +24,6 @@ def test_first_time_initialization_creates_teddy_directory_and_files(
     assert config_file.is_file(), "config.yaml should be created"
     assert init_context_file.is_file(), "init.context should be created"
 
-    # Verify default content
+    # Verify default content exists
     assert "TeDDy Configuration" in config_file.read_text(encoding="utf-8")
     assert "README.md" in init_context_file.read_text(encoding="utf-8")

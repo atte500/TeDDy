@@ -58,12 +58,17 @@ def test_generate_plan_uses_model_from_config(env):
     service.generate_plan(user_message="test", turn_dir="01")
 
     # Assert
+    mock_config.get_setting.assert_called_with("llm.planning_model")
     assert mock_llm_client.get_completion.called
     actual_model = mock_llm_client.get_completion.call_args.kwargs["model"]
     assert actual_model == "config-specified-model"
 
 
-def test_generate_plan_uses_fallback_model_if_not_in_config(env):
+def test_generate_plan_requests_harmonized_model_key(env):
+    """
+    Verifies that the service requests the correct harmonized key.
+    The fallback logic is now centralized in the config baseline.
+    """
     # Arrange
     mock_config = env.mock_port(IConfigService)
     mock_prompt_manager = env.mock_port(IPromptManager)
@@ -74,7 +79,7 @@ def test_generate_plan_uses_fallback_model_if_not_in_config(env):
 
     service = env.get_service(PlanningService)
 
-    mock_config.get_setting.return_value = None
+    mock_config.get_setting.return_value = "custom-model"
     mock_prompt_manager.resolve_message.return_value = "test"
     mock_prompt_manager.resolve_agent_metadata.return_value = (
         "pathfinder",
@@ -90,9 +95,9 @@ def test_generate_plan_uses_fallback_model_if_not_in_config(env):
     service.generate_plan(user_message="test", turn_dir="01")
 
     # Assert
-    assert mock_llm_client.get_completion.called
+    mock_config.get_setting.assert_called_with("llm.planning_model")
     actual_model = mock_llm_client.get_completion.call_args.kwargs["model"]
-    assert actual_model == "gpt-4o"
+    assert actual_model == "custom-model"
 
 
 def test_generate_plan_writes_standardized_input_md(env):

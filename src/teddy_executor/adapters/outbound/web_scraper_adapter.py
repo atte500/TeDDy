@@ -3,9 +3,9 @@ from http import HTTPStatus
 import requests
 
 from teddy_executor.core.ports.outbound.web_scraper import WebScraper
+from teddy_executor.core.ports.outbound.config_service import IConfigService
 
 
-DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36"
 MIN_GITHUB_CONTENT_LENGTH = 10
 
 
@@ -13,6 +13,9 @@ class WebScraperAdapter(WebScraper):
     """
     An adapter that implements the WebScraper port using requests and trafilatura.
     """
+
+    def __init__(self, config_service: IConfigService = None):  # type: ignore
+        self._config_service = config_service
 
     def _get_trafilatura(self):
         """Lazy-load trafilatura to keep CLI startup fast."""
@@ -152,7 +155,13 @@ class WebScraperAdapter(WebScraper):
             requests.exceptions.RequestException: For connection errors or non-200
                                                   status codes.
         """
-        headers = {"User-Agent": DEFAULT_USER_AGENT}
+        user_agent = "TeDDy-Bot/1.0"
+        if self._config_service:
+            cfg_agent = self._config_service.get_setting("web_scraper.user_agent")
+            if cfg_agent:
+                user_agent = str(cfg_agent)
+
+        headers = {"User-Agent": user_agent}
 
         if url.startswith("https://github.com/") and "/blob/" in url:
             raw_url = url.replace("github.com", "raw.githubusercontent.com").replace(

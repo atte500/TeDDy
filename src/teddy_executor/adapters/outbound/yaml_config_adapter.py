@@ -1,4 +1,5 @@
 import os
+from importlib import resources
 from typing import Any, Dict, Optional
 import yaml
 from teddy_executor.core.ports.outbound.config_service import IConfigService
@@ -16,10 +17,34 @@ class YamlConfigAdapter(IConfigService):
             self._config_path = os.path.join(root_dir, config_path)
         else:
             self._config_path = config_path
-        self._config: Dict[str, Any] = self._load_config()
+        self._config: Dict[str, Any] = self._load_layered_config()
 
-    def _load_config(self) -> Dict[str, Any]:
-        """Loads the YAML configuration file if it exists."""
+    def _load_layered_config(self) -> Dict[str, Any]:
+        """Loads the baseline config and merges it with the user config."""
+        # 1. Load Bundled Baseline
+        config = self._load_baseline()
+
+        # 2. Load User Overrides
+        user_config = self._load_user_config()
+
+        # 3. Simple Deep Merge (Layered)
+        self._merge_dicts(config, user_config)
+        return config
+
+    def _load_baseline(self) -> Dict[str, Any]:
+        """Loads the bundled baseline config from package resources."""
+        try:
+            resource_path = resources.files("teddy_executor.resources.config").joinpath(
+                "config.yaml"
+            )
+            with resource_path.open("r", encoding="utf-8") as f:
+                data = yaml.safe_load(f)
+                return data if isinstance(data, dict) else {}
+        except (yaml.YAMLError, OSError, ImportError, AttributeError):
+            return {}
+
+    def _load_user_config(self) -> Dict[str, Any]:
+        """Loads the user-specific YAML configuration file if it exists."""
         if not os.path.exists(self._config_path):
             return {}
 
@@ -30,6 +55,14 @@ class YamlConfigAdapter(IConfigService):
         except (yaml.YAMLError, OSError):
             return {}
 
+    def _merge_dicts(self, base: Dict[str, Any], overrides: Dict[str, Any]) -> None:
+        """Recursively merges overrides into base."""
+        for key, value in overrides.items():
+            if key in base and isinstance(base[key], dict) and isinstance(value, dict):
+                self._merge_dicts(base[key], value)
+            else:
+                base[key] = value
+
     def get_setting(self, key: str, default: Optional[Any] = None) -> Optional[Any]:
         """
         Retrieves a configuration value by its key from the loaded YAML.
@@ -38,34 +71,36 @@ class YamlConfigAdapter(IConfigService):
         if not key:
             return default
 
-        # 1. Try exact match (handles flat keys or dotted keys in a flat dict)
+        # 1. Try exact match
         if key in self._config:
             return self._config[key]
 
-        # 2. Try nested resolution (standard 'execution.similarity_threshold')
         parts = key.split(".")
-        current = self._config
-        found = True
-        for part in parts:
-            if isinstance(current, dict) and part in current:
-                current = current[part]
-            else:
-                found = False
-                break
-        if found:
-            return current
-
-        # 3. Try "doubled prefix" or path-based fallback
-        # This handles 'execution.similarity_threshold' -> look for 'similarity_threshold'
-        # Or 'execution.execution.key' -> look for 'execution.key'
         if len(parts) > 1:
+            # 2. Prefer root-level leaf match for backward compatibility
             leaf_key = parts[-1]
             if leaf_key in self._config:
                 return self._config[leaf_key]
 
-            # Try one level deeper for doubled prefix
+        # 3. Try nested resolution
+        result = self._resolve_nested(parts)
+        if result is not None:
+            return result
+
+        # 4. Try path-based fallbacks
+        if len(parts) > 1:
             second_attempt = ".".join(parts[1:])
             if second_attempt in self._config:
                 return self._config[second_attempt]
 
         return default
+
+    def _resolve_nested(self, parts: list[str]) -> Optional[Any]:
+        """Iteratively resolves nested keys."""
+        current = self._config
+        for part in parts:
+            if isinstance(current, dict) and part in current:
+                current = current[part]
+            else:
+                return None
+        return current

@@ -1,4 +1,5 @@
 import os
+from importlib import resources
 from teddy_executor.core.ports.inbound.init import IInitUseCase
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 
@@ -11,9 +12,13 @@ class InitService(IInitUseCase):
     def __init__(self, file_system: IFileSystemManager, config_dir: str | None = None):
         self._file_system = file_system
         # Find the config directory relative to the package root if not provided
-        self._config_dir = config_dir or os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "config")
-        )
+        if config_dir:
+            self._config_dir = config_dir
+        else:
+            # Use importlib.resources to find the bundled config templates
+            resource_path = resources.files("teddy_executor.resources.config")
+            # Ensure we resolve to an absolute string for compatibility with the FileSystem port
+            self._config_dir = os.path.abspath(str(resource_path))
 
     def _get_default_content(self, filename: str) -> str | None:
         """Loads default content from the config directory."""

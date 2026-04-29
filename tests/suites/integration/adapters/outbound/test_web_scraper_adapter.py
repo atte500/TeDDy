@@ -12,7 +12,9 @@ def test_get_content_for_github_url_fetches_raw_content(monkeypatch):
     Then it should transform the URL to the raw content URL and fetch the raw text.
     """
     # Arrange
-    env = TestEnvironment(monkeypatch).setup().with_real_web_scraper()
+    env = (
+        TestEnvironment(monkeypatch).setup().with_real_config().with_real_web_scraper()
+    )
     scraper = env.get_service(IWebScraper)
 
     github_url = "https://github.com/user/repo/blob/main/path/to/file.py"
@@ -43,7 +45,9 @@ def test_get_content_falls_back_on_403_error(monkeypatch):
     Then it should fall back to using trafilatura.fetch_url.
     """
     # Arrange
-    env = TestEnvironment(monkeypatch).setup().with_real_web_scraper()
+    env = (
+        TestEnvironment(monkeypatch).setup().with_real_config().with_real_web_scraper()
+    )
     scraper = env.get_service(IWebScraper)
 
     from unittest.mock import MagicMock
@@ -88,7 +92,9 @@ def test_get_content_for_article_strips_boilerplate(monkeypatch):
     Then it should use trafilatura to extract the main content.
     """
     # Arrange
-    env = TestEnvironment(monkeypatch).setup().with_real_web_scraper()
+    env = (
+        TestEnvironment(monkeypatch).setup().with_real_config().with_real_web_scraper()
+    )
     scraper = env.get_service(IWebScraper)
 
     article_url = "https://example.com/article"
