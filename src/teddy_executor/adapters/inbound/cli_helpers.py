@@ -38,7 +38,7 @@ def find_project_root() -> Path:
 def echo_and_copy(
     content: str,
     no_copy: bool = False,
-    confirmation_message: str = "Copied to clipboard.",
+    confirmation_message: str = "Output copied to clipboard.",
     content_to_copy: Optional[str] = None,
 ):
     """Prints content to stdout and copies it to the clipboard unless disabled."""
