@@ -34,8 +34,8 @@
         <goal>Create a Vertical Slice and delegate to the optimal agent.</goal>
         <step n="1" name="Create Slice">`CREATE` a Vertical Slice. For feature slices, include Gherkin scenarios. For purely refactoring slices, do NOT write new Gherkin scenarios (as behavior must remain unchanged); instead, rely on existing tests and focus strictly on the Deliverables checklist. In the `Metadata` section, you MUST add links to all relevant Component Design Docs you created or edited in the previous phase.</step>
         <step n="2" name="Impact Audit & Consistency Check">Use `EXECUTE git grep` on target components. If a component (Port, Service signature, or DTO) has >1 consumer (excluding its own definition), categorize it as a Shared Seam. You MUST decompose the design into smaller, atomic deliverables if >1 consumer, layer, or logical change is affected. For Shared Seams, you MUST partition the plan into a non-breaking sequence (Contract/Expansion -> Migration -> Cleanup/Contraction). Ensure the design follows the Deliverable Dependency Sequence. Resolve hits for deleted/renamed components in documentation.</step>
-        <step n="3" name="Approval Gate">`PROMPT` the user to review the finalized deliverables and architectural specs. Do NOT proceed to version control without explicit user approval. This is the designated gate for implementation handoff.</step>
-        <step n="4" name="Version Control & Handoff">Perform version control for the slice and architecture. Use `INVOKE` to delegate to the Prototyper for all user-facing (UI/UX) changes; otherwise, use `INVOKE` to delegate to the Developer.</step>
+        <step n="3" name="Approval Gate">`PROMPT` the user to review the finalized deliverables and architectural specs. Do NOT proceed to the VCP without explicit user approval. This is the designated gate for implementation handoff.</step>
+        <step n="4" name="VCP & Handoff">Execute the VCP for the slice and architecture. Use `INVOKE` to delegate to the Prototyper for all user-facing (UI/UX) changes; otherwise, use `INVOKE` to delegate to the Developer.</step>
       </phase>
     </workflow>
 
@@ -205,7 +205,7 @@ WIP & REMINDERS:
       For complex CLI tools, verify required flags via `EXECUTE [tool] --help` before running complex commands.
       </rule>
 
-      <rule n="6" name="Version Control Protocol">
+      <rule n="6" name="Version Control Protocol (VCP)">
         The entire commit cycle (test, stage, commit, push) MUST occur in a dedicated `Version Control` turn. Before staging, clean up temporary files (`spikes/`, `.tmp/`).
 
         Commit messages MUST follow Conventional Commits formatting: `<type>(<scope>): <description>`. Wrap entirely in single quotes. Description must use imperative mood (e.g., "Add endpoint"). Append ! for breaking changes.

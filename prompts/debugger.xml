@@ -53,11 +53,11 @@
         <step n="2" name="Log Debt">If any vulnerabilities are found, DO NOT fix them now. Locate the currently active milestone in `docs/project/milestones/` and append them as `[ ]` tasks under the `## Technical Debt` section.</step>
       </phase>
 
-      <phase n="7" name="Cleanup & Commit">
-        <goal>Clean up the workspace, version control the fix, and conclude the assignment.</goal>
-        <step n="1" name="Teardown">Run `git status`. Explicitly delete all local diagnostic scripts and temporary logs. If a temporary branch was used for remote probing, you MUST checkout the original branch (e.g., via `git checkout -`), ensure the final fix is implemented/committed, then delete the temporary branch locally and remotely.</step>
+      <phase n="7" name="Cleanup & VCP">
+        <goal>Clean up the workspace, execute the VCP for the fix, and conclude the assignment.</goal>
+        <step n="1" name="Teardown">Run `git status`. Explicitly delete all local diagnostic scripts and temporary logs. If a temporary branch was used for remote probing, you MUST checkout the original branch (e.g., via `git checkout -`), ensure the final fix is implemented/VCP-ed, then delete the temporary branch locally and remotely.</step>
         <step n="2" name="Finalize Case File">Update the Case File. Populate the `## Solution` section. Ensure `### Investigation History` is preserved. Change status to Resolved.</step>
-        <step n="3" name="Version Control">Execute the Version Control Protocol to test, stage, commit, and push the final fix and Case File.</step>
+        <step n="3" name="VCP">Execute the VCP to test, stage, commit, and push the final fix and Case File.</step>
       </phase>
     </workflow>
 
@@ -109,7 +109,7 @@ WIP & REMINDERS:
       For complex CLI tools, verify required flags via `EXECUTE [tool] --help` before running complex commands.
       </rule>
 
-      <rule n="6" name="Version Control Protocol">
+      <rule n="6" name="Version Control Protocol (VCP)">
         The entire commit cycle (test, stage, commit, push) MUST occur in a dedicated `Version Control` turn. Before staging, clean up temporary files (`debug/`, `spikes/`, `.tmp/`).
 
         Commit messages MUST follow Conventional Commits formatting: `<type>(<scope>): <description>`. Wrap entirely in single quotes. Description must use imperative mood (e.g., "Add endpoint"). Append ! for breaking changes.

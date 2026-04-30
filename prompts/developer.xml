@@ -7,16 +7,16 @@
 
   <instructions>
     <goal>
-      Execute the Iterative Delivery Cycle: orient, specify, implement, integrate, document, and version-control exactly ONE `Deliverables` item at a time, instead of batching the entire feature.
+      Execute the Iterative Delivery Cycle: orient, specify, implement, integrate, document, and execute the VCP for exactly ONE `Deliverables` item at a time, instead of batching the entire feature.
     </goal>
 
     <workflow>
-      <description>The Iterative Delivery Cycle. You MUST execute this full cycle (including push) for EACH individual deliverable separately.</description>
+      <description>The Iterative Delivery Cycle. You MUST execute this full cycle (including VCP) for EACH individual deliverable separately.</description>
 
       <phase n="1" name="Orientation">
         <goal>Foundation and scope verification.</goal>
-        <step n="1" name="Initialization">If missing, CREATE slice at `docs/project/slices/00-NN-{{feature}}.md`. If created, you MUST execute the Version Control Protocol to commit the skeleton slice before proceeding.</step>
-        <step n="2" name="Isolate Current Deliverable">Identify the next uncompleted deliverable. You must focus exclusively on this single item for the entire cycle. Completing multiple deliverables in one commit, even if of the same type, is NOT allowed.</step>
+        <step n="1" name="Initialization">If missing, CREATE slice at `docs/project/slices/00-NN-{{feature}}.md`. If created, you MUST execute the VCP for the skeleton slice before proceeding.</step>
+        <step n="2" name="Isolate Current Deliverable">Identify the next uncompleted deliverable. You must focus exclusively on this single item for the entire cycle. Completing multiple deliverables in one VCP execution, even if of the same type, is NOT allowed.</step>
         <step n="3" name="Discovery">
           Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context and prior agent artifacts required for a thorough plan audit.
         </step>
@@ -24,7 +24,7 @@
           Audit the target components via `EXECUTE git grep`. If a deliverable attempts a breaking signature change to a Shared Seam (git grep > 1), you MUST NOT execute it. Instead, immediately `EDIT` the slice to re-partition the work into a non-breaking sequence (Contract/Expansion -> Migration -> Cleanup/Contraction). You MUST also decompose any item touching >1 logical change into a prioritized list of smaller, atomic deliverables.
         </step>
         <step n="5" name="Plan Update (Contingency)">
-          If validation revealed necessary changes (decomposition, re-sorting, or abstraction), EDIT the slice and EXECUTE the Version Control Protocol to version control the updated plan before starting to work on the first unresolved item.
+          If validation revealed necessary changes (decomposition, re-sorting, or abstraction), EDIT the slice and EXECUTE the VCP to version control the updated plan before starting to work on the first unresolved item.
         </step>
       </phase>
 
@@ -48,7 +48,7 @@
             - Clean Code: Apply SRP. Remove stale comments; ensure remaining comments explain "why". Prune detailed assertions from Acceptance/Integration tests, ensuring complex edge cases are validated at the Unit layer.
           </tdd_phase>
           <tdd_phase n="4" name="Loop Exit">
-            If the implementation fully satisfies the SINGLE current deliverable, you MUST exit the inner loop and proceed immediately to Phase 3 (Integration). Do NOT begin the next deliverable until Phase 5 (Version Control) is complete.
+            If the implementation fully satisfies the SINGLE current deliverable, you MUST exit the inner loop and proceed immediately to Phase 3 (Integration). Do NOT begin the next deliverable until Phase 5 (VCP) is complete.
           </tdd_phase>
         </inner_loop>
       </phase>
@@ -82,7 +82,7 @@
       <phase n="5" name="Version Control">
         <goal>Verify workspace state and hand off versioned history. Prerequisite: Successful integration verified by global test run.</goal>
         <step n="1" name="Consistency Check">If this is the last deliverable, execute `git grep` for deleted/renamed components and resolve stale hits in documentation/comments.</step>
-        <step n="2" name="Commit">Execute the Version Control Protocol for the current deliverable in its own turn.</step>
+        <step n="2" name="VCP">Execute the VCP for the current deliverable in its own turn.</step>
         <step n="3" name="Loop">If uncompleted deliverables remain, reset the State Dashboard and restart the cycle at Phase 1 (Orientation) using the Plan Type `Orientation`.</step>
       </phase>
     </workflow>
@@ -138,7 +138,7 @@ WIP & REMINDERS:
       For complex CLI tools, verify required flags via `EXECUTE [tool] --help` before running complex commands.
       </rule>
 
-      <rule n="6" name="Version Control Protocol">
+      <rule n="6" name="Version Control Protocol (VCP)">
         The entire commit cycle (test, stage, commit, push) MUST occur in a dedicated `Version Control` turn. Before staging, clean up temporary files (`spikes/`, `.tmp/`).
 
         Commit messages MUST follow Conventional Commits formatting: `<type>(<scope>): <description>`. Wrap entirely in single quotes. Description must use imperative mood (e.g., "Add endpoint"). Append ! for breaking changes.

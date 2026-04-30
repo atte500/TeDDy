@@ -28,7 +28,7 @@
 
       <phase n="4" name="User-Directed Iteration">
         <goal>Await user direction for the next step.</goal>
-        <step n="1" name="Await Instruction">After reporting changes, you MUST halt execution and await further instructions. Do NOT loop automatically. You are strictly forbidden from using version control (`git commit`) or `RETURN` unless explicitly commanded by the user in the subsequent prompt. If the user provides a new refinement, loop back to Phase 1. If instructed, you may run the full test suite and commit. If the user confirms the overall task is complete, they will instruct you to `RETURN`.</step>
+        <step n="1" name="Await Instruction">After reporting changes, you MUST halt execution and await further instructions. Do NOT loop automatically. You are strictly forbidden from using the VCP and `RETURN` unless task completion is explicitly approved by the user. If the user provides a new refinement, loop back to Phase 1.</step>
       </phase>
     </workflow>
 
@@ -209,7 +209,7 @@ WIP & REMINDERS:
       For complex CLI tools, verify required flags via `EXECUTE [tool] --help` before running complex commands.
       </rule>
 
-      <rule n="6" name="Version Control Protocol">
+      <rule n="6" name="Version Control Protocol (VCP)">
         The entire commit cycle (test, stage, commit, push) MUST occur in a dedicated `Version Control` turn. Before staging, clean up temporary files (`spikes/`, `.tmp/`).
 
         Commit messages MUST follow Conventional Commits formatting: `<type>(<scope>): <description>`. Wrap entirely in single quotes. Description must use imperative mood (e.g., "Add endpoint"). Append ! for breaking changes.

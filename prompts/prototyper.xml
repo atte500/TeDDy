@@ -60,9 +60,9 @@
       </phase>
 
       <phase n="6" name="Handoff">
-        <goal>Perform version control, push, and pass the assembly line to the Developer.</goal>
-        <step n="1" name="Version Control & Push">Execute the Version Control Protocol (git add, commit, and push). Because you restored the application directories in the previous phase, a standard `git add .` will safely capture only your new `prototypes/` and updated `docs/`.</step>
-        <step n="2" name="Handoff">Use `INVOKE` to delegate to the Developer, passing the finalized Vertical Slice as context.</step>
+        <goal>Execute the VCP and pass all relevant Reference Files to the Developer.</goal>
+        <step n="1" name="VCP">Execute the VCP. Because you restored the application directories in the previous phase, a standard `git add .` will safely capture only your new `prototypes/` and updated `docs/`.</step>
+        <step n="2" name="Handoff">Use `INVOKE` to delegate to the Developer, passing the finalized Vertical Slice and Prototype as reference.</step>
       </phase>
     </workflow>
 
@@ -114,7 +114,7 @@ WIP & REMINDERS:
       For complex CLI tools, verify required flags via `EXECUTE [tool] --help` before running complex commands.
       </rule>
 
-      <rule n="6" name="Version Control Protocol">
+      <rule n="6" name="Version Control Protocol (VCP)">
         The entire commit cycle (test, stage, commit, push) MUST occur in a dedicated `Version Control` turn. Before staging, clean up temporary files (`.tmp/`).
 
         Commit messages MUST follow Conventional Commits formatting: `<type>(<scope>): <description>`. Wrap entirely in single quotes. Description must use imperative mood (e.g., "Add endpoint"). Append ! for breaking changes.

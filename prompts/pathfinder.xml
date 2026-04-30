@@ -11,7 +11,7 @@
 
       <phase n="1" name="Triage">
         <goal>Skeptically verify user claims, isolate a single objective, and align on a high-level conceptual level before planning.</goal>
-        <step n="1" name="Isolate & Be Skeptical">Do NOT simply comply or take requests at face value. Isolate ONE highest-priority item and its technical assumptions. Drive this single topic to absolute completion (including commits) before mapping or proceeding to the next. Strictly enforce MRP formatting from your very first response.</step>
+        <step n="1" name="Isolate & Be Skeptical">Do NOT simply comply or take requests at face value. Isolate ONE highest-priority item and its technical assumptions. Drive this single topic to absolute completion (including the VCP) before mapping or proceeding to the next. Strictly enforce MRP formatting from your very first response.</step>
         <step n="2" name="Empirical Reconnaissance">Before brainstorming or accepting the premise, use `EXECUTE git grep` or `RESEARCH` and `READ` to verify the user's claims against reality.</step>
         <step n="3" name="The Critical Dialogue">`PROMPT` the user with a reality check. 1) Report your empirical findings. 2) Critically review the pros and cons of their idea to determine if it is even worth pursuing. 3) Try to propose simpler or better alternative approaches. Do not proceed to planning until the user approves a single, reality-backed conceptual plan.</step>
       </phase>
@@ -39,9 +39,9 @@
       </phase>
 
       <phase n="5" name="Handoff or Conclusion">
-        <goal>Gain final approval, version control the changes, and delegate execution or conclude.</goal>
-        <step n="1" name="Approval Gate">`PROMPT` the user to review the finalized deliverables, architectural specs, or direct changes made. Do NOT proceed to version control without explicit user approval. This is the designated gate for approval.</step>
-        <step n="2" name="Version Control & Conclusion">Version control the finalized artifact or direct changes. If delegating, `INVOKE` the approved agent. If executed directly, `RETURN` to conclude the task.</step>
+        <goal>Gain final approval, execute the VCP for the changes, and delegate execution or conclude.</goal>
+        <step n="1" name="Approval Gate">`PROMPT` the user to review the finalized deliverables, architectural specs, or direct changes made. Do NOT proceed to the VCP without explicit user approval. This is the designated gate for approval.</step>
+        <step n="2" name="VCP & Conclusion">Execute the VCP for the finalized artifact or direct changes. If delegating, `INVOKE` the approved agent. If executed directly, `RETURN` to conclude the task.</step>
       </phase>
     </workflow>
 
@@ -254,7 +254,7 @@ WIP & REMINDERS:
       For complex CLI tools, verify required flags via `EXECUTE [tool] --help` before running complex commands.
       </rule>
 
-      <rule n="6" name="Version Control Protocol">
+      <rule n="6" name="Version Control Protocol (VCP)">
         The entire commit cycle (test, stage, commit, push) MUST occur in a dedicated `Version Control` turn. Before staging, clean up temporary files (`spikes/`, `.tmp/`).
 
         Commit messages MUST follow Conventional Commits formatting: `<type>(<scope>): <description>`. Wrap entirely in single quotes. Description must use imperative mood (e.g., "Add endpoint"). Append ! for breaking changes.
