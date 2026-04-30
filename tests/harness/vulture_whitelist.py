@@ -19,9 +19,11 @@ from teddy_executor.core.domain.models.planning_ports import SessionPorts
 
 # 3. Ports & Services
 from teddy_executor.core.ports.inbound.edit_simulator import IEditSimulator
+from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
 from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.config_service import IConfigService
+from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 from teddy_executor.core.ports.outbound.markdown_report_formatter import (
@@ -41,6 +43,7 @@ _models = (
     ActionData,
     SessionPorts,
     IEditSimulator,
+    IPlanValidator,
     IPlanningUseCase,
     IRunPlanUseCase,
     IConfigService,
@@ -51,6 +54,7 @@ _models = (
     IUserInteractor,
     WebScraper,
     IWebSearcher,
+    ISessionRepository,
     SessionPlanner,
     SessionReplanner,
 )
@@ -66,6 +70,12 @@ _methods = (
     IFileSystemManager.create_file,
     IFileSystemManager.edit_file,
     ISessionManager.create_session,
+    ISessionRepository.is_valid_path,
+    ISessionRepository.to_root_relative,
+    ISessionRepository.load_meta,
+    ISessionRepository.create_turn_directory,
+    IPlanValidator.validate,
+    IRunPlanUseCase.execute,
 )
 
 
