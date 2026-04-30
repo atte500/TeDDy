@@ -50,7 +50,7 @@
       <phase n="5" name="Finalization">
         <goal>Perform a final polish of the Vertical Slice, tear down unapproved spikes, and prepare for handoff.</goal>
         <step n="1" name="Impact Audit & Consistency Check">
-          Verify impact of the finalized slice via `EXECUTE git grep` on target components. You MUST decompose the prototype into smaller, atomic deliverables if >1 consumer, layer, or logical change is affected. Ensure the plan follows the Deliverable Dependency Sequence (Contract -> Harness -> Seam -> Logic -> Wiring -> Migration -> Refactor -> Cleanup). Validate Branch by Abstraction for shared contracts. Resolve hits for deleted/renamed components in documentation.
+          Use `EXECUTE git grep` on target components. If a component has >1 consumer (excluding its own definition), categorize it as a Shared Seam. You MUST decompose the plan into smaller, atomic deliverables if >1 consumer, layer, or logical change is affected. For Shared Seams, you MUST partition the plan into a non-breaking sequence (Contract/Expansion -> Migration -> Cleanup/Contraction). Ensure the plan follows the Deliverable Dependency Sequence. Resolve hits for deleted/renamed components in documentation.
         </step>
         <step n="2" name="Finalize Guidelines">Capture the insights, technical decisions, and friction points discovered during prototyping and `EDIT` the `## Guidelines for Implementation` section to ensure it is a comprehensive, finalized strategy for the Developer.</step>
         <step n="3" name="Harvest Debt">If any `[DEBT]` (frictions or architectural opportunities) was logged during this turn, `EDIT` the active Milestone's (`docs/project/milestones/`) `## Technical Debt` section to append it as a checkmarkable `[ ]` task.</step>
@@ -158,7 +158,7 @@ WIP & REMINDERS:
         </section>
         <section n="4" name="Deliverables">
           <item name="Heading">## Deliverables</item>
-          <item name="Content">Checklist of atomic units of work ordered following the Deliverable Dependency Sequence (not all types always required): 1. Contract (Interfaces; DTOs), 2. Harness (Infrastructure; Environment Setup; Dependencies; no tests), 3. Seam (Abstraction; Toggles; DI), 4. Logic (Rules; Algorithms), 5. Wiring (Origin -> Destination), 6. Migration (Schema; data), 7. Refactor (Client code), 8. Cleanup (Pruning). Format: `- [ ] **Type** - Description` (e.g., `- [ ] Logic - Add validation logic`).</item>
+          <item name="Content">Checklist of atomic units of work ordered following the Deliverable Dependency Sequence: 1. Contract (Interfaces; DTOs; Signatures; Expansion), 2. Harness (Infrastructure; Env), 3. Seam (Abstraction; Toggles; DI), 4. Logic (Rules; Algorithms), 5. Wiring (Origin -> Destination), 6. Migration (Updating consumers), 7. Refactor (Internal restructuring; non-breaking), 8. Cleanup (Pruning; Contraction). Format: `- [ ] **Type** - Description`.</item>
         </section>
         <section n="5" name="Delta Analysis">
           <item name="Heading">## Delta Analysis</item>
