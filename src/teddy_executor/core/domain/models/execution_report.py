@@ -34,6 +34,7 @@ class ActionLog:
     params: dict[str, Any]
     details: Any | None = None
     modified: bool = False
+    modified_fields: list[str] = field(default_factory=list)
     failed_command: str | None = None
 
 

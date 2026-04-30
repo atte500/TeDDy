@@ -38,6 +38,7 @@ class ActionData:
     description: str | None = None
     selected: bool = True
     modified: bool = False
+    modified_fields: list[str] = field(default_factory=list)
     executed: bool = False
     state: ExecutionStatus = ExecutionStatus.PENDING
     action_log: Optional[ActionLog] = None

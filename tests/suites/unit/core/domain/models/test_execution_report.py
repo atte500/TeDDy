@@ -30,6 +30,7 @@ def test_action_log_creation():
     )
     assert log.status == ActionStatus.SKIPPED
     assert log.status == "SKIPPED"
+    assert log.modified_fields == []
 
 
 def test_execution_report_creation():

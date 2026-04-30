@@ -29,7 +29,7 @@ Feature: User Modification Audit Trail
 ```
 
 ## Deliverables
-- [ ] **Logic** - Add `modified_fields: list[str]` to `ActionData` (plan.py) and `ActionLog` (execution_report.py).
+- [x] **Logic** - Add `modified_fields: list[str]` to `ActionData` (plan.py) and `ActionLog` (execution_report.py).
 - [ ] **Harness** - Update TUI event handlers to append field names to `modified_fields` whenever a parameter is successfully edited in the `ReviewerApp`.
 - [ ] **Refactor** - Remove `is_concise` from `IMarkdownReportFormatter` and `MarkdownReportFormatter`.
 - [ ] **Refactor** - Remove `is_concise` from `ExecutionReportAssembler` and any internal calls in the `ExecutionOrchestrator` or CLI handlers.
@@ -48,3 +48,9 @@ Feature: User Modification Audit Trail
 - Use the `TestEnvironment` to mock the TUI review process and verify that the resulting `ExecutionReport` contains the expected `modified_fields`.
 - Ensure that the "user modified" string only appears if modifications actually occurred.
 - When removing `is_concise`, ensure all tests that currently pass `is_concise=False` or `is_concise=True` are updated to match the new simplified signature.
+
+## Implementation Notes
+### Deliverable 1: Logic - modified_fields addition
+- Added `modified_fields: list[str]` to both `ActionData` (mutable, used during modification) and `ActionLog` (frozen, used for reporting).
+- Integrated assertions into existing domain model unit tests.
+- Verified that default values (empty lists) maintain backward compatibility with the existing 660+ tests.

@@ -84,4 +84,5 @@ def test_action_data_execution_state_defaults():
 
     action = ActionData(type="READ", params={}, description="test")
     assert action.executed is False
+    assert action.modified_fields == []
     assert action.state == ExecutionStatus.PENDING
