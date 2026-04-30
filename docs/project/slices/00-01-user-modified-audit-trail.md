@@ -37,7 +37,7 @@ Feature: User Modification Audit Trail
     - Remove the `is_concise` conditional blocks for Metadata, Rationale, and Original Plan (pruning these sections entirely).
     - Update the Action Log header to show `(user modified: field1, field2)` if `modified_fields` is not empty.
 - [x] **Cleanup** - Prune the `render_original_plan` and `render_rationale` macros from the Jinja template if they are no longer used.
-- [ ] **Cleanup** - Perform a global `git grep "is_concise"` to verify total elimination from the codebase (including tests, mocks, and legacy adapters).
+- [x] **Cleanup** - Perform a global `git grep "is_concise"` to verify total elimination from the codebase (including tests, mocks, and legacy adapters).
 
 ## Delta Analysis
 - **Domain:** `ActionData` and `ActionLog` are the primary state containers.
@@ -79,3 +79,9 @@ Feature: User Modification Audit Trail
 - Pruned `Rationale`, `Original Plan Metadata`, and `Original Action Plan` sections from the rendered report to reduce redundancy and improve AI readability.
 - Deleted unused macros: `render_rationale`, `render_metadata`, and `render_original_plan`.
 - Verified changes with 669 passing tests, ensuring no regressions in report generation across the suite.
+
+### Deliverable 7: Cleanup - is_concise Elimination
+- Performed a global `git grep` and removed stale `is_concise` references from `docs/architecture/`, `docs/project/milestones/`, and `docs/project/specs/`.
+- Verified that implementation (`src/`) is entirely clean of the parameter.
+- Maintained a regression test in `test_markdown_report_formatter_enhancements.py` to ensure the flag does not leak back into the template context.
+- Completed As-Built updates for `docs/architecture/core/domain/execution_report.md` and `docs/architecture/core/domain_model.md` to document the new `modified_fields` attribute.

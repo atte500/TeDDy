@@ -175,6 +175,7 @@ Represents a single action within a plan, including its parameters and execution
     *   `params` (dict): Action-specific parameters.
     *   `selected` (bool): Whether the action is currently selected for execution.
     *   `modified` (bool): Whether the action was modified by the user.
+    *   `modified_fields` (list[str]): Names of the specific fields modified by the user.
     *   `executed` (bool): Whether the action has been executed in the current session.
     *   `state` (ExecutionStatus): The outcome of the execution (`PENDING`, `SUCCESS`, or `FAILURE`).
     *   `user_response` (Optional[str]): The captured response from a `PROMPT` action.

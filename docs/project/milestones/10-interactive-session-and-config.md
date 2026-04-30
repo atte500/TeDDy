@@ -45,7 +45,7 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 - [x] **Slice 2: Auto-Initialization**
     - Automatically initialize `.teddy/config.yaml` and `.teddy/init.context` with default template content if they do not exist when the CLI is invoked.
 - [x] **Slice 3: Refactor Execution Report Template**
-    - Modify the `execution_report.md.j2` template to correctly generate "Session Report" and "CLI Report" formats based on an `is_concise` flag.
+    - Standardize the `execution_report.md.j2` template to provide a pruned, readable audit trail (replacing the legacy `is_concise` logic).
 - [x] **Slice 4: Core Session & Context Engine**
     - Implement the backbone of the interactive session workflow.
     - Implement `SessionManager` and the basic `new`, `plan`, and `execute` commands.
