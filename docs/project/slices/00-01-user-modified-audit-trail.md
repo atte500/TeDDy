@@ -32,7 +32,7 @@ Feature: User Modification Audit Trail
 - [x] **Logic** - Add `modified_fields: list[str]` to `ActionData` (plan.py) and `ActionLog` (execution_report.py).
 - [x] **Harness** - Update TUI event handlers to append field names to `modified_fields` whenever a parameter is successfully edited in the `ReviewerApp`.
 - [x] **Refactor** - Remove `is_concise` from `IMarkdownReportFormatter` and `MarkdownReportFormatter`.
-- [ ] **Refactor** - Remove `is_concise` from `ExecutionReportAssembler` and any internal calls in the `ExecutionOrchestrator` or CLI handlers.
+- [x] **Refactor** - Remove `is_concise` from `ExecutionReportAssembler` and any internal calls in the `ExecutionOrchestrator` or CLI handlers.
 - [ ] **Logic** - Update `execution_report.md.j2` to:
     - Remove the `is_concise` conditional blocks for Metadata, Rationale, and Original Plan (pruning these sections entirely).
     - Update the Action Log header to show `(user modified: field1, field2)` if `modified_fields` is not empty.
@@ -67,3 +67,9 @@ Feature: User Modification Audit Trail
 - Updated `textual_plan_reviewer_execution.py` to remove the deprecated parameter.
 - Refactored `test_markdown_report_formatter_enhancements.py` to assert pruning behavior.
 - Verified system integrity with 667 global tests passing.
+
+### Deliverable 4: Refactor - Core is_concise removal
+- Verified that `ExecutionReportAssembler` and `ExecutionOrchestrator` implementations and Port interfaces were already clean of `is_concise`.
+- Updated `test_report_formats_integration.py` to remove legacy "concise" terminology and assert the new standard pruning behavior.
+- Removed `is_concise` from `pyproject.toml` (Vulture ignore list).
+- Confirmed zero occurrences of `is_concise` in `src/` via `git grep`.

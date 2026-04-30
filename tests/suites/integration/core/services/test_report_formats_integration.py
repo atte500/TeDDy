@@ -2,13 +2,13 @@ from typer.testing import CliRunner
 from teddy_executor.__main__ import app
 
 
-def test_cli_report_is_concise(tmp_path, monkeypatch):
+def test_report_prunes_redundant_sections(tmp_path, monkeypatch):
     """
-    Scenario: CLI Report (Concise) focuses on immediate action
-    - Given an ExecutionReport resulting from a plan that included a successful READ action.
-    - When the report is formatted with is_concise=True (Default in CLI).
+    Scenario: Execution report prunes redundant sections (Rationale, Original Plan)
+    - Given an ExecutionReport resulting from a plan execution.
+    - When the report is formatted for Markdown output.
     - Then the output MUST NOT contain the original plan's Rationale section.
-    - And the output MUST contain the full, verbatim content of the successful READ action.
+    - And the output MUST contain the full, verbatim content of the successful actions.
     """
     runner = CliRunner()
     monkeypatch.chdir(tmp_path)
@@ -23,14 +23,14 @@ def test_cli_report_is_concise(tmp_path, monkeypatch):
 
 ## Rationale
 ````text
-This is the original rationale that should be hidden in concise mode.
+This is the original rationale that should be hidden.
 ````
 
 ## Action Plan
 ### `READ`
 - **Resource:** existing.txt
 """
-    # Execute in manual (concise) mode.
+    # Execute plan.
     result = runner.invoke(
         app, ["execute", "-y", "--no-copy", "--plan-content", plan_content]
     )
@@ -38,7 +38,7 @@ This is the original rationale that should be hidden in concise mode.
     assert result.exit_code == 0
 
     # Verify Rationale is NOT present
-    assert "original rationale" not in result.stdout
+    assert "original rationale" not in result.stdout.lower()
 
     # Verify READ content is present
     assert "Verbatim content" in result.stdout

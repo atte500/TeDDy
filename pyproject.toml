@@ -99,7 +99,6 @@ ignore_names = [
     "similarity_threshold",
     "file_paths",
     "paths",
-    "is_concise",
     "filename",
     "data",
     "agent",
