@@ -222,7 +222,11 @@ def slugify(text: str, max_length: int = 40) -> str:
 
 
 def truncate_lines(
-    content: str, max_lines: int, direction: str = "tail", hint: str = ""
+    content: str,
+    max_lines: int,
+    direction: str = "tail",
+    hint: str = "",
+    action_type: str | None = None,
 ) -> str:
     """
     Truncates a string to a maximum number of lines.
@@ -232,13 +236,19 @@ def truncate_lines(
         max_lines: Maximum number of lines to preserve.
         direction: "head" (preserve first X) or "tail" (preserve last X).
         hint: An optional message to include when truncation occurs.
+        action_type: Optional "execute" or "read" to generate a dynamic hint.
     """
     if not content or max_lines <= 0:
         return content
 
     lines = content.splitlines()
-    if len(lines) <= max_lines:
+    total_lines = len(lines)
+    if total_lines <= max_lines:
         return content
+
+    # Generate dynamic hint if action_type is provided
+    if action_type:
+        hint = get_truncation_hint(action_type, max_lines, total_lines)
 
     if direction == "tail":
         truncated = "\n".join(lines[-max_lines:])
@@ -250,12 +260,20 @@ def truncate_lines(
         raise ValueError(f"Invalid truncation direction: {direction}")
 
 
-def get_truncation_hint(action_type: str) -> str:
+def get_truncation_hint(action_type: str, max_lines: int, total_lines: int) -> str:
     """
     Returns a context-specific hint for truncated output based on the action type.
     """
-    hints = {
-        "execute": "[Output truncated. Use 'command > file.txt' or 'grep' to filter results if needed.]",
-        "read": "[File content truncated. Use more specific search or 'grep' to find relevant sections.]",
-    }
-    return hints.get(action_type.lower(), "[Content truncated due to length limits.]")
+    action_type = action_type.lower()
+    if action_type == "execute":
+        return (
+            f"[Output truncated: Showing LAST {max_lines} of {total_lines} lines. "
+            "Use 'command > file.txt', 'grep', or 'sed' to capture or filter results.]"
+        )
+    if action_type == "read":
+        return (
+            f"[Content truncated: Showing FIRST {max_lines} of {total_lines} lines. "
+            "Use 'grep' or 'sed' via EXECUTE to read specific sections.]"
+        )
+
+    return f"[Content truncated: Showing {max_lines} of {total_lines} lines.]"

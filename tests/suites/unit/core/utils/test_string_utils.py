@@ -55,18 +55,24 @@ def test_truncate_lines_invalid_direction():
 
 
 def test_get_truncation_hint_execute():
-    expected = "[Output truncated. Use 'command > file.txt' or 'grep' to filter results if needed.]"
-    assert get_truncation_hint("execute") == expected
+    expected = (
+        "[Output truncated: Showing LAST 10 of 100 lines. "
+        "Use 'command > file.txt', 'grep', or 'sed' to capture or filter results.]"
+    )
+    assert get_truncation_hint("execute", 10, 100) == expected
 
 
 def test_get_truncation_hint_read():
-    expected = "[File content truncated. Use more specific search or 'grep' to find relevant sections.]"
-    assert get_truncation_hint("read") == expected
+    expected = (
+        "[Content truncated: Showing FIRST 50 of 500 lines. "
+        "Use 'grep' or 'sed' via EXECUTE to read specific sections.]"
+    )
+    assert get_truncation_hint("read", 50, 500) == expected
 
 
 def test_get_truncation_hint_unknown():
-    expected = "[Content truncated due to length limits.]"
-    assert get_truncation_hint("unknown") == expected
+    expected = "[Content truncated: Showing 10 of 100 lines.]"
+    assert get_truncation_hint("unknown", 10, 100) == expected
 
 
 def test_slugify_basic():
