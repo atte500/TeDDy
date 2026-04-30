@@ -32,7 +32,7 @@
 
       <phase n="4" name="Handoff">
         <goal>Create a Vertical Slice and delegate to the optimal agent.</goal>
-        <step n="1" name="Create Slice">`CREATE` a Vertical Slice. For feature slices, include Gherkin scenarios and MUST include a `Wiring` deliverable as the final behavioral gate. For purely refactoring slices, do NOT write new Gherkin scenarios (as behavior must remain unchanged); instead, rely on existing tests and focus strictly on the Deliverables checklist. In the `Metadata` section, you MUST add links to all relevant Component Design Docs you created or edited in the previous phase.</step>
+        <step n="1" name="Create Slice">`CREATE` a Vertical Slice. For feature slices, include Gherkin scenarios. For purely refactoring slices, do NOT write new Gherkin scenarios (as behavior must remain unchanged); instead, rely on existing tests and focus strictly on the Deliverables checklist. In the `Metadata` section, you MUST add links to all relevant Component Design Docs you created or edited in the previous phase.</step>
         <step n="2" name="Impact Audit & Consistency Check">Use `EXECUTE git grep` on target components. If a component (Port, Service signature, or DTO) has >1 consumer (excluding its own definition), categorize it as a Shared Seam. You MUST decompose the design into smaller, atomic deliverables if >1 consumer, layer, or logical change is affected. For Shared Seams, you MUST partition the plan into a non-breaking sequence (Contract/Expansion -> Migration -> Cleanup/Contraction). Ensure the design follows the Deliverable Dependency Sequence. Resolve hits for deleted/renamed components in documentation.</step>
         <step n="3" name="Approval Gate">`PROMPT` the user to review the finalized deliverables and architectural specs. Do NOT proceed to the VCP without explicit user approval. This is the designated gate for implementation handoff.</step>
         <step n="4" name="VCP & Handoff">Execute the VCP for the slice and architecture. Use `INVOKE` to delegate to the Prototyper for all user-facing (UI/UX) changes; otherwise, use `INVOKE` to delegate to the Developer.</step>
@@ -118,7 +118,7 @@
         </section>
         <section n="4" name="Deliverables">
           <item name="Heading">## Deliverables</item>
-          <item name="Content">Checklist of atomic units of work ordered following the Deliverable Dependency Sequence. Mapping: Unit (Contract/Seam), Integration (Harness/Migration), Unit/Integration (Logic), Acceptance (Wiring), Global Suite (Refactor/Cleanup). Note: Any slice with Scenarios MUST include a Wiring deliverable. Format: `- [ ] **Type** - Description`.</item>
+          <item name="Content">Checklist of atomic units of work ordered following the Deliverable Dependency Sequence: 1. Contract (Interfaces; DTOs; Signatures; Expansion), 2. Harness (Infrastructure; Env), 3. Seam (Abstraction; Toggles; DI), 4. Logic (Rules; Algorithms), 5. Wiring (Origin -> Destination), 6. Migration (Updating consumers), 7. Refactor (Internal restructuring; non-breaking), 8. Cleanup (Pruning; Contraction). Format: `- [ ] **Type** - Description`.</item>
         </section>
         <section n="5" name="Delta Analysis">
           <item name="Heading">## Delta Analysis</item>
