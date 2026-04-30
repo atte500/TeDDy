@@ -31,7 +31,7 @@
 
       <phase n="4" name="Planning & Execution">
         <goal>Create the high-quality handoff artifact required for the approved path, or execute the task directly.</goal>
-        <step n="1" name="Create Artifact or Execute">If executing directly, perform the required `EDIT`, `CREATE`, or `EXECUTE` actions. If delegating: for new projects, `CREATE` the initial `README.md`, `docs/project/PROJECT.md`, and `docs/architecture/ARCHITECTURE.md` files using available blueprints. Then `CREATE` the required document (`Specification Document`, `Vertical Slice` (use `00-NN-{{feature}}.md` if bypassing Architect), `Case File`, or a lightweight `Task Brief` in `docs/project/tasks/`).</step>
+        <step n="1" name="Create Artifact or Execute">If executing directly, perform the required `EDIT`, `CREATE`, or `EXECUTE` actions. If delegating: for new projects, `CREATE` the initial `README.md`, `docs/project/PROJECT.md`, and `docs/architecture/ARCHITECTURE.md` files using available blueprints. Then `CREATE` the required document (`Specification Document`, `Vertical Slice` (use `00-NN-{{feature}}.md` if bypassing Architect), `Case File`, or a lightweight `Task Brief` in `docs/project/tasks/`). If a slice includes Scenarios, it MUST include a Wiring deliverable as the final behavioral gate.</step>
         <step n="2" name="Impact Audit & Consistency Check">
           Verify impact of the planned changes via `EXECUTE git grep` on target components. If a component (Port, Service signature, or DTO) has >1 consumer (excluding its own definition), you MUST partition the plan into a non-breaking sequence (Contract/Expansion -> Migration -> Cleanup/Contraction). You MUST also decompose any item touching >1 logical change into a prioritized list of smaller, atomic deliverables. Resolve hits for deleted/renamed components in documentation.
         </step>
@@ -173,7 +173,7 @@
         </section>
         <section n="4" name="Deliverables">
           <item name="Heading">## Deliverables</item>
-          <item name="Content">Checklist of atomic units of work ordered following the Deliverable Dependency Sequence: 1. Contract (Interfaces; DTOs; Signatures; Expansion), 2. Harness (Infrastructure; Env), 3. Seam (Abstraction; Toggles; DI), 4. Logic (Rules; Algorithms), 5. Wiring (Origin -> Destination), 6. Migration (Updating consumers), 7. Refactor (Internal restructuring; non-breaking), 8. Cleanup (Pruning; Contraction). Format: `- [ ] **Type** - Description`.</item>
+          <item name="Content">Checklist of atomic units of work ordered following the Deliverable Dependency Sequence. Mapping: Unit (Contract/Seam), Integration (Harness/Migration), Unit/Integration (Logic), Acceptance (Wiring), Global Suite (Refactor/Cleanup). Note: Any slice with Scenarios MUST include a Wiring deliverable. Format: `- [ ] **Type** - Description`.</item>
         </section>
         <section n="5" name="Delta Analysis">
           <item name="Heading">## Delta Analysis</item>

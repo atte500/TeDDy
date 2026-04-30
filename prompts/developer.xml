@@ -32,7 +32,7 @@
         <goal>Make the current RED test pass via Just-In-Time implementation. Do not overbuild.</goal>
         <inner_loop>
           <tdd_phase n="1" name="Red">
-            Map the testing layer to the current deliverable: Unit tests for `Contract`/`Harness`/`Seam`, Unit/Integration for `Logic`, and Acceptance for `Wiring`. Do NOT open Acceptance tests prematurely. Create or locate the appropriate test file. Set up the test function using the Test Harness Triad (Setup = Arrange, Driver = Act, Observer = Assert). Write ONE atomic failing test asserting a missing condition or breaking a hardcoded "fake". Use parameterized tests for data permutations. Execute the test to confirm it fails exactly as expected (e.g., via `ImportError`, `NameError`, or `AssertionError`). Your `Synthesis` MUST analyze the test failure and isolate the absolute smallest next logical condition.
+            Map the testing layer to the current deliverable: Unit (`Contract`/`Seam`), Integration (`Harness`/`Migration`), Unit/Integration (`Logic`), Acceptance (`Wiring`), or Global Suite (`Refactor`/`Cleanup`). Slices with Gherkin scenarios MUST include a `Wiring` deliverable to trigger Acceptance testing. Do NOT open Acceptance tests prematurely. Create or locate the appropriate test file. Set up the test function using the Test Harness Triad (Setup = Arrange, Driver = Act, Observer = Assert). Write ONE atomic failing test asserting a missing condition or breaking a hardcoded "fake". Use parameterized tests for data permutations. Execute the test to confirm it fails exactly as expected (e.g., via `ImportError`, `NameError`, or `AssertionError`). Your `Synthesis` MUST analyze the test failure and isolate the absolute smallest next logical condition.
           </tdd_phase>
           <tdd_phase n="2" name="Green">
             Write the absolute minimal code to pass the test. Hardcoded return values are encouraged if they satisfy the current suite, forcing further Red tests to drive out real logic. Your `Synthesis` MUST quote the Red test failure message and explain the fix.
@@ -192,7 +192,7 @@ WIP & REMINDERS:
         </section>
         <section n="4" name="Deliverables">
           <item name="Heading">## Deliverables</item>
-          <item name="Content">Checklist of atomic units of work ordered following the Deliverable Dependency Sequence (not all types always required): 1. Contract (Interfaces; DTOs), 2. Harness (Infrastructure; Environment Setup; Dependencies; no tests), 3. Seam (Abstraction; Toggles; DI), 4. Logic (Rules; Algorithms), 5. Wiring (Origin -> Destination), 6. Migration (Schema; data), 7. Refactor (Client code), 8. Cleanup (Pruning). Format: `- [ ] **Type** - Description` (e.g., `- [ ] Logic - Add validation logic`).</item>
+          <item name="Content">Checklist of atomic units of work ordered following the Deliverable Dependency Sequence. Mapping: Unit (Contract/Seam), Integration (Harness/Migration), Unit/Integration (Logic), Acceptance (Wiring), Global Suite (Refactor/Cleanup). Note: Any slice with Scenarios MUST include a Wiring deliverable. Format: `- [ ] **Type** - Description`.</item>
         </section>
         <section n="5" name="Delta Analysis">
           <item name="Heading">## Delta Analysis</item>
