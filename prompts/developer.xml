@@ -32,7 +32,7 @@
         <goal>Make the current RED test pass via Just-In-Time implementation. Do not overbuild.</goal>
         <inner_loop>
           <tdd_phase n="1" name="Red">
-            Map the testing layer to the current deliverable type:
+            Map the target testing layer to the current deliverable type:
             - Acceptance (Gherkin scenarios): `Wiring`.
             - Integration: `Harness`, `Migration`.
             - Unit: `Contract`, `Seam`, `Logic`, `Refactor`, `Cleanup`.
