@@ -20,19 +20,12 @@ class SystemEnvironmentAdapter(ISystemEnvironment):
         import sys
 
         if background:
-            # Strip VSCode/Electron env vars to prevent dual-icon behavior on macOS
-            clean_env = os.environ.copy()
-            for key in list(clean_env.keys()):
-                if key.startswith("VSCODE_") or key.startswith("ELECTRON_"):
-                    clean_env.pop(key)
-
             # We don't wait for the result
             subprocess.Popen(  # nosec B603
                 args,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 start_new_session=True,
-                env=clean_env,
             )
             return
 
