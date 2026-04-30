@@ -82,13 +82,15 @@
 {% endif %}
 {% endmacro -%}
 
-{% macro render_header(report) %}
+{% macro render_header(report) -%}
+Stop to reply to this user request hint
+
 # Execution Report: {{ report.plan_title | default('Untitled Plan') }}
 {% set status_val = report.run_summary.status.value | default(report.run_summary.status) -%}
 - **Overall Status:** {{ "Validation Failed" if status_val == "VALIDATION_FAILED" else status_val }}
 - **Execution Start Time:** {{ format_datetime(report.run_summary.start_time) }}
 - **Execution End Time:** {{ format_datetime(report.run_summary.end_time) }}
-{% endmacro %}
+{%- endmacro %}
 
 
 {{ render_header(report) }}
@@ -182,18 +184,17 @@
 {% endif -%}
 {% if target %}
 ### `{{ action_type }}`{{ modified_tag }}: {{ target }}
-{% else %}
+{% else -%}
 ### `{{ action_type }}`{{ modified_tag }}
-{% endif %}
+{% endif -%}
 {% set log_status = log.status.value | default(log.status) -%}
 - **Status:** {{ log_status }}
-{% if action_type in ['CREATE', 'EDIT'] %}
-  {% set path_val = params.get('File Path') or params.get('file_path') or params.get('path') %}
-  {% if path_val %}
+{% if action_type in ['CREATE', 'EDIT'] -%}
+  {% set path_val = params.get('File Path') or params.get('file_path') or params.get('path') -%}
+  {% if path_val -%}
 - **File Path:** `{{ path_val }}`
-  {% endif %}
-{% endif %}
-
+  {%- endif %}
+{%- endif %}
 {# Params Rendering - Flattened #}
 {% if action_type == 'EXECUTE' %}
   {% set outcome = params.get('expected_outcome') or params.get('Expected Outcome') %}

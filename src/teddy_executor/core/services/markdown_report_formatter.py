@@ -121,6 +121,21 @@ class MarkdownReportFormatter(IMarkdownReportFormatter):
                 if consecutive_blanks <= 1:
                     sanitized_lines.append(line)
             else:
+                # If the line starts with a bullet point, prevent a blank line before it
+                # unless it's the very first bullet in a list after a header.
+                # This ensures density for list items.
+                if (
+                    line.strip().startswith("- ")
+                    and sanitized_lines
+                    and not sanitized_lines[-1].strip()
+                ):
+                    # If the previous line was blank and we are starting a bullet,
+                    # check if the line before THAT was also a bullet.
+                    if len(sanitized_lines) > 1 and sanitized_lines[
+                        -2
+                    ].strip().startswith("- "):
+                        sanitized_lines.pop()  # Remove the blank line between bullets
+
                 consecutive_blanks = 0
                 sanitized_lines.append(line)
 
