@@ -35,6 +35,8 @@ class ActionDiffManager:
             action_type=action_log.action_type,
             params=action_log.params,
             details=new_details,
+            modified=action_log.modified,
+            modified_fields=action_log.modified_fields,
         )
 
     @staticmethod
@@ -83,6 +85,8 @@ class ActionDiffManager:
                 action_type=action_log.action_type,
                 params=action_log.params,
                 details=new_details,
+                modified=action_log.modified,
+                modified_fields=action_log.modified_fields,
             )
         return action_log
 

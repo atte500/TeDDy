@@ -54,12 +54,15 @@ def test_tui_context_aware_editing_marks_action_as_modified(env):
         # 7. Assert: File created with modified content
         assert (env.workspace / "new_file.py").read_text() == "print('modified')"
 
-        # 8. Verify the report contains the (modified) tag
+        # 8. Verify the report contains the granular modification tag
         from teddy_executor.core.ports.outbound import IMarkdownReportFormatter
 
         formatter = env.get_service(IMarkdownReportFormatter)
         report_content = formatter.format(report)
-        assert "### `CREATE` (modified): [new_file.py](/new_file.py)" in report_content
+        assert (
+            "### `CREATE` (user modified: content): [new_file.py](/new_file.py)"
+            in report_content
+        )
 
     finally:
         os.environ.pop("TEDDY_TEST_MOCK_EDITOR_OUTPUT", None)

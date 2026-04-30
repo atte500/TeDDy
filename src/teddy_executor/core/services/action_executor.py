@@ -56,6 +56,7 @@ class ActionExecutor:
             params=log_params,
             details=details,
             modified=action.modified,
+            modified_fields=action.modified_fields,
         )
 
     def _handle_skipped_action(self, action, reason: str) -> ActionLog:
@@ -84,6 +85,8 @@ class ActionExecutor:
                 action_type=action_log.action_type,
                 params=action_log.params,
                 details=new_details,
+                modified=action_log.modified,
+                modified_fields=action_log.modified_fields,
             )
         except Exception as e:
             logger.debug(

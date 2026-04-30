@@ -121,6 +121,7 @@ class ActionDispatcher:
             "action_type": action_data.type,
             "params": log_params,
             "modified": action_data.modified,
+            "modified_fields": action_data.modified_fields,
         }
 
         try:
