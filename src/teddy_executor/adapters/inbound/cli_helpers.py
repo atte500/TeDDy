@@ -38,7 +38,7 @@ def find_project_root() -> Path:
 def echo_and_copy(
     content: str,
     no_copy: bool = False,
-    confirmation_message: str = "Output copied to clipboard.",
+    confirmation_message: str = "Copied to clipboard.",
     content_to_copy: Optional[str] = None,
 ):
     """Prints content to stdout and copies it to the clipboard unless disabled."""
@@ -67,7 +67,7 @@ def echo_and_copy(
             # most healthy clipboard providers (pbcopy/xclip) without being
             # a noticeable delay for the user.
             thread.join(timeout=0.1)
-            typer.echo(confirmation_message, err=True)
+            typer.secho(f"\n{confirmation_message}", fg=typer.colors.GREEN, err=True)
         except Exception as e:
             logger.debug("Main thread clipboard handler failed: %s", e)
 
@@ -229,7 +229,6 @@ def handle_report_output(
             echo_and_copy(
                 formatted_report,
                 no_copy=no_copy,
-                confirmation_message="Execution report copied to clipboard.",
             )
 
         if exit_on_failure and report.run_summary.status in (
