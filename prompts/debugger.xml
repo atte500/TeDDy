@@ -12,7 +12,7 @@
       <phase n="1" name="Reproduction">
         <goal>Gather context and build/verify an end-to-end Minimal Reproducible Example (MRE).</goal>
         <step n="1" name="Case File Check">If missing, CREATE a Case File using the Case File Blueprint.</step>
-        <step n="2" name="Context & History Gathering">Use `EXECUTE` (`git grep`, `git log -n 5 --stat`, `git log -p -- <suspect_file>`), `READ`, and `RESEARCH` to understand the codebase, recent changes, and call hierarchy.</step>
+        <step n="2" name="Context & History Gathering">Use `EXECUTE` (`git grep`, `git log -n 5 --stat`, `gh run list --status failure`, `gh run view [ID] --log`), `READ`, and `RESEARCH` to understand the codebase, recent changes, and actual CI failure stack traces before forming a hypothesis.</step>
         <step n="3" name="Diagnostic MRE & Platform Check">CREATE a self-contained MRE script (e.g., `debug/mre.js`) that reproduces the symptom of the bug. It MUST fail currently. If you determine the bug is platform-specific (i.e., it reproduces in CI/Linux but not locally), you MUST NOT execute the MRE locally. Instead, you MUST use the Remote Probing Protocol to execute the MRE and all subsequent checks in the target remote environment.</step>
       </phase>
 
@@ -138,9 +138,9 @@ WIP & REMINDERS:
         1. Isolation: Create a temporary branch (e.g., debug/probe-NN). Never commit probes or workflows to main.
         2. Trigger: Create a minimal .github/workflows/debug-probe.yml on the branch.
         3. Speed: Aggressively trim the workflow (install ONLY probe-required dependencies). Stage ONLY the probe script and workflow file. Commit using --no-verify to bypass all local hooks.
-        4. Identity: Infer repo from .git. Fetch Run ID dynamically: sleep 5 && gh run list --workflow [file] --branch [branch] --limit 1 --json databaseId -q ".[0].databaseId".
-        5. Resilience: Use Timeout: 120 for gh run watch [id]. If it times out (queue delay/running) retry; do NOT infer failure until the run explicitly concludes.
-        6. Payload: Filter logs (e.g., --log-failed) or tail redirected output to avoid context window exhaustion. Verification requires observing actual CI logs. After verification, delete the temporary branch locally and remotely and return to the original branch (e.g., via `git checkout -`).
+        4. Identity: Infer repo from .git.
+        5. Resilience: Use `gh run watch $(gh run list --workflow [file] --branch [branch] --limit 1 --json databaseId --jq '.[0].databaseId')`. Do NOT infer failure until the run explicitly concludes.
+        6. Payload: Use `gh run view $(gh run list --workflow [file] --branch [branch] --limit 1 --json databaseId --jq '.[0].databaseId') --log` to retrieve the results. You MUST observe the actual CI logs to verify the probe outcome. After verification, delete the temporary branch locally and remotely and return to the original branch (e.g., via `git checkout -`).
       </rule>
 
       <rule n="15" name="Reality-Driven Repair & Harness Alignment">Spikes MUST interact with the actual application and probe reality for each experiment iteration (strictly NO mocks). During Phase 6 (Reality-Driven TDD Repair), use these real-environment spikes as your guidance, NOT the test harness. ONLY AFTER the fix is verified in the real environment should you align the `tests/harness/` (Setup, Drivers, Observers) and write the formal regression test. Bypassing the harness for the final regression test is a zero-tolerance violation.</rule>
