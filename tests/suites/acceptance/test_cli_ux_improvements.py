@@ -42,7 +42,7 @@ def test_get_prompt_retrieves_default_prompt_from_root(tmp_path, monkeypatch):
     result = adapter.run_cli_command(["get-prompt", "architect"], cwd=subdir)
     assert result.exit_code == 0
     assert "root prompt" in result.stdout
-    assert "Output copied to clipboard." in result.stdout + result.stderr
+    assert "Copied to clipboard." in result.stdout + result.stderr
 
 
 def test_get_prompt_fails_for_non_existent_prompt(tmp_path, monkeypatch):

@@ -34,5 +34,5 @@ def test_resume_with_message_captures_user_request(tmp_path: Path, monkeypatch):
     report_file = turn_dir / "report.md"
     assert report_file.exists()
     report_content = report_file.read_text()
-    expected_fragment = f"## User Request\n```text\n{message}\n```"
+    expected_fragment = f"## User Request\n```text\n{message}\n\n*(Stop to reply to this user request and ensure alignment before proceeding)*\n```"
     assert expected_fragment in report_content

@@ -25,7 +25,7 @@ def test_context_command_copies_to_clipboard_by_default(tmp_path, monkeypatch):
     assert result.exit_code == 0
     assert "Hello World" in result.stdout
     mock_pyperclip.copy.assert_called_once()
-    assert "Output copied to clipboard." in result.stderr
+    assert "Copied to clipboard." in result.stderr
 
 
 def test_context_command_suppresses_copy_with_flag(tmp_path, monkeypatch):
@@ -38,7 +38,7 @@ def test_context_command_suppresses_copy_with_flag(tmp_path, monkeypatch):
 
     assert result.exit_code == 0
     mock_pyperclip.copy.assert_not_called()
-    assert "Output copied to clipboard." not in result.stderr
+    assert "Copied to clipboard." not in result.stderr
 
 
 def test_execute_command_copies_to_clipboard_by_default(tmp_path, monkeypatch):
@@ -53,7 +53,7 @@ def test_execute_command_copies_to_clipboard_by_default(tmp_path, monkeypatch):
     result = adapter.run_cli_command(["execute", "--plan-content", plan, "-y"])
 
     assert result.exit_code == 0
-    assert "Execution report copied to clipboard." in result.stderr
+    assert "Copied to clipboard." in result.stderr
     mock_pyperclip.copy.assert_called_once()
     assert "# Execution Report: Clipboard" in mock_pyperclip.copy.call_args[0][0]
 
@@ -72,4 +72,4 @@ def test_execute_command_suppresses_copy_with_flag(tmp_path, monkeypatch):
 
     assert result.exit_code == 0
     mock_pyperclip.copy.assert_not_called()
-    assert "Execution report copied to clipboard." not in result.stderr
+    assert "Copied to clipboard." not in result.stderr

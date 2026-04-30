@@ -31,7 +31,8 @@ def test_report_encapsulates_user_message_in_fences(formatter):
     # Check that the message is present and wrapped in fences
     # Note: Content uses triple backticks since it only contains single backticks.
     expected_fragment = (
-        "## User Request\n```text\nI want to fix *this* and `that`.\n```"
+        "## User Request\n```text\nI want to fix *this* and `that`.\n\n"
+        "*(Stop to reply to this user request and ensure alignment before proceeding)*\n```"
     )
     assert expected_fragment in markdown
 
