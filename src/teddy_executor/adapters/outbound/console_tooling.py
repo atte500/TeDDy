@@ -38,7 +38,10 @@ class ConsoleToolingHelper:
         # 3. Discovery Fallback
         for fallback in ["code", "nano"]:
             if path := self._system_env.which(fallback):
-                return [path]
+                cmd = [path]
+                if fallback == "code":
+                    cmd.extend(["-r", "--wait"])
+                return cmd
 
         return None
 
@@ -50,5 +53,12 @@ class ConsoleToolingHelper:
 
         if tool_path := self._system_env.which(parts[0]):
             parts[0] = tool_path
+            # If the user just specified "code", add the standard flags
+            if (
+                len(parts) == 1
+                and parts[0].endswith("code")
+                and "code" in parts[0].lower()
+            ):
+                parts.extend(["-r", "--wait"])
             return parts
         return None

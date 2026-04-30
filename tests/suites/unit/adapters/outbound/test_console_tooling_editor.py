@@ -70,3 +70,36 @@ def test_find_editor_falls_back_to_code_then_nano(helper, mock_env, mock_config)
     calls = [call[0][0] for call in mock_env.which.call_args_list]
     assert "code" in calls
     assert calls.index("code") < calls.index("nano")
+
+
+def test_find_editor_falls_back_to_code_with_flags(helper, mock_env, mock_config):
+    # Setup: No config, No env, code exists
+    mock_config.get_setting.return_value = None
+    mock_env.get_env.return_value = None
+    mock_env.which.side_effect = lambda x: "/usr/bin/code" if x == "code" else None
+
+    result = helper.find_editor()
+
+    assert result == ["/usr/bin/code", "-r", "--wait"]
+
+
+def test_resolve_editor_cmd_appends_vscode_flags(helper, mock_env):
+    """Verifies that resolving 'code' as a simple string appends reuse flags."""
+    # Setup which() to resolve both short name and full path to the full path
+    path = "/usr/local/bin/code"
+
+    def which_mock(cmd):
+        if cmd in ("code", path):
+            return path
+        return None
+
+    mock_env.which.side_effect = which_mock
+
+    # 1. Simple command string: should append flags
+    assert helper._resolve_editor_cmd("code") == [path, "-r", "--wait"]
+
+    # 2. Full path (but still ends with code): should append flags
+    assert helper._resolve_editor_cmd(path) == [path, "-r", "--wait"]
+
+    # 3. Command string with existing flags should NOT be modified
+    assert helper._resolve_editor_cmd("code --new-window") == [path, "--new-window"]
