@@ -83,8 +83,6 @@
 {% endmacro -%}
 
 {% macro render_header(report) -%}
-Stop to reply to this user request hint
-
 # Execution Report: {{ report.plan_title | default('Untitled Plan') }}
 {% set status_val = report.run_summary.status.value | default(report.run_summary.status) -%}
 - **Overall Status:** {{ "Validation Failed" if status_val == "VALIDATION_FAILED" else status_val }}
@@ -122,6 +120,8 @@ Stop to reply to this user request hint
 ## User Request
 {{ report.user_request | fence }}text
 {{ report.user_request }}
+
+*(Stop to reply to this user request and ensure alignment before proceeding)*
 {{ report.user_request | fence }}
 {% endif %}
 
