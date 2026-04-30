@@ -27,12 +27,11 @@ class MarkdownReportFormatter(IMarkdownReportFormatter):
         cls._cached_template = None
 
     def __init__(self):
-        from jinja2 import Environment, FileSystemLoader
+        from jinja2 import Environment, PackageLoader
 
         if MarkdownReportFormatter._cached_env is None:
-            template_dir = os.path.join(os.path.dirname(__file__), "templates")
             env = Environment(
-                loader=FileSystemLoader(template_dir),
+                loader=PackageLoader("teddy_executor.core.services", "templates"),
                 trim_blocks=True,
                 lstrip_blocks=True,
                 autoescape=False,  # nosec B701
