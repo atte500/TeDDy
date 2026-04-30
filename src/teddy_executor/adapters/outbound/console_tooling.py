@@ -53,12 +53,10 @@ class ConsoleToolingHelper:
 
         if tool_path := self._system_env.which(parts[0]):
             parts[0] = tool_path
-            # If the user just specified "code", add the standard flags
-            if (
-                len(parts) == 1
-                and parts[0].endswith("code")
-                and "code" in parts[0].lower()
-            ):
-                parts.extend(["-r", "--wait"])
+            # If the tool is VS Code, ensure reuse and wait flags are present
+            if parts[0].endswith("code") and "code" in parts[0].lower():
+                for flag in ["-r", "--wait"]:
+                    if flag not in parts:
+                        parts.append(flag)
             return parts
         return None

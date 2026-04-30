@@ -101,5 +101,9 @@ def test_resolve_editor_cmd_appends_vscode_flags(helper, mock_env):
     # 2. Full path (but still ends with code): should append flags
     assert helper._resolve_editor_cmd(path) == [path, "-r", "--wait"]
 
-    # 3. Command string with existing flags should NOT be modified
-    assert helper._resolve_editor_cmd("code --new-window") == [path, "--new-window"]
+    # 3. Command string with existing flags should have missing standard flags appended
+    result = helper._resolve_editor_cmd("code --new-window")
+    assert path in result
+    assert "--new-window" in result
+    assert "-r" in result
+    assert "--wait" in result
