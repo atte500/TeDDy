@@ -96,9 +96,14 @@ class ExecutionOrchestrator(IRunPlanUseCase):
                 False,
             )
 
-        action_log, captured_message = self._dispatch_single_action(
-            action, plan, interactive
-        )
+        try:
+            action_log, captured_message = self._dispatch_single_action(
+                action, plan, interactive
+            )
+        except Exception as e:
+            action_log = self._action_executor.handle_failed_action(action, str(e))
+            captured_message = ""
+
         if captured_message:
             plan.metadata["user_request"] = captured_message
 

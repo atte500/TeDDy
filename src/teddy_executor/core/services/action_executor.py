@@ -222,3 +222,7 @@ class ActionExecutor:
     def handle_skipped_action(self, action, reason: str) -> ActionLog:
         """Public method for skipping actions."""
         return self._handle_skipped_action(action, reason)
+
+    def handle_failed_action(self, action, details: str) -> ActionLog:
+        """Creates an ActionLog for an action that failed during preparation."""
+        return self._create_intercepted_log(action, ActionStatus.FAILURE, details)
