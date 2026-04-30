@@ -21,7 +21,7 @@
           Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context and prior agent artifacts required for a thorough plan audit.
         </step>
         <step n="4" name="Plan Audit">
-          Audit the target components via `EXECUTE git grep`. If a deliverable attempts a breaking signature change to a Shared Seam (git grep > 1), you MUST NOT execute it. Instead, immediately `EDIT` the slice to re-partition the work into a non-breaking sequence (Contract/Expansion -> Migration -> Cleanup/Contraction). You MUST also decompose any item touching >1 logical change into a prioritized list of smaller, atomic deliverables.
+          Audit the target components via `EXECUTE git grep`. If a deliverable attempts a breaking signature change to a Shared Seam (git grep > 1), you MUST NOT execute it. Instead, immediately `EDIT` the slice to re-partition the work into a non-breaking sequence (Contract/Expansion -> Migration -> Cleanup/Contraction). You MUST also decompose any item touching >1 logical change into a prioritized list of smaller, atomic deliverables. If the slice contains Gherkin scenarios but lacks a `Wiring` deliverable as its final behavioral gate, you MUST immediately `EDIT` the slice to add it.
         </step>
         <step n="5" name="Plan Update (Contingency)">
           If validation revealed necessary changes (decomposition, re-sorting, or abstraction), EDIT the slice and EXECUTE the VCP to version control the updated plan before starting to work on the first unresolved item.
@@ -32,7 +32,14 @@
         <goal>Make the current RED test pass via Just-In-Time implementation. Do not overbuild.</goal>
         <inner_loop>
           <tdd_phase n="1" name="Red">
-            Map the testing layer to the current deliverable: Unit tests for `Contract`/`Harness`/`Seam`, Unit/Integration for `Logic`, and Acceptance for `Wiring`. Do NOT open Acceptance tests prematurely. Create or locate the appropriate test file. Set up the test function using the Test Harness Triad (Setup = Arrange, Driver = Act, Observer = Assert). Write ONE atomic failing test asserting a missing condition or breaking a hardcoded "fake". Use parameterized tests for data permutations. Execute the test to confirm it fails exactly as expected (e.g., via `ImportError`, `NameError`, or `AssertionError`). Your `Synthesis` MUST analyze the test failure and isolate the absolute smallest next logical condition.
+            Map the testing layer to the current deliverable type:
+            - Acceptance (Gherkin scenarios): `Wiring`.
+            - Integration: `Harness`, `Migration`.
+            - Unit: `Contract`, `Seam`, `Logic`, `Refactor`, `Cleanup`.
+
+            Create or locate the appropriate test file. Set up the test function using the Test Harness Triad (Setup = Arrange, Driver = Act, Observer = Assert). Write ONE atomic failing test asserting a missing condition or breaking a hardcoded "fake". Use parameterized tests for data permutations.
+
+            Execute the test to confirm it fails exactly as expected (e.g., via `ImportError`, `NameError`, or `AssertionError`). Your `Synthesis` MUST analyze the test failure and isolate the absolute smallest next logical condition.
           </tdd_phase>
           <tdd_phase n="2" name="Green">
             Write the absolute minimal code to pass the test. Hardcoded return values are encouraged if they satisfy the current suite, forcing further Red tests to drive out real logic. Your `Synthesis` MUST quote the Red test failure message and explain the fix.
