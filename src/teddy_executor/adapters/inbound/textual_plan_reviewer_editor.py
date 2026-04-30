@@ -29,12 +29,19 @@ def spawn_editor(cmd: list[str], path: Any) -> None:
     """Spawns an external editor process."""
     import subprocess  # nosec B404
 
+    # Strip VSCode/Electron env vars to ensure clean handoff and prevent dual-icon on macOS
+    clean_env = os.environ.copy()
+    for key in list(clean_env.keys()):
+        if key.startswith("VSCODE_") or key.startswith("ELECTRON_"):
+            clean_env.pop(key)
+
     try:
         subprocess.Popen(  # nosec B603
             cmd + [str(path)],
             stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
+            env=clean_env,
         )
     except Exception as e:
         logger.debug("Failed to spawn editor: %s", e)
