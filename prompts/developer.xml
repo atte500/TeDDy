@@ -21,10 +21,10 @@
           Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context and prior agent artifacts required for a thorough plan audit.
         </step>
         <step n="4" name="Plan Audit">
-          Audit the target components of the current deliverable item via `EXECUTE git grep`. You MUST decompose any item touching >1 consumer, layer, or logical change into a prioritized list of smaller, atomic deliverables. Conversely, combine items sharing a test boundary. Strictly follow the Deliverable Dependency Sequence (Contract -> Harness -> Seam -> Logic -> Wiring -> Migration -> Refactor -> Cleanup). For shared contracts, use Branch by Abstraction.
+          Audit target components via `EXECUTE git grep`. If the deliverable attempts a breaking signature change to a **Shared Seam** (git grep > 1), you MUST NOT execute it. You MUST decompose any item touching >1 consumer, layer, or logical change into atomic deliverables. Strictly follow the Deliverable Dependency Sequence (Contract -> Harness -> Seam -> Logic -> Wiring -> Migration -> Refactor -> Cleanup).
         </step>
         <step n="5" name="Plan Update (Contingency)">
-          If validation revealed necessary changes (decomposition, re-sorting, or abstraction), EDIT the slice and EXECUTE the Version Control Protocol to version control the updated plan before starting to work on the first unresolved item.
+          If audit revealed a "Big Bang" change or necessary decomposition, EDIT the slice to re-partition the work into the correct sequence (Contract -> Migration -> Cleanup). You MUST EXECUTE the Version Control Protocol to commit the updated plan before starting work.
         </step>
       </phase>
 
