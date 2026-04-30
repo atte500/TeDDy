@@ -49,9 +49,7 @@ class MarkdownReportFormatter(IMarkdownReportFormatter):
         self.env = MarkdownReportFormatter._cached_env
         self.template = MarkdownReportFormatter._cached_template
 
-    def _prepare_context(
-        self, report: ExecutionReport, is_concise: bool
-    ) -> dict[str, Any]:
+    def _prepare_context(self, report: ExecutionReport) -> dict[str, Any]:
         """Prepares the report data for rendering."""
 
         def format_datetime(dt):
@@ -76,20 +74,19 @@ class MarkdownReportFormatter(IMarkdownReportFormatter):
 
         return {
             "report": report,
-            "is_concise": is_concise,
             "is_session": is_session,
             "plan_title": plan_title,
             "format_datetime": format_datetime,
         }
 
-    def format(self, report: ExecutionReport, is_concise: bool = True) -> str:
+    def format(self, report: ExecutionReport) -> str:
         """Renders the execution report to a Markdown string."""
         from teddy_executor.core.utils.serialization import (
             scrub_dict_for_serialization,
         )
 
         # 1. Prepare context with real objects to support attribute access in Python
-        context = self._prepare_context(report, is_concise)
+        context = self._prepare_context(report)
 
         # 2. Scrub the report data specifically to neutralize mocks for Jinja2
         report_data = (

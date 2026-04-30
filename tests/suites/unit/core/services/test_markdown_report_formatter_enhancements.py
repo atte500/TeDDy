@@ -13,7 +13,7 @@ from teddy_executor.core.domain.models import (
 from datetime import datetime
 
 
-def test_formatter_passes_is_concise_to_template():
+def test_formatter_no_longer_passes_is_concise_to_template():
     formatter = MarkdownReportFormatter()
     # Mock the template render method to capture arguments
     formatter.template.render = MagicMock(return_value="rendered")
@@ -23,17 +23,12 @@ def test_formatter_passes_is_concise_to_template():
     )
     report = ExecutionReport(run_summary=summary)
 
-    formatter.format(report, is_concise=False)
+    formatter.format(report)
 
-    # Check that is_concise was in the context passed to render
+    # Check that is_concise is NO LONGER in the context passed to render
     args, kwargs = formatter.template.render.call_args
     context = args[0]
-    assert context["is_concise"] is False
-
-    formatter.format(report, is_concise=True)
-    args, kwargs = formatter.template.render.call_args
-    context = args[0]
-    assert context["is_concise"] is True
+    assert "is_concise" not in context
 
 
 def test_formatter_passes_is_session_to_template():
@@ -54,29 +49,11 @@ def test_formatter_passes_is_session_to_template():
     assert context["is_session"] is True
 
 
-def test_formatter_renders_rationale_only_when_not_concise():
-    formatter = MarkdownReportFormatter()
-    summary = RunSummary(
-        status=RunStatus.SUCCESS, start_time=datetime.now(), end_time=datetime.now()
-    )
-    report = ExecutionReport(
-        run_summary=summary,
-        plan_title="Test Plan",
-        rationale="SECRET_RATIONALE_CONTENT",
-    )
-
-    # Comprehensive mode
-    comprehensive_report = formatter.format(report, is_concise=False)
-    assert "SECRET_RATIONALE_CONTENT" in comprehensive_report
-    assert "## Rationale" in comprehensive_report
-
-    # Concise mode
-    concise_report = formatter.format(report, is_concise=True)
-    assert "SECRET_RATIONALE_CONTENT" not in concise_report
-    assert "## Rationale" not in concise_report
-
-
-def test_formatter_renders_original_actions_only_when_not_concise():
+def test_formatter_omits_rationale_and_original_plan():
+    """
+    Verifies that Rationale and Original Plan are now always omitted
+    as they are redundant with the plan file.
+    """
     formatter = MarkdownReportFormatter()
     summary = RunSummary(
         status=RunStatus.SUCCESS, start_time=datetime.now(), end_time=datetime.now()
@@ -85,17 +62,17 @@ def test_formatter_renders_original_actions_only_when_not_concise():
         type="EXECUTE", params={"command": "ls"}, description="list files"
     )
     report = ExecutionReport(
-        run_summary=summary, plan_title="Test Plan", original_actions=[action]
+        run_summary=summary,
+        plan_title="Test Plan",
+        rationale="SECRET_RATIONALE_CONTENT",
+        original_actions=[action],
     )
 
-    # Comprehensive mode
-    comprehensive_report = formatter.format(report, is_concise=False)
-    assert "## Original Action Plan" in comprehensive_report
-    assert "list files" in comprehensive_report
-
-    # Concise mode
-    concise_report = formatter.format(report, is_concise=True)
-    assert "## Original Action Plan" not in concise_report
+    output = formatter.format(report)
+    assert "SECRET_RATIONALE_CONTENT" not in output
+    assert "## Rationale" not in output
+    assert "## Original Action Plan" not in output
+    assert "list files" not in output
 
 
 def test_formatter_sanitizes_whitespace():
@@ -145,7 +122,7 @@ def test_formatter_hides_resource_contents_in_session_mode():
     report_normal = ExecutionReport(
         run_summary=summary, action_logs=[log], is_session=False
     )
-    output_normal = formatter.format(report_normal, is_concise=True)
+    output_normal = formatter.format(report_normal)
     assert "## Resource Contents" in output_normal
     assert "test.py" in output_normal
     assert "print('hello')" in output_normal
@@ -154,7 +131,7 @@ def test_formatter_hides_resource_contents_in_session_mode():
     report_session = ExecutionReport(
         run_summary=summary, action_logs=[log], is_session=True
     )
-    output_session = formatter.format(report_session, is_concise=True)
+    output_session = formatter.format(report_session)
     assert "## Resource Contents" not in output_session
     assert "print('hello')" not in output_session
     # The action log entry should still exist

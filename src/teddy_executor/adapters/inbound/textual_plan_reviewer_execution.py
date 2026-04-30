@@ -45,7 +45,7 @@ def format_action_log(log: ActionLog) -> str:
     )
 
     formatter = MarkdownReportFormatter()
-    return formatter.format(synthetic_report, is_concise=True)
+    return formatter.format(synthetic_report)
 
 
 def resolve_action_parameters(action: ActionData) -> dict[str, Any]:

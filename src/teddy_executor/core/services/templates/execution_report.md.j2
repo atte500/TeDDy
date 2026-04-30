@@ -82,7 +82,7 @@
 {% endif %}
 {% endmacro -%}
 
-{% macro render_header(report, show_metadata=False) %}
+{% macro render_header(report) %}
 # Execution Report: {{ report.plan_title | default('Untitled Plan') }}
 {% set status_val = report.run_summary.status.value | default(report.run_summary.status) -%}
 - **Overall Status:** {{ "Validation Failed" if status_val == "VALIDATION_FAILED" else status_val }}
@@ -162,13 +162,7 @@
 {% endif %}
 {% endmacro -%}
 
-{{ render_header(report, show_metadata=(not is_concise)) }}
-
-{% if not is_concise -%}
-{{ render_metadata(report) }}
-{{ render_rationale(report) }}
-{{ render_original_plan(report) }}
-{% endif -%}
+{{ render_header(report) }}
 
 {% if report.validation_result -%}
 ## Validation Errors:
@@ -204,12 +198,12 @@
 {% set report_ns = namespace(content_logs=[]) %}
 {% for log in report.action_logs %}
   {% if log.details and log.details is mapping and log.details.get('content') %}
-    {# In concise mode, include READ content. In non-concise mode, omit successful READ content. #}
+    {# Always include content for failed actions or successful READ actions (unless in a session). #}
     {% set is_read = log.action_type.lower() == 'read' %}
     {% set is_success = log.status.value == 'SUCCESS' %}
     {% set is_failure = log.status.value == 'FAILURE' %}
 
-    {% if is_failure or (is_read and is_success and is_concise) %}
+    {% if is_failure or (is_read and is_success) %}
       {% set report_ns.content_logs = report_ns.content_logs + [log] %}
     {% endif %}
   {% endif %}

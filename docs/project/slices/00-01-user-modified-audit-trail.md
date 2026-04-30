@@ -31,7 +31,7 @@ Feature: User Modification Audit Trail
 ## Deliverables
 - [x] **Logic** - Add `modified_fields: list[str]` to `ActionData` (plan.py) and `ActionLog` (execution_report.py).
 - [x] **Harness** - Update TUI event handlers to append field names to `modified_fields` whenever a parameter is successfully edited in the `ReviewerApp`.
-- [ ] **Refactor** - Remove `is_concise` from `IMarkdownReportFormatter` and `MarkdownReportFormatter`.
+- [x] **Refactor** - Remove `is_concise` from `IMarkdownReportFormatter` and `MarkdownReportFormatter`.
 - [ ] **Refactor** - Remove `is_concise` from `ExecutionReportAssembler` and any internal calls in the `ExecutionOrchestrator` or CLI handlers.
 - [ ] **Logic** - Update `execution_report.md.j2` to:
     - Remove the `is_concise` conditional blocks for Metadata, Rationale, and Original Plan (pruning these sections entirely).
@@ -60,3 +60,10 @@ Feature: User Modification Audit Trail
 - Implemented tracking for: `command`, `queries`, `path`, `content`, `edits`, and `user_response`.
 - Ensured `handle_revert` clears the `modified_fields` list.
 - Identified technical debt: `ReviewerApp` does not support constructor injection for `EditSimulator`.
+
+### Deliverable 3: Refactor - IMarkdownReportFormatter is_concise removal
+- Removed `is_concise` parameter from `IMarkdownReportFormatter.format` and `MarkdownReportFormatter.format`.
+- Updated `execution_report.md.j2` to remove `is_concise` logic and prune redundant sections (Rationale, Original Plan, Metadata) by default.
+- Updated `textual_plan_reviewer_execution.py` to remove the deprecated parameter.
+- Refactored `test_markdown_report_formatter_enhancements.py` to assert pruning behavior.
+- Verified system integrity with 667 global tests passing.

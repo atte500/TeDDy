@@ -19,7 +19,7 @@ class IMarkdownReportFormatter(ABC):
     """
 
     @abstractmethod
-    def format(self, report: ExecutionReport, is_concise: bool = True) -> str:
+    def format(self, report: ExecutionReport) -> str:
         """
         Formats the report into a Markdown string.
         """
