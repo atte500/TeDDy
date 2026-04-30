@@ -77,6 +77,7 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 ## 6. Technical Debt
 
 ### Structural & Security (Found during Deliverables)
+- [ ] **Refactor** - Update `ReviewerApp` to accept `IEditSimulator` via constructor injection instead of internal instantiation.
 - [ ] **Structural** - Resolve Vulture unused variable hits in `ISessionManager` and `ISessionRepository` ports (requires whitelist update or alias).
 - [ ] **Security** - Update `litellm` to 1.83.7+ and `pip` to resolve GHSA-xqmj-j6mv-4862 and GHSA-58qw-9mgm-455v.
 - [ ] **Security** - Upgrade `litellm` to >= 1.83.7 to resolve GHSA-xqmj-j6mv-4862 (found during slice 00-07).

@@ -77,6 +77,8 @@ async def preview_edit(app: ReviewerApp, action: ActionData, node: Any) -> None:
         )
         if final is not None:
             action.modified = True
+            if "edits" not in action.modified_fields:
+                action.modified_fields.append("edits")
             if str(final) != str(proposed):
                 action.params["edits"] = [{"find": original, "replace": str(final)}]
                 action.params.pop("content", None)
@@ -100,6 +102,8 @@ async def preview_create(app: ReviewerApp, action: ActionData, node: Any) -> Non
 
     if new_content is not None and str(new_content) != str(content):
         action.modified = True
+        if "content" not in action.modified_fields:
+            action.modified_fields.append("content")
         # Content will be harvested from pending_temp_file on submit
         app._refresh_node(node)
 
@@ -120,6 +124,8 @@ async def preview_text_action(app: ReviewerApp, action: ActionData, node: Any) -
 
     if final is not None:
         action.modified = True
+        if key not in action.modified_fields:
+            action.modified_fields.append(key)
         if str(final) != str(content):
             action.params[key] = str(final)
         app._refresh_node(node)
@@ -181,6 +187,8 @@ async def preview_prompt(app: ReviewerApp, action: ActionData, node: Any) -> Non
 
         if final and final != message.strip():
             action.modified = True
+            if "user_response" not in action.modified_fields:
+                action.modified_fields.append("user_response")
             action.user_response = final
             app._refresh_node(node)
 

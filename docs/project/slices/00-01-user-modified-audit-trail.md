@@ -30,7 +30,7 @@ Feature: User Modification Audit Trail
 
 ## Deliverables
 - [x] **Logic** - Add `modified_fields: list[str]` to `ActionData` (plan.py) and `ActionLog` (execution_report.py).
-- [ ] **Harness** - Update TUI event handlers to append field names to `modified_fields` whenever a parameter is successfully edited in the `ReviewerApp`.
+- [x] **Harness** - Update TUI event handlers to append field names to `modified_fields` whenever a parameter is successfully edited in the `ReviewerApp`.
 - [ ] **Refactor** - Remove `is_concise` from `IMarkdownReportFormatter` and `MarkdownReportFormatter`.
 - [ ] **Refactor** - Remove `is_concise` from `ExecutionReportAssembler` and any internal calls in the `ExecutionOrchestrator` or CLI handlers.
 - [ ] **Logic** - Update `execution_report.md.j2` to:
@@ -54,3 +54,9 @@ Feature: User Modification Audit Trail
 - Added `modified_fields: list[str]` to both `ActionData` (mutable, used during modification) and `ActionLog` (frozen, used for reporting).
 - Integrated assertions into existing domain model unit tests.
 - Verified that default values (empty lists) maintain backward compatibility with the existing 660+ tests.
+
+### Deliverable 2: Harness - TUI Modified Fields
+- Updated `textual_plan_reviewer_helpers.py`, `textual_plan_reviewer_previews.py`, and `textual_plan_reviewer_editor.py` to track granular field modifications.
+- Implemented tracking for: `command`, `queries`, `path`, `content`, `edits`, and `user_response`.
+- Ensured `handle_revert` clears the `modified_fields` list.
+- Identified technical debt: `ReviewerApp` does not support constructor injection for `EditSimulator`.

@@ -112,6 +112,8 @@ async def handle_list_view_selected(
     if new_val is not None and str(new_val) != str(val):
         _apply_param_edit(action, key, val, new_val)
         action.modified = True
+        if key and key not in action.modified_fields:
+            action.modified_fields.append(key)
         app._refresh_node(node)
         update_fn(app, action)
 
@@ -135,6 +137,8 @@ async def handle_edit_action(
         if new_val is not None and new_val != val:
             action.params["command"] = new_val
             action.modified = True
+            if "command" not in action.modified_fields:
+                action.modified_fields.append("command")
             app._refresh_node(node)
             update_fn(app, action)
     elif action.type == "RESEARCH":
@@ -151,6 +155,8 @@ async def handle_edit_action(
                 q.strip() for q in new_val.split(",") if q.strip()
             ]
             action.modified = True
+            if "queries" not in action.modified_fields:
+                action.modified_fields.append("queries")
             app._refresh_node(node)
             update_fn(app, action)
     else:
@@ -163,6 +169,7 @@ def handle_revert(app: ReviewerApp, node: Any, update_fn: Any) -> None:
     action: Optional[ActionData] = node.data
     if action and action.modified:
         action.modified = False
+        action.modified_fields.clear()
         if hasattr(action, "_original_params"):
             action.params = action._original_params.copy()
         if action.type == "PROMPT":

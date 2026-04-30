@@ -175,6 +175,8 @@ def _process_diff_result(
 ) -> bool:
     if confirmed and p_file and isinstance(p_file, (str, os.PathLike)):
         action.modified = True
+        if "edits" not in action.modified_fields:
+            action.modified_fields.append("edits")
         harvest_edit_diff(action, p_file, original, proposed)
         return True
     if not confirmed and p_file and isinstance(p_file, (str, os.PathLike)):
