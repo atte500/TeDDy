@@ -33,10 +33,10 @@ Feature: User Modification Audit Trail
 - [x] **Harness** - Update TUI event handlers to append field names to `modified_fields` whenever a parameter is successfully edited in the `ReviewerApp`.
 - [x] **Refactor** - Remove `is_concise` from `IMarkdownReportFormatter` and `MarkdownReportFormatter`.
 - [x] **Refactor** - Remove `is_concise` from `ExecutionReportAssembler` and any internal calls in the `ExecutionOrchestrator` or CLI handlers.
-- [ ] **Logic** - Update `execution_report.md.j2` to:
+- [x] **Logic** - Update `execution_report.md.j2` to:
     - Remove the `is_concise` conditional blocks for Metadata, Rationale, and Original Plan (pruning these sections entirely).
     - Update the Action Log header to show `(user modified: field1, field2)` if `modified_fields` is not empty.
-- [ ] **Cleanup** - Prune the `render_original_plan` and `render_rationale` macros from the Jinja template if they are no longer used.
+- [x] **Cleanup** - Prune the `render_original_plan` and `render_rationale` macros from the Jinja template if they are no longer used.
 - [ ] **Cleanup** - Perform a global `git grep "is_concise"` to verify total elimination from the codebase (including tests, mocks, and legacy adapters).
 
 ## Delta Analysis
@@ -73,3 +73,9 @@ Feature: User Modification Audit Trail
 - Updated `test_report_formats_integration.py` to remove legacy "concise" terminology and assert the new standard pruning behavior.
 - Removed `is_concise` from `pyproject.toml` (Vulture ignore list).
 - Confirmed zero occurrences of `is_concise` in `src/` via `git grep`.
+
+### Deliverable 5 & 6: Logic & Cleanup - Template Updates
+- Updated `execution_report.md.j2` to implement the detailed `(user modified: field1, field2)` audit trail.
+- Pruned `Rationale`, `Original Plan Metadata`, and `Original Action Plan` sections from the rendered report to reduce redundancy and improve AI readability.
+- Deleted unused macros: `render_rationale`, `render_metadata`, and `render_original_plan`.
+- Verified changes with 669 passing tests, ensuring no regressions in report generation across the suite.
