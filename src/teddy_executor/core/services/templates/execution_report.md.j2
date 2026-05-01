@@ -262,7 +262,6 @@
 {% endif %}
 
 {% if action_type == 'RESEARCH' and log.details and log.details is mapping and log.details.get('query_results') %}
-*(Use `READ` on the URLs below to inspect the full content)*
 {% for qr in log.details.get('query_results', []) %}
 
 **Query:** `{{ qr['query'] }}`
@@ -273,6 +272,8 @@
 ```
 {% endfor %}
 {% endfor %}
+
+*(Use `READ` on the URLs above to inspect the full content)*
 {% endif %}
 
 {% if action_type in ['RETURN', 'INVOKE', 'PROMPT'] %}

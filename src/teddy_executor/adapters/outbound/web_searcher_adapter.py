@@ -19,16 +19,42 @@ class WebSearcherAdapter(IWebSearcher):
         Performs a web search for each query and maps the results.
         """
         from ddgs import DDGS
+        import ddgs.utils
+
+        # Monkeypatch ddgs.utils._normalize_text to prevent word mashing.
+        # The library strips HTML tags (used for highlighting) without adding spaces.
+        def patched_normalize_text(raw: str) -> str:
+            if not raw:
+                return ""
+            # Replace tags with space instead of empty string to preserve word boundaries
+            text = ddgs.utils._REGEX_STRIP_TAGS.sub(" ", raw)
+            from html import unescape
+            import unicodedata
+
+            text = unescape(text)
+            text = unicodedata.normalize("NFC", text)
+            c_to_none = {
+                ord(ch): None for ch in set(text) if unicodedata.category(ch)[0] == "C"
+            }
+            if c_to_none:
+                text = text.translate(c_to_none)
+            return " ".join(text.split())
+
+        # Apply patch globally for this turn
+        ddgs.utils._normalize_text = patched_normalize_text
 
         all_query_results: List[QueryResult] = []
         import re
 
         def clean_snippet(text: str) -> str:
-            """Cleans snippets that often have missing spaces after punctuation."""
+            """Fixes missing spaces after punctuation or between digits/letters."""
             if not text:
                 return ""
-            # Fix missing space after period, comma, or colon followed by a letter/digit
-            text = re.sub(r"([.,:])([A-Za-z])", r"\1 \2", text)
+            # Fix missing space after punctuation
+            text = re.sub(r"([.,:;!?])([^\s])", r"\1 \2", text)
+            # Fix missing space between digit and letter
+            text = re.sub(r"(\d)([a-zA-Z])", r"\1 \2", text)
+            text = re.sub(r"([a-zA-Z])(\d)", r"\1 \2", text)
             return text
 
         try:
@@ -36,10 +62,10 @@ class WebSearcherAdapter(IWebSearcher):
             # third-party HTTP clients (urllib3, httpx, curl_cffi) used by DDGS.
             logging.disable(logging.CRITICAL)
             try:
-                with DDGS() as ddgs:
+                with DDGS() as ddgs_client:
                     for query in queries:
                         # DDGS.text returns a generator, so we convert it to a list
-                        results = list(ddgs.text(query, max_results=5))
+                        results = list(ddgs_client.text(query, max_results=5))
 
                         search_results_for_query: List[SearchResult] = [
                             {
