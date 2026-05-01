@@ -21,6 +21,16 @@ class WebSearcherAdapter(IWebSearcher):
         from ddgs import DDGS
 
         all_query_results: List[QueryResult] = []
+        import re
+
+        def clean_snippet(text: str) -> str:
+            """Cleans snippets that often have missing spaces after punctuation."""
+            if not text:
+                return ""
+            # Fix missing space after period, comma, or colon followed by a letter/digit
+            text = re.sub(r"([.,:])([A-Za-z])", r"\1 \2", text)
+            return text
+
         try:
             # Globally disable logging (CRITICAL and below) to silence noisy
             # third-party HTTP clients (urllib3, httpx, curl_cffi) used by DDGS.
@@ -35,7 +45,7 @@ class WebSearcherAdapter(IWebSearcher):
                             {
                                 "title": res.get("title", ""),
                                 "href": res.get("href", ""),
-                                "body": res.get("body", ""),
+                                "body": clean_snippet(res.get("body", "")),
                             }
                             for res in results
                         ]

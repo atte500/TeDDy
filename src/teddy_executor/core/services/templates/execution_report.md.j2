@@ -69,7 +69,7 @@
 
 {% endif -%}
 {# Render generic details if no specific fields matched, but avoid rendering if it's just content #}
-{% if not log.details.get("error") and not log.details.get("return_code") and not log.details.get("stdout") and not log.details.get("stderr") and not log.details.get("content") and not log.details.get("diff") and not log.details.get("failed_command") and not log.details.get("similarity_scores") and not log.details.get("similarity_score") %}
+{% if not log.details.get("error") and not log.details.get("return_code") and not log.details.get("stdout") and not log.details.get("stderr") and not log.details.get("content") and not log.details.get("diff") and not log.details.get("failed_command") and not log.details.get("similarity_scores") and not log.details.get("similarity_score") and not log.details.get("query_results") %}
 {% if log.status.value in ['FAILURE', 'SKIPPED'] or log.action_type | upper not in ['INVOKE', 'RETURN'] %}
 - **Details:** `{{ log.details }}`
 {% endif -%}
@@ -262,6 +262,7 @@
 {% endif %}
 
 {% if action_type == 'RESEARCH' and log.details and log.details is mapping and log.details.get('query_results') %}
+*(Use `READ` on the URLs below to inspect the full content)*
 {% for qr in log.details.get('query_results', []) %}
 
 **Query:** `{{ qr['query'] }}`

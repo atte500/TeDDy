@@ -1,3 +1,5 @@
+import textwrap
+from unittest.mock import patch
 from typer.testing import CliRunner
 from teddy_executor.__main__ import app
 
@@ -47,6 +49,61 @@ This is the original rationale that should be hidden.
     assert "Action Log" in result.stdout
     assert "READ" in result.stdout
     assert "SUCCESS" in result.stdout
+
+
+def test_research_report_includes_hint_and_hides_raw_details(tmp_path, monkeypatch):
+    """
+    Scenario: RESEARCH action report formatting
+    - Given a successful RESEARCH action.
+    - When the report is rendered.
+    - Then the output MUST contain the READ hint.
+    - And the output MUST NOT contain the raw query_results in details.
+    """
+    runner = CliRunner()
+    monkeypatch.chdir(tmp_path)
+
+    plan_content = textwrap.dedent("""\
+        # Research Plan
+        - **Status:** Green 🟢
+        - **Agent:** Pathfinder
+
+        ## Rationale
+        ~~~~~~text
+        I need to find some teddy bears.
+        ~~~~~~
+
+        ## Action Plan
+        ### `RESEARCH`
+        - **Description:** Looking for stuff
+        ~~~~~~text
+        teddy cli
+        ~~~~~~
+    """)
+
+    mock_results = [
+        {
+            "title": "Teddy",
+            "href": "https://teddy.com",
+            "body": "A cute bear.",
+        }
+    ]
+
+    with patch("ddgs.DDGS") as mock_ddgs_class:
+        mock_ddgs_instance = mock_ddgs_class.return_value.__enter__.return_value
+        mock_ddgs_instance.text.return_value = iter(mock_results)
+
+        # Execute plan.
+        result = runner.invoke(
+            app, ["execute", "-y", "--no-copy", "--plan-content", plan_content]
+        )
+
+    assert result.exit_code == 0
+    # Verify Hint is present (including backticks from template)
+    assert "Use `READ` on the URLs below to inspect the full content" in result.stdout
+    # Verify snippets are rendered
+    assert "A cute bear." in result.stdout
+    # Verify raw details are suppressed
+    assert "query_results" not in result.stdout
 
 
 def test_session_report_is_comprehensive(tmp_path, monkeypatch):
