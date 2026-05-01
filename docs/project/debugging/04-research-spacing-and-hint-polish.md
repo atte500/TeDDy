@@ -35,6 +35,6 @@ The `WebSearcherAdapter` performs a single, limited regex pass on snippets. Mash
 3. Spike 01: Confirmed `lowerUpper` regex fixes CamelCase mashes (`ofMemory`).
 4. Spike 02: Attempted glue-word heuristics; rejected due to false positives (e.g., "Missing" -> "M is sing").
 5. Spike 03: Probing `ddgs` raw output to isolate root cause of remaining mashes.
-6. Investigation: Isolated root cause in `ddgs.utils._normalize_text` (strips tags without spaces).
-7. Implementation: Applied a runtime monkeypatch to `ddgs.utils._normalize_text` to preserve spacing at tag boundaries, and restored safe punctuation-spacing regex.
+6. Investigation: Isolated structural root cause to `BaseSearchEngine.extract_results` in `ddgs` library (joins text nodes with empty string).
+7. Implementation: Applied a structural monkeypatch to `BaseSearchEngine.extract_results` to join nodes with spaces, and restored a minimal punctuation-spacing regex.
 8. Polish: Moved report hint to end of section and updated wording to "above".

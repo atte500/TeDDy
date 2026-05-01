@@ -19,43 +19,38 @@ class WebSearcherAdapter(IWebSearcher):
         Performs a web search for each query and maps the results.
         """
         from ddgs import DDGS
-        import ddgs.utils
+        from ddgs.base import BaseSearchEngine
 
-        # Monkeypatch ddgs.utils._normalize_text to prevent word mashing.
-        # The library strips HTML tags (used for highlighting) without adding spaces.
-        def patched_normalize_text(raw: str) -> str:
-            if not raw:
-                return ""
-            # Replace tags with space instead of empty string to preserve word boundaries
-            text = ddgs.utils._REGEX_STRIP_TAGS.sub(" ", raw)
-            from html import unescape
-            import unicodedata
+        # Monkeypatch BaseSearchEngine.extract_results to prevent word mashing.
+        # The library joins extracted text nodes with an empty string, mashing words
+        # previously separated by HTML tags (e.g. <b>). We fix this by joining with a space.
+        def patched_extract_results(self, html_text: str):
+            html_text = self.pre_process_html(html_text)
+            tree = self.extract_tree(html_text)
+            items = tree.xpath(self.items_xpath)
+            results = []
+            for item in items:
+                result = self.result_type()
+                for key, value in self.elements_xpath.items():
+                    parts = (x.strip() for x in item.xpath(value))
+                    # JOIN WITH SPACE instead of empty string to preserve boundaries
+                    data = " ".join(" ".join(parts).split())
+                    result.__setattr__(key, data)
+                results.append(result)
+            return results
 
-            text = unescape(text)
-            text = unicodedata.normalize("NFC", text)
-            c_to_none = {
-                ord(ch): None for ch in set(text) if unicodedata.category(ch)[0] == "C"
-            }
-            if c_to_none:
-                text = text.translate(c_to_none)
-            return " ".join(text.split())
-
-        # Apply patch globally for this turn
-        ddgs.utils._normalize_text = patched_normalize_text
+        # Apply the structural patch to the base class
+        BaseSearchEngine.extract_results = patched_extract_results  # type: ignore[method-assign]
 
         all_query_results: List[QueryResult] = []
         import re
 
         def clean_snippet(text: str) -> str:
-            """Fixes missing spaces after punctuation or between digits/letters."""
+            """Fixes missing spaces after punctuation in raw text."""
             if not text:
                 return ""
-            # Fix missing space after punctuation
-            text = re.sub(r"([.,:;!?])([^\s])", r"\1 \2", text)
-            # Fix missing space between digit and letter
-            text = re.sub(r"(\d)([a-zA-Z])", r"\1 \2", text)
-            text = re.sub(r"([a-zA-Z])(\d)", r"\1 \2", text)
-            return text
+            # Fix missing space after period, comma, or colon followed by a letter
+            return re.sub(r"([.,:])([A-Za-z])", r"\1 \2", text)
 
         try:
             # Globally disable logging (CRITICAL and below) to silence noisy

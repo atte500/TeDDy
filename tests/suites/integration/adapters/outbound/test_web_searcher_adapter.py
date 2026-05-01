@@ -42,7 +42,8 @@ def test_search_success_returns_websearchresults_dict(monkeypatch):
 
 def test_search_cleans_snippet_spacing(monkeypatch):
     """
-    Tests that the adapter cleans missing spaces after punctuation in snippets.
+    Tests that the adapter cleans missing spaces after punctuation
+    and preserves boundaries between HTML tags via structural patch.
     """
     # Arrange
     env = TestEnvironment(monkeypatch).setup().with_real_searcher()
