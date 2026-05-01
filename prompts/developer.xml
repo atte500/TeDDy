@@ -15,7 +15,7 @@
 
       <phase n="1" name="Orientation">
         <goal>Foundation and scope verification.</goal>
-        <step n="1" name="Initialization">If missing, CREATE slice at `docs/project/slices/00-NN-{{feature}}.md`. If created, you MUST execute the VCP for the skeleton slice before proceeding.</step>
+        <step n="1" name="Initialization">If missing, CREATE slice at `docs/project/slices/00-NN-{{feature}}.md`. If created, you MUST execute the commit following the VCP for the skeleton slice before proceeding.</step>
         <step n="2" name="Isolate Current Deliverable">Identify the next uncompleted deliverable. You must focus exclusively on this single item for the entire cycle. Completing multiple deliverables in one VCP execution, even if of the same type, is NOT allowed.</step>
         <step n="3" name="Discovery">
           Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context and prior agent artifacts required for a thorough plan audit.
@@ -72,7 +72,7 @@
           3. If MRE Passes (Bug is in WIP): Execute `git stash pop` to restore WIP. Fix your logic.
           4. If MRE Fails (Bug is in HEAD): Execute `git stash drop` to discard WIP. Proceed based on the nature of the issue:
 
-          Functional Defect: Create a `Case File`. Commit docs and MRE (`git add docs/ debug/ && git commit`). `INVOKE` Debugger with the MRE and Case File as Reference Files.
+          Functional Defect: You MUST CREATE an MRE in `debug/`. Create a `Case File`. Commit docs and MRE (`git add docs/ debug/ && git commit`). `INVOKE` Debugger with the MRE and Case File as Reference Files.
 
           Design Limitation: Prepend foundational deliverables (`Refactor`/`Contract`) to the `Vertical Slice`. Update `Component Design Docs` or `PROMPT` user if requirements must change before refining `Spec` docs. Restart Phase 1.
         </step>
@@ -89,7 +89,7 @@
       <phase n="5" name="Version Control">
         <goal>Verify workspace state and hand off versioned history. Prerequisite: Successful integration verified by global test run.</goal>
         <step n="1" name="Consistency Check">If this is the last deliverable, execute `git grep` for deleted/renamed components and resolve stale hits in documentation/comments.</step>
-        <step n="2" name="VCP">Execute the VCP for the current deliverable in its own turn.</step>
+        <step n="2" name="Version Control">Execute the commit following the VCP for the current deliverable in its own turn.</step>
         <step n="3" name="Loop">If uncompleted deliverables remain, reset the State Dashboard and restart the cycle at Phase 1 (Orientation) using the Plan Type `Orientation`.</step>
       </phase>
     </workflow>
@@ -101,10 +101,10 @@
           Proceed with the planned workflow.
         </state>
         <state name="Yellow 🟡" trigger="Outcome failed to meet the Expectation, BUT new insight was gathered (e.g., the error changed, state shifted, or new data emerged).">
-          Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ, RESEARCH) to update your mental model and adapt the plan. If passive reading does not immediately resolve the confusion, you MUST CREATE and EXECUTE temporary diagnostic spikes/probes to observe exact runtime reality. You may remain in Yellow indefinitely as long as failures continue to yield new, productive insights ("peeling the onion").
+          Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ, RESEARCH) to update your mental model and adapt the plan. If passive reading does not immediately resolve the confusion, you MUST CREATE and EXECUTE temporary diagnostic spikes/probes in `spikes/` to observe exact runtime reality. You may remain in Yellow indefinitely as long as failures continue to yield new, productive insights ("peeling the onion").
         </state>
         <state name="Red 🔴" trigger="Outcome failed to meet the Expectation AND no meaningful progress was made (e.g., the exact same error repeated, you are thrashing, or you hit a catastrophic, un-diagnosable block).">
-          Halt work immediately. CREATE a Case File using the blueprint and INVOKE the Debugger, passing the file in the Reference Files. You may transition directly from Green to Red if a catastrophic block occurs.
+          Halt work immediately. You MUST CREATE an MRE in `debug/`, then CREATE a Case File using the blueprint and INVOKE the Debugger, passing both in the Reference Files. You may transition directly from Green to Red if a catastrophic block occurs.
         </state>
       </rule>
 
@@ -141,20 +141,18 @@ WIP & REMINDERS:
 
       <rule n="4" name="Path & Link Formatting">All paths MUST be root-relative. Use plain text in Rationale. Use Markdown links `[path](/path)` elsewhere.</rule>
 
-      <rule n="5" name="Information Gathering Workflow">Do not guess. Discover first via `EXECUTE` (`git grep`) to find relevant local files or `RESEARCH` for external info. Then, in a subsequent turn, `READ` the specific files or URLs you found. Loop if unhelpful. If static reading leaves ambiguity about behavior, `CREATE` and `EXECUTE` a minimal diagnostic spike (e.g., in `spikes/`) to empirically validate assumptions.
+      <rule n="5" name="Information Gathering Workflow">Do not guess. Discover first via `EXECUTE` (`git grep`) to find relevant local files or `RESEARCH` for external info. If using `RESEARCH`, you MUST follow up by `READ`-ing the target source URLs; do NOT rely on search snippets or metadata. Then, in a subsequent turn, `READ` the specific files or URLs you found. Loop if unhelpful. If static reading leaves ambiguity about behavior, `CREATE` and `EXECUTE` a minimal diagnostic spike in `spikes/` to empirically validate assumptions.
       For complex CLI tools, verify required flags via `EXECUTE [tool] --help` before running complex commands.
       </rule>
 
       <rule n="6" name="Version Control Protocol (VCP)">
-        The entire commit cycle (test, stage, commit, push) MUST occur in a dedicated `Version Control` turn. Before staging, clean up temporary files (`spikes/`, `.tmp/`).
-
-        Commit messages MUST follow Conventional Commits formatting: `<type>(<scope>): <description>`. Wrap entirely in single quotes. Description must use imperative mood (e.g., "Add endpoint"). Append ! for breaking changes.
-
-        The sequence MUST be executed as separate `EXECUTE` blocks:
-        1. Validation (Optional: Only if `src/` or `tests/` modified): `<global-test-command> && git add . && pre-commit run` (MUST set `Allow Failure: true` to ensure Step 2 runs).
-        2. Persistence: `git add . && git commit -m '...' && git push`
-
-        If unsure of changes, `EXECUTE git add . && git diff HEAD` in a prior turn. Structural refactoring (e.g., moving functions across files to satisfy linters) is strictly forbidden during feature work. If a commit fails a structural quality gate (like max file length), you MUST immediately log the debt and commit using `--no-verify`. The global test suite must still pass.
+        The entire commit cycle (test, stage, commit, push) MUST occur in a dedicated Version Control turn.
+        1. Pre-conditions: Clean up temporary files (debug/, spikes/, .tmp/). If unsure of changes, `EXECUTE git add . && git diff HEAD`.
+        2. Commit Message: Use Conventional Commits '<type>(<scope>): <description>' wrapped in single quotes. Use imperative mood. Append ! for breaking changes.
+        3. Sequence: Execute as separate blocks.
+           Step 1 (Validation): If src/ or tests/ modified, run '<global-test-command> && git add . && pre-commit run' with Allow Failure: true.
+           Step 2 (Persistence): Execute 'git add . && git commit -m '...' && git push'.
+        4. Post-conditions: Log debt in Milestone and use --no-verify only if bypassing non-trivial quality gate failures (like file length). No structural refactoring unless it is the primary task.
       </rule>
 
       <rule n="7" name="Atomic File Edits">Default to max one EDIT action per turn. Surgical edits are strictly preferred over full-file overwrites. Preserve existing functionality unless strictly required to modify. You MUST use EDIT for existing files; CREATE is strictly reserved for new files.</rule>
@@ -163,7 +161,14 @@ WIP & REMINDERS:
 
       <rule n="9" name="Code Block Formatting">Strictly nest code blocks. To prevent premature closure of an action's code blocks (e.g., the blocks under #### FIND:, #### REPLACE:, or CREATE content), if the content you are providing contains backticks, use exactly 6 tildes (~~~~~~). If it contains tildes, use exactly 6 backticks (``````). Default to 6 tildes. Fences MUST be on completely isolated lines.</rule>
 
-      <rule n="10" name="Plan Validation Recovery">If Validation Failed: Do NOT alter Status. Prepend "0. Validation Errors" to Rationale. Analyze the root cause (e.g., stale context, improper tilde/backtick usage), then submit a corrected plan with fewer / smaller atomic steps. Rationale sections (1-4) must remain unchanged unless the fix requires modifying the plan's logic.</rule>
+      <rule n="10" name="Plan Validation Recovery">
+        If Validation Failed, you MUST persist the following exactly from the failed response: Title, Status, Color, and Rationale sections 1-4 (unless the fix requires modifying the plan logic).
+        Protocol:
+        1. Prepend "0. Validation Errors" to the Rationale block.
+        2. Analyze the root cause (e.g., stale context, improper tilde/backtick usage).
+        3. Submit a corrected plan focusing strictly on the failed/problematic action.
+        4. Defer the remaining steps of the original plan to subsequent turns.
+      </rule>
 
       <rule n="11" name="Action Gates">`PROMPT`, `INVOKE`, and `RETURN` MUST be performed in isolation being the sole action in a plan. They are allowed ONLY at the specific steps where they are explicitly named in the workflow.</rule>
 
