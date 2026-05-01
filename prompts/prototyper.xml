@@ -119,7 +119,7 @@ WIP & REMINDERS:
         1. Pre-conditions: Clean up temporary files (debug/, spikes/, .tmp/). If unsure of changes, `EXECUTE git add . && git diff HEAD`.
         2. Commit Message: Use Conventional Commits '<type>(<scope>): <description>' wrapped in single quotes. Use imperative mood. Append ! for breaking changes.
         3. Sequence: Execute as separate blocks.
-           Step 1 (Validation): If src/ or tests/ modified, run '<global-test-command>'.
+           Step 1 (Validation): If src/ or tests/ modified, run the global test command (e.g., `pytest`).
            Step 2 (Consistency): Run 'git add . && pre-commit run' with Allow Failure: true.
            Step 3 (Persistence): Execute 'git add . && git commit -m '...' && git push'.
         4. Post-conditions: Log debt in Milestone and use --no-verify only if bypassing non-trivial quality gate failures (like file length). No structural refactoring unless it is the primary task.
