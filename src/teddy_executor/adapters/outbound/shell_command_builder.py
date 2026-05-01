@@ -17,11 +17,28 @@ class ShellCommandBuilder:
         is_multiline = "\n" in command
 
         # Check for shell operators to enable granular reporting for single-line chains.
-        ops = (
-            ["&&", "||", ";", "|"]
-            if self._platform != "win32"
-            else ["&&", "||", "&", "|"]
-        )
+        # Includes redirection, pipes, chaining, variables, globs, and subshells.
+        # This ensures any command requiring shell interpretation is correctly flagged.
+        if self._platform == "win32":
+            ops = ["&&", "||", "&", "|", ">", "<", "%", "*", "?", "(", ")"]
+        else:
+            ops = [
+                "&&",
+                "||",
+                ";",
+                "|",
+                ">",
+                "<",
+                "$",
+                "*",
+                "?",
+                "(",
+                ")",
+                "[",
+                "]",
+                "~",
+                "`",
+            ]
         has_chaining = any(op in command for op in ops)
         is_complex = is_multiline or has_chaining
 
