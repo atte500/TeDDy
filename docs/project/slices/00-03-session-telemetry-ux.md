@@ -27,12 +27,14 @@ Feature: Pre-response Session Telemetry
 ```
 
 ## Deliverables
-- [ ] **Contract** - Add `get_context_window(model: Optional[str] = None) -> int` to `ILlmClient`.
+- [ ] **Contract (Expansion)** - Add `get_context_window(model: Optional[str] = None) -> int` to `ILlmClient` with default return.
 - [ ] **Harness** - Update `MockLlmClient` in `tests/harness/setup/mocks.py` to support `get_context_window`.
-- [ ] **Logic** - Implement `get_context_window` in `LiteLLMAdapter` using `litellm.model_cost`.
-- [ ] **Logic** - Update `PlanningService.generate_plan` to display the telemetry block immediately after token calculation.
-- [ ] **Migration** - Update `SessionPlanner.trigger_new_plan` to no longer call the display method.
-- [ ] **Cleanup** - Delete `SessionPlanner._display_planning_telemetry`.
+- [ ] **Logic (Migration)** - Implement `get_context_window` in `LiteLLMAdapter` using `litellm.model_cost`.
+- [ ] **Contract (Contraction)** - Make `get_context_window` abstract in `ILlmClient`.
+- [ ] **Logic** - Add telemetry display logic to `PlanningService.generate_plan`.
+- [ ] **Migration** - Update `SessionPlanner.trigger_new_plan` to no longer call telemetry display.
+- [ ] **Cleanup** - Remove `SessionPlanner._display_planning_telemetry` and related dead code.
+- [ ] **Wiring** - Verify end-to-end telemetry display in interactive session.
 
 ## Delta Analysis
 - **Port:** `src/teddy_executor/core/ports/outbound/llm_client.py`: Add `get_context_window(model: Optional[str] = None) -> int`.
