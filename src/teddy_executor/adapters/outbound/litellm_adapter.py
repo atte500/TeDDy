@@ -81,3 +81,7 @@ class LiteLLMAdapter(ILlmClient):
 
         self._ensure_silence(litellm)
         return float(litellm.completion_cost(completion_response=completion_response))
+
+    def validate_config(self) -> List[str]:
+        """Stub implementation for contract satisfaction."""
+        return []

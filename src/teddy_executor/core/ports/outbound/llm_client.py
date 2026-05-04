@@ -51,3 +51,13 @@ class ILlmClient(ABC):
         Calculates the precise USD cost of a completion response.
         """
         pass
+
+    @abstractmethod
+    def validate_config(self) -> List[str]:
+        """
+        Validates the current configuration (API keys, models, etc.).
+
+        Returns:
+            A list of error messages. An empty list indicates valid configuration.
+        """
+        pass
