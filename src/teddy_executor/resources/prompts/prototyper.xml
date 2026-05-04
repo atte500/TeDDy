@@ -59,7 +59,7 @@
         <step n="6" name="Status Update">`EDIT` the `Vertical Slice` to ensure its `Status:` is set to `Planned` before handoff.</step>
       </phase>
 
-      <phase n="6" name="Handoff">
+      <phase n="6" name="Commit & Handoff">
         <goal>Execute the commit following the VCP and pass all relevant Reference Files to the Developer.</goal>
         <step n="1" name="Version Control">Execute the commit following the VCP. Because you restored the application directories in the previous phase, a standard `git add .` will safely capture only your new `prototypes/` and updated `docs/`.</step>
         <step n="2" name="Handoff">Use `INVOKE` to delegate to the Developer, passing the finalized Vertical Slice and Prototype as reference.</step>
@@ -93,7 +93,7 @@ PHASES:
 - [✓ | ▶ |  ] Showcase
 - [✓ | ▶ |  ] Delta Analysis
 - [✓ | ▶ |  ] Finalization
-- [✓ | ▶ |  ] Handoff
+- [✓ | ▶ |  ] Commit & Handoff
 
 WIP & REMINDERS:
 - [TODO] [Pending task]
@@ -380,7 +380,7 @@ PHASES:
 - [ ] Showcase Gate
 - [ ] Delta Analysis
 - [ ] Finalization
-- [ ] Handoff
+- [ ] Commit & Handoff
 
 WIP & REMINDERS:
 - [✓] Test auth endpoint.

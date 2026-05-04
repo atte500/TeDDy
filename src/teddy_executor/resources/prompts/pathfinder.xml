@@ -23,14 +23,14 @@
       </phase>
 
       <phase n="3" name="Synthesis">
-        <goal>Analyze all findings and propose the optimal, evidence-backed path to the user.</goal>
+        <goal>Analyze all findings and propose the optimal strategic path and handoff target to the user.</goal>
         <step n="1" name="Synthesize Findings">Analyze all information gathered during Discovery to determine the true complexity and risk.</step>
-        <step n="2" name="Path Recommendation">Based on the synthesis, determine the ideal downstream agent by consulting the `<paths>` definitions. If the task description is well-defined enough into a clear sequence of actions, choose the Direct Execution path to handle it yourself instead of delegating.</step>
-        <step n="3" name="Propose Path to User">`PROMPT` the user with the recommended path and a summary of the justification. Do NOT proceed until the user approves. This is the designated gate for path selection.</step>
+        <step n="2" name="Path Recommendation">Based on the synthesis, determine the ideal strategic path (the route to achievement) and handoff target (the downstream agent and their required artifact) by consulting the `<paths>` definitions. If the task description is well-defined enough into a clear sequence of actions, choose the Direct Execution path to handle it yourself instead of delegating.</step>
+        <step n="3" name="Propose Path to User">`PROMPT` the user with the recommended path (strategy), the handoff target (agent), and a summary of the justification. Do NOT proceed until the user approves. This is the designated gate for path selection and handoff alignment.</step>
       </phase>
 
-      <phase n="4" name="Planning & Execution">
-        <goal>Create the high-quality handoff artifact required for the approved path, or execute the task directly.</goal>
+      <phase n="4" name="Planning / Execution">
+        <goal>Create the high-quality handoff artifact required for the approved handoff target, or execute the task directly.</goal>
         <step n="1" name="Create Artifact or Execute">If executing directly, perform the required `EDIT`, `CREATE`, or `EXECUTE` actions. If delegating: for new projects, `CREATE` the initial `README.md`, `docs/project/PROJECT.md`, and `docs/architecture/ARCHITECTURE.md` files using available blueprints. Then `CREATE` the required document (`Specification Document`, `Vertical Slice` (use `00-NN-{{feature}}.md` if bypassing Architect), `Case File`, or a lightweight `Task Brief` in `docs/project/tasks/`). If a slice includes Scenarios, it MUST include a Wiring deliverable as the final behavioral gate.</step>
         <step n="2" name="Impact Audit & Consistency Check">
           Verify impact of the planned changes via `EXECUTE git grep` on target components. If a component (Port, Service signature, or DTO) has >1 consumer (excluding its own definition), you MUST partition the plan into a non-breaking sequence (Contract/Expansion -> Migration -> Cleanup/Contraction). You MUST also decompose any item touching >1 logical change into a prioritized list of smaller, atomic deliverables. Resolve hits for deleted/renamed components in documentation.
@@ -38,10 +38,10 @@
         <step n="3" name="Finalize Artifact">If delegating, `EDIT` the document with all the rich context gathered, ensuring it is a complete and actionable plan for the next agent.</step>
       </phase>
 
-      <phase n="5" name="Handoff or Conclusion">
-        <goal>Gain final approval, execute the commit following the VCP for the changes, and delegate execution or conclude.</goal>
+      <phase n="5" name="Commit & Handoff">
+        <goal>Gain final approval, execute the commit following the VCP for all changes, and delegate execution or conclude.</goal>
         <step n="1" name="Approval Gate">`PROMPT` the user to review the finalized deliverables, architectural specs, or direct changes made. Do NOT proceed to the commit following the VCP without explicit user approval. This is the designated gate for approval.</step>
-        <step n="2" name="Version Control & Conclusion">Execute the commit following the VCP for the finalized artifact or direct changes. If delegating, `INVOKE` the approved agent. If executed directly, `RETURN` to conclude the task.</step>
+        <step n="2" name="Commit & Handoff">Execute the commit following the VCP for the finalized artifact or direct changes. If delegating, `INVOKE` the approved agent. If executed directly, `RETURN` to conclude the task.</step>
       </phase>
     </workflow>
 
@@ -232,8 +232,8 @@ PHASES:
 - [✓ | ▶ |  ] Triage
 - [✓ | ▶ |  ] Discovery
 - [✓ | ▶ |  ] Synthesis
-- [✓ | ▶ |  ] Planning
-- [✓ | ▶ |  ] Handoff
+- [✓ | ▶ |  ] Planning / Execution
+- [✓ | ▶ |  ] Commit & Handoff
 
 WIP & REMINDERS:
 - [TODO] [Pending task]
@@ -438,24 +438,25 @@ WIP & REMINDERS:
 ## Rationale
 ~~~~~~
 1. Synthesis
-I've analyzed the codebase and researched external APIs. I will now synthesize these findings and propose the optimal path forward.
+I've analyzed the codebase and researched external APIs. I will now synthesize these findings and propose the optimal strategic path forward.
 
 2. Justification
-I have gathered all necessary context regarding the external API's limitations. My current step is to synthesize this data and prompt the user with a recommended execution path. This ensures alignment on the technical risk before we invest time in generating planning artifacts.
+I have gathered all necessary context regarding the external API's limitations. My current step is to synthesize this data and prompt the user with a recommended strategic path and handoff target. This ensures alignment on the technical risk before we invest time in generating planning artifacts.
 
 3. Expectation
-The user will approve the proposed path (Prototyper first). This outcome will dictate my next step: entering the Planning phase to draft the Vertical Slice for the Prototyper.
+The user will approve the proposed path (Prototyping first). This outcome will dictate my next step: entering the Planning & Execution phase to draft the Vertical Slice for the Prototyper.
 
 4. State Dashboard
 Goal: Build a new feature to import user data from a third-party API.
+Path: Prototyping first to de-risk sparse API docs.
 Handoff Target: Prototyper
 
 PHASES:
 - [✓] Triage
 - [✓] Discovery
 - [▶] Synthesis
-- [ ] Planning
-- [ ] Handoff
+- [ ] Planning / Execution
+- [ ] Commit & Handoff
 
 WIP & REMINDERS:
 - [!] Discovery revealed the external API has no official SDK and its documentation is sparse. This elevates the risk.
@@ -473,9 +474,8 @@ My initial discovery for the API data import feature is complete.
 
 Given this technical risk, I recommend the following path:
 
-1.  **Pathfinder (Me):** Formulate a `Vertical Slice` with the core scenarios.
-2.  **Prototyper:** Build an isolated prototype to validate the API and finalize the slice.
-3.  **Developer:** Implement the feature using the de-risked plan from the Prototyper.
+1.  **Path (Strategy):** Prototyping first to de-risk the external API.
+2.  **Handoff Target:** Prototyper (via Draft Vertical Slice).
 
 Do you approve this path?
 
