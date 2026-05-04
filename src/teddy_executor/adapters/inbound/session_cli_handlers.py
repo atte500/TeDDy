@@ -26,22 +26,23 @@ def handle_new_session(  # noqa: PLR0913
     """Logic for the 'start' command."""
     from teddy_executor.adapters.inbound.cli_helpers import handle_report_output
 
-    session_manager: ISessionManager = container.resolve(ISessionManager)
-    user_interactor: IUserInteractor = container.resolve(IUserInteractor)
-
-    # 1. Resolve message first if missing in interactive mode
-    if message is None and interactive:
-        message = user_interactor.ask_question("What are we working on?")
-
-    # 2. Determine session name (slugify message if name is missing)
-    if name:
-        actual_name = name
-    elif message:
-        actual_name = slugify(message)
-    else:
-        actual_name = "session-auto"
-
     try:
+        _run_cli_preflight_check(container)
+
+        session_manager: ISessionManager = container.resolve(ISessionManager)
+        user_interactor: IUserInteractor = container.resolve(IUserInteractor)
+
+        # 1. Resolve message first if missing in interactive mode
+        if message is None and interactive:
+            message = user_interactor.ask_question("What are we working on?")
+
+        # 2. Determine session name (slugify message if name is missing)
+        if name:
+            actual_name = name
+        elif message:
+            actual_name = slugify(message)
+        else:
+            actual_name = "session-auto"
         session_dir = session_manager.create_session(name=actual_name, agent_name=agent)
         typer.echo(f"Session created at: {session_dir}")
 
@@ -81,6 +82,26 @@ def handle_new_session(  # noqa: PLR0913
         raise typer.Exit(code=1)
 
 
+def _run_cli_preflight_check(container: Container) -> None:
+    """Ensures system is configured before starting/resuming a session."""
+    from teddy_executor.core.ports.outbound.llm_client import ILlmClient
+    from teddy_executor.core.ports.outbound.config_service import IConfigService
+    from teddy_executor.core.domain.models.exceptions import ConfigurationError
+
+    llm_client = container.resolve(ILlmClient)
+    errors = llm_client.validate_config()
+    if not errors:
+        return
+
+    config_service = container.resolve(IConfigService)
+    config_path = config_service.get_config_path()
+    error_msg = (
+        f"Configuration Error: {', '.join(errors)}\n"
+        f"Please update your configuration at: {config_path}"
+    )
+    raise ConfigurationError(error_msg)
+
+
 def detect_session_context() -> Optional[Dict[str, Sequence[str]]]:
     """Helper to detect turn and session context files."""
     cwd = Path.cwd()
@@ -98,11 +119,13 @@ def detect_session_context() -> Optional[Dict[str, Sequence[str]]]:
 
 def handle_plan_generation(container: Container, message: Optional[str]):
     """Logic for the 'plan' command."""
-    planning_service: IPlanningUseCase = container.resolve(IPlanningUseCase)
-    context_files = detect_session_context()
-    cwd = Path.cwd()
-
     try:
+        _run_cli_preflight_check(container)
+
+        planning_service: IPlanningUseCase = container.resolve(IPlanningUseCase)
+        context_files = detect_session_context()
+        cwd = Path.cwd()
+
         plan_path, _ = planning_service.generate_plan(
             user_message=message, turn_dir=str(cwd), context_files=context_files
         )
@@ -132,9 +155,11 @@ def handle_resume_session(
     import re
     from teddy_executor.adapters.inbound.cli_helpers import handle_report_output
 
-    session_manager = container.resolve(ISessionManager)
-
     try:
+        _run_cli_preflight_check(container)
+
+        session_manager = container.resolve(ISessionManager)
+
         if path:
             session_name = session_manager.resolve_session_from_path(path)
         else:

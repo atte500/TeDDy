@@ -85,11 +85,13 @@ class TestEnvironment(RealAdapterMixin):
         self._register_io_mocks()
 
     def _register_system_mocks(self) -> None:
+        from teddy_executor.core.ports.inbound.init import IInitUseCase
         from teddy_executor.core.ports.outbound import (
             IShellExecutor,
             ISystemEnvironment,
         )
 
+        self.mock_port(IInitUseCase)
         self.mock_port(ISystemEnvironment)
         self.mock_port(IShellExecutor)
 

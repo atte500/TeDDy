@@ -34,8 +34,8 @@ And the session turn should halt.
 - [x] **Logic** - Implement `validate_config()` in `LiteLLMAdapter` (env check + placeholder rejection).
 - [x] **Wiring** - Integrate preflight gate into `PlanningService.generate_plan`.
 - [x] **Logic** - Update `LiteLLMAdapter.validate_config` to satisfy env-var checks if `api_key` is in config.
-- [ ] **Wiring** - Add preflight gate to `handle_new_session` before user prompt.
-- [ ] **Wiring** - Add preflight gate to `handle_resume_session` and `handle_plan_generation`.
+- [x] **Wiring** - Add preflight gate to `handle_new_session` before user prompt.
+- [x] **Wiring** - Add preflight gate to `handle_resume_session` and `handle_plan_generation`.
 
 ## Delta Analysis
 - `src/teddy_executor/core/ports/outbound/config_service.py`: Interface change.
@@ -76,3 +76,10 @@ And the session turn should halt.
 - Updated `LiteLLMAdapter.validate_config` to filter out `*_API_KEY` errors returned by `litellm.validate_environment` if a valid `llm.api_key` exists in the TeDDy config.
 - This ensures users can configure TeDDy entirely via `config.yaml` without needing to set provider-specific environment variables (e.g., `OPENAI_API_KEY`).
 - Added unit test coverage for this suppression logic in `tests/suites/unit/adapters/outbound/test_litellm_adapter_preflight.py`.
+
+### Deliverable: Wiring - Add preflight gate to handle_new_session, handle_resume_session, and handle_plan_generation
+- Implemented `_run_cli_preflight_check` as a private helper in `session_cli_handlers.py`.
+- Integrated the check into `handle_new_session`, `handle_resume_session`, and `handle_plan_generation`.
+- Verified that the check occurs before user prompting in `handle_new_session`.
+- Updated the test harness (`TestEnvironment`) to include `IInitUseCase` as a default mock to satisfy CLI bootstrap requirements in integration tests.
+- Verified system integrity with 100% pass rate on the global suite.
