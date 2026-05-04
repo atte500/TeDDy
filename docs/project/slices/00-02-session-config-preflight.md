@@ -29,7 +29,7 @@ And the session turn should halt.
 
 ## Deliverables
 - [x] **Contract** - Add `get_config_path() -> str` to `IConfigService`.
-- [ ] **Logic** - Implement `get_config_path()` in `YamlConfigAdapter`.
+- [x] **Logic** - Implement `get_config_path()` in `YamlConfigAdapter`.
 - [ ] **Contract** - Add `validate_config() -> list[str]` to `ILlmClient`.
 - [ ] **Logic** - Implement `validate_config()` in `LiteLLMAdapter` using `litellm.validate_environment`.
 - [ ] **Logic** - Ensure `LiteLLMAdapter` explicitly rejects `"your-api-key"`.
