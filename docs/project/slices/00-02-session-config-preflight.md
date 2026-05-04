@@ -31,21 +31,8 @@ And the session turn should halt.
 - [x] **Contract** - Add `get_config_path() -> str` to `IConfigService`.
 - [x] **Logic** - Implement `get_config_path()` in `YamlConfigAdapter`.
 - [x] **Contract** - Add `validate_config() -> list[str]` to `ILlmClient`.
-- [ ] **Logic** - Implement `validate_config()` in `LiteLLMAdapter` using `litellm.validate_environment`.
-
-## Implementation Notes
-### Deliverable: Contract - Add get_config_path() -> str to IConfigService
-- Added `get_config_path` to `IConfigService` port.
-- Implemented `get_config_path` in `YamlConfigAdapter` to return the `_config_path` attribute.
-- Verified via unit tests in `tests/suites/unit/adapters/outbound/test_yaml_config_adapter.py`.
-
-### Deliverable: Contract - Add validate_config() -> list[str] to ILlmClient
-- Added `validate_config` abstract method to `ILlmClient` interface.
-- Added a stub implementation to `LiteLLMAdapter` to maintain global test suite integrity during the transition.
-- Created contract enforcement test in `tests/suites/unit/core/ports/outbound/test_llm_client_contract.py`.
-- [ ] **Logic** - Ensure `LiteLLMAdapter` explicitly rejects `"your-api-key"`.
-- [ ] **Wiring** - Call `llm.validate_config()` at the start of `PlanningService.generate_plan`.
-- [ ] **Wiring** - Display errors and config path via `IUserInteractor` and halt planning if validation fails.
+- [ ] **Logic** - Implement `validate_config()` in `LiteLLMAdapter` (env check + placeholder rejection).
+- [ ] **Wiring** - Integrate preflight gate into `PlanningService.generate_plan`.
 
 ## Delta Analysis
 - `src/teddy_executor/core/ports/outbound/config_service.py`: Interface change.
@@ -64,3 +51,8 @@ And the session turn should halt.
 - Added `get_config_path` to `IConfigService` port.
 - Implemented `get_config_path` in `YamlConfigAdapter` to return the `_config_path` attribute.
 - Verified via unit tests in `tests/suites/unit/adapters/outbound/test_yaml_config_adapter.py`.
+
+### Deliverable: Contract - Add validate_config() -> list[str] to ILlmClient
+- Added `validate_config` abstract method to `ILlmClient` interface.
+- Added a stub implementation to `LiteLLMAdapter` to maintain global test suite integrity during the transition.
+- Created contract enforcement test in `tests/suites/unit/core/ports/outbound/test_llm_client_contract.py`.
