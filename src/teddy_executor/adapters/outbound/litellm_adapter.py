@@ -102,7 +102,15 @@ class LiteLLMAdapter(ILlmClient):
         if model:
             validation_result = litellm.validate_environment(model=model)
             missing_keys = validation_result.get("missing_keys", [])
+
+            # If llm.api_key is set to a valid value, satisfy missing *_API_KEY requirements
+            is_api_key_provided = (
+                isinstance(api_key, str) and api_key.lower() != "your-api-key"
+            )
+
             for key in missing_keys:
+                if is_api_key_provided and "_API_KEY" in key:
+                    continue
                 errors.append(f"Missing required environment variable or config: {key}")
 
         return errors

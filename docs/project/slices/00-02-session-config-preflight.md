@@ -33,7 +33,7 @@ And the session turn should halt.
 - [x] **Contract** - Add `validate_config() -> list[str]` to `ILlmClient`.
 - [x] **Logic** - Implement `validate_config()` in `LiteLLMAdapter` (env check + placeholder rejection).
 - [x] **Wiring** - Integrate preflight gate into `PlanningService.generate_plan`.
-- [ ] **Logic** - Update `LiteLLMAdapter.validate_config` to satisfy env-var checks if `api_key` is in config.
+- [x] **Logic** - Update `LiteLLMAdapter.validate_config` to satisfy env-var checks if `api_key` is in config.
 - [ ] **Wiring** - Add preflight gate to `handle_new_session` before user prompt.
 - [ ] **Wiring** - Add preflight gate to `handle_resume_session` and `handle_plan_generation`.
 
@@ -71,3 +71,8 @@ And the session turn should halt.
 - Injected preflight check at the start of `PlanningService.generate_plan`.
 - Optimized the test harness (`TestEnvironment`) by centralizing happy-path mock defaults in `mock_port`. This prevents regressions where truthy `MagicMock` returns would trigger the error branch in tests.
 - Verified system-wide stability with a 100% pass rate (681 tests).
+
+### Deliverable: Logic - Update LiteLLMAdapter.validate_config to satisfy env-var checks if api_key is in config
+- Updated `LiteLLMAdapter.validate_config` to filter out `*_API_KEY` errors returned by `litellm.validate_environment` if a valid `llm.api_key` exists in the TeDDy config.
+- This ensures users can configure TeDDy entirely via `config.yaml` without needing to set provider-specific environment variables (e.g., `OPENAI_API_KEY`).
+- Added unit test coverage for this suppression logic in `tests/suites/unit/adapters/outbound/test_litellm_adapter_preflight.py`.
