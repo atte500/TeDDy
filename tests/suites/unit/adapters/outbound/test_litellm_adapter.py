@@ -125,3 +125,27 @@ def test_adapter_does_not_import_litellm_on_init(mock_config):
     assert isinstance(litellm.set_verbose, MagicMock)
     assert isinstance(litellm.suppress_debug_info, MagicMock)
     assert not litellm.set_verbose.called
+
+
+def test_get_context_window_retrieves_from_litellm_cost(mock_config):
+    # Arrange
+    litellm.model_cost = {
+        "gpt-4o": {"max_input_tokens": 128000},
+        "legacy-model": {"max_tokens": 8192},
+    }
+    mock_config.get_setting.return_value = "gpt-4o"
+    adapter = LiteLLMAdapter(mock_config)
+
+    # Act & Assert
+    # 1. Primary: max_input_tokens
+    assert adapter.get_context_window("gpt-4o") == 128000
+
+    # 2. Fallback: max_tokens
+    assert adapter.get_context_window("legacy-model") == 8192
+
+    # 3. Unknown: 0
+    assert adapter.get_context_window("unknown-model") == 0
+
+    # 4. Config resolution
+    assert adapter.get_context_window() == 128000
+    mock_config.get_setting.assert_called_with("llm.model")

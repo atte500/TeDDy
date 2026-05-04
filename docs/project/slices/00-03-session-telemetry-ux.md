@@ -29,8 +29,8 @@ Feature: Pre-response Session Telemetry
 ## Deliverables
 - [x] **Contract (Expansion)** - Add `get_context_window(model: Optional[str] = None) -> int` to `ILlmClient` with default return.
 - [x] **Harness** - Update `MockLlmClient` in `tests/harness/setup/mocks.py` to support `get_context_window`.
-- [ ] **Logic (Migration)** - Implement `get_context_window` in `LiteLLMAdapter` using `litellm.model_cost`.
-- [ ] **Contract (Contraction)** - Make `get_context_window` abstract in `ILlmClient`.
+- [x] **Logic (Migration)** - Implement `get_context_window` in `LiteLLMAdapter` using `litellm.model_cost`.
+- [x] **Contract (Contraction)** - Make `get_context_window` abstract in `ILlmClient`.
 - [ ] **Logic** - Add telemetry display logic to `PlanningService.generate_plan`.
 - [ ] **Migration** - Update `SessionPlanner.trigger_new_plan` to no longer call telemetry display.
 - [ ] **Cleanup** - Remove `SessionPlanner._display_planning_telemetry` and related dead code.

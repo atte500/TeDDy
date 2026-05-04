@@ -69,7 +69,12 @@ class PlanningService(IPlanningUseCase):
             (turn_path / "input.md").as_posix(), full_context
         )
 
-        token_count = self._llm_client.get_token_count(messages=messages)
+        token_count = int(
+            self._safe_float(self._llm_client.get_token_count(messages=messages))
+        )
+
+        if self._user_interactor:
+            self._display_telemetry(meta, token_count)
 
         # R-10-12: Implement retry loop for empty content (common with Gemini/LiteLLM safety blocks)
         max_retries = 3
@@ -115,3 +120,34 @@ class PlanningService(IPlanningUseCase):
         if hasattr(response, "choices") and len(response.choices) > 0:
             return getattr(response.choices[0].message, "content", "") or ""
         return ""
+
+    def _display_telemetry(self, meta: Dict[str, Any], token_count: int) -> None:
+        """Displays real-time telemetry about the upcoming LLM call."""
+        model = str(
+            meta.get("model")
+            or self._config_service.get_setting("llm.model")
+            or "gpt-4o"
+        )
+        context_window = self._safe_float(
+            self._llm_client.get_context_window(model=model)
+        )
+        cumulative_cost = self._safe_float(meta.get("cumulative_cost"))
+
+        self._user_interactor.display_message(
+            f"[blue]• Model:[/blue] [magenta]{model}[/magenta]"
+        )
+        self._user_interactor.display_message(
+            f"[blue]• Context:[/blue] [magenta]{token_count / 1000:.1f}k / {context_window / 1000:.1f}k tokens[/magenta]"
+        )
+        self._user_interactor.display_message(
+            f"[blue]• Session Cost:[/blue] [magenta]${cumulative_cost:.4f}[/magenta]\n"
+        )
+
+    def _safe_float(self, v: Any, default: float = 0.0) -> float:
+        """Robust conversion to float, handling mocks and strings."""
+        try:
+            if hasattr(v, "__float__"):
+                return float(v)
+            return float(str(v))
+        except (TypeError, ValueError):
+            return default

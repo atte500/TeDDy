@@ -63,9 +63,10 @@ class ILlmClient(ABC):
         """
         pass
 
+    @abstractmethod
     def get_context_window(self, model: Optional[str] = None) -> int:
         """
         Returns the maximum context window size (tokens) for the specified model.
         Returns 0 if the limit is unknown.
         """
-        return 0
+        pass

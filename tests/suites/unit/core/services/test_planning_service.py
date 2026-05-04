@@ -181,3 +181,38 @@ def test_generate_plan_does_not_inject_user_request_on_subsequent_turns(env):
     input_content = input_call[0][1]
 
     assert "## User Request" not in input_content
+
+
+def test_generate_plan_displays_telemetry_before_llm_call(env):
+    # Arrange
+    mock_ui = env.mock_port(IUserInteractor)
+    mock_llm = env.mock_port(ILlmClient)
+    mock_prompt = env.mock_port(IPromptManager)
+    env.mock_port(IGetContextUseCase).get_context.return_value = ProjectContext(
+        header="H", content="C", scoped_paths={}
+    )
+
+    mock_prompt.resolve_message.return_value = "test"
+    mock_prompt.resolve_agent_metadata.return_value = (
+        "pathfinder",
+        {"cumulative_cost": 0.05, "model": "gpt-4o"},
+        "meta.yaml",
+    )
+    mock_llm.get_token_count.return_value = 1200
+    mock_llm.get_context_window.return_value = 128000
+
+    from teddy_executor.core.services.planning_service import PlanningService
+
+    service = env.get_service(PlanningService)
+
+    # Act
+    service.generate_plan(user_message="test", turn_dir="turns/01")
+
+    # Assert
+    # Verify telemetry calls. We look for the context and cost strings specifically.
+    calls = [call[0][0] for call in mock_ui.display_message.call_args_list]
+
+    # Telemetry should be displayed
+    assert any("• Model:" in c and "gpt-4o" in c for c in calls)
+    assert any("• Context:" in c and "1.2k / 128.0k tokens" in c for c in calls)
+    assert any("• Session Cost:" in c and "$0.0500" in c for c in calls)

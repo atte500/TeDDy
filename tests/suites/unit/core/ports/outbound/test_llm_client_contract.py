@@ -17,6 +17,9 @@ def test_llm_client_requires_validate_config():
         def get_completion_cost(self, _response):
             return 0.0
 
+        def get_context_window(self, model=None):
+            return 0
+
     # Act / Assert
     # This should fail initially because validate_config is not yet
     # an abstract method in the interface (so no TypeError yet),
@@ -27,10 +30,9 @@ def test_llm_client_requires_validate_config():
         MockLlmClient()
 
 
-def test_llm_client_provides_default_context_window():
+def test_llm_client_requires_get_context_window():
     """
-    Expansion Phase: The contract should provide a default implementation
-    to avoid breaking existing adapters.
+    Contraction Phase: Assert that any implementation of ILlmClient must implement get_context_window.
     """
 
     class MinimalClient(ILlmClient):
@@ -46,7 +48,8 @@ def test_llm_client_provides_default_context_window():
         def validate_config(self, _include_remote=False):
             return []
 
-    client = MinimalClient()
-    # This should fail with AttributeError until added to ILlmClient
-    assert client.get_context_window() == 0
-    assert client.get_context_window(model="some-model") == 0
+    # Act / Assert
+    with pytest.raises(
+        TypeError, match="Can't instantiate abstract class MinimalClient"
+    ):
+        MinimalClient()

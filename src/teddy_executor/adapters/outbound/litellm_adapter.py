@@ -136,3 +136,22 @@ class LiteLLMAdapter(ILlmClient):
                 )
 
         return errors
+
+    def get_context_window(self, model: Optional[str] = None) -> int:
+        """
+        Returns the maximum context window size (tokens) for the specified model.
+        """
+        import litellm
+
+        resolved_model = model or self._config_service.get_setting("llm.model")
+        if not resolved_model:
+            return 0
+
+        self._ensure_silence(litellm)
+        model_info = litellm.model_cost.get(str(resolved_model), {})
+
+        # Heuristic: max_input_tokens is specific to the context window.
+        # max_tokens often refers to the output limit but is used as a fallback in litellm metadata.
+        return int(
+            model_info.get("max_input_tokens") or model_info.get("max_tokens") or 0
+        )
