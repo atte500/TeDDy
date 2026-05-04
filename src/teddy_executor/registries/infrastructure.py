@@ -92,6 +92,7 @@ def register_infrastructure(container: punq.Container) -> None:
     container.register(
         ILlmClient,
         factory=lambda: LiteLLMAdapter(container.resolve(IConfigService)),
+        scope=punq.Scope.transient,
     )
     container.register(
         IRepoTreeGenerator, LocalRepoTreeGenerator, scope=punq.Scope.transient

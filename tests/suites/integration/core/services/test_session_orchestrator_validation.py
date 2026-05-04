@@ -1,5 +1,6 @@
 from unittest.mock import MagicMock
 from tests.suites.acceptance.plan_builder import MarkdownPlanBuilder
+from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 from teddy_executor.core.domain.models import RunStatus
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
@@ -22,6 +23,11 @@ def test_session_orchestrator_validation_failure_read_already_in_context(
         LocalFileSystemAdapter,
         root_dir=str(tmp_path),
     )
+    # Mock LLM to pass preflight check
+    mock_llm = MagicMock(spec=ILlmClient)
+    mock_llm.validate_config.return_value = []
+    container.register(ILlmClient, instance=mock_llm)
+
     # Resolve the use case which is mapped to SessionOrchestrator in container.py
     orchestrator = container.resolve(IRunPlanUseCase)
 
@@ -71,6 +77,11 @@ def test_session_orchestrator_validation_failure_edit_not_in_context(
         LocalFileSystemAdapter,
         root_dir=str(tmp_path),
     )
+    # Mock LLM to pass preflight check
+    mock_llm = MagicMock(spec=ILlmClient)
+    mock_llm.validate_config.return_value = []
+    container.register(ILlmClient, instance=mock_llm)
+
     orchestrator = container.resolve(IRunPlanUseCase)
 
     session_dir = tmp_path / ".teddy" / "sessions" / "test-edit"
@@ -143,6 +154,11 @@ def test_session_orchestrator_validation_failure_prune_not_in_context(
         LocalFileSystemAdapter,
         root_dir=str(tmp_path),
     )
+    # Mock LLM to pass preflight check
+    mock_llm = MagicMock(spec=ILlmClient)
+    mock_llm.validate_config.return_value = []
+    container.register(ILlmClient, instance=mock_llm)
+
     orchestrator = container.resolve(IRunPlanUseCase)
 
     session_dir = tmp_path / ".teddy" / "sessions" / "test-prune"

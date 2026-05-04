@@ -77,6 +77,7 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 ## 6. Technical Debt
 
 ### Structural & Security (Found during Deliverables)
+- [ ] **Infrastructure Scopes:** Standardize all registrations in `src/teddy_executor/registries/infrastructure.py` to use `punq.Scope.transient` to ensure consistent test isolation and prevent singleton leaks (found during fix of `05-ci-preflight-failure`).
 - [ ] **Refactor** - Update `ReviewerApp` to accept `IEditSimulator` via constructor injection instead of internal instantiation.
 - [ ] **Structural** - Resolve Vulture unused variable hits in `ISessionManager` and `ISessionRepository` ports (requires whitelist update or alias).
 - [ ] **Security** - Update `litellm` to 1.83.7+ and `pip` to resolve GHSA-xqmj-j6mv-4862 and GHSA-58qw-9mgm-455v.
