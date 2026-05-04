@@ -62,3 +62,10 @@ class ILlmClient(ABC):
             A list of error messages. An empty list indicates valid configuration.
         """
         pass
+
+    def get_context_window(self, model: Optional[str] = None) -> int:
+        """
+        Returns the maximum context window size (tokens) for the specified model.
+        Returns 0 if the limit is unknown.
+        """
+        return 0

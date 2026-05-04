@@ -27,7 +27,7 @@ Feature: Pre-response Session Telemetry
 ```
 
 ## Deliverables
-- [ ] **Contract (Expansion)** - Add `get_context_window(model: Optional[str] = None) -> int` to `ILlmClient` with default return.
+- [x] **Contract (Expansion)** - Add `get_context_window(model: Optional[str] = None) -> int` to `ILlmClient` with default return.
 - [ ] **Harness** - Update `MockLlmClient` in `tests/harness/setup/mocks.py` to support `get_context_window`.
 - [ ] **Logic (Migration)** - Implement `get_context_window` in `LiteLLMAdapter` using `litellm.model_cost`.
 - [ ] **Contract (Contraction)** - Make `get_context_window` abstract in `ILlmClient`.
@@ -56,3 +56,8 @@ Feature: Pre-response Session Telemetry
     - `• Context: [magenta]{used/1000:.1f}k / {total/1000:.1f}k tokens[/magenta]`
     - `• Session Cost: [magenta]${cumulative:.4f}[/magenta]`
 - The `PlanningService` already gets `meta` via `self._prompt_manager.resolve_agent_metadata(turn_path)`. Use the `cumulative_cost` found there for the pre-response display.
+
+## Implementation Notes
+### Contract (Expansion)
+- Added `get_context_window` to `ILlmClient` with a default implementation returning `0`.
+- Verified with unit test `test_llm_client_provides_default_context_window` to ensure non-breaking behavior for existing adapters.
