@@ -32,3 +32,6 @@ This is an interface and contains no implementation logic.
 
 ### `get_completion_cost(self, completion_response: Any) -> float`
 - **Description:** Calculates the precise USD cost of a completion response (Post-flight).
+
+### `get_context_window(self, model: Optional[str] = None) -> int`
+- **Description:** Retrieves the total context window (input limit) for the specified model. Returns 0 if unknown.

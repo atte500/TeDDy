@@ -3,7 +3,7 @@
 
 ## 1. Purpose / Responsibility
 
-The `PlanningService` is responsible for generating an AI plan based on a user message and the current project context. It orchestrates the gathering of context, the retrieval of agent instructions, and the communication with the Large Language Model. It includes a preflight configuration check to ensure API keys and environment variables are valid before invoking the LLM.
+The `PlanningService` is responsible for generating an AI plan based on a user message and the current project context. It orchestrates the gathering of context, the retrieval of agent instructions, and the communication with the Large Language Model. It includes a preflight configuration check to ensure API keys and environment variables are valid before invoking the LLM. It also displays pre-response telemetry (Model, Context Usage, Cost) to the user via the `IUserInteractor`.
 
 ## 2. Ports
 
