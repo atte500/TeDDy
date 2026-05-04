@@ -28,7 +28,7 @@ And the session turn should halt.
 ```
 
 ## Deliverables
-- [ ] **Contract** - Add `get_config_path() -> str` to `IConfigService`.
+- [x] **Contract** - Add `get_config_path() -> str` to `IConfigService`.
 - [ ] **Logic** - Implement `get_config_path()` in `YamlConfigAdapter`.
 - [ ] **Contract** - Add `validate_config() -> list[str]` to `ILlmClient`.
 - [ ] **Logic** - Implement `validate_config()` in `LiteLLMAdapter` using `litellm.validate_environment`.
@@ -47,3 +47,9 @@ And the session turn should halt.
 - Use TDD: Start by creating a test in `tests/suites/unit/core/services/test_planning_service_preflight.py` that mocks `llm.validate_config()` returning errors.
 - In `LiteLLMAdapter`, `validate_environment` checks `os.environ`. If the key is provided in the `llm` config block instead, you may need to temporarily patch `os.environ` or manually verify the keys against the `missing_keys` returned by LiteLLM.
 - The placeholder check for `"your-api-key"` should be case-insensitive.
+
+## Implementation Notes
+### Deliverable: Contract - Add get_config_path() -> str to IConfigService
+- Added `get_config_path` to `IConfigService` port.
+- Implemented `get_config_path` in `YamlConfigAdapter` to return the `_config_path` attribute.
+- Verified via unit tests in `tests/suites/unit/adapters/outbound/test_yaml_config_adapter.py`.

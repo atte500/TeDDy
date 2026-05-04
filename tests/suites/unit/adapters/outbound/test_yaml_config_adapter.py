@@ -121,3 +121,9 @@ def test_get_setting_output_capping_keys(fs, container):
     assert adapter.get_setting("execution.max_output_lines", 100) == 50
     assert adapter.get_setting("read.max_lines", 1000) == 500
     assert adapter.get_setting("execution.missing_key", 100) == 100
+
+
+def test_get_config_path_returns_provided_path(container):
+    adapter = container.resolve(IConfigService)
+    # The default path in YamlConfigAdapter registration (container.py) is .teddy/config.yaml
+    assert adapter.get_config_path() == ".teddy/config.yaml"

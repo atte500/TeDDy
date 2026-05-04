@@ -93,6 +93,10 @@ class YamlConfigAdapter(IConfigService):
 
         return default
 
+    def get_config_path(self) -> str:
+        """Returns the path to the configuration file."""
+        return self._config_path
+
     def _resolve_nested(self, parts: list[str]) -> Optional[Any]:
         """Iteratively resolves nested keys."""
         current = self._config
