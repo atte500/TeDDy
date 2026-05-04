@@ -83,5 +83,26 @@ class LiteLLMAdapter(ILlmClient):
         return float(litellm.completion_cost(completion_response=completion_response))
 
     def validate_config(self) -> List[str]:
-        """Stub implementation for contract satisfaction."""
-        return []
+        """
+        Validates the LLM configuration for common errors.
+        - Checks for the default 'your-api-key' placeholder.
+        - Checks for missing provider-specific environment variables.
+        """
+        import litellm
+
+        errors = []
+        api_key = self._config_service.get_setting("llm.api_key")
+
+        if isinstance(api_key, str) and api_key.lower() == "your-api-key":
+            errors.append(
+                "Configuration Error: 'llm.api_key' is still set to the default placeholder."
+            )
+
+        model = self._config_service.get_setting("llm.model")
+        if model:
+            validation_result = litellm.validate_environment(model=model)
+            missing_keys = validation_result.get("missing_keys", [])
+            for key in missing_keys:
+                errors.append(f"Missing required environment variable or config: {key}")
+
+        return errors

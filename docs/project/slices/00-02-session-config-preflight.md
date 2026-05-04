@@ -31,7 +31,7 @@ And the session turn should halt.
 - [x] **Contract** - Add `get_config_path() -> str` to `IConfigService`.
 - [x] **Logic** - Implement `get_config_path()` in `YamlConfigAdapter`.
 - [x] **Contract** - Add `validate_config() -> list[str]` to `ILlmClient`.
-- [ ] **Logic** - Implement `validate_config()` in `LiteLLMAdapter` (env check + placeholder rejection).
+- [x] **Logic** - Implement `validate_config()` in `LiteLLMAdapter` (env check + placeholder rejection).
 - [ ] **Wiring** - Integrate preflight gate into `PlanningService.generate_plan`.
 
 ## Delta Analysis
@@ -56,3 +56,9 @@ And the session turn should halt.
 - Added `validate_config` abstract method to `ILlmClient` interface.
 - Added a stub implementation to `LiteLLMAdapter` to maintain global test suite integrity during the transition.
 - Created contract enforcement test in `tests/suites/unit/core/ports/outbound/test_llm_client_contract.py`.
+
+### Deliverable: Logic - Implement validate_config() in LiteLLMAdapter
+- Implemented `validate_config` in `LiteLLMAdapter`.
+- Added case-insensitive check for the `"your-api-key"` placeholder.
+- Integrated `litellm.validate_environment(model)` to detect missing provider-specific environment variables or config keys.
+- Verified behavior via dedicated unit tests in `tests/suites/unit/adapters/outbound/test_litellm_adapter_preflight.py`.
