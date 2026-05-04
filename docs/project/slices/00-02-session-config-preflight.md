@@ -33,6 +33,9 @@ And the session turn should halt.
 - [x] **Contract** - Add `validate_config() -> list[str]` to `ILlmClient`.
 - [x] **Logic** - Implement `validate_config()` in `LiteLLMAdapter` (env check + placeholder rejection).
 - [x] **Wiring** - Integrate preflight gate into `PlanningService.generate_plan`.
+- [ ] **Logic** - Update `LiteLLMAdapter.validate_config` to satisfy env-var checks if `api_key` is in config.
+- [ ] **Wiring** - Add preflight gate to `handle_new_session` before user prompt.
+- [ ] **Wiring** - Add preflight gate to `handle_resume_session` and `handle_plan_generation`.
 
 ## Delta Analysis
 - `src/teddy_executor/core/ports/outbound/config_service.py`: Interface change.
