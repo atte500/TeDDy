@@ -34,9 +34,9 @@ def test_generate_plan_raises_configuration_error_on_invalid_config():
         service.generate_plan(user_message="test message", turn_dir="sessions/turn1")
 
     # Verify the error message contains the expected details
+    # Note: Resolution paths are now handled by the CLI layer, not the service.
     assert "Configuration Error" in str(exc_info.value)
     assert "Missing GOOGLE_API_KEY" in str(exc_info.value)
-    assert ".teddy/config.yaml" in str(exc_info.value)
 
     # Verify the LLM was NOT called for completion
     mock_llm.get_completion.assert_not_called()

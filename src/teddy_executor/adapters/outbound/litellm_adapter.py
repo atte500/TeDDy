@@ -56,10 +56,22 @@ class LiteLLMAdapter(ILlmClient):
             )
 
         self._ensure_silence(litellm)
+        from teddy_executor.core.domain.models.exceptions import ConfigurationError
+
         try:
             return litellm.completion(messages=messages, **final_params)
         except Exception as e:
-            raise LlmApiError(f"LLM Completion failed: {str(e)}") from e
+            msg = str(e)
+            # Detect common "Invalid/Expired Key" signatures
+            if any(
+                hint in msg
+                for hint in ["API key expired", "API_KEY_INVALID", "invalid_api_key"]
+            ):
+                # Extract the clean message if possible, or use a generic one
+                clean_msg = msg.split(" - ")[-1] if " - " in msg else msg
+                raise ConfigurationError(clean_msg) from e
+
+            raise LlmApiError(f"LLM Completion failed: {msg}") from e
 
     def get_token_count(
         self, messages: List[Dict[str, str]], model: Optional[str] = None
@@ -82,35 +94,45 @@ class LiteLLMAdapter(ILlmClient):
         self._ensure_silence(litellm)
         return float(litellm.completion_cost(completion_response=completion_response))
 
-    def validate_config(self) -> List[str]:
+    def validate_config(self, include_remote: bool = False) -> List[str]:
         """
         Validates the LLM configuration for common errors.
         - Checks for the default 'your-api-key' placeholder.
         - Checks for missing provider-specific environment variables.
+        - Optionally performs a lightweight remote connectivity check.
         """
         import litellm
 
-        errors = []
+        self._ensure_silence(litellm)
         api_key = self._config_service.get_setting("llm.api_key")
+        is_placeholder = isinstance(api_key, str) and api_key.lower() == "your-api-key"
 
-        if isinstance(api_key, str) and api_key.lower() == "your-api-key":
-            errors.append(
-                "Configuration Error: 'llm.api_key' is still set to the default placeholder."
-            )
+        # 1. Short-circuit: Explicit placeholder needs replacement
+        if is_placeholder:
+            return ["'llm.api_key' is still set to the default placeholder."]
 
+        # 2. Secondary Check: Environment/Provider requirements
         model = self._config_service.get_setting("llm.model")
-        if model:
-            validation_result = litellm.validate_environment(model=model)
-            missing_keys = validation_result.get("missing_keys", [])
+        if not model:
+            return ["'llm.model' is not configured."]
 
-            # If llm.api_key is set to a valid value, satisfy missing *_API_KEY requirements
-            is_api_key_provided = (
-                isinstance(api_key, str) and api_key.lower() != "your-api-key"
-            )
+        errors = []
+        validation_result = litellm.validate_environment(model=model)
+        missing_keys = validation_result.get("missing_keys", [])
 
-            for key in missing_keys:
-                if is_api_key_provided and "_API_KEY" in key:
-                    continue
-                errors.append(f"Missing required environment variable or config: {key}")
+        # If a valid api_key is provided in config, we ignore missing *_API_KEY env vars
+        is_api_key_provided = api_key and not is_placeholder
+
+        for key in missing_keys:
+            if is_api_key_provided and "_API_KEY" in key:
+                continue
+            errors.append(f"Missing required environment variable or config: {key}")
+
+        # 3. Optional Remote Check: Verify key validity/expiration
+        if not errors and include_remote:
+            if not litellm.check_valid_key(model=model, api_key=api_key):
+                errors.append(
+                    "The API key appears to be invalid, expired, or deactivated."
+                )
 
         return errors

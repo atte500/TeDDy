@@ -107,11 +107,7 @@ class PlanningService(IPlanningUseCase):
         if not errors:
             return
 
-        config_path = self._config_service.get_config_path()
-        error_msg = (
-            f"Configuration Error: {', '.join(errors)}\n"
-            f"Please update your configuration at: {config_path}"
-        )
+        error_msg = f"Configuration Error: {', '.join(errors)}"
         raise ConfigurationError(error_msg)
 
     def _extract_plan_content(self, response: Any) -> str:

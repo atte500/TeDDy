@@ -78,27 +78,32 @@ def handle_new_session(  # noqa: PLR0913
             current_session_name = session_manager.get_latest_session_name()
 
     except Exception as e:
-        typer.echo(f"Error: {e}", err=True)
+        from teddy_executor.core.domain.models.exceptions import ConfigurationError
+
+        if isinstance(e, ConfigurationError):
+            from teddy_executor.core.ports.outbound.config_service import IConfigService
+
+            config_service = container.resolve(IConfigService)
+            config_path = config_service.get_config_path()
+            typer.echo(f"Error: {e}", err=True)
+            typer.echo(f"Please update your configuration at: {config_path}", err=True)
+        else:
+            typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(code=1)
 
 
 def _run_cli_preflight_check(container: Container) -> None:
     """Ensures system is configured before starting/resuming a session."""
     from teddy_executor.core.ports.outbound.llm_client import ILlmClient
-    from teddy_executor.core.ports.outbound.config_service import IConfigService
     from teddy_executor.core.domain.models.exceptions import ConfigurationError
 
     llm_client = container.resolve(ILlmClient)
-    errors = llm_client.validate_config()
+    # Perform remote verification early to avoid prompting user if key is invalid
+    errors = llm_client.validate_config(include_remote=True)
     if not errors:
         return
 
-    config_service = container.resolve(IConfigService)
-    config_path = config_service.get_config_path()
-    error_msg = (
-        f"Configuration Error: {', '.join(errors)}\n"
-        f"Please update your configuration at: {config_path}"
-    )
+    error_msg = f"Configuration Error: {', '.join(errors)}"
     raise ConfigurationError(error_msg)
 
 
@@ -131,7 +136,17 @@ def handle_plan_generation(container: Container, message: Optional[str]):
         )
         typer.echo(f"Plan generated at: {plan_path}")
     except Exception as e:
-        typer.echo(f"Error: {e}", err=True)
+        from teddy_executor.core.domain.models.exceptions import ConfigurationError
+
+        if isinstance(e, ConfigurationError):
+            from teddy_executor.core.ports.outbound.config_service import IConfigService
+
+            config_service = container.resolve(IConfigService)
+            config_path = config_service.get_config_path()
+            typer.echo(f"Error: {e}", err=True)
+            typer.echo(f"Please update your configuration at: {config_path}", err=True)
+        else:
+            typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(code=1)
 
 
@@ -197,5 +212,15 @@ def handle_resume_session(
                 break
 
     except Exception as e:
-        typer.echo(f"Error during resume: {e}", err=True)
+        from teddy_executor.core.domain.models.exceptions import ConfigurationError
+
+        if isinstance(e, ConfigurationError):
+            from teddy_executor.core.ports.outbound.config_service import IConfigService
+
+            config_service = container.resolve(IConfigService)
+            config_path = config_service.get_config_path()
+            typer.echo(f"Error: {e}", err=True)
+            typer.echo(f"Please update your configuration at: {config_path}", err=True)
+        else:
+            typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(code=1)
