@@ -10,6 +10,7 @@ def test_automated_replan_triggers_on_structure_error(
     """
     Scenario: Automated Re-plan triggers on structure error
     """
+    mock_llm_client.validate_config.return_value = []
     monkeypatch.chdir(tmp_path)
     session_dir = tmp_path / ".teddy" / "sessions" / "test-structure"
     turn_01_dir = session_dir / "01"
@@ -102,6 +103,7 @@ def test_automated_replan_triggers_on_context_error(
     """
     Scenario: Context-aware validation failure triggers re-plan.
     """
+    mock_llm_client.validate_config.return_value = []
     monkeypatch.chdir(tmp_path)
     session_dir = tmp_path / ".teddy" / "sessions" / "test-context"
     turn_01_dir = session_dir / "01"

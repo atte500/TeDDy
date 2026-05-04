@@ -3,7 +3,7 @@
 
 ## 1. Purpose / Responsibility
 
-The `PlanningService` is responsible for generating an AI plan based on a user message and the current project context. It orchestrates the gathering of context, the retrieval of agent instructions, and the communication with the Large Language Model.
+The `PlanningService` is responsible for generating an AI plan based on a user message and the current project context. It orchestrates the gathering of context, the retrieval of agent instructions, and the communication with the Large Language Model. It includes a preflight configuration check to ensure API keys and environment variables are valid before invoking the LLM.
 
 ## 2. Ports
 
@@ -16,6 +16,7 @@ The `PlanningService` is responsible for generating an AI plan based on a user m
 
 ## 3. Implementation Details / Logic
 
+0.  **Preflight Check:** Calls `ILlmClient.validate_config()`. If errors are found, raises `ConfigurationError` with the config file path.
 1.  **Gather Context:** Calls `IGetContextUseCase.get_context()` (with session/turn files if applicable).
 2.  **Fetch System Prompt:** Reads the local `[agent_name].xml` prompt from the current turn directory.
 3.  **Contextual Hints:** If operating in Turn 01, it injects an alignment hint into the user message to encourage the agent to clarify goals.
@@ -36,5 +37,6 @@ The `PlanningService` is responsible for generating an AI plan based on a user m
     -   A valid `plan.md` is written to `turn_dir`.
     -   Returns the path to the generated plan.
 -   **Exceptions:**
+    -   `ConfigurationError`: Raised if API keys or environment variables are missing or invalid.
     -   `LlmCommunicationError`: Raised if the LLM client fails.
     -   `FileNotFoundError`: Raised if the system prompt is missing.

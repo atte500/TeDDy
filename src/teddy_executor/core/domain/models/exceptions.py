@@ -31,3 +31,10 @@ class WebSearchError(Exception):
     def __init__(self, message: str, original_exception: Optional[Exception] = None):
         super().__init__(message)
         self.original_exception = original_exception
+
+
+class ConfigurationError(Exception):
+    """Custom exception raised when system configuration is invalid or missing."""
+
+    def __init__(self, message: str):
+        super().__init__(message)

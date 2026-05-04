@@ -32,7 +32,7 @@ And the session turn should halt.
 - [x] **Logic** - Implement `get_config_path()` in `YamlConfigAdapter`.
 - [x] **Contract** - Add `validate_config() -> list[str]` to `ILlmClient`.
 - [x] **Logic** - Implement `validate_config()` in `LiteLLMAdapter` (env check + placeholder rejection).
-- [ ] **Wiring** - Integrate preflight gate into `PlanningService.generate_plan`.
+- [x] **Wiring** - Integrate preflight gate into `PlanningService.generate_plan`.
 
 ## Delta Analysis
 - `src/teddy_executor/core/ports/outbound/config_service.py`: Interface change.
@@ -62,3 +62,9 @@ And the session turn should halt.
 - Added case-insensitive check for the `"your-api-key"` placeholder.
 - Integrated `litellm.validate_environment(model)` to detect missing provider-specific environment variables or config keys.
 - Verified behavior via dedicated unit tests in `tests/suites/unit/adapters/outbound/test_litellm_adapter_preflight.py`.
+
+### Deliverable: Wiring - Integrate preflight gate into PlanningService.generate_plan
+- Added `ConfigurationError` to `src/teddy_executor/core/domain/models/exceptions.py`.
+- Injected preflight check at the start of `PlanningService.generate_plan`.
+- Optimized the test harness (`TestEnvironment`) by centralizing happy-path mock defaults in `mock_port`. This prevents regressions where truthy `MagicMock` returns would trigger the error branch in tests.
+- Verified system-wide stability with a 100% pass rate (681 tests).

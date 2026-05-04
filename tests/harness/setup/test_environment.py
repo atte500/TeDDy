@@ -90,12 +90,8 @@ class TestEnvironment(RealAdapterMixin):
             ISystemEnvironment,
         )
 
-        mock_env = self.mock_port(ISystemEnvironment)
-        mock_env.get_env.return_value = None
-        mock_env.which.return_value = None
-
-        mock_shell = self.mock_port(IShellExecutor)
-        mock_shell.execute.return_value = {"stdout": "", "stderr": "", "return_code": 0}
+        self.mock_port(ISystemEnvironment)
+        self.mock_port(IShellExecutor)
 
     def _register_ui_mocks(self) -> None:
         import typer
@@ -103,9 +99,6 @@ class TestEnvironment(RealAdapterMixin):
         from teddy_executor.core.ports.outbound import IUserInteractor
 
         mock_interactor = self.mock_port(IUserInteractor)
-        mock_interactor.confirm_action.return_value = (True, "")
-        mock_interactor.confirm_manual_handoff.return_value = (True, "")
-        mock_interactor.ask_question.return_value = ""
         # Ensure messages are visible in CLI output for assertions
         mock_interactor.display_message.side_effect = lambda m: typer.echo(m)
         self._container.register(IPlanReviewer, instance=None)
@@ -125,8 +118,6 @@ class TestEnvironment(RealAdapterMixin):
         ].message.content = "# Plan\n## Action Plan\n### EXECUTE\necho 1"
         mock_response.model = "test-model"
         mock_llm.get_completion.return_value = mock_response
-        mock_llm.get_completion_cost.return_value = 0.0
-        mock_llm.get_token_count.return_value = 0
 
         self.mock_port(IWebScraper)
         self.mock_port(IWebSearcher)
@@ -144,10 +135,7 @@ class TestEnvironment(RealAdapterMixin):
         mock_fs.get_context_paths.return_value = {}
         mock_fs.read_files_in_vault.return_value = {}
 
-        mock_config = self.mock_port(IConfigService)
-        mock_config.get_setting.side_effect = lambda k, d=None: (
-            None if k == "ui_mode" else d
-        )
+        self.mock_port(IConfigService)
 
         mock_tree = self.mock_port(IRepoTreeGenerator)
         mock_tree.generate_tree.return_value = ""
@@ -167,7 +155,40 @@ class TestEnvironment(RealAdapterMixin):
         Creates, registers, and returns a POSIXPathMock for a specific port.
         This is the preferred way to mock dependencies in tests.
         """
-        return register_mock(self._container, port_type)
+        mock = register_mock(self._container, port_type)
+        self._apply_mock_defaults(port_type, mock)
+        return mock
+
+    def _apply_mock_defaults(self, port_type: Any, mock: Any) -> None:
+        """Applies happy-path defaults to specific port types."""
+        from teddy_executor.core.ports.outbound import (
+            IConfigService,
+            ILlmClient,
+            IShellExecutor,
+            ISystemEnvironment,
+            IUserInteractor,
+        )
+
+        if port_type == ILlmClient:
+            mock.validate_config.return_value = []
+            mock.get_completion_cost.return_value = 0.0
+            mock.get_token_count.return_value = 0
+        elif port_type == IConfigService:
+            mock.get_config_path.return_value = ".teddy/config.yaml"
+
+            def mock_setting(k, d=None):
+                return None if k == "ui_mode" else d
+
+            mock.get_setting.side_effect = mock_setting
+        elif port_type == IShellExecutor:
+            mock.execute.return_value = {"stdout": "", "stderr": "", "return_code": 0}
+        elif port_type == ISystemEnvironment:
+            mock.get_env.return_value = None
+            mock.which.return_value = None
+        elif port_type == IUserInteractor:
+            mock.confirm_action.return_value = (True, "")
+            mock.confirm_manual_handoff.return_value = (True, "")
+            mock.ask_question.return_value = ""
 
     def get_service(self, service_type: Any) -> Any:
         """Resolves a service from the test-configured container."""

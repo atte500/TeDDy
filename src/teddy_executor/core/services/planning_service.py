@@ -27,6 +27,8 @@ class PlanningService(IPlanningUseCase):
         """Generates a new plan.md file."""
         import re
 
+        self._run_preflight_check()
+
         turn_path = Path(turn_dir)
         resolved_message = self._prompt_manager.resolve_message(user_message, turn_path)
 
@@ -96,6 +98,21 @@ class PlanningService(IPlanningUseCase):
         )
 
         return plan_path, cost_val
+
+    def _run_preflight_check(self) -> None:
+        """Ensures system is configured before attempting generation."""
+        from teddy_executor.core.domain.models.exceptions import ConfigurationError
+
+        errors = self._llm_client.validate_config()
+        if not errors:
+            return
+
+        config_path = self._config_service.get_config_path()
+        error_msg = (
+            f"Configuration Error: {', '.join(errors)}\n"
+            f"Please update your configuration at: {config_path}"
+        )
+        raise ConfigurationError(error_msg)
 
     def _extract_plan_content(self, response: Any) -> str:
         """Robustly extracts content from the LLM response object."""
