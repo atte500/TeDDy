@@ -23,8 +23,8 @@ def test_cli_interactive_prompt_formatting(tmp_path, monkeypatch):
     assert "Description: Make file" in output
 
 
-def test_get_prompt_retrieves_default_prompt_from_root(tmp_path, monkeypatch):
-    """Scenario: Get prompt from root prompts directory."""
+def test_get_prompt_retrieves_override_prompt_from_local_config(tmp_path, monkeypatch):
+    """Scenario: Get prompt from .teddy/prompts override directory."""
     env = TestEnvironment(monkeypatch, tmp_path)
     env.setup()
     adapter = CliTestAdapter(monkeypatch, tmp_path)
@@ -32,16 +32,16 @@ def test_get_prompt_retrieves_default_prompt_from_root(tmp_path, monkeypatch):
     # Mock pyperclip to prevent exceptions in headless environment
     monkeypatch.setattr("pyperclip.copy", lambda x: None)
 
-    (tmp_path / "prompts").mkdir()
-    (tmp_path / "prompts" / "architect.md").write_text("root prompt", encoding="utf-8")
-    (tmp_path / ".git").mkdir()
+    override_dir = tmp_path / ".teddy" / "prompts"
+    override_dir.mkdir(parents=True)
+    (override_dir / "architect.xml").write_text("override prompt", encoding="utf-8")
 
     subdir = tmp_path / "subdir"
     subdir.mkdir()
 
     result = adapter.run_cli_command(["get-prompt", "architect"], cwd=subdir)
     assert result.exit_code == 0
-    assert "root prompt" in result.stdout
+    assert "override prompt" in result.stdout
     assert "Output copied to clipboard." in result.stdout + result.stderr
 
 
