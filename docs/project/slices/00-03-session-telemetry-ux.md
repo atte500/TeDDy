@@ -28,7 +28,7 @@ Feature: Pre-response Session Telemetry
 
 ## Deliverables
 - [x] **Contract (Expansion)** - Add `get_context_window(model: Optional[str] = None) -> int` to `ILlmClient` with default return.
-- [ ] **Harness** - Update `MockLlmClient` in `tests/harness/setup/mocks.py` to support `get_context_window`.
+- [x] **Harness** - Update `MockLlmClient` in `tests/harness/setup/mocks.py` to support `get_context_window`.
 - [ ] **Logic (Migration)** - Implement `get_context_window` in `LiteLLMAdapter` using `litellm.model_cost`.
 - [ ] **Contract (Contraction)** - Make `get_context_window` abstract in `ILlmClient`.
 - [ ] **Logic** - Add telemetry display logic to `PlanningService.generate_plan`.
@@ -61,3 +61,7 @@ Feature: Pre-response Session Telemetry
 ### Contract (Expansion)
 - Added `get_context_window` to `ILlmClient` with a default implementation returning `0`.
 - Verified with unit test `test_llm_client_provides_default_context_window` to ensure non-breaking behavior for existing adapters.
+
+### Harness
+- Updated `mock_llm_client` fixture in `tests/harness/setup/mocks.py` to return a default context window of `128000`.
+- Added `tests/suites/unit/test_llm_harness.py` to verify harness defaults.
