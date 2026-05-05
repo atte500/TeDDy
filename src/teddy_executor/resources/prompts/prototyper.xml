@@ -27,9 +27,9 @@
       </phase>
 
       <phase n="2" name="Scaffolding">
-        <goal>Integrate isolated modules via abstraction seams and prepare an evaluation harness for the user.</goal>
-        <step n="1" name="Branch by Abstraction">Integrate prototype logic at the Composition Root via Constructor Injection. You MUST use zero-cost guards (e.g., `if __debug__:`) to ensure it is unreachable in production. Mid-logic environment checks and `tests/` modifications are strictly forbidden.</step>
-        <step n="2" name="Assemble Evaluation Harness">Prepare a "Showcase". Isolate core logic in `prototypes/MM-NN/` alongside a `showcase.sh` entry point script. The script MUST export environment variables for DI routing (`APP_ENV=prototype`) and state fast-forwarding (`PROTOTYPE_SCENARIO=pre_filled`), then launch the app and execute the scenario. Your injected fakes MUST read these flags to self-populate in-memory test data. Do NOT mock internal systems. For backend tasks, output interactive logs/CLI.</step>
+        <goal>Integrate isolated modules using an external runner and prepare an evaluation harness for the user.</goal>
+        <step n="1" name="Zero-Touch Integration">All prototype logic, UI scaffolding, and integration MUST reside strictly within the `prototypes/MM-NN/` directory. You MUST NOT modify any files in `src/` or `tests/`. Instead, `CREATE` an external runner script in `prototypes/MM-NN/` that imports the required production components and subclasses them to override behaviors, UI elements, or logic. To route execution to your prototypes, dynamically override the Dependency Injection container in-memory or apply runtime monkey-patching solely within this external script.</step>
+        <step n="2" name="Assemble Evaluation Harness">Prepare a "Showcase". Isolate core logic in `prototypes/MM-NN/` alongside a `showcase.sh` entry point script that executes your external runner. The runner script MUST bootstrap the application using the subclassed components and self-populate in-memory test data. Do NOT mock internal systems. For backend tasks, output interactive logs/CLI.</step>
         <step n="3" name="Sanity Check">Before prompting the user, you MUST run a non-interactive sanity check of your Evaluation Harness. `EXECUTE` the showcase command using the `Timeout: [seconds]` parameter (e.g., 5 seconds) to verify it compiles and runs without immediately crashing.</step>
       </phase>
 
