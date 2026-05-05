@@ -31,7 +31,7 @@
       <phase n="2" name="Showcase Gate">
         <goal>Mandatory checkpoint to verify behavior with the user before finalizing the implementation plan.</goal>
         <step n="1" name="Prompt for Feedback">Use `PROMPT` to present the Evaluation Harness for feedback. You MUST include a Markdown code block containing the exact copy-pasteable command to run the Showcase Runner. State your data-driven recommendation. You MUST NOT skip this step. You MUST halt and gain explicit user feedback on the UX, behavior, or business logic to de-risk the implementation before Phase 3 (Delta Analysis) begins.</step>
-        <step n="2" name="Handle Feedback">If the user requests changes or design iterations, `EDIT` the `Vertical Slice` immediately to reflect the new or changed requirements, then return to Phase 1. After implementing changes, you MUST return to Step 1 of this phase to showcase the update and wait for explicit approval again.</step>
+        <step n="2" name="Handle Feedback">If the user requests changes or design iterations, `EDIT` the `Vertical Slice` immediately to reflect the new or changed requirements, then return to Phase 1. You MUST refine your internal verification logic to cover the changes and successfully re-run the sanity check (`--verify`) before re-showcasing. After implementing and verifying changes, you MUST return to Step 1 of this phase to showcase the update and wait for explicit approval again.</step>
         <step n="3" name="Post-Debugger Verification">If control returns from the Debugger claiming a fix, you MUST immediately verify the prototype's behavior using the interactive showcase launcher. Then, you MUST return to Step 1 of this phase to gain explicit user approval before proceeding.</step>
       </phase>
 
