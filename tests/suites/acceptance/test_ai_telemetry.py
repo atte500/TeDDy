@@ -139,6 +139,76 @@ def test_telemetry_persistence_across_turns(tmp_path, monkeypatch):
     assert re.search(r"Context:.*5.0k / 128.0k tokens", combined_output)
 
 
+def test_pre_response_telemetry_sequence(tmp_path, monkeypatch):
+    """
+    Scenario: Displaying full telemetry before LLM call.
+    Maps to: Feature: Pre-response Session Telemetry
+    """
+    import re
+    from teddy_executor.core.ports.outbound import ILlmClient
+
+    env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+    setup_telemetry_env(tmp_path)
+
+    # Arrange: Setup mock LLM behavior
+    mock_llm_client = env.get_service(ILlmClient)
+    # 1.2k tokens used in the scenario
+    mock_llm_client.get_token_count.return_value = 1200
+    # 128k context window (default from harness, but we'll be explicit)
+    mock_llm_client.get_context_window.return_value = 128000
+    # Cost to return after turn (pre-response cost should be from meta)
+    mock_llm_client.get_completion_cost.return_value = 0.0100
+
+    plan = MarkdownPlanBuilder("Goal").add_execute("echo hello").build()
+    mock_llm_client.get_completion.return_value = make_mock_response(
+        plan, model="gpt-4o"
+    )
+
+    # Manually create a session meta to simulate a prior cost of 0.0500
+    fixed_now = datetime(2026, 5, 5, 8, 51, 13)
+    user_input = "Session with cost"
+    timestamp = fixed_now.strftime("%Y%m%d_%H%M%S")
+    session_name = f"{timestamp}-{slugify(user_input)}"
+    session_dir = tmp_path / ".teddy" / "sessions" / session_name
+    session_dir.mkdir(parents=True)
+    # Create dummy turn 01 so resume works
+    (session_dir / "01").mkdir()
+
+    # Create meta.yaml with prior cost inside the turn directory
+    meta_content = {
+        "model": "gpt-4o",
+        "cumulative_cost": 0.0500,
+        "total_tokens": 5000,
+    }
+    (session_dir / "01" / "meta.yaml").write_text(
+        yaml.dump(meta_content), encoding="utf-8"
+    )
+
+    # Act: Trigger a new turn via resume
+    with patch("teddy_executor.core.services.session_service.datetime") as mock_dt:
+        mock_dt.now.return_value = fixed_now
+        # Resume to trigger turn 01 (which will read the session meta)
+        result = adapter.run_resume(
+            f".teddy/sessions/{session_name}",
+            extra_args=["-m", "Trigger turn", "-y"],
+        )
+
+    # Assert: Verify sequence and telemetry content
+    combined_output = result.stdout + (result.stderr or "")
+
+    # 1. Waiting message (Dynamic based on agent)
+    assert "Waiting for pathfinder to respond" in combined_output
+
+    # 2. Telemetry block follows
+    # Model check
+    assert re.search(r"• Model:.*gpt-4o", combined_output)
+    # Context check: 1.2k / 128.0k
+    assert re.search(r"• Context:.*1.2k / 128.0k tokens", combined_output)
+    # Session Cost check: $0.0500 (inherited from meta)
+    assert re.search(r"• Session Cost:.*\$0.0500", combined_output)
+
+
 def test_input_log_during_replan(tmp_path, monkeypatch):
     """Verifies input.md during re-planning."""
     from teddy_executor.core.ports.outbound import ILlmClient

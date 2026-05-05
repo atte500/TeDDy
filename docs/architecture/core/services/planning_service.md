@@ -20,10 +20,9 @@ The `PlanningService` is responsible for generating an AI plan based on a user m
 1.  **Gather Context:** Calls `IGetContextUseCase.get_context()` (with session/turn files if applicable).
 2.  **Fetch System Prompt:** Reads the local `[agent_name].xml` prompt from the current turn directory.
 3.  **Contextual Hints:** If operating in Turn 01, it injects an alignment hint into the user message to encourage the agent to clarify goals.
-4.  **LLM Call:** Passes the formatted context, system prompt, and user message to `ILlmClient.get_completion()`. Logs the raw request (messages) to `input.log`.
-5.  **Persistence:** Saves the resulting Markdown response to the turn's `plan.md`. Updates `meta.yaml` with telemetry (model name, token usage, USD cost).
+4.  **LLM Call:** Passes the formatted context, system prompt, and user message to `ILlmClient.get_completion()`.
+5.  **Persistence:** Saves the resulting Markdown response to the turn's `plan.md`. Updates `meta.yaml` with telemetry (model name, token usage, USD cost). Writes the full context used for the generation to `input.md`.
 6.  **Hardening:** Ensures all metadata is cast to primitive types (str, int, float, bool) before serialization to prevent `yaml.dump` from entering infinite recursion hangs when encountering `MagicMock` objects in unit tests.
-7.  **Logging:** Generates a turn-level `input.log` containing the exact JSON-formatted messages sent to the LLM.
 
 ## 4. Data Contracts / Methods
 

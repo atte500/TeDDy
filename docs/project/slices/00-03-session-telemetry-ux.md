@@ -34,7 +34,7 @@ Feature: Pre-response Session Telemetry
 - [x] **Logic** - Add telemetry display logic to `PlanningService.generate_plan`.
 - [x] **Migration** - Update `SessionPlanner.trigger_new_plan` to no longer call telemetry display.
 - [x] **Cleanup** - Remove `SessionPlanner._display_planning_telemetry` and related dead code.
-- [ ] **Wiring** - Verify end-to-end telemetry display in interactive session.
+- [x] **Wiring** - Verify end-to-end telemetry display in interactive session.
 
 ## Delta Analysis
 - **Port:** `src/teddy_executor/core/ports/outbound/llm_client.py`: Add `get_context_window(model: Optional[str] = None) -> int`.
@@ -71,3 +71,8 @@ Feature: Pre-response Session Telemetry
 - Added `_safe_float` utility to handle potential `MagicMock` or string leaks in telemetry calculations, ensuring the UI doesn't crash during edge cases or tests.
 - Integrated telemetry display into `generate_plan` immediately after tokenization and before the LLM retry loop.
 - Verified behavior with unit test `test_generate_plan_displays_telemetry_before_llm_call`.
+
+### Wiring
+- Added `test_pre_response_telemetry_sequence` to `tests/suites/acceptance/test_ai_telemetry.py`.
+- Verified the end-to-end flow: `SessionOrchestrator` resumes a session, `PromptManager` resolves metadata with prior cumulative cost, and `PlanningService` displays the telemetry block (Model, Context, Cost) before calling the LLM.
+- Confirmed the telemetry block correctly inherits `cumulative_cost` from previous turns.
