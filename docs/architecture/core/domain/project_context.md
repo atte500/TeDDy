@@ -16,7 +16,8 @@ The `ProjectContext` model will be implemented as a Python `@dataclass`. This pr
 - **`token_count` (`int`):** The estimated token size of the file.
 - **`source_scope` (`str`):** The scope of the file (e.g., `session`, `turn`).
 - **`git_status` (`str`):** The 2-character git status code (e.g., `M `, `??`, or empty if tracked/unmodified).
-- **`is_auto_pruned` (`bool`):** True if the orchestrator's auto-pruning heuristics have flagged this file for removal.
+- **`selected` (`bool`):** User-controlled selection state for the NEXT turn.
+- **`auto_prune_reason` (`Optional[str]`):** Human-readable reason for pre-deselection (e.g., "Exceeds 15k token limit").
 
 ### `ProjectContext` Dataclass Attributes
 -   **`header` (`str`):** A pre-formatted string containing high-level system information (CWD, OS, etc.).

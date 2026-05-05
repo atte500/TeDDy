@@ -2,6 +2,8 @@
 - **Status:** Planned
 - **Milestone:** [10-interactive-session-and-config](../milestones/10-interactive-session-and-config.md)
 - **Specs:** [context-management-ui.md](../specs/context-management-ui.md)
+- **Prototype:** [prototypes/00-04/runner.py](../../../prototypes/00-04/runner.py)
+- **Showcase:** [prototypes/00-04/showcase.sh](../../../prototypes/00-04/showcase.sh)
 - **Component Docs:**
   - [ProjectContext](../../architecture/core/domain/project_context.md)
   - [ILlmClient](../../architecture/core/ports/outbound/llm_client.md)
@@ -62,7 +64,10 @@ And files in the session context are never unchecked automatically
     - `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py`: Update `on_mount_logic` to iterate over `project_context.items` and build the tree structure (System/Session/Turn sections with sibling indentation) as proven in the prototype.
 
 ## Guidelines for Implementation
-- **Git Status Parsing:** Use a simple regex or string splitting on the `git status -s` output format to map file paths to their status codes. Remember that paths in `git status` are relative to the git root.
+- **Guarded TUI Build:** The `ReviewerApp` and `reviewer_logic` MUST implement a guarded build pattern (using a boolean flag like `_context_built`) to ensure the tree is populated exactly once. The base `ReviewerApp.on_mount` logic should be bypassed or cleared using `tree.clear()` before custom population.
+- **Git Status Parsing:** Use `git status -s`.
+    - Map `??` to `U` (Untracked) for visual consistency with modern IDEs.
+    - Status colors: `M` (yellow), `U/A` (green), `D` (red).
 - **Failure Heuristics:** To detect failed plans/reports, parse the file names (e.g., `*plan*.md`, `*report*.md`) and read their content directly using a fast string check (e.g., `Status: FAILURE`) rather than full markdown parsing to keep the orchestrator fast.
 - **Auto-Prune Reasons:** Use the following standardized strings for the `auto_prune_reason` metadata:
     - `Exceeds 15k token limit`
@@ -71,8 +76,8 @@ And files in the session context are never unchecked automatically
 - **Context Management Tree:**
     - Use a flat tree structure with leaf-only label nodes (`SESSION_LABEL`, `TURN_LABEL`, `SYSTEM_LABEL`) for grouping.
     - **Visual Cues:**
-        - Use VS Code-style colorization for Git statuses in the tree (e.g., `[yellow]M [/yellow]`, `[green]??[/green]`).
-        - Auto-pruned files (identified by heuristics) MUST be rendered with `[s dim]` (ultra-dimmed strikethrough) by default.
+        - **Label format:** `[bold]path[/] [[color]status[/]] [#888888]tokens[/]` (e.g., `[bold]src/core.py[/] [[yellow]M[/]] [#888888]1.2k[/]`).
+        - Auto-pruned files MUST be rendered with `[s dim]` (ultra-dimmed strikethrough) by default.
     - **Editor Integration (`e` key):**
         - **Agent Node:** Opening the `e` (edit) key on an Agent node MUST launch a TUI Modal (`PromptEditorModal`) containing a `TextArea` for direct XML prompt editing.
         - **Context Labels/Files:** Opening `e` on a session/turn label or a specific context file MUST launch the external editor (using `ConsoleTooling.get_editor()`).
@@ -81,13 +86,10 @@ And files in the session context are never unchecked automatically
     - **Right Pane Summary:**
         - Include a bulleted breakdown of the context: `• System`, `• Session`, `• Turn`.
         - Show the token count for each (e.g., `• System: 2.5k`).
-        - Use an empty line separation between the Total Context and the breakdown list.
-        - Indent breakdown items with `• ` (bullet) but NO additional leading spaces.
-    - **Smart Hierarchy & Visuals:**
-        - Implement "Smart Hierarchy" by keeping headers (`System:`, `Session:`, `Turn:`) and files as siblings under the Context root to avoid over-nesting depth.
+        - Indent breakdown items with `• ` (bullet) but NO additional leading spaces. NO empty line between header and list.
+    - **Smart Hierarchy:**
+        - Keep headers (`System:`, `Session:`, `Turn:`) and files as siblings under the Context root to avoid over-nesting depth.
         - Use **two leading spaces** in file labels to simulate indentation.
-        - When an item is auto-pruned/deselected, apply ultra-low visibility: use near-black color `#333333` combined with `dim` and `strikethrough`.
-        - Ensure leading spaces are **not** struck through.
     - Display Git Status in full words (e.g., "Modified", "Untracked") in the right-side detail pane.
 
 ## Implementation Notes
