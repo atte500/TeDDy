@@ -12,14 +12,27 @@ This feature introduces a native "Context Management" section within the `Textua
 - **Architectural Purity:** The `IPlanReviewer` must remain a pure function of `(Plan, ContextMetadata) -> Plan`. It must not directly mutate the filesystem. Unselected context items should be recorded in the `Plan` object's metadata for the `SessionOrchestrator` to process.
 
 ## Technical Specification
-(To be defined by the Architect)
-- **Domain Models:** Updates to `ProjectContext` to hold token metadata.
-- **Configuration:** New schema elements for `auto_prune_threshold`, etc.
-- **Port Signatures:** Updates to `IPlanReviewer` and orchestrator data flow.
-- **TUI Architecture:** How the `ActionTree` will render the context and translate selections.
+- **Domain Models:** Introduce `ContextItem` DTO to hold metadata for a single file (`path`, `token_count`, `source_scope`, `git_status`, `is_auto_pruned`). Update `ProjectContext` to include a list of these items.
+- **Port Signatures:** Update `ILlmClient` to include a `count_tokens(text: str, model: str) -> int` method. Update `IPlanReviewer.review()` and `IRunPlanUseCase.execute()` to accept `project_context: Optional[ProjectContext] = None`.
+- **Configuration:** Add an `auto_pruning` dictionary to `config.yaml` with the following granular controls:
+  - `enabled: true/false`
+  - `threshold_tokens: X`
+  - `prune_failed_plans: true/false`
+  - `prune_failed_reports: true/false`
 
-## Guidelines
-For the Architect:
-1. Map the exact data flow of token counts from `ContextService` to the TUI.
-2. Define how the TUI's context selections are passed back out (e.g., synthetic `PRUNE` actions vs. a `pruned_context` metadata list).
-3. Design the integration point for Auto-Prune rules. Where should they be evaluated? (Hint: likely in the Orchestrator before passing data to the TUI).
+## TUI Architecture & Data Flow
+1. **ActionTree Node:** The TUI will feature a top-level node in the left-hand `ActionTree` called "Session Context".
+2. **Context View:** When selected, the right pane displays a `ContextManagementView`. This view MUST distinctly separate `session.context` files (pinned, un-prunable by auto-rules) and `turn.context` files (dynamic).
+3. **Data Display:** Each item will display its path, token count, git status (e.g., `M`, `U`, `??`), and a checkbox.
+4. **Data Return:** When the user completes the review, any files toggled OFF are aggregated into a comma-separated string and attached to the returned `Plan` via `plan.metadata["pruned_context"]`.
+
+## Auto-Pruning Heuristics
+Auto-pruning evaluates files *before* rendering the TUI, setting their `is_auto_pruned` flag to `True`. The TUI renders these items as unchecked by default. The user maintains ultimate control and can re-check them.
+
+**Rules:**
+1. **Scope Restriction:** Auto-pruning MUST ONLY apply to files in `turn.context`. Files in `session.context` are strictly exempt.
+2. **Configuration Gate:** Must respect the `auto_pruning.enabled` config toggle.
+3. **Token Threshold:** Files exceeding the `threshold_tokens` limit are flagged.
+4. **Failure Artifacts:** The orchestrator must heuristically identify artifacts based on the granular toggles:
+    - If `prune_failed_plans` is true: flag plans that failed validation.
+    - If `prune_failed_reports` is true: flag execution reports with non-green status (e.g., FAILURE or ABORTED), and their corresponding plans.
