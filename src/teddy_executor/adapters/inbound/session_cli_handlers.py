@@ -97,6 +97,7 @@ def _run_cli_preflight_check(container: Container) -> None:
     from teddy_executor.core.ports.outbound.llm_client import ILlmClient
     from teddy_executor.core.domain.models.exceptions import ConfigurationError
 
+    typer.secho("Checking configurations...", fg=typer.colors.CYAN, dim=True, err=True)
     llm_client = container.resolve(ILlmClient)
     # Perform remote verification early to avoid prompting user if key is invalid
     errors = llm_client.validate_config(include_remote=True)
