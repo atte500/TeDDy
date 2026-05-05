@@ -3,7 +3,6 @@
 - **Milestone:** [10-interactive-session-and-config](../milestones/10-interactive-session-and-config.md)
 - **Specs:** [context-management-ui.md](../specs/context-management-ui.md)
 - **Prototype:** [prototypes/00-04/runner.py](../../../prototypes/00-04/runner.py)
-- **Showcase:** [prototypes/00-04/showcase.sh](../../../prototypes/00-04/showcase.sh)
 - **Component Docs:**
   - [ProjectContext](../../architecture/core/domain/project_context.md)
   - [ILlmClient](../../architecture/core/ports/outbound/llm_client.md)
@@ -39,9 +38,9 @@ And files in the session context are never unchecked automatically
 - [ ] **Logic** - Update `ContextService` to parse git status strings, count tokens via `ILlmClient`, and build `ContextItem` lists.
 - [ ] **Logic** - Implement auto-pruning heuristics in `SessionOrchestrator` (thresholds, failure artifacts detection, scope restrictions).
 - [ ] **Wiring** - Pass `ProjectContext` from `SessionOrchestrator` -> `ExecutionOrchestrator` -> `TextualPlanReviewer`.
-- [ ] **UI** - Create `ContextManagementView` widget in TUI (separate DataTables for session/turn, checkboxes, formatted columns).
-- [ ] **UI** - Bind `ContextManagementView` to an `ActionTree` "Session Context" node.
-- [ ] **Integration** - Update `ReviewerApp` to collect unchecked paths and set `plan.metadata["pruned_context"]`.
+- [ ] **UI** - Implement `ActionTree` population for Context items with smart hierarchy (System/Session/Turn siblings) and `[s dim]` styling for pruned items.
+- [ ] **UI** - Implement `ContextAggregateDetail` view for the right-hand panel (Total tokens + bulleted breakdown).
+- [ ] **Integration** - Update `ReviewerApp` to collect deselected (`selected=False`) paths and set `plan.metadata["pruned_context"]`.
 - [ ] **Integration** - Update `SessionOrchestrator` post-execution loop to read `pruned_context` and actively remove those files from the `turn.context` file and internal state.
 
 ## Delta Analysis
@@ -61,7 +60,10 @@ And files in the session context are never unchecked automatically
     - `src/teddy_executor/core/services/context_service.py`: Update `get_context` to iterate through `scoped_paths`, count tokens per file using `ILlmClient`, and parse `git_status` output into clean 2-char codes for `ContextItem`s.
     - `src/teddy_executor/core/services/session_orchestrator.py`: In `execute()`, call `context_service.get_context()`, apply pruning heuristics (check file patterns for `FAILURE`, token thresholds from config), and pass the enriched `ProjectContext` to the reviewer.
 - **UI Logic:**
-    - `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py`: Update `on_mount_logic` to iterate over `project_context.items` and build the tree structure (System/Session/Turn sections with sibling indentation) as proven in the prototype.
+    - `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py`:
+        - Implement `rebuild_context_tree(app)` with a guard flag to prevent duplication.
+        - Implement `update_context_detail(app, data)` to switch between aggregate and file-specific views.
+        - Update `format_node_label` heuristics to handle `ContextItem` styling (bold paths, colored labels, grayed-out tokens).
 
 ## Guidelines for Implementation
 - **Guarded TUI Build:** The `ReviewerApp` and `reviewer_logic` MUST implement a guarded build pattern (using a boolean flag like `_context_built`) to ensure the tree is populated exactly once. The base `ReviewerApp.on_mount` logic should be bypassed or cleared using `tree.clear()` before custom population.
