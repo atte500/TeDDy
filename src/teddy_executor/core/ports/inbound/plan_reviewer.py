@@ -17,12 +17,11 @@ class IPlanReviewer(Protocol):
     ) -> Optional[Plan]:
         """
         Initiates the interactive review process.
-        """
-        _ = project_context
 
         Returns:
             The modified Plan object, or None if the user cancels.
         """
+        _ = project_context
         ...
 
     def review_action(

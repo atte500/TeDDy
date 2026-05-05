@@ -47,7 +47,7 @@ def _update_detail_view(app: ReviewerApp, data: Any):
 
     switcher = app.query_one(ContentSwitcher)
 
-    if __debug__ and app.ui_extension.handle_details(app, data, switcher):
+    if __debug__ and app.ui_extension.handle_details(app, data, switcher) is True:
         return
 
     if isinstance(data, dict) and data.get("type") == "RATIONALE_SECTION":
@@ -108,7 +108,7 @@ async def edit_action_logic(app: ReviewerApp, node: Any, data: Any) -> None:
     """Handles the (e)dit key logic by branching to modals or external editor."""
     from teddy_executor.core.domain.models.plan import ActionData
 
-    if __debug__ and app.ui_extension.handle_edit(app, data):
+    if __debug__ and app.ui_extension.handle_edit(app, data) is True:
         return
 
     if isinstance(data, ActionData):
