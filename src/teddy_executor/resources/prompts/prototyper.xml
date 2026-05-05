@@ -18,11 +18,10 @@
       <phase n="1" name="Prototyping">
         <goal>Iteratively build, integrate, and verify a single isolated prototype file.</goal>
         <step n="1" name="Refinement Loop">
-            1. `CREATE`/`EDIT` a single "Zero-Touch" prototype (`prototypes/NN-{{feature}}.py`). Use DI/monkey-patching to override behaviors; never modify `src/` or `tests/`.
-            2. Support two modes: Interactive Showcase (default) and Verification (`--verify`).
-            3. Before implementation, you MUST `READ` the signatures of all production constructors you intend to use.
-            4. `EXECUTE` the prototype with `--verify`. This MUST perform logic assertions AND a "Dry Run" instantiation of ALL used production components (to catch signature mismatches) before calling `sys.exit(0)`.
-            5. If verification fails or crashes, transition to Yellow to investigate; if a block persists, transition to Red, create a Case File and `INVOKE` the Debugger.
+            1. `READ` the signatures of all production constructors you intend to use.
+            2. `CREATE`/`EDIT` a Zero-Touch prototype (`prototypes/NN-{{feature}}.py`) via DI/monkey-patching to override behaviors; never modify `src/` or `tests/`.
+            3. Support two modes: Interactive Showcase (default) and Verification (`--verify`). The Verification mode MUST assert logic and perform a Dry Run of the primary execution loop (e.g., `run()`) that auto-exits successfully once Ready.
+            4. `EXECUTE` the prototype with `--verify`. If verification fails or hangs, transition to Yellow state; if a block persists, transition to Red, create a Case File, and `INVOKE` the Debugger.
         </step>
         <step n="2" name="Technical Roadblocks">If a prototype fails due to technical limitations, explicitly use `RESEARCH` to hunt for alternative APIs, libraries, or approaches.</step>
         <step n="3" name="Verification">Continue the loop until you have tested the necessary isolated combinations and the internal workings are deeply understood.</step>
