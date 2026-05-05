@@ -77,7 +77,6 @@ class ParameterEditModal(ModalScreen[str]):
 class ActionTree(Tree):
     """A tree that allows both space and enter to toggle selection."""
 
-    CONTEXT_ROOT = "CONTEXT_ROOT"
     RATIONALE_ROOT = "RATIONALE_ROOT"
     ACTION_PLAN_ROOT = "ACTION_PLAN_ROOT"
 
@@ -230,49 +229,3 @@ Static {
     height: auto;
 }
 """
-
-
-if __debug__:
-    from dataclasses import dataclass
-
-    @dataclass
-    class ContextFileData:
-        """PROTOTYPE: Data for context file nodes in the tree."""
-
-        path: str
-        tokens: int
-        git_status: str
-        scope: str
-        selected: bool = True
-        auto_prune_reason: str | None = None
-
-        def format_label(self) -> str:
-            k_tokens = self.tokens / 1000.0
-            # Map status to VS Code colors
-            status_raw = self.git_status.strip()
-            color = "yellow"
-            if status_raw in ("??", "A"):
-                color = "green"
-            elif status_raw == "D":
-                color = "red"
-
-            status_tag = f" [[{color}]{status_raw}[/]]" if status_raw else ""
-
-            # Add leading spaces for indentation; ensure they aren't struck through
-            content = f"{self.path}{status_tag} [dim]{k_tokens:.1f}k[/]"
-            if not self.selected:
-                # Use near-black (#333333) to make it almost invisible
-                return f"  [#333333 dim][s]{content}[/s][/#333333 dim]"
-            return f"  {content}"
-
-    @dataclass
-    class SystemPromptData:
-        """PROTOTYPE: Data for the system prompt node."""
-
-        agent: str
-        tokens: int
-        path: str = ".teddy/prompts/architect.xml"
-
-        def format_label(self) -> str:
-            k_tokens = self.tokens / 1000.0
-            return f"System - {self.agent} [dim]{k_tokens:.1f}k[/]"

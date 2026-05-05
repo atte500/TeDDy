@@ -15,7 +15,7 @@ The implementation should:
 
 ## 4. Data Contracts / Methods
 
-### `review(self, plan: Plan, project_context: ProjectContext | None = None) -> Plan | None`
+### `review(self, plan: Plan) -> Plan | None`
 - **Description:** Initiates the interactive review process (bulk or TUI).
 - **Preconditions:**
   - `plan` must be a valid `Plan` object.

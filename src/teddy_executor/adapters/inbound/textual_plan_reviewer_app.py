@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
 from textual import work
@@ -45,28 +46,6 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 
-class NoOpUiExtension:
-    """Null object for UI extensions."""
-
-    def extend_mount(self, _app: Any) -> None:
-        pass
-
-    def handle_details(self, _app: Any, _data: Any, _switcher: Any) -> bool:
-        return False
-
-    def handle_edit(self, _app: Any, _data: Any) -> bool:
-        return False
-
-    def handle_binding(self, _app: Any, _action_name: str, _node: Any) -> Optional[bool]:
-        return None
-
-    def handle_selection(self, _app: Any, _node: Any) -> bool:
-        return False
-
-    def handle_toggle_all(self, _app: Any, _node: Any, _new_state: bool) -> bool:
-        return False
-
-
 class ReviewerApp(App):
     """
     The Textual application for reviewing and modifying plans.
@@ -96,20 +75,16 @@ class ReviewerApp(App):
 
     CSS = TUI_CSS
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         plan: Plan,
         system_env: ISystemEnvironment,
         console_tooling: ConsoleToolingHelper,
         action_dispatcher: ActionDispatcher,
         file_system: Optional[IFileSystemManager] = None,
-        project_context: Optional[Any] = None,
-        ui_extension: Optional[Any] = None,
     ):
         super().__init__()
         self.plan = plan
-        self.project_context = project_context
-        self.ui_extension = ui_extension or NoOpUiExtension()
         self._system_env = system_env
         self._console_tooling = console_tooling
         self._action_dispatcher = action_dispatcher
@@ -156,10 +131,10 @@ class ReviewerApp(App):
 
     def on_descendant_focus(self, event: Any) -> None:
         """Ensure selection state is maintained or initialized when focus moves."""
-        # Find if the focus is inside the right-pane
-        right_pane = self.query_one("#right-pane")
-        if event.control and event.control in right_pane.walk_children(with_self=True):
+        control = getattr(event, "control", None)
+        if control and getattr(control, "id", None) in ("right-pane", "params-view"):
             list_view = self.query_one(ParameterDetail)
+            # Only reset to 0 if no item is currently selected (e.g. first focus after clear)
             if list_view.children and list_view.index is None:
                 list_view.index = 0
 
@@ -182,20 +157,64 @@ class ReviewerApp(App):
             await execute_step_logic(self, tree.cursor_node)
 
     def action_submit(self) -> None:
-        """Submit the reviewed plan and exit."""
-        from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
-            handle_submit,
-        )
+        """Exit the app and return the modified plan."""
+        # Harvest deferred changes from pending_temp_files
+        for action in self.plan.actions:
+            self._harvest_action_content(action)
 
-        handle_submit(self)
+        if self._user_message_cache is not None:
+            marker = self.INSTRUCTION_MARKER.strip()
+            if marker in self._user_message_cache:
+                final_message: str = self._user_message_cache.split(marker)[0].strip()
+            else:
+                final_message = self._user_message_cache.strip()
+            self.plan.metadata["user_request"] = final_message
+
+        for f in getattr(self, "_log_preview_files", []):
+            try:
+                self._system_env.delete_file(f)
+            except Exception as e:
+                logger.debug("Failed to delete temporary log preview file %s: %s", f, e)
+
+        self.exit(self.plan)
 
     def action_cancel(self) -> None:
-        """Cancel and exit with None."""
-        from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
-            handle_cancel,
-        )
+        """Exit the app and return None (cancellation)."""
+        # Harvest message even on cancel so it can be propagated to the abort report
+        if self._user_message_cache is not None:
+            marker = self.INSTRUCTION_MARKER.strip()
+            if marker in self._user_message_cache:
+                final_message: str = self._user_message_cache.split(marker)[0].strip()
+            else:
+                final_message = self._user_message_cache.strip()
+            self.plan.metadata["user_request"] = final_message
 
-        handle_cancel(self)
+        # Cleanup any pending temp files
+        for action in self.plan.actions:
+            # Type guard for Mocks in tests
+            is_valid_path = isinstance(action.pending_temp_file, (str, os.PathLike))
+            if (
+                action.pending_temp_file
+                and is_valid_path
+                and os.path.exists(action.pending_temp_file)
+            ):
+                try:
+                    os.remove(action.pending_temp_file)
+                    action.pending_temp_file = None
+                except Exception as e:
+                    logger.debug(
+                        "Failed to remove pending temp file %s: %s",
+                        action.pending_temp_file,
+                        e,
+                    )
+
+        for f in getattr(self, "_log_preview_files", []):
+            try:
+                self._system_env.delete_file(f)
+            except Exception as e:
+                logger.debug("Failed to delete temporary log preview file %s: %s", f, e)
+
+        self.exit(None)
 
     @work
     async def action_edit_details(self) -> None:
@@ -252,20 +271,16 @@ class ReviewerApp(App):
         self.query_one("#right-pane").focus()
 
     def action_jump_next(self) -> None:
-        """Jump to the next major section."""
-        from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
-            handle_jump_next,
-        )
-
-        handle_jump_next(self)
+        """Jump to the Action Plan section."""
+        tree = self.query_one(ActionTree)
+        tree.jump_to_section(ActionTree.ACTION_PLAN_ROOT)
+        tree.focus()
 
     def action_jump_prev(self) -> None:
-        """Jump to the previous major section."""
-        from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
-            handle_jump_prev,
-        )
-
-        handle_jump_prev(self)
+        """Jump to the Rationale section."""
+        tree = self.query_one(ActionTree)
+        tree.jump_to_section(ActionTree.RATIONALE_ROOT)
+        tree.focus()
 
     def action_toggle_all(self) -> None:
         """Toggle selection for all actions."""

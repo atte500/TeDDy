@@ -77,7 +77,6 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 ## 6. Technical Debt
 
 ### Structural & Security (Found during Deliverables)
-- [ ] **UX** - Refine `ActionTree.jump_to_section` (alt+up/down) to correctly jump between Context root, Rationale, and Action Plan.
 - [ ] **Infrastructure Scopes:** Standardize all registrations in `src/teddy_executor/registries/infrastructure.py` to use `punq.Scope.transient` to ensure consistent test isolation and prevent singleton leaks (found during fix of `05-ci-preflight-failure`).
 - [ ] **Refactor** - Update `ReviewerApp` to accept `IEditSimulator` via constructor injection instead of internal instantiation.
 - [ ] **Structural** - Resolve Vulture unused variable hits in `ISessionManager` and `ISessionRepository` ports (requires whitelist update or alias).
@@ -112,9 +111,3 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 - [ ] **External Tool Sync:** Generalize `code --wait` logic to handle other GUI editors that return before the file is released.
 - [ ] **TUI Suspension:** Investigate `app.suspend()` instability in certain terminal environments during tool execution.
 - [ ] **Logic Deduplication:** Refactor prefix-stripping regex `r"^\d{8}_\d{6}-"` and `_launch_editor` logic into shared utilities.
-- [ ] **Quality Gate (00-04)** - `textual_plan_reviewer_logic.py` exceeds 300-line limit (338).
-- [ ] **Quality Gate (00-04)** - `textual_plan_reviewer_helpers.py` exceeds 300-line limit (317).
-- [ ] **Quality Gate (00-04)** - `on_mount_logic` complexity exceeds limit (12/9) and statement count exceeds limit (43/40).
-- [ ] **Quality Gate (00-04)** - `textual_plan_reviewer_logic.py` exceeds 300-line limit (338).
-- [ ] **Quality Gate (00-04)** - `textual_plan_reviewer_helpers.py` exceeds 300-line limit (317).
-- [ ] **Quality Gate (00-04)** - `on_mount_logic` complexity exceeds limit (12/9) and statement count exceeds limit (43/40).

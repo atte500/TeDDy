@@ -45,37 +45,12 @@ def register_reviewer(container: punq.Container, ui_mode: str | None = None) -> 
         )
         from teddy_executor.core.services.action_dispatcher import ActionDispatcher
 
-        # Dynamic routing for prototype UI extension
-        def create_textual_reviewer():
-            ui_ext = None
-            if __debug__:
-                import os
-
-                if os.environ.get("APP_ENV") == "prototype":
-                    import sys
-                    from pathlib import Path
-
-                    # Allow importing from the prototypes directory
-                    proto_dir = str(
-                        Path(__file__).parent.parent.parent.parent
-                        / "prototypes"
-                        / "00-04"
-                    )
-                    if proto_dir not in sys.path:
-                        sys.path.append(proto_dir)
-                    from ui_extensions import PrototypeUiExtension
-
-                    ui_ext = PrototypeUiExtension()
-
-            return TextualPlanReviewer(
+        container.register(
+            IPlanReviewer,
+            factory=lambda: TextualPlanReviewer(
                 system_env=container.resolve(ISystemEnvironment),
                 file_system=container.resolve(IFileSystemManager),
                 console_tooling=container.resolve(ConsoleToolingHelper),
                 action_dispatcher=container.resolve(ActionDispatcher),
-                ui_extension=ui_ext,
-            )
-
-        container.register(
-            IPlanReviewer,
-            factory=create_textual_reviewer,
+            ),
         )

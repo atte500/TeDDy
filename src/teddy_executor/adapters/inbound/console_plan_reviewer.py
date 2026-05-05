@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
-from teddy_executor.core.domain.models.project_context import ProjectContext
 
 if TYPE_CHECKING:
     from teddy_executor.core.domain.models.plan import (
@@ -38,13 +37,10 @@ class ConsolePlanReviewer(IPlanReviewer):
             file_system_manager, config_service, edit_simulator
         )
 
-    def review(
-        self, plan: "Plan", project_context: Optional["ProjectContext"] = None
-    ) -> Optional["Plan"]:
+    def review(self, plan: "Plan") -> Optional["Plan"]:
         """
         Prints the plan header and returns immediately to proceed to actions.
         """
-        _ = project_context
         import typer
 
         header = f'\n▶ Reviewing Plan: "{plan.title}"'

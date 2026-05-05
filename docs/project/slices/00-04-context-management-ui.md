@@ -2,8 +2,8 @@
 - **Status:** Planned
 - **Milestone:** [10-interactive-session-and-config](../milestones/10-interactive-session-and-config.md)
 - **Specs:** [context-management-ui.md](../specs/context-management-ui.md)
-- **Prototype:** [prototypes/00-04/](/prototypes/00-04/)
-- **Showcase:** [prototypes/00-04/showcase_integrated.sh](/prototypes/00-04/showcase_integrated.sh)
+- **Prototype:** [link]
+- **Showcase:** [link]
 - **Component Docs:**
   - [ProjectContext](../../architecture/core/domain/project_context.md)
   - [ILlmClient](../../architecture/core/ports/outbound/llm_client.md)
@@ -45,52 +45,14 @@ And files in the session context are never unchecked automatically
 - [ ] **Integration** - Update `SessionOrchestrator` post-execution loop to read `pruned_context` and actively remove those files from the `turn.context` file and internal state.
 
 ## Delta Analysis
-- **Domain Models:**
-    - `src/teddy_executor/core/domain/models/project_context.py`: Implement `ContextItem` dataclass with `path`, `token_count`, `git_status`, `scope`, `selected`, and `auto_prune_reason`.
-    - `ProjectContext`: Update to include `items: List[ContextItem]`, `agent_name: str`, `system_prompt_tokens: int`, and `total_window: int`.
-- **Ports:**
-    - `src/teddy_executor/core/ports/outbound/llm_client.py`: Add `get_text_token_count(text: str, model: Optional[str] = None) -> int`.
-    - `src/teddy_executor/core/ports/inbound/plan_reviewer.py`: Update `review()` to accept `project_context: Optional[ProjectContext]`.
-- **Migration (Shared Seams):**
-    - `src/teddy_executor/core/services/execution_orchestrator.py`: Update the call to `self._plan_reviewer.review(plan)` to pass `project_context`.
-    - `src/teddy_executor/adapters/inbound/console_plan_reviewer.py`: Update implementation of `review()` to accept the optional `project_context` argument (Expansion).
-- **Adapters:**
-    - `src/teddy_executor/adapters/outbound/litellm_adapter.py`: Implement `get_text_token_count` using `litellm.token_counter(text=text, ...)`.
-    - `src/teddy_executor/adapters/inbound/textual_plan_reviewer_app.py`: Store `ProjectContext` in `ReviewerApp.__init__` and pass it to `on_mount_logic`.
-- **Services:**
-    - `src/teddy_executor/core/services/context_service.py`: Update `get_context` to iterate through `scoped_paths`, count tokens per file using `ILlmClient`, and parse `git_status` output into clean 2-char codes for `ContextItem`s.
-    - `src/teddy_executor/core/services/session_orchestrator.py`: In `execute()`, call `context_service.get_context()`, apply pruning heuristics (check file patterns for `FAILURE`, token thresholds from config), and pass the enriched `ProjectContext` to the reviewer.
-- **UI Logic:**
-    - `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py`: Update `on_mount_logic` to iterate over `project_context.items` and build the tree structure (System/Session/Turn sections with sibling indentation) as proven in the prototype.
+- **Domain/Ports:** `ProjectContext` expands. `ILlmClient` and `IPlanReviewer` get new signature capabilities.
+- **Core Services:** `ContextService` gains parsing and counting logic. `SessionOrchestrator` gains pruning heuristic logic.
+- **UI:** The TUI gains a new top-level pane and data tracking.
 
 ## Guidelines for Implementation
 - **Git Status Parsing:** Use a simple regex or string splitting on the `git status -s` output format to map file paths to their status codes. Remember that paths in `git status` are relative to the git root.
 - **Failure Heuristics:** To detect failed plans/reports, parse the file names (e.g., `*plan*.md`, `*report*.md`) and read their content directly using a fast string check (e.g., `Status: FAILURE`) rather than full markdown parsing to keep the orchestrator fast.
-- **Auto-Prune Reasons:** Use the following standardized strings for the `auto_prune_reason` metadata:
-    - `Exceeds 15k token limit`
-    - `Failed plan validation`
-    - `Non-green plan`
-- **Context Management Tree:**
-    - Use a flat tree structure with leaf-only label nodes (`SESSION_LABEL`, `TURN_LABEL`, `SYSTEM_LABEL`) for grouping.
-    - **Visual Cues:**
-        - Use VS Code-style colorization for Git statuses in the tree (e.g., `[yellow]M [/yellow]`, `[green]??[/green]`).
-        - Auto-pruned files (identified by heuristics) MUST be rendered with `[s dim]` (ultra-dimmed strikethrough) by default.
-    - **Editor Integration (`e` key):**
-        - **Agent Node:** Opening the `e` (edit) key on an Agent node MUST launch a TUI Modal (`PromptEditorModal`) containing a `TextArea` for direct XML prompt editing.
-        - **Context Labels/Files:** Opening `e` on a session/turn label or a specific context file MUST launch the external editor (using `ConsoleTooling.get_editor()`).
-        - **Deferred Harvest:** The TUI MUST wait for the external process to exit, then perform a "Deferred Harvest": re-read the `.context` files from disk and refresh the `ContextItem` metadata (tokens, git status) and the UI tree dynamically.
-    - **Navigation (`alt+up/down`):** Refine `ActionTree.jump_to_section` to include the Context root. Navigation should jump between the Context root, Rationale root, and Action Plan root.
-    - **Right Pane Summary:**
-        - Include a bulleted breakdown of the context: `• System`, `• Session`, `• Turn`.
-        - Show the token count for each (e.g., `• System: 2.5k`).
-        - Use an empty line separation between the Total Context and the breakdown list.
-        - Indent breakdown items with `• ` (bullet) but NO additional leading spaces.
-    - **Smart Hierarchy & Visuals:**
-        - Implement "Smart Hierarchy" by keeping headers (`System:`, `Session:`, `Turn:`) and files as siblings under the Context root to avoid over-nesting depth.
-        - Use **two leading spaces** in file labels to simulate indentation.
-        - When an item is auto-pruned/deselected, apply ultra-low visibility: use near-black color `#333333` combined with `dim` and `strikethrough`.
-        - Ensure leading spaces are **not** struck through.
-    - Display Git Status in full words (e.g., "Modified", "Untracked") in the right-side detail pane.
+- **TUI Checkboxes:** Textual's `DataTable` doesn't have native checkboxes. You can simulate checkboxes using text icons (e.g., `[x]` vs `[ ]`) and handle the cell click event, or use a list of `Checkbox` widgets if the list is small enough.
 
 ## Implementation Notes
 (To be filled during development)
