@@ -15,7 +15,6 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
 
 if TYPE_CHECKING:
     from teddy_executor.adapters.inbound.textual_plan_reviewer_app import ReviewerApp
-    from teddy_executor.core.domain.models.plan import ActionData
 
 
 ALLOWED_RATIONALE_SECTIONS = [
@@ -47,7 +46,9 @@ def _update_detail_view(app: ReviewerApp, data: Any):
     from textual.widgets import Label, ListItem, ContentSwitcher, Markdown
 
     switcher = app.query_one(ContentSwitcher)
-    pane = app.query_one(ParameterDetail)
+
+    if __debug__ and app.ui_extension.handle_details(app, data, switcher):
+        return
 
     if isinstance(data, dict) and data.get("type") == "RATIONALE_SECTION":
         switcher.current = "rationale-view"
@@ -56,6 +57,7 @@ def _update_detail_view(app: ReviewerApp, data: Any):
 
     # Default to parameter view for everything else
     switcher.current = "params-view"
+    pane = app.query_one(ParameterDetail)
     pane.clear()
 
     if not data:
@@ -102,13 +104,19 @@ def _update_detail_view(app: ReviewerApp, data: Any):
             pane.mount(ListItem(Label("Select an item to view details")))
 
 
-async def edit_action_logic(app: ReviewerApp, node: Any, action: ActionData) -> None:
+async def edit_action_logic(app: ReviewerApp, node: Any, data: Any) -> None:
     """Handles the (e)dit key logic by branching to modals or external editor."""
-    from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
-        handle_edit_action,
-    )
+    from teddy_executor.core.domain.models.plan import ActionData
 
-    await handle_edit_action(app, node, action, _update_detail_view)
+    if __debug__ and app.ui_extension.handle_edit(app, data):
+        return
+
+    if isinstance(data, ActionData):
+        from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+            handle_edit_action,
+        )
+
+        await handle_edit_action(app, node, data, _update_detail_view)
 
 
 def refresh_node_logic(app: ReviewerApp, node: Any) -> None:
@@ -135,6 +143,15 @@ def on_mount_logic(app: Any) -> None:
     tree = app.query_one(ActionTree)
     tree.show_root = False
     tree.root.expand()
+
+    # 0. Context Section (Restored root node with sibling-based indentation)
+    if __debug__:
+        from os import environ
+
+        if environ.get("APP_ENV") == "prototype":
+            app.ui_extension.extend_mount(app)
+            con_root_list = [n for n in tree.root.children if n.data == "CONTEXT_ROOT"]
+            con_root = con_root_list[0] if con_root_list else None
 
     # 1. Rationale Section
     rat_root = tree.root.add("[bold]Rationale[/]", data="RATIONALE_ROOT", expand=True)
@@ -163,6 +180,7 @@ def on_mount_logic(app: Any) -> None:
     act_root = tree.root.add(
         "[bold]Action Plan[/]", data="ACTION_PLAN_ROOT", expand=True
     )
+
     for action in app.plan.actions:
         if not hasattr(action, "_original_params"):
             action._original_params = action.params.copy()
@@ -170,7 +188,16 @@ def on_mount_logic(app: Any) -> None:
             continue
         act_root.add_leaf(format_node_label(action), data=action)
 
-    # Initialize with the Rationale root details highlighted
+    # Initialize with the Context details highlighted
+    if __debug__:
+        from os import environ
+
+        if environ.get("APP_ENV") == "prototype":
+            tree.move_cursor(con_root)
+            tree.focus()
+            app.call_after_refresh(_update_detail_view, app, "CONTEXT_ROOT")
+            return
+
     tree.move_cursor(rat_root)
     tree.focus()
     app.call_after_refresh(_update_detail_view, app, "RATIONALE_ROOT")
@@ -183,6 +210,12 @@ def check_action_logic(app: ReviewerApp, action_name: str) -> bool:
 
     tree = app.query_one(Tree)
     node = tree.cursor_node
+
+    if __debug__:
+        proto_result = app.ui_extension.handle_binding(app, action_name, node)
+        if proto_result is not None:
+            return proto_result
+
     if not node or not isinstance(node.data, ActionData):
         return action_name not in (
             "execute_step",
@@ -204,6 +237,18 @@ def check_action_logic(app: ReviewerApp, action_name: str) -> bool:
 def toggle_selection_logic(app: ReviewerApp, node: Any) -> None:
     """Toggle action selection when a node is selected."""
     from teddy_executor.core.domain.models.plan import ActionData
+
+    if __debug__ and app.ui_extension.handle_selection(app, node):
+        return
+
+    if node.data in (
+        "SESSION_LABEL",
+        "TURN_LABEL",
+        "CONTEXT_ROOT",
+        "ACTION_PLAN_ROOT",
+        "RATIONALE_ROOT",
+    ):
+        return
 
     action: Any = node.data
     if isinstance(action, ActionData) and not action.executed:
@@ -267,17 +312,26 @@ async def add_message_logic(app: "ReviewerApp") -> None:
 
 def toggle_all_logic(app: "ReviewerApp", plan: Any) -> None:
     """Toggle selection for all actions."""
-    new_state = any(not action.selected for action in plan.actions)
-    for action in plan.actions:
-        action.selected = new_state
-
     from textual.widgets import Tree
+    from teddy_executor.core.domain.models.plan import ActionData
 
     tree = app.query_one(Tree)
 
-    # Recursively refresh all nodes that contain ActionData
+    # 1. Determine new state based on actions
+    new_state = any(not action.selected for action in plan.actions)
+
+    # 2. Update Actions
+    for action in plan.actions:
+        action.selected = new_state
+
+    # 3. Recursively refresh nodes and update Context nodes
     def refresh_recursive(node: Any):
-        app._refresh_node(node)
+        if __debug__ and app.ui_extension.handle_toggle_all(app, node, new_state):
+            pass
+
+        if isinstance(node.data, ActionData):
+            app._refresh_node(node)
+
         for child in node.children:
             refresh_recursive(child)
 

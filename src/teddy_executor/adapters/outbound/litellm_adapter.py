@@ -87,6 +87,17 @@ class LiteLLMAdapter(ILlmClient):
         self._ensure_silence(litellm)
         return litellm.token_counter(model=str(resolved_model), messages=messages)
 
+    def get_text_token_count(self, text: str, model: Optional[str] = None) -> int:
+        """Calculates the number of tokens for a raw string."""
+        import litellm
+
+        resolved_model = model or self._config_service.get_setting("llm.model")
+        if not resolved_model:
+            resolved_model = "gpt-4o"
+
+        self._ensure_silence(litellm)
+        return litellm.token_counter(model=str(resolved_model), text=text)
+
     def get_completion_cost(self, completion_response: Any) -> float:
         """Calculates the precise USD cost of a completion response."""
         import litellm

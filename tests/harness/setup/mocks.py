@@ -203,6 +203,7 @@ def mock_llm_client(container):
     mock.get_completion.return_value = mock_response
 
     mock.get_token_count.return_value = 100
+    mock.get_text_token_count.return_value = 100
     mock.get_completion_cost.return_value = 0.01
     mock.get_context_window.return_value = 128000
 

@@ -1,5 +1,6 @@
 import textwrap
-from teddy_executor.core.domain.models import ActionStatus
+from typing import Optional
+from teddy_executor.core.domain.models import ActionStatus, ProjectContext
 from teddy_executor.core.domain.models.plan import Plan
 from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
 
@@ -12,7 +13,10 @@ class FakeReviewer(IPlanReviewer):
         self.actions_to_unselect = actions_to_unselect
         self.was_called = False
 
-    def review(self, plan: Plan) -> Plan:
+    def review(
+        self, plan: Plan, project_context: Optional[ProjectContext] = None
+    ) -> Plan:
+        _ = project_context
         self.was_called = True
         for idx in self.actions_to_unselect:
             plan.actions[idx].selected = False

@@ -30,7 +30,7 @@ This is an interface and contains no implementation logic.
 ### `get_token_count(self, model: str, messages: List[Dict[str, str]]) -> int`
 - **Description:** Calculates the number of tokens in the payload for a specific model (Pre-flight).
 
-### `get_text_token_count(self, model: str, text: str) -> int`
+### `get_text_token_count(self, text: str, model: Optional[str] = None) -> int`
 - **Description:** Calculates the number of tokens for a raw string (useful for evaluating single context files).
 
 ### `get_completion_cost(self, completion_response: Any) -> float`

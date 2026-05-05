@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from teddy_executor.adapters.inbound.textual_plan_reviewer_app import ReviewerApp
 from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
+from teddy_executor.core.domain.models.project_context import ProjectContext
 
 if TYPE_CHECKING:
     from teddy_executor.adapters.outbound.console_tooling import ConsoleToolingHelper
@@ -27,17 +28,21 @@ class TextualPlanReviewer(IPlanReviewer):
         file_system: IFileSystemManager,
         console_tooling: ConsoleToolingHelper,
         action_dispatcher: ActionDispatcher,
+        ui_extension: Optional[Any] = None,
     ):
         self._system_env = system_env
         self._file_system = file_system
         self._console_tooling = console_tooling
         self._action_dispatcher = action_dispatcher
+        self._ui_extension = ui_extension
 
-    def review(self, plan: Plan) -> Optional[Plan]:
+    def review(
+        self, plan: Plan, project_context: Optional["ProjectContext"] = None
+    ) -> Optional[Plan]:
         """
         Initiates the interactive review process using the Textual TUI.
         """
-        return self._run_app(plan)
+        return self._run_app(plan, project_context=project_context)
 
     def review_action(
         self,
@@ -52,7 +57,9 @@ class TextualPlanReviewer(IPlanReviewer):
         _ = agent_name  # Mark as used for vulture
         return True, ""
 
-    def _run_app(self, plan: Plan) -> Optional[Plan]:
+    def _run_app(
+        self, plan: Plan, project_context: Optional[ProjectContext] = None
+    ) -> Optional[Plan]:
         """
         Internal helper to launch the Textual app.
         Separated to allow for easier testing and mocking.
@@ -63,6 +70,8 @@ class TextualPlanReviewer(IPlanReviewer):
             console_tooling=self._console_tooling,
             action_dispatcher=self._action_dispatcher,
             file_system=self._file_system,
+            project_context=project_context,
+            ui_extension=self._ui_extension,
         )
         result = app.run()
         if os.getenv("TEDDY_DEBUG") and result:

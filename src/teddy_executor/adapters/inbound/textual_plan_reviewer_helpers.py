@@ -185,6 +185,105 @@ def handle_revert(app: ReviewerApp, node: Any, update_fn: Any) -> None:
         app.refresh_bindings()
 
 
+def handle_jump_next(app: Any) -> None:
+    """Logic for jumping to the next major section in the tree."""
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
+        ActionTree,
+    )
+
+    tree = app.query_one(ActionTree)
+    node = tree.cursor_node
+    if not node:
+        tree.jump_to_section(ActionTree.CONTEXT_ROOT)
+    elif node.data == ActionTree.CONTEXT_ROOT:
+        tree.jump_to_section(ActionTree.RATIONALE_ROOT)
+    elif node.data == ActionTree.RATIONALE_ROOT:
+        tree.jump_to_section(ActionTree.ACTION_PLAN_ROOT)
+    else:
+        tree.jump_to_section(ActionTree.CONTEXT_ROOT)
+    tree.focus()
+
+
+def handle_jump_prev(app: Any) -> None:
+    """Logic for jumping to the previous major section in the tree."""
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
+        ActionTree,
+    )
+
+    tree = app.query_one(ActionTree)
+    node = tree.cursor_node
+    if not node:
+        tree.jump_to_section(ActionTree.ACTION_PLAN_ROOT)
+    elif node.data == ActionTree.ACTION_PLAN_ROOT:
+        tree.jump_to_section(ActionTree.RATIONALE_ROOT)
+    elif node.data == ActionTree.RATIONALE_ROOT:
+        tree.jump_to_section(ActionTree.CONTEXT_ROOT)
+    else:
+        tree.jump_to_section(ActionTree.ACTION_PLAN_ROOT)
+    tree.focus()
+
+
+def handle_submit(app: Any) -> None:
+    """Logic for submitting the plan and closing the app."""
+
+    # Harvest deferred changes from pending_temp_files
+    for action in app.plan.actions:
+        harvest_action_content(action, app.INSTRUCTION_MARKER)
+
+    if app._user_message_cache is not None:
+        marker = app.INSTRUCTION_MARKER.strip()
+        if marker in app._user_message_cache:
+            final_message: str = app._user_message_cache.split(marker)[0].strip()
+        else:
+            final_message = app._user_message_cache.strip()
+        app.plan.metadata["user_request"] = final_message
+
+    for f in getattr(app, "_log_preview_files", []):
+        try:
+            app._system_env.delete_file(f)
+        except Exception:
+            pass  # Silent failure is safe for transient cleanup
+
+    app.exit(app.plan)
+
+
+def handle_cancel(app: Any) -> None:
+    """Logic for canceling the review and closing the app."""
+    import os
+
+    # Harvest message even on cancel so it can be propagated to the abort report
+    if app._user_message_cache is not None:
+        marker = app.INSTRUCTION_MARKER.strip()
+        if marker in app._user_message_cache:
+            final_message: str = app._user_message_cache.split(marker)[0].strip()
+        else:
+            final_message = app._user_message_cache.strip()
+        app.plan.metadata["user_request"] = final_message
+
+    # Cleanup any pending temp files
+    for action in app.plan.actions:
+        # Type guard for Mocks in tests
+        is_valid_path = isinstance(action.pending_temp_file, (str, os.PathLike))
+        if (
+            action.pending_temp_file
+            and is_valid_path
+            and os.path.exists(action.pending_temp_file)
+        ):
+            try:
+                os.remove(action.pending_temp_file)
+                action.pending_temp_file = None
+            except Exception:
+                pass  # Silent failure is safe for transient cleanup
+
+    for f in getattr(app, "_log_preview_files", []):
+        try:
+            app._system_env.delete_file(f)
+        except Exception:
+            pass  # Silent failure is safe for transient cleanup
+
+    app.exit(None)
+
+
 def harvest_action_content(action: Any, instruction_marker: str) -> None:
     """Harvest modified content from a pending temporary file back to the action."""
     # Type guard for Mocks in tests

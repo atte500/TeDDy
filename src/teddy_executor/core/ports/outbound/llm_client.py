@@ -46,6 +46,13 @@ class ILlmClient(ABC):
         pass
 
     @abstractmethod
+    def get_text_token_count(self, text: str, model: Optional[str] = None) -> int:
+        """
+        Calculates the number of tokens for a raw string.
+        """
+        pass
+
+    @abstractmethod
     def get_completion_cost(self, _completion_response: Any) -> float:
         """
         Calculates the precise USD cost of a completion response.
