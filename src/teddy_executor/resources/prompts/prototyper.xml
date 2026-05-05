@@ -20,7 +20,7 @@
         <step n="1" name="Refinement Loop">
             1. `READ` the signatures of all production constructors you intend to use.
             2. `CREATE`/`EDIT` a Zero-Touch prototype (`prototypes/NN-{{feature}}.py`) via DI/monkey-patching to override behaviors; never modify `src/` or `tests/`.
-            3. Support two modes: Interactive Showcase (default) and Verification (`--verify`). The Verification mode MUST assert logic and perform a Dry Run of the primary execution loop (e.g., `run()`) that auto-exits successfully once Ready.
+            3. Support two modes: Interactive Showcase (default) and Verification (`--verify`). The Verification mode MUST assert proper dependency injection/logic overwrites, include informative debug statements, and perform a Dry Run of the primary execution loop (e.g., `run()`) that auto-exits successfully once Ready.
             4. `EXECUTE` the prototype with `--verify`. If verification fails or hangs, transition to Yellow state; if a block persists, transition to Red, create a Case File, and `INVOKE` the Debugger.
         </step>
         <step n="2" name="Technical Roadblocks">If a prototype fails due to technical limitations, explicitly use `RESEARCH` to hunt for alternative APIs, libraries, or approaches.</step>
