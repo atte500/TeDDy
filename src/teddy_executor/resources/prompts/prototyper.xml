@@ -21,7 +21,7 @@
             1. `CREATE` or `EDIT` a single prototype file (`prototypes/NN-{{feature}}.py`).
             2. Implement "Zero-Touch" integration within the file. The script MUST import production components and subclass them to override behaviors or logic via DI overrides or monkey-patching. You MUST NOT modify `src/` or `tests/`.
             3. Support two modes: an interactive Showcase mode (default) and a non-interactive Verification mode (via a flag like `--verify`).
-            4. `EXECUTE` the prototype with the verification flag. This check MUST verify both internal logic (via assertions) and that the script is stable enough to run in showcase mode without crashing.
+            4. `EXECUTE` the prototype with the verification flag. This MUST: A) Run all internal logic assertions, B) Instantiate UI/interactive components to ensure imports and layouts are stable, and C) Auto-exit with code 0 immediately after instead of entering an event loop.
             5. If the verification fails to prove the internal logic or crashes, you MUST transition to the Yellow state to investigate the cause. If the failure persists you MUST transition to the Red state, create a Case File/MRE, and `INVOKE` the Debugger.
         </step>
         <step n="2" name="Technical Roadblocks">If a prototype fails due to technical limitations, explicitly use `RESEARCH` to hunt for alternative APIs, libraries, or approaches.</step>
