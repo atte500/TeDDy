@@ -1,8 +1,7 @@
 import logging
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
-import yaml
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 
 logger = logging.getLogger(__name__)
@@ -55,45 +54,7 @@ class SessionPlanner:
         if plan_path is None:
             return "CANCELLED"
 
-        self._display_planning_telemetry(turn_dir, plan_path, turn_cost)
-
         return Path(turn_dir).parent.name
-
-    def _display_planning_telemetry(
-        self, turn_dir: str, plan_path: str, turn_cost: float
-    ):
-        def safe_float(v: Any, default: float = 0.0) -> float:
-            try:
-                if hasattr(v, "__float__"):
-                    return float(v)
-                return float(str(v))
-            except (TypeError, ValueError):
-                return default
-
-        meta_content = self._file_system_manager.read_file(f"{turn_dir}/meta.yaml")
-        meta_loaded = yaml.safe_load(str(meta_content))
-        meta = meta_loaded if isinstance(meta_loaded, dict) else {}
-
-        model = str(meta.get("model", "unknown"))
-
-        # Arithmetic and formatting must be robust to MagicMocks leaked in tests
-        raw_token_count = safe_float(meta.get("token_count", 0))
-        # Cumulative cost in meta for current turn doesn't include current turn yet
-        cumulative_cost = safe_float(meta.get("cumulative_cost", 0.0)) + safe_float(
-            turn_cost
-        )
-
-        # Scenario: Session Visibility & Natural Language (Blue/Magenta Telemetry)
-        # Use sys.stderr for telemetry to ensure it's visible even when stdout is piped/clean
-        self._user_interactor.display_message(
-            f"[blue]• Model:[/blue] [magenta]{model}[/magenta]"
-        )
-        self._user_interactor.display_message(
-            f"[blue]• Context:[/blue] [magenta]{raw_token_count / 1000:.1f}k tokens[/magenta]"
-        )
-        self._user_interactor.display_message(
-            f"[blue]• Session Cost:[/blue] [magenta]${cumulative_cost:.4f}[/magenta]\n"
-        )
 
     def _resolve_message_from_previous_turn(self, turn_dir: str) -> Optional[str]:
         """Specialized session logic to look back at the previous turn's report."""

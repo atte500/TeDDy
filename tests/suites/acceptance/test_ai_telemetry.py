@@ -68,8 +68,10 @@ def test_ai_telemetry_and_logging(tmp_path, monkeypatch):
 
     combined_output = result.stdout + (result.stderr or "")
     assert re.search(r"Model:.*gpt-4o", combined_output)
-    assert re.search(r"Context:.*15.2k tokens", combined_output)
-    assert re.search(r"Session Cost:.*\$0.0400", combined_output)
+    # Pre-response telemetry includes context window (128k from harness)
+    assert re.search(r"Context:.*15.2k / 128.0k tokens", combined_output)
+    # Pre-response telemetry shows cost BEFORE current turn (so $0.0000 for first turn)
+    assert re.search(r"Session Cost:.*\$0.0000", combined_output)
 
 
 def test_telemetry_persistence_across_turns(tmp_path, monkeypatch):
@@ -94,6 +96,7 @@ def test_telemetry_persistence_across_turns(tmp_path, monkeypatch):
     setup_telemetry_env(tmp_path)
 
     mock_llm_client = env.get_service(ILlmClient)
+    mock_llm_client.get_token_count.return_value = 5000  # 5.0k
     # Turn 1
     fixed_now = datetime(2026, 4, 17, 12, 0, 0)
     plan_1 = MarkdownPlanBuilder("Turn 1").add_execute("echo 1").build()
@@ -131,8 +134,9 @@ def test_telemetry_persistence_across_turns(tmp_path, monkeypatch):
     initial_cost = 0.01
     assert meta_2["cumulative_cost"] == initial_cost
     combined_output = result.stdout + (result.stderr or "")
-    # Session Cost = inherited cumulative_cost (0.01) + current turn_cost (0.02) = 0.03
-    assert re.search(r"Session Cost:.*\$0.0300", combined_output)
+    # Pre-response: Session Cost = inherited cumulative_cost (0.01) ONLY
+    assert re.search(r"Session Cost:.*\$0.0100", combined_output)
+    assert re.search(r"Context:.*5.0k / 128.0k tokens", combined_output)
 
 
 def test_input_log_during_replan(tmp_path, monkeypatch):

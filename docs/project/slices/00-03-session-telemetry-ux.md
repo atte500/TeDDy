@@ -32,8 +32,8 @@ Feature: Pre-response Session Telemetry
 - [x] **Logic (Migration)** - Implement `get_context_window` in `LiteLLMAdapter` using `litellm.model_cost`.
 - [x] **Contract (Contraction)** - Make `get_context_window` abstract in `ILlmClient`.
 - [x] **Logic** - Add telemetry display logic to `PlanningService.generate_plan`.
-- [ ] **Migration** - Update `SessionPlanner.trigger_new_plan` to no longer call telemetry display.
-- [ ] **Cleanup** - Remove `SessionPlanner._display_planning_telemetry` and related dead code.
+- [x] **Migration** - Update `SessionPlanner.trigger_new_plan` to no longer call telemetry display.
+- [x] **Cleanup** - Remove `SessionPlanner._display_planning_telemetry` and related dead code.
 - [ ] **Wiring** - Verify end-to-end telemetry display in interactive session.
 
 ## Delta Analysis

@@ -106,22 +106,23 @@ def test_trigger_new_plan_delegates_to_planning_if_report_request_section_is_emp
     assert actual_message is None
 
 
-def test_display_planning_telemetry_styles(planner, mock_deps):
-    """Scenario: Session Visibility & Natural Language (Blue/Magenta Telemetry)"""
-    from unittest.mock import call
-    import yaml
-
-    mock_deps["fs"].read_file.return_value = yaml.dump(
-        {"model": "gpt-4o", "token_count": 12400, "cumulative_cost": 0.02}
-    )
+def test_trigger_new_plan_no_longer_displays_telemetry_directly(planner, mock_deps):
+    """Migration: Telemetry is now handled by PlanningService."""
+    # Arrange
+    turn_dir = "sessions/my-session/01"
+    mock_deps["fs"].path_exists.return_value = False
+    mock_deps["planning"].generate_plan.return_value = ("plan.md", 0.05)
 
     # Act
-    planner._display_planning_telemetry("turn_dir", "plan.md", 0.01)
+    planner.trigger_new_plan(turn_dir, message=None)
 
-    # Assert: Blue keys/bullets, Magenta values
-    expected_calls = [
-        call("[blue]• Model:[/blue] [magenta]gpt-4o[/magenta]"),
-        call("[blue]• Context:[/blue] [magenta]12.4k tokens[/magenta]"),
-        call("[blue]• Session Cost:[/blue] [magenta]$0.0300[/magenta]\n"),
+    # Assert: Interactor should NOT have received telemetry calls
+    # (Checking for 'Model' as it's a signature of the old telemetry display)
+    telemetry_calls = [
+        c
+        for c in mock_deps["interactor"].display_message.call_args_list
+        if "Model" in str(c)
     ]
-    mock_deps["interactor"].display_message.assert_has_calls(expected_calls)
+    assert len(telemetry_calls) == 0, (
+        f"SessionPlanner should not display telemetry. Found: {telemetry_calls}"
+    )
