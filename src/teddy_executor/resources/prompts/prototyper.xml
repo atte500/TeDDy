@@ -18,11 +18,11 @@
       <phase n="1" name="Prototyping">
         <goal>Iteratively build, integrate, and verify a single isolated prototype file.</goal>
         <step n="1" name="Refinement Loop">
-            1. `CREATE` or `EDIT` a single prototype file (`prototypes/NN-{{feature}}.py`).
-            2. Implement "Zero-Touch" integration within the file. The script MUST import production components and subclass them to override behaviors or logic via DI overrides or monkey-patching. You MUST NOT modify `src/` or `tests/`.
-            3. Support two modes: an interactive Showcase mode (default) and a non-interactive Verification mode (via a flag like `--verify`).
-            4. `EXECUTE` the prototype with the verification flag. This MUST: A) Run all internal logic assertions, B) Instantiate UI/interactive components to ensure imports and layouts are stable, and C) Auto-exit with code 0 immediately after instead of entering an event loop.
-            5. If the verification fails to prove the internal logic or crashes, you MUST transition to the Yellow state to investigate the cause. If the failure persists you MUST transition to the Red state, create a Case File/MRE, and `INVOKE` the Debugger.
+            1. `CREATE`/`EDIT` a single "Zero-Touch" prototype (`prototypes/NN-{{feature}}.py`). Use DI/monkey-patching to override behaviors; never modify `src/` or `tests/`.
+            2. Support two modes: Interactive Showcase (default) and Verification (`--verify`).
+            3. Before implementation, you MUST `READ` the signatures of all production constructors you intend to use.
+            4. `EXECUTE` the prototype with `--verify`. This MUST perform logic assertions AND a "Dry Run" instantiation of ALL used production components (to catch signature mismatches) before calling `sys.exit(0)`.
+            5. If verification fails or crashes, transition to Yellow to investigate; if a block persists, transition to Red, create a Case File and `INVOKE` the Debugger.
         </step>
         <step n="2" name="Technical Roadblocks">If a prototype fails due to technical limitations, explicitly use `RESEARCH` to hunt for alternative APIs, libraries, or approaches.</step>
         <step n="3" name="Verification">Continue the loop until you have tested the necessary isolated combinations and the internal workings are deeply understood.</step>
@@ -32,7 +32,7 @@
         <goal>Mandatory checkpoint to verify behavior with the user before finalizing the implementation plan.</goal>
         <step n="1" name="Prompt for Feedback">Use `PROMPT` to present the Evaluation Harness for feedback. You MUST include a Markdown code block containing the exact copy-pasteable command to run the Showcase Runner. The command MUST launch a functional, interactive experience. You are strictly forbidden from providing a "logic-only" script or skipping the interactive mode due to mocking complexity. You MUST halt and gain explicit user feedback on the UX, behavior, or business logic to de-risk the implementation before Phase 3 (Delta Analysis) begins.</step>
         <step n="2" name="Handle Feedback">If the user requests changes or design iterations, `EDIT` the `Vertical Slice` immediately to reflect the new or changed requirements, then return to Phase 1. You MUST refine your internal verification logic to cover the changes and successfully re-run the sanity check (`--verify`) before re-showcasing. After implementing and verifying changes, you MUST return to Step 1 of this phase to showcase the update and wait for explicit approval again.</step>
-        <step n="3" name="Post-Debugger Verification">If control returns from the Debugger claiming a fix, you MUST immediately verify the prototype's behavior using the interactive showcase launcher. Then, you MUST return to Step 1 of this phase to gain explicit user approval before proceeding.</step>
+        <step n="3" name="Post-Debugger Verification">If control returns from the Debugger claiming a fix, you MUST immediately verify the prototype's sanity checks. Then, you MUST return to Step 1 of this phase to gain explicit user approval before proceeding.</step>
       </phase>
 
       <phase n="3" name="Delta Analysis">
