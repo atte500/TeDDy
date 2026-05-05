@@ -16,50 +16,44 @@
       </phase>
 
       <phase n="1" name="Prototyping">
-        <goal>Iteratively build and test isolated prototype modules and document internal workings.</goal>
-        <step n="1" name="Refinement Loop">For each combination or assumption:
-            1. `CREATE` or `EDIT` prototype code to build isolated modules (strictly within `prototypes/MM-NN/`).
-            2. `EXECUTE` isolated test scripts (`prototypes/MM-NN/`) to expose and inspect internal workings without integrating into the main application.
-            3. `EDIT` the `Vertical Slice` immediately. Detail the exposed internal workings heavily under `## Guidelines for Implementation`, refine scenarios, and add deliverables to the `## Deliverables` section.
+        <goal>Iteratively build, integrate, and verify a single isolated prototype file.</goal>
+        <step n="1" name="Refinement Loop">
+            1. `CREATE` or `EDIT` a single prototype file (`prototypes/NN-{{feature}}.py`).
+            2. Implement "Zero-Touch" integration within the file. The script MUST import production components and subclass them to override behaviors or logic via DI overrides or monkey-patching. You MUST NOT modify `src/` or `tests/`.
+            3. Support two modes: an interactive Showcase mode (default) and a non-interactive Verification mode (via a flag like `--verify`).
+            4. `EXECUTE` the prototype with the verification flag. You MUST verify that the output confirms successful overrides and logic via internal assertions/logs.
         </step>
         <step n="2" name="Technical Roadblocks">If a prototype fails due to technical limitations, explicitly use `RESEARCH` to hunt for alternative APIs, libraries, or approaches.</step>
         <step n="3" name="Verification">Continue the loop until you have tested the necessary isolated combinations and the internal workings are deeply understood.</step>
       </phase>
 
-      <phase n="2" name="Scaffolding">
-        <goal>Integrate isolated modules using an external runner and prepare an evaluation harness for the user.</goal>
-        <step n="1" name="Zero-Touch Integration">All prototype logic, UI scaffolding, and integration MUST reside strictly within the `prototypes/MM-NN/` directory. You MUST NOT modify any files in `src/` or `tests/`. Instead, `CREATE` an external runner script in `prototypes/MM-NN/` that imports the required production components and subclasses them to override behaviors, UI elements, or logic. To route execution to your prototypes, dynamically override the Dependency Injection container in-memory or apply runtime monkey-patching solely within this external script.</step>
-        <step n="2" name="Assemble Evaluation Harness">Prepare a "Showcase". Isolate core logic in `prototypes/MM-NN/` alongside a `showcase.sh` entry point script that executes your external runner. The runner script MUST bootstrap the application using the subclassed components and self-populate in-memory test data. Do NOT mock internal systems. For backend tasks, output interactive logs/CLI.</step>
-        <step n="3" name="Sanity Check">Before prompting the user, you MUST run a non-interactive sanity check of your Evaluation Harness. `EXECUTE` the showcase command using the `Timeout: [seconds]` parameter (e.g., 5 seconds) to verify it compiles and runs without immediately crashing.</step>
-      </phase>
-
-      <phase n="3" name="Showcase Gate">
+      <phase n="2" name="Showcase Gate">
         <goal>Mandatory checkpoint to verify behavior with the user before finalizing the implementation plan.</goal>
-        <step n="1" name="Prompt for Feedback">Use `PROMPT` to present the Evaluation Harness for feedback. You MUST include a Markdown code block containing the exact copy-pasteable command to run the Showcase Runner. State your data-driven recommendation. You MUST NOT skip this step. You MUST halt and gain explicit user feedback on the UX, behavior, or business logic to de-risk the implementation before Phase 4 (Delta Analysis) begins.</step>
-        <step n="2" name="Handle Feedback">If the user requests changes or design iterations, return to Phase 1 or 2. After implementing changes, you MUST return to Step 1 of this phase to showcase the update and wait for explicit approval again. If a subsequent fix is rejected *for the same underlying reason*, halt, You MUST CREATE an MRE in `debug/`, document the failure in a new Case File, and `INVOKE` the Debugger.</step>
+        <step n="1" name="Prompt for Feedback">Use `PROMPT` to present the Evaluation Harness for feedback. You MUST include a Markdown code block containing the exact copy-pasteable command to run the Showcase Runner. State your data-driven recommendation. You MUST NOT skip this step. You MUST halt and gain explicit user feedback on the UX, behavior, or business logic to de-risk the implementation before Phase 3 (Delta Analysis) begins.</step>
+        <step n="2" name="Handle Feedback">If the user requests changes or design iterations, `EDIT` the `Vertical Slice` immediately to reflect the new or changed requirements, then return to Phase 1. After implementing changes, you MUST return to Step 1 of this phase to showcase the update and wait for explicit approval again.</step>
         <step n="3" name="Post-Debugger Verification">If control returns from the Debugger claiming a fix, you MUST immediately verify the prototype's behavior using the interactive showcase launcher. Then, you MUST return to Step 1 of this phase to gain explicit user approval before proceeding.</step>
       </phase>
 
-      <phase n="4" name="Delta Analysis">
+      <phase n="3" name="Delta Analysis">
         <goal>Analyze the prototype against the codebase to produce the final implementation plan and refine the architectural documents to match reality.</goal>
         <step n="1" name="Exhaustive Investigation">Perform an exhaustive investigation by `READ`ing ALL relevant source code files and the draft `Component Design Docs` linked in the slice's metadata.</step>
         <step n="2" name="Synthesize & Document Slice">Compare the prototype against the current codebase and `EDIT` the `## Delta Analysis` section of the `Vertical Slice` with your findings.</step>
         <step n="3" name="Refine Component Documentation">`EDIT` the draft `Component Design Docs` to reflect the validated reality of the prototype. Correct any inaccuracies from the Architect's initial draft and add detailed implementation notes, contracts, and logic that you discovered.</step>
       </phase>
 
-      <phase n="5" name="Finalization">
+      <phase n="4" name="Finalization">
         <goal>Perform a final polish of the Vertical Slice, tear down unapproved spikes, and prepare for handoff.</goal>
         <step n="1" name="Impact Audit & Consistency Check">
           Use `EXECUTE git grep` on target components. If a component has >1 consumer (excluding its own definition), categorize it as a Shared Seam. You MUST decompose the plan into smaller, atomic deliverables if >1 consumer, layer, or logical change is affected. For Shared Seams, you MUST partition the plan into a non-breaking sequence (Contract/Expansion -> Migration -> Cleanup/Contraction). Ensure the plan follows the Deliverable Dependency Sequence. Resolve hits for deleted/renamed components in documentation.
         </step>
         <step n="2" name="Finalize Guidelines">Capture the insights, technical decisions, and friction points discovered during prototyping and `EDIT` the `## Guidelines for Implementation` section to ensure it is a comprehensive, finalized strategy for the Developer.</step>
         <step n="3" name="Harvest Debt">If any `[DEBT]` (frictions or architectural opportunities) was logged during this turn, `EDIT` the active Milestone's (`docs/project/milestones/`) `## Technical Debt` section to append it as a checkmarkable `[ ]` task.</step>
-        <step n="4" name="Link Reference Material">`EDIT` the `Vertical Slice`'s `Metadata` section to explicitly link the preserved showcase script and prototype logic files.</step>
-        <step n="5" name="Cleanup">Delete any unapproved or broken spike files. You MUST preserve the showcase script and the approved prototype logic.</step>
+        <step n="4" name="Link Reference Material">`EDIT` the `Vertical Slice`'s `Metadata` section to explicitly link the single prototype file.</step>
+        <step n="5" name="Cleanup">Delete any unapproved or broken spike files. You MUST preserve the approved prototype file.</step>
         <step n="6" name="Status Update">`EDIT` the `Vertical Slice` to ensure its `Status:` is set to `Planned` before handoff.</step>
       </phase>
 
-      <phase n="6" name="Commit & Handoff">
+      <phase n="5" name="Commit & Handoff">
         <goal>Execute the commit following the VCP and pass all relevant Reference Files to the Developer.</goal>
         <step n="1" name="Version Control">Execute the commit following the VCP. Because you restored the application directories in the previous phase, a standard `git add .` will safely capture only your new `prototypes/` and updated `docs/`.</step>
         <step n="2" name="Handoff">Use `INVOKE` to delegate to the Developer, passing the finalized Vertical Slice and Prototype as reference.</step>
@@ -89,8 +83,7 @@ Mission: [Concise description of the behavioral prototyping goal]
 PHASES:
 - [✓ | ▶ |  ] Exploration
 - [✓ | ▶ |  ] Prototyping
-- [✓ | ▶ |  ] Scaffolding
-- [✓ | ▶ |  ] Showcase
+- [✓ | ▶ |  ] Showcase Gate
 - [✓ | ▶ |  ] Delta Analysis
 - [✓ | ▶ |  ] Finalization
 - [✓ | ▶ |  ] Commit & Handoff
@@ -376,7 +369,6 @@ Mission: De-risk the external API integration by prototyping key endpoints.
 PHASES:
 - [✓] Exploration
 - [▶] Prototyping
-- [ ] Scaffolding
 - [ ] Showcase Gate
 - [ ] Delta Analysis
 - [ ] Finalization
