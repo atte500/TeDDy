@@ -31,7 +31,7 @@ Feature: Pre-response Session Telemetry
 - [x] **Harness** - Update `MockLlmClient` in `tests/harness/setup/mocks.py` to support `get_context_window`.
 - [x] **Logic (Migration)** - Implement `get_context_window` in `LiteLLMAdapter` using `litellm.model_cost`.
 - [x] **Contract (Contraction)** - Make `get_context_window` abstract in `ILlmClient`.
-- [ ] **Logic** - Add telemetry display logic to `PlanningService.generate_plan`.
+- [x] **Logic** - Add telemetry display logic to `PlanningService.generate_plan`.
 - [ ] **Migration** - Update `SessionPlanner.trigger_new_plan` to no longer call telemetry display.
 - [ ] **Cleanup** - Remove `SessionPlanner._display_planning_telemetry` and related dead code.
 - [ ] **Wiring** - Verify end-to-end telemetry display in interactive session.
@@ -65,3 +65,9 @@ Feature: Pre-response Session Telemetry
 ### Harness
 - Updated `mock_llm_client` fixture in `tests/harness/setup/mocks.py` to return a default context window of `128000`.
 - Added `tests/suites/unit/test_llm_harness.py` to verify harness defaults.
+
+### Logic (PlanningService)
+- Implemented `_display_telemetry` to provide a unified telemetry block (Model, Context, Cost).
+- Added `_safe_float` utility to handle potential `MagicMock` or string leaks in telemetry calculations, ensuring the UI doesn't crash during edge cases or tests.
+- Integrated telemetry display into `generate_plan` immediately after tokenization and before the LLM retry loop.
+- Verified behavior with unit test `test_generate_plan_displays_telemetry_before_llm_call`.
