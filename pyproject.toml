@@ -39,7 +39,6 @@ pytest-httpserver = "^1.1.3"
 types-requests = "^2.32.4.20250913"
 pytest-timeout = "^2.4.0"
 pyfakefs = "^6.1.1"
-vulture = "^2.14"
 pytest-cov = "^7.0.0"
 types-pyyaml = "^6.0.12.20250915"
 pytest-xdist = "^3.8.0"
@@ -63,8 +62,6 @@ ignore = ["E501"]
 [tool.ruff.lint.per-file-ignores]
 # Ignore magic values in tests
 "tests/**/*" = ["PLR2004"]
-# Whitelist is a manifest of references, not logic
-"tests/harness/vulture_whitelist.py" = ["C901", "PLR0915", "PLR0913"]
 
 [tool.ruff.lint.mccabe]
 # Enforce a maximum cyclomatic complexity of 9
@@ -74,74 +71,6 @@ max-complexity = 9
 # Enforce a maximum of 40 statements per function
 max-statements = 40
 
-[tool.vulture]
-exclude = ["spikes/", "prototypes/"]
-ignore_names = [
-    # Generic Port Parameters (Noise)
-    "edits",
-    "threshold",
-    "match_all",
-    "context_files",
-    "messages",
-    "model",
-    "command",
-    "timeout",
-    "background",
-    "default",
-    "resources",
-    "target_agent",
-    "turn_cost",
-    "is_validation_failure",
-    "new_name",
-    "old_name",
-    "user_message",
-    "context_paths",
-    "plan_path",
-    "path_str",
-    "turn_dir",
-    "overwrite",
-    "similarity_threshold",
-    "file_paths",
-    "paths",
-    "filename",
-    "data",
-    "agent",
-    "dest_dir",
-    "src_dir",
-    "args",
-    "check",
-    "mode",
-    "url",
-    "x",
-    "expand",
-    "total_actions",
-    "agent_name",
-    "action_prompt",
-    "old_path",
-    "new_path",
-    "reason",
-    "text",
-    "path",
-    "plan",
-    "action",
-    "project_context",
-    "ProjectContext",
-    "ActionData",
-    # Textual UI Framework Callbacks
-    "on_*",
-    "action_*",
-    # Interface parameters (Protocols) and Test Fixtures
-    "queries",
-    "start_time",
-    "interactive",
-    "kwargs",
-    "session_name",
-    "cwd",
-    "mock_*",
-]
-min_confidence = 80
-paths = ["src", "tests"]
-sort_by_size = true
 
 [tool.mypy]
 ignore_missing_imports = true

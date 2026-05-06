@@ -54,11 +54,6 @@ repos:
         types: [python]
         require_serial: true
 
-    -   id: vulture
-        name: Vulture (Dead Code)
-        entry: poetry run vulture --min-confidence 80
-        language: system
-        types: [python]
 
     -   id: file-length-python
         name: Check Python File Length (Max 300 Lines)

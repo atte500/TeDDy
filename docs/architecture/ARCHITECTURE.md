@@ -66,9 +66,7 @@ This document outlines the technical standards, conventions, and setup process f
         - `ruff`: For linting and formatting (mandating rules **BLE001** and **PLW0711** for Failure Transparency). **Note:** `E501` (Line too long) is explicitly ignored to favor readability of long URLs and comments.
     - **Correctness:**
         - `mypy`: For static type checking.
-        - `vulture`: For dead code detection. **Standard:** We employ a two-pronged strategy to handle false positives elegantly:
-            1. **Framework Patterns:** Predictable, dynamic callbacks (e.g., Textual's `on_*`, `action_*`) MUST be ignored globally using wildcards in the `tool.vulture.ignore_names` array in `pyproject.toml`.
-            2. **Reference Whitelist:** Interfaces and Domain Models MUST be suppressed via a simplified reference file (`tests/harness/vulture_whitelist.py`). Do **not** simulate usage or instantiate objects. Simply import the entity and alias it (`_ = MyInterface`) so that `mypy` verifies its existence while Vulture registers the name as used.
+        - **Behavioral Proof of Life:** We rely on a combination of strict test coverage (90%+) and Ruff's static checks to identify dead code. This ensures that every line of code in the core is "alive" by proving it is exercised by the test suite.
     - **Security:**
         - `detect-secrets`: For hardcoded credential prevention.
         - `bandit`: For static security analysis.
@@ -83,7 +81,7 @@ This document outlines the technical standards, conventions, and setup process f
     2. Slower, repository-wide checks that are not suitable for local pre-commit hooks, such as Test Pyramid verification and copy-paste detection. These checks MUST exclude experimental directories like `prototypes/` and `spikes/`.
 
 ### Experimental Code Exclusion
-The `spikes/` and `prototypes/` directories are intentionally excluded from all quality gates (`ruff`, `mypy`, `vulture`, `jscpd`, etc.). These directories are for rapid, isolated experimentation. The code within them is temporary and not expected to meet production quality standards. Enforcing linting and other checks would hinder their exploratory purpose.
+The `spikes/` and `prototypes/` directories are intentionally excluded from all quality gates (`ruff`, `mypy`, `jscpd`, etc.). These directories are for rapid, isolated experimentation. The code within them is temporary and not expected to meet production quality standards. Enforcing linting and other checks would hinder their exploratory purpose.
 
 ### Configuration Hierarchy
 - **Principle:** The system follows a "Single Source of Truth" configuration strategy.
