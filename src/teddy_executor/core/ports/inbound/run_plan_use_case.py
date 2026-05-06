@@ -1,6 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from teddy_executor.core.domain.models import ExecutionReport, Plan
+
+if TYPE_CHECKING:
+    from teddy_executor.core.domain.models.project_context import ProjectContext
 
 
 class IRunPlanUseCase(ABC):
@@ -9,13 +12,14 @@ class IRunPlanUseCase(ABC):
     """
 
     @abstractmethod
-    def execute(
+    def execute(  # noqa: PLR0913
         self,
         plan: Optional[Plan] = None,
         plan_content: Optional[str] = None,
         plan_path: Optional[str] = None,
         interactive: bool = True,
         message: Optional[str] = None,
+        project_context: Optional["ProjectContext"] = None,
     ) -> ExecutionReport:
         """
         Executes a plan and returns a report.
@@ -26,8 +30,10 @@ class IRunPlanUseCase(ABC):
             plan_path: Path to a plan file on disk.
             interactive: A flag to enable/disable step-by-step user approval.
             message: Optional user instruction to include in the report.
+            project_context: Optional context metadata for display and auto-pruning.
         """
-        pass
+        _ = (plan, plan_content, plan_path, interactive, message, project_context)
+        raise NotImplementedError
 
     @abstractmethod
     def resume(
@@ -35,6 +41,7 @@ class IRunPlanUseCase(ABC):
         session_name: str,
         interactive: bool = True,
         message: Optional[str] = None,
+        project_context: Optional["ProjectContext"] = None,
     ) -> Optional[ExecutionReport]:
         """
         Intelligently resumes the session based on its state.
@@ -44,4 +51,5 @@ class IRunPlanUseCase(ABC):
             interactive: Whether to run in interactive mode.
             message: Optional user instruction to bridge to the next turn.
         """
-        pass
+        _ = (session_name, interactive, message, project_context)
+        raise NotImplementedError

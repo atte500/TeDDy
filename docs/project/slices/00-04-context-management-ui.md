@@ -36,7 +36,7 @@ And files in the session context are never struck through automatically
 - [x] **Contract** - Implement `ContextItem` DTO and update `ProjectContext` model.
 - [x] **Contract** - Add `auto_pruning` default settings to `config.yaml`.
 - [x] **Contract** - Update `IPlanReviewer.review` signature to accept `project_context`.
-- [ ] **Refactor** - Update `ConsolePlanReviewer` and `ExecutionOrchestrator` for `IPlanReviewer` signature expansion.
+- [x] **Refactor** - Update `ConsolePlanReviewer` and `ExecutionOrchestrator` for `IPlanReviewer` signature expansion.
 - [ ] **Logic** - Update `ContextService` to build `ContextItem` list with git status and tokens.
 - [ ] **Logic** - Implement auto-pruning heuristics in `SessionOrchestrator`.
 - [ ] **UI** - Implement "Session Context" tree population in `TextualPlanReviewer`.

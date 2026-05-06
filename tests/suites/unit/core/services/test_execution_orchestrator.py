@@ -203,7 +203,8 @@ def test_aborted_plan_preserves_manually_executed_logs(env, mock_plan_reviewer):
     action2 = ActionData(type="READ", params={"file": "bar.txt"}, description="Act 2")
     plan = Plan(title="Test Plan", rationale="Test", actions=[action1, action2])
 
-    def mock_review_side_effect(p: Plan) -> None:
+    def mock_review_side_effect(p: Plan, **kwargs) -> None:
+        _ = kwargs
         # Simulate manual execution of action 1 before quitting
         act = p.actions[0]
         act.executed = True

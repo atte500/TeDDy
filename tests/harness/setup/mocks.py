@@ -108,7 +108,7 @@ def mock_plan_reviewer(container):
 
     mock = register_mock(container, IPlanReviewer)
     # Default pass-through behavior for review methods
-    mock.review.side_effect = lambda p: p
+    mock.review.side_effect = lambda p, **kwargs: p
     # Default to auto-approving in tests with an empty captured message
     mock.review_action.return_value = (True, "")
 

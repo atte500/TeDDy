@@ -40,7 +40,7 @@ class TextualPlanReviewer(IPlanReviewer):
         """
         Initiates the interactive review process using the Textual TUI.
         """
-        return self._run_app(plan)
+        return self._run_app(plan, project_context=project_context)
 
     def review_action(
         self,
@@ -55,7 +55,9 @@ class TextualPlanReviewer(IPlanReviewer):
         _ = agent_name  # Mark as used for vulture
         return True, ""
 
-    def _run_app(self, plan: Plan) -> Optional[Plan]:
+    def _run_app(
+        self, plan: Plan, project_context: Optional[ProjectContext] = None
+    ) -> Optional[Plan]:
         """
         Internal helper to launch the Textual app.
         Separated to allow for easier testing and mocking.
@@ -66,6 +68,7 @@ class TextualPlanReviewer(IPlanReviewer):
             console_tooling=self._console_tooling,
             action_dispatcher=self._action_dispatcher,
             file_system=self._file_system,
+            project_context=project_context,
         )
         result = app.run()
         if os.getenv("TEDDY_DEBUG") and result:

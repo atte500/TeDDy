@@ -36,6 +36,7 @@ logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from teddy_executor.core.domain.models.plan import Plan
+    from teddy_executor.core.domain.models.project_context import ProjectContext
     from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
     from teddy_executor.core.ports.outbound.file_system_manager import (
         IFileSystemManager,
@@ -75,16 +76,18 @@ class ReviewerApp(App):
 
     CSS = TUI_CSS
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         plan: Plan,
         system_env: ISystemEnvironment,
         console_tooling: ConsoleToolingHelper,
         action_dispatcher: ActionDispatcher,
         file_system: Optional[IFileSystemManager] = None,
+        project_context: Optional[ProjectContext] = None,
     ):
         super().__init__()
         self.plan = plan
+        self.project_context = project_context
         self._system_env = system_env
         self._console_tooling = console_tooling
         self._action_dispatcher = action_dispatcher
@@ -162,13 +165,7 @@ class ReviewerApp(App):
         for action in self.plan.actions:
             self._harvest_action_content(action)
 
-        if self._user_message_cache is not None:
-            marker = self.INSTRUCTION_MARKER.strip()
-            if marker in self._user_message_cache:
-                final_message: str = self._user_message_cache.split(marker)[0].strip()
-            else:
-                final_message = self._user_message_cache.strip()
-            self.plan.metadata["user_request"] = final_message
+        self._finalize_user_message()
 
         for f in getattr(self, "_log_preview_files", []):
             try:
@@ -181,13 +178,7 @@ class ReviewerApp(App):
     def action_cancel(self) -> None:
         """Exit the app and return None (cancellation)."""
         # Harvest message even on cancel so it can be propagated to the abort report
-        if self._user_message_cache is not None:
-            marker = self.INSTRUCTION_MARKER.strip()
-            if marker in self._user_message_cache:
-                final_message: str = self._user_message_cache.split(marker)[0].strip()
-            else:
-                final_message = self._user_message_cache.strip()
-            self.plan.metadata["user_request"] = final_message
+        self._finalize_user_message()
 
         # Cleanup any pending temp files
         for action in self.plan.actions:
@@ -297,3 +288,11 @@ class ReviewerApp(App):
         )
 
         harvest_action_content(action, self.INSTRUCTION_MARKER)
+
+    def _finalize_user_message(self) -> None:
+        """Extracts final message from cache, stripping marker."""
+        if self._user_message_cache is None:
+            return
+        marker = self.INSTRUCTION_MARKER.strip()
+        msg = self._user_message_cache
+        self.plan.metadata["user_request"] = msg.split(marker)[0].strip()

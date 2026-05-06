@@ -40,7 +40,12 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         self._report_assembler = report_assembler
         self._plan_reviewer = plan_reviewer
 
-    def _perform_interactive_review(self, plan: Plan, interactive: bool) -> Plan | None:
+    def _perform_interactive_review(
+        self,
+        plan: Plan,
+        interactive: bool,
+        project_context: Optional[Any] = None,
+    ) -> Plan | None:
         """Allows the user to review and modify the plan before execution."""
         # Scenario: Universal PROMPT Auto-Execution
         # Single PROMPT actions bypass approval for fluid conversation.
@@ -49,7 +54,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
 
         # We only call the bulk review (TUI) if interactive is True AND a reviewer is present.
         if interactive and self._plan_reviewer:
-            return self._plan_reviewer.review(plan)
+            return self._plan_reviewer.review(plan, project_context=project_context)
         return plan
 
     def _process_plan_actions(self, plan: Plan, interactive: bool) -> list[ActionLog]:
@@ -226,13 +231,14 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             report, run_summary=replace(report.run_summary, status=RunStatus.ABORTED)
         )
 
-    def execute(
+    def execute(  # noqa: PLR0913
         self,
         plan: Optional[Plan] = None,
         plan_content: Optional[str] = None,
         plan_path: Optional[str] = None,
         interactive: bool = True,
         message: Optional[str] = None,
+        project_context: Optional[Any] = None,
     ) -> ExecutionReport:
         import os
 
@@ -252,7 +258,9 @@ class ExecutionOrchestrator(IRunPlanUseCase):
                     validation_errors=validation_errors,
                 )
 
-            reviewed_plan = self._perform_interactive_review(plan, interactive)
+            reviewed_plan = self._perform_interactive_review(
+                plan, interactive, project_context=project_context
+            )
             if reviewed_plan is None:
                 return self._handle_aborted_execution(plan, start_time, message)
 
@@ -276,6 +284,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         _session_name: str,
         interactive: bool = True,
         message: Optional[str] = None,
+        project_context: Optional[Any] = None,
     ) -> Optional[ExecutionReport]:
         """Stateless orchestrator does not support session resumption."""
         raise NotImplementedError(

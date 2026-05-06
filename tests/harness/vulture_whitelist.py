@@ -80,6 +80,7 @@ _methods = (
     ISessionRepository.create_turn_directory,
     IPlanValidator.validate,
     IRunPlanUseCase.execute,
+    IRunPlanUseCase.resume,
     IPlanReviewer.review,
     IPlanReviewer.review_action,
 )
