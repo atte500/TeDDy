@@ -32,13 +32,17 @@ And files in the session context are never struck through automatically
 
 ## Deliverables
 - [x] **Contract** - Add `get_text_token_count` to `ILlmClient`.
-- [ ] **Logic** - Implement `get_text_token_count` in `LiteLLMAdapter`.
+- [x] **Logic** - Implement `get_text_token_count` in `LiteLLMAdapter`.
 
 ## Implementation Notes
 ### Contract - Add get_text_token_count to ILlmClient
 - Expanded `ILlmClient` with `get_text_token_count(text, model)`.
 - Implemented as a non-breaking Expansion (throwing `NotImplementedError`) to allow incremental adapter updates without breaking the DI container.
 - Added signature verification to `tests/suites/unit/core/ports/outbound/test_llm_client_contract.py`.
+
+### Logic - Implement get_text_token_count in LiteLLMAdapter
+- Overrode `get_text_token_count` in `LiteLLMAdapter` using `litellm.token_counter(text=text, ...)`.
+- Refactored model resolution logic into a private `_resolve_model` helper to ensure consistency across `get_token_count`, `get_text_token_count`, and `get_context_window`.
 - [ ] **Contract** - Implement `ContextItem` DTO and update `ProjectContext` model.
 - [ ] **Contract** - Add `auto_pruning` default settings to `config.yaml`.
 - [ ] **Contract** - Update `IPlanReviewer.review` signature to accept `project_context`.

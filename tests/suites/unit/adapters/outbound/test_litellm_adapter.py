@@ -149,3 +149,33 @@ def test_get_context_window_retrieves_from_litellm_cost(mock_config):
     # 4. Config resolution
     assert adapter.get_context_window() == 128000
     mock_config.get_setting.assert_called_with("llm.model")
+
+
+def test_get_text_token_count_calls_litellm_token_counter(mock_config):
+    # Arrange
+    mock_config.get_setting.return_value = "gpt-4o"
+    litellm.token_counter.return_value = 42
+    adapter = LiteLLMAdapter(mock_config)
+    text = "Hello world"
+    model = "gpt-3.5-turbo"
+
+    # Act
+    count = adapter.get_text_token_count(text, model=model)
+
+    # Assert
+    assert count == 42
+    litellm.token_counter.assert_called_once_with(model=model, text=text)
+
+
+def test_get_text_token_count_uses_config_model_fallback(mock_config):
+    # Arrange
+    mock_config.get_setting.return_value = "config-model"
+    litellm.token_counter.return_value = 10
+    adapter = LiteLLMAdapter(mock_config)
+    text = "Some text"
+
+    # Act
+    adapter.get_text_token_count(text)
+
+    # Assert
+    litellm.token_counter.assert_called_once_with(model="config-model", text=text)

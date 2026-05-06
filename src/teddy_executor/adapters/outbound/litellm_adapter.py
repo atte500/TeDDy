@@ -28,6 +28,14 @@ class LiteLLMAdapter(ILlmClient):
         litellm_module.suppress_debug_info = True
         logging.getLogger("LiteLLM").setLevel(logging.WARNING)
 
+    def _resolve_model(self, model_override: Optional[str] = None) -> str:
+        """Resolves the model name from override, config, or default."""
+        resolved = model_override or self._config_service.get_setting("llm.model")
+        if not resolved:
+            # Fallback to a common encoding if no model is known yet
+            resolved = "gpt-4o"
+        return str(resolved)
+
     def get_completion(
         self, messages: List[Dict[str, str]], model: Optional[str] = None, **kwargs: Any
     ) -> Any:
@@ -79,13 +87,17 @@ class LiteLLMAdapter(ILlmClient):
         """Calculates the number of tokens in the payload."""
         import litellm
 
-        resolved_model = model or self._config_service.get_setting("llm.model")
-        if not resolved_model:
-            # Fallback to a common encoding if no model is known yet
-            resolved_model = "gpt-4o"
-
+        resolved_model = self._resolve_model(model)
         self._ensure_silence(litellm)
-        return litellm.token_counter(model=str(resolved_model), messages=messages)
+        return litellm.token_counter(model=resolved_model, messages=messages)
+
+    def get_text_token_count(self, text: str, model: Optional[str] = None) -> int:
+        """Calculates the number of tokens for a raw string."""
+        import litellm
+
+        resolved_model = self._resolve_model(model)
+        self._ensure_silence(litellm)
+        return litellm.token_counter(model=resolved_model, text=text)
 
     def get_completion_cost(self, completion_response: Any) -> float:
         """Calculates the precise USD cost of a completion response."""
