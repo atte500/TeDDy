@@ -86,11 +86,13 @@ async def launch_editor(
 
     if mock_out:
         handle_mock_editor(temp_file, mock_out)
-        return await _confirm_and_harvest(
-            app, temp_file, initial_content, is_temp, skip_confirm=skip_confirm
+        confirmed = (
+            True
+            if app.is_headless or skip_confirm
+            else await app.push_screen_wait(ConfirmScreen())
         )
+        return mock_out if confirmed else None
 
-    is_temp = persistent_path is None
     try:
         if is_temp or (
             not os.path.exists(temp_file) or os.path.getsize(temp_file) == 0
