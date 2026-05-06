@@ -110,10 +110,12 @@ And files in the session context are never struck through automatically
 - **Failure Heuristics:**
     - **Non-Green State:** Parse plan headers in `turn.context` for `Status: ... 🔴` or `Status: ... 🟡`. If found, prune the *preceding* turn's artifacts.
     - **Validation Failure:** Check report files in `turn.context` for the string `Status: Validation Failed`. If found, prune that report and its plan.
+    - **Deleted File:** Check `ContextItem.git_status` for `D`. If found, prune the item.
 - **Auto-Prune Reasons:** Use the following standardized strings for the `auto_prune_reason` metadata:
     - `Pruned to fit context budget`
     - `Plan failed validation`
     - `Pruned as it led to a non-green state`
+    - `File deleted from disk`
 - **Dynamic UI Logic:** Every toggle of a context item MUST trigger a recalculation and refresh of the `ContextAggregateDetail` view.
 - **Context Management Tree:**
     - Use a flat tree structure with leaf-only label nodes (`SYSTEM_LABEL`, `SESSION_LABEL`, `TURN_LABEL`) as siblings under the root.

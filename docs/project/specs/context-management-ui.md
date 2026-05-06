@@ -39,3 +39,5 @@ Auto-pruning evaluates files *before* rendering the TUI, setting their `is_auto_
     - **Reason:** `Pruned as it led to a non-green state`
 4. **Validation Failure Heuristic:** If a report file (`turn-N-report.md`) in `turn.context` contains `Status: Validation Failed`, prune both that report and its corresponding plan (`turn-N-plan.md`).
     - **Reason:** `Plan failed validation`
+5. **Deleted File Heuristic:** If a file in the context has a git status of `D` (Deleted), it MUST be auto-pruned.
+    - **Reason:** `File deleted from disk`
