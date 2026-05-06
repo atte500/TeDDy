@@ -22,7 +22,7 @@ This document outlines the technical standards, conventions, and setup process f
 - **Triggers:** On every push to the `main` branch.
 - **Pipeline:** The CI pipeline executes two parallel jobs:
     1.  **Test Suite (Blocking):** A multi-OS matrix (Ubuntu, macOS, Windows) running the full `pytest` suite. Failures here block merges.
-    2.  **Quality Checks (Non-Blocking):** Runs the full `pre-commit` suite (excluding tests) on Ubuntu. Configured with `continue-on-error: true` to surface technical debt (linting, complexity, security) without halting development velocity.
+    2.  **Quality Checks (Non-Blocking):** Runs the full `pre-commit` suite (excluding tests) on Ubuntu. Configured with `continue-on-error: true` to surface technical debt (linting, complexity, security) without halting development velocity. Repository-wide scans MUST explicitly exclude experimental sandboxes and non-source/dependency directories (e.g., `.venv/`, `node_modules/`, `.git/`).
 
 ### Service Layer Naming Convention
 - **Dependency Attributes:** Injected dependencies in the core application services (`src/teddy_executor/core/services/`) MUST be private.
@@ -78,7 +78,7 @@ This document outlines the technical standards, conventions, and setup process f
 - **Goal:** To provide a comprehensive, automated quality gate that protects the main branch.
 - **Principle:** The CI pipeline runs checks in two categories:
     1. The full `pre-commit` suite (using `--all-files`) to verify global compatibility and system health.
-    2. Slower, repository-wide checks that are not suitable for local pre-commit hooks, such as Test Pyramid verification and copy-paste detection. These checks MUST exclude experimental directories like `prototypes/` and `spikes/`.
+    2. Slower, repository-wide checks that are not suitable for local pre-commit hooks, such as Test Pyramid verification and copy-paste detection. These checks MUST explicitly exclude experimental sandboxes (e.g., `prototypes/`, `spikes/`) and non-source/dependency directories (e.g., `.venv/`, `node_modules/`, `.git/`).
 
 ### Experimental Code Exclusion
 The `spikes/` and `prototypes/` directories are intentionally excluded from all quality gates (`ruff`, `mypy`, `jscpd`, etc.). These directories are for rapid, isolated experimentation. The code within them is temporary and not expected to meet production quality standards. Enforcing linting and other checks would hinder their exploratory purpose.
