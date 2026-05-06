@@ -33,7 +33,7 @@ And files in the session context are never struck through automatically
 ## Deliverables
 - [x] **Contract** - Add `get_text_token_count` to `ILlmClient`.
 - [x] **Logic** - Implement `get_text_token_count` in `LiteLLMAdapter`.
-- [ ] **Contract** - Implement `ContextItem` DTO and update `ProjectContext` model.
+- [x] **Contract** - Implement `ContextItem` DTO and update `ProjectContext` model.
 - [ ] **Contract** - Add `auto_pruning` default settings to `config.yaml`.
 - [ ] **Contract** - Update `IPlanReviewer.review` signature to accept `project_context`.
 - [ ] **Refactor** - Update `ConsolePlanReviewer` and `ExecutionOrchestrator` for `IPlanReviewer` signature expansion.
@@ -55,6 +55,12 @@ And files in the session context are never struck through automatically
 ### Logic - Implement get_text_token_count in LiteLLMAdapter
 - Overrode `get_text_token_count` in `LiteLLMAdapter` using `litellm.token_counter(text=text, ...)`.
 - Refactored model resolution logic into a private `_resolve_model` helper to ensure consistency across `get_token_count`, `get_text_token_count`, and `get_context_window`.
+
+### Contract - Implement ContextItem DTO and update ProjectContext model
+- Introduced `ContextItem` dataclass for granular context file metadata (tokens, git status, scope, selection state).
+- Expanded `ProjectContext` with `items`, `agent_name`, `system_prompt_tokens`, and `total_window`.
+- Maintained backward compatibility via `field(default_factory=...)` for collection types and default literals for primitives.
+- Verified immutability via `frozen=True` in unit tests.
 
 ## Delta Analysis
 - **Domain Models:**

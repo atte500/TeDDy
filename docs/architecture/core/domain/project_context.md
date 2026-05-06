@@ -22,7 +22,12 @@ The `ProjectContext` model will be implemented as a Python `@dataclass`. This pr
 ### `ProjectContext` Dataclass Attributes
 -   **`header` (`str`):** A pre-formatted string containing high-level system information (CWD, OS, etc.).
 -   **`content` (`str`):** A pre-formatted string containing the repository file tree and the contents of all requested files from the context vault.
+-   **`scoped_paths` (`Dict[str, List[str]]`):** A mapping of scope names to lists of file paths.
+-   **`git_status` (`Optional[str]`):** The raw output of `git status -s`.
 -   **`items` (`List[ContextItem]`):** A structured list of context files and their metadata for UI presentation.
+-   **`agent_name` (`str`):** The name of the active agent persona.
+-   **`system_prompt_tokens` (`int`):** The estimated token size of the agent's system prompt.
+-   **`total_window` (`int`):** The total context window (input limit) for the model in use.
 
 ### Preconditions
 - All attributes (`header`, `content`) must be non-empty strings.
