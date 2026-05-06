@@ -1,6 +1,9 @@
 from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
 
 
+import inspect
+
+
 def test_iplan_reviewer_defines_required_methods():
     """
     Verifies that IPlanReviewer Protocol defines the required methods.
@@ -8,6 +11,12 @@ def test_iplan_reviewer_defines_required_methods():
     assert hasattr(IPlanReviewer, "review"), "IPlanReviewer must define review"
     assert hasattr(IPlanReviewer, "review_action"), (
         "IPlanReviewer must define review_action"
+    )
+
+    # Verify review signature
+    sig = inspect.signature(IPlanReviewer.review)
+    assert "project_context" in sig.parameters, (
+        "IPlanReviewer.review must accept project_context"
     )
 
 

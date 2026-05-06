@@ -15,10 +15,12 @@ from mistletoe.block_token import Document
 
 # 2. Domain Models
 from teddy_executor.core.domain.models.plan import Plan, ActionData
+from teddy_executor.core.domain.models.project_context import ProjectContext
 from teddy_executor.core.domain.models.planning_ports import SessionPorts
 
 # 3. Ports & Services
 from teddy_executor.core.ports.inbound.edit_simulator import IEditSimulator
+from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
 from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
 from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
@@ -41,8 +43,10 @@ _models = (
     Document,
     Plan,
     ActionData,
+    ProjectContext,
     SessionPorts,
     IEditSimulator,
+    IPlanReviewer,
     IPlanValidator,
     IPlanningUseCase,
     IRunPlanUseCase,
@@ -76,6 +80,8 @@ _methods = (
     ISessionRepository.create_turn_directory,
     IPlanValidator.validate,
     IRunPlanUseCase.execute,
+    IPlanReviewer.review,
+    IPlanReviewer.review_action,
 )
 
 

@@ -7,6 +7,7 @@ if TYPE_CHECKING:
         Plan,
         ActionData,
     )
+    from teddy_executor.core.domain.models.project_context import ProjectContext
     from teddy_executor.core.ports.outbound import (
         IUserInteractor,
         IFileSystemManager,
@@ -37,7 +38,9 @@ class ConsolePlanReviewer(IPlanReviewer):
             file_system_manager, config_service, edit_simulator
         )
 
-    def review(self, plan: "Plan") -> Optional["Plan"]:
+    def review(
+        self, plan: "Plan", project_context: Optional["ProjectContext"] = None
+    ) -> Optional["Plan"]:
         """
         Prints the plan header and returns immediately to proceed to actions.
         """

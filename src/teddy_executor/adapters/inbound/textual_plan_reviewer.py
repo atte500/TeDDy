@@ -9,6 +9,7 @@ from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
 if TYPE_CHECKING:
     from teddy_executor.adapters.outbound.console_tooling import ConsoleToolingHelper
     from teddy_executor.core.domain.models.plan import ActionData, Plan
+    from teddy_executor.core.domain.models.project_context import ProjectContext
     from teddy_executor.core.ports.outbound.file_system_manager import (
         IFileSystemManager,
     )
@@ -33,7 +34,9 @@ class TextualPlanReviewer(IPlanReviewer):
         self._console_tooling = console_tooling
         self._action_dispatcher = action_dispatcher
 
-    def review(self, plan: Plan) -> Optional[Plan]:
+    def review(
+        self, plan: Plan, project_context: Optional[ProjectContext] = None
+    ) -> Optional[Plan]:
         """
         Initiates the interactive review process using the Textual TUI.
         """

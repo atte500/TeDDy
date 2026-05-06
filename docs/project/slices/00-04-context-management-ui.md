@@ -35,7 +35,7 @@ And files in the session context are never struck through automatically
 - [x] **Logic** - Implement `get_text_token_count` in `LiteLLMAdapter`.
 - [x] **Contract** - Implement `ContextItem` DTO and update `ProjectContext` model.
 - [x] **Contract** - Add `auto_pruning` default settings to `config.yaml`.
-- [ ] **Contract** - Update `IPlanReviewer.review` signature to accept `project_context`.
+- [x] **Contract** - Update `IPlanReviewer.review` signature to accept `project_context`.
 - [ ] **Refactor** - Update `ConsolePlanReviewer` and `ExecutionOrchestrator` for `IPlanReviewer` signature expansion.
 - [ ] **Logic** - Update `ContextService` to build `ContextItem` list with git status and tokens.
 - [ ] **Logic** - Implement auto-pruning heuristics in `SessionOrchestrator`.
@@ -66,6 +66,12 @@ And files in the session context are never struck through automatically
 - Defined `auto_pruning` block in `src/teddy_executor/resources/config/config.yaml` with keys for `enabled`, `global_context_threshold`, `prune_preceding_on_non_green`, and `prune_validation_failures`.
 - Sanitized `config.yaml` by removing `# pragma: allowlist secret` and setting the placeholder `api_key` to an empty string.
 - Updated `tests/suites/unit/adapters/outbound/test_yaml_config_adapter.py` to verify the baseline contract using `fs.add_real_file` to map the actual bundled resource into the fake filesystem.
+
+### Contract - Update IPlanReviewer.review signature to accept project_context
+- Expanded `IPlanReviewer.review` signature to include `project_context: Optional["ProjectContext"] = None`.
+- Used `TYPE_CHECKING` guard in the protocol file to avoid circular imports with the domain model.
+- Verified the contract via `inspect.signature` in `tests/suites/unit/core/ports/inbound/test_plan_reviewer_contract.py`.
+- Confirmed backward compatibility for existing implementations (`ConsolePlanReviewer`, `TextualPlanReviewer`) via global test suite execution.
 
 ## Delta Analysis
 - **Domain Models:**
