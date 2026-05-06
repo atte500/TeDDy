@@ -31,70 +31,106 @@ class ContextService(IGetContextUseCase):
         self._llm_client = llm_client
 
     def get_context(
-        self, context_files: Optional[Dict[str, Sequence[str]]] = None
+        self,
+        context_files: Optional[Dict[str, Sequence[str]]] = None,
+        include_tokens: bool = True,
     ) -> ProjectContext:
         """
         Gathers all project context information by orchestrating its dependencies.
         """
-        # Gather all information from outbound ports
         system_info = self._environment_inspector.get_environment_info()
         git_status = self._environment_inspector.get_git_status()
         repo_tree = self._repo_tree_generator.generate_tree()
 
-        scoped_paths: Dict[str, List[str]] = {}
-        all_resolved_paths: List[str] = []
-
-        if context_files:
-            # Backward compatibility: handle list of files by wrapping in 'Default' scope
-            if isinstance(context_files, list):
-                context_files = {"Default": context_files}
-
-            for scope, files in context_files.items():
-                paths = self._file_system_manager.resolve_paths_from_files(files)
-                scoped_paths[scope] = paths
-                for p in paths:
-                    if p not in all_resolved_paths:
-                        all_resolved_paths.append(p)
-        else:
-            all_resolved_paths = self._file_system_manager.get_context_paths()
-            scoped_paths["Default"] = all_resolved_paths
-
+        scoped_paths, all_resolved_paths = self._resolve_scoped_paths(context_files)
         file_contents = self._file_system_manager.read_files_in_vault(
             all_resolved_paths
         )
 
-        header = self._format_header(system_info)
-        content = self._format_content(
-            repo_tree, scoped_paths, file_contents, git_status
+        return ProjectContext(
+            header=self._format_header(system_info),
+            content=self._format_content(
+                repo_tree, scoped_paths, file_contents, git_status
+            ),
+            scoped_paths=scoped_paths,
+            git_status=git_status,
+            items=self._collect_items(
+                scoped_paths, file_contents, git_status, include_tokens
+            ),
         )
 
-        # Build ContextItem list
-        parsed_status = self._parse_git_status(git_status)
-        items: List[ContextItem] = []
+    def _resolve_scoped_paths(
+        self, context_files: Optional[Dict[str, Sequence[str]]]
+    ) -> tuple[Dict[str, List[str]], List[str]]:
+        """Resolves raw context files into scoped and deduplicated absolute paths."""
+        if not context_files:
+            all_paths = self._file_system_manager.get_context_paths()
+            return {"Default": all_paths}, all_paths
 
+        # Backward compatibility: handle list of files
+        if isinstance(context_files, list):
+            context_files = {"Default": context_files}
+
+        scoped_paths: Dict[str, List[str]] = {}
+        all_resolved_paths: List[str] = []
+
+        for scope, files in context_files.items():
+            paths = self._file_system_manager.resolve_paths_from_files(files)
+            scoped_paths[scope] = paths
+            for p in paths:
+                if p not in all_resolved_paths:
+                    all_resolved_paths.append(p)
+
+        return scoped_paths, all_resolved_paths
+
+    def _collect_items(
+        self,
+        scoped_paths: Dict[str, List[str]],
+        file_contents: Dict[str, Optional[str]],
+        git_status: Optional[str],
+        include_tokens: bool,
+    ) -> List[ContextItem]:
+        """Orchestrates the assembly of ContextItem metadata DTOs."""
+        parsed_status = self._parse_git_status(git_status)
+        path_to_tokens = self._get_path_to_tokens(
+            scoped_paths, file_contents, include_tokens
+        )
+
+        items: List[ContextItem] = []
         for scope, paths in scoped_paths.items():
             for path in paths:
-                file_text = file_contents.get(path) or ""
-                token_count = self._llm_client.get_text_token_count(file_text)
-                status_code = parsed_status.get(path, "")
-
                 items.append(
                     ContextItem(
                         path=path,
-                        token_count=token_count,
-                        git_status=status_code,
+                        token_count=path_to_tokens.get(path, 0),
+                        git_status=parsed_status.get(path, ""),
                         scope=scope,
                     )
                 )
+        return items
 
-        # Assemble and return the DTO
-        return ProjectContext(
-            header=header,
-            content=content,
-            scoped_paths=scoped_paths,
-            git_status=git_status,
-            items=items,
-        )
+    def _get_path_to_tokens(
+        self,
+        scoped_paths: Dict[str, List[str]],
+        file_contents: Dict[str, Optional[str]],
+        include_tokens: bool,
+    ) -> Dict[str, int]:
+        """Calculates token counts for all unique files in parallel if requested."""
+        if not include_tokens:
+            return {}
+
+        unique_paths = set()
+        for paths in scoped_paths.values():
+            unique_paths.update(paths)
+
+        from concurrent.futures import ThreadPoolExecutor
+
+        def count_tokens(path: str) -> int:
+            content = file_contents.get(path) or ""
+            return self._llm_client.get_text_token_count(content)
+
+        with ThreadPoolExecutor() as executor:
+            return dict(zip(unique_paths, executor.map(count_tokens, unique_paths)))
 
     def _parse_git_status(self, git_status: Optional[str]) -> Dict[str, str]:
         """Parses git status -s output into a map of path -> status code."""

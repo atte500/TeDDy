@@ -9,7 +9,9 @@ class IGetContextUseCase(Protocol):
     """
 
     def get_context(
-        self, context_files: Optional[Dict[str, Sequence[str]]] = None
+        self,
+        context_files: Optional[Dict[str, Sequence[str]]] = None,
+        include_tokens: bool = True,
     ) -> ProjectContext:
         """
         Gathers all project context information.

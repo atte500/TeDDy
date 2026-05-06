@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 import pytest
 import litellm
 
@@ -151,31 +151,39 @@ def test_get_context_window_retrieves_from_litellm_cost(mock_config):
     mock_config.get_setting.assert_called_with("llm.model")
 
 
-def test_get_text_token_count_calls_litellm_token_counter(mock_config):
+def test_get_text_token_count_calls_tiktoken(mock_config):
     # Arrange
     mock_config.get_setting.return_value = "gpt-4o"
-    litellm.token_counter.return_value = 42
-    adapter = LiteLLMAdapter(mock_config)
-    text = "Hello world"
-    model = "gpt-3.5-turbo"
+    with patch("tiktoken.encoding_for_model") as mock_encoding:
+        mock_enc = MagicMock()
+        mock_enc.encode.return_value = [1, 2, 3]  # 3 tokens
+        mock_encoding.return_value = mock_enc
 
-    # Act
-    count = adapter.get_text_token_count(text, model=model)
+        adapter = LiteLLMAdapter(mock_config)
+        text = "Hello world"
+        model = "gpt-3.5-turbo"
 
-    # Assert
-    assert count == 42
-    litellm.token_counter.assert_called_once_with(model=model, text=text)
+        # Act
+        count = adapter.get_text_token_count(text, model=model)
+
+        # Assert
+        assert count == 3
+        mock_encoding.assert_called_with(model)
 
 
 def test_get_text_token_count_uses_config_model_fallback(mock_config):
     # Arrange
     mock_config.get_setting.return_value = "config-model"
-    litellm.token_counter.return_value = 10
-    adapter = LiteLLMAdapter(mock_config)
-    text = "Some text"
+    with patch("tiktoken.encoding_for_model") as mock_encoding:
+        mock_enc = MagicMock()
+        mock_enc.encode.return_value = range(10)
+        mock_encoding.return_value = mock_enc
 
-    # Act
-    adapter.get_text_token_count(text)
+        adapter = LiteLLMAdapter(mock_config)
+        text = "Some text"
 
-    # Assert
-    litellm.token_counter.assert_called_once_with(model="config-model", text=text)
+        # Act
+        adapter.get_text_token_count(text)
+
+        # Assert
+        mock_encoding.assert_called_with("config-model")

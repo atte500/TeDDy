@@ -155,7 +155,10 @@ def handle_context_gathering(container: Container, no_copy: bool):
     """Logic for the 'context' command."""
     context_service: IGetContextUseCase = container.resolve(IGetContextUseCase)
     context_files = detect_session_context()
-    context_result = context_service.get_context(context_files=context_files)
+    # Performance: Formatting context for Markdown doesn't use tokens, so we skip them.
+    context_result = context_service.get_context(
+        context_files=context_files, include_tokens=False
+    )
     formatted_context = format_project_context(context_result)
     echo_and_copy(formatted_context, no_copy=no_copy)
 

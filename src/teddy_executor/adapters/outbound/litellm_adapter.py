@@ -10,15 +10,40 @@ class LiteLLMAdapter(ILlmClient):
 
     def __init__(self, config_service: IConfigService):
         self._config_service = config_service
-        self._silence_litellm()
+        self._litellm_initialized = False
+        self._litellm_module: Any = None
+        self._encoding: Any = None
+        self._encoding_model: Optional[str] = None
+        from threading import Lock
 
-    def _silence_litellm(self) -> None:
-        """
-        Configures LiteLLM to be quiet.
-        Note: This method is now empty to prevent LiteLLM import during initialization.
-        Silencing is handled lazily within the methods that use the library.
-        """
-        pass
+        self._init_lock = Lock()
+
+    def _get_litellm(self) -> Any:
+        """Lazily imports and silences litellm once."""
+        if not self._litellm_initialized:
+            with self._init_lock:
+                if not self._litellm_initialized:
+                    import litellm
+
+                    self._ensure_silence(litellm)
+                    self._litellm_module = litellm
+                    self._litellm_initialized = True
+        return self._litellm_module
+
+    def _get_encoding(self, model: str) -> Any:
+        """Lazily retrieves and caches the tiktoken encoding for a model."""
+        if self._encoding_model != model:
+            with self._init_lock:
+                if self._encoding_model != model:
+                    import tiktoken
+
+                    try:
+                        self._encoding = tiktoken.encoding_for_model(model)
+                    except KeyError:
+                        # Fallback for unknown models
+                        self._encoding = tiktoken.get_encoding("cl100k_base")
+                    self._encoding_model = model
+        return self._encoding
 
     def _ensure_silence(self, litellm_module: Any) -> None:
         """Internal helper to silence litellm lazily."""
@@ -85,19 +110,17 @@ class LiteLLMAdapter(ILlmClient):
         self, messages: List[Dict[str, str]], model: Optional[str] = None
     ) -> int:
         """Calculates the number of tokens in the payload."""
-        import litellm
-
+        litellm = self._get_litellm()
         resolved_model = self._resolve_model(model)
-        self._ensure_silence(litellm)
         return litellm.token_counter(model=resolved_model, messages=messages)
 
     def get_text_token_count(self, text: str, model: Optional[str] = None) -> int:
-        """Calculates the number of tokens for a raw string."""
-        import litellm
-
+        """Calculates the number of tokens for a raw string using tiktoken directly."""
+        if not text:
+            return 0
         resolved_model = self._resolve_model(model)
-        self._ensure_silence(litellm)
-        return litellm.token_counter(model=resolved_model, text=text)
+        encoding = self._get_encoding(resolved_model)
+        return len(encoding.encode(text, disallowed_special=()))
 
     def get_completion_cost(self, completion_response: Any) -> float:
         """Calculates the precise USD cost of a completion response."""
