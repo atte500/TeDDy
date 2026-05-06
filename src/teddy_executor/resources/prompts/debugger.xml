@@ -12,8 +12,8 @@
       <phase n="1" name="Reproduction">
         <goal>Gather context and build/verify an end-to-end Minimal Reproducible Example (MRE).</goal>
         <step n="1" name="Case File Check">If missing, CREATE a Case File using the Case File Blueprint.</step>
-        <step n="2" name="Context & History Gathering">Use `EXECUTE` (`git grep`, `git log -n 5 --stat`, `gh run list --status failure`, `gh run view [ID] --log`), `READ`, and `RESEARCH` to understand the codebase, recent changes, and actual CI failure stack traces before forming a hypothesis.</step>
-        <step n="3" name="Diagnostic MRE & Platform Check">CREATE a self-contained MRE script (e.g., `debug/mre.js`) that reproduces the symptom of the bug. It MUST fail currently. If you determine the bug is platform-specific (i.e., it reproduces in CI/Linux but not locally), you MUST NOT execute the MRE locally. Instead, you MUST use the Remote Probing Protocol to execute the MRE and all subsequent checks in the target remote environment.</step>
+        <step n="2" name="Context & History Gathering">Use `EXECUTE` (`git grep`, `git log -n 5 --stat`, `gh run view [ID]` to verify job names, then `gh run view [ID] --log --job [NAME]`), `READ`, and `RESEARCH` to understand the codebase, recent changes, and actual CI failure stack traces before forming a hypothesis.</step>
+        <step n="3" name="Diagnostic MRE & Platform Check">CREATE a self-contained MRE script (e.g., `debug/mre.js`) that reproduces the symptom of the bug. It MUST fail currently. If the bug is platform-specific (e.g., fails in CI but passes locally), immediately pivot to the Remote Probing Protocol (Rule 14) and skip local reproduction. If you determine the bug is platform-specific after a local attempt, you MUST NOT continue local work; transition to Remote Probing for all subsequent checks.</step>
       </phase>
 
       <phase n="2" name="Investigation">
@@ -36,7 +36,7 @@
         <goal>Implement a regression test and verify it via the "Test the Test" sequence.</goal>
         <step n="1" name="Harness Exploration & Formalization">While the fix is active in the workspace, use `EXECUTE git grep` and `READ` to explore existing test harness patterns and usage in `tests/suites/` and `tests/harness/`. Then, translate the insights from the successful E2E MRE into a formal regression test in the test suite. You MUST set up the test function using the Test Harness Triad: Setup for state preparation (Arrange), Driver for execution (Act), and Observer for verification (Assert). Extend the `tests/harness/` utilities if necessary.</step>
         <step n="2" name="Verify Success (Test the Test - Part 1)">Execute the new test against the *fixed* code and verify that it PASSES. This proves the test is capable of passing in the corrected state.</step>
-        <step n="3" name="Vault Fix">Execute `git add src/ (or target code directories) && git stash --staged`. This hides only the implementation fix while leaving the new regression test in the workspace, reverting the SUT to its buggy state.</step>
+        <step n="3" name="Vault Fix">Execute `git add [implementation_dirs] && git stash --staged`. This surgically hides only the implementation fix while leaving the new regression test and the Case File in the workspace, reverting the SUT to its buggy state.</step>
         <step n="4" name="Verify Failure (Test the Test - Part 2)">Execute the same regression test again against the *buggy* code. It MUST FAIL. You MUST use `Allow Failure: true` for this execution. If the test PASSES here, it has failed to catch the bug; you MUST halt and transition to Red State 🔴 as your Causal Model or test setup is incorrect.</step>
         <step n="5" name="Restore Fix">Execute `git stash pop` to re-apply the validated fix.</step>
       </phase>
