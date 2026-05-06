@@ -127,3 +127,29 @@ def test_get_config_path_returns_provided_path(container):
     adapter = container.resolve(IConfigService)
     # The default path in YamlConfigAdapter registration (container.py) is .teddy/config.yaml
     assert adapter.get_config_path() == ".teddy/config.yaml"
+
+
+def test_auto_pruning_defaults_are_present(fs, container):
+    """
+    Tests that the auto_pruning configuration defaults are present in the baseline.
+    This verifies the 'Contract' deliverable for the configuration layer.
+    """
+    # Arrange - Map the real baseline file into the fake filesystem
+    from importlib import resources
+
+    res_path = resources.files("teddy_executor.resources.config").joinpath(
+        "config.yaml"
+    )
+    fs.add_real_file(str(res_path))
+
+    # Ensure no user config exists to force baseline-only check
+    fs.create_dir(".teddy")
+    fs.create_file(".teddy/config.yaml", contents="{}")
+
+    adapter = container.resolve(IConfigService)
+
+    # Act & Assert
+    assert adapter.get_setting("auto_pruning.enabled") is True
+    assert adapter.get_setting("auto_pruning.global_context_threshold") == 100000
+    assert adapter.get_setting("auto_pruning.prune_preceding_on_non_green") is True
+    assert adapter.get_setting("auto_pruning.prune_validation_failures") is True

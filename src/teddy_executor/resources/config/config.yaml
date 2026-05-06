@@ -19,10 +19,18 @@ execution:
 read:
   max_lines: 1000 # Caps READ action output to the first X lines.
 
+# Auto-Pruning Settings
+# Intelligently pre-deselects context files to save tokens and manage complexity.
+auto_pruning:
+  enabled: true
+  global_context_threshold: 100000 # Total token budget for turn context.
+  prune_preceding_on_non_green: true # Prune artifacts from turns preceding a 🔴/🟡 state.
+  prune_validation_failures: true # Prune plans and reports that failed validation.
+
 # LLM Settings
 # LiteLLM Configuration Reference: https://docs.litellm.ai/docs/completion/input
 # All keys under 'llm' are passed directly to litellm.completion().
 llm:
   model: "gemini/gemini-flash-latest"
-  api_key: "your-api-key" # pragma: allowlist secret
+  api_key: ""
   custom_llm_provider: "gemini"
