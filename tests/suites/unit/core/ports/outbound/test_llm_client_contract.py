@@ -53,3 +53,18 @@ def test_llm_client_requires_get_context_window():
         TypeError, match="Can't instantiate abstract class MinimalClient"
     ):
         MinimalClient()
+
+
+def test_llm_client_defines_get_text_token_count_signature():
+    """
+    Asserts that ILlmClient defines get_text_token_count with the correct signature.
+    """
+    import inspect
+
+    # Act
+    sig = inspect.signature(ILlmClient.get_text_token_count)
+
+    # Assert
+    assert "text" in sig.parameters
+    assert "model" in sig.parameters
+    assert sig.return_annotation is int

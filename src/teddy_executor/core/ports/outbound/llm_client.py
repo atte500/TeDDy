@@ -45,6 +45,14 @@ class ILlmClient(ABC):
         """
         pass
 
+    def get_text_token_count(self, text: str, model: Optional[str] = None) -> int:
+        """
+        Calculates the number of tokens for a raw string.
+        """
+        raise NotImplementedError(
+            "ILlmClient implementation must provide get_text_token_count"
+        )
+
     @abstractmethod
     def get_completion_cost(self, _completion_response: Any) -> float:
         """
