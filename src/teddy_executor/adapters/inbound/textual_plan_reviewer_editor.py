@@ -81,10 +81,15 @@ async def launch_editor(
 ) -> Optional[str]:
     """Launches an external editor non-blockingly and waits for TUI confirmation."""
     mock_out = os.environ.get("TEDDY_TEST_MOCK_EDITOR_OUTPUT")
-    if mock_out:
-        return handle_mock_editor(persistent_path, mock_out)
-
     temp_file = persistent_path or app._system_env.create_temp_file(suffix=suffix)
+    is_temp = persistent_path is None
+
+    if mock_out:
+        handle_mock_editor(temp_file, mock_out)
+        return await _confirm_and_harvest(
+            app, temp_file, initial_content, is_temp, skip_confirm=skip_confirm
+        )
+
     is_temp = persistent_path is None
     try:
         if is_temp or (
