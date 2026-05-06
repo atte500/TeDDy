@@ -1,5 +1,5 @@
 import logging
-from typing import List
+from typing import Any, List
 from teddy_executor.core.domain.models import (
     QueryResult,
     SearchResult,
@@ -9,21 +9,18 @@ from teddy_executor.core.domain.models import (
 from teddy_executor.core.ports.outbound.web_searcher import IWebSearcher
 
 
+logger = logging.getLogger(__name__)
+
+
 class WebSearcherAdapter(IWebSearcher):
     """
     An adapter that uses the ddgs library to perform web searches.
     """
 
-    def search(self, queries: List[str]) -> WebSearchResults:
-        """
-        Performs a web search for each query and maps the results.
-        """
-        from ddgs import DDGS
+    def _apply_ddgs_monkeypatch(self) -> None:
+        """Applies a structural patch to DDGS to preserve word boundaries."""
         from ddgs.base import BaseSearchEngine
 
-        # Monkeypatch BaseSearchEngine.extract_results to prevent word mashing.
-        # The library joins extracted text nodes with an empty string, mashing words
-        # previously separated by HTML tags (e.g. <b>). We fix this by joining with a space.
         def patched_extract_results(self, html_text: str):
             html_text = self.pre_process_html(html_text)
             tree = self.extract_tree(html_text)
@@ -42,43 +39,78 @@ class WebSearcherAdapter(IWebSearcher):
         # Apply the structural patch to the base class
         BaseSearchEngine.extract_results = patched_extract_results  # type: ignore[method-assign]
 
-        all_query_results: List[QueryResult] = []
+    def _clean_snippet(self, text: str) -> str:
+        """Fixes missing spaces after punctuation in raw text."""
         import re
 
-        def clean_snippet(text: str) -> str:
-            """Fixes missing spaces after punctuation in raw text."""
-            if not text:
-                return ""
-            # Fix missing space after period, comma, or colon followed by a letter
-            return re.sub(r"([.,:])([A-Za-z])", r"\1 \2", text)
+        if not text:
+            return ""
+        # Fix missing space after period, comma, or colon followed by a letter
+        return re.sub(r"([.,:])([A-Za-z])", r"\1 \2", text)
 
+    def _execute_single_query(
+        self, ddgs_client: Any, query: str, total_queries: int
+    ) -> QueryResult:
+        """Executes a single search query and maps results."""
         try:
-            # Globally disable logging (CRITICAL and below) to silence noisy
-            # third-party HTTP clients (urllib3, httpx, curl_cffi) used by DDGS.
-            logging.disable(logging.CRITICAL)
-            try:
-                with DDGS() as ddgs_client:
-                    for query in queries:
-                        # DDGS.text returns a generator, so we convert it to a list
-                        results = list(ddgs_client.text(query, max_results=5))
+            # DDGS.text returns a generator, so we convert it to a list
+            results = list(ddgs_client.text(query, max_results=5))
 
-                        search_results_for_query: List[SearchResult] = [
-                            {
-                                "title": res.get("title", ""),
-                                "href": res.get("href", ""),
-                                "body": clean_snippet(res.get("body", "")),
-                            }
-                            for res in results
-                        ]
+            search_results_for_query: List[SearchResult] = [
+                {
+                    "title": res.get("title", ""),
+                    "href": res.get("href", ""),
+                    "body": self._clean_snippet(res.get("body", "")),
+                }
+                for res in results
+            ]
 
-                        all_query_results.append(
-                            {
-                                "query": query,
-                                "results": search_results_for_query,
-                            }
-                        )
-                return {"query_results": all_query_results}
-            finally:
-                logging.disable(logging.NOTSET)
+            return {
+                "query": query,
+                "results": search_results_for_query,
+            }
         except Exception as e:
-            raise WebSearchError(f"Failed to execute search: {e}") from e
+            # Log the individual query failure but continue with other queries.
+            # This prevents one failing query from sabotaging the entire action.
+            logger.warning(f"Search query '{query}' failed: {e}")
+
+            # If this is the ONLY query, we still want to raise the error
+            # to maintain failure transparency (Stop the Line).
+            if total_queries == 1:
+                raise WebSearchError(f"Failed to execute search: {e}") from e
+
+            return {
+                "query": query,
+                "results": [],
+            }
+
+    def search(self, queries: List[str]) -> WebSearchResults:
+        """
+        Performs a web search for each query and maps the results.
+        """
+        from ddgs import DDGS
+
+        self._apply_ddgs_monkeypatch()
+        all_query_results: List[QueryResult] = []
+
+        # Globally disable logging (CRITICAL and below) to silence noisy
+        # third-party HTTP clients (urllib3, httpx, curl_cffi) used by DDGS.
+        logging.disable(logging.CRITICAL)
+        try:
+            with DDGS() as ddgs_client:
+                for query in queries:
+                    result = self._execute_single_query(
+                        ddgs_client, query, len(queries)
+                    )
+                    all_query_results.append(result)
+
+            # If we processed multiple queries and ALL of them failed, we should
+            # also raise an error because it likely indicates a system-wide issue
+            # (e.g. no internet) rather than just an empty result for one query.
+            if len(queries) > 1 and all(not r["results"] for r in all_query_results):
+                # We'll use the last error seen or a generic one if we want to be simple
+                raise WebSearchError("All search queries failed to return results.")
+
+            return {"query_results": all_query_results}
+        finally:
+            logging.disable(logging.NOTSET)
