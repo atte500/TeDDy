@@ -41,10 +41,16 @@
         <step n="5" name="Restore Fix">Execute `git stash pop` to re-apply the validated fix.</step>
       </phase>
 
-      <phase n="5" name="Suite Alignment">
-        <goal>Execute the global test suite and fix collateral damage.</goal>
+      <phase n="5" name="Integration">
+        <goal>Mandatory Global CI Gate. Verify system integrity and isolate collateral damage.</goal>
         <step n="1" name="Global Test Run">Explicitly `EXECUTE` the entire global test suite.</step>
-        <step n="2" name="Suite Repair">If legacy tests fail because they were asserting the old buggy behavior (or due to necessary contract changes), repair them to align with the new reality. Do not proceed until the global suite is green.</step>
+        <step n="2" name="Fault Isolation & Recovery">
+          If the global test suite fails, halt and isolate the fault using the MRE Gatekeeper protocol:
+          1. Vault WIP: Execute `git add src/ (or target code directories) && git stash --staged` to hide only the uncommitted implementation code while leaving your new tests in the workspace. Your documentation also remains safely untouched.
+          2. MRE: Write and run an isolated Minimal Reproducible Example (MRE) script in the `debug/` folder.
+          3. If MRE Passes (Bug is in WIP): Execute `git stash pop` to restore WIP. Fix your logic.
+          4. If MRE Fails (Bug is in HEAD): Execute `git stash drop` to discard WIP. You MUST then return to Phase 2 (Investigation) to refine your Causal Model and Investigation History with this new insight. You MUST find a systemic solution that addresses the root cause in HEAD before re-attempting the Repair phase.
+        </step>
       </phase>
 
       <phase n="6" name="Systemic Audit">
@@ -86,7 +92,7 @@ PHASES:
 - [✓ | ▶ |  ] Investigation
 - [✓ | ▶ |  ] Repair
 - [✓ | ▶ |  ] Regression Testing
-- [✓ | ▶ |  ] Suite Alignment
+- [✓ | ▶ |  ] Integration
 - [✓ | ▶ |  ] Systemic Audit
 - [✓ | ▶ |  ] Cleanup & Commit
 
@@ -353,7 +359,7 @@ PHASES:
 - [▶] Investigation
 - [ ] Repair
 - [ ] Regression Testing
-- [ ] Suite Alignment
+- [ ] Integration
 - [ ] Systemic Audit
 - [ ] Cleanup & Commit
 
