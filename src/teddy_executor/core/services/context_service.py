@@ -1,5 +1,5 @@
 from typing import Dict, List, Optional, Sequence
-from teddy_executor.core.domain.models import ProjectContext
+from teddy_executor.core.domain.models import ProjectContext, ContextItem
 from teddy_executor.core.utils.markdown import (
     get_fence_for_content,
     get_language_from_path,
@@ -10,6 +10,7 @@ from teddy_executor.core.ports.outbound.repo_tree_generator import IRepoTreeGene
 from teddy_executor.core.ports.outbound.environment_inspector import (
     IEnvironmentInspector,
 )
+from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 
 
 class ContextService(IGetContextUseCase):
@@ -22,10 +23,12 @@ class ContextService(IGetContextUseCase):
         file_system_manager: IFileSystemManager,
         repo_tree_generator: IRepoTreeGenerator,
         environment_inspector: IEnvironmentInspector,
+        llm_client: ILlmClient,
     ):
         self._file_system_manager = file_system_manager
         self._repo_tree_generator = repo_tree_generator
         self._environment_inspector = environment_inspector
+        self._llm_client = llm_client
 
     def get_context(
         self, context_files: Optional[Dict[str, Sequence[str]]] = None
@@ -65,13 +68,54 @@ class ContextService(IGetContextUseCase):
             repo_tree, scoped_paths, file_contents, git_status
         )
 
+        # Build ContextItem list
+        parsed_status = self._parse_git_status(git_status)
+        items: List[ContextItem] = []
+
+        for scope, paths in scoped_paths.items():
+            for path in paths:
+                file_text = file_contents.get(path) or ""
+                token_count = self._llm_client.get_text_token_count(file_text)
+                status_code = parsed_status.get(path, "")
+
+                items.append(
+                    ContextItem(
+                        path=path,
+                        token_count=token_count,
+                        git_status=status_code,
+                        scope=scope,
+                    )
+                )
+
         # Assemble and return the DTO
         return ProjectContext(
             header=header,
             content=content,
             scoped_paths=scoped_paths,
             git_status=git_status,
+            items=items,
         )
+
+    def _parse_git_status(self, git_status: Optional[str]) -> Dict[str, str]:
+        """Parses git status -s output into a map of path -> status code."""
+        if not git_status:
+            return {}
+
+        # Minimum length for "XY path" format
+        min_line_length = 4
+        status_map = {}
+        for line in git_status.splitlines():
+            if len(line) >= min_line_length:
+                code = line[:2].strip()
+                path = line[3:].strip()
+
+                # Guideline: Map ?? to U (Untracked)
+                if code == "??":
+                    code = "U"
+
+                status_map[path] = code
+
+        return status_map
 
     def _format_header(self, system_info: Dict[str, str]) -> str:
         """Formats the header section of the context report."""

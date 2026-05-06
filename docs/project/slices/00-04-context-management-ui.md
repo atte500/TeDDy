@@ -37,7 +37,7 @@ And files in the session context are never struck through automatically
 - [x] **Contract** - Add `auto_pruning` default settings to `config.yaml`.
 - [x] **Contract** - Update `IPlanReviewer.review` signature to accept `project_context`.
 - [x] **Refactor** - Update `ConsolePlanReviewer` and `ExecutionOrchestrator` for `IPlanReviewer` signature expansion.
-- [ ] **Logic** - Update `ContextService` to build `ContextItem` list with git status and tokens.
+- [x] **Logic** - Update `ContextService` to build `ContextItem` list with git status and tokens.
 - [ ] **Logic** - Implement auto-pruning heuristics in `SessionOrchestrator`.
 - [ ] **UI** - Implement "Session Context" tree population in `TextualPlanReviewer`.
 - [ ] **UI** - Implement context item toggling and `[s dim]` styling.
@@ -72,6 +72,13 @@ And files in the session context are never struck through automatically
 - Used `TYPE_CHECKING` guard in the protocol file to avoid circular imports with the domain model.
 - Verified the contract via `inspect.signature` in `tests/suites/unit/core/ports/inbound/test_plan_reviewer_contract.py`.
 - Confirmed backward compatibility for existing implementations (`ConsolePlanReviewer`, `TextualPlanReviewer`) via global test suite execution.
+
+### Logic - Update ContextService to build ContextItem list with git status and tokens
+- Updated `ContextService` constructor to accept `ILlmClient` (Constructor Injection).
+- Implemented `_parse_git_status` to transform `git status -s` output into a path -> status map.
+- Applied Guideline: Mapped `??` (Untracked) to `U` for UI consistency.
+- Updated `get_context` to iterate through all scoped paths and generate `ContextItem` objects with token counts and git status.
+- Verified via unit tests that all files (including those in multiple scopes) are correctly captured and metadata is accurate.
 
 ## Delta Analysis
 - **Domain Models:**

@@ -2,12 +2,17 @@ import pytest
 
 from teddy_executor.core.domain.models import ProjectContext
 from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
+from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 from teddy_executor.core.services.context_service import ContextService
 
 
 @pytest.fixture
-def service(container, mock_fs, mock_tree_gen, mock_inspector) -> IGetContextUseCase:
+def service(
+    container, mock_fs, mock_tree_gen, mock_inspector, mock_llm_client
+) -> IGetContextUseCase:
     """Provides a ContextService instance resolved from the container."""
+    # Ensure ILlmClient is bound to the mock for the service
+    container.register(ILlmClient, instance=mock_llm_client)
     container.register(IGetContextUseCase, ContextService)
     return container.resolve(IGetContextUseCase)
 
@@ -156,3 +161,66 @@ def test_get_context_always_includes_git_status_even_if_empty(
     # Assert
     assert "## 2. Git Status" in result.content
     assert "nothing to commit, working tree clean" in result.content
+
+
+def test_get_context_populates_context_items_with_metadata(
+    service: IGetContextUseCase,
+    mock_fs,
+    mock_tree_gen,
+    mock_inspector,
+    mock_llm_client,
+):
+    """
+    Tests that get_context populates the 'items' list with ContextItem DTOs
+    containing token counts and git status.
+    """
+    # Arrange
+    mock_file_contents = {
+        "src/core.py": "def main(): pass",
+        "README.md": "# TeDDy",
+        "new_file.txt": "hello",
+    }
+    # Mock Git Status: core.py is modified, README is unmodified, new_file is untracked
+    mock_git_status = " M src/core.py\n?? new_file.txt"
+
+    mock_inspector.get_environment_info.return_value = {}
+    mock_inspector.get_git_status.return_value = mock_git_status
+    mock_tree_gen.generate_tree.return_value = ""
+    mock_fs.resolve_paths_from_files.side_effect = lambda files: files
+    mock_fs.read_files_in_vault.return_value = mock_file_contents
+
+    # Mock token counting
+    def mock_token_counter(text, model=None):
+        return len(text.split()) * 10  # Dummy token logic
+
+    mock_llm_client.get_text_token_count.side_effect = mock_token_counter
+
+    # Act
+    result = service.get_context(
+        context_files={
+            "Session": ["src/core.py", "README.md"],
+            "Turn": ["new_file.txt"],
+        }
+    )
+
+    # Assert
+    assert len(result.items) == 3
+
+    # Check src/core.py (Modified, Session scope)
+    core_item = next(i for i in result.items if i.path == "src/core.py")
+    assert core_item.git_status == "M"
+    assert core_item.scope == "Session"
+    assert core_item.token_count == 30  # "def main(): pass" -> 3 words * 10
+    assert core_item.selected is True
+
+    # Check README.md (Unmodified, Session scope)
+    readme_item = next(i for i in result.items if i.path == "README.md")
+    assert readme_item.git_status == ""
+    assert readme_item.scope == "Session"
+    assert readme_item.token_count == 20  # "# TeDDy" -> 2 words * 10
+
+    # Check new_file.txt (Untracked -> 'U', Turn scope)
+    new_item = next(i for i in result.items if i.path == "new_file.txt")
+    assert new_item.git_status == "U"  # Guideline: ?? -> U
+    assert new_item.scope == "Turn"
+    assert new_item.token_count == 10
