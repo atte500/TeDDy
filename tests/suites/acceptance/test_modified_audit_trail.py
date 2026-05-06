@@ -24,7 +24,8 @@ async def test_execution_report_shows_user_modified_fields(env):
 
     mock_reviewer = env.mock_port(IPlanReviewer)
 
-    def simulate_review(plan):
+    def simulate_review(plan, **kwargs):
+        _ = kwargs
         action = plan.actions[0]
         action.params["command"] = "ls -R"  # Modification
         action.modified = True

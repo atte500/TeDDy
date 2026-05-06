@@ -36,6 +36,7 @@ class SessionLifecycleManager:
         orchestrator: IRunPlanUseCase,
         interactive: bool = True,
         message: Optional[str] = None,
+        project_context: Optional[Any] = None,
     ) -> Optional[ExecutionReport]:
         """Implements the 'resume' state machine."""
         state, turn_path = self._session_service.get_session_state(session_name)
@@ -43,12 +44,19 @@ class SessionLifecycleManager:
         if state == SessionState.PENDING_PLAN:
             plan_path = f"{turn_path}/plan.md"
             return orchestrator.execute(
-                plan_path=plan_path, interactive=interactive, message=message
+                plan_path=plan_path,
+                interactive=interactive,
+                message=message,
+                project_context=project_context,
             )
 
         if state == SessionState.EMPTY:
             return self._handle_planning_and_execution(
-                turn_path, orchestrator, interactive, message=message
+                turn_path,
+                orchestrator,
+                interactive,
+                message=message,
+                project_context=project_context,
             )
 
         if state == SessionState.COMPLETE_TURN:
@@ -56,7 +64,11 @@ class SessionLifecycleManager:
                 plan_path=f"{turn_path}/plan.md"
             )
             return self._handle_planning_and_execution(
-                next_turn_dir, orchestrator, interactive, message=message
+                next_turn_dir,
+                orchestrator,
+                interactive,
+                message=message,
+                project_context=project_context,
             )
 
         return None
@@ -67,6 +79,7 @@ class SessionLifecycleManager:
         orchestrator: IRunPlanUseCase,
         interactive: bool,
         message: Optional[str] = None,
+        project_context: Optional[Any] = None,
     ) -> Optional[ExecutionReport]:
         """Triggers planning for a turn and then executes the resulting plan."""
         new_name = self._session_planner.trigger_new_plan(turn_dir, message=message)
@@ -77,6 +90,7 @@ class SessionLifecycleManager:
             plan_path=f"{actual_turn_path}/plan.md",
             interactive=interactive,
             message=message,
+            project_context=project_context,
         )
 
     def trigger_replan(  # noqa: PLR0913

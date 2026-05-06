@@ -54,5 +54,5 @@ def test_resume_delegates_to_lifecycle_manager(orchestrator, mock_lifecycle_mana
 
     # Assert
     mock_lifecycle_manager.resume.assert_called_once_with(
-        session_name, orchestrator, True, None
+        session_name, orchestrator, True, None, project_context=None
     )

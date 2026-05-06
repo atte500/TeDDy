@@ -11,7 +11,7 @@ def _setup_mock_reviewer(monkeypatch, tmp_path):
 
     # Mock the PlanReviewer
     mock_reviewer = env.mock_port(IPlanReviewer)
-    mock_reviewer.review.side_effect = lambda p: p
+    mock_reviewer.review.side_effect = lambda p, **kwargs: p
     mock_reviewer.review_action.return_value = (True, "")
 
     # Force injection by monkeypatching the class constructor.

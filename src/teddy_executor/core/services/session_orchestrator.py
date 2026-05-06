@@ -44,19 +44,23 @@ class SessionOrchestrator(IRunPlanUseCase):
         session_name: str,
         interactive: bool = True,
         message: Optional[str] = None,
+        project_context: Optional[Any] = None,
     ):
         """
         Implements the 'resume' state machine.
         """
-        return self._lifecycle_manager.resume(session_name, self, interactive, message)
+        return self._lifecycle_manager.resume(
+            session_name, self, interactive, message, project_context=project_context
+        )
 
-    def execute(
+    def execute(  # noqa: PLR0913
         self,
         plan: Optional[Plan] = None,
         plan_content: Optional[str] = None,
         plan_path: Optional[str] = None,
         interactive: bool = True,
         message: Optional[str] = None,
+        project_context: Optional[Any] = None,
     ) -> ExecutionReport:
         # 0. Detect Session Mode (requires plan_path and meta.yaml)
         is_session = self._is_session_mode(plan_path)
@@ -102,6 +106,7 @@ class SessionOrchestrator(IRunPlanUseCase):
             plan_path=plan_path,
             interactive=interactive,
             message=message,
+            project_context=project_context,
         )
 
         # 4. Turn Transition
