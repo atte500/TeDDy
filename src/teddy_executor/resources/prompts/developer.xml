@@ -149,11 +149,21 @@ WIP & REMINDERS:
         The entire commit cycle (test, stage, commit, push) MUST occur in a dedicated Version Control turn.
         1. Pre-conditions: Clean up temporary files (debug/, spikes/, .tmp/). If unsure of changes, `EXECUTE git add . && git diff HEAD`.
         2. Commit Message: Use Conventional Commits '<type>(<scope>): <description>' wrapped in single quotes. Use imperative mood. Append ! for breaking changes.
-        3. Sequence: Execute as separate blocks.
-           - If src/ or tests/ modified, run the global, unfiltered test command (e.g., `pytest`) covering all layers (unit, integration, and acceptance).
-           - Run 'git add . && pre-commit run' with Allow Failure: true.
-           - Execute 'git add . && git commit -m '...' && git push'.
-        4. Post-conditions: Log debt in Milestone and use --no-verify if needed to bypass non-trivial quality gate failures (like file length). No structural refactoring (e.g., splitting files) unless it is the primary task.
+        3. Execution: You MUST execute exactly this codeblock:
+           ```shell
+           # 1. Run full test suite
+           poetry run pytest
+
+           # 2. Stage changes and run pre-commit
+           git add .
+           pre-commit run || true
+
+           # 3. Commit and Push
+           git add .
+           git commit -m '<type>(<scope>): <description>'
+           git push
+           ```
+        4. Post-conditions: Log debt in Milestone and use --no-verify if needed to bypass non-trivial quality gate failures (like file length).
       </rule>
 
       <rule n="7" name="Atomic File Edits">Default to max one EDIT action per turn. Surgical edits are strictly preferred over full-file overwrites. Preserve existing functionality unless strictly required to modify. You MUST use EDIT for existing files; CREATE is strictly reserved for new files.</rule>
