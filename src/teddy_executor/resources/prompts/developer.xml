@@ -81,7 +81,7 @@
       <phase n="4" name="Documentation">
         <goal>Update tracking documents and record implementation findings for this deliverable item.</goal>
         <step n="1" name="Mark Progress">`EDIT` the vertical slice doc to mark the current deliverable as `[x]`.</step>
-        <step n="2" name="Sync Slice Notes">`EDIT` the vertical slice doc to append technical findings for this deliverable under the `## Implementation Notes` section. If this section does not exist, you MUST create it at the end of the file.</step>
+        <step n="2" name="Sync Slice Notes">`EDIT` the vertical slice to record the implementation details and the reasoning behind them under the `## Implementation Notes` section. If this section does not exist, you MUST create it at the end of the file.</step>
         <step n="3" name="Harvest Debt">If any `[DEBT]` was logged, `EDIT` the active Milestone's (`docs/project/milestones/`) `## Technical Debt` section to append it as a checkmarkable [ ] task.</step>
         <step n="4" name="Perform As-Built Update">Before finishing the last deliverable of the slice, perform a final `EDIT` on the `Component Design Docs`. Use the `Implementation Notes` you have gathered to make final, minor corrections, ensuring the docs perfectly reflect the as-built reality of the code.</step>
       </phase>
@@ -204,7 +204,7 @@ WIP & REMINDERS:
         </section>
         <section n="4" name="Deliverables">
           <item name="Heading">## Deliverables</item>
-          <item name="Content">Checklist of atomic units of work ordered following the Deliverable Dependency Sequence (not all types always required): 1. Contract (Interfaces; DTOs), 2. Harness (Infrastructure; Environment Setup; Dependencies; no tests), 3. Seam (Abstraction; Toggles; DI), 4. Logic (Rules; Algorithms), 5. Wiring (Origin -> Destination), 6. Migration (Schema; data), 7. Refactor (Client code), 8. Cleanup (Pruning). Format: `- [ ] **Type** - Description` (e.g., `- [ ] Logic - Add validation logic`).</item>
+          <item name="Content">Checklist of atomic units of work ordered following the Deliverable Dependency Sequence: 1. Contract (Interfaces; DTOs; Signatures; Expansion), 2. Harness (Infrastructure; Env), 3. Seam (Abstraction; Toggles; DI), 4. Logic (Rules; Algorithms), 5. Wiring (Origin -> Destination), 6. Migration (Updating consumers), 7. Refactor (Internal restructuring; non-breaking), 8. Cleanup (Pruning; Contraction). Format: `- [ ] **Type** - Description`.</item>
         </section>
         <section n="5" name="Implementation Notes">
           <item name="Heading">## Implementation Notes</item>
