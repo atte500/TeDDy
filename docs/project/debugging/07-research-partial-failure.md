@@ -38,6 +38,7 @@ Unknown. The current implementation of `WebSearcherAdapter.search` wraps the ent
 1. Initial codebase search for `RESEARCH` and `WebSearcher`. Identified `WebSearcherAdapter` as the primary suspect.
 2. Searched for "No results found" error string. No exact matches in `src/`.
 3. Created MRE `debug/repro_research.py` mocking the `DDGS` client to raise an exception for a specific query. Observation: The adapter caught the exception and raised a global `WebSearchError`, losing results for successful queries. Conclusion: The broad `try/except` block in `WebSearcherAdapter.search` is the root cause.
+4. Decomposed `search` method to satisfy complexity limits. Observed regression where successful queries returned empty results. Investigation ongoing via `spikes/debug_adapter_regression.py`.
 
 ## Solution
 ### Implemented Fixes

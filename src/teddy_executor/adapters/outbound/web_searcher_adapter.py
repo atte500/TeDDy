@@ -104,13 +104,6 @@ class WebSearcherAdapter(IWebSearcher):
                     )
                     all_query_results.append(result)
 
-            # If we processed multiple queries and ALL of them failed, we should
-            # also raise an error because it likely indicates a system-wide issue
-            # (e.g. no internet) rather than just an empty result for one query.
-            if len(queries) > 1 and all(not r["results"] for r in all_query_results):
-                # We'll use the last error seen or a generic one if we want to be simple
-                raise WebSearchError("All search queries failed to return results.")
-
             return {"query_results": all_query_results}
         finally:
             logging.disable(logging.NOTSET)

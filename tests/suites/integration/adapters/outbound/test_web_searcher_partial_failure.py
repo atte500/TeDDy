@@ -15,7 +15,8 @@ async def test_search_handles_partial_query_failures():
     with patch("ddgs.DDGS") as mock_ddgs_class:
         mock_instance = mock_ddgs_class.return_value.__enter__.return_value
 
-        def side_effect(query, _max_results=5):
+        def side_effect(query, max_results=5):
+            _ = max_results  # Use variable to satisfy Vulture
             if "fail" in query:
                 raise Exception("No results found")
             return [
