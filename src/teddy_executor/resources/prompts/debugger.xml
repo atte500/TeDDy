@@ -119,10 +119,10 @@ WIP & REMINDERS:
         The entire commit cycle (test, stage, commit, push) MUST occur in a dedicated Version Control turn.
         1. Pre-conditions: Clean up temporary files (debug/, spikes/, .tmp/). If unsure of changes, `EXECUTE git add . && git diff HEAD`.
         2. Commit Message: Use Conventional Commits '<type>(<scope>): <description>' wrapped in single quotes. Use imperative mood. Append ! for breaking changes.
-        3. Execution: You MUST execute exactly this codeblock:
+        3. Execution: You MUST test (running the global, unfiltered test command covering all layers: unit, integration, and acceptance), stage, commit, and push by executing exactly this codeblock:
            ```shell
            # 1. Run full test suite
-           poetry run pytest
+           <global_test_command>
 
            # 2. Stage changes and run pre-commit
            git add .
