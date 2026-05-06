@@ -1,5 +1,5 @@
 from unittest.mock import MagicMock
-from tests.suites.acceptance.plan_builder import MarkdownPlanBuilder
+from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 from teddy_executor.core.domain.models import RunStatus
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase

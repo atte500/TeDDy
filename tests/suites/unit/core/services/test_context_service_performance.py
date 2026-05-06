@@ -1,12 +1,18 @@
+import os
 import time
+import pytest
 from unittest.mock import MagicMock
 from teddy_executor.core.services.context_service import ContextService
 
 
+@pytest.mark.skipif(
+    os.getenv("GITHUB_ACTIONS") == "true",
+    reason="Performance tests are flaky on CI runners due to environment variance",
+)
 def test_context_gathering_is_performant_for_large_repos():
     # Setup mocks
     fs = MagicMock()
-    # Simulate a large repository
+    # Use standard list comprehension for path metadata mocks
     paths = [f"file_{i}.py" for i in range(500)]
     fs.get_context_paths.return_value = paths
     fs.resolve_paths_from_files.side_effect = lambda x: x

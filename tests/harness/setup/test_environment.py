@@ -1,3 +1,4 @@
+import os
 import shutil
 import uuid
 from pathlib import Path
@@ -215,6 +216,20 @@ class TestEnvironment(RealAdapterMixin):
         from teddy_executor.core.ports.outbound import IUserInteractor
 
         return self.get_service(IUserInteractor)  # type: ignore
+
+    def create_batch_files(
+        self, base_path: Path, count: int, prefix: str = "file"
+    ) -> None:
+        """
+        High-speed batch file creation for performance testing.
+        Uses lower-level OS calls to minimize overhead.
+        """
+        base_path.mkdir(parents=True, exist_ok=True)
+        # Using string paths and os.open is significantly faster for large batches
+        str_base = str(base_path)
+        for i in range(count):
+            full_path = os.path.join(str_base, f"{prefix}_{i}.py")
+            os.close(os.open(full_path, os.O_CREAT | os.O_WRONLY))
 
     def teardown(self):
         """Cleans up monkeypatches and resets state."""

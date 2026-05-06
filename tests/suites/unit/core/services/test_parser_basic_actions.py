@@ -269,7 +269,7 @@ def test_parser_succeeds_on_builder_generated_create_action(parser: IPlanParser)
     This test verifies that the MarkdownPlanBuilder generates a valid CREATE
     action that the refactored stream-based parser can successfully parse.
     """
-    from tests.suites.acceptance.plan_builder import MarkdownPlanBuilder
+    from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
 
     # Arrange
     builder = MarkdownPlanBuilder("Test Plan")

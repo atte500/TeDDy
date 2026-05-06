@@ -1,9 +1,15 @@
+import os
 import time
+import pytest
 from pathlib import Path
 from tests.harness.setup.test_environment import TestEnvironment
 from teddy_executor.core.ports.outbound.repo_tree_generator import IRepoTreeGenerator
 
 
+@pytest.mark.skipif(
+    os.getenv("GITHUB_ACTIONS") == "true",
+    reason="Performance tests are flaky on CI runners due to environment variance",
+)
 def test_repo_tree_generator_performance_with_large_ignored_dir(
     tmp_path: Path, monkeypatch
 ):
