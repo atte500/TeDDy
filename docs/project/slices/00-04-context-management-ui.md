@@ -31,18 +31,20 @@ And files in the session context are never struck through automatically
 ```
 
 ## Deliverables
-- [ ] **Contract** - Add `get_text_token_count` to `ILlmClient` and implement in `LiteLLMAdapter`.
-- [ ] **Contract** - Create `ContextItem` DTO; update `ProjectContext` to hold a list of them.
-- [ ] **Contract** - Add `auto_pruning` section (with toggles: `enabled`, `global_context_threshold`, `prune_preceding_on_non_green`, `prune_validation_failures`) to `ConfigService` and `config.yaml` defaults.
-- [ ] **Contract** - Update `IPlanReviewer.review()` and `ExecutionOrchestrator.execute()` signatures to accept `project_context: Optional[ProjectContext]`.
-- [ ] **Logic** - Update `ContextService` to parse git status strings, count tokens via `ILlmClient`, and build `ContextItem` lists.
-- [ ] **Logic** - Implement auto-pruning heuristics in `SessionOrchestrator` (Global Budget, Non-Green History, Validation Failure).
-- [ ] **Wiring** - Pass `ProjectContext` from `SessionOrchestrator` -> `ExecutionOrchestrator` -> `TextualPlanReviewer`.
-- [ ] **UI** - Implement `ActionTree` population for Context items using flat sibling hierarchy with two-space indentation for files.
-- [ ] **UI** - Implement `selected` state toggle that updates node labels with `[s dim]` (strikethrough).
-- [ ] **UI** - Implement dynamic `ContextAggregateDetail` view (Recalculates totals/breakdown on every toggle).
-- [ ] **Integration** - Update `ReviewerApp` to collect deselected (`selected=False`) paths and set `plan.metadata["pruned_context"]`.
-- [ ] **Integration** - Update `SessionOrchestrator` post-execution loop to read `pruned_context` and actively remove those files from the `turn.context` file and internal state.
+- [ ] **Contract** - Add `get_text_token_count` to `ILlmClient`.
+- [ ] **Logic** - Implement `get_text_token_count` in `LiteLLMAdapter`.
+- [ ] **Contract** - Implement `ContextItem` DTO and update `ProjectContext` model.
+- [ ] **Contract** - Add `auto_pruning` default settings to `config.yaml`.
+- [ ] **Contract** - Update `IPlanReviewer.review` signature to accept `project_context`.
+- [ ] **Refactor** - Update `ConsolePlanReviewer` and `ExecutionOrchestrator` for `IPlanReviewer` signature expansion.
+- [ ] **Logic** - Update `ContextService` to build `ContextItem` list with git status and tokens.
+- [ ] **Logic** - Implement auto-pruning heuristics in `SessionOrchestrator`.
+- [ ] **UI** - Implement "Session Context" tree population in `TextualPlanReviewer`.
+- [ ] **UI** - Implement context item toggling and `[s dim]` styling.
+- [ ] **UI** - Implement dynamic `ContextAggregateDetail` view.
+- [ ] **Integration** - Update `ReviewerApp` to return `pruned_context` metadata.
+- [ ] **Integration** - Update `SessionOrchestrator` to process `pruned_context` and delete files from turn context.
+- [ ] **Wiring** - Verify end-to-end context visibility and auto-pruning (Gherkin scenarios).
 
 ## Delta Analysis
 - **Domain Models:**
