@@ -17,29 +17,30 @@ Provide users with direct, UI-driven control over their session context with tok
 Given an interactive session is running
 When the plan review TUI is launched
 Then there is a "Session Context" node in the action tree
-And clicking it shows lists of context files separated by session and turn scopes
+And selecting it shows lists of context files grouped by scope (System/Session/Turn)
 And each file displays its token count and git status
 ```
 
-> As a user, I want the system to automatically deselect useless context files (like failed plans/reports or huge files) so I don't waste tokens without noticing.
+> As a user, I want the system to automatically deselect useless context files (like those leading to non-green states or exceeding a budget) so I don't waste tokens.
 ```gherkin
 Given auto-pruning is enabled in the configuration
-And the current turn context contains a failed execution report
+And a plan file in the context has a non-green (🔴/🟡) status
 When the plan review TUI is launched
-Then the failed execution report is shown in the context list but its checkbox is unchecked
-And files in the session context are never unchecked automatically
+Then the previous turn's plan and report are shown but are struck through and dimmed
+And files in the session context are never struck through automatically
 ```
 
 ## Deliverables
-- [ ] **Contract** - Add `count_tokens` to `ILlmClient` and implement in `LiteLLMAdapter`.
+- [ ] **Contract** - Add `get_text_token_count` to `ILlmClient` and implement in `LiteLLMAdapter`.
 - [ ] **Contract** - Create `ContextItem` DTO; update `ProjectContext` to hold a list of them.
-- [ ] **Contract** - Add `auto_pruning` section (with granular toggles: `enabled`, `threshold_tokens`, `prune_failed_plans`, `prune_failed_reports`) to `ConfigService` and `config.yaml` defaults.
+- [ ] **Contract** - Add `auto_pruning` section (with toggles: `enabled`, `global_context_threshold`, `prune_preceding_on_non_green`, `prune_validation_failures`) to `ConfigService` and `config.yaml` defaults.
 - [ ] **Contract** - Update `IPlanReviewer.review()` and `ExecutionOrchestrator.execute()` signatures to accept `project_context: Optional[ProjectContext]`.
 - [ ] **Logic** - Update `ContextService` to parse git status strings, count tokens via `ILlmClient`, and build `ContextItem` lists.
-- [ ] **Logic** - Implement auto-pruning heuristics in `SessionOrchestrator` (thresholds, failure artifacts detection, scope restrictions).
+- [ ] **Logic** - Implement auto-pruning heuristics in `SessionOrchestrator` (Global Budget, Non-Green History, Validation Failure).
 - [ ] **Wiring** - Pass `ProjectContext` from `SessionOrchestrator` -> `ExecutionOrchestrator` -> `TextualPlanReviewer`.
-- [ ] **UI** - Implement `ActionTree` population for Context items with smart hierarchy (System/Session/Turn siblings) and `[s dim]` styling for pruned items.
-- [ ] **UI** - Implement `ContextAggregateDetail` view for the right-hand panel (Total tokens + bulleted breakdown).
+- [ ] **UI** - Implement `ActionTree` population for Context items using flat sibling hierarchy with two-space indentation for files.
+- [ ] **UI** - Implement `selected` state toggle that updates node labels with `[s dim]` (strikethrough).
+- [ ] **UI** - Implement dynamic `ContextAggregateDetail` view (Recalculates totals/breakdown on every toggle).
 - [ ] **Integration** - Update `ReviewerApp` to collect deselected (`selected=False`) paths and set `plan.metadata["pruned_context"]`.
 - [ ] **Integration** - Update `SessionOrchestrator` post-execution loop to read `pruned_context` and actively remove those files from the `turn.context` file and internal state.
 
@@ -70,16 +71,20 @@ And files in the session context are never unchecked automatically
 - **Git Status Parsing:** Use `git status -s`.
     - Map `??` to `U` (Untracked) for visual consistency with modern IDEs.
     - Status colors: `M` (yellow), `U/A` (green), `D` (red).
-- **Failure Heuristics:** To detect failed plans/reports, parse the file names (e.g., `*plan*.md`, `*report*.md`) and read their content directly using a fast string check (e.g., `Status: FAILURE`) rather than full markdown parsing to keep the orchestrator fast.
+- **Failure Heuristics:**
+    - **Non-Green State:** Parse plan headers in `turn.context` for `Status: ... 🔴` or `Status: ... 🟡`. If found, prune the *preceding* turn's artifacts.
+    - **Validation Failure:** Check report files in `turn.context` for the string `Status: Validation Failed`. If found, prune that report and its plan.
 - **Auto-Prune Reasons:** Use the following standardized strings for the `auto_prune_reason` metadata:
-    - `Exceeds 15k token limit`
-    - `Failed plan validation`
-    - `Non-green plan`
+    - `Pruned to fit context budget`
+    - `Plan failed validation`
+    - `Pruned as it led to a non-green state`
+- **Dynamic UI Logic:** Every toggle of a context item MUST trigger a recalculation and refresh of the `ContextAggregateDetail` view.
 - **Context Management Tree:**
-    - Use a flat tree structure with leaf-only label nodes (`SESSION_LABEL`, `TURN_LABEL`, `SYSTEM_LABEL`) for grouping.
+    - Use a flat tree structure with leaf-only label nodes (`SYSTEM_LABEL`, `SESSION_LABEL`, `TURN_LABEL`) as siblings under the root.
+    - **Hierarchy (Prototype Standard):** Labels use `[#888888 italic]Scope:[/]` formatting. File items are siblings of labels but use **two leading spaces** in their label strings for visual indentation.
     - **Visual Cues:**
-        - **Label format:** `[bold]path[/] [[color]status[/]] [#888888]tokens[/]` (e.g., `[bold]src/core.py[/] [[yellow]M[/]] [#888888]1.2k[/]`).
-        - Auto-pruned files MUST be rendered with `[s dim]` (ultra-dimmed strikethrough) by default.
+        - **Standard format:** `  [bold]path[/] [[color]status[/]] [#888888]tokens[/]` (e.g., `  [bold]src/core.py[/] [[yellow]M[/]] [#888888]1.2k[/]`).
+        - **Pruned format:** `  [s dim]path [[color]status[/]] tokens[/]`. The entire string (path, status, and tokens) MUST be struck through.
     - **Editor Integration (`e` key):**
         - **Agent Node:** Opening the `e` (edit) key on an Agent node MUST launch a TUI Modal (`PromptEditorModal`) containing a `TextArea` for direct XML prompt editing.
         - **Context Labels/Files:** Opening `e` on a session/turn label or a specific context file MUST launch the external editor (using `ConsoleTooling.get_editor()`).

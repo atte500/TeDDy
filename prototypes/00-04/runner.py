@@ -37,14 +37,13 @@ class ContextFileData:
         clean_status = self.git_status.strip()
         display_status = "U" if clean_status == "??" else clean_status
         status_part = f" [[{status_colors.get(clean_status, 'white')}]{display_status}[/]]" if clean_status else ""
-        
+
         token_str = f"{self.tokens / 1000.0:.1f}k"
-        
+
         if not self.selected:
-            # Strikethrough and dimmed for pruned items
-            # Images show the path and status are struck through, tokens are struck through
+            # Strikethrough and dimmed for the entire line (Prototype Standard)
             return f"  [s dim]{self.path}{status_part} {token_str}[/]"
-        
+
         # Base label logic: bold path, colored bracketed status, gray tokens
         return f"  [bold]{self.path}[/]{status_part} [#888888]{token_str}[/]"
 
@@ -111,9 +110,9 @@ def rebuild_prototype_tree(app: Any) -> None:
     sim_data = [
         ContextFileData("src/core.py", 1200, "", "Session", True),
         ContextFileData("src/utils.py", 450, "M", "Session", True),
-        ContextFileData("docs/plan-INVALID.md", 300, "??", "Turn", False, "Failed plan validation"),
-        ContextFileData("reports/turn-01-FAILURE.md", 1500, "", "Turn", False, "Non-green plan"),
-        ContextFileData("src/heavy_logic.py", 15000, "M", "Turn", False, "Exceeds 15k token limit"),
+        ContextFileData("docs/plan-INVALID.md", 300, "??", "Turn", False, "Plan failed validation"),
+        ContextFileData("reports/turn-01-FAILURE.md", 1500, "", "Turn", False, "Pruned as it led to a non-green state"),
+        ContextFileData("src/heavy_logic.py", 15000, "M", "Turn", False, "Pruned to fit context budget"),
     ]
 
     turn_header_added = False
