@@ -33,16 +33,6 @@ And files in the session context are never struck through automatically
 ## Deliverables
 - [x] **Contract** - Add `get_text_token_count` to `ILlmClient`.
 - [x] **Logic** - Implement `get_text_token_count` in `LiteLLMAdapter`.
-
-## Implementation Notes
-### Contract - Add get_text_token_count to ILlmClient
-- Expanded `ILlmClient` with `get_text_token_count(text, model)`.
-- Implemented as a non-breaking Expansion (throwing `NotImplementedError`) to allow incremental adapter updates without breaking the DI container.
-- Added signature verification to `tests/suites/unit/core/ports/outbound/test_llm_client_contract.py`.
-
-### Logic - Implement get_text_token_count in LiteLLMAdapter
-- Overrode `get_text_token_count` in `LiteLLMAdapter` using `litellm.token_counter(text=text, ...)`.
-- Refactored model resolution logic into a private `_resolve_model` helper to ensure consistency across `get_token_count`, `get_text_token_count`, and `get_context_window`.
 - [ ] **Contract** - Implement `ContextItem` DTO and update `ProjectContext` model.
 - [ ] **Contract** - Add `auto_pruning` default settings to `config.yaml`.
 - [ ] **Contract** - Update `IPlanReviewer.review` signature to accept `project_context`.
@@ -55,6 +45,16 @@ And files in the session context are never struck through automatically
 - [ ] **Integration** - Update `ReviewerApp` to return `pruned_context` metadata.
 - [ ] **Integration** - Update `SessionOrchestrator` to process `pruned_context` and delete files from turn context.
 - [ ] **Wiring** - Verify end-to-end context visibility and auto-pruning (Gherkin scenarios).
+
+## Implementation Notes
+### Contract - Add get_text_token_count to ILlmClient
+- Expanded `ILlmClient` with `get_text_token_count(text, model)`.
+- Implemented as a non-breaking Expansion (throwing `NotImplementedError`) to allow incremental adapter updates without breaking the DI container.
+- Added signature verification to `tests/suites/unit/core/ports/outbound/test_llm_client_contract.py`.
+
+### Logic - Implement get_text_token_count in LiteLLMAdapter
+- Overrode `get_text_token_count` in `LiteLLMAdapter` using `litellm.token_counter(text=text, ...)`.
+- Refactored model resolution logic into a private `_resolve_model` helper to ensure consistency across `get_token_count`, `get_text_token_count`, and `get_context_window`.
 
 ## Delta Analysis
 - **Domain Models:**
@@ -110,6 +110,3 @@ And files in the session context are never struck through automatically
         - Keep headers (`System:`, `Session:`, `Turn:`) and files as siblings under the Context root to avoid over-nesting depth.
         - Use **two leading spaces** in file labels to simulate indentation.
     - Display Git Status in full words (e.g., "Modified", "Untracked") in the right-side detail pane.
-
-## Implementation Notes
-(To be filled during development)
