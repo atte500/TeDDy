@@ -38,9 +38,6 @@ The Developer implements the plan using a disciplined, **Outside-In TDD** workfl
 ### 4. The Debugger (Scientific Fault Isolation)
 The Debugger is a specialist agent activated when others fail. It follows the **scientific method** to isolate the verifiable root cause of a problem.
 
-## 📚 Documentation
-For detailed guides, architecture blueprints, and project status, visit our **[Documentation Hub](./docs/README.md)**.
-
 ## The `teddy` CLI: The Hands of the AI
 
 The `teddy` command-line tool, is the bridge between AI-generated plans and your local filesystem. It allows for the safe, transparent, and user-supervised execution of development tasks, both in interactive as well as non-interactive mode.

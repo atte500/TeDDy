@@ -4,12 +4,6 @@ This document outlines the technical standards, conventions, and setup process f
 
 ## 1. Conventions & Standards
 
-### Guiding Principles: Quality by Design
-
-1.  **Jidoka (Autonomation):** *Stop the line immediately when a defect is found.* We make errors obvious so they can be fixed, rather than masking them. Test-Driven Development (TDD) is our primary implementation of Jidoka, preventing flawed code from ever being integrated.
-2.  **Poka-Yoke (Mistake-Proofing):** *Design processes so errors can't be made in the first place.* Contract-First Design is our Poka-Yoke. By defining clear "seams" and contracts between all parts of the system—starting with the user—we mistake-proof the architecture.
-3.  **The UNIX Philosophy (Small, Sharp Tools):** *Build small, independent components that do one thing well and compose them to handle complexity.* This principle is the foundation of our architecture and development workflow. Each component is a "small, sharp tool" with a single responsibility, and they communicate through simple, well-defined contracts (Ports).
-
 ### Language & Runtime
 - **Language:** Python
 - **Version:** 3.11+
