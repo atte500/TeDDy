@@ -135,36 +135,19 @@ class WebScraperAdapter(WebScraper):
 
     def get_content(self, url: str, **_kwargs) -> str:
         """
-        Fetches the content from the given URL.
-
-        - For GitHub blob URLs, it fetches the raw file content.
-        - For other URLs, it uses trafilatura to extract the main content.
+        Fetches and extracts the content from the given URL.
 
         Args:
             url: The URL to fetch content from.
             **_kwargs: Optional extraction hints.
 
         Returns:
-            The text content of the page.
-
-        Raises:
-            requests.exceptions.RequestException: For connection errors or non-200
-                                                  status codes.
+            The extracted text content.
         """
-        from http import HTTPStatus
         import requests
 
-        # Stealthy default mimicking Chrome on macOS
-        default_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-        user_agent = default_agent
-
-        if self._config_service:
-            user_agent = str(
-                self._config_service.get_setting(
-                    "web_scraper.user_agent", default_agent
-                )
-            )
-
+        # Stealthy identity mimicking Chrome on macOS to avoid automated blocking
+        user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
         headers = {"User-Agent": user_agent}
 
         if url.startswith("https://github.com/") and "/blob/" in url:
@@ -175,21 +158,11 @@ class WebScraperAdapter(WebScraper):
             response.raise_for_status()
             return response.text
 
-        html_content = None
-        try:
-            response = requests.get(url, headers=headers, timeout=30)
-            response.raise_for_status()
-            html_content = response.text
-        except requests.exceptions.HTTPError as e:
-            if (
-                e.response is not None
-                and e.response.status_code == HTTPStatus.FORBIDDEN
-            ):
-                # Fallback for 403 Forbidden errors
-                trafilatura = self._get_trafilatura()
-                html_content = trafilatura.fetch_url(url)
-            else:
-                raise
+        # 1. Manual Fetch: Always use our own identity rather than delegating
+        # network state to third-party libraries.
+        response = requests.get(url, headers=headers, timeout=30)
+        response.raise_for_status()
+        html_content = response.text
 
         if not html_content:
             return ""

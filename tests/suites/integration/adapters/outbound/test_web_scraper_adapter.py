@@ -1,4 +1,3 @@
-from http import HTTPStatus
 import responses
 from tests.harness.setup.test_environment import TestEnvironment
 from teddy_executor.core.ports.outbound import IWebScraper
@@ -35,53 +34,6 @@ def test_get_content_for_github_url_fetches_raw_content(monkeypatch):
     assert content == mock_response_body
     assert len(responses.calls) == 1
     assert responses.calls[0].request.url == raw_url
-
-
-@responses.activate
-def test_get_content_falls_back_on_403_error(monkeypatch):
-    """
-    Given a URL that returns a 403 Forbidden error,
-    When get_content is called,
-    Then it should fall back to using trafilatura.fetch_url.
-    """
-    # Arrange
-    env = (
-        TestEnvironment(monkeypatch).setup().with_real_config().with_real_web_scraper()
-    )
-    scraper = env.get_service(IWebScraper)
-
-    from unittest.mock import MagicMock
-
-    mock_trafilatura = MagicMock()
-    # Mock the internal _get_trafilatura to return our mock instead of importing
-    monkeypatch.setattr(scraper, "_get_trafilatura", lambda: mock_trafilatura)
-
-    protected_url = "https://protected.example.com/article"
-    mock_html_content = "<html><body><p>Fallback Content</p></body></html>"
-    mock_markdown_content = "Fallback Content"
-
-    # Mock the initial failed request
-    responses.add(
-        responses.GET,
-        protected_url,
-        status=403,
-    )
-
-    # Mock the successful fallback
-    mock_trafilatura.fetch_url.return_value = mock_html_content
-    mock_trafilatura.extract.return_value = mock_markdown_content
-
-    # Act
-    content = scraper.get_content(protected_url)
-
-    # Assert
-    assert len(responses.calls) == 1
-    assert responses.calls[0].request.url == protected_url
-    assert responses.calls[0].response.status_code == HTTPStatus.FORBIDDEN
-
-    mock_trafilatura.fetch_url.assert_called_once_with(protected_url)
-    assert mock_trafilatura.extract.call_args[0][0] == mock_html_content
-    assert content == mock_markdown_content
 
 
 @responses.activate
