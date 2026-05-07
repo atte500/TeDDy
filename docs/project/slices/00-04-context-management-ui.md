@@ -43,7 +43,7 @@ And files in the session context are never struck through automatically
 - [x] **UI** - Implement context item toggling and `[s dim]` styling.
 - [x] **UI** - Implement dynamic `ContextAggregateDetail` view.
 - [x] **Integration** - Update `ReviewerApp` to return `pruned_context` metadata.
-- [ ] **Integration** - Update `SessionOrchestrator` to process `pruned_context` and delete files from turn context.
+- [x] **Integration** - Update `SessionOrchestrator` to process `pruned_context` and delete files from turn context.
 - [ ] **Wiring** - Verify end-to-end context visibility and auto-pruning (Gherkin scenarios).
 
 ## Implementation Notes

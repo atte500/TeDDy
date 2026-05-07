@@ -104,7 +104,7 @@ class SessionOrchestrator(IRunPlanUseCase):
                 typer.secho("\nSession terminated.", fg=typer.colors.RED, err=True)
                 return None  # type: ignore
 
-            self._lifecycle_manager.finalize_turn(plan_path, report)
+            self._lifecycle_manager.finalize_turn(plan_path, report, plan=plan)
 
         return report
 

@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, ANY
 import pytest
 from teddy_executor.core.domain.models.execution_report import (
     ExecutionReport,
@@ -106,5 +106,5 @@ def test_session_orchestrator_triggers_transition_on_success(  # noqa: PLR0913
 
     # Verify delegation to lifecycle manager
     orchestrator._lifecycle_manager.finalize_turn.assert_called_once_with(
-        plan_path, mock_run_plan.execute.return_value
+        plan_path, mock_run_plan.execute.return_value, plan=ANY
     )

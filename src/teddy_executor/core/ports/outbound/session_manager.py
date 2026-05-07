@@ -45,6 +45,7 @@ class ISessionManager(Protocol):
         execution_report: Optional[ExecutionReport] = None,
         turn_cost: float = 0.0,
         is_validation_failure: bool = False,
+        pruned_paths: Optional[list[str]] = None,
     ) -> str:
         """
         Calculates and creates the next turn directory based on the current turn

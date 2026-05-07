@@ -115,6 +115,7 @@ class SessionService(ISessionManager):
         execution_report: Optional[ExecutionReport] = None,
         turn_cost: float = 0.0,
         is_validation_failure: bool = False,
+        pruned_paths: Optional[list[str]] = None,
     ) -> str:
         """
         Calculates and creates the next turn directory based on the current turn
@@ -141,6 +142,11 @@ class SessionService(ISessionManager):
         # 4. Handle context
         paths = self._repository.read_context_file(f"{cur_dir.as_posix()}/turn.context")
         self._apply_execution_effects(paths, execution_report)
+
+        # Apply manual pruning from Turn N to next Turn N+1
+        if pruned_paths:
+            for p in pruned_paths:
+                paths.discard(p)
 
         # Always append BOTH plan.md and report.md to the next turn's context
         # to ensure the AI has its previous intent and the resulting outcome.

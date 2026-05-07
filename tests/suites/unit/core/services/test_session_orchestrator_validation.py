@@ -56,6 +56,7 @@ def test_execute_triggers_replan_on_validation_failure(  # noqa: PLR0913
         execution_report=ANY,
         turn_cost=ANY,
         is_validation_failure=True,
+        pruned_paths=ANY,
     )
     mock_planning_service.generate_plan.assert_called_once()
 

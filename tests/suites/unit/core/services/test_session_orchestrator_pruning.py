@@ -2,6 +2,11 @@ import pytest
 from unittest.mock import MagicMock
 from teddy_executor.core.services.session_orchestrator import SessionOrchestrator
 from teddy_executor.core.domain.models import ProjectContext, ContextItem
+from teddy_executor.core.domain.models.plan import Plan
+from teddy_executor.core.domain.models.execution_report import (
+    ExecutionReport,
+    RunStatus,
+)
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
@@ -244,3 +249,38 @@ def test_execute_prunes_validation_failure_heuristic(
     assert plan_item.selected is False
     assert report_item.selected is False
     assert plan_item.auto_prune_reason == "Plan failed validation"
+
+
+def test_execute_respects_manually_pruned_files_during_transition(
+    orchestrator, mock_context_service
+):
+    """
+    Integration: Orchestrator must pass pruned paths to LifecycleManager for manifest removal.
+    """
+    # Arrange
+    plan_path = "session/02/plan.md"
+    orchestrator._file_system_manager.path_exists.return_value = True  # Is session mode
+
+    plan = MagicMock(spec=Plan)
+    plan.metadata = {"pruned_context": "docs/stale.md,tests/temp.py"}
+
+    orchestrator._plan_parser.parse.return_value = plan
+    orchestrator._plan_validator.validate.return_value = []
+
+    # Mock execution outcome
+    report = MagicMock(spec=ExecutionReport)
+    # Ensure status allows finalization (not aborted)
+    # Based on SessionOrchestrator logic: report.run_summary.status
+    # We setup the nested mock explicitly
+    report.run_summary = MagicMock()
+    report.run_summary.status = RunStatus.SUCCESS
+    orchestrator._execution_orchestrator.execute.return_value = report
+
+    # Act
+    orchestrator.execute(plan_path=plan_path)
+
+    # Assert
+    # The orchestrator should have passed the plan (containing pruning metadata) to finalize_turn
+    orchestrator._lifecycle_manager.finalize_turn.assert_called_once()
+    kwargs = orchestrator._lifecycle_manager.finalize_turn.call_args.kwargs
+    assert kwargs["plan"] == plan

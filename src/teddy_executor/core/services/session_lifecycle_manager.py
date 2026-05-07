@@ -130,6 +130,7 @@ class SessionLifecycleManager:
         plan_path: str,
         report: ExecutionReport,
         is_validation_failure: bool = False,
+        plan: Optional[Any] = None,
     ) -> str:
         """Persists the report and transitions to the next turn."""
         turn_dir = Path(plan_path).parent
@@ -148,10 +149,18 @@ class SessionLifecycleManager:
         report_file_path = str(turn_dir / "report.md")
         self._file_system_manager.write_file(report_file_path, formatted_report)
 
+        # Extract manual pruning paths from plan metadata
+        pruned_paths = []
+        if plan:
+            raw_pruned = plan.metadata.get("pruned_context", "")
+            if raw_pruned:
+                pruned_paths = [p.strip() for p in raw_pruned.split(",") if p.strip()]
+
         # 2. Transition to next turn
         return self._session_service.transition_to_next_turn(
             plan_path=plan_path,
             execution_report=report,
             turn_cost=turn_cost,
             is_validation_failure=is_validation_failure,
+            pruned_paths=pruned_paths,
         )
