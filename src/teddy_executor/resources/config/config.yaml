@@ -34,3 +34,8 @@ llm:
   model: "gemini/gemini-flash-latest"
   api_key: ""
   custom_llm_provider: "gemini"
+
+# Web Scraper Settings
+web_scraper:
+  # Stealthy User-Agent mimicking Chrome on macOS to avoid automated blocking.
+  user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"

@@ -42,12 +42,21 @@ def register_infrastructure(container: punq.Container) -> None:
     from teddy_executor.adapters.outbound.yaml_config_adapter import YamlConfigAdapter
 
     container.register(
-        ISystemEnvironment, SystemEnvironmentAdapter, scope=punq.Scope.transient
+        ISystemEnvironment,
+        factory=lambda: SystemEnvironmentAdapter(),
+        scope=punq.Scope.transient,
     )
     container.register(
-        IEnvironmentInspector, SystemEnvironmentInspector, scope=punq.Scope.transient
+        IEnvironmentInspector,
+        factory=lambda: SystemEnvironmentInspector(),
+        scope=punq.Scope.transient,
     )
-    container.register(ShellCommandBuilder, scope=punq.Scope.transient)
+    container.register(
+        ShellCommandBuilder,
+        factory=lambda: ShellCommandBuilder(),
+        scope=punq.Scope.transient,
+    )
+
     container.register(
         IShellExecutor,
         factory=lambda: ShellAdapter(
@@ -58,6 +67,7 @@ def register_infrastructure(container: punq.Container) -> None:
         ),
         scope=punq.Scope.transient,
     )
+
     from teddy_executor.core.ports.inbound.edit_simulator import IEditSimulator
 
     container.register(
@@ -70,11 +80,13 @@ def register_infrastructure(container: punq.Container) -> None:
         ),
         scope=punq.Scope.transient,
     )
+
     container.register(
         IWebScraper,
         factory=lambda: WebScraperAdapter(container.resolve(IConfigService)),
         scope=punq.Scope.transient,
     )
+
     container.register(
         IUserInteractor,
         factory=lambda: ConsoleInteractorAdapter(
@@ -83,11 +95,12 @@ def register_infrastructure(container: punq.Container) -> None:
         ),
         scope=punq.Scope.transient,
     )
-    container.register(IWebSearcher, WebSearcherAdapter, scope=punq.Scope.transient)
+
     container.register(
-        IConfigService,
-        factory=lambda: YamlConfigAdapter(),
-        scope=punq.Scope.transient,
+        IWebSearcher, factory=lambda: WebSearcherAdapter(), scope=punq.Scope.transient
+    )
+    container.register(
+        IConfigService, factory=lambda: YamlConfigAdapter(), scope=punq.Scope.transient
     )
     container.register(
         ILlmClient,
@@ -95,14 +108,8 @@ def register_infrastructure(container: punq.Container) -> None:
         scope=punq.Scope.transient,
     )
     container.register(
-        IRepoTreeGenerator, LocalRepoTreeGenerator, scope=punq.Scope.transient
-    )
-    container.register(
-        ConsoleToolingHelper,
-        factory=lambda: ConsoleToolingHelper(
-            system_env=container.resolve(ISystemEnvironment),
-            config_service=container.resolve(IConfigService),
-        ),
+        IRepoTreeGenerator,
+        factory=lambda: LocalRepoTreeGenerator(),
         scope=punq.Scope.transient,
     )
     container.register(

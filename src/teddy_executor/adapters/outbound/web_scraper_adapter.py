@@ -1,7 +1,3 @@
-from http import HTTPStatus
-
-import requests
-
 from teddy_executor.core.ports.outbound.web_scraper import WebScraper
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 
@@ -155,11 +151,19 @@ class WebScraperAdapter(WebScraper):
             requests.exceptions.RequestException: For connection errors or non-200
                                                   status codes.
         """
-        user_agent = "TeDDy-Bot/1.0"
+        from http import HTTPStatus
+        import requests
+
+        # Stealthy default mimicking Chrome on macOS
+        default_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+        user_agent = default_agent
+
         if self._config_service:
-            cfg_agent = self._config_service.get_setting("web_scraper.user_agent")
-            if cfg_agent:
-                user_agent = str(cfg_agent)
+            user_agent = str(
+                self._config_service.get_setting(
+                    "web_scraper.user_agent", default_agent
+                )
+            )
 
         headers = {"User-Agent": user_agent}
 

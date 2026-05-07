@@ -24,7 +24,7 @@ class ConcludeAction:
 
 class ActionFactory(IActionFactory):
     """
-    A protocol-compliant factory that uses the DI container to resolve action handlers.
+    A protocol-compliant factory that resolves action handlers from injected ports.
     """
 
     # Maps uppercase verbs from Markdown plans to the internal, descriptive keys.
@@ -184,8 +184,7 @@ class ActionFactory(IActionFactory):
 
     def create_action(self, action_type: str, params: Optional[dict] = None) -> IAction:
         """
-        Looks up the adapter protocol for the given action type and asks the
-        container to resolve an instance of it. It then binds the correct
+        Looks up the adapter protocol for the given action type and binds the correct
         adapter method to the `execute` method required by the IAction protocol.
         """
         if action_type.lower() == "read":

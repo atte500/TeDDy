@@ -155,6 +155,8 @@ def _register_orchestration_services(container: punq.Container) -> None:
     )
     container.register(ContextService, scope=punq.Scope.transient)
     container.register(IGetContextUseCase, ContextService, scope=punq.Scope.transient)
+    from teddy_executor.core.domain.models.planning_ports import PlanningPorts
+
     container.register(
         IPromptManager,
         factory=lambda: PromptManager(
@@ -163,7 +165,6 @@ def _register_orchestration_services(container: punq.Container) -> None:
         ),
         scope=punq.Scope.transient,
     )
-    from teddy_executor.core.domain.models.planning_ports import PlanningPorts
 
     container.register(
         PlanningPorts,
@@ -227,6 +228,7 @@ def _register_orchestration(container: punq.Container) -> None:
         ),
         scope=punq.Scope.transient,
     )
+
     from teddy_executor.core.domain.models.planning_ports import SessionPorts
 
     container.register(

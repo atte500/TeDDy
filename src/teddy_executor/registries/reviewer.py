@@ -33,9 +33,6 @@ def register_reviewer(container: punq.Container, ui_mode: str | None = None) -> 
             ),
         )
     else:
-        from teddy_executor.adapters.inbound.textual_plan_reviewer import (
-            TextualPlanReviewer,
-        )
         from teddy_executor.core.ports.outbound import (
             IFileSystemManager,
             ISystemEnvironment,
@@ -45,12 +42,16 @@ def register_reviewer(container: punq.Container, ui_mode: str | None = None) -> 
         )
         from teddy_executor.core.services.action_dispatcher import ActionDispatcher
 
-        container.register(
-            IPlanReviewer,
-            factory=lambda: TextualPlanReviewer(
+        def tui_factory():
+            from teddy_executor.adapters.inbound.textual_plan_reviewer import (
+                TextualPlanReviewer,
+            )
+
+            return TextualPlanReviewer(
                 system_env=container.resolve(ISystemEnvironment),
                 file_system=container.resolve(IFileSystemManager),
                 console_tooling=container.resolve(ConsoleToolingHelper),
                 action_dispatcher=container.resolve(ActionDispatcher),
-            ),
-        )
+            )
+
+        container.register(IPlanReviewer, factory=tui_factory)

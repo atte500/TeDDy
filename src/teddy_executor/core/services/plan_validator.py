@@ -42,7 +42,7 @@ class PlanValidator(IPlanValidator):
             action_type_lower = action.type.lower()
             action_errors: Optional[List[ValidationError]] = None
 
-            # New registry-based dispatching
+            # Dispatch to injected action-specific validators
             handled_by_injected = False
             for validator in self._validators:
                 if validator.can_validate(action_type_lower):
