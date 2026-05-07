@@ -58,6 +58,7 @@ async def test_reviewer_app_shows_context_aggregate_detail(env):
         # 1. Select Context Root (Initial focus)
         # Expected: Aggregate view with totals
         await pilot.pause()
+        await pilot.pause()
         pane = app.query_one(ParameterDetail)
         content = "\n".join(str(getattr(child, "data", "")) for child in pane.children)
 
@@ -117,6 +118,7 @@ async def test_reviewer_app_shows_context_item_detail(env):
         # 2. Move down to the first file item
         # Structure: Context Root (0) -> System Header (1) -> Agent (2) -> Session Header (3) -> File (4)
         await pilot.press("down", "down", "down", "down")
+        await pilot.pause()
         await pilot.pause()
 
         pane = app.query_one(ParameterDetail)
