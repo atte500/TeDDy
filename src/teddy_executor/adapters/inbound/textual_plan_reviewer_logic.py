@@ -1,11 +1,7 @@
 from __future__ import annotations
 
-import re
 from typing import TYPE_CHECKING, Any, cast
 
-from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
-    extract_status_emoji,
-)
 from teddy_executor.adapters.inbound.textual_plan_reviewer_execution import (
     resolve_action_parameters,
 )
@@ -16,7 +12,6 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
 if TYPE_CHECKING:
     from teddy_executor.adapters.inbound.textual_plan_reviewer_app import ReviewerApp
     from teddy_executor.core.domain.models.plan import ActionData
-    from teddy_executor.core.domain.models.project_context import ContextItem
 
 
 ALLOWED_RATIONALE_SECTIONS = [
@@ -68,58 +63,11 @@ def _update_detail_view(app: ReviewerApp, data: Any):
     ):
         switcher.current = "params-view"
         pane.clear()
+        from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+            populate_context_detail,
+        )
 
-        if isinstance(data, ContextItem):
-            pane.append(DetailItem("Path", data.path))
-            pane.append(DetailItem("Tokens", f"{data.token_count / 1000.0:.1f}k"))
-            status_map = {
-                "M": "Modified",
-                "??": "Untracked",
-                "U": "Untracked",
-                "A": "Added",
-                "D": "Deleted",
-            }
-            status_text = status_map.get(data.git_status.strip(), "Unmodified")
-            pane.append(DetailItem("Git Status", status_text))
-            pane.append(DetailItem("Scope", data.scope))
-            if data.auto_prune_reason:
-                pane.append(DetailItem("Auto-Prune", data.auto_prune_reason))
-        elif isinstance(data, dict) and data.get("type") == "SYSTEM_PROMPT":
-            pane.append(DetailItem("Agent", data.get("agent", "Unknown")))
-            pane.append(DetailItem("Tokens", f"{data.get('tokens', 0) / 1000.0:.1f}k"))
-        # Context Aggregate View
-        elif app.project_context:
-            total_tokens = (
-                sum(i.token_count for i in app.project_context.items)
-                + app.project_context.system_prompt_tokens
-            )
-            system_k = app.project_context.system_prompt_tokens / 1000.0
-            session_k = (
-                sum(
-                    i.token_count
-                    for i in app.project_context.items
-                    if i.scope == "Session"
-                )
-                / 1000.0
-            )
-            turn_k = (
-                sum(
-                    i.token_count
-                    for i in app.project_context.items
-                    if i.scope == "Turn"
-                )
-                / 1000.0
-            )
-
-            pane.append(
-                DetailItem(
-                    "Total Context",
-                    f"{total_tokens / 1000.0:.1f}k / {app.project_context.total_window / 1000.0:.0f}k tokens",
-                )
-            )
-            pane.append(DetailItem("• System", f"{system_k:.1f}k"))
-            pane.append(DetailItem("• Session", f"{session_k:.1f}k"))
-            pane.append(DetailItem("• Turn", f"{turn_k:.1f}k"))
+        populate_context_detail(app, pane, data)
         return
 
     if isinstance(data, dict) and data.get("type") == "RATIONALE_SECTION":
@@ -177,7 +125,7 @@ def _update_detail_view(app: ReviewerApp, data: Any):
 
 async def edit_action_logic(app: ReviewerApp, node: Any, action: ActionData) -> None:
     """Handles the (e)dit key logic by branching to modals or external editor."""
-    from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_editor import (
         handle_edit_action,
     )
 
@@ -188,130 +136,23 @@ def refresh_node_logic(app: ReviewerApp, node: Any) -> None:
     """Refresh the label and state of a single tree node."""
     from teddy_executor.core.domain.models.plan import ActionData
     from teddy_executor.core.domain.models.project_context import ContextItem
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+        format_context_item_label,
+    )
 
     if isinstance(node.data, ActionData):
         node.label = format_node_label(node.data)
     elif isinstance(node.data, ContextItem):
-        node.label = _format_context_item_label(node.data)
-
-
-def _format_context_item_label(item: "ContextItem") -> str:
-    """Format a context item label according to UI standards."""
-    status_colors = {
-        "M": "yellow",
-        "??": "green",
-        "A": "green",
-        "D": "red",
-        "U": "green",
-    }
-    clean_status = item.git_status.strip()
-    # Map ?? to U for visual consistency
-    display_status = "U" if clean_status == "??" else clean_status
-    status_part = (
-        f" [[{status_colors.get(clean_status, 'white')}]{display_status}[/]]"
-        if clean_status
-        else ""
-    )
-
-    token_str = f"{item.token_count / 1000.0:.1f}k"
-
-    if not item.selected:
-        return f"  [s dim]{item.path}{status_part} {token_str}[/]"
-
-    return f"  [bold]{item.path}[/]{status_part} [#888888]{token_str}[/]"
-
-
-def _build_context_section(app: ReviewerApp, tree: Any) -> Any:
-    """Build the 'Context' tree section."""
-    if not app.project_context:
-        return None
-
-    con_root = tree.root.add("[bold]Context[/]", data=CONTEXT_ROOT, expand=False)
-    con_root.add_leaf("[#888888 italic]System:[/]", data=SYSTEM_LABEL)
-    con_root.add_leaf(
-        f"  [bold]{app.project_context.agent_name}[/]",
-        data={
-            "type": "SYSTEM_PROMPT",
-            "agent": app.project_context.agent_name,
-            "tokens": app.project_context.system_prompt_tokens,
-        },
-    )
-
-    con_root.add_leaf("[#888888 italic]Session:[/]", data=SESSION_LABEL)
-    for item in app.project_context.items:
-        if item.scope == "Session":
-            con_root.add_leaf(_format_context_item_label(item), data=item)
-
-    con_root.add_leaf("[#888888 italic]Turn:[/]", data=TURN_LABEL)
-    for item in app.project_context.items:
-        if item.scope == "Turn":
-            con_root.add_leaf(_format_context_item_label(item), data=item)
-
-    return con_root
+        node.label = format_context_item_label(node.data)
 
 
 def on_mount_logic(app: Any) -> None:
-    """Populate the action tree and set title when the app is mounted."""
-    if getattr(app, "_tree_built", False) is True:
-        return
-
-    status_raw = (
-        app.plan.metadata.get("Status") or app.plan.metadata.get("status") or ""
-    )
-    status_emoji = extract_status_emoji(status_raw)
-    title_parts = [part for part in [status_emoji, app.plan.title] if part]
-    app.title = " ".join(title_parts)
-
-    from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
-        ActionTree,
+    """Delegate tree population and title setting."""
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+        handle_mount_logic,
     )
 
-    tree = app.query_one(ActionTree)
-    tree.show_root = False
-    tree.root.expand()
-
-    # 1. Context Section
-    con_root = _build_context_section(app, tree)
-
-    # 2. Rationale Section
-    rat_root = tree.root.add("[bold]Rationale[/]", data=RATIONALE_ROOT, expand=True)
-
-    # Split on '### ' OR '1. ' (numeric lists at start of line)
-    sections = re.split(r"\n(?=### |\d+\.\s+)", "\n" + app.plan.rationale)
-    current_node = None
-    for section in sections:
-        section = section.strip()
-        if not section:
-            continue
-        lines = section.split("\n")
-        # Strip markers (### or numeric prefix) from title, allowing for multiples
-        title = re.sub(r"^(?:###\s*|\d+\.\s*)+", "", lines[0]).strip()
-        if title in ALLOWED_RATIONALE_SECTIONS:
-            content = "\n".join(lines[1:]).strip()
-            current_node = rat_root.add_leaf(
-                title,
-                data={"type": "RATIONALE_SECTION", "title": title, "content": content},
-            )
-        elif current_node:
-            # Merge non-standard section into preceding standard node
-            current_node.data["content"] += "\n\n" + section
-
-    # 3. Action Plan Section
-    act_root = tree.root.add("[bold]Action Plan[/]", data=ACTION_PLAN_ROOT, expand=True)
-    for action in app.plan.actions:
-        if not hasattr(action, "_original_params"):
-            action._original_params = action.params.copy()
-        if action.type == "PRUNE" and not app.plan.is_session:
-            continue
-        act_root.add_leaf(format_node_label(action), data=action)
-
-    # Initialize cursor: Context root if available, else Rationale root
-    initial_node = con_root if con_root else rat_root
-
-    tree.move_cursor(initial_node)
-    tree.focus()
-    app._tree_built = True
-    app.call_after_refresh(_update_detail_view, app, initial_node.data)
+    handle_mount_logic(app, _update_detail_view)
 
 
 def check_action_logic(app: ReviewerApp, action_name: str) -> bool:
@@ -383,7 +224,7 @@ def toggle_selection_logic(app: ReviewerApp, node: Any) -> None:
 
 async def on_list_view_selected_logic(app: ReviewerApp, item: Any) -> None:
     """Handle parameter editing when a DetailItem is selected in the right pane."""
-    from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_editor import (
         handle_list_view_selected,
     )
 

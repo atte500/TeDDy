@@ -190,3 +190,95 @@ def _process_diff_result(
         with open(p_file, "w", encoding="utf-8") as f:
             f.write(str(proposed))
     return False
+
+
+async def handle_list_view_selected(
+    app: "ReviewerApp", item: Any, update_fn: Any
+) -> None:
+    """Handle parameter editing when a DetailItem is selected in the right pane."""
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
+        ActionTree,
+        PathInputScreen,
+        ParameterEditModal,
+    )
+
+    node = app.query_one(ActionTree).cursor_node
+    if not node or not node.data or not hasattr(item, "data"):
+        return
+
+    action, key, val = node.data, item.data.get("key"), item.data.get("val")
+    from teddy_executor.core.domain.models.plan import ActionData
+
+    if not isinstance(action, ActionData) or action.executed:
+        return
+
+    if action.type == "PROMPT" and key == "prompt":
+        return
+
+    if key == "path":
+        new_val = await cast(Any, app.push_screen_wait(PathInputScreen(str(val))))
+    else:
+        if not isinstance(val, (str, int, float, bool, list)) and val is not None:
+            return
+        v_str = ", ".join(map(str, val)) if isinstance(val, list) else str(val)
+        new_val = await cast(
+            Any, app.push_screen_wait(ParameterEditModal(f"{key}:", v_str))
+        )
+
+    if new_val is not None and str(new_val) != str(val):
+        from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+            _apply_param_edit,
+        )
+
+        _apply_param_edit(action, key, new_val)
+        action.modified = True
+        if key and key not in action.modified_fields:
+            action.modified_fields.append(key)
+        app._refresh_node(node)
+        update_fn(app, action)
+
+
+async def handle_edit_action(
+    app: "ReviewerApp", node: Any, action: Any, update_fn: Any
+) -> None:
+    """Handles the (e)dit key logic by branching to modals or external editor."""
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
+        ParameterEditModal,
+    )
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_previews import (
+        do_preview_logic,
+    )
+
+    if action.type == "EXECUTE":
+        val = action.params.get("command", "")
+        new_val = await cast(
+            Any, app.push_screen_wait(ParameterEditModal("Command:", val))
+        )
+        if new_val is not None and new_val != val:
+            action.params["command"] = new_val
+            action.modified = True
+            if "command" not in action.modified_fields:
+                action.modified_fields.append("command")
+            app._refresh_node(node)
+            update_fn(app, action)
+    elif action.type == "RESEARCH":
+        val = action.params.get("queries", [])
+        val_str = ", ".join(val) if isinstance(val, list) else str(val)
+        new_val = await cast(
+            Any,
+            app.push_screen_wait(
+                ParameterEditModal("Queries (comma separated):", val_str)
+            ),
+        )
+        if new_val is not None and new_val != val_str:
+            action.params["queries"] = [
+                q.strip() for q in new_val.split(",") if q.strip()
+            ]
+            action.modified = True
+            if "queries" not in action.modified_fields:
+                action.modified_fields.append("queries")
+            app._refresh_node(node)
+            update_fn(app, action)
+    else:
+        await do_preview_logic(app, node, action)
+        update_fn(app, action)

@@ -28,7 +28,8 @@ async def test_reviewer_app_contains_parameter_detail_listview(container):
         action_dispatcher=container.resolve(ActionDispatcher),
     )
 
-    async with app.run_test():
+    async with app.run_test() as pilot:
+        await pilot.pause()
         # Check for the new widget
         try:
             # Right pane is now a ContentSwitcher

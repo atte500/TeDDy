@@ -1,8 +1,10 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
-    extract_status_emoji,
     edit_action_logic,
+)
+from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+    extract_status_emoji,
 )
 from teddy_executor.core.domain.models.plan import ActionData
 

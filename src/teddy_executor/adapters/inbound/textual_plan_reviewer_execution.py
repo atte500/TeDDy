@@ -11,6 +11,39 @@ if TYPE_CHECKING:
     from teddy_executor.core.domain.models.execution_report import ActionLog
 
 
+def harvest_action_content(action: Any, instruction_marker: str) -> None:
+    """Harvest modified content from a pending temporary file back to the action."""
+    import os
+
+    is_valid_path = isinstance(action.pending_temp_file, (str, os.PathLike))
+    if not (
+        action.pending_temp_file
+        and is_valid_path
+        and os.path.exists(action.pending_temp_file)
+    ):
+        return
+    try:
+        with open(action.pending_temp_file, "r", encoding="utf-8") as f:
+            new_content = f.read()
+        mapping = {"CREATE": "content", "EXECUTE": "command", "RESEARCH": "queries"}
+        if action.type in mapping:
+            action.params[mapping[action.type]] = new_content
+        elif action.type == "PROMPT":
+            marker = instruction_marker.strip()
+            if marker in new_content:
+                action.user_response = new_content.split(marker)[0].strip()
+            else:
+                action.user_response = new_content.strip()
+        os.remove(action.pending_temp_file)
+        action.pending_temp_file = None
+    except Exception as e:
+        import logging
+
+        logging.getLogger(__name__).debug(
+            "Failed to harvest action content from %s: %s", action.pending_temp_file, e
+        )
+
+
 def format_action_log(log: ActionLog) -> str:
     """
     Formats an ActionLog entry using the global MarkdownReportFormatter to ensure

@@ -283,7 +283,7 @@ class ReviewerApp(App):
 
     def _harvest_action_content(self, action: Any) -> None:
         """Harvest modified content from a pending temporary file back to the action."""
-        from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+        from teddy_executor.adapters.inbound.textual_plan_reviewer_execution import (
             harvest_action_content,
         )
 
