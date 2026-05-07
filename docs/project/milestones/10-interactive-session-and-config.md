@@ -77,6 +77,8 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 ## 6. Technical Debt
 
 ### Structural & Security (Found during Deliverables)
+- [ ] **Structural** - Refactor `textual_plan_reviewer_app.py` to reduce file length (currently 307/300).
+- [ ] **Structural** - Decompose `_update_detail_view` in `textual_plan_reviewer_logic.py` to reduce cyclomatic complexity (currently 10/9).
 - [ ] **TUI Module Fragmentation:** The `textual_plan_reviewer` module has been split into 7 files to satisfy the 300-line quality gate. This fragmentation has introduced complex circular dependency management via local imports. Consider a higher-level abstraction (e.g., a Controller or State Machine) to reduce per-file logic.
 - [ ] textual_plan_reviewer fragmentation debt: logic is split across 8 files to bypass SLOC limits, creating circularity hacks and 100+ local imports.
 - [ ] console_interactor fragmentation debt: core prompt logic is delegated to static helpers by passing self, introducing local-import circularity management.

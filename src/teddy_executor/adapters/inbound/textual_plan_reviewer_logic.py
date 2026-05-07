@@ -53,6 +53,9 @@ def _update_detail_view(app: ReviewerApp, data: Any):
     switcher = app.query_one(ContentSwitcher)
     pane = app.query_one(ParameterDetail)
 
+    if not pane.is_attached:
+        return
+
     from teddy_executor.core.domain.models.project_context import ContextItem
 
     # Handle Context items and roots

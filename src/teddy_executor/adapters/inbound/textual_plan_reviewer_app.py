@@ -167,6 +167,15 @@ class ReviewerApp(App):
 
         self._finalize_user_message()
 
+        if self.project_context:
+            pruned_paths = [
+                item.path for item in self.project_context.items if not item.selected
+            ]
+            if pruned_paths:
+                self.plan.metadata["pruned_context"] = ",".join(pruned_paths)
+            else:
+                self.plan.metadata.pop("pruned_context", None)
+
         for f in getattr(self, "_log_preview_files", []):
             try:
                 self._system_env.delete_file(f)

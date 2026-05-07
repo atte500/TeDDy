@@ -42,7 +42,7 @@ And files in the session context are never struck through automatically
 - [x] **UI** - Implement "Session Context" tree population in `TextualPlanReviewer`.
 - [x] **UI** - Implement context item toggling and `[s dim]` styling.
 - [x] **UI** - Implement dynamic `ContextAggregateDetail` view.
-- [ ] **Integration** - Update `ReviewerApp` to return `pruned_context` metadata.
+- [x] **Integration** - Update `ReviewerApp` to return `pruned_context` metadata.
 - [ ] **Integration** - Update `SessionOrchestrator` to process `pruned_context` and delete files from turn context.
 - [ ] **Wiring** - Verify end-to-end context visibility and auto-pruning (Gherkin scenarios).
 
@@ -120,6 +120,13 @@ And files in the session context are never struck through automatically
 - Implemented `ContextItem` detail view showing Path, Tokens (k-formatted), Git Status (Human-readable map: e.g., `M` -> `Modified`), Scope, and `auto_prune_reason`.
 - Implemented `SYSTEM_PROMPT` detail view showing Agent name and token count.
 - Verified via unit tests (`test_reviewer_app_shows_context_aggregate_detail` and `test_reviewer_app_shows_context_item_detail`) that navigation correctly updates the right pane with expected formatted strings.
+
+### Integration - Update ReviewerApp to return pruned_context metadata
+- Updated `ReviewerApp.action_submit` to harvest paths of unselected `ContextItem` objects from `project_context`.
+- Collected paths are injected into `plan.metadata["pruned_context"]` as a comma-separated string.
+- If no files are pruned, the key is removed from metadata to maintain a clean plan state.
+- Resolved a `MountError` in `textual_plan_reviewer_logic.py` by adding an `is_attached` guard to `_update_detail_view`. This prevents premature widget mounting during the initial TUI refresh when a complex `project_context` is present.
+- **[DEBT]** Noted that `_update_detail_view` complexity (10/9) and `textual_plan_reviewer_app.py` length (307/300) now exceed quality gates. Logged for structural refactoring in Milestone 10.
 
 ## Delta Analysis
 - **Domain Models:**
