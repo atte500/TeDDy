@@ -77,6 +77,7 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 ## 6. Technical Debt
 
 ### Structural & Security (Found during Deliverables)
+- [ ] **TUI Module Fragmentation:** The `textual_plan_reviewer` module has been split into 7 files to satisfy the 300-line quality gate. This fragmentation has introduced complex circular dependency management via local imports. Consider a higher-level abstraction (e.g., a Controller or State Machine) to reduce per-file logic.
 - [ ] **Structural** - `textual_plan_reviewer_logic.py` exceeds file length limit (454/300). Logic should be split into thematic sub-modules (e.g., `context_logic.py`).
 - [ ] **Complexity** - `_update_detail_view` exceeds complexity (13/9) and statement (56/40) limits. Needs decomposition into specialized preview handlers.
 - [ ] **Refactor** - `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py` exceeds 300 lines (currently 390 lines).

@@ -1,6 +1,6 @@
 # Bug: Windows CI Failure on Documentation Restructure
 
-- **Status:** Unresolved
+- **Status:** Resolved
 - **Milestone:** N/A
 - **Vertical Slice:** N/A
 - **Specs:** N/A
@@ -54,6 +54,7 @@ The CI pipeline runs a multi-OS test matrix and global quality checks. Documenta
 - **TUI Stability:** Injected `await pilot.wait_for_scheduled_updates()` into `test_reviewer_app_shows_context_aggregate_detail`, `test_reviewer_app_shows_context_detail`, and `test_reviewer_app_contains_parameter_detail_listview` to eliminate race conditions on slow runners.
 - **Quality Gate Refactoring:** Extracted logic from `textual_plan_reviewer_logic.py` into `textual_plan_reviewer_helpers.py` and `textual_plan_reviewer_previews.py`. This reduced the file length to 289 lines and satisfied cyclomatic complexity constraints.
 - **Path Optimization:** Confirmed `LocalRepoTreeGenerator` uses `.absolute()` to avoid redundant Windows path resolutions.
+- **Module Load Balancing:** TUI logic distributed across `textual_plan_reviewer_[logic|helpers|previews|editor|execution|app|widgets].py` to maintain files < 300 lines.
 
 ### Prevention
 - **Test Resilience:** Mandatory use of `wait_for_scheduled_updates()` in all TUI driver tests is now a documented standard.
