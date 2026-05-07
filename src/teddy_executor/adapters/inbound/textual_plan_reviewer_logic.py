@@ -123,9 +123,12 @@ async def edit_action_logic(app: ReviewerApp, node: Any, action: ActionData) -> 
 def refresh_node_logic(app: ReviewerApp, node: Any) -> None:
     """Refresh the label and state of a single tree node."""
     from teddy_executor.core.domain.models.plan import ActionData
+    from teddy_executor.core.domain.models.project_context import ContextItem
 
     if isinstance(node.data, ActionData):
         node.label = format_node_label(node.data)
+    elif isinstance(node.data, ContextItem):
+        node.label = _format_context_item_label(node.data)
 
 
 def _format_context_item_label(item: "ContextItem") -> str:
@@ -269,7 +272,23 @@ def check_action_logic(app: ReviewerApp, action_name: str) -> bool:
     ):
         return True
 
-    if not node or not isinstance(node.data, ActionData):
+    from teddy_executor.core.domain.models.project_context import ContextItem
+
+    if not node:
+        return False
+
+    if isinstance(node.data, ContextItem):
+        # Context items only support toggling (space) and universal navigation
+        return action_name in (
+            "toggle_selection",
+            "focus_right",
+            "focus_left",
+            "jump_next",
+            "jump_prev",
+            "cancel",
+        )
+
+    if not isinstance(node.data, ActionData):
         return False
 
     data = cast(ActionData, node.data)
@@ -287,10 +306,14 @@ def check_action_logic(app: ReviewerApp, action_name: str) -> bool:
 def toggle_selection_logic(app: ReviewerApp, node: Any) -> None:
     """Toggle action selection when a node is selected."""
     from teddy_executor.core.domain.models.plan import ActionData
+    from teddy_executor.core.domain.models.project_context import ContextItem
 
-    action: Any = node.data
-    if isinstance(action, ActionData) and not action.executed:
-        action.selected = not action.selected
+    data: Any = node.data
+    if isinstance(data, ActionData) and not data.executed:
+        data.selected = not data.selected
+        app._refresh_node(node)
+    elif isinstance(data, ContextItem):
+        data.selected = not data.selected
         app._refresh_node(node)
 
 

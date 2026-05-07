@@ -7,7 +7,7 @@ from typing import Dict, List, Optional
 from dataclasses import field
 
 
-@dataclass(frozen=True)
+@dataclass
 class ContextItem:
     """
     Metadata for a single context file.
