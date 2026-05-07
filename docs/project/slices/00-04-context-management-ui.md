@@ -41,7 +41,7 @@ And files in the session context are never struck through automatically
 - [x] **Logic** - Implement auto-pruning heuristics in `SessionOrchestrator`.
 - [x] **UI** - Implement "Session Context" tree population in `TextualPlanReviewer`.
 - [x] **UI** - Implement context item toggling and `[s dim]` styling.
-- [ ] **UI** - Implement dynamic `ContextAggregateDetail` view.
+- [x] **UI** - Implement dynamic `ContextAggregateDetail` view.
 - [ ] **Integration** - Update `ReviewerApp` to return `pruned_context` metadata.
 - [ ] **Integration** - Update `SessionOrchestrator` to process `pruned_context` and delete files from turn context.
 - [ ] **Wiring** - Verify end-to-end context visibility and auto-pruning (Gherkin scenarios).
@@ -111,6 +111,15 @@ And files in the session context are never struck through automatically
 - Updated `refresh_node_logic` to correctly call `_format_context_item_label` for `ContextItem` nodes.
 - Updated `check_action_logic` to permit `toggle_selection` and navigation actions for `ContextItem` nodes while disabling action-specific logic (execute/revert).
 - Verified toggling and styling behavior via unit test `test_reviewer_app_toggles_context_item`, asserting on the Rich markup of the updated node label.
+
+### UI - Implement dynamic ContextAggregateDetail view
+- Expanded `_update_detail_view` in `textual_plan_reviewer_logic.py` to handle `CONTEXT_ROOT`, scope labels (`SYSTEM_LABEL`, etc.), and `ContextItem` data.
+- Implemented Aggregate View showing:
+    - **Total Tokens:** Formatted as `X.Yk / Zk tokens` (actual vs budget).
+    - **Scope Breakdown:** Formatted with `• ` bullets and k-unit tokens for System, Session, and Turn.
+- Implemented `ContextItem` detail view showing Path, Tokens (k-formatted), Git Status (Human-readable map: e.g., `M` -> `Modified`), Scope, and `auto_prune_reason`.
+- Implemented `SYSTEM_PROMPT` detail view showing Agent name and token count.
+- Verified via unit tests (`test_reviewer_app_shows_context_aggregate_detail` and `test_reviewer_app_shows_context_item_detail`) that navigation correctly updates the right pane with expected formatted strings.
 
 ## Delta Analysis
 - **Domain Models:**

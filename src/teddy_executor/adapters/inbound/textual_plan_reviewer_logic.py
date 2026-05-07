@@ -58,6 +58,70 @@ def _update_detail_view(app: ReviewerApp, data: Any):
     switcher = app.query_one(ContentSwitcher)
     pane = app.query_one(ParameterDetail)
 
+    from teddy_executor.core.domain.models.project_context import ContextItem
+
+    # Handle Context items and roots
+    if (
+        data in (CONTEXT_ROOT, SYSTEM_LABEL, SESSION_LABEL, TURN_LABEL)
+        or isinstance(data, ContextItem)
+        or (isinstance(data, dict) and data.get("type") == "SYSTEM_PROMPT")
+    ):
+        switcher.current = "params-view"
+        pane.clear()
+
+        if isinstance(data, ContextItem):
+            pane.append(DetailItem("Path", data.path))
+            pane.append(DetailItem("Tokens", f"{data.token_count / 1000.0:.1f}k"))
+            status_map = {
+                "M": "Modified",
+                "??": "Untracked",
+                "U": "Untracked",
+                "A": "Added",
+                "D": "Deleted",
+            }
+            status_text = status_map.get(data.git_status.strip(), "Unmodified")
+            pane.append(DetailItem("Git Status", status_text))
+            pane.append(DetailItem("Scope", data.scope))
+            if data.auto_prune_reason:
+                pane.append(DetailItem("Auto-Prune", data.auto_prune_reason))
+        elif isinstance(data, dict) and data.get("type") == "SYSTEM_PROMPT":
+            pane.append(DetailItem("Agent", data.get("agent", "Unknown")))
+            pane.append(DetailItem("Tokens", f"{data.get('tokens', 0) / 1000.0:.1f}k"))
+        # Context Aggregate View
+        elif app.project_context:
+            total_tokens = (
+                sum(i.token_count for i in app.project_context.items)
+                + app.project_context.system_prompt_tokens
+            )
+            system_k = app.project_context.system_prompt_tokens / 1000.0
+            session_k = (
+                sum(
+                    i.token_count
+                    for i in app.project_context.items
+                    if i.scope == "Session"
+                )
+                / 1000.0
+            )
+            turn_k = (
+                sum(
+                    i.token_count
+                    for i in app.project_context.items
+                    if i.scope == "Turn"
+                )
+                / 1000.0
+            )
+
+            pane.append(
+                DetailItem(
+                    "Total Context",
+                    f"{total_tokens / 1000.0:.1f}k / {app.project_context.total_window / 1000.0:.0f}k tokens",
+                )
+            )
+            pane.append(DetailItem("• System", f"{system_k:.1f}k"))
+            pane.append(DetailItem("• Session", f"{session_k:.1f}k"))
+            pane.append(DetailItem("• Turn", f"{turn_k:.1f}k"))
+        return
+
     if isinstance(data, dict) and data.get("type") == "RATIONALE_SECTION":
         switcher.current = "rationale-view"
         app.query_one("#rationale-content", Markdown).update(data["content"])

@@ -77,6 +77,8 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 ## 6. Technical Debt
 
 ### Structural & Security (Found during Deliverables)
+- [ ] **Structural** - `textual_plan_reviewer_logic.py` exceeds file length limit (454/300). Logic should be split into thematic sub-modules (e.g., `context_logic.py`).
+- [ ] **Complexity** - `_update_detail_view` exceeds complexity (13/9) and statement (56/40) limits. Needs decomposition into specialized preview handlers.
 - [ ] **Refactor** - `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py` exceeds 300 lines (currently 390 lines).
 - [ ] **Refactor** - `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py` exceeds 300 lines (367 lines). Move `_update_detail_view` or section builders to helpers.
 - [ ] **Infrastructure Scopes:** Standardize all registrations in `src/teddy_executor/registries/infrastructure.py` to use `punq.Scope.transient` to ensure consistent test isolation and prevent singleton leaks (found during fix of `05-ci-preflight-failure`).
