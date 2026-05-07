@@ -1,6 +1,6 @@
 import re
 from dataclasses import is_dataclass, replace
-from typing import Dict, Set
+from typing import Any, Dict, Optional, Set
 
 from teddy_executor.core.domain.models import ProjectContext
 from teddy_executor.core.ports.outbound.config_service import IConfigService
@@ -68,13 +68,15 @@ class SessionPruningService:
                 )
                 continue
 
-            match = re.search(r"turn-(\d+)", item.path)
-            if match and match.group(0) in turns_to_prune:
+            # Match numeric turn directories (e.g. '01', '02')
+            match = re.search(r"/(\d+)/", item.path)
+            turn_id = match.group(1) if match else None
+            if turn_id and turn_id in turns_to_prune:
                 pruned_indices.add(i)
                 items[i] = replace(
                     item,
                     selected=False,
-                    auto_prune_reason=turns_to_prune[match.group(0)],
+                    auto_prune_reason=turns_to_prune[turn_id],
                 )
 
         # 2. Heuristic 2: Global Budget
@@ -85,43 +87,55 @@ class SessionPruningService:
     def _identify_turns_to_prune(self, items) -> Dict[str, str]:
         """Identifies turns that should be pruned based on failure status."""
         turns_to_prune: Dict[str, str] = {}
-        prune_non_green = self._config_service.get_setting(
-            "auto_pruning.prune_preceding_on_non_green", True
+        prune_non_green = bool(
+            self._config_service.get_setting(
+                "auto_pruning.prune_preceding_on_non_green", True
+            )
         )
-        prune_validation = self._config_service.get_setting(
-            "auto_pruning.prune_validation_failures", True
+        prune_validation = bool(
+            self._config_service.get_setting(
+                "auto_pruning.prune_validation_failures", True
+            )
         )
-
-        # Defensive check for MagicMocks in tests
-        try:
-            prune_non_green = bool(prune_non_green)
-            prune_validation = bool(prune_validation)
-        except (TypeError, ValueError):
-            prune_non_green = True
-            prune_validation = True
 
         for item in items:
             if item.scope != "Turn":
                 continue
 
-            match = re.search(r"turn-(\d+)", item.path)
+            # Match numeric turn directories (e.g. '01', '02')
+            match = re.search(r"/(\d+)/", item.path)
             if not match:
                 continue
-            turn_id = match.group(0)
+            turn_id = match.group(1)
 
+            reason = self._check_item_for_pruning(
+                item, prune_non_green, prune_validation
+            )
+            if reason:
+                turns_to_prune[turn_id] = reason
+
+        return turns_to_prune
+
+    def _check_item_for_pruning(
+        self, item: Any, prune_non_green: bool, prune_validation: bool
+    ) -> Optional[str]:
+        """Evaluates an individual item for content-based pruning heuristics."""
+        try:
             # Heuristic 3: Non-green state
             if prune_non_green and item.path.endswith("plan.md"):
                 content = self._file_system_manager.read_file(item.path)
                 if "🔴" in content or "🟡" in content:
-                    turns_to_prune[turn_id] = "Pruned as it led to a non-green state"
+                    return "Pruned as it led to a non-green state"
 
             # Heuristic 4: Validation failure
             if prune_validation and item.path.endswith("report.md"):
                 content = self._file_system_manager.read_file(item.path)
                 if "Status: Validation Failed" in content:
-                    turns_to_prune[turn_id] = "Plan failed validation"
-
-        return turns_to_prune
+                    return "Plan failed validation"
+        except (FileNotFoundError, OSError):
+            # On Windows, rapid read-after-write can throw PermissionError
+            return None
+        return None
 
     def _apply_global_budget(self, items):
         """Prunes turn context items to fit within a global token budget."""

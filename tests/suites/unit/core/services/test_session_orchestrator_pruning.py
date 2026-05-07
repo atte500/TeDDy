@@ -64,7 +64,7 @@ def test_execute_prunes_deleted_files_heuristic(
     Heuristic 5: Files with git status 'D' (Deleted) must be auto-pruned.
     """
     # Arrange
-    plan_path = "session/turn-02/plan.md"
+    plan_path = "session/02/plan.md"
     orchestrator._file_system_manager.path_exists.return_value = True  # Is session mode
 
     # Mock context with a deleted file
@@ -127,7 +127,7 @@ def test_execute_prunes_global_budget_heuristic(orchestrator, mock_context_servi
     orchestrator._plan_validator.validate.return_value = []
 
     # Act
-    orchestrator.execute(plan_path="session/turn-02/plan.md")
+    orchestrator.execute(plan_path="session/02/plan.md")
 
     # Assert
     passed_context = orchestrator._execution_orchestrator.execute.call_args.kwargs.get(
@@ -155,10 +155,10 @@ def test_execute_prunes_failure_history_heuristic(orchestrator, mock_context_ser
 
     items = [
         ContextItem(
-            path="session/turn-01/plan.md", token_count=100, git_status="", scope="Turn"
+            path="session/01/plan.md", token_count=100, git_status="", scope="Turn"
         ),
         ContextItem(
-            path="session/turn-01/report.md",
+            path="session/01/report.md",
             token_count=100,
             git_status="",
             scope="Turn",
@@ -169,9 +169,9 @@ def test_execute_prunes_failure_history_heuristic(orchestrator, mock_context_ser
         items=items, header="", content=""
     )
 
-    # Mock file system to return a non-green header for turn-01/plan.md
+    # Mock file system to return a non-green header for 01/plan.md
     def mock_read(path):
-        if "turn-01/plan.md" in path:
+        if "01/plan.md" in path:
             return "- **Status:** [OUTCOME: FAILURE] [STATE: 🔴]"
         return ""
 
@@ -181,14 +181,14 @@ def test_execute_prunes_failure_history_heuristic(orchestrator, mock_context_ser
     orchestrator._plan_validator.validate.return_value = []
 
     # Act
-    orchestrator.execute(plan_path="session/turn-02/plan.md")
+    orchestrator.execute(plan_path="session/02/plan.md")
 
     # Assert
     passed_context = orchestrator._execution_orchestrator.execute.call_args.kwargs.get(
         "project_context"
     )
-    plan_item = next(i for i in passed_context.items if "turn-01/plan.md" in i.path)
-    report_item = next(i for i in passed_context.items if "turn-01/report.md" in i.path)
+    plan_item = next(i for i in passed_context.items if "01/plan.md" in i.path)
+    report_item = next(i for i in passed_context.items if "01/report.md" in i.path)
 
     assert plan_item.selected is False
     assert report_item.selected is False
@@ -206,10 +206,10 @@ def test_execute_prunes_validation_failure_heuristic(
 
     items = [
         ContextItem(
-            path="session/turn-01/plan.md", token_count=100, git_status="", scope="Turn"
+            path="session/01/plan.md", token_count=100, git_status="", scope="Turn"
         ),
         ContextItem(
-            path="session/turn-01/report.md",
+            path="session/01/report.md",
             token_count=100,
             git_status="",
             scope="Turn",
@@ -222,7 +222,7 @@ def test_execute_prunes_validation_failure_heuristic(
 
     # Mock file system to return validation failure in report
     def mock_read(path):
-        if "turn-01/report.md" in path:
+        if "01/report.md" in path:
             return "Status: Validation Failed"
         return ""
 
@@ -232,14 +232,14 @@ def test_execute_prunes_validation_failure_heuristic(
     orchestrator._plan_validator.validate.return_value = []
 
     # Act
-    orchestrator.execute(plan_path="session/turn-02/plan.md")
+    orchestrator.execute(plan_path="session/02/plan.md")
 
     # Assert
     passed_context = orchestrator._execution_orchestrator.execute.call_args.kwargs.get(
         "project_context"
     )
-    plan_item = next(i for i in passed_context.items if "turn-01/plan.md" in i.path)
-    report_item = next(i for i in passed_context.items if "turn-01/report.md" in i.path)
+    plan_item = next(i for i in passed_context.items if "01/plan.md" in i.path)
+    report_item = next(i for i in passed_context.items if "01/report.md" in i.path)
 
     assert plan_item.selected is False
     assert report_item.selected is False
