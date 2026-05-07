@@ -9,10 +9,12 @@
     <workflow>
 
       <phase n="1" name="Exploration">
-        <goal>Gather context, audit the environment, verify alignment, and assess technical debt.</goal>
-        <step n="1" name="Discovery">Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context, prior agent artifacts, and external patterns required for the design.</step>
-        <step n="2" name="Environment Audit">`READ` config files (`pyproject.toml`, `.github/workflows/ci.yml`, etc.) to audit existing dependencies. If the foundation is missing (new project), pivot to drafting `Milestone 00 - Foundation` (CI, Dependency Injection, Test Harness) before feature work.</step>
-        <step n="3" name="Compliance Audit">Compare existing implementations against the `Specification Document`. Log any gaps or divergences (where implementation reality differs from the spec) as `- [DEBT] <description>` in your State Dashboard. Also read the active `Milestone` to review the existing `Technical Debt` backlog.</step>
+        <goal>Gather context, audit the environment, and identify all technical/functional debt.</goal>
+        <step n="1" name="Discovery">Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context and external patterns required for the design.</step>
+        <step n="2" name="Baseline Audit">`READ` config files to audit dependencies and CI/DI/Harness baseline. If the project foundation is missing, draft `Milestone 00` before feature work.</step>
+        <step n="3" name="Compliance Audit">Compare existing implementations against the `Specification Document` to identify functional gaps or divergences.</step>
+        <step n="4" name="Integrity Audit">Audit for Eager Initialization (heavy resources loaded outside their lifecycle), Internal Inconsistencies (code vs. docstrings), Boundary Contamination (logic layer dependence on infrastructure frameworks), and any improper inline quality gate bypass comments (e.g., '# type: ignore' or 'noqa').</step>
+        <step n="5" name="Debt Logging">You MUST log all findings from the previous audits as `[DEBT]` in your State Dashboard to ensure they are prioritized in the execution plan. Also read the active `Milestone` to review the existing `Technical Debt` backlog.</step>
       </phase>
 
       <phase n="2" name="Alignment">
@@ -23,8 +25,8 @@
 
       <phase n="3" name="Design">
         <goal>Codify strategic decisions and formulate a debt reconciliation strategy.</goal>
-        <step n="1" name="Strategic Debt Reconciliation">Review the logged `[DEBT]` items. You MUST explicitly check for and log any inline  quality gate bypass comments (e.g.,  '# type: ignore' or 'noqa') discovered during your global audit. If debt must be resolved to safely unblock the current feature, plan to include it as preliminary Refactoring deliverables in the upcoming feature slice. Mark addressed debt as solved `[x]` in the Milestone.</step>
-        <step n="2" name="Specs Alignment">If all planned features for the epic are implemented, or if existing code has diverged from the spec for valid technical reasons, resolve the divergence as approved in the Alignment Gate. Perform this by either: Planning Refactoring Slices to fix the code, or Performing As-Built Alignment by `EDIT`-ing the `Specification Document` and Design Docs to match reality.</step>
+        <step n="1" name="Strategic Debt Reconciliation">Review logged `[DEBT]` items. Plan for their resolution by either: Incorporating prerequisite refactoring deliverables into the upcoming Vertical Slice, or creating dedicated Refactoring Slices to clear the backlog. Mark addressed debt as solved `[x]` in the Milestone.</step>
+        <step n="2" name="Specs Alignment">Identify divergences where implementation reality differs from the `Specification Document`. Resolve these by either: Planning Refactoring Slices to fix the code, or performing As-Built Alignment by `EDIT`-ing the Spec and Design Docs to match reality.</step>
         <step n="3" name="Milestone Management">`CREATE` or `EDIT` the technical execution `Milestone` (`docs/project/milestones/MM-{{name}}.md`) for the epic. Translate the business Spec into a concrete technical roadmap.</step>
         <step n="4" name="Draft Component Designs">For each new or affected component, `CREATE` or `EDIT` a *draft* of its design document (`docs/architecture/**/*.md`). This draft should capture the high-level strategic intent, purpose, and key contracts, but defer detailed implementation logic.</step>
         <step n="5" name="Central Architecture Maintenance">`EDIT` `docs/architecture/ARCHITECTURE.md` to update the `Component & Boundary Map` and any cross-cutting `Key Architectural Decisions`, adhering strictly to its existing structure.</step>
