@@ -16,6 +16,7 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
 if TYPE_CHECKING:
     from teddy_executor.adapters.inbound.textual_plan_reviewer_app import ReviewerApp
     from teddy_executor.core.domain.models.plan import ActionData
+    from teddy_executor.core.domain.models.project_context import ContextItem
 
 
 ALLOWED_RATIONALE_SECTIONS = [
@@ -24,6 +25,14 @@ ALLOWED_RATIONALE_SECTIONS = [
     "Expectation",
     "State Dashboard",
 ]
+
+# Tree Node Identifiers
+CONTEXT_ROOT = "CONTEXT_ROOT"
+SYSTEM_LABEL = "SYSTEM_LABEL"
+SESSION_LABEL = "SESSION_LABEL"
+TURN_LABEL = "TURN_LABEL"
+RATIONALE_ROOT = "RATIONALE_ROOT"
+ACTION_PLAN_ROOT = "ACTION_PLAN_ROOT"
 
 
 # Summary logic moved to textual_plan_reviewer_helpers.py
@@ -62,12 +71,12 @@ def _update_detail_view(app: ReviewerApp, data: Any):
         pane.mount(ListItem(Label("Select an item to view details")))
         return
 
-    if data == "RATIONALE_ROOT":
+    if data == RATIONALE_ROOT:
         # Prevent race condition: don't update metadata if user has already moved cursor
         from textual.widgets import Tree
 
         tree = app.query_one(Tree)
-        if tree.cursor_node and tree.cursor_node.data != "RATIONALE_ROOT":
+        if tree.cursor_node and tree.cursor_node.data != RATIONALE_ROOT:
             return
 
         # Check both cases as metadata keys can vary
@@ -87,7 +96,7 @@ def _update_detail_view(app: ReviewerApp, data: Any):
         pane.append(DetailItem("Agent", agent))
         pane.append(DetailItem("Plan Type", plan_type))
         pane.append(DetailItem("Status", status))
-    elif data == "ACTION_PLAN_ROOT":
+    elif data == ACTION_PLAN_ROOT:
         pane.mount(ListItem(Label("Select an action below to view details")))
     else:
         # data is likely ActionData
@@ -119,8 +128,66 @@ def refresh_node_logic(app: ReviewerApp, node: Any) -> None:
         node.label = format_node_label(node.data)
 
 
+def _format_context_item_label(item: "ContextItem") -> str:
+    """Format a context item label according to UI standards."""
+    status_colors = {
+        "M": "yellow",
+        "??": "green",
+        "A": "green",
+        "D": "red",
+        "U": "green",
+    }
+    clean_status = item.git_status.strip()
+    # Map ?? to U for visual consistency
+    display_status = "U" if clean_status == "??" else clean_status
+    status_part = (
+        f" [[{status_colors.get(clean_status, 'white')}]{display_status}[/]]"
+        if clean_status
+        else ""
+    )
+
+    token_str = f"{item.token_count / 1000.0:.1f}k"
+
+    if not item.selected:
+        return f"  [s dim]{item.path}{status_part} {token_str}[/]"
+
+    return f"  [bold]{item.path}[/]{status_part} [#888888]{token_str}[/]"
+
+
+def _build_context_section(app: ReviewerApp, tree: Any) -> Any:
+    """Build the 'Context' tree section."""
+    if not app.project_context:
+        return None
+
+    con_root = tree.root.add("[bold]Context[/]", data=CONTEXT_ROOT, expand=False)
+    con_root.add_leaf("[#888888 italic]System:[/]", data=SYSTEM_LABEL)
+    con_root.add_leaf(
+        f"  [bold]{app.project_context.agent_name}[/]",
+        data={
+            "type": "SYSTEM_PROMPT",
+            "agent": app.project_context.agent_name,
+            "tokens": app.project_context.system_prompt_tokens,
+        },
+    )
+
+    con_root.add_leaf("[#888888 italic]Session:[/]", data=SESSION_LABEL)
+    for item in app.project_context.items:
+        if item.scope == "Session":
+            con_root.add_leaf(_format_context_item_label(item), data=item)
+
+    con_root.add_leaf("[#888888 italic]Turn:[/]", data=TURN_LABEL)
+    for item in app.project_context.items:
+        if item.scope == "Turn":
+            con_root.add_leaf(_format_context_item_label(item), data=item)
+
+    return con_root
+
+
 def on_mount_logic(app: Any) -> None:
     """Populate the action tree and set title when the app is mounted."""
+    if getattr(app, "_tree_built", False) is True:
+        return
+
     status_raw = (
         app.plan.metadata.get("Status") or app.plan.metadata.get("status") or ""
     )
@@ -136,8 +203,11 @@ def on_mount_logic(app: Any) -> None:
     tree.show_root = False
     tree.root.expand()
 
-    # 1. Rationale Section
-    rat_root = tree.root.add("[bold]Rationale[/]", data="RATIONALE_ROOT", expand=True)
+    # 1. Context Section
+    con_root = _build_context_section(app, tree)
+
+    # 2. Rationale Section
+    rat_root = tree.root.add("[bold]Rationale[/]", data=RATIONALE_ROOT, expand=True)
 
     # Split on '### ' OR '1. ' (numeric lists at start of line)
     sections = re.split(r"\n(?=### |\d+\.\s+)", "\n" + app.plan.rationale)
@@ -159,10 +229,8 @@ def on_mount_logic(app: Any) -> None:
             # Merge non-standard section into preceding standard node
             current_node.data["content"] += "\n\n" + section
 
-    # 2. Action Plan Section
-    act_root = tree.root.add(
-        "[bold]Action Plan[/]", data="ACTION_PLAN_ROOT", expand=True
-    )
+    # 3. Action Plan Section
+    act_root = tree.root.add("[bold]Action Plan[/]", data=ACTION_PLAN_ROOT, expand=True)
     for action in app.plan.actions:
         if not hasattr(action, "_original_params"):
             action._original_params = action.params.copy()
@@ -170,10 +238,13 @@ def on_mount_logic(app: Any) -> None:
             continue
         act_root.add_leaf(format_node_label(action), data=action)
 
-    # Initialize with the Rationale root details highlighted
-    tree.move_cursor(rat_root)
+    # Initialize cursor: Context root if available, else Rationale root
+    initial_node = con_root if con_root else rat_root
+
+    tree.move_cursor(initial_node)
     tree.focus()
-    app.call_after_refresh(_update_detail_view, app, "RATIONALE_ROOT")
+    app._tree_built = True
+    app.call_after_refresh(_update_detail_view, app, initial_node.data)
 
 
 def check_action_logic(app: ReviewerApp, action_name: str) -> bool:
@@ -183,13 +254,25 @@ def check_action_logic(app: ReviewerApp, action_name: str) -> bool:
 
     tree = app.query_one(Tree)
     node = tree.cursor_node
+
+    # Navigation and universal actions are always allowed
+    if action_name in (
+        "focus_right",
+        "focus_left",
+        "jump_next",
+        "jump_prev",
+        "cancel",
+        "submit",
+        "view_plan",
+        "add_message",
+        "toggle_all",
+    ):
+        return True
+
     if not node or not isinstance(node.data, ActionData):
-        return action_name not in (
-            "execute_step",
-            "edit_details",
-            "revert",
-            "view_details",
-        )
+        return False
+
+    data = cast(ActionData, node.data)
 
     data = cast(ActionData, node.data)
     results = {

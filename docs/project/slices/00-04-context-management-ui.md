@@ -39,7 +39,7 @@ And files in the session context are never struck through automatically
 - [x] **Refactor** - Update `ConsolePlanReviewer` and `ExecutionOrchestrator` for `IPlanReviewer` signature expansion.
 - [x] **Logic** - Update `ContextService` to build `ContextItem` list with git status and tokens.
 - [x] **Logic** - Implement auto-pruning heuristics in `SessionOrchestrator`.
-- [ ] **UI** - Implement "Session Context" tree population in `TextualPlanReviewer`.
+- [x] **UI** - Implement "Session Context" tree population in `TextualPlanReviewer`.
 - [ ] **UI** - Implement context item toggling and `[s dim]` styling.
 - [ ] **UI** - Implement dynamic `ContextAggregateDetail` view.
 - [ ] **Integration** - Update `ReviewerApp` to return `pruned_context` metadata.
@@ -92,6 +92,18 @@ And files in the session context are never struck through automatically
 - Resolved `UnboundLocalError` by ensuring all method-level imports (e.g., `re`) are scoped correctly and not trapped in conditional loops.
 - Updated `TestEnvironment` harness to provide mandatory default token counts for `ILlmClient`.
 - Refactored legacy integration tests to use the centralized harness, resolving wiring regressions.
+
+### UI - Implement "Session Context" tree population in TextualPlanReviewer
+- Implemented `_build_context_section` in `textual_plan_reviewer_logic.py` to inject the new "Context" section before the "Rationale" section.
+- Added support for grouped context items by scope (System/Session/Turn).
+- Implemented `_format_context_item_label` with Prototype-compliant Rich formatting:
+    - **Path:** Bold.
+    - **Status:** Color-coded (M: yellow, U/A: green, D: red).
+    - **Tokens:** Grayed out.
+    - **Indentation:** 2 leading spaces for file items.
+- Introduced `_tree_built` guard in `on_mount_logic` using an explicit `is True` check to support `MagicMock` in unit tests.
+- Synchronized top-level section identifiers (`CONTEXT_ROOT`, `RATIONALE_ROOT`, `ACTION_PLAN_ROOT`) as constants to ensure robustness in navigation and detail views.
+- Updated initial cursor logic to focus the "Context" root if `ProjectContext` is present.
 
 ## Delta Analysis
 - **Domain Models:**
