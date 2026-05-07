@@ -55,7 +55,7 @@
             - Clean Code: Apply SRP. Remove stale comments; ensure remaining comments explain "why". Prune detailed assertions from Acceptance/Integration tests, ensuring complex edge cases are validated at the Unit layer.
           </tdd_phase>
           <tdd_phase n="4" name="Loop Exit">
-            If the implementation fully satisfies the SINGLE current deliverable, you MUST exit the inner loop and proceed immediately to Phase 3 (Integration). Do NOT begin the next deliverable until Phase 5 (VCP) is complete.
+            If the implementation fully satisfies the SINGLE current deliverable, you MUST exit the inner loop and proceed immediately to Phase 3 (Integration). You are strictly forbidden from starting a new deliverable until the current one is version controlled.
           </tdd_phase>
         </inner_loop>
       </phase>
@@ -76,6 +76,9 @@
 
           Design Limitation: Prepend foundational deliverables (`Refactor`/`Contract`) to the `Vertical Slice`. Update `Component Design Docs` or `PROMPT` user if requirements must change before refining `Spec` docs. Restart Phase 1.
         </step>
+        <step n="3" name="Integration Success">
+          If the global test suite passes, you MUST proceed to Phase 4 (Documentation). You are strictly forbidden from starting a new deliverable until the current one is version controlled.
+        </step>
       </phase>
 
       <phase n="4" name="Documentation">
@@ -90,7 +93,7 @@
         <goal>Verify workspace state and hand off versioned history. Prerequisite: Successful integration verified by global test run.</goal>
         <step n="1" name="Consistency Check">If this is the last deliverable, execute `git grep` for deleted/renamed components and resolve stale hits in documentation/comments.</step>
         <step n="2" name="Version Control">Execute the commit following the VCP for the current deliverable in its own turn.</step>
-        <step n="3" name="Loop">If uncompleted deliverables remain, reset the State Dashboard and restart the cycle at Phase 1 (Orientation) using the Plan Type `Orientation`.</step>
+        <step n="3" name="Atomic Delivery">You are strictly forbidden from starting a new deliverable until the current one is version controlled. Once the commit is pushed, you may reset the State Dashboard and proceed to the next item's Orientation.</step>
       </phase>
     </workflow>
 
