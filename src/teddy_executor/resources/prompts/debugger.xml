@@ -56,7 +56,7 @@
       <phase n="6" name="Systemic Audit">
         <goal>Generalize the learning and harvest technical debt.</goal>
         <step n="1" name="Audit Codebase">Use `git grep` to search the codebase for similar vulnerable patterns or code smells revealed by this bug.</step>
-        <step n="2" name="Log Debt">If any vulnerabilities are found, DO NOT fix them now. Locate the currently active milestone in `docs/project/milestones/` and append them as `[ ]` tasks under the `## Technical Debt` section.</step>
+        <step n="2" name="Log Debt">If any vulnerabilities or structural hacks (e.g., circularity from file splitting) are found, DO NOT fix them now. Locate the currently active milestone in `docs/project/milestones/` and append them as tasks under the `## Technical Debt` section.</step>
       </phase>
 
       <phase n="7" name="Cleanup & Commit">

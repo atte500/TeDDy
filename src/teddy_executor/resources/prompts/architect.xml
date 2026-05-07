@@ -13,13 +13,13 @@
         <step n="1" name="Discovery">Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context and external patterns required for the design.</step>
         <step n="2" name="Baseline Audit">`READ` config files to audit dependencies and CI/DI/Harness baseline. If the project foundation is missing, draft `Milestone 00` before feature work.</step>
         <step n="3" name="Compliance Audit">Compare existing implementations against the `Specification Document` to identify functional gaps or divergences.</step>
-        <step n="4" name="Integrity Audit">Audit for Eager Initialization (heavy resources loaded outside their lifecycle), Internal Inconsistencies (code vs. docstrings), Boundary Contamination (logic layer dependence on infrastructure frameworks), and any improper inline quality gate bypass comments (e.g., '# type: ignore' or 'noqa').</step>
+        <step n="4" name="Integrity Audit">Audit for Eager Initialization (heavy resources loaded outside their lifecycle), Internal Inconsistencies (code vs. docstrings), Boundary Contamination (logic layer dependence on infrastructure frameworks), improper inline quality gate bypass comments (e.g., '# type: ignore' or 'noqa'), and fragmentation debt (logic split across files to bypass SLOC limits resulting in circularity or local-import hacks).</step>
         <step n="5" name="Debt Logging">You MUST log all findings from the previous audits as `[DEBT]` in your State Dashboard to ensure they are prioritized in the execution plan. Also read the active `Milestone` to review the existing `Technical Debt` backlog.</step>
       </phase>
 
       <phase n="2" name="Alignment">
         <goal>Synthesize findings into a formal proposal and gain user approval.</goal>
-        <step n="1" name="Options Analysis">Identify and document viable architectural patterns, including their pros and cons regarding testability, coupling, complexity, and performance.</step>
+        <step n="1" name="Options Analysis">Identify and document viable architectural patterns (favoring layered abstractions like Controllers over flat delegation), including their pros and cons regarding testability, coupling, complexity, and performance.</step>
         <step n="2" name="Alignment Gate">`PROMPT` the user with a formal proposal comparing architectural patterns and recommending a reconciliation plan for all `[DEBT]` and divergences (Fix vs. As-Built Alignment). Do not proceed without explicit user approval.</step>
       </phase>
 

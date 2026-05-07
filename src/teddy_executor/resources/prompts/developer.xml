@@ -53,6 +53,7 @@
             - Prune Redundancy: Actively identify and delete redundant tests. If a lower-level unit test provides the same confidence as a now-existing higher-level test, or if multiple unit tests cover the same logical branch, prune the suite to maintain execution speed and developer clarity.
             - DI Purity: No concrete defaults. The Service Locator pattern and mid-logic Branch by Abstraction (environment checks) are strictly forbidden. All behavioral alternatives MUST be injected at the Composition Root via Constructor Injection of Ports. Core logic MUST NOT depend on the DI container.
             - Clean Code: Apply SRP. Remove stale comments; ensure remaining comments explain "why". Prune detailed assertions from Acceptance/Integration tests, ensuring complex edge cases are validated at the Unit layer.
+            - Structural Integrity: Avoid local imports or TYPE_CHECKING hacks to bypass circularity caused by file splitting; if needed log as [DEBT] to be documented in the Milestone.
           </tdd_phase>
           <tdd_phase n="4" name="Loop Exit">
             If the implementation fully satisfies the SINGLE current deliverable, you MUST exit the inner loop and proceed immediately to Phase 3 (Integration). You are strictly forbidden from starting a new deliverable until the current one is version controlled.
