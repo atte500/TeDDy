@@ -22,6 +22,16 @@ def orchestrator(  # noqa: PLR0913
         planning_service=mock_planning_service,
     )
 
+    from teddy_executor.core.domain.models import ProjectContext
+
+    mock_config = MagicMock()
+    mock_config.get_setting.side_effect = lambda key, default=None: default
+
+    mock_context_service = MagicMock()
+    mock_context_service.get_context.return_value = ProjectContext(
+        header="", content="", items=[]
+    )
+
     orchestrator_instance = SessionOrchestrator(
         execution_orchestrator=mock_run_plan,
         session_service=mock_session_manager,
@@ -31,6 +41,8 @@ def orchestrator(  # noqa: PLR0913
         user_interactor=mock_user_interactor,
         lifecycle_manager=MagicMock(),
         replanner=replanner,
+        context_service=mock_context_service,
+        config_service=mock_config,
     )
     return orchestrator_instance
 

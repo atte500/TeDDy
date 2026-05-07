@@ -4,21 +4,11 @@ from teddy_executor.__main__ import app
 runner = CliRunner()
 
 
-def test_resume_picks_up_pending_execution(tmp_path, monkeypatch, container):
-    from unittest.mock import MagicMock
-    from teddy_executor.core.ports.outbound import ILlmClient, IConfigService
-    from teddy_executor.core.ports.inbound.init import IInitUseCase
+def test_resume_picks_up_pending_execution(tmp_path, monkeypatch):
+    from tests.harness.setup.test_environment import TestEnvironment
 
-    # Manually satisfy preflight and bootstrap for CLI integration
-    mock_llm = MagicMock(spec=ILlmClient)
-    mock_llm.validate_config.return_value = []
-    mock_config = MagicMock(spec=IConfigService)
-    mock_config.get_config_path.return_value = ".teddy/config.yaml"
-    mock_init = MagicMock(spec=IInitUseCase)
-
-    container.register(ILlmClient, instance=mock_llm)
-    container.register(IConfigService, instance=mock_config)
-    container.register(IInitUseCase, instance=mock_init)
+    # Use harness to ensure complete wiring of SessionOrchestrator
+    TestEnvironment(monkeypatch, tmp_path).setup()
     """
     Scenario: Resume picks up pending execution
     Given a turn directory with plan.md but no report.md.

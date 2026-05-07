@@ -38,7 +38,7 @@ And files in the session context are never struck through automatically
 - [x] **Contract** - Update `IPlanReviewer.review` signature to accept `project_context`.
 - [x] **Refactor** - Update `ConsolePlanReviewer` and `ExecutionOrchestrator` for `IPlanReviewer` signature expansion.
 - [x] **Logic** - Update `ContextService` to build `ContextItem` list with git status and tokens.
-- [ ] **Logic** - Implement auto-pruning heuristics in `SessionOrchestrator`.
+- [x] **Logic** - Implement auto-pruning heuristics in `SessionOrchestrator`.
 - [ ] **UI** - Implement "Session Context" tree population in `TextualPlanReviewer`.
 - [ ] **UI** - Implement context item toggling and `[s dim]` styling.
 - [ ] **UI** - Implement dynamic `ContextAggregateDetail` view.
@@ -79,6 +79,19 @@ And files in the session context are never struck through automatically
 - Applied Guideline: Mapped `??` (Untracked) to `U` for UI consistency.
 - Updated `get_context` to iterate through all scoped paths and generate `ContextItem` objects with token counts and git status.
 - Verified via unit tests that all files (including those in multiple scopes) are correctly captured and metadata is accurate.
+
+### Logic - Implement auto-pruning heuristics in SessionOrchestrator
+- Implemented `_apply_auto_pruning` in `SessionOrchestrator` using a multi-pass heuristic approach.
+- Rules implemented:
+    - **Global Budget:** Prunes largest files first to fit under `global_context_threshold`.
+    - **Failure History:** Prunes turns preceding a 🔴/🟡 plan status.
+    - **Validation Failure:** Prunes failed validation reports and their plans.
+    - **Deleted File:** Prunes files with `D` git status.
+    - **Individual Threshold:** Prunes files exceeding `threshold_tokens`.
+- Hardened logic against shallow mocks in legacy tests via `is_dataclass` checks and safe numeric casting of configuration values.
+- Resolved `UnboundLocalError` by ensuring all method-level imports (e.g., `re`) are scoped correctly and not trapped in conditional loops.
+- Updated `TestEnvironment` harness to provide mandatory default token counts for `ILlmClient`.
+- Refactored legacy integration tests to use the centralized harness, resolving wiring regressions.
 
 ## Delta Analysis
 - **Domain Models:**

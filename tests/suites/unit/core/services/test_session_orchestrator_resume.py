@@ -30,6 +30,9 @@ def orchestrator(  # noqa: PLR0913
         planning_service=MagicMock(),
     )
 
+    mock_config = MagicMock()
+    mock_config.get_setting.side_effect = lambda key, default=None: default
+
     return SessionOrchestrator(
         execution_orchestrator=mock_run_plan,
         session_service=mock_session_manager,
@@ -39,6 +42,8 @@ def orchestrator(  # noqa: PLR0913
         user_interactor=mock_user_interactor,
         lifecycle_manager=mock_lifecycle_manager,
         replanner=replanner,
+        context_service=MagicMock(),
+        config_service=mock_config,
     )
 
 

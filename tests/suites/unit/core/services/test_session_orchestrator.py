@@ -39,6 +39,11 @@ def orchestrator(  # noqa: PLR0913
         planning_service=container.resolve(IPlanningUseCase),
     )
 
+    from teddy_executor.core.ports.outbound.config_service import IConfigService
+    from teddy_executor.core.ports.inbound.get_context_use_case import (
+        IGetContextUseCase,
+    )
+
     # Instantiate the orchestrator with its dependencies
     orchestrator_instance = SessionOrchestrator(
         execution_orchestrator=container.resolve(IRunPlanUseCase),
@@ -49,6 +54,8 @@ def orchestrator(  # noqa: PLR0913
         user_interactor=container.resolve(IUserInteractor),
         lifecycle_manager=MagicMock(spec=SessionLifecycleManager),
         replanner=replanner,
+        context_service=container.resolve(IGetContextUseCase),
+        config_service=container.resolve(IConfigService),
     )
 
     # Register as instances to bypass punq auto-wiring for untyped constructors

@@ -190,11 +190,15 @@ def _register_orchestration_services(container: punq.Container) -> None:
 
 def _register_orchestration(container: punq.Container) -> None:
     """Registers session orchestration components."""
+    from teddy_executor.core.ports.inbound.get_context_use_case import (
+        IGetContextUseCase,
+    )
     from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
     from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
     from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
     from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
     from teddy_executor.core.ports.outbound import (
+        IConfigService,
         IFileSystemManager,
         IMarkdownReportFormatter,
         ISessionManager,
@@ -209,7 +213,18 @@ def _register_orchestration(container: punq.Container) -> None:
     from teddy_executor.core.services.session_orchestrator import SessionOrchestrator
     from teddy_executor.core.services.session_planner import SessionPlanner
     from teddy_executor.core.services.session_replanner import SessionReplanner
+    from teddy_executor.core.services.session_pruning_service import (
+        SessionPruningService,
+    )
 
+    container.register(
+        SessionPruningService,
+        factory=lambda: SessionPruningService(
+            config_service=container.resolve(IConfigService),
+            file_system_manager=container.resolve(IFileSystemManager),
+        ),
+        scope=punq.Scope.transient,
+    )
     container.register(
         SessionReplanner,
         factory=lambda: SessionReplanner(
@@ -261,6 +276,9 @@ def _register_orchestration(container: punq.Container) -> None:
             user_interactor=container.resolve(IUserInteractor),
             lifecycle_manager=container.resolve(SessionLifecycleManager),
             replanner=container.resolve(SessionReplanner),
+            context_service=container.resolve(IGetContextUseCase),
+            config_service=container.resolve(IConfigService),
+            pruning_service=container.resolve(SessionPruningService),
         ),
         scope=punq.Scope.transient,
     )

@@ -34,6 +34,10 @@ def mocks():
 
 def test_trigger_new_plan_uses_ask_question(mocks):
     # Arrange
+    mocks["context_service"] = MagicMock()
+    mock_config = MagicMock()
+    mock_config.get_setting.side_effect = lambda key, default=None: default
+    mocks["config_service"] = mock_config
     orchestrator = SessionOrchestrator(**mocks)
 
     # Act

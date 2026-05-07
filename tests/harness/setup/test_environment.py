@@ -176,6 +176,7 @@ class TestEnvironment(RealAdapterMixin):
             mock.validate_config.return_value = []
             mock.get_completion_cost.return_value = 0.0
             mock.get_token_count.return_value = 0
+            mock.get_text_token_count.return_value = 0
             mock.get_context_window.return_value = 128000
         elif port_type == IConfigService:
             mock.get_config_path.return_value = ".teddy/config.yaml"

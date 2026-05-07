@@ -29,6 +29,9 @@ class SessionOrchestrator(IRunPlanUseCase):
         user_interactor,
         lifecycle_manager,
         replanner: SessionReplanner,
+        context_service,
+        config_service,
+        pruning_service=None,
     ):
         self._execution_orchestrator = execution_orchestrator
         self._session_service = session_service
@@ -38,6 +41,9 @@ class SessionOrchestrator(IRunPlanUseCase):
         self._user_interactor = user_interactor
         self._lifecycle_manager = lifecycle_manager
         self._replanner = replanner
+        self._context_service = context_service
+        self._config_service = config_service
+        self._pruning_service = pruning_service
 
     def resume(
         self,
@@ -65,41 +71,21 @@ class SessionOrchestrator(IRunPlanUseCase):
         # 0. Detect Session Mode (requires plan_path and meta.yaml)
         is_session = self._is_session_mode(plan_path)
 
-        # Ensure plan object is marked if it was already resolved
-        if plan:
-            plan.is_session = is_session
-
-        # 1. Parsing
-        content = plan_content or (
-            self._file_system_manager.read_file(plan_path) if plan_path else ""
-        )
-        if not plan:
-            try:
-                plan = self._plan_parser.parse(content, plan_path=plan_path)
-            except Exception as e:
-                if is_session and plan_path:
-                    # R-10-12: Keep session loop alive by returning the re-plan report
-                    # Suppress verbose AST in console; full detail is in report.md
-                    return self._lifecycle_manager.trigger_replan(
-                        plan_path=plan_path,
-                        errors=[f"Structural error: {str(e)}"],
-                        original_plan_content=content,
-                    )
-                raise
-
-        # 2. Validation
-        context_paths = (
-            self._session_service.resolve_context_paths(plan_path)
-            if is_session
-            else None
-        )
-        errors = self._plan_validator.validate(plan, context_paths=context_paths)
-        if errors:
-            return self._handle_logical_validation_errors(
-                plan, errors, content, plan_path, is_session
-            )
+        # 1. Prepare Plan (Parse & Validate)
+        result = self._prepare_plan(plan, plan_content, plan_path, is_session)
+        if isinstance(result, ExecutionReport):
+            return result
+        plan = result
 
         # 3. Execution
+        if is_session and plan_path and not project_context:
+            context_files = self._session_service.resolve_context_paths(plan_path)
+            project_context = self._context_service.get_context(
+                context_files=context_files
+            )
+            if self._pruning_service:
+                project_context = self._pruning_service.prune(project_context)
+
         report = self._execution_orchestrator.execute(
             plan=plan,
             plan_content=plan_content,
@@ -156,6 +142,47 @@ class SessionOrchestrator(IRunPlanUseCase):
             plan.metadata["user_request"] = new_message
 
         return updated_report
+
+    def _prepare_plan(
+        self,
+        plan: Optional[Plan],
+        plan_content: Optional[str],
+        plan_path: Optional[str],
+        is_session: bool,
+    ) -> Plan | ExecutionReport:
+        """Handles parsing and validation logic, potentially triggering a replan."""
+        # Ensure plan object is marked if it was already resolved
+        if plan:
+            plan.is_session = is_session
+
+        content = plan_content or (
+            self._file_system_manager.read_file(plan_path) if plan_path else ""
+        )
+        if not plan:
+            try:
+                plan = self._plan_parser.parse(content, plan_path=plan_path)
+            except Exception as e:
+                if is_session and plan_path:
+                    # R-10-12: Keep session loop alive by returning the re-plan report
+                    return self._lifecycle_manager.trigger_replan(
+                        plan_path=plan_path,
+                        errors=[f"Structural error: {str(e)}"],
+                        original_plan_content=content,
+                    )
+                raise
+
+        context_paths = (
+            self._session_service.resolve_context_paths(plan_path)
+            if is_session
+            else None
+        )
+        errors = self._plan_validator.validate(plan, context_paths=context_paths)
+        if errors:
+            return self._handle_logical_validation_errors(
+                plan, errors, content, plan_path, is_session
+            )
+
+        return plan
 
     def _is_session_mode(self, plan_path: Optional[str]) -> bool:
         """Determines if the orchestrator should operate in Session Mode."""
