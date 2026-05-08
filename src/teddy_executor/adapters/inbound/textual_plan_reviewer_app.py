@@ -72,6 +72,8 @@ class ReviewerApp(App):
         ("q", "cancel", "Quit"),
         ("left", "focus_left", "Focus Left"),
         ("right", "focus_right", "Focus Right"),
+        Binding("tab", "focus_next", "Focus Next", show=False, priority=True),
+        Binding("shift+tab", "focus_prev", "Focus Prev", show=False, priority=True),
     ]
 
     CSS = TUI_CSS
@@ -272,6 +274,18 @@ class ReviewerApp(App):
         if switcher.current:
             self.query_one(f"#{switcher.current}").focus()
 
+    def action_focus_next(self) -> None:
+        """Cycle focus between main panes."""
+        # Standard focus cycle
+        if self.focused and self.focused.id == "left-pane":
+            self.action_focus_right()
+        else:
+            self.action_focus_left()
+
+    def action_focus_prev(self) -> None:
+        """Cycle focus between main panes (reverse)."""
+        self.action_focus_next()
+
     def action_jump_next(self) -> None:
         """Jump to the next major section root."""
         tree = self.query_one(ActionTree)
@@ -300,7 +314,7 @@ class ReviewerApp(App):
         tree.focus()
 
     def action_jump_prev(self) -> None:
-        """Jump to the previous major section root."""
+        """Jump to the current section root or the previous one."""
         tree = self.query_one(ActionTree)
         sections = [
             ActionTree.CONTEXT_ROOT,
@@ -308,22 +322,24 @@ class ReviewerApp(App):
             ActionTree.ACTION_PLAN_ROOT,
         ]
 
-        # Find current section of cursor
-        current_section = None
         node = tree.cursor_node
-        while node:
-            if node.data in sections:
-                current_section = node.data
-                break
-            node = node.parent
+        if not node:
+            tree.jump_to_section(sections[-1])
+            tree.focus()
+            return
 
-        # Find prev section index
-        try:
-            current_idx = sections.index(current_section) if current_section else 0
+        # If we are ALREADY on a root, jump to the previous one
+        if node.data in sections:
+            current_idx = sections.index(node.data)
             prev_idx = (current_idx - 1) % len(sections)
             tree.jump_to_section(sections[prev_idx])
-        except (ValueError, IndexError):
-            tree.jump_to_section(sections[-1])
+        else:
+            # If we are on a child, jump to the CURRENT root
+            while node:
+                if node.data in sections:
+                    tree.move_cursor(node)
+                    break
+                node = node.parent
         tree.focus()
 
     def action_toggle_all(self) -> None:

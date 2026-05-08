@@ -33,6 +33,11 @@ def orchestrator(  # noqa: PLR0913
     mock_config = MagicMock()
     mock_config.get_setting.side_effect = lambda key, default=None: default
 
+    mock_prompt_manager = MagicMock()
+    mock_prompt_manager.fetch_system_prompt.return_value = "mock prompt"
+    mock_llm_client = MagicMock()
+    mock_llm_client.get_text_token_count.return_value = 100
+
     return SessionOrchestrator(
         execution_orchestrator=mock_run_plan,
         session_service=mock_session_manager,
@@ -44,6 +49,8 @@ def orchestrator(  # noqa: PLR0913
         replanner=replanner,
         context_service=MagicMock(),
         config_service=mock_config,
+        llm_client=mock_llm_client,
+        prompt_manager=mock_prompt_manager,
     )
 
 

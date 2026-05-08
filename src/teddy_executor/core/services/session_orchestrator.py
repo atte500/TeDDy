@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 from teddy_executor.core.domain.models.execution_report import (
     ExecutionReport,
@@ -31,6 +31,8 @@ class SessionOrchestrator(IRunPlanUseCase):
         replanner: SessionReplanner,
         context_service,
         config_service,
+        llm_client,
+        prompt_manager,
         pruning_service=None,
     ):
         self._execution_orchestrator = execution_orchestrator
@@ -43,6 +45,8 @@ class SessionOrchestrator(IRunPlanUseCase):
         self._replanner = replanner
         self._context_service = context_service
         self._config_service = config_service
+        self._llm_client = llm_client
+        self._prompt_manager = prompt_manager
         self._pruning_service = pruning_service
 
     def resume(
@@ -80,14 +84,44 @@ class SessionOrchestrator(IRunPlanUseCase):
         # 3. Execution
         if is_session and plan_path and not project_context:
             context_files = self._session_service.resolve_context_paths(plan_path)
+            # Use plan metadata as primary source for agent name, fallback to lifecycle manager
             agent_name = (
-                self._lifecycle_manager.get_agent_name(plan_path)
-                if hasattr(self._lifecycle_manager, "get_agent_name")
-                else "Unknown"
+                plan.metadata.get("Agent")
+                or plan.metadata.get("agent")
+                or (
+                    self._lifecycle_manager.get_agent_name(plan_path)
+                    if hasattr(self._lifecycle_manager, "get_agent_name")
+                    else "Unknown"
+                )
             )
+            total_window = self._llm_client.get_context_window()
+
+            # R-10-12: Resolve system prompt and its token count
+            system_prompt_tokens = 0
+            # fetch_system_prompt requires turn_path; we derive it from plan_path
+            turn_path = Path(plan_path).parent
+            prompt_content = self._prompt_manager.fetch_system_prompt(
+                agent_name.lower(), turn_path
+            )
+            if prompt_content:
+                system_prompt_tokens = self._llm_client.get_text_token_count(
+                    prompt_content
+                )
+
             project_context = self._context_service.get_context(
-                context_files=context_files, agent_name=agent_name
+                context_files=context_files,
+                agent_name=agent_name,
+                total_window=total_window,
             )
+            # Update context with system info
+            from dataclasses import is_dataclass, replace
+
+            if is_dataclass(project_context):
+                project_context = replace(
+                    cast(Any, project_context),
+                    agent_name=agent_name,
+                    system_prompt_tokens=system_prompt_tokens,
+                )
             if self._pruning_service:
                 project_context = self._pruning_service.prune(project_context)
 

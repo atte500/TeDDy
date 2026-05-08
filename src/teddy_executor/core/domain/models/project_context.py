@@ -29,7 +29,7 @@ class ContextItem:
     auto_prune_reason: Optional[str] = None
 
 
-@dataclass(frozen=True)
+@dataclass
 class ProjectContext:
     """
     A strictly-typed DTO representing the aggregated project context for display.

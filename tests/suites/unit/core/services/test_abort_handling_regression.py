@@ -43,6 +43,8 @@ def orchestrator(  # noqa: PLR0913
         replanner=replanner,
         context_service=mock_context_service,
         config_service=mock_config,
+        prompt_manager=MagicMock(),
+        llm_client=MagicMock(),
     )
     return orchestrator_instance
 

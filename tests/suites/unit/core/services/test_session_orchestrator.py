@@ -43,8 +43,15 @@ def orchestrator(  # noqa: PLR0913
     from teddy_executor.core.ports.inbound.get_context_use_case import (
         IGetContextUseCase,
     )
+    from teddy_executor.core.ports.outbound.llm_client import ILlmClient
+    from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
 
     # Instantiate the orchestrator with its dependencies
+    mock_prompt_manager = MagicMock(spec=IPromptManager)
+    mock_prompt_manager.fetch_system_prompt.return_value = "mock prompt content"
+    mock_llm_client = MagicMock(spec=ILlmClient)
+    mock_llm_client.get_text_token_count.return_value = 100
+
     orchestrator_instance = SessionOrchestrator(
         execution_orchestrator=container.resolve(IRunPlanUseCase),
         session_service=container.resolve(ISessionManager),
@@ -56,6 +63,8 @@ def orchestrator(  # noqa: PLR0913
         replanner=replanner,
         context_service=container.resolve(IGetContextUseCase),
         config_service=container.resolve(IConfigService),
+        llm_client=mock_llm_client,
+        prompt_manager=mock_prompt_manager,
     )
 
     # Register as instances to bypass punq auto-wiring for untyped constructors

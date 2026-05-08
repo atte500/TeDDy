@@ -200,10 +200,12 @@ def _register_orchestration(container: punq.Container) -> None:
     from teddy_executor.core.ports.outbound import (
         IConfigService,
         IFileSystemManager,
+        ILlmClient,
         IMarkdownReportFormatter,
         ISessionManager,
         IUserInteractor,
     )
+    from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
     from teddy_executor.core.services.execution_orchestrator import (
         ExecutionOrchestrator,
     )
@@ -265,6 +267,7 @@ def _register_orchestration(container: punq.Container) -> None:
         ),
         scope=punq.Scope.transient,
     )
+
     container.register(
         IRunPlanUseCase,
         factory=lambda: SessionOrchestrator(
@@ -278,6 +281,8 @@ def _register_orchestration(container: punq.Container) -> None:
             replanner=container.resolve(SessionReplanner),
             context_service=container.resolve(IGetContextUseCase),
             config_service=container.resolve(IConfigService),
+            llm_client=container.resolve(ILlmClient),
+            prompt_manager=container.resolve(IPromptManager),
             pruning_service=container.resolve(SessionPruningService),
         ),
         scope=punq.Scope.transient,

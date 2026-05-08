@@ -29,6 +29,7 @@ def mocks():
         "user_interactor": user_interactor,
         "lifecycle_manager": MagicMock(),
         "replanner": SessionReplanner(fs, planning_service),
+        "llm_client": MagicMock(),
     }
 
 
@@ -38,6 +39,7 @@ def test_trigger_new_plan_uses_ask_question(mocks):
     mock_config = MagicMock()
     mock_config.get_setting.side_effect = lambda key, default=None: default
     mocks["config_service"] = mock_config
+    mocks["prompt_manager"] = MagicMock()
     orchestrator = SessionOrchestrator(**mocks)
 
     # Act

@@ -74,9 +74,29 @@ class PromptManager(IPromptManager):
         return self._ensure_alignment_hint(resolved)
 
     def fetch_system_prompt(self, agent_name: str, turn_path: Path) -> str:
+        # 1. Try Turn-Specific override
         prompt_file_path = (turn_path / f"{agent_name}.xml").as_posix()
         if self._file_system_manager.path_exists(prompt_file_path):
             return self._file_system_manager.read_file(prompt_file_path)
+
+        # 2. Try Internal Resource Fallback
+        resource_path = (
+            Path(__file__).parent.parent.parent
+            / "resources"
+            / "prompts"
+            / f"{agent_name}.xml"
+        ).as_posix()
+        if self._file_system_manager.path_exists(resource_path):
+            return self._file_system_manager.read_file(resource_path)
+
+        import logging
+
+        logging.getLogger(__name__).warning(
+            "PromptManager: Failed to resolve system prompt for agent '%s' (searched %s and %s)",
+            agent_name,
+            prompt_file_path,
+            resource_path,
+        )
         return ""
 
     def log_telemetry(self, token_count: Any, turn_cost: Any) -> float:

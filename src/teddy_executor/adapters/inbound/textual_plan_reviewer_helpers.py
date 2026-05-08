@@ -43,9 +43,10 @@ def populate_context_detail(app: "ReviewerApp", pane: Any, data: Any) -> None:
         pane.append(DetailItem("Agent", data.get("agent", "Unknown")))
         pane.append(DetailItem("Tokens", f"{data.get('tokens', 0) / 1000.0:.1f}k"))
     elif app.project_context:
-        # Context Aggregate View
+        # Context Aggregate View - Only sum SELECTED items
+        selected_items = [i for i in app.project_context.items if i.selected]
         total_tokens = (
-            sum(i.token_count for i in app.project_context.items)
+            sum(i.token_count for i in selected_items)
             + app.project_context.system_prompt_tokens
         )
         pane.append(
@@ -62,13 +63,13 @@ def populate_context_detail(app: "ReviewerApp", pane: Any, data: Any) -> None:
         pane.append(
             DetailItem(
                 "• Session",
-                f"{sum(i.token_count for i in app.project_context.items if i.scope == 'Session') / 1000.0:.1f}k",
+                f"{sum(i.token_count for i in selected_items if i.scope == 'Session') / 1000.0:.1f}k",
             )
         )
         pane.append(
             DetailItem(
                 "• Turn",
-                f"{sum(i.token_count for i in app.project_context.items if i.scope == 'Turn') / 1000.0:.1f}k",
+                f"{sum(i.token_count for i in selected_items if i.scope == 'Turn') / 1000.0:.1f}k",
             )
         )
 
@@ -111,8 +112,9 @@ def build_context_section(app: "ReviewerApp", tree: Any) -> Any:
 
     con_root = tree.root.add("[bold]Context[/]", data=CONTEXT_ROOT, expand=False)
     con_root.add_leaf("[#888888 italic]System:[/]", data=SYSTEM_LABEL)
+    token_str = f" [#888888]{app.project_context.system_prompt_tokens / 1000.0:.1f}k[/]"
     con_root.add_leaf(
-        f"  [bold]{app.project_context.agent_name}[/]",
+        f"  [bold]{app.project_context.agent_name}[/]{token_str}",
         data={
             "type": "SYSTEM_PROMPT",
             "agent": app.project_context.agent_name,
@@ -120,13 +122,23 @@ def build_context_section(app: "ReviewerApp", tree: Any) -> Any:
         },
     )
     con_root.add_leaf("[#888888 italic]Session:[/]", data=SESSION_LABEL)
+    session_count = 0
     for item in app.project_context.items:
         if item.scope == "Session":
             con_root.add_leaf(format_context_item_label(item), data=item)
+            session_count += 1
+    if session_count == 0:
+        con_root.add_leaf("  [#888888](None)[/]", data=SESSION_LABEL)
+
     con_root.add_leaf("[#888888 italic]Turn:[/]", data=TURN_LABEL)
+    turn_count = 0
     for item in app.project_context.items:
         if item.scope == "Turn":
             con_root.add_leaf(format_context_item_label(item), data=item)
+            turn_count += 1
+    if turn_count == 0:
+        con_root.add_leaf("  [#888888](None)[/]", data=TURN_LABEL)
+
     return con_root
 
 

@@ -8,6 +8,7 @@ def test_on_mount_logic_filters_and_merges_rationale_sections():
     app.plan.title = "Test Plan"
     app.plan.metadata = {"Status": "Green 🟢"}
     app.plan.actions = []
+    app.project_context = None
 
     # Rationale with:
     # 1. Leading junk (should be ignored)

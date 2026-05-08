@@ -47,6 +47,11 @@ def orchestrator(mock_context_service, mock_config):
         file_system_manager=fs_mock,
     )
 
+    mock_prompt_manager = MagicMock()
+    mock_prompt_manager.fetch_system_prompt.return_value = "mock prompt"
+    mock_llm_client = MagicMock()
+    mock_llm_client.get_text_token_count.return_value = 100
+
     return SessionOrchestrator(
         execution_orchestrator=MagicMock(spec=IRunPlanUseCase),
         session_service=MagicMock(),
@@ -58,6 +63,8 @@ def orchestrator(mock_context_service, mock_config):
         replanner=MagicMock(spec=SessionReplanner),
         context_service=mock_context_service,
         config_service=mock_config,
+        llm_client=mock_llm_client,
+        prompt_manager=mock_prompt_manager,
         pruning_service=pruning_service,
     )
 
@@ -266,6 +273,11 @@ def test_execute_respects_manually_pruned_files_during_transition(
 
     orchestrator._plan_parser.parse.return_value = plan
     orchestrator._plan_validator.validate.return_value = []
+
+    # Mock context
+    mock_context_service.get_context.return_value = ProjectContext(
+        items=[], header="", content=""
+    )
 
     # Mock execution outcome
     report = MagicMock(spec=ExecutionReport)

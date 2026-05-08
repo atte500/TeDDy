@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Any, cast
 
 from teddy_executor.adapters.inbound.textual_plan_reviewer_execution import (
@@ -8,6 +9,8 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_execution import (
 from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
     format_node_label,
 )
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from teddy_executor.adapters.inbound.textual_plan_reviewer_app import ReviewerApp
@@ -129,8 +132,11 @@ def _render_rationale_root_detail(app: ReviewerApp, pane: Any):
     if tree.cursor_node and tree.cursor_node.data != RATIONALE_ROOT:
         return
 
+    # Fallback to project_context for agent identity
     agent = (
-        app.plan.metadata.get("Agent") or app.plan.metadata.get("agent") or "Unknown"
+        app.plan.metadata.get("Agent")
+        or app.plan.metadata.get("agent")
+        or (app.project_context.agent_name if app.project_context else "Unknown")
     )
     plan_type = (
         app.plan.metadata.get("Plan Type")
@@ -201,6 +207,8 @@ def check_action_logic(app: ReviewerApp, action_name: str) -> bool:
     if action_name in (
         "focus_right",
         "focus_left",
+        "focus_next",
+        "focus_prev",
         "jump_next",
         "jump_prev",
         "cancel",
@@ -254,6 +262,13 @@ def toggle_selection_logic(app: ReviewerApp, node: Any) -> None:
     elif isinstance(data, ContextItem):
         data.selected = not data.selected
         app._refresh_node(node)
+        # Always refresh detail view based on CURRENT highlighting
+        # This ensures totals update if the root is selected but a child is toggled
+        from textual.widgets import Tree
+
+        tree = app.query_one(Tree)
+        if tree.cursor_node:
+            _update_detail_view(app, tree.cursor_node.data)
 
 
 async def on_list_view_selected_logic(app: ReviewerApp, item: Any) -> None:
