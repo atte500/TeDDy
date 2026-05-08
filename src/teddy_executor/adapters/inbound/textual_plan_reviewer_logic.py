@@ -46,39 +46,65 @@ def _update_detail_view(app: ReviewerApp, data: Any):
     """Populate the ParameterDetail view or Rationale view."""
     from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
         ParameterDetail,
-        DetailItem,
     )
-    from textual.widgets import Label, ListItem, ContentSwitcher, Markdown
+    from textual.widgets import ContentSwitcher
 
-    switcher = app.query_one(ContentSwitcher)
-    pane = app.query_one(ParameterDetail)
+    try:
+        switcher = app.query_one(ContentSwitcher)
+        pane = app.query_one(ParameterDetail)
+    except Exception:
+        return
 
     if not pane.is_attached:
         return
 
+    if _is_context_data(data):
+        _update_context_detail(app, switcher, pane, data)
+    elif _is_rationale_section(data):
+        _update_rationale_detail(app, switcher, data)
+    else:
+        _update_action_detail(app, switcher, pane, data)
+
+
+def _is_context_data(data: Any) -> bool:
+    """Check if data belongs to the context section."""
     from teddy_executor.core.domain.models.project_context import ContextItem
 
-    # Handle Context items and roots
-    if (
+    return (
         data in (CONTEXT_ROOT, SYSTEM_LABEL, SESSION_LABEL, TURN_LABEL)
         or isinstance(data, ContextItem)
         or (isinstance(data, dict) and data.get("type") == "SYSTEM_PROMPT")
-    ):
-        switcher.current = "params-view"
-        pane.clear()
-        from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
-            populate_context_detail,
-        )
+    )
 
-        populate_context_detail(app, pane, data)
-        return
 
-    if isinstance(data, dict) and data.get("type") == "RATIONALE_SECTION":
-        switcher.current = "rationale-view"
-        app.query_one("#rationale-content", Markdown).update(data["content"])
-        return
+def _is_rationale_section(data: Any) -> bool:
+    """Check if data is a rationale section dict."""
+    return isinstance(data, dict) and data.get("type") == "RATIONALE_SECTION"
 
-    # Default to parameter view for everything else
+
+def _update_context_detail(app: ReviewerApp, switcher: Any, pane: Any, data: Any):
+    """Render details for context items or aggregates."""
+    switcher.current = "params-view"
+    pane.clear()
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+        populate_context_detail,
+    )
+
+    populate_context_detail(app, pane, data)
+
+
+def _update_rationale_detail(app: ReviewerApp, switcher: Any, data: dict[str, Any]):
+    """Render details for a rationale section."""
+    from textual.widgets import Markdown
+
+    switcher.current = "rationale-view"
+    app.query_one("#rationale-content", Markdown).update(data["content"])
+
+
+def _update_action_detail(app: ReviewerApp, switcher: Any, pane: Any, data: Any):
+    """Render details for action plan roots or individual actions."""
+    from textual.widgets import Label, ListItem
+
     switcher.current = "params-view"
     pane.clear()
 
@@ -87,43 +113,48 @@ def _update_detail_view(app: ReviewerApp, data: Any):
         return
 
     if data == RATIONALE_ROOT:
-        # Prevent race condition: don't update metadata if user has already moved cursor
-        from textual.widgets import Tree
-
-        tree = app.query_one(Tree)
-        if tree.cursor_node and tree.cursor_node.data != RATIONALE_ROOT:
-            return
-
-        # Check both cases as metadata keys can vary
-        agent = (
-            app.plan.metadata.get("Agent")
-            or app.plan.metadata.get("agent")
-            or "Unknown"
-        )
-        plan_type = (
-            app.plan.metadata.get("Plan Type")
-            or app.plan.metadata.get("plan_type")
-            or "Development"
-        )
-        status = (
-            app.plan.metadata.get("Status") or app.plan.metadata.get("status") or "N/A"
-        )
-        pane.append(DetailItem("Agent", agent))
-        pane.append(DetailItem("Plan Type", plan_type))
-        pane.append(DetailItem("Status", status))
+        _render_rationale_root_detail(app, pane)
     elif data == ACTION_PLAN_ROOT:
         pane.mount(ListItem(Label("Select an action below to view details")))
     else:
-        # data is likely ActionData
-        from teddy_executor.core.domain.models.plan import ActionData
+        _render_action_data_detail(pane, data)
 
-        if isinstance(data, ActionData):
-            for key, val in resolve_action_parameters(data).items():
-                # Stringify Enum values for clean display
-                val_str = val.value if hasattr(val, "value") else str(val)
-                pane.append(DetailItem(key, val_str))
-        else:
-            pane.mount(ListItem(Label("Select an item to view details")))
+
+def _render_rationale_root_detail(app: ReviewerApp, pane: Any):
+    """Render metadata for the Rationale root node."""
+    from textual.widgets import Tree
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import DetailItem
+
+    tree = app.query_one(Tree)
+    if tree.cursor_node and tree.cursor_node.data != RATIONALE_ROOT:
+        return
+
+    agent = (
+        app.plan.metadata.get("Agent") or app.plan.metadata.get("agent") or "Unknown"
+    )
+    plan_type = (
+        app.plan.metadata.get("Plan Type")
+        or app.plan.metadata.get("plan_type")
+        or "Development"
+    )
+    status = app.plan.metadata.get("Status") or app.plan.metadata.get("status") or "N/A"
+    pane.append(DetailItem("Agent", agent))
+    pane.append(DetailItem("Plan Type", plan_type))
+    pane.append(DetailItem("Status", status))
+
+
+def _render_action_data_detail(pane: Any, data: Any):
+    """Render parameters for an ActionData object."""
+    from teddy_executor.core.domain.models.plan import ActionData
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import DetailItem
+    from textual.widgets import Label, ListItem
+
+    if isinstance(data, ActionData):
+        for key, val in resolve_action_parameters(data).items():
+            val_str = val.value if hasattr(val, "value") else str(val)
+            pane.append(DetailItem(key, val_str))
+    else:
+        pane.mount(ListItem(Label("Select an item to view details")))
 
 
 async def edit_action_logic(app: ReviewerApp, node: Any, action: ActionData) -> None:

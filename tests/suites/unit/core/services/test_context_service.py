@@ -92,34 +92,35 @@ def test_get_context_orchestrates_and_returns_correct_dto(
     assert "```python\nprint('hello')\n```" in result.content
 
 
-def test_get_context_with_specific_files_uses_resolve_paths_from_files(
+def test_get_context_distinguishes_between_manifests_and_targets(
     service: IGetContextUseCase,
     mock_fs,
     mock_tree_gen,
     mock_inspector,
 ):
     """
-    Tests that when specific context files are provided, ContextService
-    calls resolve_paths_from_files instead of get_context_paths.
+    Tests that ContextService resolves .context files as manifests but treats
+    other files (like .py or .md) as direct targets.
     """
     # Arrange
-    specific_files = ["session.context", "turn.context"]
-    mock_vault_paths = ["file_a.txt"]
-    mock_file_contents = {"file_a.txt": "content_a"}
+    files = ["session.context", "README.md"]
+    mock_fs.resolve_paths_from_files.return_value = ["file_a.py"]
+    mock_file_contents = {"file_a.py": "content_a", "README.md": "content_readme"}
 
     mock_inspector.get_environment_info.return_value = {}
     mock_inspector.get_git_status.return_value = None
     mock_tree_gen.generate_tree.return_value = ""
-    mock_fs.resolve_paths_from_files.return_value = mock_vault_paths
     mock_fs.read_files_in_vault.return_value = mock_file_contents
 
     # Act
-    service.get_context(context_files={"Default": specific_files})
+    service.get_context(context_files={"Default": files})
 
     # Assert
-    mock_fs.resolve_paths_from_files.assert_called_once_with(specific_files)
-    mock_fs.get_context_paths.assert_not_called()
-    mock_fs.read_files_in_vault.assert_called_once_with(mock_vault_paths)
+    # session.context should be resolved once
+    mock_fs.resolve_paths_from_files.assert_called_once_with(["session.context"])
+    # README.md should be treated as target directly. Resulting set: {file_a.py, README.md}
+    # Note: Order depends on input order
+    mock_fs.read_files_in_vault.assert_called_once_with(["file_a.py", "README.md"])
 
 
 def test_get_context_uses_dynamic_fences_for_safe_encapsulation(
@@ -224,3 +225,33 @@ def test_get_context_populates_context_items_with_metadata(
     assert new_item.git_status == "U"  # Guideline: ?? -> U
     assert new_item.scope == "Turn"
     assert new_item.token_count == 10
+
+
+def test_get_context_with_long_content_file_does_not_crash(
+    service: IGetContextUseCase,
+    mock_fs,
+    mock_llm_client,
+    mock_inspector,
+    mock_tree_gen,
+):
+    """
+    REGRESSION: Ensure that passing a file with long content (e.g. a spec)
+    via the context mapping does not trigger manifest resolution which would
+    treat lines of content as file paths.
+    """
+    # Arrange
+    long_content = "This is a very long line of text " * 100
+    mock_inspector.get_environment_info.return_value = {}
+    mock_inspector.get_git_status.return_value = None
+    mock_tree_gen.generate_tree.return_value = ""
+    mock_fs.read_files_in_vault.return_value = {"long_spec.md": long_content}
+    mock_llm_client.get_text_token_count.return_value = 50
+
+    # Act (Should not call resolve_paths_from_files, avoiding crash on real FS)
+    result = service.get_context(context_files={"Spec": ["long_spec.md"]})
+
+    # Assert
+    assert len(result.items) == 1
+    assert result.items[0].path == "long_spec.md"
+    assert result.items[0].token_count == 50
+    mock_fs.resolve_paths_from_files.assert_not_called()

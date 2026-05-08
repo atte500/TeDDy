@@ -75,13 +75,38 @@ class ContextService(IGetContextUseCase):
         all_resolved_paths: List[str] = []
 
         for scope, files in context_files.items():
-            paths = self._file_system_manager.resolve_paths_from_files(files)
+            paths = self._resolve_files_to_paths(files)
             scoped_paths[scope] = paths
             for p in paths:
                 if p not in all_resolved_paths:
                     all_resolved_paths.append(p)
 
         return scoped_paths, all_resolved_paths
+
+    def _resolve_files_to_paths(self, files: Sequence[str]) -> List[str]:
+        """
+        Nuanced Resolution: Distinguishes manifests (.context) from targets.
+        Preserves original order while deduplicating results.
+        """
+        paths: List[str] = []
+        for f in files:
+            if self._is_manifest(f):
+                # Expansion of manifests can return multiple paths
+                resolved = self._file_system_manager.resolve_paths_from_files([f])
+                for r in resolved:
+                    if r not in paths:
+                        paths.append(r)
+            elif f not in paths:
+                paths.append(f)
+        return paths
+
+    def _is_manifest(self, file_path: str) -> bool:
+        """Determines if a file path refers to a .context manifest."""
+        return (
+            file_path.endswith(".context")
+            or file_path.endswith("/context")
+            or file_path == "context"
+        )
 
     def _collect_items(
         self,
