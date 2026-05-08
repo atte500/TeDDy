@@ -80,8 +80,13 @@ class SessionOrchestrator(IRunPlanUseCase):
         # 3. Execution
         if is_session and plan_path and not project_context:
             context_files = self._session_service.resolve_context_paths(plan_path)
+            agent_name = (
+                self._lifecycle_manager.get_agent_name(plan_path)
+                if hasattr(self._lifecycle_manager, "get_agent_name")
+                else "Unknown"
+            )
             project_context = self._context_service.get_context(
-                context_files=context_files
+                context_files=context_files, agent_name=agent_name
             )
             if self._pruning_service:
                 project_context = self._pruning_service.prune(project_context)

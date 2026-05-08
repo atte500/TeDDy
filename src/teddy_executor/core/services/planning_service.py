@@ -42,10 +42,12 @@ class PlanningService(IPlanningUseCase):
         if self._user_interactor:
             session_folder = turn_path.parent.name
             natural_name = re.sub(r"^\d{8}_\d{6}-", "", session_folder)
-            msg = f"[cyan][{turn_path.name}] {natural_name} | Waiting for {agent_name} to respond...[/cyan]"
+            msg = f"\n[cyan][{turn_path.name}] {natural_name} | Waiting for {agent_name} to respond...[/cyan]"
             self._user_interactor.display_message(msg)
 
-        context = self._context_service.get_context(context_files=context_files)
+        context = self._context_service.get_context(
+            context_files=context_files, agent_name=agent_name
+        )
         system_prompt = self._prompt_manager.fetch_system_prompt(agent_name, turn_path)
 
         # Scenario 1: Inject User Request into input.md on first turn

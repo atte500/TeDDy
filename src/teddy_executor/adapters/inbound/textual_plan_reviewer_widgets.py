@@ -77,6 +77,7 @@ class ParameterEditModal(ModalScreen[str]):
 class ActionTree(Tree):
     """A tree that allows both space and enter to toggle selection."""
 
+    CONTEXT_ROOT = "CONTEXT_ROOT"
     RATIONALE_ROOT = "RATIONALE_ROOT"
     ACTION_PLAN_ROOT = "ACTION_PLAN_ROOT"
 
@@ -84,15 +85,29 @@ class ActionTree(Tree):
         Binding("enter", "select_cursor", "Toggle", show=False),
         Binding("space", "select_cursor", "Toggle", show=False),
         Binding(
-            "ctrl+down", "app.jump_next", "Next Section", show=False, priority=True
+            "ctrl+down",
+            "app.jump_next",
+            "Next Section",
+            show=False,
+            priority=True,
         ),
         Binding("alt+down", "app.jump_next", "Next Section", show=False, priority=True),
         Binding(
-            "shift+down", "app.jump_next", "Next Section", show=False, priority=True
+            "shift+down",
+            "app.jump_next",
+            "Next Section",
+            show=False,
+            priority=True,
         ),
         Binding("ctrl+up", "app.jump_prev", "Prev Section", show=False, priority=True),
         Binding("alt+up", "app.jump_prev", "Prev Section", show=False, priority=True),
-        Binding("shift+up", "app.jump_prev", "Prev Section", show=False, priority=True),
+        Binding(
+            "shift+up",
+            "app.jump_prev",
+            "Prev Section",
+            show=False,
+            priority=True,
+        ),
     ]
 
     def jump_to_section(self, section_id: str) -> None:

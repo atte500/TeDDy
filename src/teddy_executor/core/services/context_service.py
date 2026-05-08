@@ -34,6 +34,7 @@ class ContextService(IGetContextUseCase):
         self,
         context_files: Optional[Dict[str, Sequence[str]]] = None,
         include_tokens: bool = True,
+        agent_name: str = "Unknown",
     ) -> ProjectContext:
         """
         Gathers all project context information by orchestrating its dependencies.
@@ -57,6 +58,7 @@ class ContextService(IGetContextUseCase):
             items=self._collect_items(
                 scoped_paths, file_contents, git_status, include_tokens
             ),
+            agent_name=agent_name,
         )
 
     def _resolve_scoped_paths(

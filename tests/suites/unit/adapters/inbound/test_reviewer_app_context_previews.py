@@ -113,10 +113,10 @@ async def test_reviewer_app_shows_context_item_detail(env):
 
         tree = app.query_one(ActionTree)
         tree.jump_to_section(CONTEXT_ROOT)
-        await pilot.press("right")
+        tree.focus()
 
         # 2. Move down to the first file item
-        # Structure: Context Root (0) -> System Header (1) -> Agent (2) -> Session Header (3) -> File (4)
+        # Structure: Context Root -> System Header (1) -> Agent (2) -> Session Header (3) -> File (4)
         await pilot.press("down", "down", "down", "down")
         await pilot.pause()
         await pilot.pause()

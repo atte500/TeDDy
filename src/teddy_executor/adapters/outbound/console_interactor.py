@@ -76,7 +76,7 @@ class ConsoleInteractorAdapter(IUserInteractor):
     ) -> None:
         """Displays the formatted message header and reference files."""
         display_name = agent_name if agent_name else "TeDDy"
-        header = f"--- MESSAGE from {display_name} ---"
+        header = f"\n--- MESSAGE from {display_name} ---"
         typer.secho(header, fg=typer.colors.CYAN, err=True)
         typer.echo(prompt, err=True)
 

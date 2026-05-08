@@ -147,6 +147,19 @@ class SessionService(ISessionManager):
         if pruned_paths:
             for p in pruned_paths:
                 paths.discard(p)
+            # R-10-12: Also prune from session.context if present
+            session_context_path = f"{session_dir}/session.context"
+            if self._file_system_manager.path_exists(session_context_path):
+                session_paths = self._repository.read_context_file(session_context_path)
+                modified = False
+                for p in pruned_paths:
+                    if p in session_paths:
+                        session_paths.discard(p)
+                        modified = True
+                if modified:
+                    self._file_system_manager.write_file(
+                        session_context_path, "\n".join(sorted(list(session_paths)))
+                    )
 
         # Always append BOTH plan.md and report.md to the next turn's context
         # to ensure the AI has its previous intent and the resulting outcome.
