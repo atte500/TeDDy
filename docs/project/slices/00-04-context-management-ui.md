@@ -44,7 +44,7 @@ And files in the session context are never struck through automatically
 - [x] **UI** - Implement dynamic `ContextAggregateDetail` view.
 - [x] **Integration** - Update `ReviewerApp` to return `pruned_context` metadata.
 - [x] **Integration** - Update `SessionOrchestrator` to process `pruned_context` and delete files from turn context.
-- [ ] **Wiring** - Verify end-to-end context visibility and auto-pruning (Gherkin scenarios).
+- [x] **Wiring** - Verify end-to-end context visibility and auto-pruning (Gherkin scenarios).
 
 ## Implementation Notes
 ### Contract - Add get_text_token_count to ILlmClient
@@ -127,6 +127,13 @@ And files in the session context are never struck through automatically
 - If no files are pruned, the key is removed from metadata to maintain a clean plan state.
 - Resolved a `MountError` in `textual_plan_reviewer_logic.py` by adding an `is_attached` guard to `_update_detail_view`. This prevents premature widget mounting during the initial TUI refresh when a complex `project_context` is present.
 - **[DEBT]** Noted that `_update_detail_view` complexity (10/9) and `textual_plan_reviewer_app.py` length (307/300) now exceed quality gates. Logged for structural refactoring in Milestone 10.
+
+### Wiring - Verify end-to-end context visibility and auto-pruning
+- Verified the end-to-end data flow from `SessionOrchestrator` through `ExecutionOrchestrator` to the `ReviewerApp`.
+- Implemented behavioral acceptance tests in `tests/suites/acceptance/test_context_management_ui.py`.
+- Verified that the "Context" node and its children are correctly populated with Rich styling (bold paths, colored status, grayed tokens).
+- Verified that auto-pruned items (e.g. failed plans) are correctly rendered with `[dim strike]` formatting.
+- Confirmed that toggling selection in the TUI correctly updates the `pruned_context` metadata in the submitted plan.
 
 ## Delta Analysis
 - **Domain Models:**

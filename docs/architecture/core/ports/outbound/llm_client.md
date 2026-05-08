@@ -27,11 +27,11 @@ This is an interface and contains no implementation logic.
 -   **Exception/Error States:**
     -   `LlmApiError`: Raised for API or communication failures.
 
-### `get_token_count(self, model: str, messages: List[Dict[str, str]]) -> int`
-- **Description:** Calculates the number of tokens in the payload for a specific model (Pre-flight).
+### `get_token_count(self, messages: List[Dict[str, str]], model: Optional[str] = None) -> int`
+- **Description:** Calculates the number of tokens in a standard chat message payload.
 
-### `get_text_token_count(self, model: str, text: str) -> int`
-- **Description:** Calculates the number of tokens for a raw string (useful for evaluating single context files).
+### `get_text_token_count(self, text: str, model: Optional[str] = None) -> int`
+- **Description:** Calculates the number of tokens for a raw string (e.g., a file content).
 
 ### `get_completion_cost(self, completion_response: Any) -> float`
 - **Description:** Calculates the precise USD cost of a completion response (Post-flight).

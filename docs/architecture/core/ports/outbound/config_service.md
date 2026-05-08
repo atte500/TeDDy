@@ -33,6 +33,6 @@ This is an interface and contains no implementation logic.
 - `max_execute_lines`: Integer limit for `EXECUTE` output truncation (default 100).
 - `max_read_lines`: Integer limit for `READ` output truncation (default 1000).
 - `auto_pruning.enabled`: Boolean toggling the entire auto-pruning heuristic system.
-- `auto_pruning.threshold_tokens`: Integer limit; files exceeding this size are auto-pruned.
-- `auto_pruning.prune_failed_plans`: Boolean toggling the auto-pruning of plans that failed validation.
-- `auto_pruning.prune_failed_reports`: Boolean toggling the auto-pruning of non-green execution reports.
+- `auto_pruning.global_context_threshold`: Integer total token limit for turn context.
+- `auto_pruning.prune_preceding_on_non_green`: Boolean toggling the pruning of turns preceding a 🔴/🟡 state.
+- `auto_pruning.prune_validation_failures`: Boolean toggling the pruning of failed validation reports and their plans.
