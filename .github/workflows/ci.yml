@@ -104,6 +104,10 @@ jobs:
       run: |
         poetry run python scripts/verify_test_pyramid.py
 
+    - name: Check Python File Length (Max 300 Lines)
+      run: |
+        find src tests -name "*.py" | xargs wc -l | awk '$1 > 300 && $2 != "total" {print "File " $2 " is too long (" $1 " lines)."; exit 1}'
+
     - name: Detect Code Duplication
       run: |
         npx jscpd --min-tokens 25 --threshold 0 --ignore "**/.venv/**,**/ports/**,**/prompts/**,**/prototypes/**,**/spikes/**"

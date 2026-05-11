@@ -54,14 +54,6 @@ repos:
         types: [python]
         require_serial: true
 
-
-    -   id: file-length-python
-        name: Check Python File Length (Max 300 Lines)
-        entry: bash -c 'for f in "$@"; do len=$(wc -l < "$f" | xargs); if [ $len -gt 300 ]; then echo "File $f is too long ($len lines). Please refactor to keep it under 300 lines."; exit 1; fi; done' --
-        language: system
-        types: [python]
-        files: ^(src|tests)/
-
     -   id: clean-spikes
         name: Clean Spikes Directory
         entry: bash -c 'rm -rf spikes/*'

@@ -4,103 +4,48 @@ This document outlines the technical standards, conventions, and setup process f
 
 ## 1. Conventions & Standards
 
-### Language & Runtime
-- **Language:** Python
-- **Version:** 3.11+
+### Runtime & Dependencies
+- **Stack:** Python 3.11+, managed via `Poetry`.
+- **CLI:** Package is an installable tool (`teddy`). Execute using `poetry run ...`.
 
-### Dependency Management
-- **Tool:** `Poetry`.
-- **Usage:** Dependencies are defined in `pyproject.toml` at the project root. The `teddy_executor` package is configured as an installable CLI tool. Once installed via `poetry install`, the `teddy` command is available within the activated Poetry shell. For development tasks, commands should be run directly from the project root using `poetry run ...`.
+### Version Control
+- **Strategy:** Trunk-Based Development on `main`.
+- **Commits:** MUST follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
 
-### Version Control Strategy
-- **System:** Git
-- **Branching:** Trunk-Based Development on the `main` branch.
-- **Commit Messages:** Must follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification.
+### Continuous Integration (CI)
+- **Platform:** GitHub Actions (multi-OS matrix for blocking tests).
+- **Jobs:**
+    1. **Blocking Tests:** Full `pytest` suite.
+    2. **Non-Blocking Debt:** Full `pre-commit` scan (`--all-files`) plus slow repository-wide checks (**SLOC/File length**, Test Pyramid, Copy-Paste Detection).
+- **Exclusions:** Sandboxes (`spikes/`, `prototypes/`) are excluded from quality scans.
 
-### CI/CD Strategy
-- **Platform:** GitHub Actions.
-- **Triggers:** On every push to the `main` branch.
-- **Pipeline:** The CI pipeline executes two parallel jobs:
-    1.  **Test Suite (Blocking):** A multi-OS matrix (Ubuntu, macOS, Windows) running the full `pytest` suite. Failures here block merges.
-    2.  **Quality Checks (Non-Blocking):** Runs the full `pre-commit` suite (excluding tests) on Ubuntu. Configured with `continue-on-error: true` to surface technical debt (linting, complexity, security) without halting development velocity. Repository-wide scans MUST explicitly exclude experimental sandboxes and non-source/dependency directories (e.g., `.venv/`, `node_modules/`, `.git/`).
-
-### Service Layer Naming Convention
-- **Dependency Attributes:** Injected dependencies in the core application services (`src/teddy_executor/core/services/`) MUST be private.
-- **Rationale:** This enforces a consistent pattern across the service layer, clearly distinguishing injected dependencies from public methods or other attributes.
+### Core Architecture & DI
+- **Naming:** Dependencies in core services (`src/.../core/services/`) MUST be private (e.g., `self._repo`).
+- **DI Strategy:** Strict **Constructor Injection**. The container MUST NOT be used as a Service Locator in core logic.
+- **DI Boundary:** Core logic MUST NOT import DI frameworks (e.g., `punq`). Enforced by pre-commit.
+- **Scopes:** Use `punq.Scope.transient` to prevent state leakage.
 
 ### Testing Strategy
-- **Framework:** `pytest` with the `anyio` plugin for asynchronous testing.
-- **Mocking Strategy:** This project uses the standard `unittest.mock` library (specifically the `patch` decorator and context manager) for all mocking needs.
-- **Location of Tests:** Tests are organized into two primary top-level directories:
-    - **`tests/suites/`**: Contains the test pyramid validating system intent.
-        - `tests/suites/acceptance/`: End-to-end tests validating full user workflows.
-        - `tests/suites/integration/`: Tests for components interacting with external systems.
-        - `tests/suites/unit/`: Tests for individual functions or classes in isolation.
-    - **`tests/harness/`**: Contains the testing infrastructure and utilities.
-        - `tests/harness/setup/`: Workspace management and DI isolation.
-        - `tests/harness/drivers/`: DSLs and adapters for driving the system.
-        - `tests/harness/observers/`: Parsers for verifying system output.
-- **Execution:** Tests are run from the **project root** using `poetry run pytest`. All asynchronous tests MUST be decorated with `@pytest.mark.anyio`.
-    - **Run all tests:** `poetry run pytest` (Runs in parallel by default via `-n auto` in `pyproject.toml`)
-    - **Run all tests with coverage:** `poetry run pytest --cov=src --cov-report=term-missing`
-    - **Run all tests (Force Sequential):** `poetry run pytest -n 0`
-    - **Run tests in a specific file:** `poetry run pytest tests/acceptance/test_prompt_action.py`
-    - **Run a specific test by name:** `poetry run pytest -k "test_prompt_gets_response"`
-- **Test Coverage:** Test coverage standards are enforced as part of the CI Quality Gates.
+- **Framework:** `pytest` + `anyio`. Mocking via `unittest.mock`.
+- **Organization:**
+    - `tests/suites/`: Functional Pyramid (Acceptance > Integration > Unit).
+    - `tests/harness/`: Infrastructure (Setup, Drivers, Observers).
+- **Standards:** Async tests MUST use `@pytest.mark.anyio`. 90%+ coverage enforced.
 
 ### Failure Transparency (Stop the Line)
-- **Standard:** Silent exception suppression is strictly forbidden.
-- **Mandate:** Bare `except:` or generic `except Exception:` blocks MUST NOT be used to swallow errors. Every `try/except` block MUST either catch a specific, expected exception or ensure that generic catches log the full context and re-raise (e.g., `raise RuntimeError(...) from e`).
-- **No Silent Skips:** The use of `pass` in implementation logic is only permitted if accompanied by a comment explaining why the failure is safe to ignore.
+- **Zero Suppression:** Silent exception swallowing is forbidden. Bare `except:` or generic `except Exception:` blocks MUST NOT be used.
+- **Re-raising:** Catch specific exceptions or log full context and re-raise. `pass` is only allowed with an explicit "safe to ignore" comment.
 
 ### Pre-commit Hooks
-- **Goal:** To provide a fast, local feedback loop for developers.
-- **Framework:** `pre-commit`, configured in `.pre-commit-config.yaml`.
-- **Principle:** Pre-commit hooks MUST be scoped strictly to **staged files** to provide a fast, local feedback loop. Heavy, repository-wide checks (like the full test suite, copy-paste detection, or test pyramid verification) belong in the Continuous Integration (CI) pipeline, not on the developer's local machine pre-commit.
-- **Included Checks:**
-    -   **Quality Gate:**
-        - `check-core-di-boundary`: Enforces Hexagonal isolation by physically preventing `punq` or other DI framework imports within `src/teddy_executor/core/`.
-        - `ruff-complexity`: Enforces a **precise Cyclomatic Complexity** limit of **9** per function (Rule `C901`) and a **precise Statement Limit** of **40** per function (Rule `PLR0915`) for ALL code.
-        - `file-length-python`: Enforces a strict **300 line limit** for all Python files (excluding `spikes/` and `prototypes/`). The check reports the actual file length on failure for quick assessment.
-    - **Style & Formatting:**
-        - `ruff`: For linting and formatting (mandating rules **BLE001** and **PLW0711** for Failure Transparency). **Note:** `E501` (Line too long) is explicitly ignored to favor readability of long URLs and comments.
-    - **Correctness:**
-        - `mypy`: For static type checking.
-        - **Behavioral Proof of Life:** We rely on a combination of strict test coverage (90%+) and Ruff's static checks to identify dead code. This ensures that every line of code in the core is "alive" by proving it is exercised by the test suite.
-    - **Security:**
-        - `detect-secrets`: For hardcoded credential prevention.
-        - `bandit`: For static security analysis.
-        - `pip-audit`: Vulnerability scanning (runs only when dependency files change).
-    - **Sanity & Consistency:**
-        - `check-yaml`, `check-toml`, and other basic file checks.
+- **Scope:** Strictly limited to **staged files** for fast local feedback. Heavy/Global checks belong in CI.
+- **Hooks:** Fast linters (Ruff [rules BLE001, PLW0711]), Formatters (Ruff), Type Checking (Mypy), DI Boundary enforcement, and Security Scanners (detect-secrets, bandit, pip-audit).
 
-### CI Quality Gates
-- **Goal:** To provide a comprehensive, automated quality gate that protects the main branch.
-- **Principle:** The CI pipeline runs checks in two categories:
-    1. The full `pre-commit` suite (using `--all-files`) to verify global compatibility and system health.
-    2. Slower, repository-wide checks that are not suitable for local pre-commit hooks, such as Test Pyramid verification and copy-paste detection. These checks MUST explicitly exclude experimental sandboxes (e.g., `prototypes/`, `spikes/`) and non-source/dependency directories (e.g., `.venv/`, `node_modules/`, `.git/`).
+### Configuration
+- **Source:** Single Source of Truth via `IConfigService`.
+- **Hierarchy:** Personal overrides (`.teddy/config.yaml`) override Bundled Baseline (`src/.../resources/config/config.yaml`). No hardcoded magic numbers in core logic.
 
-### Experimental Code Exclusion
-The `spikes/` and `prototypes/` directories are intentionally excluded from all quality gates (`ruff`, `mypy`, `jscpd`, etc.). These directories are for rapid, isolated experimentation. The code within them is temporary and not expected to meet production quality standards. Enforcing linting and other checks would hinder their exploratory purpose.
-
-### Configuration Hierarchy
-- **Principle:** The system follows a "Single Source of Truth" configuration strategy.
-- **Hierarchy:**
-    1. **Active Config:** `.teddy/config.yaml` (Personal overrides, not committed).
-    2. **Bundled Baseline:** `src/teddy_executor/resources/config/config.yaml` (System defaults, bundled with the package).
-- **Guideline:** All core application settings MUST have a defined entry in the Bundled Baseline. Services should rely on the `IConfigService` to provide these defaults, eliminating "magic number" drift across the codebase.
-
-### Dependency Injection (DI)
-- **Framework:** `punq`.
-- **Implementation Strategy:** TeDDy uses a **Constructor Injection** pattern to ensure transparency and testability.
-- **Boundary Rules:**
-    1. **Hexagonal Isolation:** The `src/teddy_executor/core/` directory MUST NOT import or depend on the DI framework (`punq`). This is physically enforced by a pre-commit hook.
-    2. **Mandatory Constructor Injection:** All core services MUST receive their dependencies via `__init__`. The use of the DI container as a Service Locator within core logic is strictly forbidden.
-    3. **Composition Root:** The `src/teddy_executor/container.py` file serves as the centralized Composition Root where all dependencies are wired.
-- **DI Scopes:** Services and adapters are registered with `punq.Scope.transient` to prevent state leakage between CLI turns or test runs.
-- **Testing:**
-    - Tests requiring DI MUST use the centralized `container` fixture.
-    - The `TestEnvironment` (Harness) provides a declarative `mock_port(PortClass)` API to hide the underlying container registration logic and ensure `UnifiedMock` (async-safe) synchronization.
+### Experimental Code
+`spikes/` and `prototypes/` are for rapid, isolated experimentation and are explicitly excluded from all quality gates (linting, types, complexity).
 
 ---
 
