@@ -1,6 +1,6 @@
 # Bug: Auto-Pruning Ineffective in Interactive Sessions
 
-- **Status:** Unresolved
+- **Status:** Resolved
 - **Milestone:** [10-interactive-session-and-config](../milestones/10-interactive-session-and-config.md)
 - **Vertical Slice:** [00-04-context-management-ui](../slices/00-04-context-management-ui.md)
 - **Specs:** [context-management-ui](../specs/context-management-ui.md)
@@ -34,6 +34,7 @@ TUI rendering logic for pruned items (verified in `00-04` prototype and acceptan
 - Pruning Logic Regex. The regex `r"(?:^|/)(\d+)/"` is greedy and matches parent directories or session names if they contain numbers. (Resolved: Updated regex to `r"(?:^|/)(\d{1,3})(?=/|$)"` to target turn IDs precisely.)
 - Padding Mismatch. The use of `:02d` padding for target IDs mismatches unpadded directory extracts. (Resolved: Implemented dual matching strategy (string + integer) to normalize comparisons.)
 - Validation Check. "Status: Validation Failed" was too strict. (Resolved: Updated to substring match for "Validation Failed".)
+- Windows Path Separators. The regex `r"(?:^|/)(\d{1,3})(?=/|$)"` only accounts for forward slashes, causing extraction failure on Windows.
 
 ### Investigation History
 1. Initial report. User observes auto-pruning is not taking effect in real sessions.
@@ -41,12 +42,15 @@ TUI rendering logic for pruned items (verified in `00-04` prototype and acceptan
 3. Padding Spike. Verified that hardcoded `:02d` padding causes comparison failures for single-digit turns.
 4. TUI Logic Audit. Verified that TUI correctly renders the `selected` state if the domain model sets it correctly.
 5. Acceptance Verification. Refined test stubbing and resolved recursive deadlock in orchestrator to verify full turn transition logic.
+6. Windows CI Failure. Identified that regex `r"(?:^|/)(\d{1,3})(?=/|$)"` fails on Windows-style paths (`\`).
 
 ## Solution
 ### Implemented Fixes
 - **Regex Refinement:** Updated `SessionPruningService._extract_turn_id` to use `r"(?:^|/)(\d{1,3})(?=/|$)"`.
 - **Match Normalization:** Updated `SessionPruningService.prune` to check both raw and integer-normalized IDs.
 - **Heuristic Resilience:** Updated validation failure check to use substring matching.
+- **Platform Agnosticism:** Updated `SessionPruningService` to normalize paths to POSIX style during pruning analysis, ensuring regex and suffix checks work on all OSs.
 
 ### Prevention
-- TBD
+- **Path Normalization Policy:** Core services performing string-based path analysis (regex, suffix checks) MUST normalize paths to POSIX style internally.
+- **Regression Test:** Added `tests/suites/unit/core/services/test_session_pruning_windows.py` to cover cross-platform path handling.

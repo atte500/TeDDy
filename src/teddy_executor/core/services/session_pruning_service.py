@@ -61,8 +61,11 @@ class SessionPruningService:
                 item, selected=False, auto_prune_reason="File deleted from disk"
             )
 
+        # Normalize path for consistent string matching
+        posix_path = item.path.replace("\\", "/")
+
         # Match numeric turn directories (e.g. '01', '02')
-        turn_id = self._extract_turn_id(item.path)
+        turn_id = self._extract_turn_id(posix_path)
         if turn_id:
             # Check both raw string and integer-normalized version
             reason = turns_to_prune.get(turn_id) or turns_to_prune.get(
@@ -79,8 +82,10 @@ class SessionPruningService:
 
     def _extract_turn_id(self, path: str) -> Optional[str]:
         """Extracts the last numeric directory segment from the path."""
+        # Normalize to forward slashes for the regex
+        normalized = path.replace("\\", "/")
         # Turn IDs are typically 1-3 digits. 4+ digits usually represent years or other data.
-        matches = re.findall(r"(?:^|/)(\d{1,3})(?=/|$)", path)
+        matches = re.findall(r"(?:^|/)(\d{1,3})(?=/|$)", normalized)
         return matches[-1] if matches else None
 
     def _identify_turns_to_prune(self, items) -> Dict[str, str]:
@@ -113,13 +118,14 @@ class SessionPruningService:
             if item.scope != "Turn":
                 continue
 
-            turn_id_str = self._extract_turn_id(item.path)
+            posix_path = item.path.replace("\\", "/")
+            turn_id_str = self._extract_turn_id(posix_path)
             if not turn_id_str:
                 continue
             turn_id = int(turn_id_str)
 
             # Heuristic 4: Validation failure (Check report)
-            if prune_validation and item.path.endswith("report.md"):
+            if prune_validation and posix_path.endswith("report.md"):
                 if self._check_file_contains(
                     item.path, "- **Overall Status:** Validation Failed"
                 ):
