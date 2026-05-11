@@ -35,9 +35,9 @@ Auto-pruning evaluates files *before* rendering the TUI, setting their `is_auto_
 1. **Scope Restriction:** Auto-pruning MUST ONLY apply to files in `turn.context`. `session.context` and System Prompts are strictly exempt.
 2. **Global Budget Heuristic:** If `Total Context Tokens` > `config.global_context_threshold`, sort `turn.context` files by token count (descending) and prune largest files until the total is under the budget.
     - **Reason:** `Pruned to fit context budget`
-3. **Failure History Heuristic:** If `prune_preceding_on_non_green` is enabled and a plan file (`turn-N-plan.md`) in `turn.context` has a 🔴 or 🟡 status emoji in its metadata header, prune the Plan and Report from the preceding turn (`turn-(N-1)`).
-    - **Reason:** `Pruned as it led to a non-green state`
-4. **Validation Failure Heuristic:** If a report file (`turn-N-report.md`) in `turn.context` contains `Status: Validation Failed`, prune both that report and its corresponding plan (`turn-N-plan.md`).
+3. **Recovery Cleanup Heuristic:** If the current turn's status is 🟢 (Success), identify all preceding 🔴/🟡 turns and their associated reports currently in the `turn.context` and prune them. If the current turn's status is 🔴/🟡, do NOT prune preceding history (preserving investigation context).
+    - **Reason:** `Pruned failure history after successful recovery`
+4. **Validation Failure Heuristic:** If a report file (`turn-N-report.md`) in `turn.context` contains the specific line `- **Overall Status:** Validation Failed`, prune both that report and its corresponding plan (`turn-N-plan.md`).
     - **Reason:** `Plan failed validation`
 5. **Deleted File Heuristic:** If a file in the context has a git status of `D` (Deleted), it MUST be auto-pruned.
     - **Reason:** `File deleted from disk`

@@ -45,6 +45,11 @@ And files in the session context are never struck through automatically
 - [x] **Integration** - Update `ReviewerApp` to return `pruned_context` metadata.
 - [x] **Integration** - Update `SessionOrchestrator` to process `pruned_context` and delete files from turn context.
 - [x] **Wiring** - Verify end-to-end context visibility and auto-pruning (Gherkin scenarios).
+- [ ] **Logic (Refinement)** - Implement Recovery Cleanup (prune failure context only when turn returns to 🟢).
+- [ ] **Logic (Refinement)** - Update Validation Matching to target `- **Overall Status:** Validation Failed`.
+- [ ] **Logic (Refinement)** - Update standardized auto-prune reason to "Pruned failure history after successful recovery".
+- [ ] **Cleanup (Refinement)** - Remove individual token threshold logic and related config keys.
+- [ ] **Showcase** - Create `showcases/00-04/showcase_heuristics.sh` to demonstrate failure-streak preservation and post-green cleanup.
 
 ## Implementation Notes
 ### Contract - Add get_text_token_count to ILlmClient
@@ -84,10 +89,9 @@ And files in the session context are never struck through automatically
 - Implemented `_apply_auto_pruning` in `SessionOrchestrator` using a multi-pass heuristic approach.
 - Rules implemented:
     - **Global Budget:** Prunes largest files first to fit under `global_context_threshold`.
-    - **Failure History:** Prunes turns preceding a 🔴/🟡 plan status.
-    - **Validation Failure:** Prunes failed validation reports and their plans.
+    - **Recovery Cleanup:** Prunes all 🔴/🟡 turns once a 🟢 status is achieved.
+    - **Validation Failure:** Prunes failed validation reports (matching `- **Overall Status:** Validation Failed`) and their plans.
     - **Deleted File:** Prunes files with `D` git status.
-    - **Individual Threshold:** Prunes files exceeding `threshold_tokens`.
 - Hardened logic against shallow mocks in legacy tests via `is_dataclass` checks and safe numeric casting of configuration values.
 - Resolved `UnboundLocalError` by ensuring all method-level imports (e.g., `re`) are scoped correctly and not trapped in conditional loops.
 - Updated `TestEnvironment` harness to provide mandatory default token counts for `ILlmClient`.
@@ -163,13 +167,13 @@ And files in the session context are never struck through automatically
     - Map `??` to `U` (Untracked) for visual consistency with modern IDEs.
     - Status colors: `M` (yellow), `U/A` (green), `D` (red).
 - **Failure Heuristics:**
-    - **Non-Green State:** Parse plan headers in `turn.context` for `Status: ... 🔴` or `Status: ... 🟡`. If found, prune the *preceding* turn's artifacts.
-    - **Validation Failure:** Check report files in `turn.context` for the string `Status: Validation Failed`. If found, prune that report and its plan.
+    - **Recovery Cleanup:** If current turn is 🟢, scan context for any `plan.md` files with `Status: ... 🔴` or `Status: ... 🟡`. If found, prune them and their corresponding reports.
+    - **Validation Failure:** Check report files in `turn.context` for the specific string `- **Overall Status:** Validation Failed`. If found, prune that report and its plan.
     - **Deleted File:** Check `ContextItem.git_status` for `D`. If found, prune the item.
 - **Auto-Prune Reasons:** Use the following standardized strings for the `auto_prune_reason` metadata:
     - `Pruned to fit context budget`
     - `Plan failed validation`
-    - `Pruned as it led to a non-green state`
+    - `Pruned failure history after successful recovery`
     - `File deleted from disk`
 - **Dynamic UI Logic:** Every toggle of a context item MUST trigger a recalculation and refresh of the `ContextAggregateDetail` view.
 - **Context Management Tree:**
