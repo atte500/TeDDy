@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "teddy-executor"
+name = "teddy"
 version = "0.1.0"
-description = "A CLI tool to safely execute AI-generated action plans."
+description = "A local-first, file-based AI coding workflow that applies the UNIX philosophy to AI collaboration."
 authors = ["Raphael Atteritano"]
 license = "AGPL-3.0-only"
 packages = [{ include = "teddy_executor", from = "src" }]
