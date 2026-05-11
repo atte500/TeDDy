@@ -104,7 +104,7 @@ class TestEnvironment(RealAdapterMixin):
         mock_interactor = self.mock_port(IUserInteractor)
         # Ensure messages are visible in CLI output for assertions
         mock_interactor.display_message.side_effect = lambda m: typer.echo(m)
-        self._container.register(IPlanReviewer, instance=None)
+        self.mock_port(IPlanReviewer)
 
     def _register_ai_mocks(self) -> None:
         from teddy_executor.core.ports.outbound import (

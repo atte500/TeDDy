@@ -156,3 +156,102 @@ async def test_auto_pruning_strikes_through_failed_plans(env: TestEnvironment):
         assert "[dim strike]" in label_markup
         assert "turn-01-plan.md" in label_markup
         assert "0.5k" in label_markup
+
+
+def _setup_acceptance_session(env, session_dir):
+    env.workspace.joinpath(f"{session_dir}/01").mkdir(parents=True)
+    env.workspace.joinpath(f"{session_dir}/02").mkdir(parents=True)
+    env.workspace.joinpath(f"{session_dir}/03").mkdir(parents=True)
+
+    env.workspace.joinpath(f"{session_dir}/01/plan.md").write_text(
+        "# Turn 1\nStatus: 🟢"
+    )
+    env.workspace.joinpath(f"{session_dir}/01/report.md").write_text(
+        "# Report 1\nStatus: SUCCESS"
+    )
+
+    env.workspace.joinpath(f"{session_dir}/02/plan.md").write_text(
+        "# Turn 2\nStatus: 🔴"
+    )
+    env.workspace.joinpath(f"{session_dir}/02/report.md").write_text(
+        "# Report 2\nStatus: ABORTED"
+    )
+
+    turn_03_plan = (
+        MarkdownPlanBuilder("Turn 3")
+        .with_rationale("Final turn.")
+        .add_read("README.md")
+        .build()
+    ).replace("Status: Unresolved", "Status: 🟢")
+
+    env.workspace.joinpath(f"{session_dir}/03/plan.md").write_text(turn_03_plan)
+    env.workspace.joinpath(f"{session_dir}/03/report.md").write_text(
+        "# Report 3\nStatus: Validation Failed"
+    )
+    env.workspace.joinpath("README.md").write_text("Hello")
+
+    env.workspace.joinpath(f"{session_dir}/03/turn.context").write_text(
+        f"{session_dir}/01/plan.md\n{session_dir}/01/report.md\n{session_dir}/02/plan.md\n"
+        f"{session_dir}/03/plan.md\n{session_dir}/03/report.md"
+    )
+    env.workspace.joinpath(f"{session_dir}/03/meta.yaml").write_text(
+        "turn_id: '03'\nagent_name: pf"
+    )
+    return turn_03_plan
+
+
+def test_auto_pruning_heuristics_acceptance(env, monkeypatch):
+    """Regression test for pruning heuristics."""
+    env.setup().with_real_filesystem()
+    session_dir = ".teddy/sessions/20260511_120000-regression"
+    turn_03_plan = _setup_acceptance_session(env, session_dir)
+
+    from teddy_executor.core.ports.outbound import IConfigService
+
+    mock_config = env.get_service(IConfigService)
+    mock_config.get_setting.side_effect = lambda k, d=None: {
+        "auto_pruning.enabled": True,
+        "auto_pruning.prune_preceding_on_non_green": True,
+        "auto_pruning.prune_validation_failures": True,
+        "ui_mode": "tui",
+    }.get(k, d)
+
+    from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
+
+    reviewer = env.mock_port(IPlanReviewer)
+    reviewer.review.side_effect = lambda plan, project_context=None: plan
+
+    from teddy_executor.core.services.session_planner import SessionPlanner
+
+    planner, call_count = env.mock_port(SessionPlanner), 0
+
+    def mock_planning(turn_dir, message=None):
+        nonlocal call_count
+        call_count += 1
+        if call_count > 1:
+            return "CANCELLED"
+        env.workspace.joinpath(f"{turn_dir}/plan.md").write_text(turn_03_plan)
+        return "20260511_120000-regression"
+
+    planner.trigger_new_plan.side_effect = mock_planning
+
+    from tests.harness.drivers.cli_adapter import CliTestAdapter
+
+    cli = CliTestAdapter(monkeypatch, env.workspace)
+    cli.run_resume(path=f"{session_dir}/03/plan.md", input="\n")
+
+    reviewer.review.assert_called_once()
+    context = reviewer.review.call_args.kwargs.get("project_context")
+    items_map = {item.path: item for item in context.items}
+
+    assert items_map[f"{session_dir}/01/plan.md"].selected is False
+    assert (
+        items_map[f"{session_dir}/01/plan.md"].auto_prune_reason
+        == "Pruned as it led to a non-green state"
+    )
+    assert items_map[f"{session_dir}/03/plan.md"].selected is False
+    assert (
+        items_map[f"{session_dir}/03/plan.md"].auto_prune_reason
+        == "Plan failed validation"
+    )
+    assert items_map[f"{session_dir}/02/plan.md"].selected is True

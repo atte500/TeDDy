@@ -1,6 +1,6 @@
 import re
 from dataclasses import is_dataclass, replace
-from typing import Any, Dict, Optional, Set
+from typing import Any, Dict, Optional
 
 from teddy_executor.core.domain.models import ProjectContext
 from teddy_executor.core.ports.outbound.config_service import IConfigService
@@ -22,67 +22,86 @@ class SessionPruningService:
 
     def prune(self, context: ProjectContext) -> ProjectContext:
         """Applies configured auto-pruning heuristics to the project context."""
-        if not self._config_service.get_setting("auto_pruning.enabled", True):
+        try:
+            if not self._config_service.get_setting("auto_pruning.enabled", True):
+                return context
+
+            # Handle MagicMocks in unit tests
+            if not is_dataclass(context):
+                return context
+
+            items = list(context.items)
+
+            # 1. Prune by status/validation failure (Heuristics 3 & 4)
+            turns_to_prune = self._identify_turns_to_prune(items)
+
+            for i, item in enumerate(items):
+                new_item = self._process_context_item(item, turns_to_prune)
+                if new_item is not item:
+                    items[i] = new_item
+
+            # 2. Heuristic 2: Global Budget
+            items = self._apply_global_budget(items)
+
+            return replace(context, items=items)
+        except Exception as e:
+            # Failure Transparency: Log and re-raise or return original context
+            import sys
+
+            print(f"[ERROR] PruningService failure: {e}", file=sys.stderr)
             return context
 
-        # Handle MagicMocks in unit tests
-        if not is_dataclass(context):
-            return context
+    def _process_context_item(self, item: Any, turns_to_prune: Dict[str, str]) -> Any:
+        """Processes an individual context item for pruning."""
+        if item.scope != "Turn":
+            return item
 
-        items = list(context.items)
-        pruned_indices: Set[int] = set()
+        if item.git_status == "D":
+            return replace(
+                item, selected=False, auto_prune_reason="File deleted from disk"
+            )
 
-        # 1. Prune by status/validation failure (Heuristics 3 & 4)
-        turns_to_prune = self._identify_turns_to_prune(items)
+        # Heuristic 2b: Individual File Threshold
+        try:
+            setting = self._config_service.get_setting(
+                "auto_pruning.threshold_tokens", 0
+            )
+            file_threshold = int(setting) if setting is not None else 0
+        except (TypeError, ValueError):
+            file_threshold = 0
 
-        for i, item in enumerate(items):
-            if item.scope != "Turn":
-                continue
+        if (
+            file_threshold > 0
+            and isinstance(item.token_count, (int, float))
+            and item.token_count > file_threshold
+        ):
+            return replace(
+                item,
+                selected=False,
+                auto_prune_reason="Pruned as it exceeds individual threshold",
+            )
 
-            if item.git_status == "D":
-                pruned_indices.add(i)
-                items[i] = replace(
-                    item, selected=False, auto_prune_reason="File deleted from disk"
-                )
-                continue
-
-            # Heuristic 2b: Individual File Threshold
-            try:
-                setting = self._config_service.get_setting(
-                    "auto_pruning.threshold_tokens", 0
-                )
-                file_threshold = int(setting) if setting is not None else 0
-            except (TypeError, ValueError):
-                file_threshold = 0
-
-            if (
-                file_threshold > 0
-                and isinstance(item.token_count, (int, float))
-                and item.token_count > file_threshold
-            ):
-                pruned_indices.add(i)
-                items[i] = replace(
+        # Match numeric turn directories (e.g. '01', '02')
+        turn_id = self._extract_turn_id(item.path)
+        if turn_id:
+            # Check both raw string and integer-normalized version
+            reason = turns_to_prune.get(turn_id) or turns_to_prune.get(
+                str(int(turn_id))
+            )
+            if reason:
+                return replace(
                     item,
                     selected=False,
-                    auto_prune_reason="Pruned as it exceeds individual threshold",
-                )
-                continue
-
-            # Match numeric turn directories (e.g. '01', '02')
-            match = re.search(r"/(\d+)/", item.path)
-            turn_id = match.group(1) if match else None
-            if turn_id and turn_id in turns_to_prune:
-                pruned_indices.add(i)
-                items[i] = replace(
-                    item,
-                    selected=False,
-                    auto_prune_reason=turns_to_prune[turn_id],
+                    auto_prune_reason=reason,
                 )
 
-        # 2. Heuristic 2: Global Budget
-        items = self._apply_global_budget(items)
+        return item
 
-        return replace(context, items=items)
+    def _extract_turn_id(self, path: str) -> Optional[str]:
+        """Extracts the last numeric directory segment from the path."""
+        # Turn IDs are typically 1-3 digits. 4+ digits usually represent years or other data.
+        matches = re.findall(r"(?:^|/)(\d{1,3})(?=/|$)", path)
+        return matches[-1] if matches else None
 
     def _identify_turns_to_prune(self, items) -> Dict[str, str]:
         """Identifies turns that should be pruned based on failure status."""
@@ -103,16 +122,24 @@ class SessionPruningService:
                 continue
 
             # Match numeric turn directories (e.g. '01', '02')
-            match = re.search(r"/(\d+)/", item.path)
-            if not match:
+            turn_id = self._extract_turn_id(item.path)
+            if not turn_id:
                 continue
-            turn_id = match.group(1)
 
             reason = self._check_item_for_pruning(
                 item, prune_non_green, prune_validation
             )
             if reason:
-                turns_to_prune[turn_id] = reason
+                if reason == "Pruned as it led to a non-green state":
+                    try:
+                        target = int(turn_id) - 1
+                        if target > 0:
+                            # Use unpadded string as key for better normalization
+                            turns_to_prune[str(target)] = reason
+                    except (ValueError, TypeError):
+                        pass
+                else:
+                    turns_to_prune[turn_id] = reason
 
         return turns_to_prune
 
@@ -130,7 +157,7 @@ class SessionPruningService:
             # Heuristic 4: Validation failure
             if prune_validation and item.path.endswith("report.md"):
                 content = self._file_system_manager.read_file(item.path)
-                if "Status: Validation Failed" in content:
+                if "Validation Failed" in content:
                     return "Plan failed validation"
         except (FileNotFoundError, OSError):
             # On Windows, rapid read-after-write can throw PermissionError
