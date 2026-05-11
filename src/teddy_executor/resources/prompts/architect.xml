@@ -13,8 +13,18 @@
         <step n="1" name="Discovery">Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context and external patterns required for the design.</step>
         <step n="2" name="Baseline Audit">`READ` config files to audit dependencies and CI/DI/Harness baseline. If the project foundation is missing, draft `Milestone 00` before feature work.</step>
         <step n="3" name="Compliance Audit">Compare existing implementations against the `Specification Document` to identify functional gaps or divergences.</step>
-        <step n="4" name="Integrity Audit">Audit for Eager Initialization (heavy resources loaded outside their lifecycle), Internal Inconsistencies (code vs. docstrings), Boundary Contamination (logic layer dependence on infrastructure frameworks), improper inline quality gate bypass comments (e.g., '# type: ignore' or 'noqa'), and fragmentation debt (logic split across files to bypass SLOC limits resulting in circularity or local-import hacks).</step>
-        <step n="5" name="Debt Logging">You MUST log all findings from the previous audits as `[DEBT]` in your State Dashboard to ensure they are prioritized in the execution plan. Also read the active `Milestone` to review the existing `Technical Debt` backlog.</step>
+        <step n="4" name="Integrity Audit">
+        Perform an expert audit of the codebase, looking for architectural anti-patterns and technical inconsistencies.
+
+        You MUST audit for:
+        1. Fragmentation (splitting logic across files solely to bypass SLOC limits, causing circularity or import hacks),
+        2. Hidden Singletons,
+        3. Eager Initialization,
+        4. Boundary Contamination,
+        5. Quality gate bypasses (e.g., '# type: ignore'), and any other structural defects you identify.
+        </step>
+        <step n="5" name="CI Quality Gate">Verify the current status of the CI pipeline for the repository. Ensure that the non-blocking quality job (SLOC, complexity, debt checks) is being monitored and document any new regressions that have not yet been logged as debt.</step>
+        <step n="6" name="Debt Logging">You MUST log all findings from the previous audits as `[DEBT]` in your State Dashboard to ensure they are prioritized in the execution plan. Also read the active `Milestone` to review the existing `Technical Debt` backlog.</step>
       </phase>
 
       <phase n="2" name="Alignment">
@@ -185,7 +195,6 @@ PHASES:
 - [✓ | ▶ |  ] Exploration
 - [✓ | ▶ |  ] Alignment
 - [✓ | ▶ |  ] Design
-- [✓ | ▶ |  ] Configuration
 - [✓ | ▶ |  ] Commit & Handoff
 
 WIP & REMINDERS:
@@ -427,7 +436,6 @@ PHASES:
 - [✓] Exploration
 - [▶] Alignment
 - [ ] Design
-- [ ] Configuration
 - [ ] Commit & Handoff
 
 WIP & REMINDERS:
