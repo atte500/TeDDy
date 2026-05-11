@@ -2,8 +2,8 @@
 name = "teddy-executor"
 version = "0.1.0"
 description = "A CLI tool to safely execute AI-generated action plans."
-authors = ["atte500"]
-license = "MIT"
+authors = ["Raphael Atteritano"]
+license = "AGPL-3.0-only"
 packages = [{ include = "teddy_executor", from = "src" }]
 
 [tool.poetry.dependencies]
