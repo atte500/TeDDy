@@ -133,11 +133,7 @@ class TestEnvironment(RealAdapterMixin):
             IRepoTreeGenerator,
         )
 
-        mock_fs = self.mock_port(IFileSystemManager)
-        mock_fs.path_exists.return_value = False
-        mock_fs.get_context_paths.return_value = {}
-        mock_fs.read_files_in_vault.return_value = {}
-
+        self.mock_port(IFileSystemManager)
         self.mock_port(IConfigService)
 
         mock_tree = self.mock_port(IRepoTreeGenerator)
@@ -164,15 +160,27 @@ class TestEnvironment(RealAdapterMixin):
 
     def _apply_mock_defaults(self, port_type: Any, mock: Any) -> None:
         """Applies happy-path defaults to specific port types."""
+        from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
         from teddy_executor.core.ports.outbound import (
             IConfigService,
+            IFileSystemManager,
             ILlmClient,
             IShellExecutor,
             ISystemEnvironment,
             IUserInteractor,
         )
 
-        if port_type == ILlmClient:
+        if port_type == IFileSystemManager:
+            mock.path_exists.return_value = False
+            mock.get_context_paths.return_value = {}
+            mock.read_files_in_vault.return_value = {}
+            mock.read_file.return_value = ""
+        elif port_type == IPlanReviewer:
+            # Identity function for plans to prevent poisoning
+            mock.review.side_effect = lambda p, **kwargs: p
+            # Auto-approve actions in tests
+            mock.review_action.return_value = (True, "")
+        elif port_type == ILlmClient:
             mock.validate_config.return_value = []
             mock.get_completion_cost.return_value = 0.0
             mock.get_token_count.return_value = 0
@@ -231,6 +239,41 @@ class TestEnvironment(RealAdapterMixin):
         for i in range(count):
             full_path = os.path.join(str_base, f"{prefix}_{i}.py")
             os.close(os.open(full_path, os.O_CREAT | os.O_WRONLY))
+
+    def without_reviewer(self):
+        """Explicitly disables the plan reviewer for the current test."""
+        from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
+        from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
+        from teddy_executor.core.services.execution_orchestrator import (
+            ExecutionOrchestrator,
+        )
+
+        # 1. Clear any existing reviewer registration
+        self._container.register(IPlanReviewer, instance=None)
+
+        # 2. Re-register the orchestrator to ensure it's instantiated with plan_reviewer=None
+        from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
+        from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
+        from teddy_executor.core.ports.outbound.file_system_manager import (
+            IFileSystemManager,
+        )
+        from teddy_executor.core.ports.outbound.execution_report_assembler import (
+            IExecutionReportAssembler,
+        )
+        from teddy_executor.core.services.action_executor import ActionExecutor
+
+        self._container.register(
+            IRunPlanUseCase,
+            factory=lambda: ExecutionOrchestrator(
+                plan_parser=self._container.resolve(IPlanParser),
+                plan_validator=self._container.resolve(IPlanValidator),
+                action_executor=self._container.resolve(ActionExecutor),
+                file_system_manager=self._container.resolve(IFileSystemManager),
+                report_assembler=self._container.resolve(IExecutionReportAssembler),
+                plan_reviewer=None,
+            ),
+        )
+        return self
 
     def teardown(self):
         """Cleans up monkeypatches and resets state."""

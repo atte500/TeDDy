@@ -15,7 +15,7 @@ from tests.harness.observers.report_parser import ReportParser
 def test_in_terminal_diff_is_shown_for_create_file(tmp_path: Path, monkeypatch):
     """Scenario: CREATE action shows in-terminal preview."""
     env = TestEnvironment(monkeypatch, tmp_path)
-    env.setup()
+    env.setup().without_reviewer()
 
     mock_env = env.get_service(ISystemEnvironment)  # type: ignore[type-abstract]
     # Properly wire the REAL interactor. Must be transient to override the container's default.
@@ -65,7 +65,7 @@ def test_in_terminal_diff_is_shown_for_create_file(tmp_path: Path, monkeypatch):
 def test_in_terminal_diff_is_shown_as_fallback(tmp_path: Path, monkeypatch):
     """Scenario: EDIT action shows in-terminal diff fallback."""
     env = TestEnvironment(monkeypatch, tmp_path)
-    env.setup()
+    env.setup().without_reviewer()
 
     mock_env = env.get_service(ISystemEnvironment)  # type: ignore[type-abstract]
     # Re-register the REAL interactor for diff preview tests
@@ -105,7 +105,7 @@ def test_in_terminal_diff_is_shown_as_fallback(tmp_path: Path, monkeypatch):
 def test_vscode_is_used_as_fallback(tmp_path: Path, monkeypatch):
     """Scenario: VS Code is used for diffing when available."""
     env = TestEnvironment(monkeypatch, tmp_path)
-    env.setup()
+    env.setup().without_reviewer()
     mock_env = env.get_service(ISystemEnvironment)  # type: ignore[type-abstract]
     # Properly wire the REAL interactor
     env._container.register(
@@ -148,7 +148,7 @@ def test_vscode_is_used_as_fallback(tmp_path: Path, monkeypatch):
 def test_custom_diff_tool_is_used_from_env(tmp_path: Path, monkeypatch):
     """Scenario: Custom diff tool from env is used."""
     env = TestEnvironment(monkeypatch, tmp_path)
-    env.setup()
+    env.setup().without_reviewer()
     mock_env = env.get_service(ISystemEnvironment)  # type: ignore[type-abstract]
     # Properly wire the REAL interactor
     env._container.register(
@@ -188,7 +188,7 @@ def test_custom_diff_tool_is_used_from_env(tmp_path: Path, monkeypatch):
 def test_invalid_custom_tool_falls_back_to_terminal(tmp_path: Path, monkeypatch):
     """Scenario: Invalid custom tool falls back to terminal diff."""
     env = TestEnvironment(monkeypatch, tmp_path)
-    env.setup()
+    env.setup().without_reviewer()
 
     mock_env = env.get_service(ISystemEnvironment)  # type: ignore[type-abstract]
     # Re-register the REAL interactor for diff preview tests

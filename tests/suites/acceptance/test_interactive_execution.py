@@ -51,7 +51,7 @@ def test_interactive_execution_skip_one(tmp_path, monkeypatch):
 def test_interactive_skip_with_reason(tmp_path, monkeypatch):
     """Scenario: User skips an action with a specific reason."""
     env = TestEnvironment(monkeypatch, tmp_path)
-    env.setup().with_real_interactor()
+    env.setup().without_reviewer().with_real_interactor()
     adapter = CliTestAdapter(monkeypatch, tmp_path)
 
     plan = (

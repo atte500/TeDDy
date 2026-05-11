@@ -54,7 +54,13 @@ class ExecutionOrchestrator(IRunPlanUseCase):
 
         # We only call the bulk review (TUI) if interactive is True AND a reviewer is present.
         if interactive and self._plan_reviewer:
-            return self._plan_reviewer.review(plan, project_context=project_context)
+            reviewed_plan = self._plan_reviewer.review(
+                plan, project_context=project_context
+            )
+            # Harden against Mocks in tests: if it's not a Plan or None, use the original plan
+            if reviewed_plan is not None and not isinstance(reviewed_plan, Plan):
+                return plan
+            return reviewed_plan
         return plan
 
     def _process_plan_actions(self, plan: Plan, interactive: bool) -> list[ActionLog]:

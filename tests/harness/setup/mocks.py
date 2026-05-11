@@ -102,7 +102,7 @@ def mock_plan_validator(container):
     return register_mock(container, IPlanValidator)
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def mock_plan_reviewer(container):
     from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
 

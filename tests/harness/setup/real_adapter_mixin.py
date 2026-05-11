@@ -27,8 +27,13 @@ class RealAdapterMixin:
         from teddy_executor.adapters.outbound.console_interactor import (
             ConsoleInteractorAdapter,
         )
+        from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
+        from teddy_executor.adapters.inbound.console_plan_reviewer import (
+            ConsolePlanReviewer,
+        )
 
         self._container.register(IUserInteractor, ConsoleInteractorAdapter)
+        self._container.register(IPlanReviewer, ConsolePlanReviewer)
         return self
 
     def with_real_inspector(self: Any) -> Any:

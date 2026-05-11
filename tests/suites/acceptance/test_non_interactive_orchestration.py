@@ -30,7 +30,7 @@ def test_prune_auto_skipped_in_non_interactive_mode(tmp_path, monkeypatch):
 def test_invoke_interactive_approval(tmp_path, monkeypatch):
     """Scenario 2 (Interactive): INVOKE with interactive approval should succeed."""
     env = TestEnvironment(monkeypatch, tmp_path)
-    env.setup()
+    env.setup().without_reviewer()
     env.with_real_interactor()  # Need real interactor for stderr and stdin
     adapter = CliTestAdapter(monkeypatch, tmp_path)
 
@@ -83,7 +83,7 @@ def test_invoke_non_interactive_must_interrupt(tmp_path, monkeypatch):
 def test_invoke_rejected_in_non_interactive_mode(tmp_path, monkeypatch):
     """Scenario 2 (Rejection): INVOKE rejected with reason becomes FAILURE."""
     env = TestEnvironment(monkeypatch, tmp_path)
-    env.setup()
+    env.setup().without_reviewer()
     env.with_real_interactor()  # Need real interactor for stderr and stdin
     adapter = CliTestAdapter(monkeypatch, tmp_path)
 

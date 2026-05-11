@@ -8,7 +8,7 @@ from teddy_executor.core.ports.outbound import IUserInteractor
 def test_interactive_prompt_shows_description(tmp_path: Path, monkeypatch):
     """Scenario: Interactive confirmation prompt includes action description."""
     env = TestEnvironment(monkeypatch, tmp_path)
-    env.setup()
+    env.setup().without_reviewer()
     adapter = CliTestAdapter(monkeypatch, tmp_path)
     interactor = env.get_service(IUserInteractor)  # type: ignore[type-abstract]
 

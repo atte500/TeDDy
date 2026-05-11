@@ -119,7 +119,7 @@ async def test_auto_pruning_strikes_through_failed_plans(env: TestEnvironment):
             git_status="",
             scope="Turn",
             selected=False,
-            auto_prune_reason="Pruned as it led to a non-green state",
+            auto_prune_reason="Pruned failure history after successful recovery",
         )
     ]
     context = ProjectContext(
@@ -186,7 +186,7 @@ def _setup_acceptance_session(env, session_dir):
 
     env.workspace.joinpath(f"{session_dir}/03/plan.md").write_text(turn_03_plan)
     env.workspace.joinpath(f"{session_dir}/03/report.md").write_text(
-        "# Report 3\nStatus: Validation Failed"
+        "# Report 3\n- **Overall Status:** Validation Failed"
     )
     env.workspace.joinpath("README.md").write_text("Hello")
 
@@ -211,7 +211,7 @@ def test_auto_pruning_heuristics_acceptance(env, monkeypatch):
     mock_config = env.get_service(IConfigService)
     mock_config.get_setting.side_effect = lambda k, d=None: {
         "auto_pruning.enabled": True,
-        "auto_pruning.prune_preceding_on_non_green": True,
+        "auto_pruning.prune_failure_history": True,
         "auto_pruning.prune_validation_failures": True,
         "ui_mode": "tui",
     }.get(k, d)
@@ -244,14 +244,19 @@ def test_auto_pruning_heuristics_acceptance(env, monkeypatch):
     context = reviewer.review.call_args.kwargs.get("project_context")
     items_map = {item.path: item for item in context.items}
 
-    assert items_map[f"{session_dir}/01/plan.md"].selected is False
+    # Turn 01 was 🟢, so it remains selected.
+    assert items_map[f"{session_dir}/01/plan.md"].selected is True
+
+    # Turn 02 was 🔴 and Turn 03 is 🟢 (Recovery). Turn 02 should be pruned.
+    assert items_map[f"{session_dir}/02/plan.md"].selected is False
     assert (
-        items_map[f"{session_dir}/01/plan.md"].auto_prune_reason
-        == "Pruned as it led to a non-green state"
+        items_map[f"{session_dir}/02/plan.md"].auto_prune_reason
+        == "Pruned failure history after successful recovery"
     )
+
+    # Turn 03 failed validation.
     assert items_map[f"{session_dir}/03/plan.md"].selected is False
     assert (
         items_map[f"{session_dir}/03/plan.md"].auto_prune_reason
         == "Plan failed validation"
     )
-    assert items_map[f"{session_dir}/02/plan.md"].selected is True

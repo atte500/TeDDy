@@ -160,20 +160,24 @@ def test_execute_prunes_global_budget_heuristic(orchestrator, mock_context_servi
 
 def test_execute_prunes_failure_history_heuristic(orchestrator, mock_context_service):
     """
-    Heuristic 3: Prune preceding turn artifacts if current turn.context contains a non-green plan.
+    Heuristic 3: Prune preceding turn artifacts after a successful recovery.
     """
     # Arrange
     orchestrator._file_system_manager.path_exists.return_value = True
 
+    # Turn 01 is 🔴, Turn 02 is 🟢
     items = [
         ContextItem(
             path="session/01/plan.md", token_count=100, git_status="", scope="Turn"
         ),
         ContextItem(
-            path="session/01/report.md",
-            token_count=100,
-            git_status="",
-            scope="Turn",
+            path="session/01/report.md", token_count=100, git_status="", scope="Turn"
+        ),
+        ContextItem(
+            path="session/02/plan.md", token_count=100, git_status="", scope="Turn"
+        ),
+        ContextItem(
+            path="session/02/report.md", token_count=100, git_status="", scope="Turn"
         ),
     ]
 
@@ -181,10 +185,11 @@ def test_execute_prunes_failure_history_heuristic(orchestrator, mock_context_ser
         items=items, header="", content=""
     )
 
-    # Mock file system to return a non-green header for 01/plan.md
     def mock_read(path):
         if "01/plan.md" in path:
             return "- **Status:** [OUTCOME: FAILURE] [STATE: 🔴]"
+        if "02/plan.md" in path:
+            return "- **Status:** [OUTCOME: SUCCESS] [STATE: 🟢]"
         return ""
 
     orchestrator._file_system_manager.read_file.side_effect = mock_read
@@ -204,14 +209,22 @@ def test_execute_prunes_failure_history_heuristic(orchestrator, mock_context_ser
 
     assert plan_item.selected is False
     assert report_item.selected is False
-    assert plan_item.auto_prune_reason == "Pruned as it led to a non-green state"
+    assert (
+        plan_item.auto_prune_reason
+        == "Pruned failure history after successful recovery"
+    )
+
+    # Turn 02 should remain
+    assert (
+        next(i for i in passed_context.items if "02/plan.md" in i.path).selected is True
+    )
 
 
 def test_execute_prunes_validation_failure_heuristic(
     orchestrator, mock_context_service
 ):
     """
-    Heuristic 4: Prune plan/report if report contains 'Status: Validation Failed'.
+    Heuristic 4: Prune plan/report if report contains '- **Overall Status:** Validation Failed'.
     """
     # Arrange
     orchestrator._file_system_manager.path_exists.return_value = True
@@ -232,10 +245,10 @@ def test_execute_prunes_validation_failure_heuristic(
         items=items, header="", content=""
     )
 
-    # Mock file system to return validation failure in report
+    # Mock file system to return validation failure in report (using spec-compliant string)
     def mock_read(path):
         if "01/report.md" in path:
-            return "Status: Validation Failed"
+            return "- **Overall Status:** Validation Failed"
         return ""
 
     orchestrator._file_system_manager.read_file.side_effect = mock_read

@@ -45,10 +45,10 @@ And files in the session context are never struck through automatically
 - [x] **Integration** - Update `ReviewerApp` to return `pruned_context` metadata.
 - [x] **Integration** - Update `SessionOrchestrator` to process `pruned_context` and delete files from turn context.
 - [x] **Wiring** - Verify end-to-end context visibility and auto-pruning (Gherkin scenarios).
-- [ ] **Logic (Refinement)** - Implement Recovery Cleanup (prune failure context only when turn returns to 🟢).
-- [ ] **Logic (Refinement)** - Update Validation Matching to target `- **Overall Status:** Validation Failed`.
-- [ ] **Logic (Refinement)** - Update standardized auto-prune reason to "Pruned failure history after successful recovery".
-- [ ] **Cleanup (Refinement)** - Remove individual token threshold logic and related config keys.
+- [x] **Logic (Refinement)** - Implement Recovery Cleanup (prune failure context only when turn returns to 🟢).
+- [x] **Logic (Refinement)** - Update Validation Matching to target `- **Overall Status:** Validation Failed`.
+- [x] **Logic (Refinement)** - Update standardized auto-prune reason to "Pruned failure history after successful recovery".
+- [x] **Cleanup (Refinement)** - Remove individual token threshold logic and related config keys.
 - [ ] **Showcase** - Create `showcases/00-04/showcase_heuristics.sh` to demonstrate failure-streak preservation and post-green cleanup.
 
 ## Implementation Notes
@@ -138,6 +138,17 @@ And files in the session context are never struck through automatically
 - Verified that the "Context" node and its children are correctly populated with Rich styling (bold paths, colored status, grayed tokens).
 - Verified that auto-pruned items (e.g. failed plans) are correctly rendered with `[dim strike]` formatting.
 - Confirmed that toggling selection in the TUI correctly updates the `pruned_context` metadata in the submitted plan.
+
+### Logic (Refinement) - Recovery Cleanup & Regression Fixes
+- Implemented Recovery Cleanup heuristic in `SessionOrchestrator`: Prunes all preceding 🔴/🟡 turns and their reports once a 🟢 status is achieved.
+- Refined `_is_validation_failure` matching to target the specific string `- **Overall Status:** Validation Failed`.
+- Removed deprecated `individual_token_threshold` logic and related config keys to simplify the pruning budget.
+- Hardened `TestEnvironment` with `without_reviewer()` to support legacy interactor-based acceptance tests. This helper re-registers the `ExecutionOrchestrator` without a reviewer, forcing the fallback to `IUserInteractor`.
+- Resolved isolation relaxation regression in `test_orchestrator_allows_non_isolated_terminal_action` by explicitly providing the `mock_plan_reviewer` to the orchestrator fixture.
+
+## Technical Debt
+- **[DEBT]** Harness Complexity: `without_reviewer()` in `TestEnvironment` is a manual container re-wiring. Consider a more robust `interactive_mode` configuration (e.g., `"tui" | "console"`) for the harness to toggle between `IPlanReviewer` and `IUserInteractor` cleanly.
+- **[DEBT]** Orchestrator Size: `ExecutionOrchestrator` is approaching the 300-line limit and has high cyclomatic complexity in its execution loop.
 
 ## Delta Analysis
 - **Domain Models:**

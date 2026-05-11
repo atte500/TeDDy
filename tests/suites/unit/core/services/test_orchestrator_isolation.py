@@ -6,7 +6,9 @@ from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
 
 
 @pytest.fixture
-def orchestrator(container, mock_action_dispatcher, mock_user_interactor):
+def orchestrator(
+    container, mock_action_dispatcher, mock_user_interactor, mock_plan_reviewer
+):
     container.register(ExecutionOrchestrator)
     mock_validator = MagicMock(spec=IPlanValidator)
     mock_validator.validate.return_value = []

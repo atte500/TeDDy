@@ -61,26 +61,6 @@ class SessionPruningService:
                 item, selected=False, auto_prune_reason="File deleted from disk"
             )
 
-        # Heuristic 2b: Individual File Threshold
-        try:
-            setting = self._config_service.get_setting(
-                "auto_pruning.threshold_tokens", 0
-            )
-            file_threshold = int(setting) if setting is not None else 0
-        except (TypeError, ValueError):
-            file_threshold = 0
-
-        if (
-            file_threshold > 0
-            and isinstance(item.token_count, (int, float))
-            and item.token_count > file_threshold
-        ):
-            return replace(
-                item,
-                selected=False,
-                auto_prune_reason="Pruned as it exceeds individual threshold",
-            )
-
         # Match numeric turn directories (e.g. '01', '02')
         turn_id = self._extract_turn_id(item.path)
         if turn_id:
@@ -105,11 +85,8 @@ class SessionPruningService:
 
     def _identify_turns_to_prune(self, items) -> Dict[str, str]:
         """Identifies turns that should be pruned based on failure status."""
-        turns_to_prune: Dict[str, str] = {}
         prune_non_green = bool(
-            self._config_service.get_setting(
-                "auto_pruning.prune_preceding_on_non_green", True
-            )
+            self._config_service.get_setting("auto_pruning.prune_failure_history", True)
         )
         prune_validation = bool(
             self._config_service.get_setting(
@@ -117,52 +94,82 @@ class SessionPruningService:
             )
         )
 
+        turn_statuses, validation_failures = self._collect_turn_metadata(
+            items, prune_non_green, prune_validation
+        )
+
+        return self._apply_pruning_heuristics(
+            turn_statuses, validation_failures, prune_non_green
+        )
+
+    def _collect_turn_metadata(
+        self, items, prune_non_green: bool, prune_validation: bool
+    ) -> tuple[Dict[int, bool], set[int]]:
+        """Scans items to determine turn statuses and validation failures."""
+        turn_statuses: Dict[int, bool] = {}
+        validation_failures: set[int] = set()
+
         for item in items:
             if item.scope != "Turn":
                 continue
 
-            # Match numeric turn directories (e.g. '01', '02')
-            turn_id = self._extract_turn_id(item.path)
-            if not turn_id:
+            turn_id_str = self._extract_turn_id(item.path)
+            if not turn_id_str:
                 continue
+            turn_id = int(turn_id_str)
 
-            reason = self._check_item_for_pruning(
-                item, prune_non_green, prune_validation
-            )
-            if reason:
-                if reason == "Pruned as it led to a non-green state":
-                    try:
-                        target = int(turn_id) - 1
-                        if target > 0:
-                            # Use unpadded string as key for better normalization
-                            turns_to_prune[str(target)] = reason
-                    except (ValueError, TypeError):
-                        pass
-                else:
-                    turns_to_prune[turn_id] = reason
+            # Heuristic 4: Validation failure (Check report)
+            if prune_validation and item.path.endswith("report.md"):
+                if self._check_file_contains(
+                    item.path, "- **Overall Status:** Validation Failed"
+                ):
+                    validation_failures.add(turn_id)
+
+            # Heuristic 3: Non-green state (Check plan)
+            if prune_non_green and item.path.endswith("plan.md"):
+                is_green = not self._check_file_contains(item.path, ("🔴", "🟡"))
+                # If any file in turn is non-green, the whole turn is non-green
+                turn_statuses[turn_id] = turn_statuses.get(turn_id, True) and is_green
+
+        return turn_statuses, validation_failures
+
+    def _check_file_contains(self, path: str, patterns: str | tuple[str, ...]) -> bool:
+        """Safely checks if a file exists and contains specific patterns."""
+        try:
+            if self._file_system_manager.path_exists(path):
+                content = self._file_system_manager.read_file(path)
+                if isinstance(patterns, str):
+                    return patterns in content
+                return any(p in content for p in patterns)
+        except (FileNotFoundError, OSError):
+            pass
+        return False
+
+    def _apply_pruning_heuristics(
+        self,
+        turn_statuses: Dict[int, bool],
+        validation_failures: set[int],
+        prune_non_green: bool,
+    ) -> Dict[str, str]:
+        """Applies heuristics to the collected metadata."""
+        turns_to_prune: Dict[str, str] = {}
+
+        # Heuristic 4: Validation Failure
+        for tid in validation_failures:
+            turns_to_prune[str(tid)] = "Plan failed validation"
+
+        # Heuristic 3: Recovery Cleanup
+        if prune_non_green and turn_statuses:
+            latest_turn = max(turn_statuses.keys())
+            if turn_statuses[latest_turn]:
+                for tid, is_green in turn_statuses.items():
+                    if not is_green and tid < latest_turn:
+                        # Don't overwrite validation failure reason if already set
+                        turns_to_prune.setdefault(
+                            str(tid), "Pruned failure history after successful recovery"
+                        )
 
         return turns_to_prune
-
-    def _check_item_for_pruning(
-        self, item: Any, prune_non_green: bool, prune_validation: bool
-    ) -> Optional[str]:
-        """Evaluates an individual item for content-based pruning heuristics."""
-        try:
-            # Heuristic 3: Non-green state
-            if prune_non_green and item.path.endswith("plan.md"):
-                content = self._file_system_manager.read_file(item.path)
-                if "🔴" in content or "🟡" in content:
-                    return "Pruned as it led to a non-green state"
-
-            # Heuristic 4: Validation failure
-            if prune_validation and item.path.endswith("report.md"):
-                content = self._file_system_manager.read_file(item.path)
-                if "Validation Failed" in content:
-                    return "Plan failed validation"
-        except (FileNotFoundError, OSError):
-            # On Windows, rapid read-after-write can throw PermissionError
-            return None
-        return None
 
     def _apply_global_budget(self, items):
         """Prunes turn context items to fit within a global token budget."""
