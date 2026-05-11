@@ -76,51 +76,40 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 
 ## 6. Technical Debt
 
-### Structural & Security (Found during Deliverables)
-- [ ] **Structural** - Refactor `textual_plan_reviewer_logic.py` to reduce file length below 300 lines (currently 329). Suggest splitting detail rendering logic into a `detail_renderer` module.
-- [ ] **Structural** - Refactor `textual_plan_reviewer_app.py` to reduce file length (currently 351/300).
-- [ ] **Structural** - Decompose `_update_detail_view` in `textual_plan_reviewer_logic.py` to reduce cyclomatic complexity (currently 10/9).
-- [ ] **TUI Module Fragmentation:** The `textual_plan_reviewer` module has been split into 7 files to satisfy the 300-line quality gate. This fragmentation has introduced complex circular dependency management via local imports. Consider a higher-level abstraction (e.g., a Controller or State Machine) to reduce per-file logic.
-- [ ] textual_plan_reviewer fragmentation debt: logic is split across 8 files to bypass SLOC limits, creating circularity hacks and 100+ local imports.
-- [ ] console_interactor fragmentation debt: core prompt logic is delegated to static helpers by passing self, introducing local-import circularity management.
-- [ ] session_* service cluster fragmentation debt: 7 highly-coupled files split purely to satisfy SLOC gates, relying on local imports for state orchestration.
-- [ ] action_parser fragmentation debt: 6 files split into strategies and infrastructure to bypass line limits, obscuring the primary parser boundary.
-- [ ] **Structural** - `textual_plan_reviewer_logic.py` exceeds file length limit (454/300). Logic should be split into thematic sub-modules (e.g., `context_logic.py`).
-- [ ] **Complexity** - `_update_detail_view` exceeds complexity (13/9) and statement (56/40) limits. Needs decomposition into specialized preview handlers.
-- [ ] **Refactor** - `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py` exceeds 300 lines (currently 390 lines).
-- [ ] **Refactor** - `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py` exceeds 300 lines (367 lines). Move `_update_detail_view` or section builders to helpers.
-- [ ] **Infrastructure Scopes:** Standardize all registrations in `src/teddy_executor/registries/infrastructure.py` to use `punq.Scope.transient` to ensure consistent test isolation and prevent singleton leaks (found during fix of `05-ci-preflight-failure`).
-- [ ] **Refactor** - Update `ReviewerApp` to accept `IEditSimulator` via constructor injection instead of internal instantiation.
-- [ ] **Structural** - Resolve Vulture unused variable hits in `ISessionManager` and `ISessionRepository` ports (requires whitelist update or alias).
-- [ ] **Security** - Update `litellm` to 1.83.7+ and `pip` to resolve GHSA-xqmj-j6mv-4862 and GHSA-58qw-9mgm-455v.
-- [ ] **Security** - Upgrade `litellm` to >= 1.83.7 to resolve GHSA-xqmj-j6mv-4862 (found during slice 00-07).
-- [ ] **Linter** - Update `tests/harness/vulture_whitelist.py` to suppress unused argument noise in core ports.
-- [ ] **Harness** - Refactor `TestEnvironment` to support a clean `interactive_mode` toggle instead of the manual `without_reviewer()` re-wiring.
+### Structural & Complexity (SLOC / PLR)
+- [ ] **SLOC Limit Enforcement:** Refactor core components to meet the 300-line limit:
+    - `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py` (~450 lines)
+    - `src/teddy_executor/adapters/inbound/textual_plan_reviewer_app.py` (~350 lines)
+    - `src/teddy_executor/adapters/inbound/textual_plan_reviewer_helpers.py`
+    - `src/teddy_executor/adapters/inbound/cli_helpers.py`
+    - `src/teddy_executor/adapters/outbound/console_interactor.py`
+    - `src/teddy_executor/core/services/execution_orchestrator.py`
+    - `src/teddy_executor/core/services/planning_service.py`
+- [ ] **Complexity Reductions:**
+    - Decompose `_update_detail_view` in `textual_plan_reviewer_logic.py` (Complexity 13/9).
+    - Refactor `check_action_logic` in `textual_plan_reviewer_logic.py` (PLR0911: 7 return statements).
+- [ ] **Boundary Fragmentation:** Resolve architectural "fragmentation debt" where logic (TUI, Sessions, Action Parser) has been split into 6-8 files solely to bypass SLOC limits, introducing circular dependency hacks via local imports. Move toward higher-level abstractions (Controllers/State Machines).
 
-### Code Quality (Linter & Logic)
-- [ ] **File Length:** Refactor the following components to meet the 300-line limit:
-    - [ ] `src/teddy_executor/adapters/outbound/console_interactor.py`
-    - [ ] `src/teddy_executor/adapters/inbound/cli_helpers.py`
-    - [ ] `src/teddy_executor/adapters/inbound/textual_plan_reviewer_app.py`
-    - [ ] `src/teddy_executor/adapters/inbound/textual_plan_reviewer_helpers.py`
-    - [ ] `src/teddy_executor/core/services/execution_orchestrator.py`
-    - [ ] `src/teddy_executor/core/services/planning_service.py`
-- [ ] **Complexity:** Refactor `check_action_logic` in `textual_plan_reviewer_logic.py` (PLR0911: 7 return statements).
-- [ ] **Typing (Mypy):** Resolve union-attr and Worker awaitable mismatches in TUI components and `SessionOrchestrator` async methods.
-- [x] **Static Analysis (Vulture):** Resolve remaining unused `args`/`kwargs` in `test_console_interactor.py` and `old_val` in `_apply_param_edit`.
-- [ ] **Code Duplication (jscpd):** Resolve duplication across the codebase to meet the 0% threshold.
-- [ ] **Magic Values (PLR2004):** Resolve remaining magic value warnings in `test_execution_orchestrator.py` and `test_planning_service_async.py`.
+### Security & Dependencies
+- [ ] **Security Updates:** Update `litellm` (1.83.7+) and `pip` to resolve critical vulnerabilities (GHSA-xqmj-j6mv-4862, GHSA-58qw-9mgm-455v).
 
-### Architectural & Harness Debt
-- [x] **Quality Gate Reconciliation:** Resolve Vulture/Mypy friction in `vulture_whitelist.py` and core ports using a simplified "Import & Alias" strategy and global wildcards in `pyproject.toml`.
-- [ ] **Harness Refactoring:** Transition `TEDDY_TEST_MOCK_EDITOR_OUTPUT` from an environment variable to a dedicated test adapter.
-- [ ] **DI Isolation:** Improve isolation by resolving container locations dynamically instead of hardcoded module paths.
-- [ ] **Test Pyramid Balance:** Resolve structural imbalance (Acceptance: 101, Integration: 101, Unit: 305) to satisfy 'Acceptance < Integration < Unit'.
-- [ ] **Test Harness Resilience:** Refactor TUI test fixtures to use centralized DI (via `punq`) for mocks to prevent `TypeError` regressions.
-- [ ] **Serialization Safety:** Replace `scrub_dict_for_serialization` with a schema-based approach (e.g., Pydantic) to prevent hangs from dynamic objects.
-- [ ] **Domain Model Integrity:** Enforce strict primitive validation in domain models to prevent `MagicMock` leakage into state.
+### Test Harness & Infrastructure
+- [ ] **Harness Refactoring:**
+    - Support a clean `interactive_mode` toggle in `TestEnvironment` instead of manual `without_reviewer()` re-wiring.
+    - Transition `TEDDY_TEST_MOCK_EDITOR_OUTPUT` from an environment variable to a dedicated test adapter.
+    - Refactor TUI test fixtures to use centralized DI (via `punq`) for mocks to prevent `TypeError` regressions.
+- [ ] **DI Isolation:** Standardize all registrations in `infrastructure.py` to use `punq.Scope.transient` and resolve container locations dynamically.
+- [ ] **Test Pyramid Balance:** Resolve structural imbalance (Acceptance/Integration count exceeds Unit in some layers) to satisfy the 'Acceptance < Integration < Unit' rule.
+
+### Code Quality & Standards
+- [ ] **Typing:** Resolve Mypy union-attr and Worker awaitable mismatches in TUI components and `SessionOrchestrator` async methods.
+- [ ] **Static Analysis:**
+    - Resolve duplication across the codebase (jscpd 0% threshold).
+    - Resolve remaining PLR2004 magic value warnings in test suites.
+- [ ] **Data Integrity:**
+    - Replace `scrub_dict_for_serialization` with a schema-based approach (e.g., Pydantic) to prevent hangs from dynamic objects.
+    - Enforce strict primitive validation in domain models to prevent `MagicMock` leakage into system state.
 
 ### TUI & UX Debt
-- [ ] **External Tool Sync:** Generalize `code --wait` logic to handle other GUI editors that return before the file is released.
-- [ ] **TUI Suspension:** Investigate `app.suspend()` instability in certain terminal environments during tool execution.
-- [ ] **Logic Deduplication:** Refactor prefix-stripping regex `r"^\d{8}_\d{6}-"` and `_launch_editor` logic into shared utilities.
+- [ ] **External Tools:** Generalize `code --wait` logic to handle other GUI editors and investigate `app.suspend()` instability in restricted terminal environments.
+- [ ] **Logic Deduplication:** Refactor timestamp prefix-stripping regex and `_launch_editor` logic into shared utilities.
