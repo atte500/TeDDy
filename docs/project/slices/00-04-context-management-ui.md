@@ -30,6 +30,17 @@ Then the previous turn's plan and report are shown but are struck through and di
 And files in the session context are never struck through automatically
 ```
 
+> As a user, I want the system to automatically prune turns older than my retention limit so I don't waste tokens on stale context.
+```gherkin
+Given an interactive session is at Turn 30
+And "max_turns_retention" is set to 25
+When the plan review TUI is launched
+Then Turn 5 and all preceding turns are deselected
+And those items display the reason "Turn exceeds retention limit of 25"
+And Turn 6 and subsequent turns remain selected by default
+And files with "System" or "Session" scope are NOT deselected by the retention limit
+```
+
 ## Deliverables
 - [x] **Contract** - Add `get_text_token_count` to `ILlmClient`.
 - [x] **Logic** - Implement `get_text_token_count` in `LiteLLMAdapter`.
@@ -49,7 +60,9 @@ And files in the session context are never struck through automatically
 - [x] **Logic (Refinement)** - Update Validation Matching to target `- **Overall Status:** Validation Failed`.
 - [x] **Logic (Refinement)** - Update standardized auto-prune reason to "Pruned failure history after successful recovery".
 - [x] **Cleanup (Refinement)** - Remove individual token threshold logic and related config keys.
-- [ ] **Showcase** - Create `showcases/00-04/showcase_heuristics.sh` to demonstrate failure-streak preservation and post-green cleanup.
+- [ ] **Logic (Refinement)** - Implement `_apply_retention_limit` in `SessionPruningService` (Default: 25).
+- [ ] **Contract** - Add `max_turns_retention: 25` to `config.yaml`.
+- [ ] **Showcase** - Create `showcases/00-04/showcase_heuristics.sh` to demonstrate failure-streak preservation, post-green cleanup, and retention limits.
 
 ## Implementation Notes
 ### Contract - Add get_text_token_count to ILlmClient
@@ -186,6 +199,12 @@ And files in the session context are never struck through automatically
     - `Plan failed validation`
     - `Pruned failure history after successful recovery`
     - `File deleted from disk`
+    - `Turn exceeds retention limit of {N}`
+- **Retention Limit Logic:**
+    - Use `_extract_turn_id` to identify turn numbers.
+    - Calculate the maximum turn ID present in the context.
+    - Deselect any turn where `turn_id <= (max_id - retention_limit)`.
+    - This rule MUST strictly apply only to `Turn` scope items.
 - **Dynamic UI Logic:** Every toggle of a context item MUST trigger a recalculation and refresh of the `ContextAggregateDetail` view.
 - **Context Management Tree:**
     - Use a flat tree structure with leaf-only label nodes (`SYSTEM_LABEL`, `SESSION_LABEL`, `TURN_LABEL`) as siblings under the root.

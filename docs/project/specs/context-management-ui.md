@@ -19,6 +19,7 @@ This feature introduces a native "Context Management" section within the `Textua
   - `global_context_threshold: X` (Total token limit for turn context)
   - `prune_preceding_on_non_green: true/false` (Toggle for pruning turns preceding a 🔴/🟡 state)
   - `prune_validation_failures: true/false` (Toggle for pruning failed validation reports/plans)
+  - `max_turns_retention: N` (Maximum number of recent turns to retain; default 25)
 
 ## TUI Architecture & Data Flow
 1. **ActionTree Node:** The TUI will feature a top-level node in the left-hand `ActionTree` called "Session Context".
@@ -41,3 +42,5 @@ Auto-pruning evaluates files *before* rendering the TUI, setting their `is_auto_
     - **Reason:** `Plan failed validation`
 5. **Deleted File Heuristic:** If a file in the context has a git status of `D` (Deleted), it MUST be auto-pruned.
     - **Reason:** `File deleted from disk`
+6. **Retention Limit Heuristic:** Identify the maximum `turn_id` in the current context. Prune any `Turn` scope item where `turn_id <= (max_id - config.max_turns_retention)`.
+    - **Reason:** `Turn exceeds retention limit of {N}`
