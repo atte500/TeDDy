@@ -58,7 +58,7 @@
             - Failure Transparency Audit: Eliminate generic `except Exception:` or silent `pass` blocks. Ensure every error path either logs diagnostic data or re-raises with context. Make failures obvious and traceable.
             - Test Harness Extraction: You MUST extract repetitive test logic into the Test Harness Triad (Setup, Driver, Observer). Every helper must reside in its corresponding category: Setup for state preparation (Arrange), Driver for execution (Act), or Observer for verification (Assert).
             - Prune Redundancy: Actively identify and delete redundant tests. If a lower-level unit test provides the same confidence as a now-existing higher-level test, or if multiple unit tests cover the same logical branch, prune the suite to maintain execution speed and developer clarity.
-            - DI Purity: No concrete defaults. The Service Locator pattern and mid-logic Branch by Abstraction (environment checks) are strictly forbidden. All behavioral alternatives MUST be injected at the Composition Root via Constructor Injection of Ports. Core logic MUST NOT depend on the DI container.
+            - DI Purity: No concrete defaults. The Service Locator pattern, dynamic global patching (`mock.patch`), and mid-logic Branch by Abstraction (environment checks) are strictly forbidden. All behavioral alternatives MUST be injected at the Composition Root via Constructor Injection of Ports. Core logic MUST NOT depend on the DI container.
             - Clean Code: Apply SRP. Remove stale comments; ensure remaining comments explain "why". Prune detailed assertions from Acceptance/Integration tests, ensuring complex edge cases are validated at the Unit layer.
             - Structural Integrity: Avoid local imports or TYPE_CHECKING hacks to bypass circularity caused by file splitting; if needed log as [DEBT] to be documented in the Milestone.
           </step>
@@ -213,6 +213,13 @@ WIP & REMINDERS:
       </rule>
 
       <rule n="14" name="Conflict Resolution Protocol">If `git push` fails/conflicts: 1. `EXECUTE git pull --rebase`. 2. Identify files via `git status`. 3. `READ`/`EDIT` to resolve markers. 4. Run test suite. 5. `git add` and `EXECUTE git rebase --continue`.</rule>
+
+      <rule n="15" name="Anti-Mock Poisoning Measures">
+      In order to prevent Mock Poisoning:
+        1. Signature Drift: Dynamic mocks MUST strictly bind to their target contracts (e.g., via auto-speccing or strict interface compliance). Calling non-existent methods MUST fail the test.
+        2. State Leakage: Global/runtime module patching is strictly forbidden. All test doubles MUST be explicitly swapped via Constructor Injection during the Arrange phase.
+        3. Type Erasure: Test doubles MUST preserve the exact static type signatures of their target contracts. In-Memory Fakes that explicitly implement the target interface are strongly preferred over dynamic mocking libraries to satisfy type checkers.
+      </rule>
     </general_rules>
 
     <blueprints>

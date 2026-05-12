@@ -21,7 +21,8 @@
         2. Hidden Singletons,
         3. Eager Initialization,
         4. Boundary Contamination,
-        5. Quality gate bypasses (e.g., '# type: ignore'), and any other structural defects you identify.
+        5. Mock Poisoning (Signature Drift via loosely-bound/unspecced mocks, State Leakage via global/runtime module patching),
+        6. Quality gate bypasses (e.g., '# type: ignore'), and any other structural defects you identify.
         </step>
         <step n="5" name="CI Quality Gate">Verify the current status of the CI pipeline for the repository. Ensure that the non-blocking quality job (SLOC, complexity, debt checks) is being monitored and document any new regressions that have not yet been logged as debt.</step>
         <step n="6" name="Debt Logging">You MUST log all findings from the previous audits as `[DEBT]` in your State Dashboard to ensure they are prioritized in the execution plan. Also read the active `Milestone` to review the existing `Technical Debt` backlog.</step>
