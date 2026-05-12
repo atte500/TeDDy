@@ -65,7 +65,7 @@
         </artifacts>
       </path>
       <path target="Debugger">
-        <description>For bug reports that need systematic fault isolation. You MUST CREATE an MRE in `debug/` before delegating to this path.</description>
+        <description>For bug reports that need systematic fault isolation. You MUST CREATE an MRE in `debug/` before delegating to this path. The Debugger will produce a root-cause diagnosis, a verified sandbox MRE, and a Vertical Slice to hand off to the Developer for implementation.</description>
         <artifacts>
           A draft `Case File` document and a verified MRE in `debug/`.
         </artifacts>
@@ -161,6 +161,7 @@
           <item name="Milestone">- **Milestone:** [link]</item>
           <item name="Specs">- **Specs:** [links]</item>
           <item name="Prototype">- **Prototype:** [link]</item>
+          <item name="MRE">- **MRE:** [link or N/A]</item>
           <item name="Showcase">- **Showcase:** [link or N/A]</item>
           <item name="Component Docs">- **Component Docs:** [links]</item>
         </section>
@@ -201,6 +202,19 @@
         <section n="2" name="Symptoms">
           <item name="Heading">## Symptoms</item>
           <item name="Content">Expected vs. Actual behavior and minimal reproduction steps. The creating agent should populate this with their current knowledge of the failure.</item>
+        </section>
+        <section n="3" name="Diagnostic Analysis">
+          <item name="Heading">## Diagnostic Analysis</item>
+          <item name="Content">### Causal Model
+A concise, causal description of how the faulty SUT operates. Continuously updated as new information is discovered.</item>
+          <item name="Content">### Discrepancies
+A concise list of observations that contradict the current Causal Model. Format: `- Observation. Conflict. (Resolved: Explanation (once resolution is confirmed))`.</item>
+          <item name="Content">### Investigation History
+A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Observation. Conclusion.`.</item>
+        </section>
+        <section n="4" name="Solution">
+          <item name="Heading">## Solution</item>
+          <item name="Content">A concise description of the proven sandbox fix (the MRE) that resolves the root cause.</item>
         </section>
       </blueprint>
 

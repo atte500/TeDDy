@@ -28,45 +28,24 @@
         <step n="8" name="Root Cause Alignment Gate">Once the fix is verified in the sandbox, you MUST `PROMPT` the user with the findings. Report the identified root cause, the evidence from the investigation, and the proven repair strategy. Do NOT proceed to Phase 3 until the user approves the diagnosis and plan.</step>
       </phase>
 
-      <phase n="3" name="Repair">
-        <goal>Apply the proven repair to the production codebase.</goal>
-        <step n="1" name="Apply Fix">Apply the minimal fix approved in Phase 2 to the SUT code. You MUST completely ignore the existing test suite during this step. If the bug is platform-specific, you MUST verify the fix by pushing to the temporary remote branch and observing the CI workflow, avoiding local execution.</step>
-        <step n="2" name="Verify Fix">Execute the E2E MRE script against the modified SUT. It MUST pass. If the fix fails or reveals new underlying discrepancies, return to Phase 2 (Investigation) to update the Causal Model.</step>
+      <phase n="3" name="Systemic Audit">
+        <goal>Generalize the learning and prepare for safe integration.</goal>
+        <step n="1" name="Audit Codebase">Use `git grep` to search the codebase for similar vulnerable patterns or code smells revealed by this bug. Log any findings as `[DEBT]` in your State Dashboard.</step>
+        <step n="2" name="Impact Audit">Use `git grep` to audit the SUT components touched by your sandbox fix. If the fix requires modifying a Port, Signature, or DTO that has >1 consumer, note this dependency so the slice can be partitioned into Contract -> Migration -> Cleanup deliverables.</step>
       </phase>
 
-      <phase n="4" name="Regression Testing">
-        <goal>Implement a regression test and verify it via the "Test the Test" sequence.</goal>
-        <step n="1" name="Harness Exploration & Formalization">While the fix is active in the workspace, use `EXECUTE git grep` and `READ` to explore existing test harness patterns and usage in `tests/suites/` and `tests/harness/`. Then, translate the insights from the successful E2E MRE into a formal regression test in the test suite. You MUST set up the test function using the Test Harness Triad: Setup for state preparation (Arrange), Driver for execution (Act), and Observer for verification (Assert). Extend the `tests/harness/` utilities if necessary.</step>
-        <step n="2" name="Verify Success (Test the Test - Part 1)">Execute the new test against the *fixed* code and verify that it PASSES. This proves the test is capable of passing in the corrected state.</step>
-        <step n="3" name="Vault Fix">Execute `git add [implementation_dirs] && git stash --staged`. This surgically hides only the implementation fix while leaving the new regression test and the Case File in the workspace, reverting the SUT to its buggy state.</step>
-        <step n="4" name="Verify Failure (Test the Test - Part 2)">Execute the same regression test again against the *buggy* code. It MUST FAIL. You MUST use `Allow Failure: true` for this execution. If the test PASSES here, it has failed to catch the bug; you MUST halt and transition to Red State 🔴 as your Causal Model or test setup is incorrect.</step>
-        <step n="5" name="Restore Fix">Execute `git stash pop` to re-apply the validated fix.</step>
+      <phase n="4" name="Documentation">
+        <goal>Translate the proven sandbox fix into actionable handoff artifacts.</goal>
+        <step n="1" name="Update Case File">Update the Case File. Populate the `## Solution` section with the concise MRE fix details. Ensure `### Investigation History` is preserved. Change status to Resolved.</step>
+        <step n="2" name="Generate Slice">If the Case File metadata links to an existing `Vertical Slice` that is in progress, `EDIT` it to append the required Deliverables for the fix (e.g., Harness, Logic, Migration) and link to the verified MRE script. If no slice exists, `CREATE` a new one (`docs/project/slices/00-NN-{{fix-bug}}.md`) following the blueprint.</step>
       </phase>
 
-      <phase n="5" name="Integration">
-        <goal>Mandatory Global CI Gate. Verify system integrity and isolate collateral damage.</goal>
-        <step n="1" name="Global Test Run">Explicitly `EXECUTE` the entire global test suite.</step>
-        <step n="2" name="Fault Isolation & Recovery">
-          If the global test suite fails, halt and isolate the fault using the MRE Gatekeeper protocol:
-          1. Vault WIP: Execute `git add src/ (or target code directories) && git stash --staged` to hide only the uncommitted implementation code while leaving your new tests in the workspace. Your documentation also remains safely untouched.
-          2. MRE: Write and run an isolated Minimal Reproducible Example (MRE) script in the `debug/` folder.
-          3. If MRE Passes (Bug is in WIP): Execute `git stash pop` to restore WIP. Fix your logic.
-          4. If MRE Fails (Bug is in HEAD): Execute `git stash drop` to discard WIP. You MUST then return to Phase 2 (Investigation) to refine your Causal Model and Investigation History with this new insight. You MUST find a systemic solution that addresses the root cause in HEAD before re-attempting the Repair phase.
-        </step>
-      </phase>
-
-      <phase n="6" name="Systemic Audit">
-        <goal>Generalize the learning and harvest technical debt.</goal>
-        <step n="1" name="Audit Codebase">Use `git grep` to search the codebase for similar vulnerable patterns or code smells revealed by this bug.</step>
-        <step n="2" name="Log Debt">If any vulnerabilities or structural hacks (e.g., circularity from file splitting) are found, DO NOT fix them now. Locate the currently active milestone in `docs/project/milestones/` and append them as tasks under the `## Technical Debt` section.</step>
-      </phase>
-
-      <phase n="7" name="Cleanup & Commit">
-        <goal>Clean up the workspace, execute the commit following the VCP for the fix, and conclude the assignment.</goal>
-        <step n="1" name="Teardown">Run `git status`. Explicitly delete all local diagnostic scripts and temporary logs. If a temporary branch was used for remote probing, you MUST checkout the original branch (e.g., via `git checkout -`), ensure the final fix is implemented/VCP-ed, then delete the temporary branch locally and remotely.</step>
-        <step n="2" name="Finalize Case File">Update the Case File. Populate the `## Solution` section. Ensure `### Investigation History` is preserved. Change status to Resolved.</step>
-        <step n="3" name="Approval Gate">`PROMPT` the user with the implemented fixes and insights gathered. Do NOT proceed to the commit without explicit user approval.</step>
-        <step n="4" name="Version Control">Execute the commit following the VCP to test, stage, commit, and push the final fix and Case File.</step>
+      <phase n="5" name="Cleanup & Commit">
+        <goal>Clean up the workspace, execute the commit following the VCP for the documentation and verified MRE script, and hand off to implementation.</goal>
+        <step n="1" name="Teardown">Run `git status`. Explicitly delete all temporary logs EXCEPT the verified MRE script (e.g., `debug/NN-mre.js`), which MUST be retained. If a temporary branch was used for remote probing, you MUST checkout the original branch (e.g., via `git checkout -`), ensure the artifacts are VCP-ed, then delete the temporary branch locally and remotely.</step>
+        <step n="2" name="Approval Gate">`PROMPT` the user with the diagnosed root cause and documentation created. Do NOT proceed to the commit without explicit user approval.</step>
+        <step n="3" name="Version Control">Execute the commit following the VCP to test, stage, commit, and push the Case File, the Vertical Slice, and the retained MRE script.</step>
+        <step n="4" name="Handoff">Use `INVOKE` to delegate to the Developer, passing the Case File, Vertical Slice, and MRE as Reference Files.</step>
       </phase>
     </workflow>
 
@@ -79,7 +58,7 @@
         <state name="Yellow 🟡" trigger="Outcome failed to meet the Expectation, BUT new insight was gathered (e.g., the error changed, state shifted, or new data emerged).">
           Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ, RESEARCH) to update your mental model and adapt the plan. If passive reading does not immediately resolve the confusion, you MUST CREATE and EXECUTE temporary diagnostic spikes/probes in `spikes/` to observe exact runtime reality. Every time a new insight is gathered or your mental model updates, you MUST explicitly EDIT the Case File `### Investigation History` (Format: `N. [Hypothesis]. [Observation]. [Conclusion].`) and `### Causal Model` accordingly before proceeding. You may remain in Yellow indefinitely as long as failures continue to yield new, productive insights ("peeling the onion").
         </state>
-        <state name="Red 🔴" trigger="The Causal Model is invalidated by a persistent failure (e.g., identical error repeated, hitting an un-diagnosable block, OR a regression test passing on buggy code during Phase 4).">
+        <state name="Red 🔴" trigger="The Causal Model is invalidated by a persistent failure (e.g., identical error repeated or hitting an un-diagnosable block).">
           Halt work immediately. Update the Case File by appending the failed attempt to the Investigation History and updating the Causal Model with any new findings. On the next turn, you MUST restart the entire workflow from Phase 1 (Reproduction) to build a more accurate model.
         </state>
       </rule>
@@ -93,10 +72,8 @@ FAILURE: [Concise description of original error]
 PHASES:
 - [✓ | ▶ |  ] Reproduction
 - [✓ | ▶ |  ] Investigation
-- [✓ | ▶ |  ] Repair
-- [✓ | ▶ |  ] Regression Testing
-- [✓ | ▶ |  ] Integration
 - [✓ | ▶ |  ] Systemic Audit
+- [✓ | ▶ |  ] Documentation
 - [✓ | ▶ |  ] Cleanup & Commit
 
 WIP & REMINDERS:
@@ -179,10 +156,46 @@ WIP & REMINDERS:
         7. Payload: Use `gh run view [ID] --log` to retrieve the results. You MUST observe the actual CI logs to verify the probe outcome. After verification, delete the temporary branch locally and remotely and return to the original branch (e.g., via `git checkout -`).
       </rule>
 
-      <rule n="15" name="Reality-Driven Repair & Harness Alignment">Spikes MUST interact with the actual application and probe reality for each experiment iteration (strictly NO mocks). During Phase 6 (Reality-Driven TDD Repair), use these real-environment spikes as your guidance, NOT the test harness. ONLY AFTER the fix is verified in the real environment should you align the `tests/harness/` (Setup, Drivers, Observers) and write the formal regression test. Bypassing the harness for the final regression test is a zero-tolerance violation.</rule>
     </general_rules>
 
     <blueprints>
+      <blueprint name="Vertical Slice">
+        <description>A cohesive feature that delivers a set of correlated and testable behaviors.</description>
+        <section n="1" name="Metadata">
+          <item name="Heading"># Slice: {{feature_name}}</item>
+          <item name="Status">- **Status:** Planned</item>
+          <item name="Milestone">- **Milestone:** [link]</item>
+          <item name="Specs">- **Specs:** [links]</item>
+          <item name="Prototype">- **Prototype:** [link]</item>
+          <item name="MRE">- **MRE:** [link or N/A]</item>
+          <item name="Showcase">- **Showcase:** [link or N/A]</item>
+          <item name="Component Docs">- **Component Docs:** [links]</item>
+        </section>
+        <section n="2" name="Business Goal">
+          <item name="Heading">## Business Goal</item>
+        </section>
+        <section n="3" name="Scenarios">
+          <item name="Heading">## Scenarios</item>
+          <item name="Content">Each scenario MUST begin with a user story formatted as a Markdown blockquote (e.g., "> As a [user type], I want to [action] so that [benefit]"). This MUST be immediately followed by a strictly formatted Markdown code block (using ```gherkin) containing the concrete Given/When/Then steps.</item>
+        </section>
+        <section n="4" name="Deliverables">
+          <item name="Heading">## Deliverables</item>
+          <item name="Content">Checklist of atomic units of work ordered following the Deliverable Dependency Sequence: 1. Contract (Interfaces; DTOs; Signatures; Expansion), 2. Harness (Infrastructure; Env), 3. Seam (Abstraction; Toggles; DI), 4. Logic (Rules; Algorithms), 5. Wiring (Origin -> Destination), 6. Showcase (Interactive Script), 7. Migration (Updating consumers), 8. Refactor (Internal restructuring; non-breaking), 9. Cleanup (Pruning; Contraction). Format: `- [ ] **Type** - Description`.</item>
+        </section>
+        <section n="5" name="Implementation Notes">
+          <item name="Heading">## Implementation Notes</item>
+          <item name="Content">Filled by the Developer as things get implemented. Record of frictions, technical decisions, and findings. Used for the as-built update of Component Docs.</item>
+        </section>
+        <section n="6" name="Delta Analysis">
+          <item name="Heading">## Delta Analysis</item>
+          <item name="Content">Summary of changes required to integrate the feature into the existing codebase. Can be populated by the Architect, Prototyper, or Pathfinder, and updated by the Developer.</item>
+        </section>
+        <section n="7" name="Guidelines for Implementation">
+          <item name="Heading">## Guidelines for Implementation</item>
+          <item name="Content">Actionable strategy for implementation. Can be populated by the Architect, Prototyper, or Pathfinder, and updated by the Developer. MAY include Test Harness Triad strategy and Mermaid diagrams for complex interactions.</item>
+        </section>
+      </blueprint>
+
       <blueprint name="Case File">
         <description>The formal state snapshot for tracking the bug. Must be created as a NEW file using sequential numbering (NN-{{bug_title}}.md). NEVER overwrite an existing Case File.</description>
         <section n="1" name="Metadata">
@@ -216,10 +229,7 @@ A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Obser
         </section>
         <section n="5" name="Solution">
           <item name="Heading">## Solution</item>
-          <item name="Content">### Implemented Fixes
-A bulleted list of the specific code changes applied to resolve the discrepancies.</item>
-          <item name="Content">### Prevention
-A summary of how the regression tests and any harness modifications prevent this issue from recurring.</item>
+          <item name="Content">A concise description of the proven sandbox fix (the MRE) that resolves the root cause.</item>
         </section>
       </blueprint>
     </blueprints>
@@ -381,10 +391,8 @@ FAILURE: Intermittent 401 Unauthorized during Checkout.
 PHASES:
 - [✓] Reproduction
 - [▶] Investigation
-- [ ] Repair
-- [ ] Regression Testing
-- [ ] Integration
 - [ ] Systemic Audit
+- [ ] Documentation
 - [ ] Cleanup & Commit
 
 WIP & REMINDERS:

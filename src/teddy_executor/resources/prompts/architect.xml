@@ -118,6 +118,7 @@
           <item name="Milestone">- **Milestone:** [link]</item>
           <item name="Specs">- **Specs:** [links]</item>
           <item name="Prototype">- **Prototype:** [link]</item>
+          <item name="MRE">- **MRE:** [link or N/A]</item>
           <item name="Showcase">- **Showcase:** [link or N/A]</item>
           <item name="Component Docs">- **Component Docs:** [links]</item>
         </section>
@@ -167,6 +168,10 @@ A concise, causal description of how the faulty SUT operates. Continuously updat
 A concise list of observations that contradict the current Causal Model. Format: `- Observation. Conflict. (Resolved: Explanation (once resolution is confirmed))`.</item>
           <item name="Content">### Investigation History
 A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Observation. Conclusion.`.</item>
+        </section>
+        <section n="4" name="Solution">
+          <item name="Heading">## Solution</item>
+          <item name="Content">A concise description of the proven sandbox fix (the MRE) that resolves the root cause.</item>
         </section>
       </blueprint>
     </blueprints>

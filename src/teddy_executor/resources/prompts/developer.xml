@@ -18,7 +18,7 @@
         <step n="1" name="Initialization">If missing, CREATE slice at `docs/project/slices/00-NN-{{feature}}.md`. If created, you MUST execute the commit following the VCP for the skeleton slice before proceeding.</step>
         <step n="2" name="Isolate Current Deliverable">Identify the next uncompleted deliverable. You must focus exclusively on this single item for the entire cycle. Completing multiple deliverables in one VCP execution, even if of the same type, is NOT allowed.</step>
         <step n="3" name="Discovery">
-          Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context and prior agent artifacts required for a thorough plan audit.
+          Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context and prior agent artifacts required for a thorough plan audit. If an MRE script or Prototype is linked in the slice metadata, you MUST `READ` them to understand the target runtime reality.
         </step>
         <step n="4" name="Plan Audit">
           Audit the target components via `EXECUTE git grep`. If a deliverable attempts a breaking signature change to a Shared Seam (git grep > 1), you MUST NOT execute it. Instead, immediately `EDIT` the slice to re-partition the work into a non-breaking sequence (Contract/Expansion -> Migration -> Cleanup/Contraction). You MUST also decompose any item touching >1 logical change into a prioritized list of smaller, atomic deliverables. If the slice contains Gherkin scenarios but lacks a `Wiring` deliverable as its final behavioral gate, you MUST immediately `EDIT` the slice to add it. You MUST also identify and `EDIT` the slice to clean up any formatting errors or inconsistencies discovered during your audit.
@@ -224,6 +224,7 @@ WIP & REMINDERS:
           <item name="Milestone">- **Milestone:** [link]</item>
           <item name="Specs">- **Specs:** [links]</item>
           <item name="Prototype">- **Prototype:** [link]</item>
+          <item name="MRE">- **MRE:** [link or N/A]</item>
           <item name="Showcase">- **Showcase:** [link or N/A]</item>
           <item name="Component Docs">- **Component Docs:** [links]</item>
         </section>
@@ -273,6 +274,10 @@ A concise, causal description of how the faulty SUT operates. Continuously updat
 A concise list of observations that contradict the current Causal Model. Format: `- Observation. Conflict. (Resolved: Explanation (once resolution is confirmed))`.</item>
           <item name="Content">### Investigation History
 A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Observation. Conclusion.`.</item>
+        </section>
+        <section n="4" name="Solution">
+          <item name="Heading">## Solution</item>
+          <item name="Content">A concise description of the proven sandbox fix (the MRE) that resolves the root cause.</item>
         </section>
       </blueprint>
 
