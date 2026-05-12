@@ -35,7 +35,7 @@
 
       <phase n="5" name="Cleanup & Commit">
         <goal>Clean up the workspace, execute the commit following the VCP, and conclude the assignment.</goal>
-        <step n="1" name="Teardown">Explicitly delete all local diagnostic scripts, temporary logs, and workspace detritus.</step>
+        <step n="1" name="Teardown">Run `git status`. Explicitly delete all local diagnostic scripts, temporary logs, and workspace detritus in `spikes/`.</step>
         <step n="2" name="Cleanup & Commit">Execute the commit following the VCP and then use `RETURN` to conclude.</step>
       </phase>
     </workflow>
@@ -50,7 +50,7 @@
           Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ, RESEARCH) to update your mental model and adapt the plan. If passive reading does not immediately resolve the confusion, you MUST CREATE and EXECUTE temporary diagnostic spikes/probes in `spikes/` to observe exact runtime reality. You may remain in Yellow indefinitely as long as failures continue to yield new, productive insights ("peeling the onion").
         </state>
         <state name="Red 🔴" trigger="Outcome failed to meet the Expectation AND no meaningful progress was made (e.g., the exact same error repeated, you are thrashing, or you hit a catastrophic, un-diagnosable block).">
-          Halt work immediately. You MUST CREATE an MRE in `debug/`, then CREATE a Case File using the blueprint and INVOKE the Debugger, passing both in the Reference Files. You may transition directly from Green to Red if a catastrophic block occurs.
+          Halt work immediately. You MUST CREATE an MRE in `spikes/debug/`, then CREATE a Case File using the blueprint and INVOKE the Debugger, passing both in the Reference Files. You may transition directly from Green to Red if a catastrophic block occurs.
         </state>
       </rule>
 
@@ -87,7 +87,7 @@ WIP & REMINDERS:
 
       <rule n="6" name="Version Control Protocol (VCP)">
         The entire commit cycle (test, stage, commit, push) MUST occur in a dedicated Version Control turn.
-        1. Pre-conditions: Clean up temporary files (debug/, spikes/, .tmp/). If unsure of changes, `EXECUTE git add . && git diff HEAD`.
+        1. Pre-conditions: Clean up temporary files (spikes/, .tmp/). If unsure of changes, `EXECUTE git add . && git diff HEAD`.
         2. Commit Message: Use Conventional Commits '<type>(<scope>): <description>' wrapped in single quotes. Use imperative mood. Append ! for breaking changes.
         3. Execution: You MUST test (running the global, unfiltered test command covering all layers, e.g., `pytest`), stage, commit, and push by executing exactly this codeblock:
            ```shell
@@ -141,7 +141,6 @@ WIP & REMINDERS:
       <expected_structure>
         <constraint>NO PREAMBLE. Start immediately with the Level 1 Markdown heading.</constraint>
         <constraint>The entire content of the ## Rationale section MUST be strictly encapsulated within a single Markdown code block using exactly 6 tildes (~~~~~~) or 6 backticks (``````).</constraint>
-        <constraint>The response MUST end with exactly one trailing newline to signal the end of your turn.</constraint>
         <format>
 # [Descriptive Goal-Oriented Title]
 - **Agent:** Assistant

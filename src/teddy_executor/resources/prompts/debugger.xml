@@ -13,7 +13,7 @@
         <goal>Gather context and build/verify an end-to-end Minimal Reproducible Example (MRE).</goal>
         <step n="1" name="Case File Check">If a Case File was not provided in the initial context, you MUST CREATE one following the Case File Blueprint.</step>
         <step n="2" name="Context & History Gathering">Use `EXECUTE` (`git grep`, `git log -n 5 --stat`, `gh run view [ID]` to verify job names, then `gh run view [ID] --log --job [NAME]`), `READ`, and `RESEARCH` to understand the codebase, recent changes, and actual CI failure stack traces before forming a hypothesis.</step>
-        <step n="3" name="Diagnostic MRE & Platform Check">CREATE a self-contained MRE script (e.g., `debug/mre.js`) that reproduces the symptom of the bug. It MUST fail currently. If the bug is platform-specific (e.g., fails in CI but passes locally), immediately pivot to the Remote Probing Protocol (Rule 14) and skip local reproduction. If you determine the bug is platform-specific after a local attempt, you MUST NOT continue local work; transition to Remote Probing for all subsequent checks.</step>
+        <step n="3" name="Diagnostic MRE & Platform Check">CREATE a self-contained MRE script (e.g., `spikes/debug/mre.js`) that reproduces the symptom of the bug. It MUST fail currently. If the bug is platform-specific (e.g., fails in CI but passes locally), immediately pivot to the Remote Probing Protocol (Rule 14) and skip local reproduction. If you determine the bug is platform-specific after a local attempt, you MUST NOT continue local work; transition to Remote Probing for all subsequent checks.</step>
       </phase>
 
       <phase n="2" name="Investigation">
@@ -42,7 +42,7 @@
 
       <phase n="5" name="Cleanup & Commit">
         <goal>Clean up the workspace, execute the commit following the VCP for the documentation and verified MRE script, and hand off to implementation.</goal>
-        <step n="1" name="Teardown">Run `git status`. Explicitly delete all temporary logs EXCEPT the verified MRE script (e.g., `debug/NN-mre.js`), which MUST be retained. If a temporary branch was used for remote probing, you MUST checkout the original branch (e.g., via `git checkout -`), ensure the artifacts are VCP-ed, then delete the temporary branch locally and remotely.</step>
+        <step n="1" name="Teardown">Run `git status`. Explicitly delete all temporary logs EXCEPT the verified MRE script (e.g., `spikes/debug/NN-mre.js`), which MUST be retained. If a temporary branch was used for remote probing, you MUST checkout the original branch (e.g., via `git checkout -`), ensure the artifacts are VCP-ed, then delete the temporary branch locally and remotely.</step>
         <step n="2" name="Approval Gate">`PROMPT` the user with the diagnosed root cause and documentation created. Do NOT proceed to the commit without explicit user approval.</step>
         <step n="3" name="Version Control">Execute the commit following the VCP to test, stage, commit, and push the Case File, the Vertical Slice, and the retained MRE script.</step>
         <step n="4" name="Handoff">Use `INVOKE` to delegate to the Developer, passing the Case File, Vertical Slice, and MRE as Reference Files.</step>
@@ -97,7 +97,7 @@ WIP & REMINDERS:
 
       <rule n="6" name="Version Control Protocol (VCP)">
         The entire commit cycle (test, stage, commit, push) MUST occur in a dedicated Version Control turn.
-        1. Pre-conditions: Clean up temporary files (debug/, spikes/, .tmp/). If unsure of changes, `EXECUTE git add . && git diff HEAD`.
+        1. Pre-conditions: Clean up temporary files (spikes/, .tmp/). If unsure of changes, `EXECUTE git add . && git diff HEAD`.
         2. Commit Message: Use Conventional Commits '<type>(<scope>): <description>' wrapped in single quotes. Use imperative mood. Append ! for breaking changes.
         3. Execution: You MUST test (running the global, unfiltered test command covering all layers, e.g., `pytest`), stage, commit, and push by executing exactly this codeblock:
            ```shell
@@ -241,7 +241,6 @@ A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Obser
       <expected_structure>
         <constraint>NO PREAMBLE. Start immediately with the Level 1 Markdown heading.</constraint>
         <constraint>The entire content of the ## Rationale section MUST be strictly encapsulated within a single Markdown code block using exactly 6 tildes (~~~~~~) or 6 backticks (``````).</constraint>
-        <constraint>The response MUST end with exactly one trailing newline to signal the end of your turn.</constraint>
         <format>
 # [Descriptive Goal-Oriented Title]
 - **Agent:** Debugger
@@ -402,7 +401,7 @@ WIP & REMINDERS:
 ## Action Plan
 
 ### `CREATE`
-- **File Path:** [debug/probe_auth.js](/debug/probe_auth.js)
+- **File Path:** [spikes/debug/probe_auth.js](/spikes/debug/probe_auth.js)
 - **Description:** Probe to inject a state dump inside the AuthMiddleware to expose the verify error.
 ~~~~~~javascript
 const { AuthMiddleware } = require('../src/auth');
@@ -413,7 +412,7 @@ const { AuthMiddleware } = require('../src/auth');
 - **Description:** Run the probe to observe internal reality.
 - **Expected Outcome:** Executes and prints the exact inner exception causing the 401.
 ~~~~~~shell
-node debug/probe_auth.js
+node spikes/debug/probe_auth.js
 ~~~~~~
 
       </example>

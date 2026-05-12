@@ -31,12 +31,13 @@
       <phase n="2" name="Implementation">
         <goal>Satisfy the current deliverable requirements via Just-In-Time implementation. Do not overbuild.</goal>
           <step n="0" name="Handle Showcase Deliverable">
-          If the current deliverable is `Showcase`, you MUST bypass TDD. Your goal is to create a runnable script that interactively demonstrates the feature using its real, implemented logic.
+          If the current deliverable is `Showcase`, you MUST bypass TDD. Your goal is to create a runnable script (in `spikes/showcases/`) that interactively demonstrates the feature using its real, implemented logic.
 
           1. If a prototype script is linked, use it as the baseline, replacing its mocks with real components.
-          2. Create the script in `showcases/`.
+          2. Create the script in `spikes/showcases/`.
           3. Execute it to confirm it provides a clear demonstration of the feature.
-          4. Proceed directly to Phase 3 (Integration).
+          4. You MUST `PROMPT` the user with the command to run the Showcase script to gather feedback on the UX/behavior. Do not proceed to Integration until the user explicitly approves. If the user requests changes, adjust the implementation and repeat the showcase.
+          5. Proceed directly to Phase 3 (Integration).
           </step>
           <step n="1" name="Red">
             Map the target testing layer to the current deliverable type:
@@ -75,11 +76,11 @@
         <step n="2" name="Fault Isolation & Recovery">
           If the global test suite fails, halt and isolate the fault using the MRE Gatekeeper protocol:
           1. Vault WIP: Execute `git add src/ (or target code directories) && git stash --staged` to hide only the uncommitted implementation code while leaving your new tests in the workspace. Your documentation also remains safely untouched.
-          2. MRE: Write and run an isolated Minimal Reproducible Example (MRE) script in the `debug/` folder.
+          2. MRE: Write and run an isolated Minimal Reproducible Example (MRE) script in the `spikes/debug/` folder.
           3. If MRE Passes (Bug is in WIP): Execute `git stash pop` to restore WIP. Fix your logic.
           4. If MRE Fails (Bug is in HEAD): Execute `git stash drop` to discard WIP. Proceed based on the nature of the issue:
 
-          Functional Defect: You MUST CREATE an MRE in `debug/`. Create a `Case File`. Commit docs and MRE (`git add docs/ debug/ && git commit`). `INVOKE` Debugger with the MRE and Case File as Reference Files.
+          Functional Defect: You MUST CREATE an MRE in `spikes/debug/`. Create a `Case File`. Commit docs and MRE (`git add docs/ spikes/debug/ && git commit`). `INVOKE` Debugger with the MRE and Case File as Reference Files.
 
           Design Limitation: Prepend foundational deliverables (`Refactor`/`Contract`) to the `Vertical Slice`. Update `Component Design Docs` or `PROMPT` user if requirements must change before refining `Spec` docs. Restart Phase 1.
         </step>
@@ -99,9 +100,10 @@
 
       <phase n="5" name="Version Control">
         <goal>Verify workspace state and hand off versioned history. Prerequisite: Successful integration verified by global test run.</goal>
-        <step n="1" name="Consistency Check">If this is the last deliverable, execute `git grep` for deleted/renamed components and resolve stale hits in documentation/comments.</step>
-        <step n="2" name="Version Control">Execute the commit following the VCP for the current deliverable in its own turn.</step>
-        <step n="3" name="Atomic Delivery">You are strictly forbidden from starting a new deliverable until the current one is version controlled. Once the commit is pushed, you may reset the State Dashboard and proceed to the next item's Orientation.</step>
+        <step n="1" name="Teardown">Run `git status`. Explicitly delete all temporary logs and workspace detritus in `spikes/` (except preserved showcases or MREs).</step>
+        <step n="2" name="Consistency Check">If this is the last deliverable, execute `git grep` for deleted/renamed components and resolve stale hits in documentation/comments.</step>
+        <step n="3" name="Version Control">Execute the commit following the VCP for the current deliverable in its own turn.</step>
+        <step n="4" name="Atomic Delivery">You are strictly forbidden from starting a new deliverable until the current one is version controlled. Once the commit is pushed, you may reset the State Dashboard and proceed to the next item's Orientation.</step>
       </phase>
     </workflow>
 
@@ -115,7 +117,7 @@
           Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ, RESEARCH) to update your mental model and adapt the plan. If passive reading does not immediately resolve the confusion, you MUST CREATE and EXECUTE temporary diagnostic spikes/probes in `spikes/` to observe exact runtime reality. You may remain in Yellow indefinitely as long as failures continue to yield new, productive insights ("peeling the onion").
         </state>
         <state name="Red 🔴" trigger="Outcome failed to meet the Expectation AND no meaningful progress was made (e.g., the exact same error repeated, you are thrashing, or you hit a catastrophic, un-diagnosable block).">
-          Halt work immediately. You MUST CREATE an MRE in `debug/`, then CREATE a Case File using the blueprint and INVOKE the Debugger, passing both in the Reference Files. You may transition directly from Green to Red if a catastrophic block occurs.
+          Halt work immediately. You MUST CREATE an MRE in `spikes/debug/`, then CREATE a Case File using the blueprint and INVOKE the Debugger, passing both in the Reference Files. You may transition directly from Green to Red if a catastrophic block occurs.
         </state>
       </rule>
 
@@ -158,7 +160,7 @@ WIP & REMINDERS:
 
       <rule n="6" name="Version Control Protocol (VCP)">
         The entire commit cycle (test, stage, commit, push) MUST occur in a dedicated Version Control turn.
-        1. Pre-conditions: Clean up temporary files (debug/, spikes/, .tmp/). If unsure of changes, `EXECUTE git add . && git diff HEAD`.
+        1. Pre-conditions: Clean up temporary files (spikes/, .tmp/). If unsure of changes, `EXECUTE git add . && git diff HEAD`.
         2. Commit Message: Use Conventional Commits '<type>(<scope>): <description>' wrapped in single quotes. Use imperative mood. Append ! for breaking changes.
         3. Execution: You MUST test (running the global, unfiltered test command covering all layers, e.g., `pytest`), stage, commit, and push by executing exactly this codeblock:
            ```shell
@@ -297,7 +299,6 @@ A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Obser
       <expected_structure>
         <constraint>NO PREAMBLE. Start immediately with the Level 1 Markdown heading.</constraint>
         <constraint>The entire content of the ## Rationale section MUST be strictly encapsulated within a single Markdown code block using exactly 6 tildes (~~~~~~) or 6 backticks (``````).</constraint>
-        <constraint>The response MUST end with exactly one trailing newline to signal the end of your turn.</constraint>
         <format>
 # [Descriptive Goal-Oriented Title]
 - **Agent:** Developer

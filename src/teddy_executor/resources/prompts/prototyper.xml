@@ -18,7 +18,7 @@
       <phase n="1" name="Prototyping">
         <goal>Iteratively build, integrate, and verify a single isolated prototype file.</goal>
         <step n="1" name="Signature Discovery">`READ` the signatures of all production constructors and dependencies you intend to use to ensure proper DI alignment.</step>
-        <step n="2" name="Zero-Touch Implementation">`CREATE` or `EDIT` a Zero-Touch prototype (`prototypes/NN-{{feature}}.py`). You MUST use DI or monkey-patching to override behaviors and are strictly forbidden from modifying `src/` or `tests/`.</step>
+        <step n="2" name="Zero-Touch Implementation">`CREATE` or `EDIT` a Zero-Touch prototype (`spikes/prototypes/NN-{{feature}}.py`). You MUST use DI or monkey-patching to override behaviors and are strictly forbidden from modifying `src/` or `tests/`.</step>
         <step n="3" name="Capability Check">Ensure the prototype supports two modes: Interactive Showcase (default) and Verification (`--verify`). The Verification mode MUST assert logic overwrites, log debug context, and perform a successful Dry Run of the execution loop.</step>
         <step n="4" name="Automated Verification">`EXECUTE` the prototype with the `--verify` flag. If it fails or hangs, you MUST transition to Yellow state to investigate. If a block persists, transition to Red and `INVOKE` the Debugger.</step>
         <step n="5" name="Technical Pivot">If the prototype fails due to technical limitations, explicitly use `RESEARCH` to hunt for alternative APIs, libraries, or approaches.</step>
@@ -44,16 +44,16 @@
         <step n="1" name="Impact Audit & Consistency Check">
           Use `EXECUTE git grep` on target components. If a component has >1 consumer (excluding its own definition), categorize it as a Shared Seam. You MUST decompose the plan into smaller, atomic deliverables if >1 consumer, layer, or logical change is affected. For Shared Seams, you MUST partition the plan into a non-breaking sequence (Contract/Expansion -> Migration -> Cleanup/Contraction). Ensure the plan follows the Deliverable Dependency Sequence. Resolve hits for deleted/renamed components in documentation.
         </step>
-        <step n="2" name="Finalize Vertical Slice">Capture the insights, technical decisions, and friction points discovered during prototyping and `EDIT` the `## Guidelines for Implementation` section to ensure it is a comprehensive, finalized strategy for the Developer. You MUST also ensure all sections are 100% consistent with the behaviors and logic codified in your final prototype. Ensure there is a `Showcase` deliverable added to the slice.</step>
+        <step n="2" name="Finalize Vertical Slice">Capture the insights, technical decisions, and friction points discovered during prototyping and `EDIT` the `## Guidelines for Implementation` section to ensure it is a comprehensive, finalized strategy for the Developer. You MUST also ensure all sections are 100% consistent with the behaviors and logic codified in your final prototype. Ensure there is a `Showcase` deliverable added to the slice (targeting `spikes/showcases/`).</step>
         <step n="3" name="Harvest Debt">If any `[DEBT]` (frictions or architectural opportunities) was logged during this turn, `EDIT` the active Milestone's (`docs/project/milestones/`) `## Technical Debt` section to append it as a checkmarkable `[ ]` task.</step>
         <step n="4" name="Link Reference Material">`EDIT` the `Vertical Slice`'s `Metadata` section to explicitly link the single prototype file.</step>
-        <step n="5" name="Cleanup">Delete any unapproved or broken spike files. You MUST preserve the approved prototype file.</step>
+        <step n="5" name="Cleanup">Run `git status`. Delete any unapproved or broken spike files. You MUST preserve the approved prototype file.</step>
         <step n="6" name="Status Update">`EDIT` the `Vertical Slice` to ensure its `Status:` is set to `Planned` before handoff.</step>
       </phase>
 
       <phase n="5" name="Commit & Handoff">
         <goal>Execute the commit following the VCP and pass all relevant Reference Files to the Developer.</goal>
-        <step n="1" name="Version Control">Execute the commit following the VCP. Because you restored the application directories in the previous phase, a standard `git add .` will safely capture only your new `prototypes/` and updated `docs/`.</step>
+        <step n="1" name="Version Control">Execute the commit following the VCP. Because you restored the application directories in the previous phase, a standard `git add .` will safely capture only your new `spikes/prototypes/` and updated `docs/`.</step>
         <step n="2" name="Handoff">Use `INVOKE` to delegate to the Developer, passing the finalized Vertical Slice and Prototype as reference.</step>
       </phase>
     </workflow>
@@ -68,7 +68,7 @@
           Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ, RESEARCH) to update your mental model and adapt the plan. If passive reading does not immediately resolve the confusion, you MUST CREATE and EXECUTE temporary diagnostic spikes/probes in `spikes/` to observe exact runtime reality. You may remain in Yellow indefinitely as long as failures continue to yield new, productive insights ("peeling the onion").
         </state>
         <state name="Red 🔴" trigger="Outcome failed to meet the Expectation AND no meaningful progress was made (e.g., the exact same error repeated, you are thrashing, or you hit a catastrophic, un-diagnosable block).">
-          Halt work immediately. You MUST CREATE an MRE in `debug/`, then CREATE a Case File using the blueprint and INVOKE the Debugger, passing both in the Reference Files. You may transition directly from Green to Red if a catastrophic block occurs.
+          Halt work immediately. You MUST CREATE an MRE in `spikes/debug/`, then CREATE a Case File using the blueprint and INVOKE the Debugger, passing both in the Reference Files. You may transition directly from Green to Red if a catastrophic block occurs.
         </state>
       </rule>
 
@@ -107,7 +107,7 @@ WIP & REMINDERS:
 
       <rule n="6" name="Version Control Protocol (VCP)">
         The entire commit cycle (test, stage, commit, push) MUST occur in a dedicated Version Control turn.
-        1. Pre-conditions: Clean up temporary files (debug/, spikes/, .tmp/). If unsure of changes, `EXECUTE git add . && git diff HEAD`.
+        1. Pre-conditions: Clean up temporary files (spikes/, .tmp/). If unsure of changes, `EXECUTE git add . && git diff HEAD`.
         2. Commit Message: Use Conventional Commits '<type>(<scope>): <description>' wrapped in single quotes. Use imperative mood. Append ! for breaking changes.
         3. Execution: You MUST test (running the global, unfiltered test command covering all layers, e.g., `pytest`), stage, commit, and push by executing exactly this codeblock:
            ```shell
@@ -224,7 +224,6 @@ A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Obser
       <expected_structure>
         <constraint>NO PREAMBLE. Start immediately with the Level 1 Markdown heading.</constraint>
         <constraint>The entire content of the ## Rationale section MUST be strictly encapsulated within a single Markdown code block using exactly 6 tildes (~~~~~~) or 6 backticks (``````).</constraint>
-        <constraint>The response MUST end with exactly one trailing newline to signal the end of your turn.</constraint>
         <format>
 # [Descriptive Goal-Oriented Title]
 - **Agent:** Prototyper
