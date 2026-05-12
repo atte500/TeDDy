@@ -109,6 +109,7 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
 - [ ] **Data Integrity:**
     - Replace `scrub_dict_for_serialization` with a schema-based approach (e.g., Pydantic) to prevent hangs from dynamic objects.
     - Enforce strict primitive validation in domain models to prevent `MagicMock` leakage into system state.
+    - Several components print emojis directly without ensuring UTF-8 support at the code level.
 
 ### TUI & UX Debt
 - [ ] **External Tools:** Generalize `code --wait` logic to handle other GUI editors and investigate `app.suspend()` instability in restricted terminal environments.
