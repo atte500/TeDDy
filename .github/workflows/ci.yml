@@ -17,6 +17,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      PYTHONIOENCODING: utf-8
+      PYTHONUTF8: 1
     defaults:
       run:
         shell: bash
