@@ -18,26 +18,8 @@ else
 fi
 
 echo ""
-echo "[VERIFICATION: Python Config Loader]"
-# Execute the logic to prove that manually setting the env var resolves the issue
-poetry run python3 - <<EOF
-import os
-import sys
-
-def mock_config_loader():
-    db_url = os.environ.get("DATABASE_URL")
-    if not db_url:
-        raise KeyError("DATABASE_URL")
-    return db_url
-
-print("Scenario: Simulating Fix by injecting DATABASE_URL...")
-os.environ["DATABASE_URL"] = "postgresql://remote-verify:pass@localhost:5432/db"
-try:
-    url = mock_config_loader()
-    print(f"SUCCESS: Remote configuration loader verified. URL: {url}")
-except KeyError as e:
-    print(f"FAILURE: Remote verification failed with KeyError: {e}")
-    sys.exit(1)
-EOF
+echo "[VERIFICATION: Python MRE]"
+# Execute the specific MRE logic via Poetry
+poetry run python3 spikes/debug/mre.py
 
 echo "--- [DEBUG] Probe Logic Executed Successfully ---"
