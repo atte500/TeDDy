@@ -110,4 +110,4 @@ jobs:
 
     - name: Detect Code Duplication
       run: |
-        npx jscpd --min-tokens 25 --threshold 0 --ignore "**/.venv/**,**/ports/**,**/prompts/**,**/prototypes/**,**/spikes/**"
+        npx jscpd --min-tokens 25 --threshold 0 --ignore "**/.venv/**,**/ports/**,**/prompts/**,**/spikes/**"

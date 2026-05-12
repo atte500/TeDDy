@@ -17,7 +17,7 @@ This document outlines the technical standards, conventions, and setup process f
 - **Jobs:**
     1. **Blocking Tests:** Full `pytest` suite.
     2. **Non-Blocking Debt:** Full `pre-commit` scan (`--all-files`) plus slow repository-wide checks (**SLOC/File length**, Test Pyramid, Copy-Paste Detection).
-- **Exclusions:** Sandboxes (`spikes/`, `prototypes/`) are excluded from quality scans.
+- **Exclusions:** Experimental sandboxes (`spikes/`) are excluded from quality scans.
 
 ### Core Architecture & DI
 - **Naming:** Dependencies in core services (`src/.../core/services/`) MUST be private (e.g., `self._repo`).
@@ -45,7 +45,7 @@ This document outlines the technical standards, conventions, and setup process f
 - **Hierarchy:** Personal overrides (`.teddy/config.yaml`) override Bundled Baseline (`src/.../resources/config/config.yaml`). No hardcoded magic numbers in core logic.
 
 ### Experimental Code
-`spikes/` and `prototypes/` are for rapid, isolated experimentation and are explicitly excluded from all quality gates (linting, types, complexity).
+The `spikes/` directory is for rapid, isolated experimentation (including `debug/`, `prototypes/`, and `showcases/`) and is explicitly excluded from all quality gates (linting, types, complexity).
 
 ---
 

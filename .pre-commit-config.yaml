@@ -1,4 +1,4 @@
-exclude: '^(prototypes/|debug/|spikes/)'
+exclude: '^spikes/'
 repos:
 -   repo: https://github.com/Yelp/detect-secrets
     rev: v1.5.0
@@ -13,23 +13,23 @@ repos:
     -   id: bandit
         args: ["-c", "pyproject.toml"]
         # Exclude tests and experimental code from bandit checks
-        exclude: ^(tests|spikes|prototypes)/
+        exclude: ^(tests|spikes)/
 
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
     -   id: trailing-whitespace
-        exclude: ^(spikes|prototypes)/
+        exclude: ^spikes/
     -   id: end-of-file-fixer
-        exclude: ^(spikes|prototypes)/
+        exclude: ^spikes/
     -   id: check-toml
     -   id: check-added-large-files
         args: ['--maxkb=500']
-        exclude: ^(spikes|prototypes)/
+        exclude: ^spikes/
     -   id: check-case-conflict
-        exclude: ^(spikes|prototypes)/
+        exclude: ^spikes/
     -   id: check-merge-conflict
-        exclude: ^(spikes|prototypes)/
+        exclude: ^spikes/
 
 -   repo: local
     hooks:
@@ -54,12 +54,6 @@ repos:
         types: [python]
         require_serial: true
 
-    -   id: clean-spikes
-        name: Clean Spikes Directory
-        entry: bash -c 'rm -rf spikes/*'
-        language: system
-        always_run: true
-        pass_filenames: false
 
     -   id: pip-audit
         name: Vulnerability Scanning (pip-audit)
