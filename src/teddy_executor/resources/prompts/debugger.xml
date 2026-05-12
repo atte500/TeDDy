@@ -174,7 +174,7 @@ WIP & REMINDERS:
              NAME=$(echo "$job" | jq -r '.name')
              ID=$(echo "$job" | jq -r '.databaseId')
              echo "--- Job: $NAME ---"
-             gh run view --job "$ID" --log | sed -n '/--- \[DEBUG\]/,/--- \[DEBUG\]/p' | sed 's/^.*Z //'
+             gh run view --job "$ID" --log | awk '/##\[group\]Run.*remote_probe\.sh/{p=1;next} p&&/##\[endgroup\]/{p=0} p{sub(/^[^ ]* /, ""); print}'
              echo ""
            done
            ~~~~~~
