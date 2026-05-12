@@ -153,11 +153,11 @@ WIP & REMINDERS:
     <rule n="14" name="Remote Probing Protocol (RPP)">
         <description>For platform-specific bugs that cannot be emulated locally, you MUST use this protocol to keep remote interaction clean and repeatable.</description>
         1. Pre-flight Check: Verify that `.github/workflows/debug.yml` exists. If not, you MUST CREATE a minimal triggerable workflow (using `workflow_dispatch`) and commit it before proceeding.
-        2. Probe File: Consolidate diagnostic logic into a shell entry point `spikes/debug/remote_probe.sh`.
+        2. Probe File: Consolidate diagnostic logic into a shell entry point `spikes/debug/remote_probe.sh`. You SHOULD use the "Heredoc" pattern to keep the probe to a single file.
         3. Execution: You MUST execute the following standardized codeblock to EXECUTE with a 300s timeout in order to push the probe, trigger the mailbox, and retrieve distilled results:
            ~~~~~~shell
            # 1. Commit and push the probe code only
-           git add spikes/debug/
+           git add spikes/debug/remote_probe.sh
            git commit -m 'debug: remote probe' --no-verify
            git push
 
