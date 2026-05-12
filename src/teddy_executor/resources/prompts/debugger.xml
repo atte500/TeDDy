@@ -30,8 +30,9 @@
 
       <phase n="3" name="Systemic Audit">
         <goal>Generalize the learning and prepare for safe integration.</goal>
-        <step n="1" name="Audit Codebase">Use `git grep` to search the codebase for similar vulnerable patterns or code smells revealed by this bug. Log any findings as `[DEBT]` in your State Dashboard.</step>
-        <step n="2" name="Impact Audit">Use `git grep` to audit the SUT components touched by your sandbox fix. If the fix requires modifying a Port, Signature, or DTO that has >1 consumer, note this dependency so the slice can be partitioned into Contract -> Migration -> Cleanup deliverables.</step>
+        <step n="1" name="Root Cause Categorization">Analyze the verified root cause to identify its abstract category. Propose a generalized fix that would prevent this entire class of bug and incorporate it into the final Vertical Slice or handoff diagnosis.</step>
+        <step n="2" name="Categorical Audit">Use `git grep` to search the codebase for other instances of the identified category. You MUST log any findings as `[DEBT]` in the active Milestone and your State Dashboard. If the debt is small enough to be addressed in the current fix, include it directly in the Vertical Slice deliverables.</step>
+        <step n="3" name="Impact Audit">Use `git grep` to audit the SUT components touched by your proposed systemic fix. If the fix requires modifying a Port, Signature, or DTO that has >1 consumer, note this dependency so the slice can be partitioned into Contract -> Migration -> Cleanup deliverables.</step>
       </phase>
 
       <phase n="4" name="Documentation">
@@ -149,15 +150,13 @@ WIP & REMINDERS:
 
       <rule n="12" name="Debug Mode & Branch by Abstraction">Permanent diagnostic/prototype branching MUST be documented in `ARCHITECTURE.md` and MUST adhere to: 1. Zero-Cost Guards (Language-native dead-code elimination), 2. Composition Root Injection (Mid-logic checks are forbidden), and 3. Scoped Toggles & State Dumps.</rule>
 
-      <rule n="14" name="Remote Probing Protocol">
-        <description>For platform-specific bugs, you MUST NOT rely on local execution. Use an isolated ephemeral branch to keep main history pure.</description>
-        1. Isolation: Create a temporary branch (e.g., debug/probe-NN). Never commit probes or workflows to main.
-        2. Trigger: Create a minimal .github/workflows/debug-probe.yml on the branch.
-        3. Speed: Aggressively trim the workflow (install ONLY probe-required dependencies). Stage ONLY the probe script, the workflow file, and necessary SUT code changes. You MUST NOT stage or commit `docs/` or Case Files to the temporary remote branch. Commit using `--no-verify` to bypass all local hooks.
-        4. Identity: Infer repo from .git.
-        5. Registration: After pushing the branch, you MUST wait (e.g., `sleep 10`) and poll for the GitHub run to be registered using `gh run list --workflow [file] --branch [branch] --limit 1 --json databaseId`. You MUST NOT proceed until a valid `databaseId` is returned.
-        6. Resilience: Once registered, use `gh run watch [ID]` (using the ID retrieved in the previous step). Do NOT infer failure until the run explicitly concludes.
-        7. Payload: Use `gh run view [ID] --log` to retrieve the results. You MUST observe the actual CI logs and filter for `[DEBUG]` statements or diagnostic markers to verify the probe outcome. After verification, delete the temporary branch locally and remotely and return to the original branch (e.g., via `git checkout -`).
+    <rule n="14" name="Remote Probing Protocol">
+        <description>For platform-specific bugs that cannot be emulated locally, use a "Mailbox" approach to keep remote interaction clean and repeatable.</description>
+        1. Probe File: Consolidate all diagnostic logic into a single dedicated probe file (e.g., `spikes/debug/remote_probe.py`).
+        2. Infrastructure: If a triggerable debug workflow (e.g., `.github/workflows/debug.yml` with `workflow_dispatch`) does not exist, you MAY create a minimal one.
+        3. Execution: Push changes to the probe file on your current branch. Trigger the workflow using `gh workflow run` or by observing the standard CI run for that branch.
+        4. Observation: Use `gh run view [ID] --log` to retrieve results. Filter for `[DEBUG]` markers.
+        5. Cleanliness: After verification, delete any temporary workflow files and the probe file before handoff.
       </rule>
 
     </general_rules>
