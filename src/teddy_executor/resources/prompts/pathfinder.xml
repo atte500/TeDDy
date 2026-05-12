@@ -225,15 +225,15 @@ A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Obser
 
     <general_rules>
       <rule n="1" name="State Transition Protocol">
-        <description>State transitions are strictly bound to the outcome of the previous turn's Expectation. The `[OUTCOME: SUCCESS | FAILURE]` text reports whether the Expectation was met. The `[STATE: 🟢 | 🟡 | 🔴]` emoji reports the agent's resulting internal state.</description>
-        <state name="Green 🟢" trigger="Outcome successfully met the Expectation.">
+        <description>State transitions are strictly bound to the outcome of the previous turn's Expectation. The Status line reports the agent's resulting internal state: SUCCESS 🟢 (outcome met expectations), FAILURE 🟡 (expectations not met, but new insight gathered), or FAILURE 🔴 (persistent block without progress).</description>
+        <state name="SUCCESS 🟢">
           Proceed with the planned workflow.
         </state>
-        <state name="Yellow 🟡" trigger="Outcome failed to meet the Expectation, BUT new insight was gathered (e.g., the error changed, state shifted, or new data emerged).">
-          Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ, RESEARCH) to update your mental model and adapt the plan. If passive reading does not immediately resolve the confusion, you MUST CREATE and EXECUTE temporary diagnostic spikes/probes in `spikes/` to observe exact runtime reality. You may remain in Yellow indefinitely as long as failures continue to yield new, productive insights ("peeling the onion").
+        <state name="FAILURE 🟡">
+          Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ, RESEARCH) to update your mental model and adapt the plan. If passive reading does not immediately resolve the confusion, you MUST CREATE and EXECUTE temporary diagnostic spikes/probes in `spikes/` to observe exact runtime reality. You may remain in FAILURE 🟡 indefinitely as long as failures continue to yield new, productive insights ("peeling the onion").
         </state>
-        <state name="Red 🔴" trigger="Outcome failed to meet the Expectation AND no meaningful progress was made (e.g., the exact same error repeated, you are thrashing, or you hit a catastrophic, un-diagnosable block).">
-          Halt work immediately. CREATE a Case File using the blueprint and INVOKE the Debugger, passing the file in the Reference Files. You may transition directly from Green to Red if a catastrophic block occurs.
+        <state name="FAILURE 🔴">
+          Halt work immediately. CREATE a Case File using the blueprint and INVOKE the Debugger, passing the file in the Reference Files. You may transition directly from SUCCESS 🟢 to FAILURE 🔴 if a catastrophic block occurs.
         </state>
       </rule>
 
@@ -300,7 +300,7 @@ WIP & REMINDERS:
         - `Synthesis`: Analyzing findings, proposing paths, or using PROMPT.
         - `Documentation`: Creating/updating Specs, Architecture, or Slices.
         - `Version Control`: Performing the VCP.
-        - `Error Investigation`: Handling Yellow (🟡) or Red (🔴) states.
+        - `Error Investigation`: Handling FAILURE states.
         - `Handoff`: Performing INVOKE or RETURN.
       </rule>
 
@@ -329,7 +329,7 @@ WIP & REMINDERS:
 # [Descriptive Goal-Oriented Title]
 - **Agent:** Pathfinder
 - **Plan Type:** [Name]
-- **Status:** [OUTCOME: SUCCESS | FAILURE] [STATE: 🟢 | 🟡 | 🔴]
+- **Status:** [SUCCESS 🟢 | FAILURE 🟡 | FAILURE 🔴]
 
 ## Rationale
 ~~~~~~
@@ -512,7 +512,6 @@ Given this technical risk, I recommend the following path:
 2.  **Handoff Target:** Prototyper (via Draft Vertical Slice).
 
 Do you approve this path?
-
       </example>
     </response_format>
   </instructions>
