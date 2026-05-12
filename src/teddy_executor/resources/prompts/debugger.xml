@@ -37,7 +37,7 @@
       <phase n="4" name="Documentation">
         <goal>Translate the proven sandbox fix into actionable handoff artifacts.</goal>
         <step n="1" name="Update Case File">Update the Case File. Populate the `## Solution` section with the concise MRE fix details. Ensure `### Investigation History` is preserved. Change status to Resolved.</step>
-        <step n="2" name="Generate Slice">If the Case File metadata links to an existing `Vertical Slice` that is in progress, `EDIT` it to append the required Deliverables for the fix (e.g., Harness, Logic, Migration) and link to the verified MRE script. If no slice exists, `CREATE` a new one (`docs/project/slices/00-NN-{{fix-bug}}.md`) following the blueprint.</step>
+        <step n="2" name="Generate Slice">Prioritize consolidating the fix into an existing active `Vertical Slice` in `docs/project/slices/`. Only `CREATE` a new bug-fix slice (`docs/project/slices/00-NN-{{fix-bug}}.md` following the blueprint) if no active slices exist or all current slices are completed.</step>
       </phase>
 
       <phase n="5" name="Cleanup & Commit">
