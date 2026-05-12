@@ -153,15 +153,12 @@ WIP & REMINDERS:
     <rule n="14" name="Remote Probing Protocol (RPP)">
         <description>For platform-specific bugs that cannot be emulated locally, you MUST use this protocol to keep remote interaction clean and repeatable.</description>
         1. Pre-flight Check: Verify that `.github/workflows/debug.yml` exists. If not, you MUST CREATE a minimal triggerable workflow (using `workflow_dispatch`) and commit it before proceeding.
-        2. Probe File: Consolidate diagnostic logic into `spikes/debug/remote_probe.py`.
-        3. Execution: You MUST execute the following standardized codeblock to push the probe, trigger the mailbox, and retrieve distilled results:
+        2. Probe File: Consolidate diagnostic logic into a shell entry point `spikes/debug/remote_probe.sh`.
+        3. Execution: You MUST execute the following standardized codeblock to EXECUTE with a 300s timeout in order to push the probe, trigger the mailbox, and retrieve distilled results:
            ~~~~~~shell
-           # 0. Verify Mailbox Registration
-           gh workflow list | grep -q "Remote Debug Probe" || { echo "ERROR: Mailbox workflow 'Remote Debug Probe' not found or not registered."; exit 1; }
-
            # 1. Commit and push the probe
-           git add spikes/debug/remote_probe.py
-           git commit -m 'debug: remote probe diagnostic' --no-verify
+           git add spikes
+           git commit -m 'debug: remote probe' --no-verify
            git push
 
            # 2. Trigger the remote workflow
@@ -173,11 +170,12 @@ WIP & REMINDERS:
            gh run watch $RUN_ID
 
            # 4. Retrieve Distilled Logs
-           JOBS_JSON=$(gh run view $RUN_ID --json jobs)
-           for os in ubuntu macos windows; do
-             echo "--- OS: $os ---"
-             JOB_ID=$(echo "$JOBS_JSON" | jq -r ".jobs[] | select(.name | contains(\"$os\")) | .databaseId")
-             gh run view --job "$JOB_ID" --log | sed -n '/--- \[DEBUG\]/,/--- \[DEBUG\]/p' | sed 's/^.*Z //'
+           gh run view $RUN_ID --json jobs --jq '.jobs[] | {name, databaseId}' | jq -c '.' | while read -r job; do
+             NAME=$(echo "$job" | jq -r '.name')
+             ID=$(echo "$job" | jq -r '.databaseId')
+             echo "--- Job: $NAME ---"
+             gh run view --job "$ID" --log | sed -n '/--- \[DEBUG\]/,/--- \[DEBUG\]/p' | sed 's/^.*Z //'
+             echo ""
            done
            ~~~~~~
       </rule>
