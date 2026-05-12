@@ -51,10 +51,10 @@ jobs:
         echo "OS: ${{ runner.os }}"
         echo "Reason: ${{ github.event.inputs.reason }}"
         echo "::endgroup::"
-
-        if [ -f spikes/debug/remote_probe.py ]; then
-          poetry run python spikes/debug/remote_probe.py
+        
+        if [ -f spikes/debug/remote_probe.sh ]; then
+          bash spikes/debug/remote_probe.sh
         else
-          echo "[ERROR] spikes/debug/remote_probe.py not found."
+          echo "[ERROR] spikes/debug/remote_probe.sh not found."
           exit 1
         fi
