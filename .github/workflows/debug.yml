@@ -51,10 +51,12 @@ jobs:
         echo "OS: ${{ runner.os }}"
         echo "Reason: ${{ github.event.inputs.reason }}"
         echo "::endgroup::"
-        
+
         if [ -f spikes/debug/remote_probe.sh ]; then
           bash spikes/debug/remote_probe.sh
         else
           echo "[ERROR] spikes/debug/remote_probe.sh not found."
           exit 1
         fi
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
