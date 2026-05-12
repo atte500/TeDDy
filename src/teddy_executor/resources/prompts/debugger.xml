@@ -154,7 +154,7 @@ WIP & REMINDERS:
         <description>For platform-specific bugs that cannot be emulated locally, you MUST use this protocol to keep remote interaction clean and repeatable.</description>
         1. Pre-flight Check: Verify that `.github/workflows/debug.yml` exists. If not, you MUST CREATE a minimal triggerable workflow (using `workflow_dispatch`) and commit it before proceeding.
         2. Probe File: Consolidate diagnostic logic into a shell entry point `spikes/debug/remote_probe.sh`. You SHOULD use the "Heredoc" pattern to keep the probe to a single file.
-        3. Execution: You MUST execute the following standardized codeblock to EXECUTE with a 300s timeout in order to push the probe, trigger the mailbox, and retrieve distilled results:
+        3. Execution: You MUST execute the following standardized codeblock to EXECUTE with a 300s Timeout in order to push the probe, trigger the mailbox, and retrieve distilled results:
            ~~~~~~shell
            # 1. Commit and push the probe code only
            git add spikes/debug/remote_probe.sh
@@ -174,11 +174,11 @@ WIP & REMINDERS:
              NAME=$(echo "$job" | jq -r '.name')
              ID=$(echo "$job" | jq -r '.databaseId')
              echo "--- Job: $NAME ---"
-             gh run view --job "$ID" --log | awk '/##\[group\].*remote_probe/{p=1;next} p&&/##\[endgroup\]/{p=0} p{sub(/^[^ ]* /, ""); print}'
+             gh run view --job "$ID" --log | awk '/##\[group\]remote_probe/{p=1;next} /##\[endgroup\]/{p=0} p{pos=index($0, "Z "); if(pos>0) print substr($0, pos+2); else print $0}'
              echo ""
            done
            ~~~~~~
-        4. Timeout Recovery: If the execution times out or `gh run view` reports the run is still in progress, repeat step 3 and 4 of the execution block using the `RUN_ID` from your history until logs are available.
+        4. Timeout Recovery: If the execution times out or `gh run view` reports the run is still in progress, EXECUTE step 3 and 4 of the execution block again using the `RUN_ID` from your history until ensuring you've set the Timeout action parameter.
       </rule>
 
     </general_rules>
