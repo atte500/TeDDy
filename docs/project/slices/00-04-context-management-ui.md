@@ -161,6 +161,17 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 - Hardened `TestEnvironment` with `without_reviewer()` to support legacy interactor-based acceptance tests. This helper re-registers the `ExecutionOrchestrator` without a reviewer, forcing the fallback to `IUserInteractor`.
 - Resolved isolation relaxation regression in `test_orchestrator_allows_non_isolated_terminal_action` by explicitly providing the `mock_plan_reviewer` to the orchestrator fixture.
 
+### Logic (Refinement) - Normalize slashes in is_path_in_context
+- Updated `is_path_in_context` in `src/teddy_executor/core/services/validation_rules/helpers.py` to normalize both target and context paths by replacing backslashes with forward slashes.
+- Stripped leading slashes consistently across comparison.
+- Added dedicated unit tests in `tests/suites/unit/core/services/test_validation_helpers.py` covering Windows-style paths, mixed slashes, and scope respect.
+
+### Logic (Refinement) - Update _extract_resource_path in SessionService
+- Updated `_extract_resource_path` in `src/teddy_executor/core/services/session_service.py` to normalize extracted paths to forward slashes.
+- Applied `replace("\\", "/")` to both Markdown link matches and raw string fallbacks.
+- Ensured leading slashes are stripped consistently post-normalization.
+- Added granular unit tests in `tests/suites/unit/core/services/test_session_service_extraction.py`.
+
 ## Technical Debt
 - **[DEBT]** Harness Complexity: `without_reviewer()` in `TestEnvironment` is a manual container re-wiring. Consider a more robust `interactive_mode` configuration (e.g., `"tui" | "console"`) for the harness to toggle between `IPlanReviewer` and `IUserInteractor` cleanly.
 - **[DEBT]** Orchestrator Size: `ExecutionOrchestrator` is approaching the 300-line limit and has high cyclomatic complexity in its execution loop.
@@ -219,18 +230,6 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
         - **Context Labels/Files:** Opening `e` on a session/turn label or a specific context file MUST launch the external editor (using `ConsoleTooling.get_editor()`).
         - **Deferred Harvest:** The TUI MUST wait for the external process to exit, then perform a "Deferred Harvest": re-read the `.context` files from disk and refresh the `ContextItem` metadata (tokens, git status) and the UI tree dynamically.
     - **Navigation (`alt+up/down`):** Refine `ActionTree.jump_to_section` to include the Context root. Navigation should jump between the Context root, Rationale root, and Action Plan root.
-
-## Implementation Notes
-### Logic (Refinement) - Normalize slashes in is_path_in_context
-- Updated `is_path_in_context` in `src/teddy_executor/core/services/validation_rules/helpers.py` to normalize both target and context paths by replacing backslashes with forward slashes.
-- Stripped leading slashes consistently across comparison.
-- Added dedicated unit tests in `tests/suites/unit/core/services/test_validation_helpers.py` covering Windows-style paths, mixed slashes, and scope respect.
-
-### Logic (Refinement) - Update _extract_resource_path in SessionService
-- Updated `_extract_resource_path` in `src/teddy_executor/core/services/session_service.py` to normalize extracted paths to forward slashes.
-- Applied `replace("\\", "/")` to both Markdown link matches and raw string fallbacks.
-- Ensured leading slashes are stripped consistently post-normalization.
-- Added granular unit tests in `tests/suites/unit/core/services/test_session_service_extraction.py`.
 
     - **Right Pane Summary:**
         - Include a bulleted breakdown of the context: `• System`, `• Session`, `• Turn`.
