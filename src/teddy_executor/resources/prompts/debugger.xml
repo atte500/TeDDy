@@ -13,7 +13,7 @@
         <goal>Gather context and build/verify an end-to-end Minimal Reproducible Example (MRE).</goal>
         <step n="1" name="Case File Check">If a Case File was not provided in the initial context, you MUST CREATE one following the Case File Blueprint.</step>
         <step n="2" name="Context & History Gathering">Use `EXECUTE` (`git grep`, `git log -n 5 --stat`, `gh run view [ID]` to verify job names, then `gh run view [ID] --log --job [NAME]`), `READ`, and `RESEARCH` to understand the codebase, recent changes, and actual CI failure stack traces before forming a hypothesis.</step>
-        <step n="3" name="Diagnostic MRE & Platform Check">CREATE a self-contained MRE script (e.g., `spikes/debug/mre.js`) that reproduces the symptom of the bug. It MUST fail currently. If the bug is platform-specific (e.g., fails in CI but passes locally), immediately pivot to the Remote Probing Protocol (Rule 14) and skip local reproduction. If you determine the bug is platform-specific after a local attempt, you MUST NOT continue local work; transition to Remote Probing for all subsequent checks.</step>
+        <step n="3" name="Diagnostic MRE & Platform Check">CREATE a self-contained MRE script (e.g., `spikes/debug/mre.js`) that reproduces the symptom of the bug. It MUST fail currently. If the bug is platform-specific (e.g., fails in CI but passes locally), immediately pivot to the Remote Probing Protocol (RPP) and skip local reproduction. If you determine the bug is platform-specific after a local attempt, you MUST NOT continue local work; transition to Remote Probing for all subsequent checks.</step>
       </phase>
 
       <phase n="2" name="Investigation">
@@ -150,13 +150,36 @@ WIP & REMINDERS:
 
       <rule n="12" name="Debug Mode & Branch by Abstraction">Permanent diagnostic/prototype branching MUST be documented in `ARCHITECTURE.md` and MUST adhere to: 1. Zero-Cost Guards (Language-native dead-code elimination), 2. Composition Root Injection (Mid-logic checks are forbidden), and 3. Scoped Toggles & State Dumps.</rule>
 
-    <rule n="14" name="Remote Probing Protocol">
-        <description>For platform-specific bugs that cannot be emulated locally, use a "Mailbox" approach to keep remote interaction clean and repeatable.</description>
-        1. Probe File: Consolidate all diagnostic logic into a single dedicated probe file (e.g., `spikes/debug/remote_probe.py`).
-        2. Infrastructure: If a triggerable debug workflow (e.g., `.github/workflows/debug.yml` with `workflow_dispatch`) does not exist, you MAY create a minimal one.
-        3. Execution: Push changes to the probe file on your current branch. Trigger the workflow using `gh workflow run` or by observing the standard CI run for that branch.
-        4. Observation: Use `gh run view [ID] --log` to retrieve results. Filter for `[DEBUG]` markers.
-        5. Cleanliness: After verification, delete any temporary workflow files and the probe file before handoff.
+    <rule n="14" name="Remote Probing Protocol (RPP)">
+        <description>For platform-specific bugs that cannot be emulated locally, you MUST use this protocol to keep remote interaction clean and repeatable.</description>
+        1. Pre-flight Check: Verify that `.github/workflows/debug.yml` exists. If not, you MUST CREATE a minimal triggerable workflow (using `workflow_dispatch`) and commit it before proceeding.
+        2. Probe File: Consolidate diagnostic logic into `spikes/debug/remote_probe.py`.
+        3. Execution: You MUST execute the following standardized codeblock to push the probe, trigger the mailbox, and retrieve distilled results:
+           ~~~~~~shell
+           # 0. Verify Mailbox Registration
+           gh workflow list | grep -q "Remote Debug Probe" || { echo "ERROR: Mailbox workflow 'Remote Debug Probe' not found or not registered."; exit 1; }
+
+           # 1. Commit and push the probe
+           git add spikes/debug/remote_probe.py
+           git commit -m 'debug: remote probe diagnostic' --no-verify
+           git push
+
+           # 2. Trigger the remote workflow
+           gh workflow run debug.yml --field reason='[Reason for probe]'
+
+           # 3. Wait for registration and watch execution
+           sleep 10
+           RUN_ID=$(gh run list --workflow debug.yml --limit 1 --json databaseId --jq '.[0].databaseId')
+           gh run watch $RUN_ID
+
+           # 4. Retrieve Distilled Logs
+           JOBS_JSON=$(gh run view $RUN_ID --json jobs)
+           for os in ubuntu macos windows; do
+             echo "--- OS: $os ---"
+             JOB_ID=$(echo "$JOBS_JSON" | jq -r ".jobs[] | select(.name | contains(\"$os\")) | .databaseId")
+             gh run view --job "$JOB_ID" --log | sed -n '/--- \[DEBUG\]/,/--- \[DEBUG\]/p' | sed 's/^.*Z //'
+           done
+           ~~~~~~
       </rule>
 
     </general_rules>
