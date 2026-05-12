@@ -5,6 +5,8 @@ standard conftest.py instead of a pyproject.toml plugin, we ensure that
 pytest-cov starts tracking coverage BEFORE our core modules are imported.
 """
 
+import functools
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -37,6 +39,34 @@ from tests.harness.setup.composition import (
     env,
     real_env,
 )
+
+
+def pytest_configure(config):
+    """
+    Systemic Fix for Windows CI: Force UTF-8 as the default for all file I/O
+    in tests. This prevents UnicodeEncodeError on Windows runners when
+    handling emojis or non-ASCII characters in plans, reports, or source code.
+    """
+    original_write_text = Path.write_text
+    original_read_text = Path.read_text
+
+    @functools.wraps(original_write_text)
+    def utf8_write_text(self, data, encoding=None, errors=None, newline=None):
+        if encoding is None:
+            encoding = "utf-8"
+        return original_write_text(
+            self, data, encoding=encoding, errors=errors, newline=newline
+        )
+
+    @functools.wraps(original_read_text)
+    def utf8_read_text(self, encoding=None, errors=None):
+        if encoding is None:
+            encoding = "utf-8"
+        return original_read_text(self, encoding=encoding, errors=errors)
+
+    Path.write_text = utf8_write_text
+    Path.read_text = utf8_read_text
+
 
 # Exporting these fixtures makes them globally available to all test suites
 __all__ = [
