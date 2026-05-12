@@ -126,6 +126,7 @@ def is_path_in_context(
 ) -> bool:
     """
     Checks if a path (normalized) is present in the specified context scopes.
+    Normalizes both target and context paths to use forward slashes.
     """
     if not context_paths or not path_str:
         return False
@@ -136,11 +137,13 @@ def is_path_in_context(
     if check_turn:
         scopes.append("Turn")
 
-    normalized_target = path_str.lstrip("/")
+    # Normalize target: remove leading slash AND convert backslashes
+    normalized_target = path_str.lstrip("/").replace("\\", "/")
 
     for scope in scopes:
         context_files = context_paths.get(scope, [])
-        normalized_context = [p.lstrip("/") for p in context_files]
+        # Normalize context: remove leading slash AND convert backslashes
+        normalized_context = [p.lstrip("/").replace("\\", "/") for p in context_files]
         if normalized_target in normalized_context:
             return True
 

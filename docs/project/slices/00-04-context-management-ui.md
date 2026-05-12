@@ -60,7 +60,7 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 - [x] **Logic (Refinement)** - Update Validation Matching to target `- **Overall Status:** Validation Failed`.
 - [x] **Logic (Refinement)** - Update standardized auto-prune reason to "Pruned failure history after successful recovery".
 - [x] **Cleanup (Refinement)** - Remove individual token threshold logic and related config keys.
-- [ ] **Logic (Refinement)** - Normalize slashes in `is_path_in_context` to support Windows paths.
+- [x] **Logic (Refinement)** - Normalize slashes in `is_path_in_context` to support Windows paths.
 - [ ] **Logic (Refinement)** - Update `_extract_resource_path` in `SessionService` to normalize extracted paths.
 - [ ] **Logic (Refinement)** - Implement `_apply_retention_limit` in `SessionPruningService` (Default: 25).
 - [ ] **Contract** - Add `max_turns_retention: 25` to `config.yaml`.
@@ -219,6 +219,13 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
         - **Context Labels/Files:** Opening `e` on a session/turn label or a specific context file MUST launch the external editor (using `ConsoleTooling.get_editor()`).
         - **Deferred Harvest:** The TUI MUST wait for the external process to exit, then perform a "Deferred Harvest": re-read the `.context` files from disk and refresh the `ContextItem` metadata (tokens, git status) and the UI tree dynamically.
     - **Navigation (`alt+up/down`):** Refine `ActionTree.jump_to_section` to include the Context root. Navigation should jump between the Context root, Rationale root, and Action Plan root.
+
+## Implementation Notes
+### Logic (Refinement) - Normalize slashes in is_path_in_context
+- Updated `is_path_in_context` in `src/teddy_executor/core/services/validation_rules/helpers.py` to normalize both target and context paths by replacing backslashes with forward slashes.
+- Stripped leading slashes consistently across comparison.
+- Added dedicated unit tests in `tests/suites/unit/core/services/test_validation_helpers.py` covering Windows-style paths, mixed slashes, and scope respect.
+
     - **Right Pane Summary:**
         - Include a bulleted breakdown of the context: `• System`, `• Session`, `• Turn`.
         - Show the token count for each (e.g., `• System: 2.5k`).
