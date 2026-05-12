@@ -137,13 +137,15 @@ def is_path_in_context(
     if check_turn:
         scopes.append("Turn")
 
-    # Normalize target: remove leading slash AND convert backslashes
-    normalized_target = path_str.lstrip("/").replace("\\", "/")
+    # Normalize target: convert backslashes BEFORE removing leading slash/dot-slash
+    normalized_target = path_str.replace("\\", "/").lstrip("./").lstrip("/")
 
     for scope in scopes:
         context_files = context_paths.get(scope, [])
-        # Normalize context: remove leading slash AND convert backslashes
-        normalized_context = [p.lstrip("/").replace("\\", "/") for p in context_files]
+        # Normalize context: convert backslashes BEFORE removing leading slash/dot-slash
+        normalized_context = [
+            p.replace("\\", "/").lstrip("./").lstrip("/") for p in context_files
+        ]
         if normalized_target in normalized_context:
             return True
 
