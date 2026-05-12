@@ -60,6 +60,8 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 - [x] **Logic (Refinement)** - Update Validation Matching to target `- **Overall Status:** Validation Failed`.
 - [x] **Logic (Refinement)** - Update standardized auto-prune reason to "Pruned failure history after successful recovery".
 - [x] **Cleanup (Refinement)** - Remove individual token threshold logic and related config keys.
+- [ ] **Logic (Refinement)** - Normalize slashes in `is_path_in_context` to support Windows paths.
+- [ ] **Logic (Refinement)** - Update `_extract_resource_path` in `SessionService` to normalize extracted paths.
 - [ ] **Logic (Refinement)** - Implement `_apply_retention_limit` in `SessionPruningService` (Default: 25).
 - [ ] **Contract** - Add `max_turns_retention: 25` to `config.yaml`.
 - [ ] **Showcase** - Create `showcases/00-04/showcase_heuristics.sh` to demonstrate failure-streak preservation, post-green cleanup, and retention limits.
