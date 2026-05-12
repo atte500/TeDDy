@@ -174,10 +174,11 @@ WIP & REMINDERS:
              NAME=$(echo "$job" | jq -r '.name')
              ID=$(echo "$job" | jq -r '.databaseId')
              echo "--- Job: $NAME ---"
-             gh run view --job "$ID" --log | awk '/##\[group\]Run.*remote_probe\.sh/{p=1;next} p&&/##\[endgroup\]/{p=0} p{sub(/^[^ ]* /, ""); print}'
+             gh run view --job "$ID" --log | awk '/##\[group\].*remote_probe/{p=1;next} p&&/##\[endgroup\]/{p=0} p{sub(/^[^ ]* /, ""); print}'
              echo ""
            done
            ~~~~~~
+        4. Timeout Recovery: If the execution times out or `gh run view` reports the run is still in progress, repeat step 3 and 4 of the execution block using the `RUN_ID` from your history until logs are available.
       </rule>
 
     </general_rules>
