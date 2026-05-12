@@ -102,12 +102,15 @@ class SessionService(ISessionManager):
         return SessionState.EMPTY, latest_turn_path
 
     def _extract_resource_path(self, resource_str: str) -> str:
-        """Extracts the path from a Markdown link or returns the string if not a link."""
+        """
+        Extracts the path from a Markdown link or returns the string if not a link.
+        Normalizes all slashes to forward slashes.
+        """
         match = re.search(r"\[.*\]\((.*)\)", resource_str)
         if match:
             path = match.group(1)
-            return path.lstrip("/")
-        return resource_str.strip()
+            return path.replace("\\", "/").lstrip("/")
+        return resource_str.strip().replace("\\", "/").lstrip("/")
 
     def transition_to_next_turn(
         self,

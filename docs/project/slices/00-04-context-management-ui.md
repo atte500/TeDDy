@@ -61,7 +61,7 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 - [x] **Logic (Refinement)** - Update standardized auto-prune reason to "Pruned failure history after successful recovery".
 - [x] **Cleanup (Refinement)** - Remove individual token threshold logic and related config keys.
 - [x] **Logic (Refinement)** - Normalize slashes in `is_path_in_context` to support Windows paths.
-- [ ] **Logic (Refinement)** - Update `_extract_resource_path` in `SessionService` to normalize extracted paths.
+- [x] **Logic (Refinement)** - Update `_extract_resource_path` in `SessionService` to normalize extracted paths.
 - [ ] **Logic (Refinement)** - Implement `_apply_retention_limit` in `SessionPruningService` (Default: 25).
 - [ ] **Contract** - Add `max_turns_retention: 25` to `config.yaml`.
 - [ ] **Showcase** - Create `showcases/00-04/showcase_heuristics.sh` to demonstrate failure-streak preservation, post-green cleanup, and retention limits.
@@ -225,6 +225,12 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 - Updated `is_path_in_context` in `src/teddy_executor/core/services/validation_rules/helpers.py` to normalize both target and context paths by replacing backslashes with forward slashes.
 - Stripped leading slashes consistently across comparison.
 - Added dedicated unit tests in `tests/suites/unit/core/services/test_validation_helpers.py` covering Windows-style paths, mixed slashes, and scope respect.
+
+### Logic (Refinement) - Update _extract_resource_path in SessionService
+- Updated `_extract_resource_path` in `src/teddy_executor/core/services/session_service.py` to normalize extracted paths to forward slashes.
+- Applied `replace("\\", "/")` to both Markdown link matches and raw string fallbacks.
+- Ensured leading slashes are stripped consistently post-normalization.
+- Added granular unit tests in `tests/suites/unit/core/services/test_session_service_extraction.py`.
 
     - **Right Pane Summary:**
         - Include a bulleted breakdown of the context: `• System`, `• Session`, `• Turn`.
