@@ -1,0 +1,60 @@
+name: Remote Debug Probe
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for the probe'
+        required: false
+        default: 'Manual diagnostic probe'
+
+jobs:
+  probe:
+    name: Probe (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v5
+
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: "3.11"
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: 1.8.3
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+
+    - name: Load cached venv
+      id: cached-poetry-dependencies
+      uses: actions/cache@v5
+      with:
+        path: .venv
+        key: venv-${{ runner.os }}-3.11-${{ hashFiles('**/poetry.lock') }}
+
+    - name: Install dependencies
+      run: poetry install --no-interaction
+
+    - name: Execute Remote Probe
+      run: |
+        echo "::group::Probe Metadata"
+        echo "OS: ${{ runner.os }}"
+        echo "Reason: ${{ github.event.inputs.reason }}"
+        echo "::endgroup::"
+
+        if [ -f spikes/debug/remote_probe.py ]; then
+          poetry run python spikes/debug/remote_probe.py
+        else
+          echo "[ERROR] spikes/debug/remote_probe.py not found."
+          exit 1
+        fi
