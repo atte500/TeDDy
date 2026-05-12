@@ -18,7 +18,7 @@
         <step n="1" name="Initialization">If missing, CREATE slice at `docs/project/slices/00-NN-{{feature}}.md`. If created, you MUST execute the commit following the VCP for the skeleton slice before proceeding.</step>
         <step n="2" name="Isolate Current Deliverable">Identify the next uncompleted deliverable. You must focus exclusively on this single item for the entire cycle. Completing multiple deliverables in one VCP execution, even if of the same type, is NOT allowed.</step>
         <step n="3" name="Discovery">
-          Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context and prior agent artifacts required for a thorough plan audit. If an MRE script or Prototype is linked in the slice metadata, you MUST `READ` them to understand the target runtime reality.
+          Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context and prior agent artifacts required for a thorough plan audit. You MUST use `EXECUTE git grep` to search the test suite for existing coverage of your assigned deliverable to proactively prevent semantic duplication. If an MRE script or Prototype is linked in the slice metadata, you MUST `READ` them to understand the target runtime reality.
         </step>
         <step n="4" name="Plan Audit">
           Audit the target components via `EXECUTE git grep`. If a deliverable attempts a breaking signature change to a Shared Seam (git grep > 1), you MUST NOT execute it. Instead, immediately `EDIT` the slice to re-partition the work into a non-breaking sequence (Contract/Expansion -> Migration -> Cleanup/Contraction). You MUST also decompose any item touching >1 logical change into a prioritized list of smaller, atomic deliverables. If the slice contains Gherkin scenarios but lacks a `Wiring` deliverable as its final behavioral gate, you MUST immediately `EDIT` the slice to add it. You MUST also identify and `EDIT` the slice to clean up any formatting errors or inconsistencies discovered during your audit.
@@ -40,9 +40,9 @@
           </step>
           <step n="1" name="Red">
             Map the target testing layer to the current deliverable type:
-            - Acceptance (Gherkin scenarios): `Wiring`.
-            - Integration: `Harness`, `Migration`.
-            - Unit: `Contract`, `Seam`, `Logic`, `Refactor`, `Cleanup`.
+            - Acceptance (Happy-path Scenarios ONLY): `Wiring`.
+            - Integration (Adapters ONLY): `Harness`, `Migration`.
+            - Unit (Core Logic & Edge Cases): `Contract`, `Seam`, `Logic`, `Refactor`, `Cleanup`.
 
             Create or locate the appropriate test file. Set up the test function using the Test Harness Triad (Setup = Arrange, Driver = Act, Observer = Assert). Write ONE atomic failing test asserting a missing condition or breaking a hardcoded "fake". Use parameterized tests for data permutations.
 
@@ -206,10 +206,10 @@ WIP & REMINDERS:
 
       <rule n="12" name="Contract Enforcement (DbC)">Contracts require active runtime checks. Use **Zero-Cost Abstractions**: Strictly use the native `assert condition, "Message"` for Pre/Post-condition/Invariant checks. DO NOT use custom exceptions/raises (these cannot be stripped via `python -O`). State explicitly which contract failed.</rule>
 
-      <rule n="13" name="Test File Organization">Strictly adhere to test layers:
-        1. **Acceptance** (`tests/suites/acceptance/`): High-level scenarios. MUST use **Subcutaneous Testing** (invoke top app boundary directly). NO slow UI/HTTP routing.
-        2. **Integration** (`tests/suites/integration/`): Adapter tests. MUST use real external instances (e.g., test DB). Mock only slow/expensive APIs.
-        3. **Unit** (`tests/suites/unit/`): Isolated core logic.
+      <rule n="13" name="Test Layer Isolation & Semantic Deduplication">Strictly adhere to test boundaries:
+        1. Acceptance (`tests/suites/acceptance/`): Happy-path only. MUST use Subcutaneous Testing. BANNED: Importing internal core services/models.
+        2. Integration (`tests/suites/integration/`): Adapter tests only. BANNED: Importing internal core services/models.
+        3. Unit (`tests/suites/unit/`): Isolated core logic. MUST contain ALL granular edge cases, errors, and permutations.
       </rule>
 
       <rule n="14" name="Conflict Resolution Protocol">If `git push` fails/conflicts: 1. `EXECUTE git pull --rebase`. 2. Identify files via `git status`. 3. `READ`/`EDIT` to resolve markers. 4. Run test suite. 5. `git add` and `EXECUTE git rebase --continue`.</rule>
