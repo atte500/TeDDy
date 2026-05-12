@@ -17,7 +17,7 @@ And no UnicodeEncodeError is raised
 
 ## Deliverables
 - [x] **Harness** - Implement `pytest_configure` hook in `tests/conftest.py` to monkeypatch `pathlib.Path.read_text` and `pathlib.Path.write_text`.
-- [ ] **Cleanup** - Revert the manual `encoding="utf-8"` additions in `tests/suites/acceptance/test_context_management_ui.py` (optional, as the global fix covers it).
+- [x] **Cleanup** - Revert the manual `encoding="utf-8"` additions in `tests/suites/acceptance/test_context_management_ui.py` (optional, as the global fix covers it).
 
 ## Implementation Notes
 - **Monkeypatching Strategy:** Implemented `pytest_configure` in `tests/conftest.py` to wrap `pathlib.Path.read_text` and `pathlib.Path.write_text`.

@@ -164,17 +164,17 @@ def _setup_acceptance_session(env, session_dir):
     env.workspace.joinpath(f"{session_dir}/03").mkdir(parents=True)
 
     env.workspace.joinpath(f"{session_dir}/01/plan.md").write_text(
-        "# Turn 1\nStatus: 🟢", encoding="utf-8"
+        "# Turn 1\nStatus: 🟢"
     )
     env.workspace.joinpath(f"{session_dir}/01/report.md").write_text(
-        "# Report 1\nStatus: SUCCESS", encoding="utf-8"
+        "# Report 1\nStatus: SUCCESS"
     )
 
     env.workspace.joinpath(f"{session_dir}/02/plan.md").write_text(
-        "# Turn 2\nStatus: 🔴", encoding="utf-8"
+        "# Turn 2\nStatus: 🔴"
     )
     env.workspace.joinpath(f"{session_dir}/02/report.md").write_text(
-        "# Report 2\nStatus: ABORTED", encoding="utf-8"
+        "# Report 2\nStatus: ABORTED"
     )
 
     turn_03_plan = (
@@ -184,21 +184,18 @@ def _setup_acceptance_session(env, session_dir):
         .build()
     ).replace("Status: Unresolved", "Status: 🟢")
 
-    env.workspace.joinpath(f"{session_dir}/03/plan.md").write_text(
-        turn_03_plan, encoding="utf-8"
-    )
+    env.workspace.joinpath(f"{session_dir}/03/plan.md").write_text(turn_03_plan)
     env.workspace.joinpath(f"{session_dir}/03/report.md").write_text(
-        "# Report 3\n- **Overall Status:** Validation Failed", encoding="utf-8"
+        "# Report 3\n- **Overall Status:** Validation Failed"
     )
-    env.workspace.joinpath("README.md").write_text("Hello", encoding="utf-8")
+    env.workspace.joinpath("README.md").write_text("Hello")
 
     env.workspace.joinpath(f"{session_dir}/03/turn.context").write_text(
         f"{session_dir}/01/plan.md\n{session_dir}/01/report.md\n{session_dir}/02/plan.md\n"
-        f"{session_dir}/03/plan.md\n{session_dir}/03/report.md",
-        encoding="utf-8",
+        f"{session_dir}/03/plan.md\n{session_dir}/03/report.md"
     )
     env.workspace.joinpath(f"{session_dir}/03/meta.yaml").write_text(
-        "turn_id: '03'\nagent_name: pf", encoding="utf-8"
+        "turn_id: '03'\nagent_name: pf"
     )
     return turn_03_plan
 
