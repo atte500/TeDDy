@@ -74,3 +74,19 @@ repos:
         language: system
         types: [python]
         files: ^src/teddy_executor/core/
+
+    -   id: check-explicit-utf8
+        name: Enforce Explicit UTF-8 Encoding (Production)
+        entry: |
+          bash -c 'for f in "$@"; do
+            # Scan for read_text, write_text, or open(..., "w"/"r") missing encoding="utf-8"
+            # Excludes binary modes (rb/wb) and existing correct usages.
+            if grep -qE "(read_text|write_text)\(\)" "$f" || \
+               grep -qE "open\(.*, *[\"'"'"'][rw][^\"'"'"'b]*[\"'"'"']\)" "$f" | grep -qv "encoding="; then
+              echo "UTF-8 Compliance Violation: Missing explicit encoding=\"utf-8\" in $f"
+              exit 1
+            fi
+          done' --
+        language: system
+        types: [python]
+        files: ^src/

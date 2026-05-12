@@ -84,7 +84,7 @@ class ShellAdapter(IShellExecutor):
         reset_seq = "\x1b[?1000l\x1b[?1003l\x1b[?1049l\x1b[?25h"
         # 1. Attempt to write directly to the controlling terminal (bypasses pipes)
         try:
-            with open("/dev/tty", "w") as tty:
+            with open("/dev/tty", "w", encoding="utf-8") as tty:
                 tty.write(reset_seq)
                 tty.flush()
         except OSError:

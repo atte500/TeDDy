@@ -70,12 +70,12 @@ class LocalRepoTreeGenerator(IRepoTreeGenerator):
         gitignore_path = self.root_dir / ".gitignore"
         if gitignore_path.is_file():
             lines.append(gitignore_path.name)
-            lines.extend(gitignore_path.read_text().splitlines())
+            lines.extend(gitignore_path.read_text(encoding="utf-8").splitlines())
 
         teddyignore_path = self.root_dir / ".teddyignore"
         if teddyignore_path.is_file():
             lines.append(teddyignore_path.name)
-            lines.extend(teddyignore_path.read_text().splitlines())
+            lines.extend(teddyignore_path.read_text(encoding="utf-8").splitlines())
 
         return pathspec.PathSpec.from_lines("gitwildmatch", lines)
 
