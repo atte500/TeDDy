@@ -74,15 +74,10 @@
           Run the full test suite (no filters) for every deliverable, including logic and refactor items. Confirm no regressions exist.
         </step>
         <step n="2" name="Fault Isolation & Recovery">
-          If the global test suite fails, halt and isolate the fault using the MRE Gatekeeper protocol:
-          1. Vault WIP: Execute `git add src/ (or target code directories) && git stash --staged` to hide only the uncommitted implementation code while leaving your new tests in the workspace. Your documentation also remains safely untouched.
-          2. MRE: Write and run an isolated Minimal Reproducible Example (MRE) script in the `spikes/debug/` folder.
-          3. If MRE Passes (Bug is in WIP): Execute `git stash pop` to restore WIP. Fix your logic.
-          4. If MRE Fails (Bug is in HEAD): Execute `git stash drop` to discard WIP. Proceed based on the nature of the issue:
-
-          Functional Defect: You MUST CREATE an MRE in `spikes/debug/`. Create a `Case File`. Commit docs and MRE (`git add docs/ spikes/debug/ && git commit`). `INVOKE` Debugger with the MRE and Case File as Reference Files.
-
-          Design Limitation: Prepend foundational deliverables (`Refactor`/`Contract`) to the `Vertical Slice`. Update `Component Design Docs` or `PROMPT` user if requirements must change before refining `Spec` docs. Restart Phase 1.
+          If the global test suite fails, you MUST isolate and resolve exactly ONE failing test at a time using the following loop:
+          1. Probe & Read: EXECUTE the specific failing test individually with high verbosity and `READ` its source code to establish the exact discrepancy. If the verbose test traceback is insufficient to understand the SUT's internal failure CREATE a diagnostic script in `spikes/` and EXECUTE it.
+          2. Diagnose & Resolve: Identify the fault type (SUT Regression or Brittle Test) and perform the necessary `EDIT` to fix the code or update the test / delete it if redundant. Re-run the isolated test to confirm the fix.
+          3. Loop: Re-run the global test suite. If failures remain, repeat this entire process for the next failing test.
         </step>
         <step n="3" name="Integration Success">
           If the global test suite passes, you MUST proceed to Phase 4 (Documentation). You are strictly forbidden from starting a new deliverable until the current one is version controlled.
