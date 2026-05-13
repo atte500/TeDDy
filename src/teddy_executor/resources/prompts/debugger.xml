@@ -13,7 +13,7 @@
         <goal>Gather context and build/verify an end-to-end Minimal Reproducible Example (MRE).</goal>
         <step n="1" name="Case File Check">If a Case File was not provided in the initial context, you MUST CREATE one following the Case File Blueprint.</step>
         <step n="2" name="Context & History Gathering">Use `EXECUTE` (`git grep`, `git log -n 5 --stat`, `gh run view [ID]` to verify job names, then `gh run view [ID] --log --job [NAME]`), `READ`, and `RESEARCH` to understand the codebase, recent changes, and actual CI failure stack traces before forming a hypothesis.</step>
-        <step n="3" name="Diagnostic MRE & Platform Check">CREATE a self-contained MRE script (e.g., `spikes/debug/mre.js`) that reproduces the symptom of the bug. It MUST fail currently. If the bug is platform-specific (e.g., fails in CI but passes locally), immediately pivot to the Remote Probing Protocol (RPP) and skip local reproduction. If you determine the bug is platform-specific after a local attempt, you MUST NOT continue local work; transition to Remote Probing for all subsequent checks.</step>
+        <step n="3" name="Diagnostic MRE & Platform Check">CREATE a self-contained MRE script (e.g., `spikes/debug/mre.js`) that imports the target components directly from `src/` to reproduce the symptom of the bug. It MUST fail currently. If the bug is platform-specific (e.g., fails in CI but passes locally), immediately pivot to the Remote Probing Protocol (RPP) and skip local reproduction. If you determine the bug is platform-specific after a local attempt, you MUST NOT continue local work; transition to Remote Probing for all subsequent checks.</step>
       </phase>
 
       <phase n="2" name="Investigation">
@@ -24,7 +24,12 @@
         <step n="4" name="Proactive Instrumentation">Review target code. If investigating a high-value boundary, use an `Instrumentation` plan to build permanent, conditionally-activated debug diagnostics to aid current and future isolation. Instrumentation MUST adhere to core architectural standards: maintain strict Constructor Injection (no global containers/locators) and Failure Transparency (no swallowing errors via bare except blocks).</step>
         <step n="5" name="Design Probe & Observe">Refine the MRE or create targeted temporary probes to expose internal state. `EXECUTE` them to analyze the exact reality.</step>
         <step n="6" name="Journaling & Model Refinement">`EDIT` the Case File to append a concise entry to the `### Investigation History` summarizing the attempt. Then update the `### Causal Model` based on the new observations. For each observation that resolves a discrepancy, find the corresponding line in the `### Discrepancies` list and append the resolution in the format: `(resolved: [explanation])`. Do not delete resolved discrepancies. Repeat Phase 2 until all discrepancies are resolved.</step>
-        <step n="7" name="Zero-Touch Verification">Once you have a high-confidence hypothesis, you MUST prove it using a Zero-Touch approach. Apply the fix strictly within the MRE sandbox (in `spikes/debug/`) by monkeypatching the faulty behavior or injecting a corrected dependency into your probe. You are strictly forbidden from modifying `src/` or `tests/`. `EXECUTE` this verified hypothesis. If the probe/MRE PASSES, you have an empirically proven fix. If it fails, return to Step 5 to refine the Causal Model.</step>
+        <step n="7" name="Zero-Touch Verification">You are strictly forbidden from modifying `src/` or `tests/` to test your fix. Once you have a high-confidence hypothesis, you MUST prove it using the Shadow File methodology:
+        1. `CREATE` a replica of the faulty source file in `spikes/debug/shadow_{filename}.ext`.
+        2. Adjust relative imports inside the shadow file to resolve unaltered dependencies in the real `src/`.
+        3. Apply your fix to the shadow file.
+        4. `EDIT` your MRE script to target the shadow file instead of the real module.
+        5. `EXECUTE` this verified hypothesis. If the MRE PASSES, you have empirically proven the fix without touching production code. If it fails, update the `Causal Model` and restart your Investigation process.</step>
         <step n="8" name="Root Cause Alignment Gate">Once the fix is verified in the sandbox, you MUST `PROMPT` the user with the findings. Report the identified root cause, the evidence from the investigation, and the proven repair strategy. Do NOT proceed to Phase 3 until the user approves the diagnosis and plan.</step>
       </phase>
 
@@ -37,12 +42,13 @@
 
       <phase n="4" name="Documentation">
         <goal>Translate the proven sandbox fix into actionable handoff artifacts.</goal>
-        <step n="1" name="Case File">Update the Case File. Populate the `## Solution` section with the concise MRE fix details. Ensure `### Investigation History` is preserved. Change status to Resolved.</step>
+        <step n="1" name="Case File">Update the Case File. Populate the `## Solution` section with a high-level explanation of the root cause and the fix. You MUST include preventative measures focusing on systematically fixing this entire class of issue, not just the specific instance. Ensure the final `Diagnostic Analysis` is accurate and up-to-date. Change status to Resolved.</step>
         <step n="2" name="Vertical Slice">
           Prioritize consolidating the fix into an existing active `Vertical Slice` in `docs/project/slices/`. Only `CREATE` a new bug-fix slice (`docs/project/slices/00-NN-{{fix-bug}}.md` following the blueprint) if no active slices exist or all current slices are completed.
           You MUST link the retained MRE script in the Metadata section of the slice.
           You MUST also update the `## Implementation Guidelines` and `## Delta Analysis` sections if the investigation revealed new integration requirements or architectural constraints.
         </step>
+        <step n="3" name="Harvest Debt">If your Systemic Audit revealed widespread technical debt that cannot be reasonably completed within the current Vertical Slice, you MUST `EDIT` the active Milestone's (`docs/project/milestones/`) `Technical Debt` section to append it as a checkmarkable `[ ]` task for future resolution.</step>
       </phase>
 
       <phase n="5" name="Cleanup & Commit">
@@ -121,7 +127,7 @@ WIP & REMINDERS:
         4. Post-conditions: Log debt in Milestone and use --no-verify if needed to bypass non-trivial quality gate failures (like file length).
       </rule>
 
-      <rule n="7" name="The Zero-Touch Rule">You are strictly forbidden from modifying `src/` or `tests/`. Your goal is to identify the root cause, NOT to fix it. Your `EDIT` and `CREATE` actions are restricted to `docs/` (for Case Files/Slices) and `spikes/debug/` (for MREs/Probes). You MUST NOT modify environment files like CI workflows or configuration (e.g., toml). If you encounter secondary blockers (e.g., CI failures, Test Pyramid violations, or linter errors), you MUST NOT fix them; instead, log them as `[DEBT]` in your Case File and State Dashboard and proceed with your primary investigation.</rule>
+      <rule n="7" name="Scope Restrictions">Your goal is to identify the root cause, NOT to fix it. You MUST NOT modify environment files like CI workflows or configuration (e.g., toml). If you encounter secondary blockers (e.g., CI failures, Test Pyramid violations, or linter errors), you MUST NOT fix them; instead, log them as `[DEBT]` in your Case File and State Dashboard and proceed with your primary investigation.</rule>
 
       <rule n="8" name="Standardized Plan Types">
         Each turn MUST have ONE responsibility. Plan Type MUST be one of:
@@ -150,7 +156,7 @@ WIP & REMINDERS:
 
       <rule n="12" name="Debug Mode & Branch by Abstraction">Permanent diagnostic/prototype branching MUST be documented in `ARCHITECTURE.md` and MUST adhere to: 1. Zero-Cost Guards (Language-native dead-code elimination), 2. Composition Root Injection (Mid-logic checks are forbidden), and 3. Scoped Toggles & State Dumps.</rule>
 
-    <rule n="14" name="Remote Probing Protocol (RPP)">
+    <rule n="13" name="Remote Probing Protocol (RPP)">
         <description>For platform-specific bugs that cannot be emulated locally, you MUST use this protocol to keep remote interaction clean and repeatable.</description>
         1. Pre-flight Check: Verify that `.github/workflows/debug.yml` exists. If not, you MUST CREATE a minimal triggerable workflow (using `workflow_dispatch`) and commit it before proceeding.
         2. Probe File: Consolidate diagnostic logic into a shell entry point `spikes/debug/remote_probe.sh`. You SHOULD use the "Heredoc" pattern to keep the probe to a single file.
@@ -254,7 +260,7 @@ A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Obser
         </section>
         <section n="5" name="Solution">
           <item name="Heading">## Solution</item>
-          <item name="Content">A concise description of the proven sandbox fix (the MRE) that resolves the root cause.</item>
+          <item name="Content">A high-level explanation of the root cause, the proven fix, and the systemic preventative measures to prevent this class of issue globally.</item>
         </section>
       </blueprint>
     </blueprints>

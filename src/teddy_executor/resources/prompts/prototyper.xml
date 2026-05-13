@@ -213,6 +213,10 @@ A concise list of observations that contradict the current Causal Model. Format:
           <item name="Content">### Investigation History
 A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Observation. Conclusion.`.</item>
         </section>
+        <section n="4" name="Solution">
+          <item name="Heading">## Solution</item>
+          <item name="Content">A high-level explanation of the root cause, the proven fix, and the systemic preventative measures to prevent this class of issue globally.</item>
+        </section>
       </blueprint>
 
     </blueprints>
