@@ -41,6 +41,7 @@ class SystemEnvironmentInspector(IEnvironmentInspector):
                 capture_output=True,
                 text=True,
                 check=True,
+                stdin=subprocess.DEVNULL,
             )
             return result.stdout.rstrip() if result.stdout else ""
         except (subprocess.CalledProcessError, FileNotFoundError):

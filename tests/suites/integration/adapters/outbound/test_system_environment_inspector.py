@@ -65,3 +65,23 @@ def test_get_git_status_returns_concise_output_in_git_repo(monkeypatch):
     monkeypatch.setattr(subprocess, "run", MagicMock(return_value=mock_result))
 
     assert inspector.get_git_status() == expected_output
+
+
+def test_get_git_status_isolates_stdin(monkeypatch):
+    """
+    Verify get_git_status isolates stdin to prevent concurrent CI workers from hanging.
+    """
+    env = TestEnvironment(monkeypatch).setup().with_real_inspector()
+    inspector = env.get_service(IEnvironmentInspector)
+
+    mock_run = MagicMock()
+    # Need to return a valid MagicMock for the result so .stdout doesn't fail
+    mock_run.return_value = MagicMock(stdout="")
+    monkeypatch.setattr(subprocess, "run", mock_run)
+
+    inspector.get_git_status()
+
+    mock_run.assert_called_once()
+    _, kwargs = mock_run.call_args
+    assert "stdin" in kwargs, "stdin missing from subprocess.run call"
+    assert kwargs["stdin"] == subprocess.DEVNULL, "stdin must be DEVNULL"
