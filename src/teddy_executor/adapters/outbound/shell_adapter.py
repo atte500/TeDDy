@@ -207,6 +207,7 @@ class ShellAdapter(IShellExecutor):
                     shell=use_shell,
                     cwd=cwd,
                     env=env,
+                    stdin=subprocess.DEVNULL,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
                     start_new_session=True,
