@@ -23,6 +23,7 @@ class SystemEnvironmentAdapter(ISystemEnvironment):
             # We don't wait for the result
             subprocess.Popen(  # nosec B603
                 args,
+                stdin=subprocess.DEVNULL,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 start_new_session=True,
@@ -30,7 +31,7 @@ class SystemEnvironmentAdapter(ISystemEnvironment):
             return
 
         try:
-            subprocess.run(args, check=check)  # nosec B603
+            subprocess.run(args, check=check, stdin=subprocess.DEVNULL)  # nosec B603
         finally:
             # Emergency TTY restore for Darwin/Linux.
             # We guard against running during tests to prevent SIGTTOU hangs in CI workers.

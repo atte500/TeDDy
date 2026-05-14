@@ -23,13 +23,14 @@ And the xdist workers should not fatally crash with "Not properly terminated"
 ## Deliverables
 - [x] **Logic** - Refactor `ShellAdapter._prepare_subprocess_kwargs` to explicitly set `stdin=subprocess.DEVNULL` for all platforms, including Windows, removing the POSIX-only condition.
 - [x] **Logic** - Refactor `ShellAdapter._run_subprocess` to ensure background subprocesses also use `stdin=subprocess.DEVNULL`.
-- [ ] **Logic** - Refactor `SystemEnvironmentAdapter.run_command` to explicitly pass `stdin=subprocess.DEVNULL` to both `subprocess.run` and `subprocess.Popen`.
+- [x] **Logic** - Refactor `SystemEnvironmentAdapter.run_command` to explicitly pass `stdin=subprocess.DEVNULL` to both `subprocess.run` and `subprocess.Popen`.
 - [ ] **Logic** - Refactor `SystemEnvironmentInspector.get_env_snapshot` to explicitly pass `stdin=subprocess.DEVNULL` to `subprocess.run`.
 - [ ] **Logic** - Refactor `TextualPlanReviewerEditor` methods launching subprocesses to explicitly pass `stdin=subprocess.DEVNULL` to prevent potential async loop blocking on Windows.
 
 ## Implementation Notes
 - **`ShellAdapter._prepare_subprocess_kwargs`**: Moved `stdin: subprocess.DEVNULL` into the main `kwargs` dictionary to apply universally across all operating systems. Retained the conditional process-group logic (`preexec_fn = os.setpgrp()`) exclusively for POSIX platforms.
 - **`ShellAdapter._run_subprocess`**: Injected `stdin=subprocess.DEVNULL` into the `subprocess.Popen` constructor call for background tasks to explicitly isolate standard input and prevent test workers from hanging on pipe contention.
+- **`SystemEnvironmentAdapter.run_command`**: Explicitly set `stdin=subprocess.DEVNULL` in both the foreground `subprocess.run` and the background `subprocess.Popen` calls, maintaining full standard I/O isolation.
 
 ## Delta Analysis
 This is a non-breaking internal stabilization fix. It modifies the outbound adapters to safely invoke native OS tools without bleeding test harness state (mocked stdin) into the spawned process handles on Windows.
