@@ -12,7 +12,7 @@
       <phase n="1" name="Reproduction">
         <goal>Gather context and build/verify an end-to-end Minimal Reproducible Example (MRE).</goal>
         <step n="1" name="Case File Check">If a Case File was not provided in the initial context, you MUST CREATE one following the Case File Blueprint.</step>
-        <step n="2" name="Context & History Gathering">Use `EXECUTE` (`git grep`, `git log -n 5 --stat`, `gh run view [ID]` to verify job names, then `gh run view [ID] --log --job [NAME]`), `READ`, and `RESEARCH` to understand the codebase, recent changes, and actual CI failure stack traces before forming a hypothesis.</step>
+        <step n="2" name="Context & History Gathering">Use `EXECUTE` (`git grep`, `git log -n 5 --stat`, `gh run view [ID]` to verify job names, then `gh run view [ID] --log --job [NAME] | awk '{pos=index($0, "Z "); if(pos>0) print substr($0, pos+2); else print $0}'`), `READ`, and `RESEARCH` to understand the codebase, recent changes, and actual CI failure stack traces before forming a hypothesis.</step>
         <step n="3" name="Diagnostic MRE & Platform Check">CREATE a self-contained MRE script (e.g., `spikes/debug/mre.js`) that imports the target components directly from `src/` to reproduce the symptom of the bug. It MUST fail currently. If the bug is platform-specific (e.g., fails in CI but passes locally), immediately pivot to the Remote Probing Protocol (RPP) and skip local reproduction. If you determine the bug is platform-specific after a local attempt, you MUST NOT continue local work; transition to Remote Probing for all subsequent checks.</step>
       </phase>
 
@@ -157,33 +157,25 @@ WIP & REMINDERS:
       <rule n="12" name="Debug Mode & Branch by Abstraction">Permanent diagnostic/prototype branching MUST be documented in `ARCHITECTURE.md` and MUST adhere to: 1. Zero-Cost Guards (Language-native dead-code elimination), 2. Composition Root Injection (Mid-logic checks are forbidden), and 3. Scoped Toggles & State Dumps.</rule>
 
     <rule n="13" name="Remote Probing Protocol (RPP)">
-        <description>For platform-specific bugs that cannot be emulated locally, you MUST use this protocol to keep remote interaction clean and repeatable.</description>
+        <description>For CI/platform-specific bugs that cannot be probed locally.</description>
         1. Pre-flight Check: Verify that `.github/workflows/debug.yml` exists. If not, you MUST CREATE a minimal triggerable workflow (using `workflow_dispatch`) and commit it before proceeding.
         2. Probe File: Consolidate diagnostic logic into a shell entry point `spikes/debug/remote_probe.sh`. You SHOULD use the "Heredoc" pattern to keep the probe to a single file.
         3. Execution: You MUST execute the following standardized codeblock to EXECUTE with a 300s Timeout in order to push the probe, trigger the mailbox, and retrieve distilled results:
-           ~~~~~~shell
-           # 1. Commit and push the probe code only
-           git add spikes/debug/remote_probe.sh
-           git commit -m 'debug: remote probe' --no-verify
-           git push
+        ~~~~~~shell
+        # 1. Commit and push the probe code only
+        git add spikes/debug/<file> && git commit -m 'debug: probe' --no-verify && git push
 
-           # 2. Trigger the remote workflow
-           gh workflow run debug.yml --field reason='[Reason for probe]'
+        # 2. Trigger the remote workflow
+        gh workflow run <workflow.yml> --field reason='[Reason]'
 
-           # 3. Wait for registration and watch execution
-           sleep 10
-           RUN_ID=$(gh run list --workflow debug.yml --limit 1 --json databaseId --jq '.[0].databaseId')
-           gh run watch $RUN_ID
+        # 3. Wait for registration and watch
+        sleep 10
+        RUN_ID=$(gh run list -w <workflow.yml> -L 1 --json databaseId -q '.[0].databaseId')
+        gh run watch $RUN_ID
 
-           # 4. Retrieve Distilled Logs
-           gh run view $RUN_ID --json jobs --jq '.jobs[] | {name, databaseId}' | jq -c '.' | while read -r job; do
-             NAME=$(echo "$job" | jq -r '.name')
-             ID=$(echo "$job" | jq -r '.databaseId')
-             echo "--- Job: $NAME ---"
-             gh run view --job "$ID" --log | awk '/##\[group\]remote_probe/{p=1;next} /##\[endgroup\]/{p=0} p{pos=index($0, "Z "); if(pos>0) print substr($0, pos+2); else print $0}'
-             echo ""
-           done
-           ~~~~~~
+        # 4. Retrieve Logs
+        gh run view $RUN_ID --log | awk '{pos=index($0, "Z "); if(pos>0) print substr($0, pos+2); else print $0}'
+        ~~~~~~
         4. Timeout Recovery: If the execution times out or `gh run view` reports the run is still in progress, EXECUTE step 3 and 4 of the execution block again using the `RUN_ID` from your history until ensuring you've set the Timeout action parameter.
       </rule>
 
