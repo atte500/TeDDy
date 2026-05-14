@@ -1,26 +1,15 @@
 #!/bin/bash
-set -e
+echo "Starting Remote Probe..."
 
-echo "##[group]remote_probe"
-echo "--- System Memory Info ---"
-free -m
+# Disable xdist (-n 0) and run the test 10 times.
+# We also print the timeout just in case.
+for i in {1..10}; do
+    echo "Run $i..."
+    # --timeout=15 to override the 5s timeout, to see if it just needs more time
+    poetry run pytest tests/suites/acceptance/test_session_resume_robustness.py::test_resume_auto_detects_latest_session -n 0 -vv -s --timeout=15 || {
+        echo "Crash detected on run $i!"
+        exit 1
+    }
+done
 
-echo ""
-echo "--- Attempting to allocate 6GB RAM ---"
-# Use python to safely allocate memory and hold it
-python3 -c "
-import time
-try:
-    data = bytearray(6 * 1024 * 1024 * 1024)
-    print('Successfully allocated 6GB')
-    time.sleep(5)
-except MemoryError:
-    print('Failed to allocate 6GB: MemoryError')
-except Exception as e:
-    print(f'Failed with error: {e}')
-" || echo "Process exited with code $?"
-
-echo ""
-echo "--- Final Memory State ---"
-free -m
-echo "##[endgroup]"
+echo "Probe completed successfully."
