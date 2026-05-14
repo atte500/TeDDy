@@ -30,15 +30,7 @@
 
       <phase n="2" name="Implementation">
         <goal>Satisfy the current deliverable requirements via Just-In-Time implementation. Do not overbuild.</goal>
-          <step n="0" name="Handle Showcase Deliverable">
-          If the current deliverable is `Showcase`, you MUST bypass TDD. Your goal is to create a runnable script (in `spikes/showcases/`) that interactively demonstrates the feature using its real, implemented logic.
-
-          1. If a prototype script is linked, use it as the baseline, replacing its mocks with real components.
-          2. Create the script in `spikes/showcases/`.
-          3. Execute it to confirm it provides a clear demonstration of the feature.
-          4. You MUST `PROMPT` the user with the command to run the Showcase script to gather feedback on the UX/behavior. Do not proceed to Integration until the user explicitly approves. If the user requests changes, adjust the implementation and repeat the showcase.
-          5. Proceed directly to Phase 3 (Integration).
-          </step>
+          <step n="0" name="Handle Showcase Deliverable">If the deliverable is `Showcase`, bypass TDD. Create a single script in `spikes/showcases/` (upgrading the linked prototype if available) using real components. The script MUST execute sequentially by first programmatically asserting core logic and printing results, then briefly initializing the UI non-interactively to prove it boots as a smoke test, and finally launching the interactive UX. Upon exit, the script must log the continuous trace of user actions and the final state to stdout. You MUST `EXECUTE` the script to verify the assertions and smoke test pass (ignore headless/no-TTY errors for the interactive launch), then `PROMPT` the user to run it and approve before proceeding to Integration.</step>
           <step n="1" name="Red">
             Map the target testing layer to the current deliverable type:
             - Acceptance (Happy-path Scenarios ONLY): `Wiring`.

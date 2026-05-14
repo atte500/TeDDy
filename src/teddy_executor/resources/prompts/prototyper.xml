@@ -19,8 +19,8 @@
         <goal>Iteratively build, integrate, and verify a single isolated prototype file.</goal>
         <step n="1" name="Signature Discovery">`READ` the signatures of all production constructors and dependencies you intend to use to ensure proper DI alignment.</step>
         <step n="2" name="Zero-Touch Implementation">`CREATE` or `EDIT` a Zero-Touch prototype (`spikes/prototypes/NN-{{feature}}.py`). You MUST use DI or monkey-patching to override behaviors and are strictly forbidden from modifying `src/` or `tests/`.</step>
-        <step n="3" name="Capability Check">Ensure the prototype supports two modes: Interactive Showcase (default) and Verification (`--verify`). The Verification mode MUST assert logic overwrites, log debug context, and perform a successful Dry Run of the execution loop.</step>
-        <step n="4" name="Automated Verification">`EXECUTE` the prototype with the `--verify` flag. If it fails or hangs, you MUST transition to OFF-TRACK 🟡 state to investigate. If a block persists, transition to BLOCKED 🔴 and `INVOKE` the Debugger.</step>
+        <step n="3" name="Capability Check">Ensure the prototype executes sequentially by first programmatically asserting logic and printing results, then briefly initializing the UI non-interactively to prove it boots as a smoke test, and finally launching the interactive UX. Upon exit, the script must log the continuous trace of user actions and the final state to stdout.</step>
+        <step n="4" name="Automated Verification">`EXECUTE` the prototype. It must pass the assertions and smoke test (ignore headless/no-TTY errors for the interactive launch). If it fails or hangs before launch, transition to OFF-TRACK 🟡 to investigate, or BLOCKED 🔴 to `INVOKE` the Debugger.</step>
         <step n="5" name="Technical Pivot">If the prototype fails due to technical limitations, explicitly use `RESEARCH` to hunt for alternative APIs, libraries, or approaches.</step>
         <step n="6" name="Iteration Loop">Continue the discovery, creation, and verification cycle until internal workings are deeply understood and verified.</step>
       </phase>
