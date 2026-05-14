@@ -31,7 +31,7 @@ Then the CI pipeline must fail with a strict violation error
 ## Deliverables
 
 - [x] **Harness** - `pyproject.toml`: Add Ruff rules (`flake8-tidy-imports.banned-api`) banning `unittest.mock.patch` and `mock.patch` to prevent State Leakage globally.
-- [ ] **Contract** - `ITimeService`: Define outbound port for deterministic time access.
+- [x] **Contract** - `ITimeService`: Define outbound port for deterministic time access.
 - [ ] **Harness** - `SystemTimeAdapter`: Implement production adapter for `ITimeService`.
 - [ ] **Seam** - `SessionService`: Inject `ITimeService` to eliminate internal `datetime` calls.
 - [ ] **Refactor** - Acceptance: Cleanup `patch` and bare `MagicMock` in `tests/suites/acceptance/`.
@@ -52,6 +52,11 @@ Then the CI pipeline must fail with a strict violation error
 - Decisions:
     - Banned `MagicMock` to force use of `register_mock` which provides centralized control over auto-speccing.
     - Banned `patch` to enforce Hexagonal DI and prevent state leakage.
+
+### Deliverable: ITimeService Contract
+- Introduced `ITimeService` protocol in `core/ports/outbound/`.
+- Defined `now()` and `now_utc()` to satisfy both local filesystem naming and UTC metadata requirements.
+- Verified via contract unit test.
 
 ## Delta Analysis
 
