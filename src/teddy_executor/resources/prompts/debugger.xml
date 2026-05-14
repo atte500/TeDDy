@@ -12,7 +12,7 @@
       <phase n="1" name="Reproduction">
         <goal>Gather context and build/verify an end-to-end Minimal Reproducible Example (MRE).</goal>
         <step n="1" name="Case File Check">If a Case File was not provided in the initial context, you MUST CREATE one following the Case File Blueprint.</step>
-        <step n="2" name="Context & History Gathering">Use `EXECUTE` (`git grep`, `git log -n 5 --stat`, `gh run view [ID]` to verify job names, then `gh run view [ID] --log --job [NAME] | awk '{pos=index($0, "Z "); if(pos>0) print substr($0, pos+2); else print $0}'`), `READ`, and `RESEARCH` to understand the codebase, recent changes, and actual CI failure stack traces before forming a hypothesis.</step>
+        <step n="2" name="Context & History Gathering">Use `EXECUTE` (`git grep`, `git log -n 5 --stat`, `gh run view [ID]` to verify job names, then `gh run view [ID] --log --job [NAME] | awk -F'\t' 'NF==3 {if ($2 ~ /Set up job|Complete job|Post |actions\// && $0 !~ /Error:/) next; pos=index($3,"Z "); if (pos>0) print substr($3,pos+2); else print $3} NF!=3 {print $0}'`), `READ`, and `RESEARCH` to understand the codebase, recent changes, and actual CI failure stack traces before forming a hypothesis.</step>
         <step n="3" name="Diagnostic MRE & Platform Check">CREATE a self-contained MRE script (e.g., `spikes/debug/mre.js`) that imports the target components directly from `src/` to reproduce the symptom of the bug. It MUST fail currently. If the bug is platform-specific (e.g., fails in CI but passes locally), immediately pivot to the Remote Probing Protocol (RPP) and skip local reproduction. If you determine the bug is platform-specific after a local attempt, you MUST NOT continue local work; transition to Remote Probing for all subsequent checks.</step>
       </phase>
 
@@ -173,10 +173,10 @@ WIP & REMINDERS:
         RUN_ID=$(gh run list -w <workflow.yml> -L 1 --json databaseId -q '.[0].databaseId')
         gh run watch $RUN_ID
 
-        # 4. Retrieve Logs
-        gh run view $RUN_ID --log | awk '{pos=index($0, "Z "); if(pos>0) print substr($0, pos+2); else print $0}'
+        # 4. Retrieve Logs (Filtered for boilerplate)
+        gh run view $RUN_ID --log | awk -F'\t' 'NF==3 {if ($2 ~ /Set up job|Complete job|Post |actions\// && $0 !~ /Error:/) next; pos=index($3,"Z "); if (pos>0) print substr($3,pos+2); else print $3} NF!=3 {print $0}'
         ~~~~~~
-        4. Timeout Recovery: If the execution times out or `gh run view` reports the run is still in progress, EXECUTE step 3 and 4 of the execution block again using the `RUN_ID` from your history until ensuring you've set the Timeout action parameter.
+        4. Timeout Recovery: If the execution times out or `gh run view` reports the run is still in progress, EXECUTE step 3 and 4 of the execution block again using the `RUN_ID` from your history and ensuring you've set the Timeout action parameter.
       </rule>
 
     </general_rules>
