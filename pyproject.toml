@@ -56,9 +56,17 @@ line-length = 88
 exclude = ["spikes/"]
 
 [tool.ruff.lint]
-# Enable Pyflakes (F), Pycodestyle (E, W), Pylint Refactor (PLR), and McCabe complexity (C90)
-select = ["F", "E", "W", "C901", "PLR"]
+# Enable Pyflakes (F), Pycodestyle (E, W), Pylint Refactor (PLR), McCabe complexity (C90), and Tidy Imports (TID)
+select = ["F", "E", "W", "C901", "PLR", "TID"]
 ignore = ["E501"]
+
+[tool.ruff.lint.flake8-tidy-imports]
+# Ban unittest.mock.patch to prevent state leakage and encourage DI
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"unittest.mock.patch".msg = "Use Constructor Injection or the Test Harness instead of global patching."
+"mock.patch".msg = "Use Constructor Injection or the Test Harness instead of global patching."
+"unittest.mock.MagicMock".msg = "Use tests.harness.setup.mocking.register_mock (which auto-specs) instead of bare MagicMocks."
+"mock.MagicMock".msg = "Use tests.harness.setup.mocking.register_mock (which auto-specs) instead of bare MagicMocks."
 
 [tool.ruff.lint.per-file-ignores]
 # Ignore magic values in tests

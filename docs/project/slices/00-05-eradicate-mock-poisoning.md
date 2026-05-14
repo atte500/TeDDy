@@ -30,8 +30,12 @@ Then the CI pipeline must fail with a strict violation error
 
 ## Deliverables
 
-- [ ] **Harness** - `pyproject.toml`: Add Ruff rules (`flake8-tidy-imports.banned-api`) banning `unittest.mock.patch` and `mock.patch` to prevent State Leakage globally.
-- [ ] **Refactor** - Test Suite: Find and eliminate the 3 existing usages of `patch` / `@patch` in the tests (e.g., `test_console_interactor.py`), replacing them with proper constructor injection or fakes.
+- [x] **Harness** - `pyproject.toml`: Add Ruff rules (`flake8-tidy-imports.banned-api`) banning `unittest.mock.patch` and `mock.patch` to prevent State Leakage globally.
+- [ ] **Refactor** - Cleanup `patch` and bare `MagicMock` in `tests/suites/acceptance/`.
+- [ ] **Refactor** - Cleanup `patch` and bare `MagicMock` in `tests/suites/integration/`.
+- [ ] **Refactor** - Cleanup `patch` and bare `MagicMock` in `tests/suites/unit/adapters/`.
+- [ ] **Refactor** - Cleanup `patch` and bare `MagicMock` in `tests/suites/unit/core/`.
+- [ ] **Refactor** - Cleanup remaining `patch` in `tests/conftest.py` and `tests/harness/`.
 - [ ] **Harness** - `tests/harness/setup/mocking.py`: Refactor `register_mock` to apply `create_autospec(interface)` by default instead of a bare `MagicMock`. This systemically eliminates Signature Drift.
 - [ ] **Refactor** - `tests/harness/setup/mocking.py`: Resolve the `Mocked = Any` Type Erasure alias. Provide proper type hints (using generics `TypeVar('T')` or intersection types) so that `register_mock` returns a type that satisfies Mypy while retaining mock tracking capabilities.
 - [ ] **Refactor** - Test Suite: Run the test suite and fix any tests that break. *Note: Enforcing `create_autospec` will likely expose existing Signature Drift across the 406 mocks. Fix the test inputs/outputs to align with the real contracts.*
@@ -39,7 +43,12 @@ Then the CI pipeline must fail with a strict violation error
 
 ## Implementation Notes
 
-*(To be filled by the Developer during implementation)*
+### Deliverable: Banned API Configuration
+- Configured `TID251` in `pyproject.toml`.
+- Initial audit revealed **114** violations across the codebase (primarily bare `MagicMock` imports and `patch` context managers).
+- Decisions:
+    - Banned `MagicMock` to force use of `register_mock` which provides centralized control over auto-speccing.
+    - Banned `patch` to enforce Hexagonal DI and prevent state leakage.
 
 ## Delta Analysis
 
