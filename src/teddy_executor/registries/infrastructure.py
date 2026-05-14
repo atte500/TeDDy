@@ -12,6 +12,7 @@ def register_infrastructure(container: punq.Container) -> None:
         IRepoTreeGenerator,
         IShellExecutor,
         ISystemEnvironment,
+        ITimeService,
         IUserInteractor,
         IWebScraper,
         IWebSearcher,
@@ -37,6 +38,7 @@ def register_infrastructure(container: punq.Container) -> None:
     from teddy_executor.adapters.outbound.system_environment_inspector import (
         SystemEnvironmentInspector,
     )
+    from teddy_executor.adapters.outbound.system_time_adapter import SystemTimeAdapter
     from teddy_executor.adapters.outbound.web_scraper_adapter import WebScraperAdapter
     from teddy_executor.adapters.outbound.web_searcher_adapter import WebSearcherAdapter
     from teddy_executor.adapters.outbound.yaml_config_adapter import YamlConfigAdapter
@@ -49,6 +51,11 @@ def register_infrastructure(container: punq.Container) -> None:
     container.register(
         IEnvironmentInspector,
         factory=lambda: SystemEnvironmentInspector(),
+        scope=punq.Scope.transient,
+    )
+    container.register(
+        ITimeService,
+        factory=lambda: SystemTimeAdapter(),
         scope=punq.Scope.transient,
     )
     container.register(

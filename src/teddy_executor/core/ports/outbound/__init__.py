@@ -8,6 +8,7 @@ from .repo_tree_generator import IRepoTreeGenerator
 from .session_manager import ISessionManager
 from .shell_executor import IShellExecutor
 from .system_environment import ISystemEnvironment
+from .time_service import ITimeService
 from .user_interactor import IUserInteractor
 from .web_scraper import WebScraper as IWebScraper
 from .web_searcher import IWebSearcher
@@ -23,6 +24,7 @@ __all__ = [
     "ISessionManager",
     "IShellExecutor",
     "ISystemEnvironment",
+    "ITimeService",
     "IUserInteractor",
     "IWebScraper",
     "IWebSearcher",
