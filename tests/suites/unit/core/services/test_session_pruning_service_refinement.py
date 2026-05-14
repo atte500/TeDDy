@@ -14,6 +14,7 @@ def mock_config():
         "auto_pruning.global_context_threshold": 10000,
         "auto_pruning.prune_preceding_on_non_green": True,
         "auto_pruning.prune_validation_failures": True,
+        "auto_pruning.max_turns_retention": 25,
     }.get(key, default)
     return service
 
@@ -133,3 +134,48 @@ def test_pruning_uses_specific_validation_failure_string(service, mock_fs):
     for item in result.items:
         assert item.selected is False
         assert item.auto_prune_reason == "Plan failed validation"
+
+
+def test_pruning_applies_retention_limit(service):
+    """
+    Heuristic 6: Identify max turn_id. Prune any Turn scope item
+    where turn_id <= (max_id - retention_limit).
+    """
+    # Arrange: Max Turn 30, Limit 25 -> Prune <= 5
+    items = [
+        ContextItem(
+            path="session/01/plan.md", token_count=10, git_status="", scope="Turn"
+        ),
+        ContextItem(
+            path="session/05/plan.md", token_count=10, git_status="", scope="Turn"
+        ),
+        ContextItem(
+            path="session/06/plan.md", token_count=10, git_status="", scope="Turn"
+        ),
+        ContextItem(
+            path="session/30/plan.md", token_count=10, git_status="", scope="Turn"
+        ),
+        # System/Session items are exempt
+        ContextItem(
+            path="docs/system.md", token_count=10, git_status="", scope="System"
+        ),
+        ContextItem(
+            path="session/config.yaml", token_count=10, git_status="", scope="Session"
+        ),
+    ]
+    context = ProjectContext(items=items, header="", content="")
+
+    # Act
+    result = service.prune(context)
+
+    # Assert
+    pruned_paths = {i.path for i in result.items if not i.selected}
+    assert "session/01/plan.md" in pruned_paths
+    assert "session/05/plan.md" in pruned_paths
+    assert "session/06/plan.md" not in pruned_paths
+    assert "session/30/plan.md" not in pruned_paths
+    assert "docs/system.md" not in pruned_paths
+    assert "session/config.yaml" not in pruned_paths
+
+    t1 = next(i for i in result.items if "01" in i.path)
+    assert t1.auto_prune_reason == "Turn exceeds retention limit of 25"

@@ -40,7 +40,10 @@ class SessionPruningService:
                 if new_item is not item:
                     items[i] = new_item
 
-            # 2. Heuristic 2: Global Budget
+            # 2. Heuristic 6: Retention Limit
+            items = self._apply_retention_limit(items)
+
+            # 3. Heuristic 2: Global Budget
             items = self._apply_global_budget(items)
 
             return replace(context, items=items)
@@ -176,6 +179,51 @@ class SessionPruningService:
                         )
 
         return turns_to_prune
+
+    def _apply_retention_limit(self, items):
+        """Prunes turn context items that exceed the turn retention limit."""
+        try:
+            setting = self._config_service.get_setting(
+                "auto_pruning.max_turns_retention", 0
+            )
+            limit = int(setting) if setting is not None else 0
+        except (TypeError, ValueError):
+            limit = 0
+
+        if limit <= 0:
+            return items
+
+        # 1. Identify max turn_id
+        max_id = -1
+        turn_id_map = {}  # idx -> int_id
+
+        for i, item in enumerate(items):
+            if item.scope != "Turn":
+                continue
+
+            # Use existing extractor
+            tid_str = self._extract_turn_id(item.path)
+            if tid_str:
+                tid = int(tid_str)
+                turn_id_map[i] = tid
+                max_id = max(max_id, tid)
+
+        if max_id == -1:
+            return items
+
+        # 2. Calculate threshold and prune
+        threshold = max_id - limit
+        reason = f"Turn exceeds retention limit of {limit}"
+
+        for idx, tid in turn_id_map.items():
+            if tid <= threshold:
+                items[idx] = replace(
+                    items[idx],
+                    selected=False,
+                    auto_prune_reason=reason,
+                )
+
+        return items
 
     def _apply_global_budget(self, items):
         """Prunes turn context items to fit within a global token budget."""

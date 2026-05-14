@@ -62,8 +62,8 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 - [x] **Cleanup (Refinement)** - Remove individual token threshold logic and related config keys.
 - [x] **Logic (Refinement)** - Normalize slashes in `is_path_in_context` to support Windows paths.
 - [x] **Logic (Refinement)** - Update `_extract_resource_path` in `SessionService` to normalize extracted paths.
-- [ ] **Logic (Refinement)** - Implement `_apply_retention_limit` in `SessionPruningService` (Default: 25).
-- [ ] **Contract** - Add `max_turns_retention: 25` to `config.yaml`.
+- [x] **Logic (Refinement)** - Implement `_apply_retention_limit` in `SessionPruningService` (Default: 25).
+- [x] **Contract** - Add `max_turns_retention: 25` to `config.yaml`.
 - [ ] **Showcase** - Create `showcases/00-04/showcase_heuristics.sh` to demonstrate failure-streak preservation, post-green cleanup, and retention limits.
 
 ## Implementation Notes
@@ -171,6 +171,12 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 - Applied `replace("\\", "/")` to both Markdown link matches and raw string fallbacks.
 - Ensured leading slashes are stripped consistently post-normalization.
 - Added granular unit tests in `tests/suites/unit/core/services/test_session_service_extraction.py`.
+
+### Logic (Refinement) - Implement _apply_retention_limit in SessionPruningService
+- Implemented `_apply_retention_limit` using the existing `_extract_turn_id` helper.
+- The heuristic identifies the maximum Turn ID present in the context and prunes any items with `Turn` scope where `turn_id <= (max_id - retention_limit)`.
+- Added `max_turns_retention: 25` to the bundled `config.yaml`.
+- Verified via unit tests that System and Session scoped items are strictly exempt from this limit.
 
 ## Technical Debt
 - **[DEBT]** Harness Complexity: `without_reviewer()` in `TestEnvironment` is a manual container re-wiring. Consider a more robust `interactive_mode` configuration (e.g., `"tui" | "console"`) for the harness to toggle between `IPlanReviewer` and `IUserInteractor` cleanly.
