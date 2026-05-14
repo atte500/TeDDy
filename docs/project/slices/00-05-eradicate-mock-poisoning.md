@@ -35,7 +35,7 @@ Then the CI pipeline must fail with a strict violation error
 - [x] **Harness** - `SystemTimeAdapter`: Implement production adapter for `ITimeService`.
 - [x] **Seam** - `SessionService`: Inject `ITimeService` to eliminate internal `datetime` calls.
 - [x] **Refactor** - Acceptance: Cleanup `patch` and bare `MagicMock` in `tests/suites/acceptance/` related to `SessionService` time.
-- [ ] **Refactor** - Integration: Cleanup `patch` and bare `MagicMock` in `tests/suites/integration/`.
+- [x] **Refactor** - Integration: Cleanup `patch` and bare `MagicMock` in `tests/suites/integration/`.
 - [ ] **Refactor** - Unit Adapters: Cleanup `patch` and bare `MagicMock` in `tests/suites/unit/adapters/`.
 - [ ] **Refactor** - Unit Core: Cleanup `patch` and bare `MagicMock` in `tests/suites/unit/core/`.
 - [ ] **Refactor** - Harness: Cleanup remaining `patch` in `tests/conftest.py` and `tests/harness/`.

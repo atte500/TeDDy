@@ -10,11 +10,17 @@ from teddy_executor.core.ports.outbound.environment_inspector import (
 )
 
 
+from typing import Any, Callable
+
+
 class SystemEnvironmentInspector(IEnvironmentInspector):
     """
     An adapter that inspects the real system environment using standard
     Python libraries.
     """
+
+    def __init__(self, run_func: Optional[Callable[..., Any]] = None):
+        self._run_func = run_func or subprocess.run
 
     def get_environment_info(self) -> dict[str, str]:
         """
@@ -36,7 +42,7 @@ class SystemEnvironmentInspector(IEnvironmentInspector):
         Gathers the current Git status of the working directory.
         """
         try:
-            result = subprocess.run(  # nosec B603 B607
+            result = self._run_func(  # nosec B603 B607
                 ["git", "status", "-s"],
                 capture_output=True,
                 text=True,

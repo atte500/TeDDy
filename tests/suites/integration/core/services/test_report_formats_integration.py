@@ -1,5 +1,8 @@
 import textwrap
-from unittest.mock import patch
+from tests.harness.setup.test_environment import TestEnvironment
+from tests.harness.setup.mocking import POSIXPathMock
+from teddy_executor.core.ports.outbound import IWebSearcher
+from teddy_executor.adapters.outbound.web_searcher_adapter import WebSearcherAdapter
 from typer.testing import CliRunner
 from teddy_executor.__main__ import app
 
@@ -88,14 +91,22 @@ def test_research_report_includes_hint_and_hides_raw_details(tmp_path, monkeypat
         }
     ]
 
-    with patch("ddgs.DDGS") as mock_ddgs_class:
-        mock_ddgs_instance = mock_ddgs_class.return_value.__enter__.return_value
-        mock_ddgs_instance.text.return_value = iter(mock_results)
+    # Arrange DI swap
+    env = TestEnvironment(monkeypatch, workspace=tmp_path).setup()
+    mock_instance = POSIXPathMock()
+    mock_instance.text.return_value = iter(mock_results)
+    mock_factory = POSIXPathMock()
+    mock_factory.return_value.__enter__.return_value = mock_instance
 
-        # Execute plan.
-        result = runner.invoke(
-            app, ["execute", "-y", "--no-copy", "--plan-content", plan_content]
-        )
+    # Register adapter with injected mock factory
+    env.container.register(
+        IWebSearcher, factory=lambda: WebSearcherAdapter(ddgs_factory=mock_factory)
+    )
+
+    # Execute plan.
+    result = runner.invoke(
+        app, ["execute", "-y", "--no-copy", "--plan-content", plan_content]
+    )
 
     assert result.exit_code == 0
     # Verify Hint is present (including backticks from template)

@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock
+from tests.harness.setup.mocking import POSIXPathMock
 from teddy_executor.adapters.outbound.console_tooling import ConsoleToolingHelper
 from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
 from teddy_executor.core.ports.outbound.config_service import IConfigService
@@ -7,12 +7,12 @@ from teddy_executor.core.ports.outbound.config_service import IConfigService
 
 @pytest.fixture
 def mock_env():
-    return MagicMock(spec=ISystemEnvironment)
+    return POSIXPathMock(spec=ISystemEnvironment)
 
 
 @pytest.fixture
 def mock_config():
-    return MagicMock(spec=IConfigService)
+    return POSIXPathMock(spec=IConfigService)
 
 
 @pytest.fixture

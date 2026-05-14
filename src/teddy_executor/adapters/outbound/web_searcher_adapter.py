@@ -1,5 +1,5 @@
 import logging
-from typing import Any, List
+from typing import Any, Callable, List, Optional
 from teddy_executor.core.domain.models import (
     QueryResult,
     SearchResult,
@@ -16,6 +16,9 @@ class WebSearcherAdapter(IWebSearcher):
     """
     An adapter that uses the ddgs library to perform web searches.
     """
+
+    def __init__(self, ddgs_factory: Optional[Callable[..., Any]] = None):
+        self._ddgs_factory = ddgs_factory
 
     def _apply_ddgs_monkeypatch(self) -> None:
         """Applies a structural patch to DDGS to preserve word boundaries."""
@@ -92,12 +95,13 @@ class WebSearcherAdapter(IWebSearcher):
 
         self._apply_ddgs_monkeypatch()
         all_query_results: List[QueryResult] = []
+        factory = self._ddgs_factory or DDGS
 
         # Globally disable logging (CRITICAL and below) to silence noisy
         # third-party HTTP clients (urllib3, httpx, curl_cffi) used by DDGS.
         logging.disable(logging.CRITICAL)
         try:
-            with DDGS() as ddgs_client:
+            with factory() as ddgs_client:
                 for query in queries:
                     result = self._execute_single_query(
                         ddgs_client, query, len(queries)

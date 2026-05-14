@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from tests.harness.setup.mocking import POSIXPathMock
 from teddy_executor.core.domain.models.plan import Plan, ActionData, ExecutionStatus
 from teddy_executor.core.domain.models.execution_report import ActionLog, ActionStatus
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
@@ -9,11 +9,11 @@ from teddy_executor.core.services.execution_report_assembler import (
 
 def test_orchestrator_skips_manually_executed_actions():
     # Setup
-    mock_parser = MagicMock()
-    mock_validator = MagicMock()
+    mock_parser = POSIXPathMock()
+    mock_validator = POSIXPathMock()
     mock_validator.validate.return_value = []
-    mock_executor = MagicMock()
-    mock_fs = MagicMock()
+    mock_executor = POSIXPathMock()
+    mock_fs = POSIXPathMock()
 
     orchestrator = ExecutionOrchestrator(
         plan_parser=mock_parser,
@@ -63,20 +63,20 @@ def test_orchestrator_halts_on_manual_failure():
 
     plan = Plan(title="Test", rationale="Test", actions=[failed_action, pending_action])
 
-    mock_executor = MagicMock()
+    mock_executor = POSIXPathMock()
     mock_executor.handle_skipped_action.side_effect = lambda action, reason: ActionLog(
         status=ActionStatus.SKIPPED,
         action_type=action.type,
         params=action.params,
         details=reason,
     )
-    mock_validator = MagicMock()
+    mock_validator = POSIXPathMock()
     mock_validator.validate.return_value = []
     orchestrator = ExecutionOrchestrator(
-        MagicMock(),
+        POSIXPathMock(),
         mock_validator,
         mock_executor,
-        MagicMock(),
+        POSIXPathMock(),
         ExecutionReportAssembler(),
     )
 

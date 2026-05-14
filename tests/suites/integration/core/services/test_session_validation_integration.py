@@ -1,3 +1,4 @@
+from tests.harness.setup.mocking import POSIXPathMock
 from typer.testing import CliRunner
 from teddy_executor.__main__ import app
 
@@ -37,10 +38,8 @@ def test_automated_replan_triggers_on_structure_error(
     plan_path.write_text(plan_content, encoding="utf-8")
 
     # Mock structured response
-    from unittest.mock import MagicMock
-
-    mock_response = MagicMock()
-    mock_choice = MagicMock()
+    mock_response = POSIXPathMock()
+    mock_choice = POSIXPathMock()
     mock_choice.message.content = "# Corrected\nRationale: fixed\n## Action Plan\n### READ\n- Resource: [README.md](/README.md)\n"
     mock_response.choices = [mock_choice]
     mock_response.model = "gpt-4o"
@@ -143,10 +142,8 @@ new
     plan_path.write_text(plan_content, encoding="utf-8")
 
     # Mock structured response
-    from unittest.mock import MagicMock
-
-    mock_response = MagicMock()
-    mock_choice = MagicMock()
+    mock_response = POSIXPathMock()
+    mock_choice = POSIXPathMock()
     mock_choice.message.content = "# Corrected\nRationale: fixed\n## Action Plan\n### READ\n- Resource: [README.md](/README.md)\n"
     mock_response.choices = [mock_choice]
     mock_response.model = "gpt-4o"

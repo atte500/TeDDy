@@ -42,7 +42,9 @@ class RealAdapterMixin:
             SystemEnvironmentInspector,
         )
 
-        self._container.register(IEnvironmentInspector, SystemEnvironmentInspector)
+        self._container.register(
+            IEnvironmentInspector, factory=lambda: SystemEnvironmentInspector()
+        )
         return self
 
     def with_real_tree_generator(self: Any, root_dir: str) -> Any:
@@ -87,7 +89,7 @@ class RealAdapterMixin:
             WebSearcherAdapter,
         )
 
-        self._container.register(IWebSearcher, WebSearcherAdapter)
+        self._container.register(IWebSearcher, factory=lambda: WebSearcherAdapter())
         return self
 
     def with_real_filesystem(self: Any) -> Any:

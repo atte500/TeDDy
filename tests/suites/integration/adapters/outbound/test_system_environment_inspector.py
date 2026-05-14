@@ -1,8 +1,7 @@
 import subprocess
-from unittest.mock import MagicMock
-from tests.harness.setup.test_environment import TestEnvironment
-from teddy_executor.core.ports.outbound.environment_inspector import (
-    IEnvironmentInspector,
+from tests.harness.setup.mocking import POSIXPathMock
+from teddy_executor.adapters.outbound.system_environment_inspector import (
+    SystemEnvironmentInspector,
 )
 
 
@@ -11,8 +10,7 @@ def test_get_environment_info(monkeypatch):
     Tests that the SystemEnvironmentInspector returns a dictionary with
     the expected keys and non-empty string values.
     """
-    env = TestEnvironment(monkeypatch).setup().with_real_inspector()
-    inspector = env.get_service(IEnvironmentInspector)
+    inspector = SystemEnvironmentInspector()
 
     expected_keys = {
         "os_name",
@@ -39,14 +37,12 @@ def test_get_git_status_returns_none_when_not_in_git_repo(monkeypatch):
     """
     Verify get_git_status returns None when the directory is not a git repository.
     """
-    env = TestEnvironment(monkeypatch).setup().with_real_inspector()
-    inspector = env.get_service(IEnvironmentInspector)
 
     # Mock subprocess.run to simulate 'not a git repository' error
     def mock_run(*_args, **_kwargs):
         raise subprocess.CalledProcessError(128, ["git", "status", "-s"])
 
-    monkeypatch.setattr(subprocess, "run", mock_run)
+    inspector = SystemEnvironmentInspector(run_func=mock_run)
 
     assert inspector.get_git_status() is None
 
@@ -55,14 +51,13 @@ def test_get_git_status_returns_concise_output_in_git_repo(monkeypatch):
     """
     Verify get_git_status returns the output of git status -s when in a repo.
     """
-    env = TestEnvironment(monkeypatch).setup().with_real_inspector()
-    inspector = env.get_service(IEnvironmentInspector)
-
     expected_output = " M src/main.py\n?? new_file.txt"
-    mock_result = MagicMock()
+    mock_result = POSIXPathMock()
     mock_result.stdout = expected_output
     mock_result.returncode = 0
-    monkeypatch.setattr(subprocess, "run", MagicMock(return_value=mock_result))
+    mock_run = POSIXPathMock(return_value=mock_result)
+
+    inspector = SystemEnvironmentInspector(run_func=mock_run)
 
     assert inspector.get_git_status() == expected_output
 
@@ -71,13 +66,11 @@ def test_get_git_status_isolates_stdin(monkeypatch):
     """
     Verify get_git_status isolates stdin to prevent concurrent CI workers from hanging.
     """
-    env = TestEnvironment(monkeypatch).setup().with_real_inspector()
-    inspector = env.get_service(IEnvironmentInspector)
+    mock_run = POSIXPathMock()
+    # Need to return a valid POSIXPathMock for the result so .stdout doesn't fail
+    mock_run.return_value = POSIXPathMock(stdout="")
 
-    mock_run = MagicMock()
-    # Need to return a valid MagicMock for the result so .stdout doesn't fail
-    mock_run.return_value = MagicMock(stdout="")
-    monkeypatch.setattr(subprocess, "run", mock_run)
+    inspector = SystemEnvironmentInspector(run_func=mock_run)
 
     inspector.get_git_status()
 

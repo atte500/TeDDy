@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from tests.harness.setup.mocking import POSIXPathMock
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 from teddy_executor.core.domain.models import RunStatus
@@ -24,7 +24,7 @@ def test_session_orchestrator_validation_failure_read_already_in_context(
         root_dir=str(tmp_path),
     )
     # Mock LLM to pass preflight check
-    mock_llm = MagicMock(spec=ILlmClient)
+    mock_llm = POSIXPathMock()
     mock_llm.validate_config.return_value = []
     container.register(ILlmClient, instance=mock_llm)
 
@@ -48,7 +48,7 @@ def test_session_orchestrator_validation_failure_read_already_in_context(
     # Mock LLM for planning
     planning_service = container.resolve(IPlanningUseCase)
     # The PlanningService uses generate_plan, not plan, in its implementation
-    planning_service.generate_plan = MagicMock(return_value="Corrected Plan")
+    planning_service.generate_plan = POSIXPathMock(return_value="Corrected Plan")
 
     # Ensure required turn artifacts exist for transition logic
     (turn_01_dir / "meta.yaml").write_text("turn_id: '01'\n", encoding="utf-8")
@@ -78,7 +78,7 @@ def test_session_orchestrator_validation_failure_edit_not_in_context(
         root_dir=str(tmp_path),
     )
     # Mock LLM to pass preflight check
-    mock_llm = MagicMock(spec=ILlmClient)
+    mock_llm = POSIXPathMock()
     mock_llm.validate_config.return_value = []
     container.register(ILlmClient, instance=mock_llm)
 
@@ -155,7 +155,7 @@ def test_session_orchestrator_validation_failure_prune_not_in_context(
         root_dir=str(tmp_path),
     )
     # Mock LLM to pass preflight check
-    mock_llm = MagicMock(spec=ILlmClient)
+    mock_llm = POSIXPathMock()
     mock_llm.validate_config.return_value = []
     container.register(ILlmClient, instance=mock_llm)
 

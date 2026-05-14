@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from tests.harness.setup.mocking import POSIXPathMock
 from teddy_executor.core.domain.models import ActionData
 from teddy_executor.core.ports.outbound import IUserInteractor
 from teddy_executor.core.services.action_dispatcher import ActionDispatcher
@@ -11,7 +11,7 @@ def test_prompt_action_dispatch_integration(container):
     """
     # Arrange
     # Mock the interactor to avoid blocking on stdin
-    mock_interactor = MagicMock(spec=IUserInteractor)
+    mock_interactor = POSIXPathMock()
     mock_interactor.ask_question.return_value = "Mocked Response"
     container.register(IUserInteractor, instance=mock_interactor)
 

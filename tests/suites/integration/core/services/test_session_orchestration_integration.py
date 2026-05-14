@@ -1,5 +1,5 @@
-from unittest.mock import MagicMock
 import yaml
+from tests.harness.setup.mocking import POSIXPathMock
 from typer.testing import CliRunner
 from teddy_executor.__main__ import app
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient
@@ -8,11 +8,11 @@ runner = CliRunner()
 
 
 def make_mock_response(content, model="gpt-4o"):
-    mock_response = MagicMock()
+    mock_response = POSIXPathMock()
     mock_response.model = model
-    mock_message = MagicMock()
+    mock_message = POSIXPathMock()
     mock_message.content = content
-    mock_choice = MagicMock()
+    mock_choice = POSIXPathMock()
     mock_choice.message = mock_message
     mock_response.choices = [mock_choice]
     return mock_response
@@ -112,7 +112,7 @@ def test_teddy_plan_generates_plan_file(tmp_path, monkeypatch, env):
     (turn_dir / "pathfinder.xml").write_text("system prompt", encoding="utf-8")
     (turn_dir / "meta.yaml").write_text("turn_id: '01'\n", encoding="utf-8")
 
-    mock_llm = MagicMock(spec=ILlmClient)
+    mock_llm = POSIXPathMock()
     mock_llm.validate_config.return_value = []
     mock_llm.get_completion.return_value = make_mock_response(
         "# Plan: Generated Plan\n- Status: Green 🟢"
