@@ -12,7 +12,7 @@
       <phase n="1" name="Reproduction">
         <goal>Gather context and build/verify an end-to-end Minimal Reproducible Example (MRE).</goal>
         <step n="1" name="Case File Check">If a Case File was not provided in the initial context, you MUST CREATE one following the Case File Blueprint.</step>
-        <step n="2" name="Context & History Gathering">Use `EXECUTE` (`git grep`, `git log -n 5 --stat`), `READ`, and `RESEARCH` to understand the codebase, recent changes, and historical CI failures before forming a hypothesis. For historical CI failures, do NOT try to read the entire log. You MUST first use `gh run view [ID]` to see the execution tree and identify the exact name of the failed step. Then, extract ONLY that step's logs, stripping ANSI codes and CI boilerplate, by executing: `gh run view [ID] --log --job "[JOB_NAME]" | awk -F'\t' '$2=="[FAILED_STEP_NAME]" { line=$3; gsub(/\033\[[0-9;]*[mGKH]/, "", line); if(line ~ /^##\[/) next; pos=index(line,"Z "); if(pos>0) print substr(line,pos+2); else print line }'`.</step>
+        <step n="2" name="Context & History Gathering">Use `EXECUTE` (`git grep`, `git log -n 5 --stat`), `READ`, and `RESEARCH` to understand the codebase, recent changes, and historical CI failures before forming a hypothesis. For historical CI failures, do NOT try to read the entire log. You MUST first use `gh run view [ID]` to see the execution tree and identify the exact name of the failed step. Then, extract ONLY that step's logs (stripping ANSI and boilerplate) by executing: `gh run view [ID] --log | awk -F'\t' '$2=="[FAILED_STEP_NAME]" { line=$3; pos=index(line,"Z "); if(pos>0) line=substr(line,pos+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/, "", line); gsub(/\^\[\[[0-9;]*[a-zA-Z]/, "", line); if(line ~ /^##\[group\]Run /) { skip=1; next } if(skip && line ~ /^##\[endgroup\]/) { skip=0; next } if(skip) next; if(line ~ /^##\[group\]/ || line ~ /^##\[endgroup\]/) next; gsub(/^##\[error\]/, "Error: ", line); print line }'`.</step>
         <step n="3" name="Diagnostic MRE & Platform Check">CREATE a self-contained MRE script (e.g., `spikes/debug/mre.js`) that imports the target components directly from `src/` to reproduce the symptom of the bug. It MUST fail currently. If the bug is platform-specific (e.g., fails in CI but passes locally), immediately pivot to the Remote Probing Protocol (RPP) and skip local reproduction. If you determine the bug is platform-specific after a local attempt, you MUST NOT continue local work; transition to Remote Probing for all subsequent checks.</step>
       </phase>
 
@@ -159,7 +159,7 @@ WIP & REMINDERS:
     <rule n="13" name="Remote Probing Protocol (RPP)">
         <description>For CI/platform-specific bugs that cannot be probed locally.</description>
         1. Pre-flight Check: Verify that `.github/workflows/debug.yml` exists. If not, you MUST CREATE a minimal triggerable workflow (using `workflow_dispatch`) and commit it before proceeding.
-        2. Probe File: Consolidate diagnostic logic into a shell entry point `spikes/debug/remote_probe.sh`. You MUST wrap your logic with `echo '=== PROBE_START ==='` and `echo '=== PROBE_END ==='` so the logs can be cleanly extracted. You SHOULD use the "Heredoc" pattern to keep the probe to a single file.
+        2. Probe File: Consolidate diagnostic logic into a shell entry point `spikes/debug/remote_probe.sh`. You SHOULD use the "Heredoc" pattern to keep the probe to a single file.
         3. Execution: You MUST execute the following standardized codeblock to EXECUTE with a 300s Timeout in order to push the probe, trigger the mailbox, and retrieve distilled results:
         ~~~~~~shell
         # 1. Commit and push the probe code only
@@ -173,8 +173,8 @@ WIP & REMINDERS:
         RUN_ID=$(gh run list -w <workflow.yml> -L 1 --json databaseId -q '.[0].databaseId')
         gh run watch $RUN_ID
 
-        # 4. Retrieve Probe Logs
-        gh run view $RUN_ID --log | awk -F'\t' '/=== PROBE_START ===/{flag=1; next} /=== PROBE_END ===/{flag=0; next} flag { line=(NF==3) ? $3 : $0; gsub(/\033\[[0-9;]*[mGKH]/, "", line); if(line ~ /^##\[/) next; if(NF==3) { pos=index(line,"Z "); if(pos>0) line=substr(line,pos+2); } print line }'
+        # 4. Retrieve Logs
+        gh run view $RUN_ID --log | awk -F'\t' '$2=="[STEP_NAME]" { line=$3; pos=index(line,"Z "); if(pos>0) line=substr(line,pos+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/, "", line); gsub(/\^\[\[[0-9;]*[a-zA-Z]/, "", line); if(line ~ /^##\[group\]Run /) { skip=1; next } if(skip && line ~ /^##\[endgroup\]/) { skip=0; next } if(skip) next; if(line ~ /^##\[group\]/ || line ~ /^##\[endgroup\]/) next; gsub(/^##\[error\]/, "Error: ", line); print line }'
         ~~~~~~
         4. Timeout Recovery: If the execution times out or `gh run view` reports the run is still in progress, EXECUTE step 3 and 4 of the execution block again using the `RUN_ID` from your history and ensuring you've set the Timeout action parameter.
       </rule>
