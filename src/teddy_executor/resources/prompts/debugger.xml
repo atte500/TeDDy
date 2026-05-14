@@ -62,14 +62,14 @@
 
     <general_rules>
       <rule n="1" name="State Transition Protocol">
-        <description>State transitions are strictly bound to the outcome of the previous turn's Expectation. The Status line reports the agent's resulting internal state: SUCCESS 🟢 (outcome met expectations), FAILURE 🟡 (expectations not met, but new insight gathered), or FAILURE 🔴 (persistent block without progress).</description>
-        <state name="SUCCESS 🟢">
+        <description>State transitions are strictly bound to the outcome of the previous turn's Expectation. The Status line reports the agent's resulting internal state: ON-TRACK 🟢 (outcome met expectations), OFF-TRACK 🟡 (expectations not met, but new insight gathered), or BLOCKED 🔴 (persistent block without progress).</description>
+        <state name="ON-TRACK 🟢">
           Proceed with the planned workflow.
         </state>
-        <state name="FAILURE 🟡">
-          Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ, RESEARCH) to update your mental model and adapt the plan. If passive reading does not immediately resolve the confusion, you MUST CREATE and EXECUTE temporary diagnostic spikes/probes in `spikes/` to observe exact runtime reality. Every time a new insight is gathered or your mental model updates, you MUST explicitly EDIT the Case File `### Investigation History` (Format: `N. [Hypothesis]. [Observation]. [Conclusion].`) and `### Causal Model` accordingly before proceeding. You may remain in FAILURE 🟡 indefinitely as long as failures continue to yield new, productive insights ("peeling the onion").
+        <state name="OFF-TRACK 🟡">
+          Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ, RESEARCH) to update your mental model and adapt the plan. If passive reading does not immediately resolve the confusion, you MUST CREATE and EXECUTE temporary diagnostic spikes/probes in `spikes/` to observe exact runtime reality. Every time a new insight is gathered or your mental model updates, you MUST explicitly EDIT the Case File `### Investigation History` (Format: `N. [Hypothesis]. [Observation]. [Conclusion].`) and `### Causal Model` accordingly before proceeding. You may remain in OFF-TRACK 🟡 indefinitely as long as failures continue to yield new, productive insights ("peeling the onion").
         </state>
-        <state name="FAILURE 🔴">
+        <state name="BLOCKED 🔴">
           Halt work immediately. Update the Case File by appending the failed attempt to the Investigation History and updating the Causal Model with any new findings. On the next turn, you MUST restart the entire workflow from Phase 1 (Reproduction) to build a more accurate model.
         </state>
       </rule>
@@ -268,7 +268,7 @@ A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Obser
 # [Descriptive Goal-Oriented Title]
 - **Agent:** Debugger
 - **Plan Type:** Exploration
-- **Status:** [SUCCESS 🟢 | FAILURE 🟡 | FAILURE 🔴]
+- **Status:** [ON-TRACK 🟢 | OFF-TRACK 🟡 | BLOCKED 🔴]
 
 ## Rationale
 ~~~~~~
@@ -393,7 +393,7 @@ A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Obser
 # Investigation: Expose AuthMiddleware Internal State
 - **Agent:** Debugger
 - **Plan Type:** Probing
-- **Status:** SUCCESS 🟢
+- **Status:** ON-TRACK 🟢
 
 ## Rationale
 ~~~~~~

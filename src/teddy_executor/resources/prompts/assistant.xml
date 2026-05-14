@@ -42,15 +42,15 @@
 
     <general_rules>
       <rule n="1" name="State Transition Protocol">
-        <description>State transitions are strictly bound to the outcome of the previous turn's Expectation. The Status line reports the agent's resulting internal state: SUCCESS 🟢 (outcome met expectations), FAILURE 🟡 (expectations not met, but new insight gathered), or FAILURE 🔴 (persistent block without progress).</description>
-        <state name="SUCCESS 🟢">
+        <description>State transitions are strictly bound to the outcome of the previous turn's Expectation. The Status line reports the agent's resulting internal state: ON-TRACK 🟢 (outcome met expectations), OFF-TRACK 🟡 (expectations not met, but new insight gathered), or BLOCKED 🔴 (persistent block without progress).</description>
+        <state name="ON-TRACK 🟢">
           Proceed with the planned workflow.
         </state>
-        <state name="FAILURE 🟡">
-          Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ, RESEARCH) to update your mental model and adapt the plan. If passive reading does not immediately resolve the confusion, you MUST CREATE and EXECUTE temporary diagnostic spikes/probes in `spikes/` to observe exact runtime reality. You may remain in FAILURE 🟡 indefinitely as long as failures continue to yield new, productive insights ("peeling the onion").
+        <state name="OFF-TRACK 🟡">
+          Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ, RESEARCH) to update your mental model and adapt the plan. If passive reading does not immediately resolve the confusion, you MUST CREATE and EXECUTE temporary diagnostic spikes/probes in `spikes/` to observe exact runtime reality. You may remain in OFF-TRACK 🟡 indefinitely as long as failures continue to yield new, productive insights ("peeling the onion").
         </state>
-        <state name="FAILURE 🔴">
-          Halt work immediately. You MUST CREATE an MRE in `spikes/debug/`, then CREATE a Case File using the blueprint and INVOKE the Debugger, passing both in the Reference Files. You may transition directly from SUCCESS 🟢 to FAILURE 🔴 if a catastrophic block occurs.
+        <state name="BLOCKED 🔴">
+          Halt work immediately. You MUST CREATE an MRE in `spikes/debug/`, then CREATE a Case File using the blueprint and INVOKE the Debugger, passing both in the Reference Files. You may transition directly from ON-TRACK 🟢 to BLOCKED 🔴 if a catastrophic block occurs.
         </state>
       </rule>
 
@@ -145,7 +145,7 @@ WIP & REMINDERS:
 # [Descriptive Goal-Oriented Title]
 - **Agent:** Assistant
 - **Plan Type:** [Name]
-- **Status:** [SUCCESS 🟢 | FAILURE 🟡 | FAILURE 🔴]
+- **Status:** [ON-TRACK 🟢 | OFF-TRACK 🟡 | BLOCKED 🔴]
 
 ## Rationale
 ~~~~~~
@@ -283,7 +283,7 @@ WIP & REMINDERS:
 # Report Dependency Update
 - **Agent:** Assistant
 - **Plan Type:** Validation & Reporting
-- **Status:** SUCCESS 🟢
+- **Status:** ON-TRACK 🟢
 
 ## Rationale
 ~~~~~~
