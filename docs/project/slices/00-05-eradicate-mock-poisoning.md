@@ -33,8 +33,8 @@ Then the CI pipeline must fail with a strict violation error
 - [x] **Harness** - `pyproject.toml`: Add Ruff rules (`flake8-tidy-imports.banned-api`) banning `unittest.mock.patch` and `mock.patch` to prevent State Leakage globally.
 - [x] **Contract** - `ITimeService`: Define outbound port for deterministic time access.
 - [x] **Harness** - `SystemTimeAdapter`: Implement production adapter for `ITimeService`.
-- [ ] **Seam** - `SessionService`: Inject `ITimeService` to eliminate internal `datetime` calls.
-- [ ] **Refactor** - Acceptance: Cleanup `patch` and bare `MagicMock` in `tests/suites/acceptance/`.
+- [x] **Seam** - `SessionService`: Inject `ITimeService` to eliminate internal `datetime` calls.
+- [x] **Refactor** - Acceptance: Cleanup `patch` and bare `MagicMock` in `tests/suites/acceptance/` related to `SessionService` time.
 - [ ] **Refactor** - Integration: Cleanup `patch` and bare `MagicMock` in `tests/suites/integration/`.
 - [ ] **Refactor** - Unit Adapters: Cleanup `patch` and bare `MagicMock` in `tests/suites/unit/adapters/`.
 - [ ] **Refactor** - Unit Core: Cleanup `patch` and bare `MagicMock` in `tests/suites/unit/core/`.
@@ -45,6 +45,12 @@ Then the CI pipeline must fail with a strict violation error
 - [ ] **Harness** - `pyproject.toml`: Update `[tool.mypy]` to enable `warn_return_any = true` to surface any remaining type erasure risks.
 
 ## Implementation Notes
+
+### Deliverable: SessionService ITimeService Seam
+- Injected `ITimeService` into `SessionService` via constructor.
+- Replaced `datetime.now()` with `self._time_service.now()` for session naming.
+- Replaced `datetime.now(timezone.utc)` with `self._time_service.now_utc()` for metadata.
+- Resolved 14 acceptance test regressions by replacing `unittest.mock.patch("...session_service.datetime")` with `env.mock_port(ITimeService)`. This establishes the pattern for the remaining refactor deliverables in this slice.
 
 ### Deliverable: Banned API Configuration
 - Configured `TID251` in `pyproject.toml`.

@@ -180,12 +180,25 @@ def _register_orchestration_services(container: punq.Container) -> None:
     )
     container.register(PlanningService, scope=punq.Scope.transient)
     container.register(IPlanningUseCase, PlanningService, scope=punq.Scope.transient)
+    from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
+    from teddy_executor.core.ports.outbound.time_service import ITimeService
+
     container.register(
         IInitUseCase,
         factory=lambda: InitService(container.resolve(IFileSystemManager)),
         scope=punq.Scope.transient,
     )
-    container.register(ISessionManager, SessionService, scope=punq.Scope.transient)
+
+    container.register(
+        ISessionManager,
+        factory=lambda: SessionService(
+            file_system_manager=container.resolve(IFileSystemManager),
+            repository=container.resolve(ISessionRepository),
+            time_service=container.resolve(ITimeService),
+            prompt_manager=container.resolve(IPromptManager),
+        ),
+        scope=punq.Scope.transient,
+    )
 
 
 def _register_orchestration(container: punq.Container) -> None:

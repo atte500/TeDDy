@@ -21,6 +21,12 @@ class PromptManager(IPromptManager):
         self._file_system_manager = file_system_manager
         self._user_interactor = user_interactor
 
+    def get_prompt_content(self, agent_name: str) -> Optional[str]:
+        """Synchronously retrieves the raw content of an agent prompt."""
+        from teddy_executor.prompts import find_prompt_content
+
+        return find_prompt_content(agent_name)
+
     def resolve_agent_metadata(
         self, turn_path: Path
     ) -> tuple[str, Dict[str, Any], str]:

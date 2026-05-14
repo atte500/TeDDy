@@ -1,5 +1,4 @@
 from datetime import datetime
-from unittest.mock import patch
 from pathlib import Path
 from tests.harness.drivers.cli_adapter import CliTestAdapter
 from tests.harness.setup.test_environment import TestEnvironment
@@ -25,13 +24,14 @@ def test_start_session_creates_prefixed_directory(tmp_path: Path, monkeypatch):
     llm.get_completion.return_value = mock_response(plan)
 
     # WHEN: We start a new session
-    # Using patch at the service layer where datetime is imported
-    with patch(
-        "teddy_executor.core.services.session_service.datetime"
-    ) as mock_datetime:
-        mock_datetime.now.return_value = fixed_now
-        # Use -y and -m to avoid interactive prompts in CI
-        adapter.run_cli_command(["start", session_name, "-y", "-m", "instructions"])
+    from teddy_executor.core.ports.outbound.time_service import ITimeService
+
+    mock_time = env.mock_port(ITimeService)
+    mock_time.now.return_value = fixed_now
+    mock_time.now_utc.return_value = fixed_now
+
+    # Use -y and -m to avoid interactive prompts in CI
+    adapter.run_cli_command(["start", session_name, "-y", "-m", "instructions"])
 
     # THEN: The session directory must be created with the timestamp prefix
     session_path = tmp_path / ".teddy" / "sessions" / expected_folder

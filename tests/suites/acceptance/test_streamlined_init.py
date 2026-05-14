@@ -1,5 +1,5 @@
 from datetime import datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import Mock
 from tests.harness.setup.test_environment import TestEnvironment
 from tests.harness.drivers.cli_adapter import CliTestAdapter
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
@@ -7,12 +7,12 @@ from teddy_executor.core.ports.outbound import ILlmClient
 
 
 def make_mock_response(content, model="gpt-4o"):
-    mock_response = MagicMock()
+    mock_response = Mock()
     mock_response.model = model
     mock_response.cost = 0.0
-    mock_message = MagicMock()
+    mock_message = Mock()
     mock_message.content = content
-    mock_choice = MagicMock()
+    mock_choice = Mock()
     mock_choice.message = mock_message
     mock_response.choices = [mock_choice]
     return mock_response
@@ -39,11 +39,15 @@ def test_teddy_start_triggers_planning(tmp_path, monkeypatch):
     mock_llm = env.get_service(ILlmClient)
     mock_llm.get_completion.return_value = make_mock_response(plan)
 
+    from teddy_executor.core.ports.outbound.time_service import ITimeService
+
     # Input: instructions -> confirmation for plan execution (y)
     fixed_now = datetime(2026, 4, 17, 12, 0, 0)
-    with patch("teddy_executor.core.services.session_service.datetime") as mock_dt:
-        mock_dt.now.return_value = fixed_now
-        result = adapter.run_start(["my-feature"], input="Initial instructions\ny\n")
+    mock_time = env.mock_port(ITimeService)
+    mock_time.now.return_value = fixed_now
+    mock_time.now_utc.return_value = fixed_now
+
+    result = adapter.run_start(["my-feature"], input="Initial instructions\ny\n")
 
     assert result.exit_code == 0
     plan_file = (

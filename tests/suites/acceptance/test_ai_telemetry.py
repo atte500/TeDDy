@@ -2,18 +2,18 @@ import yaml
 from pathlib import Path
 from datetime import datetime
 from teddy_executor.core.utils.string import slugify
-from unittest.mock import MagicMock, patch
+from unittest.mock import Mock
 from tests.harness.setup.test_environment import TestEnvironment
 from tests.harness.drivers.cli_adapter import CliTestAdapter
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
 
 
 def make_mock_response(content, model="gpt-4o"):
-    mock_response = MagicMock()
+    mock_response = Mock()
     mock_response.model = model
-    mock_message = MagicMock()
+    mock_message = Mock()
     mock_message.content = content
-    mock_choice = MagicMock()
+    mock_choice = Mock()
     mock_choice.message = mock_message
     mock_response.choices = [mock_choice]
     return mock_response
@@ -49,14 +49,18 @@ def test_ai_telemetry_and_logging(tmp_path, monkeypatch):
     mock_llm_client.get_token_count.return_value = 15200
     mock_llm_client.get_completion_cost.return_value = 0.04
 
+    from teddy_executor.core.ports.outbound.time_service import ITimeService
+
     # Input: Goal prompt -> Confirmation for plan execution (y)
     # Using -y to prevent the loop from consuming inputs meant for other checks
     user_input = "Developing New Feature"
     fixed_now = datetime(2026, 4, 17, 12, 0, 0)
-    with patch("teddy_executor.core.services.session_service.datetime") as mock_dt:
-        mock_dt.now.return_value = fixed_now
-        # Pass message via -m to ensure naming works in non-interactive mode (-y)
-        result = adapter.run_start(["--agent", "pathfinder", "-y", "-m", user_input])
+    mock_time = env.mock_port(ITimeService)
+    mock_time.now.return_value = fixed_now
+    mock_time.now_utc.return_value = fixed_now
+
+    # Pass message via -m to ensure naming works in non-interactive mode (-y)
+    result = adapter.run_start(["--agent", "pathfinder", "-y", "-m", user_input])
 
     assert result.exit_code == 0
     timestamp = fixed_now.strftime("%Y%m%d_%H%M%S")
@@ -97,15 +101,20 @@ def test_telemetry_persistence_across_turns(tmp_path, monkeypatch):
 
     mock_llm_client = env.get_service(ILlmClient)
     mock_llm_client.get_token_count.return_value = 5000  # 5.0k
+    from teddy_executor.core.ports.outbound.time_service import ITimeService
+
     # Turn 1
     fixed_now = datetime(2026, 4, 17, 12, 0, 0)
     plan_1 = MarkdownPlanBuilder("Turn 1").add_execute("echo 1").build()
     mock_llm_client.get_completion.return_value = make_mock_response(plan_1)
     mock_llm_client.get_completion_cost.return_value = 0.01
+
+    mock_time = env.mock_port(ITimeService)
+    mock_time.now.return_value = fixed_now
+    mock_time.now_utc.return_value = fixed_now
+
     # Use -y to ensure Turn 1 finishes before we manually trigger Turn 2 via resume
-    with patch("teddy_executor.core.services.session_service.datetime") as mock_dt:
-        mock_dt.now.return_value = fixed_now
-        adapter.run_start(["turn-1", "--agent", "pathfinder", "-y"], input="yes\n")
+    adapter.run_start(["turn-1", "--agent", "pathfinder", "-y"], input="yes\n")
 
     # Turn 2
     plan_2 = MarkdownPlanBuilder("Turn 2").add_execute("echo 2").build()
@@ -185,14 +194,18 @@ def test_pre_response_telemetry_sequence(tmp_path, monkeypatch):
         yaml.dump(meta_content), encoding="utf-8"
     )
 
+    from teddy_executor.core.ports.outbound.time_service import ITimeService
+
     # Act: Trigger a new turn via resume
-    with patch("teddy_executor.core.services.session_service.datetime") as mock_dt:
-        mock_dt.now.return_value = fixed_now
-        # Resume to trigger turn 01 (which will read the session meta)
-        result = adapter.run_resume(
-            f".teddy/sessions/{session_name}",
-            extra_args=["-m", "Trigger turn", "-y"],
-        )
+    mock_time = env.mock_port(ITimeService)
+    mock_time.now.return_value = fixed_now
+    mock_time.now_utc.return_value = fixed_now
+
+    # Resume to trigger turn 01 (which will read the session meta)
+    result = adapter.run_resume(
+        f".teddy/sessions/{session_name}",
+        extra_args=["-m", "Trigger turn", "-y"],
+    )
 
     # Assert: Verify sequence and telemetry content
     combined_output = result.stdout + (result.stderr or "")
@@ -230,10 +243,14 @@ def test_input_log_during_replan(tmp_path, monkeypatch):
         make_mock_response(good_plan),
     ]
 
+    from teddy_executor.core.ports.outbound.time_service import ITimeService
+
     fixed_now = datetime(2026, 4, 17, 12, 0, 0)
-    with patch("teddy_executor.core.services.session_service.datetime") as mock_dt:
-        mock_dt.now.return_value = fixed_now
-        result = adapter.run_start(["replan-test", "-y", "-m", "Go"])
+    mock_time = env.mock_port(ITimeService)
+    mock_time.now.return_value = fixed_now
+    mock_time.now_utc.return_value = fixed_now
+
+    result = adapter.run_start(["replan-test", "-y", "-m", "Go"])
 
     # R-10-12: Session mode does NOT exit on validation failure; it replans.
     assert result.exit_code == 0

@@ -9,6 +9,11 @@ class IPromptManager(ABC):
     """
 
     @abstractmethod
+    def get_prompt_content(self, _agent_name: str) -> Optional[str]:
+        """Synchronously retrieves the raw content of an agent prompt."""
+        ...
+
+    @abstractmethod
     def resolve_agent_metadata(
         self, _turn_path: Path
     ) -> tuple[str, Dict[str, Any], str]:

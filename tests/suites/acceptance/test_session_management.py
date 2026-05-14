@@ -1,6 +1,5 @@
 from pathlib import Path
 from datetime import datetime
-from unittest.mock import patch
 from teddy_executor.core.utils.string import slugify
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
 from tests.harness.drivers.cli_adapter import CliTestAdapter
@@ -19,12 +18,14 @@ def test_teddy_start_bootstraps_session(tmp_path: Path, monkeypatch):
     plan = MarkdownPlanBuilder("Init").add_execute("echo 1").build()
     llm.get_completion.return_value = mock_response(plan)  # type: ignore[attr-defined]
 
+    from teddy_executor.core.ports.outbound.time_service import ITimeService
+
     fixed_now = datetime(2026, 4, 17, 12, 0, 0)
-    with patch("teddy_executor.core.services.session_service.datetime") as mock_dt:
-        mock_dt.now.return_value = fixed_now
-        result = adapter.run_cli_command(
-            ["start", "feat-x", "-y", "-m", "instructions"]
-        )
+    mock_time = env.mock_port(ITimeService)
+    mock_time.now.return_value = fixed_now
+    mock_time.now_utc.return_value = fixed_now
+
+    result = adapter.run_cli_command(["start", "feat-x", "-y", "-m", "instructions"])
 
     assert result.exit_code == 0
 
@@ -91,11 +92,15 @@ def test_teddy_start_dynamic_renaming_and_flow(tmp_path: Path, monkeypatch):
     plan = MarkdownPlanBuilder("Auth Feature").add_execute("echo 'auth'").build()
     llm.get_completion.return_value = mock_response(plan)  # type: ignore[attr-defined]
 
+    from teddy_executor.core.ports.outbound.time_service import ITimeService
+
     user_input = "My prompt"
     fixed_now = datetime(2026, 4, 17, 12, 0, 0)
-    with patch("teddy_executor.core.services.session_service.datetime") as mock_dt:
-        mock_dt.now.return_value = fixed_now
-        result = adapter.run_cli_command(["start", "-y", "-m", user_input])
+    mock_time = env.mock_port(ITimeService)
+    mock_time.now.return_value = fixed_now
+    mock_time.now_utc.return_value = fixed_now
+
+    result = adapter.run_cli_command(["start", "-y", "-m", user_input])
 
     assert result.exit_code == 0
     timestamp = fixed_now.strftime("%Y%m%d_%H%M%S")
@@ -170,10 +175,14 @@ def test_teddy_start_with_explicit_name(tmp_path: Path, monkeypatch):
     plan = MarkdownPlanBuilder("Other").add_execute("echo '1'").build()
     llm.get_completion.return_value = mock_response(plan)  # type: ignore[attr-defined]
 
+    from teddy_executor.core.ports.outbound.time_service import ITimeService
+
     fixed_now = datetime(2026, 4, 17, 12, 0, 0)
-    with patch("teddy_executor.core.services.session_service.datetime") as mock_dt:
-        mock_dt.now.return_value = fixed_now
-        result = adapter.run_cli_command(["start", "fixed-name"], input="prompt\ny\n")
+    mock_time = env.mock_port(ITimeService)
+    mock_time.now.return_value = fixed_now
+    mock_time.now_utc.return_value = fixed_now
+
+    result = adapter.run_cli_command(["start", "fixed-name"], input="prompt\ny\n")
 
     assert result.exit_code == 0
 

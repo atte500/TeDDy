@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import Mock
 from tests.harness.setup.test_environment import TestEnvironment
 from tests.harness.drivers.cli_adapter import CliTestAdapter
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
@@ -8,11 +8,11 @@ from teddy_executor.core.ports.outbound import ILlmClient
 
 
 def make_mock_response(content, model="gpt-4o"):
-    mock_response = MagicMock()
+    mock_response = Mock()
     mock_response.model = model
-    mock_message = MagicMock()
+    mock_message = Mock()
     mock_message.content = content
-    mock_choice = MagicMock()
+    mock_choice = Mock()
     mock_choice.message = mock_message
     mock_response.choices = [mock_choice]
     return mock_response
@@ -40,16 +40,18 @@ def test_resume_auto_detects_latest_session(tmp_path, monkeypatch):
     mock_llm = env.get_service(ILlmClient)
     mock_llm.get_completion.return_value = make_mock_response(plan)
 
+    from teddy_executor.core.ports.outbound.time_service import ITimeService
+
     # Use explicit timestamps to ensure older/newer order
     dt_older = datetime(2026, 4, 17, 12, 0, 0)
     dt_newer = datetime(2026, 4, 17, 13, 0, 0)
 
-    with patch("teddy_executor.core.services.session_service.datetime") as mock_dt:
-        mock_dt.now.return_value = dt_older
-        adapter.run_start(["older-session"], input="prompt\ny\n")
+    mock_time = env.mock_port(ITimeService)
+    mock_time.now.side_effect = [dt_older, dt_newer]
+    mock_time.now_utc.return_value = dt_older
 
-        mock_dt.now.return_value = dt_newer
-        adapter.run_start(["newer-session"], input="prompt\ny\n")
+    adapter.run_start(["older-session"], input="prompt\ny\n")
+    adapter.run_start(["newer-session"], input="prompt\ny\n")
 
     result = adapter.run_cli_command(["resume"], input="prompt\ny\ny\ny\n")
 
@@ -67,10 +69,13 @@ def test_resume_with_session_path(tmp_path, monkeypatch):
     plan = MarkdownPlanBuilder("Test").add_execute("echo 1").build()
     env.get_service(ILlmClient).get_completion.return_value = make_mock_response(plan)
 
+    from teddy_executor.core.ports.outbound.time_service import ITimeService
+
     fixed_now = datetime(2026, 4, 17, 12, 0, 0)
-    with patch("teddy_executor.core.services.session_service.datetime") as mock_dt:
-        mock_dt.now.return_value = fixed_now
-        adapter.run_start(["my-session"], input="prompt\ny\n")
+    mock_time = env.mock_port(ITimeService)
+    mock_time.now.return_value = fixed_now
+    mock_time.now_utc.return_value = fixed_now
+    adapter.run_start(["my-session"], input="prompt\ny\n")
 
     result = adapter.run_cli_command(
         ["resume", ".teddy/sessions/20260417_120000-session"], input="prompt\ny\n"
@@ -89,10 +94,13 @@ def test_resume_with_turn_path(tmp_path, monkeypatch):
     plan = MarkdownPlanBuilder("Test").add_execute("echo 1").build()
     env.get_service(ILlmClient).get_completion.return_value = make_mock_response(plan)
 
+    from teddy_executor.core.ports.outbound.time_service import ITimeService
+
     fixed_now = datetime(2026, 4, 17, 12, 0, 0)
-    with patch("teddy_executor.core.services.session_service.datetime") as mock_dt:
-        mock_dt.now.return_value = fixed_now
-        adapter.run_start(["my-session"], input="prompt\ny\n")
+    mock_time = env.mock_port(ITimeService)
+    mock_time.now.return_value = fixed_now
+    mock_time.now_utc.return_value = fixed_now
+    adapter.run_start(["my-session"], input="prompt\ny\n")
 
     result = adapter.run_cli_command(
         ["resume", ".teddy/sessions/20260417_120000-session/01"], input="prompt\ny\n"
@@ -113,13 +121,14 @@ def test_start_enters_continuous_loop(tmp_path, monkeypatch):
     mock_llm = env.get_service(ILlmClient)
     mock_llm.get_completion.return_value = make_mock_response(plan)
 
+    from teddy_executor.core.ports.outbound.time_service import ITimeService
+
     # Provide input for TWO turns
     fixed_now = datetime(2026, 4, 17, 12, 0, 0)
-    with patch("teddy_executor.core.services.session_service.datetime") as mock_dt:
-        mock_dt.now.return_value = fixed_now
-        adapter.run_start(
-            ["my-loop-session"], input="first prompt\ny\nsecond prompt\ny\n"
-        )
+    mock_time = env.mock_port(ITimeService)
+    mock_time.now.return_value = fixed_now
+    mock_time.now_utc.return_value = fixed_now
+    adapter.run_start(["my-loop-session"], input="first prompt\ny\nsecond prompt\ny\n")
 
     # Find the session directory dynamically
     sessions_root = tmp_path / ".teddy" / "sessions"
@@ -142,10 +151,13 @@ def test_resume_with_file_path(tmp_path, monkeypatch):
     plan = MarkdownPlanBuilder("Test").add_execute("echo 1").build()
     env.get_service(ILlmClient).get_completion.return_value = make_mock_response(plan)
 
+    from teddy_executor.core.ports.outbound.time_service import ITimeService
+
     fixed_now = datetime(2026, 4, 17, 12, 0, 0)
-    with patch("teddy_executor.core.services.session_service.datetime") as mock_dt:
-        mock_dt.now.return_value = fixed_now
-        adapter.run_start(["my-session"], input="prompt\ny\n")
+    mock_time = env.mock_port(ITimeService)
+    mock_time.now.return_value = fixed_now
+    mock_time.now_utc.return_value = fixed_now
+    adapter.run_start(["my-session"], input="prompt\ny\n")
 
     result = adapter.run_cli_command(
         ["resume", ".teddy/sessions/20260417_120000-session/01/meta.yaml"],

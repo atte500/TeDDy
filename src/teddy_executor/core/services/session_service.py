@@ -1,5 +1,4 @@
 import re
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 from teddy_executor.core.domain.models.execution_report import ExecutionReport
@@ -10,8 +9,9 @@ from teddy_executor.core.ports.outbound.session_manager import (
     SessionState,
 )
 from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
+from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
+from teddy_executor.core.ports.outbound.time_service import ITimeService
 from teddy_executor.core.utils.string import slugify
-from teddy_executor.prompts import find_prompt_content
 
 
 class SessionService(ISessionManager):
@@ -23,15 +23,19 @@ class SessionService(ISessionManager):
         self,
         file_system_manager: IFileSystemManager,
         repository: ISessionRepository,
+        time_service: ITimeService,
+        prompt_manager: IPromptManager,
     ):
         self._file_system_manager = file_system_manager
         self._repository = repository
+        self._time_service = time_service
+        self._prompt_manager = prompt_manager
 
     def create_session(self, name: str, agent_name: str) -> str:
         """
         Initializes a new session directory and bootstraps it for Turn 1.
         """
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = self._time_service.now().strftime("%Y%m%d_%H%M%S")
         # Ensure the user-provided name is also slugified and truncated
         clean_name = slugify(name)
         prefixed_name = f"{timestamp}-{clean_name}"
@@ -55,7 +59,7 @@ class SessionService(ISessionManager):
         )
 
         # 2. Populate specific agent prompt file
-        prompt_content = find_prompt_content(agent_name)
+        prompt_content = self._prompt_manager.get_prompt_content(agent_name)
         if not prompt_content:
             raise ValueError(f"Agent prompt '{agent_name}' not found.")
         self._file_system_manager.write_file(
@@ -68,7 +72,7 @@ class SessionService(ISessionManager):
             "agent_name": agent_name,
             "cumulative_cost": 0.0,
             "turn_cost": 0.0,
-            "creation_timestamp": datetime.now(timezone.utc).isoformat(),
+            "creation_timestamp": self._time_service.now_utc().isoformat(),
         }
         self._repository.save_meta(f"{turn_dir}/meta.yaml", meta_data)
 
@@ -219,7 +223,7 @@ class SessionService(ISessionManager):
             "agent_name": current_meta.get("agent_name", "pf"),
             "cumulative_cost": cumulative,
             "parent_turn_id": current_meta.get("turn_id", "00"),
-            "creation_timestamp": datetime.now(timezone.utc).isoformat(),
+            "creation_timestamp": self._time_service.now_utc().isoformat(),
         }
         self._repository.save_meta(f"{next_dir}/meta.yaml", meta)
 

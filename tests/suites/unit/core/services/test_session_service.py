@@ -1,8 +1,10 @@
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import ANY, patch
+from unittest.mock import ANY
 
 from teddy_executor.core.ports.outbound.session_manager import ISessionManager
+from teddy_executor.core.ports.outbound.time_service import ITimeService
+from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
 
 
 def test_create_session_orchestrates_filesystem_correctly(env):
@@ -10,6 +12,8 @@ def test_create_session_orchestrates_filesystem_correctly(env):
     Tests that create_session creates the correct directory structure and files.
     """
     # Arrange
+    mock_time = env.mock_port(ITimeService)
+    mock_prompts = env.mock_port(IPromptManager)
     service = env.get_service(ISessionManager)
     mock_fs = env.get_mock_filesystem()
 
@@ -21,42 +25,36 @@ def test_create_session_orchestrates_filesystem_correctly(env):
     agent_prompt = "<prompt>Pathfinder content</prompt>"
 
     mock_fs.read_file.return_value = init_context
+    mock_time.now.return_value = datetime(2026, 4, 17, 12, 0, 0)
+    # Mock UTC time for metadata
+    mock_time.now_utc.return_value = datetime(2026, 4, 17, 12, 0, 0)
+    mock_prompts.get_prompt_content.return_value = agent_prompt
 
-    # Mock find_prompt_content to avoid dependency on filesystem during unit test
-    with (
-        patch(
-            "teddy_executor.core.services.session_service.find_prompt_content"
-        ) as mock_find_prompt,
-        patch("teddy_executor.core.services.session_service.datetime") as mock_dt,
-    ):
-        mock_find_prompt.return_value = agent_prompt
-        mock_dt.now.return_value = datetime(2026, 4, 17, 12, 0, 0)
+    # Act
+    service.create_session(name=session_name, agent_name=agent_name)
 
-        # Act
-        service.create_session(name=session_name, agent_name=agent_name)
+    # Assert
+    # 1. Directory creation
+    mock_fs.create_directory.assert_any_call(
+        str(Path(".teddy/sessions/20260417_120000-feat-x/01"))
+    )
 
-        # Assert
-        # 1. Directory creation
-        mock_fs.create_directory.assert_any_call(
-            str(Path(".teddy/sessions/20260417_120000-feat-x/01"))
-        )
+    # 2. session.context creation (with comments stripped)
+    mock_fs.write_file.assert_any_call(
+        str(Path(".teddy/sessions/20260417_120000-feat-x/session.context")),
+        clean_context,
+    )
 
-        # 2. session.context creation (with comments stripped)
-        mock_fs.write_file.assert_any_call(
-            str(Path(".teddy/sessions/20260417_120000-feat-x/session.context")),
-            clean_context,
-        )
+    # 3. pathfinder.xml creation
+    mock_fs.write_file.assert_any_call(
+        str(Path(".teddy/sessions/20260417_120000-feat-x/01/pathfinder.xml")),
+        agent_prompt,
+    )
 
-        # 3. pathfinder.xml creation
-        mock_fs.write_file.assert_any_call(
-            str(Path(".teddy/sessions/20260417_120000-feat-x/01/pathfinder.xml")),
-            agent_prompt,
-        )
-
-        # 4. meta.yaml creation
-        mock_fs.write_file.assert_any_call(
-            str(Path(".teddy/sessions/20260417_120000-feat-x/01/meta.yaml")), ANY
-        )
+    # 4. meta.yaml creation
+    mock_fs.write_file.assert_any_call(
+        str(Path(".teddy/sessions/20260417_120000-feat-x/01/meta.yaml")), ANY
+    )
 
 
 def test_transition_to_next_turn_prevents_context_leakage_on_failure(env):
@@ -114,6 +112,8 @@ def test_transition_to_next_turn_prevents_context_leakage_on_failure(env):
         params={"resource": "skipped.py"},
     )
 
+    # Note: RunSummary still uses datetime, but it's a DTO, not hidden state inside SessionService logic.
+    # We keep the import for the DTO setup in this test.
     report = ExecutionReport(
         run_summary=RunSummary(
             status=RunStatus.FAILURE, start_time=datetime.now(), end_time=datetime.now()
