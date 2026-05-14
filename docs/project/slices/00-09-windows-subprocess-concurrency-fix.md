@@ -21,14 +21,14 @@ And the xdist workers should not fatally crash with "Not properly terminated"
 ```
 
 ## Deliverables
-- [ ] **Logic** - Refactor `ShellAdapter._prepare_subprocess_kwargs` to explicitly set `stdin=subprocess.DEVNULL` for all platforms, including Windows, removing the POSIX-only condition.
+- [x] **Logic** - Refactor `ShellAdapter._prepare_subprocess_kwargs` to explicitly set `stdin=subprocess.DEVNULL` for all platforms, including Windows, removing the POSIX-only condition.
 - [ ] **Logic** - Refactor `ShellAdapter._run_subprocess` to ensure background subprocesses also use `stdin=subprocess.DEVNULL`.
 - [ ] **Logic** - Refactor `SystemEnvironmentAdapter.run_command` to explicitly pass `stdin=subprocess.DEVNULL` to both `subprocess.run` and `subprocess.Popen`.
 - [ ] **Logic** - Refactor `SystemEnvironmentInspector.get_env_snapshot` to explicitly pass `stdin=subprocess.DEVNULL` to `subprocess.run`.
 - [ ] **Logic** - Refactor `TextualPlanReviewerEditor` methods launching subprocesses to explicitly pass `stdin=subprocess.DEVNULL` to prevent potential async loop blocking on Windows.
 
 ## Implementation Notes
-*Pending Developer Implementation.*
+- **`ShellAdapter._prepare_subprocess_kwargs`**: Moved `stdin: subprocess.DEVNULL` into the main `kwargs` dictionary to apply universally across all operating systems. Retained the conditional process-group logic (`preexec_fn = os.setpgrp()`) exclusively for POSIX platforms.
 
 ## Delta Analysis
 This is a non-breaking internal stabilization fix. It modifies the outbound adapters to safely invoke native OS tools without bleeding test harness state (mocked stdin) into the spawned process handles on Windows.

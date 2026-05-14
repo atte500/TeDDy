@@ -106,6 +106,7 @@ class ShellAdapter(IShellExecutor):
             "shell": use_shell,
             "stdout": subprocess.PIPE,
             "stderr": subprocess.PIPE,
+            "stdin": subprocess.DEVNULL,
             "text": True,
             "cwd": cwd,
             "env": env,
@@ -115,7 +116,6 @@ class ShellAdapter(IShellExecutor):
 
             # ISOLATION: Severing stdin from the TTY is required to prevent SIGTTIN
             # suspension when running in a new process group.
-            kwargs["stdin"] = subprocess.DEVNULL
 
             def preexec_fn():
                 os.setpgrp()
