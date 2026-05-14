@@ -3,6 +3,7 @@
 - **Milestone:** [10-interactive-session-and-config](../milestones/10-interactive-session-and-config.md)
 - **Specs:** [context-management-ui.md](../specs/context-management-ui.md)
 - **Prototype:** [prototypes/00-04/runner.py](../../../prototypes/00-04/runner.py)
+- **Showcase:** [spikes/showcases/00-04/showcase_heuristics.sh](../../../spikes/showcases/00-04/showcase_heuristics.sh)
 - **Component Docs:**
   - [ProjectContext](../../architecture/core/domain/project_context.md)
   - [ILlmClient](../../architecture/core/ports/outbound/llm_client.md)
@@ -64,7 +65,7 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 - [x] **Logic (Refinement)** - Update `_extract_resource_path` in `SessionService` to normalize extracted paths.
 - [x] **Logic (Refinement)** - Implement `_apply_retention_limit` in `SessionPruningService` (Default: 25).
 - [x] **Contract** - Add `max_turns_retention: 25` to `config.yaml`.
-- [ ] **Showcase** - Create `showcases/00-04/showcase_heuristics.sh` to demonstrate failure-streak preservation, post-green cleanup, and retention limits.
+- [x] **Showcase** - Create `showcases/00-04/showcase_heuristics.sh` to demonstrate failure-streak preservation, post-green cleanup, and retention limits.
 
 ## Implementation Notes
 ### Contract - Add get_text_token_count to ILlmClient
