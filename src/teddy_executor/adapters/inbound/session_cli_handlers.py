@@ -75,9 +75,6 @@ def handle_new_session(  # noqa: PLR0913
             if not interactive or not loop_guard.should_continue(turn_count):
                 break
 
-            # Re-resolve the session name in case it was auto-renamed during the turn
-            current_session_name = session_manager.get_latest_session_name()
-
     except Exception as e:
         from teddy_executor.core.domain.models.exceptions import ConfigurationError
 
