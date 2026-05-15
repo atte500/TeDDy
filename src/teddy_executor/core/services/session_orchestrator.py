@@ -123,7 +123,11 @@ class SessionOrchestrator(IRunPlanUseCase):
                     system_prompt_tokens=system_prompt_tokens,
                 )
             if self._pruning_service:
-                project_context = self._pruning_service.prune(project_context)
+                # R-10-12: Pass plan status to pruning service to trigger immediate recovery cleanup
+                status = plan.metadata.get("Status") if plan else None
+                project_context = self._pruning_service.prune(
+                    project_context, current_status=status
+                )
 
         report = self._execution_orchestrator.execute(
             plan=plan,

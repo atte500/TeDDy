@@ -67,10 +67,10 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 - [x] **Logic (Refinement)** - Implement `_apply_retention_limit` in `SessionPruningService` (Default: 25).
 - [x] **Contract** - Add `max_turns_retention: 25` to `config.yaml`.
 - [x] **Showcase** - Create `showcases/00-04/showcase_heuristics.sh` to demonstrate failure-streak preservation, post-green cleanup, and retention limits.
-- [ ] **Contract** - Update `SessionPruningService.prune` signature to accept `current_status: Optional[str]`.
+- [x] **Contract** - Update `SessionPruningService.prune` signature to accept `current_status: Optional[str]`.
 - [ ] **Logic** - Refactor `SessionPruningService` to use regex-anchored status detection targeting the `- **Status:**` line.
-- [ ] **Logic** - Update `SessionPruningService` heuristics to trigger recovery cleanup immediately if `current_status` is green.
-- [ ] **Wiring** - Update `SessionOrchestrator.execute` to pass the plan status to the pruning service.
+- [x] **Logic** - Update `SessionPruningService` heuristics to trigger recovery cleanup immediately if `current_status` is green.
+- [x] **Wiring** - Update `SessionOrchestrator.execute` to pass the plan status to the pruning service.
 - [ ] **Refactor** - Refactor `extract_status_emoji` in `textual_plan_reviewer_helpers.py` to use anchored regex targeting the status line.
 - [ ] **Refactor** - Move robust instruction resolution logic to `markdown.py` as a shared utility.
 - [ ] **Logic** - Implement the "Audit Trail" principle: return `""` if `report.md` exists but no explicit `User Request` is found.
@@ -189,6 +189,15 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 - The heuristic identifies the maximum Turn ID present in the context and prunes any items with `Turn` scope where `turn_id <= (max_id - retention_limit)`.
 - Added `max_turns_retention: 25` to the bundled `config.yaml`.
 - Verified via unit tests that System and Session scoped items are strictly exempt from this limit.
+
+### Logic (Refinement) - Update SessionPruningService Contract & Logic for current_status
+- Expanded `SessionPruningService.prune` to accept an optional `current_status` string.
+- Refactored `Recovery Cleanup` heuristic to trigger immediately if `current_status` contains "🟢", allowing the system to prune preceding failure history as soon as a turn returns to a success state.
+- Hardened unit tests to use strictly numeric turn directories (e.g., `01/plan.md`) to match the service's extraction regex.
+
+### Wiring - SessionOrchestrator Status Propagation
+- Updated `SessionOrchestrator.execute` to extract `Status` from plan metadata and pass it to the `pruning_service.prune` method.
+- Refactored `SessionOrchestrator` unit test fixture to use a mock context service, resolving `AttributeError` regressions during dependency injection testing.
 
 ## Technical Debt
 - **[DEBT]** Harness Complexity: `without_reviewer()` in `TestEnvironment` is a manual container re-wiring. Consider a more robust `interactive_mode` configuration (e.g., `"tui" | "console"`) for the harness to toggle between `IPlanReviewer` and `IUserInteractor` cleanly.

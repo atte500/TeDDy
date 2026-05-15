@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from unittest.mock import MagicMock, ANY
+from unittest.mock import ANY, MagicMock  # noqa: TID251
 import pytest
 from teddy_executor.core.domain.models.execution_report import (
     ExecutionReport,
@@ -28,7 +28,7 @@ def orchestrator(  # noqa: PLR0913
     mock_plan_parser,
     mock_user_interactor,
 ):
-    from unittest.mock import MagicMock
+    from tests.harness.setup.mocking import register_mock
     from teddy_executor.core.services.session_lifecycle_manager import (
         SessionLifecycleManager,
     )
@@ -46,11 +46,17 @@ def orchestrator(  # noqa: PLR0913
     from teddy_executor.core.ports.outbound.llm_client import ILlmClient
     from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
 
+    from teddy_executor.core.services.session_pruning_service import (
+        SessionPruningService,
+    )
+
     # Instantiate the orchestrator with its dependencies
-    mock_prompt_manager = MagicMock(spec=IPromptManager)
+    mock_pruning_service = register_mock(container, SessionPruningService)
+    mock_prompt_manager = register_mock(container, IPromptManager)
     mock_prompt_manager.fetch_system_prompt.return_value = "mock prompt content"
-    mock_llm_client = MagicMock(spec=ILlmClient)
+    mock_llm_client = register_mock(container, ILlmClient)
     mock_llm_client.get_text_token_count.return_value = 100
+    mock_context_service = register_mock(container, IGetContextUseCase)
 
     orchestrator_instance = SessionOrchestrator(
         execution_orchestrator=container.resolve(IRunPlanUseCase),
@@ -59,12 +65,13 @@ def orchestrator(  # noqa: PLR0913
         plan_validator=container.resolve(IPlanValidator),
         plan_parser=container.resolve(IPlanParser),
         user_interactor=container.resolve(IUserInteractor),
-        lifecycle_manager=MagicMock(spec=SessionLifecycleManager),
+        lifecycle_manager=register_mock(container, SessionLifecycleManager),
         replanner=replanner,
-        context_service=container.resolve(IGetContextUseCase),
+        context_service=mock_context_service,
         config_service=container.resolve(IConfigService),
         llm_client=mock_llm_client,
         prompt_manager=mock_prompt_manager,
+        pruning_service=mock_pruning_service,
     )
 
     # Register as instances to bypass punq auto-wiring for untyped constructors
@@ -116,4 +123,38 @@ def test_session_orchestrator_triggers_transition_on_success(  # noqa: PLR0913
     # Verify delegation to lifecycle manager
     orchestrator._lifecycle_manager.finalize_turn.assert_called_once_with(
         plan_path, mock_run_plan.execute.return_value, plan=ANY
+    )
+
+
+def test_session_orchestrator_passes_status_to_pruning_service(
+    orchestrator,
+    mock_run_plan,
+    mock_fs,
+    mock_plan_parser,
+    mock_plan_validator,
+):
+    """
+    Wiring: SessionOrchestrator should pass the status from plan metadata to the pruning service.
+    """
+    # Arrange
+    from teddy_executor.core.domain.models import Plan
+
+    mock_plan = MagicMock(spec=Plan)
+    mock_plan.metadata = {"Status": "SUCCESS 🟢"}
+    mock_plan.is_session = True
+
+    # Setup execution mocks
+    mock_plan_parser.parse.return_value = mock_plan
+    mock_plan_validator.validate.return_value = []
+    mock_fs.path_exists.return_value = True  # For is_session_mode
+
+    # Return context
+    orchestrator._context_service.get_context.return_value = MagicMock()
+
+    # Act
+    orchestrator.execute(plan_path="path/to/01/plan.md", interactive=True)
+
+    # Assert
+    orchestrator._pruning_service.prune.assert_called_once_with(
+        ANY, current_status="SUCCESS 🟢"
     )

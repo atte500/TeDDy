@@ -35,7 +35,7 @@ class SessionPruningService:
             items = list(context.items)
 
             # 1. Prune by status/validation failure (Heuristics 3 & 4)
-            turns_to_prune = self._identify_turns_to_prune(items)
+            turns_to_prune = self._identify_turns_to_prune(items, current_status)
 
             for i, item in enumerate(items):
                 new_item = self._process_context_item(item, turns_to_prune)
@@ -93,7 +93,9 @@ class SessionPruningService:
         matches = re.findall(r"(?:^|/)(\d{1,3})(?=/|$)", normalized)
         return matches[-1] if matches else None
 
-    def _identify_turns_to_prune(self, items) -> Dict[str, str]:
+    def _identify_turns_to_prune(
+        self, items, current_status: Optional[str] = None
+    ) -> Dict[str, str]:
         """Identifies turns that should be pruned based on failure status."""
         prune_non_green = bool(
             self._config_service.get_setting("auto_pruning.prune_failure_history", True)
@@ -109,7 +111,7 @@ class SessionPruningService:
         )
 
         return self._apply_pruning_heuristics(
-            turn_statuses, validation_failures, prune_non_green
+            turn_statuses, validation_failures, prune_non_green, current_status
         )
 
     def _collect_turn_metadata(
@@ -159,6 +161,7 @@ class SessionPruningService:
         turn_statuses: Dict[int, bool],
         validation_failures: set[int],
         prune_non_green: bool,
+        current_status: Optional[str] = None,
     ) -> Dict[str, str]:
         """Applies heuristics to the collected metadata."""
         turns_to_prune: Dict[str, str] = {}
@@ -168,9 +171,14 @@ class SessionPruningService:
             turns_to_prune[str(tid)] = "Plan failed validation"
 
         # Heuristic 3: Recovery Cleanup
+        # If current_status is Green, OR if the latest turn on disk is Green, prune failures.
+        is_currently_green = current_status is not None and "🟢" in current_status
+
         if prune_non_green and turn_statuses:
-            latest_turn = max(turn_statuses.keys())
-            if turn_statuses[latest_turn]:
+            latest_on_disk = max(turn_statuses.keys())
+            is_latest_green = turn_statuses[latest_on_disk]
+
+            if is_currently_green or is_latest_green:
                 for tid, is_green in turn_statuses.items():
                     if not is_green:
                         turns_to_prune.setdefault(
