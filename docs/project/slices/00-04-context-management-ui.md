@@ -66,6 +66,11 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 - [x] **Logic (Refinement)** - Implement `_apply_retention_limit` in `SessionPruningService` (Default: 25).
 - [x] **Contract** - Add `max_turns_retention: 25` to `config.yaml`.
 - [x] **Showcase** - Create `showcases/00-04/showcase_heuristics.sh` to demonstrate failure-streak preservation, post-green cleanup, and retention limits.
+- [ ] **Contract** - Update `SessionPruningService.prune` signature to accept `current_status: Optional[str]`.
+- [ ] **Logic** - Refactor `SessionPruningService` to use regex-anchored status detection targeting the `- **Status:**` line.
+- [ ] **Logic** - Update `SessionPruningService` heuristics to trigger recovery cleanup immediately if `current_status` is green.
+- [ ] **Wiring** - Update `SessionOrchestrator.execute` to pass the plan status to the pruning service.
+- [ ] **Refactor** - Refactor `extract_status_emoji` in `textual_plan_reviewer_helpers.py` to use anchored regex targeting the status line.
 
 ## Implementation Notes
 ### Contract - Add get_text_token_count to ILlmClient
@@ -212,6 +217,8 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
     - Status colors: `M` (yellow), `U/A` (green), `D` (red).
 - **Failure Heuristics:**
     - **Recovery Cleanup:** If current turn is 🟢, scan context for any `plan.md` files with `Status: ... 🔴` or `Status: ... 🟡`. If found, prune them and their corresponding reports.
+        - **Robustness:** Detection MUST target only the `- **Status:**` line using regex `r"^- \*\*Status:\*\*.*"` to avoid rationales or code blocks.
+        - **Immediate Trigger:** The `prune` service MUST be aware of the current plan's status to trigger cleanup without a 1-turn lag.
     - **Validation Failure:** Check report files in `turn.context` for the specific string `- **Overall Status:** Validation Failed`. If found, prune that report and its plan.
     - **Deleted File:** Check `ContextItem.git_status` for `D`. If found, prune the item.
 - **Auto-Prune Reasons:** Use the following standardized strings for the `auto_prune_reason` metadata:
