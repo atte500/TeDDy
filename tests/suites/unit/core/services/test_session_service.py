@@ -36,24 +36,24 @@ def test_create_session_orchestrates_filesystem_correctly(env):
     # Assert
     # 1. Directory creation
     mock_fs.create_directory.assert_any_call(
-        str(Path(".teddy/sessions/20260417_120000-feat-x/01"))
+        Path(".teddy/sessions/20260417_120000-feat-x/01").as_posix()
     )
 
     # 2. session.context creation (with comments stripped)
     mock_fs.write_file.assert_any_call(
-        str(Path(".teddy/sessions/20260417_120000-feat-x/session.context")),
+        Path(".teddy/sessions/20260417_120000-feat-x/session.context").as_posix(),
         clean_context,
     )
 
     # 3. pathfinder.xml creation
     mock_fs.write_file.assert_any_call(
-        str(Path(".teddy/sessions/20260417_120000-feat-x/01/pathfinder.xml")),
+        Path(".teddy/sessions/20260417_120000-feat-x/01/pathfinder.xml").as_posix(),
         agent_prompt,
     )
 
     # 4. meta.yaml creation
     mock_fs.write_file.assert_any_call(
-        str(Path(".teddy/sessions/20260417_120000-feat-x/01/meta.yaml")), ANY
+        Path(".teddy/sessions/20260417_120000-feat-x/01/meta.yaml").as_posix(), ANY
     )
 
 
@@ -82,9 +82,9 @@ def test_create_session_persists_initial_request(env):
     )
 
     # Assert
-    expected_path = str(
-        Path(".teddy/sessions/20260515_100000-goal-x/initial_request.md")
-    )
+    expected_path = Path(
+        ".teddy/sessions/20260515_100000-goal-x/initial_request.md"
+    ).as_posix()
     mock_fs.write_file.assert_any_call(expected_path, initial_request)
 
 
@@ -112,11 +112,9 @@ def test_create_session_seeds_initial_request_into_session_context(env):
     )
 
     # Assert
-    context_path = str(Path(".teddy/sessions/20260515_100000-seed-x/session.context"))
-    # We find the call to write session.context
-    context_call = [
-        c for c in mock_fs.write_file.call_args_list if context_path in str(c)
-    ][0]
+    context_path = ".teddy/sessions/20260515_100000-seed-x/session.context"
+    # Systemic Solve: Use find_call_by_path instead of manual call_args_list filtering
+    context_call = mock_fs.find_call_by_path("write_file", context_path)
     written_content = context_call.args[1]
     lines = written_content.splitlines()
 

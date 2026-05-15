@@ -53,6 +53,30 @@ class POSIXPathMock(MagicMock):
             normalized_calls.append(_Call((new_args, new_kwargs), two=True))
         return super().assert_has_calls(normalized_calls, any_order=any_order)
 
+    def find_call_by_path(self, method_name: str, path: str) -> Any:
+        """
+        Systemically finds a call to the specified method where the first
+        argument matches the path. Handles cross-platform slash normalization.
+        """
+        norm_target = path.replace("\\", "/")
+        method = getattr(self, method_name)
+        for call in method.call_args_list:
+            if call.args and isinstance(call.args[0], str):
+                norm_actual = call.args[0].replace("\\", "/")
+                if norm_actual == norm_target:
+                    return call
+
+        # Provide a helpful error if not found
+        available = [
+            c.args[0]
+            for c in method.call_args_list
+            if c.args and isinstance(c.args[0], str)
+        ]
+        raise AssertionError(
+            f"No {method_name} call found for path: {norm_target}\n"
+            f"Available paths: {available}"
+        )
+
 
 def register_mock(container: Any, port_type: Any) -> Any:
     """

@@ -147,6 +147,7 @@ This section serves as the "System Law" (Poka-Yoke) for TeDDy. It defines the pr
 - **Structured Output:** Parse output into data structures before assertion. (Ensures resilience to minor formatting changes.)
 - **CLI I/O:** Use positional arguments for files; reserve `stdin` for prompts. (Prevents input stream conflicts.)
 - **Execution Testing:** Use `--plan-content` with `MarkdownPlanBuilder`. (Maintains protocol validity and test readability.)
+- **Cross-Platform Path Assertions:** All tests performing path-based assertions MUST use the `POSIXPathMock.find_call_by_path(method, path)` helper. Manual inspection of `call_args_list` with `str()` comparisons is strictly forbidden as it breaks on Windows due to slash mismatches. (Ensures CI stability across OS matrix.)
 - **Execute Action:** Allow shell chaining and inline directives. (Simplifies protocol and maintains statelessness.)
 - **Windows Failure:** Use `cmd /c` to isolate terminating commands. (Ensures parent process can report failures.)
 - **Reporting:** Use Jinja2 Macros for modularity. (Ensures consistency and facilitates section extraction.)
