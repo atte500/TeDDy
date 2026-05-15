@@ -72,12 +72,12 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 - [x] **Logic** - Update `SessionPruningService` heuristics to trigger recovery cleanup immediately if `current_status` is green.
 - [x] **Wiring** - Update `SessionOrchestrator.execute` to pass the plan status to the pruning service.
 - [x] **Refactor** - Refactor `extract_status_emoji` in `textual_plan_reviewer_helpers.py` to use anchored regex targeting the status line.
-- [ ] **Logic** - Implement `Turn 00` directory creation and `initial_request.md` persistence in `SessionService`.
-- [ ] **Logic** - Update `SessionService` to seed `00/initial_request.md` into the context and allow it to be pruned like any other file.
+- [ ] **Logic** - Implement `initial_request.md` persistence at the session root in `SessionService.create_session`.
+- [ ] **Logic** - Update `SessionService` to seed `initial_request.md` into the `session.context` file and allow it to be pruned via the TUI.
 - [ ] **Cleanup** - Remove legacy "User Request" extraction logic from `SessionPlanner` and `PromptManager`.
 - [ ] **Logic** - Refactor `PromptManager` to treat `initial_request.md` as context and prioritize turn-specific feedback (the `m` key).
 - [ ] **Logic** - Remove instruction injection from `PlanningService.generate_plan` (keeping `input.md` as pure project state).
-- [ ] **Wiring** - Verify end-to-end "Turn 00" visibility in the TUI Context Tree and session resumption.
+- [ ] **Wiring** - Verify end-to-end `initial_request.md` visibility in the TUI Context Tree (Session Scope).
 - [ ] **Wiring** - Verify that all symptoms of Session Loop Breakage are resolved using the provided MRE.
 
 ## Implementation Notes
@@ -246,10 +246,10 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 
 ## Guidelines for Implementation
 
-### Turn 00 Protocol
-- **Bootstrap:** `SessionService.create_session` MUST create a `00` directory within the session root. The initial user request is saved as `00/initial_request.md`. It MUST be seeded into the Turn 01 `turn.context` during bootstrap.
-- **Context Persistence:** `00/initial_request.md` is treated as a standard context item. It is carried forward through turn transitions by default but is subject to the same pruning logic as any other file.
-- **TUI Visibility:** The `00/initial_request.md` file MUST be visible in the "Session Context" tree under the `Session` scope. Users can edit it using the `e` key to update the "Session Goal" dynamically.
+### Session Root Goal Protocol
+- **Bootstrap:** `SessionService.create_session` MUST accept the initial user message and save it as `initial_request.md` at the session root (sibling to `session.context`).
+- **Context Seeding:** The path `initial_request.md` MUST be appended to the `session.context` file during bootstrap. This ensures it is treated as a standard context item with `Session` scope.
+- **TUI Visibility:** `initial_request.md` MUST be visible in the "Session Context" tree under the `Session` scope. Users can prune it or edit it using the `e` key to update the "Session Goal" dynamically.
 
 ### Instruction Lifecycle & Transparency
 - **Pure input.md:** `PlanningService` MUST NOT inject the user request into the `input.md` content. The `input.md` file remains a pure snapshot of the file tree and relevant file contents.
