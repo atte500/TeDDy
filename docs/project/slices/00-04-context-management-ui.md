@@ -75,13 +75,13 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 - [x] **Logic** - Implement initial_request.md persistence at the session root in `SessionService.create_session`.
 - [x] **Logic** - Update `SessionService` to seed `initial_request.md` into the `session.context` file and allow it to be pruned via the TUI.
 - [x] **Logic** - Update `PlanningPorts` and `PlanningService` for `ISessionManager` injection.
-- [ ] **Logic** - Remove persistence logic from `PlanningService` to ensure `initial_request.md` remains **IMMUTABLE**.
-- [ ] **Logic** - Implement `report.md` persistence in `SessionLifecycleManager` using root-relative paths.
-- [ ] **Cleanup** - Remove interactive `ask_question` fallback from `PromptManager.resolve_message`.
-- [ ] **Cleanup** - Remove all "Instruction Injection" and LLM `user_message` logic from `PlanningService`.
-- [ ] **Cleanup** - Remove redundant goal back-filling logic from `PlanningService.generate_plan`.
-- [ ] **Wiring** - Update acceptance tests to run from project root (`cwd=tmp_path`).
-- [ ] **Wiring** - Verify end-to-end Instruction Discovery via context (Goal + Latest Report).
+- [x] **Logic** - Remove persistence logic from `PlanningService` to ensure `initial_request.md` remains **IMMUTABLE**.
+- [x] **Logic** - Implement `report.md` persistence in `SessionLifecycleManager` using root-relative paths.
+- [x] **Cleanup** - Remove interactive `ask_question` fallback from `PromptManager.resolve_message`.
+- [x] **Cleanup** - Remove all "Instruction Injection" and LLM `user_message` logic from `PlanningService`.
+- [x] **Cleanup** - Remove redundant goal back-filling logic from `PlanningService.generate_plan`.
+- [x] **Wiring** - Update acceptance tests to run from project root (`cwd=tmp_path`).
+- [x] **Wiring** - Verify end-to-end Instruction Discovery via context (Goal + Latest Report).
 - [x] **Wiring** - Verify that all symptoms of Session Loop Breakage are resolved using the provided MRE.
 
 ## Implementation Notes
@@ -239,11 +239,18 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 - Reordered the `session.context` write operation to occur after the initial request check.
 - Verified via unit tests that the request file is correctly registered in the session context, enabling its visibility in the TUI under the `Session` scope.
 
-### Logic - Update PlanningPorts and PlanningService for ISessionManager injection
+### Logic - Update `PlanningPorts` and `PlanningService` for `ISessionManager` injection
 - Expanded `PlanningPorts` DTO to include `session_manager: ISessionManager`.
 - Updated `PlanningService.__init__` to store the session manager in `self._session_manager`.
 - Updated `container.py` and unit test fixtures to resolve the new dependency from the container.
 - Resolved a brittle unit test in `test_planning_service_preflight.py` by providing the missing `session_manager` mock.
+
+### Logic - Discovery Protocol & Session Safety
+- **Immutable Goal:** Removed persistence logic from `PlanningService`. The `initial_request.md` is now created once by `SessionService` and remains immutable.
+- **Instruction Discovery:** Updated `SessionLifecycleManager` to save reports using root-relative paths, ensuring the AI discovers feedback from the previous turn via the `turn.context`.
+- **Cleanup:** Removed "Instruction Injection" blocks and `ask_question` fallbacks from `PlanningService` and `PromptManager`, enforcing a pure filesystem-driven context model.
+- **Loop Guard:** Implemented `ISessionLoopGuard` to prevent infinite loops in automated environments. Defaulted to a 1-turn limit in the test harness to protect against regressions.
+- **Path Resolution:** Standardized path resolution in `LocalFileSystemAdapter` to avoid hangs on macOS and ensure consistency across sessions.
 
 ## Technical Debt
 - **[DEBT]** Harness Complexity: `without_reviewer()` in `TestEnvironment` is a manual container re-wiring. Consider a more robust `interactive_mode` configuration (e.g., `"tui" | "console"`) for the harness to toggle between `IPlanReviewer` and `IUserInteractor` cleanly.

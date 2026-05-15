@@ -1,4 +1,5 @@
 from enum import Enum
+from pathlib import Path
 from typing import Optional, Protocol
 from teddy_executor.core.domain.models import ExecutionReport
 
@@ -77,5 +78,11 @@ class ISessionManager(Protocol):
     def resolve_session_from_path(self, path: str) -> str:
         """
         Resolves a session name from a given path (session root, turn dir, or file).
+        """
+        ...
+
+    def to_root_relative(self, turn_dir: Path, filename: str) -> str:
+        """
+        Calculates a root-relative path for a file within a turn directory.
         """
         ...

@@ -31,16 +31,14 @@ class PlanningService(IPlanningUseCase):
         self._run_preflight_check()
 
         turn_path = Path(turn_dir)
+        # R-10-12: Resolve message to capture user intent in meta.yaml
         resolved_message = self._prompt_manager.resolve_message(user_message, turn_path)
-
-        if resolved_message is None:
-            return None, 0.0  # type: ignore
-
-        self._persist_initial_request(resolved_message, turn_path)
 
         agent_name, meta, meta_file_path = self._prompt_manager.resolve_agent_metadata(
             turn_path
         )
+        if resolved_message is not None:
+            meta["user_request"] = resolved_message
 
         if self._user_interactor:
             session_folder = turn_path.parent.name
@@ -86,21 +84,6 @@ class PlanningService(IPlanningUseCase):
         )
 
         return plan_path, cost_val
-
-    def _persist_initial_request(self, message: str, turn_path: Path) -> None:
-        """Pure Context Strategy: Persist instructions to the goal file."""
-        if not message.strip():
-            return
-
-        request_path = (turn_path.parent / "initial_request.md").as_posix()
-        self._file_system_manager.write_file(request_path, message)
-
-        session_ctx = (turn_path.parent / "session.context").as_posix()
-        if self._file_system_manager.path_exists(session_ctx):
-            ctx_content = self._file_system_manager.read_file(session_ctx)
-            if request_path not in ctx_content:
-                new_ctx = f"{ctx_content.strip()}\n{request_path}\n"
-                self._file_system_manager.write_file(session_ctx, new_ctx.lstrip())
 
     def _perform_generation_with_retry(
         self, messages: list[Dict[str, str]]

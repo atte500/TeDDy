@@ -112,6 +112,7 @@ def test_resume_with_turn_path(tmp_path, monkeypatch):
 
 def test_start_enters_continuous_loop(tmp_path, monkeypatch):
     """Scenario: 'start' enters a continuous loop after the first turn."""
+    monkeypatch.setenv("TEDDY_MAX_TURNS", "2")
     env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
     adapter = CliTestAdapter(monkeypatch, tmp_path)
     setup_robust_env(tmp_path)

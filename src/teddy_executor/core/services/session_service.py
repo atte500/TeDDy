@@ -61,8 +61,11 @@ class SessionService(ISessionManager):
         if initial_request:
             request_path = f"{session_root}/initial_request.md"
             self._file_system_manager.write_file(request_path, initial_request)
-            # Seed the request into the session context using root-relative path
-            clean_context += f"\n{request_path}"
+            # Seed the request into the session context using normalized root-relative path
+            rel_request_path = self.to_root_relative(
+                Path(session_root), "initial_request.md"
+            )
+            clean_context += f"\n{rel_request_path}"
 
         self._file_system_manager.write_file(
             f"{session_root}/session.context", clean_context
@@ -180,15 +183,15 @@ class SessionService(ISessionManager):
 
         # Always append BOTH plan.md and report.md to the next turn's context
         # to ensure the AI has its previous intent and the resulting outcome.
-        paths.add(self._to_root_relative(cur_dir, "plan.md"))
-        paths.add(self._to_root_relative(cur_dir, "report.md"))
+        paths.add(self.to_root_relative(cur_dir, "plan.md"))
+        paths.add(self.to_root_relative(cur_dir, "report.md"))
 
         self._file_system_manager.write_file(
             f"{next_dir}/turn.context", "\n".join(sorted(list(paths)))
         )
         return next_dir
 
-    def _to_root_relative(self, turn_dir: Path, filename: str) -> str:
+    def to_root_relative(self, turn_dir: Path, filename: str) -> str:
         """Calculates a root-relative path for a file within a turn directory."""
         return self._repository.to_root_relative(turn_dir, filename)
 

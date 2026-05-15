@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from unittest.mock import Mock
 import pytest
 from teddy_executor.core.services.session_orchestrator import SessionOrchestrator
 
@@ -9,7 +9,7 @@ def mock_lifecycle_manager():
         SessionLifecycleManager,
     )
 
-    return MagicMock(spec=SessionLifecycleManager)
+    return Mock(spec=SessionLifecycleManager)
 
 
 @pytest.fixture
@@ -27,15 +27,15 @@ def orchestrator(  # noqa: PLR0913
     # Manual instantiation for unit tests ensures direct control over collaborators
     replanner = SessionReplanner(
         file_system_manager=mock_fs,
-        planning_service=MagicMock(),
+        planning_service=Mock(),
     )
 
-    mock_config = MagicMock()
+    mock_config = Mock()
     mock_config.get_setting.side_effect = lambda key, default=None: default
 
-    mock_prompt_manager = MagicMock()
+    mock_prompt_manager = Mock()
     mock_prompt_manager.fetch_system_prompt.return_value = "mock prompt"
-    mock_llm_client = MagicMock()
+    mock_llm_client = Mock()
     mock_llm_client.get_text_token_count.return_value = 100
 
     return SessionOrchestrator(
@@ -47,7 +47,7 @@ def orchestrator(  # noqa: PLR0913
         user_interactor=mock_user_interactor,
         lifecycle_manager=mock_lifecycle_manager,
         replanner=replanner,
-        context_service=MagicMock(),
+        context_service=Mock(),
         config_service=mock_config,
         llm_client=mock_llm_client,
         prompt_manager=mock_prompt_manager,
@@ -66,5 +66,5 @@ def test_resume_delegates_to_lifecycle_manager(orchestrator, mock_lifecycle_mana
 
     # Assert
     mock_lifecycle_manager.resume.assert_called_once_with(
-        session_name, orchestrator, True, None, project_context=None
+        session_name, orchestrator, True, project_context=None
     )

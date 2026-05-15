@@ -127,11 +127,11 @@ def test_telemetry_persistence_across_turns(tmp_path, monkeypatch):
     # To reach a Session Cost of $0.0300, Turn 2 must add $0.02 to Turn 1's $0.01.
     mock_llm_client.get_completion_cost.side_effect = [0.02]
 
-    # Use -y and -m to avoid any interaction in Turn 2
+    # In Discovery Protocol, we don't pass -m to resume
     result = adapter.run_resume(
         ".teddy/sessions/20260417_120000-turn-1",
         interactive=False,
-        extra_args=["-y", "-m", "continue"],
+        extra_args=["-y"],
     )
 
     assert result.exit_code == 0
@@ -204,7 +204,7 @@ def test_pre_response_telemetry_sequence(tmp_path, monkeypatch):
     # Resume to trigger turn 01 (which will read the session meta)
     result = adapter.run_resume(
         f".teddy/sessions/{session_name}",
-        extra_args=["-m", "Trigger turn", "-y"],
+        extra_args=["-y"],
     )
 
     # Assert: Verify sequence and telemetry content

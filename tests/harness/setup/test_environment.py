@@ -90,11 +90,13 @@ class TestEnvironment(RealAdapterMixin):
         from teddy_executor.core.ports.outbound import (
             IShellExecutor,
             ISystemEnvironment,
+            ISessionLoopGuard,
         )
 
         self.mock_port(IInitUseCase)
         self.mock_port(ISystemEnvironment)
         self.mock_port(IShellExecutor)
+        self.mock_port(ISessionLoopGuard)
 
     def _register_ui_mocks(self) -> None:
         import typer
@@ -165,43 +167,69 @@ class TestEnvironment(RealAdapterMixin):
             IConfigService,
             IFileSystemManager,
             ILlmClient,
+            ISessionLoopGuard,
             IShellExecutor,
             ISystemEnvironment,
             IUserInteractor,
         )
 
-        if port_type == IFileSystemManager:
-            mock.path_exists.return_value = False
-            mock.get_context_paths.return_value = {}
-            mock.read_files_in_vault.return_value = {}
-            mock.read_file.return_value = ""
-        elif port_type == IPlanReviewer:
-            # Identity function for plans to prevent poisoning
-            mock.review.side_effect = lambda p, **kwargs: p
-            # Auto-approve actions in tests
-            mock.review_action.return_value = (True, "")
-        elif port_type == ILlmClient:
-            mock.validate_config.return_value = []
-            mock.get_completion_cost.return_value = 0.0
-            mock.get_token_count.return_value = 0
-            mock.get_text_token_count.return_value = 0
-            mock.get_context_window.return_value = 128000
-        elif port_type == IConfigService:
-            mock.get_config_path.return_value = ".teddy/config.yaml"
+        handlers = {
+            IFileSystemManager: self._apply_fs_defaults,
+            IPlanReviewer: self._apply_reviewer_defaults,
+            ILlmClient: self._apply_llm_defaults,
+            IConfigService: self._apply_config_defaults,
+            IShellExecutor: self._apply_shell_defaults,
+            ISystemEnvironment: self._apply_env_defaults,
+            IUserInteractor: self._apply_interactor_defaults,
+            ISessionLoopGuard: self._apply_loop_guard_defaults,
+        }
 
-            def mock_setting(k, d=None):
-                return None if k == "ui_mode" else d
+        if handler := handlers.get(port_type):
+            handler(mock)
 
-            mock.get_setting.side_effect = mock_setting
-        elif port_type == IShellExecutor:
-            mock.execute.return_value = {"stdout": "", "stderr": "", "return_code": 0}
-        elif port_type == ISystemEnvironment:
-            mock.get_env.return_value = None
-            mock.which.return_value = None
-        elif port_type == IUserInteractor:
-            mock.confirm_action.return_value = (True, "")
-            mock.confirm_manual_handoff.return_value = (True, "")
-            mock.ask_question.return_value = ""
+    def _apply_fs_defaults(self, mock: Any) -> None:
+        mock.path_exists.return_value = False
+        mock.get_context_paths.return_value = {}
+        mock.read_files_in_vault.return_value = {}
+        mock.read_file.return_value = ""
+
+    def _apply_reviewer_defaults(self, mock: Any) -> None:
+        mock.review.side_effect = lambda p, **kwargs: p
+        mock.review_action.return_value = (True, "")
+
+    def _apply_llm_defaults(self, mock: Any) -> None:
+        mock.validate_config.return_value = []
+        mock.get_completion_cost.return_value = 0.0
+        mock.get_token_count.return_value = 0
+        mock.get_text_token_count.return_value = 0
+        mock.get_context_window.return_value = 128000
+
+    def _apply_config_defaults(self, mock: Any) -> None:
+        mock.get_config_path.return_value = ".teddy/config.yaml"
+
+        def mock_setting(k, d=None):
+            return None if k == "ui_mode" else d
+
+        mock.get_setting.side_effect = mock_setting
+
+    def _apply_shell_defaults(self, mock: Any) -> None:
+        mock.execute.return_value = {"stdout": "", "stderr": "", "return_code": 0}
+
+    def _apply_env_defaults(self, mock: Any) -> None:
+        mock.get_env.return_value = None
+        mock.which.return_value = None
+
+    def _apply_interactor_defaults(self, mock: Any) -> None:
+        mock.confirm_action.return_value = (True, "")
+        mock.confirm_manual_handoff.return_value = (True, "")
+        mock.ask_question.return_value = ""
+
+    def _apply_loop_guard_defaults(self, mock: Any) -> None:
+        import os
+
+        mock.should_continue.side_effect = lambda turn_count: (
+            turn_count < int(os.getenv("TEDDY_MAX_TURNS", "1"))
+        )
 
     def get_service(self, service_type: Any) -> Any:
         """Resolves a service from the test-configured container."""

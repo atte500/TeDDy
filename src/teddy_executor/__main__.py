@@ -207,9 +207,6 @@ def resume(
     ),
     no_copy: bool = OPT_NO_COPY,
     ui_mode: Optional[bool] = OPT_UI_MODE,
-    message: Optional[str] = typer.Option(
-        None, "-m", "--message", help="Instruction to bridge to the next turn."
-    ),
 ):
     """
     Intelligently resumes the last turn of a session or starts a new one.
@@ -228,7 +225,6 @@ def resume(
         path=path,
         interactive=interactive,
         no_copy=no_copy,
-        message=message,
     )
 
 

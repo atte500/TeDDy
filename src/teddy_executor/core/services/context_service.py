@@ -171,7 +171,11 @@ class ContextService(IGetContextUseCase):
 
         # R-10-14: Parallelize to handle large repositories without stalling the UI.
         # We use a ThreadPoolExecutor as token counting is often offloaded or involves latency.
-        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        # R-10-12: Disable parallelization in tests to avoid pyfakefs deadlocks.
+        import os
+
+        max_workers = 10 if not os.environ.get("TEDDY_TESTING") else 1
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_path = {
                 executor.submit(get_count, path): path for path in unique_paths
             }

@@ -8,6 +8,7 @@ from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.session_manager import ISessionManager
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
+from teddy_executor.core.ports.outbound.session_loop_guard import ISessionLoopGuard
 from teddy_executor.core.utils.string import slugify
 from teddy_executor.adapters.inbound.cli_formatter import format_project_context
 from teddy_executor.adapters.inbound.cli_helpers import (
@@ -43,27 +44,27 @@ def handle_new_session(  # noqa: PLR0913
             actual_name = slugify(message)
         else:
             actual_name = "session-auto"
-        session_dir = session_manager.create_session(name=actual_name, agent_name=agent)
+        session_dir = session_manager.create_session(
+            name=actual_name, agent_name=agent, initial_request=message
+        )
         typer.echo(f"Session created at: {session_dir}")
 
         # Streamlined Initialization: Trigger resume (which triggers planning for EMPTY state)
         orchestrator = container.resolve(IRunPlanUseCase)
+        loop_guard = container.resolve(ISessionLoopGuard)
 
         # Use the actual folder name for session orchestration
         current_session_name = Path(session_dir).name
+        turn_count = 0
         while True:
+            turn_count += 1
             # Safeguard: prevent infinite loops in non-interactive CI environments
             report = orchestrator.resume(
                 session_name=current_session_name,
                 interactive=interactive,
-                message=message,
             )
             if report is None:
                 break
-
-            # After the first successful resumption (which might trigger planning),
-            # we clear the initial CLI message so it doesn't get re-used for Turn 2.
-            message = None
 
             # R-10-12: In session mode, we do NOT exit on validation failure
             # because the orchestrator triggers an automatic re-plan.
@@ -71,7 +72,7 @@ def handle_new_session(  # noqa: PLR0913
                 container, report, no_copy, silent=True, exit_on_failure=False
             )
 
-            if not interactive:
+            if not interactive or not loop_guard.should_continue(turn_count):
                 break
 
             # Re-resolve the session name in case it was auto-renamed during the turn
@@ -168,7 +169,6 @@ def handle_resume_session(
     path: Optional[str] = None,
     interactive: bool = True,
     no_copy: bool = False,
-    message: Optional[str] = None,
 ):
     """Logic for the 'resume' command."""
     import re
@@ -196,15 +196,15 @@ def handle_resume_session(
         typer.echo(f"Resuming session: {display_name}")
 
         orchestrator = container.resolve(IRunPlanUseCase)
+        loop_guard = container.resolve(ISessionLoopGuard)
+        turn_count = 0
         while True:
+            turn_count += 1
             report = orchestrator.resume(
-                session_name=session_name, interactive=interactive, message=message
+                session_name=session_name, interactive=interactive
             )
             if not report:
                 break
-
-            # Clear the message so it's not reused in the loop
-            message = None
 
             # R-10-12: In session mode, we do NOT exit on validation failure
             # because the orchestrator triggers an automatic re-plan.
@@ -212,7 +212,7 @@ def handle_resume_session(
                 container, report, no_copy, silent=True, exit_on_failure=False
             )
 
-            if not interactive:
+            if not interactive or not loop_guard.should_continue(turn_count):
                 break
 
     except Exception as e:

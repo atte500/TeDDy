@@ -54,6 +54,9 @@ def _register_services(container: punq.Container) -> None:
     from teddy_executor.core.services.markdown_report_formatter import (
         MarkdownReportFormatter,
     )
+    from teddy_executor.core.services.session_loop_guard import (
+        ProductionSessionLoopGuard,
+    )
     from teddy_executor.core.domain.models.action_ports import ActionPorts
 
     container.register(
@@ -71,6 +74,7 @@ def _register_services(container: punq.Container) -> None:
         IWebScraper,
         IWebSearcher,
     )
+    from teddy_executor.core.ports.outbound.session_loop_guard import ISessionLoopGuard
 
     container.register(
         IActionFactory,
@@ -100,6 +104,10 @@ def _register_services(container: punq.Container) -> None:
     )
     container.register(
         IMarkdownReportFormatter, MarkdownReportFormatter, scope=punq.Scope.transient
+    )
+
+    container.register(
+        ISessionLoopGuard, ProductionSessionLoopGuard, scope=punq.Scope.transient
     )
     _register_orchestration_services(container)
 

@@ -35,7 +35,6 @@ class SessionLifecycleManager:
         session_name: str,
         orchestrator: IRunPlanUseCase,
         interactive: bool = True,
-        message: Optional[str] = None,
         project_context: Optional[Any] = None,
     ) -> Optional[ExecutionReport]:
         """Implements the 'resume' state machine."""
@@ -46,7 +45,6 @@ class SessionLifecycleManager:
             return orchestrator.execute(
                 plan_path=plan_path,
                 interactive=interactive,
-                message=message,
                 project_context=project_context,
             )
 
@@ -55,7 +53,6 @@ class SessionLifecycleManager:
                 turn_path,
                 orchestrator,
                 interactive,
-                message=message,
                 project_context=project_context,
             )
 
@@ -67,7 +64,6 @@ class SessionLifecycleManager:
                 next_turn_dir,
                 orchestrator,
                 interactive,
-                message=message,
                 project_context=project_context,
             )
 
@@ -78,18 +74,16 @@ class SessionLifecycleManager:
         turn_dir: str,
         orchestrator: IRunPlanUseCase,
         interactive: bool,
-        message: Optional[str] = None,
         project_context: Optional[Any] = None,
     ) -> Optional[ExecutionReport]:
         """Triggers planning for a turn and then executes the resulting plan."""
-        new_name = self._session_planner.trigger_new_plan(turn_dir, message=message)
+        new_name = self._session_planner.trigger_new_plan(turn_dir)
         if not new_name or new_name == "CANCELLED":
             return None
         _, actual_turn_path = self._session_service.get_session_state(new_name)
         return orchestrator.execute(
             plan_path=f"{actual_turn_path}/plan.md",
             interactive=interactive,
-            message=message,
             project_context=project_context,
         )
 
@@ -146,7 +140,8 @@ class SessionLifecycleManager:
 
         # 1. Persist the report to the current turn directory
         formatted_report = self._report_formatter.format(report)
-        report_file_path = str(turn_dir / "report.md")
+        # Use root-relative path for report persistence to ensure context discovery
+        report_file_path = self._session_service.to_root_relative(turn_dir, "report.md")
         self._file_system_manager.write_file(report_file_path, formatted_report)
 
         # Extract manual pruning paths from plan metadata

@@ -54,11 +54,6 @@ class PromptManager(IPromptManager):
             if self._file_system_manager.path_exists(request_path):
                 resolved = self._file_system_manager.read_file(request_path)
 
-        if resolved is None and self._user_interactor:
-            resolved = self._user_interactor.ask_question(
-                "Enter your instructions for the AI"
-            )
-
         if resolved is not None and not resolved.strip():
             # User provided empty input at the prompt (just hit enter) -> Exit
             return None
@@ -117,10 +112,10 @@ class PromptManager(IPromptManager):
 
         meta["model"] = str(getattr(response, "model", "unknown"))
 
-        # R-10-12: Capture finish_reason to diagnose empty responses (safety/filter/length)
+        # R-10-12: Capture finish_reason as primitive to prevent MagicMock recursion in YAML
         if hasattr(response, "choices") and len(response.choices) > 0:
-            meta["finish_reason"] = getattr(
-                response.choices[0], "finish_reason", "unknown"
+            meta["finish_reason"] = str(
+                getattr(response.choices[0], "finish_reason", "unknown")
             )
 
         serializable_meta = scrub_dict_for_serialization(meta)

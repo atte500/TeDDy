@@ -15,7 +15,11 @@ def scrub_dict_for_serialization(data: Dict[str, Any]) -> Dict[str, Any]:
     def scrub(v: Any) -> Any:
         """Neutralizes MagicMocks for serialization (PLR0911)."""
         # 1. Neutralize Mocks, Primitives, Enums
-        if hasattr(v, "_mock_return_value") or "Mock" in str(type(v)):
+        if (
+            hasattr(v, "_mock_return_value")
+            or hasattr(v, "assert_called")
+            or "Mock" in str(type(v))
+        ):
             return str(v)
         if isinstance(v, (str, int, float, bool, type(None), datetime, Enum)):
             return v

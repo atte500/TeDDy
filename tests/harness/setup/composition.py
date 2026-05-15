@@ -1,15 +1,16 @@
 # ruff: noqa: E402
 import sys
-from unittest.mock import MagicMock
+from unittest.mock import Mock
 import pytest
 from tests.harness.setup.test_environment import TestEnvironment
+from teddy_executor.core.ports.outbound.session_loop_guard import ISessionLoopGuard
 
 # Globally mock litellm to prevent the expensive 1.2s import in all tests.
-mock_litellm = MagicMock()
+mock_litellm = Mock()
 
 # Configure a "Safe-by-Default" response for litellm.completion()
-_default_completion_mock = MagicMock()
-_default_choice = MagicMock()
+_default_completion_mock = Mock()
+_default_choice = Mock()
 _default_choice.message.content = "# Mock Plan\nRationale: Test\n## Action Plan\n### READ\n- Resource: [README.md](/README.md)\n"
 _default_completion_mock.choices = [_default_choice]
 _default_completion_mock.model = "mock-model"
@@ -92,6 +93,16 @@ def container(monkeypatch):
     from teddy_executor.container import create_container
 
     c = create_container()
+
+    class TestSessionLoopGuard(ISessionLoopGuard):
+        def should_continue(self, turn_count: int) -> bool:
+            import os
+
+            max_turns = int(os.getenv("TEDDY_MAX_TURNS", "1"))
+            return turn_count < max_turns
+
+    c.register(ISessionLoopGuard, TestSessionLoopGuard)
+
     # Force the global container to be this fresh instance
     monkeypatch.setattr(teddy_executor.container, "_container", c)
     return c

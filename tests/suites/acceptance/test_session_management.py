@@ -67,7 +67,9 @@ def test_teddy_resume_prompts_for_new_plan(tmp_path: Path, monkeypatch):
     """Scenario: 'resume' prompts for input if no plan exists for the current turn."""
     env = TestEnvironment(monkeypatch, tmp_path).setup()
     adapter = CliTestAdapter(monkeypatch, tmp_path)
-    turn_dir = tmp_path / ".teddy" / "sessions" / "resume-new" / "02"
+    # Use a standard session name pattern to avoid auto-renaming
+    session_name = "20260515_120000-resume-new"
+    turn_dir = tmp_path / ".teddy" / "sessions" / session_name / "02"
     turn_dir.mkdir(parents=True)
     (turn_dir.parent / "session.context").touch()
     (turn_dir / "turn.context").touch()
@@ -78,11 +80,18 @@ def test_teddy_resume_prompts_for_new_plan(tmp_path: Path, monkeypatch):
     plan = MarkdownPlanBuilder("New").add_execute("echo 1").build()
     llm.get_completion.return_value = mock_response(plan)  # type: ignore[attr-defined]
 
-    result = adapter.run_cli_command(["resume", "-y", "-m", "My Goal"], cwd=turn_dir)
+    # Discovery protocol: My Goal is in initial_request.md (seeded during setup or start)
+    (turn_dir.parent / "initial_request.md").write_text("My Goal")
+    (turn_dir.parent / "session.context").write_text(
+        f".teddy/sessions/{session_name}/initial_request.md"
+    )
+
+    result = adapter.run_cli_command(["resume", "-y"], cwd=turn_dir)
     assert result.exit_code == 0
 
     assert (turn_dir / "plan.md").exists()
     sent = llm.get_completion.call_args[1]["messages"][1]["content"]  # type: ignore[attr-defined]
+    # AI discovers 'My Goal' by reading the context file
     assert "My Goal" in sent
 
 
@@ -117,6 +126,7 @@ def test_teddy_start_dynamic_renaming_and_flow(tmp_path: Path, monkeypatch):
 
 def test_teddy_resume_continuous_loop(tmp_path: Path, monkeypatch):
     """Scenario: 'resume' continuously loops until the user exits."""
+    monkeypatch.setenv("TEDDY_MAX_TURNS", "2")
     env = (
         TestEnvironment(monkeypatch, tmp_path)
         .setup()

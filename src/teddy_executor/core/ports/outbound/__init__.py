@@ -5,6 +5,7 @@ from .llm_client import ILlmClient, LlmApiError
 from .markdown_report_formatter import IMarkdownReportFormatter
 from .prompt_manager import IPromptManager
 from .repo_tree_generator import IRepoTreeGenerator
+from .session_loop_guard import ISessionLoopGuard
 from .session_manager import ISessionManager
 from .shell_executor import IShellExecutor
 from .system_environment import ISystemEnvironment
@@ -21,6 +22,7 @@ __all__ = [
     "IMarkdownReportFormatter",
     "IPromptManager",
     "IRepoTreeGenerator",
+    "ISessionLoopGuard",
     "ISessionManager",
     "IShellExecutor",
     "ISystemEnvironment",

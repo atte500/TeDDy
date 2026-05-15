@@ -40,6 +40,8 @@ class LocalFileSystemAdapter(IFileSystemManager):
         Resolves a path relative to the root_dir.
         """
         path_obj = Path(path)
+        if not hasattr(self, "_resolved_root"):
+            self._resolved_root = self.root_dir.resolve()
         if path_obj.is_absolute():
             # Optimization: Only resolve if there are symlinks or ".." components.
             if ".." in str(path) or path_obj.is_symlink():
@@ -59,8 +61,8 @@ class LocalFileSystemAdapter(IFileSystemManager):
 
         # Join and resolve. This ensures we have a canonical, absolute path
         # within our root_dir, preventing macOS resolution hangs.
-        # Optimization: Pre-resolve root_dir once (though here we rely on Path caching).
-        base = self.root_dir.resolve()
+        # Optimization: Pre-resolve root_dir once
+        base = self._resolved_root
         target = base / clean_path
 
         # Only resolve if strictly necessary to avoid performance hits in loops
