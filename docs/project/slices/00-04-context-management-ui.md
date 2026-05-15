@@ -75,7 +75,7 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 - [x] **Logic** - Implement initial_request.md persistence at the session root in `SessionService.create_session`.
 - [x] **Logic** - Update `SessionService` to seed `initial_request.md` into the `session.context` file and allow it to be pruned via the TUI.
 - [x] **Logic** - Update `PlanningPorts` and `PlanningService` for `ISessionManager` injection.
-- [ ] **Logic** - Implement `user_request.md` persistence in PlanningService using root-relative paths.
+- [ ] **Logic** - Remove persistence logic from `PlanningService` to ensure `initial_request.md` remains **IMMUTABLE**.
 - [ ] **Logic** - Implement `report.md` persistence in `SessionLifecycleManager` using root-relative paths.
 - [ ] **Cleanup** - Remove interactive `ask_question` fallback from `PromptManager.resolve_message`.
 - [ ] **Cleanup** - Remove all "Instruction Injection" and LLM `user_message` logic from `PlanningService`.
@@ -281,12 +281,12 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 
 ### Session Root Goal Protocol (Immutable Goal)
 - **Bootstrap:** `SessionService.create_session` MUST accept the initial user message and save it as `initial_request.md` at the session root. This file is the **Session Goal**.
-- **Immutability:** Once written, `initial_request.md` MUST NEVER be modified or overwritten by the system.
+- **Immutability:** Once written during bootstrap, `initial_request.md` **MUST NEVER** be modified, overwritten, or updated by the system. It represents the original, unchanging objective of the session.
 - **Context Seeding:** The path `initial_request.md` is appended to `session.context` during bootstrap. This ensures it is always present in the AI's world-view as project context.
 
 ### Instruction Discovery (The Audit Trail Model)
 - **Pure input.md:** `PlanningService` MUST NOT inject instructions or user messages into the `input.md` or the LLM's `messages` list. `input.md` is a pure state snapshot.
-- **Instruction Discovery:** The AI discovers its "Current Task" by reading the context. Specifically, it observes the **Session Goal** (`initial_request.md`) and the **Latest Audit Trail** (the previous turn's `report.md`).
+- **Instruction Discovery:** The AI discovers its "Current Task" by reading the context. Specifically, it observes the **Immutable Session Goal** (`initial_request.md`) and the **Latest Audit Trail** (the previous turn's `report.md`).
 - **Feedback Loop:** Any user feedback (CLI `-m` or TUI `m` key) is captured in the metadata of the *current* turn. This metadata is used **exclusively** to populate the `User Request` section of the current turn's `report.md`.
 - **Turn Transition:** Because Turn N's `report.md` is automatically included in Turn N+1's context, the feedback naturally flows to the AI as a project artifact.
 

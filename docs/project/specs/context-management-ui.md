@@ -4,12 +4,16 @@
 ## Overview / Problem Statement
 In interactive sessions, users currently lack visibility into the token footprint of their context files and lack a direct UI mechanism to prune context before generating the next plan. The current workflow (instructing the AI to `PRUNE` files) is inefficient. Furthermore, context tends to bloat over time with large files or failed execution reports, leading to wasted tokens.
 
+Finally, the system requires a stable, **Immutable Session Goal** (`initial_request.md`) at the session root to anchor the AI's long-term objective, while allowing turn-specific feedback to flow naturally through the audit trail.
+
 This feature introduces a native "Context Management" section within the `TextualPlanReviewer` TUI, allowing users to manually toggle files for the *next* turn. It also introduces an "Auto-Pruning" system driven by configuration rules to intelligently pre-deselect problematic files.
 
 ## Guiding Principles / Core Logic
 - **Forward-Looking:** Context modifications made during the review phase apply exclusively to the *next* turn's context (`turn.context`), not the current turn.
 - **User Supremacy:** Auto-pruning rules only *pre-deselect* items in the TUI. The user always has the final say and can re-select an auto-pruned file before submitting.
 - **Architectural Purity:** The `IPlanReviewer` must remain a pure function of `(Plan, ContextMetadata) -> Plan`. It must not directly mutate the filesystem. Unselected context items should be recorded in the `Plan` object's metadata for the `SessionOrchestrator` to process.
+- **Immutable Session Goal:** The `initial_request.md` file at the session root represents the original bootstrap objective. Once written by the `SessionService` during bootstrap, it **MUST NEVER** be modified or updated.
+- **Instruction Discovery:** The AI discovers its current instructions by observing the **Immutable Goal** (if still provided in session.context and not pruned by user) qand the **Latest Audit Trail** (the previous turn's `report.md`). New user feedback is captured in the metadata of the current turn and persisted only in that turn's report.
 
 ## Technical Specification
 - **Domain Models:** Introduce `ContextItem` DTO to hold metadata for a single file (`path`, `token_count`, `source_scope`, `git_status`, `is_auto_pruned`). Update `ProjectContext` to include a list of these items.
