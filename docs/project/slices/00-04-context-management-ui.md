@@ -72,10 +72,12 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 - [x] **Logic** - Update `SessionPruningService` heuristics to trigger recovery cleanup immediately if `current_status` is green.
 - [x] **Wiring** - Update `SessionOrchestrator.execute` to pass the plan status to the pruning service.
 - [x] **Refactor** - Refactor `extract_status_emoji` in `textual_plan_reviewer_helpers.py` to use anchored regex targeting the status line.
-- [ ] **Refactor** - Move robust instruction resolution logic to `markdown.py` as a shared utility.
-- [ ] **Logic** - Implement the "Audit Trail" principle: return `""` if `report.md` exists but no explicit `User Request` is found.
-- [ ] **Logic** - Update `SessionPlanner._resolve_message_from_previous_turn` to use the shared utility.
-- [ ] **Logic** - Update `PromptManager.resolve_message` to use the shared utility, eliminating duplicated logic.
+- [ ] **Logic** - Implement `Turn 00` directory creation and `initial_request.md` persistence in `SessionService`.
+- [ ] **Logic** - Update `SessionService` to seed `00/initial_request.md` into the context and allow it to be pruned like any other file.
+- [ ] **Cleanup** - Remove legacy "User Request" extraction logic from `SessionPlanner` and `PromptManager`.
+- [ ] **Logic** - Refactor `PromptManager` to treat `initial_request.md` as context and prioritize turn-specific feedback (the `m` key).
+- [ ] **Logic** - Remove instruction injection from `PlanningService.generate_plan` (keeping `input.md` as pure project state).
+- [ ] **Wiring** - Verify end-to-end "Turn 00" visibility in the TUI Context Tree and session resumption.
 - [ ] **Wiring** - Verify that all symptoms of Session Loop Breakage are resolved using the provided MRE.
 
 ## Implementation Notes
@@ -221,15 +223,21 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 - **Ports:**
     - `src/teddy_executor/core/ports/outbound/llm_client.py`: Add `get_text_token_count(text: str, model: Optional[str] = None) -> int`.
     - `src/teddy_executor/core/ports/inbound/plan_reviewer.py`: Update `review()` to accept `project_context: Optional[ProjectContext]`.
-- **Migration (Shared Seams):**
-    - `src/teddy_executor/core/services/execution_orchestrator.py`: Update the call to `self._plan_reviewer.review(plan)` to pass `project_context`.
-    - `src/teddy_executor/adapters/inbound/console_plan_reviewer.py`: Update implementation of `review()` to accept the optional `project_context` argument (Expansion).
 - **Adapters:**
     - `src/teddy_executor/adapters/outbound/litellm_adapter.py`: Implement `get_text_token_count` using `litellm.token_counter(text=text, ...)`.
     - `src/teddy_executor/adapters/inbound/textual_plan_reviewer_app.py`: Store `ProjectContext` in `ReviewerApp.__init__` and pass it to `on_mount_logic`.
 - **Services:**
+    - `src/teddy_executor/core/services/session_service.py`:
+        - Update `create_session` to initialize `00/initial_request.md`.
+        - Update `transition_to_next_turn` to ensure `00/initial_request.md` is always in the context set.
+    - `src/teddy_executor/core/services/planning_service.py`:
+        - Remove `input.md` instruction injection.
+        - Pass `user_message` to `PromptManager` for metadata persistence.
+    - `src/teddy_executor/core/services/prompt_manager.py`:
+        - Implement `meta.yaml` persistence for `user_request`.
+        - Remove regex-based instruction extraction from reports.
+        - Update `resolve_message` to prioritize `meta.yaml` feedback.
     - `src/teddy_executor/core/services/context_service.py`: Update `get_context` to iterate through `scoped_paths`, count tokens per file using `ILlmClient`, and parse `git_status` output into clean 2-char codes for `ContextItem`s.
-    - `src/teddy_executor/core/services/session_orchestrator.py`: In `execute()`, call `context_service.get_context()`, apply pruning heuristics (check file patterns for `FAILURE`, token thresholds from config), and pass the enriched `ProjectContext` to the reviewer.
 - **UI Logic:**
     - `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py`:
         - Implement `rebuild_context_tree(app)` with a guard flag to prevent duplication.
@@ -237,6 +245,19 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
         - Update `format_node_label` heuristics to handle `ContextItem` styling (bold paths, colored labels, grayed-out tokens).
 
 ## Guidelines for Implementation
+
+### Turn 00 Protocol
+- **Bootstrap:** `SessionService.create_session` MUST create a `00` directory within the session root. The initial user request is saved as `00/initial_request.md`. It MUST be seeded into the Turn 01 `turn.context` during bootstrap.
+- **Context Persistence:** `00/initial_request.md` is treated as a standard context item. It is carried forward through turn transitions by default but is subject to the same pruning logic as any other file.
+- **TUI Visibility:** The `00/initial_request.md` file MUST be visible in the "Session Context" tree under the `Session` scope. Users can edit it using the `e` key to update the "Session Goal" dynamically.
+
+### Instruction Lifecycle & Transparency
+- **Pure input.md:** `PlanningService` MUST NOT inject the user request into the `input.md` content. The `input.md` file remains a pure snapshot of the file tree and relevant file contents.
+- **Metadata-Driven Resumption:** `PromptManager.resolve_message` MUST prioritize turn-specific feedback stored in the current turn's `meta.yaml` (key: `user_request`). If no feedback is present, it relies on the goal being present in the `turn.context`.
+- **Machine-Readable Goal:** `PromptManager.update_meta` MUST save the `user_request` to the `meta.yaml` file to ensure `teddy resume` can function without re-parsing Markdown reports.
+- **Human-Readable Audit:** The `ExecutionReportAssembler` continues to populate the `user_request` field from metadata, ensuring the report remains a complete, self-contained record of the turn.
+
+### TUI Context Management
 - **Guarded TUI Build:** The `ReviewerApp` and `reviewer_logic` MUST implement a guarded build pattern (using a boolean flag like `_context_built`) to ensure the tree is populated exactly once. The base `ReviewerApp.on_mount` logic should be bypassed or cleared using `tree.clear()` before custom population.
 - **Git Status Parsing:** Use `git status -s`.
     - Map `??` to `U` (Untracked) for visual consistency with modern IDEs.
