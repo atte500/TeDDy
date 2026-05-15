@@ -72,8 +72,8 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 - [x] **Logic** - Update `SessionPruningService` heuristics to trigger recovery cleanup immediately if `current_status` is green.
 - [x] **Wiring** - Update `SessionOrchestrator.execute` to pass the plan status to the pruning service.
 - [x] **Refactor** - Refactor `extract_status_emoji` in `textual_plan_reviewer_helpers.py` to use anchored regex targeting the status line.
-- [x] **Logic** - Implement `initial_request.md` persistence at the session root in `SessionService.create_session`.
-- [ ] **Logic** - Update `SessionService` to seed `initial_request.md` into the `session.context` file and allow it to be pruned via the TUI.
+- [x] **Logic** - Implement initial_request.md persistence at the session root in `SessionService.create_session`.
+- [x] **Logic** - Update `SessionService` to seed `initial_request.md` into the `session.context` file and allow it to be pruned via the TUI.
 - [ ] **Cleanup** - Remove legacy "User Request" extraction logic from `SessionPlanner` and `PromptManager`.
 - [ ] **Logic** - Refactor `PromptManager` to treat `initial_request.md` as context and prioritize turn-specific feedback (the `m` key).
 - [ ] **Logic** - Remove instruction injection from `PlanningService.generate_plan` (keeping `input.md` as pure project state).
@@ -216,6 +216,11 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 - Expanded `ISessionManager` protocol and `SessionService.create_session` implementation to accept an optional `initial_request` string.
 - Implemented file writing logic to save the request as `initial_request.md` in the session root directory during bootstrap.
 - Verified via unit tests that the file is correctly placed alongside `session.context` and that the implementation handles optionality gracefully.
+
+### Logic - Seed initial_request.md into session.context
+- Updated `SessionService.create_session` to append `initial_request.md` to the `clean_context` string if an `initial_request` is provided.
+- Reordered the `session.context` write operation to occur after the initial request check.
+- Verified via unit tests that the request file is correctly registered in the session context, enabling its visibility in the TUI under the `Session` scope.
 
 ## Technical Debt
 - **[DEBT]** Harness Complexity: `without_reviewer()` in `TestEnvironment` is a manual container re-wiring. Consider a more robust `interactive_mode` configuration (e.g., `"tui" | "console"`) for the harness to toggle between `IPlanReviewer` and `IUserInteractor` cleanly.

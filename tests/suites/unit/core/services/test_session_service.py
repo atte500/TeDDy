@@ -88,6 +88,40 @@ def test_create_session_persists_initial_request(env):
     mock_fs.write_file.assert_any_call(expected_path, initial_request)
 
 
+def test_create_session_seeds_initial_request_into_session_context(env):
+    """
+    Tests that create_session appends initial_request.md to session.context.
+    """
+    # Arrange
+    mock_time = env.mock_port(ITimeService)
+    mock_prompts = env.mock_port(IPromptManager)
+    service = env.get_service(ISessionManager)
+    mock_fs = env.get_mock_filesystem()
+
+    session_name = "seed-x"
+    agent_name = "pathfinder"
+    initial_request = "Goal"
+    mock_time.now.return_value = datetime(2026, 5, 15, 10, 0, 0)
+    mock_time.now_utc.return_value = datetime(2026, 5, 15, 10, 0, 0)
+    mock_prompts.get_prompt_content.return_value = "<prompt/>"
+    mock_fs.read_file.return_value = "README.md"
+
+    # Act
+    service.create_session(
+        name=session_name, agent_name=agent_name, initial_request=initial_request
+    )
+
+    # Assert
+    context_path = str(Path(".teddy/sessions/20260515_100000-seed-x/session.context"))
+    # We find the call to write session.context
+    context_call = [
+        c for c in mock_fs.write_file.call_args_list if context_path in str(c)
+    ][0]
+    written_content = context_call.args[1]
+
+    assert "initial_request.md" in written_content.splitlines()
+
+
 def test_transition_to_next_turn_prevents_context_leakage_on_failure(env):
     """
     Ensures that READ actions only update turn.context if they were successful.

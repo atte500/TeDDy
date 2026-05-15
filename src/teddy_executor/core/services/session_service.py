@@ -56,15 +56,18 @@ class SessionService(ISessionManager):
                 if line.strip() and not line.strip().startswith("#")
             ]
         )
-        self._file_system_manager.write_file(
-            f"{session_root}/session.context", clean_context
-        )
 
         # 2. Persist initial request if provided
         if initial_request:
             self._file_system_manager.write_file(
                 f"{session_root}/initial_request.md", initial_request
             )
+            # Seed the request into the session context
+            clean_context += "\ninitial_request.md"
+
+        self._file_system_manager.write_file(
+            f"{session_root}/session.context", clean_context
+        )
 
         # 3. Populate specific agent prompt file
         prompt_content = self._prompt_manager.get_prompt_content(agent_name)
