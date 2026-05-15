@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import create_autospec
 from teddy_executor.core.services.session_pruning_service import SessionPruningService
 from teddy_executor.core.domain.models.project_context import (
     ProjectContext,
@@ -9,7 +9,12 @@ from teddy_executor.core.domain.models.project_context import (
 
 @pytest.fixture
 def pruning_service():
-    config = MagicMock()
+    from teddy_executor.core.ports.outbound.config_service import IConfigService
+    from teddy_executor.core.ports.outbound.file_system_manager import (
+        IFileSystemManager,
+    )
+
+    config = create_autospec(IConfigService, instance=True)
     # Enable all pruning heuristics
     config.get_setting.side_effect = lambda k, d=None: {
         "auto_pruning.enabled": True,
@@ -17,7 +22,7 @@ def pruning_service():
         "auto_pruning.prune_validation_failures": True,
         "auto_pruning.global_context_threshold": 0,
     }.get(k, d)
-    fs = MagicMock()
+    fs = create_autospec(IFileSystemManager, instance=True)
     return SessionPruningService(config, fs)
 
 
@@ -74,11 +79,11 @@ def test_pruning_handles_windows_path_separators(pruning_service):
     def mock_read(path):
         p = path.replace("\\", "/")
         if "01/plan.md" in p:
-            return "Status: 🟢"
+            return "- **Status:** SUCCESS 🟢"
         if "02/plan.md" in p:
-            return "Status: 🔴"
+            return "- **Status:** FAILURE 🔴"
         if "03/plan.md" in p:
-            return "Status: 🟢"
+            return "- **Status:** SUCCESS 🟢"
         return ""
 
     pruning_service._file_system_manager.path_exists.return_value = True

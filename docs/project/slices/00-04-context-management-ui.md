@@ -68,7 +68,7 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 - [x] **Contract** - Add `max_turns_retention: 25` to `config.yaml`.
 - [x] **Showcase** - Create `showcases/00-04/showcase_heuristics.sh` to demonstrate failure-streak preservation, post-green cleanup, and retention limits.
 - [x] **Contract** - Update `SessionPruningService.prune` signature to accept `current_status: Optional[str]`.
-- [ ] **Logic** - Refactor `SessionPruningService` to use regex-anchored status detection targeting the `- **Status:**` line.
+- [x] **Logic** - Refactor `SessionPruningService` to use regex-anchored status detection targeting the `- **Status:**` line.
 - [x] **Logic** - Update `SessionPruningService` heuristics to trigger recovery cleanup immediately if `current_status` is green.
 - [x] **Wiring** - Update `SessionOrchestrator.execute` to pass the plan status to the pruning service.
 - [ ] **Refactor** - Refactor `extract_status_emoji` in `textual_plan_reviewer_helpers.py` to use anchored regex targeting the status line.
@@ -198,6 +198,12 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 ### Wiring - SessionOrchestrator Status Propagation
 - Updated `SessionOrchestrator.execute` to extract `Status` from plan metadata and pass it to the `pruning_service.prune` method.
 - Refactored `SessionOrchestrator` unit test fixture to use a mock context service, resolving `AttributeError` regressions during dependency injection testing.
+
+### Logic - Refactor SessionPruningService status detection
+- Implemented `_check_plan_failed` using `re.search(r"^- \*\*Status:\*\*.*[🔴🟡]", content, re.MULTILINE)`.
+- Implemented `_check_report_failed_validation` using `re.search(r"^- \*\*Overall Status:\*\* Validation Failed", content, re.MULTILINE)`.
+- These anchored regexes prevent false positives from emojis or "Validation Failed" strings appearing in rationales or user notes.
+- Updated `test_session_pruning_windows.py`, `test_session_pruning_robustness.py`, and `test_context_management_ui.py` to use protocol-compliant status strings in mocks.
 
 ## Technical Debt
 - **[DEBT]** Harness Complexity: `without_reviewer()` in `TestEnvironment` is a manual container re-wiring. Consider a more robust `interactive_mode` configuration (e.g., `"tui" | "console"`) for the harness to toggle between `IPlanReviewer` and `IUserInteractor` cleanly.

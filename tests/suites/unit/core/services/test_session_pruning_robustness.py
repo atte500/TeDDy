@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import create_autospec
 from teddy_executor.core.services.session_pruning_service import SessionPruningService
 from teddy_executor.core.domain.models.project_context import (
     ProjectContext,
@@ -11,7 +11,7 @@ from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemMa
 
 @pytest.fixture
 def mock_config():
-    config = MagicMock(spec=IConfigService)
+    config = create_autospec(IConfigService, instance=True)
     config.get_setting.side_effect = lambda k, d=None: {
         "auto_pruning.enabled": True,
         "auto_pruning.prune_failure_history": True,
@@ -22,7 +22,7 @@ def mock_config():
 
 @pytest.fixture
 def mock_fs():
-    return MagicMock(spec=IFileSystemManager)
+    return create_autospec(IFileSystemManager, instance=True)
 
 
 @pytest.fixture
@@ -34,9 +34,9 @@ def test_prune_handles_padding_mismatch(service, mock_fs):
     # Scenario: Turn 1 failed, Turn 2 is green (Recovery).
     def mock_read(p):
         if "1/plan.md" in p:
-            return "🔴"
+            return "- **Status:** 🔴"
         if "2/plan.md" in p:
-            return "🟢"
+            return "- **Status:** 🟢"
         return ""
 
     mock_fs.read_file.side_effect = mock_read
@@ -82,9 +82,9 @@ def test_prune_handles_regex_shadowing(service, mock_fs):
     # Turn 01 failed, Turn 02 green (Recovery).
     def mock_read(p):
         if "01/plan.md" in p:
-            return "🔴"
+            return "- **Status:** 🔴"
         if "02/plan.md" in p:
-            return "🟢"
+            return "- **Status:** 🟢"
         return ""
 
     mock_fs.read_file.side_effect = mock_read

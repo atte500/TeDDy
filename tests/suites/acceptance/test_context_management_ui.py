@@ -164,14 +164,14 @@ def _setup_acceptance_session(env, session_dir):
     env.workspace.joinpath(f"{session_dir}/03").mkdir(parents=True)
 
     env.workspace.joinpath(f"{session_dir}/01/plan.md").write_text(
-        "# Turn 1\nStatus: 🟢"
+        "# Turn 1\n- **Status:** 🟢"
     )
     env.workspace.joinpath(f"{session_dir}/01/report.md").write_text(
-        "# Report 1\nStatus: SUCCESS"
+        "# Report 1\n- **Overall Status:** SUCCESS"
     )
 
     env.workspace.joinpath(f"{session_dir}/02/plan.md").write_text(
-        "# Turn 2\nStatus: 🔴"
+        "# Turn 2\n- **Status:** 🔴"
     )
     env.workspace.joinpath(f"{session_dir}/02/report.md").write_text(
         "# Report 2\nStatus: ABORTED"

@@ -133,16 +133,46 @@ class SessionPruningService:
 
             # Heuristic 4: Validation failure (Check report)
             if prune_validation and posix_path.endswith("report.md"):
-                if self._check_file_contains(item.path, "Validation Failed"):
+                if self._check_report_failed_validation(item.path):
                     validation_failures.add(turn_id)
 
             # Heuristic 3: Non-green state (Check plan)
             if prune_non_green and item.path.endswith("plan.md"):
-                is_green = not self._check_file_contains(item.path, ("🔴", "🟡"))
+                is_green = not self._check_plan_failed(item.path)
                 # If any file in turn is non-green, the whole turn is non-green
                 turn_statuses[turn_id] = turn_statuses.get(turn_id, True) and is_green
 
         return turn_statuses, validation_failures
+
+    def _check_plan_failed(self, path: str) -> bool:
+        """Checks if a plan file contains a failure status emoji on the status line."""
+        try:
+            if self._file_system_manager.path_exists(path):
+                content = self._file_system_manager.read_file(path)
+                # Anchored to start of line to avoid matches in rationales or code blocks
+                return bool(
+                    re.search(r"^- \*\*Status:\*\*.*[🔴🟡]", content, re.MULTILINE)
+                )
+        except (FileNotFoundError, OSError):
+            pass
+        return False
+
+    def _check_report_failed_validation(self, path: str) -> bool:
+        """Checks if a report file contains the official validation failure status."""
+        try:
+            if self._file_system_manager.path_exists(path):
+                content = self._file_system_manager.read_file(path)
+                # Anchored to target the standardized overall status line
+                return bool(
+                    re.search(
+                        r"^- \*\*Overall Status:\*\* Validation Failed",
+                        content,
+                        re.MULTILINE,
+                    )
+                )
+        except (FileNotFoundError, OSError):
+            pass
+        return False
 
     def _check_file_contains(self, path: str, patterns: str | tuple[str, ...]) -> bool:
         """Safely checks if a file exists and contains specific patterns."""
