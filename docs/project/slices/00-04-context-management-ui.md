@@ -74,8 +74,8 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 - [x] **Refactor** - Refactor `extract_status_emoji` in `textual_plan_reviewer_helpers.py` to use anchored regex targeting the status line.
 - [x] **Logic** - Implement initial_request.md persistence at the session root in `SessionService.create_session`.
 - [x] **Logic** - Update `SessionService` to seed `initial_request.md` into the `session.context` file and allow it to be pruned via the TUI.
-- [ ] **Logic** - Update `PlanningPorts` and `PlanningService` for `ISessionManager` injection.
-- [ ] **Logic** - Implement `user_request.md` persistence in `PlanningService` using root-relative paths.
+- [x] **Logic** - Update `PlanningPorts` and `PlanningService` for `ISessionManager` injection.
+- [ ] **Logic** - Implement `user_request.md` persistence in PlanningService using root-relative paths.
 - [ ] **Logic** - Implement `report.md` persistence in `SessionLifecycleManager` using root-relative paths.
 - [ ] **Cleanup** - Remove interactive `ask_question` fallback from `PromptManager.resolve_message`.
 - [ ] **Cleanup** - Remove all "Instruction Injection" and LLM `user_message` logic from `PlanningService`.
@@ -238,6 +238,12 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 - Updated `SessionService.create_session` to append `initial_request.md` to the `clean_context` string if an `initial_request` is provided.
 - Reordered the `session.context` write operation to occur after the initial request check.
 - Verified via unit tests that the request file is correctly registered in the session context, enabling its visibility in the TUI under the `Session` scope.
+
+### Logic - Update PlanningPorts and PlanningService for ISessionManager injection
+- Expanded `PlanningPorts` DTO to include `session_manager: ISessionManager`.
+- Updated `PlanningService.__init__` to store the session manager in `self._session_manager`.
+- Updated `container.py` and unit test fixtures to resolve the new dependency from the container.
+- Resolved a brittle unit test in `test_planning_service_preflight.py` by providing the missing `session_manager` mock.
 
 ## Technical Debt
 - **[DEBT]** Harness Complexity: `without_reviewer()` in `TestEnvironment` is a manual container re-wiring. Consider a more robust `interactive_mode` configuration (e.g., `"tui" | "console"`) for the harness to toggle between `IPlanReviewer` and `IUserInteractor` cleanly.

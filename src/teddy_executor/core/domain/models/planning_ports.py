@@ -28,6 +28,7 @@ class PlanningPorts:
     config: IConfigService
     prompts: IPromptManager
     ui: IUserInteractor
+    session_manager: ISessionManager
 
 
 @dataclass(frozen=True)

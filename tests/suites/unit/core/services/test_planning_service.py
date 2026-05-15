@@ -7,6 +7,7 @@ from teddy_executor.core.ports.outbound import (
     IConfigService,
     IFileSystemManager,
     IUserInteractor,
+    ISessionManager,
 )
 from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
 from teddy_executor.core.services.planning_service import PlanningService
@@ -24,6 +25,7 @@ def service(env):
             config=env.container.resolve(IConfigService),
             prompts=env.container.resolve(IPromptManager),
             ui=env.container.resolve(IUserInteractor),
+            session_manager=env.container.resolve(ISessionManager),
         ),
     )
     env.container.register(PlanningService)
@@ -138,3 +140,11 @@ def test_generate_plan_displays_telemetry_before_llm_call(env):
     assert any("• Model:" in c and "gpt-4o" in c for c in calls)
     assert any("• Context:" in c and "1.2k / 128.0k tokens" in c for c in calls)
     assert any("• Session Cost:" in c and "$0.0500" in c for c in calls)
+
+
+def test_planning_service_has_session_manager(env):
+    """Verify that PlanningService has the session manager injected."""
+    from teddy_executor.core.services.planning_service import PlanningService
+
+    service = env.get_service(PlanningService)
+    assert hasattr(service, "_session_manager")

@@ -1,33 +1,35 @@
 import pytest
-from unittest.mock import MagicMock
+from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
+from teddy_executor.core.ports.outbound import (
+    ILlmClient,
+    IConfigService,
+    IFileSystemManager,
+    IUserInteractor,
+    ISessionManager,
+)
+from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
 from teddy_executor.core.services.planning_service import PlanningService
-from teddy_executor.core.domain.models.planning_ports import PlanningPorts
 from teddy_executor.core.domain.models.exceptions import ConfigurationError
 
 
-def test_generate_plan_raises_configuration_error_on_invalid_config():
+def test_generate_plan_raises_configuration_error_on_invalid_config(env):
     # Arrange
-    # We use a mock for the ports and dependencies
-    mock_llm = MagicMock()
+    mock_llm = env.mock_port(ILlmClient)
     mock_llm.validate_config.return_value = ["Missing GOOGLE_API_KEY"]
 
-    mock_config = MagicMock()
+    mock_config = env.mock_port(IConfigService)
     mock_config.get_config_path.return_value = ".teddy/config.yaml"
 
-    # We need a minimal ports DTO
-    ports = MagicMock(spec=PlanningPorts)
-    ports.llm = mock_llm
-    ports.config = mock_config
-    ports.context = MagicMock()
-    ports.fs = MagicMock()
-    ports.prompts = MagicMock()
-    ports.ui = MagicMock()
+    env.mock_port(IGetContextUseCase)
+    env.mock_port(IFileSystemManager)
+    env.mock_port(IUserInteractor)
+    env.mock_port(ISessionManager)
+    mock_prompt = env.mock_port(IPromptManager)
 
-    # Mock prompt manager to avoid resolving metadata/agent
-    ports.prompts.resolve_message.return_value = "do something"
-    ports.prompts.resolve_agent_metadata.return_value = ("developer", {}, "meta.yaml")
+    mock_prompt.resolve_message.return_value = "do something"
+    mock_prompt.resolve_agent_metadata.return_value = ("developer", {}, "meta.yaml")
 
-    service = PlanningService(ports)
+    service = env.get_service(PlanningService)
 
     # Act / Assert
     with pytest.raises(ConfigurationError) as exc_info:

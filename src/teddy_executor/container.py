@@ -175,6 +175,7 @@ def _register_orchestration_services(container: punq.Container) -> None:
             config=container.resolve(IConfigService),
             prompts=container.resolve(IPromptManager),
             ui=container.resolve(IUserInteractor),
+            session_manager=container.resolve(ISessionManager),
         ),
         scope=punq.Scope.transient,
     )

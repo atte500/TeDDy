@@ -17,6 +17,7 @@ class PlanningService(IPlanningUseCase):
         self._config_service = ports.config
         self._prompt_manager = ports.prompts
         self._user_interactor = ports.ui
+        self._session_manager = ports.session_manager
 
     def generate_plan(
         self,
@@ -35,18 +36,7 @@ class PlanningService(IPlanningUseCase):
         if resolved_message is None:
             return None, 0.0  # type: ignore
 
-        # Pure Context Strategy: Persist new instructions to the goal file
-        # and ensure it is registered in the session context so ContextService picks it up.
-        if resolved_message.strip():
-            request_path = (turn_path.parent / "initial_request.md").as_posix()
-            self._file_system_manager.write_file(request_path, resolved_message)
-
-            session_ctx = (turn_path.parent / "session.context").as_posix()
-            if self._file_system_manager.path_exists(session_ctx):
-                ctx_content = self._file_system_manager.read_file(session_ctx)
-                if request_path not in ctx_content:
-                    new_ctx = f"{ctx_content.strip()}\n{request_path}\n"
-                    self._file_system_manager.write_file(session_ctx, new_ctx.lstrip())
+        self._persist_initial_request(resolved_message, turn_path)
 
         agent_name, meta, meta_file_path = self._prompt_manager.resolve_agent_metadata(
             turn_path
@@ -84,7 +74,38 @@ class PlanningService(IPlanningUseCase):
         if self._user_interactor:
             self._display_telemetry(meta, token_count)
 
-        # R-10-12: Implement retry loop for empty content (common with Gemini/LiteLLM safety blocks)
+        response, plan_content, turn_cost = self._perform_generation_with_retry(
+            messages
+        )
+
+        cost_val = self._prompt_manager.log_telemetry(token_count, turn_cost)
+        plan_path = (turn_path / "plan.md").as_posix()
+        self._file_system_manager.write_file(plan_path, plan_content)
+        self._prompt_manager.update_meta(
+            meta, response, token_count, turn_cost, meta_file_path
+        )
+
+        return plan_path, cost_val
+
+    def _persist_initial_request(self, message: str, turn_path: Path) -> None:
+        """Pure Context Strategy: Persist instructions to the goal file."""
+        if not message.strip():
+            return
+
+        request_path = (turn_path.parent / "initial_request.md").as_posix()
+        self._file_system_manager.write_file(request_path, message)
+
+        session_ctx = (turn_path.parent / "session.context").as_posix()
+        if self._file_system_manager.path_exists(session_ctx):
+            ctx_content = self._file_system_manager.read_file(session_ctx)
+            if request_path not in ctx_content:
+                new_ctx = f"{ctx_content.strip()}\n{request_path}\n"
+                self._file_system_manager.write_file(session_ctx, new_ctx.lstrip())
+
+    def _perform_generation_with_retry(
+        self, messages: list[Dict[str, str]]
+    ) -> tuple[Any, str, float]:
+        """Implements retry loop for empty LLM content."""
         max_retries = 3
         response = None
         plan_content = ""
@@ -98,19 +119,12 @@ class PlanningService(IPlanningUseCase):
             if plan_content and plan_content.strip():
                 break
 
-            if attempt < max_retries - 1:
+            if attempt < max_retries - 1 and self._user_interactor:
                 self._user_interactor.display_message(
                     f"[yellow]Empty response received (Attempt {attempt + 1}/{max_retries}). Retrying...[/yellow]"
                 )
 
-        cost_val = self._prompt_manager.log_telemetry(token_count, turn_cost)
-        plan_path = (turn_path / "plan.md").as_posix()
-        self._file_system_manager.write_file(plan_path, plan_content)
-        self._prompt_manager.update_meta(
-            meta, response, token_count, turn_cost, meta_file_path
-        )
-
-        return plan_path, cost_val
+        return response, plan_content, turn_cost
 
     def _run_preflight_check(self) -> None:
         """Ensures system is configured before attempting generation."""
