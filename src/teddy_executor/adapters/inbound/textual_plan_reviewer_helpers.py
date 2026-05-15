@@ -14,9 +14,17 @@ MAX_LABEL_LENGTH = 60
 
 
 def extract_status_emoji(raw_status: str) -> str:
-    """Extracts the last emoji from a status string."""
+    """Extracts the status emoji, preferring anchored status lines."""
+    # Priority 1: Anchored status line (matches SessionPruningService logic)
+    anchored_match = re.search(
+        r"^- \*\*Status:\*\*.*([🟢🟡🔴])", raw_status, re.MULTILINE
+    )
+    if anchored_match:
+        return anchored_match.group(1)
+
+    # Priority 2: Fallback to first occurring emoji (resilience for unanchored strings)
     emojis = re.findall(r"[🟢🟡🔴]", raw_status)
-    return emojis[-1] if emojis else ""
+    return emojis[0] if emojis else ""
 
 
 def populate_context_detail(app: "ReviewerApp", pane: Any, data: Any) -> None:

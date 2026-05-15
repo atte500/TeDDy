@@ -40,7 +40,9 @@ async def test_edit_action_logic_branches_to_prompt():
         ("", ""),
         ("Trailing space 🟢 ", "🟢"),
         (" 🟢 Leading space", "🟢"),
-        ("Multiple 🟢 Emojis 🟡", "🟡"),
+        ("Multiple 🟢 Emojis 🟡", "🟢"),  # Changed from 🟡 to 🟢 to demand FIRST match
+        ("ON-TRACK 🟢 (avoid 🔴)", "🟢"),  # Poisoning test
+        ("- **Status:** ON-TRACK 🟢", "🟢"),  # Anchored line test
     ],
 )
 def test_extract_status_emoji(raw_status, expected_emoji):

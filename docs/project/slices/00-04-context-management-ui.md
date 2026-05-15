@@ -71,7 +71,7 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 - [x] **Logic** - Refactor `SessionPruningService` to use regex-anchored status detection targeting the `- **Status:**` line.
 - [x] **Logic** - Update `SessionPruningService` heuristics to trigger recovery cleanup immediately if `current_status` is green.
 - [x] **Wiring** - Update `SessionOrchestrator.execute` to pass the plan status to the pruning service.
-- [ ] **Refactor** - Refactor `extract_status_emoji` in `textual_plan_reviewer_helpers.py` to use anchored regex targeting the status line.
+- [x] **Refactor** - Refactor `extract_status_emoji` in `textual_plan_reviewer_helpers.py` to use anchored regex targeting the status line.
 - [ ] **Refactor** - Move robust instruction resolution logic to `markdown.py` as a shared utility.
 - [ ] **Logic** - Implement the "Audit Trail" principle: return `""` if `report.md` exists but no explicit `User Request` is found.
 - [ ] **Logic** - Update `SessionPlanner._resolve_message_from_previous_turn` to use the shared utility.
@@ -198,6 +198,11 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 ### Wiring - SessionOrchestrator Status Propagation
 - Updated `SessionOrchestrator.execute` to extract `Status` from plan metadata and pass it to the `pruning_service.prune` method.
 - Refactored `SessionOrchestrator` unit test fixture to use a mock context service, resolving `AttributeError` regressions during dependency injection testing.
+
+### Refactor - Refine Status Emoji Extraction
+- Refactored `extract_status_emoji` to prioritize anchored status lines (`- **Status:**`) using `re.search` with `re.MULTILINE`.
+- Implemented first-match fallback for unanchored strings to ensure poisoning resilience (e.g., ignoring emojis in parenthetical notes).
+- Synchronized the detection pattern with `SessionPruningService` to ensure a consistent "Source of Truth" for status throughout the session lifecycle.
 
 ### Logic - Refactor SessionPruningService status detection
 - Implemented `_check_plan_failed` using `re.search(r"^- \*\*Status:\*\*.*[🔴🟡]", content, re.MULTILINE)`.
