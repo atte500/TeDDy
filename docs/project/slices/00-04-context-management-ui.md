@@ -74,10 +74,10 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 - [x] **Refactor** - Refactor `extract_status_emoji` in `textual_plan_reviewer_helpers.py` to use anchored regex targeting the status line.
 - [x] **Logic** - Implement initial_request.md persistence at the session root in `SessionService.create_session`.
 - [x] **Logic** - Update `SessionService` to seed `initial_request.md` into the `session.context` file and allow it to be pruned via the TUI.
-- [ ] **Cleanup** - Remove legacy "User Request" extraction logic from `SessionPlanner` and `PromptManager`.
-- [ ] **Logic** - Refactor `PromptManager` to treat `initial_request.md` as context and prioritize turn-specific feedback (the `m` key).
-- [ ] **Logic** - Remove instruction injection from `PlanningService.generate_plan` (keeping `input.md` as pure project state).
-- [ ] **Wiring** - Verify end-to-end `initial_request.md` visibility in the TUI Context Tree (Session Scope).
+- [ ] **Cleanup** - Remove all "Instruction Injection" and LLM `user_message` logic from `PlanningService`.
+- [ ] **Logic** - Refactor `PromptManager` to support report-only instruction metadata (for the Audit Trail).
+- [ ] **Logic** - Enforce `initial_request.md` immutability in `SessionService` and `PlanningService`.
+- [ ] **Wiring** - Verify end-to-end Instruction Discovery via context (Goal + Latest Report).
 - [x] **Wiring** - Verify that all symptoms of Session Loop Breakage are resolved using the provided MRE.
 
 ## Implementation Notes
@@ -269,16 +269,16 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 
 ## Guidelines for Implementation
 
-### Session Root Goal Protocol
-- **Bootstrap:** `SessionService.create_session` MUST accept the initial user message and save it as `initial_request.md` at the session root (sibling to `session.context`).
-- **Context Seeding:** The path `initial_request.md` MUST be appended to the `session.context` file during bootstrap. This ensures it is treated as a standard context item with `Session` scope.
-- **TUI Visibility:** `initial_request.md` MUST be visible in the "Session Context" tree under the `Session` scope. Users can prune it or edit it using the `e` key to update the "Session Goal" dynamically.
+### Session Root Goal Protocol (Immutable Goal)
+- **Bootstrap:** `SessionService.create_session` MUST accept the initial user message and save it as `initial_request.md` at the session root. This file is the **Session Goal**.
+- **Immutability:** Once written, `initial_request.md` MUST NEVER be modified or overwritten by the system.
+- **Context Seeding:** The path `initial_request.md` is appended to `session.context` during bootstrap. This ensures it is always present in the AI's world-view as project context.
 
-### Instruction Lifecycle & Transparency
-- **Pure input.md:** `PlanningService` MUST NOT inject the user request into the `input.md` content. The `input.md` file remains a pure snapshot of the file tree and relevant file contents.
-- **Metadata-Driven Resumption:** `PromptManager.resolve_message` MUST prioritize turn-specific feedback stored in the current turn's `meta.yaml` (key: `user_request`). If no feedback is present, it relies on the goal being present in the `turn.context`.
-- **Machine-Readable Goal:** `PromptManager.update_meta` MUST save the `user_request` to the `meta.yaml` file to ensure `teddy resume` can function without re-parsing Markdown reports.
-- **Human-Readable Audit:** The `ExecutionReportAssembler` continues to populate the `user_request` field from metadata, ensuring the report remains a complete, self-contained record of the turn.
+### Instruction Discovery (The Audit Trail Model)
+- **Pure input.md:** `PlanningService` MUST NOT inject instructions or user messages into the `input.md` or the LLM's `messages` list. `input.md` is a pure state snapshot.
+- **Instruction Discovery:** The AI discovers its "Current Task" by reading the context. Specifically, it observes the **Session Goal** (`initial_request.md`) and the **Latest Audit Trail** (the previous turn's `report.md`).
+- **Feedback Loop:** Any user feedback (CLI `-m` or TUI `m` key) is captured in the metadata of the *current* turn. This metadata is used **exclusively** to populate the `User Request` section of the current turn's `report.md`.
+- **Turn Transition:** Because Turn N's `report.md` is automatically included in Turn N+1's context, the feedback naturally flows to the AI as a project artifact.
 
 ### TUI Context Management
 - **Guarded TUI Build:** The `ReviewerApp` and `reviewer_logic` MUST implement a guarded build pattern (using a boolean flag like `_context_built`) to ensure the tree is populated exactly once. The base `ReviewerApp.on_mount` logic should be bypassed or cleared using `tree.clear()` before custom population.

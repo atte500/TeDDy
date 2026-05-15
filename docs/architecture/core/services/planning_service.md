@@ -1,6 +1,12 @@
 # Component: PlanningService
 - **Status:** Implemented
 
+## Pure Context Model (Poka-Yoke)
+To maintain architectural purity and statelessness, the `PlanningService` follows a "Pure Context" model:
+- **Instruction-Free Prompting:** The service MUST NOT inject specific user instructions or "Current Tasks" into the LLM's `messages` list or the `input.md` file.
+- **Pure State Snapshot:** `input.md` represents the "Project Reality" at a specific moment. It contains file structures and contents (including `initial_request.md` and previous `report.md` files).
+- **Discovery Mechanism:** The agent prompt (System Message) instructs the AI to determine its next action by analyzing the project state, session goal, and latest audit trail (report) within the provided context.
+
 ## 1. Purpose / Responsibility
 
 The `PlanningService` is responsible for generating an AI plan based on a user message and the current project context. It orchestrates the gathering of context, the retrieval of agent instructions, and the communication with the Large Language Model. It includes a preflight configuration check to ensure API keys and environment variables are valid before invoking the LLM. It also displays pre-response telemetry (Model, Context Usage, Cost) to the user via the `IUserInteractor`.
