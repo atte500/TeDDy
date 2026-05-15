@@ -16,7 +16,9 @@ class ISessionManager(Protocol):
     Outbound port for managing turn directories and metadata persistence.
     """
 
-    def create_session(self, name: str, agent_name: str) -> str:
+    def create_session(
+        self, name: str, agent_name: str, initial_request: Optional[str] = None
+    ) -> str:
         """
         Initializes a new session directory and bootstraps it for Turn 1.
         Returns the path to the new session directory.

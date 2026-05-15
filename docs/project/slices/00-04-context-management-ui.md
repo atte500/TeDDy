@@ -72,7 +72,7 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 - [x] **Logic** - Update `SessionPruningService` heuristics to trigger recovery cleanup immediately if `current_status` is green.
 - [x] **Wiring** - Update `SessionOrchestrator.execute` to pass the plan status to the pruning service.
 - [x] **Refactor** - Refactor `extract_status_emoji` in `textual_plan_reviewer_helpers.py` to use anchored regex targeting the status line.
-- [ ] **Logic** - Implement `initial_request.md` persistence at the session root in `SessionService.create_session`.
+- [x] **Logic** - Implement `initial_request.md` persistence at the session root in `SessionService.create_session`.
 - [ ] **Logic** - Update `SessionService` to seed `initial_request.md` into the `session.context` file and allow it to be pruned via the TUI.
 - [ ] **Cleanup** - Remove legacy "User Request" extraction logic from `SessionPlanner` and `PromptManager`.
 - [ ] **Logic** - Refactor `PromptManager` to treat `initial_request.md` as context and prioritize turn-specific feedback (the `m` key).
@@ -211,6 +211,11 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 - Implemented `_check_report_failed_validation` using `re.search(r"^- \*\*Overall Status:\*\* Validation Failed", content, re.MULTILINE)`.
 - These anchored regexes prevent false positives from emojis or "Validation Failed" strings appearing in rationales or user notes.
 - Updated `test_session_pruning_windows.py`, `test_session_pruning_robustness.py`, and `test_context_management_ui.py` to use protocol-compliant status strings in mocks.
+
+### Logic - Implement initial_request.md persistence at the session root
+- Expanded `ISessionManager` protocol and `SessionService.create_session` implementation to accept an optional `initial_request` string.
+- Implemented file writing logic to save the request as `initial_request.md` in the session root directory during bootstrap.
+- Verified via unit tests that the file is correctly placed alongside `session.context` and that the implementation handles optionality gracefully.
 
 ## Technical Debt
 - **[DEBT]** Harness Complexity: `without_reviewer()` in `TestEnvironment` is a manual container re-wiring. Consider a more robust `interactive_mode` configuration (e.g., `"tui" | "console"`) for the harness to toggle between `IPlanReviewer` and `IUserInteractor` cleanly.

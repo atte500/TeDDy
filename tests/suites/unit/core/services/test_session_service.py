@@ -57,6 +57,37 @@ def test_create_session_orchestrates_filesystem_correctly(env):
     )
 
 
+def test_create_session_persists_initial_request(env):
+    """
+    Tests that create_session persists the initial_request to initial_request.md
+    at the session root.
+    """
+    # Arrange
+    mock_time = env.mock_port(ITimeService)
+    mock_prompts = env.mock_port(IPromptManager)
+    service = env.get_service(ISessionManager)
+    mock_fs = env.get_mock_filesystem()
+
+    session_name = "goal-x"
+    agent_name = "pathfinder"
+    initial_request = "# My Goal\nDo some coding."
+    mock_time.now.return_value = datetime(2026, 5, 15, 10, 0, 0)
+    mock_time.now_utc.return_value = datetime(2026, 5, 15, 10, 0, 0)
+    mock_prompts.get_prompt_content.return_value = "<prompt/>"
+    mock_fs.read_file.return_value = "README.md"
+
+    # Act
+    service.create_session(
+        name=session_name, agent_name=agent_name, initial_request=initial_request
+    )
+
+    # Assert
+    expected_path = str(
+        Path(".teddy/sessions/20260515_100000-goal-x/initial_request.md")
+    )
+    mock_fs.write_file.assert_any_call(expected_path, initial_request)
+
+
 def test_transition_to_next_turn_prevents_context_leakage_on_failure(env):
     """
     Ensures that READ actions only update turn.context if they were successful.

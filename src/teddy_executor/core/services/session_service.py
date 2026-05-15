@@ -31,7 +31,9 @@ class SessionService(ISessionManager):
         self._time_service = time_service
         self._prompt_manager = prompt_manager
 
-    def create_session(self, name: str, agent_name: str) -> str:
+    def create_session(
+        self, name: str, agent_name: str, initial_request: Optional[str] = None
+    ) -> str:
         """
         Initializes a new session directory and bootstraps it for Turn 1.
         """
@@ -58,7 +60,13 @@ class SessionService(ISessionManager):
             f"{session_root}/session.context", clean_context
         )
 
-        # 2. Populate specific agent prompt file
+        # 2. Persist initial request if provided
+        if initial_request:
+            self._file_system_manager.write_file(
+                f"{session_root}/initial_request.md", initial_request
+            )
+
+        # 3. Populate specific agent prompt file
         prompt_content = self._prompt_manager.get_prompt_content(agent_name)
         if not prompt_content:
             raise ValueError(f"Agent prompt '{agent_name}' not found.")
@@ -66,7 +74,7 @@ class SessionService(ISessionManager):
             f"{turn_dir}/{agent_name}.xml", prompt_content
         )
 
-        # 3. Create meta.yaml
+        # 4. Create meta.yaml
         meta_data = {
             "turn_id": "01",
             "agent_name": agent_name,
