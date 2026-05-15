@@ -20,7 +20,9 @@ class SessionPruningService:
         self._config_service = config_service
         self._file_system_manager = file_system_manager
 
-    def prune(self, context: ProjectContext) -> ProjectContext:
+    def prune(
+        self, context: ProjectContext, current_status: Optional[str] = None
+    ) -> ProjectContext:
         """Applies configured auto-pruning heuristics to the project context."""
         try:
             if not self._config_service.get_setting("auto_pruning.enabled", True):
@@ -129,9 +131,7 @@ class SessionPruningService:
 
             # Heuristic 4: Validation failure (Check report)
             if prune_validation and posix_path.endswith("report.md"):
-                if self._check_file_contains(
-                    item.path, "- **Overall Status:** Validation Failed"
-                ):
+                if self._check_file_contains(item.path, "Validation Failed"):
                     validation_failures.add(turn_id)
 
             # Heuristic 3: Non-green state (Check plan)
@@ -172,8 +172,7 @@ class SessionPruningService:
             latest_turn = max(turn_statuses.keys())
             if turn_statuses[latest_turn]:
                 for tid, is_green in turn_statuses.items():
-                    if not is_green and tid < latest_turn:
-                        # Don't overwrite validation failure reason if already set
+                    if not is_green:
                         turns_to_prune.setdefault(
                             str(tid), "Pruned failure history after successful recovery"
                         )
