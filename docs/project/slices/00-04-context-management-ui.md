@@ -74,11 +74,13 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 - [x] **Refactor** - Refactor `extract_status_emoji` in `textual_plan_reviewer_helpers.py` to use anchored regex targeting the status line.
 - [x] **Logic** - Implement initial_request.md persistence at the session root in `SessionService.create_session`.
 - [x] **Logic** - Update `SessionService` to seed `initial_request.md` into the `session.context` file and allow it to be pruned via the TUI.
+- [ ] **Logic** - Update `PlanningPorts` and `PlanningService` for `ISessionManager` injection.
+- [ ] **Logic** - Implement `user_request.md` persistence in `PlanningService` using root-relative paths.
+- [ ] **Logic** - Implement `report.md` persistence in `SessionLifecycleManager` using root-relative paths.
 - [ ] **Cleanup** - Remove interactive `ask_question` fallback from `PromptManager.resolve_message`.
 - [ ] **Cleanup** - Remove all "Instruction Injection" and LLM `user_message` logic from `PlanningService`.
-- [ ] **Logic** - Refactor `PromptManager` to support report-only instruction metadata (for the Audit Trail).
-- [ ] **Logic** - Enforce `initial_request.md` immutability in `SessionService` and `PlanningService`.
 - [ ] **Cleanup** - Remove redundant goal back-filling logic from `PlanningService.generate_plan`.
+- [ ] **Wiring** - Update acceptance tests to run from project root (`cwd=tmp_path`).
 - [ ] **Wiring** - Verify end-to-end Instruction Discovery via context (Goal + Latest Report).
 - [x] **Wiring** - Verify that all symptoms of Session Loop Breakage are resolved using the provided MRE.
 
