@@ -1,5 +1,5 @@
 from typing import Any, TypeVar
-from unittest.mock import MagicMock, _Call
+from unittest.mock import MagicMock, _Call  # noqa: TID251
 
 T = TypeVar("T")
 
@@ -21,8 +21,11 @@ class POSIXPathMock(MagicMock):
     def _normalize_args(self, args, kwargs):
         new_args = list(args)
         if new_args and isinstance(new_args[0], str):
-            # Systemic normalization: replace \ with /
-            new_args[0] = new_args[0].replace("\\", "/")
+            val = new_args[0]
+            # Systemic normalization: only replace \ with / for path-like strings.
+            # Large strings (file contents) or multi-line strings are skipped for performance.
+            if len(val) < 1024 and "\n" not in val:
+                new_args[0] = val.replace("\\", "/")
         return tuple(new_args), kwargs
 
     def __call__(self, /, *args, **kwargs):

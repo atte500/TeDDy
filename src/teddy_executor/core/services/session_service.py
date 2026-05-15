@@ -59,11 +59,10 @@ class SessionService(ISessionManager):
 
         # 2. Persist initial request if provided
         if initial_request:
-            self._file_system_manager.write_file(
-                f"{session_root}/initial_request.md", initial_request
-            )
-            # Seed the request into the session context
-            clean_context += "\ninitial_request.md"
+            request_path = f"{session_root}/initial_request.md"
+            self._file_system_manager.write_file(request_path, initial_request)
+            # Seed the request into the session context using root-relative path
+            clean_context += f"\n{request_path}"
 
         self._file_system_manager.write_file(
             f"{session_root}/session.context", clean_context

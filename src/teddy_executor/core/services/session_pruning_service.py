@@ -19,10 +19,13 @@ class SessionPruningService:
     ):
         self._config_service = config_service
         self._file_system_manager = file_system_manager
+        self._read_cache: Dict[str, str] = {}
 
     def prune(
         self, context: ProjectContext, current_status: Optional[str] = None
     ) -> ProjectContext:
+        """Applies configured auto-pruning heuristics to the project context."""
+        self._read_cache.clear()
         """Applies configured auto-pruning heuristics to the project context."""
         try:
             if not self._config_service.get_setting("auto_pruning.enabled", True):
@@ -120,9 +123,10 @@ class SessionPruningService:
         """Scans items to determine turn statuses and validation failures."""
         turn_statuses: Dict[int, bool] = {}
         validation_failures: set[int] = set()
+        checked_paths = set()
 
         for item in items:
-            if item.scope != "Turn":
+            if item.scope != "Turn" or item.path in checked_paths:
                 continue
 
             posix_path = item.path.replace("\\", "/")
@@ -130,6 +134,7 @@ class SessionPruningService:
             if not turn_id_str:
                 continue
             turn_id = int(turn_id_str)
+            checked_paths.add(item.path)
 
             # Heuristic 4: Validation failure (Check report)
             if prune_validation and posix_path.endswith("report.md"):
@@ -137,7 +142,7 @@ class SessionPruningService:
                     validation_failures.add(turn_id)
 
             # Heuristic 3: Non-green state (Check plan)
-            if prune_non_green and item.path.endswith("plan.md"):
+            if prune_non_green and posix_path.endswith("plan.md"):
                 is_green = not self._check_plan_failed(item.path)
                 # If any file in turn is non-green, the whole turn is non-green
                 turn_statuses[turn_id] = turn_statuses.get(turn_id, True) and is_green
@@ -146,33 +151,38 @@ class SessionPruningService:
 
     def _check_plan_failed(self, path: str) -> bool:
         """Checks if a plan file contains a failure status emoji on the status line."""
-        try:
-            if self._file_system_manager.path_exists(path):
-                content = self._file_system_manager.read_file(path)
-                # Anchored to start of line to avoid matches in rationales or code blocks
-                return bool(
-                    re.search(r"^- \*\*Status:\*\*.*[🔴🟡]", content, re.MULTILINE)
-                )
-        except (FileNotFoundError, OSError):
-            pass
+        content = self._safe_read(path)
+        if content:
+            # Anchored to start of line to avoid matches in rationales or code blocks
+            return bool(re.search(r"^- \*\*Status:\*\*.*[🔴🟡]", content, re.MULTILINE))
         return False
 
     def _check_report_failed_validation(self, path: str) -> bool:
         """Checks if a report file contains the official validation failure status."""
+        content = self._safe_read(path)
+        if content:
+            # Anchored to target the standardized overall status line
+            return bool(
+                re.search(
+                    r"^- \*\*Overall Status:\*\* Validation Failed",
+                    content,
+                    re.MULTILINE,
+                )
+            )
+        return False
+
+    def _safe_read(self, path: str) -> Optional[str]:
+        """Reads a file with caching and error handling."""
+        if path in self._read_cache:
+            return self._read_cache[path]
         try:
             if self._file_system_manager.path_exists(path):
                 content = self._file_system_manager.read_file(path)
-                # Anchored to target the standardized overall status line
-                return bool(
-                    re.search(
-                        r"^- \*\*Overall Status:\*\* Validation Failed",
-                        content,
-                        re.MULTILINE,
-                    )
-                )
+                self._read_cache[path] = content
+                return content
         except (FileNotFoundError, OSError):
             pass
-        return False
+        return None
 
     def _check_file_contains(self, path: str, patterns: str | tuple[str, ...]) -> bool:
         """Safely checks if a file exists and contains specific patterns."""

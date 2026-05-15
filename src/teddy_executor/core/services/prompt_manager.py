@@ -4,7 +4,6 @@ import yaml
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
-from teddy_executor.core.utils.markdown import extract_markdown_section
 from teddy_executor.core.utils.serialization import scrub_dict_for_serialization
 
 
@@ -40,17 +39,6 @@ class PromptManager(IPromptManager):
             meta = {}
         return meta.get("agent_name", "pathfinder"), meta, meta_file_path
 
-    def _ensure_alignment_hint(
-        self, message: str, default: Optional[str] = None
-    ) -> str:
-        if not message or not message.strip():
-            return default or ""
-
-        hint = "\n\n*(Stop to reply to this user request and ensure alignment before proceeding)*"
-        if hint not in message and "(No instructions provided" not in message:
-            return message + hint
-        return message
-
     def resolve_message(
         self, user_message: Optional[str], turn_path: Path
     ) -> Optional[str]:
@@ -59,11 +47,12 @@ class PromptManager(IPromptManager):
             return ""
 
         resolved = user_message
-        if resolved is None:
-            report_path = (turn_path / "report.md").as_posix()
-            if self._file_system_manager.path_exists(report_path):
-                report_content = self._file_system_manager.read_file(report_path)
-                resolved = extract_markdown_section(report_content, "User Request")
+        if resolved is None and turn_path.name == "01":
+            # Check for initial_request.md at session root (turn_path.parent)
+            # R-10-12: This only acts as a fallback for the very first turn.
+            request_path = (turn_path.parent / "initial_request.md").as_posix()
+            if self._file_system_manager.path_exists(request_path):
+                resolved = self._file_system_manager.read_file(request_path)
 
         if resolved is None and self._user_interactor:
             resolved = self._user_interactor.ask_question(
@@ -74,10 +63,7 @@ class PromptManager(IPromptManager):
             # User provided empty input at the prompt (just hit enter) -> Exit
             return None
 
-        if resolved is None:
-            return None
-
-        return self._ensure_alignment_hint(resolved)
+        return resolved
 
     def fetch_system_prompt(self, agent_name: str, turn_path: Path) -> str:
         # 1. Try Turn-Specific override

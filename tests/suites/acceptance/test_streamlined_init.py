@@ -57,4 +57,5 @@ def test_teddy_start_triggers_planning(tmp_path, monkeypatch):
 
     # Verify instructions were sent to LLM (check first turn call)
     first_call = mock_llm.get_completion.call_args_list[0]
-    assert "Initial instructions" in first_call[1]["messages"][1]["content"]
+    sent_content = first_call[1]["messages"][1]["content"]
+    assert "Initial instructions" in sent_content

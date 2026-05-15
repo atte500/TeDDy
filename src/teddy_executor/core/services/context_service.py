@@ -1,3 +1,4 @@
+import concurrent.futures
 from typing import Dict, List, Optional, Sequence
 from teddy_executor.core.domain.models import ProjectContext, ContextItem
 from teddy_executor.core.utils.markdown import (
@@ -154,22 +155,31 @@ class ContextService(IGetContextUseCase):
         file_contents: Dict[str, Optional[str]],
         include_tokens: bool,
     ) -> Dict[str, int]:
-        """Calculates token counts for all unique files in parallel if requested."""
+        """Calculates token counts for all unique files in parallel."""
         if not include_tokens:
             return {}
 
-        unique_paths = set()
-        for paths in scoped_paths.values():
-            unique_paths.update(paths)
+        unique_paths = list(set().union(*scoped_paths.values()))
+        if not unique_paths:
+            return {}
 
-        from concurrent.futures import ThreadPoolExecutor
+        token_counts = {}
 
-        def count_tokens(path: str) -> int:
+        def get_count(path: str) -> tuple[str, int]:
             content = file_contents.get(path) or ""
-            return self._llm_client.get_text_token_count(content)
+            return path, self._llm_client.get_text_token_count(content)
 
-        with ThreadPoolExecutor() as executor:
-            return dict(zip(unique_paths, executor.map(count_tokens, unique_paths)))
+        # R-10-14: Parallelize to handle large repositories without stalling the UI.
+        # We use a ThreadPoolExecutor as token counting is often offloaded or involves latency.
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            future_to_path = {
+                executor.submit(get_count, path): path for path in unique_paths
+            }
+            for future in concurrent.futures.as_completed(future_to_path):
+                path, count = future.result()
+                token_counts[path] = count
+
+        return token_counts
 
     def _parse_git_status(self, git_status: Optional[str]) -> Dict[str, str]:
         """Parses git status -s output into a map of path -> status code."""

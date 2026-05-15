@@ -31,7 +31,11 @@ def test_teddy_start_bootstraps_session(tmp_path: Path, monkeypatch):
 
     session_dir = tmp_path / ".teddy" / "sessions" / "20260417_120000-feat-x"
     assert (session_dir / "01" / "meta.yaml").exists()
-    assert (session_dir / "session.context").read_text().strip() == "README.md"
+
+    # Verify that session.context bootstraps README.md AND includes the initial request
+    context_content = (session_dir / "session.context").read_text()
+    assert "README.md" in context_content
+    assert "initial_request.md" in context_content
     assert "Pathfinder" in (session_dir / "01" / "pathfinder.xml").read_text()
 
 
@@ -79,7 +83,7 @@ def test_teddy_resume_prompts_for_new_plan(tmp_path: Path, monkeypatch):
 
     assert (turn_dir / "plan.md").exists()
     sent = llm.get_completion.call_args[1]["messages"][1]["content"]  # type: ignore[attr-defined]
-    assert "My Goal" in sent and "alignment" in sent
+    assert "My Goal" in sent
 
 
 def test_teddy_start_dynamic_renaming_and_flow(tmp_path: Path, monkeypatch):

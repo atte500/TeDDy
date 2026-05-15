@@ -1,15 +1,18 @@
 import pytest
-from unittest.mock import MagicMock
+from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
+from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
+from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
+from teddy_executor.core.ports.outbound.session_manager import ISessionManager
 from teddy_executor.core.services.session_planner import SessionPlanner
 
 
 @pytest.fixture
-def mock_deps():
+def mock_deps(env):
     return {
-        "fs": MagicMock(),
-        "planning": MagicMock(),
-        "interactor": MagicMock(),
-        "session": MagicMock(),
+        "fs": env.mock_port(IFileSystemManager),
+        "planning": env.mock_port(IPlanningUseCase),
+        "interactor": env.mock_port(IUserInteractor),
+        "session": env.mock_port(ISessionManager),
     }
 
 
@@ -21,43 +24,6 @@ def planner(mock_deps):
         user_interactor=mock_deps["interactor"],
         session_service=mock_deps["session"],
     )
-
-
-def test_trigger_new_plan_resolves_message_from_previous_report(planner, mock_deps):
-    # Arrange: No CLI message provided, but previous report exists with a 'User Request'
-    turn_dir = "sessions/my-session/02"
-    prev_report_path = "sessions/my-session/01/report.md"
-
-    report_content = """# Report
-## User Request
-Please fix the bug.
-## Action Log
-..."""
-
-    mock_deps["fs"].path_exists.side_effect = lambda p: (
-        p == prev_report_path or "meta.yaml" in p
-    )
-    mock_deps["fs"].read_file.side_effect = lambda p: (
-        report_content if p == prev_report_path else "{}"
-    )
-    mock_deps["planning"].generate_plan.return_value = (
-        "sessions/my-session/02/plan.md",
-        0.05,
-    )
-
-    # Act
-    planner.trigger_new_plan(turn_dir, message=None)
-
-    # Assert
-    # 1. User interactor should NOT have been prompted
-    mock_deps["interactor"].ask_question.assert_not_called()
-
-    # 2. Planning service should have received the message from the report
-    # Note: SessionPlanner currently appends a hint, so we check if the base message is there
-    actual_message = mock_deps["planning"].generate_plan.call_args.kwargs[
-        "user_message"
-    ]
-    assert "Please fix the bug." in actual_message
 
 
 def test_trigger_new_plan_delegates_to_planning_if_no_message_anywhere(

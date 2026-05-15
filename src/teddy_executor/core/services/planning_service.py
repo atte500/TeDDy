@@ -35,6 +35,19 @@ class PlanningService(IPlanningUseCase):
         if resolved_message is None:
             return None, 0.0  # type: ignore
 
+        # Pure Context Strategy: Persist new instructions to the goal file
+        # and ensure it is registered in the session context so ContextService picks it up.
+        if resolved_message.strip():
+            request_path = (turn_path.parent / "initial_request.md").as_posix()
+            self._file_system_manager.write_file(request_path, resolved_message)
+
+            session_ctx = (turn_path.parent / "session.context").as_posix()
+            if self._file_system_manager.path_exists(session_ctx):
+                ctx_content = self._file_system_manager.read_file(session_ctx)
+                if request_path not in ctx_content:
+                    new_ctx = f"{ctx_content.strip()}\n{request_path}\n"
+                    self._file_system_manager.write_file(session_ctx, new_ctx.lstrip())
+
         agent_name, meta, meta_file_path = self._prompt_manager.resolve_agent_metadata(
             turn_path
         )
@@ -50,20 +63,13 @@ class PlanningService(IPlanningUseCase):
         )
         system_prompt = self._prompt_manager.fetch_system_prompt(agent_name, turn_path)
 
-        # Scenario 1: Inject User Request into input.md on first turn
-        header = context.header
-        if turn_path.name == "01":
-            user_request_block = (
-                f"\n\n## User Request\n~~~~~~text\n{resolved_message}\n~~~~~~\n"
-            )
-            header = f"{context.header}{user_request_block}"
-
-        full_context = f"{header}\n{context.content}"
+        # Context is purely project state (including initial_request.md via session.context).
+        full_context = f"{context.header}\n{context.content}"
         messages = [
             {"role": "system", "content": system_prompt},
             {
                 "role": "user",
-                "content": f"Context:\n{full_context}\n\nUser Message: {resolved_message}",
+                "content": full_context,
             },
         ]
 

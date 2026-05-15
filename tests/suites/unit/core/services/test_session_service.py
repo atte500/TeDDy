@@ -118,8 +118,9 @@ def test_create_session_seeds_initial_request_into_session_context(env):
         c for c in mock_fs.write_file.call_args_list if context_path in str(c)
     ][0]
     written_content = context_call.args[1]
+    lines = written_content.splitlines()
 
-    assert "initial_request.md" in written_content.splitlines()
+    assert any(line.endswith("initial_request.md") for line in lines)
 
 
 def test_transition_to_next_turn_prevents_context_leakage_on_failure(env):

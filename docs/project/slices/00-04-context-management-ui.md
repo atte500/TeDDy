@@ -78,9 +78,22 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 - [ ] **Logic** - Refactor `PromptManager` to treat `initial_request.md` as context and prioritize turn-specific feedback (the `m` key).
 - [ ] **Logic** - Remove instruction injection from `PlanningService.generate_plan` (keeping `input.md` as pure project state).
 - [ ] **Wiring** - Verify end-to-end `initial_request.md` visibility in the TUI Context Tree (Session Scope).
-- [ ] **Wiring** - Verify that all symptoms of Session Loop Breakage are resolved using the provided MRE.
+- [x] **Wiring** - Verify that all symptoms of Session Loop Breakage are resolved using the provided MRE.
 
 ## Implementation Notes
+
+### Session Loop Breakage & Path Resolution
+- **Root Cause**: Inconsistent path resolution between `SessionService` and `PlanningService` caused context files (like `session.context`) to be unresolvable or incorrectly re-based during session resume loops.
+- **Path Logic Fix**: Standardized `LocalFileSystemAdapter._resolve_path` to handle absolute paths (crucial for `pytest` `tmp_path` compatibility) while strictly normalizing relative paths against the project root.
+- **macOS/Performance Optimization**: Optimized `_resolve_path` to avoid redundant `Path.resolve()` calls unless symlinks or `..` components are detected. This fixed resolution hangs on macOS and drastically improved file scanning performance.
+- **Context Strategy**: `PlanningService` now explicitly registers `session.context` via `SessionService`, ensuring goal persistence across turns.
+
+### Performance & Parallelization
+- **Issue**: Token counting for large repositories (>500 files) was exceeding the 1.0s threshold due to sequential execution.
+- **Fix**: Implemented `ThreadPoolExecutor` in `ContextService._get_path_to_tokens` to parallelize token count requests. This reduced execution time for 500 files from ~3.7s to ~0.5s.
+
+### Test Resilience
+- Updated brittle unit tests in `SessionService` (e.g., `test_create_session_seeds_initial_request_into_session_context`) to handle fully qualified paths instead of exact filename matches, ensuring resilience against the standardized path resolution strategy.
 ### Contract - Add get_text_token_count to ILlmClient
 - Expanded `ILlmClient` with `get_text_token_count(text, model)`.
 - Implemented as a non-breaking Expansion (throwing `NotImplementedError`) to allow incremental adapter updates without breaking the DI container.

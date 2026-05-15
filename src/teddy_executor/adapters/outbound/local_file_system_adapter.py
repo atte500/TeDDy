@@ -41,13 +41,32 @@ class LocalFileSystemAdapter(IFileSystemManager):
         """
         path_obj = Path(path)
         if path_obj.is_absolute():
+            # Optimization: Only resolve if there are symlinks or ".." components.
+            if ".." in str(path) or path_obj.is_symlink():
+                return path_obj.resolve()
             return path_obj
 
-        # Handle project-root-relative convention (e.g., '/file.txt')
-        if path.startswith("/"):
-            path = path[1:]
+        # Systemic Fix: Strictly follow project-root-relative convention.
+        # We strip leading slashes and Windows drive letters to ensure the path
+        # is always joined with our controlled root_dir.
+        clean_path = str(path).replace("\\", "/")
 
-        return (self.root_dir.resolve() / path).resolve()
+        # Remove drive letter (e.g., C:) if present
+        if ":" in clean_path and clean_path[1] == ":":
+            clean_path = clean_path[2:]
+
+        clean_path = clean_path.lstrip("/")
+
+        # Join and resolve. This ensures we have a canonical, absolute path
+        # within our root_dir, preventing macOS resolution hangs.
+        # Optimization: Pre-resolve root_dir once (though here we rely on Path caching).
+        base = self.root_dir.resolve()
+        target = base / clean_path
+
+        # Only resolve if strictly necessary to avoid performance hits in loops
+        if ".." in clean_path or target.is_symlink():
+            return target.resolve()
+        return target
 
     def get_context_paths(self) -> list[str]:
         """
@@ -120,8 +139,8 @@ class LocalFileSystemAdapter(IFileSystemManager):
         contents: dict[str, str | None] = {}
         for path in paths:
             try:
-                full_path = self.root_dir / path
-                contents[path] = self.read_file(str(full_path))
+                # read_file already calls _resolve_path, which joins with root_dir.
+                contents[path] = self.read_file(path)
             except FileNotFoundError:
                 contents[path] = None  # Mark not found files with None
         return contents

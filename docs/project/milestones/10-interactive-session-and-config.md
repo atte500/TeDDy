@@ -75,6 +75,7 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
     - Implement the `SessionLogGenerator` to compile session histories into a human-readable `session-log.md`, excluding turns that fail validation.
 
 ## 6. Technical Debt
+- [ ] `PlanningService.generate_plan` complexity (10/9) and statement count (44/40) exceeds limits following session loop repair. Requires extraction of goal resolution and metadata management into sub-services.
 
 ### Structural & Complexity (SLOC / PLR)
 - [ ] **SLOC Limit Enforcement:** Refactor core components to meet the 300-line limit:
