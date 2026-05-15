@@ -13,7 +13,8 @@ This feature introduces a native "Context Management" section within the `Textua
 - **User Supremacy:** Auto-pruning rules only *pre-deselect* items in the TUI. The user always has the final say and can re-select an auto-pruned file before submitting.
 - **Architectural Purity:** The `IPlanReviewer` must remain a pure function of `(Plan, ContextMetadata) -> Plan`. It must not directly mutate the filesystem. Unselected context items should be recorded in the `Plan` object's metadata for the `SessionOrchestrator` to process.
 - **Immutable Session Goal:** The `initial_request.md` file at the session root represents the original bootstrap objective. Once written by the `SessionService` during bootstrap, it **MUST NEVER** be modified or updated.
-- **Instruction Discovery:** The AI discovers its current instructions by observing the **Immutable Goal** (if still provided in session.context and not pruned by user) qand the **Latest Audit Trail** (the previous turn's `report.md`). New user feedback is captured in the metadata of the current turn and persisted only in that turn's report.
+- **Instruction Discovery:** The AI discovers its current instructions exclusively by observing the **Immutable Goal** (provided in `session.context`) and the **Latest Audit Trail** (the previous turn's `report.md` provided in `turn.context`).
+- **Stateless Planning:** The `PlanningService` is a pure state-gatherer. It MUST NOT inject user messages or hidden instructions into the LLM prompt. User feedback is captured in the metadata of Turn N and persisted in Turn N's `report.md`, allowing Turn N+1 to "discover" it via the filesystem context.
 
 ## Technical Specification
 - **Domain Models:** Introduce `ContextItem` DTO to hold metadata for a single file (`path`, `token_count`, `source_scope`, `git_status`, `is_auto_pruned`). Update `ProjectContext` to include a list of these items.

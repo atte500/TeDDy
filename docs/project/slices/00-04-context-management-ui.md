@@ -282,13 +282,15 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 ### Session Root Goal Protocol (Immutable Goal)
 - **Bootstrap:** `SessionService.create_session` MUST accept the initial user message and save it as `initial_request.md` at the session root. This file is the **Session Goal**.
 - **Immutability:** Once written during bootstrap, `initial_request.md` **MUST NEVER** be modified, overwritten, or updated by the system. It represents the original, unchanging objective of the session.
-- **Context Seeding:** The path `initial_request.md` is appended to `session.context` during bootstrap. This ensures it is always present in the AI's world-view as project context.
+- **Long-Term Memory Seeding:** The path `initial_request.md` is appended to `session.context` during bootstrap. It **MUST NOT** be added to `turn.context`. This ensures the goal is always present in the AI's world-view as part of the session-level context.
 
-### Instruction Discovery (The Audit Trail Model)
-- **Pure input.md:** `PlanningService` MUST NOT inject instructions or user messages into the `input.md` or the LLM's `messages` list. `input.md` is a pure state snapshot.
-- **Instruction Discovery:** The AI discovers its "Current Task" by reading the context. Specifically, it observes the **Immutable Session Goal** (`initial_request.md`) and the **Latest Audit Trail** (the previous turn's `report.md`).
-- **Feedback Loop:** Any user feedback (CLI `-m` or TUI `m` key) is captured in the metadata of the *current* turn. This metadata is used **exclusively** to populate the `User Request` section of the current turn's `report.md`.
-- **Turn Transition:** Because Turn N's `report.md` is automatically included in Turn N+1's context, the feedback naturally flows to the AI as a project artifact.
+### Instruction Discovery (The Pure Context Model)
+- **Pure Planning:** `PlanningService` MUST NOT inject instructions, "Instruction Injection" blocks, or user messages into the LLM's `messages` list or the `input.md` artifact. Its sole responsibility is gathering the file contents of the project context.
+- **Discovery Mechanism:** The AI discovers its "Current Task" exclusively by reading the file contents provided in the project context. It derives its purpose from:
+    1. The **Immutable Session Goal** (`initial_request.md`) found in the session context.
+    2. The **Latest Audit Trail** (`report.md`) from the previous turn found in the turn context.
+- **Feedback Loop:** Any user feedback (CLI `-m` or TUI `m` key) is captured in the metadata of the *current* turn and used **exclusively** to populate the `User Request` section of the current turn's `report.md`.
+- **Instruction Flow:** Because Turn N's `report.md` is automatically included in Turn N+1's `turn.context`, the feedback naturally flows to the AI as a project artifact.
 
 ### TUI Context Management
 - **Guarded TUI Build:** The `ReviewerApp` and `reviewer_logic` MUST implement a guarded build pattern (using a boolean flag like `_context_built`) to ensure the tree is populated exactly once. The base `ReviewerApp.on_mount` logic should be bypassed or cleared using `tree.clear()` before custom population.
