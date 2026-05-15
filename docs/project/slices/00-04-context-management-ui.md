@@ -1,8 +1,9 @@
-# Slice: Context Management UI
+# Slice: Context Management UI & Session Loop Repair
 - **Status:** Planned
 - **Milestone:** [10-interactive-session-and-config](../milestones/10-interactive-session-and-config.md)
 - **Specs:** [context-management-ui.md](../specs/context-management-ui.md)
 - **Prototype:** [prototypes/00-04/runner.py](../../../prototypes/00-04/runner.py)
+- **MRE:** [spikes/debug/03_repro_session_break.py](../../../spikes/debug/03_repro_session_break.py)
 - **Showcase:** [spikes/showcases/00-04/showcase_heuristics.sh](../../../spikes/showcases/00-04/showcase_heuristics.sh)
 - **Component Docs:**
   - [ProjectContext](../../architecture/core/domain/project_context.md)
@@ -71,6 +72,11 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 - [ ] **Logic** - Update `SessionPruningService` heuristics to trigger recovery cleanup immediately if `current_status` is green.
 - [ ] **Wiring** - Update `SessionOrchestrator.execute` to pass the plan status to the pruning service.
 - [ ] **Refactor** - Refactor `extract_status_emoji` in `textual_plan_reviewer_helpers.py` to use anchored regex targeting the status line.
+- [ ] **Refactor** - Move robust instruction resolution logic to `markdown.py` as a shared utility.
+- [ ] **Logic** - Implement the "Audit Trail" principle: return `""` if `report.md` exists but no explicit `User Request` is found.
+- [ ] **Logic** - Update `SessionPlanner._resolve_message_from_previous_turn` to use the shared utility.
+- [ ] **Logic** - Update `PromptManager.resolve_message` to use the shared utility, eliminating duplicated logic.
+- [ ] **Wiring** - Verify that all symptoms of Session Loop Breakage are resolved using the provided MRE.
 
 ## Implementation Notes
 ### Contract - Add get_text_token_count to ILlmClient
