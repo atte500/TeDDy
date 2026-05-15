@@ -100,6 +100,7 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
     - Refactor TUI test fixtures to use centralized DI (via `punq`) for mocks to prevent `TypeError` regressions.
 - [ ] **DI Isolation:** Standardize all registrations in `infrastructure.py` to use `punq.Scope.transient` and resolve container locations dynamically.
 - [ ] **Test Pyramid Balance:** Resolve structural imbalance (Acceptance/Integration count exceeds Unit in some layers) to satisfy the 'Acceptance < Integration < Unit' rule.
+- [ ] **Banned Mocks:** Resolve `TID251` (MagicMock/patch) violations in `tests/suites/unit/adapters/inbound/test_textual_plan_reviewer_logic.py`.
 
 ### Code Quality & Standards
 - [ ] **Typing:** Resolve Mypy union-attr and Worker awaitable mismatches in TUI components and `SessionOrchestrator` async methods.
