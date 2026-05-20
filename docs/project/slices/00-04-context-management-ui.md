@@ -43,6 +43,37 @@ And Turn 6 and subsequent turns remain selected by default
 And files with "System" or "Session" scope are NOT deselected by the retention limit
 ```
 
+> As a developer running a stateful session with auto-approval enabled, I want auto-pruning to apply to my context files, so that my token count remains optimized without requiring manual TUI intervention.
+```gherkin
+Given a stateful session is running in non-interactive mode
+And a preceding turn failed validation
+When the next turn execution is triggered
+Then the system automatically prunes the failed plan and report from the turn context
+And those unselected files are physically removed during turn transition
+```
+
+> As a user starting a new session with the auto-approve flag, I want to be prompted for my initial working request if I forgot to supply it, so that my session can be correctly bootstrapped.
+```gherkin
+Given I start a new session with "-y"
+And I did not provide a message via "-m"
+When the start command is executed
+Then the system prompts me with "What are we working on?"
+And uses my input to bootstrap the session
+```
+
+> As an automated agent running a session with auto-approval enabled, I want the session loop to continue running multiple turns, so that the entire development goal can be completed in sequence.
+```gherkin
+Given a session is started with "-y"
+And there are multiple actions and turns required
+When the first turn executes successfully
+Then the session loop transitions to turn 2 automatically
+And continues executing up to the Loop Guard limit
+```
+
+## Edge Cases
+- **[No Terminal Input]**: If the stdin stream is closed when prompting for a missing initial message in `-y` mode, the system should raise an abort/EOF error rather than hanging or passing an empty goal.
+- **[Zero Pruned Items]**: If no context items are auto-pruned during a non-interactive turn, the `pruned_context` key should be cleanly removed from the plan's metadata to prevent metadata clutter.
+
 ## Deliverables
 - [x] **Contract** - Add `get_text_token_count` to `ILlmClient`.
 - [x] **Logic** - Implement `get_text_token_count` in `LiteLLMAdapter`.
@@ -83,6 +114,11 @@ And files with "System" or "Session" scope are NOT deselected by the retention l
 - [x] **Wiring** - Update acceptance tests to run from project root (`cwd=tmp_path`).
 - [x] **Wiring** - Verify end-to-end Instruction Discovery via context (Goal + Latest Report).
 - [x] **Wiring** - Verify that all symptoms of Session Loop Breakage are resolved using the provided MRE.
+- [ ] **Logic** - Remove `interactive` guard in `SessionOrchestrator.execute` to enable context resolution and auto-pruning in non-interactive sessions.
+- [ ] **Logic** - Implement programmatic harvesting of unselected context items into `plan.metadata["pruned_context"]` in `SessionOrchestrator.execute` when `interactive` is False.
+- [ ] **Logic** - Remove `interactive` check from initial message resolution in `handle_new_session` to always prompt for start messages when missing.
+- [ ] **Wiring** - Remove `not interactive` from session loop breakout conditions in `handle_new_session` and `handle_resume_session` to support multi-turn auto-approvals.
+- [ ] **Wiring** - Verify end-to-end non-interactive auto-pruning, message prompting, and multi-turn loops.
 
 ## Implementation Notes
 
