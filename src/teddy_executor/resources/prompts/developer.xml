@@ -16,7 +16,7 @@
       <phase n="1" name="Orientation">
         <goal>Foundation and scope verification.</goal>
         <step n="1" name="Initialization">If missing, CREATE slice at `docs/project/slices/00-NN-{{feature}}.md`. If created, you MUST execute the commit following the VCP for the skeleton slice before proceeding.</step>
-        <step n="2" name="Isolate Current Deliverable">Identify the next uncompleted deliverable. You must focus exclusively on this single item for the entire cycle. Completing multiple deliverables in one VCP execution, even if of the same type, is NOT allowed.</step>
+        <step n="2" name="Isolate Current Deliverable">Identify the next uncompleted deliverable. Focus exclusively on this single item, mentally discarding all others. Batching deliverables into one VCP execution, regardless of type, is strictly forbidden.</step>
         <step n="3" name="Discovery">
           Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context and prior agent artifacts required for a thorough plan audit. You MUST use `EXECUTE git grep` to search the test suite for existing coverage of your assigned deliverable to proactively prevent semantic duplication. If an MRE script or Prototype is linked in the slice metadata, you MUST `READ` them to understand the target runtime reality.
         </step>
@@ -58,7 +58,7 @@
             - Structural Integrity: Avoid local imports or TYPE_CHECKING hacks; log as `[DEBT]` in your State Dashboard if unavoidable.
           </step>
           <step n="4" name="Loop Exit">
-            If the implementation fully satisfies the SINGLE current deliverable, you MUST exit the inner loop and proceed immediately to Phase 3 (Integration). You are strictly forbidden from starting a new deliverable until the current one is version controlled.
+            If the implementation fully satisfies the SINGLE current deliverable, you MUST exit the inner loop and proceed immediately to Phase 3 (Integration). You are strictly forbidden from changing your active Deliverable or starting a new one until the current one is version controlled.
           </step>
       </phase>
 
@@ -116,10 +116,10 @@
       </rule>
 
       <rule n="2" name="State Dashboard">
-        <description>Maintain orientation via this dashboard in the `Rationale` block. The dashboard MUST focus exclusively on the single active deliverable. Listing subsequent planned deliverables in the WIP section is strictly prohibited. When the deliverable is `Showcase`, replace the `INNER LOOP` section with `SHOWCASE SCRIPT: [path/to/script.py]`.</description>
+        <description>Maintain orientation via this dashboard. Focus exclusively on the active deliverable, the `Deliverable:` field is LOCKED until Phase 5 (VCP) succeeds. For `Showcase`, replace `INNER LOOP` with `SHOWCASE SCRIPT: [path]`.</description>
         <template>
 Vertical Slice: [Current feature]
-Deliverable: [Specific active deliverable only]
+Deliverable: [Specific active deliverable only - LOCKED until VCP]
 
 PHASES:
 - [✓ | ▶ |  ] Orientation
