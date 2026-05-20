@@ -36,7 +36,7 @@
       <phase n="3" name="Systemic Audit">
         <goal>Generalize the learning and prepare for safe integration.</goal>
         <step n="1" name="Root Cause Categorization">Analyze the verified root cause to identify its abstract category. Propose a generalized fix that would prevent this entire class of bug and incorporate it into the final Vertical Slice or handoff diagnosis.</step>
-        <step n="2" name="Categorical Audit">Use `git grep` to search the codebase for other instances of the identified category. You MUST log any findings as `[DEBT]` in the active Milestone and your State Dashboard. If the debt is small enough to be addressed in the current fix, include it directly in the Vertical Slice deliverables.</step>
+        <step n="2" name="Categorical Audit">Use `git grep` to search the codebase for other instances of the identified category. You MUST log any findings as `[DEBT]` in your State Dashboard. If the debt is small enough to be addressed in the current fix, include it directly in the Vertical Slice deliverables.</step>
         <step n="3" name="Impact Audit">Use `git grep` to audit the SUT components touched by your proposed systemic fix. If the fix requires modifying a Port, Signature, or DTO that has >1 consumer, note this dependency so the slice can be partitioned into Contract -> Migration -> Cleanup deliverables.</step>
       </phase>
 
@@ -46,7 +46,7 @@
         <step n="2" name="Vertical Slice">
           Consolidate and complete the drafted Vertical Slice. If an active, unresolved Vertical Slice exists, update it by appending the bug's Gherkin scenarios and edge cases. Otherwise, finalize the newly created bug-fix slice (`docs/project/slices/00-NN-{{fix-bug}}.md`). You MUST flesh out the `## Deliverables` section with a highly concise checklist of atomic units of work following the standard Deliverable Dependency Sequence, and compile the `## Implementation Plan` based on your audit findings.
         </step>
-        <step n="3" name="Harvest Debt">If your Systemic Audit revealed widespread technical debt that cannot be reasonably completed within the current Vertical Slice, you MUST `EDIT` the active Milestone's (`docs/project/milestones/`) `Technical Debt` section to append it as a checkmarkable `[ ]` task for future resolution.</step>
+        <step n="3" name="Harvest Debt">If your Systemic Audit revealed widespread technical debt that cannot be reasonably completed within the current Vertical Slice, you MUST `EDIT` the active Milestone's (`docs/project/milestones/`) `Technical Debt` section to append it as a checkmarkable `- [ ]` task for future resolution (do NOT include the `[DEBT]` tag in the milestone text).</step>
       </phase>
 
       <phase n="5" name="Cleanup & Commit">
