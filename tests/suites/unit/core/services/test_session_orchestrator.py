@@ -158,3 +158,37 @@ def test_session_orchestrator_passes_status_to_pruning_service(
     orchestrator._pruning_service.prune.assert_called_once_with(
         ANY, current_status="SUCCESS 🟢"
     )
+
+
+def test_session_orchestrator_resolves_context_when_non_interactive(
+    orchestrator,
+    mock_run_plan,
+    mock_fs,
+    mock_plan_parser,
+    mock_plan_validator,
+):
+    """
+    SessionOrchestrator should resolve project context and call the pruning service
+    even in non-interactive sessions.
+    """
+    # Arrange
+    from teddy_executor.core.domain.models import Plan
+
+    mock_plan = MagicMock(spec=Plan)
+    mock_plan.metadata = {"Status": "SUCCESS 🟢"}
+    mock_plan.is_session = True
+
+    # Setup execution mocks
+    mock_plan_parser.parse.return_value = mock_plan
+    mock_plan_validator.validate.return_value = []
+    mock_fs.path_exists.return_value = True  # For is_session_mode
+
+    # Return context
+    orchestrator._context_service.get_context.return_value = MagicMock()
+
+    # Act
+    orchestrator.execute(plan_path="path/to/01/plan.md", interactive=False)
+
+    # Assert
+    orchestrator._context_service.get_context.assert_called_once()
+    orchestrator._pruning_service.prune.assert_called_once()

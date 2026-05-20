@@ -81,7 +81,7 @@ class SessionOrchestrator(IRunPlanUseCase):
         plan = result
 
         # 3. Execution
-        if is_session and plan_path and not project_context and interactive:
+        if is_session and plan_path and not project_context:
             context_files = self._session_service.resolve_context_paths(plan_path)
             # Use plan metadata as primary source for agent name, fallback to lifecycle manager
             agent_name = (

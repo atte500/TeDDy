@@ -44,10 +44,12 @@ def test_teddy_context_aggregates_cascading_context(tmp_path, monkeypatch):
     assert "file_a.py" in result.stdout
 
 
-def test_teddy_execute_triggers_turn_transition(tmp_path, monkeypatch):
+def test_teddy_execute_triggers_turn_transition(tmp_path, monkeypatch, env):
     """
     Scenario: teddy execute triggers turn transition
     """
+    env.workspace = tmp_path
+    env.with_real_filesystem()
     monkeypatch.chdir(tmp_path)
     session_dir = tmp_path / ".teddy" / "sessions" / "feat-x"
     turn_dir = session_dir / "01"

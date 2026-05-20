@@ -114,13 +114,17 @@ And continues executing up to the Loop Guard limit
 - [x] **Wiring** - Update acceptance tests to run from project root (`cwd=tmp_path`).
 - [x] **Wiring** - Verify end-to-end Instruction Discovery via context (Goal + Latest Report).
 - [x] **Wiring** - Verify that all symptoms of Session Loop Breakage are resolved using the provided MRE.
-- [ ] **Logic** - Remove `interactive` guard in `SessionOrchestrator.execute` to enable context resolution and auto-pruning in non-interactive sessions.
+- [x] **Logic** - Remove `interactive` guard in `SessionOrchestrator.execute` to enable context resolution and auto-pruning in non-interactive sessions.
 - [ ] **Logic** - Implement programmatic harvesting of unselected context items into `plan.metadata["pruned_context"]` in `SessionOrchestrator.execute` when `interactive` is False.
 - [ ] **Logic** - Remove `interactive` check from initial message resolution in `handle_new_session` to always prompt for start messages when missing.
 - [ ] **Wiring** - Remove `not interactive` from session loop breakout conditions in `handle_new_session` and `handle_resume_session` to support multi-turn auto-approvals.
 - [ ] **Wiring** - Verify end-to-end non-interactive auto-pruning, message prompting, and multi-turn loops.
 
 ## Implementation Notes
+
+### Non-Interactive Context Resolution & Auto-Pruning
+- **Enhancement**: Removed the `and interactive` check from `SessionOrchestrator.execute`'s context resolution guard. Context resolution, token footprint calculation, and auto-pruning heuristics now run deterministically across both interactive and non-interactive sessions.
+- **Integration Harness Alignment**: Enabled the integration test `test_teddy_execute_triggers_turn_transition` to use the standardized `env` fixture and explicitly anchored `env.workspace = tmp_path` with `env.with_real_filesystem()`. This aligns the real file system adapter's root directory with the pytest temp folder to prevent path validation errors.
 
 ### Session Loop Breakage & Path Resolution
 - **Root Cause**: Inconsistent path resolution between `SessionService` and `PlanningService` caused context files (like `session.context`) to be unresolvable or incorrectly re-based during session resume loops.
