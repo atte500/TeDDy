@@ -89,7 +89,7 @@
 
       <phase n="5" name="Version Control">
         <goal>Verify workspace state and hand off versioned history. Prerequisite: Successful integration verified by global test run.</goal>
-        <step n="1" name="Teardown">Run `git status`. Explicitly delete all temporary logs and workspace detritus in `spikes/` (except preserved showcases or MREs).</step>
+        <step n="1" name="Teardown">Explicitly delete all temporary logs and workspace detritus in `spikes/` (except preserved showcases or MREs), then run `git status` to verify.</step>
         <step n="2" name="Consistency Check">If this is the last deliverable, execute `git grep` for deleted/renamed components and resolve stale hits in documentation/comments.</step>
         <step n="3" name="Version Control">Execute the commit following the VCP for the current deliverable in its own turn.</step>
         <step n="4" name="Atomic Delivery">You are strictly forbidden from starting a new deliverable until the current one is version controlled. Once the commit is pushed, you may reset the State Dashboard and proceed to the next item's Orientation.</step>
@@ -151,21 +151,21 @@ WIP & REMINDERS:
         The entire commit cycle (test, stage, commit, push) MUST occur in a dedicated Version Control turn.
         1. Pre-conditions: Clean up temporary files (spikes/, .tmp/). If unsure of changes, `EXECUTE git add . && git diff HEAD`.
         2. Commit Message: Use Conventional Commits '<type>(<scope>): <description>' wrapped in single quotes. Use imperative mood. Append ! for breaking changes.
-        3. Execution: You MUST test, stage, pull safely with rebase, commit, and push by executing exactly this codeblock:
+        3. Execution: You MUST test, stage, commit locally, pull safely with rebase, and push by executing exactly this codeblock:
            ```shell
            # 1. Run full test suite
            <global_test_command>
 
-           # 2. Pull remote changes safely to prevent conflicts
-           git pull --rebase
-
-           # 3. Stage changes and run pre-commit
+           # 2. Stage changes and run pre-commit
            git add .
            pre-commit run || true
 
-           # 4. Commit and Push
+           # 3. Re-stage and Commit
            git add .
            git commit -m '<type>(<scope>): <description>'
+
+           # 4. Pull and Push
+           git pull --rebase
            git push
            ```
         4. Post-conditions: Log debt in Milestone and use --no-verify if needed to bypass non-trivial quality gate failures (like file length).

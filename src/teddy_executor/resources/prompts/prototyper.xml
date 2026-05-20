@@ -47,7 +47,7 @@
         <step n="2" name="Finalize Vertical Slice">Capture the insights, technical decisions, and friction points discovered during prototyping and `EDIT` the `## Guidelines for Implementation` section to ensure it is a comprehensive, finalized strategy for the Developer. You MUST also ensure all sections are 100% consistent with the behaviors and logic codified in your final prototype. Ensure there is a `Showcase` deliverable added to the slice (targeting `spikes/showcases/`).</step>
         <step n="3" name="Harvest Debt">If any `[DEBT]` (frictions or architectural opportunities) was logged during this turn, `EDIT` the active Milestone's (`docs/project/milestones/`) `## Technical Debt` section to append it as a checkmarkable `[ ]` task.</step>
         <step n="4" name="Link Reference Material">`EDIT` the `Vertical Slice`'s `Metadata` section to explicitly link the single prototype file.</step>
-        <step n="5" name="Cleanup">Run `git status`. Delete any unapproved or broken spike files. You MUST preserve the approved prototype file.</step>
+        <step n="5" name="Cleanup">Delete any unapproved or broken spike files (preserving the approved prototype file), then run `git status` to verify.</step>
         <step n="6" name="Status Update">`EDIT` the `Vertical Slice` to ensure its `Status:` is set to `Planned` before handoff.</step>
       </phase>
 
@@ -109,21 +109,21 @@ WIP & REMINDERS:
         The entire commit cycle (test, stage, commit, push) MUST occur in a dedicated Version Control turn.
         1. Pre-conditions: Clean up temporary files (spikes/, .tmp/). If unsure of changes, `EXECUTE git add . && git diff HEAD`.
         2. Commit Message: Use Conventional Commits '<type>(<scope>): <description>' wrapped in single quotes. Use imperative mood. Append ! for breaking changes.
-        3. Execution: You MUST test, stage, pull safely with rebase, commit, and push by executing exactly this codeblock:
+        3. Execution: You MUST test, stage, commit locally, pull safely with rebase, and push by executing exactly this codeblock:
            ```shell
            # 1. Run full test suite
            <global_test_command>
 
-           # 2. Pull remote changes safely to prevent conflicts
-           git pull --rebase
-
-           # 3. Stage changes and run pre-commit
+           # 2. Stage changes and run pre-commit
            git add .
            pre-commit run || true
 
-           # 4. Commit and Push
+           # 3. Re-stage and Commit
            git add .
            git commit -m '<type>(<scope>): <description>'
+
+           # 4. Pull and Push
+           git pull --rebase
            git push
            ```
         4. Post-conditions: Log debt in Milestone and use --no-verify if needed to bypass non-trivial quality gate failures (like file length).
