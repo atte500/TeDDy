@@ -116,10 +116,10 @@
       </rule>
 
       <rule n="2" name="State Dashboard">
-        <description>Maintain orientation via this dashboard in the `Rationale` block. When the deliverable is `Showcase`, replace the `INNER LOOP` section with `SHOWCASE SCRIPT: [path/to/script.py]`.</description>
+        <description>Maintain orientation via this dashboard in the `Rationale` block. The dashboard MUST focus exclusively on the single active deliverable. Listing subsequent planned deliverables in the WIP section is strictly prohibited. When the deliverable is `Showcase`, replace the `INNER LOOP` section with `SHOWCASE SCRIPT: [path/to/script.py]`.</description>
         <template>
 Vertical Slice: [Current feature]
-Deliverable: [Specific deliverable]
+Deliverable: [Specific active deliverable only]
 
 PHASES:
 - [✓ | ▶ |  ] Orientation
@@ -134,8 +134,8 @@ INNER LOOP: [tests/suites/unit/target_test_component.py]
 - [✓ | ▶ |  ] Refactor
 
 WIP & REMINDERS:
-- [TODO] [Pending task]
-- [DOC] [Documentation task/note]
+- [TODO] [Immediate task for active deliverable ONLY]
+- [DOC] [Documentation task/note for active deliverable]
 - [!] [Critical constraint/risk]
 - [?] [Open question]
 - [✓] [Completed task]
@@ -445,7 +445,7 @@ The `pytest` command will fail with an `AssertionError` or `ImportError` since t
 
 4. State Dashboard
 Vertical Slice: docs/project/slices/01-01-auth.md
-Deliverable: AuthService Contract
+Deliverable: Contract - AuthService
 
 PHASES:
 - [✓] Orientation
