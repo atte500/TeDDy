@@ -20,25 +20,25 @@ This document outlines the technical standards, conventions, and setup process f
 - **Exclusions:** Experimental sandboxes (`spikes/`) are excluded from quality scans.
 
 ### Core Architecture & DI
-- **Naming:** Dependencies in core services (`src/.../core/services/`) MUST be private (e.g., `self._repo`).
+- **Naming:** Dependencies in core services MUST be private (e.g., private properties).
 - **DI Strategy:** Strict **Constructor Injection**. The container MUST NOT be used as a Service Locator in core logic.
-- **DI Boundary:** Core logic MUST NOT import DI frameworks (e.g., `punq`). Enforced by pre-commit.
-- **Scopes:** Use `punq.Scope.transient` to prevent state leakage.
+- **DI Boundary:** Core domain logic MUST NOT import or depend on external Dependency Injection frameworks or containers.
+- **Scopes:** Use transient scoping to prevent state leakage.
 
 ### Testing Strategy
-- **Framework:** `pytest` + `anyio`. Mocking via `unittest.mock`.
+- **Framework:** Async-capable testing framework. Mocking via centralized mock registration.
 - **Organization:**
     - `tests/suites/`: Functional Pyramid (Acceptance > Integration > Unit).
     - `tests/harness/`: Infrastructure (Setup, Drivers, Observers).
-- **Standards:** Async tests MUST use `@pytest.mark.anyio`. 90%+ coverage enforced.
+- **Standards:** To prevent Mock Poisoning, any allowed Mocks MUST strictly bind to their target contracts (e.g., via the project's designated mock registration helper that enforces auto-speccing) to prevent Signature Drift. Direct instantiation of bare, dynamic mock objects is strictly forbidden. 90%+ test coverage target enforced.
 
 ### Failure Transparency (Stop the Line)
-- **Zero Suppression:** Silent exception swallowing is forbidden. Bare `except:` or generic `except Exception:` blocks MUST NOT be used.
-- **Re-raising:** Catch specific exceptions or log full context and re-raise. `pass` is only allowed with an explicit "safe to ignore" comment.
+- **Zero Suppression:** Silent error swallowing is forbidden. Generic catch-all blocks MUST NOT be used to swallow errors.
+- **Re-raising:** Catch specific error types or log full context and re-raise. Empty catch blocks are only allowed with an explicit "safe to ignore" comment.
 
 ### Pre-commit Hooks
 - **Scope:** Strictly limited to **staged files** for fast local feedback. Heavy/Global checks belong in CI.
-- **Hooks:** Fast linters (Ruff [rules BLE001, PLW0711]), Formatters (Ruff), Type Checking (Mypy), DI Boundary enforcement, and Security Scanners (detect-secrets, bandit, pip-audit).
+- **Hooks:** Fast linters, formatters, static type-checkers, DI Boundary enforcement, security scanners, and rules to ban bare mock objects in favor of the designated mock registration helper.
 
 ### Configuration
 - **Source:** Single Source of Truth via `IConfigService`.
