@@ -132,21 +132,21 @@
           <item name="Heading">## Scenarios</item>
           <item name="Content">Each scenario MUST begin with a user story formatted as a Markdown blockquote (e.g., "> As a [user type], I want to [action] so that [benefit]"). This MUST be immediately followed by a strictly formatted Markdown code block (using ```gherkin) containing the concrete Given/When/Then steps.</item>
         </section>
-        <section n="4" name="Deliverables">
+        <section n="4" name="Edge Cases">
+          <item name="Heading">## Edge Cases</item>
+          <item name="Content">List of anticipated edge cases and failures. Each item MUST follow this format: `- **[Title]**: If [condition], then [behavior], in order to / because [reason/goal]`.</item>
+        </section>
+        <section n="5" name="Deliverables">
           <item name="Heading">## Deliverables</item>
           <item name="Content">Checklist of atomic units of work ordered following the Deliverable Dependency Sequence: 1. Contract (Interfaces; DTOs; Signatures; Expansion), 2. Harness (Infrastructure; Env), 3. Seam (Abstraction; Toggles; DI), 4. Logic (Rules; Algorithms), 5. Wiring (Origin -> Destination), 6. Showcase (Interactive Script), 7. Migration (Updating consumers), 8. Refactor (Internal restructuring; non-breaking), 9. Cleanup (Pruning; Contraction). Format: `- [ ] **Type** - Description`.</item>
         </section>
-        <section n="5" name="Implementation Notes">
+        <section n="6" name="Implementation Notes">
           <item name="Heading">## Implementation Notes</item>
           <item name="Content">Filled by the Developer as things get implemented. Record of frictions, technical decisions, and findings. Used for the as-built update of Component Docs.</item>
         </section>
-        <section n="6" name="Delta Analysis">
-          <item name="Heading">## Delta Analysis</item>
-          <item name="Content">Summary of changes required to integrate the feature into the existing codebase. Can be populated by the Architect, Prototyper, or Pathfinder, and updated by the Developer.</item>
-        </section>
-        <section n="7" name="Guidelines for Implementation">
-          <item name="Heading">## Guidelines for Implementation</item>
-          <item name="Content">Actionable strategy for implementation. Can be populated by the Architect, Prototyper, or Pathfinder, and updated by the Developer. MAY include Test Harness Triad strategy and Mermaid diagrams for complex interactions.</item>
+        <section n="7" name="Implementation Plan">
+          <item name="Heading">## Implementation Plan</item>
+          <item name="Content">Summary of changes required to integrate the feature into the existing codebase, combined with the actionable strategy and guidelines for implementation (such as Test Harness Triad strategy or Mermaid diagrams). Can be populated by the Architect, Prototyper, or Pathfinder, and updated by the Developer.</item>
         </section>
       </blueprint>
 
@@ -228,16 +228,19 @@ WIP & REMINDERS:
         The entire commit cycle (test, stage, commit, push) MUST occur in a dedicated Version Control turn.
         1. Pre-conditions: Clean up temporary files (spikes/, .tmp/). If unsure of changes, `EXECUTE git add . && git diff HEAD`.
         2. Commit Message: Use Conventional Commits '<type>(<scope>): <description>' wrapped in single quotes. Use imperative mood. Append ! for breaking changes.
-        3. Execution: You MUST test (running the global, unfiltered test command covering all layers, e.g., `pytest`), stage, commit, and push by executing exactly this codeblock:
+        3. Execution: You MUST test, stage, pull safely with rebase, commit, and push by executing exactly this codeblock:
            ```shell
            # 1. Run full test suite
            <global_test_command>
 
-           # 2. Stage changes and run pre-commit
+           # 2. Pull remote changes safely to prevent conflicts
+           git pull --rebase
+
+           # 3. Stage changes and run pre-commit
            git add .
            pre-commit run || true
 
-           # 3. Commit and Push
+           # 4. Commit and Push
            git add .
            git commit -m '<type>(<scope>): <description>'
            git push
@@ -271,6 +274,7 @@ WIP & REMINDERS:
       </rule>
 
       <rule n="11" name="Action Gates">`PROMPT`, `INVOKE`, and `RETURN` MUST be performed in isolation being the sole action in a plan. They are allowed ONLY at the specific steps where they are explicitly named in the workflow.</rule>
+      <rule n="12" name="Conflict Resolution Protocol">If any git rebase/pull fails or conflicts: 1. Identify conflicted files via `git status`. 2. `READ` and surgically `EDIT` those files to resolve conflict markers. 3. Run the full test suite to verify correctness. 4. Stage resolved files via `git add`. 5. Complete the rebase via `EXECUTE git rebase --continue`.</rule>
     </general_rules>
 
     <response_format>
