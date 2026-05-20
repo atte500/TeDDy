@@ -218,7 +218,6 @@ WIP & REMINDERS:
           <item name="Milestone">- **Milestone:** [link]</item>
           <item name="Specs">- **Specs:** [links]</item>
           <item name="Prototype">- **Prototype:** [link]</item>
-          <item name="MRE">- **MRE:** [link or N/A]</item>
           <item name="Showcase">- **Showcase:** [link or N/A]</item>
           <item name="Component Docs">- **Component Docs:** [links]</item>
         </section>
