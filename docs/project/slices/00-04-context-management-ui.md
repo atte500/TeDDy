@@ -115,7 +115,7 @@ And continues executing up to the Loop Guard limit
 - [x] **Wiring** - Verify end-to-end Instruction Discovery via context (Goal + Latest Report).
 - [x] **Wiring** - Verify that all symptoms of Session Loop Breakage are resolved using the provided MRE.
 - [x] **Logic** - Remove `interactive` guard in `SessionOrchestrator.execute` to enable context resolution and auto-pruning in non-interactive sessions.
-- [ ] **Logic** - Implement programmatic harvesting of unselected context items into `plan.metadata["pruned_context"]` in `SessionOrchestrator.execute` when `interactive` is False.
+- [x] **Logic** - Implement programmatic harvesting of unselected context items into `plan.metadata["pruned_context"]` in `SessionOrchestrator.execute` when `interactive` is False.
 - [ ] **Logic** - Remove `interactive` check from initial message resolution in `handle_new_session` to always prompt for start messages when missing.
 - [ ] **Wiring** - Remove `not interactive` from session loop breakout conditions in `handle_new_session` and `handle_resume_session` to support multi-turn auto-approvals.
 - [ ] **Wiring** - Verify end-to-end non-interactive auto-pruning, message prompting, and multi-turn loops.
@@ -138,6 +138,11 @@ And continues executing up to the Loop Guard limit
 
 ### Test Resilience
 - Updated brittle unit tests in `SessionService` (e.g., `test_create_session_seeds_initial_request_into_session_context`) to handle fully qualified paths instead of exact filename matches, ensuring resilience against the standardized path resolution strategy.
+
+### Programmatic Context Harvesting in Non-Interactive Mode
+- **Enhancement**: Implemented programmatic harvesting of unselected (auto-pruned) context items into `plan.metadata["pruned_context"]` in `SessionOrchestrator.execute` when `interactive` is False.
+- **Behavior**: If any context items are unselected (e.g., deselected by the pruning heuristics), their paths are formatted as a comma-separated list and stored in plan metadata. If all items remain selected, any pre-existing `pruned_context` key is cleanly deleted to prevent clutter. This matches the identical finalization behavior of interactive TUI sessions.
+
 ### Contract - Add get_text_token_count to ILlmClient
 - Expanded `ILlmClient` with `get_text_token_count(text, model)`.
 - Implemented as a non-breaking Expansion (throwing `NotImplementedError`) to allow incremental adapter updates without breaking the DI container.

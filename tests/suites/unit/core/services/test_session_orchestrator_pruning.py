@@ -309,3 +309,94 @@ def test_execute_respects_manually_pruned_files_during_transition(
     orchestrator._lifecycle_manager.finalize_turn.assert_called_once()
     kwargs = orchestrator._lifecycle_manager.finalize_turn.call_args.kwargs
     assert kwargs["plan"] == plan
+
+
+def test_execute_programmatic_harvest_when_non_interactive(
+    orchestrator, mock_context_service
+):
+    """
+    Asserts that in non-interactive sessions, unselected (auto-pruned) files are
+    programmatically harvested into plan.metadata["pruned_context"].
+    """
+    # Arrange
+    plan_path = "session/02/plan.md"
+    orchestrator._file_system_manager.path_exists.return_value = True  # Is session mode
+
+    # We mock a Plan with metadata dict
+    plan = Plan(
+        title="Test Plan",
+        rationale="Some Rationale",
+        actions=[MagicMock()],
+        metadata={"Agent": "Developer"},
+        source_doc=None,
+    )
+    orchestrator._plan_parser.parse.return_value = plan
+    orchestrator._plan_validator.validate.return_value = []
+
+    # Mock context with one unselected (pruned) file and one selected file
+    items = [
+        ContextItem(
+            path="selected.py",
+            token_count=100,
+            git_status="",
+            scope="Turn",
+            selected=True,
+        ),
+        ContextItem(
+            path="unselected.py",
+            token_count=100,
+            git_status="",
+            scope="Turn",
+            selected=False,
+        ),
+    ]
+    mock_context_service.get_context.return_value = ProjectContext(
+        header="", content="", items=items
+    )
+
+    # Act
+    orchestrator.execute(plan_path=plan_path, interactive=False)
+
+    # Assert
+    assert plan.metadata.get("pruned_context") == "unselected.py"
+
+
+def test_execute_programmatic_harvest_clean_pop_when_none_pruned(
+    orchestrator, mock_context_service
+):
+    """
+    Asserts that if all items are selected, pruned_context is removed from plan.metadata.
+    """
+    # Arrange
+    plan_path = "session/02/plan.md"
+    orchestrator._file_system_manager.path_exists.return_value = True
+
+    plan = Plan(
+        title="Test Plan",
+        rationale="Some Rationale",
+        actions=[MagicMock()],
+        metadata={"Agent": "Developer", "pruned_context": "old_pruned.py"},
+        source_doc=None,
+    )
+    orchestrator._plan_parser.parse.return_value = plan
+    orchestrator._plan_validator.validate.return_value = []
+
+    # All files are selected
+    items = [
+        ContextItem(
+            path="selected.py",
+            token_count=100,
+            git_status="",
+            scope="Turn",
+            selected=True,
+        ),
+    ]
+    mock_context_service.get_context.return_value = ProjectContext(
+        header="", content="", items=items
+    )
+
+    # Act
+    orchestrator.execute(plan_path=plan_path, interactive=False)
+
+    # Assert
+    assert "pruned_context" not in plan.metadata

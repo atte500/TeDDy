@@ -128,6 +128,14 @@ class SessionOrchestrator(IRunPlanUseCase):
                     project_context, current_status=status
                 )
 
+        # R-10-12: Programmatic context harvesting in non-interactive mode
+        self._harvest_context_if_non_interactive(
+            is_session=is_session,
+            interactive=interactive,
+            project_context=project_context,
+            plan=plan,
+        )
+
         report = self._execution_orchestrator.execute(
             plan=plan,
             plan_content=plan_content,
@@ -149,6 +157,24 @@ class SessionOrchestrator(IRunPlanUseCase):
             self._lifecycle_manager.finalize_turn(plan_path, report, plan=plan)
 
         return report
+
+    def _harvest_context_if_non_interactive(
+        self,
+        is_session: bool,
+        interactive: bool,
+        project_context: Optional[Any],
+        plan: Plan,
+    ) -> None:
+        """Harvests unselected context paths in non-interactive mode."""
+        if is_session and not interactive and project_context:
+            if hasattr(project_context, "items") and project_context.items:
+                pruned_paths = [
+                    item.path for item in project_context.items if not item.selected
+                ]
+                if pruned_paths:
+                    plan.metadata["pruned_context"] = ",".join(pruned_paths)
+                else:
+                    plan.metadata.pop("pruned_context", None)
 
     def _handle_aborted_session(
         self, report: ExecutionReport, plan: Optional[Plan]
