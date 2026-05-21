@@ -23,7 +23,7 @@ read:
 # Intelligently pre-deselects context files to save tokens and manage complexity.
 auto_pruning:
   enabled: true
-  global_context_threshold: 100000 # Total token budget for turn context.
+  global_context_threshold: 50000 # Total context token budget. If surpassed, triggers pruning of largest files in turn.context.
   prune_failure_history: true # Prune non-green turns once recovery is achieved.
   prune_validation_failures: true # Prune plans and reports that failed validation.
   max_turns_retention: 25 # Prune plans and reports that failed validation.

@@ -23,6 +23,7 @@ def mock_config():
 def mock_fs():
     mock = create_autospec(IFileSystemManager, instance=True)
     mock.path_exists.return_value = True
+    mock.read_file.return_value = ""
     return mock
 
 
@@ -79,3 +80,96 @@ def test_prune_triggers_recovery_cleanup_via_current_status(service, mock_fs):
         result.items[0].auto_prune_reason
         == "Pruned failure history after successful recovery"
     )
+
+
+def test_global_budget_includes_all_selected_tokens_and_system_prompt(
+    service, mock_config
+):
+    """
+    Logic: The global token summation must include selected files from all scopes
+    (Turn, Session, History) and the system prompt, but only prune Turn/History files.
+    """
+    from teddy_executor.core.domain.models.project_context import ContextItem
+
+    # Config has global_context_threshold set to 10000 in mock_config fixture.
+    # We construct items whose selected totals are:
+    # System Prompt: 3000 tokens
+    # Session (un-prunable): 2000 tokens
+    # Turn 1 Plan (History file): 4000 tokens (eligible to prune)
+    # Turn 2 Plan (Turn file): 2000 tokens (eligible to prune)
+    # Total selected = 3000 (system) + 2000 (session) + 4000 (history) + 2000 (turn) = 11000 > 10000 threshold.
+    items = [
+        ContextItem(
+            path="src/login.py", scope="Session", token_count=2000, git_status=" "
+        ),
+        ContextItem(
+            path=".teddy/sessions/S/01/plan.md",
+            scope="Turn",
+            token_count=4000,
+            git_status=" ",
+        ),
+        ContextItem(path="02/plan.md", scope="Turn", token_count=2000, git_status=" "),
+    ]
+    context = ProjectContext(
+        items=items,
+        header="",
+        content="",
+        system_prompt_tokens=3000,
+    )
+
+    # Act
+    result = service.prune(context)
+
+    # Assert
+    # The largest prunable candidate (Turn 1 Plan / History file with 4000 tokens) must be pruned first.
+    # This reduces total tokens from 11000 to 7000, which is below the 10000 threshold.
+    # Therefore, turn_items (2000 tokens) should remain selected.
+    history_item = next(i for i in result.items if "01/plan.md" in i.path)
+    turn_item = next(i for i in result.items if "02/plan.md" in i.path)
+    session_item = next(i for i in result.items if "src/login.py" in i.path)
+
+    assert history_item.selected is False
+    assert history_item.auto_prune_reason == "Pruned to fit context budget"
+    assert turn_item.selected is True
+    assert session_item.selected is True
+
+
+def test_global_budget_strictly_protects_initial_request(service, mock_config):
+    """
+    Logic: Even if initial_request.md is extremely large and we exceed the global budget,
+    it must be protected and never pruned.
+    """
+    from teddy_executor.core.domain.models.project_context import ContextItem
+
+    # Total threshold = 10000.
+    # Initial request (History path) = 8000 tokens. (Must NOT be pruned!)
+    # Turn file = 4000 tokens. (Eligible to prune!)
+    # System prompt = 1000 tokens.
+    # Total selected = 8000 + 4000 + 1000 = 13000 > 10000 threshold.
+    items = [
+        ContextItem(
+            path=".teddy/sessions/S/initial_request.md",
+            scope="Session",
+            token_count=8000,
+            git_status=" ",
+        ),
+        ContextItem(path="02/plan.md", scope="Turn", token_count=4000, git_status=" "),
+    ]
+    context = ProjectContext(
+        items=items,
+        header="",
+        content="",
+        system_prompt_tokens=1000,
+    )
+
+    # Act
+    result = service.prune(context)
+
+    # Assert
+    init_req_item = next(i for i in result.items if "initial_request.md" in i.path)
+    turn_item = next(i for i in result.items if "02/plan.md" in i.path)
+
+    # Turn item is pruned to bring total selected to 13000 - 4000 = 9000 <= 10000
+    assert init_req_item.selected is True
+    assert turn_item.selected is False
+    assert turn_item.auto_prune_reason == "Pruned to fit context budget"

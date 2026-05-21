@@ -123,14 +123,14 @@ def test_execute_prunes_global_budget_heuristic(orchestrator, mock_context_servi
 
     items = [
         ContextItem(
-            path="system.py", token_count=5000, git_status="", scope="System"
+            path="system.py", token_count=100, git_status="", scope="System"
         ),  # Exempt
         ContextItem(path="large.py", token_count=800, git_status="", scope="Turn"),
         ContextItem(path="medium.py", token_count=300, git_status="", scope="Turn"),
         ContextItem(path="small.py", token_count=100, git_status="", scope="Turn"),
     ]
-    # Total Turn = 1200. Threshold = 1000.
-    # Must prune large.py (800) to get to 400.
+    # Total selected = 100 (System) + 1200 (Turn) = 1300. Threshold = 1000.
+    # Must prune large.py (800) to get to 500.
 
     mock_context_service.get_context.return_value = ProjectContext(
         items=items, header="", content=""

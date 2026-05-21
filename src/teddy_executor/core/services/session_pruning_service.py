@@ -49,7 +49,10 @@ class SessionPruningService:
             items = self._apply_retention_limit(items)
 
             # 3. Heuristic 2: Global Budget
-            items = self._apply_global_budget(items)
+            system_prompt_tokens = context.system_prompt_tokens or 0
+            items = self._apply_global_budget(
+                items, system_prompt_tokens=system_prompt_tokens
+            )
 
             return replace(context, items=items)
         except Exception as e:
@@ -272,8 +275,8 @@ class SessionPruningService:
 
         return items
 
-    def _apply_global_budget(self, items):
-        """Prunes turn context items to fit within a global token budget."""
+    def _apply_global_budget(self, items, system_prompt_tokens: int = 0):
+        """Prunes turn and history context items to fit within a global token budget."""
         try:
             setting = self._config_service.get_setting(
                 "auto_pruning.global_context_threshold", 0
@@ -283,19 +286,27 @@ class SessionPruningService:
             threshold = 0
 
         if threshold > 0:
-            turn_items = [
-                (i, item)
-                for i, item in enumerate(items)
-                if item.scope == "Turn"
-                and item.selected
-                and isinstance(item.token_count, (int, float))
-            ]
-            total_tokens = sum(item.token_count for _, item in turn_items)
+            # Sum ALL selected items plus system prompt tokens to reflect true context size
+            total_tokens = system_prompt_tokens + sum(
+                item.token_count
+                for item in items
+                if item.selected and isinstance(item.token_count, (int, float))
+            )
 
             if total_tokens > threshold:
-                # Sort by token count descending
-                turn_items.sort(key=lambda x: x[1].token_count, reverse=True)
-                for idx, item in turn_items:
+                # Gather eligible pruning candidates: standard Turn files (which includes history files in turn.context)
+                prune_candidates = [
+                    (i, item)
+                    for i, item in enumerate(items)
+                    if item.scope == "Turn"
+                    and item.selected
+                    and isinstance(item.token_count, (int, float))
+                ]
+
+                # Sort by token count descending to prune largest files first
+                prune_candidates.sort(key=lambda x: x[1].token_count, reverse=True)
+
+                for idx, item in prune_candidates:
                     if total_tokens <= threshold:
                         break
                     items[idx] = replace(
