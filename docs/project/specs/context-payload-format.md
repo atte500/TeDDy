@@ -33,6 +33,9 @@ The payload is a single Markdown document with the following top-level sections.
 
 ## 4. Resource Contents
 ...
+
+## 5. Session History (Session Mode only)
+...
 ```
 
 ---
@@ -108,5 +111,31 @@ The full, verbatim content of every resource (file or URL) included in the conte
     ````markdown
     # TeDDy CLI: A File-Based Front-End for Agentic Coding
     ... (full file content) ...
+    ````
+    `````
+
+### 3.5. Session History
+
+In Stateful (Interactive) Session Mode, the stateful conversation history files (e.g. `initial_request.md`, turn plans, and execution reports under `.teddy/sessions/`) are completely isolated and filtered out of standard `## 4. Resource Contents`.
+
+Instead, they are appended in chronological order under a dedicated `## 5. Session History` section using clean, human-readable turn headers (e.g. `### Initial Request`, `### Turn 1: Plan`, `### Turn 1: Execution Report`) with all raw directory paths stripped out to keep the prompt concise and structured.
+
+-   **Example:**
+    `````markdown
+    ## 5. Session History
+
+    ### Initial Request
+    ````markdown
+    Implement user login module.
+    ````
+
+    ### Turn 1: Plan
+    ````markdown
+    We will create the login route in `src/auth.py`.
+    ````
+
+    ### Turn 1: Execution Report
+    ````markdown
+    Successfully created auth module and passed unit tests.
     ````
     `````
