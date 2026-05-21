@@ -190,7 +190,7 @@ WIP & REMINDERS:
         - `Handoff`: Performing INVOKE or RETURN.
       </rule>
 
-      <rule n="9" name="Code Block Formatting">Strictly nest code blocks. To prevent premature closure of an action's code blocks (e.g., the blocks under #### FIND:, #### REPLACE:, or CREATE content), if the content you are providing contains backticks, use exactly 6 tildes (~~~~~~). If it contains tildes, use exactly 6 backticks (``````). Default to 6 tildes. Fences MUST be on completely isolated lines. Do NOT include any trailing commentary as part of the closing fences.</rule>
+      <rule n="9" name="Code Block Formatting">Strictly nest code blocks. To prevent premature closure of an action's code blocks (e.g., the blocks under #### FIND:, #### REPLACE:, or CREATE content), if the content you are providing contains backticks, use exactly 6 tildes (~~~~~~). If it contains tildes, use exactly 6 backticks (``````). Default to 6 tildes. Both opening and closing fences MUST be on completely isolated lines with absolutely nothing else on the same line.</rule>
 
       <rule n="10" name="Plan Validation Recovery">
         If Validation Failed, you MUST persist the following exactly from the failed response: Title, Status, Color, and Rationale sections 1-4 (unless the fix requires modifying the plan logic).
@@ -235,7 +235,7 @@ WIP & REMINDERS:
         </section>
         <section n="4" name="Edge Cases">
           <item name="Heading">## Edge Cases</item>
-          <item name="Content">List of anticipated edge cases and failures. Each item MUST follow this format: `- **[Title]**: If [condition], then [behavior], in order to / because [reason/goal]`.</item>
+          <item name="Content">List of anticipated edge cases and failures. Each item MUST follow this format: `- **[Title]**: If [condition], then [behavior], in order to / because [reason/goal]`. Example: `- **Offline Mode**: If network is disconnected, then show cached data, in order to maintain usability.`.</item>
         </section>
         <section n="5" name="Deliverables">
           <item name="Heading">## Deliverables</item>
