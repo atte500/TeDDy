@@ -4,6 +4,9 @@ from teddy_executor.core.domain.models import ProjectContext, ContextItem
 from teddy_executor.core.utils.markdown import (
     get_fence_for_content,
     get_language_from_path,
+    is_session_file_path,
+    get_session_history_display_name,
+    get_session_history_sort_key,
 )
 from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
@@ -238,29 +241,38 @@ class ContextService(IGetContextUseCase):
             f"```\n{repo_tree}\n```",
         ]
 
+        # Gather all unique paths
+        all_paths: List[str] = []
+        for paths in scoped_paths.values():
+            for p in paths:
+                if p not in all_paths:
+                    all_paths.append(p)
+
+        # Partition standard workspace files and session files
+        workspace_paths = [p for p in all_paths if not is_session_file_path(p)]
+        session_paths = [p for p in all_paths if is_session_file_path(p)]
+
+        # 1. Format workspace files under ## 4. Resource Contents
         content_parts.extend(
-            self._format_resource_contents(scoped_paths, file_contents)
+            self._format_workspace_contents(workspace_paths, file_contents)
         )
+
+        # 2. Format recognized session history files chronologically in ## 5. Session History
+        content_parts.extend(self._format_session_history(session_paths, file_contents))
 
         return "\n".join(content_parts)
 
-    def _format_resource_contents(
+    def _format_workspace_contents(
         self,
-        scoped_paths: Dict[str, List[str]],
+        workspace_paths: List[str],
         file_contents: Dict[str, Optional[str]],
     ) -> List[str]:
-        """Formats the Resource Contents section."""
-        unique_paths: List[str] = []
-        for paths in scoped_paths.values():
-            for p in paths:
-                if p not in unique_paths:
-                    unique_paths.append(p)
-
-        if not unique_paths:
+        """Formats the workspace contents section."""
+        if not workspace_paths:
             return []
 
         parts = ["\n## 4. Resource Contents"]
-        for path in unique_paths:
+        for path in workspace_paths:
             parts.append("\n---")
             parts.append(f"### [{path}](/{path})")
             content = file_contents.get(path)
@@ -270,4 +282,31 @@ class ContextService(IGetContextUseCase):
                 parts.append(f"{fence}{lang}\n{content}\n{fence}")
             else:
                 parts.append("```\n--- FILE NOT FOUND ---\n```")
+        return parts
+
+    def _format_session_history(
+        self,
+        session_paths: List[str],
+        file_contents: Dict[str, Optional[str]],
+    ) -> List[str]:
+        """Formats the session history section."""
+        if not session_paths:
+            return []
+
+        recognized_session_paths = [
+            p for p in session_paths if get_session_history_display_name(p) is not None
+        ]
+        if not recognized_session_paths:
+            return []
+
+        recognized_session_paths.sort(key=get_session_history_sort_key)
+        parts = ["\n## 5. Session History"]
+        for path in recognized_session_paths:
+            disp_name = get_session_history_display_name(path)
+            content = file_contents.get(path) or ""
+            content_str = content.strip()
+            lang = get_language_from_path(path)
+            fence = get_fence_for_content(content_str)
+            parts.append(f"\n### {disp_name}")
+            parts.append(f"{fence}{lang}\n{content_str}\n{fence}")
         return parts

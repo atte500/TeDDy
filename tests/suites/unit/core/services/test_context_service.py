@@ -255,3 +255,110 @@ def test_get_context_with_long_content_file_does_not_crash(
     assert result.items[0].path == "long_spec.md"
     assert result.items[0].token_count == 50
     mock_fs.resolve_paths_from_files.assert_not_called()
+
+
+def test_get_context_separates_and_formats_session_history(
+    service: IGetContextUseCase,
+    mock_fs,
+    mock_tree_gen,
+    mock_inspector,
+):
+    """
+    Scenario 1: Formatting chronological session history for the context payload.
+    Verifies that ContextService partitions session history files from workspace files,
+    excluding session files from '## 4. Resource Contents' and formatting them in
+    '## 5. Session History' at the end, sorted chronologically. Unrecognized session
+    files (like meta.yaml) are completely omitted. If no session files exist,
+    the section is omitted entirely.
+    """
+    # Arrange
+    session_prefix = ".teddy/sessions/20260521_134944-test-session"
+    mock_file_contents = {
+        f"{session_prefix}/initial_request.md": "Implement user login",
+        f"{session_prefix}/01/meta.yaml": "some_meta: data",  # unrecognized
+        f"{session_prefix}/01/plan.md": "Plan for step 1",
+        f"{session_prefix}/01/report.md": "Report for step 1",
+        "src/main.py": "print('hello')",  # standard workspace file
+    }
+
+    mock_inspector.get_environment_info.return_value = {}
+    mock_inspector.get_git_status.return_value = ""
+    mock_tree_gen.generate_tree.return_value = "src/main.py"
+    mock_fs.resolve_paths_from_files.side_effect = lambda files: files
+    mock_fs.read_files_in_vault.return_value = mock_file_contents
+
+    # Act
+    # Pass both session files and normal files
+    result = service.get_context(
+        context_files={
+            "Session": [
+                f"{session_prefix}/initial_request.md",
+                f"{session_prefix}/01/meta.yaml",
+            ],
+            "Turn": [
+                f"{session_prefix}/01/plan.md",
+                f"{session_prefix}/01/report.md",
+                "src/main.py",
+            ],
+        }
+    )
+
+    # Assert
+    # 1. Standard workspace file MUST be in '## 4. Resource Contents'
+    assert "## 4. Resource Contents" in result.content
+    assert "### [src/main.py]" in result.content
+    assert "print('hello')" in result.content
+
+    # 2. Session files MUST NOT be in '## 4. Resource Contents'
+    # We slice content to check within '## 4' block but before '## 5'
+    assert "## 5. Session History" in result.content
+    resource_contents_block = result.content.split("## 4. Resource Contents")[1].split(
+        "## 5. Session History"
+    )[0]
+    assert "initial_request.md" not in resource_contents_block
+    assert "plan.md" not in resource_contents_block
+    assert "report.md" not in resource_contents_block
+    assert (
+        "meta.yaml" not in result.content
+    )  # Unrecognized session file completely omitted
+
+    # 3. '## 5. Session History' at the end in correct order with formatted headers and no raw directory paths
+    history_block = result.content.split("## 5. Session History")[1]
+    assert "### Initial Request" in history_block
+    assert "Implement user login" in history_block
+    assert "### Turn 1: Plan" in history_block
+    assert "Plan for step 1" in history_block
+    assert "### Turn 1: Execution Report" in history_block
+    assert "Report for step 1" in history_block
+
+    # Assert correct ordering
+    idx_req = history_block.index("### Initial Request")
+    idx_plan = history_block.index("### Turn 1: Plan")
+    idx_report = history_block.index("### Turn 1: Execution Report")
+    assert idx_req < idx_plan < idx_report
+
+    # Ensure no raw directory paths exist under Session History
+    assert ".teddy/sessions/" not in history_block
+
+
+def test_get_context_omits_session_history_if_none_present(
+    service: IGetContextUseCase,
+    mock_fs,
+    mock_tree_gen,
+    mock_inspector,
+):
+    """
+    Verifies that '## 5. Session History' is omitted entirely if there are no session files in the context.
+    """
+    # Arrange
+    mock_inspector.get_environment_info.return_value = {}
+    mock_inspector.get_git_status.return_value = ""
+    mock_tree_gen.generate_tree.return_value = ""
+    mock_fs.read_files_in_vault.return_value = {"src/main.py": "print('hello')"}
+
+    # Act
+    result = service.get_context(context_files={"Turn": ["src/main.py"]})
+
+    # Assert
+    assert "## 4. Resource Contents" in result.content
+    assert "## 5. Session History" not in result.content
