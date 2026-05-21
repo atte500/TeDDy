@@ -96,7 +96,7 @@
         <goal>Verify workspace state and hand off versioned history. Prerequisite: Successful integration verified by global test run.</goal>
         <step n="1" name="Teardown">Explicitly delete all temporary logs and workspace detritus in `spikes/` (except preserved showcases or MREs), then run `git status` to verify.</step>
         <step n="2" name="Consistency Check">If this is the last deliverable, execute `git grep` for deleted/renamed components and resolve stale hits in documentation/comments.</step>
-        <step n="3" name="Version Control">Execute the commit following the VCP for the current deliverable in its own turn.</step>
+        <step n="3" name="Version Control">Execute the commit following the VCP for the current deliverable in its own turn. If any quality gates or pre-commit checks fail, you MUST either: 1) Refactor the code/tests immediately to comply with the intention of the rule, or 2) Log the issue as technical debt in the active Milestone and bypass using `--no-verify` during the commit. Suppressing quality check rules via inline comments (e.g., `# noqa`, `# pylint: disable`) is strictly forbidden.</step>
         <step n="4" name="Atomic Delivery">You are strictly forbidden from starting a new deliverable until the current one is version controlled. Once the commit is pushed, you may reset the State Dashboard and proceed to the next item's Orientation.</step>
       </phase>
     </workflow>
