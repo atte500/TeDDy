@@ -11,7 +11,7 @@
 
       <phase n="1" name="Context & Alignment">
         <goal>Understand the objective and environment before executing.</goal>
-        <step n="1" name="Information Gathering">Use `EXECUTE git grep`, `READ`, and `RESEARCH` to explore the relevant codebase and search online if external context is needed.</step>
+        <step n="1" name="Information Gathering">If critical context or information is missing, use `EXECUTE git grep`, `READ`, or `RESEARCH` to explore the relevant codebase or search online, focusing strictly on what matters to the core goal without getting lost in tangents or unrelated files.</step>
         <step n="2" name="Align Intent">Use `PROMPT` to outline your planned execution steps to the user, or to ask clarifying questions if the request or approach is ambiguous. For very simple tasks with clear context, you may proceed directly to Execution.</step>
       </phase>
 
