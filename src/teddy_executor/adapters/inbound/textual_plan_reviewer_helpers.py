@@ -102,9 +102,15 @@ def format_context_item_label(item: "ContextItem") -> str:
         else ""
     )
     token_str = f"{item.token_count / 1000.0:.1f}k"
+
+    from teddy_executor.core.utils.markdown import get_session_history_display_name
+
+    disp_name = get_session_history_display_name(item.path)
+    display_path = disp_name if disp_name else item.path
+
     if not item.selected:
-        return f"  [s dim]{item.path}{status_part} {token_str}[/]"
-    return f"  [bold]{item.path}[/]{status_part} [#888888]{token_str}[/]"
+        return f"  [s dim]{display_path}{status_part} {token_str}[/]"
+    return f"  [bold]{display_path}[/]{status_part} [#888888]{token_str}[/]"
 
 
 def build_context_section(app: "ReviewerApp", tree: Any) -> Any:
@@ -116,6 +122,12 @@ def build_context_section(app: "ReviewerApp", tree: Any) -> Any:
         SYSTEM_LABEL,
         SESSION_LABEL,
         TURN_LABEL,
+        HISTORY_LABEL,
+    )
+    from teddy_executor.core.utils.markdown import (
+        is_session_file_path,
+        is_session_history_path,
+        get_session_history_sort_key,
     )
 
     con_root = tree.root.add("[bold]Context[/]", data=CONTEXT_ROOT, expand=False)
@@ -129,23 +141,27 @@ def build_context_section(app: "ReviewerApp", tree: Any) -> Any:
             "tokens": app.project_context.system_prompt_tokens,
         },
     )
-    con_root.add_leaf("[#888888 italic]Session:[/]", data=SESSION_LABEL)
-    session_count = 0
-    for item in app.project_context.items:
-        if item.scope == "Session":
-            con_root.add_leaf(format_context_item_label(item), data=item)
-            session_count += 1
-    if session_count == 0:
-        con_root.add_leaf("  [#888888](None)[/]", data=SESSION_LABEL)
 
-    con_root.add_leaf("[#888888 italic]Turn:[/]", data=TURN_LABEL)
-    turn_count = 0
-    for item in app.project_context.items:
-        if item.scope == "Turn":
+    # Standard context items grouped by scope
+    for scope, label in [("Session", SESSION_LABEL), ("Turn", TURN_LABEL)]:
+        con_root.add_leaf(f"[#888888 italic]{scope}:[/]", data=label)
+        count = 0
+        for item in app.project_context.items:
+            if item.scope == scope and not is_session_file_path(item.path):
+                con_root.add_leaf(format_context_item_label(item), data=item)
+                count += 1
+        if count == 0:
+            con_root.add_leaf("  [#888888](None)[/]", data=label)
+
+    # Chronological history turns
+    history_items = [
+        item for item in app.project_context.items if is_session_history_path(item.path)
+    ]
+    if history_items:
+        con_root.add_leaf("[#888888 italic]History:[/]", data=HISTORY_LABEL)
+        history_items.sort(key=lambda x: get_session_history_sort_key(x.path))
+        for item in history_items:
             con_root.add_leaf(format_context_item_label(item), data=item)
-            turn_count += 1
-    if turn_count == 0:
-        con_root.add_leaf("  [#888888](None)[/]", data=TURN_LABEL)
 
     return con_root
 
