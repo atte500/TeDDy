@@ -65,7 +65,7 @@ And the right-pane ParameterDetail aggregate totals MUST update immediately to e
 
 ## Deliverables
 - [x] **Contract** - Define pure helpers (`is_session_file_path`, `is_session_history_path`, `get_session_history_display_name`, `get_session_history_sort_key`) in `src/teddy_executor/core/utils/markdown.py`.
-- [ ] **Contract** - Define `HISTORY_LABEL = "HISTORY_LABEL"` in `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py`.
+- [x] **Contract** - Define `HISTORY_LABEL = "HISTORY_LABEL"` in `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py`.
 - [ ] **Logic** - Update `ContextService._format_content` to partition workspace files from session files, formatting workspace files in `## 4. Resource Contents` and session files in `## 5. Session History` (sorted chronologically and filtered for recognized turns).
 - [ ] **Wiring** - Update `build_context_section` in `src/teddy_executor/adapters/inbound/textual_plan_reviewer_helpers.py` to use the helpers, filtering out all `.teddy/sessions/` files from "Session" and "Turn" lists and rendering recognized history turns under a new italicized `History:` node using `HISTORY_LABEL`.
 - [ ] **Wiring** - Update `_is_context_data` in `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py` to accept `HISTORY_LABEL`.
@@ -146,3 +146,4 @@ The Developer should follow the **Deliverable Dependency Sequence** and leverage
 ## Implementation Notes
 - **Pure Helpers Contract**: Defined `is_session_file_path`, `is_session_history_path`, `get_session_history_display_name`, and `get_session_history_sort_key` in `src/teddy_executor/core/utils/markdown.py`. These helpers isolate session files and map turn-based session files to human-readable names and sort-keys.
 - **Unit Testing**: Added exhaustive unit testing in `tests/suites/unit/core/utils/test_markdown_utils.py` verifying correct behavior and edge-cases (e.g. initial requests, turns, non-session paths, unrecognized session files, and sort order).
+- **History Label Contract**: Defined the `HISTORY_LABEL = "HISTORY_LABEL"` constant in `src/teddy_executor/adapters/inbound/textual_plan_reviewer_logic.py` and updated `_is_context_data` to correctly recognize it. Added accompanying unit tests verifying this contract.

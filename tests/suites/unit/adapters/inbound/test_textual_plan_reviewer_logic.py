@@ -48,3 +48,14 @@ async def test_edit_action_logic_branches_to_prompt():
 def test_extract_status_emoji(raw_status, expected_emoji):
     """Verify the emoji extraction helper handles various formats correctly."""
     assert extract_status_emoji(raw_status) == expected_emoji
+
+
+def test_history_label_contract():
+    """Verify HISTORY_LABEL constant is defined and recognized as context data."""
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
+        HISTORY_LABEL,
+        _is_context_data,
+    )
+
+    assert HISTORY_LABEL == "HISTORY_LABEL"
+    assert _is_context_data(HISTORY_LABEL) is True

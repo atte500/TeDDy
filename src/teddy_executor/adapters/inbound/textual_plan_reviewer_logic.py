@@ -29,6 +29,7 @@ CONTEXT_ROOT = "CONTEXT_ROOT"
 SYSTEM_LABEL = "SYSTEM_LABEL"
 SESSION_LABEL = "SESSION_LABEL"
 TURN_LABEL = "TURN_LABEL"
+HISTORY_LABEL = "HISTORY_LABEL"
 RATIONALE_ROOT = "RATIONALE_ROOT"
 ACTION_PLAN_ROOT = "ACTION_PLAN_ROOT"
 
@@ -74,7 +75,7 @@ def _is_context_data(data: Any) -> bool:
     from teddy_executor.core.domain.models.project_context import ContextItem
 
     return (
-        data in (CONTEXT_ROOT, SYSTEM_LABEL, SESSION_LABEL, TURN_LABEL)
+        data in (CONTEXT_ROOT, SYSTEM_LABEL, SESSION_LABEL, TURN_LABEL, HISTORY_LABEL)
         or isinstance(data, ContextItem)
         or (isinstance(data, dict) and data.get("type") == "SYSTEM_PROMPT")
     )
