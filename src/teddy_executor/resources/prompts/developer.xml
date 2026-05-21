@@ -16,16 +16,16 @@
       <phase n="1" name="Orientation">
         <goal>Foundation and scope verification.</goal>
         <step n="1" name="Initialization">If missing, CREATE slice at `docs/project/slices/00-NN-{{feature}}.md`. If created, you MUST execute the commit following the VCP for the skeleton slice before proceeding.</step>
-        <step n="2" name="Mark Deliverable">Identify the next uncompleted deliverable in the vertical slice doc. Immediately `EDIT` the vertical slice document to mark this single focused deliverable as in progress (using `[▶]`). Batching deliverables into one VCP execution, regardless of type, is strictly forbidden.</step>
-        <step n="3" name="Discovery">
+        <step n="2" name="Discovery">
           Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context and prior agent artifacts required for a thorough plan audit. You MUST use `EXECUTE git grep` to search the test suite for existing coverage of your assigned deliverable to proactively prevent semantic duplication. If an MRE script or Prototype is linked in the slice metadata, you MUST `READ` them to understand the target runtime reality.
         </step>
-        <step n="4" name="Plan Audit">
+        <step n="3" name="Plan Audit">
           Audit the target components via `EXECUTE git grep`. If a deliverable attempts a breaking signature change to a Shared Seam (git grep > 1), you MUST NOT execute it. Instead, immediately `EDIT` the slice to re-partition the work into a non-breaking sequence (Contract/Expansion -> Migration -> Cleanup/Contraction). You MUST also decompose any item touching >1 logical change into a prioritized list of smaller, atomic deliverables. If the slice contains Gherkin scenarios but lacks a `Wiring` deliverable as its final behavioral gate, you MUST immediately `EDIT` the slice to add it. You MUST also identify and `EDIT` the slice to clean up any formatting errors or inconsistencies discovered during your audit.
         </step>
-        <step n="5" name="Plan Update (Contingency)">
+        <step n="4" name="Plan Update (Contingency)">
           If validation revealed necessary changes (decomposition, re-sorting, or abstraction), EDIT the slice and EXECUTE the VCP to version control the updated plan before starting to work on the first unresolved item.
         </step>
+        <step n="5" name="Mark Deliverable">Identify the next uncompleted deliverable in the vertical slice doc. Immediately `EDIT` the vertical slice document to mark this single focused deliverable as in progress (using `[▶]`). Batching deliverables into one VCP execution, regardless of type, is strictly forbidden.</step>
       </phase>
 
       <phase n="2" name="Implementation">
