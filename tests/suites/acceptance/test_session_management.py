@@ -202,3 +202,163 @@ def test_teddy_start_with_explicit_name(tmp_path: Path, monkeypatch):
 
     assert (tmp_path / ".teddy" / "sessions" / "20260417_120000-fixed-name").exists()
     assert not (tmp_path / ".teddy" / "sessions" / "20260417_120000-other").exists()
+
+
+def test_teddy_start_loops_multiple_turns_when_non_interactive_yes(
+    tmp_path: Path, monkeypatch
+):
+    """Scenario: 'start' with -y and -m runs multiple turns automatically up to loop guard limit."""
+    monkeypatch.setenv("TEDDY_MAX_TURNS", "2")
+    env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_shell()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+    setup_project(tmp_path)
+
+    llm = env.get_service(ILlmClient)  # type: ignore[type-abstract]
+    plan1 = MarkdownPlanBuilder("Plan 1").add_execute("echo turn1").build()
+    plan2 = MarkdownPlanBuilder("Plan 2").add_execute("echo turn2").build()
+    llm.get_completion.side_effect = [mock_response(plan1), mock_response(plan2)]  # type: ignore[attr-defined]
+
+    result = adapter.run_cli_command(["start", "-y", "-m", "Goal"])
+
+    assert result.exit_code == 0
+
+    # Locate the session directory (it will have a timestamp)
+    session_dirs = list((tmp_path / ".teddy" / "sessions").glob("*"))
+    assert len(session_dirs) == 1
+    session_dir = session_dirs[0]
+
+    # Both Turn 1 and Turn 2 should have executed and generated reports
+    assert (session_dir / "01" / "report.md").exists()
+    assert (session_dir / "02" / "report.md").exists()
+    assert "turn1" in (session_dir / "01" / "report.md").read_text()
+    assert "turn2" in (session_dir / "02" / "report.md").read_text()
+
+
+def test_teddy_start_prompts_for_message_in_non_interactive_yes(
+    tmp_path: Path, monkeypatch
+):
+    """Scenario: 'start' with -y but no -m prompts the user for the initial message."""
+    env = (
+        TestEnvironment(monkeypatch, tmp_path)
+        .setup()
+        .with_real_shell()
+        .with_real_interactor()
+    )
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+    setup_project(tmp_path)
+
+    llm = env.get_service(ILlmClient)  # type: ignore[type-abstract]
+    plan = MarkdownPlanBuilder("My Goal").add_execute("echo 1").build()
+    llm.get_completion.return_value = mock_response(plan)  # type: ignore[attr-defined]
+
+    # Provide the initial message followed by enter
+    result = adapter.run_cli_command(["start", "-y"], input="Interactive Goal Input\n")
+
+    assert result.exit_code == 0
+
+    # Locate the session directory
+    session_dirs = list((tmp_path / ".teddy" / "sessions").glob("*"))
+    assert len(session_dirs) == 1
+    session_dir = session_dirs[0]
+
+    # Verify initial request file content
+    assert (
+        session_dir / "initial_request.md"
+    ).read_text().strip() == "Interactive Goal Input"
+
+
+def test_teddy_start_aborts_on_empty_message_in_non_interactive_yes(
+    tmp_path: Path, monkeypatch
+):
+    """Scenario: 'start' with -y and no -m raises EOFError/aborts if input is empty or closed."""
+    (
+        TestEnvironment(monkeypatch, tmp_path)
+        .setup()
+        .with_real_shell()
+        .with_real_interactor()
+    )
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+    setup_project(tmp_path)
+
+    # Empty input should cause an abort
+    result = adapter.run_cli_command(["start", "-y"], input="")
+
+    assert result.exit_code != 0
+
+
+def test_teddy_non_interactive_auto_pruning_and_physical_removal(
+    tmp_path: Path, monkeypatch
+):
+    """
+    Scenario: Under non-interactive (-y) execution, pruning heuristics apply,
+    unselected files are harvested programmatically into plan metadata, and
+    excluded from the next turn's context file on disk.
+    """
+    TestEnvironment(monkeypatch, tmp_path).setup().with_real_shell()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+    setup_project(tmp_path)
+
+    # 1. Create a session layout for Turn 02.
+    session_dir = tmp_path / ".teddy" / "sessions" / "20260515_120000-prune-non-int"
+    turn_02_dir = session_dir / "02"
+    turn_02_dir.mkdir(parents=True)
+
+    # Turn 01 was a validation failure. Let's write the failure report and plan.
+    turn_01_dir = session_dir / "01"
+    turn_01_dir.mkdir(parents=True)
+    turn_01_plan = turn_01_dir / "plan.md"
+    turn_01_plan.write_text("# Turn 1 Plan")
+    turn_01_report = turn_01_dir / "report.md"
+    # Specify the exact validation failure indicator
+    turn_01_report.write_text("# Report 1\n- **Overall Status:** Validation Failed")
+
+    # Let's write files that will be in Turn 02 turn.context
+    readme = tmp_path / "README.md"
+    readme.write_text("Readme contents")
+
+    # Seed the Turn 02 context
+    turn_02_context = turn_02_dir / "turn.context"
+    # It tracks README.md and the failed Turn 01 plan and report
+    turn_02_context.write_text(
+        "README.md\n"
+        ".teddy/sessions/20260515_120000-prune-non-int/01/plan.md\n"
+        ".teddy/sessions/20260515_120000-prune-non-int/01/report.md"
+    )
+
+    # Also touch the session.context
+    (session_dir / "session.context").write_text("README.md\ninitial_request.md")
+    (session_dir / "initial_request.md").write_text("My Goal")
+
+    # Setup standard metadata for Turn 02
+    (turn_02_dir / "meta.yaml").write_text("turn_id: '02'\nagent_name: pf")
+    (turn_02_dir / "pathfinder.xml").touch()
+
+    # The plan to execute for Turn 02
+    plan2 = (
+        MarkdownPlanBuilder("Turn 2")
+        .with_rationale("Executing next step.")
+        .add_execute("echo turn2")
+        .build()
+    )
+    (turn_02_dir / "plan.md").write_text(plan2)
+
+    # Run the resume command in non-interactive mode
+    result = adapter.run_cli_command(["resume", "-y"], cwd=turn_02_dir)
+    assert result.exit_code == 0
+
+    # Turn 03 should have been created
+    turn_03_dir = session_dir / "03"
+    assert turn_03_dir.exists()
+
+    # The next turn's turn.context should be written to disk
+    turn_03_context = turn_03_dir / "turn.context"
+    assert turn_03_context.exists()
+    turn_03_context_content = turn_03_context.read_text()
+
+    # Since Turn 01 failed validation, it must be auto-pruned and physically excluded
+    # from the next turn's turn.context!
+    assert "01/plan.md" not in turn_03_context_content
+    assert "01/report.md" not in turn_03_context_content
+
+    # However, README.md (the clean file) should still be in turn.context
+    assert "README.md" in turn_03_context_content

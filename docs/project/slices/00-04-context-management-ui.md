@@ -118,9 +118,22 @@ And continues executing up to the Loop Guard limit
 - [x] **Logic** - Implement programmatic harvesting of unselected context items into `plan.metadata["pruned_context"]` in `SessionOrchestrator.execute` when `interactive` is False.
 - [x] **Logic** - Remove `interactive` check from initial message resolution in `handle_new_session` to always prompt for start messages when missing.
 - [x] **Wiring** - Remove `not interactive` from session loop breakout conditions in `handle_new_session` and `handle_resume_session` to support multi-turn auto-approvals.
-- [ ] **Wiring** - Verify end-to-end non-interactive auto-pruning, message prompting, and multi-turn loops.
+- [x] **Wiring** - Verify end-to-end non-interactive auto-pruning, message prompting, and multi-turn loops.
 
 ## Implementation Notes
+
+### Non-Interactive Multi-Turn Loops & Automation
+- **Enhancement**: Ensured that the `handle_new_session` and `handle_resume_session` CLI handlers support fully automated loops up to the maximum turn limit set by `TEDDY_MAX_TURNS` or the loop guard when the auto-approve flag (`-y`) is supplied.
+- **Verification**: Verified end-to-end loop automation via `test_teddy_start_loops_multiple_turns_when_non_interactive_yes` inside `tests/suites/acceptance/test_session_management.py`. It proves the system automatically transitions from Turn 01 to Turn 02, executing successive plans and producing correct reports without requiring user approval or terminal interaction.
+
+### Missing Message Prompting & Terminal Safety
+- **Enhancement**: When starting a session in non-interactive mode (`-y`), if the initial goal message (`-m`) was omitted, the CLI gracefully prompts the user with "What are we working on?".
+- **EOF Error Handling**: If terminal input is closed or empty (EOF), the system raises a clean `EOFError("No terminal input provided for initial message.")` and aborts the bootstrap process to prevent empty sessions.
+- **Verification**: Covered by `test_teddy_start_prompts_for_message_in_non_interactive_yes` and `test_teddy_start_aborts_on_empty_message_in_non_interactive_yes`. These verify prompt interactions using `.with_real_interactor()` to feed simulated CLI input sequences.
+
+### Non-Interactive Auto-Pruning and Physical Exclusion
+- **Enhancement**: Auto-pruning logic evaluates and prunes context files (e.g., plans/reports of preceding turns that failed validation) during non-interactive turns. The programmatically harvested unselected paths are stored in plan metadata and subsequently filtered/excluded from the `turn.context` file written to disk during turn transition.
+- **Verification**: Asserted end-to-end via `test_teddy_non_interactive_auto_pruning_and_physical_removal`. It builds a session with a validation-failed preceding turn, runs a non-interactive execution, and confirms that the failed plan and report are physically excluded from Turn 03's `turn.context` on disk while other healthy context files are correctly retained.
 
 ### Multi-Turn Non-Interactive Session Loops
 - **Enhancement**: Removed the `not interactive` check from the loop breakout conditions in `handle_new_session` and `handle_resume_session` inside `src/teddy_executor/adapters/inbound/session_cli_handlers.py`. This ensures that automated, non-interactive environments running in auto-approval mode can execute multiple turns continuously under the control of the injected `ISessionLoopGuard`.
