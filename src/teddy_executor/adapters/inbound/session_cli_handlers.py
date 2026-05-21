@@ -16,6 +16,15 @@ from teddy_executor.adapters.inbound.cli_helpers import (
 )
 
 
+def _determine_session_name(name: Optional[str], message: Optional[str]) -> str:
+    """Determine session name (slugify message if name is missing)."""
+    if name:
+        return name
+    if message:
+        return slugify(message)
+    return "session-auto"
+
+
 def handle_new_session(  # noqa: PLR0913
     container: Container,
     name: Optional[str],
@@ -33,17 +42,14 @@ def handle_new_session(  # noqa: PLR0913
         session_manager: ISessionManager = container.resolve(ISessionManager)
         user_interactor: IUserInteractor = container.resolve(IUserInteractor)
 
-        # 1. Resolve message first if missing in interactive mode
-        if message is None and interactive:
+        # 1. Resolve message first if missing
+        if message is None:
             message = user_interactor.ask_question("What are we working on?")
+            if not message:
+                raise EOFError("No terminal input provided for initial message.")
 
         # 2. Determine session name (slugify message if name is missing)
-        if name:
-            actual_name = name
-        elif message:
-            actual_name = slugify(message)
-        else:
-            actual_name = "session-auto"
+        actual_name = _determine_session_name(name, message)
         session_dir = session_manager.create_session(
             name=actual_name, agent_name=agent, initial_request=message
         )

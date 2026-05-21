@@ -67,3 +67,79 @@ def test_handle_new_session_prompts_for_message_before_creating_dir():
         agent_name="pathfinder",
         initial_request="Build a rocket",
     )
+
+
+def test_handle_new_session_prompts_even_when_non_interactive():
+    # Arrange
+    container = Container()
+    mock_session_manager = Mock(spec=ISessionManager)
+    mock_user_interactor = Mock(spec=IUserInteractor)
+    mock_orchestrator = Mock(spec=IRunPlanUseCase)
+    mock_llm_client = Mock(spec=ILlmClient)
+    mock_config_service = Mock(spec=IConfigService)
+    mock_loop_guard = Mock(spec=ISessionLoopGuard)
+
+    container.register(ISessionManager, instance=mock_session_manager)
+    container.register(IUserInteractor, instance=mock_user_interactor)
+    container.register(IRunPlanUseCase, instance=mock_orchestrator)
+    container.register(ILlmClient, instance=mock_llm_client)
+    container.register(IConfigService, instance=mock_config_service)
+    container.register(ISessionLoopGuard, instance=mock_loop_guard)
+
+    mock_llm_client.validate_config.return_value = []
+    mock_user_interactor.ask_question.return_value = "Do something non-interactive"
+    mock_session_manager.create_session.return_value = ".teddy/sessions/something"
+    mock_orchestrator.resume.return_value = None
+
+    # Act
+    handle_new_session(
+        container=container,
+        name=None,
+        agent="pathfinder",
+        interactive=False,
+        no_copy=False,
+        message=None,
+    )
+
+    # Assert
+    mock_user_interactor.ask_question.assert_called_once_with("What are we working on?")
+    mock_session_manager.create_session.assert_called_once_with(
+        name="something-non-interactive",
+        agent_name="pathfinder",
+        initial_request="Do something non-interactive",
+    )
+
+
+def test_handle_new_session_raises_eof_error_on_empty_prompt_response_in_non_interactive():
+    import pytest
+    import typer
+
+    # Arrange
+    container = Container()
+    mock_session_manager = Mock(spec=ISessionManager)
+    mock_user_interactor = Mock(spec=IUserInteractor)
+    mock_llm_client = Mock(spec=ILlmClient)
+    mock_config_service = Mock(spec=IConfigService)
+
+    container.register(ISessionManager, instance=mock_session_manager)
+    container.register(IUserInteractor, instance=mock_user_interactor)
+    container.register(ILlmClient, instance=mock_llm_client)
+    container.register(IConfigService, instance=mock_config_service)
+
+    mock_llm_client.validate_config.return_value = []
+    # Simulate EOF / Empty response from closed stdin
+    mock_user_interactor.ask_question.return_value = ""
+
+    # Act & Assert
+    with pytest.raises(typer.Exit) as excinfo:
+        handle_new_session(
+            container=container,
+            name=None,
+            agent="pathfinder",
+            interactive=False,
+            no_copy=False,
+            message=None,
+        )
+
+    assert excinfo.value.exit_code == 1
+    mock_session_manager.create_session.assert_not_called()
