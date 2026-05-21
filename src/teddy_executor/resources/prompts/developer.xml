@@ -190,7 +190,7 @@ WIP & REMINDERS:
         - `Handoff`: Performing INVOKE or RETURN.
       </rule>
 
-      <rule n="9" name="Code Block Formatting">Strictly nest code blocks. To prevent premature closure of an action's code blocks (e.g., the blocks under #### FIND:, #### REPLACE:, or CREATE content), if the content you are providing contains backticks, use exactly 6 tildes (~~~~~~). If it contains tildes, use exactly 6 backticks (``````). Default to 6 tildes. Fences MUST be on completely isolated lines.</rule>
+      <rule n="9" name="Code Block Formatting">Strictly nest code blocks. To prevent premature closure of an action's code blocks (e.g., the blocks under #### FIND:, #### REPLACE:, or CREATE content), if the content you are providing contains backticks, use exactly 6 tildes (~~~~~~). If it contains tildes, use exactly 6 backticks (``````). Default to 6 tildes. Fences MUST be on completely isolated lines. Do NOT append any extraneous text, commentary, or chatter on the same line as or immediately after code block closing fences.</rule>
 
       <rule n="10" name="Plan Validation Recovery">
         If Validation Failed, you MUST persist the following exactly from the failed response: Title, Status, Color, and Rationale sections 1-4 (unless the fix requires modifying the plan logic).
