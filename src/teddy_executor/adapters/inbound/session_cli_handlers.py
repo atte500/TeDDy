@@ -78,7 +78,7 @@ def handle_new_session(  # noqa: PLR0913
                 container, report, no_copy, silent=True, exit_on_failure=False
             )
 
-            if not interactive or not loop_guard.should_continue(turn_count):
+            if not loop_guard.should_continue(turn_count):
                 break
 
     except Exception as e:
@@ -215,7 +215,7 @@ def handle_resume_session(
                 container, report, no_copy, silent=True, exit_on_failure=False
             )
 
-            if not interactive or not loop_guard.should_continue(turn_count):
+            if not loop_guard.should_continue(turn_count):
                 break
 
     except Exception as e:

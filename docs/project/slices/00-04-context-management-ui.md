@@ -117,10 +117,14 @@ And continues executing up to the Loop Guard limit
 - [x] **Logic** - Remove `interactive` guard in `SessionOrchestrator.execute` to enable context resolution and auto-pruning in non-interactive sessions.
 - [x] **Logic** - Implement programmatic harvesting of unselected context items into `plan.metadata["pruned_context"]` in `SessionOrchestrator.execute` when `interactive` is False.
 - [x] **Logic** - Remove `interactive` check from initial message resolution in `handle_new_session` to always prompt for start messages when missing.
-- [ ] **Wiring** - Remove `not interactive` from session loop breakout conditions in `handle_new_session` and `handle_resume_session` to support multi-turn auto-approvals.
+- [x] **Wiring** - Remove `not interactive` from session loop breakout conditions in `handle_new_session` and `handle_resume_session` to support multi-turn auto-approvals.
 - [ ] **Wiring** - Verify end-to-end non-interactive auto-pruning, message prompting, and multi-turn loops.
 
 ## Implementation Notes
+
+### Multi-Turn Non-Interactive Session Loops
+- **Enhancement**: Removed the `not interactive` check from the loop breakout conditions in `handle_new_session` and `handle_resume_session` inside `src/teddy_executor/adapters/inbound/session_cli_handlers.py`. This ensures that automated, non-interactive environments running in auto-approval mode can execute multiple turns continuously under the control of the injected `ISessionLoopGuard`.
+- **Unit Coverage**: Implemented `test_handle_new_session_loops_multiple_turns_when_non_interactive` and `test_handle_resume_session_loops_multiple_turns_when_non_interactive` in `tests/suites/unit/adapters/inbound/test_session_replan_loop.py` to assert correct multi-turn loops based on loop guard rules.
 
 ### Non-Interactive Context Resolution & Auto-Pruning
 - **Enhancement**: Removed the `and interactive` check from `SessionOrchestrator.execute`'s context resolution guard. Context resolution, token footprint calculation, and auto-pruning heuristics now run deterministically across both interactive and non-interactive sessions.
