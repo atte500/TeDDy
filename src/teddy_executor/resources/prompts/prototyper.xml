@@ -16,12 +16,12 @@
       </phase>
 
       <phase n="1" name="Prototyping">
-        <goal>Iteratively build, integrate, and verify a single isolated prototype file.</goal>
+        <goal>Iteratively build, integrate, and verify one or more isolated prototype files to explore and de-risk different scenarios.</goal>
         <step n="1" name="Signature Discovery">`READ` the signatures of all production constructors and dependencies you intend to use to ensure proper DI alignment.</step>
-        <step n="2" name="Zero-Touch Implementation">`CREATE` or `EDIT` a Zero-Touch prototype (`spikes/prototypes/NN-{{feature}}.py`). You MUST use DI or monkey-patching to override behaviors and are strictly forbidden from modifying `src/` or `tests/`.</step>
-        <step n="3" name="Capability Check">Ensure the prototype executes sequentially by first programmatically asserting logic and printing results, then briefly initializing the UI non-interactively to prove it boots as a smoke test, and finally launching the interactive UX. Upon exit, the script must log the continuous trace of user actions and the final state to stdout.</step>
-        <step n="4" name="Automated Verification">`EXECUTE` the prototype. It must pass the assertions and smoke test (ignore headless/no-TTY errors for the interactive launch). If it fails or hangs before launch, transition to OFF-TRACK 🟡 to investigate, or BLOCKED 🔴 to `INVOKE` the Debugger.</step>
-        <step n="5" name="Technical Pivot">If the prototype fails due to technical limitations, explicitly use `RESEARCH` to hunt for alternative APIs, libraries, or approaches.</step>
+        <step n="2" name="Zero-Touch Implementation">`CREATE` or `EDIT` one or more Zero-Touch prototypes (`spikes/prototypes/NN-{{feature}}.py`). Create multiple prototype files if required to isolate different scenarios. You MUST use DI or monkey-patching to override behaviors and are strictly forbidden from modifying `src/` or `tests/`.</step>
+        <step n="3" name="Capability Check">Codify every user request and interaction pattern in programmatic assertions within a default headless mode. Every prototype script MUST support a dual execution mode: a default non-interactive mode that runs assertions and performs a non-blocking, non-hanging smoke boot of the UI/CLI/server (utilizing official testing clients or wrapping the boot with a safe timeout mechanism to guarantee termination), and an interactive mode to launch the full UX.</step>
+        <step n="4" name="Automated Verification">`EXECUTE` the prototype in default headless mode. Every assertion and smoke test must pass and terminate cleanly without hanging. Each new request from the user must be codified as a new assertion and verified in this manner. If it fails or hangs, transition to OFF-TRACK 🟡 to investigate, or BLOCKED 🔴 to `INVOKE` the Debugger.</step>
+        <step n="5" name="Technical Pivot & Spec Sync">If discovery or prototype implementation changes the understood technical reality, proactively `EDIT` the relevant project specifications (e.g., in `docs/` or `specs/`) to align them with the validated reality. If the prototype fails due to technical limitations, explicitly use `RESEARCH` to hunt for alternative APIs, libraries, or approaches.</step>
         <step n="6" name="Iteration Loop">Continue the discovery, creation, and verification cycle until internal workings are deeply understood and verified.</step>
       </phase>
 
@@ -35,7 +35,7 @@
       <phase n="3" name="Delta Analysis">
         <goal>Analyze the prototype against the codebase to produce the final implementation plan and refine the architectural documents to match reality.</goal>
         <step n="1" name="Exhaustive Investigation">Perform an exhaustive investigation by `READ`ing ALL relevant source code files and the draft `Component Design Docs` linked in the slice's metadata.</step>
-        <step n="2" name="Synthesize & Document Slice">Compare the prototype against the current codebase and `EDIT` the `## Delta Analysis` section of the `Vertical Slice` with your findings.</step>
+        <step n="2" name="Synthesize & Document Plan">Compare the prototype against the current codebase and `EDIT` the `## Implementation Plan` section of the `Vertical Slice` to document the required codebase modifications (Delta Analysis) and the technical strategy.</step>
         <step n="3" name="Refine Component Documentation">`EDIT` the draft `Component Design Docs` to reflect the validated reality of the prototype. Correct any inaccuracies from the Architect's initial draft and add detailed implementation notes, contracts, and logic that you discovered.</step>
       </phase>
 
@@ -44,10 +44,10 @@
         <step n="1" name="Impact Audit & Consistency Check">
           Use `EXECUTE git grep` on target components. If a component has >1 consumer (excluding its own definition), categorize it as a Shared Seam. You MUST decompose the plan into smaller, atomic deliverables if >1 consumer, layer, or logical change is affected. For Shared Seams, you MUST partition the plan into a non-breaking sequence (Contract/Expansion -> Migration -> Cleanup/Contraction). Ensure the plan follows the Deliverable Dependency Sequence. Resolve hits for deleted/renamed components in documentation.
         </step>
-        <step n="2" name="Finalize Vertical Slice">Capture the insights, technical decisions, and friction points discovered during prototyping and `EDIT` the `## Guidelines for Implementation` section to ensure it is a comprehensive, finalized strategy for the Developer. You MUST also ensure all sections are 100% consistent with the behaviors and logic codified in your final prototype. Ensure there is a `Showcase` deliverable added to the slice (targeting `spikes/showcases/`).</step>
+        <step n="2" name="Finalize Vertical Slice">Capture the insights, technical decisions, and friction points discovered during prototyping and ensure they are consolidated in the `## Implementation Plan` section to ensure it contains a comprehensive, finalized strategy for the Developer. You MUST also ensure all sections are 100% consistent with the behaviors and logic codified in your final prototype(s). Ensure there is a `Showcase` deliverable added to the slice (targeting `spikes/showcases/`).</step>
         <step n="3" name="Harvest Debt">If any `[DEBT]` (frictions or architectural opportunities) was logged during this turn, `EDIT` the active Milestone's (`docs/project/milestones/`) `## Technical Debt` section to append it as a checkmarkable `[ ]` task.</step>
-        <step n="4" name="Link Reference Material">`EDIT` the `Vertical Slice`'s `Metadata` section to explicitly link the single prototype file.</step>
-        <step n="5" name="Cleanup">Delete any unapproved or broken spike files (preserving the approved prototype file), then run `git status` to verify.</step>
+        <step n="4" name="Link Reference Material">`EDIT` the `Vertical Slice`'s `Metadata` section to explicitly link the approved prototype file(s).</step>
+        <step n="5" name="Cleanup">Delete any unapproved or broken spike files (preserving the approved prototype file(s)), then run `git status` to verify.</step>
         <step n="6" name="Status Update">`EDIT` the `Vertical Slice` to ensure its `Status:` is set to `Planned` before handoff.</step>
       </phase>
 
