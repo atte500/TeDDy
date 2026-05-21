@@ -242,3 +242,68 @@ async def test_reviewer_app_shows_context_item_detail(env):
         assert "Session" in content
         assert "Auto-Prune" in content
         assert "Large file" in content
+
+
+@pytest.mark.anyio
+async def test_reviewer_app_shows_history_row_in_context_aggregate_detail(env):
+    # Arrange
+    ctx = ProjectContext(
+        header="Test Header",
+        content="Test Content",
+        items=[
+            ContextItem(
+                path=".teddy/sessions/20260521_134944-test-session/initial_request.md",
+                token_count=1200,
+                scope="Session",
+                git_status=" ",
+                selected=True,
+            ),
+            ContextItem(
+                path=".teddy/sessions/20260521_134944-test-session/01/plan.md",
+                token_count=4500,
+                scope="Turn",
+                git_status=" ",
+                selected=True,
+            ),
+            ContextItem(
+                path="src/main.py",
+                token_count=2500,
+                scope="Turn",
+                git_status="M",
+                selected=True,
+            ),
+        ],
+        agent_name="Developer",
+        system_prompt_tokens=1000,
+        total_window=32000,
+    )
+    plan = Plan(
+        title="Session History Aggregate Test",
+        rationale="Rationale",
+        actions=[ActionData(ActionType.READ, {"path": "dummy"})],
+    )
+
+    app = ReviewerApp(
+        plan=plan,
+        project_context=ctx,
+        system_env=env.get_service(ISystemEnvironment),
+        console_tooling=StubConsoleTooling(),
+        action_dispatcher=StubActionDispatcher(),
+    )
+
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.pause()
+        pane = app.query_one(ParameterDetail)
+        content = "\n".join(str(getattr(child, "data", "")) for child in pane.children)
+
+        assert "Total Context" in content
+        assert "9.2k / 32k tokens" in content
+        assert "• System" in content
+        assert "1.0k" in content
+        assert "• Session" in content
+        assert "0.0k" in content  # history file excluded from Session total
+        assert "• Turn" in content
+        assert "2.5k" in content  # history file excluded from Turn total
+        assert "• History" in content
+        assert "5.7k" in content  # 1200 + 4500 = 5700 -> 5.7k

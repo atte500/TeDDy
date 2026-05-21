@@ -31,6 +31,7 @@ def populate_context_detail(app: "ReviewerApp", pane: Any, data: Any) -> None:
     """Extract context-specific detail population logic."""
     from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import DetailItem
     from teddy_executor.core.domain.models.project_context import ContextItem
+    from teddy_executor.core.utils.markdown import is_session_history_path
 
     if isinstance(data, ContextItem):
         pane.append(DetailItem("Path", data.path))
@@ -68,18 +69,23 @@ def populate_context_detail(app: "ReviewerApp", pane: Any, data: Any) -> None:
                 "• System", f"{app.project_context.system_prompt_tokens / 1000.0:.1f}k"
             )
         )
-        pane.append(
-            DetailItem(
-                "• Session",
-                f"{sum(i.token_count for i in selected_items if i.scope == 'Session') / 1000.0:.1f}k",
-            )
+        session_tokens = sum(
+            i.token_count
+            for i in selected_items
+            if i.scope == "Session" and not is_session_history_path(i.path)
         )
-        pane.append(
-            DetailItem(
-                "• Turn",
-                f"{sum(i.token_count for i in selected_items if i.scope == 'Turn') / 1000.0:.1f}k",
-            )
+        turn_tokens = sum(
+            i.token_count
+            for i in selected_items
+            if i.scope == "Turn" and not is_session_history_path(i.path)
         )
+        history_tokens = sum(
+            i.token_count for i in selected_items if is_session_history_path(i.path)
+        )
+
+        pane.append(DetailItem("• Session", f"{session_tokens / 1000.0:.1f}k"))
+        pane.append(DetailItem("• Turn", f"{turn_tokens / 1000.0:.1f}k"))
+        pane.append(DetailItem("• History", f"{history_tokens / 1000.0:.1f}k"))
 
 
 # Editor helpers moved to textual_plan_reviewer_editor.py
