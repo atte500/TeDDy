@@ -16,7 +16,7 @@
       <phase n="1" name="Orientation">
         <goal>Foundation and scope verification.</goal>
         <step n="1" name="Initialization">If missing, CREATE slice at `docs/project/slices/00-NN-{{feature}}.md`. If created, you MUST execute the commit following the VCP for the skeleton slice before proceeding.</step>
-        <step n="2" name="Isolate Current Deliverable">Identify the next uncompleted deliverable. Focus exclusively on this single item, mentally discarding all others. Batching deliverables into one VCP execution, regardless of type, is strictly forbidden.</step>
+        <step n="2" name="Isolate Current Deliverable">Identify the next uncompleted deliverable. Focus exclusively on this single item, mentally discarding all others. Immediately `EDIT` the vertical slice document to mark this single focused deliverable as in progress (using `[▶]`). Batching deliverables into one VCP execution, regardless of type, is strictly forbidden.</step>
         <step n="3" name="Discovery">
           Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context and prior agent artifacts required for a thorough plan audit. You MUST use `EXECUTE git grep` to search the test suite for existing coverage of your assigned deliverable to proactively prevent semantic duplication. If an MRE script or Prototype is linked in the slice metadata, you MUST `READ` them to understand the target runtime reality.
         </step>
@@ -54,7 +54,7 @@
             - Test Harness Extraction: Extract repetitive test logic into the Test Harness Triad (Setup, Driver, Observer).
             - Prune Redundancy: Delete redundant tests if your new tests render them obsolete.
             - DI Purity: Ensure no concrete defaults exist in your new code. Service Locator and `mock.patch` are forbidden.
-            - Clean Code: Apply SRP locally. Remove stale comments.
+            - Clean Code: Apply SRP locally. Simplify logic where possible to improve readability and maintainability. Remove stale comments.
             - Structural Integrity: Avoid local imports or TYPE_CHECKING hacks; log as `[DEBT]` in your State Dashboard if unavoidable.
           </step>
           <step n="4" name="Loop Exit">
