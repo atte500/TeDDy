@@ -83,3 +83,49 @@ def get_fence_for_content(content: str) -> str:
     fence_length = max(3, max_backticks + 1)
 
     return "`" * fence_length
+
+
+def get_session_history_display_name(path: str) -> str | None:
+    """
+    Returns human-readable display name if it's a recognized session history file.
+    """
+    clean_path = path.lstrip("./")
+    if "initial_request.md" in clean_path:
+        return "Initial Request"
+    plan_match = re.search(r"sessions/[^/]+/(\d+)/plan.md$", clean_path)
+    if plan_match:
+        return f"Turn {int(plan_match.group(1))}: Plan"
+    report_match = re.search(r"sessions/[^/]+/(\d+)/report.md$", clean_path)
+    if report_match:
+        return f"Turn {int(report_match.group(1))}: Execution Report"
+    return None
+
+
+def is_session_file_path(path: str) -> bool:
+    """
+    Determines if a path is inside .teddy/sessions/.
+    """
+    return "sessions/" in path.lstrip("./")
+
+
+def is_session_history_path(path: str) -> bool:
+    """
+    Determines if a path is a session history file.
+    """
+    return get_session_history_display_name(path) is not None
+
+
+def get_session_history_sort_key(path: str) -> tuple[int, int]:
+    """
+    Sort key for chronological session history: (turn_number, sub_order).
+    """
+    clean_path = path.lstrip("./")
+    if "initial_request.md" in clean_path:
+        return (0, 0)
+    plan_match = re.search(r"sessions/[^/]+/(\d+)/plan.md$", clean_path)
+    if plan_match:
+        return (int(plan_match.group(1)), 1)
+    report_match = re.search(r"sessions/[^/]+/(\d+)/report.md$", clean_path)
+    if report_match:
+        return (int(report_match.group(1)), 2)
+    return (999999, 999999)

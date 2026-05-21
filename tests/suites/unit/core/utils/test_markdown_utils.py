@@ -65,3 +65,48 @@ def test_get_language_from_path(container):
     # No extension
     assert get_language_from_path("Makefile") == "text"
     assert get_language_from_path("LICENSE") == "text"
+
+
+def test_session_history_helpers(container):
+    from teddy_executor.core.utils.markdown import (
+        is_session_file_path,
+        is_session_history_path,
+        get_session_history_display_name,
+        get_session_history_sort_key,
+    )
+
+    # 1. Test is_session_file_path
+    assert is_session_file_path(".teddy/sessions/XYZ/initial_request.md") is True
+    assert is_session_file_path("src/main.py") is False
+
+    # 2. Test is_session_history_path
+    assert is_session_history_path(".teddy/sessions/XYZ/initial_request.md") is True
+    assert is_session_history_path(".teddy/sessions/XYZ/01/plan.md") is True
+    assert is_session_history_path(".teddy/sessions/XYZ/01/report.md") is True
+    assert is_session_history_path(".teddy/sessions/XYZ/01/meta.yaml") is False
+    assert is_session_history_path("src/main.py") is False
+
+    # 3. Test get_session_history_display_name
+    assert (
+        get_session_history_display_name(".teddy/sessions/XYZ/initial_request.md")
+        == "Initial Request"
+    )
+    assert (
+        get_session_history_display_name(".teddy/sessions/XYZ/01/plan.md")
+        == "Turn 1: Plan"
+    )
+    assert (
+        get_session_history_display_name(".teddy/sessions/XYZ/01/report.md")
+        == "Turn 1: Execution Report"
+    )
+    assert get_session_history_display_name(".teddy/sessions/XYZ/01/meta.yaml") is None
+    assert get_session_history_display_name("src/main.py") is None
+
+    # 4. Test get_session_history_sort_key
+    assert get_session_history_sort_key(".teddy/sessions/XYZ/initial_request.md") == (
+        0,
+        0,
+    )
+    assert get_session_history_sort_key(".teddy/sessions/XYZ/01/plan.md") == (1, 1)
+    assert get_session_history_sort_key(".teddy/sessions/XYZ/01/report.md") == (1, 2)
+    assert get_session_history_sort_key("src/main.py") == (999999, 999999)
