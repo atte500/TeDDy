@@ -69,7 +69,9 @@ This milestone represents a major strategic evolution for TeDDy. It combines est
     - Wire `TextualPlanReviewer` to `IPlanReviewer` in `container.py`. Create a continuous interactive loop in the session orchestrator. Move planning logs to before the LLM call and add Turn N. Fix telemetry coloring and relax terminal action isolation.
 - [x] **Slice 9: Advanced TUI & UX Polish**
     - Implement `input.md` standardized artifact, TUI instruction bridge, universal previewing, and enhanced diagnostic labels (AST/Diffs).
-- [ ] **Slice 10: Agent Collaboration Model**
+- [x] **Slice 10: Fix Validation Context Reset**
+    - Centralize session context resolution in `PlanningService` to prevent history loss during automated replanning.
+- [ ] **Slice 11: Agent Collaboration Model**
     - Implement `meta.yaml` ledgers, turn transition algorithms, and `INVOKE`/`RETURN` capabilities.
 - [ ] **Slice 11: Automatic Session Log Generation**
     - Implement the `SessionLogGenerator` to compile session histories into a human-readable `session-log.md`, excluding turns that fail validation.

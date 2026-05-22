@@ -92,3 +92,25 @@ def test_trigger_new_plan_no_longer_displays_telemetry_directly(planner, mock_de
     assert len(telemetry_calls) == 0, (
         f"SessionPlanner should not display telemetry. Found: {telemetry_calls}"
     )
+
+
+def test_trigger_new_plan_passes_none_for_context_files_allowing_service_resolution(
+    planner, mock_deps
+):
+    """
+    R-10-12: SessionPlanner should no longer manually resolve context manifests.
+    It must pass None to PlanningService, which handles it defensively.
+    """
+    # Arrange
+    turn_dir = "sessions/S1/01"
+    mock_deps["planning"].generate_plan.return_value = ("plan.md", 0.0)
+
+    # Act
+    planner.trigger_new_plan(turn_dir, message="test")
+
+    # Assert
+    # Verify that context_files is NOT passed (or is passed as None)
+    kwargs = mock_deps["planning"].generate_plan.call_args.kwargs
+    assert kwargs.get("context_files") is None, (
+        "SessionPlanner should delegate context resolution to PlanningService"
+    )

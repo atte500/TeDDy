@@ -31,18 +31,9 @@ class SessionPlanner:
         resolved_message = message
         # We pass it to generate_plan which handles the resolution and hint.
 
-        # Resolve context files
-        turn_p = Path(turn_dir)
-        session_dir = turn_p.parent
-        context_files = {
-            "Session": [(session_dir / "session.context").as_posix()],
-            "Turn": [(turn_p / "turn.context").as_posix()],
-        }
-
         plan_path, turn_cost = self._planning_service.generate_plan(
             user_message=resolved_message,
             turn_dir=turn_dir,
-            context_files=context_files,
         )
 
         # Handle planning cancellation/empty input

@@ -34,7 +34,7 @@ The `PlanningService` is responsible for generating an AI plan based on a user m
 
 ### `generate_plan(user_message: str, turn_dir: str, context_files: Optional[Dict[str, Sequence[str]]] = None) -> str`
 
--   **Description:** Generates a new `plan.md` file in the specified directory.
+-   **Description:** Generates a new `plan.md` file in the specified directory. **Defensive Design:** If `context_files` is omitted, it auto-resolves session/turn manifests from `turn_dir` via `SessionManager`.
 -   **Preconditions:**
     -   `turn_dir` must exist.
     -   The agent prompt file (`[agent_name].xml`) must exist in `turn_dir`.

@@ -20,11 +20,12 @@ And the token count should reflect the accumulated history
 
 ## Deliverables
 - [x] **Logic** - Implement defensive context resolution in `PlanningService.generate_plan`.
-- [ ] **Cleanup** - Remove redundant context resolution from `SessionPlanner` if it now duplicates `PlanningService` logic.
+- [x] **Cleanup** - Remove redundant context resolution from `SessionPlanner` if it now duplicates `PlanningService` logic.
 
 ## Implementation Notes
 - **Defensive Resolution**: Updated `PlanningService.generate_plan` to check if `context_files` is `None`. If it is, and a `turn_dir` is provided, the service now calls `self._session_manager.resolve_context_paths` to find the standard `session.context` and `turn.context` manifests.
-- **Verification**: Added `test_generate_plan_auto_resolves_context_from_turn_dir_when_missing` to `test_planning_service.py`. Verified that global history (771 tests) remains stable.
+- **Redundancy Cleanup**: Removed manual context construction from `SessionPlanner`. It now delegates resolution to the planning service.
+- **Verification**: Added `test_generate_plan_auto_resolves_context_from_turn_dir_when_missing` to `test_planning_service.py` and delegation test to `test_session_planner.py`. Verified that global history (774 tests) remains stable.
 
 ## Implementation Plan
 1. Update `PlanningService.generate_plan` to check for `context_files is None`.

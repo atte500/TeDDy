@@ -39,6 +39,7 @@ Actual: The context token count drops to initial session levels (e.g., from 30.5
 6. Hypothesis Refinement: The bug likely affects all new plan generation within sessions (including interactive mode) because `PlanningService.generate_plan` lacks logic to auto-resolve turn context.
 7. Shadow Verification: Created `spikes/debug/shadow_planning_service.py` with defensive context resolution logic. MRE verified that this fix correctly resolves and passes context manifests when triggered via the automated replan path.
 8. Systemic Audit: Audited `SessionReplanner` and `PlanningService`. Confirmed that `SessionReplanner` is the primary culprit but `PlanningService` requires defensive resolution to prevent this class of bug across all session-aware consumers.
+9. Final Verification: Implemented defensive resolution in `PlanningService`. Cleaned up redundant logic in `SessionPlanner`. Verified via `test_generate_plan_auto_resolves_context_from_turn_dir_when_missing` and global suite (774 tests).
 
 ## Solution
 ### Root Cause

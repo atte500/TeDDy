@@ -20,7 +20,9 @@ class IPlanningUseCase(ABC):
         Args:
             user_message: The instructions from the user.
             turn_dir: The directory where artifacts for the turn are stored.
-            context_files: Optional scoped context files to include.
+            context_files: Optional scoped context files to include. If None,
+                implementations should auto-resolve session/turn manifests
+                from turn_dir.
 
         Returns:
             The path to the generated plan.md.
