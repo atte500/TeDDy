@@ -31,7 +31,16 @@ class PlanningService(IPlanningUseCase):
         self._run_preflight_check()
 
         turn_path = Path(turn_dir)
-        # R-10-12: Resolve message to capture user intent in meta.yaml
+
+        # Defensive resolution of context manifests from turn_dir
+        resolved_context_files = context_files
+        if resolved_context_files is None and self._session_manager:
+            plan_path = (turn_path / "plan.md").as_posix()
+            # Mypy: dict is invariant, so dict[str, list] != dict[str, Sequence]
+            resolved_context_files = self._session_manager.resolve_context_paths(  # type: ignore[assignment]
+                plan_path
+            )
+        # Resolve message to capture user intent in meta.yaml
         resolved_message = self._prompt_manager.resolve_message(user_message, turn_path)
 
         agent_name, meta, meta_file_path = self._prompt_manager.resolve_agent_metadata(
@@ -47,7 +56,7 @@ class PlanningService(IPlanningUseCase):
             self._user_interactor.display_message(msg)
 
         context = self._context_service.get_context(
-            context_files=context_files, agent_name=agent_name
+            context_files=resolved_context_files, agent_name=agent_name
         )
         system_prompt = self._prompt_manager.fetch_system_prompt(agent_name, turn_path)
 

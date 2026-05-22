@@ -191,7 +191,7 @@ class SessionOrchestrator(IRunPlanUseCase):
 
         typer.secho("Plan aborted by user.", fg=typer.colors.YELLOW, err=True)
 
-        # R-10-12: We always prompt for a NEW message when a plan is aborted,
+        # We always prompt for a NEW message when a plan is aborted,
         # unless one was explicitly captured during the abort process itself
         # (e.g. via the 'm' key in TUI). Pre-existing turn messages are ignored.
         new_message = self._user_interactor.ask_question(

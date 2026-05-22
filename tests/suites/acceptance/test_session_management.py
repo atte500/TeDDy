@@ -160,7 +160,7 @@ def test_teddy_resume_continuous_loop(tmp_path: Path, monkeypatch):
 
     result = adapter.run_cli_command(["resume"], cwd=turn_dir, input=input_sequence)
 
-    # R-10-12: Session mode does NOT exit on failure; it continues the loop.
+    # Session mode does NOT exit on failure; it continues the loop.
     assert result.exit_code == 0
 
     # In sessions, execution report is silent in console. Check files.

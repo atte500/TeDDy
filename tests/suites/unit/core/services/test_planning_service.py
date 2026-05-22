@@ -148,3 +148,47 @@ def test_planning_service_has_session_manager(env):
 
     service = env.get_service(PlanningService)
     assert hasattr(service, "_session_manager")
+
+
+def test_generate_plan_auto_resolves_context_from_turn_dir_when_missing(env):
+    """
+    R-10-12: PlanningService should auto-resolve session context manifests
+    from turn_dir if context_files is not provided.
+    """
+    # Arrange
+    mock_session_manager = env.mock_port(ISessionManager)
+    mock_context_service = env.mock_port(IGetContextUseCase)
+    mock_prompt_manager = env.mock_port(IPromptManager)
+    env.mock_port(ILlmClient)
+
+    from teddy_executor.core.services.planning_service import PlanningService
+
+    service = env.get_service(PlanningService)
+
+    # Setup standard mocks to allow generation to proceed
+    mock_prompt_manager.resolve_message.return_value = "test"
+    mock_prompt_manager.resolve_agent_metadata.return_value = ("pf", {}, "m.yaml")
+    mock_prompt_manager.fetch_system_prompt.return_value = "system"
+    mock_context_service.get_context.return_value = ProjectContext(
+        header="H", content="C", scoped_paths={}
+    )
+
+    # Setup the session manager to return fake manifests
+    fake_manifests = {"Session": ["s.context"], "Turn": ["t.context"]}
+    mock_session_manager.resolve_context_paths.return_value = fake_manifests
+
+    # Act
+    service.generate_plan(user_message="test", turn_dir="sessions/S1/02")
+
+    # Assert
+    # 1. Verify resolve_context_paths was called for the turn directory
+    # We expect it to be called with a path targeting plan.md inside the dir
+    expected_plan_path = "sessions/S1/02/plan.md"
+    mock_session_manager.resolve_context_paths.assert_called_once_with(
+        expected_plan_path
+    )
+
+    # 2. Verify get_context received the resolved manifests
+    mock_context_service.get_context.assert_called_once_with(
+        context_files=fake_manifests, agent_name="pf"
+    )

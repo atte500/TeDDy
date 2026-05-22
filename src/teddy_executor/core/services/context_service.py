@@ -59,7 +59,7 @@ class ContextService(IGetContextUseCase):
             # This is a bit of a stretch as ContextService doesn't know about PromptManager
             # But we can try to get the prompt from the inspector if it was cached
             # Or just accept that system_prompt_tokens might be passed in.
-            # R-10-12: The orchestrator should probably handle this calculation or pass the prompt.
+            # The orchestrator should probably handle this calculation or pass the prompt.
             pass
 
         return ProjectContext(
@@ -183,9 +183,9 @@ class ContextService(IGetContextUseCase):
             content = file_contents.get(path) or ""
             return path, self._llm_client.get_text_token_count(content)
 
-        # R-10-14: Parallelize to handle large repositories without stalling the UI.
+        # Parallelize to handle large repositories without stalling the UI.
         # We use a ThreadPoolExecutor as token counting is often offloaded or involves latency.
-        # R-10-12: Disable parallelization in tests to avoid pyfakefs deadlocks.
+        # Disable parallelization in tests to avoid pyfakefs deadlocks.
         import os
 
         max_workers = 10 if not os.environ.get("TEDDY_TESTING") else 1

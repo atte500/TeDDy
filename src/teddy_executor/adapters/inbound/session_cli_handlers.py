@@ -72,7 +72,7 @@ def handle_new_session(  # noqa: PLR0913
             if report is None:
                 break
 
-            # R-10-12: In session mode, we do NOT exit on validation failure
+            # In session mode, we do NOT exit on validation failure
             # because the orchestrator triggers an automatic re-plan.
             handle_report_output(
                 container, report, no_copy, silent=True, exit_on_failure=False
@@ -209,7 +209,7 @@ def handle_resume_session(
             if not report:
                 break
 
-            # R-10-12: In session mode, we do NOT exit on validation failure
+            # In session mode, we do NOT exit on validation failure
             # because the orchestrator triggers an automatic re-plan.
             handle_report_output(
                 container, report, no_copy, silent=True, exit_on_failure=False

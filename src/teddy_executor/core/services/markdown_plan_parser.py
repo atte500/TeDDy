@@ -78,7 +78,7 @@ class MarkdownPlanParser(IPlanParser):
             Document,
         )
 
-        # R-10-12: Trim trailing whitespace to prevent mistletoe from
+        # Trim trailing whitespace to prevent mistletoe from
         # interpreting trailing indentation as an unexpected code block.
         # We keep leading whitespace for potential Markdown significance (though rare at top-level).
         clean_content = plan_content.rstrip()
@@ -206,7 +206,7 @@ class MarkdownPlanParser(IPlanParser):
             action_heading = get_action_heading(node, self._valid_actions)
 
             if not action_heading:
-                # R-10-12: Skip ONLY whitespace-only code blocks (indented spaces)
+                # Skip ONLY whitespace-only code blocks (indented spaces)
                 # to fix the user's backtick/trailing space issue.
                 # Other junk (Paragraphs, breaks) must still fail validation.
                 if isinstance(node, BlockCode) and not get_child_text(node).strip():

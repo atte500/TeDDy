@@ -252,7 +252,7 @@ def test_input_log_during_replan(tmp_path, monkeypatch):
 
     result = adapter.run_start(["replan-test", "-y", "-m", "Go"])
 
-    # R-10-12: Session mode does NOT exit on validation failure; it replans.
+    # Session mode does NOT exit on validation failure; it replans.
     assert result.exit_code == 0
     assert (
         tmp_path / ".teddy/sessions/20260417_120000-replan-test/02/input.md"

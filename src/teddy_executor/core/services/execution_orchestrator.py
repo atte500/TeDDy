@@ -216,7 +216,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         from dataclasses import replace
         from teddy_executor.core.domain.models import RunStatus
 
-        # R-10-12: If a message was captured in the TUI (via 'm' key), propagate it.
+        # If a message was captured in the TUI (via 'm' key), propagate it.
         resolved_message = message or plan.metadata.get("user_request")
 
         action_logs = []

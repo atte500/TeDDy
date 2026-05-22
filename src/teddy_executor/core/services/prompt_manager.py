@@ -42,14 +42,14 @@ class PromptManager(IPromptManager):
     def resolve_message(
         self, user_message: Optional[str], turn_path: Path
     ) -> Optional[str]:
-        # R-10-12: If message is an empty string, it's a continuation signal.
+        # If message is an empty string, it's a continuation signal.
         if user_message == "":
             return ""
 
         resolved = user_message
         if resolved is None and turn_path.name == "01":
             # Check for initial_request.md at session root (turn_path.parent)
-            # R-10-12: This only acts as a fallback for the very first turn.
+            # This only acts as a fallback for the very first turn.
             request_path = (turn_path.parent / "initial_request.md").as_posix()
             if self._file_system_manager.path_exists(request_path):
                 resolved = self._file_system_manager.read_file(request_path)
@@ -112,7 +112,7 @@ class PromptManager(IPromptManager):
 
         meta["model"] = str(getattr(response, "model", "unknown"))
 
-        # R-10-12: Capture finish_reason as primitive to prevent MagicMock recursion in YAML
+        # Capture finish_reason as primitive to prevent MagicMock recursion in YAML
         if hasattr(response, "choices") and len(response.choices) > 0:
             meta["finish_reason"] = str(
                 getattr(response.choices[0], "finish_reason", "unknown")
