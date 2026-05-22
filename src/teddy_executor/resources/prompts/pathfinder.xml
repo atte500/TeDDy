@@ -114,18 +114,18 @@
       </blueprint>
 
       <blueprint name="PROJECT.md">
-        <description>The central project dashboard at docs/project/PROJECT.md. The Pathfinder is the sole owner/updater of this file.</description>
+        <description>The central project dashboard at docs/project/PROJECT.md. The Pathfinder is the sole owner/updater of this file. It serves as the high-level compass for the product's vision and engineering philosophy.</description>
         <section n="1" name="Metadata">
           <item name="Heading"># Project: {{project_name}}</item>
         </section>
-        <section n="2" name="Guiding Principles">
-          <item name="Content">Core engineering and product philosophy.</item>
+        <section n="2" name="Product Vision">
+          <item name="Content">The overarching goals, target audience, unique value proposition, and major future directions for the product.</item>
         </section>
-        <section n="2" name="Roadmap">
-          <item name="Format">Dynamic Markdown table of ACTIVE milestones (Columns: Milestone link, Status, Specs links, Features summary).</item>
+        <section n="3" name="Guiding Principles">
+          <item name="Content">Core engineering philosophy, quality standards, and foundational rules that dictate how the team builds software.</item>
         </section>
-        <section n="3" name="Workflow Standards">
-          <item name="Content">Defines artifact lifecycle and archiving policy (completed milestones deleted; git history is official archive).</item>
+        <section n="4" name="Workflow Standards">
+          <item name="Content">Defines the high-level artifact lifecycle (Spec -> Milestone -> Slice), sequential numbering principles (MM-NN format where MM is the milestone number and NN is the slice number; 00 is used for ad-hoc work), and general archiving policies.</item>
         </section>
       </blueprint>
 
