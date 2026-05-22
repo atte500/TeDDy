@@ -36,6 +36,7 @@ def test_trigger_replan_accepts_plan_parameter(manager, container):
     errors = ["Some error"]
     original_content = "plan content"
     mock_plan = register_mock(container, Plan)
+    mock_plan.metadata = {}
 
     # Act & Assert
     # This should no longer fail with TypeError
@@ -44,4 +45,26 @@ def test_trigger_replan_accepts_plan_parameter(manager, container):
         errors=errors,
         original_plan_content=original_content,
         plan=mock_plan,
+    )
+
+
+def test_trigger_replan_propagates_plan_to_finalize_turn(manager, container):
+    # Arrange
+    mock_plan = register_mock(container, Plan)
+    mock_plan.metadata = {"pruned_context": "file_a.txt"}
+
+    # Act
+    manager.trigger_replan(
+        plan_path="session/turn_1/plan.md",
+        errors=["err"],
+        original_plan_content="...",
+        plan=mock_plan,
+    )
+
+    # Assert
+    # Check that the plan metadata was processed and passed to the session service
+    manager._session_service.transition_to_next_turn.assert_called_once()
+    args, kwargs = manager._session_service.transition_to_next_turn.call_args
+    assert kwargs.get("pruned_paths") == ["file_a.txt"], (
+        "Pruned paths from plan were not propagated"
     )

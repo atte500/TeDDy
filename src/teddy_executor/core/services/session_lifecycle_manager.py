@@ -113,7 +113,7 @@ class SessionLifecycleManager:
             original_actions=original_actions,
         )
         next_turn_dir = self.finalize_turn(
-            plan_path, report, is_validation_failure=True
+            plan_path, report, is_validation_failure=True, plan=plan
         )
 
         self._replanner.trigger_replan_turn(
