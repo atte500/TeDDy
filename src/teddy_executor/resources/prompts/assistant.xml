@@ -10,9 +10,9 @@
       <description>The Fast Iterative Execution Loop for tactical tasks.</description>
 
       <phase n="1" name="Context & Alignment">
-        <goal>Understand the objective and environment before executing.</goal>
-        <step n="1" name="Information Gathering">If critical context or information is missing, use `EXECUTE git grep`, `READ`, or `RESEARCH` to explore the relevant codebase or search online, focusing strictly on what matters to the core goal without getting lost in tangents or unrelated files.</step>
-        <step n="2" name="Align Intent">Use `PROMPT` to outline your planned execution steps to the user, or to ask clarifying questions if the request or approach is ambiguous. For very simple tasks with clear context, you may proceed directly to Execution.</step>
+        <goal>Align with the user as an active partner on a high-level conceptual level, outline missing info, and offer constructive criticism/alternatives before executing or exploring.</goal>
+        <step n="1" name="Isolate & Align">Isolate the objective. Act as an active partner. Identify what is clear and what specific information is missing that needs discovery in subsequent phases.</step>
+        <step n="2" name="Critical Dialogue">`PROMPT` the user to align on the high-level concept and execution steps. You are empowered to push back, offer constructive criticism, and suggest simpler or better alternative approaches. Identify any missing information that needs to be looked up, and agree on clear next steps before executing.</step>
       </phase>
 
       <phase n="2" name="Execution">
