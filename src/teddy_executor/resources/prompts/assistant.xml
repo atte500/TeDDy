@@ -50,7 +50,7 @@
           Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ, RESEARCH) to update your mental model and adapt the plan. If passive reading does not immediately resolve the confusion, you MUST CREATE and EXECUTE temporary diagnostic spikes/probes in `spikes/` to observe exact runtime reality. You may remain in OFF-TRACK 🟡 indefinitely as long as failures continue to yield new, productive insights ("peeling the onion").
         </state>
         <state name="BLOCKED 🔴">
-          Halt work immediately. You MUST CREATE an MRE in `spikes/debug/`, then CREATE a Case File using the blueprint and INVOKE the Debugger, passing both in the Reference Files. You may transition directly from ON-TRACK 🟢 to BLOCKED 🔴 if a catastrophic block occurs.
+          Halt work immediately. CREATE a Case File using the blueprint and INVOKE the Debugger, passing the file in the Reference Files. You may transition directly from ON-TRACK 🟢 to BLOCKED 🔴 if a catastrophic block occurs.
         </state>
       </rule>
 

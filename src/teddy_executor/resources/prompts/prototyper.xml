@@ -68,7 +68,7 @@
           Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ, RESEARCH) to update your mental model and adapt the plan. If passive reading does not immediately resolve the confusion, you MUST CREATE and EXECUTE temporary diagnostic spikes/probes in `spikes/` to observe exact runtime reality. You may remain in OFF-TRACK 🟡 indefinitely as long as failures continue to yield new, productive insights ("peeling the onion").
         </state>
         <state name="BLOCKED 🔴">
-          Halt work immediately. You MUST CREATE an MRE in `spikes/debug/`, then CREATE a Case File using the blueprint and INVOKE the Debugger, passing both in the Reference Files. You may transition directly from ON-TRACK 🟢 to BLOCKED 🔴 if a catastrophic block occurs.
+          Halt work immediately. CREATE a Case File using the blueprint and INVOKE the Debugger, passing the file in the Reference Files. You may transition directly from ON-TRACK 🟢 to BLOCKED 🔴 if a catastrophic block occurs.
         </state>
       </rule>
 
@@ -167,7 +167,6 @@ WIP & REMINDERS:
           <item name="Milestone">- **Milestone:** [link]</item>
           <item name="Specs">- **Specs:** [links]</item>
           <item name="Prototype">- **Prototype:** [link]</item>
-          <item name="Showcase">- **Showcase:** [link or N/A]</item>
           <item name="Component Docs">- **Component Docs:** [links]</item>
         </section>
         <section n="2" name="Business Goal">
@@ -183,7 +182,7 @@ WIP & REMINDERS:
         </section>
         <section n="5" name="Deliverables">
           <item name="Heading">## Deliverables</item>
-          <item name="Content">Checklist of atomic units of work ordered following the Deliverable Dependency Sequence: 1. Contract (Interfaces; DTOs; Signatures; Expansion), 2. Harness (Infrastructure; Env), 3. Seam (Abstraction; Toggles; DI), 4. Logic (Rules; Algorithms), 5. Wiring (Origin -> Destination), 6. Showcase (Interactive Script), 7. Migration (Updating consumers), 8. Refactor (Internal restructuring; non-breaking), 9. Cleanup (Pruning; Contraction). Format: `- [ ] **Type** - Description`.</item>
+          <item name="Content">Checklist of atomic units of work ordered following the Deliverable Dependency Sequence: 1. Contract (Interfaces; DTOs; Signatures; Expansion), 2. Harness (Infrastructure; Env), 3. Seam (Abstraction; Toggles; DI), 4. Logic (Rules; Algorithms), 5. Wiring (Origin -> Destination), 6. Showcase (Transient interactive script required for user-facing UI/UX or subjective behavior), 7. Migration (Updating consumers), 8. Refactor (Internal restructuring; non-breaking), 9. Cleanup (Pruning; Contraction). Format: `- [ ] **Type** - Description`.</item>
         </section>
         <section n="6" name="Implementation Notes">
           <item name="Heading">## Implementation Notes</item>
