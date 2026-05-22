@@ -128,10 +128,9 @@ class SessionOrchestrator(IRunPlanUseCase):
                     project_context, current_status=status
                 )
 
-        # R-10-12: Programmatic context harvesting in non-interactive mode
-        self._harvest_context_if_non_interactive(
+        # R-10-12: Programmatic context harvesting
+        self._harvest_context(
             is_session=is_session,
-            interactive=interactive,
             project_context=project_context,
             plan=plan,
         )
@@ -158,15 +157,14 @@ class SessionOrchestrator(IRunPlanUseCase):
 
         return report
 
-    def _harvest_context_if_non_interactive(
+    def _harvest_context(
         self,
         is_session: bool,
-        interactive: bool,
         project_context: Optional[Any],
         plan: Plan,
     ) -> None:
-        """Harvests unselected context paths in non-interactive mode."""
-        if is_session and not interactive and project_context:
+        """Harvests unselected context paths."""
+        if is_session and project_context:
             if hasattr(project_context, "items") and project_context.items:
                 pruned_paths = [
                     item.path for item in project_context.items if not item.selected

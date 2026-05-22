@@ -43,7 +43,7 @@ Scenario: Replan Finalization Propagates Pruned Context
 - [x] **Logic** - Refactor `ContextService._collect_items` to deduplicate collected `ContextItem` objects, ensuring only one item per unique path is registered, prioritizing non-`Turn` scopes if duplicates exist.
 - [x] **Logic** - Update `SessionLifecycleManager.trigger_replan` to accept and pass the `plan` parameter to `finalize_turn`.
 - [x] **Logic** - Update `SessionOrchestrator.execute` to pass the `plan` to `trigger_replan` when validation fails.
-- [ ] **Logic** - Update `SessionOrchestrator` to harvest context in both interactive and non-interactive modes, ensuring pruned files are updated on disk.
+- [x] **Logic** - Update `SessionOrchestrator` to harvest context in both interactive and non-interactive modes, ensuring pruned files are updated on disk.
 - [ ] **Wiring** - Wire up the components and execute high-level integration scenarios to verify correctness.
 - [ ] **Refactor** - Standardize test coverage to verify deduplication and persistence behavior.
 
@@ -53,6 +53,7 @@ Scenario: Replan Finalization Propagates Pruned Context
 - **Context Deduplication**: Refactored `ContextService._collect_items` to deduplicate items by path using an `items_map`. Implementation uses a priority-based "upgrade" logic where a "Turn" scoped item is replaced if the same path is encountered in a non-"Turn" scope (e.g., "Session"). This prevents double-counting in token budget calculations. Added comprehensive coverage in `tests/suites/unit/core/services/test_context_service.py`.
 - **Replan Propagation Logic**: Updated `SessionLifecycleManager.trigger_replan` to pass the `plan` parameter to `finalize_turn`. This ensures that any context pruned during a turn that ultimately fails validation is correctly harvested from the plan metadata and excluded from the next turn's manifest. Fixed mock poisoning in `test_session_lifecycle_manager.py` by ensuring `mock_plan` has the required `metadata` attribute.
 - **Orchestrator Plan Propagation**: Updated `SessionOrchestrator._handle_logical_validation_errors` to pass the `plan` object to `trigger_replan` upon validation failure. This completes the wiring required to preserve context management state across automated replan cycles.
+- **Unified Context Harvesting**: Renamed `SessionOrchestrator._harvest_context_if_non_interactive` to `_harvest_context` and removed the `not interactive` guard. This ensures that unselected (pruned) context items are recorded in `plan.metadata["pruned_context"]` even during interactive sessions. This metadata is subsequently processed by `SessionLifecycleManager.finalize_turn` to update the next turn's context manifest on disk. Added regression coverage in `tests/suites/unit/core/services/test_session_orchestrator.py`.
 
 ## Implementation Plan
 1. **Deduplicate Context Items**: Implement deduplication loop in `src/teddy_executor/core/services/context_service.py` under `_collect_items` keeping unique paths only.

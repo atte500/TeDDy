@@ -241,3 +241,49 @@ def test_session_orchestrator_passes_plan_to_trigger_replan_on_validation_failur
         original_actions=[],
         plan=mock_plan,  # This is what we are adding
     )
+
+
+def test_session_orchestrator_harvests_context_in_interactive_mode(
+    orchestrator,
+    mock_run_plan,
+    mock_fs,
+    mock_plan_parser,
+    mock_plan_validator,
+):
+    """
+    SessionOrchestrator should harvest pruned context into plan metadata
+    even in interactive mode.
+    """
+    # Arrange
+    from teddy_executor.core.domain.models import Plan
+
+    mock_plan = MagicMock(spec=Plan)
+    mock_plan.metadata = {}
+    mock_plan.is_session = True
+
+    # Setup execution mocks
+    mock_plan_parser.parse.return_value = mock_plan
+    mock_plan_validator.validate.return_value = []
+    mock_fs.path_exists.return_value = True
+
+    # Setup context with unselected items
+    item_pruned = MagicMock()
+    item_pruned.path = "pruned.txt"
+    item_pruned.selected = False
+
+    item_selected = MagicMock()
+    item_selected.path = "selected.txt"
+    item_selected.selected = True
+
+    project_context = MagicMock()
+    project_context.items = [item_pruned, item_selected]
+    orchestrator._context_service.get_context.return_value = project_context
+
+    # Ensure pruning service returns the context so harvesting sees our items
+    orchestrator._pruning_service.prune.side_effect = lambda ctx, **kwargs: ctx
+
+    # Act
+    orchestrator.execute(plan_path="path/to/01/plan.md", interactive=True)
+
+    # Assert
+    assert mock_plan.metadata.get("pruned_context") == "pruned.txt"
