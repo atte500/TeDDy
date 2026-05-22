@@ -133,24 +133,35 @@ class ContextService(IGetContextUseCase):
         git_status: Optional[str],
         include_tokens: bool,
     ) -> List[ContextItem]:
-        """Orchestrates the assembly of ContextItem metadata DTOs."""
+        """
+        Orchestrates the assembly of ContextItem metadata DTOs.
+        Deduplicates by path, prioritizing non-Turn scopes (e.g. Session).
+        """
         parsed_status = self._parse_git_status(git_status)
         path_to_tokens = self._get_path_to_tokens(
             scoped_paths, file_contents, include_tokens
         )
 
-        items: List[ContextItem] = []
+        # Deduplication map: path -> ContextItem
+        items_map: Dict[str, ContextItem] = {}
+
         for scope, paths in scoped_paths.items():
             for path in paths:
-                items.append(
-                    ContextItem(
+                # Priority logic: Set if new path, or if we can upgrade a "Turn" scope to something else.
+                is_new = path not in items_map
+                can_upgrade = (
+                    not is_new and items_map[path].scope == "Turn" and scope != "Turn"
+                )
+
+                if is_new or can_upgrade:
+                    items_map[path] = ContextItem(
                         path=path,
                         token_count=path_to_tokens.get(path, 0),
                         git_status=parsed_status.get(path, ""),
                         scope=scope,
                     )
-                )
-        return items
+
+        return list(items_map.values())
 
     def _get_path_to_tokens(
         self,

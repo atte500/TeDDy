@@ -362,3 +362,44 @@ def test_get_context_omits_session_history_if_none_present(
     # Assert
     assert "## 4. Resource Contents" in result.content
     assert "## 5. Session History" not in result.content
+
+
+def test_get_context_deduplicates_overlapping_paths_prioritizing_non_turn_scope(
+    service: IGetContextUseCase,
+    mock_fs,
+    mock_tree_gen,
+    mock_inspector,
+    mock_llm_client,
+):
+    """
+    Scenario: Context Deduplication
+    Tests that when a path appears in both 'Session' and 'Turn' scopes,
+    only one ContextItem is returned, and it prefers the 'Session' scope.
+    """
+    # Arrange
+    overlapping_path = "shared_file.txt"
+    mock_file_contents = {overlapping_path: "content"}
+
+    mock_inspector.get_environment_info.return_value = {}
+    mock_inspector.get_git_status.return_value = None
+    mock_tree_gen.generate_tree.return_value = ""
+    mock_fs.resolve_paths_from_files.side_effect = lambda files: files
+    mock_fs.read_files_in_vault.return_value = mock_file_contents
+    mock_llm_client.get_text_token_count.return_value = 10
+
+    # Act
+    # overlapping_path is in BOTH scopes
+    result = service.get_context(
+        context_files={
+            "Session": [overlapping_path],
+            "Turn": [overlapping_path],
+        }
+    )
+
+    # Assert
+    # 1. Total items should be 1 (deduplicated)
+    assert len(result.items) == 1
+
+    # 2. Scope should be "Session" (priority)
+    assert result.items[0].path == overlapping_path
+    assert result.items[0].scope == "Session"

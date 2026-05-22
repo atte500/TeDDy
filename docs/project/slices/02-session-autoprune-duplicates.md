@@ -40,7 +40,7 @@ Scenario: Replan Finalization Propagates Pruned Context
 
 ## Deliverables
 - [x] **Contract** - Add `plan: Optional[Plan] = None` to `ISessionLifecycleManager.trigger_replan` signature in the inbound/outbound ports.
-- [ ] **Logic** - Refactor `ContextService._collect_items` to deduplicate collected `ContextItem` objects, ensuring only one item per unique path is registered, prioritizing non-`Turn` scopes if duplicates exist.
+- [x] **Logic** - Refactor `ContextService._collect_items` to deduplicate collected `ContextItem` objects, ensuring only one item per unique path is registered, prioritizing non-`Turn` scopes if duplicates exist.
 - [ ] **Logic** - Update `SessionLifecycleManager.trigger_replan` to accept and pass the `plan` parameter to `finalize_turn`.
 - [ ] **Logic** - Update `SessionOrchestrator.execute` to pass the `plan` to `trigger_replan` when validation fails.
 - [ ] **Logic** - Update `SessionOrchestrator` to harvest context in both interactive and non-interactive modes, ensuring pruned files are updated on disk.
@@ -50,6 +50,7 @@ Scenario: Replan Finalization Propagates Pruned Context
 ## Implementation Notes
 - **Contract Expansion**: Updated `SessionLifecycleManager.trigger_replan` to accept an optional `plan: Plan` parameter. This is necessary to allow the replan loop to harvest pruned context from the plan's metadata and propagate it to the next turn's manifest.
 - **New Unit Test Suite**: Created `tests/suites/unit/core/services/test_session_lifecycle_manager.py` to provide dedicated coverage for the lifecycle manager, which was previously only covered via orchestrator integration tests.
+- **Context Deduplication**: Refactored `ContextService._collect_items` to deduplicate items by path using an `items_map`. Implementation uses a priority-based "upgrade" logic where a "Turn" scoped item is replaced if the same path is encountered in a non-"Turn" scope (e.g., "Session"). This prevents double-counting in token budget calculations. Added comprehensive coverage in `tests/suites/unit/core/services/test_context_service.py`.
 
 ## Implementation Plan
 1. **Deduplicate Context Items**: Implement deduplication loop in `src/teddy_executor/core/services/context_service.py` under `_collect_items` keeping unique paths only.
