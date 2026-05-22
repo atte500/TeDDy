@@ -192,3 +192,70 @@ def test_generate_plan_auto_resolves_context_from_turn_dir_when_missing(env):
     mock_context_service.get_context.assert_called_once_with(
         context_files=fake_manifests, agent_name="pf"
     )
+
+
+def test_generate_plan_suppresses_overwriting_user_request_if_is_replan_is_true(env):
+    """Verify that generate_plan does not overwrite user_request when is_replan is True."""
+    # Arrange
+    mock_prompt_manager = env.mock_port(IPromptManager)
+    env.mock_port(ILlmClient)
+    mock_context_service = env.mock_port(IGetContextUseCase)
+
+    from teddy_executor.core.services.planning_service import PlanningService
+
+    service = env.get_service(PlanningService)
+
+    existing_meta = {
+        "user_request": "Original human request",
+        "is_replan": True,
+    }
+
+    mock_prompt_manager.resolve_message.return_value = "Automated validation feedback"
+    mock_prompt_manager.resolve_agent_metadata.return_value = (
+        "pathfinder",
+        existing_meta,
+        "meta.yaml",
+    )
+    mock_prompt_manager.fetch_system_prompt.return_value = "system-prompt"
+    mock_context_service.get_context.return_value = ProjectContext(
+        header="H", content="C", scoped_paths={}, git_status=""
+    )
+
+    # Act
+    service.generate_plan(user_message="Automated validation feedback", turn_dir="02")
+
+    # Assert
+    assert existing_meta["user_request"] == "Original human request"
+
+
+def test_generate_plan_overwrites_user_request_if_not_replan(env):
+    """Verify that generate_plan normal overwriting behaves as expected when is_replan is absent or False."""
+    # Arrange
+    mock_prompt_manager = env.mock_port(IPromptManager)
+    env.mock_port(ILlmClient)
+    mock_context_service = env.mock_port(IGetContextUseCase)
+
+    from teddy_executor.core.services.planning_service import PlanningService
+
+    service = env.get_service(PlanningService)
+
+    existing_meta = {
+        "user_request": "Old request",
+    }
+
+    mock_prompt_manager.resolve_message.return_value = "New user request"
+    mock_prompt_manager.resolve_agent_metadata.return_value = (
+        "pathfinder",
+        existing_meta,
+        "meta.yaml",
+    )
+    mock_prompt_manager.fetch_system_prompt.return_value = "system-prompt"
+    mock_context_service.get_context.return_value = ProjectContext(
+        header="H", content="C", scoped_paths={}, git_status=""
+    )
+
+    # Act
+    service.generate_plan(user_message="New user request", turn_dir="01")
+
+    # Assert
+    assert existing_meta["user_request"] == "New user request"

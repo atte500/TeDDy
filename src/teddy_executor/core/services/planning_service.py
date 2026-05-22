@@ -47,7 +47,8 @@ class PlanningService(IPlanningUseCase):
             turn_path
         )
         if resolved_message is not None:
-            meta["user_request"] = resolved_message
+            if not meta.get("is_replan"):
+                meta["user_request"] = resolved_message
 
         if self._user_interactor:
             session_folder = turn_path.parent.name
