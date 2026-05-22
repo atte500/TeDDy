@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from teddy_executor.core.domain.models.planning_ports import (
         SessionPorts,
     )
+    from teddy_executor.core.domain.models.plan import Plan
 
     _ = SessionPorts
 
@@ -97,6 +98,7 @@ class SessionLifecycleManager:
         failed_resources: Optional[dict[str, str]] = None,
         validation_ast: Optional[str] = None,
         original_actions: Optional[Sequence[Any]] = None,
+        plan: Optional["Plan"] = None,
     ) -> ExecutionReport:
         """Triggers the Automated Re-plan Loop."""
         self._user_interactor.display_message(

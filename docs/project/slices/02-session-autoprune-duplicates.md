@@ -39,15 +39,17 @@ Scenario: Replan Finalization Propagates Pruned Context
 - **Multiple Replans**: If multiple consecutive validation failures and replans occur, each turn must accurately chain the pruned context from the previous turn's metadata.
 
 ## Deliverables
-- [ ] **Contract** - Add `plan: Optional[Plan] = None` to `ISessionLifecycleManager.trigger_replan` signature in the inbound/outbound ports.
+- [x] **Contract** - Add `plan: Optional[Plan] = None` to `ISessionLifecycleManager.trigger_replan` signature in the inbound/outbound ports.
 - [ ] **Logic** - Refactor `ContextService._collect_items` to deduplicate collected `ContextItem` objects, ensuring only one item per unique path is registered, prioritizing non-`Turn` scopes if duplicates exist.
 - [ ] **Logic** - Update `SessionLifecycleManager.trigger_replan` to accept and pass the `plan` parameter to `finalize_turn`.
 - [ ] **Logic** - Update `SessionOrchestrator.execute` to pass the `plan` to `trigger_replan` when validation fails.
 - [ ] **Logic** - Update `SessionOrchestrator` to harvest context in both interactive and non-interactive modes, ensuring pruned files are updated on disk.
+- [ ] **Wiring** - Wire up the components and execute high-level integration scenarios to verify correctness.
 - [ ] **Refactor** - Standardize test coverage to verify deduplication and persistence behavior.
 
 ## Implementation Notes
-*Recorded during implementation.*
+- **Contract Expansion**: Updated `SessionLifecycleManager.trigger_replan` to accept an optional `plan: Plan` parameter. This is necessary to allow the replan loop to harvest pruned context from the plan's metadata and propagate it to the next turn's manifest.
+- **New Unit Test Suite**: Created `tests/suites/unit/core/services/test_session_lifecycle_manager.py` to provide dedicated coverage for the lifecycle manager, which was previously only covered via orchestrator integration tests.
 
 ## Implementation Plan
 1. **Deduplicate Context Items**: Implement deduplication loop in `src/teddy_executor/core/services/context_service.py` under `_collect_items` keeping unique paths only.
