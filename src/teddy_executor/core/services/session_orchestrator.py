@@ -74,16 +74,16 @@ class SessionOrchestrator(IRunPlanUseCase):
         # 0. Detect Session Mode (requires plan_path and meta.yaml)
         is_session = self._is_session_mode(plan_path)
 
-        # 1. Prepare Plan (Parse & Validate)
-        result = self._prepare_plan(plan, plan_content, plan_path, is_session)
+        # 1. Resolve Plan (Parse only)
+        result = self._prepare_plan_parsing(plan, plan_content, plan_path, is_session)
         if isinstance(result, ExecutionReport):
             return result
         plan = result
 
-        # 3. Execution
+        # 2. Context Preparation (Gather, Prune, Harvest)
+        # We must harvest context BEFORE validation so that pruned paths persist across replans
         if is_session and plan_path and not project_context:
             context_files = self._session_service.resolve_context_paths(plan_path)
-            # Use plan metadata as primary source for agent name, fallback to lifecycle manager
             agent_name = (
                 plan.metadata.get("Agent")
                 or plan.metadata.get("agent")
@@ -95,9 +95,7 @@ class SessionOrchestrator(IRunPlanUseCase):
             )
             total_window = self._llm_client.get_context_window()
 
-            # R-10-12: Resolve system prompt and its token count
             system_prompt_tokens = 0
-            # fetch_system_prompt requires turn_path; we derive it from plan_path
             turn_path = Path(plan_path).parent
             prompt_content = self._prompt_manager.fetch_system_prompt(
                 agent_name.lower(), turn_path
@@ -112,7 +110,6 @@ class SessionOrchestrator(IRunPlanUseCase):
                 agent_name=agent_name,
                 total_window=total_window,
             )
-            # Update context with system info
             from dataclasses import is_dataclass, replace
 
             if is_dataclass(project_context):
@@ -122,19 +119,25 @@ class SessionOrchestrator(IRunPlanUseCase):
                     system_prompt_tokens=system_prompt_tokens,
                 )
             if self._pruning_service:
-                # R-10-12: Pass plan status to pruning service to trigger immediate recovery cleanup
                 status = plan.metadata.get("Status") if plan else None
                 project_context = self._pruning_service.prune(
                     project_context, current_status=status
                 )
 
-        # R-10-12: Programmatic context harvesting
         self._harvest_context(
             is_session=is_session,
             project_context=project_context,
             plan=plan,
         )
 
+        # 3. Validation (passing refined context)
+        result = self._validate_plan_with_context(
+            plan, plan_path, is_session, project_context
+        )
+        if isinstance(result, ExecutionReport):
+            return result
+
+        # 4. Execution
         report = self._execution_orchestrator.execute(
             plan=plan,
             plan_content=plan_content,
@@ -209,15 +212,14 @@ class SessionOrchestrator(IRunPlanUseCase):
 
         return updated_report
 
-    def _prepare_plan(
+    def _prepare_plan_parsing(
         self,
         plan: Optional[Plan],
         plan_content: Optional[str],
         plan_path: Optional[str],
         is_session: bool,
     ) -> Plan | ExecutionReport:
-        """Handles parsing and validation logic, potentially triggering a replan."""
-        # Ensure plan object is marked if it was already resolved
+        """Handles parsing only, potentially triggering a replan on structural error."""
         if plan:
             plan.is_session = is_session
 
@@ -229,21 +231,40 @@ class SessionOrchestrator(IRunPlanUseCase):
                 plan = self._plan_parser.parse(content, plan_path=plan_path)
             except Exception as e:
                 if is_session and plan_path:
-                    # R-10-12: Keep session loop alive by returning the re-plan report
                     return self._lifecycle_manager.trigger_replan(
                         plan_path=plan_path,
                         errors=[f"Structural error: {str(e)}"],
                         original_plan_content=content,
                     )
                 raise
+        return plan
 
-        context_paths = (
-            self._session_service.resolve_context_paths(plan_path)
-            if is_session
-            else None
-        )
+    def _validate_plan_with_context(
+        self,
+        plan: Plan,
+        plan_path: Optional[str],
+        is_session: bool,
+        project_context: Optional[Any],
+    ) -> Plan | ExecutionReport:
+        """Handles logical validation with optional refined context."""
+        context_paths = None
+        if is_session and plan_path:
+            # Prefer active project context (respecting pruning) if available
+            if project_context and hasattr(project_context, "items"):
+                context_paths = {
+                    "Session": [],  # Pruning logic already applied
+                    "Turn": [
+                        item.path for item in project_context.items if item.selected
+                    ],
+                }
+            else:
+                context_paths = self._session_service.resolve_context_paths(plan_path)
+
         errors = self._plan_validator.validate(plan, context_paths=context_paths)
         if errors:
+            content = (
+                self._file_system_manager.read_file(plan_path) if plan_path else ""
+            )
             return self._handle_logical_validation_errors(
                 plan, errors, content, plan_path, is_session
             )

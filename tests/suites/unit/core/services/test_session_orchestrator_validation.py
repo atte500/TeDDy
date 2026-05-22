@@ -1,6 +1,8 @@
 from unittest.mock import ANY
+from tests.harness.setup.mocking import POSIXPathMock
 from teddy_executor.core.domain.models.plan import Plan, ActionData, ValidationError
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
+from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 
 
 def test_execute_triggers_replan_on_validation_failure(  # noqa: PLR0913
@@ -15,6 +17,12 @@ def test_execute_triggers_replan_on_validation_failure(  # noqa: PLR0913
     SessionOrchestrator.execute should call the validator and, on failure,
     trigger the Automated Re-plan Loop.
     """
+    # Mock LLM Client to prevent LiteLLM cost lookup issues
+    mock_llm = POSIXPathMock(spec=ILlmClient)
+    mock_llm.get_context_window.return_value = 1000
+    mock_llm.get_text_token_count.return_value = 0
+    container.register(ILlmClient, instance=mock_llm)
+
     orchestrator = container.resolve(IRunPlanUseCase)
 
     plan = Plan(

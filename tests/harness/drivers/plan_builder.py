@@ -232,14 +232,14 @@ class MarkdownPlanBuilder:
         return action_str
 
     def build(self) -> str:
-        agent_line = f"- **Agent:** {self._agent}\n" if self._agent else ""
-        header = dedent(
-            f"""\
-            # {self._title}
-            - **Status:** Green 🟢
-            - **Plan Type:** Implementation
-            {agent_line}"""
-        )
+        lines = [
+            f"# {self._title}",
+            "- **Status:** Green 🟢",
+            "- **Plan Type:** Implementation",
+        ]
+        if self._agent:
+            lines.append(f"- **Agent:** {self._agent}")
+        header = "\n".join(lines)
 
         if self._rationale:
             rationale_content = self._rationale

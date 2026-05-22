@@ -213,6 +213,7 @@ def test_session_orchestrator_passes_plan_to_trigger_replan_on_validation_failur
     mock_plan.actions = []
     mock_plan.source_doc = None
     mock_plan.is_session = True
+    mock_plan.metadata = {}
 
     mock_plan_parser.parse.return_value = mock_plan
 
