@@ -42,7 +42,7 @@ Scenario: Replan Finalization Propagates Pruned Context
 - [x] **Contract** - Add `plan: Optional[Plan] = None` to `ISessionLifecycleManager.trigger_replan` signature in the inbound/outbound ports.
 - [x] **Logic** - Refactor `ContextService._collect_items` to deduplicate collected `ContextItem` objects, ensuring only one item per unique path is registered, prioritizing non-`Turn` scopes if duplicates exist.
 - [x] **Logic** - Update `SessionLifecycleManager.trigger_replan` to accept and pass the `plan` parameter to `finalize_turn`.
-- [ ] **Logic** - Update `SessionOrchestrator.execute` to pass the `plan` to `trigger_replan` when validation fails.
+- [x] **Logic** - Update `SessionOrchestrator.execute` to pass the `plan` to `trigger_replan` when validation fails.
 - [ ] **Logic** - Update `SessionOrchestrator` to harvest context in both interactive and non-interactive modes, ensuring pruned files are updated on disk.
 - [ ] **Wiring** - Wire up the components and execute high-level integration scenarios to verify correctness.
 - [ ] **Refactor** - Standardize test coverage to verify deduplication and persistence behavior.
@@ -52,6 +52,7 @@ Scenario: Replan Finalization Propagates Pruned Context
 - **New Unit Test Suite**: Created `tests/suites/unit/core/services/test_session_lifecycle_manager.py` to provide dedicated coverage for the lifecycle manager, which was previously only covered via orchestrator integration tests.
 - **Context Deduplication**: Refactored `ContextService._collect_items` to deduplicate items by path using an `items_map`. Implementation uses a priority-based "upgrade" logic where a "Turn" scoped item is replaced if the same path is encountered in a non-"Turn" scope (e.g., "Session"). This prevents double-counting in token budget calculations. Added comprehensive coverage in `tests/suites/unit/core/services/test_context_service.py`.
 - **Replan Propagation Logic**: Updated `SessionLifecycleManager.trigger_replan` to pass the `plan` parameter to `finalize_turn`. This ensures that any context pruned during a turn that ultimately fails validation is correctly harvested from the plan metadata and excluded from the next turn's manifest. Fixed mock poisoning in `test_session_lifecycle_manager.py` by ensuring `mock_plan` has the required `metadata` attribute.
+- **Orchestrator Plan Propagation**: Updated `SessionOrchestrator._handle_logical_validation_errors` to pass the `plan` object to `trigger_replan` upon validation failure. This completes the wiring required to preserve context management state across automated replan cycles.
 
 ## Implementation Plan
 1. **Deduplicate Context Items**: Implement deduplication loop in `src/teddy_executor/core/services/context_service.py` under `_collect_items` keeping unique paths only.

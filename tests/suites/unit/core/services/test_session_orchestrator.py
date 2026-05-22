@@ -192,3 +192,52 @@ def test_session_orchestrator_resolves_context_when_non_interactive(
     # Assert
     orchestrator._context_service.get_context.assert_called_once()
     orchestrator._pruning_service.prune.assert_called_once()
+
+
+def test_session_orchestrator_passes_plan_to_trigger_replan_on_validation_failure(
+    orchestrator,
+    mock_fs,
+    mock_plan_parser,
+    mock_plan_validator,
+):
+    """
+    SessionOrchestrator should pass the current plan object to trigger_replan
+    when validation fails, so that pruned context can be harvested.
+    """
+    # Arrange
+    from teddy_executor.core.domain.models import Plan
+
+    mock_plan = MagicMock(spec=Plan)
+    mock_plan.title = "Test Plan"
+    mock_plan.rationale = "Test Rationale"
+    mock_plan.actions = []
+    mock_plan.source_doc = None
+    mock_plan.is_session = True
+
+    mock_plan_parser.parse.return_value = mock_plan
+
+    # Mock validation errors
+    error = MagicMock()
+    error.message = "Invalid action"
+    mock_plan_validator.validate.return_value = [error]
+
+    mock_fs.path_exists.return_value = True  # is_session_mode
+    mock_fs.read_file.return_value = "plan content"
+
+    plan_path = "path/to/01/plan.md"
+
+    # Act
+    orchestrator.execute(plan_path=plan_path)
+
+    # Assert
+    orchestrator._lifecycle_manager.trigger_replan.assert_called_once_with(
+        plan_path=plan_path,
+        errors=["Invalid action"],
+        original_plan_content="plan content",
+        title="Test Plan",
+        rationale="Test Rationale",
+        failed_resources=ANY,
+        validation_ast=ANY,
+        original_actions=[],
+        plan=mock_plan,  # This is what we are adding
+    )

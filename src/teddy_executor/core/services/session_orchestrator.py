@@ -306,6 +306,7 @@ class SessionOrchestrator(IRunPlanUseCase):
                 failed_resources=failed_resources,
                 validation_ast=rich_ast,
                 original_actions=plan.actions,
+                plan=plan,
             )
 
         return self._replanner.build_failure_report(
