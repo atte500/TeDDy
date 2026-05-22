@@ -36,14 +36,15 @@ Scenario: Automated validation replan turn carries forward and preserves parent 
 ## Deliverables
 Checklist of atomic units of work ordered following the Deliverable Dependency Sequence:
 
-- [ ] **Contract** - Update `ISessionManager.transition_to_next_turn` interface to ensure any override specifications are consistent with carrying forward metadata.
-- [ ] **Logic** - Edit `SessionService.transition_to_next_turn` implementation to accept `is_validation_failure: bool` and propagate `is_replan: True` plus `user_request` into the new turn's metadata during transition.
+- [x] **Contract** - Update `ISessionManager.transition_to_next_turn` interface to ensure any override specifications are consistent with carrying forward metadata.
+- [x] **Logic** - Edit `SessionService.transition_to_next_turn` implementation to accept `is_validation_failure: bool` and propagate `is_replan: True` plus `user_request` into the new turn's metadata during transition.
 - [ ] **Logic** - Edit `PlanningService.generate_plan` to inspect the turn's `meta.yaml` and suppress overwriting `user_request` with the LLM prompt if `is_replan: True` is present.
 - [ ] **Wiring** - Ensure standard integration test suite executes and asserts both normal transitions and validation-triggered transitions behave correctly.
 
 ## Implementation Notes
 - The fix has been verified via a Minimal Reproducible Example (`spikes/debug/01-validation-error-meta-user-request-mre.py`) running against shadow service classes.
 - Standard dependency injection patterns (Constructor Injection) are maintained, with zero coupling to any runtime container frameworks.
+- **SessionService metadata propagation**: Passed `is_validation_failure` from `transition_to_next_turn` down into `_persist_next_meta`. Updated `_persist_next_meta` to append `is_replan: True` and carry forward `user_request` from parent metadata when validation fails, while ensuring fields are omitted if parent has no such metadata. Verified using robust unit tests in `tests/suites/unit/core/services/test_session_service_transition.py`.
 
 ## Implementation Plan
 1. Update `SessionService.transition_to_next_turn` and its private helper `_persist_next_meta` to accept and handle `is_validation_failure`.

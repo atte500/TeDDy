@@ -141,7 +141,6 @@ class SessionService(ISessionManager):
         Calculates and creates the next turn directory based on the current turn
         and the outcome of its plan.
         """
-        _ = is_validation_failure
         cur_dir = Path(plan_path).parent
         session_dir = cur_dir.parent.as_posix()
 
@@ -157,7 +156,9 @@ class SessionService(ISessionManager):
         )
 
         # 3. Persist metadata
-        self._persist_next_meta(next_dir, next_id, meta, turn_cost)
+        self._persist_next_meta(
+            next_dir, next_id, meta, turn_cost, is_validation_failure
+        )
 
         # 4. Handle context
         paths = self._repository.read_context_file(f"{cur_dir.as_posix()}/turn.context")
@@ -223,6 +224,7 @@ class SessionService(ISessionManager):
         next_id: str,
         current_meta: Dict[str, Any],
         turn_cost: float,
+        is_validation_failure: bool = False,
     ) -> None:
         """Calculates and persists metadata for the next turn."""
         prev_cost = current_meta.get("cumulative_cost", 0.0)
@@ -238,6 +240,10 @@ class SessionService(ISessionManager):
             "parent_turn_id": current_meta.get("turn_id", "00"),
             "creation_timestamp": self._time_service.now_utc().isoformat(),
         }
+        if is_validation_failure:
+            meta["is_replan"] = True
+            if "user_request" in current_meta:
+                meta["user_request"] = current_meta["user_request"]
         self._repository.save_meta(f"{next_dir}/meta.yaml", meta)
 
     def rename_session(self, old_name: str, new_name: str) -> str:
