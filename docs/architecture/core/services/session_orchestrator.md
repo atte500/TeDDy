@@ -20,11 +20,13 @@ The `SessionOrchestrator` is a decorator-style service that wraps the stateless 
 2.  **Session Mode Detection:** If a `plan_path` is provided, the orchestrator enters "Session Mode".
 3.  **Validation Phase (Session Mode):**
     -   Resolves context paths from `session.context` and `turn.context`.
+    -   **Context Harvesting**: Before validation, identifies unselected (pruned) context items and records them in `plan.metadata["pruned_context"]`. This ensures persistence even if the turn fails validation.
     -   Calls `PlanValidator.validate(plan, context_paths)`.
     -   If errors exist, triggers the **Automated Re-plan Loop**.
 4.  **Automated Re-plan Loop:**
     -   Generates a `report.md` in the current turn containing the validation errors.
-    -   Calls `SessionService.transition_to_next_turn` with `is_validation_failure=True`. This ensures the failure report is NOT added to the next turn's context.
+    -   Triggers the replan via `SessionLifecycleManager.trigger_replan`, propagating the current `Plan` object.
+    -   Calls `SessionService.transition_to_next_turn` with `is_validation_failure=True`, and extracts `pruned_context` from the plan metadata to ensure pruned files remain excluded from the next turn's manifest.
     -   Calls `PlanningService.generate_plan` for the new turn, using a structured feedback payload (Errors + Original Plan) as the user message.
 5.  **Planning Visibility:** Centralizes planning triggers to provide consistent UI feedback, extracting the Turn ID from the directory name and the agent name from metadata to display a progress message (e.g., `[01] Planning Turn with pathfinder...`) before LLM calls. The message is wrapped in `[cyan]` Rich style tags for consistent terminal coloring.
 6.  **Telemetry Display:** After plan generation, retrieves metadata and displays model name, context token usage, and cumulative session cost to the user. The formatted telemetry strings are wrapped in `[dim]` Rich style tags to visually separate them as secondary information.

@@ -16,6 +16,7 @@ from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
 from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
+from tests.harness.setup.mocking import register_mock
 
 
 @pytest.fixture
@@ -87,6 +88,7 @@ def test_session_orchestrator_triggers_transition_on_success(  # noqa: PLR0913
     mock_fs,
     mock_plan_parser,
     mock_plan_validator,
+    container,
 ):
     """
     SessionOrchestrator should call SessionLifecycleManager.finalize_turn
@@ -110,7 +112,11 @@ def test_session_orchestrator_triggers_transition_on_success(  # noqa: PLR0913
     mock_fs.path_exists.return_value = True
 
     # Mock parsing and validation to allow execution flow
-    mock_plan_parser.parse.return_value = MagicMock()
+    from teddy_executor.core.domain.models import Plan
+
+    mock_plan = register_mock(container, Plan)
+    mock_plan.metadata = {}
+    mock_plan_parser.parse.return_value = mock_plan
     mock_plan_validator.validate.return_value = []
 
     # Act
@@ -126,12 +132,13 @@ def test_session_orchestrator_triggers_transition_on_success(  # noqa: PLR0913
     )
 
 
-def test_session_orchestrator_passes_status_to_pruning_service(
+def test_session_orchestrator_passes_status_to_pruning_service(  # noqa: PLR0913
     orchestrator,
     mock_run_plan,
     mock_fs,
     mock_plan_parser,
     mock_plan_validator,
+    container,
 ):
     """
     Wiring: SessionOrchestrator should pass the status from plan metadata to the pruning service.
@@ -139,7 +146,7 @@ def test_session_orchestrator_passes_status_to_pruning_service(
     # Arrange
     from teddy_executor.core.domain.models import Plan
 
-    mock_plan = MagicMock(spec=Plan)
+    mock_plan = register_mock(container, Plan)
     mock_plan.metadata = {"Status": "SUCCESS 🟢"}
     mock_plan.is_session = True
 
@@ -199,6 +206,7 @@ def test_session_orchestrator_passes_plan_to_trigger_replan_on_validation_failur
     mock_fs,
     mock_plan_parser,
     mock_plan_validator,
+    container,
 ):
     """
     SessionOrchestrator should pass the current plan object to trigger_replan
@@ -207,7 +215,7 @@ def test_session_orchestrator_passes_plan_to_trigger_replan_on_validation_failur
     # Arrange
     from teddy_executor.core.domain.models import Plan
 
-    mock_plan = MagicMock(spec=Plan)
+    mock_plan = register_mock(container, Plan)
     mock_plan.title = "Test Plan"
     mock_plan.rationale = "Test Rationale"
     mock_plan.actions = []
@@ -244,12 +252,13 @@ def test_session_orchestrator_passes_plan_to_trigger_replan_on_validation_failur
     )
 
 
-def test_session_orchestrator_harvests_context_in_interactive_mode(
+def test_session_orchestrator_harvests_context_in_interactive_mode(  # noqa: PLR0913
     orchestrator,
     mock_run_plan,
     mock_fs,
     mock_plan_parser,
     mock_plan_validator,
+    container,
 ):
     """
     SessionOrchestrator should harvest pruned context into plan metadata
@@ -258,7 +267,7 @@ def test_session_orchestrator_harvests_context_in_interactive_mode(
     # Arrange
     from teddy_executor.core.domain.models import Plan
 
-    mock_plan = MagicMock(spec=Plan)
+    mock_plan = register_mock(container, Plan)
     mock_plan.metadata = {}
     mock_plan.is_session = True
 

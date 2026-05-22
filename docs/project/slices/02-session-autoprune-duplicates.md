@@ -45,7 +45,7 @@ Scenario: Replan Finalization Propagates Pruned Context
 - [x] **Logic** - Update `SessionOrchestrator.execute` to pass the `plan` to `trigger_replan` when validation fails.
 - [x] **Logic** - Update `SessionOrchestrator` to harvest context in both interactive and non-interactive modes, ensuring pruned files are updated on disk.
 - [x] **Wiring** - Wire up the components and execute high-level integration scenarios to verify correctness.
-- [ ] **Refactor** - Standardize test coverage to verify deduplication and persistence behavior.
+- [x] **Refactor** - Standardize test coverage to verify deduplication and persistence behavior.
 
 ## Implementation Notes
 - **Contract Expansion**: Updated `SessionLifecycleManager.trigger_replan` to accept an optional `plan: Plan` parameter. This is necessary to allow the replan loop to harvest pruned context from the plan's metadata and propagate it to the next turn's manifest.
@@ -56,6 +56,7 @@ Scenario: Replan Finalization Propagates Pruned Context
 - **Unified Context Harvesting**: Renamed `SessionOrchestrator._harvest_context_if_non_interactive` to `_harvest_context` and removed the `not interactive` guard. This ensures that unselected (pruned) context items are recorded in `plan.metadata["pruned_context"]` even during interactive sessions. This metadata is subsequently processed by `SessionLifecycleManager.finalize_turn` to update the next turn's context manifest on disk. Added regression coverage in `tests/suites/unit/core/services/test_session_orchestrator.py`.
 - **Pre-Validation Context Management**: Refactored `SessionOrchestrator.execute` to gather, prune, and harvest context *before* plan validation. This ensures that the `Plan` object is enriched with `pruned_context` metadata even when a turn fails validation and triggers an automated replan, preserving the context management state across the replan cycle.
 - **Headless Integration Testing**: Updated `tests/suites/integration/core/services/test_session_pruning_persistence.py` to mock `IPlanReviewer`, allowing interactive session persistence logic to be verified in headless CI environments without blocking for TUI input.
+- **Test Standardization**: Refactored `test_session_orchestrator.py` and `test_session_pruning_persistence.py` to use the `register_mock` helper and `container` fixture. This ensures strict adherence to DI boundary rules and prevents "Mock Poisoning" by enforcing `autospec=True` via the standard test harness.
 
 ## Implementation Plan
 1. **Deduplicate Context Items**: Implement deduplication loop in `src/teddy_executor/core/services/context_service.py` under `_collect_items` keeping unique paths only.

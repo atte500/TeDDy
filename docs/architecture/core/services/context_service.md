@@ -24,8 +24,9 @@ When the `get_context` method is called, the `ContextService` performs the follo
 2.  It invokes the `IRepoTreeGenerator` to get the repository tree as a single string. The generator is responsible for respecting `.gitignore` and `.teddyignore` rules.
 3.  It uses the `IFileSystemManager` to read the file paths from all `.teddy/*.context` files. These paths form the `context_vault_paths`.
 4.  It uses the `IFileSystemManager` again to read the content of each file in `context_vault_paths`.
-5.  It formats the system information into a `header` string and the repository tree and file contents into a `content` string using private helper methods.
-6.  It assembles the final `ProjectContext` DTO with the formatted `header` and `content` and returns it.
+5.  It gathers all paths into `ContextItem` DTOs, performing **deduplication** to ensure each unique path appears only once. If a path exists in multiple scopes (e.g., "Session" and "Turn"), it prioritizes non-"Turn" scopes to prevent double-counting in token budget calculations.
+6.  It formats the system information into a `header` string and the repository tree and file contents into a `content` string using private helper methods.
+7.  It assembles the final `ProjectContext` DTO with the formatted `header`, `content`, and deduplicated `items`, then returns it.
 
 ## 5. Data Contracts / Methods
 

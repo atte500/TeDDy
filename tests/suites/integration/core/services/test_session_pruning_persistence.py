@@ -1,4 +1,4 @@
-from tests.harness.setup.mocking import POSIXPathMock
+from tests.harness.setup.mocking import register_mock
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
@@ -39,36 +39,32 @@ def test_pruning_persistence_in_interactive_execution(container, tmp_path):
         IFileSystemManager, LocalFileSystemAdapter, root_dir=str(tmp_path)
     )
 
-    mock_config = POSIXPathMock()
+    mock_config = register_mock(container, IConfigService)
     # Pruning service uses config_service for thresholds
     mock_config.get_setting.side_effect = lambda key, default=None: {
         "auto_pruning.enabled": True,
         "auto_pruning.global_context_threshold": 5,
     }.get(key, default)
-    container.register(IConfigService, instance=mock_config)
 
-    mock_prompts = POSIXPathMock()
+    mock_prompts = register_mock(container, IPromptManager)
     mock_prompts.fetch_system_prompt.return_value = ""
     mock_prompts.resolve_agent_metadata.return_value = ("pf", {}, "meta.yaml")
-    container.register(IPromptManager, instance=mock_prompts)
 
-    mock_reviewer = POSIXPathMock()
+    mock_reviewer = register_mock(container, IPlanReviewer)
     # review returns the plan (approved); review_action returns (True, "") (approved, no message)
     mock_reviewer.review.side_effect = lambda plan, **kwargs: plan
     mock_reviewer.review_action.return_value = (True, "")
-    container.register(IPlanReviewer, instance=mock_reviewer)
 
-    mock_llm = POSIXPathMock()
+    mock_llm = register_mock(container, ILlmClient)
     mock_llm.validate_config.return_value = []
     # 'content a' ~ 2 tokens, 'content b' * 10 ~ 20 tokens.
     mock_llm.get_text_token_count.side_effect = lambda x: len(x.split())
     mock_llm.get_context_window.return_value = (
         1000  # Large window, we rely on threshold
     )
-    container.register(ILlmClient, instance=mock_llm)
 
     # Mock Planning
-    mock_planning = POSIXPathMock()
+    mock_planning = register_mock(container, IPlanningUseCase)
     mock_planning.generate_plan.return_value = ("Corrected Plan", 0.0)
     container.register(IPlanningUseCase, instance=mock_planning)
 
@@ -100,34 +96,29 @@ def test_pruning_persistence_in_replan_loop(container, tmp_path):
         IFileSystemManager, LocalFileSystemAdapter, root_dir=str(tmp_path)
     )
 
-    mock_config = POSIXPathMock()
+    mock_config = register_mock(container, IConfigService)
     mock_config.get_setting.side_effect = lambda key, default=None: {
         "auto_pruning.enabled": True,
         "auto_pruning.global_context_threshold": 5,
     }.get(key, default)
-    container.register(IConfigService, instance=mock_config)
 
-    mock_prompts = POSIXPathMock()
+    mock_prompts = register_mock(container, IPromptManager)
     mock_prompts.fetch_system_prompt.return_value = ""
     mock_prompts.resolve_agent_metadata.return_value = ("pf", {}, "meta.yaml")
-    container.register(IPromptManager, instance=mock_prompts)
 
-    mock_reviewer = POSIXPathMock()
+    mock_reviewer = register_mock(container, IPlanReviewer)
     # review returns the plan (approved); review_action returns (True, "") (approved, no message)
     mock_reviewer.review.side_effect = lambda plan, **kwargs: plan
     mock_reviewer.review_action.return_value = (True, "")
-    container.register(IPlanReviewer, instance=mock_reviewer)
 
-    mock_llm = POSIXPathMock()
+    mock_llm = register_mock(container, ILlmClient)
     mock_llm.validate_config.return_value = []
     mock_llm.get_text_token_count.side_effect = lambda x: len(x.split())
     mock_llm.get_context_window.return_value = 1000
-    container.register(ILlmClient, instance=mock_llm)
 
     # Mock Planning
-    mock_planning = POSIXPathMock()
+    mock_planning = register_mock(container, IPlanningUseCase)
     mock_planning.generate_plan.return_value = ("Corrected Plan", 0.0)
-    container.register(IPlanningUseCase, instance=mock_planning)
 
     orchestrator = container.resolve(IRunPlanUseCase)
     session_dir, turn_01_dir = setup_session_workspace(tmp_path)
@@ -156,35 +147,30 @@ def test_deduplication_prevents_aggressive_pruning(container, tmp_path):
         IFileSystemManager, LocalFileSystemAdapter, root_dir=str(tmp_path)
     )
 
-    mock_config = POSIXPathMock()
+    mock_config = register_mock(container, IConfigService)
     mock_config.get_setting.side_effect = lambda key, default=None: {
         "auto_pruning.enabled": True,
         "auto_pruning.global_context_threshold": 20,
     }.get(key, default)
-    container.register(IConfigService, instance=mock_config)
 
-    mock_prompts = POSIXPathMock()
+    mock_prompts = register_mock(container, IPromptManager)
     mock_prompts.fetch_system_prompt.return_value = ""
     mock_prompts.resolve_agent_metadata.return_value = ("pf", {}, "meta.yaml")
-    container.register(IPromptManager, instance=mock_prompts)
 
-    mock_reviewer = POSIXPathMock()
+    mock_reviewer = register_mock(container, IPlanReviewer)
     # review returns the plan (approved); review_action returns (True, "") (approved, no message)
     mock_reviewer.review.side_effect = lambda plan, **kwargs: plan
     mock_reviewer.review_action.return_value = (True, "")
-    container.register(IPlanReviewer, instance=mock_reviewer)
 
-    mock_llm = POSIXPathMock()
+    mock_llm = register_mock(container, ILlmClient)
     mock_llm.validate_config.return_value = []
     # Both files are 9 tokens. Total 18 tokens.
     mock_llm.get_text_token_count.return_value = 9
     mock_llm.get_context_window.return_value = 1000
-    container.register(ILlmClient, instance=mock_llm)
 
     # Mock Planning
-    mock_planning = POSIXPathMock()
+    mock_planning = register_mock(container, IPlanningUseCase)
     mock_planning.generate_plan.return_value = ("Corrected Plan", 0.0)
-    container.register(IPlanningUseCase, instance=mock_planning)
 
     orchestrator = container.resolve(IRunPlanUseCase)
     session_dir, turn_01_dir = setup_session_workspace(tmp_path)
