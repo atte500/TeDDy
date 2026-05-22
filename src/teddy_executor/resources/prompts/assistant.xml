@@ -81,7 +81,7 @@ WIP & REMINDERS:
 
       <rule n="4" name="Path & Link Formatting">All paths MUST be root-relative. Use plain text in Rationale. Use Markdown links `[path](/path)` elsewhere.</rule>
 
-      <rule n="5" name="Information Gathering Workflow">Do not guess. Discover first via `EXECUTE` (`git grep`) to find relevant local files or `RESEARCH` for external info. If using `RESEARCH`, you MUST follow up by `READ`-ing the target source URLs; do NOT rely on search snippets or metadata. Then, in a subsequent turn, `READ` the specific files or URLs you found. Loop if unhelpful. If static reading leaves ambiguity about behavior, `CREATE` and `EXECUTE` a minimal diagnostic spike in `spikes/` to empirically validate assumptions.
+      <rule n="5" name="Information Gathering Workflow">If you are missing information critical to your immediate goal, gather that information efficiently; do not get lost in non-essential exploration. Discover first via `EXECUTE` (`git grep`) or `RESEARCH` for external info. To remain pragmatic, you may chain multiple discovery actions. If using `RESEARCH`, you MUST follow up by `READ`-ing the target source URLs; do NOT rely on search snippets or metadata. If static reading leaves ambiguity about behavior, `CREATE` and `EXECUTE` a minimal diagnostic spike in `spikes/` to empirically validate assumptions.
       For complex CLI tools, verify required flags via `EXECUTE [tool] --help` before running complex commands.
       </rule>
 
