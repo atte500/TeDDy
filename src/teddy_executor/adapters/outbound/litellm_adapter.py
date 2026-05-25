@@ -41,8 +41,11 @@ class LiteLLMAdapter(ILlmClient):
         if not self._litellm_initialized:
             with self._init_lock:
                 if not self._litellm_initialized:
+                    # Silence logging BEFORE import to suppress botocore warnings
+                    self._ensure_silence(None)
                     import litellm
 
+                    # Silence library-specific flags AFTER import
                     self._ensure_silence(litellm)
                     self._litellm_module = litellm
                     self._litellm_initialized = True
@@ -66,10 +69,16 @@ class LiteLLMAdapter(ILlmClient):
     def _ensure_silence(self, litellm_module: Any) -> None:
         """Internal helper to silence litellm lazily."""
         import logging
+        import os
 
-        litellm_module.set_verbose = False
-        litellm_module.suppress_debug_info = True
-        logging.getLogger("LiteLLM").setLevel(logging.WARNING)
+        # 1. Prepare environment before import or reinforce after
+        os.environ["LITELLM_LOG"] = "CRITICAL"
+        logging.getLogger("LiteLLM").setLevel(logging.CRITICAL)
+
+        # 2. Configure module-specific flags if provided
+        if litellm_module:
+            litellm_module.set_verbose = False
+            litellm_module.suppress_debug_info = True
 
     def _resolve_model(self, model_override: Optional[str] = None) -> str:
         """Resolves the model name from override, config, or default."""

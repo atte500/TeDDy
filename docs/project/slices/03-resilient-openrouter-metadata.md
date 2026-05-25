@@ -52,7 +52,7 @@ Scenario: Fallback to "???" on Hydration Failure
 - [x] **Refactor** - Update TUI/Console components to display "???" when context window or session cost is unknown.
 - [x] **Showcase** - Create `spikes/showcase/03-openrouter-resilience.py` demonstrating the fix with a versioned model name.
 - [x] **Logic** - Refine `LiteLLMAdapter` hydration to parse actual model IDs from error messages.
-- [ ] **Logic** - Silence LiteLLM logging at the critical level during initialization to suppress `botocore` warnings.
+- [x] **Logic** - Silence LiteLLM logging at the critical level during initialization to suppress `botocore` warnings.
 - [ ] **Refactor** - Move `validate_config(include_remote=True)` from the global `bootstrap()` path to a lazy, on-demand check in `PlanningService`.
 - [ ] **Logic** - Add a 2s timeout to all remote configuration and connectivity checks.
 - [ ] **Cleanup** - Consolidate redundant lazy imports in `LiteLLMAdapter` into the `_get_litellm` factory.
@@ -125,3 +125,9 @@ Scenario: Fallback to "???" on Hydration Failure
 - This is necessary because LiteLLM often resolves a requested ID (e.g., `openrouter/deepseek/deepseek-v4-flash`) to an internal, versioned ID (e.g., `deepseek/deepseek-v4-flash-20260423`) before failing if it's not in its local registry.
 - The hydration logic now collects a set of candidate IDs (requested + extracted) and attempts to hydrate all of them before retrying the completion call once.
 - Verified with unit tests that both IDs are correctly populated in `litellm.model_cost`.
+
+### Deliverable: Logic - Silence LiteLLM logging
+- Updated `LiteLLMAdapter` to perform double-pass silencing: once before the `import litellm` call and once after.
+- Set `os.environ["LITELLM_LOG"] = "CRITICAL"` and `logging.getLogger("LiteLLM").setLevel(logging.CRITICAL)`.
+- This suppresses noisy `botocore` warnings emitted by LiteLLM during its eager loading of AWS shapes.
+- Verified with unit tests that both the environment variable and the logger level are correctly configured at initialization.
