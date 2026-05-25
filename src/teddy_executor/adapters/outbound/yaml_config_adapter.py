@@ -85,15 +85,6 @@ class YamlConfigAdapter(IConfigService):
         parts = key.split(".")
         result = self._resolve_nested(parts)
 
-        # 3. Migration Shim: If hierarchical key is missing OR is exactly the same
-        # as the baseline default, check for a flat override at the root.
-        # This allows legacy tests writing 'similarity_threshold: 0.8' to override
-        # the baseline 'execution.similarity_threshold: 1.0'.
-        if len(parts) > 1:
-            leaf_key = parts[-1]
-            if leaf_key in self._config:
-                return self._config[leaf_key]
-
         if result is not None:
             return result
 
