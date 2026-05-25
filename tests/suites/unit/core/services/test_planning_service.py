@@ -356,6 +356,9 @@ def test_run_preflight_check_requests_remote_validation(env):
 
     from teddy_executor.core.services.planning_service import PlanningService
 
+    # Reset state to ensure remote check is requested regardless of previous tests
+    PlanningService.reset_preflight()
+
     service = env.get_service(PlanningService)
 
     # Act

@@ -259,6 +259,12 @@ class LiteLLMAdapter(ILlmClient):
         if not resolved_model:
             return 0
 
+        # Pre-emptive Hydration: If the model is unknown and we have a hydrator, try to fetch it now.
+        # This ensures that Turn 1 telemetry can display correct info even before the first AI call.
+        if str(resolved_model) not in litellm.model_cost and self._hydrator:
+            candidates = {str(resolved_model)}
+            self._hydrate_all_candidates(candidates)
+
         model_info = litellm.model_cost.get(str(resolved_model), {})
 
         # Heuristic: max_input_tokens is specific to the context window.

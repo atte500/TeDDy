@@ -42,7 +42,14 @@ logging.basicConfig(
 
 @app.callback()
 def bootstrap():
-    """Ensures the project is anchored to the root and initialized."""
+    """Ensures the project is anchored to the root."""
+    # We NO LONGER call get_container() or ensure_initialized() here.
+    # This drastically speeds up 'teddy --help' and commands like 'context'.
+    pass
+
+
+def _ensure_project_initialized(container) -> None:
+    """Lazily performs project anchoring and initialization."""
     from teddy_executor.adapters.inbound.cli_helpers import find_project_root
     from teddy_executor.core.ports.outbound.file_system_manager import (
         IFileSystemManager,
@@ -59,24 +66,18 @@ def bootstrap():
     from teddy_executor.core.ports.inbound.init import IInitUseCase
     from teddy_executor.core.ports.outbound.config_service import IConfigService
     from teddy_executor.adapters.outbound.yaml_config_adapter import YamlConfigAdapter
+    from punq import Scope
 
     root = str(find_project_root())
-    c = get_container()
-
-    # Defensive Guard: Only register if not already configured as an override (e.g. by a test).
-    # We allow overwriting default (transient) registrations to ensure project anchoring,
-    # but we protect Singletons/Instances (which are typically Mocks or test-specific setups).
-    from punq import Scope
+    c = container
 
     regs = getattr(c.registrations, "_Registry__registrations", {})
 
     def is_override(service_type) -> bool:
         reg_list = regs.get(service_type)
-        if not reg_list:
-            return False
-        # If any registration is a singleton or has an explicit instance, it's an override
         return any(
-            reg.scope == Scope.singleton or hasattr(reg, "instance") for reg in reg_list
+            reg.scope == Scope.singleton or hasattr(reg, "instance")
+            for reg in (reg_list or [])
         )
 
     if not is_override(IFileSystemManager):
@@ -117,6 +118,7 @@ def start(  # noqa: PLR0913
     from teddy_executor.adapters.inbound.session_cli_handlers import handle_new_session
 
     container = get_container()
+    _ensure_project_initialized(container)
     if ui_mode is not None:
         _apply_ui_mode_override(container, ui_mode)
 
@@ -143,7 +145,9 @@ def plan(
         handle_plan_generation,
     )
 
-    handle_plan_generation(get_container(), message)
+    container = get_container()
+    _ensure_project_initialized(container)
+    handle_plan_generation(container, message)
 
 
 @app.command()
@@ -163,7 +167,9 @@ def context(
         handle_context_gathering,
     )
 
-    handle_context_gathering(get_container(), no_copy)
+    container = get_container()
+    _ensure_project_initialized(container)
+    handle_context_gathering(container, no_copy)
 
 
 @app.command(name="get-prompt")
@@ -217,6 +223,7 @@ def resume(
     )
 
     container = get_container()
+    _ensure_project_initialized(container)
     if ui_mode is not None:
         apply_ui_mode_override(container, ui_mode)
 
@@ -256,6 +263,7 @@ def execute(  # noqa: PLR0913
     start_time = datetime.now(timezone.utc)
 
     container = get_container()
+    _ensure_project_initialized(container)
     if ui_mode is not None:
         apply_ui_mode_override(container, ui_mode)
 

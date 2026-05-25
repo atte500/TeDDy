@@ -126,12 +126,28 @@ class PlanningService(IPlanningUseCase):
 
         return response, plan_content, turn_cost
 
+    # Class-level cache to ensure remote preflight is performed exactly once per process.
+    # This eliminates the 10s timeout lag on subsequent turns in a session.
+    _PREFLIGHT_DONE = False
+
+    @classmethod
+    def reset_preflight(cls) -> None:
+        """Resets the preflight cache (used primarily for testing)."""
+        cls._PREFLIGHT_DONE = False
+
     def _run_preflight_check(self) -> None:
         """Ensures system is configured before attempting generation."""
         from teddy_executor.core.domain.models.exceptions import ConfigurationError
 
-        errors = self._llm_client.validate_config(include_remote=True)
+        # Use the cached result if we've already successfully verified the remote connection.
+        if PlanningService._PREFLIGHT_DONE:
+            # We still perform local validation to ensure immediate feedback if keys were removed.
+            errors = self._llm_client.validate_config(include_remote=False)
+        else:
+            errors = self._llm_client.validate_config(include_remote=True)
+
         if not errors:
+            PlanningService._PREFLIGHT_DONE = True
             return
 
         error_msg = f"Configuration Error: {', '.join(errors)}"
