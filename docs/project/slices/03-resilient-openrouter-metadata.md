@@ -55,7 +55,7 @@ Scenario: Fallback to "???" on Hydration Failure
 - [x] **Logic** - Silence LiteLLM logging at the critical level during initialization to suppress `botocore` warnings.
 - [x] **Refactor** - Move `validate_config(include_remote=True)` from the global `bootstrap()` path to a lazy, on-demand check in `PlanningService`.
 - [x] **Logic** - Add a 2s timeout to all remote configuration and connectivity checks.
-- [ ] **Cleanup** - Consolidate redundant lazy imports in `LiteLLMAdapter` into the `_get_litellm` factory.
+- [x] **Cleanup** - Consolidate redundant lazy imports in `LiteLLMAdapter` into the `_get_litellm` factory.
 
 ## Implementation Plan
 1. **Hydrator Service**: Create a small, focused service that fetches the OpenRouter catalog and provides a `get_metadata(model_id)` method with suffix-stripping logic.
@@ -144,3 +144,9 @@ Scenario: Fallback to "???" on Hydration Failure
 - Used a lazy-initialized singleton `ThreadPoolExecutor` to wrap the synchronous library call. This ensures that `validate_config` returns immediately when the `future.result(timeout=2.0)` throws a `TimeoutError`, while avoiding the blocking behavior of a `with` block context manager.
 - Added a specific unit test `test_validate_config_remote_check_timeout` in `tests/suites/unit/adapters/outbound/test_litellm_adapter_preflight.py` that mocks a 4-second hang and verifies the method returns a "timed out" error within 2.5 seconds.
 - Verified that `OpenRouterMetadataHydrator` (implemented earlier in this slice) also respects the 2s timeout via its `requests.get(..., timeout=2.0)` configuration.
+
+### Deliverable: Cleanup - Consolidate redundant lazy imports
+- Refactored `LiteLLMAdapter` to eliminate 7 redundant `import litellm` and `_ensure_silence` calls.
+- Centralized `litellm` access through the thread-safe `_get_litellm()` factory.
+- This ensures that the silencing protocol (environment variables and logger levels) is applied consistently and correctly across all LLM operations.
+- Verified with unit and global integration tests that behavioral contracts remain intact.

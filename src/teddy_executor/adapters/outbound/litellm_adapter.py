@@ -106,7 +106,7 @@ class LiteLLMAdapter(ILlmClient):
         Sends a request to an LLM via litellm and returns the raw response object.
         Values in the 'llm' section of the config are passed directly to LiteLLM.
         """
-        import litellm
+        litellm = self._get_litellm()
         from typing import cast
 
         # 1. Start with caller-provided kwargs
@@ -125,8 +125,6 @@ class LiteLLMAdapter(ILlmClient):
                 "No LLM model specified. Please set 'llm.model' in your config "
                 "or export 'OPENAI_API_KEY' etc. for LiteLLM defaults."
             )
-
-        self._ensure_silence(litellm)
         from teddy_executor.core.domain.models.exceptions import ConfigurationError
 
         try:
@@ -167,9 +165,7 @@ class LiteLLMAdapter(ILlmClient):
 
     def get_completion_cost(self, completion_response: Any) -> float:
         """Calculates the precise USD cost of a completion response."""
-        import litellm
-
-        self._ensure_silence(litellm)
+        litellm = self._get_litellm()
         return float(litellm.completion_cost(completion_response=completion_response))
 
     def validate_config(self, include_remote: bool = False) -> List[str]:
@@ -179,9 +175,7 @@ class LiteLLMAdapter(ILlmClient):
         - Checks for missing provider-specific environment variables.
         - Optionally performs a lightweight remote connectivity check.
         """
-        import litellm
-
-        self._ensure_silence(litellm)
+        litellm = self._get_litellm()
         api_key = self._config_service.get_setting("llm.api_key")
         is_placeholder = isinstance(api_key, str) and api_key.lower() == "your-api-key"
 
@@ -233,13 +227,12 @@ class LiteLLMAdapter(ILlmClient):
         """
         Returns the maximum context window size (tokens) for the specified model.
         """
-        import litellm
+        litellm = self._get_litellm()
 
         resolved_model = model or self._config_service.get_setting("llm.model")
         if not resolved_model:
             return 0
 
-        self._ensure_silence(litellm)
         model_info = litellm.model_cost.get(str(resolved_model), {})
 
         # Heuristic: max_input_tokens is specific to the context window.
@@ -252,7 +245,7 @@ class LiteLLMAdapter(ILlmClient):
         self, error: Exception, messages: List[Dict[str, str]], params: Dict[str, Any]
     ) -> Optional[Any]:
         """Internal helper to detect NotFoundError and retry once with hydrated metadata."""
-        import litellm
+        litellm = self._get_litellm()
 
         if not (self._is_not_found_error(error) and self._hydrator):
             return None
@@ -282,7 +275,7 @@ class LiteLLMAdapter(ILlmClient):
 
     def _is_not_found_error(self, error: Exception) -> bool:
         """Robustly checks if the error is a LiteLLM NotFoundError."""
-        import litellm
+        litellm = self._get_litellm()
 
         if type(error).__name__ == "NotFoundError":
             return True

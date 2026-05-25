@@ -8,14 +8,17 @@ The `LiteLLMAdapter` is responsible for interacting with various Large Language 
 
 -   **Type:** Outbound Adapter
 -   **Implements:** `ILlmClient`
--   **Uses:** `IConfigService` (to retrieve API keys and other model settings).
+-   **Uses:**
+    - `IConfigService`: For retrieving model settings and API keys.
+    - `IOpenRouterHydrator` (Internal): For dynamic metadata fetching from OpenRouter.
 
 ## 3. Implementation Details / Logic
 
--   **Lazy Loading:** To maintain CLI responsiveness, the `litellm` library is imported lazily within the methods where it is used. This ensures initialization remains under the 500ms threshold.
--   **Logging Suppression:** The adapter explicitly disables `litellm`'s internal verbose logging (`litellm.set_verbose = False`) and suppresses debug info to keep the CLI output clean. It configures the `LiteLLM` logger to `WARNING` level.
--   **Environment Configuration:** Before making an API call, it uses the `IConfigService` to retrieve credentials and set them as environment variables for `litellm` to consume.
--   **Error Handling:** Wraps all calls to `litellm.completion` to catch specific exceptions (e.g., `AuthenticationError`, `RateLimitError`) and re-raise them as `LlmApiError`.
+-   **Lazy Initialization:** To maintain CLI responsiveness (initialization < 500ms), both the `litellm` library and the `ThreadPoolExecutor` are loaded lazily and protected by an internal lock.
+-   **Logging Suppression:** The adapter performs a double-pass silencing protocol (once before and once after `litellm` import). It sets `LITELLM_LOG=CRITICAL` and configures the `LiteLLM` logger to `CRITICAL` level to suppress noisy `botocore` warnings.
+-   **OpenRouter Resilience:** Implements a trigger-and-retry mechanism. Upon receiving a `NotFoundError`, the adapter extracts the model ID from the error message and uses the hydrator to inject metadata (context window, pricing) into `litellm.model_cost` before retrying.
+-   **Remote Check Timeouts:** All remote connectivity and configuration checks (e.g., `litellm.check_valid_key`) are capped at a 2.0-second timeout via a background executor.
+-   **Error Handling:** Wraps all `litellm` operations to re-raise specific failures as `LlmApiError` or `ConfigurationError`, ensuring transparent CLI feedback.
 
 ## 4. Data Contracts / Methods
 
