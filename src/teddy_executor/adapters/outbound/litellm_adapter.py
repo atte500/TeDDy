@@ -180,12 +180,17 @@ class LiteLLMAdapter(ILlmClient):
                             "max_input_tokens": metadata.get("context_window", 0),
                             **metadata.get("pricing", {}),
                         }
-                        return float(
-                            litellm.completion_cost(
-                                completion_response=completion_response
+                        try:
+                            return float(
+                                litellm.completion_cost(
+                                    completion_response=completion_response
+                                )
                             )
-                        )
-            raise e
+                        except Exception:
+                            # Fallback if retry also fails
+                            return 0.0
+            # Graceful fallback for unmapped models or hydration failure
+            return 0.0
 
     def validate_config(self, include_remote: bool = False) -> List[str]:
         """
