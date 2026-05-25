@@ -54,8 +54,12 @@ Scenario: Fallback to "???" on Hydration Failure
 - [x] **Logic** - Refine `LiteLLMAdapter` hydration to parse actual model IDs from error messages.
 - [x] **Logic** - Silence LiteLLM logging at the critical level during initialization to suppress `botocore` warnings.
 - [x] **Refactor** - Move `validate_config(include_remote=True)` from the global `bootstrap()` path to a lazy, on-demand check in `PlanningService`.
-- [x] **Logic** - Add a 2s timeout to all remote configuration and connectivity checks.
+- [ ] **Logic** - Increase remote connectivity timeout to 10s to accommodate slow cold-starts and network latency.
 - [x] **Cleanup** - Consolidate redundant lazy imports in `LiteLLMAdapter` into the `_get_litellm` factory.
+- [ ] **Refactor** - Move "Checking configurations..." to the start of `bootstrap()` in `__main__.py` for instant UI feedback.
+- [ ] **Optimization** - Implement "Ultra-Lazy" `validate_config` in `LiteLLMAdapter` to avoid `litellm` import for local checks.
+- [ ] **Optimization** - Refactor `LocalRepoTreeGenerator` to use lazy `pathspec` imports.
+- [ ] **Optimization** - Refactor `cli_helpers.py` to use lazy `pyperclip` imports.
 
 ## Implementation Plan
 1. **Hydrator Service**: Create a small, focused service that fetches the OpenRouter catalog and provides a `get_metadata(model_id)` method with suffix-stripping logic.
@@ -66,7 +70,10 @@ Scenario: Fallback to "???" on Hydration Failure
     - Move the `include_remote=True` check out of `_run_cli_preflight_check`.
     - Update `PlanningService._run_preflight_check` to perform the remote check only when a generation is actually requested.
     - Set `os.environ["LITELLM_LOG"] = "CRITICAL"` and configure the LiteLLM logger to `CRITICAL` during adapter initialization to suppress `botocore` noise.
-    - Implement a 2s timeout for `litellm.check_valid_key` calls.
+    - Implement a 10s timeout for `litellm.check_valid_key` calls to ensure reliability for remote providers like OpenRouter.
+    - Optimize `LiteLLMAdapter.validate_config` to perform basic existence checks for `llm.model` and `llm.api_key` before calling `_get_litellm()`.
+    - Move the preflight "Checking configurations..." message to the very start of the `bootstrap()` callback in `__main__.py` to eliminate "dead air" during Typer/Python startup.
+    - Audit and refactor all adapters (specifically `LocalRepoTreeGenerator` and `cli_helpers.py`) to move module-level heavy imports (`pathspec`, `pyperclip`) into lazy-loaded methods.
 
 ## Implementation Notes
 
