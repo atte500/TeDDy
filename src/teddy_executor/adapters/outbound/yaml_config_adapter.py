@@ -29,7 +29,34 @@ class YamlConfigAdapter(IConfigService):
 
         # 3. Simple Deep Merge (Layered)
         self._merge_dicts(config, user_config)
+
+        # 4. Proactive Migration Shim Application
+        # This ensures block lookups (e.g. get_setting("llm")) reflect flat overrides.
+        self._apply_migration_shims(config)
+
         return config
+
+    def _apply_migration_shims(self, config: Dict[str, Any]) -> None:
+        """Propagates flat root-level overrides into their nested hierarchical locations."""
+        shims = {
+            "model": "llm.model",
+            "api_key": "llm.api_key",  # pragma: allowlist secret
+            "similarity_threshold": "execution.similarity_threshold",
+        }
+        for flat_key, hierarchical_path in shims.items():
+            if flat_key in config:
+                value = config[flat_key]
+                parts = hierarchical_path.split(".")
+
+                # Navigate/Create nested structure
+                current = config
+                for part in parts[:-1]:
+                    if part not in current or not isinstance(current[part], dict):
+                        current[part] = {}
+                    current = current[part]
+
+                # Set the leaf value
+                current[parts[-1]] = value
 
     def _load_baseline(self) -> Dict[str, Any]:
         """Loads the bundled baseline config from package resources."""
@@ -56,9 +83,14 @@ class YamlConfigAdapter(IConfigService):
             return {}
 
     def _merge_dicts(self, base: Dict[str, Any], overrides: Dict[str, Any]) -> None:
-        """Recursively merges overrides into base."""
+        """Recursively merges overrides into base. Prunes keys set to None."""
         for key, value in overrides.items():
-            if key in base and isinstance(base[key], dict) and isinstance(value, dict):
+            if value is None:
+                if key in base:
+                    del base[key]
+            elif isinstance(value, dict):
+                if key not in base or not isinstance(base[key], dict):
+                    base[key] = {}
                 self._merge_dicts(base[key], value)
             else:
                 base[key] = value

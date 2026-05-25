@@ -38,9 +38,9 @@ Scenario: Inconsistent Shim Propagation
 - **Multiple Shims**: If both `model` and `api_key` are provided as flat overrides, both must propagate into the `llm` block.
 
 ## Deliverables
-- [ ] **Contract** - Update `YamlConfigAdapter` tests to include the "split-brain" failure case.
-- [ ] **Logic** - Refactor `YamlConfigAdapter._load_layered_config` to apply the migration shim to the dictionary itself.
-- [ ] **Logic** - Update `YamlConfigAdapter._merge_dicts` to prune `None` values.
+- [x] **Contract** - Update `YamlConfigAdapter` tests to include the "split-brain" failure case.
+- [x] **Logic** - Refactor `YamlConfigAdapter._load_layered_config` to apply the migration shim to the dictionary itself.
+- [x] **Logic** - Update `YamlConfigAdapter._merge_dicts` to prune `None` values.
 - [ ] **Migration** - Update `src/teddy_executor/resources/config/config.yaml` to set DeepSeek V4 Flash as default and remove the redundant provider.
 - [ ] **Cleanup** - Remove legacy code in `get_setting` that performs the shim lookup on every call.
 
@@ -49,3 +49,7 @@ Scenario: Inconsistent Shim Propagation
 2. **Apply Shim on Load**: In `YamlConfigAdapter`, iterate through the migration shim mapping (e.g., `model` -> `llm.model`) and update the internal `self._config` dictionary if the flat key exists.
 3. **Null Pruning**: Modify `_merge_dicts` to `del base[key]` if `value` is `None`.
 4. **Baseline Update**: Apply the new default model to the production YAML.
+
+## Implementation Notes
+- **Proactive Shim Application**: Migrated the shim logic from a dynamic lookup in `get_setting` to a proactive update of the internal `_config` dictionary during load. This resolves the "split-brain" issue where block lookups (e.g., `get_setting("llm")`) did not reflect flat root-level overrides.
+- **Recursive Null Pruning**: Enhanced `_merge_dicts` to recursively prune keys set to `None`. This allows users to explicitly "unset" baseline defaults in their local configuration.
