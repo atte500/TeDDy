@@ -41,6 +41,8 @@ Scenario: Fallback to "???" on Hydration Failure
 - **Caching**: The OpenRouter catalog should be fetched at most once per session to minimize latency.
 - **No Suffix Match**: If stripping the suffix (e.g. `-20240525`) still yields no match in the live catalog, fallback to "???".
 - **Malformed Response**: Handle non-JSON or invalid schema responses from OpenRouter gracefully.
+- **Cache Key Miss**: If a requested alias (`openrouter/deepseek...`) resolves to a versioned ID internally, the hydrated metadata must be mapped to *all* candidate IDs to ensure LiteLLM's cache lookup succeeds during the retry.
+- **UI Message Scope**: The "Checking configurations..." message must only appear for commands that actually verify configurations (like `start`), preventing visual lag and scope creep on lightweight commands like `execute` and `context`.
 
 ## Deliverables
 - [x] **Contract** - Define `IOpenRouterHydrator` port (internal to adapter layer).
@@ -60,6 +62,8 @@ Scenario: Fallback to "???" on Hydration Failure
 - [x] **Optimization** - Implement "Ultra-Lazy" `validate_config` in `LiteLLMAdapter` to avoid `litellm` import for local checks.
 - [x] **Optimization** - Refactor `LocalRepoTreeGenerator` to use lazy `pathspec` imports.
 - [x] **Optimization** - Refactor `cli_helpers.py` to use lazy `pyperclip` imports.
+- [ ] **Bugfix** - Modify `LiteLLMAdapter._handle_hydration_retry` to apply fetched metadata to all candidate IDs.
+- [ ] **Bugfix** - Move `typer.echo("Checking configurations...")` from `__main__.py` `bootstrap()` to `session_cli_handlers.py` `handle_new_session()`.
 
 ## Implementation Plan
 1. **Hydrator Service**: Create a small, focused service that fetches the OpenRouter catalog and provides a `get_metadata(model_id)` method with suffix-stripping logic.
@@ -72,8 +76,9 @@ Scenario: Fallback to "???" on Hydration Failure
     - Set `os.environ["LITELLM_LOG"] = "CRITICAL"` and configure the LiteLLM logger to `CRITICAL` during adapter initialization to suppress `botocore` noise.
     - Implement a 10s timeout for `litellm.check_valid_key` calls to ensure reliability for remote providers like OpenRouter.
     - Optimize `LiteLLMAdapter.validate_config` to perform basic existence checks for `llm.model` and `llm.api_key` before calling `_get_litellm()`.
-    - Move the preflight "Checking configurations..." message to the very start of the `bootstrap()` callback in `__main__.py` to eliminate "dead air" during Typer/Python startup.
+    - Move the preflight "Checking configurations..." message out of the `bootstrap()` callback in `__main__.py` and place it at the very top of `handle_new_session` in `session_cli_handlers.py`. This ensures it only prints for the `start` command and not for `execute` or `context`.
     - Audit and refactor all adapters (specifically `LocalRepoTreeGenerator` and `cli_helpers.py`) to move module-level heavy imports (`pathspec`, `pyperclip`) into lazy-loaded methods.
+6. **Hydration Retry Patch**: Update `_handle_hydration_retry` so that when metadata is found for *any* candidate ID, it iterates through *all* candidate IDs and injects the metadata into `litellm.model_cost` for each. This guarantees that LiteLLM's internal retry (which uses the original requested alias) hits the cache.
 
 ## Implementation Notes
 
