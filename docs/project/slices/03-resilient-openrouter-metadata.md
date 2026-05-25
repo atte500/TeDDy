@@ -49,7 +49,7 @@ Scenario: Fallback to "???" on Hydration Failure
 - [x] **Logic** - Update `LiteLLMAdapter.get_context_window()` to return a sentinel/0 when metadata is estimated.
 - [x] **Wiring** - Update the `container.py` to wire the hydrator into the adapter.
 - [x] **Refactor** - Update TUI/Console components to display "???" when context window or session cost is unknown.
-- [ ] **Showcase** - Create `spikes/showcase/03-openrouter-resilience.py` demonstrating the fix with a versioned model name.
+- [▶] **Showcase** - Create `spikes/showcase/03-openrouter-resilience.py` demonstrating the fix with a versioned model name.
 
 ## Implementation Plan
 1. **Hydrator Service**: Create a small, focused service that fetches the OpenRouter catalog and provides a `get_metadata(model_id)` method with suffix-stripping logic.

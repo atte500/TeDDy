@@ -17,7 +17,8 @@ def test_hydrator_resolves_exact_match(openrouter_mock: Any):
     # Assert
     assert metadata is not None
     assert metadata["context_window"] == 1048576
-    assert metadata["pricing"]["prompt"] == "0.000001"
+    assert metadata["pricing"]["input_cost_per_token"] == 0.000001
+    assert metadata["pricing"]["output_cost_per_token"] == 0.000002
 
 
 def test_hydrator_resolves_suffix_match(openrouter_mock: Any):

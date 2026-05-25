@@ -45,15 +45,18 @@ class OpenRouterMetadataHydrator(IOpenRouterHydrator):
         if not models:
             return None
 
+        # Strip openrouter/ prefix if present to match catalog IDs
+        clean_id = model_id.removeprefix("openrouter/")
+
         # 1. Try exact match
-        metadata = self._find_model(models, model_id)
+        metadata = self._find_model(models, clean_id)
         if metadata:
             return metadata
 
         # 2. Try suffix stripping (e.g. -20240525)
         # Matches patterns like -20240525 or -202405251230
-        stripped_id = re.sub(r"-\d{8,12}$", "", model_id)
-        if stripped_id != model_id:
+        stripped_id = re.sub(r"-\d{8,12}$", "", clean_id)
+        if stripped_id != clean_id:
             metadata = self._find_model(models, stripped_id)
             if metadata:
                 return metadata
@@ -66,8 +69,12 @@ class OpenRouterMetadataHydrator(IOpenRouterHydrator):
         """Helper to find a model in the list and format the result."""
         for m in models:
             if m.get("id") == model_id:
+                pricing = m.get("pricing", {})
                 return {
                     "context_window": m.get("context_length", 0),
-                    "pricing": m.get("pricing", {"prompt": "0", "completion": "0"}),
+                    "pricing": {
+                        "input_cost_per_token": float(pricing.get("prompt", 0)),
+                        "output_cost_per_token": float(pricing.get("completion", 0)),
+                    },
                 }
         return None
