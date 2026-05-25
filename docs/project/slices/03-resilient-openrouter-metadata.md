@@ -69,7 +69,7 @@ Scenario: Fallback to "???" on Hydration Failure
 - [x] **Optimization** - Refactor `cli_helpers.py` to use lazy `pyperclip` imports.
 - [x] **Bugfix** - Modify `LiteLLMAdapter._handle_hydration_retry` to apply fetched metadata to all candidate IDs.
 - [x] **Bugfix** - Move `typer.echo("Checking configurations...")` from `__main__.py` `bootstrap()` to `session_cli_handlers.py` `handle_new_session()`.
-- [ ] **Bugfix** - Synchronize hydration across requested and resolved model IDs in `get_completion_cost` to prevent telemetry fragmentation.
+- [x] **Bugfix** - Synchronize hydration across requested and resolved model IDs in `get_completion_cost` to prevent telemetry fragmentation.
 
 ## Implementation Plan
 ### Phase 2: Deferred Hydration
@@ -226,3 +226,10 @@ Scenario: Fallback to "???" on Hydration Failure
 - Updated `PlanningService._display_telemetry` to check both the context window and pricing support before displaying session cost.
 - This ensures that genuine free models ($0.00) are reported correctly, while models with missing pricing metadata are reported as `$???`.
 - Verified with unit tests covering known models, free models, and hydrated models with missing pricing keys.
+
+### Deliverable: Bugfix - Synchronize hydration in get_completion_cost
+- Updated `ILlmClient.get_completion_cost` port signature to accept an optional `model_override: Optional[str]`.
+- Extracted `_hydrate_all_candidates(candidates: set[str])` helper in `LiteLLMAdapter` to centralize the metadata broadcasting logic.
+- Updated `PlanningService` to pass the model name (the requested alias) during `get_completion_cost` calls.
+- This ensures that both the requested alias and the internally resolved versioned ID are hydrated in LiteLLM's `model_cost` registry during deferred hydration (when cost calculation fails for a model the API natively accepted but LiteLLM's registry doesn't yet know).
+- Verified with unit tests that `__setitem__` is called for both the requested and resolved IDs in the registry.

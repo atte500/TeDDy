@@ -163,7 +163,9 @@ class LiteLLMAdapter(ILlmClient):
         encoding = self._get_encoding(resolved_model)
         return len(encoding.encode(text, disallowed_special=()))
 
-    def get_completion_cost(self, completion_response: Any) -> float:
+    def get_completion_cost(
+        self, completion_response: Any, model_override: Optional[str] = None
+    ) -> float:
         """Calculates the precise USD cost of a completion response."""
         litellm = self._get_litellm()
         try:
@@ -172,23 +174,23 @@ class LiteLLMAdapter(ILlmClient):
             )
         except Exception as e:
             if "This model isn't mapped yet" in str(e) and self._hydrator:
+                candidates = set()
+                if model_override:
+                    candidates.add(str(model_override))
                 model_id = getattr(completion_response, "model", None)
                 if model_id:
-                    metadata = self._hydrator.get_metadata(str(model_id))
-                    if metadata:
-                        litellm.model_cost[str(model_id)] = {
-                            "max_input_tokens": metadata.get("context_window", 0),
-                            **metadata.get("pricing", {}),
-                        }
-                        try:
-                            return float(
-                                litellm.completion_cost(
-                                    completion_response=completion_response
-                                )
+                    candidates.add(str(model_id))
+
+                if self._hydrate_all_candidates(candidates):
+                    try:
+                        return float(
+                            litellm.completion_cost(
+                                completion_response=completion_response
                             )
-                        except Exception:
-                            # Fallback if retry also fails
-                            return 0.0
+                        )
+                    except Exception:
+                        return 0.0
+
             # Graceful fallback for unmapped models or hydration failure
             return 0.0
 
@@ -293,6 +295,21 @@ class LiteLLMAdapter(ILlmClient):
             return None
 
         # 2. Hydrate all candidates using the first successful metadata found
+        if not self._hydrate_all_candidates(candidates):
+            return None
+
+        # 3. Retry once
+        return litellm.completion(messages=messages, **params)
+
+    def _hydrate_all_candidates(self, candidates: set[str]) -> bool:
+        """
+        Internal helper to fetch metadata for any candidate and broadcast it to all.
+        Returns True if any metadata was found and injected.
+        """
+        if not self._hydrator:
+            return False
+
+        litellm = self._get_litellm()
         shared_metadata = None
         for m_id in candidates:
             shared_metadata = self._hydrator.get_metadata(m_id)
@@ -300,7 +317,7 @@ class LiteLLMAdapter(ILlmClient):
                 break
 
         if not shared_metadata:
-            return None
+            return False
 
         for m_id in candidates:
             # Update LiteLLM's internal registry for all candidate IDs
@@ -308,9 +325,7 @@ class LiteLLMAdapter(ILlmClient):
                 "max_input_tokens": shared_metadata.get("context_window", 0),
                 **shared_metadata.get("pricing", {}),
             }
-
-        # 3. Retry once
-        return litellm.completion(messages=messages, **params)
+        return True
 
     def _is_not_found_error(self, error: Exception) -> bool:
         """Robustly checks if the error is a LiteLLM NotFoundError."""

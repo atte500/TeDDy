@@ -79,11 +79,16 @@ class PlanningService(IPlanningUseCase):
             self._safe_float(self._llm_client.get_token_count(messages=messages))
         )
 
+        model = str(
+            meta.get("model")
+            or self._config_service.get_setting("llm.model")
+            or "gpt-4o"
+        )
         if self._user_interactor:
             self._display_telemetry(meta, token_count)
 
         response, plan_content, turn_cost = self._perform_generation_with_retry(
-            messages
+            messages, model=model
         )
 
         cost_val = self._prompt_manager.log_telemetry(token_count, turn_cost)
@@ -96,7 +101,7 @@ class PlanningService(IPlanningUseCase):
         return plan_path, cost_val
 
     def _perform_generation_with_retry(
-        self, messages: list[Dict[str, str]]
+        self, messages: list[Dict[str, str]], model: str
     ) -> tuple[Any, str, float]:
         """Implements retry loop for empty LLM content."""
         max_retries = 3
@@ -107,7 +112,9 @@ class PlanningService(IPlanningUseCase):
         for attempt in range(max_retries):
             response = self._llm_client.get_completion(messages=messages)
             plan_content = self._extract_plan_content(response)
-            turn_cost = self._llm_client.get_completion_cost(response)
+            turn_cost = self._llm_client.get_completion_cost(
+                response, model_override=model
+            )
 
             if plan_content and plan_content.strip():
                 break

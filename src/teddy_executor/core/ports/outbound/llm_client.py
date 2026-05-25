@@ -54,7 +54,9 @@ class ILlmClient(ABC):
         )
 
     @abstractmethod
-    def get_completion_cost(self, _completion_response: Any) -> float:
+    def get_completion_cost(
+        self, completion_response: Any, model_override: Optional[str] = None
+    ) -> float:
         """
         Calculates the precise USD cost of a completion response.
         """
