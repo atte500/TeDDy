@@ -306,7 +306,52 @@ def test_get_completion_parses_actual_model_from_error_message(mock_config, cont
     assert litellm.model_cost[requested_id]["max_input_tokens"] == 64000
     assert litellm.model_cost[resolved_id]["max_input_tokens"] == 64000
 
-    # 2. Hydrator called for both (or at least for the resolved one)
-    # The resolved ID is the most important one as LiteLLM retries with it.
-    mock_hydrator.get_metadata.assert_any_call(requested_id)
-    mock_hydrator.get_metadata.assert_any_call(resolved_id)
+    # 2. Hydrator called at least once.
+    # We don't assert specifically which one because set order is non-deterministic,
+    # and we optimize by stopping at the first successful hit.
+    assert mock_hydrator.get_metadata.called
+
+
+def test_get_completion_broadcasts_metadata_to_all_candidates(mock_config, container):
+    # Arrange
+    import litellm
+    from tests.harness.setup.mocking import register_mock
+
+    mock_config.get_setting.return_value = {}
+    mock_hydrator = register_mock(container, IOpenRouterHydrator)
+
+    requested_id = "openrouter/model-alias"
+    resolved_id = "model-versioned-id"
+
+    # Hydrator ONLY recognizes the resolved ID (versioned)
+    def hydrator_side_effect(m_id):
+        if m_id == resolved_id:
+            return {
+                "context_window": 32000,
+                "pricing": {"prompt": "0.1", "completion": "0.1"},
+            }
+        return None
+
+    mock_hydrator.get_metadata.side_effect = hydrator_side_effect
+
+    class NotFoundError(Exception):
+        pass
+
+    litellm.NotFoundError = NotFoundError
+    litellm.model_cost = {}
+    error_msg = f"Model not found. model={resolved_id}"
+
+    litellm.completion.side_effect = [
+        litellm.NotFoundError(error_msg),
+        Mock(choices=[Mock()]),
+    ]
+
+    adapter = LiteLLMAdapter(mock_config, hydrator=mock_hydrator)
+
+    # Act
+    adapter.get_completion(model=requested_id, messages=[])
+
+    # Assert
+    # Metadata from resolved_id MUST be applied to requested_id as well
+    assert litellm.model_cost[requested_id]["max_input_tokens"] == 32000
+    assert litellm.model_cost[resolved_id]["max_input_tokens"] == 32000

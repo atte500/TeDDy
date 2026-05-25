@@ -62,7 +62,7 @@ Scenario: Fallback to "???" on Hydration Failure
 - [x] **Optimization** - Implement "Ultra-Lazy" `validate_config` in `LiteLLMAdapter` to avoid `litellm` import for local checks.
 - [x] **Optimization** - Refactor `LocalRepoTreeGenerator` to use lazy `pathspec` imports.
 - [x] **Optimization** - Refactor `cli_helpers.py` to use lazy `pyperclip` imports.
-- [ ] **Bugfix** - Modify `LiteLLMAdapter._handle_hydration_retry` to apply fetched metadata to all candidate IDs.
+- [x] **Bugfix** - Modify `LiteLLMAdapter._handle_hydration_retry` to apply fetched metadata to all candidate IDs.
 - [ ] **Bugfix** - Move `typer.echo("Checking configurations...")` from `__main__.py` `bootstrap()` to `session_cli_handlers.py` `handle_new_session()`.
 
 ## Implementation Plan
@@ -184,3 +184,9 @@ Scenario: Fallback to "???" on Hydration Failure
 - This ensures that these libraries are not loaded during the container registration phase, further reducing CLI startup lag.
 - Repaired "Mock Poisoning" in acceptance tests by redirecting `pyperclip` mocks to the source module instead of the consumer namespace.
 - Added a diagnostic test `tests/suites/unit/test_startup_laziness.py` to prevent future regressions.
+
+### Deliverable: Bugfix - Modify LiteLLMAdapter._handle_hydration_retry
+- Updated the hydration retry logic to find the first available metadata from candidate IDs (requested alias and extracted versioned ID).
+- Implemented broadcasting of the discovered metadata to all candidate IDs in `litellm.model_cost`.
+- This ensures that LiteLLM's internal cache lookup succeeds during the retry attempt, regardless of whether it uses the original alias or the resolved internal ID.
+- Verified with unit tests that cross-mapping occurs even if the hydrator only recognizes one of the IDs.

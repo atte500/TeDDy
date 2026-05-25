@@ -255,20 +255,22 @@ class LiteLLMAdapter(ILlmClient):
         if not candidates:
             return None
 
-        # 2. Hydrate all candidates
-        hydrated_any = False
+        # 2. Hydrate all candidates using the first successful metadata found
+        shared_metadata = None
         for m_id in candidates:
-            metadata = self._hydrator.get_metadata(m_id)
-            if metadata:
-                # Update LiteLLM's internal registry
-                litellm.model_cost[m_id] = {
-                    "max_input_tokens": metadata.get("context_window", 0),
-                    **metadata.get("pricing", {}),
-                }
-                hydrated_any = True
+            shared_metadata = self._hydrator.get_metadata(m_id)
+            if shared_metadata:
+                break
 
-        if not hydrated_any:
+        if not shared_metadata:
             return None
+
+        for m_id in candidates:
+            # Update LiteLLM's internal registry for all candidate IDs
+            litellm.model_cost[m_id] = {
+                "max_input_tokens": shared_metadata.get("context_window", 0),
+                **shared_metadata.get("pricing", {}),
+            }
 
         # 3. Retry once
         return litellm.completion(messages=messages, **params)
