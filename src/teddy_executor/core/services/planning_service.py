@@ -157,7 +157,12 @@ class PlanningService(IPlanningUseCase):
             f"[blue]• Context:[/blue] [magenta]{token_count / 1000:.1f}k / {window_str} tokens[/magenta]"
         )
 
-        cost_str = f"${cumulative_cost:.4f}" if context_window > 0 else "$???"
+        pricing_supported = self._llm_client.supports_pricing(model=model)
+        cost_str = (
+            f"${cumulative_cost:.4f}"
+            if context_window > 0 and pricing_supported
+            else "$???"
+        )
         self._user_interactor.display_message(
             f"[blue]• Session Cost:[/blue] [magenta]{cost_str}[/magenta]\n"
         )

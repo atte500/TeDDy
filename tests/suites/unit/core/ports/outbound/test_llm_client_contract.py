@@ -30,6 +30,34 @@ def test_llm_client_requires_validate_config():
         MockLlmClient()
 
 
+def test_llm_client_requires_supports_pricing():
+    """
+    Asserts that any implementation of ILlmClient must implement supports_pricing.
+    """
+
+    class IncompleteClient(ILlmClient):
+        def get_completion(self, messages, model=None, **kwargs):
+            pass
+
+        def get_token_count(self, messages, model=None):
+            return 0
+
+        def get_completion_cost(self, _response):
+            return 0.0
+
+        def validate_config(self, _include_remote=False):
+            return []
+
+        def get_context_window(self, model=None):
+            return 0
+
+    # Act / Assert
+    with pytest.raises(
+        TypeError, match="Can't instantiate abstract class IncompleteClient"
+    ):
+        IncompleteClient()
+
+
 def test_llm_client_requires_get_context_window():
     """
     Contraction Phase: Assert that any implementation of ILlmClient must implement get_context_window.

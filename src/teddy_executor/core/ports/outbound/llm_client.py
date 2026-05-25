@@ -78,3 +78,11 @@ class ILlmClient(ABC):
         Returns 0 if the limit is unknown.
         """
         pass
+
+    @abstractmethod
+    def supports_pricing(self, model: Optional[str] = None) -> bool:
+        """
+        Returns True if the model has known pricing metadata (even if $0.00).
+        Returns False if pricing info is missing from the registry.
+        """
+        pass

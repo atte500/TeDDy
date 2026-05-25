@@ -49,7 +49,7 @@ Scenario: Fallback to "???" on Hydration Failure
 ## Deliverables
 - [x] **Logic** - Wrap `LiteLLMAdapter.get_completion_cost` to catch the generic `Exception("This model isn't mapped yet...")`, trigger the `OpenRouterMetadataHydrator`, and retry the calculation.
 - [x] **Logic** - Update `LiteLLMAdapter.get_completion_cost` to gracefully return `0.0` if hydration and retry still fail, preventing application crashes.
-- [▶] **Refactor** - Update `PlanningService._display_telemetry` to display `???` for cost if the model lacks explicit pricing data in the registry, satisfying the "??? not 0" UI requirement.
+- [x] **Refactor** - Update `PlanningService._display_telemetry` to display `???` for cost if the model lacks explicit pricing data in the registry, satisfying the "??? not 0" UI requirement.
 - [x] **Contract** - Define `IOpenRouterHydrator` port (internal to adapter layer).
 - [x] **Harness** - Add mock OpenRouter `/models` response to the test environment.
 - [x] **Logic** - Implement `OpenRouterMetadataHydrator` service that performs the fetch, suffix-stripping, and matching.
@@ -218,3 +218,10 @@ Scenario: Fallback to "???" on Hydration Failure
 - Updated `LiteLLMAdapter.get_completion_cost` to return `0.0` instead of re-raising if hydration fails to provide metadata or if the retry attempt still throws an exception.
 - This ensures that pricing failures (which are common for "Day-0" or versioned models) do not crash the session planning or execution flow.
 - Verified that `PlanningService` correctly uses the context window sentinel (`0`) to display `???` in the UI when the model is entirely unknown, maintaining transparency for the user.
+
+### Deliverable: Refactor - Update PlanningService._display_telemetry for "??? not 0"
+- Extended `ILlmClient` with `supports_pricing(model: Optional[str] = None) -> bool`.
+- Implemented `supports_pricing` in `LiteLLMAdapter` by checking for the existence of the `input_cost_per_token` key in the LiteLLM internal registry.
+- Updated `PlanningService._display_telemetry` to check both the context window and pricing support before displaying session cost.
+- This ensures that genuine free models ($0.00) are reported correctly, while models with missing pricing metadata are reported as `$???`.
+- Verified with unit tests covering known models, free models, and hydrated models with missing pricing keys.

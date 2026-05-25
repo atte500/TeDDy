@@ -265,6 +265,19 @@ class LiteLLMAdapter(ILlmClient):
             model_info.get("max_input_tokens") or model_info.get("max_tokens") or 0
         )
 
+    def supports_pricing(self, model: Optional[str] = None) -> bool:
+        """
+        Returns True if the model has known pricing metadata in the registry.
+        """
+        litellm = self._get_litellm()
+        resolved_model = model or self._config_service.get_setting("llm.model")
+        if not resolved_model:
+            return False
+
+        model_info = litellm.model_cost.get(str(resolved_model), {})
+        # input_cost_per_token is the primary indicator of pricing metadata
+        return "input_cost_per_token" in model_info
+
     def _handle_hydration_retry(
         self, error: Exception, messages: List[Dict[str, str]], params: Dict[str, Any]
     ) -> Optional[Any]:

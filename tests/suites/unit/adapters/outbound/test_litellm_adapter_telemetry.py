@@ -107,6 +107,31 @@ def test_get_completion_cost_falls_back_to_zero_on_hydration_failure(container):
     assert cost == 0.0
 
 
+def test_supports_pricing_checks_litellm_registry(container):
+    """
+    Verifies that supports_pricing correctly identifies models with
+    and without pricing data in the LiteLLM registry.
+    """
+    from teddy_executor.core.ports.outbound.llm_client import ILlmClient
+
+    adapter = container.resolve(ILlmClient)
+
+    mock_litellm = Mock()
+    mock_litellm.model_cost = {
+        "gpt-4": {"input_cost_per_token": 0.00001, "max_input_tokens": 8192},
+        "free-model": {"input_cost_per_token": 0.0, "max_input_tokens": 4096},
+        "unmapped": {"max_input_tokens": 128000},  # No pricing key
+    }
+    adapter._litellm_initialized = True
+    adapter._litellm_module = mock_litellm
+
+    # Assert
+    assert adapter.supports_pricing("gpt-4") is True
+    assert adapter.supports_pricing("free-model") is True
+    assert adapter.supports_pricing("unmapped") is False
+    assert adapter.supports_pricing("completely-unknown") is False
+
+
 def test_get_completion_cost_delegates_to_litellm(container):
     adapter = container.resolve(ILlmClient)
     mock_response = Mock()
