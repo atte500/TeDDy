@@ -54,7 +54,7 @@ Scenario: Fallback to "???" on Hydration Failure
 - [x] **Logic** - Refine `LiteLLMAdapter` hydration to parse actual model IDs from error messages.
 - [x] **Logic** - Silence LiteLLM logging at the critical level during initialization to suppress `botocore` warnings.
 - [x] **Refactor** - Move `validate_config(include_remote=True)` from the global `bootstrap()` path to a lazy, on-demand check in `PlanningService`.
-- [ ] **Logic** - Increase remote connectivity timeout to 10s to accommodate slow cold-starts and network latency.
+- [x] **Logic** - Increase remote connectivity timeout to 10s to accommodate slow cold-starts and network latency.
 - [x] **Cleanup** - Consolidate redundant lazy imports in `LiteLLMAdapter` into the `_get_litellm` factory.
 - [ ] **Refactor** - Move "Checking configurations..." to the start of `bootstrap()` in `__main__.py` for instant UI feedback.
 - [ ] **Optimization** - Implement "Ultra-Lazy" `validate_config` in `LiteLLMAdapter` to avoid `litellm` import for local checks.
@@ -157,3 +157,9 @@ Scenario: Fallback to "???" on Hydration Failure
 - Centralized `litellm` access through the thread-safe `_get_litellm()` factory.
 - This ensures that the silencing protocol (environment variables and logger levels) is applied consistently and correctly across all LLM operations.
 - Verified with unit and global integration tests that behavioral contracts remain intact.
+
+### Deliverable: Logic - Increase remote connectivity timeout to 10s
+- Increased the timeout for `litellm.check_valid_key` in `LiteLLMAdapter.validate_config` from 2.0s to 10.0s.
+- Updated the error message in `LiteLLMAdapter` to reflect the 10-second threshold.
+- Increased the timeout in `OpenRouterMetadataHydrator` from 2.0s to 10.0s for consistency across all remote metadata/connectivity checks.
+- Refactored `test_validate_config_remote_check_timeout` to use a mocked `Future` object, allowing for instantaneous verification of the 10.0s parameter without incurring real-time delays.

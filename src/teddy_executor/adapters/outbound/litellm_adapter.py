@@ -209,14 +209,14 @@ class LiteLLMAdapter(ILlmClient):
                 litellm.check_valid_key, model=model, api_key=api_key
             )
             try:
-                is_valid = future.result(timeout=2.0)
+                is_valid = future.result(timeout=10.0)
                 if not is_valid:
                     errors.append(
                         "The API key appears to be invalid, expired, or deactivated."
                     )
             except TimeoutError:
                 errors.append(
-                    "The remote connectivity check timed out after 2 seconds."
+                    "The remote connectivity check timed out after 10 seconds."
                 )
             except Exception as e:
                 errors.append(f"Remote connectivity check failed: {str(e)}")

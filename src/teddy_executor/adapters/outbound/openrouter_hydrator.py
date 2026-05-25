@@ -11,7 +11,7 @@ class OpenRouterMetadataHydrator(IOpenRouterHydrator):
     """
 
     API_URL = "https://openrouter.ai/api/v1/models"
-    TIMEOUT = 2.0
+    TIMEOUT = 10.0
 
     def __init__(self):
         self._cached_models: Optional[List[Dict[str, Any]]] = None

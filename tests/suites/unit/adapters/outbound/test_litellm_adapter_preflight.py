@@ -78,14 +78,16 @@ def test_validate_config_accepts_api_key_from_config(adapter, mock_config, monke
 
 
 def test_validate_config_remote_check_timeout(adapter, mock_config, monkeypatch):
-    # Arrange: Mock check_valid_key to hang
-    import time
+    # Arrange: Mock the executor and future to simulate timeout immediately
+    from concurrent.futures import TimeoutError
 
-    def slow_check(*args, **kwargs):
-        time.sleep(
-            4
-        )  # Sleep 4s (enough to exceed 2.5s but stay under 5s global timeout)
-        return True
+    mock_future = Mock()
+    mock_future.result.side_effect = TimeoutError()
+
+    mock_executor = Mock()
+    mock_executor.submit.return_value = mock_future
+
+    monkeypatch.setattr(adapter, "_get_executor", lambda: mock_executor)
 
     mock_config.get_setting.side_effect = lambda key, default=None: {
         "llm.api_key": "sk-real-key",  # pragma: allowlist secret
@@ -97,13 +99,10 @@ def test_validate_config_remote_check_timeout(adapter, mock_config, monkeypatch)
     monkeypatch.setattr(
         litellm, "validate_environment", Mock(return_value={"missing_keys": []})
     )
-    monkeypatch.setattr(litellm, "check_valid_key", slow_check)
 
-    # Act: Run with a timer to ensure it returns fast
-    start_time = time.time()
+    # Act
     errors = adapter.validate_config(include_remote=True)
-    duration = time.time() - start_time
 
-    # Assert
-    assert duration < 2.5  # Allow a small buffer for thread overhead
-    assert any("timed out" in error.lower() for error in errors)
+    # Assert: Verify that result() was called with EXACTLY 10 seconds
+    mock_future.result.assert_called_with(timeout=10.0)
+    assert any("timed out after 10 seconds" in error.lower() for error in errors)
