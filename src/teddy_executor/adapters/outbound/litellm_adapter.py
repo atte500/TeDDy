@@ -1,6 +1,19 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Protocol
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient, LlmApiError
+
+
+class IOpenRouterHydrator(Protocol):
+    """
+    Internal adapter-layer port for fetching live model metadata from OpenRouter.
+    """
+
+    def get_metadata(self, model_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Fetches metadata for a model from OpenRouter.
+        Returns a dict with 'context_window' and 'pricing' if found, else None.
+        """
+        ...
 
 
 class LiteLLMAdapter(ILlmClient):

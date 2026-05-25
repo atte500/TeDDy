@@ -42,7 +42,7 @@ Scenario: Fallback to "???" on Hydration Failure
 - **Malformed Response**: Handle non-JSON or invalid schema responses from OpenRouter gracefully.
 
 ## Deliverables
-- [ ] **Contract** - Define `IOpenRouterHydrator` port (internal to adapter layer).
+- [x] **Contract** - Define `IOpenRouterHydrator` port (internal to adapter layer).
 - [ ] **Harness** - Add mock OpenRouter `/models` response to the test environment.
 - [ ] **Logic** - Implement `OpenRouterMetadataHydrator` service that performs the fetch, suffix-stripping, and matching.
 - [ ] **Logic** - Update `LiteLLMAdapter` to catch `NotFoundError` and trigger hydration.
@@ -55,3 +55,10 @@ Scenario: Fallback to "???" on Hydration Failure
 1. **Hydrator Service**: Create a small, focused service that fetches the OpenRouter catalog and provides a `get_metadata(model_id)` method with suffix-stripping logic.
 2. **Adapter Integration**: Update `LiteLLMAdapter` to use this hydrator. Crucially, it should use `litellm.model_cost[key] = { ... }` to inject the data as proven in the Pathfinder's discovery.
 3. **UI Updates**: Ensure that the `get_context_window` port returns a value that signals "Unknown" to the UI layers.
+
+## Implementation Notes
+
+### Deliverable: Contract - IOpenRouterHydrator
+- Defined `IOpenRouterHydrator` as a `typing.Protocol` inside `src/teddy_executor/adapters/outbound/litellm_adapter.py`.
+- This ensures the contract is internal to the adapter layer as specified, avoiding leakage into the core domain.
+- The protocol defines `get_metadata(model_id: str)` returning an optional dictionary containing `context_window` and `pricing`.
