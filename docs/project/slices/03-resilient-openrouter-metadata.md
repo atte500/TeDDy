@@ -36,6 +36,8 @@ Scenario: Fallback to "???" on Hydration Failure
 ```
 
 ## Edge Cases
+- **Deferred Hydration**: If the initial `get_completion` request succeeds natively (because the OpenRouter endpoint handles unknown aliases), LiteLLM's internal registry remains unhydrated. The hydration must then be triggered dynamically when `get_completion_cost` is called to prevent a deferred crash.
+- **Missing Pricing**: If hydration succeeds but OpenRouter provides no pricing data for the model, the UI must explicitly display `???` instead of `$0.0000`.
 - **API Timeout**: If the OpenRouter metadata fetch takes > 2 seconds, it must timeout and fallback to "???" to avoid hanging the CLI.
 - **Remote Config Timeout**: If the LLM remote connectivity check takes > 2 seconds, it must timeout to prevent blocking CLI startup.
 - **Caching**: The OpenRouter catalog should be fetched at most once per session to minimize latency.
@@ -45,6 +47,9 @@ Scenario: Fallback to "???" on Hydration Failure
 - **UI Message Scope**: The "Checking configurations..." message must only appear for commands that actually verify configurations (like `start`), preventing visual lag and scope creep on lightweight commands like `execute` and `context`.
 
 ## Deliverables
+- [ ] **Logic** - Wrap `LiteLLMAdapter.get_completion_cost` to catch the generic `Exception("This model isn't mapped yet...")`, trigger the `OpenRouterMetadataHydrator`, and retry the calculation.
+- [ ] **Logic** - Update `LiteLLMAdapter.get_completion_cost` to gracefully return `0.0` if hydration and retry still fail, preventing application crashes.
+- [ ] **Refactor** - Update `PlanningService._display_telemetry` to display `???` for cost if the model lacks explicit pricing data in the registry, satisfying the "??? not 0" UI requirement.
 - [x] **Contract** - Define `IOpenRouterHydrator` port (internal to adapter layer).
 - [x] **Harness** - Add mock OpenRouter `/models` response to the test environment.
 - [x] **Logic** - Implement `OpenRouterMetadataHydrator` service that performs the fetch, suffix-stripping, and matching.
@@ -66,6 +71,13 @@ Scenario: Fallback to "???" on Hydration Failure
 - [x] **Bugfix** - Move `typer.echo("Checking configurations...")` from `__main__.py` `bootstrap()` to `session_cli_handlers.py` `handle_new_session()`.
 
 ## Implementation Plan
+### Phase 2: Deferred Hydration
+1. **Intercept Deferred Exceptions**: Modify `LiteLLMAdapter.get_completion_cost` with a `try/except Exception` block to catch LiteLLM's deferred `This model isn't mapped yet` error.
+2. **Extract & Hydrate**: When caught, extract the model ID from `response.model` and the exception string, fetch metadata via `_hydrator`, and inject it into `litellm.model_cost` for both the raw versioned ID and the `openrouter/` prefixed variant.
+3. **Graceful Fallback**: Retry the cost calculation. If it fails again, return `0.0` instead of crashing.
+4. **UI Degradation**: In `PlanningService._display_telemetry`, add logic to verify if pricing actually exists for the model. If it doesn't, display `$???` instead of the accumulated `0.0`.
+
+### Phase 1: Initial Implementation
 1. **Hydrator Service**: Create a small, focused service that fetches the OpenRouter catalog and provides a `get_metadata(model_id)` method with suffix-stripping logic.
 2. **Adapter Integration**: Update `LiteLLMAdapter` to use this hydrator. Crucially, it should use `litellm.model_cost[key] = { ... }` to inject the data as proven in the Pathfinder's discovery.
 3. **UI Updates**: Ensure that the `get_context_window` port returns a value that signals "Unknown" to the UI layers.
