@@ -151,11 +151,15 @@ class PlanningService(IPlanningUseCase):
         self._user_interactor.display_message(
             f"[blue]• Model:[/blue] [magenta]{model}[/magenta]"
         )
+
+        window_str = f"{context_window / 1000:.1f}k" if context_window > 0 else "???"
         self._user_interactor.display_message(
-            f"[blue]• Context:[/blue] [magenta]{token_count / 1000:.1f}k / {context_window / 1000:.1f}k tokens[/magenta]"
+            f"[blue]• Context:[/blue] [magenta]{token_count / 1000:.1f}k / {window_str} tokens[/magenta]"
         )
+
+        cost_str = f"${cumulative_cost:.4f}" if context_window > 0 else "$???"
         self._user_interactor.display_message(
-            f"[blue]• Session Cost:[/blue] [magenta]${cumulative_cost:.4f}[/magenta]\n"
+            f"[blue]• Session Cost:[/blue] [magenta]{cost_str}[/magenta]\n"
         )
 
     def _safe_float(self, v: Any, default: float = 0.0) -> float:

@@ -48,7 +48,7 @@ Scenario: Fallback to "???" on Hydration Failure
 - [x] **Logic** - Update `LiteLLMAdapter` to catch `NotFoundError` and trigger hydration.
 - [x] **Logic** - Update `LiteLLMAdapter.get_context_window()` to return a sentinel/0 when metadata is estimated.
 - [x] **Wiring** - Update the `container.py` to wire the hydrator into the adapter.
-- [ ] **Refactor** - Update TUI/Console components to display "???" when the context window is unknown.
+- [x] **Refactor** - Update TUI/Console components to display "???" when context window or session cost is unknown.
 - [ ] **Showcase** - Create `spikes/showcase/03-openrouter-resilience.py` demonstrating the fix with a versioned model name.
 
 ## Implementation Plan
@@ -91,3 +91,9 @@ Scenario: Fallback to "???" on Hydration Failure
 - Used `punq.Scope.singleton` for the hydrator to ensure its internal model catalog cache persists across resolutions within a single container lifetime.
 - Updated the `ILlmClient` (LiteLLMAdapter) registration to resolve and inject the `IOpenRouterHydrator`.
 - Added an integration test in `tests/suites/integration/adapters/outbound/test_llm_wiring.py` to verify the wiring at the composition root.
+
+### Deliverable: Refactor - UI display for unknown context window/cost
+- Updated `populate_context_detail` in `src/teddy_executor/adapters/inbound/textual_plan_reviewer_helpers.py` to display `???` instead of `0k` when `total_window` is `0`.
+- Updated `PlanningService._display_telemetry` to display `???` for both context window and session cost when model metadata is unknown (indicated by a `0` context window).
+- Verified TUI fix with new unit tests in `tests/suites/unit/adapters/inbound/test_context_display_helpers.py`.
+- Verified PlanningService fix with new unit tests in `tests/suites/unit/core/services/test_planning_service.py`.

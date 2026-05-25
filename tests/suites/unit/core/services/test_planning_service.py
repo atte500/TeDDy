@@ -142,6 +142,39 @@ def test_generate_plan_displays_telemetry_before_llm_call(env):
     assert any("• Session Cost:" in c and "$0.0500" in c for c in calls)
 
 
+def test_generate_plan_displays_sentinel_for_unknown_model_telemetry(env):
+    # Arrange
+    mock_ui = env.mock_port(IUserInteractor)
+    mock_llm = env.mock_port(ILlmClient)
+    mock_prompt = env.mock_port(IPromptManager)
+    env.mock_port(IGetContextUseCase).get_context.return_value = ProjectContext(
+        header="H", content="C", scoped_paths={}
+    )
+
+    mock_prompt.resolve_message.return_value = "test"
+    mock_prompt.resolve_agent_metadata.return_value = (
+        "pathfinder",
+        {"cumulative_cost": 0.0, "model": "unknown-model"},
+        "meta.yaml",
+    )
+    mock_llm.get_token_count.return_value = 1000
+    mock_llm.get_context_window.return_value = 0  # Unknown
+
+    from teddy_executor.core.services.planning_service import PlanningService
+
+    service = env.get_service(PlanningService)
+
+    # Act
+    service.generate_plan(user_message="test", turn_dir="turns/01")
+
+    # Assert
+    calls = [call[0][0] for call in mock_ui.display_message.call_args_list]
+    # Context window should be ???
+    assert any("• Context:" in c and "1.0k / ??? tokens" in c for c in calls)
+    # Session cost should be $???
+    assert any("• Session Cost:" in c and "$???" in c for c in calls)
+
+
 def test_planning_service_has_session_manager(env):
     """Verify that PlanningService has the session manager injected."""
     from teddy_executor.core.services.planning_service import PlanningService

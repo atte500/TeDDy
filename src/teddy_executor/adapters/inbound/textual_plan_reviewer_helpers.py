@@ -58,10 +58,15 @@ def populate_context_detail(app: "ReviewerApp", pane: Any, data: Any) -> None:
             sum(i.token_count for i in selected_items)
             + app.project_context.system_prompt_tokens
         )
+        window_val = (
+            f"{app.project_context.total_window / 1000.0:.0f}k"
+            if app.project_context.total_window > 0
+            else "???"
+        )
         pane.append(
             DetailItem(
                 "Total Context",
-                f"{total_tokens / 1000.0:.1f}k / {app.project_context.total_window / 1000.0:.0f}k tokens",
+                f"{total_tokens / 1000.0:.1f}k / {window_val} tokens",
             )
         )
         pane.append(
