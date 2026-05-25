@@ -47,7 +47,7 @@ Scenario: Fallback to "???" on Hydration Failure
 - **UI Message Scope**: The "Checking configurations..." message must only appear for commands that actually verify configurations (like `start`), preventing visual lag and scope creep on lightweight commands like `execute` and `context`.
 
 ## Deliverables
-- [ ] **Logic** - Wrap `LiteLLMAdapter.get_completion_cost` to catch the generic `Exception("This model isn't mapped yet...")`, trigger the `OpenRouterMetadataHydrator`, and retry the calculation.
+- [x] **Logic** - Wrap `LiteLLMAdapter.get_completion_cost` to catch the generic `Exception("This model isn't mapped yet...")`, trigger the `OpenRouterMetadataHydrator`, and retry the calculation.
 - [ ] **Logic** - Update `LiteLLMAdapter.get_completion_cost` to gracefully return `0.0` if hydration and retry still fail, preventing application crashes.
 - [ ] **Refactor** - Update `PlanningService._display_telemetry` to display `???` for cost if the model lacks explicit pricing data in the registry, satisfying the "??? not 0" UI requirement.
 - [x] **Contract** - Define `IOpenRouterHydrator` port (internal to adapter layer).
@@ -207,3 +207,9 @@ Scenario: Fallback to "???" on Hydration Failure
 - Relocated `typer.echo("Checking configurations...")` from the global `bootstrap()` callback in `__main__.py` to the `handle_new_session` handler in `session_cli_handlers.py`.
 - This prevents the message from appearing on lightweight, non-generative commands like `execute` and `context`, providing a cleaner UX and eliminating misleading output for tasks that do not perform LLM preflight checks.
 - Verified with acceptance tests in `tests/suites/acceptance/test_cli_ux_improvements.py`.
+
+### Deliverable: Logic - Implement Deferred Hydration Retry in get_completion_cost
+- Wrapped `LiteLLMAdapter.get_completion_cost` with a `try/except Exception` block.
+- Caught the generic `"This model isn't mapped yet"` exception and extracted the `model_id` directly from `completion_response.model`.
+- Leveraged the injected `_hydrator` to fetch missing metadata dynamically.
+- Injected the metadata into `litellm.model_cost` and successfully retried the cost calculation, preventing deferred crashes when OpenRouter model aliases are natively accepted by the API but unknown to LiteLLM's internal registry.

@@ -166,7 +166,26 @@ class LiteLLMAdapter(ILlmClient):
     def get_completion_cost(self, completion_response: Any) -> float:
         """Calculates the precise USD cost of a completion response."""
         litellm = self._get_litellm()
-        return float(litellm.completion_cost(completion_response=completion_response))
+        try:
+            return float(
+                litellm.completion_cost(completion_response=completion_response)
+            )
+        except Exception as e:
+            if "This model isn't mapped yet" in str(e) and self._hydrator:
+                model_id = getattr(completion_response, "model", None)
+                if model_id:
+                    metadata = self._hydrator.get_metadata(str(model_id))
+                    if metadata:
+                        litellm.model_cost[str(model_id)] = {
+                            "max_input_tokens": metadata.get("context_window", 0),
+                            **metadata.get("pricing", {}),
+                        }
+                        return float(
+                            litellm.completion_cost(
+                                completion_response=completion_response
+                            )
+                        )
+            raise e
 
     def validate_config(self, include_remote: bool = False) -> List[str]:
         """
