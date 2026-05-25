@@ -7,7 +7,6 @@ pytest-cov starts tracking coverage BEFORE our core modules are imported.
 
 import functools
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
@@ -36,6 +35,7 @@ from tests.harness.setup.composition import (
     mock_llm_client,
     mock_prompt_manager,
     mock_pyperclip,
+    openrouter_mock,
     env,
     real_env,
 )
@@ -94,6 +94,7 @@ __all__ = [
     "mock_llm_client",
     "mock_prompt_manager",
     "mock_pyperclip",
+    "openrouter_mock",
     "env",
     "real_env",
 ]
@@ -106,8 +107,16 @@ def patch_socket_getfqdn():
     By patching it session-wide to return 'localhost', we bypass the DNS lookup
     bottleneck for pytest-httpserver and other networking utilities.
     """
-    with patch("socket.getfqdn", return_value="localhost"):
-        yield
+    # Use pytest's internal MonkeyPatch since session-scoped monkeypatch
+    # fixture is not available in standard pytest.
+    from _pytest.monkeypatch import MonkeyPatch
+
+    mp = MonkeyPatch()
+    import socket
+
+    mp.setattr(socket, "getfqdn", lambda *args, **kwargs: "localhost")
+    yield
+    mp.undo()
 
 
 @pytest.fixture(autouse=True)

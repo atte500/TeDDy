@@ -43,7 +43,7 @@ Scenario: Fallback to "???" on Hydration Failure
 
 ## Deliverables
 - [x] **Contract** - Define `IOpenRouterHydrator` port (internal to adapter layer).
-- [ ] **Harness** - Add mock OpenRouter `/models` response to the test environment.
+- [x] **Harness** - Add mock OpenRouter `/models` response to the test environment.
 - [ ] **Logic** - Implement `OpenRouterMetadataHydrator` service that performs the fetch, suffix-stripping, and matching.
 - [ ] **Logic** - Update `LiteLLMAdapter` to catch `NotFoundError` and trigger hydration.
 - [ ] **Logic** - Update `LiteLLMAdapter.get_context_window()` to return a sentinel/0 when metadata is estimated.
@@ -62,3 +62,8 @@ Scenario: Fallback to "???" on Hydration Failure
 - Defined `IOpenRouterHydrator` as a `typing.Protocol` inside `src/teddy_executor/adapters/outbound/litellm_adapter.py`.
 - This ensures the contract is internal to the adapter layer as specified, avoiding leakage into the core domain.
 - The protocol defines `get_metadata(model_id: str)` returning an optional dictionary containing `context_window` and `pricing`.
+
+### Deliverable: Harness - OpenRouter Mock Response
+- Created `tests/harness/setup/openrouter_mock_data.py` containing a standardized mock response for the OpenRouter `/models` API.
+- Added `openrouter_mock` fixture to `tests/harness/setup/composition.py` and exported it in `tests/conftest.py`.
+- The fixture uses `pytest_httpserver` to provide a canned response for `GET /api/v1/models`, enabling isolated testing of hydration logic.

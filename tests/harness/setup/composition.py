@@ -133,3 +133,17 @@ def real_env(monkeypatch):
     e.with_real_init_service()
     yield e
     e.teardown()
+
+
+@pytest.fixture
+def openrouter_mock(httpserver):
+    """
+    Configures the httpserver to respond to OpenRouter model requests.
+    Returns the base URL of the mock server.
+    """
+    from tests.harness.setup.openrouter_mock_data import OPENROUTER_MODELS_RESPONSE
+
+    httpserver.expect_request("/api/v1/models").respond_with_json(
+        OPENROUTER_MODELS_RESPONSE
+    )
+    return httpserver.url_for("")
