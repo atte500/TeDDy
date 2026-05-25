@@ -32,9 +32,20 @@ class LiteLLMAdapter(ILlmClient):
         self._litellm_module: Any = None
         self._encoding: Any = None
         self._encoding_model: Optional[str] = None
+        self._executor: Any = None
         from threading import Lock
 
         self._init_lock = Lock()
+
+    def _get_executor(self) -> Any:
+        """Lazily creates a ThreadPoolExecutor for remote checks."""
+        if not self._executor:
+            with self._init_lock:
+                if not self._executor:
+                    from concurrent.futures import ThreadPoolExecutor
+
+                    self._executor = ThreadPoolExecutor(max_workers=5)
+        return self._executor
 
     def _get_litellm(self) -> Any:
         """Lazily imports and silences litellm once."""
@@ -197,10 +208,24 @@ class LiteLLMAdapter(ILlmClient):
 
         # 3. Optional Remote Check: Verify key validity/expiration
         if not errors and include_remote:
-            if not litellm.check_valid_key(model=model, api_key=api_key):
+            from concurrent.futures import TimeoutError
+
+            executor = self._get_executor()
+            future = executor.submit(
+                litellm.check_valid_key, model=model, api_key=api_key
+            )
+            try:
+                is_valid = future.result(timeout=2.0)
+                if not is_valid:
+                    errors.append(
+                        "The API key appears to be invalid, expired, or deactivated."
+                    )
+            except TimeoutError:
                 errors.append(
-                    "The API key appears to be invalid, expired, or deactivated."
+                    "The remote connectivity check timed out after 2 seconds."
                 )
+            except Exception as e:
+                errors.append(f"Remote connectivity check failed: {str(e)}")
 
         return errors
 

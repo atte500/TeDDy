@@ -54,7 +54,7 @@ Scenario: Fallback to "???" on Hydration Failure
 - [x] **Logic** - Refine `LiteLLMAdapter` hydration to parse actual model IDs from error messages.
 - [x] **Logic** - Silence LiteLLM logging at the critical level during initialization to suppress `botocore` warnings.
 - [x] **Refactor** - Move `validate_config(include_remote=True)` from the global `bootstrap()` path to a lazy, on-demand check in `PlanningService`.
-- [ ] **Logic** - Add a 2s timeout to all remote configuration and connectivity checks.
+- [x] **Logic** - Add a 2s timeout to all remote configuration and connectivity checks.
 - [ ] **Cleanup** - Consolidate redundant lazy imports in `LiteLLMAdapter` into the `_get_litellm` factory.
 
 ## Implementation Plan
@@ -138,3 +138,9 @@ Scenario: Fallback to "???" on Hydration Failure
 - Added comprehensive unit tests to `tests/suites/unit/core/services/test_planning_service.py` to ensure the `PlanningService` correctly triggers remote validation before generation.
 - Updated CLI preflight tests in `tests/suites/unit/adapters/inbound/test_session_preflight_wiring.py` to assert that only local validation is performed at the adapter level.
 - Verified that error reporting (e.g., missing API keys) remains transparent and halts execution at the correct layer.
+
+### Deliverable: Logic - Add a 2s timeout to all remote configuration and connectivity checks
+- Implemented a 2-second timeout for `litellm.check_valid_key` in `LiteLLMAdapter.validate_config`.
+- Used a lazy-initialized singleton `ThreadPoolExecutor` to wrap the synchronous library call. This ensures that `validate_config` returns immediately when the `future.result(timeout=2.0)` throws a `TimeoutError`, while avoiding the blocking behavior of a `with` block context manager.
+- Added a specific unit test `test_validate_config_remote_check_timeout` in `tests/suites/unit/adapters/outbound/test_litellm_adapter_preflight.py` that mocks a 4-second hang and verifies the method returns a "timed out" error within 2.5 seconds.
+- Verified that `OpenRouterMetadataHydrator` (implemented earlier in this slice) also respects the 2s timeout via its `requests.get(..., timeout=2.0)` configuration.
