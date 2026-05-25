@@ -76,7 +76,9 @@ def test_edit_custom_threshold_fail(tmp_path, monkeypatch):
     target_file.write_text("def hello():\n    print('hello worLd')\n", encoding="utf-8")
 
     # Set global threshold to 1.0 to force failure on any non-perfect match
-    (tmp_path / ".teddy" / "config.yaml").write_text("similarity_threshold: 1.0\n")
+    (tmp_path / ".teddy" / "config.yaml").write_text(
+        "execution:\n  similarity_threshold: 1.0\n"
+    )
 
     plan = dedent("""\
         # Test Plan

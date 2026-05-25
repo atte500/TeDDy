@@ -42,7 +42,7 @@ Scenario: Inconsistent Shim Propagation
 - [x] **Migration** - Update `src/teddy_executor/resources/config/config.yaml` to set DeepSeek V4 Flash as default and remove the redundant provider.
 - [x] **Logic** - Remove proactive shim application from `YamlConfigAdapter`.
 - [x] **Logic** - Remove legacy dynamic shim fallback from `YamlConfigAdapter.get_setting`.
-- [ ] **Migration** - Update all tests to use strict hierarchical configuration keys.
+- [x] **Migration** - Update all tests to use strict hierarchical configuration keys.
 - [x] **Cleanup** - Delete `tests/suites/unit/adapters/outbound/test_yaml_config_split_brain.py`.
 
 ## Implementation Plan
@@ -57,3 +57,4 @@ Scenario: Inconsistent Shim Propagation
 - **Baseline Migration**: Updated the bundled `config.yaml` to use `openrouter/deepseek/deepseek-v4-flash`. Removed `custom_llm_provider: "gemini"` to prevent LiteLLM misrouting.
 - **Proactive Shim Removal**: Removed `_apply_migration_shims` and its call site. Verified that `get_setting` block lookups no longer automatically include flat root-level overrides, eliminating one half of the "split-brain" configuration state.
 - **Dynamic Fallback Removal**: Removed the leaf-key fallback logic in `get_setting`. Hierarchical lookups now strictly require the hierarchical structure to be present in the configuration dictionary.
+- **Global Test Migration**: Migrated all acceptance and integration tests that used flat configuration keys (e.g., `similarity_threshold`) to use the strict hierarchical format (e.g., `execution.similarity_threshold`). Verified the full suite is green.
