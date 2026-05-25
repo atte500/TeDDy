@@ -20,7 +20,13 @@ def register_infrastructure(container: punq.Container) -> None:
     from teddy_executor.adapters.outbound.console_interactor import (
         ConsoleInteractorAdapter,
     )
-    from teddy_executor.adapters.outbound.litellm_adapter import LiteLLMAdapter
+    from teddy_executor.adapters.outbound.litellm_adapter import (
+        LiteLLMAdapter,
+        IOpenRouterHydrator,
+    )
+    from teddy_executor.adapters.outbound.openrouter_hydrator import (
+        OpenRouterMetadataHydrator,
+    )
     from teddy_executor.adapters.outbound.local_file_system_adapter import (
         LocalFileSystemAdapter,
     )
@@ -110,8 +116,16 @@ def register_infrastructure(container: punq.Container) -> None:
         IConfigService, factory=lambda: YamlConfigAdapter(), scope=punq.Scope.transient
     )
     container.register(
+        IOpenRouterHydrator,
+        factory=lambda: OpenRouterMetadataHydrator(),
+        scope=punq.Scope.singleton,
+    )
+    container.register(
         ILlmClient,
-        factory=lambda: LiteLLMAdapter(container.resolve(IConfigService)),
+        factory=lambda: LiteLLMAdapter(
+            config_service=container.resolve(IConfigService),
+            hydrator=container.resolve(IOpenRouterHydrator),
+        ),
         scope=punq.Scope.transient,
     )
     container.register(

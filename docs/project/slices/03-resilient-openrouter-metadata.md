@@ -47,7 +47,7 @@ Scenario: Fallback to "???" on Hydration Failure
 - [x] **Logic** - Implement `OpenRouterMetadataHydrator` service that performs the fetch, suffix-stripping, and matching.
 - [x] **Logic** - Update `LiteLLMAdapter` to catch `NotFoundError` and trigger hydration.
 - [x] **Logic** - Update `LiteLLMAdapter.get_context_window()` to return a sentinel/0 when metadata is estimated.
-- [ ] **Wiring** - Update the `container.py` to wire the hydrator into the adapter.
+- [x] **Wiring** - Update the `container.py` to wire the hydrator into the adapter.
 - [ ] **Refactor** - Update TUI/Console components to display "???" when the context window is unknown.
 - [ ] **Showcase** - Create `spikes/showcase/03-openrouter-resilience.py` demonstrating the fix with a versioned model name.
 
@@ -85,3 +85,9 @@ Scenario: Fallback to "???" on Hydration Failure
 - Confirmed `get_context_window` returns `0` for unknown models or models with missing metadata in `litellm.model_cost`.
 - Added explicit regression test case in `test_get_context_window_retrieves_from_litellm_cost`.
 - This `0` sentinel allows UI layers (TUI/Console) to display `???` instead of failing or showing incorrect data, fulfilling the "Fallback to ???" scenario requirements.
+
+### Deliverable: Wiring - container.py injection
+- Registered `IOpenRouterHydrator` mapping to `OpenRouterMetadataHydrator` in `src/teddy_executor/registries/infrastructure.py`.
+- Used `punq.Scope.singleton` for the hydrator to ensure its internal model catalog cache persists across resolutions within a single container lifetime.
+- Updated the `ILlmClient` (LiteLLMAdapter) registration to resolve and inject the `IOpenRouterHydrator`.
+- Added an integration test in `tests/suites/integration/adapters/outbound/test_llm_wiring.py` to verify the wiring at the composition root.
