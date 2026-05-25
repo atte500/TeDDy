@@ -287,7 +287,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
 
     def resume(
         self,
-        _session_name: str,
+        session_name: str,
         interactive: bool = True,
         message: Optional[str] = None,
         project_context: Optional[Any] = None,

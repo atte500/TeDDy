@@ -123,7 +123,7 @@ class PlanningService(IPlanningUseCase):
         """Ensures system is configured before attempting generation."""
         from teddy_executor.core.domain.models.exceptions import ConfigurationError
 
-        errors = self._llm_client.validate_config()
+        errors = self._llm_client.validate_config(include_remote=True)
         if not errors:
             return
 

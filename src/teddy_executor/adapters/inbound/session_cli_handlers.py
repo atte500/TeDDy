@@ -103,8 +103,9 @@ def _run_cli_preflight_check(container: Container) -> None:
 
     typer.echo("Checking configurations...", err=True)
     llm_client = container.resolve(ILlmClient)
-    # Perform remote verification early to avoid prompting user if key is invalid
-    errors = llm_client.validate_config(include_remote=True)
+    # Perform local validation only to ensure fast CLI startup.
+    # Remote connectivity is checked lazily by the PlanningService.
+    errors = llm_client.validate_config(include_remote=False)
     if not errors:
         return
 

@@ -292,3 +292,36 @@ def test_generate_plan_overwrites_user_request_if_not_replan(env):
 
     # Assert
     assert existing_meta["user_request"] == "New user request"
+
+
+def test_run_preflight_check_raises_on_error(env):
+    """Verify that PlanningService raises ConfigurationError if preflight fails."""
+    # Arrange
+    mock_llm = env.mock_port(ILlmClient)
+    mock_llm.validate_config.return_value = ["Missing Model"]
+
+    from teddy_executor.core.services.planning_service import PlanningService
+    from teddy_executor.core.domain.models.exceptions import ConfigurationError
+
+    service = env.get_service(PlanningService)
+
+    # Act & Assert
+    with pytest.raises(ConfigurationError, match="Missing Model"):
+        service._run_preflight_check()
+
+
+def test_run_preflight_check_requests_remote_validation(env):
+    """Verify that PlanningService specifically requests remote validation during preflight."""
+    # Arrange
+    mock_llm = env.mock_port(ILlmClient)
+    mock_llm.validate_config.return_value = []
+
+    from teddy_executor.core.services.planning_service import PlanningService
+
+    service = env.get_service(PlanningService)
+
+    # Act
+    service._run_preflight_check()
+
+    # Assert
+    mock_llm.validate_config.assert_called_once_with(include_remote=True)

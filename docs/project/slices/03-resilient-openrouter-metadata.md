@@ -53,7 +53,7 @@ Scenario: Fallback to "???" on Hydration Failure
 - [x] **Showcase** - Create `spikes/showcase/03-openrouter-resilience.py` demonstrating the fix with a versioned model name.
 - [x] **Logic** - Refine `LiteLLMAdapter` hydration to parse actual model IDs from error messages.
 - [x] **Logic** - Silence LiteLLM logging at the critical level during initialization to suppress `botocore` warnings.
-- [ ] **Refactor** - Move `validate_config(include_remote=True)` from the global `bootstrap()` path to a lazy, on-demand check in `PlanningService`.
+- [x] **Refactor** - Move `validate_config(include_remote=True)` from the global `bootstrap()` path to a lazy, on-demand check in `PlanningService`.
 - [ ] **Logic** - Add a 2s timeout to all remote configuration and connectivity checks.
 - [ ] **Cleanup** - Consolidate redundant lazy imports in `LiteLLMAdapter` into the `_get_litellm` factory.
 
@@ -131,3 +131,10 @@ Scenario: Fallback to "???" on Hydration Failure
 - Set `os.environ["LITELLM_LOG"] = "CRITICAL"` and `logging.getLogger("LiteLLM").setLevel(logging.CRITICAL)`.
 - This suppresses noisy `botocore` warnings emitted by LiteLLM during its eager loading of AWS shapes.
 - Verified with unit tests that both the environment variable and the logger level are correctly configured at initialization.
+
+### Deliverable: Refactor - Move validate_config(include_remote=True)
+- Relocated the remote connectivity check (`include_remote=True`) from the CLI bootstrap helper (`_run_cli_preflight_check` in `session_cli_handlers.py`) to the `PlanningService._run_preflight_check`.
+- Updated `session_cli_handlers.py` to perform only a local configuration check (`include_remote=False`) during CLI startup, eliminating the ~2.2s remote lag for non-generative commands.
+- Added comprehensive unit tests to `tests/suites/unit/core/services/test_planning_service.py` to ensure the `PlanningService` correctly triggers remote validation before generation.
+- Updated CLI preflight tests in `tests/suites/unit/adapters/inbound/test_session_preflight_wiring.py` to assert that only local validation is performed at the adapter level.
+- Verified that error reporting (e.g., missing API keys) remains transparent and halts execution at the correct layer.

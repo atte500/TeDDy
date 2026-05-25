@@ -61,10 +61,10 @@ class ILlmClient(ABC):
         pass
 
     @abstractmethod
-    def validate_config(self, _include_remote: bool = False) -> List[str]:
+    def validate_config(self, include_remote: bool = False) -> List[str]:
         """
         Validates the current configuration (API keys, models, etc.).
-        If _include_remote is True, performs a lightweight connectivity check.
+        If include_remote is True, performs a lightweight connectivity check.
 
         Returns:
             A list of error messages. An empty list indicates valid configuration.
