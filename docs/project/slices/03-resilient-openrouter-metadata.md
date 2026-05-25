@@ -63,7 +63,7 @@ Scenario: Fallback to "???" on Hydration Failure
 - [x] **Optimization** - Refactor `LocalRepoTreeGenerator` to use lazy `pathspec` imports.
 - [x] **Optimization** - Refactor `cli_helpers.py` to use lazy `pyperclip` imports.
 - [x] **Bugfix** - Modify `LiteLLMAdapter._handle_hydration_retry` to apply fetched metadata to all candidate IDs.
-- [ ] **Bugfix** - Move `typer.echo("Checking configurations...")` from `__main__.py` `bootstrap()` to `session_cli_handlers.py` `handle_new_session()`.
+- [x] **Bugfix** - Move `typer.echo("Checking configurations...")` from `__main__.py` `bootstrap()` to `session_cli_handlers.py` `handle_new_session()`.
 
 ## Implementation Plan
 1. **Hydrator Service**: Create a small, focused service that fetches the OpenRouter catalog and provides a `get_metadata(model_id)` method with suffix-stripping logic.
@@ -190,3 +190,8 @@ Scenario: Fallback to "???" on Hydration Failure
 - Implemented broadcasting of the discovered metadata to all candidate IDs in `litellm.model_cost`.
 - This ensures that LiteLLM's internal cache lookup succeeds during the retry attempt, regardless of whether it uses the original alias or the resolved internal ID.
 - Verified with unit tests that cross-mapping occurs even if the hydrator only recognizes one of the IDs.
+
+### Deliverable: Bugfix - Localize UI Feedback
+- Relocated `typer.echo("Checking configurations...")` from the global `bootstrap()` callback in `__main__.py` to the `handle_new_session` handler in `session_cli_handlers.py`.
+- This prevents the message from appearing on lightweight, non-generative commands like `execute` and `context`, providing a cleaner UX and eliminating misleading output for tasks that do not perform LLM preflight checks.
+- Verified with acceptance tests in `tests/suites/acceptance/test_cli_ux_improvements.py`.

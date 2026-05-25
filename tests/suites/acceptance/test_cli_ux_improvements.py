@@ -54,3 +54,30 @@ def test_get_prompt_fails_for_non_existent_prompt(tmp_path, monkeypatch):
     result = adapter.run_cli_command(["get-prompt", "unknown"])
     assert result.exit_code != 0
     assert "Prompt 'unknown' not found." in result.stdout + result.stderr
+
+
+def test_config_check_message_is_localized_to_start_command(tmp_path, monkeypatch):
+    """Scenario: 'Checking configurations...' message is only shown for 'start'."""
+    from tests.harness.setup.test_environment import TestEnvironment
+
+    env = TestEnvironment(monkeypatch, tmp_path)
+    env.setup()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+
+    # 1. Verify message IS present in 'start'
+    # Use a dummy message to trigger the handler
+    result_start = adapter.run_cli_command(["start", "-m", "test", "--no-interactive"])
+    assert "Checking configurations..." in result_start.stderr
+
+    # 2. Verify message is NOT present in 'execute'
+    plan = (
+        MarkdownPlanBuilder("Test Plan")
+        .add_execute("echo 'hello'", description="Test")
+        .build()
+    )
+    result_execute = adapter.run_execute_with_plan(plan, interactive=False)
+    assert "Checking configurations..." not in result_execute.stderr
+
+    # 3. Verify message is NOT present in 'context'
+    result_context = adapter.run_cli_command(["context", "--no-copy"])
+    assert "Checking configurations..." not in result_context.stderr

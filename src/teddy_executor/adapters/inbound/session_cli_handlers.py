@@ -34,6 +34,7 @@ def handle_new_session(  # noqa: PLR0913
     message: Optional[str] = None,
 ):
     """Logic for the 'start' command."""
+    typer.echo("Checking configurations...", err=True)
     from teddy_executor.adapters.inbound.cli_helpers import handle_report_output
 
     try:
