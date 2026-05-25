@@ -28,9 +28,18 @@ class PlanningService(IPlanningUseCase):
         """Generates a new plan.md file."""
         import re
 
-        self._run_preflight_check()
-
         turn_path = Path(turn_dir)
+        agent_name, meta, meta_file_path = self._prompt_manager.resolve_agent_metadata(
+            turn_path
+        )
+
+        if self._user_interactor:
+            session_folder = turn_path.parent.name
+            natural_name = re.sub(r"^\d{8}_\d{6}-", "", session_folder)
+            msg = f"\n[cyan][{turn_path.name}] {natural_name} | Waiting for {agent_name} to respond...[/cyan]"
+            self._user_interactor.display_message(msg)
+
+        self._run_preflight_check()
 
         # Defensive resolution of context manifests from turn_dir
         resolved_context_files = context_files
@@ -43,18 +52,9 @@ class PlanningService(IPlanningUseCase):
         # Resolve message to capture user intent in meta.yaml
         resolved_message = self._prompt_manager.resolve_message(user_message, turn_path)
 
-        agent_name, meta, meta_file_path = self._prompt_manager.resolve_agent_metadata(
-            turn_path
-        )
         if resolved_message is not None:
             if not meta.get("is_replan"):
                 meta["user_request"] = resolved_message
-
-        if self._user_interactor:
-            session_folder = turn_path.parent.name
-            natural_name = re.sub(r"^\d{8}_\d{6}-", "", session_folder)
-            msg = f"\n[cyan][{turn_path.name}] {natural_name} | Waiting for {agent_name} to respond...[/cyan]"
-            self._user_interactor.display_message(msg)
 
         context = self._context_service.get_context(
             context_files=resolved_context_files, agent_name=agent_name
@@ -146,12 +146,10 @@ class PlanningService(IPlanningUseCase):
         """Ensures system is configured before attempting generation."""
         from teddy_executor.core.domain.models.exceptions import ConfigurationError
 
-        # Use the cached result if we've already successfully verified the remote connection.
-        if PlanningService._PREFLIGHT_DONE:
-            # We still perform local validation to ensure immediate feedback if keys were removed.
-            errors = self._llm_client.validate_config(include_remote=False)
-        else:
-            errors = self._llm_client.validate_config(include_remote=True)
+        # Perform local validation only. Remote connectivity is checked lazily
+        # by the LLM client during actual generation. This ensures fast CLI startup
+        # and eliminates redundant remote lag for sessions.
+        errors = self._llm_client.validate_config(include_remote=False)
 
         if not errors:
             PlanningService._PREFLIGHT_DONE = True
