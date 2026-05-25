@@ -146,8 +146,9 @@ def test_get_context_window_retrieves_from_litellm_cost(mock_config):
     # 2. Fallback: max_tokens
     assert adapter.get_context_window("legacy-model") == 8192
 
-    # 3. Unknown: 0
+    # 3. Unknown/Estimated: Returns 0 sentinel for "???" display
     assert adapter.get_context_window("unknown-model") == 0
+    assert adapter.get_context_window("model-with-no-metadata") == 0
 
     # 4. Config resolution
     assert adapter.get_context_window() == 128000

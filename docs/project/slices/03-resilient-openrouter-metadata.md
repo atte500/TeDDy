@@ -46,7 +46,7 @@ Scenario: Fallback to "???" on Hydration Failure
 - [x] **Harness** - Add mock OpenRouter `/models` response to the test environment.
 - [x] **Logic** - Implement `OpenRouterMetadataHydrator` service that performs the fetch, suffix-stripping, and matching.
 - [x] **Logic** - Update `LiteLLMAdapter` to catch `NotFoundError` and trigger hydration.
-- [ ] **Logic** - Update `LiteLLMAdapter.get_context_window()` to return a sentinel/0 when metadata is estimated.
+- [x] **Logic** - Update `LiteLLMAdapter.get_context_window()` to return a sentinel/0 when metadata is estimated.
 - [ ] **Wiring** - Update the `container.py` to wire the hydrator into the adapter.
 - [ ] **Refactor** - Update TUI/Console components to display "???" when the context window is unknown.
 - [ ] **Showcase** - Create `spikes/showcase/03-openrouter-resilience.py` demonstrating the fix with a versioned model name.
@@ -80,3 +80,8 @@ Scenario: Fallback to "???" on Hydration Failure
 - Implemented a trigger-and-retry mechanism: when a model is not found, the adapter uses the hydrator to fetch live metadata and injects it into `litellm.model_cost` before retrying the call once.
 - Refactored the fallback context window to `0` instead of a hardcoded default (like 128k) during hydration. This preserves the "unknown" state, allowing UI layers to correctly display `???` per the port contract.
 - Verified with unit tests simulating `NotFoundError` and confirming the hydration call, registry update, and retry execution.
+
+### Deliverable: Logic - LiteLLMAdapter.get_context_window() sentinel
+- Confirmed `get_context_window` returns `0` for unknown models or models with missing metadata in `litellm.model_cost`.
+- Added explicit regression test case in `test_get_context_window_retrieves_from_litellm_cost`.
+- This `0` sentinel allows UI layers (TUI/Console) to display `???` instead of failing or showing incorrect data, fulfilling the "Fallback to ???" scenario requirements.
