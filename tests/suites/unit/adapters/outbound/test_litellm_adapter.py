@@ -264,3 +264,49 @@ def test_get_completion_uses_zero_fallback_when_hydrator_omits_window(
     # Assert
     # We use 0 as the sentinel for unknown, allowing UI to show ???
     assert litellm.model_cost[model]["max_input_tokens"] == 0
+
+
+def test_get_completion_parses_actual_model_from_error_message(mock_config, container):
+    # Arrange
+    import litellm
+    from tests.harness.setup.mocking import register_mock
+
+    mock_config.get_setting.return_value = {}
+    mock_hydrator = register_mock(container, IOpenRouterHydrator)
+    mock_hydrator.get_metadata.return_value = {
+        "context_window": 64000,
+        "pricing": {"prompt": "0.000001", "completion": "0.000001"},
+    }
+
+    class NotFoundError(Exception):
+        pass
+
+    litellm.NotFoundError = NotFoundError
+    litellm.model_cost = {}
+
+    # The error message LiteLLM actually produces includes the resolved ID
+    resolved_id = "deepseek/deepseek-v4-flash-20260423"
+    error_msg = f"This model isn't mapped yet. model={resolved_id}, custom_llm_provider=openrouter."
+
+    litellm.completion.side_effect = [
+        litellm.NotFoundError(error_msg),
+        Mock(choices=[Mock()]),
+    ]
+
+    adapter = LiteLLMAdapter(mock_config, hydrator=mock_hydrator)
+    requested_id = "openrouter/deepseek/deepseek-v4-flash"
+
+    # Act
+    adapter.get_completion(model=requested_id, messages=[])
+
+    # Assert
+    # 1. BOTH IDs should be hydrated in litellm.model_cost
+    assert requested_id in litellm.model_cost
+    assert resolved_id in litellm.model_cost
+    assert litellm.model_cost[requested_id]["max_input_tokens"] == 64000
+    assert litellm.model_cost[resolved_id]["max_input_tokens"] == 64000
+
+    # 2. Hydrator called for both (or at least for the resolved one)
+    # The resolved ID is the most important one as LiteLLM retries with it.
+    mock_hydrator.get_metadata.assert_any_call(requested_id)
+    mock_hydrator.get_metadata.assert_any_call(resolved_id)

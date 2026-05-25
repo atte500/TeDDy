@@ -220,29 +220,59 @@ class LiteLLMAdapter(ILlmClient):
         """Internal helper to detect NotFoundError and retry once with hydrated metadata."""
         import litellm
 
-        # Detect NotFoundError by name (robust for mocks) or isinstance
-        is_not_found = type(error).__name__ == "NotFoundError"
-        if not is_not_found and hasattr(litellm, "NotFoundError"):
-            not_found_cls = getattr(litellm, "NotFoundError")
-            # Only use isinstance if the attribute is actually a class/type
-            if isinstance(not_found_cls, type) and isinstance(error, not_found_cls):
-                is_not_found = True
-
-        if not (is_not_found and self._hydrator):
+        if not (self._is_not_found_error(error) and self._hydrator):
             return None
 
-        model_id = params.get("model")
-        if not model_id:
+        # 1. Identify all candidate model IDs for hydration
+        candidates = self._identify_hydration_candidates(error, params)
+        if not candidates:
             return None
 
-        metadata = self._hydrator.get_metadata(model_id)
-        if not metadata:
+        # 2. Hydrate all candidates
+        hydrated_any = False
+        for m_id in candidates:
+            metadata = self._hydrator.get_metadata(m_id)
+            if metadata:
+                # Update LiteLLM's internal registry
+                litellm.model_cost[m_id] = {
+                    "max_input_tokens": metadata.get("context_window", 0),
+                    **metadata.get("pricing", {}),
+                }
+                hydrated_any = True
+
+        if not hydrated_any:
             return None
 
-        # Update LiteLLM's internal registry
-        litellm.model_cost[model_id] = {
-            "max_input_tokens": metadata.get("context_window", 0),
-            **metadata.get("pricing", {}),
-        }
-        # Retry once
+        # 3. Retry once
         return litellm.completion(messages=messages, **params)
+
+    def _is_not_found_error(self, error: Exception) -> bool:
+        """Robustly checks if the error is a LiteLLM NotFoundError."""
+        import litellm
+
+        if type(error).__name__ == "NotFoundError":
+            return True
+
+        if hasattr(litellm, "NotFoundError"):
+            not_found_cls = getattr(litellm, "NotFoundError")
+            return isinstance(not_found_cls, type) and isinstance(error, not_found_cls)
+
+        return False
+
+    def _identify_hydration_candidates(
+        self, error: Exception, params: Dict[str, Any]
+    ) -> set[str]:
+        """Extracts requested and resolved model IDs from params and error message."""
+        import re
+
+        candidates = set()
+        requested_model = params.get("model")
+        if requested_model:
+            candidates.add(str(requested_model))
+
+        # Parse actual model from error message (e.g. "model=deepseek/deepseek-v4...")
+        match = re.search(r"model=([^,\s]+)", str(error))
+        if match:
+            candidates.add(match.group(1))
+
+        return candidates

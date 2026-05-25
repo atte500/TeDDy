@@ -51,10 +51,11 @@ Scenario: Fallback to "???" on Hydration Failure
 - [x] **Wiring** - Update the `container.py` to wire the hydrator into the adapter.
 - [x] **Refactor** - Update TUI/Console components to display "???" when context window or session cost is unknown.
 - [x] **Showcase** - Create `spikes/showcase/03-openrouter-resilience.py` demonstrating the fix with a versioned model name.
-- [ ] **Logic** - Refine `LiteLLMAdapter` hydration to parse actual model IDs from error messages.
+- [x] **Logic** - Refine `LiteLLMAdapter` hydration to parse actual model IDs from error messages.
 - [ ] **Logic** - Silence LiteLLM logging at the critical level during initialization to suppress `botocore` warnings.
 - [ ] **Refactor** - Move `validate_config(include_remote=True)` from the global `bootstrap()` path to a lazy, on-demand check in `PlanningService`.
 - [ ] **Logic** - Add a 2s timeout to all remote configuration and connectivity checks.
+- [ ] **Cleanup** - Consolidate redundant lazy imports in `LiteLLMAdapter` into the `_get_litellm` factory.
 
 ## Implementation Plan
 1. **Hydrator Service**: Create a small, focused service that fetches the OpenRouter catalog and provides a `get_metadata(model_id)` method with suffix-stripping logic.
@@ -118,3 +119,9 @@ Scenario: Fallback to "???" on Hydration Failure
     4. Successful retry of completion requests with the hydrated metadata.
     5. Smoke-tested the UI telemetry logic to ensure `???` is displayed when the context window is unknown.
 - Verified that the hydrator strips the `openrouter/` prefix to match catalog entries, which often lack the provider prefix.
+
+### Deliverable: Logic - Refine LiteLLMAdapter hydration to parse actual model IDs
+- Updated `_handle_hydration_retry` in `src/teddy_executor/adapters/outbound/litellm_adapter.py` to use regex for extracting `model=...` values from `NotFoundError` messages.
+- This is necessary because LiteLLM often resolves a requested ID (e.g., `openrouter/deepseek/deepseek-v4-flash`) to an internal, versioned ID (e.g., `deepseek/deepseek-v4-flash-20260423`) before failing if it's not in its local registry.
+- The hydration logic now collects a set of candidate IDs (requested + extracted) and attempts to hydrate all of them before retrying the completion call once.
+- Verified with unit tests that both IDs are correctly populated in `litellm.model_cost`.
