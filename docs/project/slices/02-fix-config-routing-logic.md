@@ -39,7 +39,7 @@ Scenario: Inconsistent Shim Propagation
 
 ## Deliverables
 - [x] **Logic** - Update `YamlConfigAdapter._merge_dicts` to prune `None` values.
-- [ ] **Migration** - Update `src/teddy_executor/resources/config/config.yaml` to set DeepSeek V4 Flash as default and remove the redundant provider.
+- [x] **Migration** - Update `src/teddy_executor/resources/config/config.yaml` to set DeepSeek V4 Flash as default and remove the redundant provider.
 - [ ] **Logic** - Remove proactive shim application from `YamlConfigAdapter`.
 - [ ] **Logic** - Remove legacy dynamic shim fallback from `YamlConfigAdapter.get_setting`.
 - [ ] **Migration** - Update all tests to use strict hierarchical configuration keys.
@@ -54,3 +54,4 @@ Scenario: Inconsistent Shim Propagation
 ## Implementation Notes
 - **Pivot to Clean Break**: Initially implemented a proactive shim to resolve the "split-brain" state. However, strategic reflection concluded that hardcoded shims create domain-leaks in infrastructure. Decided to enforce a clean break: remove all legacy shim logic and migrate all baseline/test data to the strict hierarchical format.
 - **Recursive Null Pruning**: Enhanced `_merge_dicts` to recursively prune keys set to `None`. This allows users to explicitly "unset" baseline defaults in their local configuration.
+- **Baseline Migration**: Updated the bundled `config.yaml` to use `openrouter/deepseek/deepseek-v4-flash`. Removed `custom_llm_provider: "gemini"` to prevent LiteLLM misrouting.
