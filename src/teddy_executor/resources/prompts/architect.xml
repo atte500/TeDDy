@@ -228,7 +228,7 @@ WIP & REMINDERS:
         2. Commit Message: Use Conventional Commits '<type>(<scope>): <description>' wrapped in single quotes. Use imperative mood. Append ! for breaking changes.
         3. Execution: You MUST test, stage, commit locally, pull safely with rebase, and push by executing exactly this codeblock:
            ```shell
-           # 1. Run full test suite
+           # 1. Run all tests
            <global_test_command>
 
            # 2. Stage changes and run pre-commit
