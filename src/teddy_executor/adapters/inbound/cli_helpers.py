@@ -3,7 +3,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional
 
-import pyperclip
 import typer
 from punq import Container
 
@@ -56,6 +55,8 @@ def echo_and_copy(
             # Completely detached thread. We do NOT join it at all to ensure
             # the main process can exit even if the clipboard provider hangs.
             def _copy():
+                import pyperclip
+
                 try:
                     pyperclip.copy(to_copy)
                 except Exception as e:
@@ -89,6 +90,8 @@ def get_plan_content(plan_content_str: Optional[str], plan_file: Optional[Path])
             raise typer.Exit(code=1)
         return plan_file.read_text(encoding="utf-8")
 
+    import pyperclip
+
     try:
         plan_from_clipboard = pyperclip.paste()
         if not plan_from_clipboard.strip():
@@ -98,7 +101,7 @@ def get_plan_content(plan_content_str: Optional[str], plan_file: Optional[Path])
             )
             raise typer.Exit(code=1)
         return plan_from_clipboard
-    except pyperclip.PyperclipException as e:
+    except Exception as e:
         typer.echo(f"Error accessing clipboard: {e}", err=True)
         raise typer.Exit(code=1)
 

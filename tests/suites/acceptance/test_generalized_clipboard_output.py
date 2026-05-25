@@ -1,14 +1,17 @@
-from unittest.mock import MagicMock
+from unittest.mock import Mock
 from tests.harness.setup.test_environment import TestEnvironment
 from tests.harness.drivers.cli_adapter import CliTestAdapter
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
 
 
 def setup_clipboard_mock(monkeypatch):
-    mock_pyperclip = MagicMock()
-    monkeypatch.setattr(
-        "teddy_executor.adapters.inbound.cli_helpers.pyperclip", mock_pyperclip
-    )
+    """Sets up a mock for pyperclip."""
+    import pyperclip
+
+    mock_pyperclip = Mock(spec=pyperclip)
+    # Mock at the source to support lazy imports in consumers
+    monkeypatch.setattr(pyperclip, "copy", mock_pyperclip.copy)
+    monkeypatch.setattr(pyperclip, "paste", mock_pyperclip.paste)
     return mock_pyperclip
 
 

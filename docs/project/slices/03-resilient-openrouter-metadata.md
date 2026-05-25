@@ -58,8 +58,8 @@ Scenario: Fallback to "???" on Hydration Failure
 - [x] **Cleanup** - Consolidate redundant lazy imports in `LiteLLMAdapter` into the `_get_litellm` factory.
 - [x] **Refactor** - Move "Checking configurations..." to the start of `bootstrap()` in `__main__.py` for instant UI feedback.
 - [x] **Optimization** - Implement "Ultra-Lazy" `validate_config` in `LiteLLMAdapter` to avoid `litellm` import for local checks.
-- [ ] **Optimization** - Refactor `LocalRepoTreeGenerator` to use lazy `pathspec` imports.
-- [ ] **Optimization** - Refactor `cli_helpers.py` to use lazy `pyperclip` imports.
+- [x] **Optimization** - Refactor `LocalRepoTreeGenerator` to use lazy `pathspec` imports.
+- [x] **Optimization** - Refactor `cli_helpers.py` to use lazy `pyperclip` imports.
 
 ## Implementation Plan
 1. **Hydrator Service**: Create a small, focused service that fetches the OpenRouter catalog and provides a `get_metadata(model_id)` method with suffix-stripping logic.
@@ -173,3 +173,9 @@ Scenario: Fallback to "???" on Hydration Failure
 - Refactored `LiteLLMAdapter.validate_config` to perform existence checks for `llm.api_key` and `llm.model` before calling `_get_litellm()`.
 - This eliminates the ~2.2s `import litellm` cost for the most common configuration errors (missing keys or empty placeholders).
 - Confirmed with laziness unit tests that the heavy import is deferred until environment validation or remote checks are explicitly required.
+
+### Deliverable: Optimization - Lazy pathspec and pyperclip
+- Refactored `LocalRepoTreeGenerator` and `cli_helpers.py` to move heavy library imports (`pathspec`, `pyperclip`) into the methods where they are actually used.
+- This ensures that these libraries are not loaded during the container registration phase, further reducing CLI startup lag.
+- Repaired "Mock Poisoning" in acceptance tests by redirecting `pyperclip` mocks to the source module instead of the consumer namespace.
+- Added a diagnostic test `tests/suites/unit/test_startup_laziness.py` to prevent future regressions.

@@ -1,6 +1,6 @@
 import os
-import pathspec
 from pathlib import Path
+from typing import Any
 from teddy_executor.core.ports.outbound.repo_tree_generator import IRepoTreeGenerator
 
 
@@ -63,8 +63,10 @@ class LocalRepoTreeGenerator(IRepoTreeGenerator):
         self.root_dir = Path(root_dir).resolve()
         self.ignore_spec = self._load_ignore_spec()
 
-    def _load_ignore_spec(self) -> pathspec.PathSpec:
+    def _load_ignore_spec(self) -> Any:
         """Loads ignore files."""
+        import pathspec
+
         default_ignores = {".git/", ".venv/", "__pycache__/", ".teddy/", ".ruff_cache/"}
         lines = list(default_ignores)
         gitignore_path = self.root_dir / ".gitignore"

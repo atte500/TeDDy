@@ -13,9 +13,12 @@ The `LocalRepoTreeGenerator` is an adapter that implements the `IRepoTreeGenerat
 
 ## 3. Dependencies
 
-*   `pathspec`: For parsing `.gitignore` patterns.
+*   `pathspec`: For parsing `.gitignore` patterns (Imported lazily).
 
 ## 4. Implementation Details
+
+### Lazy Loading
+To minimize CLI startup lag, the `pathspec` library is imported lazily only when ignore rules need to be loaded during the first generation or instantiation that requires filtering.
 
 ### Path Filtering Logic
 The adapter performs a recursive walk of the project directory. For each file and directory, it checks against a `PathSpec` object initialized with patterns from ignore files plus a set of default ignores (e.g., `.git/`, `.venv/`). This ensures the generated tree is a clean representation of the project's relevant files.
