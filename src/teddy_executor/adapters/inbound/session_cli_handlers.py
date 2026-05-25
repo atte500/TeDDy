@@ -39,7 +39,7 @@ def handle_new_session(  # noqa: PLR0913
 
     try:
         _run_cli_preflight_check(container)
-        _echo_config_success(container)
+        _echo_config_success(container, agent=agent)
 
         session_manager: ISessionManager = container.resolve(ISessionManager)
         user_interactor: IUserInteractor = container.resolve(IUserInteractor)
@@ -98,13 +98,16 @@ def handle_new_session(  # noqa: PLR0913
         raise typer.Exit(code=1)
 
 
-def _echo_config_success(container: Container) -> None:
-    """Retrieves and echoes the active model configuration on success."""
+def _echo_config_success(container: Container, agent: Optional[str] = None) -> None:
+    """Retrieves and echoes the active model and agent configuration on success."""
     from teddy_executor.core.ports.outbound.config_service import IConfigService
 
     config_service = container.resolve(IConfigService)
     model = config_service.get_setting("llm.model", "unknown")
-    typer.echo(f"API key valid! Model: {model}", err=True)
+    msg = f"API key valid! Model: {model}"
+    if agent:
+        msg += f" | Agent: {agent}"
+    typer.echo(msg, err=True)
 
 
 def _run_cli_preflight_check(container: Container) -> None:
@@ -191,6 +194,7 @@ def handle_resume_session(
 
     try:
         _run_cli_preflight_check(container)
+        # For resume, the agent is determined by the session metadata
         _echo_config_success(container)
 
         session_manager = container.resolve(ISessionManager)
