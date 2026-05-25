@@ -49,7 +49,7 @@ Scenario: Fallback to "???" on Hydration Failure
 - [x] **Logic** - Update `LiteLLMAdapter.get_context_window()` to return a sentinel/0 when metadata is estimated.
 - [x] **Wiring** - Update the `container.py` to wire the hydrator into the adapter.
 - [x] **Refactor** - Update TUI/Console components to display "???" when context window or session cost is unknown.
-- [▶] **Showcase** - Create `spikes/showcase/03-openrouter-resilience.py` demonstrating the fix with a versioned model name.
+- [x] **Showcase** - Create `spikes/showcase/03-openrouter-resilience.py` demonstrating the fix with a versioned model name.
 
 ## Implementation Plan
 1. **Hydrator Service**: Create a small, focused service that fetches the OpenRouter catalog and provides a `get_metadata(model_id)` method with suffix-stripping logic.
@@ -97,3 +97,13 @@ Scenario: Fallback to "???" on Hydration Failure
 - Updated `PlanningService._display_telemetry` to display `???` for both context window and session cost when model metadata is unknown (indicated by a `0` context window).
 - Verified TUI fix with new unit tests in `tests/suites/unit/adapters/inbound/test_context_display_helpers.py`.
 - Verified PlanningService fix with new unit tests in `tests/suites/unit/core/services/test_planning_service.py`.
+
+### Deliverable: Showcase - OpenRouter Resilience
+- Created `spikes/showcases/03-openrouter-resilience.py` to demonstrate the end-to-end "Day-0" model support.
+- The showcase script programmatically verifies:
+    1. Detection of `NotFoundError` for versioned model IDs.
+    2. Dynamic fetching and suffix-stripping logic in the `OpenRouterMetadataHydrator`.
+    3. Correct mapping of OpenRouter pricing fields to LiteLLM-compatible internal registry keys.
+    4. Successful retry of completion requests with the hydrated metadata.
+    5. Smoke-tested the UI telemetry logic to ensure `???` is displayed when the context window is unknown.
+- Verified that the hydrator strips the `openrouter/` prefix to match catalog entries, which often lack the provider prefix.
