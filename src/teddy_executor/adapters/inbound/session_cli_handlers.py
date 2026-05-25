@@ -39,6 +39,7 @@ def handle_new_session(  # noqa: PLR0913
 
     try:
         _run_cli_preflight_check(container)
+        _echo_config_success(container)
 
         session_manager: ISessionManager = container.resolve(ISessionManager)
         user_interactor: IUserInteractor = container.resolve(IUserInteractor)
@@ -97,6 +98,15 @@ def handle_new_session(  # noqa: PLR0913
         raise typer.Exit(code=1)
 
 
+def _echo_config_success(container: Container) -> None:
+    """Retrieves and echoes the active model configuration on success."""
+    from teddy_executor.core.ports.outbound.config_service import IConfigService
+
+    config_service = container.resolve(IConfigService)
+    model = config_service.get_setting("llm.model", "unknown")
+    typer.echo(f"API key valid! Model: {model}", err=True)
+
+
 def _run_cli_preflight_check(container: Container) -> None:
     """Ensures system is configured before starting/resuming a session."""
     from teddy_executor.core.ports.outbound.llm_client import ILlmClient
@@ -132,6 +142,7 @@ def handle_plan_generation(container: Container, message: Optional[str]):
     """Logic for the 'plan' command."""
     try:
         _run_cli_preflight_check(container)
+        _echo_config_success(container)
 
         planning_service: IPlanningUseCase = container.resolve(IPlanningUseCase)
         context_files = detect_session_context()
@@ -180,6 +191,7 @@ def handle_resume_session(
 
     try:
         _run_cli_preflight_check(container)
+        _echo_config_success(container)
 
         session_manager = container.resolve(ISessionManager)
 
