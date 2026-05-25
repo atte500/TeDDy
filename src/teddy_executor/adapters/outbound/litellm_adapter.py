@@ -175,19 +175,19 @@ class LiteLLMAdapter(ILlmClient):
         - Checks for missing provider-specific environment variables.
         - Optionally performs a lightweight remote connectivity check.
         """
-        litellm = self._get_litellm()
+        # 1. Ultra-Lazy Short-circuit: Basic configuration checks (No litellm import)
         api_key = self._config_service.get_setting("llm.api_key")
-        is_placeholder = isinstance(api_key, str) and api_key.lower() == "your-api-key"
+        is_placeholder = isinstance(api_key, str) and api_key == ""
 
-        # 1. Short-circuit: Explicit placeholder needs replacement
         if is_placeholder:
-            return ["'llm.api_key' is still set to the default placeholder."]
+            return ["'llm.api_key' is empty."]
 
-        # 2. Secondary Check: Environment/Provider requirements
         model = self._config_service.get_setting("llm.model")
         if not model:
             return ["'llm.model' is not configured."]
 
+        # 2. Secondary Check: Environment/Provider requirements (Requires litellm)
+        litellm = self._get_litellm()
         errors = []
         validation_result = litellm.validate_environment(model=model)
         missing_keys = validation_result.get("missing_keys", [])

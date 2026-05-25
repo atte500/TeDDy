@@ -57,7 +57,7 @@ Scenario: Fallback to "???" on Hydration Failure
 - [x] **Logic** - Increase remote connectivity timeout to 10s to accommodate slow cold-starts and network latency.
 - [x] **Cleanup** - Consolidate redundant lazy imports in `LiteLLMAdapter` into the `_get_litellm` factory.
 - [x] **Refactor** - Move "Checking configurations..." to the start of `bootstrap()` in `__main__.py` for instant UI feedback.
-- [ ] **Optimization** - Implement "Ultra-Lazy" `validate_config` in `LiteLLMAdapter` to avoid `litellm` import for local checks.
+- [x] **Optimization** - Implement "Ultra-Lazy" `validate_config` in `LiteLLMAdapter` to avoid `litellm` import for local checks.
 - [ ] **Optimization** - Refactor `LocalRepoTreeGenerator` to use lazy `pathspec` imports.
 - [ ] **Optimization** - Refactor `cli_helpers.py` to use lazy `pyperclip` imports.
 
@@ -168,3 +168,8 @@ Scenario: Fallback to "???" on Hydration Failure
 - Relocated the "Checking configurations..." message from `session_cli_handlers.py` to the `@app.callback()` (bootstrap) in `__main__.py`.
 - This ensures the message is printed immediately after Typer/Python bootstrap, providing visual feedback during the loading of heavy dependencies (like `punq` or `typer` itself).
 - Verified that global tests pass, confirming that moving the message to the start of every command (where it now appears for `context` and `get-prompt` as well) does not violate existing behavioral contracts.
+
+### Deliverable: Optimization - Ultra-Lazy validate_config
+- Refactored `LiteLLMAdapter.validate_config` to perform existence checks for `llm.api_key` and `llm.model` before calling `_get_litellm()`.
+- This eliminates the ~2.2s `import litellm` cost for the most common configuration errors (missing keys or empty placeholders).
+- Confirmed with laziness unit tests that the heavy import is deferred until environment validation or remote checks are explicitly required.
