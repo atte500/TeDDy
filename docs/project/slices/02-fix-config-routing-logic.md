@@ -38,18 +38,19 @@ Scenario: Inconsistent Shim Propagation
 - **Multiple Shims**: If both `model` and `api_key` are provided as flat overrides, both must propagate into the `llm` block.
 
 ## Deliverables
-- [x] **Contract** - Update `YamlConfigAdapter` tests to include the "split-brain" failure case.
-- [x] **Logic** - Refactor `YamlConfigAdapter._load_layered_config` to apply the migration shim to the dictionary itself.
 - [x] **Logic** - Update `YamlConfigAdapter._merge_dicts` to prune `None` values.
 - [ ] **Migration** - Update `src/teddy_executor/resources/config/config.yaml` to set DeepSeek V4 Flash as default and remove the redundant provider.
-- [ ] **Cleanup** - Remove legacy code in `get_setting` that performs the shim lookup on every call.
+- [ ] **Logic** - Remove proactive shim application from `YamlConfigAdapter`.
+- [ ] **Logic** - Remove legacy dynamic shim fallback from `YamlConfigAdapter.get_setting`.
+- [ ] **Migration** - Update all tests to use strict hierarchical configuration keys.
+- [ ] **Cleanup** - Delete `tests/suites/unit/adapters/outbound/test_yaml_config_split_brain.py`.
 
 ## Implementation Plan
-1. **Test-First Failure**: Add a unit test to `test_yaml_config_adapter.py` that fails when `get_setting("llm")` doesn't reflect a flat `model` override.
-2. **Apply Shim on Load**: In `YamlConfigAdapter`, iterate through the migration shim mapping (e.g., `model` -> `llm.model`) and update the internal `self._config` dictionary if the flat key exists.
-3. **Null Pruning**: Modify `_merge_dicts` to `del base[key]` if `value` is `None`.
-4. **Baseline Update**: Apply the new default model to the production YAML.
+1. **Baseline Update**: Update the bundled `config.yaml` to use DeepSeek V4 Flash and remove the sticky `custom_llm_provider`.
+2. **Remove Shims**: Delete both the `_apply_migration_shims` method and the leaf-key fallback logic in `get_setting`.
+3. **Test Migration**: Globally update all test setups that use flat keys (identified in Discovery) to use the hierarchical format.
+4. **Validation**: Run the full test suite to ensure the system is stable under the strict configuration regime.
 
 ## Implementation Notes
-- **Proactive Shim Application**: Migrated the shim logic from a dynamic lookup in `get_setting` to a proactive update of the internal `_config` dictionary during load. This resolves the "split-brain" issue where block lookups (e.g., `get_setting("llm")`) did not reflect flat root-level overrides.
+- **Pivot to Clean Break**: Initially implemented a proactive shim to resolve the "split-brain" state. However, strategic reflection concluded that hardcoded shims create domain-leaks in infrastructure. Decided to enforce a clean break: remove all legacy shim logic and migrate all baseline/test data to the strict hierarchical format.
 - **Recursive Null Pruning**: Enhanced `_merge_dicts` to recursively prune keys set to `None`. This allows users to explicitly "unset" baseline defaults in their local configuration.
