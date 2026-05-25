@@ -21,8 +21,13 @@ class LiteLLMAdapter(ILlmClient):
     Implements ILlmClient using the litellm library, driven by configuration.
     """
 
-    def __init__(self, config_service: IConfigService):
+    def __init__(
+        self,
+        config_service: IConfigService,
+        hydrator: Optional[IOpenRouterHydrator] = None,
+    ):
         self._config_service = config_service
+        self._hydrator = hydrator
         self._litellm_initialized = False
         self._litellm_module: Any = None
         self._encoding: Any = None
@@ -107,6 +112,11 @@ class LiteLLMAdapter(ILlmClient):
         try:
             return litellm.completion(messages=messages, **final_params)
         except Exception as e:
+            # 1. Attempt Hydration Retry for OpenRouter models
+            response = self._handle_hydration_retry(e, messages, final_params)
+            if response:
+                return response
+
             msg = str(e)
             # Detect common "Invalid/Expired Key" signatures
             if any(
@@ -203,3 +213,36 @@ class LiteLLMAdapter(ILlmClient):
         return int(
             model_info.get("max_input_tokens") or model_info.get("max_tokens") or 0
         )
+
+    def _handle_hydration_retry(
+        self, error: Exception, messages: List[Dict[str, str]], params: Dict[str, Any]
+    ) -> Optional[Any]:
+        """Internal helper to detect NotFoundError and retry once with hydrated metadata."""
+        import litellm
+
+        # Detect NotFoundError by name (robust for mocks) or isinstance
+        is_not_found = type(error).__name__ == "NotFoundError"
+        if not is_not_found and hasattr(litellm, "NotFoundError"):
+            not_found_cls = getattr(litellm, "NotFoundError")
+            # Only use isinstance if the attribute is actually a class/type
+            if isinstance(not_found_cls, type) and isinstance(error, not_found_cls):
+                is_not_found = True
+
+        if not (is_not_found and self._hydrator):
+            return None
+
+        model_id = params.get("model")
+        if not model_id:
+            return None
+
+        metadata = self._hydrator.get_metadata(model_id)
+        if not metadata:
+            return None
+
+        # Update LiteLLM's internal registry
+        litellm.model_cost[model_id] = {
+            "max_input_tokens": metadata.get("context_window", 0),
+            **metadata.get("pricing", {}),
+        }
+        # Retry once
+        return litellm.completion(messages=messages, **params)

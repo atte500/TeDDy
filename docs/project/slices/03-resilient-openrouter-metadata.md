@@ -45,7 +45,7 @@ Scenario: Fallback to "???" on Hydration Failure
 - [x] **Contract** - Define `IOpenRouterHydrator` port (internal to adapter layer).
 - [x] **Harness** - Add mock OpenRouter `/models` response to the test environment.
 - [x] **Logic** - Implement `OpenRouterMetadataHydrator` service that performs the fetch, suffix-stripping, and matching.
-- [ ] **Logic** - Update `LiteLLMAdapter` to catch `NotFoundError` and trigger hydration.
+- [x] **Logic** - Update `LiteLLMAdapter` to catch `NotFoundError` and trigger hydration.
 - [ ] **Logic** - Update `LiteLLMAdapter.get_context_window()` to return a sentinel/0 when metadata is estimated.
 - [ ] **Wiring** - Update the `container.py` to wire the hydrator into the adapter.
 - [ ] **Refactor** - Update TUI/Console components to display "???" when the context window is unknown.
@@ -73,3 +73,10 @@ Scenario: Fallback to "???" on Hydration Failure
 - Included a 2-second timeout and regex-based suffix stripping for versioned model IDs (e.g., `-20240525`).
 - Added caching to ensure the catalog is fetched at most once per session (instance lifetime).
 - Verified behavior with unit tests covering exact matches, suffix matches, and API failures.
+
+### Deliverable: Logic - Update LiteLLMAdapter to catch NotFoundError and trigger hydration
+- Updated `LiteLLMAdapter` to accept an optional `IOpenRouterHydrator` in its constructor via DI.
+- Modified `get_completion` to catch `litellm.NotFoundError`. The detection logic checks both `type(e).__name__` and `isinstance` to ensure robustness across different runtime and mock environments.
+- Implemented a trigger-and-retry mechanism: when a model is not found, the adapter uses the hydrator to fetch live metadata and injects it into `litellm.model_cost` before retrying the call once.
+- Refactored the fallback context window to `0` instead of a hardcoded default (like 128k) during hydration. This preserves the "unknown" state, allowing UI layers to correctly display `???` per the port contract.
+- Verified with unit tests simulating `NotFoundError` and confirming the hydration call, registry update, and retry execution.

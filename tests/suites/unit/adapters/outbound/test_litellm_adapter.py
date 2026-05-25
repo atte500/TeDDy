@@ -1,8 +1,11 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import Mock
 import pytest
 import litellm
 
-from teddy_executor.adapters.outbound.litellm_adapter import LiteLLMAdapter
+from teddy_executor.adapters.outbound.litellm_adapter import (
+    LiteLLMAdapter,
+    IOpenRouterHydrator,
+)
 from teddy_executor.core.ports.outbound.llm_client import LlmApiError
 
 
@@ -15,18 +18,18 @@ def reset_litellm_mock():
     litellm.reset_mock()
     # Explicitly restore attributes that are overwritten by literal assignments
     # in the adapter (e.g., litellm.set_verbose = False).
-    litellm.set_verbose = MagicMock()
-    litellm.suppress_debug_info = MagicMock()
+    litellm.set_verbose = Mock()
+    litellm.suppress_debug_info = Mock()
     litellm.completion.side_effect = None
-    litellm.completion.return_value = MagicMock()
+    litellm.completion.return_value = Mock()
     yield
 
 
 def test_get_completion_calls_litellm_correctly(mock_config):
     # Arrange
     # Mock the response structure of litellm
-    mock_response = MagicMock()
-    mock_choice = MagicMock()
+    mock_response = Mock()
+    mock_choice = Mock()
     mock_choice.message.content = "AI response text"
     mock_response.choices = [mock_choice]
     litellm.completion.return_value = mock_response
@@ -63,7 +66,7 @@ def test_get_completion_wraps_errors_in_llm_api_error(mock_config):
 
 def test_get_completion_returns_empty_string_for_empty_choices(mock_config):
     # Arrange
-    mock_response = MagicMock()
+    mock_response = Mock()
     mock_response.choices = []
     litellm.completion.return_value = mock_response
 
@@ -112,8 +115,8 @@ def test_adapter_does_not_import_litellm_on_init(mock_config):
     # Arrange
     litellm.reset_mock()
     # Reset to fresh mocks to ensure we can check if they were replaced by assignment
-    litellm.set_verbose = MagicMock()
-    litellm.suppress_debug_info = MagicMock()
+    litellm.set_verbose = Mock()
+    litellm.suppress_debug_info = Mock()
 
     # Act
     LiteLLMAdapter(mock_config)
@@ -121,9 +124,9 @@ def test_adapter_does_not_import_litellm_on_init(mock_config):
     # Assert
     # In __init__, the adapter should NOT touch litellm properties.
     # If it did (lazily), these would be replaced by booleans or called.
-    # We check if they are still the fresh MagicMocks we just assigned.
-    assert isinstance(litellm.set_verbose, MagicMock)
-    assert isinstance(litellm.suppress_debug_info, MagicMock)
+    # We check if they are still the fresh Mocks we just assigned.
+    assert isinstance(litellm.set_verbose, Mock)
+    assert isinstance(litellm.suppress_debug_info, Mock)
     assert not litellm.set_verbose.called
 
 
@@ -151,39 +154,112 @@ def test_get_context_window_retrieves_from_litellm_cost(mock_config):
     mock_config.get_setting.assert_called_with("llm.model")
 
 
-def test_get_text_token_count_calls_tiktoken(mock_config):
+def test_get_text_token_count_calls_tiktoken(mock_config, monkeypatch):
     # Arrange
     mock_config.get_setting.return_value = "gpt-4o"
-    with patch("tiktoken.encoding_for_model") as mock_encoding:
-        mock_enc = MagicMock()
-        mock_enc.encode.return_value = [1, 2, 3]  # 3 tokens
-        mock_encoding.return_value = mock_enc
+    mock_enc = Mock()
+    mock_enc.encode.return_value = [1, 2, 3]  # 3 tokens
+    mock_encoding = Mock(return_value=mock_enc)
+    monkeypatch.setattr("tiktoken.encoding_for_model", mock_encoding)
 
-        adapter = LiteLLMAdapter(mock_config)
-        text = "Hello world"
-        model = "gpt-3.5-turbo"
+    adapter = LiteLLMAdapter(mock_config)
+    text = "Hello world"
+    model = "gpt-3.5-turbo"
 
-        # Act
-        count = adapter.get_text_token_count(text, model=model)
+    # Act
+    count = adapter.get_text_token_count(text, model=model)
 
-        # Assert
-        assert count == 3
-        mock_encoding.assert_called_with(model)
+    # Assert
+    assert count == 3
+    mock_encoding.assert_called_with(model)
 
 
-def test_get_text_token_count_uses_config_model_fallback(mock_config):
+def test_get_text_token_count_uses_config_model_fallback(mock_config, monkeypatch):
     # Arrange
     mock_config.get_setting.return_value = "config-model"
-    with patch("tiktoken.encoding_for_model") as mock_encoding:
-        mock_enc = MagicMock()
-        mock_enc.encode.return_value = range(10)
-        mock_encoding.return_value = mock_enc
+    mock_enc = Mock()
+    mock_enc.encode.return_value = range(10)
+    mock_encoding = Mock(return_value=mock_enc)
+    monkeypatch.setattr("tiktoken.encoding_for_model", mock_encoding)
 
-        adapter = LiteLLMAdapter(mock_config)
-        text = "Some text"
+    adapter = LiteLLMAdapter(mock_config)
+    text = "Some text"
 
-        # Act
-        adapter.get_text_token_count(text)
+    # Act
+    adapter.get_text_token_count(text)
 
-        # Assert
-        mock_encoding.assert_called_with("config-model")
+    # Assert
+    mock_encoding.assert_called_with("config-model")
+
+
+def test_get_completion_hydrates_and_retries_on_not_found_error(mock_config, container):
+    # Arrange
+    import litellm
+    from tests.harness.setup.mocking import register_mock
+
+    mock_config.get_setting.return_value = {}
+    mock_hydrator = register_mock(container, IOpenRouterHydrator)
+    mock_hydrator.get_metadata.return_value = {
+        "context_window": 100000,
+        "pricing": {"prompt": "0.000001", "completion": "0.000002"},
+    }
+
+    # Simulate NotFoundError on first call, success on second
+    # Force a real exception class onto the mock for isinstance checks
+    class NotFoundError(Exception):
+        pass
+
+    litellm.NotFoundError = NotFoundError
+    litellm.model_cost = {}
+
+    litellm.completion.side_effect = [
+        litellm.NotFoundError("Model not mapped"),
+        Mock(choices=[Mock()]),
+    ]
+
+    adapter = LiteLLMAdapter(mock_config, hydrator=mock_hydrator)
+    model = "openrouter/deepseek/deepseek-v4"
+
+    # Act
+    adapter.get_completion(model=model, messages=[])
+
+    # Assert
+    # 1. Hydrator was called with the model
+    mock_hydrator.get_metadata.assert_called_with(model)
+    # 2. litellm.model_cost was updated
+    assert litellm.model_cost[model]["max_input_tokens"] == 100000
+    # 3. completion was called twice
+    assert litellm.completion.call_count == 2
+
+
+def test_get_completion_uses_zero_fallback_when_hydrator_omits_window(
+    mock_config, container
+):
+    # Arrange
+    import litellm
+    from tests.harness.setup.mocking import register_mock
+
+    mock_config.get_setting.return_value = {}
+    mock_hydrator = register_mock(container, IOpenRouterHydrator)
+    # Return metadata but missing context_window
+    mock_hydrator.get_metadata.return_value = {"pricing": {}}
+
+    class NotFoundError(Exception):
+        pass
+
+    litellm.NotFoundError = NotFoundError
+    litellm.model_cost = {}
+    litellm.completion.side_effect = [
+        NotFoundError("No mapped"),
+        Mock(choices=[Mock()]),
+    ]
+
+    adapter = LiteLLMAdapter(mock_config, hydrator=mock_hydrator)
+    model = "some-new-model"
+
+    # Act
+    adapter.get_completion(model=model, messages=[])
+
+    # Assert
+    # We use 0 as the sentinel for unknown, allowing UI to show ???
+    assert litellm.model_cost[model]["max_input_tokens"] == 0
