@@ -75,15 +75,22 @@ class PlanningService(IPlanningUseCase):
             (turn_path / "input.md").as_posix(), full_context
         )
 
-        token_count = int(
-            self._safe_float(self._llm_client.get_token_count(messages=messages))
-        )
-
         model = str(
             meta.get("model")
             or self._config_service.get_setting("llm.model")
             or "gpt-4o"
         )
+
+        # Pre-emptive Hydration: Trigger hydration via get_context_window BEFORE counting tokens.
+        # This ensures the model is known to the registry so token counting and telemetry work.
+        if self._user_interactor:
+            # We call this for the side-effect of triggering hydration in Turn 1
+            self._llm_client.get_context_window(model=model)
+
+        token_count = int(
+            self._safe_float(self._llm_client.get_token_count(messages=messages))
+        )
+
         if self._user_interactor:
             self._display_telemetry(meta, token_count)
 
