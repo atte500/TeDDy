@@ -44,7 +44,7 @@ Scenario: Fallback to "???" on Hydration Failure
 ## Deliverables
 - [x] **Contract** - Define `IOpenRouterHydrator` port (internal to adapter layer).
 - [x] **Harness** - Add mock OpenRouter `/models` response to the test environment.
-- [ ] **Logic** - Implement `OpenRouterMetadataHydrator` service that performs the fetch, suffix-stripping, and matching.
+- [x] **Logic** - Implement `OpenRouterMetadataHydrator` service that performs the fetch, suffix-stripping, and matching.
 - [ ] **Logic** - Update `LiteLLMAdapter` to catch `NotFoundError` and trigger hydration.
 - [ ] **Logic** - Update `LiteLLMAdapter.get_context_window()` to return a sentinel/0 when metadata is estimated.
 - [ ] **Wiring** - Update the `container.py` to wire the hydrator into the adapter.
@@ -67,3 +67,9 @@ Scenario: Fallback to "???" on Hydration Failure
 - Created `tests/harness/setup/openrouter_mock_data.py` containing a standardized mock response for the OpenRouter `/models` API.
 - Added `openrouter_mock` fixture to `tests/harness/setup/composition.py` and exported it in `tests/conftest.py`.
 - The fixture uses `pytest_httpserver` to provide a canned response for `GET /api/v1/models`, enabling isolated testing of hydration logic.
+
+### Deliverable: Logic - Implement OpenRouterMetadataHydrator
+- Implemented `OpenRouterMetadataHydrator` in `src/teddy_executor/adapters/outbound/openrouter_hydrator.py`.
+- Included a 2-second timeout and regex-based suffix stripping for versioned model IDs (e.g., `-20240525`).
+- Added caching to ensure the catalog is fetched at most once per session (instance lifetime).
+- Verified behavior with unit tests covering exact matches, suffix matches, and API failures.
