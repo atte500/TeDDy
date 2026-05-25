@@ -37,8 +37,9 @@ Scenario: Fallback to "???" on Hydration Failure
 
 ## Edge Cases
 - **API Timeout**: If the OpenRouter metadata fetch takes > 2 seconds, it must timeout and fallback to "???" to avoid hanging the CLI.
+- **Remote Config Timeout**: If the LLM remote connectivity check takes > 2 seconds, it must timeout to prevent blocking CLI startup.
 - **Caching**: The OpenRouter catalog should be fetched at most once per session to minimize latency.
-- **No Suffix Match**: If stripping the suffix (e.g. `-20260423`) still yields no match in the live catalog, fallback to "???".
+- **No Suffix Match**: If stripping the suffix (e.g. `-20240525`) still yields no match in the live catalog, fallback to "???".
 - **Malformed Response**: Handle non-JSON or invalid schema responses from OpenRouter gracefully.
 
 ## Deliverables
@@ -50,11 +51,21 @@ Scenario: Fallback to "???" on Hydration Failure
 - [x] **Wiring** - Update the `container.py` to wire the hydrator into the adapter.
 - [x] **Refactor** - Update TUI/Console components to display "???" when context window or session cost is unknown.
 - [x] **Showcase** - Create `spikes/showcase/03-openrouter-resilience.py` demonstrating the fix with a versioned model name.
+- [ ] **Logic** - Refine `LiteLLMAdapter` hydration to parse actual model IDs from error messages.
+- [ ] **Logic** - Silence LiteLLM logging at the critical level during initialization to suppress `botocore` warnings.
+- [ ] **Refactor** - Move `validate_config(include_remote=True)` from the global `bootstrap()` path to a lazy, on-demand check in `PlanningService`.
+- [ ] **Logic** - Add a 2s timeout to all remote configuration and connectivity checks.
 
 ## Implementation Plan
 1. **Hydrator Service**: Create a small, focused service that fetches the OpenRouter catalog and provides a `get_metadata(model_id)` method with suffix-stripping logic.
 2. **Adapter Integration**: Update `LiteLLMAdapter` to use this hydrator. Crucially, it should use `litellm.model_cost[key] = { ... }` to inject the data as proven in the Pathfinder's discovery.
 3. **UI Updates**: Ensure that the `get_context_window` port returns a value that signals "Unknown" to the UI layers.
+4. **Resilient Hydration**: Update `LiteLLMAdapter._handle_hydration_retry` to parse the `NotFoundError` string for the `model=...` value. This ensures that even if LiteLLM resolves to a versioned ID (e.g., `-20260423`), the metadata is injected into the correct registry key.
+5. **Startup Optimization**:
+    - Move the `include_remote=True` check out of `_run_cli_preflight_check`.
+    - Update `PlanningService._run_preflight_check` to perform the remote check only when a generation is actually requested.
+    - Set `os.environ["LITELLM_LOG"] = "CRITICAL"` and configure the LiteLLM logger to `CRITICAL` during adapter initialization to suppress `botocore` noise.
+    - Implement a 2s timeout for `litellm.check_valid_key` calls.
 
 ## Implementation Notes
 
