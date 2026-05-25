@@ -43,6 +43,7 @@ logging.basicConfig(
 @app.callback()
 def bootstrap():
     """Ensures the project is anchored to the root and initialized."""
+    typer.echo("Checking configurations...", err=True)
     from teddy_executor.adapters.inbound.cli_helpers import find_project_root
     from teddy_executor.core.ports.outbound.file_system_manager import (
         IFileSystemManager,

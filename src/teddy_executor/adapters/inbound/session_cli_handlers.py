@@ -101,7 +101,6 @@ def _run_cli_preflight_check(container: Container) -> None:
     from teddy_executor.core.ports.outbound.llm_client import ILlmClient
     from teddy_executor.core.domain.models.exceptions import ConfigurationError
 
-    typer.echo("Checking configurations...", err=True)
     llm_client = container.resolve(ILlmClient)
     # Perform local validation only to ensure fast CLI startup.
     # Remote connectivity is checked lazily by the PlanningService.

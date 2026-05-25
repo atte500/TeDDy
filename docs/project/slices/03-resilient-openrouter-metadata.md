@@ -56,7 +56,7 @@ Scenario: Fallback to "???" on Hydration Failure
 - [x] **Refactor** - Move `validate_config(include_remote=True)` from the global `bootstrap()` path to a lazy, on-demand check in `PlanningService`.
 - [x] **Logic** - Increase remote connectivity timeout to 10s to accommodate slow cold-starts and network latency.
 - [x] **Cleanup** - Consolidate redundant lazy imports in `LiteLLMAdapter` into the `_get_litellm` factory.
-- [ ] **Refactor** - Move "Checking configurations..." to the start of `bootstrap()` in `__main__.py` for instant UI feedback.
+- [x] **Refactor** - Move "Checking configurations..." to the start of `bootstrap()` in `__main__.py` for instant UI feedback.
 - [ ] **Optimization** - Implement "Ultra-Lazy" `validate_config` in `LiteLLMAdapter` to avoid `litellm` import for local checks.
 - [ ] **Optimization** - Refactor `LocalRepoTreeGenerator` to use lazy `pathspec` imports.
 - [ ] **Optimization** - Refactor `cli_helpers.py` to use lazy `pyperclip` imports.
@@ -163,3 +163,8 @@ Scenario: Fallback to "???" on Hydration Failure
 - Updated the error message in `LiteLLMAdapter` to reflect the 10-second threshold.
 - Increased the timeout in `OpenRouterMetadataHydrator` from 2.0s to 10.0s for consistency across all remote metadata/connectivity checks.
 - Refactored `test_validate_config_remote_check_timeout` to use a mocked `Future` object, allowing for instantaneous verification of the 10.0s parameter without incurring real-time delays.
+
+### Deliverable: Refactor - Move "Checking configurations..." to bootstrap()
+- Relocated the "Checking configurations..." message from `session_cli_handlers.py` to the `@app.callback()` (bootstrap) in `__main__.py`.
+- This ensures the message is printed immediately after Typer/Python bootstrap, providing visual feedback during the loading of heavy dependencies (like `punq` or `typer` itself).
+- Verified that global tests pass, confirming that moving the message to the start of every command (where it now appears for `context` and `get-prompt` as well) does not violate existing behavioral contracts.
