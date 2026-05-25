@@ -69,6 +69,7 @@ Scenario: Fallback to "???" on Hydration Failure
 - [x] **Optimization** - Refactor `cli_helpers.py` to use lazy `pyperclip` imports.
 - [x] **Bugfix** - Modify `LiteLLMAdapter._handle_hydration_retry` to apply fetched metadata to all candidate IDs.
 - [x] **Bugfix** - Move `typer.echo("Checking configurations...")` from `__main__.py` `bootstrap()` to `session_cli_handlers.py` `handle_new_session()`.
+- [ ] **Bugfix** - Synchronize hydration across requested and resolved model IDs in `get_completion_cost` to prevent telemetry fragmentation.
 
 ## Implementation Plan
 ### Phase 2: Deferred Hydration
