@@ -195,6 +195,10 @@ class ConsoleInteractorAdapter(IUserInteractor):
         """Prints a colorized warning that an action was skipped."""
         print_skipped_action(action, reason)
 
+    def notify_warning(self, message: str) -> None:
+        """Prints a colorized warning message to stderr."""
+        self._console.print(f"[bold yellow]WARNING:[/] {message}")
+
     def confirm_manual_handoff(
         self,
         action_type: str,

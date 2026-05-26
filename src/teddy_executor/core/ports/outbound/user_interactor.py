@@ -114,3 +114,13 @@ class IUserInteractor(ABC):
             A tuple of (approved: bool, rejection_reason: str)
         """
         pass
+
+    @abstractmethod
+    def notify_warning(self, message: str) -> None:
+        """
+        Notifies the user of a non-fatal warning (e.g. deprecation).
+
+        Args:
+            message: The warning message to display.
+        """
+        pass

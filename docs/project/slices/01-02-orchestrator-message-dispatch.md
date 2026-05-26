@@ -33,7 +33,7 @@ And the final execution report (report.md) contains these warnings to inform the
 - **Empty Message Content**: If the `## Message` section is empty or contains only whitespace, then a `PlanValidationError` must be raised, in order to prevent silent, contentless handoffs.
 
 ## Deliverables
-- [ ] **Contract** - Add `notify_warning(message: str)` to `IUserInteractor` and `ConsoleInteractor`.
+- [x] **Contract** - Add `notify_warning(message: str)` to `IUserInteractor` and `ConsoleInteractor`.
 - [ ] **Contract** - Update `ExecutionReport` domain model and `IExecutionReportAssembler` to support a `warnings` list.
 - [ ] **Logic** - Implement `Plan.is_communication_turn()` and `ActionData.is_legacy` helpers.
 - [ ] **Logic** - Implement validation in `PlanValidator` to reject `MESSAGE` actions with empty content.
@@ -48,3 +48,9 @@ And the final execution report (report.md) contains these warnings to inform the
 3. If true, call `user_interactor.display_message()` and proceed directly to report generation.
 4. Add a check in the action execution loop to append warnings to the report if legacy types are encountered.
 5. Update `MarkdownReportFormatter` to render the warnings section.
+
+## Implementation Notes
+### Deliverable: Contract - notify_warning
+- Added `notify_warning(message: str)` to `IUserInteractor` interface to support deprecation warnings.
+- Implemented `notify_warning` in `ConsoleInteractorAdapter` using Rich's `[bold yellow]WARNING:[/]`.
+- Verified behavior with integration test `test_notify_warning_prints_formatted_message`.
