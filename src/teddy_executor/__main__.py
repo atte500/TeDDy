@@ -40,14 +40,6 @@ logging.basicConfig(
 )
 
 
-@app.callback()
-def bootstrap():
-    """Ensures the project is anchored to the root."""
-    # We NO LONGER call get_container() or ensure_initialized() here.
-    # This drastically speeds up 'teddy --help' and commands like 'context'.
-    pass
-
-
 def _ensure_project_initialized(container) -> None:
     """Lazily performs project anchoring and initialization."""
     from teddy_executor.adapters.inbound.cli_helpers import find_project_root
