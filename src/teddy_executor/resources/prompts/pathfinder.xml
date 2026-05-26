@@ -128,7 +128,16 @@
           <item name="Content">Defines the high-level artifact lifecycle (Spec -> Milestone -> Slice), sequential numbering principles (MM-NN format where MM is the milestone number and NN is the slice number; 00 is used for ad-hoc work), and general archiving policies.</item>
         </section>
         <section n="5" name="Roadmap">
-          <item name="Content">A living list of upcoming Milestones and the high-level features/capabilities planned for each. This serves as the product roadmap.</item>
+          <item name="Heading">## Roadmap</item>
+          <item name="Content">
+A living list of upcoming Milestones and the high-level features/capabilities planned for each. Each milestone entry MUST follow this structural format:
+
+### [Milestone Name]
+- **Core Goal:** [The high-level objective]
+- **Key Deliverables:**
+    - [Deliverable 1]
+    - [Deliverable 2]
+          </item>
         </section>
       </blueprint>
 
