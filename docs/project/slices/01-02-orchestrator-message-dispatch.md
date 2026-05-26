@@ -1,0 +1,46 @@
+# Slice: 01-02-Orchestrator Message Support
+
+- **Status:** Planned
+- **Milestone:** [docs/project/milestones/01-structural-message-protocol.md](/docs/project/milestones/01-structural-message-protocol.md)
+- **Specs:** [docs/project/specs/handoff-protocol.md](/docs/project/specs/handoff-protocol.md)
+- **Component Docs:** [docs/architecture/core/services/execution_orchestrator.md](/docs/architecture/core/services/execution_orchestrator.md)
+
+## Business Goal
+Enable the `ExecutionOrchestrator` to handle the new structural `MESSAGE` action, treating it as an auto-approving communication turn, while discouraging the use of legacy actions.
+
+## Scenarios
+> As a User, I want "Communication Turns" (messages only) to be presented to me directly without requiring a manual approval step, so that the conversation flows naturally.
+
+```gherkin
+Given a parsed plan containing only a "MESSAGE" action
+When the orchestrator executes the plan
+Then the message content is displayed to the user
+And the user is NOT prompted for approval (Skip Approval Gate)
+And the execution report confirms the message was delivered
+```
+
+> As a Developer, I want to be warned when I use legacy actions so that I am encouraged to migrate to the structural protocol.
+
+```gherkin
+Given a plan containing "PROMPT", "INVOKE", or "RETURN" actions
+When the plan is parsed and executed
+Then a deprecation warning is included in the execution report for each legacy action
+```
+
+## Edge Cases
+- **Message with Other Actions**: If a plan contains a `MESSAGE` action AND other actions (e.g., `CREATE`), then the `MESSAGE` should be treated as a normal action requiring approval (or the orchestrator should prioritize the Message section as terminal). *Note: The Parser already enforces mutual exclusivity at the Section level.*
+- **Empty Message Content**: If the message is empty, it should still "execute" (display nothing) and complete the turn.
+
+## Deliverables
+- [ ] **Contract** - Update `ExecutionReport` domain model to include a `warnings: List[str]` field.
+- [ ] **Logic** - Update `ExecutionOrchestrator.run_plan` to detect single-action `MESSAGE` plans and bypass the `IPlanReviewer` (TUI).
+- [ ] **Logic** - Update `ActionExecutor` (or Orchestrator) to generate deprecation warnings for `PROMPT`, `INVOKE`, and `RETURN`.
+- [ ] **Wiring** - Ensure the `MESSAGE` action content is correctly passed to the `IUserInteractor` for display.
+- [ ] **Harness** - Add acceptance tests in `tests/suites/acceptance/test_message_protocol_orchestration.py`.
+
+## Implementation Plan
+1. Update `ExecutionReport` domain model to include a `warnings` list.
+2. Modify `ExecutionOrchestrator` to check `plan.is_communication_turn()` (new helper in `Plan` model).
+3. If true, call `user_interactor.display_message()` and proceed directly to report generation.
+4. Add a check in the action execution loop to append warnings to the report if legacy types are encountered.
+5. Update `MarkdownReportFormatter` to render the warnings section.

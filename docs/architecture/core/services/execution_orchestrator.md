@@ -17,10 +17,16 @@ The `ExecutionOrchestrator` is the stateless core service responsible for the at
     -   `ActionDispatcher`: To execute each action in the plan.
     -   `IEditSimulator`: To generate preview content for `EDIT` actions.
 -   **Outbound Ports:**
-    -   `IUserInteractor`: To prompt the user for step-by-step approval during interactive execution.
+    -   `IUserInteractor`: To display messages and prompt for step-by-step approval.
     -   `IFileSystemManager`: For contextual file reading.
+    -   `IExecutionReportAssembler`: To construct the final report.
 
-## 3. Public Interface
+## 3. Core Logic: Message Protocol
+The orchestrator distinguishes between "Acting Turns" and "Communication Turns":
+- **Acting Turns:** Plans containing standard actions. These require user approval via `IPlanReviewer` (TUI) and `IUserInteractor` (step-by-step).
+- **Communication Turns:** Plans containing a single `MESSAGE` action. These bypass the `IPlanReviewer` and display content directly via `IUserInteractor.display_message`.
+
+## 4. Public Interface
 
 The `ExecutionOrchestrator` service exposes a single method, fulfilling the `IRunPlanUseCase` inbound port.
 
