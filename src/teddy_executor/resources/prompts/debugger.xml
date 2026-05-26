@@ -37,7 +37,7 @@
         <goal>Generalize the learning and prepare for safe integration.</goal>
         <step n="1" name="Root Cause Categorization">Analyze the verified root cause to identify its abstract category. Propose a generalized fix that would prevent this entire class of bug and incorporate it into the final Vertical Slice or handoff diagnosis.</step>
         <step n="2" name="Categorical Audit">Use `git grep` to search the codebase for other instances of the identified category. You MUST formalize any significant findings into deliverables within the Vertical Slice (e.g., a `Refactor` deliverable).</step>
-        <step n="3" name="Impact Audit">Use `git grep` to audit the SUT components touched by your proposed systemic fix. If the fix requires modifying a Port, Signature, or DTO that has >1 consumer, note this dependency so the slice can be partitioned into Contract -> Migration -> Cleanup deliverables.</step>
+        <step n="3" name="Impact Audit">Use `git grep` to audit the SUT components touched by your proposed systemic fix. If the fix requires modifying a Port, Signature, or DTO that has >1 consumer, note this dependency so the slice can be partitioned into Contract -> Migration -> Cleanup deliverables. Ensure all proposed Contract/Seam changes have matching Harness deliverables.</step>
       </phase>
 
       <phase n="4" name="Documentation">
