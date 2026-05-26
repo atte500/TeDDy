@@ -16,8 +16,12 @@ def register_validators(container: punq.Container) -> None:
         ReadActionValidator,
         PruneActionValidator,
     )
+    from teddy_executor.core.services.validation_rules.message import (
+        MessageActionValidator,
+    )
 
     container.register(CreateActionValidator, scope=punq.Scope.transient)
+    container.register(MessageActionValidator, scope=punq.Scope.transient)
     container.register(
         EditActionValidator,
         factory=lambda: EditActionValidator(
@@ -39,6 +43,7 @@ def register_validators(container: punq.Container) -> None:
                 container.resolve(ExecuteActionValidator),
                 container.resolve(ReadActionValidator),
                 container.resolve(PruneActionValidator),
+                container.resolve(MessageActionValidator),
             ],
         ),
         scope=punq.Scope.transient,

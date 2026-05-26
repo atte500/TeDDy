@@ -36,7 +36,7 @@ And the final execution report (report.md) contains these warnings to inform the
 - [x] **Contract** - Add `notify_warning(message: str)` to `IUserInteractor` and `ConsoleInteractor`.
 - [x] **Contract** - Update `ExecutionReport` domain model and `IExecutionReportAssembler` to support a `warnings` list.
 - [x] **Logic** - Implement `Plan.is_communication_turn()` and `ActionData.is_legacy` helpers.
-- [ ] **Logic** - Implement validation in `PlanValidator` to reject `MESSAGE` actions with empty content.
+- [x] **Logic** - Implement validation in `PlanValidator` to reject `MESSAGE` actions with empty content.
 - [ ] **Logic** - Update `ExecutionOrchestrator` to detect single-action `MESSAGE` plans and bypass the `IPlanReviewer` (TUI).
 - [ ] **Logic** - Update `ExecutionOrchestrator` to display and record deprecation warnings for `PROMPT`, `INVOKE`, and `RETURN`.
 - [ ] **Logic** - Update `MarkdownReportFormatter` to render the warnings section in the report.
@@ -66,3 +66,8 @@ And the final execution report (report.md) contains these warnings to inform the
 - Implemented `ActionData.is_legacy` property to identify `PROMPT`, `INVOKE`, and `RETURN` actions.
 - Implemented `Plan.is_communication_turn()` to detect plans consisting of exactly one `MESSAGE` action.
 - Added comprehensive unit tests in `tests/suites/unit/core/domain/models/test_plan_helpers.py`.
+
+### Deliverable: Logic - Message Validation
+- Created `MessageActionValidator` to enforce non-empty content for `MESSAGE` actions.
+- Registered `MessageActionValidator` in `registries/validators.py`.
+- Verified with unit tests in `tests/suites/unit/core/services/test_validator_message.py`.
