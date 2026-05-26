@@ -12,6 +12,7 @@ from teddy_executor.core.domain.models import ActionData, Plan, ActionType
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser, InvalidPlanError
 from teddy_executor.core.services.parser_infrastructure import (
     H1_LEVEL,
+    H2_LEVEL,
     _FencePreProcessor,
     _PeekableStream,
     get_child_text,
@@ -36,6 +37,7 @@ from teddy_executor.core.services.action_parser_complex import (
     parse_prompt_action,
     parse_invoke_action,
     parse_return_action,
+    parse_message_action,
 )
 
 
@@ -95,8 +97,30 @@ class MarkdownPlanParser(IPlanParser):
         stream = _PeekableStream(iter(doc.children or []))
 
         try:
-            title, rationale, metadata = self._parse_strict_top_level(stream, doc)
-            actions = self._parse_actions(stream, doc)
+            title, rationale, metadata, section_heading = self._parse_strict_top_level(
+                stream, doc
+            )
+
+            # Mutual Exclusivity Check
+            from mistletoe.block_token import Heading
+
+            doc_children = doc.children or []
+            h2_headings = [
+                n
+                for n in doc_children
+                if isinstance(n, Heading) and n.level == H2_LEVEL
+            ]
+            h2_texts = [get_child_text(h) for h in h2_headings]
+            if "Action Plan" in h2_texts and "Message" in h2_texts:
+                raise InvalidPlanError(
+                    "Plan cannot contain both '## Action Plan' and '## Message'. Mutual exclusivity is required."
+                )
+
+            section_name = get_child_text(section_heading).strip()
+            if "Message" in section_name:
+                actions = [parse_message_action(stream, node=section_heading)]
+            else:
+                actions = self._parse_actions(stream, doc)
 
             is_session = False
             if plan_path:
@@ -157,7 +181,7 @@ class MarkdownPlanParser(IPlanParser):
 
     def _parse_strict_top_level(
         self, stream: _PeekableStream, doc: Document
-    ) -> tuple[str, str, dict[str, str]]:
+    ) -> tuple[str, str, dict[str, str], Any]:
         from mistletoe.block_token import Heading
 
         # 0: Find H1 Title. Must be at index 0 per Rule 3.1.
@@ -188,9 +212,9 @@ class MarkdownPlanParser(IPlanParser):
         stream.next()  # H2 Rationale
         rationale_node = stream.next()
         rationale = get_child_text(rationale_node).strip()
-        stream.next()  # H2 Action Plan
+        section_heading = stream.next()  # H2 Action Plan or Message
 
-        return title, rationale, metadata
+        return title, rationale, metadata, section_heading
 
     def _parse_actions(
         self, stream: _PeekableStream, doc: Document

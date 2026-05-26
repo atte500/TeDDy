@@ -14,6 +14,7 @@ class MarkdownPlanBuilder:
         self._agent: Optional[str] = "Developer"
         self._rationale: Optional[str] = None
         self._actions: List[Dict[str, Any]] = []
+        self._message_content: Optional[str] = None
 
     def with_agent(self, agent: Optional[str]) -> "MarkdownPlanBuilder":
         """Sets the agent name for the plan header. Use None for no agent."""
@@ -172,6 +173,11 @@ class MarkdownPlanBuilder:
         params = {key: self._path_link(resource), "Description": description}
         return self.add_action("PRUNE", params)
 
+    def with_message(self, content: str) -> "MarkdownPlanBuilder":
+        """Sets the plan to use a ## Message section instead of an Action Plan."""
+        self._message_content = content
+        return self
+
     def _render_params(self, params: Dict[str, Any]) -> str:
         lines = []
         params_copy = params.copy()
@@ -266,6 +272,12 @@ class MarkdownPlanBuilder:
             )
 
         rationale = f"## Rationale\n````text\n{rationale_content.strip()}\n````"
+
+        if self._message_content is not None:
+            message_section = f"## Message\n{self._message_content}"
+            return (
+                f"{header.strip()}\n\n{rationale.strip()}\n\n{message_section.strip()}"
+            )
 
         action_plan_parts = ["## Action Plan"]
         for action in self._actions:

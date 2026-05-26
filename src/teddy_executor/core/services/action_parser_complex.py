@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     pass
 
-from teddy_executor.core.domain.models import ActionData
+from teddy_executor.core.domain.models import ActionData, ActionType
 from teddy_executor.core.ports.inbound.plan_parser import InvalidPlanError
 from teddy_executor.core.services.parser_infrastructure import (
     _PeekableStream,
@@ -275,3 +275,29 @@ def parse_prompt_action(
 
     params["prompt"] = prompt
     return ActionData(type="PROMPT", description=None, params=params, node=node)
+
+
+def parse_message_action(
+    stream: _PeekableStream, node: Optional[Any] = None
+) -> ActionData:
+    """
+    Parses a MESSAGE action by consuming all remaining nodes in the stream.
+    """
+    from mistletoe.markdown_renderer import MarkdownRenderer
+
+    nodes = []
+    while stream.has_next():
+        nodes.append(stream.next())
+
+    content = ""
+    if nodes:
+        with MarkdownRenderer() as renderer:
+            rendered_parts = [renderer.render(node) for node in nodes]
+            content = "".join(rendered_parts).strip()
+
+    return ActionData(
+        type=ActionType.MESSAGE,
+        description="Message to user",
+        params={"content": content},
+        node=node,
+    )

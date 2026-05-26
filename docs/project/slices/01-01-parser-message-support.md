@@ -33,8 +33,8 @@ Then an "InvalidPlanError" is raised detailing the mutual exclusivity violation
 
 ## Deliverables
 - [x] **Contract** - Add `MESSAGE` to `ActionType` enum in `src/teddy_executor/core/domain/models/plan.py`.
-- [ ] **Logic** - Update `MarkdownPlanParser._parse_strict_top_level` to handle the bifurcated path (Action Plan vs Message).
-- [ ] **Logic** - Implement `parse_message_action` to capture all remaining AST nodes until the end of the document.
+- [x] **Logic** - Update `MarkdownPlanParser._parse_strict_top_level` to handle the bifurcated path (Action Plan vs Message).
+- [x] **Logic** - Implement `parse_message_action` to capture all remaining AST nodes until the end of the document.
 - [ ] **Seam** - Update `ActionFactory` to map `MESSAGE` to a new internal handler (or the user interactor).
 - [ ] **Wiring** - Ensure the `MESSAGE` action is correctly integrated into the `Plan` object returned by the parser.
 
@@ -48,3 +48,8 @@ Then an "InvalidPlanError" is raised detailing the mutual exclusivity violation
 ## Implementation Notes
 - Added `MESSAGE` to `ActionType` enum in `src/teddy_executor/core/domain/models/plan.py`.
 - Updated `ActionData.is_terminal` to treat `MESSAGE` as a terminal action, consistent with the `## Message` section being terminal in the plan format.
+- Updated `validate_plan_structure` to accept either `## Action Plan` or `## Message` as the primary content section following the Rationale.
+- Modified `MarkdownPlanParser._parse_strict_top_level` signature to return the detected section heading to facilitate downstream branching.
+- Implemented `parse_message_action` using `mistletoe.markdown_renderer.MarkdownRenderer` to reconstruct raw Markdown from AST nodes for the message content.
+- Enforced mutual exclusivity between `## Action Plan` and `## Message` headings at the parser level.
+- Updated `MarkdownPlanBuilder` test harness with `with_message()` support to facilitate declarative testing of the new protocol.

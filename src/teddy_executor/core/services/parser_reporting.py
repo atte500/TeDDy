@@ -197,11 +197,13 @@ def validate_plan_structure(doc: Document, start_idx: int):
             lambda n: isinstance(n, (CodeFence, BlockCode)),
         ),
         (
-            "a Level 2 Heading containing 'Action Plan'",
+            "a Level 2 Heading containing 'Action Plan' or 'Message'",
             lambda n: (
                 isinstance(n, Heading)
                 and n.level == H2_LEVEL
-                and "Action Plan" in get_child_text(n)
+                and any(
+                    term in get_child_text(n) for term in ["Action Plan", "Message"]
+                )
             ),
         ),
     ]
