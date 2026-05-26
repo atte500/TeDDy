@@ -27,7 +27,7 @@ This section defines the conventions for our project management artifacts.
 
 ### Structural Protocol & Parser
 - **Core Goal:** Move from action-based communication (`INVOKE`, `RETURN`, `PROMPT`) to the structural `## Message` protocol.
-- **Key Deliverables:**
+- **Requirements:**
     - `MarkdownPlanParser` update to support `## Message` section.
     - `ExecutionOrchestrator` update to handle "Message Turns" (no actions, just a report of the message).
     - Hard deprecation of legacy actions.
@@ -35,11 +35,12 @@ This section defines the conventions for our project management artifacts.
 
 ### TUI & CLI UX Polish
 - **Core Goal:** Improve the interactive experience and provide better visibility into session state.
-- **Key Deliverables:**
+- **Requirements:**
     - **Navigation:** Alt+Up/Down for jumping between Context, Rationale, and Plan/Message sections.
     - **Context Interactions:** Pressing `e` on context nodes opens the corresponding file/context file in the external editor.
     - **Metadata Visibility:** Display model name and session cost (rounded to nearest cent) in the right panel when the Context Root is selected.
     - **Tier 2 Editing:** Automatically open external editor for parameters that are multiline or >100 characters.
+    - **Truncation Hints:** If `EXECUTE` or `READ` output is truncated, provide specific instructions (e.g., "output to file and READ" or "use sed with line counts").
     - **Editor & Diff Mapping:** Strictly respect `editor` config; implement a translation table for diff flags (e.g., `nvim` -> `-d`); remove all implicit VS Code fallbacks.
     - **Layout:** Ensure consistent padding for Rationale items and Message sections to match the right and left panels.
     - **UX Hints:** Append reminder to user request messages: "Update reference documents accordingly if needed."
@@ -49,12 +50,16 @@ This section defines the conventions for our project management artifacts.
 
 ### Stability & Infrastructure
 - **Core Goal:** Hardening the system against external failures and improving context management.
-- **Key Deliverables:**
+- **Requirements:**
     - **LLM Resilience:** Implement retry logic (3 attempts) for SSL and OpenRouter timeout errors (Reproduce via: `SSLV3_ALERT_BAD_RECORD_MAC`).
     - **Web Scraper (403 Bypassing):** Attempt to bypass 403 Forbidden errors via User-Agent rotation and common headers (Reproduce via: `https://www.pnas.org/doi/10.1073/pnas.2416294121`).
     - **GitHub Compatibility:** Fix content extraction for `raw.githubusercontent.com` links that currently return SUCCESS but empty content (Reproduce via: `https://raw.githubusercontent.com/lllyasviel/LayerDiffuse/main/README.md`).
-    - **Context Robustness:** Recursive directory expansion for context paths; strictly enforce deduplication.
-    - **Session Efficiency:** In session mode, NEVER include resource contents in `report.md` (since contents are already gathered in `input.md`).
+    - **Safety Limits:** Implement `max-turns` (99) and `max-cost` ($5) limits in `config.yaml`, enforced strictly in `-y` mode.
+    - **Context Robustness:** Recursive directory expansion for context paths; support remote URLs in `.context` files; strictly enforce deduplication.
+    - **Action Side-effects:** `CREATE` actions automatically add the new file path to the turn's context.
+    - **Session Prompt Relocation:** Store `system_prompt.xml` at the session root rather than copying it into every turn directory.
+    - **Session Efficiency:** In session mode, NEVER include resource contents in `report.md`; add config to prevent "Message Turns" from being pruned.
+    - **EXECUTE Fail-Fast:** Detect interactive prompts to fail early; on timeout, identify the specific failing command in a chain.
     - **Mid-Execution Consistency:** Gracefully return `FAILURE` for `EDIT` actions if a file is modified during execution (e.g., by a preceding `EXECUTE`).
     - **Environment Hardening:** Suppress `LiteLLM`/`botocore` warnings in production environments.
-    - **Parser Resilience:** For all actions (e.g., `READ`, `MESSAGE`), ignore and clean up unforeseen codeblocks or thematic breaks (`---`) following the action block without triggering validation errors. (Note: Other trailing / unforseen text must still raise validation error).
+    - **Parser Resilience:** For all actions (e.g., `READ`, `MESSAGE`), ignore and clean up unforeseen codeblocks, thematic breaks (`---`), or trailing text within codeblock delimiters (e.g., `~~~~~~ trailing text`) following the action block without triggering validation errors. (Note: Other unforeseen text outside delimiters must still raise validation error).
