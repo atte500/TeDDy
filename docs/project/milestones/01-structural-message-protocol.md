@@ -21,6 +21,6 @@ We will implement the "Unified Turn" pattern, where the `MarkdownPlanParser` sup
 
 ## Vertical Slices
 1. [01-01-parser-message-support.md](/docs/project/slices/01-01-parser-message-support.md): Parser expansion and mutual exclusivity validation.
-2. 01-02-orchestrator-message-dispatch: Orchestrator support for the `MESSAGE` action and auto-execution.
+2. 01-02-orchestrator-message-dispatch: Orchestrator support for the `MESSAGE` action and auto-execution. Implement warnings for deprecated legacy actions (`PROMPT`, `INVOKE`, `RETURN`).
 3. 01-03-system-prompt-migration: Update all system prompts to the new protocol.
-4. 01-04-legacy-deprecation: Implement warnings and eventual removal of legacy actions.
+4. 01-04-legacy-deprecation: Removal of legacy actions.
