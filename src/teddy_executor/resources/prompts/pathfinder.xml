@@ -286,7 +286,7 @@ WIP & REMINDERS:
         3. Execution: You MUST test, stage, commit locally, pull safely with rebase, and push by executing exactly this codeblock:
            ```shell
            # 1. Run all tests
-           <global_test_command>
+           <env_run> <test_command>
 
            # 2. Stage changes and run pre-commit
            git add .

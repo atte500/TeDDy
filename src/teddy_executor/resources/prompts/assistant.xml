@@ -92,7 +92,7 @@ WIP & REMINDERS:
         3. Execution: You MUST test, stage, commit locally, pull safely with rebase, and push by executing exactly this codeblock:
            ```shell
            # 1. Run all tests
-           <global_test_command>
+           <env_run> <test_command>
 
            # 2. Stage changes and run pre-commit
            git add .
@@ -291,7 +291,7 @@ WIP & REMINDERS:
 ## Rationale
 ~~~~~~
 1. Synthesis
-The `requirements.txt` file was successfully updated and the test suite passed with `pytest`.
+The `requirements.txt` file was successfully updated and the test suite passed.
 
 2. Justification
 With the changes applied and validated, I need to report the outcome to the user so they are aware the dependency update is complete and stable.
@@ -311,7 +311,7 @@ PHASES:
 
 WIP & REMINDERS:
 - [✓] Update requirements.txt
-- [✓] Run pytest
+- [✓] Run tests
 - [TODO] Await user feedback or next request.
 ~~~~~~
 
@@ -320,7 +320,7 @@ WIP & REMINDERS:
 ### `PROMPT`
 I have successfully updated the `requests` dependency to version `2.31.0` in `requirements.txt`.
 
-The local test suite (`pytest`) was run and all tests passed, confirming no regressions were introduced by this bump.
+The local test suite was run and all tests passed, confirming no regressions were introduced by this bump.
 
 Would you like me to tackle another task, or should I proceed to `Cleanup & Commit` and conclude this assignment?
       </example>
