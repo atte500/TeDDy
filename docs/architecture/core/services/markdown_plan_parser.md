@@ -8,7 +8,7 @@ The `MarkdownPlanParser` service is responsible for parsing a plan written in th
 
 ## 2. Core Responsibilities
 - **AST Parsing:** Uses the `mistletoe` library to parse Markdown into an Abstract Syntax Tree (AST).
-- **Structural Validation:** Enforces a strict, top-level document structure (H1 Title -> Metadata List -> Rationale -> Action Plan) using a single-pass traversal strategy. Any deviation triggers an `InvalidPlanError` with a rich structural diagnostic report (Status icons, indices, and surgical error messages).
+- **Structural Validation:** Enforces a strict, top-level document structure (H1 Title -> Metadata List -> Rationale -> Action Plan OR Message) using a single-pass traversal strategy. It enforces mutual exclusivity between the `## Action Plan` and `## Message` sections. Any deviation triggers an `InvalidPlanError` with a rich structural diagnostic report (Status icons, indices, and surgical error messages).
 - **Precise Error Propagation:** Action strategies are responsible for identifying structural failures within their own blocks and propagating the specific `offending_node` to ensure diagnostic reports pinpoint the exact location of the error.
 - **Action Dispatching:** Iterates through the `## Action Plan` section and dispatches parsing control to specialized strategy functions based on the detected action type.
 - **Path Normalization:** Performs centralized normalization of project-relative paths, ensuring cross-platform compatibility.
@@ -17,6 +17,7 @@ The `MarkdownPlanParser` service is responsible for parsing a plan written in th
 
 ## 3. Supported Actions
 The parser supports the following actions, each with its own parsing strategy:
+- `MESSAGE`: Extracts the raw Markdown content from the `## Message` section.
 - `CREATE`: Extracts file path and content.
 - `EDIT`: Extracts file path, optional `Similarity Threshold`, and sequential `FIND`/`REPLACE` pairs.- `READ`, `PRUNE`: Extracts resource path or URL.
 - `EXECUTE`: Extracts the raw command block and metadata (Description, Expected Outcome, Allow Failure, Background, Timeout). Chaining and directives are preserved as-is in the command string for execution by the shell.
