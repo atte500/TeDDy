@@ -19,24 +19,27 @@ And the user is NOT prompted for approval (Skip Approval Gate)
 And the execution report confirms the message was delivered
 ```
 
-> As a Developer, I want to be warned in my terminal when I use legacy actions so that I am encouraged to migrate to the structural protocol without cluttering the project's permanent audit trail.
+> As a Developer, I want to be warned when I use legacy actions so that I am encouraged to migrate to the structural protocol.
 
 ```gherkin
 Given a plan containing "PROMPT", "INVOKE", or "RETURN" actions
 When the plan is executed
 Then a deprecation warning is displayed in the terminal via IUserInteractor
-And the final execution report (report.md) does NOT contain these warnings
+And the final execution report (report.md) contains these warnings to inform the AI
 ```
 
 ## Edge Cases
-- **Message with Other Actions**: If a plan contains a `MESSAGE` action AND other actions (e.g., `CREATE`), then the `MESSAGE` should be treated as a normal action requiring approval (or the orchestrator should prioritize the Message section as terminal). *Note: The Parser already enforces mutual exclusivity at the Section level.*
+- **Message with Other Actions**: If a plan contains a `MESSAGE` action AND other actions (e.g., `CREATE`), then the `MESSAGE` should be treated as a normal action requiring approval. *Note: The Parser already enforces mutual exclusivity at the Section level, but ActionFactory might still create them if legacy actions are used alongside ## Action Plan.*
 - **Empty Message Content**: If the `## Message` section is empty or contains only whitespace, then a `PlanValidationError` must be raised, in order to prevent silent, contentless handoffs.
 
 ## Deliverables
-- [ ] **Logic** - Update `ExecutionOrchestrator.run_plan` to detect single-action `MESSAGE` plans and bypass the `IPlanReviewer` (TUI).
+- [ ] **Contract** - Add `notify_warning(message: str)` to `IUserInteractor` and `ConsoleInteractor`.
+- [ ] **Contract** - Update `ExecutionReport` domain model and `IExecutionReportAssembler` to support a `warnings` list.
+- [ ] **Logic** - Implement `Plan.is_communication_turn()` and `ActionData.is_legacy` helpers.
 - [ ] **Logic** - Implement validation in `PlanValidator` to reject `MESSAGE` actions with empty content.
-- [ ] **Logic** - Update `ExecutionOrchestrator` to display deprecation warnings for `PROMPT`, `INVOKE`, and `RETURN` via `IUserInteractor.notify_warning`.
-- [ ] **Wiring** - Ensure the `MESSAGE` action content is correctly passed to `IUserInteractor.display_message` for display.
+- [ ] **Logic** - Update `ExecutionOrchestrator` to detect single-action `MESSAGE` plans and bypass the `IPlanReviewer` (TUI).
+- [ ] **Logic** - Update `ExecutionOrchestrator` to display and record deprecation warnings for `PROMPT`, `INVOKE`, and `RETURN`.
+- [ ] **Logic** - Update `MarkdownReportFormatter` to render the warnings section in the report.
 - [ ] **Harness** - Add acceptance tests in `tests/suites/acceptance/test_message_protocol_orchestration.py`.
 
 ## Implementation Plan
