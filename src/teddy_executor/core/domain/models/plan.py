@@ -17,6 +17,7 @@ class ActionType(str, Enum):
     PRUNE = "PRUNE"
     INVOKE = "INVOKE"
     RETURN = "RETURN"
+    MESSAGE = "MESSAGE"
 
 
 class ExecutionStatus(str, Enum):
@@ -50,8 +51,13 @@ class ActionData:
 
     @property
     def is_terminal(self) -> bool:
-        """Returns True if the action is a terminal action (PROMPT, INVOKE, RETURN)."""
-        return self.type in (ActionType.PROMPT, ActionType.INVOKE, ActionType.RETURN)
+        """Returns True if the action is a terminal action (PROMPT, INVOKE, RETURN, MESSAGE)."""
+        return self.type in (
+            ActionType.PROMPT,
+            ActionType.INVOKE,
+            ActionType.RETURN,
+            ActionType.MESSAGE,
+        )
 
 
 @dataclass(frozen=True)

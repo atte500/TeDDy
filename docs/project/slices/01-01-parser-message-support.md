@@ -32,7 +32,7 @@ Then an "InvalidPlanError" is raised detailing the mutual exclusivity violation
 - **Trailing Junk**: If there is text or headings *after* the `## Message` section content, then it should all be included in the message content until EOF, because `## Message` is a terminal section.
 
 ## Deliverables
-- [ ] **Contract** - Add `MESSAGE` to `ActionType` enum in `src/teddy_executor/core/domain/models/plan.py`.
+- [x] **Contract** - Add `MESSAGE` to `ActionType` enum in `src/teddy_executor/core/domain/models/plan.py`.
 - [ ] **Logic** - Update `MarkdownPlanParser._parse_strict_top_level` to handle the bifurcated path (Action Plan vs Message).
 - [ ] **Logic** - Implement `parse_message_action` to capture all remaining AST nodes until the end of the document.
 - [ ] **Seam** - Update `ActionFactory` to map `MESSAGE` to a new internal handler (or the user interactor).
@@ -44,3 +44,7 @@ Then an "InvalidPlanError" is raised detailing the mutual exclusivity violation
 3. If `## Message` is detected, consume all remaining nodes and render them back to Markdown for the action `params`.
 4. Add structural validation to ensure only one of the two sections exists.
 5. Add unit tests in `tests/suites/unit/core/services/test_parser_message_protocol.py`.
+
+## Implementation Notes
+- Added `MESSAGE` to `ActionType` enum in `src/teddy_executor/core/domain/models/plan.py`.
+- Updated `ActionData.is_terminal` to treat `MESSAGE` as a terminal action, consistent with the `## Message` section being terminal in the plan format.
