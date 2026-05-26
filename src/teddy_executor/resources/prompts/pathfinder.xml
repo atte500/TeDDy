@@ -288,7 +288,7 @@ WIP & REMINDERS:
            git pull --rebase
            git push
            ```
-        4. Post-conditions: Log debt in Milestone and use --no-verify if needed to bypass non-trivial quality gate failures (like file length).
+        4. Post-conditions: Log debt in Vertical Slice and use --no-verify if needed to bypass non-trivial quality gate failures (like file length).
       </rule>
 
 
