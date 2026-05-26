@@ -202,9 +202,9 @@ The primary "continue" command for a session. It intelligently determines the ne
 
 ---
 
-## 7. Approval & Execution Phase
+## 7. Interactive Review & Execution
 
-This phase implements a two-tiered workflow to give the user both speed and granular control.
+This phase provides a unified TUI experience for reviewing and modifying plans before execution.
 
 ### 7.1. TUI Navigation & Polish
 
@@ -219,87 +219,36 @@ This phase implements a two-tiered workflow to give the user both speed and gran
     - File paths in the context section are project-root relative without the `./` prefix.
     - All panels use consistent padding.
     - `Rationale` and `Message` content is rendered as Markdown in the right panel instead of a parameter list.
-- **Parameter Editing:** If a parameter is multiline or exceeds a length threshold (e.g., 100 chars), the TUI must open the external editor for that parameter instead of an inline prompt.
+- **Parameter Editing:** If a parameter is multiline or exceeds a length threshold (e.g., 100 chars), the TUI must automatically open the external editor for that parameter instead of an inline prompt.
 
-**Tier 1: High-Level Summary & Prompt**
-The command first presents a high-level summary of the actions to be performed.
+### 7.2. Unified Plan Review
 
-*Example UI:*
-```text
-▶ Reviewing Plan: "Bootstrap New Project Component"
---------------------------------------------------------------------
-
- Action Plan:
-  - CREATE: 1 file
-  - EDIT:   1 file
-  - EXECUTE: 1 command
-
---------------------------------------------------------------------
-Execute this plan? (a)pprove all / (r)eview full plan / (m)odify / (s)kip / (q)uit ›
-```
--   `(a)pprove all`: Executes the entire plan non-interactively.
--   `(r)eview full plan`: Opens the complete `plan.md` file in the configured previewer (read-only) for a full review. After the previewer is closed, the user is returned to this prompt.
--   `(m)odify`: Enters Tier 2 for granular control.
--   `(s)kip`: Aborts execution and prompts for a message to generate a new plan.
--   `(q)uit`: Exits the session.
-
-**Tier 2: Interactive "Modify & Preview" Mode**
-If the user selects `(m)odify`, they enter an interactive checklist to configure the plan before execution. The tool will execute all checked items as a single batch, in their original order, once the user confirms their selections.
+The system launches a single-screen TUI (the `ReviewerApp`) where the user can inspect every aspect of the plan.
 
 *Example UI:*
 ```text
-Use [↑/↓] to navigate, [enter] to toggle, [a] to toggle all, [p] to preview, [e] to edit, [s] to confirm.
+Use [↑/↓] to navigate, [enter] to toggle, [a] to toggle all, [e] to edit, [s] to confirm.
 
 Action Plan
  ├─[ ] CREATE: src/components/new_component/core.py
  ├─[✓] EDIT:   pyproject.toml
  └─[ ] EXECUTE: poetry lock
 ```
-- **Controls:** Users can navigate the list, toggle items on/off with the spacebar, and press `[enter]` to confirm and execute the configured plan.
+- **Controls:**
+    - Users navigate the action list using arrow keys.
+    - Actions are toggled for execution with `[enter]`.
+    - `[a]` toggles all actions.
+    - `[s]` submits and executes the selected actions.
+    - `[q]` quits the session without executing.
 
-- **Interactive Previews & Manual Editing:**
-    - **Preview (p):** Opens a read-only view of the action's details or the proposed file content. This is a non-blocking operation; the TUI remains responsive. For `READ` actions, the system opens the actual file path directly in the viewer.
-    - **Edit (e):** Triggers the **"Context-Aware Editing"** workflow. This launches an external editor in a non-blocking way and immediately displays a confirmation prompt in the TUI. If a user makes changes and confirms (`y`), the action is marked with a `*modified` tag. The final executed action will reflect these changes, and the `report.md` will note the manual modification.
+- **Interactive Editing (`e` key):**
+    The `e` key triggers the **"Context-Aware Editing"** workflow, launching an external editor in a non-blocking way. If a user makes changes and confirms (`y`), the action is marked with a `*modified` tag and recorded in the final `report.md`. The behavior is context-dependent:
 
-    The behavior of the `(e)` key is context-dependent:
-
-    -   **For `CREATE` actions (The "Save As" Workflow):**
-        1.  The tool immediately opens the proposed file content in a temporary file using the user's configured external editor (non-blocking).
-        2.  Simultaneously, the terminal displays a message and prompts for the file path:
-            ```text
-            Your editor has been opened to preview the new file's content. You may edit it directly in this preview.
-
-            File path: [src/new_component.py]
-            Press Enter to confirm, or type a new path ›
-            ```
-        3.  After the path is confirmed, a final confirmation prompt (`Have you finished editing and saved the file content? (y/n)`) appears. This user confirmation acts as the synchronization signal.
-        4.  Once confirmed, the tool uses the (potentially modified) path and content for execution.
-
-    -   **For `EDIT` actions:**
-        1.  The tool creates a temporary file representing the **proposed final version** of the target file (i.e., the original file with the AI's changes already applied).
-        2.  This temporary file is opened in the user's external editor (non-blocking).
-        3.  Simultaneously, the terminal displays a message and a confirmation prompt, including the path of the file being edited for clarity:
-            ```text
-            Editing: [pyproject.toml]
-
-            Your editor has been opened to preview the proposed changes. You may edit the file directly in this preview to make final adjustments.
-
-            Have you finished editing and saved the file? (y/n) ›
-            ```
-        4.  Once confirmed, the tool calculates the final changes and updates the action. The final `diff` is what will be recorded in the `report.md`.
-
-    -   **For simple actions (`EXECUTE`, `RESEARCH`, etc.):**
-        1.  A simple, in-terminal view of the action's content (e.g., the shell command) is displayed.
-        2.  The user is prompted to `(e)dit` or `(c)lose`. Selecting edit provides a simple input field to change the content.
-
-    - **For `PROMPT` actions (Interactive Answering):**
-        1.  Pressing `(e)` opens the external editor.
-        2.  The editor contains the AI's prompt as context.
-        3.  The user provides their response directly in the file.
-        4.  Once confirmed (`y`), the response is stored. During execution, this stored answer is used automatically, and the system does not prompt the user again.
-
-    - **For read-only actions (`READ`, `PRUNE`):**
-        1.  A simple preview of the target resource is shown without an option to edit.
+    -   **For `CREATE` actions (The "Save As" Workflow):** The tool opens the proposed file content in a temporary file.
+    -   **For `EDIT` actions:** The tool opens a temporary file representing the **proposed final version** of the target file (simulated).
+    -   **For simple actions (`EXECUTE`, `RESEARCH`):** A simple input field or terminal view is provided to edit the command/queries.
+    -   **For `PROMPT` actions:** The editor opens with the AI's prompt as context for the user's response.
+    -   **For `READ`/`PRUNE`:** These are read-only; the `e` key has no effect or provides a read-only preview.
 
 ## 8. Plan Validation & Automated Re-planning
 
@@ -376,10 +325,15 @@ User-specific behavior for the `teddy` tool can be defined in an optional `.tedd
 
 -   **`context_pruning_threshold`**: (Optional) An integer defining the maximum token size of the context payload before the AI is explicitly prompted to prune. Defaults to `50000`.
 
--   **Previewer Fallback Logic:** When the user triggers a preview, the tool will use the following logic to determine how to display it:
-    1.  **Configured Editor:** If `preview_command` is set in `.teddy/config.yaml`, it will be used.
-    2.  **Visual Studio Code (Default):** If the `code` command is available in the system's `PATH`, it will be used as the default external editor.
-    3.  **In-Terminal Display (Fallback):** If neither of the above is available, a colorized diff or formatted content will be printed directly to the terminal.
+- **Editor & Diff Logic:** When the user triggers an edit (`e`), the tool will use the following logic:
+    1.  **Explicit Tool:** If `diff_tool` is set in `config.yaml`, it will be used for comparisons.
+    2.  **Smart Mapping:** If no `diff_tool` is set, the system attempts to derive the diff command from the `editor` configuration using an internal mapping table:
+        - `code`, `cursor`, `zed` -> `--diff`
+        - `nvim`, `vim`, `vi` -> `-d`
+        - `idea`, `pycharm`, `webstorm`, `phpstorm` -> `diff`
+    3.  **Tool Absence Fallback:** If no valid external tool is found (after checking Config, Env, and the Mapping Table), NO internal preview or editor is opened. Instead, the system MUST display a transient notification (Toast) to the user: *"Error: External editor/diff tool not found. Please configure 'editor' in config.yaml."*
+    - **Stability:** Printing directly to the terminal during a session is strictly forbidden as it corrupts the TUI display.
+    - **Note:** Implicit fallbacks to `code` are forbidden to ensure environment-agnostic behavior.
 
 ---
 

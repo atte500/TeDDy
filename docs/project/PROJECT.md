@@ -39,7 +39,8 @@ This section defines the conventions for our project management artifacts.
     - Alt+Up/Down navigation for jumping between Context, Rationale, and Plan/Message sections.
     - Context Node Editing: Pressing `e` on context nodes opens the corresponding file/context file in the external editor.
     - Metadata Visibility: Display model name and session cost (rounded to nearest cent) in the TUI when the Context Root is selected.
-    - Parameter Editing: Automatically open external editor for multiline or long text parameters in Tier 2 review.
+    - Parameter Editing: Automatically open external editor for multiline or long text parameters in the TUI review.
+    - Smart Editor & Diff Mapping: Implement a translation table to automatically derive diff flags from the `editor` configuration (e.g., `nvim` -> `-d`), removing implicit fallbacks to VS Code.
     - CLI Abbreviations: Support `-a`, `-m`, and `-c` flags for the `start` command.
 
 ### Stability & Infrastructure
