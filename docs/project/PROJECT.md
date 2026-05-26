@@ -44,7 +44,7 @@ This section defines the conventions for our project management artifacts.
     - **Layout:** Ensure consistent padding for Rationale items and Message sections to match the right and left panels.
     - **UX Hints:** Append reminder to user request messages: "Update reference documents accordingly if needed."
     - **Validation Logging:** Include concise versions of encountered errors in "Validation failed replanning" logs; remove the empty line before the message.
-    - **RESEARCH Enhancement:** Scrape and return full contents/excerpts instead of just SERP snippets.
+    - **RESEARCH Enhancement:** Scrape and return full contents/excerpts instead of just SERP snippets. Update instructions for all agents accordingly.
     - **CLI Polish:** Support `-a`, `-m`, and `-c` flags for the `start` command.
 
 ### Stability & Infrastructure
