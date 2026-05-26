@@ -35,7 +35,7 @@ And the final execution report (report.md) contains these warnings to inform the
 ## Deliverables
 - [x] **Contract** - Add `notify_warning(message: str)` to `IUserInteractor` and `ConsoleInteractor`.
 - [x] **Contract** - Update `ExecutionReport` domain model and `IExecutionReportAssembler` to support a `warnings` list.
-- [ ] **Logic** - Implement `Plan.is_communication_turn()` and `ActionData.is_legacy` helpers.
+- [x] **Logic** - Implement `Plan.is_communication_turn()` and `ActionData.is_legacy` helpers.
 - [ ] **Logic** - Implement validation in `PlanValidator` to reject `MESSAGE` actions with empty content.
 - [ ] **Logic** - Update `ExecutionOrchestrator` to detect single-action `MESSAGE` plans and bypass the `IPlanReviewer` (TUI).
 - [ ] **Logic** - Update `ExecutionOrchestrator` to display and record deprecation warnings for `PROMPT`, `INVOKE`, and `RETURN`.
@@ -61,3 +61,8 @@ And the final execution report (report.md) contains these warnings to inform the
 - Updated `IExecutionReportAssembler` port and `ExecutionReportAssembler` service to support an optional `warnings` argument in the `assemble` method.
 - Verified with unit tests for both the domain model and the assembler service.
 - Confirmed global integration with a full test suite run.
+
+### Deliverable: Logic - Plan and ActionData Helpers
+- Implemented `ActionData.is_legacy` property to identify `PROMPT`, `INVOKE`, and `RETURN` actions.
+- Implemented `Plan.is_communication_turn()` to detect plans consisting of exactly one `MESSAGE` action.
+- Added comprehensive unit tests in `tests/suites/unit/core/domain/models/test_plan_helpers.py`.

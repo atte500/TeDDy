@@ -59,6 +59,15 @@ class ActionData:
             ActionType.MESSAGE,
         )
 
+    @property
+    def is_legacy(self) -> bool:
+        """Returns True if the action is a legacy action (PROMPT, INVOKE, RETURN)."""
+        return self.type in (
+            ActionType.PROMPT,
+            ActionType.INVOKE,
+            ActionType.RETURN,
+        )
+
 
 @dataclass(frozen=True)
 class ValidationError:
@@ -88,3 +97,7 @@ class Plan:
 
     def __post_init__(self):
         assert self.actions, "Plan must contain at least one action."
+
+    def is_communication_turn(self) -> bool:
+        """Returns True if the plan consists only of a MESSAGE action."""
+        return len(self.actions) == 1 and self.actions[0].type == ActionType.MESSAGE
