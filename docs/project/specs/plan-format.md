@@ -201,52 +201,9 @@ All actions are located under the `## Action Plan` heading. Each action is defin
     2.  The parser iterates through every fenced code block.
     3.  Each block is split into individual lines. Each non-empty line (stripped of leading/trailing whitespace) is treated as a separate, individual query.
 
-### 5.6. `PROMPT`
+### 5.6. [Deprecated] `PROMPT`, `INVOKE`, `RETURN`
 
--   **Purpose:** Communicates with the user. **CRITICAL RULE:** This action MUST be the ONLY action in the plan. It cannot be combined with any other actions (e.g., CREATE, EDIT, EXECUTE).
--   **Format:**
-    ```markdown
-    ### `PROMPT`
-    - **Reference Files:**
-      [path/to/file.ext](/path/to/file.ext)
-
-    I have created a new milestone at `docs/project/milestones/01-finisher-agent.md` and will now begin my research.
-
-    This is a standard checkpoint to ensure we are aligned before I proceed with the research phase. Does this initial direction meet with your approval?
-    ```
--   **Parsing Rules:** The content for the message is all the free-form markdown content under the `### PROMPT` heading. The parser does not explicitly separate metadata from the message; it is treated as a single block of text.
-
-### 5.7. `INVOKE`
-
--   **Purpose:** Hands off control to another agent, resetting the context for a new task. **CRITICAL RULE:** This action MUST be the ONLY action in the plan. It cannot be combined with any other actions.
--   **Format:**
-    ```markdown
-    ### `INVOKE`
-    - **Agent:** Architect
-    - **Description:** The feature discovery is complete and the problem is validated.
-    - **Reference Files:** (Optional)
-    [docs/project/milestones/new-feature.md](/docs/project/milestones/new-feature.md)
-    ```
--   **Parsing Rules:**
-    1.  Extract the target `Agent` and the `Description` from the metadata list.
-    2.  Extract the optional list of `Reference Files`. These should be formatted as a multi-line list of root-relative links without leading bullets. The link text should be the full path from the project root.
-    3.  The `Description` serves as the short explanation of the handoff. Free-form text following the metadata list is forbidden.
-
-### 5.8. `RETURN`
-
--   **Purpose:** Returns control to the calling agent after a specialist sub-task is complete. **CRITICAL RULE:** This action MUST be the ONLY action in the plan. It cannot be combined with any other actions.
--   **Format:**
-    ```markdown
-    ### `RETURN`
-    - **Description:** The implementation and testing of the vertical slice are complete.
-    - **Reference Files:** (Optional)
-    [docs/project/debugging/rca/the-bug.md](/docs/project/debugging/rca/the-bug.md)
-    [spikes/fix-script.sh](/spikes/fix-script.sh)
-    ```
--   **Parsing Rules:**
-    1.  Extract the `Description` from the metadata list.
-    2.  Extract the optional list of `Reference Files`. These should be formatted as a multi-line list of root-relative links without leading bullets. The link text should be the full path from the project root.
-    3.  The `Description` serves as the short explanation of the task completion. Free-form text following the metadata list is forbidden.
+These actions are deprecated in favor of the structural `## Message` section. This transition simplifies the protocol by separating acting turns from communicating turns. See the [Unified Handoff Protocol](/docs/project/specs/handoff-protocol.md) for the new convention.
 
 ### 5.9. `PRUNE`
 

@@ -54,15 +54,16 @@ graph TD
 
 ## 3. The Core Directory Structure
 
-The system uses a top-level `.teddy/` directory to store all persistent data. Session data is organized within a dedicated `sessions/` subdirectory to keep the root clean.
+The system uses a top-level `.teddy/` directory to store all persistent data. Session data is organized within a dedicated `sessions/` subdirectory to keep the root clean. To prevent context drift, the `system_prompt.xml` resides in the session root.
 
 ```
 .teddy/
 ├── sessions/
 │   └── 20260124-add-user-auth/  # Session Directory
-│       └── 01/                  # Turn 1
+│       ├── system_prompt.xml    # Shared across all turns
+│       ├── session.context      # Shared across all turns
+│       └── 001/                 # Turn 1 (Fixed 3-digit padding, e.g., 001, 010, 100)
 │           ├── input.md
-│           ├── system_prompt.xml
 │           ├── plan.md
 │           └── report.md
 └── init.context                 # Default context for new sessions
@@ -113,7 +114,9 @@ Initializes a new session directory, generates the first plan, and immediately e
 -   **Arguments:**
     -   `[name]`: (Optional) A descriptive name for the session. If omitted, a temporary name is used and automatically renamed based on the title (H1) of the first generated plan.
 -   **Options:**
-    -   `--agent <agent_name>`: (Optional) The name of the agent to use. Defaults to `pathfinder`.
+    -   `-a, --agent <agent_name>`: (Optional) The name of the agent to use. Defaults to `pathfinder`.
+    -   `-m, --message <text>`: (Optional) The initial request or message for the agent.
+    -   `-c, --context <paths>`: (Optional) A comma-separated list of additional files or directories to add to the session context (additive to `init.context`).
     -   `--model`, `--provider`, `--api-key`: (Optional) Overrides for LLM configuration for this session.
 -   **Behavior:**
     1.  Creates the session directory inside `.teddy/sessions/`.
@@ -202,6 +205,23 @@ The primary "continue" command for a session. It intelligently determines the ne
 ## 7. Approval & Execution Phase
 
 This phase implements a two-tiered workflow to give the user both speed and granular control.
+
+### 7.1. TUI Navigation & Polish
+
+- **Alt + Up/Down:**
+    - Jumps between major sections: `Context Root`, `Rationale Root`, and `Action Plan/Message Root`.
+    - Does not loop at boundaries; instead scrolls to the absolute top or bottom.
+- **Context Node Interactions:**
+    - Pressing `e` on the Session/Turn root node opens the corresponding `.context` file in the external editor.
+    - Pressing `e` on a specific file path node opens that file directly.
+    - Pressing `e` on the `System:` agent node triggers an interactive agent selection prompt (e.g., using `questionary`).
+- **Visuals & Data:**
+    - The `Context Root` displays the current model name and cumulative session cost (rounded up to the nearest cent).
+    - Session files in the right panel truncate redundant prefixes (e.g., `.teddy/sessions/name/01/` becomes `01/`).
+    - File paths in the context section are project-root relative without the `./` prefix.
+    - All panels use consistent padding.
+    - `Rationale` and `Message` content is rendered as Markdown in the right panel instead of a parameter list.
+- **Parameter Editing:** If a parameter is multiline or exceeds a length threshold (e.g., 100 chars), the TUI must open the external editor for that parameter instead of an inline prompt.
 
 **Tier 1: High-Level Summary & Prompt**
 The command first presents a high-level summary of the actions to be performed.
