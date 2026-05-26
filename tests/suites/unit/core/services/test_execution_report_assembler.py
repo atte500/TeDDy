@@ -42,19 +42,6 @@ def test_assemble_success_status(assembler, base_plan):
     assert report.run_summary.status == RunStatus.SUCCESS
     assert report.plan_title == base_plan.title
     assert report.action_logs == logs
-    assert report.warnings == []
-
-
-def test_assemble_with_warnings(assembler, base_plan):
-    # Given a list of warnings
-    warnings = ["Legacy action 'PROMPT' is deprecated"]
-    logs = []
-
-    # When
-    report = assembler.assemble(base_plan, logs, datetime.now(), warnings=warnings)
-
-    # Then
-    assert report.warnings == warnings
 
 
 def test_assemble_propagates_is_session_from_plan(assembler, base_plan):

@@ -72,18 +72,14 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             return reviewed_plan
         return plan
 
-    def _process_plan_actions(
-        self, plan: Plan, interactive: bool
-    ) -> tuple[list[ActionLog], list[str]]:
+    def _process_plan_actions(self, plan: Plan, interactive: bool) -> list[ActionLog]:
         """Iterates through actions and dispatches them."""
         action_logs = []
-        warnings = []
         halt_execution = False
         for action in plan.actions:
             if action.is_legacy:
                 msg = LEGACY_DEPRECATION_WARNING.format(type=action.type)
                 self._user_interactor.notify_warning(msg)
-                warnings.append(msg)
 
             action_log, should_halt = self._handle_action_in_loop(
                 action, plan, interactive, halt_execution
@@ -91,7 +87,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             action_logs.append(action_log)
             if should_halt:
                 halt_execution = True
-        return action_logs, warnings
+        return action_logs
 
     def _handle_action_in_loop(
         self, action: ActionData, plan: Plan, interactive: bool, halt_execution: bool
@@ -289,11 +285,9 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             if reviewed_plan is None:
                 return self._handle_aborted_execution(plan, start_time, message)
 
-            action_logs, warnings = self._process_plan_actions(
-                reviewed_plan, interactive
-            )
+            action_logs = self._process_plan_actions(reviewed_plan, interactive)
             return self._report_assembler.assemble(
-                reviewed_plan, action_logs, start_time, message, warnings=warnings
+                reviewed_plan, action_logs, start_time, message
             )
         finally:
             if temp_plan_path and os.path.exists(temp_plan_path):

@@ -26,7 +26,6 @@ class ExecutionReportAssembler(IExecutionReportAssembler):
         start_time: datetime,
         message: Optional[str] = None,
         is_session: bool = False,
-        warnings: Optional[Sequence[str]] = None,
     ) -> ExecutionReport:
         """
         Calculates the final run status and constructs a complete ExecutionReport.
@@ -45,7 +44,6 @@ class ExecutionReportAssembler(IExecutionReportAssembler):
             metadata=plan.metadata,
             original_actions=plan.actions,
             action_logs=action_logs,
-            warnings=warnings or [],
         )
 
     def _determine_overall_status(self, action_logs: Sequence[ActionLog]) -> RunStatus:

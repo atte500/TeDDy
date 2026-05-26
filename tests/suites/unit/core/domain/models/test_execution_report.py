@@ -47,25 +47,12 @@ def test_execution_report_creation():
         run_summary=summary,
         action_logs=[log],
         is_session=True,
-        warnings=["Legacy action used"],
     )
 
     assert report.run_summary.status == RunStatus.FAILURE
     assert len(report.action_logs) == 1
     assert report.action_logs[0].status == ActionStatus.FAILURE
     assert report.is_session is True
-    assert report.warnings == ["Legacy action used"]
-
-
-def test_execution_report_defaults_to_empty_warnings():
-    """Test that warnings defaults to an empty list."""
-    summary = RunSummary(
-        status=RunStatus.SUCCESS,
-        start_time=datetime.now(),
-        end_time=datetime.now(),
-    )
-    report = ExecutionReport(run_summary=summary)
-    assert report.warnings == []
 
 
 def test_execution_report_defaults_to_non_session():

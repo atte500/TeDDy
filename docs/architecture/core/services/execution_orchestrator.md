@@ -26,7 +26,7 @@ The orchestrator distinguishes between "Acting Turns" and "Communication Turns":
 - **Acting Turns:** Plans containing standard actions. These require user approval via `IPlanReviewer` (TUI) and `IUserInteractor` (step-by-step).
 - **Communication Turns:** Plans containing a single `MESSAGE` action. These bypass the `IPlanReviewer` and display content directly via `IUserInteractor.display_message`.
 - **Validation:** Communication turns MUST NOT be empty. An empty message triggers a `PlanValidationError`.
-- **Deprecation:** Legacy actions (`PROMPT`, `INVOKE`, `RETURN`) trigger terminal-only warnings via `IUserInteractor` but are not included in the `ExecutionReport`.
+- **Deprecation:** Legacy actions (`PROMPT`, `INVOKE`, `RETURN`) trigger terminal-only warnings via `IUserInteractor` to alert the developer. These warnings are EXCLUDED from the `ExecutionReport` to prevent AI confusion and hallucinations.
 
 ## 4. Public Interface
 

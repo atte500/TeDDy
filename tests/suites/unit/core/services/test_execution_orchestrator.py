@@ -339,7 +339,7 @@ def test_execute_records_warnings_for_legacy_actions(
     Given a plan containing a legacy action (e.g., PROMPT)
     When the orchestrator executes the plan
     Then it should notify the user via notify_warning
-    And it should pass the warning to the report assembler
+    And it should NOT pass the warning to the report assembler (terminal-only)
     """
     # Arrange
     from teddy_executor.core.ports.outbound.execution_report_assembler import (
@@ -373,8 +373,6 @@ def test_execute_records_warnings_for_legacy_actions(
     assert "PROMPT" in warning_msg
     assert "deprecated" in warning_msg.lower()
 
-    # 2. Assembler should receive the warnings list
+    # 2. Assembler should be called WITHOUT warnings
     mock_assembler.assemble.assert_called()
-    called_warnings = mock_assembler.assemble.call_args.kwargs.get("warnings")
-    assert called_warnings is not None
-    assert any("PROMPT" in w and "deprecated" in w.lower() for w in called_warnings)
+    assert "warnings" not in mock_assembler.assemble.call_args.kwargs

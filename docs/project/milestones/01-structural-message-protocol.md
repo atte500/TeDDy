@@ -12,7 +12,7 @@ We will implement the "Unified Turn" pattern, where the `MarkdownPlanParser` sup
 ## Guidelines (The "How")
 - **Test Harness Triad:** Use `MarkdownPlanBuilder` to generate plans with the new `## Message` section and `ReportParser` to verify the resulting execution report.
 - **Mutual Exclusivity:** Validation MUST fail if both `## Action Plan` and `## Message` are present in the same plan.
-- **Transparency:** Deprecated legacy actions (`PROMPT`, `INVOKE`, `RETURN`) will trigger a warning in the execution report to encourage migration.
+- **Transparency:** Deprecated legacy actions (`PROMPT`, `INVOKE`, `RETURN`) will trigger a terminal-only warning via `IUserInteractor` to encourage developer migration.
 
 ## Technical Specifications
 - **New Action Type:** `MESSAGE`

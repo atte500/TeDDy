@@ -18,7 +18,6 @@ class IExecutionReportAssembler(ABC):
         start_time: datetime,
         message: Optional[str] = None,
         is_session: bool = False,
-        warnings: Optional[Sequence[str]] = None,
     ) -> ExecutionReport:
         """
         Calculates the final run status and constructs a complete ExecutionReport.
