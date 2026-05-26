@@ -1,6 +1,6 @@
 # Slice: 01-01-Parser Message Support
 
-- **Status:** Planned
+- **Status:** Completed
 - **Milestone:** [docs/project/milestones/01-structural-message-protocol.md](/docs/project/milestones/01-structural-message-protocol.md)
 - **Specs:** [docs/project/specs/handoff-protocol.md](/docs/project/specs/handoff-protocol.md), [docs/project/specs/plan-format.md](/docs/project/specs/plan-format.md)
 - **Component Docs:** [docs/architecture/core/services/markdown_plan_parser.md](/docs/architecture/core/services/markdown_plan_parser.md)
@@ -35,8 +35,8 @@ Then an "InvalidPlanError" is raised detailing the mutual exclusivity violation
 - [x] **Contract** - Add `MESSAGE` to `ActionType` enum in `src/teddy_executor/core/domain/models/plan.py`.
 - [x] **Logic** - Update `MarkdownPlanParser._parse_strict_top_level` to handle the bifurcated path (Action Plan vs Message).
 - [x] **Logic** - Implement `parse_message_action` to capture all remaining AST nodes until the end of the document.
-- [ ] **Seam** - Update `ActionFactory` to map `MESSAGE` to a new internal handler (or the user interactor).
-- [ ] **Wiring** - Ensure the `MESSAGE` action is correctly integrated into the `Plan` object returned by the parser.
+- [x] **Seam** - Update `ActionFactory` to map `MESSAGE` to a new internal handler (or the user interactor).
+- [x] **Wiring** - Ensure the `MESSAGE` action is correctly integrated into the `Plan` object returned by the parser.
 
 ## Implementation Plan
 1. Update `ActionType` enum.

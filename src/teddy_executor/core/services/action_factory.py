@@ -35,6 +35,7 @@ class ActionFactory(IActionFactory):
         "EXECUTE": "execute",
         "INVOKE": "invoke",
         "PROMPT": "prompt",
+        "MESSAGE": "message",
         "RESEARCH": "research",
         "PRUNE": "prune",
         "RETURN": "return",
@@ -54,6 +55,7 @@ class ActionFactory(IActionFactory):
             "edit": self._file_system_manager,
             "read_file": self._file_system_manager,
             "prompt": self._user_interactor,
+            "message": self._user_interactor,
             "research": self._web_searcher,
             "invoke": InvokeAction,
             "prune": PruneAction,
@@ -144,9 +146,10 @@ class ActionFactory(IActionFactory):
         return method(**kwargs)
 
     def _handle_prompt_protocol(self, method: Any, kwargs: dict) -> Any:
-        """Handles the positional argument mapping for the PROMPT action."""
+        """Handles the positional argument mapping for the PROMPT/MESSAGE action."""
+        prompt = kwargs.get("prompt", kwargs.get("content"))
         return method(
-            kwargs["prompt"],
+            prompt,
             resources=kwargs.get("handoff_resources"),
             agent_name=kwargs.get("agent_name"),
         )
@@ -168,6 +171,7 @@ class ActionFactory(IActionFactory):
             "edit": "edit_file",
             "read_file": "read_file",
             "prompt": "ask_question",
+            "message": "ask_question",
             "research": "search",
             "execute": "execute",
         }

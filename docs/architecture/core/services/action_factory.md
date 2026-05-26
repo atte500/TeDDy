@@ -45,6 +45,7 @@ The factory maintains a mapping between the Markdown verbs used in plans and the
 | `READ` (remote)  | `read_file`      | `IWebScraper`           | `get_content`  |
 | `EXECUTE`        | `execute`        | `IShellExecutor`        | `execute`      |
 | `PROMPT` | `prompt` | `IUserInteractor`       | `ask_question` |
+| `MESSAGE` | `message` | `IUserInteractor`       | `ask_question` |
 | `RESEARCH`       | `research`       | `IWebSearcher`          | `search`       |
 | `INVOKE`         | `invoke`         | Internal `InvokeAction` | `execute`      |
 | `PRUNE`          | `prune`          | Internal `PruneAction`  | `execute`      |
