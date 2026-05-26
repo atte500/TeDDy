@@ -25,6 +25,8 @@ The `ExecutionOrchestrator` is the stateless core service responsible for the at
 The orchestrator distinguishes between "Acting Turns" and "Communication Turns":
 - **Acting Turns:** Plans containing standard actions. These require user approval via `IPlanReviewer` (TUI) and `IUserInteractor` (step-by-step).
 - **Communication Turns:** Plans containing a single `MESSAGE` action. These bypass the `IPlanReviewer` and display content directly via `IUserInteractor.display_message`.
+- **Validation:** Communication turns MUST NOT be empty. An empty message triggers a `PlanValidationError`.
+- **Deprecation:** Legacy actions (`PROMPT`, `INVOKE`, `RETURN`) trigger terminal-only warnings via `IUserInteractor` but are not included in the `ExecutionReport`.
 
 ## 4. Public Interface
 

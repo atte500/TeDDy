@@ -19,23 +19,24 @@ And the user is NOT prompted for approval (Skip Approval Gate)
 And the execution report confirms the message was delivered
 ```
 
-> As a Developer, I want to be warned when I use legacy actions so that I am encouraged to migrate to the structural protocol.
+> As a Developer, I want to be warned in my terminal when I use legacy actions so that I am encouraged to migrate to the structural protocol without cluttering the project's permanent audit trail.
 
 ```gherkin
 Given a plan containing "PROMPT", "INVOKE", or "RETURN" actions
-When the plan is parsed and executed
-Then a deprecation warning is included in the execution report for each legacy action
+When the plan is executed
+Then a deprecation warning is displayed in the terminal via IUserInteractor
+And the final execution report (report.md) does NOT contain these warnings
 ```
 
 ## Edge Cases
 - **Message with Other Actions**: If a plan contains a `MESSAGE` action AND other actions (e.g., `CREATE`), then the `MESSAGE` should be treated as a normal action requiring approval (or the orchestrator should prioritize the Message section as terminal). *Note: The Parser already enforces mutual exclusivity at the Section level.*
-- **Empty Message Content**: If the message is empty, it should still "execute" (display nothing) and complete the turn.
+- **Empty Message Content**: If the `## Message` section is empty or contains only whitespace, then a `PlanValidationError` must be raised, in order to prevent silent, contentless handoffs.
 
 ## Deliverables
-- [ ] **Contract** - Update `ExecutionReport` domain model to include a `warnings: List[str]` field.
 - [ ] **Logic** - Update `ExecutionOrchestrator.run_plan` to detect single-action `MESSAGE` plans and bypass the `IPlanReviewer` (TUI).
-- [ ] **Logic** - Update `ActionExecutor` (or Orchestrator) to generate deprecation warnings for `PROMPT`, `INVOKE`, and `RETURN`.
-- [ ] **Wiring** - Ensure the `MESSAGE` action content is correctly passed to the `IUserInteractor` for display.
+- [ ] **Logic** - Implement validation in `PlanValidator` to reject `MESSAGE` actions with empty content.
+- [ ] **Logic** - Update `ExecutionOrchestrator` to display deprecation warnings for `PROMPT`, `INVOKE`, and `RETURN` via `IUserInteractor.notify_warning`.
+- [ ] **Wiring** - Ensure the `MESSAGE` action content is correctly passed to `IUserInteractor.display_message` for display.
 - [ ] **Harness** - Add acceptance tests in `tests/suites/acceptance/test_message_protocol_orchestration.py`.
 
 ## Implementation Plan
