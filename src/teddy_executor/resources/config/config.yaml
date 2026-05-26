@@ -32,5 +32,5 @@ auto_pruning:
 # LiteLLM Configuration Reference: https://docs.litellm.ai/docs/completion/input
 # All keys under 'llm' are passed directly to litellm.completion().
 llm:
-  model: "openrouter/google/gemini-2.5-flash"
+  model: "openrouter/google/gemini-3-flash-preview"
   api_key: ""
