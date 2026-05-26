@@ -21,4 +21,4 @@ Used when the agent needs to talk to the user, hand off to another agent, or sig
 ## 3. Behavioral Rules
 1. **Isolation:** A plan cannot contain both `## Action Plan` and `## Message`. If both are present, validation fails.
 2. **Implicit Target:** All `## Message` blocks are presented to the User.
-3. **Completion:** If the message signals completion and the user provides an empty response, the session terminates.
+3. **Completion:** If the user provides an empty response, the session terminates.
