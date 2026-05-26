@@ -34,13 +34,14 @@ And the final execution report (report.md) contains these warnings to inform the
 
 ## Deliverables
 - [x] **Contract** - Add `notify_warning(message: str)` to `IUserInteractor` and `ConsoleInteractor`.
-- [ ] **Contract** - Update `ExecutionReport` domain model and `IExecutionReportAssembler` to support a `warnings` list.
+- [x] **Contract** - Update `ExecutionReport` domain model and `IExecutionReportAssembler` to support a `warnings` list.
 - [ ] **Logic** - Implement `Plan.is_communication_turn()` and `ActionData.is_legacy` helpers.
 - [ ] **Logic** - Implement validation in `PlanValidator` to reject `MESSAGE` actions with empty content.
 - [ ] **Logic** - Update `ExecutionOrchestrator` to detect single-action `MESSAGE` plans and bypass the `IPlanReviewer` (TUI).
 - [ ] **Logic** - Update `ExecutionOrchestrator` to display and record deprecation warnings for `PROMPT`, `INVOKE`, and `RETURN`.
 - [ ] **Logic** - Update `MarkdownReportFormatter` to render the warnings section in the report.
 - [ ] **Harness** - Add acceptance tests in `tests/suites/acceptance/test_message_protocol_orchestration.py`.
+- [ ] **Refactor** - [DEBT] Refactor `ExecutionReportAssembler.assemble` parameters into a DTO to comply with `PLR0913` (too many arguments).
 
 ## Implementation Plan
 1. Update `ExecutionReport` domain model to include a `warnings` list.
@@ -54,3 +55,9 @@ And the final execution report (report.md) contains these warnings to inform the
 - Added `notify_warning(message: str)` to `IUserInteractor` interface to support deprecation warnings.
 - Implemented `notify_warning` in `ConsoleInteractorAdapter` using Rich's `[bold yellow]WARNING:[/]`.
 - Verified behavior with integration test `test_notify_warning_prints_formatted_message`.
+
+### Deliverable: Contract - ExecutionReport Warnings
+- Added `warnings: Sequence[str]` field to `ExecutionReport` domain model with `field(default_factory=list)` for backward compatibility.
+- Updated `IExecutionReportAssembler` port and `ExecutionReportAssembler` service to support an optional `warnings` argument in the `assemble` method.
+- Verified with unit tests for both the domain model and the assembler service.
+- Confirmed global integration with a full test suite run.
