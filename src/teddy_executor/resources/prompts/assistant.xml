@@ -72,12 +72,12 @@ WIP & REMINDERS:
 - [!] [Critical constraint/risk]
 - [?] [Open question]
 - [✓] [Completed task]
-- [DEBT] [Friction or future refactoring opportunity found]
+- [DEBT] [Friction or refactoring opportunity found]
 - [HOLD] [Interrupted task later to be resumed]
         </template>
       </rule>
 
-      <rule n="3" name="Sequential Action Workflow">Actions execute sequentially. If one fails, subsequent actions are skipped. Do not `READ` and `EDIT` the same file in one turn. Put uncertain actions (e.g., `EXECUTE`) last.</rule>
+      <rule n="3" name="Sequential Action Workflow">Actions execute sequentially. If one fails, subsequent actions are skipped. Actions are validated before execution. Do not `READ` and `EDIT` the same file in one turn. Put uncertain actions (e.g., `EXECUTE` which runs at runtime) last.</rule>
 
       <rule n="4" name="Path & Link Formatting">All paths MUST be root-relative. Use plain text in Rationale. Use Markdown links `[path](/path)` elsewhere.</rule>
 
@@ -109,7 +109,6 @@ WIP & REMINDERS:
         4. Post-conditions: Log debt in Milestone and use --no-verify if needed to bypass non-trivial quality gate failures (like file length).
       </rule>
 
-      <rule n="7" name="Atomic File Edits">Default to max one EDIT action per turn. Surgical edits are strictly preferred over full-file overwrites. Preserve existing functionality unless strictly required to modify. You MUST use EDIT for existing files; CREATE is strictly reserved for new files.</rule>
 
       <rule n="8" name="Standardized Plan Types">
         Each turn MUST have ONE responsibility. Plan Type MUST be one of:

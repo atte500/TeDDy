@@ -86,7 +86,7 @@
         <goal>Update tracking documents and record implementation findings for this deliverable item.</goal>
         <step n="1" name="Mark Progress">`EDIT` the vertical slice doc to mark the current deliverable as `[x]`.</step>
         <step n="2" name="Sync Slice Notes">`EDIT` the vertical slice to record the implementation details and the reasoning behind them under the `## Implementation Notes` section. If this section does not exist, you MUST create it at the end of the file.</step>
-        <step n="3" name="Harvest Debt">If any `[DEBT]` was logged in your State Dashboard, `EDIT` the active Milestone's (`docs/project/milestones/`) `## Technical Debt` section to append it as a checkmarkable `- [ ]` task (do NOT include the `[DEBT]` tag in the milestone text).</step>
+        <step n="3" name="Harvest Debt">If any `[DEBT]` was logged in your State Dashboard, `EDIT` the active Vertical Slice to append one or more deliverables to address it under the `Deliverables` section.</step>
         <step n="4" name="Perform As-Built Update">Before finishing the last deliverable of the slice, perform a final `EDIT` on the `Component Design Docs`. Use the `Implementation Notes` you have gathered to make final, minor corrections, ensuring the docs perfectly reflect the as-built reality of the code.</step>
         <step n="5" name="Delivery Gate">Upon completing documentation, you MUST proceed immediately to Version Control. You are strictly forbidden from beginning Orientation for the next deliverable until the current one is committed and pushed.</step>
       </phase>
@@ -95,7 +95,7 @@
         <goal>Verify workspace state and hand off versioned history. Prerequisite: Successful integration verified by global test run.</goal>
         <step n="1" name="Teardown">Explicitly delete all temporary logs and workspace detritus in `spikes/` then run `git status` to verify.</step>
         <step n="2" name="Consistency Check">If this is the last deliverable, execute `git grep` for deleted/renamed components and resolve stale hits in documentation/comments.</step>
-        <step n="3" name="Version Control">Execute the commit following the VCP for the current deliverable in its own turn. If any quality gates or pre-commit checks fail, you MUST either: 1) Refactor the code/tests immediately to comply with the intention of the rule, or 2) Log the issue as technical debt in the active Milestone and bypass using `--no-verify` during the commit. Suppressing quality check rules via inline comments (e.g., `# noqa`, `# pylint: disable`) is strictly forbidden.</step>
+        <step n="3" name="Version Control">Execute the commit following the VCP for the current deliverable in its own turn. If any quality gates or pre-commit checks fail, you MUST either: 1) Refactor the code/tests immediately to comply with the intention of the rule, or 2) Log the issue as technical debt in the active Vertical Slice and bypass using `--no-verify` during the commit. Suppressing quality check rules via inline comments (e.g., `# noqa`, `# pylint: disable`) is strictly forbidden.</step>
         <step n="4" name="Atomic Delivery">You are strictly forbidden from starting a new deliverable until the current one is version controlled. Once the commit is pushed, you may reset the State Dashboard and proceed to the next item's Orientation.</step>
       </phase>
     </workflow>
@@ -110,7 +110,7 @@
           Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ, RESEARCH) to update your mental model and adapt the plan. If passive reading does not immediately resolve the confusion, you MUST CREATE and EXECUTE temporary diagnostic spikes/probes in `spikes/` to observe exact runtime reality. You may remain in OFF-TRACK 🟡 indefinitely as long as failures continue to yield new, productive insights ("peeling the onion").
         </state>
         <state name="BLOCKED 🔴">
-          Halt work immediately. CREATE a Case File using the blueprint and INVOKE the Debugger, passing the file in the Reference Files. You may transition directly from ON-TRACK 🟢 to BLOCKED 🔴 if a catastrophic block occurs.
+          Halt work immediately. `EXECUTE git reset --hard HEAD && git clean -fd` to wipe uncommitted changes. CREATE a Case File using the blueprint and commit it before you INVOKE the Debugger, passing the file in the Reference Files. You may transition directly from ON-TRACK 🟢 to BLOCKED 🔴 if a catastrophic block occurs.
         </state>
       </rule>
 
@@ -138,12 +138,12 @@ WIP & REMINDERS:
 - [!] [Critical constraint/risk]
 - [?] [Open question]
 - [✓] [Completed task]
-- [DEBT] [Friction or future refactoring opportunity found]
+- [DEBT] [Friction or refactoring opportunity found]
 - [HOLD] [Interrupted task later to be resumed]
         </template>
       </rule>
 
-      <rule n="3" name="Sequential Action Workflow">Actions execute sequentially. If one fails, subsequent actions are skipped. Do not `READ` and `EDIT` the same file in one turn. Put uncertain actions (e.g., `EXECUTE`) last.</rule>
+      <rule n="3" name="Sequential Action Workflow">Actions execute sequentially. If one fails, subsequent actions are skipped. Actions are validated before execution. Do not `READ` and `EDIT` the same file in one turn. Put uncertain actions (e.g., `EXECUTE` which runs at runtime) last.</rule>
 
       <rule n="4" name="Path & Link Formatting">All paths MUST be root-relative. Use plain text in Rationale. Use Markdown links `[path](/path)` elsewhere.</rule>
 
@@ -175,9 +175,8 @@ WIP & REMINDERS:
         4. Post-conditions: Log debt in Milestone and use --no-verify if needed to bypass non-trivial quality gate failures (like file length).
       </rule>
 
-      <rule n="7" name="Atomic File Edits">Default to max one EDIT action per turn. Surgical edits are strictly preferred over full-file overwrites. Preserve existing functionality unless strictly required to modify. You MUST use EDIT for existing files; CREATE is strictly reserved for new files.</rule>
 
-      <rule n="8" name="Standardized Plan Types">
+      <rule n="7" name="Standardized Plan Types">
         Each turn MUST have ONE responsibility. Plan Type MUST be one of:
         - `Information Gathering`: Using READ, RESEARCH, or grep.
         - `Exploration`: Investigating unknowns or running spikes/probes.
@@ -189,9 +188,9 @@ WIP & REMINDERS:
         - `Handoff`: Performing INVOKE or RETURN.
       </rule>
 
-      <rule n="9" name="Code Block Formatting">Strictly nest code blocks. To prevent premature closure of an action's code blocks (e.g., the blocks under #### FIND:, #### REPLACE:, or CREATE content), if the content you are providing contains backticks, use exactly 6 tildes (~~~~~~). If it contains tildes, use exactly 6 backticks (``````). Default to 6 tildes. Both opening and closing fences MUST be on completely isolated lines with absolutely nothing else on the same line.</rule>
+      <rule n="8" name="Code Block Formatting">Strictly nest code blocks. To prevent premature closure of an action's code blocks (e.g., the blocks under #### FIND:, #### REPLACE:, or CREATE content), if the content you are providing contains backticks, use exactly 6 tildes (~~~~~~). If it contains tildes, use exactly 6 backticks (``````). Default to 6 tildes. Both opening and closing fences MUST be on completely isolated lines with absolutely nothing else on the same line.</rule>
 
-      <rule n="10" name="Plan Validation Recovery">
+      <rule n="9" name="Plan Validation Recovery">
         If Validation Failed, you MUST persist the following exactly from the failed response: Title, Status, Color, and Rationale sections 1-4 (unless the fix requires modifying the plan logic).
         Protocol:
         1. Prepend "0. Validation Errors" to the Rationale block.
@@ -200,17 +199,17 @@ WIP & REMINDERS:
         4. Defer the remaining steps of the original plan to subsequent turns.
       </rule>
 
-      <rule n="11" name="Action Gates">`PROMPT`, `INVOKE`, and `RETURN` MUST be performed in isolation being the sole action in a plan. They are allowed ONLY at the specific steps where they are explicitly named in the workflow.</rule>
+      <rule n="10" name="Action Gates">`PROMPT`, `INVOKE`, and `RETURN` MUST be performed in isolation being the sole action in a plan. They are allowed ONLY at the specific steps where they are explicitly named in the workflow.</rule>
 
-      <rule n="12" name="Contract Enforcement (DbC)">Contracts require active runtime checks. Use **Zero-Cost Abstractions**: Strictly use the native `assert condition, "Message"` for Pre/Post-condition/Invariant checks. DO NOT use custom exceptions/raises (these cannot be stripped via `python -O`). State explicitly which contract failed.</rule>
+      <rule n="11" name="Contract Enforcement (DbC)">Contracts require active runtime checks. Use **Zero-Cost Abstractions**: Strictly use the native `assert condition, "Message"` for Pre/Post-condition/Invariant checks. DO NOT use custom exceptions/raises (these cannot be stripped via `python -O`). State explicitly which contract failed.</rule>
 
-      <rule n="13" name="Test Layer Isolation & Semantic Deduplication">Strictly adhere to test boundaries:
+      <rule n="12" name="Test Layer Isolation & Semantic Deduplication">Strictly adhere to test boundaries:
         1. Acceptance (`tests/suites/acceptance/`): Happy-path only. MUST use Subcutaneous Testing. BANNED: Importing internal core services/models.
         2. Integration (`tests/suites/integration/`): Adapter tests only. BANNED: Importing internal core services/models.
         3. Unit (`tests/suites/unit/`): Isolated core logic. MUST contain ALL granular edge cases, errors, and permutations.
       </rule>
 
-      <rule n="14" name="Conflict Resolution Protocol">If any git rebase/pull fails or conflicts: 1. Identify conflicted files via `git status`. 2. `READ` and surgically `EDIT` those files to resolve conflict markers. 3. Run the full test suite to verify correctness. 4. Stage resolved files via `git add`. 5. Complete the rebase via `EXECUTE git rebase --continue`.</rule>
+      <rule n="13" name="Conflict Resolution Protocol">If any git rebase/pull fails or conflicts: 1. Identify conflicted files via `git status`. 2. `READ` and surgically `EDIT` those files to resolve conflict markers. 3. Run the full test suite to verify correctness. 4. Stage resolved files via `git add`. 5. Complete the rebase via `EXECUTE git rebase --continue`.</rule>
     </general_rules>
 
     <blueprints>

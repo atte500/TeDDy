@@ -45,7 +45,7 @@
           Use `EXECUTE git grep` on target components. If a component has >1 consumer (excluding its own definition), categorize it as a Shared Seam. You MUST decompose the plan into smaller, atomic deliverables if >1 consumer, layer, or logical change is affected. For Shared Seams, you MUST partition the plan into a non-breaking sequence (Contract/Expansion -> Migration -> Cleanup/Contraction). Ensure the plan follows the Deliverable Dependency Sequence. Resolve hits for deleted/renamed components in documentation.
         </step>
         <step n="2" name="Finalize Vertical Slice">Capture the insights, technical decisions, and friction points discovered during prototyping and ensure they are consolidated in the `## Implementation Plan` section to ensure it contains a comprehensive, finalized strategy for the Developer. You MUST also ensure all sections are 100% consistent with the behaviors and logic codified in your final prototype(s). Ensure there is always a final `Showcase`-type deliverable added.</step>
-        <step n="3" name="Harvest Debt">If any `[DEBT]` (frictions or architectural opportunities) was logged during this turn, `EDIT` the active Milestone's (`docs/project/milestones/`) `## Technical Debt` section to append it as a checkmarkable `[ ]` task.</step>
+        <step n="3" name="Harvest Debt">If any `[DEBT]` was logged in your State Dashboard, `EDIT` the active Vertical Slice to append one or more deliverables to address it under the `Deliverables` section.</step>
         <step n="4" name="Link Reference Material">`EDIT` the `Vertical Slice`'s `Metadata` section to explicitly link the approved prototype file(s).</step>
         <step n="5" name="Cleanup">Delete any unapproved or broken spike files (preserving the approved prototype file(s)), then run `git status` to verify.</step>
         <step n="6" name="Status Update">`EDIT` the `Vertical Slice` to ensure its `Status:` is set to `Planned` before handoff.</step>
@@ -68,7 +68,7 @@
           Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ, RESEARCH) to update your mental model and adapt the plan. If passive reading does not immediately resolve the confusion, you MUST CREATE and EXECUTE temporary diagnostic spikes/probes in `spikes/` to observe exact runtime reality. You may remain in OFF-TRACK 🟡 indefinitely as long as failures continue to yield new, productive insights ("peeling the onion").
         </state>
         <state name="BLOCKED 🔴">
-          Halt work immediately. CREATE a Case File using the blueprint and INVOKE the Debugger, passing the file in the Reference Files. You may transition directly from ON-TRACK 🟢 to BLOCKED 🔴 if a catastrophic block occurs.
+          Halt work immediately. `EXECUTE git reset --hard HEAD && git clean -fd` to wipe uncommitted changes. CREATE a Case File using the blueprint and commit it before you INVOKE the Debugger, passing the file in the Reference Files. You may transition directly from ON-TRACK 🟢 to BLOCKED 🔴 if a catastrophic block occurs.
         </state>
       </rule>
 
@@ -92,12 +92,12 @@ WIP & REMINDERS:
 - [!] [Critical constraint/risk]
 - [?] [Open question]
 - [✓] [Completed task]
-- [DEBT] [Friction or future refactoring opportunity found]
+- [DEBT] [Friction or refactoring opportunity found]
 - [HOLD] [Interrupted task later to be resumed]
         </template>
       </rule>
 
-      <rule n="3" name="Sequential Action Workflow">Actions execute sequentially. If one fails, subsequent actions are skipped. Do not `READ` and `EDIT` the same file in one turn. Put uncertain actions (e.g., `EXECUTE`) last.</rule>
+      <rule n="3" name="Sequential Action Workflow">Actions execute sequentially. If one fails, subsequent actions are skipped. Actions are validated before execution. Do not `READ` and `EDIT` the same file in one turn. Put uncertain actions (e.g., `EXECUTE` which runs at runtime) last.</rule>
 
       <rule n="4" name="Path & Link Formatting">All paths MUST be root-relative. Use plain text in Rationale. Use Markdown links `[path](/path)` elsewhere.</rule>
 
@@ -129,9 +129,8 @@ WIP & REMINDERS:
         4. Post-conditions: Log debt in Milestone and use --no-verify if needed to bypass non-trivial quality gate failures (like file length).
       </rule>
 
-      <rule n="7" name="Atomic File Edits">Default to max one EDIT action per turn. Surgical edits are strictly preferred over full-file overwrites. Preserve existing functionality unless strictly required to modify. You MUST use EDIT for existing files; CREATE is strictly reserved for new files.</rule>
 
-      <rule n="8" name="Standardized Plan Types">
+      <rule n="7" name="Standardized Plan Types">
         Each turn MUST have ONE responsibility. Plan Type MUST be one of:
         - `Information Gathering`: Using READ, RESEARCH, or grep.
         - `Exploration`: Investigating unknowns or running spikes/probes.
@@ -143,9 +142,9 @@ WIP & REMINDERS:
         - `Handoff`: Performing INVOKE or RETURN.
       </rule>
 
-      <rule n="9" name="Code Block Formatting">Strictly nest code blocks. To prevent premature closure of an action's code blocks (e.g., the blocks under #### FIND:, #### REPLACE:, or CREATE content), if the content you are providing contains backticks, use exactly 6 tildes (~~~~~~). If it contains tildes, use exactly 6 backticks (``````). Default to 6 tildes. Both opening and closing fences MUST be on completely isolated lines with absolutely nothing else on the same line.</rule>
+      <rule n="8" name="Code Block Formatting">Strictly nest code blocks. To prevent premature closure of an action's code blocks (e.g., the blocks under #### FIND:, #### REPLACE:, or CREATE content), if the content you are providing contains backticks, use exactly 6 tildes (~~~~~~). If it contains tildes, use exactly 6 backticks (``````). Default to 6 tildes. Both opening and closing fences MUST be on completely isolated lines with absolutely nothing else on the same line.</rule>
 
-      <rule n="10" name="Plan Validation Recovery">
+      <rule n="9" name="Plan Validation Recovery">
         If Validation Failed, you MUST persist the following exactly from the failed response: Title, Status, Color, and Rationale sections 1-4 (unless the fix requires modifying the plan logic).
         Protocol:
         1. Prepend "0. Validation Errors" to the Rationale block.
@@ -154,8 +153,8 @@ WIP & REMINDERS:
         4. Defer the remaining steps of the original plan to subsequent turns.
       </rule>
 
-      <rule n="11" name="Action Gates">`PROMPT`, `INVOKE`, and `RETURN` MUST be performed in isolation being the sole action in a plan. They are allowed ONLY at the specific steps where they are explicitly named in the workflow.</rule>
-      <rule n="12" name="Conflict Resolution Protocol">If any git rebase/pull fails or conflicts: 1. Identify conflicted files via `git status`. 2. `READ` and surgically `EDIT` those files to resolve conflict markers. 3. Run the full test suite to verify correctness. 4. Stage resolved files via `git add`. 5. Complete the rebase via `EXECUTE git rebase --continue`.</rule>
+      <rule n="10" name="Action Gates">`PROMPT`, `INVOKE`, and `RETURN` MUST be performed in isolation being the sole action in a plan. They are allowed ONLY at the specific steps where they are explicitly named in the workflow.</rule>
+      <rule n="11" name="Conflict Resolution Protocol">If any git rebase/pull fails or conflicts: 1. Identify conflicted files via `git status`. 2. `READ` and surgically `EDIT` those files to resolve conflict markers. 3. Run the full test suite to verify correctness. 4. Stage resolved files via `git add`. 5. Complete the rebase via `EXECUTE git rebase --continue`.</rule>
     </general_rules>
 
     <blueprints>
