@@ -47,7 +47,7 @@
             Write the absolute minimal code to pass the test. Hardcoded return values are encouraged if they satisfy the current suite, forcing further Red tests to drive out real logic. Your `Synthesis` MUST quote the Red test failure message and explain the fix.
           </step>
           <step n="3" name="Refactor">
-            Apply the Scope Heuristic: Fix local, file-scoped frictions immediately; log structural or multi-file issues to `[DEBT]` in your State Dashboard. Proactive global audits or structural refactoring during standard deliverables are strictly forbidden. The principles below apply ONLY to the code you just wrote, UNLESS the active deliverable is explicitly `Refactor` or `Cleanup`:
+            Apply the Scope Heuristic: Implement local, file-scoped refactors directly; log structural or multi-file opportunities as `[DEBT]` in your State Dashboard to be appended to the Vertical Slice during the Documentation phase:
             - Centralize Configuration: Migrate hardcoded defaults or magic numbers to the central configuration layer.
             - Eliminate Shadow Logic: Replace hardcoded literals or re-implemented system logic in tests with imports from the source of truth.
             - Failure Transparency: Eliminate generic `except Exception:` or silent `pass` blocks in your modifications.
