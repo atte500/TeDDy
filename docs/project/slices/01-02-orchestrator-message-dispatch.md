@@ -38,8 +38,9 @@ And the final execution report (report.md) contains these warnings to inform the
 - [x] **Logic** - Implement `Plan.is_communication_turn()` and `ActionData.is_legacy` helpers.
 - [x] **Logic** - Implement validation in `PlanValidator` to reject `MESSAGE` actions with empty content.
 - [x] **Logic** - Update `ExecutionOrchestrator` to detect single-action `MESSAGE` plans and bypass the `IPlanReviewer` (TUI).
-- [ ] **Logic** - Update `ExecutionOrchestrator` to display and record deprecation warnings for `PROMPT`, `INVOKE`, and `RETURN`.
+- [x] **Logic** - Update `ExecutionOrchestrator` to display and record deprecation warnings for `PROMPT`, `INVOKE`, and `RETURN`.
 - [ ] **Logic** - Update `MarkdownReportFormatter` to render the warnings section in the report.
+- [ ] **Refactor** - [DEBT] Refactor `ExecutionOrchestrator` constructor to use a `Dependencies` DTO to reduce parameter count (currently 7).
 - [ ] **Harness** - Add acceptance tests in `tests/suites/acceptance/test_message_protocol_orchestration.py`.
 - [ ] **Refactor** - [DEBT] Refactor `ExecutionReportAssembler.assemble` parameters into a DTO to comply with `PLR0913` (too many arguments).
 
@@ -71,3 +72,9 @@ And the final execution report (report.md) contains these warnings to inform the
 - Created `MessageActionValidator` to enforce non-empty content for `MESSAGE` actions.
 - Registered `MessageActionValidator` in `registries/validators.py`.
 - Verified with unit tests in `tests/suites/unit/core/services/test_validator_message.py`.
+
+### Deliverable: Logic - Orchestrate Deprecation Warnings
+- Updated `ExecutionOrchestrator` to detect legacy actions (`PROMPT`, `INVOKE`, `RETURN`) during the execution loop.
+- Injected `IUserInteractor` into the orchestrator to support real-time terminal warnings.
+- Recorded warnings in the `ExecutionReport` object for inclusion in the final Markdown report.
+- Verified terminal output and report state with unit and integration tests.

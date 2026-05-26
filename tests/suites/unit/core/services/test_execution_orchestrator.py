@@ -329,3 +329,52 @@ def test_execute_with_single_message_bypasses_reviewer(
     # Assert
     # Verify reviewer.review (TUI) was NOT called
     mock_plan_reviewer.review.assert_not_called()
+
+
+def test_execute_records_warnings_for_legacy_actions(
+    env, container, mock_action_dispatcher, mock_user_interactor
+):
+    """
+    Scenario: Deprecation warnings for legacy actions.
+    Given a plan containing a legacy action (e.g., PROMPT)
+    When the orchestrator executes the plan
+    Then it should notify the user via notify_warning
+    And it should pass the warning to the report assembler
+    """
+    # Arrange
+    from teddy_executor.core.ports.outbound.execution_report_assembler import (
+        IExecutionReportAssembler,
+    )
+    from tests.harness.setup.mocking import register_mock
+
+    # Manually register the assembler mock since it's not a global fixture
+    mock_assembler = register_mock(container, IExecutionReportAssembler)
+
+    orchestrator = env.get_service(ExecutionOrchestrator)
+
+    action = ActionData(type="PROMPT", params={"message": "Hello"})
+    plan = Plan(title="Test Plan", rationale="Test", actions=[action])
+
+    action_log = ActionLog(
+        status=ActionStatus.SUCCESS,
+        action_type="PROMPT",
+        params=action.params,
+        details="Success",
+    )
+    mock_action_dispatcher.dispatch_and_execute.return_value = action_log
+
+    # Act
+    orchestrator.execute(plan=plan, interactive=False)
+
+    # Assert
+    # 1. User Interactor should receive a warning
+    mock_user_interactor.notify_warning.assert_called()
+    warning_msg = mock_user_interactor.notify_warning.call_args[0][0]
+    assert "PROMPT" in warning_msg
+    assert "deprecated" in warning_msg.lower()
+
+    # 2. Assembler should receive the warnings list
+    mock_assembler.assemble.assert_called()
+    called_warnings = mock_assembler.assemble.call_args.kwargs.get("warnings")
+    assert called_warnings is not None
+    assert any("PROMPT" in w and "deprecated" in w.lower() for w in called_warnings)

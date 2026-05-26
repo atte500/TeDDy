@@ -21,6 +21,7 @@ def test_orchestrator_skips_manually_executed_actions():
         action_executor=mock_executor,
         file_system_manager=mock_fs,
         report_assembler=ExecutionReportAssembler(),
+        user_interactor=POSIXPathMock(),
     )
 
     # Create an action that was ALREADY executed
@@ -78,6 +79,7 @@ def test_orchestrator_halts_on_manual_failure():
         mock_executor,
         POSIXPathMock(),
         ExecutionReportAssembler(),
+        POSIXPathMock(),
     )
 
     report = orchestrator.execute(plan=plan, interactive=False)

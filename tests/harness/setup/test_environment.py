@@ -282,8 +282,9 @@ class TestEnvironment(RealAdapterMixin):
         # 2. Re-register the orchestrator to ensure it's instantiated with plan_reviewer=None
         from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
         from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
-        from teddy_executor.core.ports.outbound.file_system_manager import (
+        from teddy_executor.core.ports.outbound import (
             IFileSystemManager,
+            IUserInteractor,
         )
         from teddy_executor.core.ports.outbound.execution_report_assembler import (
             IExecutionReportAssembler,
@@ -298,6 +299,7 @@ class TestEnvironment(RealAdapterMixin):
                 action_executor=self._container.resolve(ActionExecutor),
                 file_system_manager=self._container.resolve(IFileSystemManager),
                 report_assembler=self._container.resolve(IExecutionReportAssembler),
+                user_interactor=self._container.resolve(IUserInteractor),
                 plan_reviewer=None,
             ),
         )

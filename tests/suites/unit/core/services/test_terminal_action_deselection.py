@@ -12,6 +12,7 @@ def test_deselected_terminal_action_uses_isolation_reason():
         action_executor=executor,
         file_system_manager=Mock(),
         report_assembler=Mock(),
+        user_interactor=Mock(),
     )
 
     # Action marked as NOT selected
@@ -36,6 +37,7 @@ def test_deselected_non_terminal_action_uses_standard_reason():
         action_executor=executor,
         file_system_manager=Mock(),
         report_assembler=Mock(),
+        user_interactor=Mock(),
     )
 
     # Non-terminal action marked as NOT selected

@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from unittest.mock import Mock
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
 from teddy_executor.core.services.execution_report_assembler import (
     ExecutionReportAssembler,
@@ -12,17 +12,17 @@ def test_execute_persists_manual_plan_content_to_temp_file():
     the orchestrator persists it to a temporary file.
     """
     # Setup
-    mock_parser = MagicMock()
-    mock_validator = MagicMock()
-    mock_executor = MagicMock()
-    mock_executor.confirm_and_dispatch.return_value = (MagicMock(), "")
-    mock_fs = MagicMock()
+    mock_parser = Mock()
+    mock_validator = Mock()
+    mock_executor = Mock()
+    mock_executor.confirm_and_dispatch.return_value = (Mock(), "")
+    mock_fs = Mock()
 
     # Mock validator to pass
     mock_validator.validate.return_value = []
 
     # Mock parser to return a plan
-    mock_action = MagicMock()
+    mock_action = Mock()
     mock_action.selected = True
     mock_plan = Plan(
         title="Test Plan", rationale="Test", metadata={}, actions=[mock_action]
@@ -35,6 +35,7 @@ def test_execute_persists_manual_plan_content_to_temp_file():
         action_executor=mock_executor,
         file_system_manager=mock_fs,
         report_assembler=ExecutionReportAssembler(),
+        user_interactor=Mock(),
     )
 
     plan_content = "# Test Plan\n## Rationale\n..."

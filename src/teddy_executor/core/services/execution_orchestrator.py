@@ -14,13 +14,18 @@ from teddy_executor.core.ports.inbound.plan_parser import IPlanParser, InvalidPl
 from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
-from teddy_executor.core.ports.outbound import IFileSystemManager
+from teddy_executor.core.ports.outbound import IFileSystemManager, IUserInteractor
 from teddy_executor.core.ports.outbound.execution_report_assembler import (
     IExecutionReportAssembler,
 )
 from teddy_executor.core.services.action_executor import ActionExecutor
 
 logger = logging.getLogger(__name__)
+
+LEGACY_DEPRECATION_WARNING = (
+    "Action Type '{type}' is deprecated and will be removed in a future version. "
+    "Please use the structural '## Message' protocol instead."
+)
 
 
 class ExecutionOrchestrator(IRunPlanUseCase):
@@ -31,6 +36,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         action_executor: ActionExecutor,
         file_system_manager: IFileSystemManager,
         report_assembler: IExecutionReportAssembler,
+        user_interactor: IUserInteractor,
         plan_reviewer: IPlanReviewer = None,  # type: ignore
     ):
         self._plan_parser = plan_parser
@@ -38,6 +44,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         self._action_executor = action_executor
         self._file_system_manager = file_system_manager
         self._report_assembler = report_assembler
+        self._user_interactor = user_interactor
         self._plan_reviewer = plan_reviewer
 
     def _perform_interactive_review(
@@ -65,18 +72,26 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             return reviewed_plan
         return plan
 
-    def _process_plan_actions(self, plan: Plan, interactive: bool) -> list[ActionLog]:
+    def _process_plan_actions(
+        self, plan: Plan, interactive: bool
+    ) -> tuple[list[ActionLog], list[str]]:
         """Iterates through actions and dispatches them."""
         action_logs = []
+        warnings = []
         halt_execution = False
         for action in plan.actions:
+            if action.is_legacy:
+                msg = LEGACY_DEPRECATION_WARNING.format(type=action.type)
+                self._user_interactor.notify_warning(msg)
+                warnings.append(msg)
+
             action_log, should_halt = self._handle_action_in_loop(
                 action, plan, interactive, halt_execution
             )
             action_logs.append(action_log)
             if should_halt:
                 halt_execution = True
-        return action_logs
+        return action_logs, warnings
 
     def _handle_action_in_loop(
         self, action: ActionData, plan: Plan, interactive: bool, halt_execution: bool
@@ -274,9 +289,11 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             if reviewed_plan is None:
                 return self._handle_aborted_execution(plan, start_time, message)
 
-            action_logs = self._process_plan_actions(reviewed_plan, interactive)
+            action_logs, warnings = self._process_plan_actions(
+                reviewed_plan, interactive
+            )
             return self._report_assembler.assemble(
-                reviewed_plan, action_logs, start_time, message
+                reviewed_plan, action_logs, start_time, message, warnings=warnings
             )
         finally:
             if temp_plan_path and os.path.exists(temp_plan_path):

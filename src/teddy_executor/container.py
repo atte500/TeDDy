@@ -157,6 +157,7 @@ def _register_orchestration_services(container: punq.Container) -> None:
             action_executor=container.resolve(ActionExecutor),
             file_system_manager=container.resolve(IFileSystemManager),
             report_assembler=container.resolve(IExecutionReportAssembler),
+            user_interactor=container.resolve(IUserInteractor),
             plan_reviewer=container.resolve(IPlanReviewer),
         ),
         scope=punq.Scope.transient,

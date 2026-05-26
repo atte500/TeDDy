@@ -6,8 +6,7 @@ from teddy_executor.core.domain.models import (
     RunStatus,
 )
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
-from unittest.mock import patch
-from teddy_executor.core.services.action_executor import ActionExecutor
+from unittest.mock import Mock
 from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
 
 
@@ -58,46 +57,46 @@ def test_orchestrator_falls_back_to_legacy_interaction_if_no_reviewer(
     # Manually instantiate orchestrator WITHOUT a reviewer
     from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
     from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
-    from teddy_executor.core.ports.outbound import IFileSystemManager
+    from teddy_executor.core.ports.outbound import IFileSystemManager, IUserInteractor
     from teddy_executor.core.ports.outbound.execution_report_assembler import (
         IExecutionReportAssembler,
+    )
+
+    mock_executor = Mock()
+    mock_executor.confirm_and_dispatch.return_value = (
+        ActionLog(
+            status=ActionStatus.SUCCESS,
+            action_type="EXECUTE",
+            params={},
+            details="",
+        ),
+        "",
     )
 
     orchestrator = ExecutionOrchestrator(
         plan_parser=env.container.resolve(IPlanParser),
         plan_validator=env.container.resolve(IPlanValidator),
-        action_executor=env.container.resolve(ActionExecutor),
+        action_executor=mock_executor,
         file_system_manager=env.container.resolve(IFileSystemManager),
         report_assembler=env.container.resolve(IExecutionReportAssembler),
+        user_interactor=env.container.resolve(IUserInteractor),
         plan_reviewer=None,
     )
 
     action1 = ActionData(type="EXECUTE", params={"command": "ls"})
     plan = Plan(title="Test Plan", rationale="Test", actions=[action1])
 
-    # We need to mock ActionExecutor.confirm_and_dispatch since we're testing the orchestrator's call to it
-    with patch.object(ActionExecutor, "confirm_and_dispatch") as mock_confirm:
-        mock_confirm.return_value = (
-            ActionLog(
-                status=ActionStatus.SUCCESS,
-                action_type="EXECUTE",
-                params={},
-                details="",
-            ),
-            "",
-        )
+    # Act
+    orchestrator.execute(plan=plan, interactive=True)
 
-        # Act
-        orchestrator.execute(plan=plan, interactive=True)
-
-        # Assert
-        mock_confirm.assert_called_once_with(
-            action1,
-            interactive=True,
-            total_actions=1,
-            agent_name=None,
-            is_session=False,
-        )
+    # Assert
+    mock_executor.confirm_and_dispatch.assert_called_once_with(
+        action1,
+        interactive=True,
+        total_actions=1,
+        agent_name=None,
+        is_session=False,
+    )
 
 
 def test_execute_interactive_and_skipped(
