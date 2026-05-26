@@ -22,3 +22,30 @@ This section defines the conventions for our project management artifacts.
 - **Artifact Lifecycle:** Work flows from `Spec` -> `Milestone` -> `Slice`.
 - **Numbering:** Artifacts are numbered sequentially using an `MM-NN-name.md` format, where `MM` represents the target Milestone number and `NN` represents the specific Slice or Case File number. For ad-hoc tasks not tied to an active milestone, `00` is used as the Milestone prefix (e.g., `00-01-ad-hoc-feature.md`).
 - **Archiving Policy:** Once a feature slice or milestone is fully implemented and merged, its active planning artifacts can be deleted. The Git history serves as the official, permanent archive.
+
+## Roadmap
+
+### Structural Protocol & Parser
+- **Core Goal:** Move from action-based communication (`INVOKE`, `RETURN`, `PROMPT`) to the structural `## Message` protocol.
+- **Key Deliverables:**
+    - `MarkdownPlanParser` update to support `## Message` section.
+    - `ExecutionOrchestrator` update to handle "Message Turns" (no actions, just a report of the message).
+    - Hard deprecation of legacy actions.
+    - Update all system prompts in `src/teddy_executor/resources/prompts/` to follow the new protocol.
+
+### TUI & CLI UX Polish
+- **Core Goal:** Improve the interactive experience and provide better visibility into session state.
+- **Key Deliverables:**
+    - Alt+Up/Down navigation for jumping between Context, Rationale, and Plan/Message sections.
+    - Context Node Editing: Pressing `e` on context nodes opens the corresponding file/context file in the external editor.
+    - Metadata Visibility: Display model name and session cost (rounded to nearest cent) in the TUI when the Context Root is selected.
+    - Parameter Editing: Automatically open external editor for multiline or long text parameters in Tier 2 review.
+    - CLI Abbreviations: Support `-a`, `-m`, and `-c` flags for the `start` command.
+
+### Stability & Infrastructure
+- **Core Goal:** Hardening the system against external failures and improving context management.
+- **Key Deliverables:**
+    - Resilience: Implement 403 error bypassing (User-Agent rotation/headers) and SSL retry logic.
+    - Context Robustness: Recursive directory expansion for context paths and deduplication of resources.
+    - Environment Hardening: Suppress `LiteLLM`/`botocore` warnings in production deployments.
+    - Reliability: Handle cases where files are modified *during* execution (e.g., by an `EXECUTE` command) to prevent orchestrator crashes.
