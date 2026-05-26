@@ -37,7 +37,7 @@ And the final execution report (report.md) contains these warnings to inform the
 - [x] **Contract** - Update `ExecutionReport` domain model and `IExecutionReportAssembler` to support a `warnings` list.
 - [x] **Logic** - Implement `Plan.is_communication_turn()` and `ActionData.is_legacy` helpers.
 - [x] **Logic** - Implement validation in `PlanValidator` to reject `MESSAGE` actions with empty content.
-- [ ] **Logic** - Update `ExecutionOrchestrator` to detect single-action `MESSAGE` plans and bypass the `IPlanReviewer` (TUI).
+- [x] **Logic** - Update `ExecutionOrchestrator` to detect single-action `MESSAGE` plans and bypass the `IPlanReviewer` (TUI).
 - [ ] **Logic** - Update `ExecutionOrchestrator` to display and record deprecation warnings for `PROMPT`, `INVOKE`, and `RETURN`.
 - [ ] **Logic** - Update `MarkdownReportFormatter` to render the warnings section in the report.
 - [ ] **Harness** - Add acceptance tests in `tests/suites/acceptance/test_message_protocol_orchestration.py`.

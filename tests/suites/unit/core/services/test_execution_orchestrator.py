@@ -271,3 +271,61 @@ def test_execute_skips_terminal_action_in_multi_action_non_interactive_plan(
         report.action_logs[1].details
         == "Automatically skipped: This action must be performed in isolation."
     )
+
+
+def test_execute_with_single_prompt_bypasses_reviewer(
+    env, mock_plan_parser, mock_plan_reviewer, mock_action_dispatcher
+):
+    """
+    Scenario: Single PROMPT actions bypass approval for fluid conversation.
+    """
+    # Arrange
+    orchestrator = env.get_service(ExecutionOrchestrator)
+    orchestrator._plan_reviewer = mock_plan_reviewer
+
+    action = ActionData(type="PROMPT", params={"message": "Hello"})
+    plan = Plan(title="Test Plan", rationale="Test", actions=[action])
+
+    success_log = ActionLog(
+        status=ActionStatus.SUCCESS,
+        action_type="PROMPT",
+        params=action.params,
+        details="Prompt success",
+    )
+    mock_action_dispatcher.dispatch_and_execute.return_value = success_log
+
+    # Act
+    orchestrator.execute(plan=plan, interactive=True)
+
+    # Assert
+    # Verify reviewer.review (TUI) was NOT called
+    mock_plan_reviewer.review.assert_not_called()
+
+
+def test_execute_with_single_message_bypasses_reviewer(
+    env, mock_plan_parser, mock_plan_reviewer, mock_action_dispatcher
+):
+    """
+    Scenario: Communication turns (MESSAGE) bypass approval for fluid conversation.
+    """
+    # Arrange
+    orchestrator = env.get_service(ExecutionOrchestrator)
+    orchestrator._plan_reviewer = mock_plan_reviewer
+
+    action = ActionData(type="MESSAGE", params={"content": "Hello from Message"})
+    plan = Plan(title="Test Plan", rationale="Test", actions=[action])
+
+    success_log = ActionLog(
+        status=ActionStatus.SUCCESS,
+        action_type="MESSAGE",
+        params=action.params,
+        details="Message success",
+    )
+    mock_action_dispatcher.dispatch_and_execute.return_value = success_log
+
+    # Act
+    orchestrator.execute(plan=plan, interactive=True)
+
+    # Assert
+    # Verify reviewer.review (TUI) was NOT called
+    mock_plan_reviewer.review.assert_not_called()

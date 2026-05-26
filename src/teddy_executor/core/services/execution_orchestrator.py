@@ -47,9 +47,11 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         project_context: Optional[Any] = None,
     ) -> Plan | None:
         """Allows the user to review and modify the plan before execution."""
-        # Scenario: Universal PROMPT Auto-Execution
-        # Single PROMPT actions bypass approval for fluid conversation.
-        if len(plan.actions) == 1 and plan.actions[0].type == "PROMPT":
+        # Scenario: Communication Turns (MESSAGE/PROMPT) bypass TUI
+        # Single-action communication turns bypass approval for fluid conversation.
+        if plan.is_communication_turn() or (
+            len(plan.actions) == 1 and plan.actions[0].type == "PROMPT"
+        ):
             return plan
 
         # We only call the bulk review (TUI) if interactive is True AND a reviewer is present.
@@ -133,11 +135,13 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         should_dispatch = True
         captured_message = ""
 
-        # Scenario: Universal PROMPT Auto-Execution
-        # Single PROMPT actions bypass approval for fluid conversation.
-        is_single_prompt = len(plan.actions) == 1 and action.type == "PROMPT"
+        # Scenario: Communication Turns (MESSAGE/PROMPT) bypass confirmation
+        # Single communication actions bypass approval for fluid conversation.
+        is_communication_action = plan.is_communication_turn() or (
+            len(plan.actions) == 1 and action.type == "PROMPT"
+        )
 
-        if interactive and self._plan_reviewer and not is_single_prompt:
+        if interactive and self._plan_reviewer and not is_communication_action:
             should_dispatch, captured_message = self._plan_reviewer.review_action(
                 action, len(plan.actions), agent_name=agent_name
             )
