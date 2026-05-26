@@ -36,17 +36,25 @@ This section defines the conventions for our project management artifacts.
 ### TUI & CLI UX Polish
 - **Core Goal:** Improve the interactive experience and provide better visibility into session state.
 - **Key Deliverables:**
-    - Alt+Up/Down navigation for jumping between Context, Rationale, and Plan/Message sections.
-    - Context Node Editing: Pressing `e` on context nodes opens the corresponding file/context file in the external editor.
-    - Metadata Visibility: Display model name and session cost (rounded to nearest cent) in the TUI when the Context Root is selected.
-    - Parameter Editing: Automatically open external editor for multiline or long text parameters in the TUI review.
-    - Smart Editor & Diff Mapping: Implement a translation table to automatically derive diff flags from the `editor` configuration (e.g., `nvim` -> `-d`), removing implicit fallbacks to VS Code.
-    - CLI Abbreviations: Support `-a`, `-m`, and `-c` flags for the `start` command.
+    - **Navigation:** Alt+Up/Down for jumping between Context, Rationale, and Plan/Message sections.
+    - **Context Interactions:** Pressing `e` on context nodes opens the corresponding file/context file in the external editor.
+    - **Metadata Visibility:** Display model name and session cost (rounded to nearest cent) in the right panel when the Context Root is selected.
+    - **Tier 2 Editing:** Automatically open external editor for parameters that are multiline or >100 characters.
+    - **Editor & Diff Mapping:** Strictly respect `editor` config; implement a translation table for diff flags (e.g., `nvim` -> `-d`); remove all implicit VS Code fallbacks.
+    - **Layout:** Ensure consistent padding for Rationale items and Message sections to match the right and left panels.
+    - **UX Hints:** Append reminder to user request messages: "Update reference documents accordingly if needed."
+    - **Validation Logging:** Include concise versions of encountered errors in "Validation failed replanning" logs; remove the empty line before the message.
+    - **RESEARCH Enhancement:** Scrape and return full contents/excerpts instead of just SERP snippets.
+    - **CLI Polish:** Support `-a`, `-m`, and `-c` flags for the `start` command.
 
 ### Stability & Infrastructure
 - **Core Goal:** Hardening the system against external failures and improving context management.
 - **Key Deliverables:**
-    - Resilience: Implement 403 error bypassing (User-Agent rotation/headers) and SSL retry logic.
-    - Context Robustness: Recursive directory expansion for context paths and deduplication of resources.
-    - Environment Hardening: Suppress `LiteLLM`/`botocore` warnings in production deployments.
-    - Reliability: Handle cases where files are modified *during* execution (e.g., by an `EXECUTE` command) to prevent orchestrator crashes.
+    - **LLM Resilience:** Implement retry logic (3 attempts) for SSL and OpenRouter timeout errors (Reproduce via: `SSLV3_ALERT_BAD_RECORD_MAC`).
+    - **Web Scraper (403 Bypassing):** Attempt to bypass 403 Forbidden errors via User-Agent rotation and common headers (Reproduce via: `https://www.pnas.org/doi/10.1073/pnas.2416294121`).
+    - **GitHub Compatibility:** Fix content extraction for `raw.githubusercontent.com` links that currently return SUCCESS but empty content (Reproduce via: `https://raw.githubusercontent.com/lllyasviel/LayerDiffuse/main/README.md`).
+    - **Context Robustness:** Recursive directory expansion for context paths; strictly enforce deduplication.
+    - **Session Efficiency:** In session mode, NEVER include resource contents in `report.md` (since contents are already gathered in `input.md`).
+    - **Mid-Execution Consistency:** Gracefully return `FAILURE` for `EDIT` actions if a file is modified during execution (e.g., by a preceding `EXECUTE`).
+    - **Environment Hardening:** Suppress `LiteLLM`/`botocore` warnings in production environments.
+    - **Parser Resilience:** For all actions (e.g., `READ`, `MESSAGE`), ignore and clean up unforeseen codeblocks or thematic breaks (`---`) following the action block without triggering validation errors. (Note: Other trailing / unforseen text must still raise validation error).

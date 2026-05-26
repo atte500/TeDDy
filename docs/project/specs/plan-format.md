@@ -126,6 +126,9 @@ All actions are located under the `## Action Plan` heading. Each action is defin
 ### 5.3. `EDIT`
 
 -   **Purpose:** Edits an existing file. It is strongly preferred to make surgical changes by including multiple, small, sequential `FIND`/`REPLACE` pairs in a single action rather than one large replacement.
+
+#### Parser Resilience (Cross-Action)
+For all actions, the parser must ignore and clean up unforeseen codeblocks or thematic breaks (`---`) following the action block without throwing validation errors. Trailing text validation errors must be preserved.
 -   **Format:**
     ``````markdown
     ### `EDIT`
