@@ -195,7 +195,11 @@ class ActionExecutor:
         change_set = self._create_change_set(action)
 
         should_dispatch, reason = True, ""
-        if interactive and action.type.lower() != "prompt":
+        # Communication actions (MESSAGE, PROMPT) bypass the interactive confirmation
+        # to ensure a fluid conversational flow.
+        is_communication = action.type.upper() in ("MESSAGE", "PROMPT")
+
+        if interactive and not is_communication:
             should_dispatch, reason = self._get_interactive_confirmation(action)
 
         if not should_dispatch:

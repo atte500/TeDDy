@@ -39,7 +39,7 @@ And the final execution report (report.md) does NOT contain these warnings (to a
 - [x] **Logic** - Update `ExecutionOrchestrator` to detect single-action `MESSAGE` plans and bypass the `IPlanReviewer` (TUI).
 - [x] **Logic** - Update `ExecutionOrchestrator` to display terminal-only deprecation warnings for `PROMPT`, `INVOKE`, and `RETURN`.
 - [x] **Refactor** - [DEBT] Refactor `ExecutionOrchestrator` constructor to use a `Dependencies` DTO to reduce parameter count (currently 7).
-- [ ] **Harness** - Add acceptance tests in `tests/suites/acceptance/test_message_protocol_orchestration.py`.
+- [x] **Harness** - Add acceptance tests in `tests/suites/acceptance/test_message_protocol_orchestration.py`.
 - [ ] **Refactor** - [DEBT] Refactor `ExecutionReportAssembler.assemble` parameters into a DTO to comply with `PLR0913` (too many arguments).
 
 ## Implementation Plan
@@ -76,3 +76,9 @@ And the final execution report (report.md) does NOT contain these warnings (to a
 - Updated `ExecutionOrchestrator` constructor to accept the DTO, reducing parameter count to 1 and resolving `PLR0913`.
 - Registered `OrchestratorPorts` in `container.py` for automated injection.
 - Updated all manual instantiations in the test suite and `TestEnvironment.without_reviewer()`.
+
+### Deliverable: Harness - Acceptance Tests
+- Created `tests/suites/acceptance/test_message_protocol_orchestration.py` to verify the end-to-end behavior of the structural message protocol.
+- Verified that `MESSAGE` turns bypass the TUI and confirmation prompts for a fluid conversational flow.
+- Verified that legacy actions (`PROMPT`, `INVOKE`, `RETURN`) trigger terminal-only warnings.
+- Identified and fixed a bug in `ActionExecutor.confirm_and_dispatch` where `MESSAGE` actions were incorrectly triggering interactive confirmation prompts.
