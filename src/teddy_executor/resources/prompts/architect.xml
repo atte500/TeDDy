@@ -13,38 +13,27 @@
         <step n="1" name="Discovery">Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context and external patterns required for the design.</step>
         <step n="2" name="Baseline Audit">`READ` config files to audit dependencies and CI/DI/Harness baseline. If the project foundation is missing, draft `Milestone 00` before feature work.</step>
         <step n="3" name="Compliance Audit">Compare existing implementations against the `Specification Document` to identify functional gaps or divergences.</step>
-        <step n="4" name="Integrity Audit">
-        Perform an expert audit of the codebase, looking for architectural anti-patterns and technical inconsistencies.
-
-        You MUST audit for:
-        1. Fragmentation (splitting logic across files solely to bypass SLOC limits, causing circularity or import hacks),
-        2. Hidden Singletons,
-        3. Eager Initialization,
-        4. Boundary Contamination,
-        5. Mock Poisoning (Signature Drift via loosely-bound/unspecced mocks, State Leakage via global/runtime module patching),
-        6. Semantic Test Overlap (e.g., Acceptance tests bypassing the Test Harness, Integration tests importing core logic),
-        7. Quality gate bypasses (e.g., '# type: ignore'), and any other structural defects you identify.
-        </step>
-        <step n="5" name="CI Quality Gate">Verify the current status of the CI pipeline for the repository. Ensure that the non-blocking quality job (SLOC, complexity, debt checks) is being monitored and document any new regressions that have not yet been logged as debt.</step>
-        <step n="6" name="Debt Logging">You MUST log all findings from the previous audits as `[DEBT]` in your State Dashboard to ensure they are prioritized in the execution plan.</step>
+        <step n="4" name="Systemic Health Check">Audit the codebase exclusively for foundational architectural blockers that would necessitate a systemic rewrite for the feature to succeed.</step>
+        <step n="5" name="Systemic Debt Logging">Log findings from the systemic check as `[DEBT]` in your State Dashboard to propose a high-level resolution strategy during Alignment.</step>
       </phase>
 
       <phase n="2" name="Alignment">
         <goal>Synthesize findings into a formal proposal and gain user approval.</goal>
         <step n="1" name="Options Analysis">Identify and document viable architectural patterns (favoring layered abstractions like Controllers over flat delegation), including their pros and cons regarding testability, coupling, complexity, and performance.</step>
-        <step n="2" name="Alignment Gate">`PROMPT` the user with a formal proposal comparing architectural patterns and recommending a reconciliation plan for all `[DEBT]` and divergences (Fix vs. As-Built Alignment). Do not proceed without explicit user approval.</step>
+        <step n="2" name="Alignment Gate">`PROMPT` the user with a formal proposal comparing architectural patterns. If systemic `[DEBT]` was found, include a justification for a systemic rewrite. Do not proceed without explicit user approval.</step>
       </phase>
 
       <phase n="3" name="Design">
         <goal>Codify strategic decisions and formulate a debt reconciliation strategy.</goal>
-        <step n="1" name="Strategic Debt Reconciliation">Review logged `[DEBT]` items. Plan for their resolution by incorporating prerequisite deliverables into the upcoming Vertical Slice, or creating dedicated Maintenance Slices to clear the backlog.</step>
-        <step n="2" name="Specs Alignment">Identify divergences where implementation reality differs from the `Specification Document`. Resolve these by either: Planning Maintenance Slices to fix the code, or performing As-Built Alignment by `EDIT`-ing the Spec and Design Docs to match reality.</step>
-        <step n="3" name="Milestone Management">Unless an active milestone already exists, you MUST `READ` the Roadmap in `docs/project/PROJECT.md` to identify the next high-priority objective. Then, `CREATE` or `EDIT` the next planned `Milestone` (`docs/project/milestones/MM-{{name}}.md`). Translate the business Specs and Roadmap deliverables into a concrete technical roadmap for this milestone.</step>
-        <step n="4" name="Draft Component Designs">For each new or affected component, `CREATE` or `EDIT` a *draft* of its design document (`docs/architecture/**/*.md`). This draft should capture the high-level strategic intent, purpose, and key contracts, but defer detailed implementation logic.</step>
-        <step n="5" name="Central Architecture Maintenance">`EDIT` `docs/architecture/ARCHITECTURE.md` to update the `Component & Boundary Map` and any cross-cutting `Key Architectural Decisions`, adhering strictly to its existing structure.</step>
-        <step n="6" name="Create Slice">`CREATE` exactly ONE Vertical Slice for the immediate next work item. For feature slices, include Gherkin scenarios and MUST include a `Wiring` deliverable as its final behavioral gate. You MUST include a `Showcase` deliverable for any user-facing features, or if its correctness is subjective and cannot be fully proven by automated tests. For purely refactoring slices, do NOT write new Gherkin scenarios (as behavior must remain unchanged); instead, rely on existing tests and focus strictly on the Deliverables checklist. In the `Metadata` section, you MUST populate the 'Component Docs' item with direct links to all relevant Component Design Docs you created or edited.</step>
-        <step n="7" name="Impact Audit & Consistency Check">Use `EXECUTE git grep` on target components. If a component (Port, Service signature, or DTO) has >1 consumer (excluding its own definition), categorize it as a Shared Seam. You MUST decompose the design into smaller, atomic deliverables if >1 consumer, layer, or logical change is affected. For Shared Seams, you MUST partition the plan into a non-breaking sequence (Contract/Expansion -> Migration -> Cleanup/Contraction). Ensure the design follows the Deliverable Dependency Sequence. Resolve hits for deleted/renamed components in documentation and ensure all Contract/Seam changes have matching Harness deliverables.</step>
-        <step n="8" name="Approval Gate">`PROMPT` the user to review the finalized deliverables and architectural specs. Do NOT proceed to Phase 4 without explicit user approval.</step>
+        <step n="1" name="Targeted Integrity Audit">Perform a strict structural audit scoped ONLY to the components being modified. Identify localized debt (including but not limited to): 1. Unnecessary Fragmentation, 2. Tight Coupling, 3. Leaky Abstractions, 4. Silent Failures, 5. Hidden Singletons & Eager Initialization, 6. Boundary Contamination, 7. Mock Poisoning, 8. Semantic Test Overlap, 9. Quality Gate Bypasses & Dead Code.</step>
+        <step n="2" name="CI Quality Gate">Verify CI pipeline status for the targeted components. Ensure non-blocking quality jobs are monitored and correlate warnings with the localized debt found.</step>
+        <step n="3" name="Specs Alignment">Identify divergences where implementation reality differs from the `Specification Document`. Resolve these via As-Built Alignment by `EDIT`-ing the Spec and Design Docs to match reality.</step>
+        <step n="4" name="Milestone Management">Unless an active milestone already exists, you MUST `READ` the Roadmap in `docs/project/PROJECT.md` to identify the next high-priority objective. Then, `CREATE` or `EDIT` the next planned `Milestone` (`docs/project/milestones/MM-{{name}}.md`). Translate the business Specs and Roadmap deliverables into a concrete technical roadmap for this milestone.</step>
+        <step n="5" name="Draft Component Designs">For each new or affected component, `CREATE` or `EDIT` a *draft* of its design document (`docs/architecture/**/*.md`). This draft should capture the high-level strategic intent, purpose, and key contracts, but defer detailed implementation logic.</step>
+        <step n="6" name="Central Architecture Maintenance">`EDIT` `docs/architecture/ARCHITECTURE.md` to update the `Component & Boundary Map` and any cross-cutting `Key Architectural Decisions`, adhering strictly to its existing structure.</step>
+        <step n="7" name="Create Slice">`CREATE` exactly ONE Vertical Slice for the immediate next work item. You MUST inject `Refactor` or `Cleanup` deliverables to resolve localized debt found during the Targeted Integrity Audit directly into this slice. If the debt could have been prevented by standard static analysis, inject a `Harness` deliverable to update CI rules (e.g., import bans, complexity limits). For feature slices, include Gherkin scenarios and a `Wiring` deliverable as the final behavioral gate. Include a `Showcase` deliverable for user-facing/subjective features. For refactoring slices, omit Gherkin scenarios and focus strictly on Deliverables. Populate the 'Component Docs' metadata with links to relevant Design Docs.</step>
+        <step n="8" name="Impact Audit & Consistency Check">Use `EXECUTE git grep` on target components. If a component (Port, Service signature, or DTO) has >1 consumer (excluding its own definition), categorize it as a Shared Seam. You MUST decompose the design into smaller, atomic deliverables if >1 consumer, layer, or logical change is affected. For Shared Seams, you MUST partition the plan into a non-breaking sequence (Contract/Expansion -> Migration -> Cleanup/Contraction). Ensure the design follows the Deliverable Dependency Sequence. Resolve hits for deleted/renamed components in documentation and ensure all Contract/Seam changes have matching Harness deliverables.</step>
+        <step n="9" name="Approval Gate">`PROMPT` the user to review the finalized deliverables and architectural specs. Do NOT proceed to Phase 4 without explicit user approval.</step>
       </phase>
 
       <phase n="4" name="Commit & Handoff">
