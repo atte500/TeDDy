@@ -12,15 +12,17 @@ We will implement the "Unified Turn" pattern, where the `MarkdownPlanParser` sup
 ## Guidelines (The "How")
 - **Test Harness Triad:** Use `MarkdownPlanBuilder` to generate plans with the new `## Message` section and `ReportParser` to verify the resulting execution report.
 - **Mutual Exclusivity:** Validation MUST fail if both `## Action Plan` and `## Message` are present in the same plan.
-- **Transparency:** Deprecated legacy actions (`PROMPT`, `INVOKE`, `RETURN`) will trigger a terminal-only warning via `IUserInteractor` to encourage developer migration.
+- **CLI Flag Realignment:** Support `-a/--agent` and `-c/--context` on the `start` command to allow programmatic handoffs via prompt instructions.
 
 ## Technical Specifications
 - **New Action Type:** `MESSAGE`
 - **Parser Rule:** `## Message` captures everything until EOF as `params["content"]`.
 - **Orchestrator Rule:** If `plan.actions == [MESSAGE]`, skip approval and execute immediately.
+- **Legacy Pruning:** Deprecated legacy actions (`PROMPT`, `INVOKE`, `RETURN`) MUST be removed from `ActionType` and the parser's dispatch map.
 
 ## Vertical Slices
-1. [01-01-parser-message-support.md](/docs/project/slices/01-01-parser-message-support.md): Parser expansion and mutual exclusivity validation.
-2. 01-02-orchestrator-message-dispatch: Orchestrator support for the `MESSAGE` action and auto-execution. Implement warnings for deprecated legacy actions (`PROMPT`, `INVOKE`, `RETURN`).
-3. 01-03-system-prompt-migration: Update all system prompts to the new protocol.
-4. 01-04-legacy-deprecation: Removal of legacy actions.
+1. 01-01-parser-message-support.md: Parser expansion and mutual exclusivity validation.
+2. 01-02-orchestrator-message-dispatch: Orchestrator support for the `MESSAGE` action and auto-execution.
+3. 01-03-cli-flag-realignment: Implement `-a/--agent` and `-c/--context` on the `start` command.
+4. 01-04-system-prompt-migration: Update all 6 default system prompts to the new protocol.
+5. 01-05-legacy-deprecation: Removal of legacy actions from the domain and parser.

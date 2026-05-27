@@ -28,10 +28,10 @@ This section defines the conventions for our project management artifacts.
 ### Structural Protocol & Parser
 - **Core Goal:** Move from action-based communication (`INVOKE`, `RETURN`, `PROMPT`) to the structural `## Message` protocol.
 - **Requirements:**
-    - `MarkdownPlanParser` update to support `## Message` section.
-    - `ExecutionOrchestrator` update to handle "Message Turns" (no actions, just a report of the message).
-    - Hard deprecation of legacy actions.
-    - Update all system prompts in `src/teddy_executor/resources/prompts/` to follow the new protocol.
+    - **CLI Polish:** Update `start` command to support `-a/--agent`, `-m/--message`, and `-c/--context` flags for fluid handoffs.
+    - **Parser Cleanup:** Remove legacy `PROMPT`, `INVOKE`, and `RETURN` actions from `MarkdownPlanParser` and `PlanValidator`.
+    - **Orchestrator:** Ensure `ExecutionOrchestrator` handles "Message Turns" (no actions) without side-effects.
+    - **Prompt Migration:** Update all system prompts (`pathfinder`, `architect`, `developer`, `debugger`, `assistant`, `prototyper`) to use `## Message` for all communication and handoffs.
 
 ### TUI & CLI UX Polish
 - **Core Goal:** Improve the interactive experience and provide better visibility into session state.
