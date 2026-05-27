@@ -56,6 +56,7 @@ This section defines the conventions for our project management artifacts.
     - **GitHub Compatibility:** Fix content extraction for `raw.githubusercontent.com` links that currently return SUCCESS but empty content (Reproduce via: `https://raw.githubusercontent.com/lllyasviel/LayerDiffuse/main/README.md`).
     - **Safety Limits:** Implement `max-turns` (99) and `max-cost` ($5) limits in `config.yaml`, enforced strictly in `-y` mode.
     - **Context Robustness:** Recursive directory expansion for context paths; support remote URLs in `.context` files; strictly enforce deduplication.
+    - **Session Migration:** Cap turns at 99 (2-digit padding); at turn 100, automatically migrate to a new continuation session (e.g., `name-2`) by cloning `session.context` and the active prompt and transition the `turn.context` exactly as a normal turn transition would to preserve the working context.
     - **Action Side-effects:** `CREATE` actions automatically add the new file path to the turn's context.
     - **Session Prompt Relocation:** Store `system_prompt.xml` at the session root rather than copying it into every turn directory.
     - **Session Efficiency:** In session mode, NEVER include resource contents in `report.md`; add config to prevent "Message Turns" from being pruned.
