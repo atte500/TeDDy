@@ -1,18 +1,21 @@
 from unittest.mock import Mock
 from teddy_executor.core.domain.models import ActionData, Plan
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
+from teddy_executor.core.domain.models.orchestrator_ports import OrchestratorPorts
 
 
 def test_deselected_terminal_action_uses_isolation_reason():
     # Setup
     executor = Mock()
     orchestrator = ExecutionOrchestrator(
-        plan_parser=Mock(),
-        plan_validator=Mock(),
-        action_executor=executor,
-        file_system_manager=Mock(),
-        report_assembler=Mock(),
-        user_interactor=Mock(),
+        ports=OrchestratorPorts(
+            plan_parser=Mock(),
+            plan_validator=Mock(),
+            action_executor=executor,
+            file_system_manager=Mock(),
+            report_assembler=Mock(),
+            user_interactor=Mock(),
+        )
     )
 
     # Action marked as NOT selected
@@ -32,12 +35,14 @@ def test_deselected_non_terminal_action_uses_standard_reason():
     # Setup
     executor = Mock()
     orchestrator = ExecutionOrchestrator(
-        plan_parser=Mock(),
-        plan_validator=Mock(),
-        action_executor=executor,
-        file_system_manager=Mock(),
-        report_assembler=Mock(),
-        user_interactor=Mock(),
+        ports=OrchestratorPorts(
+            plan_parser=Mock(),
+            plan_validator=Mock(),
+            action_executor=executor,
+            file_system_manager=Mock(),
+            report_assembler=Mock(),
+            user_interactor=Mock(),
+        )
     )
 
     # Non-terminal action marked as NOT selected

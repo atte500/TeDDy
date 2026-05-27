@@ -149,9 +149,11 @@ def _register_orchestration_services(container: punq.Container) -> None:
     container.register(
         IExecutionReportAssembler, ExecutionReportAssembler, scope=punq.Scope.transient
     )
+    from teddy_executor.core.domain.models.orchestrator_ports import OrchestratorPorts
+
     container.register(
-        ExecutionOrchestrator,
-        factory=lambda: ExecutionOrchestrator(
+        OrchestratorPorts,
+        factory=lambda: OrchestratorPorts(
             plan_parser=container.resolve(IPlanParser),
             plan_validator=container.resolve(IPlanValidator),
             action_executor=container.resolve(ActionExecutor),
@@ -162,6 +164,7 @@ def _register_orchestration_services(container: punq.Container) -> None:
         ),
         scope=punq.Scope.transient,
     )
+    container.register(ExecutionOrchestrator, scope=punq.Scope.transient)
     container.register(ContextService, scope=punq.Scope.transient)
     container.register(IGetContextUseCase, ContextService, scope=punq.Scope.transient)
     from teddy_executor.core.domain.models.planning_ports import PlanningPorts

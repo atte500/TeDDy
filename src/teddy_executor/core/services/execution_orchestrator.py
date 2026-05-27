@@ -10,15 +10,9 @@ from teddy_executor.core.domain.models import (
     Plan,
     ActionStatus,
 )
-from teddy_executor.core.ports.inbound.plan_parser import IPlanParser, InvalidPlanError
-from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
+from teddy_executor.core.ports.inbound.plan_parser import InvalidPlanError
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
-from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
-from teddy_executor.core.ports.outbound import IFileSystemManager, IUserInteractor
-from teddy_executor.core.ports.outbound.execution_report_assembler import (
-    IExecutionReportAssembler,
-)
-from teddy_executor.core.services.action_executor import ActionExecutor
+from teddy_executor.core.domain.models.orchestrator_ports import OrchestratorPorts
 
 logger = logging.getLogger(__name__)
 
@@ -29,23 +23,17 @@ LEGACY_DEPRECATION_WARNING = (
 
 
 class ExecutionOrchestrator(IRunPlanUseCase):
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
-        plan_parser: IPlanParser,
-        plan_validator: IPlanValidator,
-        action_executor: ActionExecutor,
-        file_system_manager: IFileSystemManager,
-        report_assembler: IExecutionReportAssembler,
-        user_interactor: IUserInteractor,
-        plan_reviewer: IPlanReviewer = None,  # type: ignore
+        ports: OrchestratorPorts,
     ):
-        self._plan_parser = plan_parser
-        self._plan_validator = plan_validator
-        self._action_executor = action_executor
-        self._file_system_manager = file_system_manager
-        self._report_assembler = report_assembler
-        self._user_interactor = user_interactor
-        self._plan_reviewer = plan_reviewer
+        self._plan_parser = ports.plan_parser
+        self._plan_validator = ports.plan_validator
+        self._action_executor = ports.action_executor
+        self._file_system_manager = ports.file_system_manager
+        self._report_assembler = ports.report_assembler
+        self._user_interactor = ports.user_interactor
+        self._plan_reviewer = ports.plan_reviewer
 
     def _perform_interactive_review(
         self,

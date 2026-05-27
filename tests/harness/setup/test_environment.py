@@ -291,16 +291,22 @@ class TestEnvironment(RealAdapterMixin):
         )
         from teddy_executor.core.services.action_executor import ActionExecutor
 
+        from teddy_executor.core.domain.models.orchestrator_ports import (
+            OrchestratorPorts,
+        )
+
         self._container.register(
             IRunPlanUseCase,
             factory=lambda: ExecutionOrchestrator(
-                plan_parser=self._container.resolve(IPlanParser),
-                plan_validator=self._container.resolve(IPlanValidator),
-                action_executor=self._container.resolve(ActionExecutor),
-                file_system_manager=self._container.resolve(IFileSystemManager),
-                report_assembler=self._container.resolve(IExecutionReportAssembler),
-                user_interactor=self._container.resolve(IUserInteractor),
-                plan_reviewer=None,
+                ports=OrchestratorPorts(
+                    plan_parser=self._container.resolve(IPlanParser),
+                    plan_validator=self._container.resolve(IPlanValidator),
+                    action_executor=self._container.resolve(ActionExecutor),
+                    file_system_manager=self._container.resolve(IFileSystemManager),
+                    report_assembler=self._container.resolve(IExecutionReportAssembler),
+                    user_interactor=self._container.resolve(IUserInteractor),
+                    plan_reviewer=None,
+                )
             ),
         )
         return self

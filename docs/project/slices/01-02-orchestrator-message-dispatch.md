@@ -38,7 +38,7 @@ And the final execution report (report.md) does NOT contain these warnings (to a
 - [x] **Logic** - Implement validation in `PlanValidator` to reject `MESSAGE` actions with empty content.
 - [x] **Logic** - Update `ExecutionOrchestrator` to detect single-action `MESSAGE` plans and bypass the `IPlanReviewer` (TUI).
 - [x] **Logic** - Update `ExecutionOrchestrator` to display terminal-only deprecation warnings for `PROMPT`, `INVOKE`, and `RETURN`.
-- [ ] **Refactor** - [DEBT] Refactor `ExecutionOrchestrator` constructor to use a `Dependencies` DTO to reduce parameter count (currently 7).
+- [x] **Refactor** - [DEBT] Refactor `ExecutionOrchestrator` constructor to use a `Dependencies` DTO to reduce parameter count (currently 7).
 - [ ] **Harness** - Add acceptance tests in `tests/suites/acceptance/test_message_protocol_orchestration.py`.
 - [ ] **Refactor** - [DEBT] Refactor `ExecutionReportAssembler.assemble` parameters into a DTO to comply with `PLR0913` (too many arguments).
 
@@ -70,3 +70,9 @@ And the final execution report (report.md) does NOT contain these warnings (to a
 - Updated `ExecutionOrchestrator` to detect legacy actions (`PROMPT`, `INVOKE`, `RETURN`) during the execution loop.
 - Injected `IUserInteractor` into the orchestrator to support real-time terminal warnings.
 - Verified terminal output with unit and integration tests; ensured report remains clean.
+
+### Deliverable: Refactor - ExecutionOrchestrator Dependencies DTO
+- Created `OrchestratorPorts` DTO in `core/domain/models/orchestrator_ports.py` to group dependencies.
+- Updated `ExecutionOrchestrator` constructor to accept the DTO, reducing parameter count to 1 and resolving `PLR0913`.
+- Registered `OrchestratorPorts` in `container.py` for automated injection.
+- Updated all manual instantiations in the test suite and `TestEnvironment.without_reviewer()`.

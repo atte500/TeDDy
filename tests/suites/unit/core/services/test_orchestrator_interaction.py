@@ -6,6 +6,7 @@ from teddy_executor.core.domain.models import (
     RunStatus,
 )
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
+from teddy_executor.core.domain.models.orchestrator_ports import OrchestratorPorts
 from unittest.mock import Mock
 from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
 
@@ -74,13 +75,15 @@ def test_orchestrator_falls_back_to_legacy_interaction_if_no_reviewer(
     )
 
     orchestrator = ExecutionOrchestrator(
-        plan_parser=env.container.resolve(IPlanParser),
-        plan_validator=env.container.resolve(IPlanValidator),
-        action_executor=mock_executor,
-        file_system_manager=env.container.resolve(IFileSystemManager),
-        report_assembler=env.container.resolve(IExecutionReportAssembler),
-        user_interactor=env.container.resolve(IUserInteractor),
-        plan_reviewer=None,
+        ports=OrchestratorPorts(
+            plan_parser=env.container.resolve(IPlanParser),
+            plan_validator=env.container.resolve(IPlanValidator),
+            action_executor=mock_executor,
+            file_system_manager=env.container.resolve(IFileSystemManager),
+            report_assembler=env.container.resolve(IExecutionReportAssembler),
+            user_interactor=env.container.resolve(IUserInteractor),
+            plan_reviewer=None,
+        )
     )
 
     action1 = ActionData(type="EXECUTE", params={"command": "ls"})

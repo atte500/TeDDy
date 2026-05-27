@@ -31,7 +31,7 @@ class EditSimulator(IEditSimulator):
 
         if is_ambiguous and not match_all:
             count = content.count(find) if score == 1.0 else 2
-            hint = " Please provide a larger FIND block to uniquely identify the section, refactor the code to avoid duplication. Alternatively you can use `Match All: true` to change all occurrences in the file at once."
+            hint = " Please provide a larger FIND block to uniquely identify the section, refactor the code to avoid duplication. Alternatively you can use the list item `Match All: true` to change all occurrences in the file at once."
             raise MultipleMatchesFoundError(
                 message=f"Found {count} ambiguous occurrences of {find!r}. Aborting edit to prevent ambiguity.{hint}",
                 content=content,

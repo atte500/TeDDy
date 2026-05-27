@@ -2,6 +2,7 @@ from tests.harness.setup.mocking import POSIXPathMock
 from teddy_executor.core.domain.models.plan import Plan, ActionData, ExecutionStatus
 from teddy_executor.core.domain.models.execution_report import ActionLog, ActionStatus
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
+from teddy_executor.core.domain.models.orchestrator_ports import OrchestratorPorts
 from teddy_executor.core.services.execution_report_assembler import (
     ExecutionReportAssembler,
 )
@@ -16,12 +17,14 @@ def test_orchestrator_skips_manually_executed_actions():
     mock_fs = POSIXPathMock()
 
     orchestrator = ExecutionOrchestrator(
-        plan_parser=mock_parser,
-        plan_validator=mock_validator,
-        action_executor=mock_executor,
-        file_system_manager=mock_fs,
-        report_assembler=ExecutionReportAssembler(),
-        user_interactor=POSIXPathMock(),
+        ports=OrchestratorPorts(
+            plan_parser=mock_parser,
+            plan_validator=mock_validator,
+            action_executor=mock_executor,
+            file_system_manager=mock_fs,
+            report_assembler=ExecutionReportAssembler(),
+            user_interactor=POSIXPathMock(),
+        )
     )
 
     # Create an action that was ALREADY executed
@@ -74,12 +77,14 @@ def test_orchestrator_halts_on_manual_failure():
     mock_validator = POSIXPathMock()
     mock_validator.validate.return_value = []
     orchestrator = ExecutionOrchestrator(
-        POSIXPathMock(),
-        mock_validator,
-        mock_executor,
-        POSIXPathMock(),
-        ExecutionReportAssembler(),
-        POSIXPathMock(),
+        ports=OrchestratorPorts(
+            plan_parser=POSIXPathMock(),
+            plan_validator=mock_validator,
+            action_executor=mock_executor,
+            file_system_manager=POSIXPathMock(),
+            report_assembler=ExecutionReportAssembler(),
+            user_interactor=POSIXPathMock(),
+        )
     )
 
     report = orchestrator.execute(plan=plan, interactive=False)

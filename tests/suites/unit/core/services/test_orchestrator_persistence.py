@@ -1,5 +1,6 @@
 from unittest.mock import Mock
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
+from teddy_executor.core.domain.models.orchestrator_ports import OrchestratorPorts
 from teddy_executor.core.services.execution_report_assembler import (
     ExecutionReportAssembler,
 )
@@ -30,12 +31,14 @@ def test_execute_persists_manual_plan_content_to_temp_file():
     mock_parser.parse.return_value = mock_plan
 
     orchestrator = ExecutionOrchestrator(
-        plan_parser=mock_parser,
-        plan_validator=mock_validator,
-        action_executor=mock_executor,
-        file_system_manager=mock_fs,
-        report_assembler=ExecutionReportAssembler(),
-        user_interactor=Mock(),
+        ports=OrchestratorPorts(
+            plan_parser=mock_parser,
+            plan_validator=mock_validator,
+            action_executor=mock_executor,
+            file_system_manager=mock_fs,
+            report_assembler=ExecutionReportAssembler(),
+            user_interactor=Mock(),
+        )
     )
 
     plan_content = "# Test Plan\n## Rationale\n..."
