@@ -13,10 +13,10 @@ Used when the agent needs to perform file system, shell, or research operations.
 
 ### 2.2. Communicating Turns (`## Message`)
 Used when the agent needs to talk to the user, hand off to another agent, or signal completion.
-- Everything following the `## Message` header is treated as raw Markdown content for the recipient.
-- There are no formal parameters like `Target` or `Reference Files`.
-- **Reference Files:** Should be included as standard Markdown links within the body of the message (e.g., `Check the logs in [report.md](/path/to/report.md)`).
-- **Handoffs:** To hand off to another agent, the message should include the specific CLI instruction for the user to start a new session (e.g., `teddy start -a developer ...`).
+- **User as Mediator:** All `## Message` blocks are presented to the User. The User acts as the bridge for all agent handoffs.
+- **Structure:** Free-form Markdown content. No formal parameters (like `Target` or `Reference Files`).
+- **Reference Files:** MUST be included as root-relative Markdown links within the message body (e.g., `[report.md](/path/to/report.md)`).
+- **Handoffs:** To delegate to another agent, the message MUST provide clear instructions and the exact CLI command for the user to run (e.g., `teddy start -a developer -m "Implement this slice" -c "path/to/slice.md"`).
 
 ## 3. Behavioral Rules
 1. **Isolation:** A plan cannot contain both `## Action Plan` and `## Message`. If both are present, validation fails.

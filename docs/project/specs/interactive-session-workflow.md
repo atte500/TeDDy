@@ -37,12 +37,8 @@ graph TD
         subgraph "plan.md"
             direction LR
             H["`READ` action"];
-            I["`PRUNE` action"];
-            J["`INVOKE` action"];
         end
         H -- "adds to" --> K["`N+1/turn.context`"];
-        I -- "removes from" --> K;
-        J -- "overwrites" --> L["`N+1/system_prompt.xml`"];
     end
 
     E -- contains --> H;
@@ -167,18 +163,9 @@ The `teddy execute` command creates the *next* turn (`T_next`) based on the stat
 4.  **Apply Standard Context Changes from `plan.md`:**
     -   Process all standard actions in `T_current/plan.md`:
         -   For each `READ` action, add its resource path to `T_next/turn.context`.
-        -   For each `PRUNE` action, remove its resource path from `T_next/turn.context`.
-5.  **Apply Special Action Overrides:**
-    -   If `T_current/plan.md` contains an `INVOKE` or `RETURN` action, it overrides the default state.
-    -   **If `INVOKE`:**
-        -   **Context:** `T_next/turn.context` is wiped and replaced with files from `Reference Files`.
-        -   **Agent:** `T_next/system_prompt.xml` is overwritten with the invoked agent's prompt.
-        -   **Ledger:** `caller_turn_id` in `T_next/meta.yaml` is set to `T_current`'s ID.
-    -   **If `RETURN`:**
-        -   Find the original `caller_turn_id` from `T_current/meta.yaml`.
-        -   **Context:** `T_next/turn.context` is replaced with the *caller's* context, then files from `Reference Files` are appended.
-        -   **Agent:** `T_next/system_prompt.xml` is overwritten with the *caller's* prompt.
-        -   **Ledger:** `parent_turn_id` in `T_next/meta.yaml` is set to the `caller_turn_id`, and `caller_turn_id` is cleared.
+5.  **Handoffs & Communicating Turns:**
+    -   If the turn uses `## Message`, the executor generates the `report.md` as usual and transitions to `T_next`.
+    -   Handoffs are mediated by the User; the agent provides the necessary `teddy start` command in the message body.
 6.  **Finalize and Report:**
     -   **Generate Report:** The factual `T_current/report.md` is generated based on the execution of the plan (or its validation failure).
     -   **Update Session Log:** The system will create or append to the `<session_name>/session-log.md` file. It will append the full content of `T_current/plan.md` and the "Action Log" section from `T_current/report.md`. See the [Automatic Session Log Specification](./session-history-view.md) for details.

@@ -204,24 +204,17 @@ For all actions, the parser must ignore and clean up unforeseen codeblocks or th
     2.  The parser iterates through every fenced code block.
     3.  Each block is split into individual lines. Each non-empty line (stripped of leading/trailing whitespace) is treated as a separate, individual query.
 
-### 5.6. [Deprecated] `PROMPT`, `INVOKE`, `RETURN`
+### 5.6. `## Message` (Communicating Turns)
 
-These actions are deprecated in favor of the structural `## Message` section. This transition simplifies the protocol by separating acting turns from communicating turns. See the [Unified Handoff Protocol](/docs/project/specs/handoff-protocol.md) for the new convention.
+Used when the agent needs to talk to the user, hand off to another agent, or signal completion.
+- Everything following the `## Message` header is treated as raw Markdown content for the recipient (the User).
+- **Reference Files:** Included as standard Markdown links within the body of the message (e.g., `[report.md](/path/to/report.md)`).
+- **Handoffs:** To hand off to another agent, the message should include the specific CLI instruction for the user to start a new session (e.g., `teddy start -a developer ...`).
+- **Protocol Isolation:** A plan cannot contain both `## Action Plan` and `## Message`.
 
-### 5.9. `PRUNE`
+### 5.9. [Deprecated] `PRUNE`, `PROMPT`, `INVOKE`, `RETURN`
 
--   **Purpose:** Removes a resource from the agent's working context for subsequent turns. This is used to prevent context clutter.
--   **Format:**
-    ````markdown
-    ### `PRUNE`
-    -   **Resource:** [docs/project/specs/old-spec.md](/docs/project/specs/old-spec.md)
-    -   **File Path:** [docs/project/specs/old-spec.md](/docs/project/specs/old-spec.md)
-    -   **Description:** Remove the old specification as it is no longer relevant.
-    ````
--   **Parsing Rules:**
-    1.  Extract `Resource` or `File Path` and `Description`.
-    2.  `File Path` is an alias for local resources and **strictly forbids URLs**.
-    3.  The value for either can be a root-relative Markdown link `[text](/destination)`. The parser should use the destination as the path to remove from the context.
+These actions are deprecated. `PRUNE` has been removed to simplify context management. `PROMPT`, `INVOKE`, and `RETURN` are replaced by the structural `## Message` section.
 
 ## 6. Comprehensive Example Plan
 
