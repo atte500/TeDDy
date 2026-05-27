@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
-from datetime import datetime
-from typing import Optional, Sequence
 
-from teddy_executor.core.domain.models import ActionLog, ExecutionReport, Plan
+from teddy_executor.core.domain.models import ExecutionReport, ReportAssemblyData
 
 
 class IExecutionReportAssembler(ABC):
@@ -13,11 +11,7 @@ class IExecutionReportAssembler(ABC):
     @abstractmethod
     def assemble(
         self,
-        plan: Plan,
-        action_logs: Sequence[ActionLog],
-        start_time: datetime,
-        message: Optional[str] = None,
-        is_session: bool = False,
+        data: ReportAssemblyData,
     ) -> ExecutionReport:
         """
         Calculates the final run status and constructs a complete ExecutionReport.

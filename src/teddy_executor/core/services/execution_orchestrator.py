@@ -8,6 +8,7 @@ from teddy_executor.core.domain.models import (
     ActionLog,
     ExecutionReport,
     Plan,
+    ReportAssemblyData,
     ActionStatus,
 )
 from teddy_executor.core.ports.inbound.plan_parser import InvalidPlanError
@@ -234,7 +235,12 @@ class ExecutionOrchestrator(IRunPlanUseCase):
                 )
 
         report = self._report_assembler.assemble(
-            plan, action_logs, start_time, resolved_message
+            ReportAssemblyData(
+                plan=plan,
+                action_logs=action_logs,
+                start_time=start_time,
+                message=resolved_message,
+            )
         )
         return replace(
             report, run_summary=replace(report.run_summary, status=RunStatus.ABORTED)
@@ -275,7 +281,13 @@ class ExecutionOrchestrator(IRunPlanUseCase):
 
             action_logs = self._process_plan_actions(reviewed_plan, interactive)
             return self._report_assembler.assemble(
-                reviewed_plan, action_logs, start_time, message
+                ReportAssemblyData(
+                    plan=reviewed_plan,
+                    action_logs=action_logs,
+                    start_time=start_time,
+                    message=message,
+                    is_session=reviewed_plan.is_session,
+                )
             )
         finally:
             if temp_plan_path and os.path.exists(temp_plan_path):

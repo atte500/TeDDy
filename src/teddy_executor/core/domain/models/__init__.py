@@ -17,6 +17,7 @@ from .web_search_results import SearchResult
 from .web_search_results import WebSearchResults
 from .change_set import ChangeSet
 from .project_context import ContextItem, ProjectContext
+from .report_assembly_data import ReportAssemblyData
 from .action_ports import ActionPorts
 
 __all__ = [
@@ -24,6 +25,7 @@ __all__ = [
     "ChangeSet",
     "ContextItem",
     "ProjectContext",
+    "ReportAssemblyData",
     "Plan",
     "ActionData",
     "ActionType",

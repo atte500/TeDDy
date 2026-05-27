@@ -40,7 +40,7 @@ And the final execution report (report.md) does NOT contain these warnings (to a
 - [x] **Logic** - Update `ExecutionOrchestrator` to display terminal-only deprecation warnings for `PROMPT`, `INVOKE`, and `RETURN`.
 - [x] **Refactor** - [DEBT] Refactor `ExecutionOrchestrator` constructor to use a `Dependencies` DTO to reduce parameter count (currently 7).
 - [x] **Harness** - Add acceptance tests in `tests/suites/acceptance/test_message_protocol_orchestration.py`.
-- [ ] **Refactor** - [DEBT] Refactor `ExecutionReportAssembler.assemble` parameters into a DTO to comply with `PLR0913` (too many arguments).
+- [x] **Refactor** - [DEBT] Refactor `ExecutionReportAssembler.assemble` parameters into a DTO to comply with `PLR0913` (too many arguments).
 
 ## Implementation Plan
 1. Modify `ExecutionOrchestrator` to check `plan.is_communication_turn()` (new helper in `Plan` model).
@@ -82,3 +82,9 @@ And the final execution report (report.md) does NOT contain these warnings (to a
 - Verified that `MESSAGE` turns bypass the TUI and confirmation prompts for a fluid conversational flow.
 - Verified that legacy actions (`PROMPT`, `INVOKE`, `RETURN`) trigger terminal-only warnings.
 - Identified and fixed a bug in `ActionExecutor.confirm_and_dispatch` where `MESSAGE` actions were incorrectly triggering interactive confirmation prompts.
+
+### Deliverable: Refactor - ExecutionReportAssembler DTO
+- Created `ReportAssemblyData` DTO in `core/domain/models/report_assembly_data.py` to group assembly parameters.
+- Updated `IExecutionReportAssembler` outbound port and `ExecutionReportAssembler` implementation to accept the DTO, resolving `PLR0913`.
+- Updated `ExecutionOrchestrator` to use the DTO when calling the assembler.
+- Refactored all unit tests in `tests/suites/unit/core/services/test_execution_report_assembler.py` to use the new DTO.

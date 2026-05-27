@@ -1,11 +1,11 @@
 from datetime import datetime
-from typing import Optional, Sequence
+from typing import Sequence
 
 from teddy_executor.core.domain.models import (
     ActionLog,
     ActionStatus,
     ExecutionReport,
-    Plan,
+    ReportAssemblyData,
     RunStatus,
     RunSummary,
 )
@@ -21,29 +21,25 @@ class ExecutionReportAssembler(IExecutionReportAssembler):
 
     def assemble(
         self,
-        plan: Plan,
-        action_logs: Sequence[ActionLog],
-        start_time: datetime,
-        message: Optional[str] = None,
-        is_session: bool = False,
+        data: ReportAssemblyData,
     ) -> ExecutionReport:
         """
         Calculates the final run status and constructs a complete ExecutionReport.
         """
         summary = RunSummary(
-            status=self._determine_overall_status(action_logs),
-            start_time=start_time,
+            status=self._determine_overall_status(data.action_logs),
+            start_time=data.start_time,
             end_time=datetime.now(),
         )
         return ExecutionReport(
             run_summary=summary,
-            plan_title=plan.title,
-            rationale=plan.rationale,
-            user_request=message or plan.metadata.get("user_request"),
-            is_session=is_session or plan.is_session,
-            metadata=plan.metadata,
-            original_actions=plan.actions,
-            action_logs=action_logs,
+            plan_title=data.plan.title,
+            rationale=data.plan.rationale,
+            user_request=data.message or data.plan.metadata.get("user_request"),
+            is_session=data.is_session or data.plan.is_session,
+            metadata=data.plan.metadata,
+            original_actions=data.plan.actions,
+            action_logs=data.action_logs,
         )
 
     def _determine_overall_status(self, action_logs: Sequence[ActionLog]) -> RunStatus:
