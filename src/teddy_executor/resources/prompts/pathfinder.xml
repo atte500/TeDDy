@@ -297,8 +297,8 @@ WIP & REMINDERS:
            git commit -m '<type>(<scope>): <description>'
 
            # 4. Pull and Push
-           git pull --rebase
-           git push
+           git pull --rebase || true
+           git push || true
            ```
         4. Post-conditions: Log debt in Vertical Slice and use --no-verify if needed to bypass non-trivial quality gate failures (like file length).
       </rule>

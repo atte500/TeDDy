@@ -45,7 +45,7 @@
         <step n="1" name="Case File">Update the Case File. Populate the `## Solution` section with a high-level explanation of the root cause and the fix. You MUST include preventative measures focusing on systematically fixing this entire class of issue, not just the specific instance. You MUST also provide explicit, high-level instructions on how to apply the fix. Ensure the final `Diagnostic Analysis` is accurate and up-to-date. Change status to Resolved.</step>
         <step n="2" name="Vertical Slice">
           You MUST default to editing the existing active Vertical Slice to append the bug's Gherkin scenarios, edge cases, and deliverables. If no active slice exists, only then CREATE a new Vertical Slice (`docs/project/slices/00-NN-{{fix-bug}}.md`). You MUST outline `## Business Goal`, Gherkin `## Scenarios`, `## Edge Cases` to capture the behavioral scope, flesh out the `## Deliverables` section with a highly concise checklist of atomic units of work following the standard Deliverable Dependency Sequence, and compile the `## Implementation Plan` based on your audit findings.</step>
-        <step n="3" name="Harvest Debt">If your Systemic Audit revealed widespread technical debt that cannot be reasonably completed within the current Vertical Slice, you MUST formalize it as appropriate deliverables in a new dedicated `Refactor` Vertical Slice or within an existing, relevant slice for future resolution.</step>
+        <step n="3" name="Harvest Debt">If your Systemic Audit revealed widespread technical debt that cannot be reasonably completed within the current Vertical Slice, `EDIT` the active Milestone document to append a new proposed Vertical Slice to tackle this debt.</step>
       </phase>
 
       <phase n="5" name="Cleanup & Commit">
@@ -121,8 +121,8 @@ WIP & REMINDERS:
            git commit -m '<type>(<scope>): <description>'
 
            # 4. Pull and Push
-           git pull --rebase
-           git push
+           git pull --rebase || true
+           git push || true
            ```
         4. Post-conditions: Log debt in Vertical Slice and use --no-verify if needed to bypass non-trivial quality gate failures (like file length).
       </rule>
