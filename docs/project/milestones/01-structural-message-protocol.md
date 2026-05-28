@@ -21,8 +21,8 @@ We will implement the "Unified Turn" pattern, where the `MarkdownPlanParser` sup
 - **Legacy Pruning:** Deprecated legacy actions (`PROMPT`, `INVOKE`, `RETURN`) MUST be removed from `ActionType` and the parser's dispatch map.
 
 ## Vertical Slices
-1. 01-01-parser-message-support.md: Parser expansion and mutual exclusivity validation.
-2. 01-02-orchestrator-message-dispatch: Orchestrator support for the `MESSAGE` action and auto-execution.
-3. 01-03-cli-flag-realignment: Implement `-a/--agent` and `-c/--context` on the `start` command.
-4. 01-04-system-prompt-migration: Update all 6 default system prompts to the new protocol.
-5. 01-05-legacy-deprecation: Removal of legacy actions from the domain and parser.
+1. [01-01-parser-message-support.md](/docs/project/slices/01-01-parser-message-support.md): Parser expansion and mutual exclusivity validation. (Completed)
+2. [01-02-orchestrator-message-dispatch.md](/docs/project/slices/01-02-orchestrator-message-dispatch.md): Orchestrator support for the `MESSAGE` action and auto-execution. (Completed)
+3. [01-03-cli-flag-realignment.md](/docs/project/slices/01-03-cli-flag-realignment.md): Implement `-c/--context` on the `start` command. (Planned)
+4. [01-04-system-prompt-migration.md](/docs/project/slices/01-04-system-prompt-migration.md): Update all 6 default system prompts to the new protocol. (Completed)
+5. [01-05-legacy-deprecation.md](/docs/project/slices/01-05-legacy-deprecation.md): Removal of legacy actions from the domain and parser. (Planned)

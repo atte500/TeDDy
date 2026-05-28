@@ -16,6 +16,7 @@ The `SessionService` is responsible for managing the lifecycle of TeDDy sessions
 1.  **Session Bootstrapping (`create_session`):**
     -   Creates the session root and Turn 01 directory.
     -   Seeds `session.context` from `.teddy/init.context`, stripping comments.
+    -   **Context Merging:** If `additional_context` is provided, it is merged into the `session.context` content after the `init.context` content.
     -   Fetches and saves the agent's system prompt to `01/[agent_name].xml`.
     -   Initializes `01/meta.yaml` with a `turn_id` and `creation_timestamp`.
 2.  **Turn Transition (`transition_to_next_turn`):**
@@ -31,8 +32,8 @@ The `SessionService` is responsible for managing the lifecycle of TeDDy sessions
 
 ## 4. Data Contracts / Methods
 
-### `create_session(name: str, agent_name: str) -> str`
--   **Description:** Bootstraps a new session directory and returns the root path.
+### `create_session(name: str, agent_name: str, initial_request: Optional[str] = None, additional_context: Optional[list[str]] = None) -> str`
+-   **Description:** Bootstraps a new session directory, merging additional context if provided, and returns the root path.
 
 ### `get_latest_turn(session_name: str) -> str`
 -   **Description:** Returns the directory path of the most recent turn in a session.

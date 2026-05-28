@@ -16,8 +16,13 @@ This port abstracts the logic for creating turn directories, managing the `turn.
 
 ## 4. Data Contracts / Methods
 
-### `create_session(name: str, agent_name: str) -> str`
+### `create_session(name: str, agent_name: str, initial_request: Optional[str] = None, additional_context: Optional[list[str]] = None) -> str`
 - **Description:** Initializes a new session directory and bootstraps it for Turn 1.
+- **Arguments:**
+    - `name` (str)
+    - `agent_name` (str)
+    - `initial_request` (Optional[str])
+    - `additional_context` (Optional[list[str]]): List of root-relative paths to add to the initial `session.context`.
 - **Returns:** The path to the new session directory.
 
 ### `get_latest_turn(session_name: str) -> str`
