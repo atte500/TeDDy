@@ -40,7 +40,6 @@ class IRunPlanUseCase(ABC):
         self,
         session_name: str,
         interactive: bool = True,
-        message: Optional[str] = None,
         project_context: Optional["ProjectContext"] = None,
     ) -> Optional[ExecutionReport]:
         """
@@ -49,8 +48,7 @@ class IRunPlanUseCase(ABC):
         Args:
             session_name: The name of the session to resume.
             interactive: Whether to run in interactive mode.
-            message: Optional instruction for the report.
             project_context: Optional context for the run.
         """
-        _ = (session_name, interactive, message, project_context)
+        _ = (session_name, interactive, project_context)
         raise NotImplementedError

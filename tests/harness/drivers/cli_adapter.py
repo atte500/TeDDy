@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 from typing import List, Optional
 from typer.testing import CliRunner, Result
@@ -21,6 +22,11 @@ class CliTestAdapter:
         """Sets the content that will be 'returned' by the external editor mock."""
         self._mock_editor_output = content
 
+    def _strip_ansi(self, text: str) -> str:
+        """Removes ANSI escape sequences from text."""
+        ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+        return ansi_escape.sub("", text)
+
     def run_cli_command(
         self, args: List[str], cwd: Optional[Path] = None, input: Optional[str] = None
     ) -> Result:
@@ -33,6 +39,17 @@ class CliTestAdapter:
         with self._monkeypatch.context() as m:
             m.chdir(target_cwd)
             result = self._runner.invoke(app, args, input=input, env=env)
+
+            if result.stdout:
+                # Normalize output by stripping ANSI codes for reliable matching.
+                # Since Result.stdout is a property, we patch the instance's class.
+                normalized = self._strip_ansi(result.stdout)
+                result.__class__ = type(
+                    "NormalizedResult",
+                    (result.__class__,),
+                    {"stdout": property(lambda s: normalized)},
+                )
+
             return result
 
     def run_execute_with_plan(

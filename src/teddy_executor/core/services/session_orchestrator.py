@@ -59,7 +59,10 @@ class SessionOrchestrator(IRunPlanUseCase):
         Implements the 'resume' state machine.
         """
         return self._lifecycle_manager.resume(
-            session_name, self, interactive, project_context=project_context
+            session_name,
+            self,
+            interactive,
+            project_context=project_context,
         )
 
     def execute(  # noqa: PLR0913
