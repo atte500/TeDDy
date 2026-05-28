@@ -159,7 +159,7 @@ WIP & REMINDERS:
         3. Execution: You MUST execute the following standardized codeblock to EXECUTE with a 300s Timeout in order to push the probe, trigger the mailbox, and retrieve distilled results:
         ~~~~~~shell
         # 1. Commit and push the probe code only
-        git add spikes/debug/<file> && git commit -m 'debug: probe' --no-verify && git push
+        git add -f spikes/debug/<file> && git commit -m 'debug: probe' --no-verify && git push
 
         # 2. Trigger the remote workflow
         gh workflow run <workflow.yml> --field reason='[Reason]'
