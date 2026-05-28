@@ -327,6 +327,7 @@ WIP & REMINDERS:
       </rule>
 
       <rule n="10" name="Conflict Resolution Protocol">If any git rebase/pull fails or conflicts: 1. Identify conflicted files via `git status`. 2. `READ` and surgically `EDIT` those files to resolve conflict markers. 3. Run the full test suite to verify correctness. 4. Stage resolved files via `git add`. 5. Complete the rebase via `EXECUTE git rebase --continue`.</rule>
+      <rule n="11" name="Programmatic Edits">You may use `EXECUTE` with bash tools to modify files when surgical `EDIT` matching is brittle or for bulk changes. You MUST scope these actions to specific files and chain a verification command to output the delta immediately. Example: `sed -i 's/old/new/g' <file> && git diff <file>`</rule>
     </general_rules>
 
     <response_format>
