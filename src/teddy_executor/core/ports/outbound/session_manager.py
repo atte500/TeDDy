@@ -1,6 +1,6 @@
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Protocol
+from typing import Optional, Protocol, runtime_checkable
 from teddy_executor.core.domain.models import ExecutionReport
 
 
@@ -12,13 +12,21 @@ class SessionState(Enum):
     COMPLETE_TURN = "COMPLETE_TURN"  # report.md exists
 
 
+@runtime_checkable
 class ISessionManager(Protocol):
     """
     Outbound port for managing turn directories and metadata persistence.
     """
 
     def create_session(
-        self, name: str, agent_name: str, initial_request: Optional[str] = None
+        self,
+        name: str,
+        agent_name: str,
+        initial_request: Optional[str] = None,
+        additional_context: Optional[list[str]] = None,
+        model: Optional[str] = None,
+        provider: Optional[str] = None,
+        api_key: Optional[str] = None,
     ) -> str:
         """
         Initializes a new session directory and bootstraps it for Turn 1.

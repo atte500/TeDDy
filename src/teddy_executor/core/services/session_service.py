@@ -32,7 +32,14 @@ class SessionService(ISessionManager):
         self._prompt_manager = prompt_manager
 
     def create_session(
-        self, name: str, agent_name: str, initial_request: Optional[str] = None
+        self,
+        name: str,
+        agent_name: str,
+        initial_request: Optional[str] = None,
+        additional_context: Optional[list[str]] = None,
+        model: Optional[str] = None,
+        provider: Optional[str] = None,
+        api_key: Optional[str] = None,
     ) -> str:
         """
         Initializes a new session directory and bootstraps it for Turn 1.

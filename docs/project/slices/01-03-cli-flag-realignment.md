@@ -24,10 +24,19 @@ And the "session.context" file contains both paths
 - **Component Docs:** [docs/architecture/core/ports/outbound/session_manager.md](/docs/architecture/core/ports/outbound/session_manager.md), [docs/architecture/core/services/session_service.md](/docs/architecture/core/services/session_service.md)
 
 ## Deliverables
-- [ ] **Contract** - Update `ISessionManager.create_session` to accept `additional_context: Optional[list[str]] = None` and LLM overrides (`model`, `provider`, `api_key`).
+- [x] **Contract** - Update `ISessionManager.create_session` to accept `additional_context: Optional[list[str]] = None` and LLM overrides (`model`, `provider`, `api_key`).
 - [ ] **Harness** - Create `tests/suites/acceptance/test_cli_context_flag.py` to verify `start -a`, `-m`, `-c`, and LLM overrides.
 - [ ] **Logic** - Update `SessionService.create_session` to merge `additional_context` into `session.context` and persist overrides in `meta.yaml`.
 - [ ] **Logic** - Update `PlanningService.generate_plan` to extract `provider` and `api_key` from metadata and pass them to `llm_client.get_completion`.
 - [ ] **Wiring** - Update `handle_new_session` in `session_cli_handlers.py` to accept and pass the new flag values.
 - [ ] **Wiring** - Fix `start` command in `src/teddy_executor/__main__.py`: explicitly add `-a` short flag for `--agent` and add `-c` for the new `--context` flag. Ensure `--model`, `--provider`, and `--api-key` are also wired.
 - [ ] **Cleanup** - Verify through integration tests that all flags (including short aliases) are correctly propagated and persisted.
+- [ ] **Refactor** - [DEBT] Consolidate `create_session` parameters (7) into a DTO (e.g., `SessionOptions`) to satisfy `PLR0913`.
+
+## Implementation Notes
+
+### Deliverable: Contract - ISessionManager.create_session
+- Updated ISessionManager protocol in src/teddy_executor/core/ports/outbound/session_manager.py to include optional parameters: additional_context, model, provider, and api_key.
+- Applied @runtime_checkable to ISessionManager to enable runtime validation in tests.
+- Updated SessionService.create_session signature in src/teddy_executor/core/services/session_service.py to match the protocol.
+- Verified non-breaking nature of the change via a global test run and specific contract tests in tests/suites/unit/core/ports/test_session_manager_contract.py.
