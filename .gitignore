@@ -100,6 +100,7 @@ error_screenshot.png
 /src/teddy_executor/resources/config/**/__pycache__/
 
 # Spikes (temporary experimental code)
+spikes
 private/
 temp_*
 
