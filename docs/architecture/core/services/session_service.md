@@ -18,7 +18,7 @@ The `SessionService` is responsible for managing the lifecycle of TeDDy sessions
     -   Seeds `session.context` from `.teddy/init.context`, stripping comments.
     -   **Context Merging:** If `additional_context` is provided, it is merged into the `session.context` content after the `init.context` content.
     -   Fetches and saves the agent's system prompt to `01/[agent_name].xml`.
-    -   Initializes `01/meta.yaml` with a `turn_id` and `creation_timestamp`.
+    -   Initializes `01/meta.yaml` with `turn_id`, `creation_timestamp`, and any optional LLM overrides (`model`, `provider`, `api_key`) to ensure session-level persistence.
 2.  **Turn Transition (`transition_to_next_turn`):**
     -   Calculates the next turn ID (e.g., `01` -> `02`).
     -   Creates the next turn directory.
