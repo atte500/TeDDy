@@ -138,7 +138,7 @@ WIP & REMINDERS:
         - `Version Control`: Performing the VCP.
         - `Error Investigation`: Handling FAILURE states.
         - `Alignment`: For any `## Message` turn seeking user feedback or clarification.
-        - `Conclusion`: For the final `## Message` turn of a task, optionally including delegation instructions for the next agent.
+        - `Conclusion`: Terminal turn of a session. ALWAYS requires a clean workspace and completed VCP to have been performed beforehand!
       </rule>
 
       <rule n="8" name="Code Block Formatting">Strictly nest code blocks. To prevent premature closure of an action's code blocks (e.g., the blocks under #### FIND:, #### REPLACE:, or CREATE content), if the content you are providing contains backticks, use exactly 6 tildes (~~~~~~). If it contains tildes, use exactly 6 backticks (``````). Default to 6 tildes. Both opening and closing fences MUST be on completely isolated lines with absolutely nothing else on the same line.</rule>
