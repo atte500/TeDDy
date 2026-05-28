@@ -210,7 +210,7 @@ Used when the agent needs to talk to the user, hand off to another agent, or sig
 - Everything following the `## Message` header is treated as raw Markdown content for the recipient (the User).
 - **Reference Files:** Included as standard Markdown links within the body of the message (e.g., `[report.md](/path/to/report.md)`).
 - **Handoffs:** To hand off to another agent, the message should include the specific CLI instruction for the user to start a new session (e.g., `teddy start -a developer ...`).
-- **Protocol Isolation:** A plan cannot contain both `## Action Plan` and `## Message`.
+- **Mutual Exclusivity:** A plan cannot contain both `## Action Plan` and `## Message`.
 
 ### 5.9. [Deprecated] `PRUNE`, `PROMPT`, `INVOKE`, `RETURN`
 
