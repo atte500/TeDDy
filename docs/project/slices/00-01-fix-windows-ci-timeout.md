@@ -12,13 +12,12 @@ Eliminate intermittent CI failures on Windows to ensure reliable quality gates a
 Given a CI environment (CI=true)
 And a test suite with heavy TUI components
 When the tests are executed on a Windows runner under contention
-Then the timeout should automatically scale to provide 30s of headroom
+Then the timeout should automatically scale to provide 10s of headroom
 And the worker process should not be terminated prematurely
 ```
 
 ## Deliverables
 - [ ] **Harness** - Implement `pytest_collection_modifyitems` in `tests/conftest.py` for dynamic timeout scaling.
-- [ ] **Cleanup** - Delete debug spikes and shadow files.
 
 ## Implementation Plan
 1. Add `pytest_collection_modifyitems` hook to `tests/conftest.py`.

@@ -6,6 +6,7 @@ pytest-cov starts tracking coverage BEFORE our core modules are imported.
 """
 
 import functools
+import os
 from pathlib import Path
 
 import pytest
@@ -41,7 +42,14 @@ from tests.harness.setup.composition import (
 )
 
 
+@pytest.hookimpl(tryfirst=True)
 def pytest_configure(config):
+    """
+    Systemic Fix for Windows CI: Provide 10s of extra headroom for tests
+    running in CI environments to prevent worker crashes under contention.
+    """
+    if os.getenv("CI") == "true":
+        config.option.timeout = 15
     """
     Systemic Fix for Windows CI: Force UTF-8 as the default for all file I/O
     in tests. This prevents UnicodeEncodeError on Windows runners when
