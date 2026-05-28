@@ -6,6 +6,7 @@ from teddy_executor.core.ports.outbound.session_manager import (
     ISessionManager,
     SessionState,
 )
+from teddy_executor.core.domain.models.session import SessionOptions
 
 
 class DummyManager:
@@ -13,13 +14,7 @@ class DummyManager:
 
     def create_session(
         self,
-        name: str,
-        agent_name: str,
-        initial_request: Optional[str] = None,
-        additional_context: Optional[list[str]] = None,
-        model: Optional[str] = None,
-        provider: Optional[str] = None,
-        api_key: Optional[str] = None,
+        options: SessionOptions,
     ) -> str:
         return "ok"
 
@@ -68,8 +63,6 @@ def test_session_manager_contract_rejects_partial_implementation():
             self,
             name: str,
             agent_name: str,
-            initial_request: Optional[str] = None,
-            additional_context: Optional[list[str]] = None,
         ) -> str:
             return "ok"
 

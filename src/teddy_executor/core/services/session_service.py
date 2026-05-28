@@ -2,6 +2,7 @@ import re
 from pathlib import Path
 from typing import Any, Dict, Optional
 from teddy_executor.core.domain.models.execution_report import ExecutionReport
+from teddy_executor.core.domain.models.session import SessionOptions
 from teddy_executor.core.domain.models.plan import ActionType
 from teddy_executor.core.ports.inbound.init import IInitUseCase
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
@@ -36,27 +37,43 @@ class SessionService(ISessionManager):
 
     def create_session(
         self,
-        name: str,
-        agent_name: str,
-        initial_request: Optional[str] = None,
-        additional_context: Optional[list[str]] = None,
-        model: Optional[str] = None,
-        provider: Optional[str] = None,
-        api_key: Optional[str] = None,
+        options: SessionOptions,
     ) -> str:
         """
         Initializes a new session directory and bootstraps it for Turn 1.
         """
         timestamp = self._time_service.now().strftime("%Y%m%d_%H%M%S")
-        # Ensure the user-provided name is slugified to be filesystem-safe
-        clean_name = slugify(name) or "session"
+        clean_name = slugify(options.name) or "session"
         prefixed_name = f"{timestamp}-{clean_name}"
         session_root = f".teddy/sessions/{prefixed_name}"
         turn_dir = f"{session_root}/01"
 
         self._repository.create_turn_directory(turn_dir)
 
-        # 1. Seed session.context from init.context (Ensure it exists first)
+        # 1. Context Seeding
+        clean_context = self._prepare_session_context(session_root, options)
+        self._file_system_manager.write_file(
+            f"{session_root}/session.context", clean_context
+        )
+
+        # 2. Prompt population
+        prompt_content = self._prompt_manager.get_prompt_content(options.agent_name)
+        if not prompt_content:
+            raise ValueError(f"Agent prompt '{options.agent_name}' not found.")
+        self._file_system_manager.write_file(
+            f"{turn_dir}/{options.agent_name}.xml", prompt_content
+        )
+
+        # 3. Metadata persistence
+        meta_data = self._initialize_meta_data(options)
+        self._repository.save_meta(f"{turn_dir}/meta.yaml", meta_data)
+
+        return session_root
+
+    def _prepare_session_context(
+        self, session_root: str, options: SessionOptions
+    ) -> str:
+        """Seeds and merges context for the new session."""
         init_context_path = ".teddy/init.context"
         if not self._file_system_manager.path_exists(init_context_path):
             self._init_service.ensure_initialized()
@@ -67,61 +84,44 @@ class SessionService(ISessionManager):
             )
 
         init_context = self._file_system_manager.read_file(init_context_path)
-        # Strip comments as per specification
-        clean_context_lines = [
+        clean_lines = [
             line.strip()
             for line in init_context.splitlines()
             if line.strip() and not line.strip().startswith("#")
         ]
 
-        # Merge additional context if provided
-        if additional_context:
-            for path in additional_context:
-                if path and path not in clean_context_lines:
-                    clean_context_lines.append(path)
+        # Merge additional context
+        for path in options.additional_context:
+            if path and path not in clean_lines:
+                clean_lines.append(path)
 
-        clean_context = "\n".join(clean_context_lines)
+        clean_context = "\n".join(clean_lines)
 
-        # 2. Persist initial request if provided
-        if initial_request:
-            request_path = f"{session_root}/initial_request.md"
-            self._file_system_manager.write_file(request_path, initial_request)
-            # Seed the request into the session context using normalized root-relative path
-            rel_request_path = self.to_root_relative(
-                Path(session_root), "initial_request.md"
-            )
-            clean_context += f"\n{rel_request_path}"
+        # Seed initial request
+        if options.initial_request:
+            req_path = f"{session_root}/initial_request.md"
+            self._file_system_manager.write_file(req_path, options.initial_request)
+            rel_path = self.to_root_relative(Path(session_root), "initial_request.md")
+            clean_context += f"\n{rel_path}"
 
-        self._file_system_manager.write_file(
-            f"{session_root}/session.context", clean_context
-        )
+        return clean_context
 
-        # 3. Populate specific agent prompt file
-        prompt_content = self._prompt_manager.get_prompt_content(agent_name)
-        if not prompt_content:
-            raise ValueError(f"Agent prompt '{agent_name}' not found.")
-        self._file_system_manager.write_file(
-            f"{turn_dir}/{agent_name}.xml", prompt_content
-        )
-
-        # 4. Create meta.yaml
+    def _initialize_meta_data(self, options: SessionOptions) -> Dict[str, Any]:
+        """Creates the initial metadata dictionary."""
         meta_data = {
             "turn_id": "01",
-            "agent_name": agent_name,
+            "agent_name": options.agent_name,
             "cumulative_cost": 0.0,
             "turn_cost": 0.0,
             "creation_timestamp": self._time_service.now_utc().isoformat(),
         }
-        if model:
-            meta_data["model"] = model
-        if provider:
-            meta_data["provider"] = provider
-        if api_key:
-            meta_data["api_key"] = api_key
-
-        self._repository.save_meta(f"{turn_dir}/meta.yaml", meta_data)
-
-        return session_root
+        if options.model:
+            meta_data["model"] = options.model
+        if options.provider:
+            meta_data["provider"] = options.provider
+        if options.api_key:
+            meta_data["api_key"] = options.api_key
+        return meta_data
 
     def get_latest_turn(self, session_name: str) -> str:
         """

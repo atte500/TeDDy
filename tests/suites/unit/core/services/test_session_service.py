@@ -3,6 +3,7 @@ from pathlib import Path
 from unittest.mock import ANY
 
 from teddy_executor.core.ports.outbound.session_manager import ISessionManager
+from teddy_executor.core.domain.models.session import SessionOptions
 from teddy_executor.core.ports.outbound.time_service import ITimeService
 from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
 
@@ -33,10 +34,12 @@ def test_create_session_orchestrates_filesystem_correctly(env):
 
     # Act
     service.create_session(
-        name=session_name,
-        agent_name=agent_name,
-        additional_context=["extra.md"],
-        model="gpt-4",
+        SessionOptions(
+            name=session_name,
+            agent_name=agent_name,
+            additional_context=["extra.md"],
+            model="gpt-4",
+        )
     )
 
     # Assert
@@ -86,7 +89,9 @@ def test_create_session_persists_initial_request(env):
 
     # Act
     service.create_session(
-        name=session_name, agent_name=agent_name, initial_request=initial_request
+        SessionOptions(
+            name=session_name, agent_name=agent_name, initial_request=initial_request
+        )
     )
 
     # Assert
@@ -117,7 +122,9 @@ def test_create_session_seeds_initial_request_into_session_context(env):
 
     # Act
     service.create_session(
-        name=session_name, agent_name=agent_name, initial_request=initial_request
+        SessionOptions(
+            name=session_name, agent_name=agent_name, initial_request=initial_request
+        )
     )
 
     # Assert

@@ -2,6 +2,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional, Protocol, runtime_checkable
 from teddy_executor.core.domain.models import ExecutionReport
+from teddy_executor.core.domain.models.session import SessionOptions
 
 
 class SessionState(Enum):
@@ -20,13 +21,7 @@ class ISessionManager(Protocol):
 
     def create_session(
         self,
-        name: str,
-        agent_name: str,
-        initial_request: Optional[str] = None,
-        additional_context: Optional[list[str]] = None,
-        model: Optional[str] = None,
-        provider: Optional[str] = None,
-        api_key: Optional[str] = None,
+        options: SessionOptions,
     ) -> str:
         """
         Initializes a new session directory and bootstraps it for Turn 1.

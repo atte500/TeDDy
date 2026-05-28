@@ -31,9 +31,15 @@ And the "session.context" file contains both paths
 - [x] **Wiring** - Update `handle_new_session` in `session_cli_handlers.py` to accept and pass the new flag values.
 - [x] **Wiring** - Fix `start` command in `src/teddy_executor/__main__.py`: explicitly add `-a` short flag for `--agent` and add `-c` for the new `--context` flag. Ensure `--model`, `--provider`, and `--api-key` are also wired.
 - [x] **Cleanup** - Verify through integration tests that all flags (including short aliases) are correctly propagated and persisted.
-- [ ] **Refactor** - [DEBT] Consolidate `create_session` parameters (7) into a DTO (e.g., `SessionOptions`) to satisfy `PLR0913`.
+- [x] **Refactor** - [DEBT] Consolidate `create_session` parameters (7) into a DTO (e.g., `SessionOptions`) to satisfy `PLR0913`.
 
 ## Implementation Notes
+
+### Deliverable: Refactor - Consolidate create_session parameters into a DTO
+- **DTO Implementation**: Created `SessionOptions` DTO in `src/teddy_executor/core/domain/models/session.py` to encapsulate all session initialization parameters.
+- **Interface Decoupling**: Updated `ISessionManager` and `SessionService` to use the DTO, reducing constructor complexity and satisfying `PLR0913`.
+- **Migration**: Updated all call sites including `session_cli_handlers.py` and the full unit test suite.
+- **Contract Enforcement**: Updated `test_session_manager_contract.py` to verify the new signature at the protocol level.
 
 ### Deliverable: CLI Flag Realignment and Persistence
 - **Flag Wiring**: Added `-c/--context`, `--model`, `--provider`, and `--api-key` to the `start` command in `__main__.py`. Added `-a` short alias for `--agent`.

@@ -8,6 +8,7 @@ from teddy_executor.core.ports.inbound.init import IInitUseCase
 from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.session_manager import ISessionManager
+from teddy_executor.core.domain.models.session import SessionOptions
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 from teddy_executor.core.ports.outbound.session_loop_guard import ISessionLoopGuard
 from teddy_executor.core.utils.string import slugify
@@ -61,15 +62,16 @@ def handle_new_session(  # noqa: PLR0913
 
         # 2. Determine session name (slugify message if name is missing)
         actual_name = _determine_session_name(name, message)
-        session_dir = session_manager.create_session(
+        options = SessionOptions(
             name=actual_name,
             agent_name=agent,
             initial_request=message,
-            additional_context=additional_context,
+            additional_context=additional_context or [],
             model=model,
             provider=provider,
             api_key=api_key,
         )
+        session_dir = session_manager.create_session(options)
         typer.echo(f"Session created at: {session_dir}")
 
         # Streamlined Initialization: Trigger resume (which triggers planning for EMPTY state)

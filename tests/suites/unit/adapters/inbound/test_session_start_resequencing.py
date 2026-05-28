@@ -3,6 +3,7 @@ from punq import Container
 from teddy_executor.adapters.inbound.session_cli_handlers import handle_new_session
 from teddy_executor.core.ports.inbound.init import IInitUseCase
 from teddy_executor.core.ports.outbound.session_manager import ISessionManager
+from teddy_executor.core.domain.models.session import SessionOptions
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient
@@ -65,13 +66,12 @@ def test_handle_new_session_prompts_for_message_before_creating_dir():
 
     # 3. Correct name used (slugified from prompt) and initial request seeded
     mock_session_manager.create_session.assert_called_once_with(
-        name="build-rocket",
-        agent_name="pathfinder",
-        initial_request="Build a rocket",
-        additional_context=None,
-        model=None,
-        provider=None,
-        api_key=None,
+        SessionOptions(
+            name="build-rocket",
+            agent_name="pathfinder",
+            initial_request="Build a rocket",
+            additional_context=[],
+        )
     )
 
 
@@ -111,13 +111,12 @@ def test_handle_new_session_prompts_even_when_non_interactive():
     # Assert
     mock_user_interactor.ask_question.assert_called_once_with("What are we working on?")
     mock_session_manager.create_session.assert_called_once_with(
-        name="something-non-interactive",
-        agent_name="pathfinder",
-        initial_request="Do something non-interactive",
-        additional_context=None,
-        model=None,
-        provider=None,
-        api_key=None,
+        SessionOptions(
+            name="something-non-interactive",
+            agent_name="pathfinder",
+            initial_request="Do something non-interactive",
+            additional_context=[],
+        )
     )
 
 

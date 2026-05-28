@@ -16,16 +16,10 @@ This port abstracts the logic for creating turn directories, managing the `turn.
 
 ## 4. Data Contracts / Methods
 
-### `create_session(name: str, agent_name: str, initial_request: Optional[str] = None, additional_context: Optional[list[str]] = None, model: Optional[str] = None, provider: Optional[str] = None, api_key: Optional[str] = None) -> str`
-- **Description:** Initializes a new session directory and bootstraps it for Turn 1.
+### `create_session(options: SessionOptions) -> str`
+- **Description:** Initializes a new session directory and bootstraps it for Turn 1 using the provided `SessionOptions` DTO.
 - **Arguments:**
-    - `name` (str): The slugified session name.
-    - `agent_name` (str): The name of the agent prompt to use.
-    - `initial_request` (Optional[str]): The user's first message/instruction.
-    - `additional_context` (Optional[list[str]]): List of root-relative paths to add to the initial `session.context`.
-    - `model` (Optional[str]): LLM model override (e.g., 'gpt-4o') for this session.
-    - `provider` (Optional[str]): LLM provider (e.g., 'openai').
-    - `api_key` (Optional[str]): LLM API key.
+    - `options` (SessionOptions): DTO containing session name, agent name, initial request, additional context, and LLM overrides.
 - **Returns:** The path to the new session directory.
 
 ### `get_latest_turn(session_name: str) -> str`
