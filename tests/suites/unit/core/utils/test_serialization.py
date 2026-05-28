@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock  # noqa: TID251
 from teddy_executor.core.utils.serialization import scrub_dict_for_serialization
 
 
@@ -18,8 +18,8 @@ def test_scrub_dict_converts_complex_to_str(container):
     assert result == {"obj": "complex_obj"}
 
 
-def test_scrub_dict_converts_mock_to_str(container):
+def test_scrub_dict_neutralizes_mock(container):
     mock_obj = MagicMock()
     data = {"mock": mock_obj}
     result = scrub_dict_for_serialization(data)
-    assert result["mock"].startswith("<MagicMock")
+    assert result == {"mock": "mock_object"}

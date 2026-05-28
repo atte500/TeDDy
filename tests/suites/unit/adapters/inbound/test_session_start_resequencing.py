@@ -1,6 +1,7 @@
 from unittest.mock import Mock
 from punq import Container
 from teddy_executor.adapters.inbound.session_cli_handlers import handle_new_session
+from teddy_executor.core.ports.inbound.init import IInitUseCase
 from teddy_executor.core.ports.outbound.session_manager import ISessionManager
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
@@ -19,6 +20,7 @@ def test_handle_new_session_prompts_for_message_before_creating_dir():
     mock_config_service = Mock(spec=IConfigService)
     mock_loop_guard = Mock(spec=ISessionLoopGuard)
 
+    container.register(IInitUseCase, instance=Mock(spec=IInitUseCase))
     container.register(ISessionManager, instance=mock_session_manager)
     container.register(IUserInteractor, instance=mock_user_interactor)
     container.register(IRunPlanUseCase, instance=mock_orchestrator)
@@ -66,6 +68,10 @@ def test_handle_new_session_prompts_for_message_before_creating_dir():
         name="build-rocket",
         agent_name="pathfinder",
         initial_request="Build a rocket",
+        additional_context=None,
+        model=None,
+        provider=None,
+        api_key=None,
     )
 
 
@@ -79,6 +85,7 @@ def test_handle_new_session_prompts_even_when_non_interactive():
     mock_config_service = Mock(spec=IConfigService)
     mock_loop_guard = Mock(spec=ISessionLoopGuard)
 
+    container.register(IInitUseCase, instance=Mock(spec=IInitUseCase))
     container.register(ISessionManager, instance=mock_session_manager)
     container.register(IUserInteractor, instance=mock_user_interactor)
     container.register(IRunPlanUseCase, instance=mock_orchestrator)
@@ -107,6 +114,10 @@ def test_handle_new_session_prompts_even_when_non_interactive():
         name="something-non-interactive",
         agent_name="pathfinder",
         initial_request="Do something non-interactive",
+        additional_context=None,
+        model=None,
+        provider=None,
+        api_key=None,
     )
 
 
@@ -121,6 +132,7 @@ def test_handle_new_session_raises_eof_error_on_empty_prompt_response_in_non_int
     mock_llm_client = Mock(spec=ILlmClient)
     mock_config_service = Mock(spec=IConfigService)
 
+    container.register(IInitUseCase, instance=Mock(spec=IInitUseCase))
     container.register(ISessionManager, instance=mock_session_manager)
     container.register(IUserInteractor, instance=mock_user_interactor)
     container.register(ILlmClient, instance=mock_llm_client)

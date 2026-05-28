@@ -66,7 +66,7 @@ def test_generate_plan_delegates_to_llm_client(env):
     assert messages[0]["content"] == "system-prompt"
     # Pure context strategy: user message is context only
     assert messages[1]["content"] == "H\nC"
-    assert "model" not in kwargs  # Handled by Adapter/Config now
+    assert "model" in kwargs  # Now explicitly passed for override support
 
 
 def test_generate_plan_writes_standardized_input_md(env):

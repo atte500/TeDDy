@@ -94,7 +94,9 @@ OPT_UI_MODE = typer.Option(
 @app.command()
 def start(  # noqa: PLR0913
     name: Optional[str] = typer.Argument(None, help="The name of the new session."),
-    agent: str = typer.Option("pathfinder", "--agent", help="Agent prompt to use."),
+    agent: str = typer.Option(
+        "pathfinder", "--agent", "-a", help="Agent prompt to use."
+    ),
     interactive: bool = typer.Option(
         True, "--interactive/--no-interactive", "-i/-y", help="Interactive mode."
     ),
@@ -102,6 +104,19 @@ def start(  # noqa: PLR0913
     ui_mode: Optional[bool] = OPT_UI_MODE,
     message: Optional[str] = typer.Option(
         None, "-m", "--message", help="Instruction for the first turn."
+    ),
+    context: Optional[str] = typer.Option(
+        None,
+        "--context",
+        "-c",
+        help="Comma-separated list of additional files/dirs for context.",
+    ),
+    model: Optional[str] = typer.Option(None, "--model", help="LLM model override."),
+    provider: Optional[str] = typer.Option(
+        None, "--provider", help="LLM provider override."
+    ),
+    api_key: Optional[str] = typer.Option(
+        None, "--api-key", help="LLM API key override."
     ),
 ):
     """
@@ -114,6 +129,8 @@ def start(  # noqa: PLR0913
     if ui_mode is not None:
         _apply_ui_mode_override(container, ui_mode)
 
+    additional_context = context.split(",") if context else None
+
     handle_new_session(
         container=container,
         name=name,
@@ -121,6 +138,10 @@ def start(  # noqa: PLR0913
         interactive=interactive,
         no_copy=no_copy,
         message=message,
+        additional_context=additional_context,
+        model=model,
+        provider=provider,
+        api_key=api_key,
     )
 
 

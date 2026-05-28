@@ -128,16 +128,18 @@ class RealAdapterMixin:
             root_dir=str(self.workspace),
             scope=Scope.singleton,
         )
-        return self
+        return self.with_real_init_service()
 
     def with_real_init_service(self: Any) -> Any:
+        from punq import Scope
         from teddy_executor.core.ports.inbound.init import IInitUseCase
         from teddy_executor.core.services.init_service import InitService
         from teddy_executor.core.ports.outbound import IFileSystemManager
 
-        # Allow InitService to use its internal importlib.resources logic
+        # Register as singleton to ensure it is treated as an override in CLI bootstrap
         self._container.register(
             IInitUseCase,
-            lambda: InitService(self.get_service(IFileSystemManager)),
+            factory=lambda: InitService(self.get_service(IFileSystemManager)),
+            scope=Scope.singleton,
         )
         return self

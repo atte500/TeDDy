@@ -21,15 +21,15 @@ class InitService(IInitUseCase):
             self._config_dir = os.path.abspath(str(resource_path))
 
     def _get_default_content(self, filename: str) -> str | None:
-        """Loads default content from the config directory."""
-        # Use the file system manager even for internal templates to allow mocking
-        path = os.path.join(self._config_dir, filename)
+        """Loads default content from the config directory using the file system port."""
+        try:
+            target_path = os.path.join(self._config_dir, filename)
+            if self._file_system.path_exists(target_path):
+                return self._file_system.read_file(target_path)
+        except Exception:  # nosec B110
+            pass
 
-        # We check path_exists on the file_system port
-        if not self._file_system.path_exists(path):
-            return None
-
-        return self._file_system.read_file(path)
+        return None
 
     def ensure_initialized(self) -> None:
         """

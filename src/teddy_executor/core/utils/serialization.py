@@ -20,7 +20,7 @@ def scrub_dict_for_serialization(data: Dict[str, Any]) -> Dict[str, Any]:
             or hasattr(v, "assert_called")
             or "Mock" in str(type(v))
         ):
-            return str(v)
+            return "mock_object"
         if isinstance(v, (str, int, float, bool, type(None), datetime, Enum)):
             return v
 

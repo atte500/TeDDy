@@ -110,12 +110,13 @@ class PromptManager(IPromptManager):
             meta["turn_cost"] = meta.get("turn_cost", 0.0)
             meta["token_count"] = meta.get("token_count", 0)
 
-        meta["model"] = str(getattr(response, "model", "unknown"))
+        if not meta.get("model"):
+            meta["model"] = str(getattr(response, "model", "unknown"))
 
-        # Capture finish_reason as primitive to prevent MagicMock recursion in YAML
+        # Capture finish_reason; scrub_dict_for_serialization will neutralize mocks
         if hasattr(response, "choices") and len(response.choices) > 0:
-            meta["finish_reason"] = str(
-                getattr(response.choices[0], "finish_reason", "unknown")
+            meta["finish_reason"] = getattr(
+                response.choices[0], "finish_reason", "unknown"
             )
 
         serializable_meta = scrub_dict_for_serialization(meta)

@@ -7,6 +7,7 @@ from teddy_executor.adapters.inbound.session_cli_handlers import (
 )
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
+from teddy_executor.core.ports.inbound.init import IInitUseCase
 from teddy_executor.core.ports.outbound.session_manager import ISessionManager
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient
@@ -19,6 +20,7 @@ def test_handle_new_session_halts_on_preflight_failure_before_prompt(env):
     mock_user_interactor = env.mock_port(IUserInteractor)
     mock_llm_client = env.mock_port(ILlmClient)
     mock_config_service = env.mock_port(IConfigService)
+    env.mock_port(IInitUseCase)
 
     # Set up preflight failure
     mock_llm_client.validate_config.return_value = ["API Key is placeholder"]

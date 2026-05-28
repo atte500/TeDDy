@@ -4,6 +4,7 @@ import typer
 from punq import Container
 
 from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
+from teddy_executor.core.ports.inbound.init import IInitUseCase
 from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.session_manager import ISessionManager
@@ -32,19 +33,27 @@ def handle_new_session(  # noqa: PLR0913
     interactive: bool = True,
     no_copy: bool = False,
     message: Optional[str] = None,
+    additional_context: Optional[list[str]] = None,
+    model: Optional[str] = None,
+    provider: Optional[str] = None,
+    api_key: Optional[str] = None,
 ):
     """Logic for the 'start' command."""
-    typer.echo("Checking configurations...", err=True)
     from teddy_executor.adapters.inbound.cli_helpers import handle_report_output
 
     try:
+        # 0. Ensure project is initialized
+        container.resolve(IInitUseCase).ensure_initialized()
+
+        # 1. Pre-flight checks (Fail-fast before user interaction)
+        typer.echo("Checking configurations...", err=True)
         _run_cli_preflight_check(container)
-        _echo_config_success(container, agent=agent)
+        _echo_config_success(container, agent)
 
         session_manager: ISessionManager = container.resolve(ISessionManager)
         user_interactor: IUserInteractor = container.resolve(IUserInteractor)
 
-        # 1. Resolve message first if missing
+        # 2. Resolve message first if missing
         if message is None:
             message = user_interactor.ask_question("What are we working on?")
             if not message:
@@ -53,7 +62,13 @@ def handle_new_session(  # noqa: PLR0913
         # 2. Determine session name (slugify message if name is missing)
         actual_name = _determine_session_name(name, message)
         session_dir = session_manager.create_session(
-            name=actual_name, agent_name=agent, initial_request=message
+            name=actual_name,
+            agent_name=agent,
+            initial_request=message,
+            additional_context=additional_context,
+            model=model,
+            provider=provider,
+            api_key=api_key,
         )
         typer.echo(f"Session created at: {session_dir}")
 

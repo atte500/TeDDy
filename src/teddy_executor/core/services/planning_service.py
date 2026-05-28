@@ -95,7 +95,10 @@ class PlanningService(IPlanningUseCase):
             self._display_telemetry(meta, token_count)
 
         response, plan_content, turn_cost = self._perform_generation_with_retry(
-            messages, model=model
+            messages,
+            model=model,
+            provider=meta.get("provider"),
+            api_key=meta.get("api_key"),
         )
 
         cost_val = self._prompt_manager.log_telemetry(token_count, turn_cost)
@@ -108,7 +111,11 @@ class PlanningService(IPlanningUseCase):
         return plan_path, cost_val
 
     def _perform_generation_with_retry(
-        self, messages: list[Dict[str, str]], model: str
+        self,
+        messages: list[Dict[str, str]],
+        model: str,
+        provider: Optional[str] = None,
+        api_key: Optional[str] = None,
     ) -> tuple[Any, str, float]:
         """Implements retry loop for empty LLM content."""
         max_retries = 3
@@ -116,8 +123,17 @@ class PlanningService(IPlanningUseCase):
         plan_content = ""
         turn_cost = 0.0
 
+        # Construct overrides dict for kwargs
+        overrides = {}
+        if provider:
+            overrides["provider"] = provider
+        if api_key:
+            overrides["api_key"] = api_key
+
         for attempt in range(max_retries):
-            response = self._llm_client.get_completion(messages=messages)
+            response = self._llm_client.get_completion(
+                messages=messages, model=model, **overrides
+            )
             plan_content = self._extract_plan_content(response)
             turn_cost = self._llm_client.get_completion_cost(
                 response, model_override=model

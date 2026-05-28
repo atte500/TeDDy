@@ -125,6 +125,16 @@ class LiteLLMAdapter(ILlmClient):
                 "No LLM model specified. Please set 'llm.model' in your config "
                 "or export 'OPENAI_API_KEY' etc. for LiteLLM defaults."
             )
+
+        # Robust Provider Routing for OpenRouter
+        target_model = str(final_params.get("model", ""))
+        provider = final_params.get("provider")
+        if provider and target_model.startswith("openrouter/"):
+            final_params.setdefault("extra_body", {})
+            final_params["extra_body"]["providers"] = {"order": [provider.capitalize()]}
+            # Remove top-level provider to prevent LiteLLM/OpenRouter 400 errors
+            del final_params["provider"]
+
         from teddy_executor.core.domain.models.exceptions import ConfigurationError
 
         try:

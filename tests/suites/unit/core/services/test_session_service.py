@@ -25,13 +25,19 @@ def test_create_session_orchestrates_filesystem_correctly(env):
     agent_prompt = "<prompt>Pathfinder content</prompt>"
 
     mock_fs.read_file.return_value = init_context
+    mock_fs.path_exists.return_value = True
     mock_time.now.return_value = datetime(2026, 4, 17, 12, 0, 0)
     # Mock UTC time for metadata
     mock_time.now_utc.return_value = datetime(2026, 4, 17, 12, 0, 0)
     mock_prompts.get_prompt_content.return_value = agent_prompt
 
     # Act
-    service.create_session(name=session_name, agent_name=agent_name)
+    service.create_session(
+        name=session_name,
+        agent_name=agent_name,
+        additional_context=["extra.md"],
+        model="gpt-4",
+    )
 
     # Assert
     # 1. Directory creation
@@ -39,10 +45,11 @@ def test_create_session_orchestrates_filesystem_correctly(env):
         Path(".teddy/sessions/20260417_120000-feat-x/01").as_posix()
     )
 
-    # 2. session.context creation (with comments stripped)
+    # 2. session.context creation (with comments stripped and extra paths)
+    expected_context = f"{clean_context}\nextra.md"
     mock_fs.write_file.assert_any_call(
         Path(".teddy/sessions/20260417_120000-feat-x/session.context").as_posix(),
-        clean_context,
+        expected_context,
     )
 
     # 3. pathfinder.xml creation
@@ -75,6 +82,7 @@ def test_create_session_persists_initial_request(env):
     mock_time.now_utc.return_value = datetime(2026, 5, 15, 10, 0, 0)
     mock_prompts.get_prompt_content.return_value = "<prompt/>"
     mock_fs.read_file.return_value = "README.md"
+    mock_fs.path_exists.return_value = True
 
     # Act
     service.create_session(
@@ -105,6 +113,7 @@ def test_create_session_seeds_initial_request_into_session_context(env):
     mock_time.now_utc.return_value = datetime(2026, 5, 15, 10, 0, 0)
     mock_prompts.get_prompt_content.return_value = "<prompt/>"
     mock_fs.read_file.return_value = "README.md"
+    mock_fs.path_exists.return_value = True
 
     # Act
     service.create_session(

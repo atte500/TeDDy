@@ -78,6 +78,11 @@ class TestEnvironment(RealAdapterMixin):
             teddy_executor.container, "get_container", lambda: self.container
         )
 
+        # 4. Ensure the CLI entry point uses the test container during acceptance tests
+        self._monkeypatch.setattr(
+            teddy_executor.__main__, "get_container", lambda: self.container
+        )
+
     def _register_default_mocks(self) -> None:
         """Registers mocks for side-effect-prone outbound ports (PLR0915)."""
         self._register_system_mocks()

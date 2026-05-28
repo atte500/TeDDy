@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import pytest
 from teddy_executor.core.services.init_service import InitService
 
@@ -34,9 +32,10 @@ def test_ensure_initialized_creates_directory_and_files_if_missing(service, mock
 
     # Then
     mock_fs.create_directory.assert_called_once_with(".teddy")
-    mock_fs.write_file.assert_any_call(str(Path(".teddy/.gitignore")), SOURCE_GITIGNORE)
-    mock_fs.write_file.assert_any_call(str(Path(".teddy/config.yaml")), SOURCE_CONFIG)
-    mock_fs.write_file.assert_any_call(str(Path(".teddy/init.context")), SOURCE_CONTEXT)
+    # Ensure we use the exact content from side_effect for assertions
+    mock_fs.write_file.assert_any_call(".teddy/.gitignore", SOURCE_GITIGNORE)
+    mock_fs.write_file.assert_any_call(".teddy/config.yaml", SOURCE_CONFIG)
+    mock_fs.write_file.assert_any_call(".teddy/init.context", SOURCE_CONTEXT)
 
 
 def test_ensure_initialized_does_not_overwrite_existing_files(service, mock_fs):

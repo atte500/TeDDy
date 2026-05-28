@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 from teddy_executor.core.domain.models.execution_report import ExecutionReport
 from teddy_executor.core.domain.models.plan import ActionType
+from teddy_executor.core.ports.inbound.init import IInitUseCase
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.ports.outbound.session_manager import (
     ISessionManager,
@@ -25,11 +26,13 @@ class SessionService(ISessionManager):
         repository: ISessionRepository,
         time_service: ITimeService,
         prompt_manager: IPromptManager,
+        init_service: IInitUseCase,
     ):
         self._file_system_manager = file_system_manager
         self._repository = repository
         self._time_service = time_service
         self._prompt_manager = prompt_manager
+        self._init_service = init_service
 
     def create_session(
         self,
@@ -45,24 +48,39 @@ class SessionService(ISessionManager):
         Initializes a new session directory and bootstraps it for Turn 1.
         """
         timestamp = self._time_service.now().strftime("%Y%m%d_%H%M%S")
-        # Ensure the user-provided name is also slugified and truncated
-        clean_name = slugify(name)
+        # Ensure the user-provided name is slugified to be filesystem-safe
+        clean_name = slugify(name) or "session"
         prefixed_name = f"{timestamp}-{clean_name}"
         session_root = f".teddy/sessions/{prefixed_name}"
         turn_dir = f"{session_root}/01"
 
         self._repository.create_turn_directory(turn_dir)
 
-        # 1. Seed session.context from init.context
-        init_context = self._file_system_manager.read_file(".teddy/init.context")
+        # 1. Seed session.context from init.context (Ensure it exists first)
+        init_context_path = ".teddy/init.context"
+        if not self._file_system_manager.path_exists(init_context_path):
+            self._init_service.ensure_initialized()
+
+        if not self._file_system_manager.path_exists(init_context_path):
+            raise FileNotFoundError(
+                f"Initialization failed: {init_context_path} not found."
+            )
+
+        init_context = self._file_system_manager.read_file(init_context_path)
         # Strip comments as per specification
-        clean_context = "\n".join(
-            [
-                line
-                for line in init_context.splitlines()
-                if line.strip() and not line.strip().startswith("#")
-            ]
-        )
+        clean_context_lines = [
+            line.strip()
+            for line in init_context.splitlines()
+            if line.strip() and not line.strip().startswith("#")
+        ]
+
+        # Merge additional context if provided
+        if additional_context:
+            for path in additional_context:
+                if path and path not in clean_context_lines:
+                    clean_context_lines.append(path)
+
+        clean_context = "\n".join(clean_context_lines)
 
         # 2. Persist initial request if provided
         if initial_request:
@@ -94,6 +112,13 @@ class SessionService(ISessionManager):
             "turn_cost": 0.0,
             "creation_timestamp": self._time_service.now_utc().isoformat(),
         }
+        if model:
+            meta_data["model"] = model
+        if provider:
+            meta_data["provider"] = provider
+        if api_key:
+            meta_data["api_key"] = api_key
+
         self._repository.save_meta(f"{turn_dir}/meta.yaml", meta_data)
 
         return session_root
@@ -247,6 +272,12 @@ class SessionService(ISessionManager):
             "parent_turn_id": current_meta.get("turn_id", "00"),
             "creation_timestamp": self._time_service.now_utc().isoformat(),
         }
+
+        # Carry over LLM overrides
+        for key in ["model", "provider", "api_key"]:
+            if key in current_meta:
+                meta[key] = current_meta[key]
+
         if is_validation_failure:
             meta["is_replan"] = True
             if "user_request" in current_meta:
