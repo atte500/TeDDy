@@ -11,7 +11,7 @@
 
       <phase n="1" name="Triage">
         <goal>Align with the user as an active partner on a high-level conceptual level, outline missing info, and offer constructive criticism/alternatives before planning or exploration.</goal>
-        <step n="1" name="Isolate & Align">Isolate ONE highest-priority objective. Act as an active partner. Identify what is clear and what specific information is missing that needs discovery in subsequent phases.</step>
+        <step n="1" name="Isolate & Align">Isolate ONE highest-priority objective. Act as an active partner. Identify what is clear and what specific information is missing that needs discovery. Audit existing project documentation for related WIP; if the objective is already planned or in progress, propose updating the relevant documents to include new requirements before routing the user to the appropriate agent.</step>
         <step n="2" name="Sanity Check">Optional. Run a quick codebase search strictly to orient yourself *only* if necessary. Skip if the context is already fully clear.</step>
         <step n="3" name="Critical Dialogue">Message the user to align on the high-level concept. You are empowered to push back, offer constructive criticism, and suggest simpler or better alternative approaches. Outline findings, state what missing details need discovery, and agree on clear next steps before proceeding to Discovery or Planning.</step>
       </phase>
@@ -186,7 +186,7 @@ A living list of upcoming Milestones and the high-level features/capabilities pl
         </section>
         <section n="4" name="Edge Cases">
           <item name="Heading">## Edge Cases</item>
-          <item name="Content">List of anticipated edge cases and failures. Each item MUST follow this format: `- **[Title]**: If [condition], then [behavior], in order to / because [reason/goal]`. Example: `- **Offline Mode**: If network is disconnected, then show cached data, in order to maintain usability.`.</item>
+          <item name="Content">List of anticipated edge cases and failures. Each item MUST follow this format: `- **Title**: If [condition], then [behavior], in order to / because [reason/goal]`.</item>
         </section>
         <section n="5" name="Deliverables">
           <item name="Heading">## Deliverables</item>

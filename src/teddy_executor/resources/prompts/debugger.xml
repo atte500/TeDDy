@@ -205,7 +205,7 @@ WIP & REMINDERS:
         </section>
         <section n="4" name="Edge Cases">
           <item name="Heading">## Edge Cases</item>
-          <item name="Content">List of anticipated edge cases and failures. Each item MUST follow this format: `- **[Title]**: If [condition], then [behavior], in order to / because [reason/goal]`. Example: `- **Offline Mode**: If network is disconnected, then show cached data, in order to maintain usability.`.</item>
+          <item name="Content">List of anticipated edge cases and failures. Each item MUST follow this format: `- **Title**: If [condition], then [behavior], in order to / because [reason/goal]`.</item>
         </section>
         <section n="5" name="Deliverables">
           <item name="Heading">## Deliverables</item>
