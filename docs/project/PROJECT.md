@@ -27,6 +27,7 @@ This section defines the conventions for our project management artifacts.
 
 ### Structural Protocol & Parser
 - **Core Goal:** Move from action-based communication (`INVOKE`, `RETURN`, `PROMPT`) to the structural `## Message` protocol.
+- **Specs:** [docs/project/specs/handoff-protocol.md](/docs/project/specs/handoff-protocol.md)
 - **Requirements:**
     - **CLI Polish:** Update `start` command to support `-a/--agent`, `-m/--message`, and `-c/--context` flags for fluid handoffs.
     - **Parser Cleanup:** Remove legacy `PROMPT`, `INVOKE`, and `RETURN` actions from `MarkdownPlanParser` and `PlanValidator`.
@@ -35,6 +36,7 @@ This section defines the conventions for our project management artifacts.
 
 ### TUI & CLI UX Polish
 - **Core Goal:** Improve the interactive experience and provide better visibility into session state.
+- **Specs:** [docs/project/specs/interactive-session-workflow.md](/docs/project/specs/interactive-session-workflow.md)
 - **Requirements:**
     - **Navigation:** Alt+Up/Down for jumping between Context, Rationale, and Plan/Message sections.
     - **Context Interactions:** Pressing `e` on context nodes opens the corresponding file/context file in the external editor.
@@ -50,6 +52,7 @@ This section defines the conventions for our project management artifacts.
 
 ### Stability & Infrastructure
 - **Core Goal:** Hardening the system against external failures and improving context management.
+- **Specs:** [docs/project/specs/stability-and-bugfixes.md](/docs/project/specs/stability-and-bugfixes.md)
 - **Requirements:**
     - **LLM Resilience:** Implement retry logic (3 attempts) for SSL and OpenRouter timeout errors (Reproduce via: `SSLV3_ALERT_BAD_RECORD_MAC`).
     - **Web Scraper (403 Bypassing):** Attempt to bypass 403 Forbidden errors via User-Agent rotation and common headers (Reproduce via: `https://www.pnas.org/doi/10.1073/pnas.2416294121`).
