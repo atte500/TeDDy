@@ -27,8 +27,8 @@ Then the generated input.md should contain the contents of all 3 files
 ```
 
 ## Edge Cases
-- **[Exhausted Retries]**: If all 3 attempts fail, then raise a `LlmApiError` to inform the user of the persistent failure.
-- **[Nested Ignores]**: If a directory is expanded, then respect `.gitignore` in subdirectories to prevent context pollution.
+- **Exhausted Retries**: If all 3 attempts fail, then raise a `LlmApiError` to inform the user of the persistent failure.
+- **Nested Ignores**: If a directory is expanded, then respect `.gitignore` in subdirectories to prevent context pollution.
 
 ## Deliverables
 - [ ] **Contract** - Update `ILlmClient` if necessary for retry configuration.
