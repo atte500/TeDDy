@@ -54,7 +54,7 @@ These checks validate the *content* of an action against the current state of th
 #### `EDIT`
 -   **[✓] `File Path` must be specified:** The metadata block must contain a valid `File Path`.
 -   **[✓] Target path must exist:** The specified file must already exist on the file system.
--   **[✓] Target path must be in context:** The specified file must be listed in the current turn's context (`turn.context`).
+-   **[ ] Target path context check:** (Relaxed) The file does NOT need to be in context; hallucinations or mismatches will be caught by the matching engine.
 -   **[✓] Must contain `FIND`/`REPLACE` pairs:** The action block must contain at least one pair of `#### FIND:` and `#### REPLACE:` headings.
 -   **[✓] `FIND` and `REPLACE` must be different:** For each pair, the content of the `FIND` and `REPLACE` blocks must not be identical.
 -   **[✓] `Match All` is optional:** Defaults to `false` if omitted. If present, the value MUST be `true` or `false`.
@@ -82,8 +82,7 @@ These checks validate the *content* of an action against the current state of th
 -   **[✓] `Resource` or `File Path` must be specified:** The metadata block must contain a `Resource` or `File Path`.
 -   **[✓] Strict Local Only:** If `File Path` is used, the value MUST NOT be a URL (starts with `http://` or `https://`).
 -   **[✓] Local file must exist:** If the resource is a local file path (e.g., `[path/to/file.md](/path/to/file.md)`), that file must exist on the file system. (Note: URLs are not validated at this stage).
--   **[✓] Target must NOT be in context:** The specified file must NOT be already listed in the session context (`session.context`) or the current turn's context (`turn.context`).
-    -   *Failure Example:* A plan tries to `READ` `README.md` but that file is already in `session.context`.
+-   **[ ] Context Redundancy:** (Relaxed) Validation will NOT fail if the file is already in context; the `READ` will simply be treated as a redundant request (no-op).
 
 #### `PRUNE`
 -   **[✓] `Resource` or `File Path` must be specified:** The metadata block must contain a `Resource` or `File Path`.

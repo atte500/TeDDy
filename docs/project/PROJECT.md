@@ -62,5 +62,5 @@ This section defines the conventions for our project management artifacts.
     - **Session Efficiency:** In session mode, NEVER include resource contents in `report.md`; add config to prevent "Message Turns" from being pruned.
     - **EXECUTE Fail-Fast:** Detect interactive prompts to fail early; on timeout, identify the specific failing command in a chain.
     - **Mid-Execution Consistency:** Gracefully return `FAILURE` for `EDIT` actions if a file is modified during execution (e.g., by a preceding `EXECUTE`).
-    - **Environment Hardening:** Suppress `LiteLLM`/`botocore` warnings in production environments.
+    - **Relaxed Context Validation:** Do not throw validation errors for `READ`-ing files already in context or `EDIT`-ing files not in context; rely on matching logic for enforcement.
     - **Parser Resilience:** For all actions (e.g., `READ`, `MESSAGE`), ignore and clean up unforeseen codeblocks, thematic breaks (`---`), or trailing text within codeblock delimiters (e.g., `~~~~~~ trailing text`) following the action block without triggering validation errors. (Note: Other unforeseen text outside delimiters must still raise validation error).
