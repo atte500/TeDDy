@@ -10,7 +10,7 @@ Finalize the transition by removing all code-level support for `PROMPT`, `INVOKE
 ## Deliverables
 - [x] **Contract** - Remove `PROMPT`, `INVOKE`, `RETURN`, and `PRUNE` from `ActionType` enum in `src/teddy_executor/core/domain/models/plan.py`.
 - [x] **Logic** - Purge `is_legacy` and update `is_terminal` to only include `MESSAGE`.
-- [▶] **Cleanup** - Purge `PROMPT` and `PRUNE` remnants from `ActionDispatcher` and `validation_rules/filesystem.py`.
+- [x] **Cleanup** - Purge `PROMPT` and `PRUNE` remnants from `ActionDispatcher` and `validation_rules/filesystem.py`.
 - [x] **Cleanup** - Remove parser strategies for legacy actions from `MarkdownPlanParser` and `action_parser_complex.py`.
 - [x] **Cleanup** - Remove legacy handling, `is_terminal` property, and `notify_warning` from `ActionExecutor` and `ExecutionOrchestrator`.
 - [x] **Cleanup** - Remove `PRUNE` side-effect logic from `SessionService`.
@@ -26,3 +26,4 @@ Finalize the transition by removing all code-level support for `PROMPT`, `INVOKE
 - **Test Purge**: Deleted several legacy unit and acceptance test files (`test_action_dispatcher.py`, `test_parser_edit_bulk.py`, etc.) that were dedicated to the removed actions.
 - **Harness Stability**: Fixed signature mismatches in `ReportParser` and test assertions that were broken by the property/method transitions.
 - **Audit Findings**: Discovered remaining `PROMPT` strings in `ActionDispatcher` and `PRUNE` logic in `validation_rules/filesystem.py`. Updated planning to include their removal and harvested `MagicMock` debt in tests.
+- **Remnant Purge**: Successfully removed `PROMPT`-specific handling in `ActionDispatcher`, deleted `PruneActionValidator`, and updated `validators.py` to remove legacy registration. Verified container stability.

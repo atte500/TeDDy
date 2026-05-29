@@ -14,7 +14,6 @@ def register_validators(container: punq.Container) -> None:
     from teddy_executor.core.services.validation_rules.filesystem import (
         CreateActionValidator,
         ReadActionValidator,
-        PruneActionValidator,
     )
     from teddy_executor.core.services.validation_rules.message import (
         MessageActionValidator,
@@ -31,7 +30,6 @@ def register_validators(container: punq.Container) -> None:
     )
     container.register(ExecuteActionValidator, scope=punq.Scope.transient)
     container.register(ReadActionValidator, scope=punq.Scope.transient)
-    container.register(PruneActionValidator, scope=punq.Scope.transient)
 
     container.register(
         IPlanValidator,
@@ -42,7 +40,6 @@ def register_validators(container: punq.Container) -> None:
                 container.resolve(EditActionValidator),
                 container.resolve(ExecuteActionValidator),
                 container.resolve(ReadActionValidator),
-                container.resolve(PruneActionValidator),
                 container.resolve(MessageActionValidator),
             ],
         ),

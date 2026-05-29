@@ -89,8 +89,6 @@ class ActionDispatcher:
         if isinstance(result, str):
             if action_type.lower() == "read":
                 result = {"content": result}
-            elif action_type.lower() == "prompt":
-                result = {"response": result}
         elif action_type.lower() == "edit" and isinstance(result, list):
             # edit_file now returns a list of scores
             result = {"similarity_scores": result}
@@ -125,17 +123,7 @@ class ActionDispatcher:
         }
 
         try:
-            # Bypassed execution if a user response is already provided (from the review phase)
-            if action_data.type.upper() == "PROMPT" and action_data.user_response:
-                log_data["status"] = ActionStatus.SUCCESS
-                log_data["details"] = {"response": action_data.user_response}
-                logger.info("SUCCESS (Bypassed)")
-                return ActionLog(**log_data)
-
             execution_params = self._prepare_execution_params(action_data)
-            if agent_name and action_data.type.upper() == "PROMPT":
-                execution_params["agent_name"] = agent_name
-
             details, status = self._execute_and_process_result(
                 action_data.type, execution_params
             )

@@ -81,35 +81,3 @@ class ReadActionValidator(BaseActionValidator):
                     )
                 ]
         return read_errors
-
-
-class PruneActionValidator(BaseActionValidator):
-    """Handles validation for the 'PRUNE' action."""
-
-    def validate(
-        self,
-        action: ActionData,
-        context_paths: Optional[ContextPaths] = None,
-    ) -> ValidationResult:
-        """Performs pre-flight checks for PRUNE."""
-        resource, errors = self._get_validated_path(action, ["resource"], "PRUNE")
-        if not resource:
-            return [
-                ValidationError(message="PRUNE action missing 'resource' parameter.")
-            ]
-        if errors:
-            return errors
-
-        if context_paths is not None:
-            if not is_path_in_context(
-                resource, context_paths, check_session=False, check_turn=True
-            ):
-                return [
-                    ValidationError(
-                        message=f"{resource} is not in the current turn context",
-                        file_path=resource,
-                        offending_node=action.node,
-                    )
-                ]
-
-        return []
