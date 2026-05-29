@@ -192,7 +192,7 @@ class LocalFileSystemAdapter(IFileSystemManager):
         Reads the content of a file from the specified path.
         """
         try:
-            content = self._resolve_path(path).read_text(encoding="utf-8")
+            content = self.read_raw_file(path)
             return truncate_lines(
                 content,
                 max_lines=self.max_read_lines,
@@ -204,6 +204,17 @@ class LocalFileSystemAdapter(IFileSystemManager):
             raise
         except IOError as e:
             raise IOError(f"Failed to read file at {path}: {e}") from e
+
+    def read_raw_file(self, path: str) -> str:
+        """
+        Reads the full content of a file from the specified path.
+        """
+        try:
+            return self._resolve_path(path).read_text(encoding="utf-8")
+        except FileNotFoundError:
+            raise
+        except IOError as e:
+            raise IOError(f"Failed to read raw file at {path}: {e}") from e
 
     def edit_file(
         self,

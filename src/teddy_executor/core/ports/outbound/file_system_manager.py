@@ -46,6 +46,15 @@ class IFileSystemManager(Protocol):
         """
         ...
 
+    def read_raw_file(self, path: str) -> str:
+        """
+        Reads the full, untruncated content of a file from the specified path.
+
+        Raises:
+            FileNotFoundError: If no file exists at the specified path.
+        """
+        ...
+
     def edit_file(
         self,
         path: str,

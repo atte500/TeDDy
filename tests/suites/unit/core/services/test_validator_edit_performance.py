@@ -30,7 +30,7 @@ def test_edit_validator_performance_large_file(container, mock_fs, mock_config):
     find_block = "".join(target_lines)
 
     mock_fs.path_exists.return_value = True
-    mock_fs.read_file.return_value = file_content
+    mock_fs.read_raw_file.return_value = file_content
     mock_config.get_setting.return_value = 0.95
 
     validator = container.resolve(EditActionValidator)

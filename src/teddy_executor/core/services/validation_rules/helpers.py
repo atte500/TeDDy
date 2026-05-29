@@ -7,8 +7,12 @@ from pathlib import Path
 from abc import ABC
 from typing import Dict, List, Optional, Protocol, Sequence
 
-from teddy_executor.core.domain.models.plan import ActionData, ValidationError
-from teddy_executor.core.ports.outbound import IFileSystemManager
+from teddy_executor.core.domain.models.plan import (
+    DEFAULT_SIMILARITY_THRESHOLD,
+    ActionData,
+    ValidationError,
+)
+from teddy_executor.core.ports.outbound import IConfigService, IFileSystemManager
 
 ContextPaths = Dict[str, Sequence[str]]
 ValidationResult = List[ValidationError]
@@ -116,6 +120,28 @@ def validate_path_is_safe(path_str: str, action_type: str):
         raise PlanValidationError(
             f"Action `{action_type}` contains a directory traversal attempt ('..'), which is not allowed: {path_str}"
         )
+
+
+def resolve_similarity_threshold(
+    config_service: IConfigService, action_params: dict
+) -> float:
+    """
+    Centralized resolution logic for the similarity threshold.
+    Resolves in order: Action Params -> Global Config -> Domain Default.
+    """
+    global_threshold_raw = config_service.get_setting(
+        "execution.similarity_threshold", DEFAULT_SIMILARITY_THRESHOLD
+    )
+    global_threshold = (
+        float(global_threshold_raw)
+        if global_threshold_raw is not None
+        else DEFAULT_SIMILARITY_THRESHOLD
+    )
+
+    threshold_raw = action_params.get(
+        "execution.similarity_threshold", global_threshold
+    )
+    return float(threshold_raw) if threshold_raw is not None else global_threshold
 
 
 def is_path_in_context(

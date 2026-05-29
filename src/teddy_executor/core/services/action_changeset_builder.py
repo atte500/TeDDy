@@ -2,7 +2,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional, TYPE_CHECKING
 from teddy_executor.core.domain.models.change_set import ChangeSet
-from teddy_executor.core.domain.models.plan import DEFAULT_SIMILARITY_THRESHOLD
+from teddy_executor.core.services.validation_rules.helpers import (
+    resolve_similarity_threshold,
+)
 
 if TYPE_CHECKING:
     from teddy_executor.core.domain.models.plan import ActionData
@@ -59,27 +61,15 @@ class ActionChangeSetBuilder:
             return None
 
         before_content = (
-            self._file_system_manager.read_file(path_str)
+            self._file_system_manager.read_raw_file(path_str)
             if self._file_system_manager.path_exists(path_str)
             else ""
         )
         path = Path(path_str)
 
         if action_type == "EDIT":
-            global_threshold_raw = self._config_service.get_setting(
-                "execution.similarity_threshold", DEFAULT_SIMILARITY_THRESHOLD
-            )
-            global_threshold = (
-                float(global_threshold_raw)
-                if global_threshold_raw is not None
-                else DEFAULT_SIMILARITY_THRESHOLD
-            )
-
-            threshold_raw = action.params.get(
-                "execution.similarity_threshold", global_threshold
-            )
-            threshold = (
-                float(threshold_raw) if threshold_raw is not None else global_threshold
+            threshold = resolve_similarity_threshold(
+                self._config_service, action.params
             )
 
             match_all = action.params.get("match_all", False)

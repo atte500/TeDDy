@@ -4,7 +4,7 @@ from teddy_executor.core.services.validation_rules.edit import EditActionValidat
 
 def test_validator_handles_ambiguity(container, mock_fs, mock_config):
     content = "block1\nblock2\n"
-    mock_fs.read_file.return_value = content
+    mock_fs.read_raw_file.return_value = content
     mock_fs.path_exists.return_value = True
 
     mock_config.get_setting.return_value = 0.95
@@ -31,7 +31,7 @@ def test_validator_respects_custom_threshold(container, mock_fs, mock_config):
     Note: Plan-level threshold is now deprecated and ignored.
     """
     content = "def hello():\n    pass\n"
-    mock_fs.read_file.return_value = content
+    mock_fs.read_raw_file.return_value = content
     mock_fs.path_exists.return_value = True
 
     mock_config.get_setting.return_value = 0.99
@@ -56,7 +56,7 @@ def test_validator_respects_custom_threshold(container, mock_fs, mock_config):
 
 def test_validator_passes_on_successful_fuzzy_match(container, mock_fs, mock_config):
     content = "def hello():\n    pass\n"
-    mock_fs.read_file.return_value = content
+    mock_fs.read_raw_file.return_value = content
     mock_fs.path_exists.return_value = True
 
     mock_config.get_setting.return_value = 0.8

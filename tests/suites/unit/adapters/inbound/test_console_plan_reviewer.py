@@ -72,7 +72,7 @@ def test_review_action_generates_changeset_for_edit(
     """Should generate a ChangeSet using the edit simulator for an EDIT action."""
     mock_interactor.confirm_action.return_value = (True, "")
     mock_file_system.path_exists.return_value = True
-    mock_file_system.read_file.return_value = "old content"
+    mock_file_system.read_raw_file.return_value = "old content"
     mock_edit_simulator.simulate_edits.return_value = ("simulated content", 1.0)
 
     action = ActionData(

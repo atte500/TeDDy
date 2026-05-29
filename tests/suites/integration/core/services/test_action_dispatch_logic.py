@@ -43,7 +43,7 @@ def test_edit_action_is_dispatched_to_filesystem(monkeypatch):
     mock_fs = env.get_mock_filesystem()
 
     mock_fs.path_exists.return_value = True
-    mock_fs.read_file.return_value = "old"
+    mock_fs.read_raw_file.return_value = "old"
 
     plan = Plan(
         title="Test Edit",
@@ -107,7 +107,7 @@ def test_read_action_is_dispatched_to_filesystem(monkeypatch):
     env = TestEnvironment(monkeypatch).setup()
     orchestrator = env.get_service(IRunPlanUseCase)
     mock_fs = env.get_mock_filesystem()
-    mock_fs.read_file.return_value = "content"
+    mock_fs.read_raw_file.return_value = "content"
 
     plan = Plan(
         title="Test Read",

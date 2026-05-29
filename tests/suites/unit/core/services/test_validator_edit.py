@@ -55,7 +55,7 @@ def test_validate_edit_action_with_nonexistent_find_block(parser, validator, moc
     """Verify error when FIND block content does not exist."""
     file_path = "app/test.txt"
     mock_fs.path_exists.return_value = True
-    mock_fs.read_file.return_value = "Hello world"
+    mock_fs.read_raw_file.return_value = "Hello world"
 
     plan = _p(
         parser,
@@ -85,7 +85,7 @@ def test_validate_edit_action_with_valid_find_block(parser, validator, mock_fs):
     """Verify success when FIND block content exists."""
     file_path = "app/test.txt"
     mock_fs.path_exists.return_value = True
-    mock_fs.read_file.return_value = "Hello world"
+    mock_fs.read_raw_file.return_value = "Hello world"
 
     plan = _p(
         parser,
@@ -100,7 +100,7 @@ def test_validate_edit_fails_if_find_block_not_unique(parser, validator, mock_fs
     """Verify error when FIND block is ambiguous."""
     content = "def foo():\n    pass\n\ndef foo():\n    pass\n"
     mock_fs.path_exists.return_value = True
-    mock_fs.read_file.return_value = content
+    mock_fs.read_raw_file.return_value = content
 
     plan = _p(
         parser,
@@ -117,7 +117,7 @@ def test_validate_edit_fails_if_find_block_not_unique(parser, validator, mock_fs
 def test_validate_edit_reports_multiple_failures(parser, validator, mock_fs):
     """Verify all failing edits are reported."""
     mock_fs.path_exists.return_value = True
-    mock_fs.read_file.return_value = "Some content"
+    mock_fs.read_raw_file.return_value = "Some content"
 
     plan = _p(
         parser,
@@ -137,7 +137,7 @@ def test_validate_edit_provides_diff_on_mismatch(container, parser, validator, m
     """Verify error message contains a diff on near-match."""
     container.resolve(IConfigService).get_setting.return_value = 0.99
     mock_fs.path_exists.return_value = True
-    mock_fs.read_file.return_value = "This is the original content"
+    mock_fs.read_raw_file.return_value = "This is the original content"
 
     plan = _p(
         parser,
@@ -155,7 +155,7 @@ def test_validate_edit_provides_diff_on_mismatch(container, parser, validator, m
 def test_validate_edit_diff_handling_no_trailing_newline(parser, validator, mock_fs):
     """Verify diff formatting for content without trailing newlines."""
     mock_fs.path_exists.return_value = True
-    mock_fs.read_file.return_value = "Line with typo"
+    mock_fs.read_raw_file.return_value = "Line with typo"
 
     plan = _p(
         parser,
@@ -192,7 +192,7 @@ def test_validate_edit_provides_hint_if_replace_block_already_present(
 ):
     """Verify hint when REPLACE block is already present but FIND is not."""
     mock_fs.path_exists.return_value = True
-    mock_fs.read_file.return_value = "This is the New content"
+    mock_fs.read_raw_file.return_value = "This is the New content"
 
     plan = _p(
         parser,
@@ -214,7 +214,7 @@ def test_validate_edit_diff_includes_standard_headers(
     # Force strict threshold
     container.resolve(IConfigService).get_setting.return_value = 0.99
     mock_fs.path_exists.return_value = True
-    mock_fs.read_file.return_value = "This is the original content"
+    mock_fs.read_raw_file.return_value = "This is the original content"
 
     # Significant mismatch
     plan = _p(

@@ -20,6 +20,7 @@ from teddy_executor.core.services.validation_rules.helpers import (
     ValidationError,
     ValidationResult,
     is_path_in_context,
+    resolve_similarity_threshold,
     validate_path_is_safe,
 )
 from teddy_executor.core.utils.markdown import get_fence_for_content
@@ -78,15 +79,10 @@ class EditActionValidator(BaseActionValidator):
             ]
 
         action_errors: ValidationResult = []
-        content = self._file_system_manager.read_file(path_str)
+        content = self._file_system_manager.read_raw_file(path_str)
 
-        # Get global threshold from config, fallback to domain default
-        global_threshold = self._config_service.get_setting(
-            "execution.similarity_threshold", DEFAULT_SIMILARITY_THRESHOLD
-        )
-
-        # Use global threshold from config
-        threshold = global_threshold
+        # Use centralized similarity threshold resolution
+        threshold = resolve_similarity_threshold(self._config_service, action.params)
 
         match_all = action.params.get("match_all", False)
         edits = action.params.get("edits")
