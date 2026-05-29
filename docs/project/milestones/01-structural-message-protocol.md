@@ -1,6 +1,6 @@
 # Milestone: 01-Structural Message Protocol
 
-- **Status:** Planned
+- **Status:** Completed
 - **Specs:** [docs/project/specs/handoff-protocol.md](/docs/project/specs/handoff-protocol.md)
 
 ## Goal (The "Why")

@@ -167,6 +167,7 @@ This section serves as the "System Law" (Poka-Yoke) for TeDDy. It defines the pr
 - **TUI Editing:** Use Non-Blocking Deferred Harvest for external editors. (Maintains TUI responsiveness during editing.)
 - **TUI Test Speed:** Use `TuiDriver.set_input` or direct assignment. (~50x faster than character-by-character simulation.)
 - **Pre-commit Workflow:** Scope local checks strictly to staged files. (Ensures fast feedback loops while delegating global checks to CI.)
+- **Transient Resilience:** Outbound adapters for unreliable remote services (LLM, Web) MUST implement stateful retry logic (default 3 attempts) for known transient failure modes (SSL, Timeout, 5xx).
 
 
 ---

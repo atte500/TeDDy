@@ -16,9 +16,16 @@ The `ContextService` is the application service responsible for orchestrating th
 
 *   [`IGetContextUseCase`](../ports/inbound/get_context_use_case.md)
 
-## 4. Orchestration Logic
+## 4. Failure Modes
+
+- **Missing Directories:** Handled gracefully via `IFileSystemManager` checks.
+- **Permission Errors:** Propagated from the adapter layer.
+
+## 5. Orchestration Logic
 
 When the `get_context` method is called, the `ContextService` performs the following steps in order:
+
+1.  **Recursive Expansion:** It resolves input paths. If a path is a directory, it recursively expands its contents, filtering results through `IRepoTreeGenerator`'s ignore logic to ensure consistency with the visible file tree.
 
 1.  It invokes the `IEnvironmentInspector` to get system information, ensuring the user's `shell` is included.
 2.  It invokes the `IRepoTreeGenerator` to get the repository tree as a single string. The generator is responsible for respecting `.gitignore` and `.teddyignore` rules.

@@ -25,7 +25,7 @@ This section defines the conventions for our project management artifacts.
 
 ## Roadmap
 
-### Structural Protocol & Parser
+### Structural Protocol & Parser [COMPLETED]
 - **Core Goal:** Move from action-based communication (`INVOKE`, `RETURN`, `PROMPT`) to the structural `## Message` protocol.
 - **Specs:** [docs/project/specs/handoff-protocol.md](/docs/project/specs/handoff-protocol.md)
 - **Requirements:**

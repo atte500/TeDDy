@@ -12,8 +12,16 @@ The `LiteLLMAdapter` is responsible for interacting with various Large Language 
     - `IConfigService`: For retrieving model settings and API keys.
     - `IOpenRouterHydrator` (Internal): For dynamic metadata fetching from OpenRouter.
 
-## 3. Implementation Details / Logic
+## 3. Failure Modes
 
+- **Transient Network Failures:** Handled via a stateful retry loop (3 attempts).
+- **SSL Handshake Errors:** Specific errors like `SSLV3_ALERT_BAD_RECORD_MAC` trigger retries.
+- **API Timeouts:** OpenRouter or provider timeouts trigger retries.
+- **Permanent Configuration Errors:** (Invalid API key) raise `ConfigurationError` immediately.
+
+## 4. Implementation Details / Logic
+
+-   **Stateful Retries:** `get_completion` implements a retry loop for specific transient exceptions. Each attempt is logged to the debug stream.
 -   **Lazy Initialization:** To maintain CLI responsiveness (initialization < 500ms), both the `litellm` library and the `ThreadPoolExecutor` are loaded lazily and protected by an internal lock.
 -   **Logging Suppression:** The adapter performs a double-pass silencing protocol (once before and once after `litellm` import). It sets `LITELLM_LOG=CRITICAL` and configures the `LiteLLM` logger to `CRITICAL` level to suppress noisy `botocore` warnings.
 -   **OpenRouter Resilience:** Implements a trigger-and-retry mechanism. Upon receiving a `NotFoundError`, the adapter extracts the model ID from the error message and uses the hydrator to inject metadata (context window, pricing) into `litellm.model_cost` before retrying.
