@@ -48,7 +48,7 @@ def handle_new_session(  # noqa: PLR0913
 
         # 1. Pre-flight checks (Fail-fast before user interaction)
         typer.echo("Checking configurations...", err=True)
-        _run_cli_preflight_check(container)
+        _run_cli_preflight_check(container, agent=agent)
         _echo_config_success(container, agent)
 
         session_manager: ISessionManager = container.resolve(ISessionManager)
@@ -127,15 +127,22 @@ def _echo_config_success(container: Container, agent: Optional[str] = None) -> N
     typer.echo(msg, err=True)
 
 
-def _run_cli_preflight_check(container: Container) -> None:
+def _run_cli_preflight_check(container: Container, agent: Optional[str] = None) -> None:
     """Ensures system is configured before starting/resuming a session."""
     from teddy_executor.core.ports.outbound.llm_client import ILlmClient
     from teddy_executor.core.domain.models.exceptions import ConfigurationError
+    from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
 
     llm_client = container.resolve(ILlmClient)
     # Perform local validation only to ensure fast CLI startup.
     # Remote connectivity is checked lazily by the PlanningService.
     errors = llm_client.validate_config(include_remote=False)
+
+    if agent:
+        prompt_manager = container.resolve(IPromptManager)
+        if not prompt_manager.get_prompt_content(agent):
+            errors.append(f"Agent prompt '{agent}' not found")
+
     if not errors:
         return
 
@@ -161,7 +168,8 @@ def detect_session_context() -> Optional[Dict[str, Sequence[str]]]:
 def handle_plan_generation(container: Container, message: Optional[str]):
     """Logic for the 'plan' command."""
     try:
-        _run_cli_preflight_check(container)
+        # Note: 'plan' command uses the default 'pathfinder' agent if not in a session
+        _run_cli_preflight_check(container, agent="pathfinder")
         _echo_config_success(container)
 
         planning_service: IPlanningUseCase = container.resolve(IPlanningUseCase)

@@ -9,6 +9,7 @@ from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.session_loop_guard import ISessionLoopGuard
+from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
 
 
 def test_handle_new_session_prompts_for_message_before_creating_dir():
@@ -20,8 +21,10 @@ def test_handle_new_session_prompts_for_message_before_creating_dir():
     mock_llm_client = Mock(spec=ILlmClient)
     mock_config_service = Mock(spec=IConfigService)
     mock_loop_guard = Mock(spec=ISessionLoopGuard)
+    mock_prompt_manager = Mock(spec=IPromptManager)
 
     container.register(IInitUseCase, instance=Mock(spec=IInitUseCase))
+    container.register(IPromptManager, instance=mock_prompt_manager)
     container.register(ISessionManager, instance=mock_session_manager)
     container.register(IUserInteractor, instance=mock_user_interactor)
     container.register(IRunPlanUseCase, instance=mock_orchestrator)
@@ -84,8 +87,10 @@ def test_handle_new_session_prompts_even_when_non_interactive():
     mock_llm_client = Mock(spec=ILlmClient)
     mock_config_service = Mock(spec=IConfigService)
     mock_loop_guard = Mock(spec=ISessionLoopGuard)
+    mock_prompt_manager = Mock(spec=IPromptManager)
 
     container.register(IInitUseCase, instance=Mock(spec=IInitUseCase))
+    container.register(IPromptManager, instance=mock_prompt_manager)
     container.register(ISessionManager, instance=mock_session_manager)
     container.register(IUserInteractor, instance=mock_user_interactor)
     container.register(IRunPlanUseCase, instance=mock_orchestrator)
@@ -130,8 +135,10 @@ def test_handle_new_session_raises_eof_error_on_empty_prompt_response_in_non_int
     mock_user_interactor = Mock(spec=IUserInteractor)
     mock_llm_client = Mock(spec=ILlmClient)
     mock_config_service = Mock(spec=IConfigService)
+    mock_prompt_manager = Mock(spec=IPromptManager)
 
     container.register(IInitUseCase, instance=Mock(spec=IInitUseCase))
+    container.register(IPromptManager, instance=mock_prompt_manager)
     container.register(ISessionManager, instance=mock_session_manager)
     container.register(IUserInteractor, instance=mock_user_interactor)
     container.register(ILlmClient, instance=mock_llm_client)
