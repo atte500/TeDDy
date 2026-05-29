@@ -157,7 +157,7 @@ WIP & REMINDERS:
         2. Commit Message: Use Conventional Commits '<type>(<scope>): <description>' wrapped in single quotes. Use imperative mood. Append ! for breaking changes.
         3. Execution: You MUST test, stage, commit locally, pull safely with rebase, and push by executing exactly this codeblock:
            ```shell
-           # 1. Run all tests (acceptance, integration and unit)
+           # 1. Run all tests
            <env_run> <test_command>
 
            # 2. Stage changes and run pre-commit
