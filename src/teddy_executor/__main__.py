@@ -98,14 +98,11 @@ def start(  # noqa: PLR0913
         "pathfinder", "--agent", "-a", help="Agent prompt to use."
     ),
     yolo: bool = typer.Option(
-        False,
-        "--yolo",
-        "-y",
-        "--yes",
-        "--no-interactive",
-        "--non-interactive",
-        help="Auto-approve all actions (non-interactive mode).",
+        False, "--yolo", "-y", help="Auto-approve all actions (non-interactive mode)."
     ),
+    yes: bool = typer.Option(False, "--yes", hidden=True),
+    no_interactive: bool = typer.Option(False, "--no-interactive", hidden=True),
+    non_interactive: bool = typer.Option(False, "--non-interactive", hidden=True),
     no_copy: bool = OPT_NO_COPY,
     ui_mode: Optional[bool] = OPT_UI_MODE,
     message: Optional[str] = typer.Option(
@@ -141,7 +138,7 @@ def start(  # noqa: PLR0913
         container=container,
         name=name,
         agent=agent,
-        interactive=not yolo,
+        interactive=not (yolo or yes or no_interactive or non_interactive),
         no_copy=no_copy,
         message=message,
         additional_context=additional_context,
@@ -225,17 +222,14 @@ def create_parser_for_plan(plan_content: str) -> IPlanParser:
 
 
 @app.command()
-def resume(
+def resume(  # noqa: PLR0913
     path: Optional[str] = typer.Argument(None, help="Path to session or turn."),
     yolo: bool = typer.Option(
-        False,
-        "--yolo",
-        "-y",
-        "--yes",
-        "--no-interactive",
-        "--non-interactive",
-        help="Auto-approve all actions (non-interactive mode).",
+        False, "--yolo", "-y", help="Auto-approve all actions (non-interactive mode)."
     ),
+    yes: bool = typer.Option(False, "--yes", hidden=True),
+    no_interactive: bool = typer.Option(False, "--no-interactive", hidden=True),
+    non_interactive: bool = typer.Option(False, "--non-interactive", hidden=True),
     no_copy: bool = OPT_NO_COPY,
     ui_mode: Optional[bool] = OPT_UI_MODE,
 ):
@@ -255,7 +249,7 @@ def resume(
     handle_resume_session(
         container=container,
         path=path,
-        interactive=not yolo,
+        interactive=not (yolo or yes or no_interactive or non_interactive),
         no_copy=no_copy,
     )
 
@@ -266,14 +260,11 @@ def execute(  # noqa: PLR0913
         None, help="Root-relative path to the plan file (.md).", show_default=False
     ),
     yolo: bool = typer.Option(
-        False,
-        "--yolo",
-        "-y",
-        "--yes",
-        "--no-interactive",
-        "--non-interactive",
-        help="Auto-approve all actions (non-interactive mode).",
+        False, "--yolo", "-y", help="Auto-approve all actions (non-interactive mode)."
     ),
+    yes: bool = typer.Option(False, "--yes", hidden=True),
+    no_interactive: bool = typer.Option(False, "--no-interactive", hidden=True),
+    non_interactive: bool = typer.Option(False, "--non-interactive", hidden=True),
     no_copy: bool = OPT_NO_COPY,
     plan_content: Optional[str] = typer.Option(
         None, "--plan-content", help="Plan content.", show_default=False
@@ -283,6 +274,9 @@ def execute(  # noqa: PLR0913
         None, "-m", "--message", help="Optional instruction for the report."
     ),
 ):
+    """
+    Executes a Markdown plan file (from path or clipboard) and generates an execution report.
+    """
     from teddy_executor.adapters.inbound.cli_helpers import (
         apply_ui_mode_override,
         get_plan_content,
@@ -292,7 +286,7 @@ def execute(  # noqa: PLR0913
     from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 
     report: Optional[ExecutionReport] = None
-    interactive_mode = not yolo
+    interactive_mode = not (yolo or yes or no_interactive or non_interactive)
     start_time = datetime.now(timezone.utc)
 
     container = get_container()
