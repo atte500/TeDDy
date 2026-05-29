@@ -8,10 +8,12 @@
 Finalize the transition by removing all code-level support for `PROMPT`, `INVOKE`, `RETURN`, and `PRUNE`.
 
 ## Deliverables
-- [ ] **Cleanup** - Remove legacy types from `ActionType` enum.
-- [ ] **Cleanup** - Remove `is_legacy` and `is_terminal` logic referencing legacy types.
-- [ ] **Cleanup** - Remove dispatch and parser strategies from `MarkdownPlanParser`.
-- [ ] **Cleanup** - Delete `action_parser_complex.py` legacy functions.
-- [ ] **Cleanup** - Remove `LEGACY_DEPRECATION_WARNING` from `ExecutionOrchestrator`.
-- [ ] **Wiring** - Ensure `is_communication_turn` only checks for `MESSAGE`.
-- [ ] **Cleanup** - Global check to ensure all legacy references have been purged both in code as well as in docs.
+- [ ] **Contract** - Remove `PROMPT`, `INVOKE`, `RETURN`, and `PRUNE` from `ActionType` enum in `src/teddy_executor/core/domain/models/plan.py`.
+- [ ] **Logic** - Purge `is_legacy` and update `is_terminal` to only include `MESSAGE`.
+- [ ] **Cleanup** - Remove parser strategies for legacy actions from `MarkdownPlanParser` and `action_parser_complex.py`.
+- [ ] **Cleanup** - Remove legacy handling and `notify_warning` from `ActionExecutor` and `ExecutionOrchestrator`.
+- [ ] **Cleanup** - Remove `PRUNE` side-effect logic from `SessionService`.
+- [ ] **Cleanup** - Purge legacy-specific logic from `ExecutionReportAssembler` and `execution_report.md.j2` template.
+- [ ] **Cleanup** - Strip legacy-specific preview, editor, and labeling logic from Textual TUI adapters (`src/teddy_executor/adapters/inbound/textual_plan_reviewer_*`).
+- [ ] **Wiring** - Update `ActionFactory` to remove legacy mappings.
+- [ ] **Harness** - Purge all legacy-specific tests in `tests/suites/unit/core/services/` and `tests/suites/acceptance/`.

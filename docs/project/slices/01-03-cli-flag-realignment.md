@@ -1,6 +1,6 @@
 # Slice: 01-03-CLI Flag Realignment
 
-- **Status:** Planned
+- **Status:** Completed
 - **Milestone:** [docs/project/milestones/01-structural-message-protocol.md](/docs/project/milestones/01-structural-message-protocol.md)
 - **Specs:** [docs/project/specs/interactive-session-workflow.md](/docs/project/specs/interactive-session-workflow.md)
 
