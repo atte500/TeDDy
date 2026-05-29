@@ -1,6 +1,6 @@
 # Slice: 01-05-Legacy Deprecation
 
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** [docs/project/milestones/01-structural-message-protocol.md](/docs/project/milestones/01-structural-message-protocol.md)
 - **Specs:** [docs/project/specs/handoff-protocol.md](/docs/project/specs/handoff-protocol.md)
 
@@ -18,7 +18,7 @@ Finalize the transition by removing all code-level support for `PROMPT`, `INVOKE
 - [x] **Cleanup** - Strip legacy-specific preview, editor, and labeling logic from Textual TUI adapters (`src/teddy_executor/adapters/inbound/textual_plan_reviewer_*`).
 - [x] **Wiring** - Update `ActionFactory` to remove legacy mappings.
 - [x] **Harness** - Purge all legacy-specific tests in `tests/suites/unit/core/services/` and `tests/suites/acceptance/`.
-- [ ] **Cleanup** - Replace bare MagicMocks in `tests/suites/acceptance/helpers.py` and `tests/suites/unit/core/services/test_action_executor.py` with `register_mock`.
+- [x] **Cleanup** - Replace bare MagicMocks in `tests/suites/acceptance/helpers.py` and `tests/suites/unit/core/services/test_action_executor.py` with `register_mock`.
 
 ## Implementation Notes
 - **Action Models**: Re-added `ActionData.is_terminal` (property) and `Plan.is_communication_turn` (method) to the domain model as they are essential for the `ExecutionOrchestrator` to identify `MESSAGE` turns and bypass approval/reviews for fluid conversation.

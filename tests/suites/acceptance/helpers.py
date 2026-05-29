@@ -3,8 +3,8 @@ from contextlib import contextmanager
 from pathlib import Path
 import re
 import tempfile
+from types import SimpleNamespace
 from typing import Any, Dict, Generator, Optional
-from unittest.mock import MagicMock
 
 from typer.testing import CliRunner, Result
 
@@ -223,14 +223,15 @@ def create_plan_file(
             plan_path.unlink()
 
 
-def mock_response(content):
-    """Creates a mock LLM response."""
-    res = MagicMock()
-    res.choices = [MagicMock()]
-    res.choices[0].message.content = content
-    res.model = "gpt-4o"
-    res.usage = MagicMock(prompt_tokens=100, completion_tokens=50, total_tokens=150)
-    return res
+def mock_response(content: str) -> Any:
+    """Creates a structured mock LLM response."""
+    return SimpleNamespace(
+        choices=[SimpleNamespace(message=SimpleNamespace(content=content))],
+        model="gpt-4o",
+        usage=SimpleNamespace(
+            prompt_tokens=100, completion_tokens=50, total_tokens=150
+        ),
+    )
 
 
 def setup_project(tmp_path: Path):
