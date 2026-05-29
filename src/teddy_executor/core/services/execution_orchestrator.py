@@ -17,11 +17,6 @@ from teddy_executor.core.domain.models.orchestrator_ports import OrchestratorPor
 
 logger = logging.getLogger(__name__)
 
-LEGACY_DEPRECATION_WARNING = (
-    "Action Type '{type}' is deprecated and will be removed in a future version. "
-    "Please use the structural '## Message' protocol instead."
-)
-
 
 class ExecutionOrchestrator(IRunPlanUseCase):
     def __init__(
@@ -43,11 +38,9 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         project_context: Optional[Any] = None,
     ) -> Plan | None:
         """Allows the user to review and modify the plan before execution."""
-        # Scenario: Communication Turns (MESSAGE/PROMPT) bypass TUI
+        # Scenario: Communication Turns (MESSAGE) bypass TUI
         # Single-action communication turns bypass approval for fluid conversation.
-        if plan.is_communication_turn() or (
-            len(plan.actions) == 1 and plan.actions[0].type == "PROMPT"
-        ):
+        if plan.is_communication_turn():
             return plan
 
         # We only call the bulk review (TUI) if interactive is True AND a reviewer is present.
@@ -66,10 +59,6 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         action_logs = []
         halt_execution = False
         for action in plan.actions:
-            if action.is_legacy:
-                msg = LEGACY_DEPRECATION_WARNING.format(type=action.type)
-                self._user_interactor.notify_warning(msg)
-
             action_log, should_halt = self._handle_action_in_loop(
                 action, plan, interactive, halt_execution
             )
@@ -100,10 +89,6 @@ class ExecutionOrchestrator(IRunPlanUseCase):
 
         if not action.selected:
             reason = "User deselected this action in the plan reviewer."
-            if action.is_terminal:
-                reason = (
-                    "Automatically skipped: This action must be performed in isolation."
-                )
             return (
                 self._action_executor.handle_skipped_action(action, reason),
                 False,
@@ -135,11 +120,9 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         should_dispatch = True
         captured_message = ""
 
-        # Scenario: Communication Turns (MESSAGE/PROMPT) bypass confirmation
+        # Scenario: Communication Turns (MESSAGE) bypass confirmation
         # Single communication actions bypass approval for fluid conversation.
-        is_communication_action = plan.is_communication_turn() or (
-            len(plan.actions) == 1 and action.type == "PROMPT"
-        )
+        is_communication_action = plan.is_communication_turn()
 
         if interactive and self._plan_reviewer and not is_communication_action:
             should_dispatch, captured_message = self._plan_reviewer.review_action(
@@ -149,10 +132,6 @@ class ExecutionOrchestrator(IRunPlanUseCase):
 
         if not should_dispatch:
             reason = "User skipped this action in the plan reviewer."
-            if action.is_terminal:
-                reason = (
-                    "Automatically skipped: This action must be performed in isolation."
-                )
             return (
                 self._action_executor.handle_skipped_action(action, reason),
                 "",
@@ -304,7 +283,6 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         self,
         session_name: str,
         interactive: bool = True,
-        message: Optional[str] = None,
         project_context: Optional[Any] = None,
     ) -> Optional[ExecutionReport]:
         """Stateless orchestrator does not support session resumption."""

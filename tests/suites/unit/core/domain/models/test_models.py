@@ -1,5 +1,7 @@
 from datetime import datetime
+
 import pytest
+
 from teddy_executor.core.domain.models import (
     ActionData,
     ExecutionReport,
@@ -7,6 +9,7 @@ from teddy_executor.core.domain.models import (
     RunStatus,
     RunSummary,
 )
+from teddy_executor.core.domain.models.plan import ActionType
 
 
 def test_plan_can_hold_rationale():
@@ -61,15 +64,12 @@ def test_plan_defaults_is_session_to_false():
 @pytest.mark.parametrize(
     "action_type, expected",
     [
-        ("PROMPT", True),
-        ("INVOKE", True),
-        ("RETURN", True),
-        ("CREATE", False),
-        ("EDIT", False),
-        ("EXECUTE", False),
-        ("READ", False),
-        ("PRUNE", False),
-        ("RESEARCH", False),
+        (ActionType.MESSAGE, True),
+        (ActionType.CREATE, False),
+        (ActionType.EDIT, False),
+        (ActionType.EXECUTE, False),
+        (ActionType.READ, False),
+        (ActionType.RESEARCH, False),
     ],
 )
 def test_action_data_is_terminal(action_type, expected):

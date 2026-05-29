@@ -74,21 +74,17 @@ def test_transition_to_next_turn_creates_directory_and_linkage(env):
     assert "01/report.md" in context_call.args[1]
 
 
-def test_transition_to_next_turn_applies_read_and_prune_side_effects(env):
+def test_transition_to_next_turn_applies_read_side_effects(env):
     """
-    transition_to_next_turn should add READ resources to and remove PRUNE
-    resources from the next turn's context.
+    transition_to_next_turn should add READ resources to the next turn's context.
     """
     # Arrange
     service = env.get_service(ISessionManager)
     mock_fs = env.get_mock_filesystem()
-    plan_path = setup_transition_harness(env, context="file_a.py\nfile_b.py")
+    plan_path = setup_transition_harness(env, context="file_a.py")
 
     action_read = ActionData(
         type=ActionType.READ.value, params={"Resource": "[new_file.py](/new_file.py)"}
-    )
-    action_prune = ActionData(
-        type=ActionType.PRUNE.value, params={"Resource": "[file_b.py](/file_b.py)"}
     )
 
     from teddy_executor.core.domain.models import ActionLog, ActionStatus
@@ -96,17 +92,12 @@ def test_transition_to_next_turn_applies_read_and_prune_side_effects(env):
     now = datetime.now(timezone.utc)
     report = ExecutionReport(
         run_summary=RunSummary(status=RunStatus.SUCCESS, start_time=now, end_time=now),
-        original_actions=[action_read, action_prune],
+        original_actions=[action_read],
         action_logs=[
             ActionLog(
                 status=ActionStatus.SUCCESS,
                 action_type=ActionType.READ.value,
                 params=action_read.params,
-            ),
-            ActionLog(
-                status=ActionStatus.SUCCESS,
-                action_type=ActionType.PRUNE.value,
-                params=action_prune.params,
             ),
         ],
     )
@@ -123,7 +114,6 @@ def test_transition_to_next_turn_applies_read_and_prune_side_effects(env):
     assert "file_a.py" in next_context  # Persisted
     assert "new_file.py" in next_context  # Added
     assert "01/report.md" in next_context  # Always added
-    assert "file_b.py" not in next_context  # Removed
 
 
 def test_transition_to_next_turn_appends_plan_and_report_on_validation_failure(env):

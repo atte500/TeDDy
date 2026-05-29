@@ -70,14 +70,10 @@
 {% endif -%}
 {# Render generic details if no specific fields matched, but avoid rendering if it's just content #}
 {% if not log.details.get("error") and not log.details.get("return_code") and not log.details.get("stdout") and not log.details.get("stderr") and not log.details.get("content") and not log.details.get("diff") and not log.details.get("failed_command") and not log.details.get("similarity_scores") and not log.details.get("similarity_score") and not log.details.get("query_results") %}
-{% if log.status.value in ['FAILURE', 'SKIPPED'] or log.action_type | upper not in ['INVOKE', 'RETURN'] %}
 - **Details:** `{{ log.details }}`
-{% endif -%}
 {% endif -%}
 {% else -%}
-{% if log.status.value in ['FAILURE', 'SKIPPED'] or log.action_type | upper not in ['INVOKE', 'RETURN'] %}
 - **Details:** `{{ log.details }}`
-{% endif -%}
 {% endif -%}
 {% endif %}
 {% endmacro -%}
@@ -158,12 +154,6 @@
   {% set target = '"' ~ (params.get('description') or params.get('Description') or 'Execute Command') ~ '"' %}
 {% elif action_type == 'RESEARCH' %}
   {% set target = params.get('description') or params.get('Description') or 'Research' %}
-{% elif action_type == 'INVOKE' %}
-  {% set target = params.get('agent') or params.get('Agent') or '' %}
-{% elif action_type == 'RETURN' %}
-  {% set target = '' %}
-{% elif action_type == 'PROMPT' %}
-  {% set target = '' %}
 {% else %}
   {# Use Markdown Link for CREATE/EDIT/READ #}
   {% set full_path = params.get('File Path') or params.get('file_path') or params.get('Resource') or params.get('resource') or params.get('path') or '' %}
@@ -231,17 +221,8 @@
   {% if action_type in ['EXECUTE', 'RESEARCH'] %}
     {% set param_ns.ignored = param_ns.ignored + ['description', 'Description'] %}
   {% endif %}
-  {% if action_type == 'INVOKE' %}
-    {% set param_ns.ignored = param_ns.ignored + ['agent', 'Agent'] %}
-  {% endif %}
   {% if action_type == 'RESEARCH' %}
     {% set param_ns.ignored = param_ns.ignored + ['queries'] %}
-  {% endif %}
-  {% if action_type in ['RETURN', 'INVOKE', 'PROMPT'] %}
-    {% set param_ns.ignored = param_ns.ignored + ['message', 'handoff_resources', 'handoff resources'] %}
-  {% endif %}
-  {% if action_type == 'PROMPT' %}
-    {% set param_ns.ignored = param_ns.ignored + ['prompt'] %}
   {% endif %}
 
   {% for key, value in params.items() %}
@@ -276,25 +257,7 @@
 *(Use `READ` on the URLs above to inspect the full content)*
 {% endif %}
 
-{% if action_type in ['RETURN', 'INVOKE', 'PROMPT'] %}
-  {% set resources = params.get('handoff_resources') or params.get('Handoff Resources') -%}
-  {% if resources -%}
-- **Reference Files:**
-{% for res in resources -%}
-[{{ res }}]({% if not res.startswith('/') %}/{% endif %}{{ res }})
-{% endfor -%}
-  {% endif -%}
-{% endif %}
-
-{% if action_type == 'PROMPT' and log.details and log.details is mapping and log.details.get('response') %}
-
-#### User Response
-{{ log.details.get('response') | fence }}text
-{{ log.details.get('response') }}
-{{ log.details.get('response') | fence }}
-{% else %}
 {{ render_action_details(log) }}
-{% endif %}
 {% else %}
 *(No actions were executed.)*
 {% endfor %}

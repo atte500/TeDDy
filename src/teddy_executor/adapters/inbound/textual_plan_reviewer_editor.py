@@ -212,9 +212,6 @@ async def handle_list_view_selected(
     if not isinstance(action, ActionData) or action.executed:
         return
 
-    if action.type == "PROMPT" and key == "prompt":
-        return
-
     if key == "path":
         new_val = await cast(Any, app.push_screen_wait(PathInputScreen(str(val))))
     else:

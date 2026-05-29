@@ -28,15 +28,11 @@ from teddy_executor.core.services.parser_metadata import parse_plan_metadata
 from teddy_executor.core.services.action_parser_strategies import (
     parse_create_action,
     parse_read_action,
-    parse_prune_action,
 )
 from teddy_executor.core.services.action_parser_complex import (
     parse_edit_action,
     parse_execute_action,
     parse_research_action,
-    parse_prompt_action,
-    parse_invoke_action,
-    parse_return_action,
     parse_message_action,
 )
 
@@ -58,16 +54,6 @@ class MarkdownPlanParser(IPlanParser):
             ),
             "EXECUTE": parse_execute_action,
             "RESEARCH": lambda s, node=None: parse_research_action(
-                s, self._valid_actions, node=node
-            ),
-            "PROMPT": lambda s, node=None: parse_prompt_action(
-                s, self._valid_actions, node=node
-            ),
-            "PRUNE": parse_prune_action,
-            "INVOKE": lambda s, node=None: parse_invoke_action(
-                s, self._valid_actions, node=node
-            ),
-            "RETURN": lambda s, node=None: parse_return_action(
                 s, self._valid_actions, node=node
             ),
         }
@@ -259,11 +245,6 @@ class MarkdownPlanParser(IPlanParser):
 
             parse_method = self._dispatch_map[action_type_str]
             actions.append(parse_method(stream, node=action_heading))
-
-        if len(actions) > 1:
-            for action in actions:
-                if action.type in ("PROMPT", "INVOKE", "RETURN"):
-                    action.selected = False
 
         return actions
 

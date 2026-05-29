@@ -37,11 +37,9 @@ Hello
 ````text
 World
 ````
-### `INVOKE`
-- **Agent:** Architect
-- **Description:** Handoff message.
-- **Handoff Resources:**
-  - [mixed\\path/file.md](/mixed\\path/file.md)
+### `READ`
+- **Resource:** [docs\\spec.md](/docs\\spec.md)
+- **Description:** Read a file.
 """
     # Act
     plan = parser.parse(plan_content)
@@ -54,10 +52,9 @@ World
     assert edit_action.type == "EDIT"
     assert edit_action.params["path"] == "target_dir/pyproject.toml"
 
-    invoke_action = plan.actions[1]
-    assert invoke_action.type == "INVOKE"
-    assert invoke_action.params["message"] == "Handoff message."
-    assert invoke_action.params["handoff_resources"] == ["mixed/path/file.md"]
+    read_action = plan.actions[1]
+    assert read_action.type == "READ"
+    assert read_action.params["resource"] == "docs/spec.md"
 
 
 def test_parser_accepts_properly_nested_code_fences(parser: IPlanParser):

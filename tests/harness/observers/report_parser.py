@@ -161,22 +161,21 @@ class ReportParser:
         if link_match:
             subject = link_match.group(1).lstrip("/")
 
-        if action_type in ["CREATE", "EDIT", "READ", "PRUNE"]:
+        if action_type in ["CREATE", "EDIT", "READ"]:
             params["File Path"] = subject
             if action_type == "READ":
                 params["Resource"] = subject
-        elif action_type in ["EXECUTE", "RESEARCH", "PROMPT", "INVOKE", "RETURN"]:
+        elif action_type in ["EXECUTE", "RESEARCH"]:
             params["Description"] = subject.strip('"').strip("'")
 
     def _extract_content_blocks(self, chunk: str, details: Dict[str, Any]):
         """Extracts stdout/stderr/response blocks."""
-        for block in ["stdout", "stderr", "User Response"]:
+        for block in ["stdout", "stderr"]:
             block_match = re.search(
                 rf"#### `?{block}`?\s*(`{{3,}})text\n(.*?)\n\1", chunk, re.DOTALL
             )
             if block_match:
-                key = "response" if block == "User Response" else block
-                details[key] = block_match.group(2).strip()
+                details[block] = block_match.group(2).strip()
 
     def action_was_successful(self, index: int) -> bool:
         """Returns True if the action at the given index was successful."""

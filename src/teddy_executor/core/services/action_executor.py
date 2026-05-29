@@ -94,65 +94,6 @@ class ActionExecutor:
             )
             return action_log
 
-    def _check_action_isolation(
-        self,
-        action,
-        total_actions: int,
-        interactive: bool = False,
-        skip_isolation: bool = False,
-    ) -> ActionLog | None:
-        """
-        Ensures terminal actions are handled correctly.
-
-        Note: Strict isolation is now relaxed. The user is responsible for
-        deciding whether to execute terminal actions in mixed plans via the TUI.
-        """
-        if skip_isolation:
-            return None
-
-        if action.is_terminal and total_actions > 1 and not interactive:
-            return self._handle_skipped_action(
-                action,
-                "Automatically skipped: This action must be performed in isolation.",
-            )
-
-        return None
-
-    def _intercept_control_flow_action(
-        self, action, is_session: bool = False
-    ) -> ActionLog | None:
-        """Intercepts control flow actions in the manual CLI workflow."""
-        action_type = action.type.upper()
-
-        if action_type == "PRUNE" and not is_session:
-            return self._handle_skipped_action(
-                action,
-                "PRUNE is automatically skipped in manual execution mode - action only available within TeDDy sessions.",
-            )
-
-        if action_type in ("INVOKE", "RETURN"):
-            approved, reason = self._user_interactor.confirm_manual_handoff(
-                action_type=action_type,
-                target_agent=action.params.get("Agent") or action.params.get("agent"),
-                resources=action.params.get("handoff_resources") or [],
-                message=action.params.get("message")
-                or action.params.get("Message")
-                or "",
-            )
-
-            if approved:
-                return self._create_intercepted_log(
-                    action, ActionStatus.SUCCESS, "Manual handoff approved by user."
-                )
-            else:
-                return self._create_intercepted_log(
-                    action,
-                    ActionStatus.FAILURE,
-                    f"Manual handoff rejected by user: {reason}",
-                )
-
-        return None
-
     def _create_change_set(self, action) -> ChangeSet | None:
         """Creates a ChangeSet for file operations."""
         return self._changeset_builder.create_change_set(action)
@@ -177,27 +118,13 @@ class ActionExecutor:
         skip_isolation: bool = False,
     ) -> tuple[ActionLog, str]:
         """Handles user confirmation and dispatches a single action."""
-        # 1. Check isolation constraints
-        if isolation_log := self._check_action_isolation(
-            action,
-            total_actions,
-            interactive=interactive,
-            skip_isolation=skip_isolation,
-        ):
-            return isolation_log, ""
-
-        if intercepted_log := self._intercept_control_flow_action(
-            action, is_session=is_session
-        ):
-            return intercepted_log, ""
-
         # Capture the change set BEFORE execution for diff reporting
         change_set = self._create_change_set(action)
 
         should_dispatch, reason = True, ""
-        # Communication actions (MESSAGE, PROMPT) bypass the interactive confirmation
+        # Communication actions (MESSAGE) bypass the interactive confirmation
         # to ensure a fluid conversational flow.
-        is_communication = action.type.upper() in ("MESSAGE", "PROMPT")
+        is_communication = action.type.upper() == "MESSAGE"
 
         if interactive and not is_communication:
             should_dispatch, reason = self._get_interactive_confirmation(action)

@@ -25,11 +25,9 @@ async def do_preview_logic(app: ReviewerApp, node: Any, action: ActionData) -> N
         await preview_create(app, action, node)
     elif action.type == "EDIT":
         await preview_edit(app, action, node)
-    elif action.type == "PROMPT":
-        await preview_prompt(app, action, node)
     elif action.type in ("EXECUTE", "RESEARCH"):
         await preview_text_action(app, action, node)
-    elif action.type in ("READ", "PRUNE"):
+    elif action.type == "READ":
         await preview_readonly(app, action)
 
 
@@ -132,7 +130,7 @@ async def preview_text_action(app: ReviewerApp, action: ActionData, node: Any) -
 
 
 async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
-    """Handle non-blocking preview for READ/PRUNE (read-only)."""
+    """Handle non-blocking preview for READ (read-only)."""
     if not app._file_system:
         return
     resource = action.params.get("resource") or action.params.get("path", "")
@@ -152,45 +150,13 @@ async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
         os.chmod(temp_file, 0o444)
         editor_cmd = app._console_tooling.find_editor()
         if editor_cmd:
-            # We don't use the deferred harvest pattern for READ/PRUNE as they are truly read-only
+            # We don't use the deferred harvest pattern for READ as they are truly read-only
             with app.suspend():
                 await anyio.to_thread.run_sync(
                     app._system_env.run_command, editor_cmd + [temp_file]
                 )
     finally:
         app._system_env.delete_file(temp_file)
-
-
-async def preview_prompt(app: ReviewerApp, action: ActionData, node: Any) -> None:
-    """Handle non-blocking interactive answering for PROMPT."""
-
-    message = cast(str, action.params.get("prompt", ""))
-    marker = app.INSTRUCTION_MARKER
-    response = getattr(action, "user_response", None) or ""
-    initial_content = f"{response}{marker}\n\n{message}\n"
-
-    # Ensure a persistent path exists for the harvest
-    if not action.pending_temp_file:
-        action.pending_temp_file = app._system_env.create_temp_file(suffix=".md")
-
-    # For PROMPT, closing the editor is the submission intent
-    final = await launch_editor(
-        app, initial_content, suffix=".md", persistent_path=action.pending_temp_file
-    )
-
-    if final is not None:
-        marker_clean = marker.strip()
-        if marker_clean in final:
-            final = final.split(marker_clean)[0].strip()
-        else:
-            final = final.strip()
-
-        if final and final != message.strip():
-            action.modified = True
-            if "user_response" not in action.modified_fields:
-                action.modified_fields.append("user_response")
-            action.user_response = final
-            app._refresh_node(node)
 
 
 async def view_details_handler(app: "ReviewerApp") -> None:

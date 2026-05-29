@@ -231,7 +231,7 @@ class SessionService(ISessionManager):
     def _apply_execution_effects(
         self, paths: set[str], report: Optional[ExecutionReport]
     ) -> None:
-        """Applies side effects from READ/PRUNE actions to the context set."""
+        """Applies side effects from READ actions to the context set."""
         from teddy_executor.core.domain.models import ActionStatus
 
         if not report:
@@ -247,8 +247,6 @@ class SessionService(ISessionManager):
             if log.action_type == ActionType.READ.value:
                 if self._repository.is_valid_path(path):
                     paths.add(path)
-            elif log.action_type == ActionType.PRUNE.value:
-                paths.discard(path)
 
     def _persist_next_meta(
         self,

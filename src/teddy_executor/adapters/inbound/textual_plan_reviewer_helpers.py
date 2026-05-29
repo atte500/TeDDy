@@ -230,8 +230,6 @@ def handle_mount_logic(app: Any, update_detail_fn: Any) -> None:
     for action in app.plan.actions:
         if not hasattr(action, "_original_params"):
             action._original_params = action.params.copy()
-        if action.type == "PRUNE" and not app.plan.is_session:
-            continue
         act_root.add_leaf(format_node_label(action), data=action)
 
     # Initialize cursor: Context root if available, else Rationale root
@@ -274,10 +272,6 @@ def get_action_summary(action: "ActionData") -> str:
             params.get("path") or params.get("resource") or params.get("command", "")
         )
 
-        if action.type == "PROMPT" and not summary:
-            msg = str(params.get("prompt", "")).strip().split("\n")[0]
-            summary = msg
-
     if len(summary) > MAX_LABEL_LENGTH:
         summary = summary[: MAX_LABEL_LENGTH - 3] + "..."
     return summary
@@ -285,9 +279,6 @@ def get_action_summary(action: "ActionData") -> str:
 
 def _apply_param_edit(action: Any, key: str, new_val: str) -> None:
     """Helper to apply parameter edits back to the action."""
-    if action.type == "PROMPT" and key == "response":
-        action.user_response = str(new_val)
-        return
     list_keys = {"queries", "reference_files"}
     if key in list_keys:
         action.params[key] = [v.strip() for v in str(new_val).split(",") if v.strip()]
@@ -303,8 +294,6 @@ def handle_revert(app: ReviewerApp, node: Any, update_fn: Any) -> None:
         action.modified_fields.clear()
         if hasattr(action, "_original_params"):
             action.params = action._original_params.copy()
-        if action.type == "PROMPT":
-            action.user_response = None
 
         ptf = getattr(action, "pending_temp_file", None)
         if isinstance(ptf, str):

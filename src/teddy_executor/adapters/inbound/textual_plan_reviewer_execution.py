@@ -28,12 +28,6 @@ def harvest_action_content(action: Any, instruction_marker: str) -> None:
         mapping = {"CREATE": "content", "EXECUTE": "command", "RESEARCH": "queries"}
         if action.type in mapping:
             action.params[mapping[action.type]] = new_content
-        elif action.type == "PROMPT":
-            marker = instruction_marker.strip()
-            if marker in new_content:
-                action.user_response = new_content.split(marker)[0].strip()
-            else:
-                action.user_response = new_content.strip()
         os.remove(action.pending_temp_file)
         action.pending_temp_file = None
     except Exception as e:
@@ -109,11 +103,7 @@ def resolve_action_parameters(action: ActionData) -> dict[str, Any]:
             "description",
         ],
         "READ": ["resource", "description"],
-        "PRUNE": ["resource", "description"],
         "RESEARCH": ["queries", "description"],
-        "PROMPT": ["prompt", "reference_files"],
-        "INVOKE": ["agent", "reference_files", "description"],
-        "RETURN": ["reference_files", "description"],
     }
 
     keys = param_map.get(action.type, [])
@@ -131,9 +121,6 @@ def resolve_action_parameters(action: ActionData) -> dict[str, Any]:
             val = ", ".join(map(str, val))
 
         resolved[key] = val
-
-    if action.type == "PROMPT":
-        resolved["response"] = getattr(action, "user_response", None) or ""
 
     # After execution, some parameters are hidden from the preview to reduce clutter
     if action.executed:
@@ -163,10 +150,6 @@ async def orchestrate_execution(app: ReviewerApp, node: Any, update_fn: Any) -> 
     ):
         return
 
-    if action.type == "PROMPT":
-        await _execute_prompt_step(app, action, node, update_fn)
-        return
-
     action.state = ExecutionStatus.RUNNING
     app._refresh_node(node)
 
@@ -192,36 +175,6 @@ async def orchestrate_execution(app: ReviewerApp, node: Any, update_fn: Any) -> 
         app._refresh_node(node)
         update_fn(app, action)
         app.refresh_bindings()
-
-
-async def _execute_prompt_step(
-    app: ReviewerApp, action: ActionData, node: Any, update_fn: Any
-) -> None:
-    """Special execution logic for PROMPT actions."""
-    from teddy_executor.adapters.inbound.textual_plan_reviewer_previews import (
-        preview_prompt,
-    )
-    from teddy_executor.core.domain.models.execution_report import (
-        ActionLog,
-        ActionStatus,
-    )
-    from teddy_executor.core.domain.models.plan import ExecutionStatus
-
-    await preview_prompt(app, action, node)
-    if action.modified:
-        action.executed, action.state = True, ExecutionStatus.SUCCESS
-        action.action_log = ActionLog(
-            action_type=action.type,
-            params=action.params,
-            status=ActionStatus.SUCCESS,
-            details={"response": action.user_response},
-            failed_command=None,
-        )
-    else:
-        action.state = ExecutionStatus.PENDING
-    app._refresh_node(node)
-    update_fn(app, action)
-    app.refresh_bindings()
 
 
 def _execute_silently(dispatcher: Any, act: Any) -> Any:

@@ -4,24 +4,6 @@ from teddy_executor.core.domain.models.plan import DEFAULT_SIMILARITY_THRESHOLD
 from teddy_executor.core.services.action_dispatcher import IAction, IActionFactory
 
 
-class InvokeAction:
-    def execute(self, **kwargs: Any) -> str:
-        agent = kwargs.get("agent", "Unknown")
-        return f"INVOKE action recognized for agent: {agent}"
-
-
-class PruneAction:
-    def execute(self, **kwargs: Any) -> str:
-        resource = kwargs.get("resource", "Unknown")
-        return f"PRUNE action recognized for resource: {resource}"
-
-
-class ConcludeAction:
-    def execute(self, **kwargs: Any) -> str:
-        message = kwargs.get("message", "Completed")
-        return f"RETURN action recognized with message: {message}"
-
-
 class ActionFactory(IActionFactory):
     """
     A protocol-compliant factory that resolves action handlers from injected ports.
@@ -33,12 +15,8 @@ class ActionFactory(IActionFactory):
         "EDIT": "edit",
         "READ": "read",
         "EXECUTE": "execute",
-        "INVOKE": "invoke",
-        "PROMPT": "prompt",
         "MESSAGE": "message",
         "RESEARCH": "research",
-        "PRUNE": "prune",
-        "RETURN": "return",
     }
 
     def __init__(self, ports: ActionPorts):
@@ -48,18 +26,14 @@ class ActionFactory(IActionFactory):
         self._web_scraper = ports.web_scraper
         self._web_searcher = ports.web_searcher
         self._config_service = ports.config_service
-        self._standalone_actions = {InvokeAction, PruneAction, ConcludeAction}
+        self._standalone_actions: set[str] = set()
         self._action_map: Dict[str, Any] = {
             "execute": self._shell_executor,
             "create_file": self._file_system_manager,
             "edit": self._file_system_manager,
             "read_file": self._file_system_manager,
-            "prompt": self._user_interactor,
             "message": self._user_interactor,
             "research": self._web_searcher,
-            "invoke": InvokeAction,
-            "prune": PruneAction,
-            "return": ConcludeAction,
         }
 
     def _normalize_action_type(self, action_type: str) -> str:
@@ -107,7 +81,7 @@ class ActionFactory(IActionFactory):
                 if method_name == "edit_file":
                     return self._factory._handle_edit_protocol(self._method, kwargs)
                 if method_name == "ask_question":
-                    return self._factory._handle_prompt_protocol(self._method, kwargs)
+                    return self._factory._handle_message_protocol(self._method, kwargs)
                 return self._method(**kwargs)
 
         return ActionWrapper(self, original_method)
@@ -145,8 +119,8 @@ class ActionFactory(IActionFactory):
                 kwargs["similarity_threshold"] = float(global_threshold)
         return method(**kwargs)
 
-    def _handle_prompt_protocol(self, method: Any, kwargs: dict) -> Any:
-        """Handles the positional argument mapping for the PROMPT/MESSAGE action."""
+    def _handle_message_protocol(self, method: Any, kwargs: dict) -> Any:
+        """Handles the positional argument mapping for the MESSAGE action."""
         prompt = kwargs.get("prompt", kwargs.get("content"))
         return method(
             prompt,
@@ -170,7 +144,6 @@ class ActionFactory(IActionFactory):
             "create_file": "create_file",
             "edit": "edit_file",
             "read_file": "read_file",
-            "prompt": "ask_question",
             "message": "ask_question",
             "research": "search",
             "execute": "execute",

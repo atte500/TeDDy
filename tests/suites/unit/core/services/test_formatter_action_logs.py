@@ -106,26 +106,6 @@ def test_formats_multiline_execute_command_correctly():
     assert f"- **Command:**\n```shell\n{cmd}\n```" in output
 
 
-def test_formats_return_action_correctly():
-    """Verify RETURN action formatting."""
-    formatter = MarkdownReportFormatter()
-    report = _get_report(
-        [
-            ActionLog(
-                status=ActionStatus.SUCCESS,
-                action_type="RETURN",
-                params={"handoff_resources": ["A.md", "B.md"], "description": "Done"},
-            )
-        ]
-    )
-
-    output = formatter.format(report)
-
-    assert "[A.md](/A.md)" in output
-    assert "### `RETURN`" in output
-    assert "- **Description:** Done" in output
-
-
 def test_formats_failed_execute_action_details():
     """Verify failed EXECUTE details (stdout/stderr/rc)."""
     formatter = MarkdownReportFormatter()
@@ -186,63 +166,3 @@ def test_formats_validation_failed_report():
     assert "## Validation Errors" in output
     assert "E1" in output
     assert "E2" in output
-
-
-def test_formats_prompt_action_omits_prompt_text():
-    """Verify PROMPT action omits the internal prompt text."""
-    formatter = MarkdownReportFormatter()
-    report = _get_report(
-        [
-            ActionLog(
-                status=ActionStatus.SUCCESS,
-                action_type="PROMPT",
-                params={"prompt": "Q?"},
-                details={"response": "A"},
-            )
-        ]
-    )
-
-    parser = ReportParser(formatter.format(report))
-
-    assert parser.action_logs[0].details["response"] == "A"
-    assert "Q?" not in parser.stdout
-
-
-def test_formats_invoke_action_clean():
-    """Verify INVOKE action is clean and includes agent in header."""
-    formatter = MarkdownReportFormatter()
-    report = _get_report(
-        [
-            ActionLog(
-                status=ActionStatus.SUCCESS,
-                action_type="INVOKE",
-                params={"Agent": "Arch", "description": "H", "message": "M"},
-            )
-        ]
-    )
-
-    output = formatter.format(report)
-
-    assert "### `INVOKE`: Arch" in output
-    assert "- **Description:** H" in output
-    assert "- **Details:**" not in output
-
-
-def test_formats_handoff_includes_details_when_skipped():
-    """Verify skipped INVOKE includes details."""
-    formatter = MarkdownReportFormatter()
-    report = _get_report(
-        [
-            ActionLog(
-                status=ActionStatus.SKIPPED,
-                action_type="INVOKE",
-                params={"Agent": "Arch"},
-                details="Skip",
-            )
-        ]
-    )
-
-    parser = ReportParser(formatter.format(report))
-
-    assert parser.action_logs[0].status == "SKIPPED"
-    assert parser.action_logs[0].details["details"] == "Skip"

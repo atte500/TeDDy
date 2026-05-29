@@ -2,10 +2,9 @@ from textwrap import dedent
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
 
 
-def test_builder_supports_all_nine_specialized_methods():
+def test_builder_supports_specialized_methods():
     """
-    Ensures the builder has specialized methods for all 9 actions.
-    This test defines the target API for the refactored builder.
+    Ensures the builder has specialized methods for all actions.
     """
     builder = MarkdownPlanBuilder("Exhaustive Test Plan")
 
@@ -21,12 +20,6 @@ def test_builder_supports_all_nine_specialized_methods():
         timeout=60,
     )
     builder.add_research(["how to test python"], description="Searching for tests")
-    builder.add_prompt("Is this okay?", reference_files=["docs/spec.md"])
-    builder.add_invoke(
-        "Architect", "Designing system", reference_files=["docs/goals.md"]
-    )
-    builder.add_return("Feature complete", reference_files=["tests/results.xml"])
-    builder.add_prune("old_file.py")
 
     plan = builder.build()
 
@@ -36,10 +29,6 @@ def test_builder_supports_all_nine_specialized_methods():
     assert "### `EDIT`" in plan
     assert "### `EXECUTE`" in plan
     assert "### `RESEARCH`" in plan
-    assert "### `PROMPT`" in plan
-    assert "### `INVOKE`" in plan
-    assert "### `RETURN`" in plan
-    assert "### `PRUNE`" in plan
 
 
 def test_builder_path_normalization():
@@ -76,6 +65,9 @@ def test_builder_execute_options():
     plan = builder.build()
     assert "- **Allow Failure:** `true`" in plan
     assert "- **Background:** `true`" in plan
+
+
+def test_plan_builder_basic():
     """
     Tests that the plan builder can create a basic plan with a title,
     default rationale, and a single action.

@@ -15,7 +15,6 @@ from teddy_executor.core.services.parser_infrastructure import (
 from teddy_executor.core.services.parser_metadata import (
     parse_action_metadata,
     parse_env_from_metadata,
-    parse_handoff_resources_from_list,
 )
 
 
@@ -102,64 +101,6 @@ def parse_edit_action(
     return ActionData(type="EDIT", description=description, params=params, node=node)
 
 
-def parse_return_action(
-    stream: _PeekableStream, valid_actions: set[str], node: Optional[Any] = None
-) -> ActionData:
-    from mistletoe.block_token import List as MdList
-
-    metadata_list = stream.next()
-    if not isinstance(metadata_list, MdList):
-        raise InvalidPlanError(
-            "RETURN action is missing metadata list.", offending_node=metadata_list
-        )
-
-    description, params = parse_action_metadata(metadata_list)
-    resources = parse_handoff_resources_from_list(metadata_list)
-    if resources:
-        params["handoff_resources"] = resources
-
-    if not description:
-        raise InvalidPlanError(
-            "RETURN action is missing 'Description' (message content).",
-            offending_node=metadata_list,
-        )
-
-    params["message"] = description
-    return ActionData(type="RETURN", description=description, params=params, node=node)
-
-
-def parse_invoke_action(
-    stream: _PeekableStream, valid_actions: set[str], node: Optional[Any] = None
-) -> ActionData:
-    from mistletoe.block_token import List as MdList
-
-    metadata_list = stream.next()
-    if not isinstance(metadata_list, MdList):
-        raise InvalidPlanError(
-            "INVOKE action is missing metadata list.", offending_node=metadata_list
-        )
-
-    description, params = parse_action_metadata(
-        metadata_list, text_key_map={"Agent": "agent"}
-    )
-    resources = parse_handoff_resources_from_list(metadata_list)
-    if resources:
-        params["handoff_resources"] = resources
-
-    if "agent" not in params:
-        raise InvalidPlanError(
-            "INVOKE action is missing 'Agent' parameter.", offending_node=metadata_list
-        )
-    if not description:
-        raise InvalidPlanError(
-            "INVOKE action is missing 'Description' (message content).",
-            offending_node=metadata_list,
-        )
-
-    params["message"] = description
-    return ActionData(type="INVOKE", description=description, params=params, node=node)
-
-
 def parse_execute_action(
     stream: _PeekableStream, node: Optional[Any] = None
 ) -> ActionData:
@@ -238,43 +179,6 @@ def parse_research_action(
         params={"queries": queries},
         node=node,
     )
-
-
-def parse_prompt_action(
-    stream: _PeekableStream, valid_actions: set[str], node: Optional[Any] = None
-) -> ActionData:
-    from mistletoe.block_token import List as MdList, Document
-    from mistletoe.markdown_renderer import MarkdownRenderer
-
-    content_nodes = consume_content_until_next_action(stream, valid_actions)
-    if not content_nodes:
-        raise InvalidPlanError("PROMPT action is missing prompt content.")
-
-    params: dict[str, Any] = {}
-    remaining_nodes = list(content_nodes)
-
-    # Check if the first node is a metadata list
-    if remaining_nodes and isinstance(remaining_nodes[0], MdList):
-        metadata_list = remaining_nodes.pop(0)
-        resources = parse_handoff_resources_from_list(metadata_list)
-        if resources:
-            params["handoff_resources"] = resources
-
-    rendered_parts = []
-    with MarkdownRenderer() as renderer:
-        for content_node in remaining_nodes:
-            temp_doc = Document("")
-            temp_doc.children = [content_node]
-            rendered_parts.append(renderer.render(temp_doc).strip())
-
-    prompt = "\n\n".join(rendered_parts)
-    if not prompt:
-        if "handoff_resources" not in params:
-            raise InvalidPlanError("PROMPT action is missing prompt content.")
-        prompt = ""
-
-    params["prompt"] = prompt
-    return ActionData(type="PROMPT", description=None, params=params, node=node)
 
 
 def parse_message_action(

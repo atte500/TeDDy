@@ -81,9 +81,3 @@ def parse_read_action(
     stream: _PeekableStream, node: Optional[Any] = None
 ) -> ActionData:
     return parse_resource_action(stream, "READ", node=node)
-
-
-def parse_prune_action(
-    stream: _PeekableStream, node: Optional[Any] = None
-) -> ActionData:
-    return parse_resource_action(stream, "PRUNE", node=node)

@@ -20,7 +20,7 @@ This document defines the core entities for the `teddy` executor application. Th
 
 ### `ActionType`
 Enumerates the supported action types in the system.
-*   `CREATE`, `READ`, `EDIT`, `EXECUTE`, `RESEARCH`, `PROMPT`, `PRUNE`, `INVOKE`, `RETURN`
+*   `CREATE`, `READ`, `EDIT`, `EXECUTE`, `RESEARCH`, `MESSAGE`
 
 ### `ExecutionStatus`
 Enumerates the possible execution states of an individual action.
@@ -164,6 +164,8 @@ Represents a full plan to be executed. It is the aggregate root for a collection
     *   `title` (str): The plan's title.
     *   `rationale` (str): The AI's explanation for the plan.
     *   `actions` (list[ActionData]): A list of `ActionData` objects.
+*   **Behaviors:**
+    *   `is_communication_turn()`: Returns `True` if the plan consists only of a `MESSAGE` action.
 
 ### `ActionData` (Value Object/Entity)
 **Status:** Implemented
@@ -178,9 +180,9 @@ Represents a single action within a plan, including its parameters and execution
     *   `modified_fields` (list[str]): Names of the specific fields modified by the user.
     *   `executed` (bool): Whether the action has been executed in the current session.
     *   `state` (ExecutionStatus): The outcome of the execution (`PENDING`, `SUCCESS`, or `FAILURE`).
-    *   `user_response` (Optional[str]): The captured response from a `PROMPT` action.
+    *   `user_response` (Optional[str]): [Deprecated]
 *   **Behaviors:**
-    *   `is_terminal`: (Property) Returns `True` if the action is a terminal action (`PROMPT`, `INVOKE`, `RETURN`) that should trigger isolation or handoff.
+    *   `is_terminal`: (Property) Returns `True` if the action is a `MESSAGE` action.
 *   **Invariants:**
     *   `actions` must be a list containing at least one action.
 

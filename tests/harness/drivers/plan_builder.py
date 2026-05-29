@@ -138,41 +138,6 @@ class MarkdownPlanBuilder:
         content_blocks = {"": ("text", "\n".join(queries))}
         return self.add_action("RESEARCH", {"Description": description}, content_blocks)
 
-    def add_prompt(self, message: str, reference_files: Optional[List[str]] = None):
-        params = {"prompt": message}
-        if reference_files:
-            params["Reference Files"] = "\n".join(
-                self._path_link(f) for f in reference_files
-            )
-        return self.add_action("PROMPT", params)
-
-    def add_invoke(
-        self, agent: str, description: str, reference_files: Optional[List[str]] = None
-    ):
-        params = {"Agent": agent, "Description": description}
-        if reference_files:
-            params["Reference Files"] = "\n".join(
-                self._path_link(f) for f in reference_files
-            )
-        return self.add_action("INVOKE", params)
-
-    def add_return(self, description: str, reference_files: Optional[List[str]] = None):
-        params = {"Description": description}
-        if reference_files:
-            params["Reference Files"] = "\n".join(
-                self._path_link(f) for f in reference_files
-            )
-        return self.add_action("RETURN", params)
-
-    def add_prune(
-        self,
-        resource: str,
-        description: str = "Pruning resource",
-        key: str = "File Path",
-    ):
-        params = {key: self._path_link(resource), "Description": description}
-        return self.add_action("PRUNE", params)
-
     def with_message(self, content: str) -> "MarkdownPlanBuilder":
         """Sets the plan to use a ## Message section instead of an Action Plan."""
         self._message_content = content
@@ -220,9 +185,7 @@ class MarkdownPlanBuilder:
         action_str = f"\n### `{action_type}`"
         action_str += self._render_params(params)
 
-        if action_type == "PROMPT":
-            action_str += f"\n\n{params.get('prompt', '')}"
-        elif action_type == "EXECUTE":
+        if action_type == "EXECUTE":
             command = params.get("command")
             if not command and content_blocks:
                 if "COMMAND" in content_blocks:
