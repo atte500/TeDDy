@@ -65,7 +65,7 @@ class CliTestAdapter:
         """
         args = ["execute", "--no-copy", "--plan-content", plan_content]
         if not interactive:
-            args.append("--yes")
+            args.append("--yolo")
         if extra_args:
             args.extend(extra_args)
         return self.run_cli_command(args, cwd=cwd, input=input)
@@ -93,7 +93,7 @@ class CliTestAdapter:
         if no_copy:
             args.append("--no-copy")
         if not interactive:
-            args.append("--no-interactive")
+            args.append("--yolo")
         if extra_args:
             args.extend(extra_args)
         return self.run_cli_command(args, input=input)
