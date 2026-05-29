@@ -30,26 +30,32 @@
         4. `EDIT` your MRE script to target the shadow file instead of the real module.
         5. `EXECUTE` this verified hypothesis. If the MRE PASSES, you have empirically proven the fix without touching production code.
         6. You MUST ALWAYS `EDIT` the Case File to record the results. If the verification failed, update the `Causal Model` and restart your Investigation process.</step>
-        <step n="8" name="Root Cause Alignment Gate">Once the fix is verified in the sandbox, you MUST EDIT the Case File to update the Diagnostic Analysis. You MUST then Message the user, presenting your root cause analysis to ensure findings and root cause are well understood by the user and that there are no remaining uncertainties.</step>
       </phase>
 
-      <phase n="3" name="Systemic Audit">
+      <phase n="3" name="Alignment">
+        <goal>Synchronize the causal model with user observations and resolve uncertainties.</goal>
+        <step n="1" name="Case File Synchronization">EDIT the Case File to update the Diagnostic Analysis and ensure the Causal Model reflects the verified reality from the Shadow File execution.</step>
+        <step n="2" name="Root Cause Presentation">Message the user to present the Root Cause Analysis (RCA). You MUST explain the mechanism of the bug, present the evidence from the MRE/Shadow verification, and explicitly ask the user if this matches their observations. You MUST resolve any questions or discrepancies raised by the user before proceeding.</step>
+        <step n="3" name="Approval Gate">You are strictly forbidden from proceeding to Systemic Audit until the user provides explicit confirmation that the root cause is understood and aligned with the observed symptoms.</step>
+      </phase>
+
+      <phase n="4" name="Systemic Audit">
         <goal>Generalize the learning and prepare for safe integration.</goal>
         <step n="1" name="Root Cause Categorization">Analyze the verified root cause to identify its abstract category. Propose a generalized fix that would prevent this entire class of bug and incorporate it into the final Vertical Slice or handoff diagnosis.</step>
         <step n="2" name="Categorical Audit">Use `git grep` to search the codebase for other instances of the identified category. You MUST formalize any significant findings into deliverables within the Vertical Slice (e.g., a `Refactor` deliverable).</step>
         <step n="3" name="Impact Audit">Use `git grep` to audit the SUT components touched by your proposed systemic fix. If the fix requires modifying a Port, Signature, or DTO that has >1 consumer, note this dependency so the slice can be partitioned into Contract -> Migration -> Cleanup deliverables. Ensure all proposed Contract/Seam changes have matching Harness deliverables.</step>
       </phase>
 
-      <phase n="4" name="Documentation">
+      <phase n="5" name="Documentation">
         <goal>Translate the proven sandbox fix into actionable handoff artifacts.</goal>
         <step n="1" name="Case File">Update the Case File. Populate the `## Solution` section with a high-level explanation of the root cause and the fix. You MUST include preventative measures focusing on systematically fixing this entire class of issue. Ensure the final `Diagnostic Analysis` is accurate and up-to-date. Change status to Resolved.</step>
         <step n="2" name="Vertical Slice">If the fix is non-trivial (requires >1 Logic deliverable or any Contract changes), you MUST default to editing the existing active Vertical Slice to append the bug's Gherkin scenarios, edge cases, and deliverables. If no active slice exists, only then CREATE a new Vertical Slice (`docs/project/slices/00-NN-{{fix-bug}}.md`) and link the Case File in the Metadata section. You MUST outline `## Business Goal`, Gherkin `## Scenarios`, `## Edge Cases`, and `## Deliverables`. If the fix is trivial, SKIP this step.</step>
         <step n="3" name="Harvest Debt">If your Systemic Audit revealed widespread technical debt that cannot be reasonably completed within the current Vertical Slice, `EDIT` the active Milestone document to append a new proposed Vertical Slice to tackle this debt.</step>
       </phase>
 
-      <phase n="5" name="Conclusion">
+      <phase n="6" name="Conclusion">
         <goal>Apply trivial fixes, clean up the workspace, and conclude the session.</goal>
-        <step n="1" name="Direct Implementation">If the fix is trivial (only 1 Logic deliverable and 0 Contract changes), you MUST apply the verified hypothesis from the shadow file to the target production file in `src/` now.</step>
+        <step n="1" name="Direct Implementation & Integration Verification">If the fix is trivial (only 1 Logic deliverable and 0 Contract changes), you MUST apply the verified hypothesis from the shadow file to the target production file in `src/`. Immediately after applying the fix, you MUST EXECUTE the entire test suite (acceptance, unit and integration) to ensure no regressions were introduced. If tests fail, you MUST revert changes and return to the Investigation phase.</step>
         <step n="2" name="Teardown">Explicitly delete all temporary logs, MRE scripts, and shadow files created in `spikes/debug/` to ensure a completely clean workspace. If a temporary branch was used for remote probing, checkout the original branch, ensure artifacts are VCP-ed, then delete the temporary branch. Run `git status` to verify.</step>
         <step n="2" name="Approval Gate">Message the user regarding the finalized Vertical Slice for final approval, ensuring alignment on behavioral aspects and edge case handling. Do NOT proceed to the commit without explicit user approval.</step>
         <step n="3" name="Version Control">Execute the commit following the VCP to test, stage, commit, and push the Case File and the Vertical Slice. You MUST ensure the workspace is clean and all documentation changes are committed before recommending handoff.</step>
@@ -75,11 +81,12 @@
         <description>Maintain orientation via this dashboard in the `Rationale` block.</description>
         <template>
 Case File: [docs/project/debugging/NN-{{bug_title}}.md]
-FAILURE: [Concise description of original error]
+MRE(s): [file path(s)]
 
 PHASES:
 - [✓ | ▶ |  ] Reproduction
 - [✓ | ▶ |  ] Investigation
+- [✓ | ▶ |  ] Alignment
 - [✓ | ▶ |  ] Systemic Audit
 - [✓ | ▶ |  ] Documentation
 - [✓ | ▶ |  ] Conclusion
@@ -386,11 +393,12 @@ The probe will execute and output the exact error thrown by `jwt.verify()`. I wi
 
 4. State Dashboard
 Case File: docs/project/debugging/01-auth-bug.md
-FAILURE: Intermittent 401 Unauthorized during Checkout.
+MRE(s): spikes/debug/01-auth-mre.js
 
 PHASES:
 - [✓] Reproduction
 - [▶] Investigation
+- [ ] Alignment
 - [ ] Systemic Audit
 - [ ] Documentation
 - [ ] Conclusion
