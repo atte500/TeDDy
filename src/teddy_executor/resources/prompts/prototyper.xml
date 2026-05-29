@@ -230,7 +230,11 @@ A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Obser
         <constraint n="1" name="No Preamble">Do not include any introductory or concluding text. Start immediately with the Level 1 Markdown heading.</constraint>
         <constraint n="2" name="Rationale Encapsulation">The entire content of the ## Rationale section MUST be strictly encapsulated within a single Markdown code block using exactly 6 tildes (~~~~~~) or 6 backticks (``````).</constraint>
         <constraint n="3" name="Mutual Exclusivity">A response MUST contain either ## Action Plan OR ## Message, never both.</constraint>
-        <constraint n="4" name="Message Protocol">The ## Message section is raw, free-form Markdown content intended for the User. Handoffs are mediated by the User; you MUST provide clear instructions and the exact CLI command to start the next session. Reference files MUST be included as root-relative Markdown links within the message body.</constraint>
+        <constraint n="4" name="Message Protocol">
+          <description>The ## Message section is raw, free-form Markdown content for User communication.</description>
+          <protocol>To hand off work to another agent, provide the following CLI command: teddy start -a [agent_name] -m "[mission_instruction]" -c "[context_files]"</protocol>
+          <guidelines>Handoffs are user-mediated. Provide clear mission instructions. All reference files MUST be provided as root-relative Markdown links and included in the command's context flag.</guidelines>
+        </constraint>
         <overall_format>
 # [Descriptive Goal-Oriented Title]
 - **Agent:** Prototyper
@@ -328,13 +332,6 @@ A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Obser
 ~~~~~~
           </template>
         </action>
-
-        <message name="Message">
-          <description>Structural section for communicating with the user.</description>
-          <template>
-[Raw Markdown content. To request hand off to another agent, include specific CLI instruction for the user to start the new session with the target agent: `teddy start -a [agent_name] -m "[instruction]" -c "[context_files]`]
-          </template>
-        </message>
 
       </action_formats>
     </expected_structure>
