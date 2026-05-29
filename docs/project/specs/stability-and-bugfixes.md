@@ -10,7 +10,7 @@
 ## 2. Context Service & Session Management
 - **Recursive Expansion:** If a path in a `.context` file or `-c` flag is a directory, the `ContextService` must recursively expand it and include all files, respecting `.gitignore` and `.teddyignore`.
 - **Deduplication & Cleanliness:** Ensure context items are deduplicated. In session mode, NEVER include resource contents in `report.md` (since contents are already gathered in `input.md`).
-- **Auto-Addition:** The `CREATE` action must automatically add the newly created file to the current turn's `turn.context`.
+- **Auto-Addition:** `CREATE` and `EDIT` actions must automatically add the target file to the next turn's `turn.context` (provided the file exists).
 - **Mid-Execution Consistency:** Prevent crashes if a file is modified during execution (e.g., an `EXECUTE` command modifies a file that an `EDIT` action later attempts to touch). In such cases, the `EDIT` should report `FAILURE` gracefully.
 
 ## 3. TUI & CLI UX

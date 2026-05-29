@@ -162,7 +162,7 @@ The `teddy execute` command creates the *next* turn (`T_next`) based on the stat
         -   Create `T_next/meta.yaml` with `turn_id`, `parent_turn_id` pointing to `T_current`'s ID, and `caller_turn_id` copied from `T_current`.
 4.  **Apply Standard Context Changes from `plan.md`:**
     -   Process all standard actions in `T_current/plan.md`:
-        -   For each `READ` action, add its resource path to `T_next/turn.context`.
+        -   For each `READ`, `CREATE`, and `EDIT` action, add its resource/file path to `T_next/turn.context` (provided the file exists).
 5.  **Handoffs & Communicating Turns:**
     -   If the turn uses `## Message`, the executor generates the `report.md` as usual and transitions to `T_next`.
     -   Handoffs are mediated by the User; the agent provides the necessary `teddy start` command in the message body.
