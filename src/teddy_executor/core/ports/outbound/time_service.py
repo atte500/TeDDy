@@ -20,3 +20,9 @@ class ITimeService(Protocol):
         Returns the current UTC date and time.
         """
         ...
+
+    def sleep(self, seconds: float) -> None:
+        """
+        Suspends execution for the given number of seconds.
+        """
+        ...

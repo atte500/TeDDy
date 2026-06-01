@@ -74,6 +74,28 @@ The `FileSystemManager` port defines a technology-agnostic interface for interac
 
 ---
 
+### `is_dir`
+**Status:** Implemented
+
+*   **Description:** Checks if the specified path is a directory.
+*   **Signature:** `is_dir(path: str) -> bool`
+*   **Postconditions:**
+    *   Returns `True` if the path exists and is a directory.
+
+---
+
+### `list_directory_recursive`
+**Status:** Implemented
+
+*   **Description:** Lists all files within a directory recursively, respecting ignore rules.
+*   **Signature:** `list_directory_recursive(path: str) -> list[str]`
+*   **Preconditions:**
+    *   `path` must exist and be a directory.
+*   **Postconditions:**
+    *   Returns a list of root-relative file paths.
+
+---
+
 ### `create_directory`
 **Status:** Implemented
 

@@ -34,3 +34,4 @@ auto_pruning:
 llm:
   model: "openrouter/google/gemini-3-flash-preview"
   api_key: ""
+  max_retries: 3

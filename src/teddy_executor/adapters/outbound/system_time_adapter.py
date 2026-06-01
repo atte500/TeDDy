@@ -14,3 +14,9 @@ class SystemTimeAdapter(ITimeService):
     def now_utc(self) -> datetime:
         """Returns current UTC time."""
         return datetime.now(timezone.utc)
+
+    def sleep(self, seconds: float) -> None:
+        """Suspends execution for the given number of seconds."""
+        import time
+
+        time.sleep(seconds)

@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Optional, Protocol
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient, LlmApiError
+from teddy_executor.core.ports.outbound.time_service import ITimeService
 
 
 class IOpenRouterHydrator(Protocol):
@@ -25,11 +26,14 @@ class LiteLLMAdapter(ILlmClient):
         self,
         config_service: IConfigService,
         hydrator: Optional[IOpenRouterHydrator] = None,
+        time_service: Optional[ITimeService] = None,
+        _litellm_provider: Optional[Any] = None,
     ):
         self._config_service = config_service
         self._hydrator = hydrator
-        self._litellm_initialized = False
-        self._litellm_module: Any = None
+        self._time_service = time_service
+        self._litellm_initialized = _litellm_provider is not None
+        self._litellm_module: Any = _litellm_provider
         self._encoding: Any = None
         self._encoding_model: Optional[str] = None
         self._executor: Any = None
@@ -107,37 +111,10 @@ class LiteLLMAdapter(ILlmClient):
         Values in the 'llm' section of the config are passed directly to LiteLLM.
         """
         litellm = self._get_litellm()
-        from typing import cast
+        final_params = self._prepare_completion_params(model, **kwargs)
 
-        # 1. Start with caller-provided kwargs
-        final_params = {**kwargs}
-
-        # 2. Explicit model argument
-        if model:
-            final_params["model"] = model
-
-        # 3. Layer in 'llm' config block (Config overrides Caller/Args for control)
-        llm_config = cast(Dict[str, Any], self._config_service.get_setting("llm", {}))
-        final_params.update(llm_config)
-
-        if "model" not in final_params:
-            raise LlmApiError(
-                "No LLM model specified. Please set 'llm.model' in your config "
-                "or export 'OPENAI_API_KEY' etc. for LiteLLM defaults."
-            )
-
-        # Robust Provider Routing for OpenRouter
-        target_model = str(final_params.get("model", ""))
-        provider = final_params.get("provider")
-        if provider and target_model.startswith("openrouter/"):
-            final_params.setdefault("extra_body", {})
-            final_params["extra_body"]["providers"] = {"order": [provider.capitalize()]}
-            # Remove top-level provider to prevent LiteLLM/OpenRouter 400 errors
-            del final_params["provider"]
-
-        from teddy_executor.core.domain.models.exceptions import ConfigurationError
-
-        max_attempts = 3
+        max_attempts_val = final_params.get("max_retries")
+        max_attempts = int(max_attempts_val) if max_attempts_val is not None else 3
         last_exception: Optional[Exception] = None
 
         for attempt in range(max_attempts):
@@ -145,43 +122,76 @@ class LiteLLMAdapter(ILlmClient):
                 return litellm.completion(messages=messages, **final_params)
             except Exception as e:
                 last_exception = e
-                # 1. Attempt Hydration Retry for OpenRouter models
-                # Note: Hydration retry counts as a retry attempt for this loop
                 response = self._handle_hydration_retry(e, messages, final_params)
                 if response:
                     return response
 
-                msg = str(e)
-
-                # Check for retryable transient errors
-                is_transient = any(
-                    err in msg for err in ["SSLV3_ALERT_BAD_RECORD_MAC", "TimeoutError"]
-                )
-                if is_transient and attempt < max_attempts - 1:
-                    import time
-
-                    # Minimal exponential backoff: 0.5s, 1s
-                    time.sleep(0.5 * (2**attempt))
+                if self._should_retry_completion(e, attempt, max_attempts):
                     continue
 
-                # Non-retryable or exhausted attempts: handle specific signatures
-                if any(
-                    hint in msg
-                    for hint in [
-                        "API key expired",
-                        "API_KEY_INVALID",
-                        "invalid_api_key",
-                    ]
-                ):
-                    clean_msg = msg.split(" - ")[-1] if " - " in msg else msg
-                    raise ConfigurationError(clean_msg) from e
-
-                # Break loop to raise final generic error outside except block
+                self._raise_specific_completion_errors(e)
                 break
 
-        # Re-raise the final error outside the loop and except block
         final_msg = str(last_exception) if last_exception else "Unknown error"
         raise LlmApiError(f"LLM Completion failed: {final_msg}") from last_exception
+
+    def _prepare_completion_params(
+        self, model: Optional[str] = None, **kwargs: Any
+    ) -> Dict[str, Any]:
+        """Resolves and layers configuration for the completion request."""
+        from typing import cast
+
+        params = {**kwargs}
+        if model:
+            params["model"] = model
+
+        llm_config = cast(Dict[str, Any], self._config_service.get_setting("llm", {}))
+        params.update(llm_config)
+
+        if "model" not in params:
+            raise LlmApiError(
+                "No LLM model specified. Please set 'llm.model' in your config."
+            )
+
+        # OpenRouter Provider Routing
+        target_model = str(params.get("model", ""))
+        provider = params.get("provider")
+        if provider and target_model.startswith("openrouter/"):
+            params.setdefault("extra_body", {})
+            params["extra_body"]["providers"] = {"order": [provider.capitalize()]}
+            del params["provider"]
+
+        return params
+
+    def _should_retry_completion(
+        self, error: Exception, attempt: int, max_attempts: int
+    ) -> bool:
+        """Determines if a completion error is transient and performs backoff."""
+        msg = str(error)
+        is_transient = any(
+            err in msg for err in ["SSLV3_ALERT_BAD_RECORD_MAC", "TimeoutError"]
+        )
+
+        if is_transient and attempt < max_attempts - 1:
+            delay = 0.5 * (2**attempt)
+            if self._time_service:
+                self._time_service.sleep(delay)
+            else:
+                import time
+
+                time.sleep(delay)
+            return True
+        return False
+
+    def _raise_specific_completion_errors(self, error: Exception) -> None:
+        """Identifies and raises specific errors based on exception signature."""
+        from teddy_executor.core.domain.models.exceptions import ConfigurationError
+
+        msg = str(error)
+        hints = ["API key expired", "API_KEY_INVALID", "invalid_api_key"]
+        if any(hint in msg for hint in hints):
+            clean_msg = msg.split(" - ")[-1] if " - " in msg else msg
+            raise ConfigurationError(clean_msg) from error
 
     def get_token_count(
         self, messages: List[Dict[str, str]], model: Optional[str] = None

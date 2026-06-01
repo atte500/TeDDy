@@ -14,7 +14,7 @@ The `LiteLLMAdapter` is responsible for interacting with various Large Language 
 
 ## 3. Failure Modes
 
-- **Transient Network Failures:** Handled via a stateful retry loop (3 attempts).
+- **Transient Network Failures:** Handled via a stateful retry loop. The number of attempts is determined by `llm.max_retries` (default: 3).
 - **SSL Handshake Errors:** Specific errors like `SSLV3_ALERT_BAD_RECORD_MAC` trigger retries.
 - **API Timeouts:** OpenRouter or provider timeouts trigger retries.
 - **Permanent Configuration Errors:** (Invalid API key) raise `ConfigurationError` immediately.

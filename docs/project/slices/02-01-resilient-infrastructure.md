@@ -1,6 +1,6 @@
 # Slice: 02-01-Resilient Infrastructure
 
-- **Status:** Planned
+- **Status:** Completed
 - **Milestone:** [docs/project/milestones/02-stability-and-polish.md](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [docs/project/specs/stability-and-bugfixes.md](/docs/project/specs/stability-and-bugfixes.md)
 - **Component Docs:** [docs/architecture/adapters/outbound/litellm_adapter.md](/docs/architecture/adapters/outbound/litellm_adapter.md), [docs/architecture/core/services/context_service.md](/docs/architecture/core/services/context_service.md)
@@ -39,7 +39,7 @@ Then the generated input.md should contain the contents of all 3 files
 - [x] **Logic** - Update `ContextService._resolve_files_to_paths` to detect and expand directories.
 - [x] **Refactor** - Move recursive file listing logic into a shared utility or update `IFileSystemManager`.
 - [x] **Cleanup** - Centralize ignore-spec loading logic to avoid duplication between `LocalRepoTreeGenerator` and `LocalFileSystemAdapter`. [DEBT]
-- [ ] **Wiring** - Ensure `PlanningService` passes correct retry parameters if configurable.
+- [x] **Wiring** - Ensure `PlanningService` passes correct retry parameters if configurable.
 
 ## Implementation Plan
 1. **Targeted Integrity Audit**: Audit `LiteLLMAdapter` and `ContextService`.
@@ -52,3 +52,4 @@ Then the generated input.md should contain the contents of all 3 files
 - `ContextService`: Recursion logic added to `_resolve_files_to_paths`.
 - `LocalFileSystemAdapter`: Implemented `list_directory_recursive` using a manual `_walk` to support `pathspec` ignores. The logic is cached and uses lazy imports for performance.
 - `Refactor (filesystem_helpers.py)`: Centralized `load_ignore_spec` and `walk_recursive` to eliminate duplication between `LocalFileSystemAdapter` and `LocalRepoTreeGenerator`. The tree generator specifically required maintaining parent directory connectivity in its `included_paths` set, which was preserved by iterating over the results of `walk_recursive`.
+- `Wiring (LLM Retries)`: Introduced `llm.max_retries` (default 3) in `config.yaml`. Updated both `PlanningService` (for application-level empty responses) and `LiteLLMAdapter` (for transient network/API errors) to respect this setting.

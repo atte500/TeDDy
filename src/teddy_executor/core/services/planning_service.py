@@ -118,7 +118,8 @@ class PlanningService(IPlanningUseCase):
         api_key: Optional[str] = None,
     ) -> tuple[Any, str, float]:
         """Implements retry loop for empty LLM content."""
-        max_retries = 3
+        max_retries_val = self._config_service.get_setting("llm.max_retries")
+        max_retries = int(max_retries_val) if max_retries_val is not None else 3
         response = None
         plan_content = ""
         turn_cost = 0.0
