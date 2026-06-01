@@ -4,7 +4,6 @@
 - **Milestone:** [docs/project/milestones/02-stability-and-polish.md](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [docs/project/specs/stability-and-bugfixes.md](/docs/project/specs/stability-and-bugfixes.md)
 - **Component Docs:** [docs/architecture/adapters/outbound/web_scraper_adapter.md](/docs/architecture/adapters/outbound/web_scraper_adapter.md), [docs/architecture/adapters/outbound/web_searcher_adapter.md](/docs/architecture/adapters/outbound/web_searcher_adapter.md)
-- **Case File:** [docs/project/debugging/04-web-scraping-messiness.md](/docs/project/debugging/04-web-scraping-messiness.md)
 
 ## Business Goal
 Improve the reliability and depth of information gathered through web scraping and searching to provide better context to AI agents.
