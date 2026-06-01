@@ -79,7 +79,6 @@
           3. Commit Plan: Execute the VCP to version control the updated slice.
           4. Restart: Begin Phase 1 for the newly added prerequisite deliverable.
         </step>
-        <step n="5" name="Real-World Verification Gate">If this is the last deliverable, `CREATE` a temporary script in `spikes/sandbox/` that imports the wired components and executes all end-to-end scenarios. `EXECUTE` it to verify SUT behaves as expected, then transition to a `Message` turn to present the CLI command and output to the user. You MUST halt and gain explicit user approval before proceeding to the Documentation phase. If the user requests changes, `EDIT` the Vertical Slice to append new deliverables to address the feedback, then proceed to the Documentation phase to close out the current deliverable.</step>
       </phase>
 
       <phase n="4" name="Documentation">
@@ -91,12 +90,13 @@
         <step n="5" name="Delivery Gate">Upon completing documentation, you MUST proceed immediately to Version Control. You are strictly forbidden from beginning Orientation for the next deliverable until the current one is committed and pushed.</step>
       </phase>
 
-      <phase n="5" name="Version Control">
-        <goal>Verify workspace state and hand off versioned history. Prerequisite: Successful integration verified by global test run.</goal>
+      <phase n="5" name="Delivery">
+        <goal>Verify workspace state, hand off versioned history, and conduct final user verification.</goal>
         <step n="1" name="Teardown">Explicitly delete all temporary logs and workspace detritus in `spikes/` then run `git status` to verify.</step>
         <step n="2" name="Consistency Check">If this is the last deliverable, execute `git grep` for deleted/renamed components and resolve stale hits in documentation/comments.</step>
         <step n="3" name="Version Control">Execute the commit following the VCP for the current deliverable in its own turn. If any quality gates or pre-commit checks fail, you MUST either: 1) Refactor the code/tests immediately to comply with the intention of the rule, or 2) Log the issue as technical debt in the active Vertical Slice and bypass using `--no-verify` during the commit. Suppressing quality check rules via inline comments (e.g., `# noqa`, `# pylint: disable`) is strictly forbidden.</step>
-        <step n="4" name="Atomic Delivery">You are strictly forbidden from starting a new deliverable until the current one is version controlled. Once the commit is pushed, you may reset the State Dashboard and proceed to the next item's Orientation.</step>
+        <step n="4" name="Feature Verification Playbook">If this commit completed the final deliverable of the Vertical Slice, you MUST transition to a `Message` turn to present a "Verification Playbook" to the user. This playbook MUST make manual testing as easy as possible by providing: 1. Exact instructions to bootstrap the local environment (e.g., starting servers, setting `.env` vars). 2. Exact copy-pasteable commands (CLI/cURL) or UI steps mapping perfectly to the Gherkin scenarios. 3. Expected observable outputs. You MUST halt and gain explicit user approval. If the user reports failures, `EDIT` the slice to append new deliverables to fix the issue and commit. If the user approves, `EDIT` the Vertical Slice to change its Status to Completed and conclude the session after final commit.</step>
+        <step n="5" name="Atomic Delivery">You are strictly forbidden from starting a new deliverable until the current one is version controlled. Once the commit is pushed, if the slice is not yet completed, you may reset the State Dashboard and proceed to the next item's Orientation.</step>
       </phase>
     </workflow>
 
@@ -125,7 +125,7 @@ PHASES:
 - [✓ | ▶ |  ] Implementation
 - [✓ | ▶ |  ] Integration
 - [✓ | ▶ |  ] Documentation
-- [✓ | ▶ |  ] Version Control
+- [✓ | ▶ |  ] Delivery
 
 INNER LOOP: [tests/suites/unit/target_test_component.py]
 - [✓ | ▶ |  ] Red
