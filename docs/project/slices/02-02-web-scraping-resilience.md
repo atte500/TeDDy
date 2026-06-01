@@ -37,8 +37,8 @@ Then the results should contain excerpts or full content from the top results, n
 - **Search Result Failures**: If individual links in a search result fail to scrape, provide the snippet as a fallback and log the failure.
 
 ## Deliverables
-- [ ] **Harness** - Create reproduction tests for 403 and GitHub raw issues.
-- [ ] **Contract** - Update `QueryResult` and `SearchResult` DTOs to include `content`.
+- [x] **Harness** - Create reproduction tests for 403 and GitHub raw issues.
+- [▶] **Contract** - Update `QueryResult` and `SearchResult` DTOs to include `content`.
 - [ ] **Harness** - Create tests for configurable search depth.
 - [ ] **Logic** - Implement User-Agent and header rotation in `WebScraperAdapter`.
 - [ ] **Logic** - Implement specialized handling for `raw.githubusercontent.com` in `WebScraperAdapter`.
@@ -51,3 +51,7 @@ Then the results should contain excerpts or full content from the top results, n
 2. **Reproduction Spikes**: Verify the failures using the URLs provided in the spec.
 3. **Resilience Implementation**: Add headers/UA rotation and GitHub special-casing.
 4. **Research Deepening**: Integrate scraper into the searcher workflow.
+
+## Implementation Notes
+- **403 Failure (PNAS)**: Diagnostic probing confirmed PNAS returns a 403 with Cloudflare headers when using the default User-Agent. Created `test_get_content_handles_403_with_fallback` which asserts that the adapter falls back to `trafilatura.fetch_url` upon a 403.
+- **GitHub Raw Bug**: Probing revealed that `requests` correctly fetches the raw content, but the `WebScraperAdapter` passes this content to `trafilatura.extract`, which fails to produce output for non-HTML raw files (like README.md). Created `test_get_content_raw_github_returns_content` to assert verbatim content return for `raw.githubusercontent.com` URLs.
