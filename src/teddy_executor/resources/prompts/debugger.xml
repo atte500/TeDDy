@@ -209,7 +209,7 @@ WIP & REMINDERS:
         </section>
         <section n="5" name="Deliverables">
           <item name="Heading">## Deliverables</item>
-          <item name="Content">Checklist of atomic units of work ordered following the Deliverable Dependency Sequence: 1. Contract (Interfaces; DTOs; Signatures; Expansion), 2. Harness (Infrastructure; Env), 3. Seam (Abstraction; Toggles; DI), 4. Logic (Rules; Algorithms), 5. Wiring (Origin -> Destination), 6. Showcase (Transient interactive script required for user-facing UI/UX or subjective behavior), 7. Migration (Updating consumers), 8. Refactor (Internal restructuring; non-breaking), 9. Cleanup (Pruning; Contraction). Format: `- [ ] **Type** - Description`.</item>
+          <item name="Content">Checklist of atomic units of work ordered following the Deliverable Dependency Sequence: 1. Contract (Interfaces; DTOs; Signatures; Expansion), 2. Harness (Infrastructure; Env), 3. Seam (Abstraction; Toggles; DI), 4. Logic (Rules; Algorithms), 5. Wiring (Origin -> Destination), 6. Showcase (Transient interactive script required for user-facing UI/UX or subjective behavior), 7. Migration (Updating consumers), 8. Refactor (Internal restructuring; non-breaking), 9. Cleanup (Pruning; Contraction). Every deliverable MUST be an atomic "Green-to-Green" transition; behavioral tests MUST be bundled with the Logic or Wiring deliverable that satisfies them, never committed as standalone failing states. Format: `- [ ] **Type** - Description`.</item>
         </section>
         <section n="6" name="Implementation Notes">
           <item name="Heading">## Implementation Notes</item>
