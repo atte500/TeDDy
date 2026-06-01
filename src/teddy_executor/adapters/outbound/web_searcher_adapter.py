@@ -6,7 +6,7 @@ from teddy_executor.core.domain.models import (
     WebSearchError,
     WebSearchResults,
 )
-from teddy_executor.core.ports.outbound.web_searcher import IWebSearcher
+from teddy_executor.core.ports.outbound import IWebScraper, IWebSearcher
 
 
 logger = logging.getLogger(__name__)
@@ -17,8 +17,13 @@ class WebSearcherAdapter(IWebSearcher):
     An adapter that uses the ddgs library to perform web searches.
     """
 
-    def __init__(self, ddgs_factory: Optional[Callable[..., Any]] = None):
+    def __init__(
+        self,
+        ddgs_factory: Optional[Callable[..., Any]] = None,
+        scraper: Optional[IWebScraper] = None,
+    ):
         self._ddgs_factory = ddgs_factory
+        self._scraper = scraper
 
     def _apply_ddgs_monkeypatch(self) -> None:
         """Applies a structural patch to DDGS to preserve word boundaries."""
@@ -59,14 +64,23 @@ class WebSearcherAdapter(IWebSearcher):
             # DDGS.text returns a generator, so we convert it to a list
             results = list(ddgs_client.text(query, max_results=5))
 
-            search_results_for_query: List[SearchResult] = [
-                {
+            search_results_for_query: List[SearchResult] = []
+            for res in results:
+                url = res.get("href", "")
+                item: SearchResult = {
                     "title": res.get("title", ""),
-                    "href": res.get("href", ""),
+                    "href": url,
                     "body": self._clean_snippet(res.get("body", "")),
                 }
-                for res in results
-            ]
+
+                if self._scraper and url:
+                    try:
+                        item["content"] = self._scraper.get_content(url)
+                    except Exception as e:
+                        # Log failure but continue; we still have the snippet.
+                        logger.warning(f"Failed to scrape content for {url}: {e}")
+
+                search_results_for_query.append(item)
 
             return {
                 "query": query,

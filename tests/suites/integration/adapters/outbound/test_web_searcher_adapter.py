@@ -80,3 +80,33 @@ def test_search_handles_library_exception(monkeypatch):
     # Act & Assert
     with pytest.raises(WebSearchError, match="Failed to execute search"):
         searcher.search(queries)
+
+
+def test_search_performs_deep_scraping_for_results():
+    """
+    Verify that the searcher uses the provided scraper to fetch full
+    content for each search result.
+    """
+    # Arrange
+    mock_ddgs_instance = POSIXPathMock()
+    mock_ddgs_instance.text.return_value = [
+        {
+            "title": "Python",
+            "href": "https://python.org",
+            "body": "Snippet",
+        }
+    ]
+    mock_factory = POSIXPathMock()
+    mock_factory.return_value.__enter__.return_value = mock_ddgs_instance
+
+    mock_scraper = POSIXPathMock()
+    mock_scraper.get_content.return_value = "Full scraped content"
+
+    # Act
+    # This should fail because __init__ doesn't accept 'scraper' yet
+    searcher = WebSearcherAdapter(ddgs_factory=mock_factory, scraper=mock_scraper)
+    result = searcher.search(["python"])
+
+    # Assert
+    assert result["query_results"][0]["results"][0]["content"] == "Full scraped content"
+    mock_scraper.get_content.assert_called_once_with("https://python.org")
