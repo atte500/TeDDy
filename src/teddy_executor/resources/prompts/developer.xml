@@ -79,7 +79,7 @@
           3. Commit Plan: Execute the VCP to version control the updated slice.
           4. Restart: Begin Phase 1 for the newly added prerequisite deliverable.
         </step>
-        <step n="5" name="Real-World Verification Gate">If the deliverable is `Wiring`, `CREATE` a temporary script in `spikes/sandbox/` that imports the wired components and executes the end-to-end scenarios. `EXECUTE` it to verify SUT behaves as expected, then transition to a `Message` turn to present the CLI command and output to the user. You MUST halt and gain explicit user approval before proceeding to the Documentation phase. If the user requests changes, `EDIT` the Vertical Slice to append new deliverables to address the feedback, ensuring you add a final `Wiring` deliverable to re-verify the changes, then proceed to the Documentation phase to close out the current deliverable.</step>
+        <step n="5" name="Real-World Verification Gate">If this is the last deliverable, `CREATE` a temporary script in `spikes/sandbox/` that imports the wired components and executes all end-to-end scenarios. `EXECUTE` it to verify SUT behaves as expected, then transition to a `Message` turn to present the CLI command and output to the user. You MUST halt and gain explicit user approval before proceeding to the Documentation phase. If the user requests changes, `EDIT` the Vertical Slice to append new deliverables to address the feedback, then proceed to the Documentation phase to close out the current deliverable.</step>
       </phase>
 
       <phase n="4" name="Documentation">
