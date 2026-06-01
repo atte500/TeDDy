@@ -148,14 +148,22 @@ class WebScraperAdapter(WebScraper):
         import requests
 
         # Stealthy identity mimicking Chrome on macOS to avoid automated blocking
-        user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+        user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, Gecko) Chrome/124.0.0.0 Safari/537.36"
         headers = {"User-Agent": user_agent}
 
-        if url.startswith("https://github.com/") and "/blob/" in url:
-            raw_url = url.replace("github.com", "raw.githubusercontent.com").replace(
-                "/blob/", "/"
+        # Specialized handling for GitHub raw content (direct raw URLs or blob URLs)
+        is_raw_github = url.startswith("https://raw.githubusercontent.com/")
+        is_github_blob = url.startswith("https://github.com/") and "/blob/" in url
+
+        if is_raw_github or is_github_blob:
+            target_url = (
+                url.replace("github.com", "raw.githubusercontent.com").replace(
+                    "/blob/", "/"
+                )
+                if is_github_blob
+                else url
             )
-            response = requests.get(raw_url, headers=headers, timeout=30)
+            response = requests.get(target_url, headers=headers, timeout=30)
             response.raise_for_status()
             return response.text
 

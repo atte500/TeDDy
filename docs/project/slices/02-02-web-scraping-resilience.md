@@ -40,7 +40,7 @@ Then the results should contain excerpts or full content from the top results, n
 - [x] **Harness** - Create reproduction tests for 403 and GitHub raw issues.
 - [x] **Contract** - Update `QueryResult` and `SearchResult` DTOs to include `content`.
 - [x] **Logic** - Implement User-Agent/Header rotation for 403 fallback in `WebScraperAdapter` (includes removing `xfail` from tests).
-- [ ] **Logic** - Implement specialized GitHub Raw extraction in `WebScraperAdapter` (includes removing `xfail` from tests).
+- [x] **Logic** - Implement specialized GitHub Raw extraction in `WebScraperAdapter` (includes removing `xfail` from tests).
 - [ ] **Logic** - Enhance `WebSearcherAdapter` to perform follow-up scraping for top results (includes new unit/integration tests).
 - [ ] **Wiring** - Implement `research.max_results` and `research.auto_scrape_depth` configuration support.
 - [ ] **Showcase** - Demonstration script validating PNAS (403 bypass), GitHub Raw (README extraction), and Deepened Research (Scraped content in SERP).
@@ -56,3 +56,4 @@ Then the results should contain excerpts or full content from the top results, n
 - **GitHub Raw Bug**: Probing revealed that `requests` correctly fetches the raw content, but the `WebScraperAdapter` passes this content to `trafilatura.extract`, which fails to produce output for non-HTML raw files (like README.md). Created `test_get_content_raw_github_returns_content` to assert verbatim content return for `raw.githubusercontent.com` URLs.
 - **DTO Refinement**: Refactored `SearchResult` in `src/teddy_executor/core/domain/models/web_search_results.py` to use Python 3.11's `NotRequired` for the `content` field. This ensures `title`, `href`, and `body` are mandatory while explicitly allowing `content` to be omitted. Added comprehensive unit tests in `tests/suites/unit/core/domain/models/test_web_search_results.py`.
 - **Green State Management**: Marked reproduction tests in `tests/suites/integration/adapters/outbound/test_web_scraper_resilience.py` as `@pytest.mark.xfail` to maintain a passing test suite during intermediate deliverables until logic is implemented.
+- **GitHub Raw extraction**: Refactored `WebScraperAdapter.get_content` to unify the handling of `raw.githubusercontent.com` and `github.com` blob URLs. Both now bypass `trafilatura` and return verbatim text content via `requests.get`, ensuring documentation and source files are not lost to HTML parsing failures.
