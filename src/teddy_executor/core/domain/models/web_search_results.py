@@ -2,16 +2,16 @@
 This module defines the strictly-typed data transfer object for web search results.
 """
 
-from typing import List, TypedDict
+from typing import List, NotRequired, TypedDict
 
 
-class SearchResult(TypedDict, total=False):
+class SearchResult(TypedDict):
     """Represents a single search result item."""
 
     title: str
     href: str
     body: str  # The SERP snippet
-    content: str  # The full scraped content (optional)
+    content: NotRequired[str]  # The full scraped content (optional)
 
 
 class QueryResult(TypedDict):

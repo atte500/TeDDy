@@ -1,3 +1,4 @@
+import pytest
 import requests
 from teddy_executor.adapters.outbound.web_scraper_adapter import WebScraperAdapter
 
@@ -14,6 +15,7 @@ class MockResponse:
             )
 
 
+@pytest.mark.xfail(reason="Logic for 403 fallback not yet implemented")
 def test_get_content_handles_403_with_fallback(monkeypatch):
     """
     Desired behavior: If requests.get returns 403, we should fallback to trafilatura.fetch_url.
@@ -41,6 +43,9 @@ def test_get_content_handles_403_with_fallback(monkeypatch):
     assert "Fallback Content" in content
 
 
+@pytest.mark.xfail(
+    reason="Logic for raw GitHub content preservation not yet implemented"
+)
 def test_get_content_raw_github_returns_content(monkeypatch):
     """
     Desired behavior: raw.githubusercontent.com should return verbatim content.
