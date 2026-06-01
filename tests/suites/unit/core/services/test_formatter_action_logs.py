@@ -166,3 +166,41 @@ def test_formats_validation_failed_report():
     assert "## Validation Errors" in output
     assert "E1" in output
     assert "E2" in output
+
+
+def test_formats_research_action_with_content():
+    """Verify RESEARCH action result rendering prioritizes content over body."""
+    formatter = MarkdownReportFormatter()
+    results: WebSearchResults = {
+        "query_results": [
+            {
+                "query": "q",
+                "results": [
+                    {
+                        "title": "T",
+                        "href": "H",
+                        "body": "B",
+                        "content": "Full extracted content",
+                    }
+                ],
+            }
+        ]
+    }
+    report = _get_report(
+        [
+            ActionLog(
+                status=ActionStatus.SUCCESS,
+                action_type="RESEARCH",
+                params={"Description": "Res"},
+                details=results,
+            )
+        ]
+    )
+
+    output = formatter.format(report)
+
+    assert "**Query:** `q`" in output
+    assert "[T](H)" in output
+    assert "```Content\nFull extracted content\n```" in output
+    assert "```Snippet" not in output
+    assert "B" not in output

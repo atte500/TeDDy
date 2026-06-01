@@ -248,9 +248,15 @@
 **Query:** `{{ qr['query'] }}`
 {% for sr in qr['results'] %}
 [{{ sr['title'] }}]({{ sr['href'] }})
+{% if sr.get('content') %}
+```Content
+{{ sr['content'] }}
+```
+{% else %}
 ```Snippet
 {{ sr['body'] }}
 ```
+{% endif %}
 {% endfor %}
 {% endfor %}
 
