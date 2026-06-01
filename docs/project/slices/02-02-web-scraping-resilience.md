@@ -1,6 +1,6 @@
 # Slice: 02-02-Web Scraping Resilience
 
-- **Status:** Planned
+- **Status:** Completed
 - **Milestone:** [docs/project/milestones/02-stability-and-polish.md](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [docs/project/specs/stability-and-bugfixes.md](/docs/project/specs/stability-and-bugfixes.md)
 - **Component Docs:** [docs/architecture/adapters/outbound/web_scraper_adapter.md](/docs/architecture/adapters/outbound/web_scraper_adapter.md), [docs/architecture/adapters/outbound/web_searcher_adapter.md](/docs/architecture/adapters/outbound/web_searcher_adapter.md)
@@ -57,7 +57,7 @@ And the output should be truncated to the limit defined in read.max_lines
 - [x] **Logic** - Refactor `WebScraperAdapter.get_content` to disable high-recall flags (`favor_recall=False`, `include_comments=False`) and implement `truncate_lines` (head) respecting `read.max_lines`.
 - [x] **Refactor** - Update `WebSearcherAdapter` to remove redundant truncation logic, delegating it to the scraper.
 - [x] **Wiring** - Update `execution_report.md.j2` to prioritize rendering `content` over `body` in research results.
-- [ ] **Refactor** - Remove banned `unittest.mock.patch` from `tests/suites/unit/adapters/outbound/test_web_scraper_contract.py`.
+- [x] **Refactor** - Remove banned `unittest.mock.patch` from `tests/suites/unit/adapters/outbound/test_web_scraper_contract.py`.
 
 ## Implementation Plan
 1. **Targeted Integrity Audit**: Audit current `WebScraperAdapter` and `WebSearcherAdapter`.
@@ -93,3 +93,4 @@ And the output should be truncated to the limit defined in read.max_lines
 - **High-Recall Refactor**: Disabled `favor_recall` and `include_comments` in `WebScraperAdapter.get_content` to reduce noise in HTML extraction. Implemented head-truncation logic that splits the final Markdown content by newlines and truncates it to `read.max_lines` (defaulting to 1000 from config) if it exceeds the limit.
 - **Searcher Truncation Cleanup**: Audited `WebSearcherAdapter` and confirmed that redundant string truncation logic (using `research.max_content_length`) has been fully removed. The searcher now delegates truncation entirely to `WebScraperAdapter.get_content`. Integration tests (`test_search_returns_untruncated_content_from_scraper`) confirm this behavior.
 - **Reporting Visibility (Wiring)**: Added a Red test `test_formats_research_action_with_content` to `test_formatter_action_logs.py` to assert `content` takes precedence. Updated the `execution_report.md.j2` Jinja template to check for `sr.get('content')` and render it inside a `Content` code block, falling back to rendering `body` in a `Snippet` block if absent.
+- **Mocking Refactor**: Refactored `tests/suites/unit/adapters/outbound/test_web_scraper_contract.py` to eliminate `unittest.mock.patch` and bare `Mock` objects. Replaced them with `POSIXPathMock` and constructor/instance injection to comply with the project's anti-mock poisoning standards.
