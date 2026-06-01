@@ -31,7 +31,7 @@ Then the generated input.md should contain the contents of all 3 files
 - **Nested Ignores**: If a directory is expanded, then respect `.gitignore` in subdirectories to prevent context pollution.
 
 ## Deliverables
-- [ ] **Contract** - Update `ILlmClient` if necessary for retry configuration.
+- [x] **Contract** - Update `ILlmClient` and `IFileSystemManager` for resilience and recursion support.
 - [ ] **Harness** - Create `test_litellm_retries.py` using a mock that yields side-effects.
 - [ ] **Harness** - Create `test_context_recursion.py` with mock filesystem.
 - [ ] **Logic** - Implement stateful retry loop in `LiteLLMAdapter.get_completion`.
@@ -43,3 +43,8 @@ Then the generated input.md should contain the contents of all 3 files
 1. **Targeted Integrity Audit**: Audit `LiteLLMAdapter` and `ContextService`.
 2. **Retry Loop**: Implement a `for` loop (range 3) in `get_completion`. Catch specific exceptions (`SSLV3_ALERT_BAD_RECORD_MAC`, `TimeoutError`).
 3. **Recursive Context**: Update `_resolve_files_to_paths` in `ContextService`. Use `Path.is_dir()` via `IFileSystemManager`.
+
+## Implementation Notes
+- `ILlmClient`: `get_completion` already supports `**kwargs`, so retry configuration can be passed if needed, but primary retry logic will be internal to `LiteLLMAdapter`.
+- `IFileSystemManager`: Needs `is_dir(path: str) -> bool` to support `ContextService` recursion logic without relying on exception-driven detection.
+- `ContextService`: Recursion logic will be added to `_resolve_files_to_paths`.

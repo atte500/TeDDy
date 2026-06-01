@@ -12,6 +12,12 @@ class IFileSystemManager(Protocol):
         """
         ...
 
+    def is_dir(self, path: str) -> bool:
+        """
+        Returns True if the path exists and is a directory.
+        """
+        ...
+
     def create_directory(self, path: str) -> None:
         """
         Creates a directory, including any necessary parent directories.
