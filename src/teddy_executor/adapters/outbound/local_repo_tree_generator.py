@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from typing import Any
 from teddy_executor.core.ports.outbound.repo_tree_generator import IRepoTreeGenerator
 
 
@@ -60,51 +59,22 @@ class LocalRepoTreeGenerator(IRepoTreeGenerator):
     """
 
     def __init__(self, root_dir: str = "."):
+        from teddy_executor.adapters.outbound.filesystem_helpers import (
+            load_ignore_spec,
+        )
+
         self.root_dir = Path(root_dir).resolve()
-        self.ignore_spec = self._load_ignore_spec()
-
-    def _load_ignore_spec(self) -> Any:
-        """Loads ignore files."""
-        import pathspec
-
-        default_ignores = {".git/", ".venv/", "__pycache__/", ".teddy/", ".ruff_cache/"}
-        lines = list(default_ignores)
-        gitignore_path = self.root_dir / ".gitignore"
-        if gitignore_path.is_file():
-            lines.append(gitignore_path.name)
-            lines.extend(gitignore_path.read_text(encoding="utf-8").splitlines())
-
-        teddyignore_path = self.root_dir / ".teddyignore"
-        if teddyignore_path.is_file():
-            lines.append(teddyignore_path.name)
-            lines.extend(teddyignore_path.read_text(encoding="utf-8").splitlines())
-
-        return pathspec.PathSpec.from_lines("gitwildmatch", lines)
+        self.ignore_spec = load_ignore_spec(self.root_dir)
 
     def _get_included_paths(self) -> set[Path]:
         """
         Walks the directory and returns a set of all files and parent directories
         that are not excluded by the ignore spec.
         """
+        from teddy_executor.adapters.outbound.filesystem_helpers import walk_recursive
+
         included_paths: set[Path] = set()
-        self._walk(self.root_dir, included_paths)
-        return included_paths
-
-    def _walk(self, current_dir: Path, included_paths: set[Path]):
-        """
-        Recursively walks the directory tree, pruning ignored directories.
-        """
-        for entry in current_dir.iterdir():
-            relative_path_str = str(entry.relative_to(self.root_dir))
-            # We treat symlinks as files to avoid infinite recursion
-            is_real_dir = entry.is_dir() and not entry.is_symlink()
-
-            # For directories, add a trailing slash to match gitignore behavior
-            match_path = relative_path_str + "/" if is_real_dir else relative_path_str
-
-            if self.ignore_spec.match_file(match_path):
-                continue
-
+        for entry, _ in walk_recursive(self.root_dir, self.root_dir, self.ignore_spec):
             # If not ignored, add to set
             included_paths.add(entry)
 
@@ -114,9 +84,7 @@ class LocalRepoTreeGenerator(IRepoTreeGenerator):
                     break
                 included_paths.add(parent)
 
-            # Recurse if it's a directory
-            if is_real_dir:
-                self._walk(entry, included_paths)
+        return included_paths
 
     def generate_tree(self) -> str:
         """

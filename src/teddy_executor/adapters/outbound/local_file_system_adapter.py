@@ -114,6 +114,8 @@ class LocalFileSystemAdapter(IFileSystemManager):
         """
         Lists all files in a directory and its subdirectories, respecting ignores.
         """
+        from teddy_executor.adapters.outbound.filesystem_helpers import walk_recursive
+
         dir_path = self._resolve_path(path)
         if not dir_path.is_dir():
             raise FileNotFoundError(f"Directory not found: {path}")
@@ -124,59 +126,27 @@ class LocalFileSystemAdapter(IFileSystemManager):
         spec = self._get_ignore_spec()
         files = []
 
-        def _walk(current_dir: Path):
-            for entry in current_dir.iterdir():
+        for entry, is_dir in walk_recursive(self._resolved_root, dir_path, spec):
+            if not is_dir and entry.is_file():
                 try:
                     rel_path = entry.relative_to(self._resolved_root)
                 except ValueError:
-                    # Fallback for paths outside root
                     rel_path = entry
+                files.append(str(rel_path).replace("\\", "/"))
 
-                rel_path_str = str(rel_path).replace("\\", "/")
-                is_dir = entry.is_dir() and not entry.is_symlink()
-
-                # For directories, add a trailing slash to match gitignore behavior
-                match_path = rel_path_str + "/" if is_dir else rel_path_str
-
-                if spec.match_file(match_path):
-                    continue
-
-                if is_dir:
-                    _walk(entry)
-                elif entry.is_file():
-                    files.append(rel_path_str)
-
-        _walk(dir_path)
         return sorted(files)
 
     def _get_ignore_spec(self):
         """Loads and caches the ignore specification."""
         if not hasattr(self, "_ignore_spec"):
-            import pathspec
+            from teddy_executor.adapters.outbound.filesystem_helpers import (
+                load_ignore_spec,
+            )
 
             if not hasattr(self, "_resolved_root"):
                 self._resolved_root = self.root_dir.resolve()
 
-            default_ignores = {
-                ".git/",
-                ".venv/",
-                "__pycache__/",
-                ".teddy/",
-                ".ruff_cache/",
-            }
-            lines = list(default_ignores)
-
-            gitignore_path = self._resolved_root / ".gitignore"
-            if gitignore_path.is_file():
-                lines.append(gitignore_path.name)
-                lines.extend(gitignore_path.read_text(encoding="utf-8").splitlines())
-
-            teddyignore_path = self._resolved_root / ".teddyignore"
-            if teddyignore_path.is_file():
-                lines.append(teddyignore_path.name)
-                lines.extend(teddyignore_path.read_text(encoding="utf-8").splitlines())
-
-            self._ignore_spec = pathspec.PathSpec.from_lines("gitwildmatch", lines)
+            self._ignore_spec = load_ignore_spec(self._resolved_root)
         return self._ignore_spec
 
     def get_mtime(self, path: str) -> float:

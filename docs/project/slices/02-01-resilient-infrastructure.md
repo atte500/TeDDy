@@ -37,8 +37,8 @@ Then the generated input.md should contain the contents of all 3 files
 - [x] **Logic** - Implement stateful retry loop in `LiteLLMAdapter.get_completion`.
 - [x] **Migration** - Implement `list_directory_recursive` in `LocalFileSystemAdapter`.
 - [x] **Logic** - Update `ContextService._resolve_files_to_paths` to detect and expand directories.
-- [ ] **Refactor** - Move recursive file listing logic into a shared utility or update `IFileSystemManager`.
-- [ ] **Cleanup** - Centralize ignore-spec loading logic to avoid duplication between `LocalRepoTreeGenerator` and `LocalFileSystemAdapter`. [DEBT]
+- [x] **Refactor** - Move recursive file listing logic into a shared utility or update `IFileSystemManager`.
+- [x] **Cleanup** - Centralize ignore-spec loading logic to avoid duplication between `LocalRepoTreeGenerator` and `LocalFileSystemAdapter`. [DEBT]
 - [ ] **Wiring** - Ensure `PlanningService` passes correct retry parameters if configurable.
 
 ## Implementation Plan
@@ -51,4 +51,4 @@ Then the generated input.md should contain the contents of all 3 files
 - `IFileSystemManager`: Added `is_dir(path: str) -> bool` and `list_directory_recursive(path: str) -> list[str]` to support `ContextService` recursion logic.
 - `ContextService`: Recursion logic added to `_resolve_files_to_paths`.
 - `LocalFileSystemAdapter`: Implemented `list_directory_recursive` using a manual `_walk` to support `pathspec` ignores. The logic is cached and uses lazy imports for performance.
-- `[DEBT]`: The ignore-spec loading logic in `LocalFileSystemAdapter` and `LocalRepoTreeGenerator` is identical. This should be moved to a shared utility or the `IFileSystemManager` port itself in a future refactor.
+- `Refactor (filesystem_helpers.py)`: Centralized `load_ignore_spec` and `walk_recursive` to eliminate duplication between `LocalFileSystemAdapter` and `LocalRepoTreeGenerator`. The tree generator specifically required maintaining parent directory connectivity in its `included_paths` set, which was preserved by iterating over the results of `walk_recursive`.
