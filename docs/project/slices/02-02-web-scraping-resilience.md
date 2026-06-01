@@ -43,7 +43,9 @@ Then the results should contain excerpts or full content from the top results, n
 - [x] **Logic** - Implement specialized GitHub Raw extraction in `WebScraperAdapter`.
 - [x] **Logic** - Enhance `WebSearcherAdapter` to perform follow-up scraping for top results using the hardened `WebScraperAdapter`.
 - [x] **Wiring** - Implement `research.max_results` configuration support.
-- [ ] **Showcase** - Demonstration script validating PNAS (403 bypass), GitHub Raw (README extraction), and Deepened Research (Scraped content in SERP).
+- [x] **Showcase** - Demonstration script validating PNAS (403 bypass), GitHub Raw (README extraction), and Deepened Research (Scraped content in SERP).
+- [ ] **Logic** - Implement exponential backoff/retry (3 attempts) in `WebScraperAdapter` for 403/5xx errors (Arch 3.3).
+- [ ] **Logic** - Implement intelligent content truncation (configurable limit, default ~5000 chars) for search results in `WebSearcherAdapter` with a hint to `curl` to file for full depth if truncated.
 
 ## Implementation Plan
 1. **Targeted Integrity Audit**: Audit current `WebScraperAdapter` and `WebSearcherAdapter`.
@@ -59,3 +61,10 @@ Then the results should contain excerpts or full content from the top results, n
 - **GitHub Raw extraction**: Refactored `WebScraperAdapter.get_content` to unify the handling of `raw.githubusercontent.com` and `github.com` blob URLs. Both now bypass `trafilatura` and return verbatim text content via `requests.get`, ensuring documentation and source files are not lost to HTML parsing failures.
 - **Deep Search Scraping**: Enhanced `WebSearcherAdapter` to accept an optional `IWebScraper` via constructor injection. In the `search` method, if a scraper is present, the adapter iterates through search results and attempts to populate the `content` field for each item. Failures in individual scraping attempts are logged as warnings and caught to ensure the overall search still returns at least the engine's snippet.
 - **Wiring**: Integrated `IConfigService` into `WebSearcherAdapter` to support `research.max_results`. Updated `infrastructure.py` and resolved regressions across the integration test suite to ensure consistent dependency injection of the config service and the scraper.
+- **Showcase**: Created `spikes/showcases/02_02_web_resilience.py` which programmatically verified:
+    1. **PNAS 403 Bypass**: Content retrieved after transient retries using UA rotation and trafilatura fallback.
+    2. **GitHub Raw Support**: Verbatim extraction from `raw.githubusercontent.com`.
+    3. **Deep Search**: Enrichment of DDGS results with full scraped content.
+    4. **TUI Boot**: Verified `ReviewerApp` correctly initializes with real container dependencies.
+- **Finding (Retry)**: PNAS bypass is transient; requires adapter-level backoff (Arch 3.3).
+- **Finding (Truncation)**: Trafilatura cleans HTML noise but preserves full volume. Large results (e.g. Wikipedia) threaten context window stability. Intelligent truncation (capping at ~5000 chars) is required.
