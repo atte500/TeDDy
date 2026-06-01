@@ -42,7 +42,7 @@ Then the results should contain excerpts or full content from the top results, n
 - [x] **Logic** - Implement Multi-Stage Stealth Rotation (UA + High-Fidelity Headers) for 403 resilience in `WebScraperAdapter`.
 - [x] **Logic** - Implement specialized GitHub Raw extraction in `WebScraperAdapter`.
 - [x] **Logic** - Enhance `WebSearcherAdapter` to perform follow-up scraping for top results using the hardened `WebScraperAdapter`.
-- [ ] **Wiring** - Implement `research.max_results` configuration support.
+- [x] **Wiring** - Implement `research.max_results` configuration support.
 - [ ] **Showcase** - Demonstration script validating PNAS (403 bypass), GitHub Raw (README extraction), and Deepened Research (Scraped content in SERP).
 
 ## Implementation Plan
@@ -58,3 +58,4 @@ Then the results should contain excerpts or full content from the top results, n
 - **Green State Management**: Marked reproduction tests in `tests/suites/integration/adapters/outbound/test_web_scraper_resilience.py` as `@pytest.mark.xfail` to maintain a passing test suite during intermediate deliverables until logic is implemented.
 - **GitHub Raw extraction**: Refactored `WebScraperAdapter.get_content` to unify the handling of `raw.githubusercontent.com` and `github.com` blob URLs. Both now bypass `trafilatura` and return verbatim text content via `requests.get`, ensuring documentation and source files are not lost to HTML parsing failures.
 - **Deep Search Scraping**: Enhanced `WebSearcherAdapter` to accept an optional `IWebScraper` via constructor injection. In the `search` method, if a scraper is present, the adapter iterates through search results and attempts to populate the `content` field for each item. Failures in individual scraping attempts are logged as warnings and caught to ensure the overall search still returns at least the engine's snippet.
+- **Wiring**: Integrated `IConfigService` into `WebSearcherAdapter` to support `research.max_results`. Updated `infrastructure.py` and resolved regressions across the integration test suite to ensure consistent dependency injection of the config service and the scraper.

@@ -26,7 +26,9 @@ def test_search_handles_partial_query_failures():
     mock_factory = POSIXPathMock()
     mock_factory.return_value.__enter__.return_value = mock_instance
 
-    adapter = WebSearcherAdapter(ddgs_factory=mock_factory)
+    adapter = WebSearcherAdapter(
+        config_service=POSIXPathMock(), ddgs_factory=mock_factory
+    )
 
     # Act
     results = adapter.search(["success", "fail"])

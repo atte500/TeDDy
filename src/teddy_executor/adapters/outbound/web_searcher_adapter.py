@@ -6,7 +6,7 @@ from teddy_executor.core.domain.models import (
     WebSearchError,
     WebSearchResults,
 )
-from teddy_executor.core.ports.outbound import IWebScraper, IWebSearcher
+from teddy_executor.core.ports.outbound import IConfigService, IWebScraper, IWebSearcher
 
 
 logger = logging.getLogger(__name__)
@@ -19,9 +19,11 @@ class WebSearcherAdapter(IWebSearcher):
 
     def __init__(
         self,
+        config_service: IConfigService,
         ddgs_factory: Optional[Callable[..., Any]] = None,
         scraper: Optional[IWebScraper] = None,
     ):
+        self._config_service = config_service
         self._ddgs_factory = ddgs_factory
         self._scraper = scraper
 
@@ -61,8 +63,9 @@ class WebSearcherAdapter(IWebSearcher):
     ) -> QueryResult:
         """Executes a single search query and maps results."""
         try:
+            max_results = self._config_service.get_setting("research.max_results", 5)
             # DDGS.text returns a generator, so we convert it to a list
-            results = list(ddgs_client.text(query, max_results=5))
+            results = list(ddgs_client.text(query, max_results=max_results))
 
             search_results_for_query: List[SearchResult] = []
             for res in results:

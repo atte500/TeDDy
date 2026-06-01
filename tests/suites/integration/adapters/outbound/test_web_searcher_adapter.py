@@ -22,7 +22,9 @@ def test_search_success_returns_websearchresults_dict(monkeypatch):
     mock_factory.return_value.__enter__.return_value = mock_ddgs_instance
 
     # Inject the mock factory directly into the adapter
-    searcher = WebSearcherAdapter(ddgs_factory=mock_factory)
+    searcher = WebSearcherAdapter(
+        config_service=POSIXPathMock(), ddgs_factory=mock_factory
+    )
     queries = ["python"]
 
     # Act
@@ -52,7 +54,9 @@ def test_search_cleans_snippet_spacing(monkeypatch):
     mock_factory = POSIXPathMock()
     mock_factory.return_value.__enter__.return_value = mock_ddgs_instance
 
-    searcher = WebSearcherAdapter(ddgs_factory=mock_factory)
+    searcher = WebSearcherAdapter(
+        config_service=POSIXPathMock(), ddgs_factory=mock_factory
+    )
     queries = ["test"]
 
     # Act
@@ -74,7 +78,9 @@ def test_search_handles_library_exception(monkeypatch):
     mock_factory = POSIXPathMock()
     mock_factory.return_value.__enter__.return_value = mock_ddgs_instance
 
-    searcher = WebSearcherAdapter(ddgs_factory=mock_factory)
+    searcher = WebSearcherAdapter(
+        config_service=POSIXPathMock(), ddgs_factory=mock_factory
+    )
     queries = ["test query"]
 
     # Act & Assert
@@ -103,8 +109,12 @@ def test_search_performs_deep_scraping_for_results():
     mock_scraper.get_content.return_value = "Full scraped content"
 
     # Act
-    # This should fail because __init__ doesn't accept 'scraper' yet
-    searcher = WebSearcherAdapter(ddgs_factory=mock_factory, scraper=mock_scraper)
+    # Inject dependencies
+    searcher = WebSearcherAdapter(
+        config_service=POSIXPathMock(),
+        ddgs_factory=mock_factory,
+        scraper=mock_scraper,
+    )
     result = searcher.search(["python"])
 
     # Assert

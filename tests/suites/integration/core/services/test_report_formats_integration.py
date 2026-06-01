@@ -1,7 +1,7 @@
 import textwrap
 from tests.harness.setup.test_environment import TestEnvironment
 from tests.harness.setup.mocking import POSIXPathMock
-from teddy_executor.core.ports.outbound import IWebSearcher
+from teddy_executor.core.ports.outbound import IConfigService, IWebSearcher
 from teddy_executor.adapters.outbound.web_searcher_adapter import WebSearcherAdapter
 from typer.testing import CliRunner
 from teddy_executor.__main__ import app
@@ -100,7 +100,11 @@ def test_research_report_includes_hint_and_hides_raw_details(tmp_path, monkeypat
 
     # Register adapter with injected mock factory
     env.container.register(
-        IWebSearcher, factory=lambda: WebSearcherAdapter(ddgs_factory=mock_factory)
+        IWebSearcher,
+        factory=lambda: WebSearcherAdapter(
+            config_service=env.container.resolve(IConfigService),
+            ddgs_factory=mock_factory,
+        ),
     )
 
     # Execute plan.
