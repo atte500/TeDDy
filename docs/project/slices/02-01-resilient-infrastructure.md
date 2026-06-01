@@ -35,9 +35,10 @@ Then the generated input.md should contain the contents of all 3 files
 - [x] **Harness** - Create `test_litellm_retries.py` using a mock that yields side-effects.
 - [x] **Harness** - Create `test_context_recursion.py` with mock filesystem.
 - [x] **Logic** - Implement stateful retry loop in `LiteLLMAdapter.get_completion`.
-- [ ] **Migration** - Implement `list_directory_recursive` in `LocalFileSystemAdapter`.
+- [x] **Migration** - Implement `list_directory_recursive` in `LocalFileSystemAdapter`.
 - [x] **Logic** - Update `ContextService._resolve_files_to_paths` to detect and expand directories.
 - [ ] **Refactor** - Move recursive file listing logic into a shared utility or update `IFileSystemManager`.
+- [ ] **Cleanup** - Centralize ignore-spec loading logic to avoid duplication between `LocalRepoTreeGenerator` and `LocalFileSystemAdapter`. [DEBT]
 - [ ] **Wiring** - Ensure `PlanningService` passes correct retry parameters if configurable.
 
 ## Implementation Plan
@@ -48,4 +49,6 @@ Then the generated input.md should contain the contents of all 3 files
 ## Implementation Notes
 - `ILlmClient`: `get_completion` already supports `**kwargs`, so retry configuration can be passed if needed, but primary retry logic will be internal to `LiteLLMAdapter`.
 - `IFileSystemManager`: Added `is_dir(path: str) -> bool` and `list_directory_recursive(path: str) -> list[str]` to support `ContextService` recursion logic.
-- `ContextService`: Recursion logic will be added to `_resolve_files_to_paths`.
+- `ContextService`: Recursion logic added to `_resolve_files_to_paths`.
+- `LocalFileSystemAdapter`: Implemented `list_directory_recursive` using a manual `_walk` to support `pathspec` ignores. The logic is cached and uses lazy imports for performance.
+- `[DEBT]`: The ignore-spec loading logic in `LocalFileSystemAdapter` and `LocalRepoTreeGenerator` is identical. This should be moved to a shared utility or the `IFileSystemManager` port itself in a future refactor.
