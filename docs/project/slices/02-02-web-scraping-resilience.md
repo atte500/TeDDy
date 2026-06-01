@@ -4,6 +4,7 @@
 - **Milestone:** [docs/project/milestones/02-stability-and-polish.md](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [docs/project/specs/stability-and-bugfixes.md](/docs/project/specs/stability-and-bugfixes.md)
 - **Component Docs:** [docs/architecture/adapters/outbound/web_scraper_adapter.md](/docs/architecture/adapters/outbound/web_scraper_adapter.md), [docs/architecture/adapters/outbound/web_searcher_adapter.md](/docs/architecture/adapters/outbound/web_searcher_adapter.md)
+- **Case File:** [docs/project/debugging/04-web-scraping-messiness.md](/docs/project/debugging/04-web-scraping-messiness.md)
 
 ## Business Goal
 Improve the reliability and depth of information gathered through web scraping and searching to provide better context to AI agents.
@@ -31,6 +32,14 @@ When I execute a RESEARCH action
 Then the results should contain excerpts or full content from the top results, not just SERP snippets
 ```
 
+> As an agent, I want to READ a large Wikipedia page so that I get a clean, truncated Markdown version without sidebar noise.
+```gherkin
+Given a Wikipedia URL
+When I execute a READ action
+Then the output should be cleaned of comments and sidebar noise
+And the output should be truncated to the limit defined in read.max_lines
+```
+
 ## Edge Cases
 - **Persistent 403/404**: If after rotation the site still returns 403/404, report a clear error in the execution report.
 - **Large Page Content**: If a scraped page is excessively large, truncate intelligently to avoid context window overflows while providing the most relevant information.
@@ -46,12 +55,16 @@ Then the results should contain excerpts or full content from the top results, n
 - [x] **Logic** - Implement exponential backoff/retry (3 attempts) in `WebScraperAdapter` for 403/5xx errors (Arch 3.3).
 - [x] **Refactor** - Make WebScraperAdapter max_retries configurable via IConfigService.
 - [x] **Logic** - Implement intelligent content truncation (configurable limit, default ~5000 chars) for search results in `WebSearcherAdapter` with a hint to `curl` to file for full depth if truncated.
+- [ ] **Logic** - Refactor `WebScraperAdapter.get_content` to disable high-recall flags (`favor_recall=False`, `include_comments=False`) and implement `truncate_lines` (head) respecting `read.max_lines`.
+- [ ] **Refactor** - Update `WebSearcherAdapter` to remove redundant truncation logic, delegating it to the scraper.
+- [ ] **Wiring** - Update `execution_report.md.j2` to prioritize rendering `content` over `body` in research results.
 
 ## Implementation Plan
 1. **Targeted Integrity Audit**: Audit current `WebScraperAdapter` and `WebSearcherAdapter`.
 2. **Reproduction Spikes**: Verify the failures using the URLs provided in the spec.
 3. **Resilience Implementation**: Add headers/UA rotation and GitHub special-casing.
 4. **Research Deepening**: Integrate scraper into the searcher workflow.
+5. **Scraping Polish**: Reduce noise in scraper output, implement global truncation in the scraper, and wire enriched content into the report template.
 
 ## Implementation Notes
 - **403 Failure (PNAS)**: Diagnostic probing confirmed PNAS returns a 403 with Cloudflare headers when using the default User-Agent. Implemented a fallback in `WebScraperAdapter.get_content` that catches `403 Forbidden` errors and retries using `trafilatura.fetch_url`, which handles stealth headers and rotation internally.
@@ -75,3 +88,5 @@ Then the results should contain excerpts or full content from the top results, n
     1. GitHub Raw Extraction (Verbatim README content retrieved).
     2. Intelligent Truncation (Searcher correctly capped Wikipedia results with the required hint).
     3. 403 Bypass Mechanism (PNAS content retrieved without exception using rotation fallback).
+- **Diagnostic Findings (Messy Output)**: Wikipedia `READ` previously returned 128k characters including sidebar and edit links. Shadow verification (disabling `favor_recall` and `include_comments`) reduced this significantly and adding head-truncation capped it to ~50k characters.
+- **Reporting Visibility**: Confirmed that `execution_report.md.j2` was hardcoded to only show `body` for search results, ignoring the enriched `content` field.
