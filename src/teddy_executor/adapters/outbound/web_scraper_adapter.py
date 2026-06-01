@@ -3,7 +3,11 @@ from teddy_executor.core.ports.outbound.config_service import IConfigService
 
 
 MIN_GITHUB_CONTENT_LENGTH = 10
+HTTP_BAD_REQUEST = 400
 HTTP_FORBIDDEN = 403
+HTTP_NOT_ACCEPTABLE = 406
+HTTP_TOO_MANY_REQUESTS = 429
+HTTP_INTERNAL_SERVER_ERROR = 500
 
 
 class WebScraperAdapter(WebScraper):
@@ -134,10 +138,62 @@ class WebScraperAdapter(WebScraper):
 
         return f"# {title}\n\n" + "".join(content_blocks)
 
-    def _fetch_with_rotation(self, url: str) -> str | None:
-        """Attempts to fetch HTML content using a rotating pool of User-Agents."""
-        import requests
+    def _is_retryable_error(self, status_code: int | None) -> bool:
+        """Determines if an HTTP error is transient and should be retried."""
+        if not status_code:
+            return True
+        # Retry on 5xx (server errors) or 429 (Too Many Requests)
+        return (
+            status_code >= HTTP_INTERNAL_SERVER_ERROR
+            or status_code == HTTP_TOO_MANY_REQUESTS
+        )
 
+    def _fetch_with_ua(self, url: str, ua: str, max_retries: int) -> str | None:
+        """Internal helper to attempt fetch with a specific User-Agent and retries."""
+        import requests
+        import time
+
+        headers = {
+            "User-Agent": ua,
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Accept-Encoding": "gzip, deflate, br",
+            "DNT": "1",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1",
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none",
+            "Sec-Fetch-User": "?1",
+        }
+
+        for attempt in range(max_retries):
+            try:
+                response = requests.get(url, headers=headers, timeout=20)
+                response.raise_for_status()
+                return response.text
+            except requests.exceptions.HTTPError as e:
+                status_code = getattr(e.response, "status_code", None)
+
+                # 403/406 signal a need for UA rotation, not same-UA retry
+                if status_code in [HTTP_FORBIDDEN, HTTP_NOT_ACCEPTABLE]:
+                    return None
+
+                if self._is_retryable_error(status_code) and attempt < max_retries - 1:
+                    time.sleep(2**attempt)
+                    continue
+                raise
+            except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+                if attempt < max_retries - 1:
+                    time.sleep(2**attempt)
+                    continue
+                return None
+            except Exception:
+                return None
+        return None
+
+    def _fetch_with_rotation(self, url: str) -> str | None:
+        """Attempts to fetch HTML content using a rotating pool of User-Agents and retries."""
         user_agents = [
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, Gecko) Chrome/124.0.0.0 Safari/537.36",
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, Gecko) Chrome/121.0.0.0 Safari/537.36",
@@ -145,33 +201,14 @@ class WebScraperAdapter(WebScraper):
             "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, Gecko) Version/17.4.1 Mobile/15E148 Safari/604.1",
         ]
 
+        max_retries = 3
         last_error: Exception | None = None
 
         for ua in user_agents:
-            headers = {
-                "User-Agent": ua,
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Language": "en-US,en;q=0.9",
-                "Accept-Encoding": "gzip, deflate, br",
-                "DNT": "1",
-                "Connection": "keep-alive",
-                "Upgrade-Insecure-Requests": "1",
-                "Sec-Fetch-Dest": "document",
-                "Sec-Fetch-Mode": "navigate",
-                "Sec-Fetch-Site": "none",
-                "Sec-Fetch-User": "?1",
-            }
             try:
-                response = requests.get(url, headers=headers, timeout=20)
-                response.raise_for_status()
-                return response.text
-            except requests.exceptions.HTTPError as e:
-                last_error = e
-                # Retry on 403 (Forbidden) and 406 (Not Acceptable)
-                status_code = getattr(e.response, "status_code", None)
-                if status_code in [HTTP_FORBIDDEN, 406]:
-                    continue
-                raise
+                html_content = self._fetch_with_ua(url, ua, max_retries)
+                if html_content:
+                    return html_content
             except Exception as e:
                 last_error = e
                 continue
@@ -184,8 +221,9 @@ class WebScraperAdapter(WebScraper):
         return html_content
 
     def _handle_github_raw(self, url: str) -> str | None:
-        """Handles specialized fetching for GitHub raw content."""
+        """Handles specialized fetching for GitHub raw content with retries."""
         import requests
+        import time
 
         is_raw_github = url.startswith("https://raw.githubusercontent.com/")
         is_github_blob = url.startswith("https://github.com/") and "/blob/" in url
@@ -200,15 +238,39 @@ class WebScraperAdapter(WebScraper):
             if is_github_blob
             else url
         )
-        response = requests.get(
-            target_url,
-            headers={
-                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, Gecko) Chrome/124.0.0.0 Safari/537.36"
-            },
-            timeout=30,
-        )
-        response.raise_for_status()
-        return response.text
+
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                response = requests.get(
+                    target_url,
+                    headers={
+                        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, Gecko) Chrome/124.0.0.0 Safari/537.36"
+                    },
+                    timeout=30,
+                )
+                response.raise_for_status()
+                return response.text
+            except (
+                requests.exceptions.HTTPError,
+                requests.exceptions.ConnectionError,
+                requests.exceptions.Timeout,
+            ) as e:
+                if attempt < max_retries - 1:
+                    status_code = getattr(
+                        getattr(e, "response", None), "status_code", None
+                    )
+                    # Don't retry on most 4xx
+                    if (
+                        status_code
+                        and HTTP_BAD_REQUEST <= status_code < HTTP_INTERNAL_SERVER_ERROR
+                        and status_code not in [HTTP_FORBIDDEN, HTTP_TOO_MANY_REQUESTS]
+                    ):
+                        raise
+                    time.sleep(2**attempt)
+                    continue
+                raise
+        return None
 
     def get_content(self, url: str, **_kwargs) -> str:
         """
