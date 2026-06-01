@@ -22,6 +22,7 @@ read:
 # Research Settings
 research:
   max_results: 5 # Number of SERP results to retrieve and automatically scrape.
+  max_scraper_retries: 3
 
 # Auto-Pruning Settings
 # Intelligently pre-deselects context files to save tokens and manage complexity.

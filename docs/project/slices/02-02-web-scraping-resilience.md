@@ -44,7 +44,7 @@ Then the results should contain excerpts or full content from the top results, n
 - [x] **Logic** - Enhance `WebSearcherAdapter` to perform follow-up scraping for top results using the hardened `WebScraperAdapter`.
 - [x] **Wiring** - Implement `research.max_results` configuration support, concluding with Sandbox Verification for PNAS 403 bypass, GitHub Raw extraction, and Deepened Research.
 - [x] **Logic** - Implement exponential backoff/retry (3 attempts) in `WebScraperAdapter` for 403/5xx errors (Arch 3.3).
-- [ ] **Refactor** - Make WebScraperAdapter max_retries configurable via IConfigService.
+- [x] **Refactor** - Make WebScraperAdapter max_retries configurable via IConfigService.
 - [ ] **Logic** - Implement intelligent content truncation (configurable limit, default ~5000 chars) for search results in `WebSearcherAdapter` with a hint to `curl` to file for full depth if truncated.
 - [ ] **Wiring** - Execute Sandbox Verification to validate exponential backoff behavior and intelligent truncation logic integration.
 
@@ -70,3 +70,4 @@ Then the results should contain excerpts or full content from the top results, n
 - **Finding (Retry)**: PNAS bypass is transient; requires adapter-level backoff (Arch 3.3).
 - **Finding (Truncation)**: Trafilatura cleans HTML noise but preserves full volume. Large results (e.g. Wikipedia) threaten context window stability. Intelligent truncation (capping at ~5000 chars) is required.
 - **Exponential Backoff**: Implemented 3-attempt exponential backoff (2^n) in `WebScraperAdapter._fetch_with_rotation` and `_handle_github_raw`. Logic retries on 5xx, 429, and transient connection/timeout errors. Permanent 4xx errors (except 403/406/429) fail-fast without retry.
+- **Configurable Retries**: Refactored `WebScraperAdapter` to retrieve `max_retries` from `IConfigService` using the key `research.max_scraper_retries`. Added the key to the default `config.yaml` with a value of 3.

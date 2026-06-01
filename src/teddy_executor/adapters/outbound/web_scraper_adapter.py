@@ -202,6 +202,11 @@ class WebScraperAdapter(WebScraper):
         ]
 
         max_retries = 3
+        if self._config_service:
+            val = self._config_service.get_setting("research.max_scraper_retries", 3)
+            if val is not None:
+                max_retries = int(val)
+
         last_error: Exception | None = None
 
         for ua in user_agents:
@@ -240,6 +245,11 @@ class WebScraperAdapter(WebScraper):
         )
 
         max_retries = 3
+        if self._config_service:
+            val = self._config_service.get_setting("research.max_scraper_retries", 3)
+            if val is not None:
+                max_retries = int(val)
+
         for attempt in range(max_retries):
             try:
                 response = requests.get(

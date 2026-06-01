@@ -29,6 +29,8 @@ The adapter employs a "smart router" pattern to choose the best scraping strateg
     - **User-Agent Pool:** Rotates between Chrome, Safari, and Edge on macOS/Windows.
     - **Header Hardening:** Adds `Accept-Language`, `Referer`, and `Upgrade-Insecure-Requests` to the rotation.
     - **Fingerprint Reduction:** Minimizes custom library headers that identify `requests`.
+7.  **Transient Failure Resilience:** Implements exponential backoff (2^n) for 5xx, 429, and connection/timeout errors.
+8.  **Configurable Retries:** The maximum number of retry attempts is configurable via `research.max_scraper_retries` in `config.yaml` (default: 3).
 
 ## 4. Data Contracts / Methods
 The adapter implements the `get_content` method as defined by the `IWebScraper` port.
