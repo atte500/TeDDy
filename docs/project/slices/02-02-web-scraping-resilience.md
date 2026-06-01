@@ -45,8 +45,7 @@ Then the results should contain excerpts or full content from the top results, n
 - [x] **Wiring** - Implement `research.max_results` configuration support, concluding with Sandbox Verification for PNAS 403 bypass, GitHub Raw extraction, and Deepened Research.
 - [x] **Logic** - Implement exponential backoff/retry (3 attempts) in `WebScraperAdapter` for 403/5xx errors (Arch 3.3).
 - [x] **Refactor** - Make WebScraperAdapter max_retries configurable via IConfigService.
-- [ ] **Logic** - Implement intelligent content truncation (configurable limit, default ~5000 chars) for search results in `WebSearcherAdapter` with a hint to `curl` to file for full depth if truncated.
-- [ ] **Wiring** - Execute Sandbox Verification to validate exponential backoff behavior and intelligent truncation logic integration.
+- [x] **Logic** - Implement intelligent content truncation (configurable limit, default ~5000 chars) for search results in `WebSearcherAdapter` with a hint to `curl` to file for full depth if truncated.
 
 ## Implementation Plan
 1. **Targeted Integrity Audit**: Audit current `WebScraperAdapter` and `WebSearcherAdapter`.
@@ -71,3 +70,8 @@ Then the results should contain excerpts or full content from the top results, n
 - **Finding (Truncation)**: Trafilatura cleans HTML noise but preserves full volume. Large results (e.g. Wikipedia) threaten context window stability. Intelligent truncation (capping at ~5000 chars) is required.
 - **Exponential Backoff**: Implemented 3-attempt exponential backoff (2^n) in `WebScraperAdapter._fetch_with_rotation` and `_handle_github_raw`. Logic retries on 5xx, 429, and transient connection/timeout errors. Permanent 4xx errors (except 403/406/429) fail-fast without retry.
 - **Configurable Retries**: Refactored `WebScraperAdapter` to retrieve `max_retries` from `IConfigService` using the key `research.max_scraper_retries`. Added the key to the default `config.yaml` with a value of 3.
+- **Intelligent Truncation**: Implemented content truncation in `WebSearcherAdapter` using the `research.max_content_length` config key (default 5000). Added a hint to the AI when truncation occurs. The logic is defensive against non-integer configuration values (e.g., from mocks) by using strict type checking.
+- **Real-World Verification**: Executed `spikes/sandbox/02_02_final_verification.py` to confirm end-to-end integration. Verified:
+    1. GitHub Raw Extraction (Verbatim README content retrieved).
+    2. Intelligent Truncation (Searcher correctly capped Wikipedia results with the required hint).
+    3. 403 Bypass Mechanism (PNAS content retrieved without exception using rotation fallback).

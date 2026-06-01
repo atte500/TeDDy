@@ -13,7 +13,8 @@ The `WebSearcherAdapter` is the concrete implementation of the [`IWebSearcher`](
 ## 3. Implementation Notes
 
 *   **Library:** The `ddgs` library is used to interact with DuckDuckGo.
-*   **Configurability:** Respects `research.max_results` (default 5) for the number of SERP items retrieved.
+*   **Configurability:** Respects `research.max_results` (default 5) and `research.max_content_length` (default 5000).
+*   **Intelligent Truncation:** Scraped content is capped at `research.max_content_length` to protect the context window. A hint is appended to the content when truncation occurs. The logic is defensive against non-integer config values (e.g., from mocks) and falls back to 5000.
 *   **Deep Research (Auto-Scraping):** To reduce agent turns, the adapter performs follow-up scraping for retrieved search results if an `IWebScraper` is provided:
     - **Integration:** Uses a constructor-injected `IWebScraper` port to fetch and extract content for every result.
     - **Storage:** Scraped content is stored in the `content` field of the `SearchResult` DTO.

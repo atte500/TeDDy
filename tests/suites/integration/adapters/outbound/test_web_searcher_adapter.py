@@ -120,3 +120,43 @@ def test_search_performs_deep_scraping_for_results():
     # Assert
     assert result["query_results"][0]["results"][0]["content"] == "Full scraped content"
     mock_scraper.get_content.assert_called_once_with("https://python.org")
+
+
+def test_search_truncates_large_content():
+    """
+    Ensures that scraped content is truncated if it exceeds the limit.
+    """
+    # Arrange
+    limit = 10
+    mock_config = POSIXPathMock()
+
+    def mock_get_setting(key, default=None):
+        if key == "research.max_content_length":
+            return limit
+        return default
+
+    mock_config.get_setting.side_effect = mock_get_setting
+
+    mock_ddgs_instance = POSIXPathMock()
+    mock_ddgs_instance.text.return_value = [{"title": "T", "href": "H", "body": "B"}]
+    mock_factory = POSIXPathMock()
+    mock_factory.return_value.__enter__.return_value = mock_ddgs_instance
+
+    mock_scraper = POSIXPathMock()
+    mock_scraper.get_content.return_value = "A" * 20
+
+    searcher = WebSearcherAdapter(
+        config_service=mock_config,
+        ddgs_factory=mock_factory,
+        scraper=mock_scraper,
+    )
+
+    # Act
+    result = searcher.search(["query"])
+
+    # Assert
+    content = result["query_results"][0]["results"][0]["content"]
+    assert content.startswith("A" * limit)
+    assert "[TRUNCATED" in content
+    assert "curl" in content
+    assert len(content) < 100  # Ensure it's not the full 20 + hint
