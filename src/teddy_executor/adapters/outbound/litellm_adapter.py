@@ -137,25 +137,51 @@ class LiteLLMAdapter(ILlmClient):
 
         from teddy_executor.core.domain.models.exceptions import ConfigurationError
 
-        try:
-            return litellm.completion(messages=messages, **final_params)
-        except Exception as e:
-            # 1. Attempt Hydration Retry for OpenRouter models
-            response = self._handle_hydration_retry(e, messages, final_params)
-            if response:
-                return response
+        max_attempts = 3
+        last_exception: Optional[Exception] = None
 
-            msg = str(e)
-            # Detect common "Invalid/Expired Key" signatures
-            if any(
-                hint in msg
-                for hint in ["API key expired", "API_KEY_INVALID", "invalid_api_key"]
-            ):
-                # Extract the clean message if possible, or use a generic one
-                clean_msg = msg.split(" - ")[-1] if " - " in msg else msg
-                raise ConfigurationError(clean_msg) from e
+        for attempt in range(max_attempts):
+            try:
+                return litellm.completion(messages=messages, **final_params)
+            except Exception as e:
+                last_exception = e
+                # 1. Attempt Hydration Retry for OpenRouter models
+                # Note: Hydration retry counts as a retry attempt for this loop
+                response = self._handle_hydration_retry(e, messages, final_params)
+                if response:
+                    return response
 
-            raise LlmApiError(f"LLM Completion failed: {msg}") from e
+                msg = str(e)
+
+                # Check for retryable transient errors
+                is_transient = any(
+                    err in msg for err in ["SSLV3_ALERT_BAD_RECORD_MAC", "TimeoutError"]
+                )
+                if is_transient and attempt < max_attempts - 1:
+                    import time
+
+                    # Minimal exponential backoff: 0.5s, 1s
+                    time.sleep(0.5 * (2**attempt))
+                    continue
+
+                # Non-retryable or exhausted attempts: handle specific signatures
+                if any(
+                    hint in msg
+                    for hint in [
+                        "API key expired",
+                        "API_KEY_INVALID",
+                        "invalid_api_key",
+                    ]
+                ):
+                    clean_msg = msg.split(" - ")[-1] if " - " in msg else msg
+                    raise ConfigurationError(clean_msg) from e
+
+                # Break loop to raise final generic error outside except block
+                break
+
+        # Re-raise the final error outside the loop and except block
+        final_msg = str(last_exception) if last_exception else "Unknown error"
+        raise LlmApiError(f"LLM Completion failed: {final_msg}") from last_exception
 
     def get_token_count(
         self, messages: List[Dict[str, str]], model: Optional[str] = None

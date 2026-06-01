@@ -32,9 +32,9 @@ Then the generated input.md should contain the contents of all 3 files
 
 ## Deliverables
 - [x] **Contract** - Update `ILlmClient` and `IFileSystemManager` for resilience and recursion support.
-- [ ] **Harness** - Create `test_litellm_retries.py` using a mock that yields side-effects.
+- [x] **Harness** - Create `test_litellm_retries.py` using a mock that yields side-effects.
 - [ ] **Harness** - Create `test_context_recursion.py` with mock filesystem.
-- [ ] **Logic** - Implement stateful retry loop in `LiteLLMAdapter.get_completion`.
+- [x] **Logic** - Implement stateful retry loop in `LiteLLMAdapter.get_completion`.
 - [ ] **Logic** - Update `ContextService._resolve_files_to_paths` to detect and expand directories.
 - [ ] **Refactor** - Move recursive file listing logic into a shared utility or update `IFileSystemManager`.
 - [ ] **Wiring** - Ensure `PlanningService` passes correct retry parameters if configurable.
