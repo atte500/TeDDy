@@ -80,19 +80,7 @@ class WebSearcherAdapter(IWebSearcher):
                     try:
                         content = self._scraper.get_content(url)
                         if content is not None:
-                            # Set content immediately to avoid KeyError if truncation fails
                             item["content"] = content
-
-                            max_val = self._config_service.get_setting(
-                                "research.max_content_length", 5000
-                            )
-                            # Robustly detect concrete integers to avoid Mock comparison issues
-                            if type(max_val) is int:
-                                if len(content) > max_val:
-                                    item["content"] = (
-                                        content[:max_val]
-                                        + "\n\n...[TRUNCATED. Use 'curl' to file or 'READ' for full depth]"
-                                    )
                     except Exception as e:
                         # Log failure but continue; we still have the snippet.
                         logger.warning(f"Failed to scrape content for {url}: {e}")

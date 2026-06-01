@@ -55,7 +55,7 @@ And the output should be truncated to the limit defined in read.max_lines
 - [x] **Refactor** - Make WebScraperAdapter max_retries configurable via IConfigService.
 - [x] **Logic** - Implement intelligent content truncation (configurable limit, default ~5000 chars) for search results in `WebSearcherAdapter` with a hint to `curl` to file for full depth if truncated.
 - [x] **Logic** - Refactor `WebScraperAdapter.get_content` to disable high-recall flags (`favor_recall=False`, `include_comments=False`) and implement `truncate_lines` (head) respecting `read.max_lines`.
-- [ ] **Refactor** - Update `WebSearcherAdapter` to remove redundant truncation logic, delegating it to the scraper.
+- [▶] **Refactor** - Update `WebSearcherAdapter` to remove redundant truncation logic, delegating it to the scraper.
 - [ ] **Wiring** - Update `execution_report.md.j2` to prioritize rendering `content` over `body` in research results.
 - [ ] **Refactor** - Remove banned `unittest.mock.patch` from `tests/suites/unit/adapters/outbound/test_web_scraper_contract.py`.
 
