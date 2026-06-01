@@ -134,9 +134,85 @@ class WebScraperAdapter(WebScraper):
 
         return f"# {title}\n\n" + "".join(content_blocks)
 
+    def _fetch_with_rotation(self, url: str) -> str | None:
+        """Attempts to fetch HTML content using a rotating pool of User-Agents."""
+        import requests
+
+        user_agents = [
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, Gecko) Chrome/121.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, Gecko) Chrome/122.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, Gecko) Version/17.4.1 Mobile/15E148 Safari/604.1",
+        ]
+
+        last_error: Exception | None = None
+
+        for ua in user_agents:
+            headers = {
+                "User-Agent": ua,
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Accept-Encoding": "gzip, deflate, br",
+                "DNT": "1",
+                "Connection": "keep-alive",
+                "Upgrade-Insecure-Requests": "1",
+                "Sec-Fetch-Dest": "document",
+                "Sec-Fetch-Mode": "navigate",
+                "Sec-Fetch-Site": "none",
+                "Sec-Fetch-User": "?1",
+            }
+            try:
+                response = requests.get(url, headers=headers, timeout=20)
+                response.raise_for_status()
+                return response.text
+            except requests.exceptions.HTTPError as e:
+                last_error = e
+                # Only retry on 403 Forbidden; other errors are likely permanent
+                if e.response is not None and e.response.status_code == HTTP_FORBIDDEN:
+                    continue
+                raise
+            except Exception as e:
+                last_error = e
+                continue
+
+        # Final Resort: Trafilatura's internal fetcher
+        html_content = self._get_trafilatura().fetch_url(url)
+        if not html_content and last_error:
+            raise last_error
+
+        return html_content
+
+    def _handle_github_raw(self, url: str) -> str | None:
+        """Handles specialized fetching for GitHub raw content."""
+        import requests
+
+        is_raw_github = url.startswith("https://raw.githubusercontent.com/")
+        is_github_blob = url.startswith("https://github.com/") and "/blob/" in url
+
+        if not (is_raw_github or is_github_blob):
+            return None
+
+        target_url = (
+            url.replace("github.com", "raw.githubusercontent.com").replace(
+                "/blob/", "/"
+            )
+            if is_github_blob
+            else url
+        )
+        response = requests.get(
+            target_url,
+            headers={
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, Gecko) Chrome/124.0.0.0 Safari/537.36"
+            },
+            timeout=30,
+        )
+        response.raise_for_status()
+        return response.text
+
     def get_content(self, url: str, **_kwargs) -> str:
         """
         Fetches and extracts the content from the given URL.
+        Employs a multi-stage stealth rotation to bypass automated blocking.
 
         Args:
             url: The URL to fetch content from.
@@ -145,47 +221,17 @@ class WebScraperAdapter(WebScraper):
         Returns:
             The extracted text content.
         """
-        import requests
+        # 1. Specialized handling for GitHub raw content
+        raw_github_content = self._handle_github_raw(url)
+        if raw_github_content is not None:
+            return raw_github_content
 
-        # Stealthy identity mimicking Chrome on macOS to avoid automated blocking
-        user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, Gecko) Chrome/124.0.0.0 Safari/537.36"
-        headers = {"User-Agent": user_agent}
-
-        # Specialized handling for GitHub raw content (direct raw URLs or blob URLs)
-        is_raw_github = url.startswith("https://raw.githubusercontent.com/")
-        is_github_blob = url.startswith("https://github.com/") and "/blob/" in url
-
-        if is_raw_github or is_github_blob:
-            target_url = (
-                url.replace("github.com", "raw.githubusercontent.com").replace(
-                    "/blob/", "/"
-                )
-                if is_github_blob
-                else url
-            )
-            response = requests.get(target_url, headers=headers, timeout=30)
-            response.raise_for_status()
-            return response.text
-
-        # 1. Manual Fetch: Always use our own identity rather than delegating
-        # network state to third-party libraries.
-        try:
-            response = requests.get(url, headers=headers, timeout=30)
-            response.raise_for_status()
-            html_content = response.text
-        except requests.exceptions.HTTPError as e:
-            # Fallback for 403 Forbidden (e.g. Cloudflare) using trafilatura's fetcher
-            if getattr(e.response, "status_code", None) == HTTP_FORBIDDEN:
-                html_content = self._get_trafilatura().fetch_url(url)
-                if not html_content:
-                    raise
-            else:
-                raise
-
+        # 2. Multi-stage Stealth Rotation for general URLs
+        html_content = self._fetch_with_rotation(url)
         if not html_content:
             return ""
 
-        # Routing: Use specialized extractor for GitHub Issues and Pull Requests
+        # 3. Routing: Use specialized extractor for GitHub Issues and Pull Requests
         is_github_domain = (
             "github.com" in url or "localhost" in url or "127.0.0.1" in url
         )
