@@ -127,9 +127,10 @@ WIP & REMINDERS:
         If Validation Failed, you MUST persist the following exactly from the failed response: Title, Status, Color, and Rationale sections 1-4 (unless the fix requires modifying the plan logic).
         Protocol:
         1. Prepend "0. Validation Errors" to the Rationale block.
-        2. Analyze the root cause (e.g., stale context, improper tilde/backtick usage).
-        3. Submit a corrected plan focusing strictly on the failed/problematic action.
-        4. Defer the remaining steps of the original plan to subsequent turns.
+        2. Analyze the root cause.
+        3. Add a clear, actionable directive (e.g., `[!] Ensure strict 6-tilde encapsulation`) to the `WIP & REMINDERS` section of your State Dashboard to ensure you do not repeat the mistake.
+        4. Submit a corrected plan focusing strictly on the failed/problematic action.
+        5. Defer the remaining steps of the original plan to subsequent turns.
       </rule>
 
       <rule n="10" name="Conflict Resolution Protocol">If any git rebase/pull fails or conflicts: 1. Identify conflicted files via `git status`. 2. `READ` and surgically `EDIT` those files to resolve conflict markers. 3. Run the full test suite to verify correctness. 4. Stage resolved files via `git add`. 5. Complete the rebase via `EXECUTE git rebase --continue`.</rule>

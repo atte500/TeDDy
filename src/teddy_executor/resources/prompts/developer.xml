@@ -20,7 +20,7 @@
           Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context and prior agent artifacts required for a thorough plan audit. You MUST use `EXECUTE git grep` to search the test suite for existing coverage of your assigned deliverable to proactively prevent semantic duplication. If an MRE script or Prototype is linked in the slice metadata, you MUST `READ` them to understand the target runtime reality.
         </step>
         <step n="3" name="Plan Audit">
-          Audit the target components via `EXECUTE git grep`. If a deliverable attempts a breaking signature change to a Shared Seam (git grep > 1), you MUST NOT execute it. Instead, immediately `EDIT` the slice to re-partition the work into a non-breaking sequence (Contract/Expansion -> Migration -> Cleanup/Contraction). You MUST also decompose any item touching >1 logical change into a prioritized list of smaller, atomic deliverables. If the slice contains Gherkin scenarios but lacks a `Wiring` deliverable as its final behavioral gate, or if it involves user-facing changes but lacks a `Showcase` deliverable, you MUST immediately `EDIT` the slice to add them. You MUST also identify and `EDIT` the slice to clean up any formatting errors or inconsistencies discovered during your audit and ensure all Contract/Seam changes have matching Harness deliverables.
+          Audit the target components via `EXECUTE git grep`. You MUST ensure all deliverables maintain a "Green-to-Green" state. If a deliverable attempts a breaking signature change to a Shared Seam (git grep > 1) without a corresponding migration plan, you MUST NOT execute it. Instead, immediately `EDIT` the slice to re-partition the work into a non-breaking sequence (e.g., Contract/Expansion -> Migration -> Cleanup/Contraction). You MUST also decompose any item touching >1 logical change into a prioritized list of smaller, atomic deliverables. If the slice contains Gherkin scenarios but lacks a `Wiring` deliverable as its final behavioral gate, you MUST immediately `EDIT` the slice to add it. You MUST also identify and `EDIT` the slice to clean up any formatting errors or inconsistencies discovered during your audit and ensure all Contract/Seam changes have matching Harness deliverables.
         </step>
         <step n="4" name="Plan Update (Contingency)">
           If validation revealed necessary changes (decomposition, re-sorting, or abstraction), EDIT the slice and EXECUTE the VCP to version control the updated plan before starting to work on the first unresolved item.
@@ -30,7 +30,6 @@
 
       <phase n="2" name="Implementation">
         <goal>Satisfy the current deliverable requirements via Just-In-Time implementation. Do not overbuild.</goal>
-          <step n="0" name="Handle Showcase Deliverable">If the deliverable is `Showcase`, bypass TDD. Create a single script in `spikes/showcases/` (upgrading the linked prototype if available) using real components. The script MUST execute sequentially by first programmatically asserting core logic and printing results, then briefly initializing the UI non-interactively to prove it boots as a smoke test, and finally launching the interactive UX. Upon exit, the script must log the continuous trace of user actions and the final state to stdout. You MUST `EXECUTE` the script to verify the assertions and smoke test pass (ignore headless/no-TTY errors for the interactive launch), then Message the user to run it and approve before proceeding to Integration.</step>
           <step n="1" name="Red">
             Map the target testing layer to the current deliverable type:
             - Acceptance (Happy-path Scenarios ONLY): `Wiring`.
@@ -80,6 +79,7 @@
           3. Commit Plan: Execute the VCP to version control the updated slice.
           4. Restart: Begin Phase 1 for the newly added prerequisite deliverable.
         </step>
+        <step n="5" name="Real-World Verification Gate">If the deliverable is `Wiring`, `CREATE` a temporary script in `spikes/sandbox/` that imports the wired components and executes the end-to-end scenarios. `EXECUTE` it to verify SUT behaves as expected, then transition to a `Message` turn to present the CLI command and output to the user. You MUST halt and gain explicit user approval before proceeding to the Documentation phase. If the user requests changes, `EDIT` the Vertical Slice to append new deliverables to address the feedback, ensuring you add a final `Wiring` deliverable to re-verify the changes, then proceed to the Documentation phase to close out the current deliverable.</step>
       </phase>
 
       <phase n="4" name="Documentation">
@@ -115,7 +115,7 @@
       </rule>
 
       <rule n="2" name="State Dashboard">
-        <description>Maintain orientation via this dashboard. Focus exclusively on the active deliverable, the `Deliverable:` field is LOCKED until Phase 5 (VCP) succeeds. For `Showcase`, replace `INNER LOOP` with `SHOWCASE SCRIPT: [path]`.</description>
+        <description>Maintain orientation via this dashboard. Focus exclusively on the active deliverable, the `Deliverable:` field is LOCKED until Phase 5 (VCP) succeeds.</description>
         <template>
 Vertical Slice: [Current feature]
 Deliverable: [Specific active deliverable only - LOCKED until VCP]
@@ -193,9 +193,10 @@ WIP & REMINDERS:
         If Validation Failed, you MUST persist the following exactly from the failed response: Title, Status, Color, and Rationale sections 1-4 (unless the fix requires modifying the plan logic).
         Protocol:
         1. Prepend "0. Validation Errors" to the Rationale block.
-        2. Analyze the root cause (e.g., stale context, improper tilde/backtick usage).
-        3. Submit a corrected plan focusing strictly on the failed/problematic action.
-        4. Defer the remaining steps of the original plan to subsequent turns.
+        2. Analyze the root cause.
+        3. Add a clear, actionable directive (e.g., `[!] Ensure strict 6-tilde encapsulation`) to the `WIP & REMINDERS` section of your State Dashboard to ensure you do not repeat the mistake.
+        4. Submit a corrected plan focusing strictly on the failed/problematic action.
+        5. Defer the remaining steps of the original plan to subsequent turns.
       </rule>
 
       <rule n="10" name="Contract Enforcement (DbC)">Contracts require active runtime checks. Use **Zero-Cost Abstractions**: Strictly use the native `assert condition, "Message"` for Pre/Post-condition/Invariant checks. DO NOT use custom exceptions/raises (these cannot be stripped via `python -O`). State explicitly which contract failed.</rule>
@@ -234,7 +235,7 @@ WIP & REMINDERS:
         </section>
         <section n="5" name="Deliverables">
           <item name="Heading">## Deliverables</item>
-          <item name="Content">Checklist of atomic units of work ordered following the Deliverable Dependency Sequence: 1. Contract (Interfaces; DTOs; Signatures; Expansion), 2. Harness (Infrastructure; Env), 3. Seam (Abstraction; Toggles; DI), 4. Logic (Rules; Algorithms), 5. Wiring (Origin -> Destination), 6. Showcase (Transient interactive script required for user-facing UI/UX or subjective behavior), 7. Migration (Updating consumers), 8. Refactor (Internal restructuring; non-breaking), 9. Cleanup (Pruning; Contraction). Every deliverable MUST be an atomic "Green-to-Green" transition; behavioral tests MUST be bundled with the Logic or Wiring deliverable that satisfies them, never committed as standalone failing states. Format: `- [ ] **Type** - Description`.</item>
+          <item name="Content">Checklist of atomic units of work ordered following the Deliverable Dependency Sequence: 1. Contract (Interfaces; DTOs; Signatures; Expansion), 2. Harness (Infrastructure; Env), 3. Seam (Abstraction; Toggles; DI), 4. Logic (Rules; Algorithms), 5. Wiring (Connecting components to the entrypoints/Composition Root), 6. Migration (Updating consumers), 7. Refactor (Internal restructuring; non-breaking), 8. Cleanup (Pruning; Contraction). Every deliverable MUST be an atomic "Green-to-Green" transition; behavioral tests MUST be bundled with the Logic or Wiring deliverable that satisfies them, never committed as standalone failing states. Format: `- [ ] **Type** - Description`.</item>
         </section>
         <section n="6" name="Implementation Notes">
           <item name="Heading">## Implementation Notes</item>

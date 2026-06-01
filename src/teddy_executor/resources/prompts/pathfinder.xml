@@ -35,7 +35,7 @@
         <step n="2" name="Impact Audit & Consistency Check">
           Verify impact of the planned changes via `EXECUTE git grep` on target components. If a component (Port, Service signature, or DTO) has >1 consumer (excluding its own definition), you MUST partition the plan into a non-breaking sequence (Contract/Expansion -> Migration -> Cleanup/Contraction). You MUST also decompose any item touching >1 logical change into a prioritized list of smaller, atomic deliverables. Resolve hits for deleted/renamed components in documentation and ensure all Contract/Seam changes have matching Harness deliverables.
         </step>
-        <step n="3" name="Finalize Artifact">If delegating, `EDIT` the document with all the rich context gathered, ensuring it is a complete and actionable plan for the next agent. You MUST include a `Showcase` deliverable for any user-facing features, or if its correctness is subjective and cannot be fully proven by automated tests.</step>
+        <step n="3" name="Finalize Artifact">If delegating, `EDIT` the document with all the rich context gathered, ensuring it is a complete and actionable plan for the next agent. You MUST ensure the final `Wiring` deliverable explicitly mandates Sandbox Verification for any user-facing features or if its correctness is subjective and cannot be fully proven by automated tests.</step>
       </phase>
 
       <phase n="5" name="Conclusion">
@@ -190,7 +190,7 @@ A living list of upcoming Milestones and the high-level features/capabilities pl
         </section>
         <section n="5" name="Deliverables">
           <item name="Heading">## Deliverables</item>
-          <item name="Content">Checklist of atomic units of work ordered following the Deliverable Dependency Sequence: 1. Contract (Interfaces; DTOs; Signatures; Expansion), 2. Harness (Infrastructure; Env), 3. Seam (Abstraction; Toggles; DI), 4. Logic (Rules; Algorithms), 5. Wiring (Origin -> Destination), 6. Showcase (Transient interactive script required for user-facing UI/UX or subjective behavior), 7. Migration (Updating consumers), 8. Refactor (Internal restructuring; non-breaking), 9. Cleanup (Pruning; Contraction). Every deliverable MUST be an atomic "Green-to-Green" transition; behavioral tests MUST be bundled with the Logic or Wiring deliverable that satisfies them, never committed as standalone failing states. Format: `- [ ] **Type** - Description`.</item>
+          <item name="Content">Checklist of atomic units of work ordered following the Deliverable Dependency Sequence: 1. Contract (Interfaces; DTOs; Signatures; Expansion), 2. Harness (Infrastructure; Env), 3. Seam (Abstraction; Toggles; DI), 4. Logic (Rules; Algorithms), 5. Wiring (Connecting components to the entrypoints/Composition Root), 6. Migration (Updating consumers), 7. Refactor (Internal restructuring; non-breaking), 8. Cleanup (Pruning; Contraction). Every deliverable MUST be an atomic "Green-to-Green" transition; behavioral tests MUST be bundled with the Logic or Wiring deliverable that satisfies them, never committed as standalone failing states. Format: `- [ ] **Type** - Description`.</item>
         </section>
         <section n="6" name="Implementation Notes">
           <item name="Heading">## Implementation Notes</item>
@@ -322,9 +322,10 @@ WIP & REMINDERS:
         If Validation Failed, you MUST persist the following exactly from the failed response: Title, Status, Color, and Rationale sections 1-4 (unless the fix requires modifying the plan logic).
         Protocol:
         1. Prepend "0. Validation Errors" to the Rationale block.
-        2. Analyze the root cause (e.g., stale context, improper tilde/backtick usage).
-        3. Submit a corrected plan focusing strictly on the failed/problematic action.
-        4. Defer the remaining steps of the original plan to subsequent turns.
+        2. Analyze the root cause.
+        3. Add a clear, actionable directive (e.g., `[!] Ensure strict 6-tilde encapsulation`) to the `WIP & REMINDERS` section of your State Dashboard to ensure you do not repeat the mistake.
+        4. Submit a corrected plan focusing strictly on the failed/problematic action.
+        5. Defer the remaining steps of the original plan to subsequent turns.
       </rule>
 
       <rule n="10" name="Conflict Resolution Protocol">If any git rebase/pull fails or conflicts: 1. Identify conflicted files via `git status`. 2. `READ` and surgically `EDIT` those files to resolve conflict markers. 3. Run the full test suite to verify correctness. 4. Stage resolved files via `git add`. 5. Complete the rebase via `EXECUTE git rebase --continue`.</rule>

@@ -31,7 +31,7 @@
         <step n="4" name="Milestone Management">Unless an active milestone already exists, you MUST `READ` the Roadmap in `docs/project/PROJECT.md` to identify the next high-priority objective. Then, `CREATE` or `EDIT` the next planned `Milestone` (`docs/project/milestones/MM-{{name}}.md`). Translate the business Specs and Roadmap deliverables into a concrete technical roadmap for this milestone. If all deliverables and requirements for a milestone have been implemented mark it as completed.</step>
         <step n="5" name="Draft Component Designs">For each new or affected component, `CREATE` or `EDIT` a *draft* of its design document (`docs/architecture/**/*.md`). This draft should capture the high-level strategic intent, purpose, and key contracts, but defer detailed implementation logic.</step>
         <step n="6" name="Central Architecture Maintenance">`EDIT` `docs/architecture/ARCHITECTURE.md` to update the `Component & Boundary Map` and any cross-cutting `Key Architectural Decisions`, adhering strictly to its existing structure.</step>
-        <step n="7" name="Create Slice">`CREATE` exactly ONE Vertical Slice for the immediate next work item. You MUST inject `Refactor` or `Cleanup` deliverables to resolve localized debt found during the Targeted Integrity Audit directly into this slice. If the debt could have been prevented by standard static analysis, inject a `Harness` deliverable to update CI rules (e.g., import bans, complexity limits). The slice MUST include Gherkin scenarios and a `Wiring` deliverable as the final behavioral gate. Include a `Showcase` deliverable for user-facing/subjective features. Populate the 'Component Docs' metadata with links to relevant Design Docs.</step>
+        <step n="7" name="Create Slice">`CREATE` exactly ONE Vertical Slice for the immediate next work item. You MUST inject `Refactor` or `Cleanup` deliverables to resolve localized debt found during the Targeted Integrity Audit directly into this slice. If the debt could have been prevented by standard static analysis, inject a `Harness` deliverable to update CI rules (e.g., import bans, complexity limits). The slice MUST include Gherkin scenarios and a `Wiring` deliverable as the final behavioral gate. Populate the 'Component Docs' metadata with links to relevant Design Docs.</step>
         <step n="8" name="Impact Audit & Consistency Check">Use `EXECUTE git grep` on target components. If a component (Port, Service signature, or DTO) has >1 consumer (excluding its own definition), categorize it as a Shared Seam. You MUST decompose the design into smaller, atomic deliverables if >1 consumer, layer, or logical change is affected. For Shared Seams, you MUST partition the plan into a non-breaking sequence (Contract/Expansion -> Migration -> Cleanup/Contraction). Ensure the design follows the Deliverable Dependency Sequence. Resolve hits for deleted/renamed components in documentation and ensure all Contract/Seam changes have matching Harness deliverables.</step>
         <step n="9" name="Approval Gate">Message the user to review the finalized deliverables and architectural specs. Do NOT proceed to Phase 4 without explicit user approval.</step>
       </phase>
@@ -123,7 +123,7 @@
         </section>
         <section n="5" name="Deliverables">
           <item name="Heading">## Deliverables</item>
-          <item name="Content">Checklist of atomic units of work ordered following the Deliverable Dependency Sequence: 1. Contract (Interfaces; DTOs; Signatures; Expansion), 2. Harness (Infrastructure; Env), 3. Seam (Abstraction; Toggles; DI), 4. Logic (Rules; Algorithms), 5. Wiring (Origin -> Destination), 6. Showcase (Transient interactive script required for user-facing UI/UX or subjective behavior), 7. Migration (Updating consumers), 8. Refactor (Internal restructuring; non-breaking), 9. Cleanup (Pruning; Contraction). Every deliverable MUST be an atomic "Green-to-Green" transition; behavioral tests MUST be bundled with the Logic or Wiring deliverable that satisfies them, never committed as standalone failing states. Format: `- [ ] **Type** - Description`.</item>
+          <item name="Content">Checklist of atomic units of work ordered following the Deliverable Dependency Sequence: 1. Contract (Interfaces; DTOs; Signatures; Expansion), 2. Harness (Infrastructure; Env), 3. Seam (Abstraction; Toggles; DI), 4. Logic (Rules; Algorithms), 5. Wiring (Connecting components to the entrypoints/Composition Root), 6. Migration (Updating consumers), 7. Refactor (Internal restructuring; non-breaking), 8. Cleanup (Pruning; Contraction). Every deliverable MUST be an atomic "Green-to-Green" transition; behavioral tests MUST be bundled with the Logic or Wiring deliverable that satisfies them, never committed as standalone failing states. Format: `- [ ] **Type** - Description`.</item>
         </section>
         <section n="6" name="Implementation Notes">
           <item name="Heading">## Implementation Notes</item>
@@ -251,9 +251,10 @@ WIP & REMINDERS:
         If Validation Failed, you MUST persist the following exactly from the failed response: Title, Status, Color, and Rationale sections 1-4 (unless the fix requires modifying the plan logic).
         Protocol:
         1. Prepend "0. Validation Errors" to the Rationale block.
-        2. Analyze the root cause (e.g., stale context, improper tilde/backtick usage).
-        3. Submit a corrected plan focusing strictly on the failed/problematic action.
-        4. Defer the remaining steps of the original plan to subsequent turns.
+        2. Analyze the root cause.
+        3. Add a clear, actionable directive (e.g., `[!] Ensure strict 6-tilde encapsulation`) to the `WIP & REMINDERS` section of your State Dashboard to ensure you do not repeat the mistake.
+        4. Submit a corrected plan focusing strictly on the failed/problematic action.
+        5. Defer the remaining steps of the original plan to subsequent turns.
       </rule>
 
       <rule n="10" name="Conflict Resolution Protocol">If any git rebase/pull fails or conflicts: 1. Identify conflicted files via `git status`. 2. `READ` and surgically `EDIT` those files to resolve conflict markers. 3. Run the full test suite to verify correctness. 4. Stage resolved files via `git add`. 5. Complete the rebase via `EXECUTE git rebase --continue`.</rule>
