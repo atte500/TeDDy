@@ -42,7 +42,7 @@ Then the results should contain excerpts or full content from the top results, n
 - [x] **Logic** - Implement User-Agent/Header rotation for 403 fallback in `WebScraperAdapter` (includes removing `xfail` from tests).
 - [x] **Logic** - Implement specialized GitHub Raw extraction in `WebScraperAdapter` (includes removing `xfail` from tests).
 - [ ] **Logic** - Enhance `WebSearcherAdapter` to perform follow-up scraping for top results (includes new unit/integration tests).
-- [ ] **Wiring** - Implement `research.max_results` and `research.auto_scrape_depth` configuration support.
+- [ ] **Wiring** - Implement `research.max_results` configuration support.
 - [ ] **Showcase** - Demonstration script validating PNAS (403 bypass), GitHub Raw (README extraction), and Deepened Research (Scraped content in SERP).
 
 ## Implementation Plan
