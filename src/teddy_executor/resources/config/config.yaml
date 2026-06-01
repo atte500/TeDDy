@@ -19,6 +19,11 @@ execution:
 read:
   max_lines: 1000 # Caps READ action output to the first X lines.
 
+# Research Settings
+research:
+  max_results: 5 # Number of SERP results per query.
+  auto_scrape_depth: 3 # Number of top results to automatically scrape for content.
+
 # Auto-Pruning Settings
 # Intelligently pre-deselects context files to save tokens and manage complexity.
 auto_pruning:

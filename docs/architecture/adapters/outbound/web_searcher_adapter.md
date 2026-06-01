@@ -13,8 +13,13 @@ The `WebSearcherAdapter` is the concrete implementation of the [`IWebSearcher`](
 ## 3. Implementation Notes
 
 *   **Library:** The `ddgs` library is used to interact with DuckDuckGo.
-*   **Data Mapping:** The raw results from the `ddgs` library are mapped to the `WebSearchResults` `TypedDict` contract. Specifically, the library's `title`, `href` (as `url`), and `body` (as `snippet`) keys are used to construct the `SearchResult` dictionaries. The adapter aggregates all results into a single `WebSearchResults` object.
-*   **Error Handling:** Any exception raised during the interaction with the `ddgs` library is caught and re-raised as a domain-specific `WebSearchError` to honor the port contract.
+*   **Configurability:** Respects `research.max_results` (default 5) for the number of SERP items retrieved.
+*   **Deep Research (Auto-Scraping):** To reduce agent turns, the adapter performs follow-up scraping for top results:
+    - **Depth Control:** Respects `research.auto_scrape_depth` (default 3).
+    - **Integration:** Uses the `IWebScraper` port to fetch and extract content for the top N results.
+    - **Storage:** Scraped content is stored in the `content` field of the `SearchResult` DTO.
+*   **Data Mapping:** Maps `ddgs` output to the `WebSearchResults` contract. The `body` field contains the SERP snippet, while the `content` field contains the results of the auto-scrape.
+*   **Error Handling:** Individual query or scraping failures are logged but do not crash the entire search action, providing partial results to the agent. Persistent library failures are raised as `WebSearchError`.
 
 ## 4. External Documentation
 

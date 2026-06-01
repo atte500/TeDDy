@@ -1,0 +1,53 @@
+# Slice: 02-02-Web Scraping Resilience
+
+- **Status:** Planned
+- **Milestone:** [docs/project/milestones/02-stability-and-polish.md](/docs/project/milestones/02-stability-and-polish.md)
+- **Specs:** [docs/project/specs/stability-and-bugfixes.md](/docs/project/specs/stability-and-bugfixes.md)
+- **Component Docs:** [docs/architecture/adapters/outbound/web_scraper_adapter.md](/docs/architecture/adapters/outbound/web_scraper_adapter.md), [docs/architecture/adapters/outbound/web_searcher_adapter.md](/docs/architecture/adapters/outbound/web_searcher_adapter.md)
+
+## Business Goal
+Improve the reliability and depth of information gathered through web scraping and searching to provide better context to AI agents.
+
+## Scenarios
+> As an agent, I want to scrape content from a site that blocks generic scrapers so that I can gather the information I need.
+```gherkin
+Given a URL that returns 403 Forbidden to standard Python-requests User-Agents
+When I attempt to scrape the URL using WebScraperAdapter
+Then the adapter should rotate its User-Agent and headers
+And the content should be successfully extracted
+```
+
+> As an agent, I want to read raw content from GitHub so that I can analyze source code or documentation.
+```gherkin
+Given a GitHub raw URL (e.g., raw.githubusercontent.com)
+When I scrape the URL
+Then the adapter should return the full raw content of the file
+```
+
+> As an agent performing research, I want to see content from the search results so that I don't have to manually READ each link.
+```gherkin
+Given a set of search queries
+When I execute a RESEARCH action
+Then the results should contain excerpts or full content from the top results, not just SERP snippets
+```
+
+## Edge Cases
+- **Persistent 403/404**: If after rotation the site still returns 403/404, report a clear error in the execution report.
+- **Large Page Content**: If a scraped page is excessively large, truncate intelligently to avoid context window overflows while providing the most relevant information.
+- **Search Result Failures**: If individual links in a search result fail to scrape, provide the snippet as a fallback and log the failure.
+
+## Deliverables
+- [ ] **Harness** - Create reproduction tests for 403 and GitHub raw issues.
+- [ ] **Contract** - Update `QueryResult` and `SearchResult` DTOs to include `content`.
+- [ ] **Harness** - Create tests for configurable search depth.
+- [ ] **Logic** - Implement User-Agent and header rotation in `WebScraperAdapter`.
+- [ ] **Logic** - Implement specialized handling for `raw.githubusercontent.com` in `WebScraperAdapter`.
+- [ ] **Logic** - Enhance `WebSearcherAdapter` to perform follow-up scraping for top results.
+- [ ] **Wiring** - Add `research.max_results` and `research.auto_scrape_depth` to `config.yaml`.
+- [ ] **Showcase** - Demonstrate successful scraping of PNAS, GitHub, and deepened research.
+
+## Implementation Plan
+1. **Targeted Integrity Audit**: Audit current `WebScraperAdapter` and `WebSearcherAdapter`.
+2. **Reproduction Spikes**: Verify the failures using the URLs provided in the spec.
+3. **Resilience Implementation**: Add headers/UA rotation and GitHub special-casing.
+4. **Research Deepening**: Integrate scraper into the searcher workflow.

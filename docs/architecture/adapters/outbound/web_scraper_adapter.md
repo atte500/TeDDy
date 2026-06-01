@@ -13,10 +13,11 @@ The `WebScraperAdapter` is the concrete implementation of the `WebScraper` outbo
 ## 3. Implementation Details / Logic
 The adapter employs a "smart router" pattern to choose the best scraping strategy based on the URL. This hybrid approach ensures both high-quality content extraction from general web pages and perfect fidelity for source code files from GitHub.
 
-1.  **GitHub URL Detection:** The adapter first inspects the URL. It identifies two specific patterns:
-    -   **Blob URLs:** Pattern `github.com/.../blob/...`. Bypasses general extraction to fetch raw file content.
+1.  **GitHub URL Detection:** The adapter first inspects the URL. It identifies three specific patterns:
+    -   **Raw Content URLs:** Domain `raw.githubusercontent.com`. Bypasses extraction and returns content immediately.
+    -   **Blob URLs:** Pattern `github.com/.../blob/...`. Transformed to raw and returned immediately.
     -   **Conversation URLs:** Pattern `github.com/.../issues/...` or `github.com/.../pull/...`. Routed to the specialized `_extract_github_conversation` logic.
-2.  **Raw Content Fetching (for GitHub Blobs):** The GitHub URL is transformed into its corresponding "raw" content URL (e.g., `raw.githubusercontent.com/...`). The adapter then fetches this URL directly using `requests` and returns the raw file content.
+2.  **Raw Content Fetching:** URLs identified as raw are fetched directly using `requests`. The response text is returned as-is, bypassing `trafilatura` to prevent accidental stripping of source code or markdown.
 3.  **GitHub Conversation Extraction (Issues/PRs):** Uses a **Hybrid JSON/HTML strategy** to maximize fidelity:
     -   **JSON Pass:** Scans `<script>` tags for React hydration payloads (`data-target="react-app.embeddedData"` or `id="client-env"`). Recursively searches for the `issue` or `pullRequest` container and timeline `edges`. This provides structured Markdown and metadata (authors, timestamps).
     -   **HTML Fallback:** Scrapes `.markdown-title` for the header and `.markdown-body` / `.comment-body` blocks if JSON data is missing or fragmented.
@@ -24,7 +25,10 @@ The adapter employs a "smart router" pattern to choose the best scraping strateg
 4.  **General Content Extraction (for all other URLs):** For all other URLs, the adapter uses a two-stage process. It first attempts a direct fetch using the `requests` library.
 4.  **403 Fallback:** If the initial `requests` fetch is blocked with a `403 Forbidden` error, the adapter automatically falls back to using `trafilatura.fetch_url`. This second method is more robust and can bypass some simple anti-scraping measures.
 5.  **Content Conversion:** Once the HTML content is successfully fetched (either directly or via the fallback), `trafilatura.extract` is used to strip away boilerplate and convert the main content to Markdown.
-6.  **User Agent:** A default browser-like `User-Agent` header is sent with all initial `requests` calls to avoid being blocked by simple anti-bot measures.
+6.  **UA & Header Rotation:** To bypass Cloudflare and other anti-scraping measures (e.g., 403 Forbidden), the adapter implements a rotation strategy:
+    - **User-Agent Pool:** Rotates between Chrome, Safari, and Edge on macOS/Windows.
+    - **Header Hardening:** Adds `Accept-Language`, `Referer`, and `Upgrade-Insecure-Requests` to the rotation.
+    - **Fingerprint Reduction:** Minimizes custom library headers that identify `requests`.
 
 ## 4. Data Contracts / Methods
 The adapter implements the `get_content` method as defined by the `IWebScraper` port.

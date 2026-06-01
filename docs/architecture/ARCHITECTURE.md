@@ -120,7 +120,7 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 | **ShellAdapter**               | Implements `IShellExecutor` using Python's `subprocess` module.                                                      | [ShellAdapter](./adapters/outbound/shell_adapter.md)                              |
 | **SystemEnvironmentInspector** | Implements `IEnvironmentInspector` using Python's `os`, `platform`, and `sys` modules.                               | [SystemEnvironmentInspector](./adapters/outbound/system_environment_inspector.md) |
 | **WebScraperAdapter**          | Implements `IWebScraper` using `trafilatura` for content extraction and a direct-fetch for GitHub URLs.              | [WebScraperAdapter](./adapters/outbound/web_scraper_adapter.md)                   |
-| **WebSearcherAdapter**         | Implements `IWebSearcher` using the `ddgs` library for keyless DuckDuckGo searches.                                  | [WebSearcherAdapter](./adapters/outbound/web_searcher_adapter.md)                 |
+| **WebSearcherAdapter**         | Implements `IWebSearcher` using the `ddgs` library for DuckDuckGo searches with automated follow-up scraping.        | [WebSearcherAdapter](./adapters/outbound/web_searcher_adapter.md)                 |
 | **YamlConfigAdapter**          | Implements `IConfigService` by reading configuration from a `.teddy/config.yaml` file.                               | [YamlConfigAdapter](./adapters/outbound/yaml_config_adapter.md)                   |
 
 #### Test Harness Triad (Setup, Driver, Observer)
