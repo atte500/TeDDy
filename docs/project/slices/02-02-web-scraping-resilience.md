@@ -39,12 +39,11 @@ Then the results should contain excerpts or full content from the top results, n
 ## Deliverables
 - [x] **Harness** - Create reproduction tests for 403 and GitHub raw issues.
 - [x] **Contract** - Update `QueryResult` and `SearchResult` DTOs to include `content`.
-- [ ] **Harness** - Create tests for configurable search depth.
-- [ ] **Logic** - Implement User-Agent and header rotation in `WebScraperAdapter`.
-- [ ] **Logic** - Implement specialized handling for `raw.githubusercontent.com` in `WebScraperAdapter`.
-- [ ] **Logic** - Enhance `WebSearcherAdapter` to perform follow-up scraping for top results.
-- [ ] **Wiring** - Add `research.max_results` and `research.auto_scrape_depth` to `config.yaml`.
-- [ ] **Showcase** - Demonstrate successful scraping of PNAS, GitHub, and deepened research.
+- [ ] **Logic** - Implement User-Agent/Header rotation for 403 fallback in `WebScraperAdapter` (includes removing `xfail` from tests).
+- [ ] **Logic** - Implement specialized GitHub Raw extraction in `WebScraperAdapter` (includes removing `xfail` from tests).
+- [ ] **Logic** - Enhance `WebSearcherAdapter` to perform follow-up scraping for top results (includes new unit/integration tests).
+- [ ] **Wiring** - Implement `research.max_results` and `research.auto_scrape_depth` configuration support.
+- [ ] **Showcase** - Demonstration script validating PNAS (403 bypass), GitHub Raw (README extraction), and Deepened Research (Scraped content in SERP).
 
 ## Implementation Plan
 1. **Targeted Integrity Audit**: Audit current `WebScraperAdapter` and `WebSearcherAdapter`.
