@@ -167,8 +167,9 @@ class WebScraperAdapter(WebScraper):
                 return response.text
             except requests.exceptions.HTTPError as e:
                 last_error = e
-                # Only retry on 403 Forbidden; other errors are likely permanent
-                if e.response is not None and e.response.status_code == HTTP_FORBIDDEN:
+                # Retry on 403 (Forbidden) and 406 (Not Acceptable)
+                status_code = getattr(e.response, "status_code", None)
+                if status_code in [HTTP_FORBIDDEN, 406]:
                     continue
                 raise
             except Exception as e:
