@@ -3,6 +3,7 @@ from teddy_executor.core.ports.outbound.config_service import IConfigService
 
 
 MIN_GITHUB_CONTENT_LENGTH = 10
+HTTP_FORBIDDEN = 403
 
 
 class WebScraperAdapter(WebScraper):
@@ -160,9 +161,18 @@ class WebScraperAdapter(WebScraper):
 
         # 1. Manual Fetch: Always use our own identity rather than delegating
         # network state to third-party libraries.
-        response = requests.get(url, headers=headers, timeout=30)
-        response.raise_for_status()
-        html_content = response.text
+        try:
+            response = requests.get(url, headers=headers, timeout=30)
+            response.raise_for_status()
+            html_content = response.text
+        except requests.exceptions.HTTPError as e:
+            # Fallback for 403 Forbidden (e.g. Cloudflare) using trafilatura's fetcher
+            if getattr(e.response, "status_code", None) == HTTP_FORBIDDEN:
+                html_content = self._get_trafilatura().fetch_url(url)
+                if not html_content:
+                    raise
+            else:
+                raise
 
         if not html_content:
             return ""

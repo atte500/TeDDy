@@ -15,7 +15,6 @@ class MockResponse:
             )
 
 
-@pytest.mark.xfail(reason="Logic for 403 fallback not yet implemented")
 def test_get_content_handles_403_with_fallback(monkeypatch):
     """
     Desired behavior: If requests.get returns 403, we should fallback to trafilatura.fetch_url.
