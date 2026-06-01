@@ -104,6 +104,7 @@ class ContextService(IGetContextUseCase):
     def _resolve_files_to_paths(self, files: Sequence[str]) -> List[str]:
         """
         Nuanced Resolution: Distinguishes manifests (.context) from targets.
+        Detects and expands directories recursively.
         Preserves original order while deduplicating results.
         """
         paths: List[str] = []
@@ -111,6 +112,12 @@ class ContextService(IGetContextUseCase):
             if self._is_manifest(f):
                 # Expansion of manifests can return multiple paths
                 resolved = self._file_system_manager.resolve_paths_from_files([f])
+                for r in resolved:
+                    if r not in paths:
+                        paths.append(r)
+            elif self._file_system_manager.is_dir(f):
+                # Recursive directory expansion
+                resolved = self._file_system_manager.list_directory_recursive(f)
                 for r in resolved:
                     if r not in paths:
                         paths.append(r)

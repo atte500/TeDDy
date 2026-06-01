@@ -33,9 +33,10 @@ Then the generated input.md should contain the contents of all 3 files
 ## Deliverables
 - [x] **Contract** - Update `ILlmClient` and `IFileSystemManager` for resilience and recursion support.
 - [x] **Harness** - Create `test_litellm_retries.py` using a mock that yields side-effects.
-- [ ] **Harness** - Create `test_context_recursion.py` with mock filesystem.
+- [x] **Harness** - Create `test_context_recursion.py` with mock filesystem.
 - [x] **Logic** - Implement stateful retry loop in `LiteLLMAdapter.get_completion`.
-- [ ] **Logic** - Update `ContextService._resolve_files_to_paths` to detect and expand directories.
+- [ ] **Migration** - Implement `list_directory_recursive` in `LocalFileSystemAdapter`.
+- [x] **Logic** - Update `ContextService._resolve_files_to_paths` to detect and expand directories.
 - [ ] **Refactor** - Move recursive file listing logic into a shared utility or update `IFileSystemManager`.
 - [ ] **Wiring** - Ensure `PlanningService` passes correct retry parameters if configurable.
 
@@ -46,5 +47,5 @@ Then the generated input.md should contain the contents of all 3 files
 
 ## Implementation Notes
 - `ILlmClient`: `get_completion` already supports `**kwargs`, so retry configuration can be passed if needed, but primary retry logic will be internal to `LiteLLMAdapter`.
-- `IFileSystemManager`: Needs `is_dir(path: str) -> bool` to support `ContextService` recursion logic without relying on exception-driven detection.
+- `IFileSystemManager`: Added `is_dir(path: str) -> bool` and `list_directory_recursive(path: str) -> list[str]` to support `ContextService` recursion logic.
 - `ContextService`: Recursion logic will be added to `_resolve_files_to_paths`.

@@ -18,6 +18,12 @@ class IFileSystemManager(Protocol):
         """
         ...
 
+    def list_directory_recursive(self, path: str) -> list[str]:
+        """
+        Lists all files in a directory and its subdirectories, respecting ignores.
+        """
+        ...
+
     def create_directory(self, path: str) -> None:
         """
         Creates a directory, including any necessary parent directories.

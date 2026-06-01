@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from typing import Any
 import pytest
 import pyperclip
 from tests.harness.setup.mocking import POSIXPathMock, register_mock
@@ -19,12 +19,14 @@ def mock_user_interactor(container):
 
 
 @pytest.fixture
-def mock_fs(container):
+def mock_fs(container) -> Any:
     from teddy_executor.core.ports.outbound import IFileSystemManager
 
     mock = register_mock(container, IFileSystemManager)
     mock.get_context_paths.return_value = {}
     mock.read_files_in_vault.return_value = {}
+    mock.is_dir.return_value = False
+    mock.list_directory_recursive.return_value = []
     return mock
 
 
@@ -192,7 +194,7 @@ def mock_llm_client(container):
 
     # Create a structured ModelResponse mock
     mock_response = POSIXPathMock()
-    mock_choice = MagicMock()
+    mock_choice = POSIXPathMock()
 
     # CRITICAL: Ensure the mock content is a real string to prevent
     # Pathlib TypeError in integration tests that write the plan to disk.
@@ -210,13 +212,14 @@ def mock_llm_client(container):
 
 
 @pytest.fixture(autouse=True)
-def mock_pyperclip():
+def mock_pyperclip(monkeypatch):
     """
     Automatically mock pyperclip for all tests to prevent clipboard pollution.
     Raises PyperclipException to force the application to skip clipboard logging.
     """
-    with patch(
-        "pyperclip.copy",
-        side_effect=pyperclip.PyperclipException("Clipboard not available in test"),
-    ) as mock_copy:
-        yield mock_copy
+    mock_copy = POSIXPathMock()
+    mock_copy.side_effect = pyperclip.PyperclipException(
+        "Clipboard not available in test"
+    )
+    monkeypatch.setattr("pyperclip.copy", mock_copy)
+    yield mock_copy
