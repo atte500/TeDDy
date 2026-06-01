@@ -54,9 +54,10 @@ And the output should be truncated to the limit defined in read.max_lines
 - [x] **Logic** - Implement exponential backoff/retry (3 attempts) in `WebScraperAdapter` for 403/5xx errors (Arch 3.3).
 - [x] **Refactor** - Make WebScraperAdapter max_retries configurable via IConfigService.
 - [x] **Logic** - Implement intelligent content truncation (configurable limit, default ~5000 chars) for search results in `WebSearcherAdapter` with a hint to `curl` to file for full depth if truncated.
-- [ ] **Logic** - Refactor `WebScraperAdapter.get_content` to disable high-recall flags (`favor_recall=False`, `include_comments=False`) and implement `truncate_lines` (head) respecting `read.max_lines`.
+- [x] **Logic** - Refactor `WebScraperAdapter.get_content` to disable high-recall flags (`favor_recall=False`, `include_comments=False`) and implement `truncate_lines` (head) respecting `read.max_lines`.
 - [ ] **Refactor** - Update `WebSearcherAdapter` to remove redundant truncation logic, delegating it to the scraper.
 - [ ] **Wiring** - Update `execution_report.md.j2` to prioritize rendering `content` over `body` in research results.
+- [ ] **Refactor** - Remove banned `unittest.mock.patch` from `tests/suites/unit/adapters/outbound/test_web_scraper_contract.py`.
 
 ## Implementation Plan
 1. **Targeted Integrity Audit**: Audit current `WebScraperAdapter` and `WebSearcherAdapter`.
@@ -89,3 +90,4 @@ And the output should be truncated to the limit defined in read.max_lines
     3. 403 Bypass Mechanism (PNAS content retrieved without exception using rotation fallback).
 - **Diagnostic Findings (Messy Output)**: Wikipedia `READ` previously returned 128k characters including sidebar and edit links. Shadow verification (disabling `favor_recall` and `include_comments`) reduced this significantly and adding head-truncation capped it to ~50k characters.
 - **Reporting Visibility**: Confirmed that `execution_report.md.j2` was hardcoded to only show `body` for search results, ignoring the enriched `content` field.
+- **High-Recall Refactor**: Disabled `favor_recall` and `include_comments` in `WebScraperAdapter.get_content` to reduce noise in HTML extraction. Implemented head-truncation logic that splits the final Markdown content by newlines and truncates it to `read.max_lines` (defaulting to 1000 from config) if it exceeds the limit.

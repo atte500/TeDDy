@@ -282,6 +282,22 @@ class WebScraperAdapter(WebScraper):
                 raise
         return None
 
+    def _truncate_content(self, markdown_content: str) -> str:
+        """Truncates markdown content based on read.max_lines configuration."""
+        if not self._config_service or not markdown_content:
+            return markdown_content
+
+        max_lines = self._config_service.get_setting("read.max_lines", None)
+        if max_lines is not None:
+            try:
+                max_lines_int = int(max_lines)
+                lines = markdown_content.splitlines()
+                if len(lines) > max_lines_int:
+                    return "\n".join(lines[:max_lines_int])
+            except (ValueError, TypeError):
+                pass
+        return markdown_content
+
     def get_content(self, url: str, **_kwargs) -> str:
         """
         Fetches and extracts the content from the given URL.
@@ -319,9 +335,12 @@ class WebScraperAdapter(WebScraper):
             output_format="markdown",
             include_links=True,
             include_formatting=True,
-            favor_recall=True,
-            include_comments=True,
+            favor_recall=False,
+            include_comments=False,
             include_tables=True,
         )
 
-        return markdown_content if markdown_content else ""
+        if not markdown_content:
+            return ""
+
+        return self._truncate_content(markdown_content)
