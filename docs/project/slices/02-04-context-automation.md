@@ -32,14 +32,14 @@ Then "new_file.py" should be present in the next turn's "turn.context"
 - **Remote URL Deduplication**: URLs should be deduplicated against themselves but never treated as local paths.
 
 ## Deliverables
-- [ ] **Contract** - Update `IFileSystemManager.resolve_paths_from_files` (if needed) to handle remote URLs.
-- [ ] **Logic** - Update `ContextService._resolve_recursive` to explicitly handle `http/https` URLs.
-- [ ] **Logic** - Update `EditActionValidator` to remove the context-presence check.
-- [ ] **Logic** - Update `EditActionValidator` to treat identical FIND/REPLACE blocks as successful no-ops (suppressing the current error).
-- [ ] **Logic** - Update `ReadActionValidator` to remove the "already in context" error.
+- [▶] **Seam** - Inject `IWebScraper` into `ContextService` to support remote URL context gathering.
+- [ ] **Logic** - Update `ContextService.get_context` to fetch remote URL content via `IWebScraper`.
+- [ ] **Logic** - Update `ContextService._resolve_recursive` to ensure URLs are not treated as local directories.
+- [ ] **Logic** - Update `EditActionValidator` to remove context-presence check and treat identical FIND/REPLACE as no-ops.
+- [ ] **Logic** - Update `ReadActionValidator` to remove "already in context" error.
 - [ ] **Logic** - Update `SessionService._apply_execution_effects` to include `CREATE` and `EDIT` side-effects.
-- [ ] **Harness** - Add integration test for recursive expansion of directories inside `.context` files.
-- [ ] **Wiring** - Ensure `ExecutionReport` contains sufficient info for `SessionService` to verify file existence before auto-addition.
+- [ ] **Harness** - Add integration test for recursive directory expansion in `.context` manifests.
+- [ ] **Wiring** - Update `registries/infrastructure.py` and `container.py` for the new `ContextService` dependency.
 
 ## Implementation Plan
 ### Delta Analysis
