@@ -26,7 +26,6 @@ class SessionPruningService:
     ) -> ProjectContext:
         """Applies configured auto-pruning heuristics to the project context."""
         self._read_cache.clear()
-        """Applies configured auto-pruning heuristics to the project context."""
         try:
             if not self._config_service.get_setting("auto_pruning.enabled", True):
                 return context
@@ -38,7 +37,10 @@ class SessionPruningService:
             items = list(context.items)
 
             # 1. Prune by status/validation failure (Heuristics 3 & 4)
-            turns_to_prune = self._identify_turns_to_prune(items, current_status)
+            # Returns turns_to_prune mapping and a set of turns that MUST be spared
+            turns_to_prune, spared_turns = self._identify_turns_to_prune(
+                items, current_status
+            )
 
             for i, item in enumerate(items):
                 new_item = self._process_context_item(item, turns_to_prune)
@@ -46,7 +48,7 @@ class SessionPruningService:
                     items[i] = new_item
 
             # 2. Heuristic 6: Retention Limit
-            items = self._apply_retention_limit(items)
+            items = self._apply_retention_limit(items, spared_turns=spared_turns)
 
             # 3. Heuristic 2: Global Budget
             system_prompt_tokens = context.system_prompt_tokens or 0
@@ -101,7 +103,7 @@ class SessionPruningService:
 
     def _identify_turns_to_prune(
         self, items, current_status: Optional[str] = None
-    ) -> Dict[str, str]:
+    ) -> tuple[Dict[str, str], set[int]]:
         """Identifies turns that should be pruned based on failure status."""
         prune_non_green = bool(
             self._config_service.get_setting("auto_pruning.prune_failure_history", True)
@@ -111,21 +113,40 @@ class SessionPruningService:
                 "auto_pruning.prune_validation_failures", True
             )
         )
-
-        turn_statuses, validation_failures = self._collect_turn_metadata(
-            items, prune_non_green, prune_validation
+        preserve_messages = bool(
+            self._config_service.get_setting(
+                "auto_pruning.preserve_message_turns", True
+            )
         )
 
-        return self._apply_pruning_heuristics(
+        turn_statuses, validation_failures, successful_messages = (
+            self._collect_turn_metadata(
+                items, prune_non_green, prune_validation, preserve_messages
+            )
+        )
+
+        turns_to_prune = self._apply_pruning_heuristics(
             turn_statuses, validation_failures, prune_non_green, current_status
         )
 
+        # Explicitly remove preserved message turns from the prune list
+        if preserve_messages:
+            for tid in successful_messages:
+                turns_to_prune.pop(str(tid), None)
+
+        return turns_to_prune, successful_messages if preserve_messages else set()
+
     def _collect_turn_metadata(
-        self, items, prune_non_green: bool, prune_validation: bool
-    ) -> tuple[Dict[int, bool], set[int]]:
+        self,
+        items,
+        prune_non_green: bool,
+        prune_validation: bool,
+        preserve_messages: bool = False,
+    ) -> tuple[Dict[int, bool], set[int], set[int]]:
         """Scans items to determine turn statuses and validation failures."""
         turn_statuses: Dict[int, bool] = {}
         validation_failures: set[int] = set()
+        successful_messages: set[int] = set()
         checked_paths = set()
 
         for item in items:
@@ -136,21 +157,65 @@ class SessionPruningService:
             turn_id_str = self._extract_turn_id(posix_path)
             if not turn_id_str:
                 continue
+
             turn_id = int(turn_id_str)
             checked_paths.add(item.path)
 
-            # Heuristic 4: Validation failure (Check report)
-            if prune_validation and posix_path.endswith("report.md"):
-                if self._check_report_failed_validation(item.path):
-                    validation_failures.add(turn_id)
+            self._update_turn_metadata_from_item(
+                item,
+                posix_path,
+                turn_id,
+                {
+                    "statuses": turn_statuses,
+                    "validation_fails": validation_failures,
+                    "messages": successful_messages,
+                },
+                {
+                    "non_green": prune_non_green,
+                    "validation": prune_validation,
+                    "messages": preserve_messages,
+                },
+            )
 
-            # Heuristic 3: Non-green state (Check plan)
-            if prune_non_green and posix_path.endswith("plan.md"):
-                is_green = not self._check_plan_failed(item.path)
+        return turn_statuses, validation_failures, successful_messages
+
+    def _update_turn_metadata_from_item(
+        self,
+        item: Any,
+        posix_path: str,
+        turn_id: int,
+        state: Dict[str, Any],
+        config: Dict[str, bool],
+    ) -> None:
+        """Processes a single item to update turn-level metadata."""
+        is_validation_fail = False
+
+        # Heuristic 4: Validation failure (Check report)
+        if config["validation"] and posix_path.endswith("report.md"):
+            if self._check_report_failed_validation(item.path):
+                state["validation_fails"].add(turn_id)
+                is_validation_fail = True
+
+        # Heuristic 3: Non-green state (Check plan)
+        if posix_path.endswith("plan.md"):
+            is_failed = self._check_plan_failed(item.path)
+            if config["non_green"]:
+                is_green = not is_failed
                 # If any file in turn is non-green, the whole turn is non-green
-                turn_statuses[turn_id] = turn_statuses.get(turn_id, True) and is_green
+                state["statuses"][turn_id] = (
+                    state["statuses"].get(turn_id, True) and is_green
+                )
 
-        return turn_statuses, validation_failures
+            if config["messages"] and not is_failed and not is_validation_fail:
+                if self._check_plan_is_message(item.path):
+                    state["messages"].add(turn_id)
+
+    def _check_plan_is_message(self, path: str) -> bool:
+        """Checks if a plan file contains a ## Message section."""
+        content = self._safe_read(path)
+        if content:
+            return bool(re.search(r"^## Message", content, re.MULTILINE))
+        return False
 
     def _check_plan_failed(self, path: str) -> bool:
         """Checks if a plan file contains a failure status emoji on the status line."""
@@ -230,7 +295,7 @@ class SessionPruningService:
 
         return turns_to_prune
 
-    def _apply_retention_limit(self, items):
+    def _apply_retention_limit(self, items, spared_turns: Optional[set[int]] = None):
         """Prunes turn context items that exceed the turn retention limit."""
         try:
             setting = self._config_service.get_setting(
@@ -264,9 +329,10 @@ class SessionPruningService:
         # 2. Calculate threshold and prune
         threshold = max_id - limit
         reason = f"Turn exceeds retention limit of {limit}"
+        spared = spared_turns or set()
 
         for idx, tid in turn_id_map.items():
-            if tid <= threshold:
+            if tid <= threshold and tid not in spared:
                 items[idx] = replace(
                     items[idx],
                     selected=False,
