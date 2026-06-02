@@ -67,7 +67,7 @@
           <item name="Description">## Technical Specifications: API contracts and data models.</item>
         </section>
         <section n="6" name="Vertical Slices">
-          <item name="Description">## Vertical Slices: High-level checklist of implementation steps (links to Slices).</item>
+          <item name="Description">## Vertical Slices: High-level checklist of implementation steps.</item>
         </section>
         </section>
       </blueprint>

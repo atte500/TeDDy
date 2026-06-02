@@ -120,7 +120,7 @@
           <item name="Content">
 A living list of upcoming Milestones and the high-level features/capabilities planned for each. Each milestone entry MUST follow this structural format:
 
-### Milestone {{N}}: [Milestone Name]
+### Milestone {{N}}: [Milestone Name] [STATUS]
 - **Core Goal:** [The high-level objective]
 - **Specs:** [Link to Specification Document(s)]
 - **Requirements:**
