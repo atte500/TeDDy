@@ -25,7 +25,7 @@
         <step n="4" name="Plan Update (Contingency)">
           If validation revealed necessary changes (decomposition, re-sorting, or abstraction), EDIT the slice and EXECUTE the VCP to version control the updated plan before starting to work on the first unresolved item.
         </step>
-        <step n="5" name="Mark Deliverable">Identify the next uncompleted deliverable in the vertical slice doc. Immediately `EDIT` the vertical slice document to mark this single focused deliverable as in progress (using `[▶]`). Batching deliverables into one VCP execution is strictly forbidden (even if they are of the same Type!).</step>
+        <step n="5" name="Mark Deliverable">Identify the next uncompleted deliverable in the vertical slice doc. Immediately `EDIT` the vertical slice document to mark this single focused deliverable as in progress (using `[▶]`). Batching deliverables into one VCP execution is strictly forbidden (even if they are of Logic Type!).</step>
       </phase>
 
       <phase n="2" name="Implementation">
