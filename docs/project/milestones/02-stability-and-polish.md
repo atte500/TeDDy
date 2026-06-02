@@ -31,7 +31,7 @@ Implement resilient infrastructure patterns (retries, User-Agent rotation), enfo
 ## Vertical Slices
 - [x] **02-01-Resilient Infrastructure**: LLM retries and recursive context expansion.
 - [x] **02-02-Web Scraping Resilience**: User-Agent rotation and GitHub raw fixes.
-- [ ] **02-03-Safety Limits**: 99-turn limit, session cost tracking, and loop protection.
+- [▶] **02-03-Safety Limits**: 99-turn limit, session cost tracking, and loop protection.
 - [ ] **02-04-Context Automation**: Auto-addition of CREATE/EDIT targets, remote URL context, and relaxed validation.
 - [ ] **02-05-Architecture Efficiency**: Session prompt relocation and session efficiency improvements.
 - [ ] **02-06-Parser and Orchestrator Hardening**: Fail-fast execution, mid-execution consistency, and parser resilience.

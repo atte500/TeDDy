@@ -24,6 +24,11 @@ research:
   max_results: 5 # Number of SERP results to retrieve and automatically scrape.
   max_scraper_retries: 3
 
+# Safety limits enforced ONLY in --yolo mode.
+yolo_guardrails:
+  max_turns: 99
+  max_session_cost: 5.00
+
 # Auto-Pruning Settings
 # Intelligently pre-deselects context files to save tokens and manage complexity.
 auto_pruning:

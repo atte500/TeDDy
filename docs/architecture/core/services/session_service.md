@@ -1,5 +1,5 @@
 # Component: SessionService
-- **Status:** Implemented
+- **Status:** Refactoring
 
 ## 1. Purpose / Responsibility
 
@@ -10,6 +10,8 @@ The `SessionService` is responsible for managing the lifecycle of TeDDy sessions
 -   **Implements Outbound Port:** `ISessionManager`
 -   **Uses Outbound Ports:**
     -   `IFileSystemManager`: For all directory and file operations.
+    -   `ISessionRepository`: For persistence and turn discovery.
+    -   `IPromptManager`: For resolving agent prompts.
 
 ## 3. Implementation Details / Logic
 
@@ -17,13 +19,17 @@ The `SessionService` is responsible for managing the lifecycle of TeDDy sessions
     -   Creates the session root and Turn 01 directory.
     -   Seeds `session.context` from `.teddy/init.context`, stripping comments.
     -   **Context Merging:** If `additional_context` is provided, it is merged into the `session.context` content after the `init.context` content.
-    -   Fetches and saves the agent's system prompt to `01/[agent_name].xml`.
-    -   Initializes `01/meta.yaml` with `turn_id`, `creation_timestamp`, and any optional LLM overrides (`model`, `provider`, `api_key`) to ensure session-level persistence.
+    -   **Prompt Relocation:** Fetches and saves the agent's system prompt exclusively to the session root as `{session_root}/system_prompt.xml`.
+    -   Initializes `01/meta.yaml` with `turn_id`, `creation_timestamp`, and any optional LLM overrides (`model`, `provider`, `api_key`).
 2.  **Turn Transition (`transition_to_next_turn`):**
     -   Calculates the next turn ID (e.g., `01` -> `02`).
-    -   Creates the next turn directory.
-    -   Copies the current `[agent_name].xml` prompt file to the next turn.
-    -   **Cost Persistence:** Updates `meta.yaml` with `parent_turn_id` links and cumulative cost. Every turn's `meta.yaml` MUST store `turn_cost` and `cumulative_cost` to ensure cost transparency and maintain a self-contained, auditable history for every turn without a centralized database.
+    -   **Migration Trigger:** If the next ID is `"100"`, invokes `migrate_to_continuation`.
+    -   **Cost Persistence:** Updates `meta.yaml` with `parent_turn_id` links and cumulative cost. Every turn's `meta.yaml` MUST store `turn_cost` and `cumulative_cost`.
+
+3.  **Migration Algorithm (`migrate_to_continuation`):**
+    -   Resolves next session name (e.g., `{name}-2`).
+    -   Clones `session.context` and `system_prompt.xml` from the current session root to the new one.
+    -   Transitions the current turn's `turn.context` to Turn 01 of the new session.
     -   **Defensive Serialization:** Ensures all metadata is cast to primitive types before serialization to prevent hangs (see `ARCHITECTURE.md` rule on serialization).
     -   **Context Management:**
         -   Seeds the next `turn.context` with the current one. Reading is robust: if `turn.context` is missing or unreadable, it is treated as an empty set of paths.
