@@ -42,8 +42,8 @@ And it should transition Turn 99's turn.context to Turn 01 of the new session
 - [x] **Logic** - Implement `yolo_guardrails` enforcement in `ProductionSessionLoopGuard`.
 - [x] **Logic** - Implement `migrate_to_continuation` in `SessionService` for the Turn 99 -> 100 transition.
 - [x] **Logic** - Implement Message Turn protection in `SessionPruningService` (check for `## Message` + `status != FAILURE`); make it configurable via `auto_pruning.preserve_message_turns` (default: `true`).
-- [ ] **Logic** - Relocate `system_prompt.xml` to session root in `SessionService.create_session`.
-- [ ] **Logic** - Refactor `PromptManager` and `PlanningService` to resolve system prompts exclusively from the session root.
+- [x] **Logic** - Relocate `system_prompt.xml` to session root in `SessionService.create_session`.
+- [x] **Logic** - Refactor `PromptManager` and `PlanningService` to resolve system prompts exclusively from the session root.
 - [ ] **Wiring** - Update `config.yaml` with `yolo_guardrails` keys.
 - [ ] **Wiring** - Update `SessionOrchestrator` to pass the `interactive` flag to the loop guard.
 
@@ -61,6 +61,8 @@ And it should transition Turn 99's turn.context to Turn 01 of the new session
 - `ProductionSessionLoopGuard` now enforces `yolo_guardrails` (max_turns, max_session_cost) using process-relative calculations (delta from initial state). Limits are strictly ignored if `interactive=True`.
 - **Centennial Migration**: `SessionService` now detects when Turn 99 is completed. It automatically calculates a new session directory name using a regex-based suffix incrementer (e.g., `session-name` -> `session-name-2` -> `session-name-3`). It creates the new session root and a `01` turn directory, cloning `session.context` and the active agent prompt to ensure continuity.
 - **Message Turn Protection**: `SessionPruningService` now identifies successful "Communicating Turns" (those containing a `## Message` section and no failure status). These turns are explicitly spared from both failure-history pruning and retention-limit pruning, ensuring important conversational context is preserved. This behavior is controlled by `auto_pruning.preserve_message_turns` (default: `True`).
+- **Prompt Relocation**: Agent prompts (e.g., `pathfinder.xml`) are now stored in the session root. `SessionService.create_session` writes the prompt to the root, and `PromptManager.fetch_system_prompt` prioritizes the session root for resolution. This eliminates redundant prompt copying across turns and simplifies centennial migration.
+- **Pruning Service Resilience**: Added type guards to `SessionPruningService` to handle `POSIXPathMock` objects and non-string paths encountered in partially mocked integration tests. Refactored `_apply_retention_limit` to reduce cyclomatic complexity (C901) by extracting turn ID mapping into a private helper.
 
 ## Implementation Plan
 ### Delta Analysis

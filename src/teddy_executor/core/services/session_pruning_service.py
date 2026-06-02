@@ -95,6 +95,8 @@ class SessionPruningService:
 
     def _extract_turn_id(self, path: str) -> Optional[str]:
         """Extracts the last numeric directory segment from the path."""
+        if not isinstance(path, str):
+            return None
         # Normalize to forward slashes and strip prefixes for consistent matching
         normalized = path.replace("\\", "/").lstrip("./").lstrip("/")
         # Turn IDs are typically 1-3 digits. 4+ digits usually represent years or other data.
@@ -308,25 +310,11 @@ class SessionPruningService:
         if limit <= 0:
             return items
 
-        # 1. Identify max turn_id
-        max_id = -1
-        turn_id_map = {}  # idx -> int_id
-
-        for i, item in enumerate(items):
-            if item.scope != "Turn":
-                continue
-
-            # Use existing extractor
-            tid_str = self._extract_turn_id(item.path)
-            if tid_str:
-                tid = int(tid_str)
-                turn_id_map[i] = tid
-                max_id = max(max_id, tid)
-
+        turn_id_map, max_id = self._map_turn_ids(items)
         if max_id == -1:
             return items
 
-        # 2. Calculate threshold and prune
+        # Calculate threshold and prune
         threshold = max_id - limit
         reason = f"Turn exceeds retention limit of {limit}"
         spared = spared_turns or set()
@@ -340,6 +328,25 @@ class SessionPruningService:
                 )
 
         return items
+
+    def _map_turn_ids(self, items) -> tuple[Dict[int, int], int]:
+        """Identifies turn IDs and the maximum ID in the context items."""
+        max_id = -1
+        turn_id_map = {}  # idx -> int_id
+
+        for i, item in enumerate(items):
+            if item.scope != "Turn":
+                continue
+
+            tid_str = self._extract_turn_id(item.path)
+            if tid_str:
+                try:
+                    tid = int(tid_str)
+                    turn_id_map[i] = tid
+                    max_id = max(max_id, tid)
+                except (ValueError, TypeError):
+                    continue
+        return turn_id_map, max_id
 
     def _apply_global_budget(self, items, system_prompt_tokens: int = 0):
         """Prunes turn and history context items to fit within a global token budget."""

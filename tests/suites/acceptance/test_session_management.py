@@ -36,7 +36,7 @@ def test_teddy_start_bootstraps_session(tmp_path: Path, monkeypatch):
     context_content = (session_dir / "session.context").read_text()
     assert "README.md" in context_content
     assert "initial_request.md" in context_content
-    assert "Pathfinder" in (session_dir / "01" / "pathfinder.xml").read_text()
+    assert "Pathfinder" in (session_dir / "pathfinder.xml").read_text()
 
 
 def test_teddy_resume_executes_pending_plan(tmp_path: Path, monkeypatch):

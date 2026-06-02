@@ -57,7 +57,7 @@ def test_create_session_orchestrates_filesystem_correctly(env):
 
     # 3. pathfinder.xml creation
     mock_fs.write_file.assert_any_call(
-        Path(".teddy/sessions/20260417_120000-feat-x/01/pathfinder.xml").as_posix(),
+        Path(".teddy/sessions/20260417_120000-feat-x/pathfinder.xml").as_posix(),
         agent_prompt,
     )
 

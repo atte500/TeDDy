@@ -61,12 +61,17 @@ class PromptManager(IPromptManager):
         return resolved
 
     def fetch_system_prompt(self, agent_name: str, turn_path: Path) -> str:
-        # 1. Try Turn-Specific override
-        prompt_file_path = (turn_path / f"{agent_name}.xml").as_posix()
-        if self._file_system_manager.path_exists(prompt_file_path):
-            return self._file_system_manager.read_file(prompt_file_path)
+        # 1. Try Session-Root override (Preferred)
+        session_root_prompt = (turn_path.parent / f"{agent_name}.xml").as_posix()
+        if self._file_system_manager.path_exists(session_root_prompt):
+            return self._file_system_manager.read_file(session_root_prompt)
 
-        # 2. Try Internal Resource Fallback
+        # 2. Try Turn-Specific override (Legacy/Compatibility)
+        turn_prompt = (turn_path / f"{agent_name}.xml").as_posix()
+        if self._file_system_manager.path_exists(turn_prompt):
+            return self._file_system_manager.read_file(turn_prompt)
+
+        # 3. Try Internal Resource Fallback
         resource_path = (
             Path(__file__).parent.parent.parent
             / "resources"
@@ -79,9 +84,10 @@ class PromptManager(IPromptManager):
         import logging
 
         logging.getLogger(__name__).warning(
-            "PromptManager: Failed to resolve system prompt for agent '%s' (searched %s and %s)",
+            "PromptManager: Failed to resolve system prompt for agent '%s' (searched %s, %s and %s)",
             agent_name,
-            prompt_file_path,
+            session_root_prompt,
+            turn_prompt,
             resource_path,
         )
         return ""

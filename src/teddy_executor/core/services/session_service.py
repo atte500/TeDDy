@@ -61,7 +61,7 @@ class SessionService(ISessionManager):
         if not prompt_content:
             raise ValueError(f"Agent prompt '{options.agent_name}' not found.")
         self._file_system_manager.write_file(
-            f"{turn_dir}/{options.agent_name}.xml", prompt_content
+            f"{session_root}/{options.agent_name}.xml", prompt_content
         )
 
         # 3. Metadata persistence
@@ -197,10 +197,6 @@ class SessionService(ISessionManager):
         if is_migration:
             self._clone_session_artifacts(
                 cur_dir.parent, next_session_dir, cur_dir, Path(next_dir), meta
-            )
-        else:
-            self._repository.copy_prompt(
-                cur_dir.as_posix(), next_dir, meta.get("agent_name", "pf")
             )
 
         # 3. Persist metadata
@@ -354,11 +350,11 @@ class SessionService(ISessionManager):
                 (dest_session / "session.context").as_posix(), content
             )
 
-        # 2. Agent Prompt (from Turn 99 to Turn 01)
+        # 2. Agent Prompt (from Session to Session-N)
         agent_name = meta.get("agent_name", "pf")
-        old_prompt = src_turn / f"{agent_name}.xml"
+        old_prompt = src_session / f"{agent_name}.xml"
         if self._file_system_manager.path_exists(old_prompt.as_posix()):
             content = self._file_system_manager.read_file(old_prompt.as_posix())
             self._file_system_manager.write_file(
-                (dest_turn / f"{agent_name}.xml").as_posix(), content
+                (dest_session / f"{agent_name}.xml").as_posix(), content
             )

@@ -65,9 +65,10 @@ def test_ai_telemetry_and_logging(tmp_path, monkeypatch):
     assert result.exit_code == 0
     timestamp = fixed_now.strftime("%Y%m%d_%H%M%S")
     session_name = f"{timestamp}-{slugify(user_input)}"
-    turn_dir = Path(f".teddy/sessions/{session_name}/01")
+    session_dir = Path(f".teddy/sessions/{session_name}")
+    turn_dir = session_dir / "01"
     assert (tmp_path / turn_dir / "input.md").exists()
-    assert (tmp_path / turn_dir / "pathfinder.xml").exists()
+    assert (tmp_path / session_dir / "pathfinder.xml").exists()
     import re
 
     combined_output = result.stdout + (result.stderr or "")

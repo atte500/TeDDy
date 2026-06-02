@@ -19,13 +19,13 @@ def setup_transition_harness(env, meta_id="abc", context="file_a.py"):
 
     valid_paths = {
         ".teddy/sessions/feat-x/01/meta.yaml",
-        ".teddy/sessions/feat-x/01/pathfinder.xml",
+        ".teddy/sessions/feat-x/pathfinder.xml",
         ".teddy/sessions/feat-x/01/turn.context",
     }
     mock_fs.path_exists.side_effect = lambda p: p in valid_paths
     mock_fs.read_file.side_effect = lambda path: {
         ".teddy/sessions/feat-x/01/meta.yaml": yaml.dump(current_meta),
-        ".teddy/sessions/feat-x/01/pathfinder.xml": current_prompt,
+        ".teddy/sessions/feat-x/pathfinder.xml": current_prompt,
         ".teddy/sessions/feat-x/01/turn.context": context,
     }.get(path, "")
     return plan_path
@@ -61,11 +61,10 @@ def test_transition_to_next_turn_creates_directory_and_linkage(env):
     meta_data = yaml.safe_load(meta_call.args[1])
     assert meta_data["parent_turn_id"] == "abc"
 
-    # Verify pathfinder.xml is copied
-    prompt_call = next(
-        c for c in mock_fs.write_file.call_args_list if "02/pathfinder.xml" in c.args[0]
+    # Prompt is no longer copied to turn directories
+    assert not any(
+        "02/pathfinder.xml" in c.args[0] for c in mock_fs.write_file.call_args_list
     )
-    assert prompt_call.args[1] == "system prompt content"
 
     # Verify report.md is added to context
     context_call = next(
@@ -161,13 +160,13 @@ def test_transition_to_next_turn_propagates_replan_and_user_request_on_validatio
 
     valid_paths = {
         ".teddy/sessions/feat-x/01/meta.yaml",
-        ".teddy/sessions/feat-x/01/pathfinder.xml",
+        ".teddy/sessions/feat-x/pathfinder.xml",
         ".teddy/sessions/feat-x/01/turn.context",
     }
     mock_fs.path_exists.side_effect = lambda p: p in valid_paths
     mock_fs.read_file.side_effect = lambda path: {
         ".teddy/sessions/feat-x/01/meta.yaml": yaml.dump(current_meta),
-        ".teddy/sessions/feat-x/01/pathfinder.xml": current_prompt,
+        ".teddy/sessions/feat-x/pathfinder.xml": current_prompt,
         ".teddy/sessions/feat-x/01/turn.context": "existing.py",
     }.get(path, "")
 
@@ -203,13 +202,13 @@ def test_transition_to_next_turn_handles_no_parent_user_request(env):
 
     valid_paths = {
         ".teddy/sessions/feat-x/01/meta.yaml",
-        ".teddy/sessions/feat-x/01/pathfinder.xml",
+        ".teddy/sessions/feat-x/pathfinder.xml",
         ".teddy/sessions/feat-x/01/turn.context",
     }
     mock_fs.path_exists.side_effect = lambda p: p in valid_paths
     mock_fs.read_file.side_effect = lambda path: {
         ".teddy/sessions/feat-x/01/meta.yaml": yaml.dump(current_meta),
-        ".teddy/sessions/feat-x/01/pathfinder.xml": current_prompt,
+        ".teddy/sessions/feat-x/pathfinder.xml": current_prompt,
         ".teddy/sessions/feat-x/01/turn.context": "existing.py",
     }.get(path, "")
 
