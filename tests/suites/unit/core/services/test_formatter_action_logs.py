@@ -130,7 +130,7 @@ def test_formats_failed_execute_action_details():
 
 
 def test_formats_research_action_with_results():
-    """Verify RESEARCH action result rendering."""
+    """Verify RESEARCH action result rendering with the refined layout."""
     formatter = MarkdownReportFormatter()
     results: WebSearchResults = {
         "query_results": [
@@ -150,9 +150,10 @@ def test_formats_research_action_with_results():
 
     output = formatter.format(report)
 
-    assert "**Query:** `q`" in output
-    assert "[T](H)" in output
-    assert "```description\nB\n```" in output
+    assert '#### Query: "q"' in output
+    assert "1. `H`" in output
+    assert "   - **Title:** T" in output
+    assert "   - **Description:** B" in output
 
 
 def test_formats_validation_failed_report():
@@ -169,7 +170,7 @@ def test_formats_validation_failed_report():
 
 
 def test_formats_research_action_with_content_removed():
-    """Verify RESEARCH action result rendering no longer includes content blocks."""
+    """Verify RESEARCH action result rendering no longer includes code blocks."""
     formatter = MarkdownReportFormatter()
     results: WebSearchResults = {
         "query_results": [
@@ -198,8 +199,10 @@ def test_formats_research_action_with_content_removed():
 
     output = formatter.format(report)
 
-    assert "**Query:** `q`" in output
-    assert "[T](H)" in output
-    assert "```description\nB\n```" in output
+    assert '#### Query: "q"' in output
+    assert "1. `H`" in output
+    assert "   - **Title:** T" in output
+    assert "   - **Description:** B" in output
+    assert "```description" not in output
     assert "```Content" not in output
     assert "```Snippet" not in output

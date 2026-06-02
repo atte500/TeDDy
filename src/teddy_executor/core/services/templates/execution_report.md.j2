@@ -245,12 +245,11 @@
 {% if action_type == 'RESEARCH' and log.details and log.details is mapping and log.details.get('query_results') %}
 {% for qr in log.details.get('query_results', []) %}
 
-**Query:** `{{ qr['query'] }}`
+#### Query: "{{ qr['query'] }}"
 {% for sr in qr['results'] %}
-[{{ sr['title'] }}]({{ sr['href'] }})
-```description
-{{ sr['description'] }}
-```
+{{ loop.index }}. `{{ sr['href'] }}`
+   - **Title:** {{ sr['title'] }}
+   - **Description:** {{ sr['description'] }}
 {% endfor %}
 {% endfor %}
 

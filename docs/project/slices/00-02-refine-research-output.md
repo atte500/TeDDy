@@ -24,8 +24,14 @@ And no Markdown links ([text](url)) should be used for the results
 - **Empty Results**: Ensure the "No results found" or empty list state is still handled within the new structure.
 
 ## Deliverables
-- [▶] **Wiring** - Update `src/teddy_executor/core/services/templates/execution_report.md.j2` and align `tests/suites/unit/core/services/test_formatter_action_logs.py`.
-- [ ] **Cleanup** - Update any identified integration or acceptance tests asserting on research output formatting.
+- [x] **Wiring** - Update `src/teddy_executor/core/services/templates/execution_report.md.j2` and align `tests/suites/unit/core/services/test_formatter_action_logs.py`.
+- [x] **Cleanup** - Update any identified integration or acceptance tests asserting on research output formatting.
+
+## Implementation Notes
+- **Refined Layout**: Replaced dense code-blocked layout for research results with Level 4 headings for queries and bulleted metadata for results (Title/Description).
+- **Indentation**: Used 3-space indentation for bulleted metadata to ensure proper Markdown nesting and readability.
+- **Raw URLs**: URLs are now rendered as raw text in backticks to facilitate easy copying and direct referral without hidden links.
+- **Verification**: Global test suite passed, confirming that most tests either don't assert on exact formatting or use resilient parsers.
 
 ## Implementation Plan
 1. **Template Refactor**:
