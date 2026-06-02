@@ -29,5 +29,6 @@ Then execution should fail immediately with an "Interactive prompt detected" err
 - [ ] **Seam** - Add `get_file_hash` to `IFileSystemManager`.
 - [ ] **Logic** - Update `ActionExecutor` to snapshot file hashes before plan start and verify them before every `EDIT` dispatch.
 - [ ] **Logic** - Update `ShellAdapter` to detect signs of interactive prompts (TTY requests or specific stdout patterns) and fail-fast.
-- [ ] **Logic** - Update `MarkdownPlanParser` to support the "Parser Resilience" rule (ignoring unforeseen text within delimiters).
+- [ ] **Logic** - Update `MarkdownPlanParser` and `ActionParserStrategies` to ignore and clean up unforeseen codeblocks, thematic breaks (`---`), or trailing text within codeblock delimiters (e.g., `~~~~~~ trailing text`) without triggering validation errors.
 - [ ] **Harness** - Create integration test involving a shell command that modifies a file followed by an `EDIT` in the same plan.
+- [ ] **Harness** - Create unit tests in `test_parser_resilience.py` specifically for thematic breaks and trailing delimiter text between actions.
