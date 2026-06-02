@@ -419,7 +419,7 @@ WIP & REMINDERS:
         </action>
 
         <action name="RESEARCH">
-          <description>Performs multiple, distinct web searches. The results will contain the URL, Page Title, and meta-description. URLs need to be READ to get the full content.</description>
+          <description>Performs multiple, distinct web searches. The results will contain the URL, Page Title, and description. URLs need to be READ to get the full content.</description>
           <template>
 ### `RESEARCH`
 - **Description:** [Explanation]
