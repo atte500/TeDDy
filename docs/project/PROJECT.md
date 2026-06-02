@@ -25,7 +25,7 @@ This section defines the conventions for our project management artifacts.
 
 ## Roadmap
 
-### Structural Protocol & Parser [COMPLETED]
+### Milestone 1: Structural Protocol & Parser [COMPLETED]
 - **Core Goal:** Move from action-based communication (`INVOKE`, `RETURN`, `PROMPT`) to the structural `## Message` protocol.
 - **Specs:** [docs/project/specs/handoff-protocol.md](/docs/project/specs/handoff-protocol.md)
 - **Requirements:**
@@ -34,7 +34,23 @@ This section defines the conventions for our project management artifacts.
     - **Orchestrator:** Ensure `ExecutionOrchestrator` handles "Message Turns" (no actions) without side-effects.
     - **Prompt Migration:** Update all system prompts (`pathfinder`, `architect`, `developer`, `debugger`, `assistant`, `prototyper`) to use `## Message` for all communication and handoffs.
 
-### TUI & CLI UX Polish
+### Milestone 2: Stability & Infrastructure [IN PROGRESS]
+- **Core Goal:** Hardening the system against external failures, ensuring safety limits, and improving context/session management.
+- **Specs:** [docs/project/specs/stability-and-bugfixes.md](/docs/project/specs/stability-and-bugfixes.md)
+- **Requirements:**
+    - **LLM Resilience:** Implement retry logic (3 attempts) for SSL and OpenRouter timeout errors (Reproduce via: `SSLV3_ALERT_BAD_RECORD_MAC`).
+    - **Web Scraper (403 Bypassing):** Attempt to bypass 403 Forbidden errors via User-Agent rotation and common headers (Reproduce via: `https://www.pnas.org/doi/10.1073/pnas.2416294121`).
+    - **GitHub Compatibility:** Fix content extraction for `raw.githubusercontent.com` links that currently return SUCCESS but empty content (Reproduce via: `https://raw.githubusercontent.com/lllyasviel/LayerDiffuse/main/README.md`).
+    - **Safety Limits:** Implement `max-turns` (99) and `max-cost` ($5) limits in `config.yaml`, enforced strictly in `--yolo` (`-y`) mode.
+    - **Context Robustness:** Recursive directory expansion for context paths; support remote URLs in `.context` files; strictly enforce deduplication.
+    - **Session Migration:** Cap turns at 99 (2-digit padding); at turn 100, automatically migrate to a new continuation session (e.g., `name-2`) by cloning `session.context` and the active prompt and transition the `turn.context` exactly as a normal turn transition would to preserve the working context.
+    - **Action Side-effects:** `CREATE` and `EDIT` actions automatically add the target file path to the turn's context (provided the file exists).
+    - **Architecture Polish:** Relocate `system_prompt.xml` to session root; improve session efficiency; prevent "Message Turns" from being pruned.
+    - **Fail-Fast & Consistency:** Synchronous `EXECUTE` fail-fast on interactive prompts; mid-execution consistency for `EDIT` (gracefully return `FAILURE`).
+    - **Relaxed Validation:** Allow `READ` of existing context and `EDIT` of non-context files; rely on matching logic for enforcement.
+    - **Parser Resilience:** For all actions, ignore and clean up unforeseen codeblocks, thematic breaks (`---`), or trailing text within delimiters (e.g., `~~~~~~ trailing text`) without triggering validation errors. (Note: Other unforeseen text outside delimiters must still raise validation error).
+
+### Milestone 3: TUI & UX Enhancements [PLANNED]
 - **Core Goal:** Improve the interactive experience and provide better visibility into session state.
 - **Specs:** [docs/project/specs/interactive-session-workflow.md](/docs/project/specs/interactive-session-workflow.md)
 - **Requirements:**
@@ -49,21 +65,3 @@ This section defines the conventions for our project management artifacts.
     - **Validation Logging:** Include concise versions of encountered errors in "Validation failed replanning" logs; remove the empty line before the message.
     - **RESEARCH Enhancement:** Scrape and return full contents/excerpts instead of just SERP snippets. Update instructions for all agents accordingly.
     - **CLI Polish:** Support `-a`, `-m`, and `-c` flags for the `start` command.
-
-### Stability & Infrastructure
-- **Core Goal:** Hardening the system against external failures and improving context management.
-- **Specs:** [docs/project/specs/stability-and-bugfixes.md](/docs/project/specs/stability-and-bugfixes.md)
-- **Requirements:**
-    - **LLM Resilience:** Implement retry logic (3 attempts) for SSL and OpenRouter timeout errors (Reproduce via: `SSLV3_ALERT_BAD_RECORD_MAC`).
-    - **Web Scraper (403 Bypassing):** Attempt to bypass 403 Forbidden errors via User-Agent rotation and common headers (Reproduce via: `https://www.pnas.org/doi/10.1073/pnas.2416294121`).
-    - **GitHub Compatibility:** Fix content extraction for `raw.githubusercontent.com` links that currently return SUCCESS but empty content (Reproduce via: `https://raw.githubusercontent.com/lllyasviel/LayerDiffuse/main/README.md`).
-    - **Safety Limits:** Implement `max-turns` (99) and `max-cost` ($5) limits in `config.yaml`, enforced strictly in `--yolo` (`-y`) mode.
-    - **Context Robustness:** Recursive directory expansion for context paths; support remote URLs in `.context` files; strictly enforce deduplication.
-    - **Session Migration:** Cap turns at 99 (2-digit padding); at turn 100, automatically migrate to a new continuation session (e.g., `name-2`) by cloning `session.context` and the active prompt and transition the `turn.context` exactly as a normal turn transition would to preserve the working context.
-    - **Action Side-effects:** `CREATE` and `EDIT` actions automatically add the target file path to the turn's context (provided the file exists).
-    - **Session Prompt Relocation:** Store `system_prompt.xml` at the session root rather than copying it into every turn directory.
-    - **Session Efficiency:** In session mode, NEVER include resource contents in `report.md`; add config to prevent "Message Turns" from being pruned.
-    - **EXECUTE Fail-Fast:** Detect interactive prompts to fail early; on timeout, identify the specific failing command in a chain.
-    - **Mid-Execution Consistency:** Gracefully return `FAILURE` for `EDIT` actions if a file is modified during execution (e.g., by a preceding `EXECUTE`).
-    - **Relaxed Context Validation:** Do not throw validation errors for `READ`-ing files already in context or `EDIT`-ing files not in context; rely on matching logic for enforcement.
-    - **Parser Resilience:** For all actions (e.g., `READ`, `MESSAGE`), ignore and clean up unforeseen codeblocks, thematic breaks (`---`), or trailing text within codeblock delimiters (e.g., `~~~~~~ trailing text`) following the action block without triggering validation errors. (Note: Other unforeseen text outside delimiters must still raise validation error).
