@@ -11,6 +11,7 @@ The `ContextService` is the application service responsible for orchestrating th
 *   [`IFileSystemManager`](../ports/outbound/file_system_manager.md): To read `.gitignore`, `.teddyignore` and other context files.
 *   [`IRepoTreeGenerator`](../ports/outbound/repo_tree_generator.md): To generate the repository's file tree as a string.
 *   [`IEnvironmentInspector`](../ports/outbound/environment_inspector.md): To gather information about the operating system and environment, including the user's shell.
+*   [`IWebScraper`](../ports/outbound/web_scraper.md): To fetch and include content from remote URLs included in the context.
 
 ## 3. Implemented Inbound Ports
 
