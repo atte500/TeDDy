@@ -40,8 +40,13 @@ def _orchestrate_session_loop(
     session_manager = container.resolve(ISessionManager)
 
     # Resolve initial state for process-relative guardrails
-    latest_turn = session_manager.get_latest_turn(session_name)
-    initial_turn = int(latest_turn) if latest_turn else 0
+    latest_turn_path = session_manager.get_latest_turn(session_name)
+    try:
+        # get_latest_turn returns a path string; the turn ID is the folder name
+        initial_turn = int(Path(latest_turn_path).name) if latest_turn_path else 0
+    except (ValueError, TypeError):
+        # Handle non-numeric turn names or MagicMocks in tests
+        initial_turn = 0
 
     # We don't have a direct 'get_metadata' yet, but we can infer cost from latest report
     # Or just start with 0 if it's a new session.

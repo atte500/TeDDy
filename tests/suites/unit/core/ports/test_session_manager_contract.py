@@ -49,6 +49,9 @@ class DummyManager:
     def to_root_relative(self, turn_dir: Path, filename: str) -> str:
         return ""
 
+    def get_cumulative_cost(self, session_name: str) -> float:
+        return 0.0
+
 
 def test_session_manager_contract_accepts_new_parameters():
     """Assert that the ISessionManager protocol now defines the expanded signature."""

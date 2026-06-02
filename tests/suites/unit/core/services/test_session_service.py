@@ -218,3 +218,27 @@ def test_transition_to_next_turn_prevents_context_leakage_on_failure(env):
     assert "skipped.py" not in context_lines, (
         "Skipped READ should not leak into context"
     )
+
+
+def test_get_cumulative_cost_returns_value_from_latest_meta(env):
+    """
+    Tests that get_cumulative_cost retrieves the cost from the latest turn's metadata.
+    """
+    # Arrange
+    from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
+
+    repo = env.mock_port(ISessionRepository)
+    service = env.get_service(ISessionManager)
+
+    session_name = "my-session"
+    latest_turn_path = ".teddy/sessions/my-session/02"
+    repo.get_latest_turn.return_value = latest_turn_path
+    repo.load_meta.return_value = {"cumulative_cost": 1.25}
+
+    # Act
+    cost = service.get_cumulative_cost(session_name)
+
+    # Assert
+    assert cost == 1.25
+    repo.get_latest_turn.assert_called_once_with(session_name)
+    repo.load_meta.assert_called_once_with(latest_turn_path)

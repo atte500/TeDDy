@@ -150,6 +150,17 @@ class SessionService(ISessionManager):
 
         return SessionState.EMPTY, latest_turn_path
 
+    def get_cumulative_cost(self, session_name: str) -> float:
+        """
+        Retrieves the total cumulative cost for the session from the latest turn's metadata.
+        """
+        latest_turn_path = self.get_latest_turn(session_name)
+        if not latest_turn_path:
+            return 0.0
+
+        meta = self._repository.load_meta(latest_turn_path)
+        return float(meta.get("cumulative_cost", 0.0))
+
     def _extract_resource_path(self, resource_str: str) -> str:
         """
         Extracts the path from a Markdown link or returns the string if not a link.

@@ -45,6 +45,12 @@ class ISessionManager(Protocol):
         """
         ...
 
+    def get_cumulative_cost(self, session_name: str) -> float:
+        """
+        Retrieves the total cumulative cost for the session from the latest turn's metadata.
+        """
+        ...
+
     def transition_to_next_turn(
         self,
         plan_path: str,
