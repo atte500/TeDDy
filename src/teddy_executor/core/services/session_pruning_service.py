@@ -210,7 +210,10 @@ class SessionPruningService:
 
             if config["messages"] and not is_failed and not is_validation_fail:
                 if self._check_plan_is_message(item.path):
-                    state["messages"].add(turn_id)
+                    # Final guard: Only spare if the report indicates SUCCESS
+                    report_path = item.path.replace("plan.md", "report.md")
+                    if self._check_report_is_success(report_path):
+                        state["messages"].add(turn_id)
 
     def _check_plan_is_message(self, path: str) -> bool:
         """Checks if a plan file contains a ## Message section."""
@@ -235,6 +238,20 @@ class SessionPruningService:
             return bool(
                 re.search(
                     r"^- \*\*Overall Status:\*\* Validation Failed",
+                    content,
+                    re.MULTILINE,
+                )
+            )
+        return False
+
+    def _check_report_is_success(self, path: str) -> bool:
+        """Checks if a report file contains the official success status."""
+        content = self._safe_read(path)
+        if content:
+            # Anchored to target the standardized overall status line
+            return bool(
+                re.search(
+                    r"^- \*\*Overall Status:\*\* SUCCESS",
                     content,
                     re.MULTILINE,
                 )

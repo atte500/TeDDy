@@ -54,7 +54,7 @@ def test_retention_limit_spares_successful_message_turns(service, mock_fs):
         if "01/plan.md" in path:
             return "# Plan\n## Message\nHello User"
         if "01/report.md" in path:
-            return "- **Overall Status:** Success"
+            return "- **Overall Status:** SUCCESS"
         return ""
 
     mock_fs.read_file.side_effect = mock_read
@@ -74,18 +74,18 @@ def test_failure_pruning_spares_successful_message_turns(service, mock_fs):
     Logic: Successful Message turns should NOT be pruned even if failure history pruning is active.
     """
     # Arrange: Turn 01 is a message turn. Turn 02 is a successful plan.
-    # (Failure pruning usually prunes failures, but we want to ensure message turns are explicitly protected
-    # if they were somehow flagged or if logic changes).
     items = [
         ContextItem(path="01/plan.md", scope="Turn", token_count=100, git_status=" "),
+        ContextItem(path="01/report.md", scope="Turn", token_count=100, git_status=" "),
         ContextItem(path="02/plan.md", scope="Turn", token_count=100, git_status=" "),
     ]
     context = ProjectContext(items=items, header="", content="")
 
     def mock_read(path):
         if "01/plan.md" in path:
-            # Contains Message but also some failure indicator elsewhere (e.g. status)
             return "- **Status:** 🟢\n## Message\nHello"
+        if "01/report.md" in path:
+            return "- **Overall Status:** SUCCESS"
         return ""
 
     mock_fs.read_file.side_effect = mock_read

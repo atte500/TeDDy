@@ -37,6 +37,7 @@ auto_pruning:
   global_context_threshold: 50000 # Total context token budget. If surpassed, triggers pruning of largest files in turn.context.
   prune_failure_history: true # Prune non-green turns once recovery is achieved.
   prune_validation_failures: true # Prune plans and reports that failed validation.
+  preserve_message_turns: true # Ensure successful communicating turns are not pruned.
   max_turns_retention: 25
 
 # LLM Settings
