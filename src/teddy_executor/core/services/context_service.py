@@ -82,7 +82,9 @@ class ContextService(IGetContextUseCase):
     ) -> tuple[Dict[str, List[str]], List[str]]:
         """Resolves raw context files into scoped and deduplicated absolute paths."""
         if not context_files:
-            all_paths = self._file_system_manager.get_context_paths()
+            raw_paths = self._file_system_manager.get_context_paths()
+            # Systemic Fix: Ensure default paths are also expanded recursively
+            all_paths = self._resolve_files_to_paths(raw_paths)
             return {"Default": all_paths}, all_paths
 
         # Backward compatibility: handle list of files
