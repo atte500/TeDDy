@@ -4,45 +4,14 @@ This document outlines the technical standards, conventions, and setup process f
 
 ## 1. Conventions & Standards
 
-### Runtime & Dependencies
-- **Stack:** Python 3.11+, managed via `Poetry`.
-- **CLI:** Package is an installable tool (`teddy`). Execute using `poetry run ...`.
-
-### Version Control
-- **Strategy:** Trunk-Based Development on `main`.
-- **Commits:** MUST follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
-
-### Continuous Integration (CI)
-- **Platform:** GitHub Actions (multi-OS matrix for blocking tests).
-- **Jobs:**
-    1. **Blocking Tests:** Full `pytest` suite.
-    2. **Non-Blocking Debt:** Full `pre-commit` scan (`--all-files`) plus slow repository-wide checks (**SLOC/File length**, Test Pyramid, Copy-Paste Detection).
-- **Exclusions:** Experimental sandboxes (`spikes/`) are excluded from quality scans.
-
-### Core Architecture & DI
-- **Naming:** Dependencies in core services MUST be private (e.g., private properties).
-- **DI Strategy:** Strict **Constructor Injection**. The container MUST NOT be used as a Service Locator in core logic.
-- **DI Boundary:** Core domain logic MUST NOT import or depend on external Dependency Injection frameworks or containers.
-- **Scopes:** Use transient scoping to prevent state leakage.
-
-### Testing Strategy
-- **Framework:** Async-capable testing framework. Mocking via centralized mock registration.
-- **Organization:**
-    - `tests/suites/`: Functional Pyramid (Acceptance > Integration > Unit).
-    - `tests/harness/`: Infrastructure (Setup, Drivers, Observers).
-- **Standards:** To prevent Mock Poisoning, any allowed Mocks MUST strictly bind to their target contracts (e.g., via the project's designated mock registration helper that enforces auto-speccing) to prevent Signature Drift. Direct instantiation of bare, dynamic mock objects is strictly forbidden. 90%+ test coverage target enforced.
-
-### Failure Transparency (Stop the Line)
-- **Zero Suppression:** Silent error swallowing is forbidden. Generic catch-all blocks MUST NOT be used to swallow errors.
-- **Re-raising:** Catch specific error types or log full context and re-raise. Empty catch blocks are only allowed with an explicit "safe to ignore" comment.
-
-### Pre-commit Hooks
-- **Scope:** Strictly limited to **staged files** for fast local feedback. Heavy/Global checks belong in CI.
-- **Hooks:** Fast linters, formatters, static type-checkers, DI Boundary enforcement, security scanners, and rules to ban bare mock objects in favor of the designated mock registration helper.
-
-### Configuration
-- **Source:** Single Source of Truth via `IConfigService`.
-- **Hierarchy:** Personal overrides (`.teddy/config.yaml`) override Bundled Baseline (`src/.../resources/config/config.yaml`). No hardcoded magic numbers in core logic.
+- **Version Control:** Default to Trunk-Based Development on main. Commits MUST follow Conventional Commits.
+- **Run Environment:** All execution commands MUST be prefixed with the project's designated runner ('poetry run').
+- **Failure Transparency:** Silent error suppression is strictly forbidden. Generic catch-all blocks MUST NOT be used to swallow errors. Every try/catch block MUST either catch a specific error type or ensure generic catches log full context and re-raise. Empty catch blocks are only allowed with an explicit "safe to ignore" comment.
+- **Testing Strategy:** Define structural rules (Unit > Integration > Acceptance) and mandate designated temporary directories for detritus (`tests/.tmp/`). The Test Harness is a first-class boundary requiring its own unit tests. Mandate: Real domain objects for logic; In-Memory Fakes for state-managing Outbound Ports; Mocks ONLY for un-verifiable external side-effects. To prevent Mock Poisoning, any allowed Mocks MUST strictly bind to their target contracts (e.g., via the project's designated mock registration helper that enforces auto-speccing) to prevent Signature Drift. Direct instantiation of bare, dynamic mock objects is strictly forbidden. Global/runtime module patching is strictly forbidden to prevent State Leakage; swap dependencies explicitly via Constructor Injection. Ensure the suite is designed to be fast and parallelized.
+- **Dependency Injection:** Mandate strict Constructor Injection for all core domain services. All dependencies MUST be passed explicitly via constructors. Defaulting to null or dynamic resolution via a global or passed container is strictly forbidden. Core domain logic MUST NOT import or depend on external Dependency Injection frameworks or containers.
+- **Centralized Configuration:** Hardcoded "magic numbers" or scattered fallback values for application logic are strictly forbidden. All configurable parameters MUST be centralized in the project's designated configuration layer (e.g., `IConfigService`).
+- **CI Pipeline:** Define two parallel jobs: 1) Blocking OS matrix test suite with strict test coverage targets. 2) Non-blocking (continue-on-error: true) quality checks running fast formatters, linters, security/secret scanners, type checkers, and repository-wide structural checks (excluding sandboxes and third-party dependencies).
+- **Pre-commit Hooks:** Local pre-commit MUST be scoped strictly to staged files to ensure fast feedback loops. Hooks MUST include fast formatters, linters, security/secrets scanners, static type-checkers, automated DI boundary verifiers (ensuring core domain logic has zero external DI container imports), and rules to ban bare mock objects in favor of the designated mock registration helper.
 
 ### Experimental Code
 The `spikes/` directory is for rapid, isolated experimentation (including `debug/`, `prototypes/`, and `showcases/`) and is explicitly excluded from all quality gates (linting, types, complexity).
@@ -161,11 +130,7 @@ This section serves as the "System Law" (Poka-Yoke) for TeDDy. It defines the pr
 - **Constructor Injection:** All core services MUST use explicit constructor injection. (Mandates transparency and simplifies testing.)
 - **Initialization:** Import heavy libraries (`litellm`, `trafilatura`) lazily. (Ensures CLI initializes under 500ms.)
 - **Binary Stability:** Abstract heavy binary libs into private getters and mock the getter. (Prevents worker crashes in distributed tests.)
-- **Validation:** Optimize plan rules for performance on large inputs. (Ensures low-latency feedback loops.)
-- **Sequence Matching:** Use tiered heuristics with Priority Capping. (Balances AI resilience with sub-second performance.)
-- **TUI Responsiveness:** Decorate modal/external tool handlers with `@work`. (Prevents UI deadlocks.)
-- **TUI Editing:** Use Non-Blocking Deferred Harvest for external editors. (Maintains TUI responsiveness during editing.)
-- **TUI Test Speed:** Use `TuiDriver.set_input` or direct assignment. (~50x faster than character-by-character simulation.)
+- **Performance:** Optimize core logic and plan validation for performance on large inputs to ensure low-latency feedback loops.
 - **Pre-commit Workflow:** Scope local checks strictly to staged files. (Ensures fast feedback loops while delegating global checks to CI.)
 - **Transient Resilience:** Outbound adapters for unreliable remote services (LLM, Web) MUST implement stateful retry logic (default 3 attempts) for known transient failure modes (SSL, Timeout, 5xx).
 
