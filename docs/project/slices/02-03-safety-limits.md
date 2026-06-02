@@ -37,7 +37,7 @@ And it should transition Turn 99's turn.context to Turn 01 of the new session
 - [x] **Cleanup** - Fix `PLR0915` (Too many statements) in `session_cli_handlers.py` [DEBT].
 - [x] **Contract** - Update `ISessionLoopGuard.should_continue` signature to include `cumulative_cost` and `interactive` flag.
 - [x] **Harness** - Create `MockSessionLoopGuard` for testing limit breaches.
-- [ ] **Seam** - Update `ProductionSessionLoopGuard` to store `initial_turn` and `initial_cost` on instantiation.
+- [x] **Seam** - Update `ProductionSessionLoopGuard` to store `initial_turn` and `initial_cost` on instantiation.
 - [ ] **Logic** - Implement `yolo_guardrails` enforcement in `ProductionSessionLoopGuard`.
 - [ ] **Logic** - Implement `migrate_to_continuation` in `SessionService` for the Turn 99 -> 100 transition.
 - [ ] **Logic** - Implement Message Turn protection in `SessionPruningService` (check for `## Message` + `status != FAILURE`); make it configurable via `auto_pruning.preserve_message_turns` (default: `true`).
@@ -54,6 +54,8 @@ And it should transition Turn 99's turn.context to Turn 01 of the new session
 - **System Prompt Relocation**: Prototyper confirmed that moving the agent's dynamic prompt (e.g., `pathfinder.xml`) to the session root simplifies migration, as it only needs to be copied once per centennial jump rather than once per turn.
 - **Pruning Logic**: Successful `## Message` turns are now protected from pruning by checking for the presence of the message header and a `SUCCESS` status in the report.
 - **Harness Integration**: `mock_session_loop_guard` is registered as a global fixture in `tests/conftest.py`, ensuring all tests can easily control the execution loop safety breaks.
+- **Seam Implementation**: `ProductionSessionLoopGuard` constructor now stores process-relative initial state. CLI handlers (`_orchestrate_session_loop`) resolve the guard by passing the current session's latest turn count.
+- [DEBT] `ISessionManager` lacks a direct method to retrieve current cumulative cost from session metadata; CLI currently passes `0.0` as placeholder.
 
 ## Implementation Plan
 ### Delta Analysis

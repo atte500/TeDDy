@@ -37,7 +37,18 @@ def _orchestrate_session_loop(
     from teddy_executor.adapters.inbound.cli_helpers import handle_report_output
 
     orchestrator = container.resolve(IRunPlanUseCase)
-    loop_guard = container.resolve(ISessionLoopGuard)
+    session_manager = container.resolve(ISessionManager)
+
+    # Resolve initial state for process-relative guardrails
+    latest_turn = session_manager.get_latest_turn(session_name)
+    initial_turn = int(latest_turn) if latest_turn else 0
+
+    # We don't have a direct 'get_metadata' yet, but we can infer cost from latest report
+    # Or just start with 0 if it's a new session.
+    # For now, we'll use 0.0 and refine once Logic deliverable is active.
+    loop_guard = container.resolve(
+        ISessionLoopGuard, initial_turn=initial_turn, initial_cost=0.0
+    )
 
     turn_count = 0
     while True:
