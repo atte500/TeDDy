@@ -1,6 +1,6 @@
 # Slice: Refine Research Output Format
 
-- **Status:** Planned
+- **Status:** In Progress
 - **Type:** Refactor
 - **Milestone:** N/A
 - **Specs:** [docs/project/specs/report-format.md](/docs/project/specs/report-format.md)
@@ -24,9 +24,8 @@ And no Markdown links ([text](url)) should be used for the results
 - **Empty Results**: Ensure the "No results found" or empty list state is still handled within the new structure.
 
 ## Deliverables
-- [ ] **Wiring** - Update `src/teddy_executor/core/services/templates/execution_report.md.j2` to implement the approved layout.
-- [ ] **Cleanup** - Update `tests/suites/unit/core/services/test_formatter_action_logs.py` (or relevant formatting tests) to assert on the new structure.
-- [ ] **Cleanup** - Update `tests/suites/integration/core/services/test_research_parsing_integration.py` or any other integration tests that check rendered report content.
+- [▶] **Wiring** - Update `src/teddy_executor/core/services/templates/execution_report.md.j2` and align `tests/suites/unit/core/services/test_formatter_action_logs.py`.
+- [ ] **Cleanup** - Update any identified integration or acceptance tests asserting on research output formatting.
 
 ## Implementation Plan
 1. **Template Refactor**:
