@@ -1,6 +1,6 @@
 # Slice: Refine Research Output Format
 
-- **Status:** In Progress
+- **Status:** Completed
 - **Type:** Refactor
 - **Milestone:** N/A
 - **Specs:** [docs/project/specs/report-format.md](/docs/project/specs/report-format.md)

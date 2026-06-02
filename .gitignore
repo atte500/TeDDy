@@ -99,15 +99,12 @@ error_screenshot.png
 !/src/teddy_executor/resources/config/**
 /src/teddy_executor/resources/config/**/__pycache__/
 
-# Spikes (temporary experimental code)
-spikes
-private/
-temp_*
-
 # Test detritus
 .tmp
 test_data/
 hello.txt
+private/
+temp_*
 
 # Archived Folders
 *archive
