@@ -97,7 +97,8 @@ def handle_new_session(  # noqa: PLR0913
                 container, report, no_copy, silent=True, exit_on_failure=False
             )
 
-            if not loop_guard.should_continue(turn_count):
+            cumulative_cost = float(report.metadata.get("cumulative_cost", 0.0))
+            if not loop_guard.should_continue(turn_count, cumulative_cost, interactive):
                 break
 
     except Exception as e:
@@ -257,7 +258,8 @@ def handle_resume_session(
                 container, report, no_copy, silent=True, exit_on_failure=False
             )
 
-            if not loop_guard.should_continue(turn_count):
+            cumulative_cost = float(report.metadata.get("cumulative_cost", 0.0))
+            if not loop_guard.should_continue(turn_count, cumulative_cost, interactive):
                 break
 
     except Exception as e:

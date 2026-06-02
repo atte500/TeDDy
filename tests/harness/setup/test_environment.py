@@ -232,7 +232,7 @@ class TestEnvironment(RealAdapterMixin):
     def _apply_loop_guard_defaults(self, mock: Any) -> None:
         import os
 
-        mock.should_continue.side_effect = lambda turn_count: (
+        mock.should_continue.side_effect = lambda turn_count, cost, interactive: (
             turn_count < int(os.getenv("TEDDY_MAX_TURNS", "1"))
         )
 

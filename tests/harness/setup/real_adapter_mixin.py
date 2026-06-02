@@ -86,7 +86,6 @@ class RealAdapterMixin:
     def with_real_searcher(self: Any) -> Any:
         from teddy_executor.core.ports.outbound import (
             IConfigService,
-            IWebScraper,
             IWebSearcher,
         )
         from teddy_executor.adapters.outbound.web_searcher_adapter import (
@@ -96,8 +95,7 @@ class RealAdapterMixin:
         self._container.register(
             IWebSearcher,
             factory=lambda: WebSearcherAdapter(
-                config_service=self._container.resolve(IConfigService),
-                scraper=self._container.resolve(IWebScraper),
+                config_service=self._container.resolve(IConfigService)
             ),
         )
         return self

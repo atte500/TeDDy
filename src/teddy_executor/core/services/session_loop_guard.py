@@ -6,5 +6,7 @@ class ProductionSessionLoopGuard(ISessionLoopGuard):
     Production implementation: always continues unless manually interrupted.
     """
 
-    def should_continue(self, turn_count: int) -> bool:
+    def should_continue(
+        self, turn_count: int, cumulative_cost: float, interactive: bool
+    ) -> bool:
         return True

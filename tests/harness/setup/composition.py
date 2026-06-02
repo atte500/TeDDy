@@ -95,7 +95,9 @@ def container(monkeypatch):
     c = create_container()
 
     class TestSessionLoopGuard(ISessionLoopGuard):
-        def should_continue(self, turn_count: int) -> bool:
+        def should_continue(
+            self, turn_count: int, cumulative_cost: float, interactive: bool
+        ) -> bool:
             import os
 
             max_turns = int(os.getenv("TEDDY_MAX_TURNS", "1"))

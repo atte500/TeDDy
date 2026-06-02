@@ -1,6 +1,6 @@
 # Slice: 02-03-Safety Limits
 
-- **Status:** Planned
+- **Status:** In Progress
 - **Prototype:** [spikes/prototypes/02-03-safety-limits.py](/spikes/prototypes/02-03-safety-limits.py)
 - **Type:** Feature
 - **Milestone:** [docs/project/milestones/02-stability-and-polish.md](/docs/project/milestones/02-stability-and-polish.md)
@@ -34,18 +34,22 @@ And it should transition Turn 99's turn.context to Turn 01 of the new session
 - **Migration with Suffix**: If migrating `{name}-2`, the next session should be `{name}-3`.
 
 ## Deliverables
-- [ ] **Contract** - Update `ISessionLoopGuard.should_continue` signature to include `cumulative_cost` and `interactive` flag.
+- [ ] **Cleanup** - Fix `PLR0915` (Too many statements) in `session_cli_handlers.py` [DEBT].
+- [ ] **Cleanup** - Fix Mypy signature mismatch in `real_adapter_mixin.py` for `WebSearcherAdapter` [DEBT].
+- [x] **Contract** - Update `ISessionLoopGuard.should_continue` signature to include `cumulative_cost` and `interactive` flag.
 - [ ] **Harness** - Create `MockSessionLoopGuard` for testing limit breaches.
 - [ ] **Seam** - Update `ProductionSessionLoopGuard` to store `initial_turn` and `initial_cost` on instantiation.
 - [ ] **Logic** - Implement `yolo_guardrails` enforcement in `ProductionSessionLoopGuard`.
 - [ ] **Logic** - Implement `migrate_to_continuation` in `SessionService` for the Turn 99 -> 100 transition.
-- [ ] **Logic** - Implement Message Turn protection in `SessionPruningService` (check for `## Message` + `status != FAILURE`).
+- [ ] **Logic** - Implement Message Turn protection in `SessionPruningService` (check for `## Message` + `status != FAILURE`); make it configurable via `auto_pruning.preserve_message_turns` (default: `true`).
 - [ ] **Logic** - Relocate `system_prompt.xml` to session root in `SessionService.create_session`.
 - [ ] **Logic** - Refactor `PromptManager` and `PlanningService` to resolve system prompts exclusively from the session root.
 - [ ] **Wiring** - Update `config.yaml` with `yolo_guardrails` keys.
 - [ ] **Wiring** - Update `SessionOrchestrator` to pass the `interactive` flag to the loop guard.
 
 ## Implementation Notes
+- **Mocking Protocol**: Use `unittest.mock.create_autospec` for port mocks in unit tests to ensure signature drift is caught immediately during contract updates.
+- **Harness Repair**: Systemic regressions in acceptance/integration tests during the `ISessionLoopGuard` contract update were traced to the `TestEnvironment` harness, which required a matching signature update for its default mock side-effect.
 - **Prototype Scope**: The validated prototype (`spikes/prototypes/02-03-safety-limits.py`) focused strictly on the "Centennial" migration boundary and pruning logic. It did not simulate physical directory creation for every incremental turn (T1-T98), as that logic already exists in the production `SessionRepository`.
 - **System Prompt Relocation**: Prototyper confirmed that moving the agent's dynamic prompt (e.g., `pathfinder.xml`) to the session root simplifies migration, as it only needs to be copied once per centennial jump rather than once per turn.
 - **Pruning Logic**: Successful `## Message` turns are now protected from pruning by checking for the presence of the message header and a `SUCCESS` status in the report.

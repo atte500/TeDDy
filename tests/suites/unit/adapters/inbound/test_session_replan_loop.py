@@ -5,7 +5,7 @@ from teddy_executor.core.domain.models.execution_report import (
     RunStatus,
     RunSummary,
 )
-from unittest.mock import Mock
+from unittest.mock import Mock, create_autospec
 from teddy_executor.adapters.inbound.cli_helpers import handle_report_output
 from teddy_executor.core.ports.outbound.markdown_report_formatter import (
     IMarkdownReportFormatter,
@@ -37,7 +37,7 @@ def test_handle_new_session_loops_multiple_turns_when_non_interactive():
     mock_orchestrator = Mock(spec=IRunPlanUseCase)
     mock_llm_client = Mock(spec=ILlmClient)
     mock_config_service = Mock(spec=IConfigService)
-    mock_loop_guard = Mock(spec=ISessionLoopGuard)
+    mock_loop_guard = create_autospec(ISessionLoopGuard)
     mock_prompt_manager = Mock(spec=IPromptManager)
 
     container.register(IInitUseCase, instance=Mock(spec=IInitUseCase))
@@ -60,12 +60,15 @@ def test_handle_new_session_loops_multiple_turns_when_non_interactive():
         start_time=datetime.now(timezone.utc),
         end_time=datetime.now(timezone.utc),
     )
+    fake_report.metadata = {}
     mock_orchestrator.resume.return_value = fake_report
 
     # Loop guard allows 2 turns:
     # turn_count=1: should_continue(1) -> True
     # turn_count=2: should_continue(2) -> False
-    mock_loop_guard.should_continue.side_effect = lambda tc: tc < 2
+    # turn_count=1: should_continue(1, cost, interact) -> True
+    # turn_count=2: should_continue(2, cost, interact) -> False
+    mock_loop_guard.should_continue.side_effect = lambda tc, cost, interact: tc < 2
 
     # Act
     handle_new_session(
@@ -88,7 +91,7 @@ def test_handle_resume_session_loops_multiple_turns_when_non_interactive():
     mock_orchestrator = Mock(spec=IRunPlanUseCase)
     mock_llm_client = Mock(spec=ILlmClient)
     mock_config_service = Mock(spec=IConfigService)
-    mock_loop_guard = Mock(spec=ISessionLoopGuard)
+    mock_loop_guard = create_autospec(ISessionLoopGuard)
     mock_prompt_manager = Mock(spec=IPromptManager)
 
     container.register(IInitUseCase, instance=Mock(spec=IInitUseCase))
@@ -109,9 +112,12 @@ def test_handle_resume_session_loops_multiple_turns_when_non_interactive():
         start_time=datetime.now(timezone.utc),
         end_time=datetime.now(timezone.utc),
     )
+    fake_report.metadata = {}
     mock_orchestrator.resume.return_value = fake_report
 
-    mock_loop_guard.should_continue.side_effect = lambda tc: tc < 2
+    # turn_count=1: should_continue(1, cost, interact) -> True
+    # turn_count=2: should_continue(2, cost, interact) -> False
+    mock_loop_guard.should_continue.side_effect = lambda tc, cost, interact: tc < 2
 
     # Act
     handle_resume_session(

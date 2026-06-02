@@ -1,4 +1,4 @@
-from unittest.mock import Mock
+from unittest.mock import Mock, create_autospec
 from punq import Container
 from teddy_executor.adapters.inbound.session_cli_handlers import handle_new_session
 from teddy_executor.core.ports.inbound.init import IInitUseCase
@@ -20,7 +20,7 @@ def test_handle_new_session_prompts_for_message_before_creating_dir():
     mock_orchestrator = Mock(spec=IRunPlanUseCase)
     mock_llm_client = Mock(spec=ILlmClient)
     mock_config_service = Mock(spec=IConfigService)
-    mock_loop_guard = Mock(spec=ISessionLoopGuard)
+    mock_loop_guard = create_autospec(ISessionLoopGuard)
     mock_prompt_manager = Mock(spec=IPromptManager)
 
     container.register(IInitUseCase, instance=Mock(spec=IInitUseCase))
@@ -86,7 +86,7 @@ def test_handle_new_session_prompts_even_when_non_interactive():
     mock_orchestrator = Mock(spec=IRunPlanUseCase)
     mock_llm_client = Mock(spec=ILlmClient)
     mock_config_service = Mock(spec=IConfigService)
-    mock_loop_guard = Mock(spec=ISessionLoopGuard)
+    mock_loop_guard = create_autospec(ISessionLoopGuard)
     mock_prompt_manager = Mock(spec=IPromptManager)
 
     container.register(IInitUseCase, instance=Mock(spec=IInitUseCase))

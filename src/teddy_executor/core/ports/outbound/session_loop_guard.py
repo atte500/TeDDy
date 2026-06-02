@@ -7,7 +7,9 @@ class ISessionLoopGuard(Protocol):
     Allows for safety breaks in automated environments.
     """
 
-    def should_continue(self, turn_count: int) -> bool:
+    def should_continue(
+        self, turn_count: int, cumulative_cost: float, interactive: bool
+    ) -> bool:
         """
         Returns True if the loop should continue to the next turn.
         """
