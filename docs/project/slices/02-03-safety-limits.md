@@ -66,7 +66,7 @@ And it should transition Turn 99's turn.context to Turn 01 of the new session
 3.  **Pruning Discrimination (Pruning Service)**:
     -   **Target**: `src/teddy_executor/core/services/session_pruning_service.py`.
     -   **Delta**: In `_identify_turns_to_prune`, add a check for `## Message`.
-    -   **Delta**: If a turn's `plan.md` contains `## Message` and its `report.md` is NOT a validation failure or error, explicitly `continue` to spare it from the `turns_to_prune` map.
+    -   **Delta**: If a turn's `plan.md` contains `## Message` and its `report.md` is NOT a validation failure or error, explicitly `continue` to spare both from the `turns_to_prune` map.
     -   **Delta**: Ensure `_process_context_item` preserves both the plan and report for spared turns.
 4.  **Architecture Polish**:
     -   **Target**: `src/teddy_executor/core/services/session_service.py`.
