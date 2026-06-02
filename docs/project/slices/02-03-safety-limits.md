@@ -40,7 +40,7 @@ And it should transition Turn 99's turn.context to Turn 01 of the new session
 - [x] **Seam** - Update `ProductionSessionLoopGuard` to store `initial_turn` and `initial_cost` on instantiation.
 - [x] **Contract** - Add `get_cumulative_cost` to `ISessionManager`.
 - [x] **Logic** - Implement `yolo_guardrails` enforcement in `ProductionSessionLoopGuard`.
-- [ ] **Logic** - Implement `migrate_to_continuation` in `SessionService` for the Turn 99 -> 100 transition.
+- [x] **Logic** - Implement `migrate_to_continuation` in `SessionService` for the Turn 99 -> 100 transition.
 - [ ] **Logic** - Implement Message Turn protection in `SessionPruningService` (check for `## Message` + `status != FAILURE`); make it configurable via `auto_pruning.preserve_message_turns` (default: `true`).
 - [ ] **Logic** - Relocate `system_prompt.xml` to session root in `SessionService.create_session`.
 - [ ] **Logic** - Refactor `PromptManager` and `PlanningService` to resolve system prompts exclusively from the session root.
@@ -59,6 +59,7 @@ And it should transition Turn 99's turn.context to Turn 01 of the new session
 - `ISessionManager` now includes `get_cumulative_cost(session_name: str) -> float`, implemented in `SessionService` to retrieve the cost from the latest turn's metadata.
 - Resolved a regression in `session_cli_handlers.py` where `int()` was called on the `latest_turn` path string and mock objects in tests. Added robust turn ID extraction and type guards.
 - `ProductionSessionLoopGuard` now enforces `yolo_guardrails` (max_turns, max_session_cost) using process-relative calculations (delta from initial state). Limits are strictly ignored if `interactive=True`.
+- **Centennial Migration**: `SessionService` now detects when Turn 99 is completed. It automatically calculates a new session directory name using a regex-based suffix incrementer (e.g., `session-name` -> `session-name-2` -> `session-name-3`). It creates the new session root and a `01` turn directory, cloning `session.context` and the active agent prompt to ensure continuity.
 
 ## Implementation Plan
 ### Delta Analysis

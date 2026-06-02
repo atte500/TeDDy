@@ -185,18 +185,23 @@ class SessionService(ISessionManager):
         and the outcome of its plan.
         """
         cur_dir = Path(plan_path).parent
-        session_dir = cur_dir.parent.as_posix()
 
         # 1. Resolve current state
         meta = self._repository.load_meta(cur_dir.as_posix())
-        next_id = f"{int(cur_dir.name) + 1:02d}"
-        next_dir = f"{session_dir}/{next_id}"
+        next_id, next_session_dir, is_migration = self._resolve_next_turn_path(cur_dir)
+        next_dir = (next_session_dir / next_id).as_posix()
 
         # 2. Setup next directory
         self._repository.create_turn_directory(next_dir)
-        self._repository.copy_prompt(
-            cur_dir.as_posix(), next_dir, meta.get("agent_name", "pf")
-        )
+
+        if is_migration:
+            self._clone_session_artifacts(
+                cur_dir.parent, next_session_dir, cur_dir, Path(next_dir), meta
+            )
+        else:
+            self._repository.copy_prompt(
+                cur_dir.as_posix(), next_dir, meta.get("agent_name", "pf")
+            )
 
         # 3. Persist metadata
         self._persist_next_meta(
@@ -212,7 +217,7 @@ class SessionService(ISessionManager):
             for p in pruned_paths:
                 paths.discard(p)
             # Also prune from session.context if present
-            session_context_path = f"{session_dir}/session.context"
+            session_context_path = (next_session_dir / "session.context").as_posix()
             if self._file_system_manager.path_exists(session_context_path):
                 session_paths = self._repository.read_context_file(session_context_path)
                 modified = False
@@ -313,3 +318,47 @@ class SessionService(ISessionManager):
     def resolve_session_from_path(self, path: str) -> str:
         """Resolves a session name from a given path."""
         return self._repository.resolve_session_from_path(path)
+
+    def _resolve_next_turn_path(self, cur_dir: Path) -> tuple[str, Path, bool]:
+        """Determines the next turn ID, session directory, and migration status."""
+        if cur_dir.name == "99":
+            new_name = self._calculate_continuation_name(cur_dir.parent.name)
+            return "01", cur_dir.parent.parent / new_name, True
+
+        next_id = f"{int(cur_dir.name) + 1:02d}"
+        return next_id, cur_dir.parent, False
+
+    def _calculate_continuation_name(self, current_name: str) -> str:
+        """Determines the next session name with an incremented suffix."""
+        suffix_match = re.search(r"-(\d+)$", current_name)
+        if suffix_match:
+            count = int(suffix_match.group(1))
+            base = current_name[: suffix_match.start()]
+            return f"{base}-{count + 1}"
+        return f"{current_name}-2"
+
+    def _clone_session_artifacts(
+        self,
+        src_session: Path,
+        dest_session: Path,
+        src_turn: Path,
+        dest_turn: Path,
+        meta: Dict[str, Any],
+    ) -> None:
+        """Clones core session and agent artifacts during migration."""
+        # 1. session.context
+        old_ctx = src_session / "session.context"
+        if self._file_system_manager.path_exists(old_ctx.as_posix()):
+            content = self._file_system_manager.read_file(old_ctx.as_posix())
+            self._file_system_manager.write_file(
+                (dest_session / "session.context").as_posix(), content
+            )
+
+        # 2. Agent Prompt (from Turn 99 to Turn 01)
+        agent_name = meta.get("agent_name", "pf")
+        old_prompt = src_turn / f"{agent_name}.xml"
+        if self._file_system_manager.path_exists(old_prompt.as_posix()):
+            content = self._file_system_manager.read_file(old_prompt.as_posix())
+            self._file_system_manager.write_file(
+                (dest_turn / f"{agent_name}.xml").as_posix(), content
+            )
