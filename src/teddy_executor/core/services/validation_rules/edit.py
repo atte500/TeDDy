@@ -19,7 +19,6 @@ from teddy_executor.core.services.validation_rules.helpers import (
     PlanValidationError,
     ValidationError,
     ValidationResult,
-    is_path_in_context,
     resolve_similarity_threshold,
     validate_path_is_safe,
 )
@@ -55,13 +54,8 @@ class EditActionValidator(BaseActionValidator):
         try:
             validate_path_is_safe(path_str, "EDIT")
 
-            # Context Check: EDIT must be in context
-            if context_paths is not None:
-                if not is_path_in_context(path_str, context_paths):
-                    raise PlanValidationError(
-                        f"{path_str} is not in the current turn context",
-                        file_path=path_str,
-                    )
+            # Context Check: Removed as per 02-04-Context Automation slice.
+            # EDIT actions are now allowed on any valid path, relying on the matcher.
 
             if not self._file_system_manager.path_exists(path_str):
                 raise PlanValidationError(
@@ -127,19 +121,8 @@ def _validate_single_edit(
 
     if isinstance(find_block, str):
         if find_block == replace_block:
-            fence = get_fence_for_content(find_block)
-            errors.append(
-                ValidationError(
-                    message=(
-                        f"FIND and REPLACE blocks are identical in: {file_path}\n"
-                        f"**Block Content:**\n"
-                        f"{fence}\n{find_block}\n{fence}\n"
-                        "**Hint:** FIND and REPLACE blocks are identical. This edit can be safely omitted."
-                    ),
-                    file_path=str(file_path),
-                )
-            )
-            return errors
+            # Treat identical blocks as a successful no-op (02-04-Context Automation slice)
+            return []
 
         # Use the resilient matcher for all matching logic
         matcher_kwargs = {}

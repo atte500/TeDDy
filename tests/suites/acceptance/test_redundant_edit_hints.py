@@ -18,14 +18,10 @@ def test_identical_find_and_replace_blocks_returns_hint(tmp_path: Path, monkeypa
         .build()
     )
 
-    # Validation failure expected
+    # SUCCESS expected (no-op)
     report = adapter.execute_plan(plan)
 
-    assert "Validation Failed" in report.stdout
-    expected_hint = (
-        "FIND and REPLACE blocks are identical. This edit can be safely omitted."
-    )
-    assert expected_hint in report.stdout
+    assert "SUCCESS" in report.stdout
 
 
 def test_edit_validation_hint_already_applied(tmp_path: Path, monkeypatch):

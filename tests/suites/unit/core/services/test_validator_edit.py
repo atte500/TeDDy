@@ -1,5 +1,4 @@
 import pytest
-from unittest.mock import MagicMock
 
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
 from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
@@ -25,9 +24,10 @@ def parser(container) -> IPlanParser:
 @pytest.fixture
 def validator(container, mock_fs) -> IPlanValidator:
     """Resolves the PlanValidator from the container with all rules."""
-    mock_config = MagicMock()
+    from tests.harness.setup.mocking import register_mock
+
+    mock_config = register_mock(container, IConfigService)
     mock_config.get_setting.return_value = 0.95
-    container.register(IConfigService, instance=mock_config)
 
     rules = [
         CreateActionValidator,
@@ -177,14 +177,15 @@ def test_validate_edit_diff_handling_no_trailing_newline(parser, validator, mock
     assert lines[4].startswith("+")
 
 
-def test_validate_edit_fails_if_find_and_replace_identical(parser, validator, mock_fs):
-    """Verify error when FIND and REPLACE are identical."""
+def test_validate_edit_succeeds_if_find_and_replace_identical(
+    parser, validator, mock_fs
+):
+    """Verify that identical FIND and REPLACE blocks are treated as a successful no-op."""
     mock_fs.path_exists.return_value = True
     plan = _p(parser, MarkdownPlanBuilder("T").add_edit("s.py", "same", "same"))
     errors = validator.validate(plan)
 
-    assert len(errors) == 1
-    assert "FIND and REPLACE blocks are identical" in errors[0].message
+    assert len(errors) == 0
 
 
 def test_validate_edit_provides_hint_if_replace_block_already_present(
