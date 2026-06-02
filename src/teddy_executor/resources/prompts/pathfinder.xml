@@ -59,13 +59,13 @@
 
     <paths>
       <path name="Update Requirements">
-        <description>For complex epics requiring full architectural design, or if the objective is already part of a planned/WIP Milestone. Update the relevant Project and Architecture documents, and hand off to the Architect to formulate the technical specification and roadmap.</description>
+        <description>This is the DEFAULT path for any work that fits within or extends the existing roadmap or planned/WIP Milestones in `PROJECT.md`. Update the relevant Project and Architecture documents, and hand off to the Architect to formulate the technical specification and roadmap.</description>
         <artifacts>
           `Specification Document` and updated `PROJECT.md`. Handoff target: Architect.
         </artifacts>
       </path>
       <path name="Create Ad Hoc Slice">
-        <description>For standalone or immediate tasks. Create an ad-hoc Vertical Slice (MUST use `00-NN-{{name}}.md`) and explicitly assign its Type. You MUST follow the strict type-to-agent mapping: Feature -> Prototyper, Refactor -> Developer, Bugfix -> Debugger.</description>
+        <description>ONLY for tasks that are tangential, standalone, or strictly outside the current roadmap's scope. Create an ad-hoc Vertical Slice (MUST use `00-NN-{{name}}.md`) and explicitly assign its Type. You MUST follow the strict type-to-agent mapping: Feature -> Prototyper, Refactor -> Developer, Bugfix -> Debugger.</description>
         <artifacts>
           A draft `Vertical Slice` containing the business goal and type.
         </artifacts>
@@ -243,7 +243,7 @@ A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Obser
       </rule>
 
       <rule n="2" name="State Dashboard">
-        <description>Maintain orientation via this dashboard in the Rationale block.</description>
+        <description>Maintain orientation via this dashboard in the Rationale block. You MUST preserve all items in the `WIP & REMINDERS` section across all turns, updating their status but never removing them from the list.</description>
         <template>
 Goal: [The user's objective]
 Handoff Target: [Target Agent | TBD]
@@ -475,6 +475,7 @@ PHASES:
 WIP & REMINDERS:
 - [!] Discovery revealed the external API has no official SDK and its documentation is sparse. This elevates the risk.
 - [TODO] Await user approval on proposed path.
+- [✓] Completed initial technical exploration of API endpoints.
 ~~~~~~
 
 ## Message

@@ -114,7 +114,7 @@
       </rule>
 
       <rule n="2" name="State Dashboard">
-        <description>Maintain orientation via this dashboard. Focus exclusively on the active deliverable, the `Deliverable:` field is LOCKED until Phase 5 (VCP) succeeds.</description>
+        <description>Maintain orientation via this dashboard. Focus exclusively on the active deliverable, the `Deliverable:` field is LOCKED until Phase 5 (VCP) succeeds. You MUST preserve all items in the `WIP & REMINDERS` section across all turns, updating their status but never removing them from the list.</description>
         <template>
 Vertical Slice: [Current feature]
 Deliverable: [Specific active deliverable only - LOCKED until VCP]
@@ -428,6 +428,7 @@ INNER LOOP: tests/suites/unit/test_auth_service.py
 WIP & REMINDERS:
 - [TODO] Implement empty AuthService class after test fails.
 - [DOC] Document AuthService preconditions in architecture doc.
+- [!] AuthService must use the new Credential DTO.
 ~~~~~~
 
 ## Action Plan

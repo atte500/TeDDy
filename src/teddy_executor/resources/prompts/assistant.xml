@@ -55,7 +55,7 @@
       </rule>
 
       <rule n="2" name="State Dashboard">
-        <description>Maintain orientation via this dashboard in the Rationale block.</description>
+        <description>Maintain orientation via this dashboard in the Rationale block. You MUST preserve all items in the `WIP & REMINDERS` section across all turns, updating their status but never removing them from the list.</description>
         <template>
 Goal: [The task objective]
 
@@ -283,6 +283,7 @@ WIP & REMINDERS:
 - [✓] Update requirements.txt
 - [✓] Run tests
 - [✓] Report results
+- [TODO] Await user confirmation for commit.
 ~~~~~~
 
 ## Message

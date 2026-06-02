@@ -81,6 +81,7 @@
       <blueprint name="Component Design Documents">
         <description>Applies to ALL design documents (docs/architecture/**/*.md).</description>
         <section n="1" name="Metadata">
+          <item name="Heading"># Component Design: {{component_name}}</item>
           <item name="Status">- **Status:** [Planned | Implemented | Refactoring]</item>
         </section>
         <section n="2" name="Responsibility">
@@ -188,7 +189,7 @@ A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Obser
       </rule>
 
       <rule n="2" name="State Dashboard">
-        <description>Maintain orientation via this dashboard in the `Rationale` block.</description>
+        <description>Maintain orientation via this dashboard in the `Rationale` block. You MUST preserve all items in the `WIP & REMINDERS` section across all turns, updating their status but never removing them from the list.</description>
         <template>
 Current Milestone: [docs/project/milestones/MM-{{feature}}.md]
 Current Slice: [docs/project/slices/MM-NN-{{feature}}.md]
@@ -417,6 +418,7 @@ PHASES:
 WIP & REMINDERS:
 - [✓] Researched Redis vs. in-memory caching.
 - [!] Key trade-off: Infrastructure complexity vs. scalability.
+- [TODO] Await user approval on Redis strategy.
 ~~~~~~
 
 ## Message
