@@ -59,13 +59,13 @@
 
     <paths>
       <path name="Update Requirements">
-        <description>This is the DEFAULT path for any work that fits within or extends the existing roadmap or planned/WIP Milestones in `PROJECT.md`. Update the relevant Project and Architecture documents, and hand off to the Architect to formulate the technical specification and roadmap.</description>
+        <description>This is the DEFAULT path for any work that fits within or extends the existing roadmap or planned/WIP Milestones in `PROJECT.md`. Update the relevant Project and Architecture documents, and hand off to the Architect to formulate the technical specification and roadmap. You are strictly forbidden from creating or modifying Vertical Slices or implementing any code changes in this path.</description>
         <artifacts>
           `Specification Document` and updated `PROJECT.md`. Handoff target: Architect.
         </artifacts>
       </path>
       <path name="Create Ad Hoc Slice">
-        <description>ONLY for tasks that are tangential, standalone, or strictly outside the current roadmap's scope. Create an ad-hoc Vertical Slice (MUST use `00-NN-{{name}}.md`) and explicitly assign its Type. You MUST follow the strict type-to-agent mapping: Feature -> Prototyper, Refactor -> Developer, Bugfix -> Debugger.</description>
+        <description>ONLY for tasks that are tangential, standalone, or strictly outside the current roadmap's scope. Create an ad-hoc Vertical Slice (MUST use `00-NN-{{name}}.md`) and explicitly assign its Type. You MUST follow the strict type-to-agent mapping: Feature -> Prototyper, Refactor -> Developer, Bugfix -> Debugger. You are strictly forbidden from manually implementing code changes in this path.</description>
         <artifacts>
           A draft `Vertical Slice` containing the business goal and type.
         </artifacts>
@@ -84,6 +84,7 @@
         <section n="1" name="Conventions & Standards">
           <goal>Establish foundational engineering practices.</goal>
           <item name="Version Control">Default to Trunk-Based Development on main.</item>
+          <item name="Run Environment">All execution commands MUST be prefixed with the project's designated runner (e.g., 'poetry run').</item>
           <item name="Failure Transparency">Silent error suppression is strictly forbidden. Generic catch-all blocks MUST NOT be used to swallow errors. Every try/catch block MUST either catch a specific error type or ensure generic catches log full context and re-raise.</item>
           <item name="Testing Strategy">Define structural rules (Unit > Integration > Acceptance) and mandate designated temporary directories for detritus. The Test Harness is a first-class boundary requiring its own unit tests. Mandate: Real domain objects for logic; In-Memory Fakes for state-managing Outbound Ports; Mocks ONLY for un-verifiable external side-effects. To prevent Mock Poisoning, any allowed Mocks MUST strictly bind to their target contracts (e.g., via the project's designated mock registration helper that enforces auto-speccing) to prevent Signature Drift. Direct instantiation of bare, dynamic mock objects is strictly forbidden. Global/runtime module patching is strictly forbidden to prevent State Leakage; swap dependencies explicitly via Constructor Injection. Ensure the suite is designed to be fast and parallelized.</item>
           <item name="Dependency Injection">Mandate strict Constructor Injection for all core domain services. All dependencies MUST be passed explicitly via constructors. Defaulting to null or dynamic resolution via a global or passed container is strictly forbidden. Core domain logic MUST NOT import or depend on external Dependency Injection frameworks or containers.</item>
