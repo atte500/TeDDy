@@ -52,9 +52,18 @@ class ContextService(IGetContextUseCase):
         repo_tree = self._repo_tree_generator.generate_tree()
 
         scoped_paths, all_resolved_paths = self._resolve_scoped_paths(context_files)
-        file_contents = self._file_system_manager.read_files_in_vault(
-            all_resolved_paths
-        )
+
+        local_paths = [p for p in all_resolved_paths if not self._is_url(p)]
+        urls = [p for p in all_resolved_paths if self._is_url(p)]
+
+        file_contents = self._file_system_manager.read_files_in_vault(local_paths)
+
+        # Fetch remote content
+        for url in urls:
+            try:
+                file_contents[url] = self._web_scraper.get_content(url)
+            except Exception:
+                file_contents[url] = None
 
         system_prompt_tokens = 0
         if include_tokens and agent_name != "Unknown":
@@ -158,6 +167,10 @@ class ContextService(IGetContextUseCase):
             or file_path.endswith("/context")
             or file_path == "context"
         )
+
+    def _is_url(self, path: str) -> bool:
+        """Determines if a path is a remote URL."""
+        return path.startswith("http://") or path.startswith("https://")
 
     def _collect_items(
         self,
@@ -318,7 +331,10 @@ class ContextService(IGetContextUseCase):
         parts = ["\n## 4. Resource Contents"]
         for path in workspace_paths:
             parts.append("\n---")
-            parts.append(f"### [{path}](/{path})")
+            if self._is_url(path):
+                parts.append(f"### [{path}]({path})")
+            else:
+                parts.append(f"### [{path}](/{path})")
             content = file_contents.get(path)
             if content is not None:
                 lang = get_language_from_path(path)

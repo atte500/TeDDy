@@ -406,3 +406,44 @@ def test_get_context_deduplicates_overlapping_paths_prioritizing_non_turn_scope(
     # 2. Scope should be "Session" (priority)
     assert result.items[0].path == overlapping_path
     assert result.items[0].scope == "Session"
+
+
+def test_get_context_fetches_remote_url_content_via_web_scraper(
+    service: IGetContextUseCase,
+    container,
+    mock_fs,
+    mock_tree_gen,
+    mock_inspector,
+):
+    """
+    Scenario: Remote URL Context Gathering
+    Tests that get_context identifies URLs in the path list and uses IWebScraper
+    to fetch their content, merging it with local file contents.
+    """
+    # Arrange
+    url = "https://example.com/spec.md"
+    local_file = "README.md"
+    scraped_content = "# Scraped Content"
+    local_content = "# Local Content"
+
+    mock_scraper = container.resolve(IWebScraper)
+    mock_scraper.get_content.return_value = scraped_content
+
+    mock_inspector.get_environment_info.return_value = {}
+    mock_inspector.get_git_status.return_value = None
+    mock_tree_gen.generate_tree.return_value = ""
+    mock_fs.resolve_paths_from_files.side_effect = lambda files: files
+    mock_fs.read_files_in_vault.return_value = {local_file: local_content}
+
+    # Act
+    result = service.get_context(context_files={"Default": [url, local_file]})
+
+    # Assert
+    # 1. Scraper should be called for the URL
+    mock_scraper.get_content.assert_called_once_with(url)
+
+    # 2. Results should contain both contents
+    assert scraped_content in result.content
+    assert local_content in result.content
+    assert f"### [{url}]" in result.content
+    assert f"### [{local_file}]" in result.content

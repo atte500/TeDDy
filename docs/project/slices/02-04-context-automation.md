@@ -33,7 +33,7 @@ Then "new_file.py" should be present in the next turn's "turn.context"
 
 ## Deliverables
 - [x] **Seam** - Inject `IWebScraper` into `ContextService` to support remote URL context gathering.
-- [ ] **Logic** - Update `ContextService.get_context` to fetch remote URL content via `IWebScraper`.
+- [x] **Logic** - Update `ContextService.get_context` to fetch remote URL content via `IWebScraper`.
 - [ ] **Logic** - Update `ContextService._resolve_recursive` to ensure URLs are not treated as local directories.
 - [ ] **Logic** - Update `EditActionValidator` to remove context-presence check and treat identical FIND/REPLACE as no-ops.
 - [ ] **Logic** - Update `ReadActionValidator` to remove "already in context" error.
@@ -43,6 +43,7 @@ Then "new_file.py" should be present in the next turn's "turn.context"
 
 ## Implementation Notes
 - **Seam (IWebScraper Injection)**: Injected `IWebScraper` into `ContextService` constructor. Updated `test_context_service.py` fixture and two manual instantiations in `test_context_recursion.py` and `test_context_service_performance.py` to provide a mock.
+- **Logic (Remote URL context)**: Updated `ContextService.get_context` to detect URLs (starting with http/https) and use the `IWebScraper` to fetch their content. URLs are formatted with root-relative-like Markdown links (without the leading slash) in the resource contents section.
 
 ## Implementation Plan
 ### Delta Analysis
