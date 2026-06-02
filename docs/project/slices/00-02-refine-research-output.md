@@ -64,4 +64,4 @@ Below is the exact expected rendering for a RESEARCH action with multiple result
    - **Title:** Third Result Title
    - **Description:** This is the snippet for the third result...
 
-*(Use `READ` on the URLs above to inspect the full content)*
+_**Hint:** NOW you MUST use READ on the most promising results)_
