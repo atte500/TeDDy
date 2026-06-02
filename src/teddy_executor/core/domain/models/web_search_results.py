@@ -2,7 +2,7 @@
 This module defines the strictly-typed data transfer object for web search results.
 """
 
-from typing import List, NotRequired, TypedDict
+from typing import List, TypedDict
 
 
 class SearchResult(TypedDict):
@@ -11,7 +11,6 @@ class SearchResult(TypedDict):
     title: str
     href: str
     body: str  # The SERP snippet
-    content: NotRequired[str]  # The full scraped content (optional)
 
 
 class QueryResult(TypedDict):

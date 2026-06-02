@@ -1,3 +1,4 @@
+from typing import get_type_hints
 from teddy_executor.core.domain.models.web_search_results import (
     SearchResult,
     QueryResult,
@@ -5,29 +6,27 @@ from teddy_executor.core.domain.models.web_search_results import (
 )
 
 
+def test_search_result_contract_does_not_contain_content():
+    """
+    Asserts that 'content' is no longer part of the SearchResult TypedDict.
+    This ensures we are reverting the deep search behavior at the contract level.
+    """
+    hints = get_type_hints(SearchResult)
+    assert "content" not in hints, (
+        "SearchResult should no longer contain a 'content' field."
+    )
+
+
 def test_search_result_structure():
-    """Verify the structure of SearchResult with content."""
+    """Verify the structure of SearchResult with core fields."""
     result: SearchResult = {
         "title": "Title",
         "href": "https://example.com",
         "body": "Snippet",
-        "content": "Full Scraped Content",
     }
     assert result["title"] == "Title"
     assert result["href"] == "https://example.com"
     assert result["body"] == "Snippet"
-    assert result["content"] == "Full Scraped Content"
-
-
-def test_search_result_content_is_optional():
-    """Verify that content is not required in SearchResult."""
-    # This should be valid according to the type hint
-    result: SearchResult = {
-        "title": "Title",
-        "href": "https://example.com",
-        "body": "Snippet",
-    }
-    assert "content" not in result
 
 
 def test_query_result_structure():

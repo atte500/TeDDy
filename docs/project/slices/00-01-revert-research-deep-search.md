@@ -1,6 +1,6 @@
 # Slice: Revert Research Deep Search
 
-- **Status:** Planned
+- **Status:** In Progress
 - **Type:** Refactor
 - **Milestone:** N/A
 - **Specs:** [docs/project/specs/stability-and-bugfixes.md](/docs/project/specs/stability-and-bugfixes.md)
@@ -21,13 +21,11 @@ And no full "Content" blocks should be present in the report
 - **Scraper Persistence**: Ensure the `WebScraperAdapter` itself remains unchanged, as its 403-bypassing and GitHub raw fixes are still required for `READ` actions.
 
 ## Deliverables
+- [x] **Contract** - Remove `content` field from `SearchResult` DTO in `src/teddy_executor/core/domain/models/web_search_results.py`.
 - [ ] **Logic** - Remove `IWebScraper` dependency and scraping loop from `WebSearcherAdapter`.
-- [ ] **Logic** - Remove `content` field from `SearchResult` DTO in `src/teddy_executor/core/domain/models/web_search_results.py`.
-- [ ] **Wiring** - Update `src/teddy_executor/core/services/templates/execution_report.md.j2` to remove the `sr.get('content')` conditional block and the "Use READ on the URLs above" hint.
-- [ ] **Cleanup** - Update or remove the following tests:
-    - `tests/suites/integration/adapters/outbound/test_web_searcher_adapter.py`
-    - `tests/suites/integration/core/services/test_research_parsing_integration.py`
 - [ ] **Wiring** - Remove `IWebScraper` injection from `src/teddy_executor/registries/infrastructure.py` for the `WebSearcherAdapter`.
+- [ ] **Wiring** - Update `src/teddy_executor/core/services/templates/execution_report.md.j2` to remove the `sr.get('content')` conditional block and the "Use READ on the URLs above" hint.
+- [ ] **Cleanup** - Align tests in `tests/suites/integration/adapters/outbound/test_web_searcher_adapter.py` and `tests/suites/integration/core/services/test_research_parsing_integration.py`.
 - [x] **Logic** - Update `RESEARCH` action description in all system prompts (`src/teddy_executor/resources/prompts/*.xml`).
 - [x] **Wiring** - Update documentation (specs, standards, and roadmap) to align with the revert and ad-hoc slice rules.
 
@@ -37,3 +35,7 @@ And no full "Content" blocks should be present in the report
 3. **Template Update**: Simplify the `RESEARCH` section of the Jinja2 template to only render titles, links, and snippets.
 4. **Registry Update**: Remove the scraper from the dependency injection container setup for the searcher.
 5. **Test Alignment**: Run the test suite and remove/refactor tests that now fail due to the missing `content` field.
+
+## Implementation Notes
+- **Contract Contraction**: Removed `content` from `SearchResult` TypedDict. Verified via `get_type_hints` in unit tests.
+- **Runtime Reality**: Python `TypedDict` does not enforce key constraints at runtime. Existing logic in `WebSearcherAdapter` that still populates `item["content"]` does not trigger runtime errors, which explains why the global test suite remained green. This logic will be removed in the next deliverable.
