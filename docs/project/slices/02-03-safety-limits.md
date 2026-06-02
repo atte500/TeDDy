@@ -1,6 +1,6 @@
 # Slice: 02-03-Safety Limits
 
-- **Status:** In Progress
+- **Status:** Completed
 - **Prototype:** [spikes/prototypes/02-03-safety-limits.py](/spikes/prototypes/02-03-safety-limits.py)
 - **Type:** Feature
 - **Milestone:** [docs/project/milestones/02-stability-and-polish.md](/docs/project/milestones/02-stability-and-polish.md)
@@ -44,8 +44,8 @@ And it should transition Turn 99's turn.context to Turn 01 of the new session
 - [x] **Logic** - Implement Message Turn protection in `SessionPruningService` (check for `## Message` + `status != FAILURE`); make it configurable via `auto_pruning.preserve_message_turns` (default: `true`).
 - [x] **Logic** - Relocate `system_prompt.xml` to session root in `SessionService.create_session`.
 - [x] **Logic** - Refactor `PromptManager` and `PlanningService` to resolve system prompts exclusively from the session root.
-- [ ] **Wiring** - Update `config.yaml` with `yolo_guardrails` keys.
-- [ ] **Wiring** - Update `SessionOrchestrator` to pass the `interactive` flag to the loop guard.
+- [x] **Wiring** - Update `config.yaml` with `yolo_guardrails` keys.
+- [x] **Wiring** - Update `session_cli_handlers.py` to correctly track and pass `cumulative_cost` to the loop guard.
 
 ## Implementation Notes
 - **CLI Refactor**: Extracted `_orchestrate_session_loop` in `session_cli_handlers.py` to resolve `PLR0915` (Too many statements) and eliminate duplication between `start` and `resume` logic.
@@ -58,7 +58,8 @@ And it should transition Turn 99's turn.context to Turn 01 of the new session
 - **Seam Implementation**: `ProductionSessionLoopGuard` constructor now stores process-relative initial state. CLI handlers (`_orchestrate_session_loop`) resolve the guard by passing the current session's latest turn count.
 - `ISessionManager` now includes `get_cumulative_cost(session_name: str) -> float`, implemented in `SessionService` to retrieve the cost from the latest turn's metadata.
 - Resolved a regression in `session_cli_handlers.py` where `int()` was called on the `latest_turn` path string and mock objects in tests. Added robust turn ID extraction and type guards.
-- `ProductionSessionLoopGuard` now enforces `yolo_guardrails` (max_turns, max_session_cost) using process-relative calculations (delta from initial state). Limits are strictly ignored if `interactive=True`.
+- `ProductionSessionLoopGuard` now enforces `yolo_guardrails` (enabled, max_turns, max_session_cost) using process-relative calculations (delta from initial state). Limits are strictly ignored if `interactive=True` or if `enabled` is set to `False` in `config.yaml`.
+- **CLI Wiring**: `_orchestrate_session_loop` in `session_cli_handlers.py` now resolves `initial_turn` and `initial_cost` from the `ISessionManager` at the start of the loop, ensuring process-relative guardrails work correctly across resumes.
 - **Centennial Migration**: `SessionService` now detects when Turn 99 is completed. It automatically calculates a new session directory name using a regex-based suffix incrementer (e.g., `session-name` -> `session-name-2` -> `session-name-3`). It creates the new session root and a `01` turn directory, cloning `session.context` and the active agent prompt to ensure continuity.
 - **Message Turn Protection**: `SessionPruningService` now identifies successful "Communicating Turns" (those containing a `## Message` section and no failure status). These turns are explicitly spared from both failure-history pruning and retention-limit pruning, ensuring important conversational context is preserved. This behavior is controlled by `auto_pruning.preserve_message_turns` (default: `True`).
 - **Prompt Relocation**: Agent prompts (e.g., `pathfinder.xml`) are now stored in the session root. `SessionService.create_session` writes the prompt to the root, and `PromptManager.fetch_system_prompt` prioritizes the session root for resolution. This eliminates redundant prompt copying across turns and simplifies centennial migration.

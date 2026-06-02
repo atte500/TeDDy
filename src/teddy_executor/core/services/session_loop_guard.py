@@ -23,6 +23,9 @@ class ProductionSessionLoopGuard(ISessionLoopGuard):
         if interactive:
             return True
 
+        if not self._config_service.get_setting("yolo_guardrails.enabled", True):
+            return True
+
         max_turns = int(
             self._config_service.get_setting("yolo_guardrails.max_turns", 99) or 99
         )

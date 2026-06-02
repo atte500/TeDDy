@@ -26,6 +26,7 @@ research:
 
 # Safety limits enforced ONLY in --yolo mode.
 yolo_guardrails:
+  enabled: true
   max_turns: 99
   max_session_cost: 5.00
 

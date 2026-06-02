@@ -48,11 +48,11 @@ def _orchestrate_session_loop(
         # Handle non-numeric turn names or MagicMocks in tests
         initial_turn = 0
 
-    # We don't have a direct 'get_metadata' yet, but we can infer cost from latest report
-    # Or just start with 0 if it's a new session.
-    # For now, we'll use 0.0 and refine once Logic deliverable is active.
+    # Resolve initial cost for process-relative guardrails
+    initial_cost = session_manager.get_cumulative_cost(session_name)
+
     loop_guard = container.resolve(
-        ISessionLoopGuard, initial_turn=initial_turn, initial_cost=0.0
+        ISessionLoopGuard, initial_turn=initial_turn, initial_cost=initial_cost
     )
 
     turn_count = 0
