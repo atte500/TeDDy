@@ -165,7 +165,23 @@ def _register_orchestration_services(container: punq.Container) -> None:
         scope=punq.Scope.transient,
     )
     container.register(ExecutionOrchestrator, scope=punq.Scope.transient)
-    container.register(ContextService, scope=punq.Scope.transient)
+    from teddy_executor.core.ports.outbound import (
+        IEnvironmentInspector,
+        IRepoTreeGenerator,
+        IWebScraper,
+    )
+
+    container.register(
+        ContextService,
+        factory=lambda: ContextService(
+            file_system_manager=container.resolve(IFileSystemManager),
+            repo_tree_generator=container.resolve(IRepoTreeGenerator),
+            environment_inspector=container.resolve(IEnvironmentInspector),
+            llm_client=container.resolve(ILlmClient),
+            web_scraper=container.resolve(IWebScraper),
+        ),
+        scope=punq.Scope.transient,
+    )
     container.register(IGetContextUseCase, ContextService, scope=punq.Scope.transient)
     from teddy_executor.core.domain.models.planning_ports import PlanningPorts
 

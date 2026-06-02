@@ -38,10 +38,12 @@ Then "new_file.py" should be present in the next turn's "turn.context"
 - [x] **Logic** - Update `EditActionValidator` to remove context-presence check and treat identical FIND/REPLACE as no-ops.
 - [x] **Logic** - Update `ReadActionValidator` to remove "already in context" error.
 - [x] **Logic** - Update `SessionService._apply_execution_effects` to include `CREATE` and `EDIT` side-effects.
-- [ ] **Harness** - Add integration test for recursive directory expansion in `.context` manifests.
-- [ ] **Wiring** - Update `registries/infrastructure.py` and `container.py` for the new `ContextService` dependency.
+- [x] **Harness** - Add integration test for recursive directory expansion in `.context` manifests.
+- [x] **Wiring** - Update `registries/infrastructure.py` and `container.py` for the new `ContextService` dependency.
 
 ## Implementation Notes
+- **Wiring (ContextService)**: Fixed a wiring gap in `container.py` where `ContextService` was being registered as a transient with its default constructor, which would fail due to the newly added `IWebScraper` dependency. Explicitly defined the factory to resolve all required outbound ports (`IFileSystemManager`, `IRepoTreeGenerator`, `IEnvironmentInspector`, `ILlmClient`, and `IWebScraper`).
+- **Harness (Manifest Recursion Integration)**: Added `tests/suites/integration/core/services/test_context_manifest_integration.py` which verifies that directory paths listed inside `.context` manifests are recursively expanded by the `ContextService`. The test utilizes `TestEnvironment` with a real filesystem to ensure path resolution and expansion logic works correctly in an integrated environment.
 - **Seam (IWebScraper Injection)**: Injected `IWebScraper` into `ContextService` constructor. Updated `test_context_service.py` fixture and two manual instantiations in `test_context_recursion.py` and `test_context_service_performance.py` to provide a mock.
 - **Logic (Remote URL context)**: Updated `ContextService.get_context` to detect URLs (starting with http/https) and use the `IWebScraper` to fetch their content. URLs are formatted with root-relative-like Markdown links (without the leading slash) in the resource contents section.
 - **Logic (Recursive URL support)**: Updated `ContextService._resolve_recursive` to include a URL guard. This ensures that URLs in manifests or context lists are preserved without triggering local filesystem directory/manifest checks, preventing potential errors or invalid state.
