@@ -27,6 +27,39 @@ def _determine_session_name(name: Optional[str], message: Optional[str]) -> str:
     return "session-auto"
 
 
+def _orchestrate_session_loop(
+    container: Container,
+    session_name: str,
+    interactive: bool,
+    no_copy: bool,
+) -> None:
+    """Shared turn loop for start and resume commands."""
+    from teddy_executor.adapters.inbound.cli_helpers import handle_report_output
+
+    orchestrator = container.resolve(IRunPlanUseCase)
+    loop_guard = container.resolve(ISessionLoopGuard)
+
+    turn_count = 0
+    while True:
+        turn_count += 1
+        report = orchestrator.resume(
+            session_name=session_name,
+            interactive=interactive,
+        )
+        if report is None:
+            break
+
+        # In session mode, we do NOT exit on validation failure
+        # because the orchestrator triggers an automatic re-plan.
+        handle_report_output(
+            container, report, no_copy, silent=True, exit_on_failure=False
+        )
+
+        cumulative_cost = float(report.metadata.get("cumulative_cost", 0.0))
+        if not loop_guard.should_continue(turn_count, cumulative_cost, interactive):
+            break
+
+
 def handle_new_session(  # noqa: PLR0913
     container: Container,
     name: Optional[str],
@@ -40,8 +73,6 @@ def handle_new_session(  # noqa: PLR0913
     api_key: Optional[str] = None,
 ):
     """Logic for the 'start' command."""
-    from teddy_executor.adapters.inbound.cli_helpers import handle_report_output
-
     try:
         # 0. Ensure project is initialized
         container.resolve(IInitUseCase).ensure_initialized()
@@ -75,31 +106,12 @@ def handle_new_session(  # noqa: PLR0913
         typer.echo(f"Session created at: {session_dir}")
 
         # Streamlined Initialization: Trigger resume (which triggers planning for EMPTY state)
-        orchestrator = container.resolve(IRunPlanUseCase)
-        loop_guard = container.resolve(ISessionLoopGuard)
-
-        # Use the actual folder name for session orchestration
-        current_session_name = Path(session_dir).name
-        turn_count = 0
-        while True:
-            turn_count += 1
-            # Safeguard: prevent infinite loops in non-interactive CI environments
-            report = orchestrator.resume(
-                session_name=current_session_name,
-                interactive=interactive,
-            )
-            if report is None:
-                break
-
-            # In session mode, we do NOT exit on validation failure
-            # because the orchestrator triggers an automatic re-plan.
-            handle_report_output(
-                container, report, no_copy, silent=True, exit_on_failure=False
-            )
-
-            cumulative_cost = float(report.metadata.get("cumulative_cost", 0.0))
-            if not loop_guard.should_continue(turn_count, cumulative_cost, interactive):
-                break
+        _orchestrate_session_loop(
+            container=container,
+            session_name=Path(session_dir).name,
+            interactive=interactive,
+            no_copy=no_copy,
+        )
 
     except Exception as e:
         from teddy_executor.core.domain.models.exceptions import ConfigurationError
@@ -216,7 +228,6 @@ def handle_resume_session(
 ):
     """Logic for the 'resume' command."""
     import re
-    from teddy_executor.adapters.inbound.cli_helpers import handle_report_output
 
     try:
         _run_cli_preflight_check(container)
@@ -241,26 +252,12 @@ def handle_resume_session(
         display_name = re.sub(r"^\d{8}_\d{6}-", "", session_name)
         typer.echo(f"Resuming session: {display_name}")
 
-        orchestrator = container.resolve(IRunPlanUseCase)
-        loop_guard = container.resolve(ISessionLoopGuard)
-        turn_count = 0
-        while True:
-            turn_count += 1
-            report = orchestrator.resume(
-                session_name=session_name, interactive=interactive
-            )
-            if not report:
-                break
-
-            # In session mode, we do NOT exit on validation failure
-            # because the orchestrator triggers an automatic re-plan.
-            handle_report_output(
-                container, report, no_copy, silent=True, exit_on_failure=False
-            )
-
-            cumulative_cost = float(report.metadata.get("cumulative_cost", 0.0))
-            if not loop_guard.should_continue(turn_count, cumulative_cost, interactive):
-                break
+        _orchestrate_session_loop(
+            container=container,
+            session_name=session_name,
+            interactive=interactive,
+            no_copy=no_copy,
+        )
 
     except Exception as e:
         from teddy_executor.core.domain.models.exceptions import ConfigurationError

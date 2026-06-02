@@ -34,7 +34,7 @@ And it should transition Turn 99's turn.context to Turn 01 of the new session
 - **Migration with Suffix**: If migrating `{name}-2`, the next session should be `{name}-3`.
 
 ## Deliverables
-- [ ] **Cleanup** - Fix `PLR0915` (Too many statements) in `session_cli_handlers.py` [DEBT].
+- [x] **Cleanup** - Fix `PLR0915` (Too many statements) in `session_cli_handlers.py` [DEBT].
 - [ ] **Cleanup** - Fix Mypy signature mismatch in `real_adapter_mixin.py` for `WebSearcherAdapter` [DEBT].
 - [x] **Contract** - Update `ISessionLoopGuard.should_continue` signature to include `cumulative_cost` and `interactive` flag.
 - [ ] **Harness** - Create `MockSessionLoopGuard` for testing limit breaches.
@@ -48,6 +48,7 @@ And it should transition Turn 99's turn.context to Turn 01 of the new session
 - [ ] **Wiring** - Update `SessionOrchestrator` to pass the `interactive` flag to the loop guard.
 
 ## Implementation Notes
+- **CLI Refactor**: Extracted `_orchestrate_session_loop` in `session_cli_handlers.py` to resolve `PLR0915` (Too many statements) and eliminate duplication between `start` and `resume` logic.
 - **Mocking Protocol**: Use `unittest.mock.create_autospec` for port mocks in unit tests to ensure signature drift is caught immediately during contract updates.
 - **Harness Repair**: Systemic regressions in acceptance/integration tests during the `ISessionLoopGuard` contract update were traced to the `TestEnvironment` harness, which required a matching signature update for its default mock side-effect.
 - **Prototype Scope**: The validated prototype (`spikes/prototypes/02-03-safety-limits.py`) focused strictly on the "Centennial" migration boundary and pruning logic. It did not simulate physical directory creation for every incremental turn (T1-T98), as that logic already exists in the production `SessionRepository`.
