@@ -26,7 +26,7 @@ Implement resilient infrastructure patterns (retries, User-Agent rotation), enfo
 - **Parser Resilience:** Ignore and clean up unforeseen codeblocks, thematic breaks (`---`), or trailing text within delimiters (e.g., `~~~~~~ trailing text`) without validation errors (Note: Preserve trailing text outside delimiters).
 - **Efficiency:** Store `system_prompt.xml` at session root; prevent pruning of "Message Turns".
 - **Fail-Fast:** Synchronous `EXECUTE` must fail-fast on interactive prompts; `EDIT` must gracefully return `FAILURE` if file modified during execution.
-- **Validation:** Relax context rules for `READ`/`EDIT` to rely on matching logic rather than throwing validation errors for context presence.
+- **Validation:** Relax context rules for `READ`/`EDIT` to rely on matching logic rather than throwing validation errors for context presence; ignore redundant edits (identical FIND and REPLACE blocks) without triggering validation errors.
 
 ## Vertical Slices
 - [x] **02-01-Resilient Infrastructure**: LLM retries and recursive context expansion.

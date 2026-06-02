@@ -26,3 +26,4 @@
 - **Parser Resilience:** For all actions (e.g., `READ`, `MESSAGE`), ignore and clean up unforeseen codeblocks, thematic breaks (`---`), or trailing text within codeblock delimiters (e.g., `~~~~~~ trailing text`) following the action block without triggering validation errors. **Note:** Other unforeseen text outside delimiters must still raise a validation error.
 - **EXECUTE Fail-Fast:** Detect interactive prompts to fail early; on timeout, identify the specific failing command in a chain.
 - **Relaxed Context Validation:** Do not throw validation errors for `READ`-ing files already in context or `EDIT`-ing files not in context; rely on matching logic for enforcement.
+- **Redundant Edits:** Do not throw validation errors for `EDIT` actions where the `FIND` and `REPLACE` blocks are identical; treat them as successful no-ops.
