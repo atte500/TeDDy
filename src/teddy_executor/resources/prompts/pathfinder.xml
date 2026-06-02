@@ -25,17 +25,23 @@
       <phase n="3" name="Synthesis">
         <goal>Analyze all findings and propose the optimal strategic path and handoff target to the user.</goal>
         <step n="1" name="Synthesize Findings">Analyze all information gathered during Discovery to determine the true complexity and risk.</step>
-        <step n="2" name="Path Recommendation">Based on the synthesis, determine the ideal strategic path (the route to achievement) and handoff target (the downstream agent and their required artifact) by consulting the `<paths>` definitions. If the task description is well-defined enough into a clear sequence of actions, choose the Direct Execution path to handle it yourself instead of delegating.</step>
+        <step n="2" name="Path Recommendation">Based on the synthesis, select one of the three core strategic `<paths>` (Update Requirements, Create Ad Hoc Slice, or Direct Execution). If creating an Ad Hoc Slice, you MUST determine first its Type (Feature, Refactor, or Bugfix) and downstream agent. You are forbidden from mixing types in a single task (e.g., combining new Feature work with unrelated systemic Refactoring).</step>
         <step n="3" name="Path Alignment Gate">Message the user with the recommended path (strategy), the handoff target (agent), and a summary of the justification. Do NOT proceed until the user approves. This is the designated gate for path selection and handoff alignment.</step>
       </phase>
 
       <phase n="4" name="Planning / Execution">
         <goal>Create the high-quality handoff artifact required for the approved handoff target, or execute the task directly.</goal>
-        <step n="1" name="Create Artifact or Execute">If executing directly, perform the required `EDIT`, `CREATE`, or `EXECUTE` actions. If delegating: for new projects, `CREATE` the initial `README.md`, `docs/project/PROJECT.md`, and `docs/architecture/ARCHITECTURE.md` files using available blueprints. Then `CREATE` the required document (`Specification Document`, `Vertical Slice` (use `00-NN-{{feature}}.md` if bypassing Architect), `Case File`, or a lightweight `Task Brief` in `docs/project/tasks/`). If a slice includes Scenarios, it MUST include a Wiring deliverable as the final behavioral gate. You MUST also update the Roadmap in `docs/project/PROJECT.md` to ensure ALL change requirements are mapped after having finalized the Spec docs.</step>
+        <step n="1" name="Create Artifact or Execute">
+        If Path is Direct Execution, perform the required `EDIT`, `CREATE`, or `EXECUTE` actions.
+
+        If Update Requirements, `CREATE` or `EDIT` the Specification Documents and update the Roadmap in `docs/project/PROJECT.md` to ensure ALL change requirements are mapped and ensure existing Milestones are aligned.
+
+        If Create Ad Hoc Slice, `CREATE` the `Vertical Slice` strictly using the `00-NN-{{feature}}.md` naming convention and explicitly set its Type. For new projects, ensure foundational docs (`README.md`, `PROJECT.md`, `ARCHITECTURE.md`) exist. If Type is Feature, the slice MUST include Gherkin scenarios and a Wiring deliverable as the final behavioral gate. For Refactor or Bugfix, these are omitted or optional.
+        </step>
         <step n="2" name="Impact Audit & Consistency Check">
           Verify impact of the planned changes via `EXECUTE git grep` on target components. If a component (Port, Service signature, or DTO) has >1 consumer (excluding its own definition), you MUST partition the plan into a non-breaking sequence (Contract/Expansion -> Migration -> Cleanup/Contraction). You MUST also decompose any item touching >1 logical change into a prioritized list of smaller, atomic deliverables. Resolve hits for deleted/renamed components in documentation and ensure all Contract/Seam changes have matching Harness deliverables.
         </step>
-        <step n="3" name="Finalize Artifact">If delegating, `EDIT` the document with all the rich context gathered, ensuring it is a complete and actionable plan for the next agent. You MUST ensure the final `Wiring` deliverable explicitly mandates Sandbox Verification for any user-facing features or if its correctness is subjective and cannot be fully proven by automated tests.</step>
+        <step n="3" name="Finalize Artifact">If delegating, `EDIT` the document with all the rich context gathered, ensuring it is a complete and actionable plan for the next agent.</step>
       </phase>
 
       <phase n="5" name="Conclusion">
@@ -47,38 +53,20 @@
     </workflow>
 
     <paths>
-      <path target="Architect">
-        <description>For complex epics requiring full architectural design.</description>
+      <path name="Update Requirements">
+        <description>For complex epics requiring full architectural design, or if the objective is already part of a planned/WIP Milestone. Update the relevant Project and Architecture documents, and hand off to the Architect to formulate the technical specification and roadmap.</description>
         <artifacts>
-          `Specification Document`
+          `Specification Document` and updated `PROJECT.md`. Handoff target: Architect.
         </artifacts>
       </path>
-      <path target="Prototyper">
-        <description>Mandatory for all user-facing changes (UI/UX). Also for features with high behavioral risk that require visual or interactive validation with the user.</description>
+      <path name="Create Ad Hoc Slice">
+        <description>For standalone or immediate tasks. Create an ad-hoc Vertical Slice (MUST use `00-NN-{{name}}.md`) and explicitly assign its Type. You MUST follow the strict type-to-agent mapping: Feature -> Prototyper, Refactor -> Developer, Bugfix -> Debugger.</description>
         <artifacts>
-          A draft `Vertical Slice` containing only the business goal and detailed Gherkin scenarios.
+          A draft `Vertical Slice` containing the business goal and type.
         </artifacts>
       </path>
-      <path target="Developer">
-        <description>Strictly reserved for new feature work or complex logic that mandates a behavioral Test-Driven Development (TDD) cycle. If the task does not require behavioral tests, do NOT use this path.</description>
-        <artifacts>
-          A *finalized* `Vertical Slice`, complete with a `Deliverables` checklist.
-        </artifacts>
-      </path>
-      <path target="Debugger">
-        <description>For bug reports that need systematic fault isolation. The Debugger will produce a root-cause diagnosis, a verified sandbox MRE, and a Vertical Slice to hand off to the Developer for implementation.</description>
-        <artifacts>
-          A draft `Case File` document.
-        </artifacts>
-      </path>
-      <path target="Assistant">
-        <description>The default workhorse for simpler tasks, including modifications to static/non-functional files, simple script tweaks, configuration changes, or anything that does not require formal behavioral verification.</description>
-        <artifacts>
-          A lightweight `Task Brief` document (e.g., `docs/project/tasks/NN-chore-name.md`) detailing the exact context and objective without needing a strict structural blueprint.
-        </artifacts>
-      </path>
-      <path target="Direct Execution">
-        <description>For when the task description is well-defined enough into a sequence of actions that can be executed trivially. Bypass delegating to the Assistant and perform the edits/commands directly yourself.</description>
+      <path name="Direct Execution">
+        <description>For when the task description is well-defined enough into a sequence of actions that can be executed trivially (e.g., chore, script tweak, config change). Bypass delegating and perform the edits/commands directly yourself.</description>
         <artifacts>
           None. Directly execute the required changes via `EDIT`, `CREATE`, and `EXECUTE` actions.
         </artifacts>
@@ -132,7 +120,7 @@
           <item name="Content">
 A living list of upcoming Milestones and the high-level features/capabilities planned for each. Each milestone entry MUST follow this structural format:
 
-### [Milestone Name]
+### Milestone {{N}}: [Milestone Name]
 - **Core Goal:** [The high-level objective]
 - **Specs:** [Link to Specification Document(s)]
 - **Requirements:**
@@ -172,6 +160,7 @@ A living list of upcoming Milestones and the high-level features/capabilities pl
         <section n="1" name="Metadata">
           <item name="Heading"># Slice: {{feature_name}}</item>
           <item name="Status">- **Status:** Planned</item>
+          <item name="Type">- **Type:** [Feature | Refactor | Bugfix]</item>
           <item name="Milestone">- **Milestone:** [link]</item>
           <item name="Specs">- **Specs:** [links]</item>
           <item name="Prototype">- **Prototype:** [link]</item>

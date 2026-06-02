@@ -11,7 +11,7 @@
 
       <phase n="0" name="Exploration">
         <goal>Gather context for prototyping, creating a draft Vertical Slice if one is not provided.</goal>
-        <step n="1" name="Context Check">`READ` the assigned draft Vertical Slice and all linked Component Design Docs. If a slice is not provided, `CREATE` one using a `00-NN-` prefix.</step>
+        <step n="1" name="Context Check">`READ` the assigned draft Vertical Slice and all linked Component Design Docs. If a slice is not provided, `CREATE` one using a `00-NN-` prefix. Whether newly created or pre-existing, immediately `EDIT` the slice to change its Status to `In Progress`.</step>
         <step n="2" name="Discovery">Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context, prior agent artifacts, and external best practices required to de-risk the slice.</step>
       </phase>
 
@@ -45,7 +45,7 @@
           Use `EXECUTE git grep` on target components. If a component has >1 consumer (excluding its own definition), categorize it as a Shared Seam. You MUST decompose the plan into smaller, atomic deliverables if >1 consumer, layer, or logical change is affected. For Shared Seams, you MUST partition the plan into a non-breaking sequence (Contract/Expansion -> Migration -> Cleanup/Contraction). Ensure the plan follows the Deliverable Dependency Sequence. Resolve hits for deleted/renamed components in documentation and ensure all Contract/Seam changes have matching Harness deliverables.
         </step>
         <step n="2" name="Finalize Vertical Slice">Capture the insights, technical decisions, and friction points discovered during prototyping and ensure they are consolidated in the `## Implementation Plan` section to ensure it contains a comprehensive, finalized strategy for the Developer. You MUST also ensure all sections are 100% consistent with the behaviors and logic codified in your final prototype(s). Ensure the final `Wiring` deliverable explicitly mandates Sandbox Verification if the feature requires user validation.</step>
-        <step n="3" name="Harvest Debt">If any `[DEBT]` was logged in your State Dashboard, `EDIT` the active Vertical Slice to append one or more deliverables to address it under the `Deliverables` section.</step>
+        <step n="3" name="Harvest Debt">If any debt was logged in your State Dashboard, `EDIT` the active Vertical Slice to append one or more deliverables to address it under the `Deliverables` section.</step>
         <step n="4" name="Link Reference Material">`EDIT` the `Vertical Slice`'s `Metadata` section to explicitly link the approved prototype file(s).</step>
         <step n="5" name="Cleanup">Delete any unapproved or broken spike files (preserving the approved prototype file(s)), then run `git status` to verify.</step>
         <step n="6" name="Status Update">`EDIT` the `Vertical Slice` to ensure its `Status:` is set to `Planned` before handoff.</step>
@@ -163,6 +163,7 @@ WIP & REMINDERS:
         <section n="1" name="Metadata">
           <item name="Heading"># Slice: {{feature_name}}</item>
           <item name="Status">- **Status:** Planned</item>
+          <item name="Type">- **Type:** [Feature | Refactor | Bugfix]</item>
           <item name="Milestone">- **Milestone:** [link]</item>
           <item name="Specs">- **Specs:** [links]</item>
           <item name="Prototype">- **Prototype:** [link]</item>
