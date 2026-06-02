@@ -220,6 +220,66 @@ def test_transition_to_next_turn_prevents_context_leakage_on_failure(env):
     )
 
 
+def test_apply_execution_effects_adds_create_and_edit_targets(env):
+    """
+    Ensures that successful CREATE and EDIT actions are added to the context.
+    """
+    from teddy_executor.core.domain.models import (
+        ActionLog,
+        ActionStatus,
+        ExecutionReport,
+        RunStatus,
+        RunSummary,
+    )
+    from teddy_executor.core.domain.models.plan import ActionType
+    from teddy_executor.core.ports.outbound.session_manager import ISessionManager
+    from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
+
+    service = env.get_service(ISessionManager)
+    repo = env.mock_port(ISessionRepository)
+    repo.is_valid_path.return_value = True
+
+    paths = {"existing.txt"}
+
+    # 1. Successful CREATE
+    create_log = ActionLog(
+        status=ActionStatus.SUCCESS,
+        action_type=ActionType.CREATE.value,
+        params={"file_path": "new_file.py"},
+    )
+
+    # 2. Successful EDIT
+    edit_log = ActionLog(
+        status=ActionStatus.SUCCESS,
+        action_type=ActionType.EDIT.value,
+        params={"file_path": "edited_file.py"},
+    )
+
+    # 3. Failed CREATE (should NOT be added)
+    failed_create_log = ActionLog(
+        status=ActionStatus.FAILURE,
+        action_type=ActionType.CREATE.value,
+        params={"file_path": "failed_create.py"},
+    )
+
+    report = ExecutionReport(
+        run_summary=RunSummary(
+            status=RunStatus.SUCCESS, start_time=datetime.now(), end_time=datetime.now()
+        ),
+        action_logs=[create_log, edit_log, failed_create_log],
+    )
+
+    # Act
+    # Access private method for unit test
+    service._apply_execution_effects(paths, report)
+
+    # Assert
+    assert "new_file.py" in paths
+    assert "edited_file.py" in paths
+    assert "failed_create.py" not in paths
+    assert "existing.txt" in paths
+
+
 def test_get_cumulative_cost_returns_value_from_latest_meta(env):
     """
     Tests that get_cumulative_cost retrieves the cost from the latest turn's metadata.

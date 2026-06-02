@@ -37,7 +37,7 @@ Then "new_file.py" should be present in the next turn's "turn.context"
 - [x] **Logic** - Update `ContextService._resolve_recursive` to ensure URLs are not treated as local directories.
 - [x] **Logic** - Update `EditActionValidator` to remove context-presence check and treat identical FIND/REPLACE as no-ops.
 - [x] **Logic** - Update `ReadActionValidator` to remove "already in context" error.
-- [ ] **Logic** - Update `SessionService._apply_execution_effects` to include `CREATE` and `EDIT` side-effects.
+- [x] **Logic** - Update `SessionService._apply_execution_effects` to include `CREATE` and `EDIT` side-effects.
 - [ ] **Harness** - Add integration test for recursive directory expansion in `.context` manifests.
 - [ ] **Wiring** - Update `registries/infrastructure.py` and `container.py` for the new `ContextService` dependency.
 
@@ -47,6 +47,7 @@ Then "new_file.py" should be present in the next turn's "turn.context"
 - **Logic (Recursive URL support)**: Updated `ContextService._resolve_recursive` to include a URL guard. This ensures that URLs in manifests or context lists are preserved without triggering local filesystem directory/manifest checks, preventing potential errors or invalid state.
 - **Logic (Relaxed Edit Validation)**: Removed the context-presence check in `EditActionValidator`, allowing AI agents to edit any file as long as it exists and the matcher finds a unique match. Identical `FIND` and `REPLACE` blocks are now treated as successful no-ops to prevent unnecessary validation failures during replanning or redundant turn outputs. Updated existing unit, integration, and acceptance tests to reflect these changes.
 - **Logic (Relaxed Read Validation)**: Removed the "already in context" check from `ReadActionValidator`. AI agents are now permitted to `READ` files that are already part of the session or turn context. This change necessitated updating integration tests (`test_session_orchestrator_validation.py` and `test_session_pruning_persistence.py`) to use `CREATE` failures (e.g., creating an existing file without overwrite) instead of redundant `READ` actions to trigger the validation failure paths they were testing.
+- **Logic (CREATE/EDIT Auto-addition)**: Updated `SessionService._apply_execution_effects` to automatically add the target files of successful `CREATE` and `EDIT` actions to the next turn's context. The logic extracts the `file_path` (or `File Path`) from the action parameters, ensuring that any file created or modified by the AI is immediately available in its working set for the subsequent turn, reducing manual `READ` requirements.
 
 ## Implementation Plan
 ### Delta Analysis

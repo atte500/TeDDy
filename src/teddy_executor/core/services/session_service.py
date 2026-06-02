@@ -243,7 +243,7 @@ class SessionService(ISessionManager):
     def _apply_execution_effects(
         self, paths: set[str], report: Optional[ExecutionReport]
     ) -> None:
-        """Applies side effects from READ actions to the context set."""
+        """Applies side effects from READ, CREATE, and EDIT actions to the context set."""
         from teddy_executor.core.domain.models import ActionStatus
 
         if not report:
@@ -252,13 +252,21 @@ class SessionService(ISessionManager):
             if log.status != ActionStatus.SUCCESS:
                 continue
 
-            resource = log.params.get("resource") or log.params.get("Resource")
-            if not resource:
-                continue
-            path = self._extract_resource_path(resource)
+            # Determine path based on action type
+            resource_val = None
             if log.action_type == ActionType.READ.value:
-                if self._repository.is_valid_path(path):
-                    paths.add(path)
+                resource_val = log.params.get("resource") or log.params.get("Resource")
+            elif log.action_type in (ActionType.CREATE.value, ActionType.EDIT.value):
+                resource_val = log.params.get("file_path") or log.params.get(
+                    "File Path"
+                )
+
+            if not resource_val:
+                continue
+
+            path = self._extract_resource_path(resource_val)
+            if self._repository.is_valid_path(path):
+                paths.add(path)
 
     def _persist_next_meta(
         self,
