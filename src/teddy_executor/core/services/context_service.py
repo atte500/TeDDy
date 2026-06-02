@@ -133,7 +133,10 @@ class ContextService(IGetContextUseCase):
         self, f: str, paths: List[str], processed_manifests: set[str]
     ) -> None:
         """Helper to resolve a single path recursively."""
-        if self._is_manifest(f):
+        if self._is_url(f):
+            if f not in paths:
+                paths.append(f)
+        elif self._is_manifest(f):
             self._expand_manifest(f, paths, processed_manifests)
         elif self._file_system_manager.is_dir(f):
             self._expand_directory(f, paths)

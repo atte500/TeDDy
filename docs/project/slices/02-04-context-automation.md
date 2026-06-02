@@ -34,7 +34,7 @@ Then "new_file.py" should be present in the next turn's "turn.context"
 ## Deliverables
 - [x] **Seam** - Inject `IWebScraper` into `ContextService` to support remote URL context gathering.
 - [x] **Logic** - Update `ContextService.get_context` to fetch remote URL content via `IWebScraper`.
-- [ ] **Logic** - Update `ContextService._resolve_recursive` to ensure URLs are not treated as local directories.
+- [x] **Logic** - Update `ContextService._resolve_recursive` to ensure URLs are not treated as local directories.
 - [ ] **Logic** - Update `EditActionValidator` to remove context-presence check and treat identical FIND/REPLACE as no-ops.
 - [ ] **Logic** - Update `ReadActionValidator` to remove "already in context" error.
 - [ ] **Logic** - Update `SessionService._apply_execution_effects` to include `CREATE` and `EDIT` side-effects.
@@ -44,6 +44,7 @@ Then "new_file.py" should be present in the next turn's "turn.context"
 ## Implementation Notes
 - **Seam (IWebScraper Injection)**: Injected `IWebScraper` into `ContextService` constructor. Updated `test_context_service.py` fixture and two manual instantiations in `test_context_recursion.py` and `test_context_service_performance.py` to provide a mock.
 - **Logic (Remote URL context)**: Updated `ContextService.get_context` to detect URLs (starting with http/https) and use the `IWebScraper` to fetch their content. URLs are formatted with root-relative-like Markdown links (without the leading slash) in the resource contents section.
+- **Logic (Recursive URL support)**: Updated `ContextService._resolve_recursive` to include a URL guard. This ensures that URLs in manifests or context lists are preserved without triggering local filesystem directory/manifest checks, preventing potential errors or invalid state.
 
 ## Implementation Plan
 ### Delta Analysis

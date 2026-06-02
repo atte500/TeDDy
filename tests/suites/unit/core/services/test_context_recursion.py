@@ -50,3 +50,38 @@ def test_resolve_files_to_paths_expands_directories_recursively(
     assert resolved_paths == expected
     mock_fs.is_dir.assert_any_call("src/utils")
     mock_fs.list_directory_recursive.assert_called_once_with("src/utils")
+
+
+def test_resolve_recursive_ignores_urls_for_directory_checks(
+    container,
+    mock_fs: Any,
+    mock_tree_gen: Any,
+    mock_inspector: Any,
+    mock_llm_client: Any,
+):
+    """
+    Ensures that URLs are added to paths without calling is_dir on the filesystem manager.
+    """
+    # Arrange
+    mock_scraper = register_mock(container, IWebScraper)
+    service = ContextService(
+        file_system_manager=mock_fs,
+        repo_tree_generator=mock_tree_gen,
+        environment_inspector=mock_inspector,
+        llm_client=mock_llm_client,
+        web_scraper=mock_scraper,
+    )
+
+    url = "https://example.com/spec.md"
+    paths: list[str] = []
+    processed_manifests: set[str] = set()
+
+    # Act
+    service._resolve_recursive(url, paths, processed_manifests)
+
+    # Assert
+    assert url in paths
+    # Crucially, is_dir should NOT be called for the URL
+    for call in mock_fs.is_dir.call_args_list:
+        args, _ = call
+        assert args[0] != url, f"is_dir was incorrectly called with URL: {url}"
