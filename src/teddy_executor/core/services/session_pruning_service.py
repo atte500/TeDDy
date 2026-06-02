@@ -190,13 +190,12 @@ class SessionPruningService:
         config: Dict[str, bool],
     ) -> None:
         """Processes a single item to update turn-level metadata."""
-        is_validation_fail = False
+        # --- 1. Identify Metadata for Pruning ---
 
         # Heuristic 4: Validation failure (Check report)
         if config["validation"] and posix_path.endswith("report.md"):
             if self._check_report_failed_validation(item.path):
                 state["validation_fails"].add(turn_id)
-                is_validation_fail = True
 
         # Heuristic 3: Non-green state (Check plan)
         if posix_path.endswith("plan.md"):
@@ -208,12 +207,18 @@ class SessionPruningService:
                     state["statuses"].get(turn_id, True) and is_green
                 )
 
-            if config["messages"] and not is_failed and not is_validation_fail:
-                if self._check_plan_is_message(item.path):
-                    # Final guard: Only spare if the report indicates SUCCESS
-                    report_path = item.path.replace("plan.md", "report.md")
-                    if self._check_report_is_success(report_path):
-                        state["messages"].add(turn_id)
+        # --- 2. Identify Metadata for Sparing ---
+
+        # Sparing Rule: Successful Message Turns
+        if config["messages"] and posix_path.endswith("plan.md"):
+            if self._check_plan_is_message(item.path):
+                # We only spare if the turn resulted in a SUCCESSFUL execution.
+                # We ignore the plan's internal status (is_failed)
+                # and the report's validation status (is_validation_fail) here,
+                # as a successful message is valuable regardless.
+                report_path = item.path.replace("plan.md", "report.md")
+                if self._check_report_is_success(report_path):
+                    state["messages"].add(turn_id)
 
     def _check_plan_is_message(self, path: str) -> bool:
         """Checks if a plan file contains a ## Message section."""

@@ -83,7 +83,8 @@ def test_failure_pruning_spares_successful_message_turns(service, mock_fs):
 
     def mock_read(path):
         if "01/plan.md" in path:
-            return "- **Status:** 🟢\n## Message\nHello"
+            # Sparing should work even if the agent is OFF-TRACK (🟡)
+            return "- **Status:** OFF-TRACK 🟡\n## Message\nHello"
         if "01/report.md" in path:
             return "- **Overall Status:** SUCCESS"
         return ""
