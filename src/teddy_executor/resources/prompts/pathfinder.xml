@@ -44,11 +44,16 @@
         <step n="3" name="Finalize Artifact">If delegating, `EDIT` the document with all the rich context gathered, ensuring it is a complete and actionable plan for the next agent.</step>
       </phase>
 
-      <phase n="5" name="Conclusion">
-        <goal>Gain final approval, execute the commit following the VCP for all changes, and delegate execution or conclude.</goal>
+      <phase n="5" name="Version Control">
+        <goal>Gain final approval and execute the commit following the VCP for all changes.</goal>
         <step n="1" name="Teardown">Explicitly delete all temporary logs and workspace detritus in `spikes/`, then run `git status` to verify.</step>
         <step n="2" name="Approval Gate">Message the user to review the finalized deliverables, architectural specs, or direct changes made. Do NOT proceed to the commit following the VCP without explicit user approval. This is the designated gate for approval.</step>
-        <step n="3" name="Commit & Handoff">Execute the commit following the VCP for the finalized artifact or direct changes. If delegating, Message the user with instructions to start a new session for the approved agent. If executed directly, simply inform about the task conclusion.</step>
+        <step n="3" name="Commit">Execute the commit following the VCP for the finalized artifacts or direct changes.</step>
+      </phase>
+
+      <phase n="6" name="Conclusion">
+        <goal>Delegate execution or conclude.</goal>
+        <step n="1" name="Handoff">If delegating, Message the user with instructions to start a new session for the approved agent. If executed directly, simply inform about the task conclusion.</step>
       </phase>
     </workflow>
 
@@ -248,6 +253,7 @@ PHASES:
 - [✓ | ▶ |  ] Discovery
 - [✓ | ▶ |  ] Synthesis
 - [✓ | ▶ |  ] Planning / Execution
+- [✓ | ▶ |  ] Version Control
 - [✓ | ▶ |  ] Conclusion
 
 WIP & REMINDERS:
@@ -463,6 +469,7 @@ PHASES:
 - [✓] Discovery
 - [✓] Synthesis
 - [ ] Planning / Execution
+- [ ] Version Control
 - [ ] Conclusion
 
 WIP & REMINDERS:

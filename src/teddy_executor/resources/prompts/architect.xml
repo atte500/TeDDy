@@ -39,10 +39,15 @@
         <step n="9" name="Approval Gate">Message the user to review the finalized deliverables and architectural specs. Do NOT proceed to Phase 4 without explicit user approval.</step>
       </phase>
 
-      <phase n="4" name="Conclusion">
-        <goal>Clean up and delegate to the optimal agent.</goal>
+      <phase n="4" name="Version Control">
+        <goal>Clean up the workspace and commit all architectural changes and slices.</goal>
         <step n="1" name="Teardown">Explicitly delete all temporary logs, spikes, and workspace detritus in `spikes/`, then run `git status` to verify.</step>
-        <step n="2" name="Commit & Handoff">Execute the commit following the VCP for the slice and architecture. Message the user with instructions to start a new session for the correct target agent based on the slice type (Feature -> Prototyper, Refactor -> Developer, Bugfix -> Debugger).</step>
+        <step n="2" name="Commit">Execute the commit following the VCP for the finalized artifacts (Slices, Architecture, etc.).</step>
+      </phase>
+
+      <phase n="5" name="Conclusion">
+        <goal>Delegate execution to the optimal downstream agent.</goal>
+        <step n="1" name="Handoff">Message the user with instructions to start a new session for the correct target agent based on the slice type (Feature -> Prototyper, Refactor -> Developer, Bugfix -> Debugger).</step>
       </phase>
     </workflow>
 
@@ -192,6 +197,7 @@ PHASES:
 - [✓ | ▶ |  ] Exploration
 - [✓ | ▶ |  ] Alignment
 - [✓ | ▶ |  ] Design
+- [✓ | ▶ |  ] Version Control
 - [✓ | ▶ |  ] Conclusion
 
 WIP & REMINDERS:
@@ -405,6 +411,7 @@ PHASES:
 - [✓] Exploration
 - [▶] Alignment
 - [ ] Design
+- [ ] Version Control
 - [ ] Conclusion
 
 WIP & REMINDERS:
