@@ -134,7 +134,7 @@ def test_formats_research_action_with_results():
     formatter = MarkdownReportFormatter()
     results: WebSearchResults = {
         "query_results": [
-            {"query": "q", "results": [{"title": "T", "href": "H", "body": "B"}]}
+            {"query": "q", "results": [{"title": "T", "href": "H", "description": "B"}]}
         ]
     }
     report = _get_report(
@@ -152,7 +152,7 @@ def test_formats_research_action_with_results():
 
     assert "**Query:** `q`" in output
     assert "[T](H)" in output
-    assert "B" in output
+    assert "```description\nB\n```" in output
 
 
 def test_formats_validation_failed_report():
@@ -168,8 +168,8 @@ def test_formats_validation_failed_report():
     assert "E2" in output
 
 
-def test_formats_research_action_with_content():
-    """Verify RESEARCH action result rendering prioritizes content over body."""
+def test_formats_research_action_with_content_removed():
+    """Verify RESEARCH action result rendering no longer includes content blocks."""
     formatter = MarkdownReportFormatter()
     results: WebSearchResults = {
         "query_results": [
@@ -179,8 +179,7 @@ def test_formats_research_action_with_content():
                     {
                         "title": "T",
                         "href": "H",
-                        "body": "B",
-                        "content": "Full extracted content",
+                        "description": "B",
                     }
                 ],
             }
@@ -201,6 +200,6 @@ def test_formats_research_action_with_content():
 
     assert "**Query:** `q`" in output
     assert "[T](H)" in output
-    assert "```Content\nFull extracted content\n```" in output
+    assert "```description\nB\n```" in output
+    assert "```Content" not in output
     assert "```Snippet" not in output
-    assert "B" not in output

@@ -63,7 +63,7 @@ def test_search_cleans_snippet_spacing(monkeypatch):
     result = searcher.search(queries)
 
     # Assert
-    cleaned_body = result["query_results"][0]["results"][0]["body"]
+    cleaned_body = result["query_results"][0]["results"][0]["description"]
     assert cleaned_body == "Missing space. Here. And, there: now."
 
 
@@ -88,10 +88,9 @@ def test_search_handles_library_exception(monkeypatch):
         searcher.search(queries)
 
 
-def test_search_performs_deep_scraping_for_results():
+def test_search_no_longer_performs_deep_scraping():
     """
-    Verify that the searcher uses the provided scraper to fetch full
-    content for each search result.
+    Verify that the searcher no longer attempts to use a scraper.
     """
     # Arrange
     mock_ddgs_instance = POSIXPathMock()
@@ -105,52 +104,13 @@ def test_search_performs_deep_scraping_for_results():
     mock_factory = POSIXPathMock()
     mock_factory.return_value.__enter__.return_value = mock_ddgs_instance
 
-    mock_scraper = POSIXPathMock()
-    mock_scraper.get_content.return_value = "Full scraped content"
-
     # Act
-    # Inject dependencies
     searcher = WebSearcherAdapter(
         config_service=POSIXPathMock(),
         ddgs_factory=mock_factory,
-        scraper=mock_scraper,
     )
     result = searcher.search(["python"])
 
     # Assert
-    assert result["query_results"][0]["results"][0]["content"] == "Full scraped content"
-    mock_scraper.get_content.assert_called_once_with("https://python.org")
-
-
-def test_search_returns_untruncated_content_from_scraper():
-    """
-    Ensures that WebSearcherAdapter returns the exact content provided by the scraper,
-    delegating truncation responsibility entirely to the WebScraperAdapter.
-    """
-    # Arrange
-    mock_config = POSIXPathMock()
-    # Default behavior for max_results
-    mock_config.get_setting.return_value = 5
-
-    mock_ddgs_instance = POSIXPathMock()
-    mock_ddgs_instance.text.return_value = [{"title": "T", "href": "H", "body": "B"}]
-    mock_factory = POSIXPathMock()
-    mock_factory.return_value.__enter__.return_value = mock_ddgs_instance
-
-    mock_scraper = POSIXPathMock()
-    large_string = "A" * 10000
-    mock_scraper.get_content.return_value = large_string
-
-    searcher = WebSearcherAdapter(
-        config_service=mock_config,
-        ddgs_factory=mock_factory,
-        scraper=mock_scraper,
-    )
-
-    # Act
-    result = searcher.search(["query"])
-
-    # Assert
-    content = result["query_results"][0]["results"][0]["content"]
-    assert content == large_string
-    assert "[TRUNCATED" not in content
+    # Verify content key is missing from the result DTO
+    assert "content" not in result["query_results"][0]["results"][0]

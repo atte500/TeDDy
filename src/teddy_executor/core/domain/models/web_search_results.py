@@ -10,7 +10,7 @@ class SearchResult(TypedDict):
 
     title: str
     href: str
-    body: str  # The SERP snippet
+    description: str  # The SERP snippet
 
 
 class QueryResult(TypedDict):

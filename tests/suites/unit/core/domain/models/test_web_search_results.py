@@ -17,16 +17,23 @@ def test_search_result_contract_does_not_contain_content():
     )
 
 
+def test_search_result_contract_renamed_body_to_description():
+    """Asserts that 'body' has been renamed to 'description' in the contract."""
+    hints = get_type_hints(SearchResult)
+    assert "description" in hints, "SearchResult must contain 'description' field."
+    assert "body" not in hints, "SearchResult must NOT contain 'body' field."
+
+
 def test_search_result_structure():
     """Verify the structure of SearchResult with core fields."""
     result: SearchResult = {
         "title": "Title",
         "href": "https://example.com",
-        "body": "Snippet",
+        "description": "Snippet",
     }
     assert result["title"] == "Title"
     assert result["href"] == "https://example.com"
-    assert result["body"] == "Snippet"
+    assert result["description"] == "Snippet"
 
 
 def test_query_result_structure():
@@ -34,7 +41,7 @@ def test_query_result_structure():
     result: SearchResult = {
         "title": "T",
         "href": "H",
-        "body": "B",
+        "description": "B",
     }
     query_res: QueryResult = {"query": "test", "results": [result]}
     assert query_res["query"] == "test"

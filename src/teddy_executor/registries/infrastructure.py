@@ -113,7 +113,6 @@ def register_infrastructure(container: punq.Container) -> None:
         IWebSearcher,
         factory=lambda: WebSearcherAdapter(
             config_service=container.resolve(IConfigService),
-            scraper=container.resolve(IWebScraper),
         ),
         scope=punq.Scope.transient,
     )

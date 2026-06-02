@@ -6,7 +6,7 @@ from teddy_executor.core.domain.models import (
     WebSearchError,
     WebSearchResults,
 )
-from teddy_executor.core.ports.outbound import IConfigService, IWebScraper, IWebSearcher
+from teddy_executor.core.ports.outbound import IConfigService, IWebSearcher
 
 
 logger = logging.getLogger(__name__)
@@ -21,11 +21,9 @@ class WebSearcherAdapter(IWebSearcher):
         self,
         config_service: IConfigService,
         ddgs_factory: Optional[Callable[..., Any]] = None,
-        scraper: Optional[IWebScraper] = None,
     ):
         self._config_service = config_service
         self._ddgs_factory = ddgs_factory
-        self._scraper = scraper
 
     def _apply_ddgs_monkeypatch(self) -> None:
         """Applies a structural patch to DDGS to preserve word boundaries."""
@@ -70,20 +68,12 @@ class WebSearcherAdapter(IWebSearcher):
             search_results_for_query: List[SearchResult] = []
             for res in results:
                 url = res.get("href", "")
+                # Map library 'body' to our 'description'
                 item: SearchResult = {
                     "title": res.get("title", ""),
                     "href": url,
-                    "body": self._clean_snippet(res.get("body", "")),
+                    "description": self._clean_snippet(res.get("body", "")),
                 }
-
-                if self._scraper and url:
-                    try:
-                        content = self._scraper.get_content(url)
-                        if content is not None:
-                            item["content"] = content
-                    except Exception as e:
-                        # Log failure but continue; we still have the snippet.
-                        logger.warning(f"Failed to scrape content for {url}: {e}")
 
                 search_results_for_query.append(item)
 

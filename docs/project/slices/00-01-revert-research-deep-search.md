@@ -22,10 +22,10 @@ And no full "Content" blocks should be present in the report
 
 ## Deliverables
 - [x] **Contract** - Remove `content` field from `SearchResult` DTO in `src/teddy_executor/core/domain/models/web_search_results.py`.
-- [ ] **Contract** - Rename `body` field to `description` in `SearchResult` DTO.
-- [ ] **Logic** - Remove `IWebScraper` dependency and scraping loop from `WebSearcherAdapter`.
-- [ ] **Logic** - Update `WebSearcherAdapter` to populate `description` instead of `body`.
-- [ ] **Wiring** - Remove `IWebScraper` injection from `src/teddy_executor/registries/infrastructure.py` for the `WebSearcherAdapter`.
+- [x] **Contract** - Rename `body` field to `description` in `SearchResult` DTO.
+- [x] **Logic** - Remove `IWebScraper` dependency and scraping loop from `WebSearcherAdapter`.
+- [x] **Logic** - Update `WebSearcherAdapter` to populate `description` instead of `body`.
+- [▶] **Wiring** - Remove `IWebScraper` injection from `src/teddy_executor/registries/infrastructure.py` for the `WebSearcherAdapter`.
 - [ ] **Wiring** - Update `src/teddy_executor/core/services/templates/execution_report.md.j2` to use `description` and change codeblock extension from snippet to description but **keep** the "Use READ on the URLs above" hint.
 - [ ] **Cleanup** - Align tests in `tests/suites/integration/adapters/outbound/test_web_searcher_adapter.py` and `tests/suites/integration/core/services/test_research_parsing_integration.py`.
 - [x] **Logic** - Update `RESEARCH` action description in all system prompts (`src/teddy_executor/resources/prompts/*.xml`).
@@ -41,3 +41,6 @@ And no full "Content" blocks should be present in the report
 ## Implementation Notes
 - **Contract Contraction**: Removed `content` from `SearchResult` TypedDict. Verified via `get_type_hints` in unit tests.
 - **Runtime Reality**: Python `TypedDict` does not enforce key constraints at runtime. Existing logic in `WebSearcherAdapter` that still populates `item["content"]` does not trigger runtime errors, which explains why the global test suite remained green. This logic will be removed in the next deliverable.
+- **Contract Renaming**: Renamed `body` to `description` in `SearchResult` DTO. Verified via `get_type_hints`.
+- **Global Alignment**: Performed a bulk `sed` replacement of dictionary keys in `tests/` to align the test harness with the new DTO contract.
+- **Template Cleanup**: Removed `content` block from `execution_report.md.j2` and renamed `Snippet` codeblock label to `description` to match the DTO field name and the "revert" business goal.
