@@ -153,3 +153,4 @@ def test_auto_pruning_defaults_are_present(fs, container):
     assert adapter.get_setting("auto_pruning.global_context_threshold") == 50000
     assert adapter.get_setting("auto_pruning.prune_failure_history") is True
     assert adapter.get_setting("auto_pruning.prune_validation_failures") is True
+    assert adapter.get_setting("auto_pruning.preserve_message_turns") is True
