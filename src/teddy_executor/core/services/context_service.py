@@ -108,22 +108,43 @@ class ContextService(IGetContextUseCase):
         Preserves original order while deduplicating results.
         """
         paths: List[str] = []
+        processed_manifests: set[str] = set()
+
         for f in files:
-            if self._is_manifest(f):
-                # Expansion of manifests can return multiple paths
-                resolved = self._file_system_manager.resolve_paths_from_files([f])
-                for r in resolved:
-                    if r not in paths:
-                        paths.append(r)
-            elif self._file_system_manager.is_dir(f):
-                # Recursive directory expansion
-                resolved = self._file_system_manager.list_directory_recursive(f)
-                for r in resolved:
-                    if r not in paths:
-                        paths.append(r)
-            elif f not in paths:
-                paths.append(f)
+            self._resolve_recursive(f, paths, processed_manifests)
+
         return paths
+
+    def _resolve_recursive(
+        self, f: str, paths: List[str], processed_manifests: set[str]
+    ) -> None:
+        """Helper to resolve a single path recursively."""
+        if self._is_manifest(f):
+            self._expand_manifest(f, paths, processed_manifests)
+        elif self._file_system_manager.is_dir(f):
+            self._expand_directory(f, paths)
+        elif f not in paths:
+            paths.append(f)
+
+    def _expand_manifest(
+        self, f: str, paths: List[str], processed_manifests: set[str]
+    ) -> None:
+        """Expands a manifest and recursively resolves its contents."""
+        if f in processed_manifests:
+            return
+        processed_manifests.add(f)
+
+        # Expansion of manifests can return multiple paths
+        resolved = self._file_system_manager.resolve_paths_from_files([f])
+        for r in resolved:
+            self._resolve_recursive(r, paths, processed_manifests)
+
+    def _expand_directory(self, f: str, paths: List[str]) -> None:
+        """Expands a directory and adds its contents to the path list."""
+        resolved = self._file_system_manager.list_directory_recursive(f)
+        for r in resolved:
+            if r not in paths:
+                paths.append(r)
 
     def _is_manifest(self, file_path: str) -> bool:
         """Determines if a file path refers to a .context manifest."""
