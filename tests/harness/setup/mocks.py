@@ -66,6 +66,15 @@ def mock_session_manager(container):
 
 
 @pytest.fixture
+def mock_session_loop_guard(container):
+    from teddy_executor.core.ports.outbound.session_loop_guard import (
+        ISessionLoopGuard,
+    )
+
+    return register_mock(container, ISessionLoopGuard)
+
+
+@pytest.fixture
 def mock_planning_service(container):
     from teddy_executor.core.ports.inbound.planning_use_case import (
         IPlanningUseCase,

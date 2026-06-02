@@ -36,7 +36,7 @@ And it should transition Turn 99's turn.context to Turn 01 of the new session
 ## Deliverables
 - [x] **Cleanup** - Fix `PLR0915` (Too many statements) in `session_cli_handlers.py` [DEBT].
 - [x] **Contract** - Update `ISessionLoopGuard.should_continue` signature to include `cumulative_cost` and `interactive` flag.
-- [ ] **Harness** - Create `MockSessionLoopGuard` for testing limit breaches.
+- [x] **Harness** - Create `MockSessionLoopGuard` for testing limit breaches.
 - [ ] **Seam** - Update `ProductionSessionLoopGuard` to store `initial_turn` and `initial_cost` on instantiation.
 - [ ] **Logic** - Implement `yolo_guardrails` enforcement in `ProductionSessionLoopGuard`.
 - [ ] **Logic** - Implement `migrate_to_continuation` in `SessionService` for the Turn 99 -> 100 transition.
@@ -53,6 +53,7 @@ And it should transition Turn 99's turn.context to Turn 01 of the new session
 - **Prototype Scope**: The validated prototype (`spikes/prototypes/02-03-safety-limits.py`) focused strictly on the "Centennial" migration boundary and pruning logic. It did not simulate physical directory creation for every incremental turn (T1-T98), as that logic already exists in the production `SessionRepository`.
 - **System Prompt Relocation**: Prototyper confirmed that moving the agent's dynamic prompt (e.g., `pathfinder.xml`) to the session root simplifies migration, as it only needs to be copied once per centennial jump rather than once per turn.
 - **Pruning Logic**: Successful `## Message` turns are now protected from pruning by checking for the presence of the message header and a `SUCCESS` status in the report.
+- **Harness Integration**: `mock_session_loop_guard` is registered as a global fixture in `tests/conftest.py`, ensuring all tests can easily control the execution loop safety breaks.
 
 ## Implementation Plan
 ### Delta Analysis

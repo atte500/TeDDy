@@ -42,6 +42,7 @@ from tests.harness.setup.mocks import (
     mock_run_plan as mock_run_plan,
     mock_scraper as mock_scraper,
     mock_searcher as mock_searcher,
+    mock_session_loop_guard as mock_session_loop_guard,
     mock_session_manager as mock_session_manager,
     mock_shell as mock_shell,
     mock_tree_gen as mock_tree_gen,
