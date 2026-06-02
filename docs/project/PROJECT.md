@@ -54,6 +54,7 @@ This section defines the conventions for our project management artifacts.
 - **Core Goal:** Improve the interactive experience and provide better visibility into session state.
 - **Specs:** [docs/project/specs/interactive-session-workflow.md](/docs/project/specs/interactive-session-workflow.md)
 - **Requirements:**
+    - **Console Visibility:** In session mode, log the "Status Emoji + Plan Title" (e.g., `🟢 Title`) to the terminal after the metadata block and before the action logs.
     - **Navigation:** Alt+Up/Down for jumping between Context, Rationale, and Plan/Message sections.
     - **Context Interactions:** Pressing `e` on context nodes opens the corresponding file/context file in the external editor.
     - **Metadata Visibility:** Display model name and session cost (rounded to nearest cent) in the right panel when the Context Root is selected.
