@@ -123,9 +123,9 @@ def test_pruning_persistence_in_replan_loop(container, tmp_path):
     orchestrator = container.resolve(IRunPlanUseCase)
     session_dir, turn_01_dir = setup_session_workspace(tmp_path)
 
-    # Trigger validation error: READ file already in context (file_a.txt is in session.context)
+    # Trigger validation error: CREATE file that already exists (file_a.txt)
     builder = MarkdownPlanBuilder("Faulty Plan").with_agent("Pathfinder")
-    builder.add_read("file_a.txt")
+    builder.add_create(path="file_a.txt", content="content")
     plan_path = turn_01_dir / "plan.md"
     plan_path.write_text(builder.build(), encoding="utf-8")
 

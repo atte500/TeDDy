@@ -9,7 +9,6 @@ from teddy_executor.core.services.validation_rules.helpers import (
     BaseActionValidator,
     ContextPaths,
     ValidationResult,
-    is_path_in_context,
 )
 
 
@@ -57,15 +56,6 @@ class ReadActionValidator(BaseActionValidator):
         )
         if read_errors:
             return read_errors
-
-        if src_resource and is_path_in_context(src_resource, context_paths):
-            return [
-                ValidationError(
-                    message=f"{src_resource} is already in context",
-                    file_path=src_resource,
-                    offending_node=action.node,
-                )
-            ]
 
         if (
             isinstance(src_resource, str)

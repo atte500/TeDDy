@@ -40,8 +40,9 @@ def test_session_orchestrator_validation_failure_read_already_in_context(
     (turn_01_dir / "turn.context").write_text("", encoding="utf-8")
     (tmp_path / "README.md").write_text("content", encoding="utf-8")
 
+    # Faulty plan (CREATE file that already exists)
     builder = MarkdownPlanBuilder("Faulty Plan")
-    builder.add_action("READ", params={"Resource": "[README.md](/README.md)"})
+    builder.add_create(path="README.md", content="content")
     plan_path = turn_01_dir / "plan.md"
     plan_path.write_text(builder.build(), encoding="utf-8")
 
@@ -61,7 +62,7 @@ def test_session_orchestrator_validation_failure_read_already_in_context(
 
     # Assert
     assert report.run_summary.status == RunStatus.VALIDATION_FAILED
-    assert "README.md is already in context" in report.validation_result[0]
+    assert "File already exists: README.md" in report.validation_result[0]
     assert (session_dir / "02" / "plan.md").exists()
 
 
@@ -120,9 +121,9 @@ def test_session_orchestrator_validation_replan_preserves_user_request_integrati
     (turn_01_dir / "turn.context").write_text("", encoding="utf-8")
     (tmp_path / "README.md").write_text("content", encoding="utf-8")
 
-    # Faulty plan (READ file already in context)
+    # Faulty plan (CREATE file that already exists)
     builder = MarkdownPlanBuilder("Faulty Plan")
-    builder.add_action("READ", params={"Resource": "[README.md](/README.md)"})
+    builder.add_create(path="README.md", content="content")
     plan_path = turn_01_dir / "plan.md"
     plan_path.write_text(builder.build(), encoding="utf-8")
 
