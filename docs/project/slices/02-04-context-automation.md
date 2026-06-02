@@ -32,7 +32,7 @@ Then "new_file.py" should be present in the next turn's "turn.context"
 - **Remote URL Deduplication**: URLs should be deduplicated against themselves but never treated as local paths.
 
 ## Deliverables
-- [▶] **Seam** - Inject `IWebScraper` into `ContextService` to support remote URL context gathering.
+- [x] **Seam** - Inject `IWebScraper` into `ContextService` to support remote URL context gathering.
 - [ ] **Logic** - Update `ContextService.get_context` to fetch remote URL content via `IWebScraper`.
 - [ ] **Logic** - Update `ContextService._resolve_recursive` to ensure URLs are not treated as local directories.
 - [ ] **Logic** - Update `EditActionValidator` to remove context-presence check and treat identical FIND/REPLACE as no-ops.
@@ -40,6 +40,9 @@ Then "new_file.py" should be present in the next turn's "turn.context"
 - [ ] **Logic** - Update `SessionService._apply_execution_effects` to include `CREATE` and `EDIT` side-effects.
 - [ ] **Harness** - Add integration test for recursive directory expansion in `.context` manifests.
 - [ ] **Wiring** - Update `registries/infrastructure.py` and `container.py` for the new `ContextService` dependency.
+
+## Implementation Notes
+- **Seam (IWebScraper Injection)**: Injected `IWebScraper` into `ContextService` constructor. Updated `test_context_service.py` fixture and two manual instantiations in `test_context_recursion.py` and `test_context_service_performance.py` to provide a mock.
 
 ## Implementation Plan
 ### Delta Analysis

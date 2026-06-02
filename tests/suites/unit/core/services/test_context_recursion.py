@@ -1,8 +1,11 @@
 from typing import Any
+from teddy_executor.core.ports.outbound.web_scraper import WebScraper as IWebScraper
 from teddy_executor.core.services.context_service import ContextService
+from tests.harness.setup.mocking import register_mock
 
 
 def test_resolve_files_to_paths_expands_directories_recursively(
+    container,
     mock_fs: Any,
     mock_tree_gen: Any,
     mock_inspector: Any,
@@ -12,11 +15,13 @@ def test_resolve_files_to_paths_expands_directories_recursively(
     Verifies that ContextService resolves directory paths into recursive file lists.
     """
     # Arrange
+    mock_scraper = register_mock(container, IWebScraper)
     service = ContextService(
         file_system_manager=mock_fs,
         repo_tree_generator=mock_tree_gen,
         environment_inspector=mock_inspector,
         llm_client=mock_llm_client,
+        web_scraper=mock_scraper,
     )
 
     # Setup FSM behavior:

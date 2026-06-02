@@ -3,7 +3,9 @@ import pytest
 from teddy_executor.core.domain.models import ProjectContext
 from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient
+from teddy_executor.core.ports.outbound.web_scraper import WebScraper as IWebScraper
 from teddy_executor.core.services.context_service import ContextService
+from tests.harness.setup.mocking import register_mock
 
 
 @pytest.fixture
@@ -11,8 +13,9 @@ def service(
     container, mock_fs, mock_tree_gen, mock_inspector, mock_llm_client
 ) -> IGetContextUseCase:
     """Provides a ContextService instance resolved from the container."""
-    # Ensure ILlmClient is bound to the mock for the service
+    # Ensure dependencies are bound to the mocks for the service
     container.register(ILlmClient, instance=mock_llm_client)
+    register_mock(container, IWebScraper)
     container.register(IGetContextUseCase, ContextService)
     return container.resolve(IGetContextUseCase)
 

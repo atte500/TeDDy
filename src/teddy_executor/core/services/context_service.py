@@ -15,6 +15,7 @@ from teddy_executor.core.ports.outbound.environment_inspector import (
     IEnvironmentInspector,
 )
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient
+from teddy_executor.core.ports.outbound.web_scraper import WebScraper as IWebScraper
 
 
 class ContextService(IGetContextUseCase):
@@ -28,11 +29,13 @@ class ContextService(IGetContextUseCase):
         repo_tree_generator: IRepoTreeGenerator,
         environment_inspector: IEnvironmentInspector,
         llm_client: ILlmClient,
+        web_scraper: IWebScraper,
     ):
         self._file_system_manager = file_system_manager
         self._repo_tree_generator = repo_tree_generator
         self._environment_inspector = environment_inspector
         self._llm_client = llm_client
+        self._web_scraper = web_scraper
 
     def get_context(
         self,
