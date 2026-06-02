@@ -39,7 +39,7 @@ And it should transition Turn 99's turn.context to Turn 01 of the new session
 - [x] **Harness** - Create `MockSessionLoopGuard` for testing limit breaches.
 - [x] **Seam** - Update `ProductionSessionLoopGuard` to store `initial_turn` and `initial_cost` on instantiation.
 - [x] **Contract** - Add `get_cumulative_cost` to `ISessionManager`.
-- [▶] **Logic** - Implement `yolo_guardrails` enforcement in `ProductionSessionLoopGuard`.
+- [x] **Logic** - Implement `yolo_guardrails` enforcement in `ProductionSessionLoopGuard`.
 - [ ] **Logic** - Implement `migrate_to_continuation` in `SessionService` for the Turn 99 -> 100 transition.
 - [ ] **Logic** - Implement Message Turn protection in `SessionPruningService` (check for `## Message` + `status != FAILURE`); make it configurable via `auto_pruning.preserve_message_turns` (default: `true`).
 - [ ] **Logic** - Relocate `system_prompt.xml` to session root in `SessionService.create_session`.
@@ -56,8 +56,9 @@ And it should transition Turn 99's turn.context to Turn 01 of the new session
 - **Pruning Logic**: Successful `## Message` turns are now protected from pruning by checking for the presence of the message header and a `SUCCESS` status in the report.
 - **Harness Integration**: `mock_session_loop_guard` is registered as a global fixture in `tests/conftest.py`, ensuring all tests can easily control the execution loop safety breaks.
 - **Seam Implementation**: `ProductionSessionLoopGuard` constructor now stores process-relative initial state. CLI handlers (`_orchestrate_session_loop`) resolve the guard by passing the current session's latest turn count.
-- [✓] `ISessionManager` now includes `get_cumulative_cost(session_name: str) -> float`, implemented in `SessionService` to retrieve the cost from the latest turn's metadata.
-- [FIX] Resolved a regression in `session_cli_handlers.py` where `int()` was called on the `latest_turn` path string and mock objects in tests. Added robust turn ID extraction and type guards.
+- `ISessionManager` now includes `get_cumulative_cost(session_name: str) -> float`, implemented in `SessionService` to retrieve the cost from the latest turn's metadata.
+- Resolved a regression in `session_cli_handlers.py` where `int()` was called on the `latest_turn` path string and mock objects in tests. Added robust turn ID extraction and type guards.
+- `ProductionSessionLoopGuard` now enforces `yolo_guardrails` (max_turns, max_session_cost) using process-relative calculations (delta from initial state). Limits are strictly ignored if `interactive=True`.
 
 ## Implementation Plan
 ### Delta Analysis
