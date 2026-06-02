@@ -35,7 +35,6 @@ And it should transition Turn 99's turn.context to Turn 01 of the new session
 
 ## Deliverables
 - [x] **Cleanup** - Fix `PLR0915` (Too many statements) in `session_cli_handlers.py` [DEBT].
-- [ ] **Cleanup** - Fix Mypy signature mismatch in `real_adapter_mixin.py` for `WebSearcherAdapter` [DEBT].
 - [x] **Contract** - Update `ISessionLoopGuard.should_continue` signature to include `cumulative_cost` and `interactive` flag.
 - [ ] **Harness** - Create `MockSessionLoopGuard` for testing limit breaches.
 - [ ] **Seam** - Update `ProductionSessionLoopGuard` to store `initial_turn` and `initial_cost` on instantiation.
